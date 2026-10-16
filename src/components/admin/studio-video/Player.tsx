@@ -8,6 +8,7 @@ import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
 import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
+import { transAt, transStyle } from "./transitions";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
 
@@ -98,6 +99,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   );
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgRef = useRef<HTMLVideoElement>(null);
+  const otherRef = useRef<HTMLVideoElement>(null); // 화면전환 상대 클립의 멈춘 장면
   const voiceRef = useRef<HTMLAudioElement>(null);
   const musicEls = useRef<Record<string, HTMLAudioElement | null>>({});
   const [t, setT] = useState(0);
@@ -137,7 +139,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       if (sameSource) target = sourceTimeAt(c, loc);
       else {
         const s = Number(c.visual?.s) || 0;
-        target = vis.duration ? (s + loc) % Math.max(0.1, vis.duration) : s + loc;
+        // 클립보다 짧으면 마지막 장면에서 멈춘다 (처음부터 반복하지 않음)
+        target = vis.duration ? Math.min(s + loc, Math.max(0, vis.duration - 0.05)) : s + loc;
       }
       if (force || Math.abs(v.currentTime - target) > 0.3) {
         try {
@@ -519,17 +522,50 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const blurT = `scale(${clip?.flipX ? -1.15 : 1.15}, ${clip?.flipY ? -1.15 : 1.15})`;
   const vUrl = visual?.url || "";
 
+  // 화면전환 — 지금 클립 화면(main)과 상대 클립의 멈춘 장면(other)을 효과대로 섞는다 (굽기 render.js 와 같은 규칙)
+  const tr = transAt(flat.items, t);
+  const trLook = tr ? transStyle(tr.type, tr.p) : null;
+  const other = tr ? (tr.live === "from" ? tr.to : tr.from) : null;
+  const otherVis = other ? visualOf(other.clip) : null;
+  const otherT = (() => {
+    if (!other || !otherVis || otherVis.kind !== "video") return 0;
+    const c = other.clip;
+    const loc = tr!.live === "from" ? 0 : Math.max(0, other.dur - 0.04); // 뒤 클립은 첫 장면, 앞 클립은 마지막 장면
+    if (c.type !== "voice" && c.src && otherVis.id === c.src.asset) return sourceTimeAt(c, loc);
+    const s = Number(c.visual?.s) || 0;
+    return otherVis.duration ? Math.min(s + loc, Math.max(0, otherVis.duration - 0.05)) : s + loc;
+  })();
+  useEffect(() => {
+    const v = otherRef.current;
+    if (!v || !otherVis || otherVis.kind !== "video") return;
+    try {
+      if (Math.abs(v.currentTime - otherT) > 0.05) v.currentTime = otherT;
+    } catch {}
+  }, [otherVis?.url, otherT]); // eslint-disable-line react-hooks/exhaustive-deps
+  const mainZ = trLook ? (tr!.live === "to" ? 2 : 1) : undefined;
+  const otherFit = other ? other.clip.fill || project.settings.fill : "contain";
+  const otherMedia: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: otherFit === "cover" ? "cover" : "contain", transform: flipOf(other?.clip) };
+
   return (
     <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}
       onPointerDown={(e) => { if (e.target === e.currentTarget) setPick(""); }}>
-      {visual && fill === "blur" && !vbox && (visual.kind === "image" ? (
-        <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
-      ) : (
-        <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
-      ))}
-      {visual?.kind === "image" && <img src={vUrl} alt="" style={mediaStyle} />}
-      <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
-        onLoadedData={() => sync(tRef.current, true)} />
+      {/* 지금 클립 화면 — 화면전환 중이면 효과대로 움직인다 */}
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: mainZ, ...(trLook ? (tr!.live === "from" ? trLook.from : trLook.to) : {}) }}>
+        {visual && fill === "blur" && !vbox && (visual.kind === "image" ? (
+          <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
+        ) : (
+          <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
+        ))}
+        {visual?.kind === "image" && <img src={vUrl} alt="" style={mediaStyle} />}
+        <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
+          onLoadedData={() => sync(tRef.current, true)} />
+      </div>
+      {/* 화면전환 상대 — 뒤 클립 첫 장면 / 앞 클립 마지막 장면 (멈춘 채) */}
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: trLook ? (mainZ === 2 ? 1 : 2) : undefined, pointerEvents: "none", display: trLook && otherVis ? "block" : "none", background: "#000", ...(trLook ? (tr!.live === "from" ? trLook.to : trLook.from) : {}) }}>
+        {otherVis?.kind === "image" && <img src={otherVis.url} alt="" style={otherMedia} />}
+        <video ref={otherRef} src={otherVis?.kind === "video" ? otherVis.url : undefined} muted playsInline preload="auto" style={{ ...otherMedia, display: otherVis?.kind === "video" ? "block" : "none" }} />
+      </div>
+      {trLook?.veil && <div style={{ position: "absolute", inset: 0, zIndex: 3, pointerEvents: "none", ...trLook.veil }} />}
       {visual?.missing && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 14 }}>원본 파일을 찾지 못했어요</div>}
       {/* 클립 화면 고르기 — 누르면 테두리, 끌면 옮기기, 모서리로 크기 */}
       {visual && !visual.missing && onVisualMove && clip && (

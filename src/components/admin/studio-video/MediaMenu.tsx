@@ -33,6 +33,7 @@ type Props = {
   onFlip: (axis: "x" | "y") => void;
   onReplace: () => void;
   onStart?: () => void; // 비디오 시작점 변경 (영상일 때만)
+  trim?: boolean; // 녹화·촬영 영상 클립이면 "시작·끝 자르기"로
   /** 클립 소리 (원본 소리가 있는 영상 클립만) */
   sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void };
   onRange: (a: number, b: number) => void;
@@ -76,7 +77,9 @@ export default function MediaMenu(p: Props) {
     items = [
       { icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") },
       { icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") },
-      ...(p.onStart ? [{ icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
+      ...(p.onStart ? [p.trim
+        ? { icon: "cut", label: "시작·끝 자르기", desc: "영상 앞뒤를 잘라 쓸 부분만 남겨요 (프리미어·캡컷처럼). 소리·자막도 같이 잘려요", run: done(p.onStart) }
+        : { icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
       ...(p.sound ? [{ icon: p.sound.muted ? "mute" : "volume", label: "볼륨 조절", desc: "이 클립의 소리를 끄거나 크게·작게 해요", sub: true, run: go("volume") }] : []),
       { icon: "swap", label: "교체", desc: `다른 사진·영상으로 바꿔요. 채우기·반전·범위는 그대로예요`, run: done(p.onReplace) },
       { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : "이 사진이 몇 번 클립부터 몇 번 클립까지 나올지 정해요", sub: true, run: go("range") },
@@ -189,7 +192,7 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
   onMute: (v: boolean) => void;
   onVolume: (v: number, first: boolean) => void;
   onSpeed: (v: number) => void;
-  onVoice: () => void;
+  onVoice?: () => void; // AI 목소리 클립만 — 촬영한 영상(원본 소리)은 목소리를 바꾸지 않는다
   onClose: () => void;
 }) {
   React.useEffect(() => {
@@ -219,9 +222,9 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
         <div style={{ display: "flex", gap: 5 }}>
           {[0.75, 1, 1.25, 1.5, 2].map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
         </div>
-        <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
+        {onVoice && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
           <Icon name="voice" size={16} />AI 목소리 바꾸기<Icon name="chevron" size={14} color={C.sub} />
-        </button>
+        </button>}
         <div style={{ fontSize: 11.5, color: C.dim, marginTop: 6 }}>자세한 설정은 오른쪽 칸 · Esc 로 닫기</div>
       </div>
     </>

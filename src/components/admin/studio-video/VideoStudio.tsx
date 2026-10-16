@@ -2,13 +2,16 @@
 
 // 공실뉴스 스튜디오 [동영상제작] — 브루식 영상 편집기 (원본은 회원 PC, 편집·미리보기·굽기도 PC)
 // 계획서: docs/2026-10-15_studio_video_editor_plan.md
-import React, { useState } from "react";
-import type { LibItem, Method, Project } from "./types";
-import { errText, videoBridge } from "./types";
+import React, { useEffect, useState } from "react";
+import type { LibItem, Method, Project, Recover } from "./types";
+import { errText, isRecover, videoBridge } from "./types";
 import Editor from "./Editor";
 import TextWizard from "./TextWizard";
 import { Home, LongformFlow, NewDialog, RecordFlow, VideoFlow } from "./Flows";
-import { C, FONT, Icon } from "./ui";
+import { Btn, C, FONT, Icon, Modal } from "./ui";
+
+/** 동영상제작을 쓸 수 있는 가장 낮은 스튜디오 앱 버전 (.gss 저장 방식 — 0.1.4) */
+const MIN_APP = "0.1.4";
 
 export default function VideoStudio() {
   const b = videoBridge();
@@ -16,6 +19,24 @@ export default function VideoStudio() {
   const [flow, setFlow] = useState<"" | "new" | Method>("");
   const [recorded, setRecorded] = useState<LibItem | null>(null);
   const [err, setErr] = useState("");
+  // .gss 를 열었는데 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로 열기]
+  const [recover, setRecover] = useState<Recover | null>(null);
+  const take = (r: Project | Recover | null) => {
+    if (!r) return;
+    if (isRecover(r)) setRecover(r);
+    else setProject(r);
+  };
+  // 탐색기에서 .gss 파일을 두 번 눌러 앱을 열었으면 — 그 파일을 바로 연다 (앱이 켜져 있을 때 눌러도)
+  useEffect(() => {
+    if (!b) return;
+    const openFile = (f: string) => {
+      if (!f) return;
+      setFlow("");
+      b.project.open(f).then(take).catch((e) => setErr(errText(e)));
+    };
+    b.project.pendingFile?.().then(openFile).catch(() => {});
+    return b.project.onOpenFile?.(openFile);
+  }, [b]);
 
   if (!b) {
     return (
@@ -29,27 +50,51 @@ export default function VideoStudio() {
     );
   }
 
-  const open = async (dir: string) => {
+  // 필수 앱 버전 — 이보다 낮은 앱이면 동영상제작을 막고 업데이트를 안내한다 (저장 방식이 바뀌는 등 큰 변경 때 올린다)
+  const appVer = (typeof navigator !== "undefined" && /GongsilStudio\/([\d.]+)/.exec(navigator.userAgent)?.[1]) || "";
+  const older = (a: string, z: string) => {
+    const x = a.split(".").map(Number), y = z.split(".").map(Number);
+    for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+    return false;
+  };
+  if (appVer && older(appVer, MIN_APP)) {
+    const studio = (window as unknown as { gongsilStudio?: { checkUpdate?: () => Promise<void> } }).gongsilStudio;
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, color: C.text, fontFamily: FONT }}>
+        <div style={{ maxWidth: 520, padding: 32, textAlign: "center", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8 }}>
+          <Icon name="video" size={36} />
+          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>공실뉴스 스튜디오 업데이트가 필요해요</div>
+          <div style={{ fontSize: 15, color: C.sub, marginTop: 10, lineHeight: 1.7 }}>
+            동영상제작이 새로워졌어요 (지금 앱 v{appVer} → v{MIN_APP} 이상).<br />
+            {studio?.checkUpdate ? "[지금 업데이트]를 누르면 새 버전을 받아 다시 켜요." : "앱을 껐다 켜면 켤 때 자동으로 새 버전을 받아요."}
+          </div>
+          {studio?.checkUpdate && <div style={{ marginTop: 18 }}><Btn primary onClick={() => void studio.checkUpdate!()}>지금 업데이트</Btn></div>}
+        </div>
+      </div>
+    );
+  }
+
+  const open = async (dir: string, choice?: "work" | "file") => {
     setErr("");
     try {
-      setProject(await b.project.open(dir));
+      take(await b.project.open(dir, choice));
     } catch (e) {
       setErr(errText(e));
     }
   };
   const openPick = async () => {
     try {
-      const p = await b.project.openPick();
-      if (p) setProject(p);
+      take((await b.project.openPick()) as Project | Recover | null);
     } catch (e) {
       setErr(errText(e));
     }
   };
-  const done = (p: Project) => {
+  const done = async (p: Project) => {
     setFlow("");
     setRecorded(null);
-    // 저장된 것을 다시 열어 주소·없는 파일 표시를 맞춘다
-    b.project.open(p.dir).then(setProject).catch(() => setProject(p));
+    // 만들기 마법사로 만든 내용은 첫 저장으로 .gss 에 담는다. 그리고 다시 열어 주소·없는 파일 표시를 맞춘다
+    await b.project.flush?.(p).catch(() => {});
+    b.project.open(p.dir).then((r) => take(r as Project)).catch(() => setProject(p));
   };
 
   return (
@@ -58,6 +103,15 @@ export default function VideoStudio() {
         <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={() => setFlow("new")} onOpen={openPick} onSwitch={setProject} />
       ) : (
         <Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} />
+      )}
+      {recover && (
+        <Modal title="저장하지 않은 고친 내용이 있어요" onClose={() => setRecover(null)} width={520}
+          footer={<><Btn onClick={() => { const r = recover; setRecover(null); open(r.file, "file"); }}>마지막 저장 상태로 열기</Btn><Btn primary onClick={() => { const r = recover; setRecover(null); open(r.file, "work"); }}>이어서 열기</Btn></>}>
+          <div style={{ padding: 20, fontSize: 15, lineHeight: 1.7 }}>
+            <b>{recover.name}</b>을(를) 지난번에 고친 뒤 저장하지 않고 닫았어요 (또는 갑자기 꺼졌어요).<br />
+            고친 내용을 이어서 열까요, 마지막으로 저장한 상태로 열까요?
+          </div>
+        </Modal>
       )}
       {err && <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", padding: "10px 16px", background: C.card, border: `1px solid ${C.danger}`, color: C.text, borderRadius: 6, fontFamily: FONT, fontSize: 14.5, zIndex: 2000 }} onClick={() => setErr("")}>{err}</div>}
       {flow === "new" && <NewDialog onPick={(m) => setFlow(m)} onClose={() => setFlow("")} />}

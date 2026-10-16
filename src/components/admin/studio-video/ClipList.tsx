@@ -9,6 +9,7 @@ import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timelin
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
 import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
+import { transLabel } from "./transitions";
 
 export type ClipActions = {
   selectClip: (id: string, multi: boolean) => void;
@@ -29,6 +30,9 @@ export type ClipActions = {
   sceneBreak: (id: string) => void;
   play: (id: string) => void;
   editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
+  restoreCut: (id: string, i: number | "all") => void; // 무음 줄이기 원래대로 (한 곳 / 모두)
+  addCut: (id: string, g: { s: number; e: number }) => void; // 쉼 [..] 하나 줄이기
+  openTrans: (id: string, add: boolean) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
 };
 
 type Props = {
@@ -48,6 +52,8 @@ type Props = {
   onDropMedia?: (clipId: string, where: "before" | "after" | "replace", raw: string) => void;
   /** 왼쪽 애셋 줄에 놓으면 그 클립부터 사진 올리기 (레이어) */
   onDropLayer?: (clipId: string, raw: string) => void;
+  /** 오른쪽 칸에 열린 화면전환 (뒤 클립 id) */
+  transClip?: string;
 };
 
 /** 썸네일 크게 보기 — 마우스를 올린 동안 썸네일 왼쪽에 크게 (영상은 소리 없이 재생). 왼쪽 자리가 모자라면 오른쪽에 */
@@ -99,14 +105,27 @@ function ActionBtn({ icon, label, onClick, danger }: { icon: string; label: stri
 }
 
 /** 자막 줄 — 누르면 자막 글만 고친다 (말소리·AI 목소리는 그대로) */
-function SubLine({ c, p, empty }: { c: Clip; p: Props; empty?: string }) {
+function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string; open?: number }) {
   const [edit, setEdit] = React.useState(false);
   const custom = typeof c.subText === "string";
   const text = custom ? c.subText! : clipText(c);
   const [draft, setDraft] = React.useState(text);
+  // 촬영 클립의 연필·[자막 고치기]를 누르면 여기를 연다 (말한 내용은 못 고치고 자막만)
+  React.useEffect(() => {
+    if (!open) return;
+    setDraft(text);
+    setEdit(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   if (edit) {
     return (
-      <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}
+        onBlur={(e) => {
+          // 다른 곳을 누르면 닫는다 — 고친 글은 그대로 남긴다 (열린 칸이 여기저기 남아 산만하지 않게)
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          if (draft !== text) p.actions.editSub(c.id, draft);
+          setEdit(false);
+        }}>
         <input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus placeholder="화면에 나올 자막"
           onKeyDown={(e) => { if (e.key === "Enter") { p.actions.editSub(c.id, draft); setEdit(false); } if (e.key === "Escape") setEdit(false); }}
           style={{ flex: 1, minWidth: 200, height: 34, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15, fontFamily: FONT }} />
@@ -119,8 +138,16 @@ function SubLine({ c, p, empty }: { c: Clip; p: Props; empty?: string }) {
   return (
     <button type="button" title="자막만 고치기 (목소리는 그대로)" onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
       style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 6px", border: 0, borderRadius: 4, background: "transparent", cursor: "text", textAlign: "left", fontFamily: FONT }}>
-      <span style={{ flex: 1, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text || empty || " "}</span>
+      <span style={{ flex: "0 1 auto", minWidth: 0, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text || empty || " "}</span>
+      {/* 자막을 고치는 곳은 여기 — 연필 표시 */}
+      <Icon name="pen" size={16} color={C.sub} />
+      <span style={{ flex: 1 }} />
       {custom && text && <span style={{ fontSize: 12, color: C.dim, flexShrink: 0 }}>자막만 고침</span>}
+      {/* 말한 단어와 자막이 다를 때 바로 되돌리기 */}
+      {custom && c.type !== "silence" && (
+        <span role="button" title="말한 단어 그대로 자막에 보여요" onClick={(e) => { e.stopPropagation(); p.actions.editSub(c.id, null); }}
+          style={{ flexShrink: 0, padding: "2px 8px", borderRadius: 4, border: `1px solid ${C.line2}`, color: C.sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>말한 그대로</span>
+      )}
     </button>
   );
 }
@@ -130,6 +157,10 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const sel = p.selected.includes(c.id);
   const playingHere = p.curClip === c.id;
   const [editing, setEditing] = React.useState(false);
+  // 촬영한 영상(원본 소리) 클립은 말한 내용·목소리를 못 바꾼다 — 연필·[자막 고치기]는 자막 줄을 연다 (AI 목소리 클립만 글 고치기)
+  const isSrc = c.type !== "voice";
+  const [subOpen, setSubOpen] = React.useState(0);
+  const editPen = () => (isSrc ? setSubOpen((x) => x + 1) : (setDraft(clipText(c)), setEditing(true)));
   const [draft, setDraft] = React.useState("");
   const [peek, setPeek] = React.useState<DOMRect | null>(null); // 썸네일에 마우스를 올리면 크게
   const silent = Boolean(c.muted) || c.volume === 0; // 무음이면 빨갛게
@@ -139,6 +170,43 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const words: Word[] = c.words && c.words.length ? c.words : String(c.text || "").split(/\s+/).filter(Boolean).map((w) => ({ w, s: 0, e: 0 }));
   const times = wordTimes(c, project.settings);
   const activeIdx = playingHere ? p.curWord : -1;
+  // 쉼(무음) — 브루처럼 단어 사이 0.3초 넘게 쉰 곳에 [..] (클립 맨 앞·뒤 포함). 누르면 그 쉼을 줄이고(줄 그어짐), 다시 누르면 원래대로.
+  //  [무음 줄이기]로 줄인 곳(clip.cuts)도 같은 [..] 로. 단어 시각이 없으면 아래 요약 한 줄로만
+  const cuts = c.type === "source" ? (c.cuts || []).map((g, k) => ({ ...g, k })) : [];
+  const timed = words.length > 0 && words.some((w) => w.e > 0);
+  const pauses: { s: number; e: number; cut: number; at: number }[] = [];
+  if (c.type === "source" && c.src && timed) {
+    const S = c.src.s, E = c.src.e, MINP = 0.3;
+    const edges: { s: number; e: number; at: number }[] = [];
+    if (words[0].s - S >= MINP) edges.push({ s: S, e: words[0].s, at: 0 });
+    for (let i = 1; i < words.length; i++) if (words[i].s - words[i - 1].e >= MINP) edges.push({ s: words[i - 1].e, e: words[i].s, at: i });
+    if (E - words[words.length - 1].e >= MINP) edges.push({ s: words[words.length - 1].e, e: E, at: words.length });
+    const used = new Set<number>();
+    for (const g of edges) {
+      const k = cuts.findIndex((x) => x.s < g.e && g.s < x.e);
+      if (k >= 0) used.add(k);
+      pauses.push({ ...g, cut: k });
+    }
+    for (const x of cuts) if (!used.has(x.k)) { const at = words.findIndex((w) => w.s >= x.e); pauses.push({ s: x.s, e: x.e, cut: x.k, at: at < 0 ? words.length : at }); }
+  }
+  const pauseChip = (g: { s: number; e: number; cut: number; at: number }, i: number) => {
+    const on = g.cut >= 0; // 줄인 쉼
+    const src = c.src!;
+    const PAD = 0.15;
+    const toggle = () => {
+      if (on) return p.actions.restoreCut(c.id, g.cut);
+      let a = g.s === src.s ? g.s : g.s + PAD, z = g.e === src.e ? g.e : g.e - PAD;
+      if (z - a < 0.05) { a = g.s; z = g.e; }
+      p.actions.addCut(c.id, { s: +a.toFixed(3), e: +z.toFixed(3) });
+    };
+    return (
+      <button type="button" key={`p${i}`} title={on ? `쉼 ${(g.e - g.s).toFixed(1)}초를 줄였어요 — 누르면 원래대로` : `쉼 ${(g.e - g.s).toFixed(1)}초 — 누르면 줄여요`} onClick={(e) => { e.stopPropagation(); toggle(); }}
+        style={{ height: 34, padding: "0 8px", borderRadius: 4, border: `1px ${on ? "dashed" : "solid"} ${C.line2}`, background: on ? "transparent" : C.panel2, color: on ? C.dim : "#9ecbff", textDecoration: on ? "line-through" : "none", fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+        [..]
+      </button>
+    );
+  };
+  const cutSec = cuts.reduce((a, g) => a + (g.e - g.s), 0);
 
   if (c.type === "silence") {
     return (
@@ -172,7 +240,12 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             {silent ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
           </button>
           {editing ? (
-            <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}
+              onBlur={(e) => {
+                // 다른 곳을 누르면 닫는다 — 고친 게 있으면(AI 목소리를 새로 만들 수 있으니) 열어 둔다
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                if (draft === clipText(c)) setEditing(false);
+              }}>
               <textarea value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus rows={2}
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, borderRadius: 6, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 16, lineHeight: 1.5, fontFamily: FONT, resize: "vertical" }} />
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
@@ -187,21 +260,40 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
               {words.map((w, i) => {
                 const isSel = p.selWord?.clip === c.id && p.selWord.i === i;
                 const active = !w.del && times.find((x) => (x as { i: number }).i === i) && activeIdx === i;
+                // 이 단어 앞의 쉼 [..]
+                const before = pauses.filter((g) => g.at === i);
                 return (
-                  <button type="button" key={i} onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
+                  <React.Fragment key={i}>
+                  {before.map((g, j) => pauseChip(g, i * 10 + j))}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
                       color: w.del ? C.dim : active ? "#fff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}
                   </button>
+                  </React.Fragment>
                 );
               })}
-              <button type="button" title="글 고치기" onClick={(e) => { e.stopPropagation(); setDraft(clipText(c)); setEditing(true); }}
-                style={{ height: 34, width: 34, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, background: "transparent", color: C.sub, cursor: "pointer" }}>
-                <Icon name="pen" size={18} />
-              </button>
+              {/* 마지막 단어 뒤의 쉼 [..] */}
+              {pauses.filter((g) => g.at === words.length).map((g, j) => pauseChip(g, 100000 + j))}
+              {/* 글 고치기는 AI 목소리 클립만 — 촬영한 영상(원본 소리)은 말한 내용을 못 고치고, 자막 줄의 연필로 자막만 */}
+              {!isSrc && (
+                <button type="button" title="글 고치기" onClick={(e) => { e.stopPropagation(); editPen(); }}
+                  style={{ height: 34, width: 34, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, background: "transparent", color: C.sub, cursor: "pointer" }}>
+                  <Icon name="pen" size={18} />
+                </button>
+              )}
             </div>
           )}
         </div>
+
+        {/* 무음 줄이기 요약 */}
+        {cuts.length > 0 && !editing && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px 8px 12px", fontSize: 13, color: C.sub }} onClick={(e) => e.stopPropagation()}>
+            <Icon name="silence" size={15} color={C.dim} />
+            무음 {cuts.length}곳 줄임 · {cutSec.toFixed(1)}초 짧아짐
+            <button type="button" onClick={() => p.actions.restoreCut(c.id, "all")} style={{ height: 24, padding: "0 8px", borderRadius: 4, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>원래대로</button>
+          </div>
+        )}
 
         {/* 고른 단어로 할 수 있는 일 */}
         {p.selWord?.clip === c.id && !editing && words[p.selWord.i] && (
@@ -213,7 +305,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         )}
 
         {/* 2줄: 화면 자료 + 자막 */}
-        {p.view === "detail" && (
+        {(p.view === "detail" || (isSrc && subOpen > 0)) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
             <button type="button" onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
               onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
@@ -222,7 +314,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             </button>
             {peek && asset && <Peek asset={asset} rect={peek} start={c.visual ? c.visual.s : c.src?.s || 0} flipX={c.flipX} flipY={c.flipY} />}
             <Icon name="sub" size={18} color={C.dim} />
-            <SubLine c={c} p={p} empty="자막 넣기" />
+            <SubLine c={c} p={p} empty="자막 넣기" open={subOpen} />
             {busy && <span style={{ fontSize: 13, color: C.sub }}>{busy}</span>}
             {c.type === "voice" && !c.voice && !busy && clipText(c) && <span style={{ fontSize: 13, color: C.dim }}>목소리 없음</span>}
           </div>
@@ -232,9 +324,9 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {sel && !editing && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px 12px", borderTop: `1px solid ${C.line}` }} onClick={(e) => e.stopPropagation()}>
             <ActionBtn icon="play" label="여기부터 듣기" onClick={() => p.actions.play(c.id)} />
-            <ActionBtn icon="pen" label="글 고치기" onClick={() => { setDraft(clipText(c)); setEditing(true); }} />
+            <ActionBtn icon="pen" label={isSrc ? "자막 고치기" : "글 고치기"} onClick={editPen} />
             <ActionBtn icon="image" label="화면 바꾸기" onClick={() => p.actions.openVisual(c.id)} />
-            <ActionBtn icon="voice" label="목소리" onClick={() => p.actions.openVoice(c.id)} />
+            <ActionBtn icon={isSrc ? "volume" : "voice"} label={isSrc ? "소리 크기" : "목소리"} onClick={() => p.actions.openVoice(c.id)} />
 
             {n > 1 && <ActionBtn icon="merge" label="윗 클립과 합치기" onClick={() => p.actions.mergeUp(c.id)} />}
             {n > 1 && <ActionBtn icon="scene" label="여기서 씬 나누기" onClick={() => p.actions.sceneBreak(c.id)} />}
@@ -257,6 +349,23 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {c.type !== "voice" && srcSpeed(c) !== 1 && <span style={{ fontSize: 12, color: C.dim }}>빠르기 {srcSpeed(c)}배</span>}
         {c.subStyle && Object.keys(c.subStyle).length > 0 && <span title="이 클립은 메인자막 서식을 따로 바꿨어요" style={{ fontSize: 11.5, fontWeight: 700, color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 4, padding: "0 5px" }}>자막 따로</span>}
       </div>
+    </div>
+  );
+}
+
+/** 클립 사이 화면전환 자리 — 카드 사이 틈에 겹쳐 띄운다 (자리를 차지하지 않게). 있으면 칩, 없으면 마우스를 올릴 때 [+ 화면전환] */
+function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
+  const [hover, setHover] = React.useState(false);
+  const t = c.trans;
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ position: "absolute", left: 0, right: 0, top: -10, height: 20, zIndex: 3, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto" }}>
+      {(t || hover) && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTrans(c.id, !t); }} title={t ? "눌러서 화면전환 바꾸기" : "이 두 클립 사이에 화면전환 넣기"}
+          style={{ height: 22, padding: "0 10px", borderRadius: 11, border: `1px solid ${t || open ? C.accent : C.line2}`, background: t ? (open ? C.accent : C.accentDim) : C.panel, color: t && open ? "#fff" : t ? C.text : C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+          {t ? <>↔ {transLabel(t.type)} · {(Number(t.a) + Number(t.b)).toFixed(1)}초</> : <>＋ 화면전환</>}
+        </button>
+      )}
     </div>
   );
 }
@@ -358,6 +467,7 @@ export default function ClipList(p: Props) {
               <div key={it.clip.id} data-row={it.clip.id} style={{ display: "flex" }}>
                 {gutter(it.index, false, it.clip.id)}
                 <div style={{ flex: 1, minWidth: 0, position: "relative" }} {...dropProps(it.clip.id)}>
+                  {n > 0 && <TransSlot c={it.clip} p={p} open={p.transClip === it.clip.id} />}
                   <ClipCard project={project} it={it} n={++n} p={p} />
                   {drop?.id === it.clip.id && (drop.where === "replace" ? (
                     <div style={{ position: "absolute", inset: "6px 0", border: `2px solid ${C.accent}`, borderRadius: 8, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59,130,246,0.12)" }}>

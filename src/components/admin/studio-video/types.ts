@@ -28,6 +28,8 @@ export type Clip = {
   text: string;
   words?: Word[];
   src?: { asset: string; s: number; e: number };
+  trans?: { type: string; a: number; b: number }; // 앞 클립에서 이 클립으로 넘어가는 화면전환 — 앞 클립 끝 a초 + 이 클립 시작 b초 (transitions.ts)
+  cuts?: { s: number; e: number }[]; // 무음 줄이기로 건너뛰는 구간 (원본 시각) — 원래대로 하면 지운다
   voice?: { file: string; url?: string; duration: number; id: string; text: string } | null;
   voiceId?: string; // 클립만 다른 목소리
   speed?: number; // 클립만 다른 빠르기 (AI 목소리 클립: 목소리 빠르기 / 촬영 클립: 영상·소리 빠르기 0.5~2)
@@ -112,6 +114,8 @@ export type Project = {
   v: number;
   id: string;
   name: string;
+  file?: string; // .gss 파일 위치 (예전 폴더 방식이면 없음) — dir 은 보이지 않는 작업 폴더
+  savedAt?: string; // 마지막으로 [저장]한 시각 (비면 한 번도 저장 안 한 새 프로젝트)
   method: Method;
   ratio: Ratio;
   vacancyId?: string;
@@ -126,7 +130,12 @@ export type Project = {
   thumb?: string;
 };
 
-export type LibItem = { id: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
+export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
+/** .gss 를 열 때 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로] 를 묻는다 */
+export type Recover = { recover: true; file: string; name: string };
+export const isRecover = (x: unknown): x is Recover => Boolean(x && (x as Recover).recover);
+export type Folders = { projectDir: string; recordDir: string; exportDir: string; defaults: { projectDir: string; recordDir: string; exportDir: string } };
+export type TrashItem = { id: string; name: string; from: string; at: string; deletedAt: string; thumb: string; ratio: Ratio; duration: number };
 export type Recent = { dir: string; name: string; ratio: Ratio; method: Method; updatedAt: string; thumb: string; duration: number };
 export type StockItem = { id: string; kind: "image" | "video"; thumb: string; url: string; width: number; height: number; duration?: number; credit: string; source: string };
 
@@ -147,17 +156,46 @@ export type VideoBridge = {
   };
   project: {
     create: (o: { method: Method; ratio: Ratio; name?: string; vacancyId?: string }) => Promise<Project>;
-    open: (dir: string) => Promise<Project>;
+    open: (dir: string, choice?: "work" | "file") => Promise<Project | Recover>;
     openPick: () => Promise<Project | null>;
     save: (p: Project) => Promise<{ updatedAt: string; duration: number }>;
+    // .gss 파일 (옛 앱에는 없음)
+    flush?: (p: Project) => Promise<{ savedAt: string }>;
+    discard?: (p: Project) => Promise<boolean>;
+    setDirty?: (v: boolean, dir?: string, file?: string) => Promise<boolean>;
+    backup?: (p: Project) => Promise<string>;
+    backups?: (p: Project) => Promise<{ file: string; at: string; size: number }[]>;
+    closeNow?: () => Promise<boolean>;
+    onWantClose?: (fn: () => void) => () => void;
+    convert?: (p: Project) => Promise<Project>;
+    packageInfo?: (p: Project) => Promise<{ count: number; bytes: number; missing: string[] }>;
+    makePackage?: (p: Project) => Promise<{ dir: string; file: string; count: number; bytes: number } | null>;
+    relink?: (p: Project, assetId: string) => Promise<{ path: string; edit: string; missing: boolean; url: string } | null>;
+    pendingFile?: () => Promise<string>;
+    onOpenFile?: (fn: (file: string) => void) => () => void;
     saveAs?: (p: Project, name: string, parent?: string) => Promise<Project>; // 앱 0.1.4부터
     pickFolder?: (title: string, defaultPath?: string) => Promise<string | null>;
     recent: () => Promise<Recent[]>;
+    // 저장 폴더 설정 — 비어 있으면 기본 폴더 (옛 앱에는 없음)
+    folders?: () => Promise<Folders>;
+    setFolders?: (patch: Partial<Omit<Folders, "defaults">>) => Promise<Folders>;
+    rename?: (dir: string, name: string) => Promise<string>; // 이름만 바꾸기 (폴더는 그대로, 옛 앱에는 없음)
+    // 휴지통 (옛 앱에는 없음)
+    trash?: (dir: string) => Promise<string>; // 휴지통 항목 id (되돌리기용)
+    trashList?: () => Promise<TrashItem[]>;
+    restore?: (id: string) => Promise<string>;
+    purge?: (id: string | "all") => Promise<number>;
     addAsset: (libId: string) => Promise<Asset>;
     exportText: (p: Project, kind: "srt" | "txt") => Promise<string>;
   };
   voice: (dir: string, text: string, voiceId: string) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
+  // 무음 줄이기 — 영상별 실제 말소리 구간 (PC에서, 옛 앱에는 없음)
+  speech?: (p: Project, assetIds: string[]) => Promise<Record<string, { s: number; e: number }[]>>;
+  // 자막 시각 맞추기 — 글은 그대로, 단어 시각만 실제 말소리에 (무료, 옛 앱에는 없음)
+  realign?: (p: Project, items: { id: string; asset: string; s: number; e: number; text: string }[]) => Promise<{ id: string; words: Word[] }[]>;
+  // 자동 자막 — 지금 클립은 그대로, 글만 채우기 (옛 앱에는 없음)
+  transcribeClips?: (p: Project, targets: { id: string; asset: string; s: number; e: number }[]) => Promise<{ id: string; text: string; words: Word[]; sents?: { text: string; s: number; e: number; words: Word[] }[] }[]>;
   split?: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>; // 받아쓰기 없이 말소리 구간으로만 (무료, 앱 0.1.4부터)
   ai: {
     script: (o: { topic?: string; style?: string; request?: string; chars?: number; vacancy?: unknown; source?: string }) => Promise<{ title?: string; scenes: { title: string; lines: { text: string; desc: string; keywords: string; kind: string }[] }[] }>;
@@ -180,9 +218,16 @@ export type VideoBridge = {
   record: {
     sources: () => Promise<{ id: string; name: string; thumb: string }[]>;
     choose: (id: string) => Promise<boolean>;
-    start: (name: string) => Promise<string>;
+    start: (name: string, opt?: { dir?: string; fileName?: string }) => Promise<string>;
+    // 저장할 곳 (옛 앱에는 없음)
+    defaultDir?: () => Promise<string>;
+    pickDir?: (cur?: string) => Promise<string>;
     chunk: (token: string, buf: ArrayBuffer) => Promise<boolean>;
     stop: (token: string) => Promise<LibItem>;
+    // 녹화 중 작게 하기 (옛 앱에는 없음)
+    live?: (on: boolean, startedAt?: number) => Promise<boolean>;
+    minimize?: () => Promise<boolean>;
+    onMiniStop?: (fn: () => void) => () => void;
   };
   showFile: (file: string) => Promise<void>;
   openPath: (p: string) => Promise<string>;

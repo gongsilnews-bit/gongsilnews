@@ -2,18 +2,223 @@
 
 // 처음 화면(새로 만들기 · 프로젝트 열기) · 새로 만들기 창(만들 방법 4가지) · 촬영 영상 편집 · 롱폼→숏폼 · 녹화
 import React, { useEffect, useRef, useState } from "react";
-import type { Clip, LibItem, Method, Project, Ratio, Recent } from "./types";
+import type { Clip, Folders, LibItem, Method, Project, Ratio, Recent, TrashItem } from "./types";
 import { RATIO_LABEL, errText, fmtTime, uid, videoBridge } from "./types";
 import { useStudioWriter } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
 
+/* ── 저장 폴더 설정 (처음 화면 [저장 폴더]) — 프로젝트·녹화·내보낸 영상. 앞으로 새로 만드는 것부터 ── */
+function FoldersDialog({ onClose }: { onClose: () => void }) {
+  const b = videoBridge()!;
+  const [f, setF] = useState<Folders | null>(null);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    b.project.folders?.().then(setF).catch((e) => setErr(errText(e)));
+  }, [b]);
+  const shown = (d: string) => {
+    const parts = d.split(/[\\/]/).filter(Boolean);
+    const di = parts.findIndex((x) => /^(documents|문서)$/i.test(x));
+    return (di >= 0 ? ["문서", ...parts.slice(di + 1)] : parts).join(" › ");
+  };
+  const pick = async (k: "projectDir" | "recordDir" | "exportDir", title: string) => {
+    if (!f) return;
+    const cur = f[k] || f.defaults[k] || f.defaults.projectDir;
+    const d = await b.project.pickFolder?.(title, cur);
+    if (!d) return;
+    setF(await b.project.setFolders!({ [k]: d === f.defaults[k] ? "" : d }));
+  };
+  const reset = async (k: "projectDir" | "recordDir" | "exportDir") => f && setF(await b.project.setFolders!({ [k]: "" }));
+  const row = (k: "projectDir" | "recordDir" | "exportDir", name: string, desc: string, emptyText?: string) => {
+    if (!f) return null;
+    const v = f[k] || f.defaults[k];
+    return (
+      <div style={{ padding: "14px 0", borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontSize: 15.5, fontWeight: 800 }}>{name}</span>
+          <span style={{ fontSize: 13, color: C.dim }}>{desc}</span>
+          {!f[k] && <span style={{ fontSize: 12, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "0 6px" }}>기본</span>}
+        </div>
+        <div title={v} style={{ fontSize: 14, color: C.text, margin: "6px 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v ? shown(v) : emptyText}</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <Btn small onClick={() => pick(k, `${name} 고르기`)}><Icon name="folder" size={15} />바꾸기</Btn>
+          {v && <Btn small onClick={() => b.openPath(v)}><Icon name="open" size={15} />폴더 열기</Btn>}
+          {f[k] && <Btn small onClick={() => reset(k)}><Icon name="undo" size={15} />기본으로</Btn>}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <Modal title="저장 폴더" onClose={onClose} width={620} footer={<Btn primary onClick={onClose}>닫기</Btn>}>
+      <div style={{ padding: "6px 24px 18px" }}>
+        {!f ? <div style={{ padding: 20, color: err ? C.danger : C.sub }}>{err || "불러오는 중…"}</div> : (
+          <>
+            {row("projectDir", "프로젝트 저장 폴더", "새로 만드는 프로젝트 파일(.gss)")}
+            {row("recordDir", "녹화 영상 저장 폴더", "영상 녹화하기 (녹화 창에서 바꿔도 여기에 들어가요)")}
+            {row("exportDir", "내보낸 영상 폴더", "완성 영상", "프로젝트 파일(.gss)이 있는 폴더")}
+            <div style={{ marginTop: 14 }}><Hint>이미 만든 프로젝트·녹화는 옮기지 않아요. 앞으로 새로 만드는 것부터 이 폴더에 저장돼요. 다른 폴더를 골라도 녹화·완성 영상은 [내 자료]에 그대로 보여요.</Hint></div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 /* ── 처음 화면 ── */
+const iconBtn: React.CSSProperties = { flexShrink: 0, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: "#8b95a3", cursor: "pointer" };
 export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void }) {
   const b = videoBridge()!;
   const [recent, setRecent] = useState<Recent[] | null>(null);
   useEffect(() => {
     b.project.recent().then(setRecent).catch(() => setRecent([]));
   }, [b]);
+  // 최근 프로젝트 이름 바꾸기 (연필) — 이름만 바뀌고 폴더는 그대로
+  const [editing, setEditing] = useState("");
+  const [draft, setDraft] = useState("");
+  const saveName = async (r: Recent) => {
+    if (editing !== r.dir) return;
+    setEditing("");
+    const nm = draft.trim();
+    if (!nm || nm === r.name || !b.project.rename) return;
+    try {
+      const saved = await b.project.rename(r.dir, nm);
+      setRecent((list) => (list || []).map((x) => (x.dir === r.dir ? { ...x, name: saved } : x)));
+    } catch (e) {
+      alert(errText(e));
+    }
+  };
+  // 검색 · 보기(이 PC에 기억) · 휴지통
+  const [q, setQ] = useState("");
+  const [view, setView] = useState<"grid" | "list">(() => {
+    try {
+      return localStorage.getItem("gsv:homeView") === "list" ? "list" : "grid";
+    } catch {
+      return "grid";
+    }
+  });
+  const setViewMode = (v: "grid" | "list") => {
+    setView(v);
+    try {
+      localStorage.setItem("gsv:homeView", v);
+    } catch {}
+  };
+  const shown = (recent || []).filter((r) => !q.trim() || r.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const [trashView, setTrashView] = useState(false);
+  const [trash, setTrash] = useState<TrashItem[] | null>(null);
+  const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null);
+  // 여러 개 고르기 — 최근 프로젝트(폴더) / 휴지통(id). 고르는 중에는 카드를 눌러도 열지 않고 고르기만
+  const [sel, setSel] = useState<string[]>([]);
+  const [tsel, setTsel] = useState<string[]>([]);
+  const toggle = (arr: string[], set: (v: string[]) => void, k: string) => set(arr.includes(k) ? arr.filter((x) => x !== k) : [...arr, k]);
+  const cardClick = (r: Recent) => {
+    if (editing === r.dir) return;
+    if (sel.length) toggle(sel, setSel, r.dir);
+    else onOpen(r.dir);
+  };
+  const trashMany = async () => {
+    if (!b.project.trash || !sel.length) return;
+    const done: { id: string; name: string }[] = [];
+    for (const dir of sel) {
+      const r = (recent || []).find((x) => x.dir === dir);
+      try {
+        done.push({ id: await b.project.trash(dir), name: r?.name || "" });
+      } catch (e) {
+        alert(`${r?.name || dir}: ${errText(e)}`);
+      }
+    }
+    setSel([]);
+    reload();
+    if (done.length) setToast({ text: `프로젝트 ${done.length}개를 휴지통으로 옮겼어요.`, undo: async () => { for (const d of done) await b.project.restore?.(d.id).catch(() => {}); reload(); } });
+  };
+  const restoreMany = async () => {
+    for (const id of tsel) await b.project.restore?.(id).catch((e) => alert(errText(e)));
+    const n = tsel.length;
+    setTsel([]);
+    setTrash((list) => (list || []).filter((y) => !tsel.includes(y.id)));
+    setToast({ text: `프로젝트 ${n}개를 되살렸어요. 최근 프로젝트에 다시 보여요.` });
+    reload();
+  };
+  const purgeMany = async () => {
+    if (!tsel.length || !confirm(`고른 프로젝트 ${tsel.length}개를 영구 삭제할까요?\n되돌릴 수 없어요. 녹화 원본·내 자료는 지워지지 않아요.`)) return;
+    for (const id of tsel) await b.project.purge?.(id).catch((e) => alert(errText(e)));
+    setTrash((list) => (list || []).filter((y) => !tsel.includes(y.id)));
+    setTsel([]);
+  };
+  const check = (on: boolean, onClick: () => void, show: boolean, extra?: React.CSSProperties) => (
+    <span role="checkbox" aria-checked={on} onClick={(e) => { e.stopPropagation(); onClick(); }} title={on ? "고르기 풀기" : "고르기"}
+      style={{ width: 22, height: 22, borderRadius: 5, border: `2px solid ${on ? C.accent : "rgba(255,255,255,0.85)"}`, background: on ? C.accent : "rgba(0,0,0,0.45)", display: show || on ? "flex" : "none", alignItems: "center", justifyContent: "center", color: "#fff", cursor: "pointer", flexShrink: 0, ...extra }}>
+      {on && <Icon name="check" size={14} stroke={3} />}
+    </span>
+  );
+  const [hoverDir, setHoverDir] = useState("");
+  const [foldersOpen, setFoldersOpen] = useState(false);
+  const reload = () => b.project.recent().then(setRecent).catch(() => {});
+  const openTrash = () => {
+    setTrashView(true);
+    setTrash(null);
+    b.project.trashList?.().then(setTrash).catch(() => setTrash([]));
+  };
+  const toTrash = async (r: Recent) => {
+    if (!b.project.trash) return;
+    try {
+      const id = await b.project.trash(r.dir);
+      setRecent((list) => (list || []).filter((x) => x.dir !== r.dir));
+      setToast({ text: `'${r.name}' 프로젝트를 휴지통으로 옮겼어요.`, undo: async () => { await b.project.restore?.(id).catch((e) => alert(errText(e))); reload(); } });
+    } catch (e) {
+      alert(errText(e));
+    }
+  };
+  const restoreOne = async (x: TrashItem) => {
+    try {
+      await b.project.restore!(x.id);
+      setTrash((list) => (list || []).filter((y) => y.id !== x.id));
+      setToast({ text: `'${x.name}' 프로젝트를 되살렸어요. 최근 프로젝트에 다시 보여요.` });
+      reload();
+    } catch (e) {
+      alert(errText(e));
+    }
+  };
+  const purgeOne = async (x: TrashItem) => {
+    if (!confirm(`'${x.name}' 프로젝트를 영구 삭제할까요?\n프로젝트 폴더(목소리·내보낸 영상 포함)가 지워지고 되돌릴 수 없어요.\n녹화 원본·내 자료는 지워지지 않아요.`)) return;
+    try {
+      await b.project.purge!(x.id);
+      setTrash((list) => (list || []).filter((y) => y.id !== x.id));
+    } catch (e) {
+      alert(errText(e));
+    }
+  };
+  const emptyTrash = async () => {
+    if (!trash?.length || !confirm(`휴지통의 프로젝트 ${trash.length}개를 모두 영구 삭제할까요?\n되돌릴 수 없어요. 녹화 원본·내 자료는 지워지지 않아요.`)) return;
+    try {
+      await b.project.purge!("all");
+      setTrash([]);
+    } catch (e) {
+      alert(errText(e));
+    }
+  };
+  const tbtn = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: "transparent", color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" });
+  // 이름 줄 — 연필(이름 바꾸기) · 휴지통
+  const nameRow = (r: Recent) =>
+    editing === r.dir ? (
+      // 이름 고치기 — 엔터·바깥 누르기: 저장, Esc: 그만두기
+      <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") saveName(r); if (e.key === "Escape") setEditing(""); }}
+        onBlur={() => saveName(r)}
+        style={{ ...input, height: 30, fontSize: 14.5, fontWeight: 700, padding: "0 8px", width: "100%", boxSizing: "border-box" }} />
+    ) : (
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+        {b.project.rename && (
+          <button type="button" title="이름 바꾸기" onClick={(e) => { e.stopPropagation(); setDraft(r.name); setEditing(r.dir); }} style={iconBtn}>
+            <Icon name="pen" size={15} />
+          </button>
+        )}
+        {b.project.trash && (
+          <button type="button" title="휴지통으로 (되살릴 수 있어요)" onClick={(e) => { e.stopPropagation(); toTrash(r); }} style={iconBtn}>
+            <Icon name="trash" size={15} />
+          </button>
+        )}
+      </div>
+    );
   const big = (icon: string, title: string, desc: string, onClick: () => void, primary?: boolean) => (
     <button type="button" onClick={onClick}
       style={{ width: 300, height: 220, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, borderRadius: 8, border: `1px solid ${primary ? C.accent : C.line2}`, background: primary ? C.accent : C.card, color: primary ? "#fff" : C.text, cursor: "pointer", fontFamily: FONT }}>
@@ -24,25 +229,114 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
   );
   return (
     <div style={{ flex: 1, overflowY: "auto", background: C.bg, color: C.text, fontFamily: FONT }}>
+      {foldersOpen && <FoldersDialog onClose={() => setFoldersOpen(false)} />}
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "64px 24px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
           {big("plus", "새로 만들기", "원하는 방식으로 새 영상을 만들어요", onNew, true)}
           {big("open", "프로젝트 열기", "저장한 프로젝트를 이어서 편집해요", onOpenPick)}
         </div>
         <div style={{ marginTop: 52 }}>
-          <div style={{ ...label, fontSize: 17, marginBottom: 12 }}>최근 프로젝트</div>
-          {recent === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : recent.length === 0 ? (
+          {/* 캡컷처럼 — 검색 · 보기(크게/목록) · 휴지통 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            {trashView ? (
+              <>
+                <button type="button" onClick={() => setTrashView(false)} style={tbtn(false)}><Icon name="back" size={15} />최근 프로젝트</button>
+                <span style={{ ...label, fontSize: 17, marginLeft: 6 }}>휴지통{trash ? ` (${trash.length})` : ""}</span>
+                <span style={{ flex: 1 }} />
+                {tsel.length > 0 ? (
+                  <>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: C.accent }}>{tsel.length}개 선택</span>
+                    <button type="button" onClick={() => setTsel((trash || []).map((x) => x.id))} style={tbtn(false)}>전체 선택</button>
+                    <button type="button" onClick={() => setTsel([])} style={tbtn(false)}>선택 풀기</button>
+                    <button type="button" onClick={restoreMany} style={tbtn(false)}><Icon name="undo" size={15} />되살리기</button>
+                    <button type="button" onClick={purgeMany} style={{ ...tbtn(false), color: C.danger }}><Icon name="trash" size={15} />영구 삭제</button>
+                  </>
+                ) : trash && trash.length > 0 && <button type="button" onClick={emptyTrash} style={{ ...tbtn(false), color: C.danger }}><Icon name="trash" size={15} />휴지통 비우기</button>}
+              </>
+            ) : (
+              <>
+                <span style={{ ...label, fontSize: 17 }}>최근 프로젝트</span>
+                <span style={{ flex: 1 }} />
+                {sel.length > 0 ? (
+                  <>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: C.accent }}>{sel.length}개 선택</span>
+                    <button type="button" onClick={() => setSel(shown.map((r) => r.dir))} style={tbtn(false)}>전체 선택</button>
+                    <button type="button" onClick={() => setSel([])} style={tbtn(false)}>선택 풀기</button>
+                    {b.project.trash && <button type="button" onClick={trashMany} style={{ ...tbtn(false), color: C.danger }}><Icon name="trash" size={15} />휴지통으로</button>}
+                  </>
+                ) : <>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: 9, top: 8, color: C.dim, pointerEvents: "none" }}><Icon name="search" size={15} /></span>
+                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="프로젝트 검색" style={{ ...input, width: 200, height: 32, fontSize: 13.5, padding: "0 10px 0 30px" }} />
+                </div>
+                <div style={{ display: "flex", border: `1px solid ${C.line2}`, borderRadius: 5, overflow: "hidden" }}>
+                  {(["grid", "list"] as const).map((v) => (
+                    <button key={v} type="button" onClick={() => setViewMode(v)} title={v === "grid" ? "크게 보기" : "목록으로 보기"}
+                      style={{ height: 30, padding: "0 10px", border: 0, background: view === v ? C.card : "transparent", color: view === v ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{v === "grid" ? "▦ 크게" : "☰ 목록"}</button>
+                  ))}
+                </div>
+                {b.project.trashList && <button type="button" onClick={openTrash} style={tbtn(false)}><Icon name="trash" size={15} />휴지통</button>}
+                {b.project.folders && <button type="button" onClick={() => setFoldersOpen(true)} title="프로젝트·녹화·내보낸 영상을 저장할 폴더" style={tbtn(false)}><Icon name="folder" size={15} />저장 폴더</button>}
+                </>}
+              </>
+            )}
+          </div>
+          {toast && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 12, borderRadius: 6, background: C.card, border: `1px solid ${C.line2}`, fontSize: 14 }}>
+              <span style={{ flex: 1 }}>{toast.text}</span>
+              {toast.undo && <button type="button" onClick={() => { const u = toast.undo!; setToast(null); u(); }} style={tbtn(false)}>되돌리기</button>}
+            </div>
+          )}
+          {trashView ? (
+            trash === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : trash.length === 0 ? (
+              <Hint>휴지통이 비어 있어요.</Hint>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <Hint>[되살리기]를 누르면 원래 자리로 돌아가요. [영구 삭제]하면 되돌릴 수 없어요.</Hint>
+                {trash.map((x) => (
+                  <div key={x.id} onClick={() => toggle(tsel, setTsel, x.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 8, borderRadius: 6, border: `1px solid ${tsel.includes(x.id) ? C.accent : C.line}`, background: C.card, cursor: "pointer" }}>
+                    {check(tsel.includes(x.id), () => toggle(tsel, setTsel, x.id), true)}
+                    <div style={{ width: 112, height: 63, flexShrink: 0, borderRadius: 4, overflow: "hidden", background: "#000" }}>{x.thumb && <img src={x.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0.6 }} />}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.name}</div>
+                      <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{x.ratio} · {fmtTime(x.duration || 0, false)} · {new Date(x.deletedAt).toLocaleDateString("ko-KR")} 삭제</div>
+                    </div>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); restoreOne(x); }} style={tbtn(false)}><Icon name="undo" size={15} />되살리기</button>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); purgeOne(x); }} style={{ ...tbtn(false), color: C.danger }}><Icon name="trash" size={15} />영구 삭제</button>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : recent === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : recent.length === 0 ? (
             <Hint>아직 만든 영상이 없어요. 위의 [새로 만들기]를 눌러 시작하세요.</Hint>
-          ) : (
+          ) : shown.length === 0 ? (
+            <Hint>“{q}” 이름이 들어간 프로젝트가 없어요.</Hint>
+          ) : view === "grid" ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 12 }}>
-              {recent.slice(0, 24).map((r) => (
-                <button key={r.dir} type="button" onClick={() => onOpen(r.dir)} style={{ textAlign: "left", padding: 0, borderRadius: 6, border: `1px solid ${C.line}`, background: C.card, color: C.text, cursor: "pointer", fontFamily: FONT, overflow: "hidden" }}>
-                  <div style={{ aspectRatio: "16 / 9", background: "#000" }}>{r.thumb && <img src={r.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}</div>
+              {shown.slice(0, 48).map((r) => (
+                <div key={r.dir} role="button" tabIndex={0} onClick={() => cardClick(r)} onKeyDown={(e) => e.key === "Enter" && cardClick(r)} onMouseEnter={() => setHoverDir(r.dir)} onMouseLeave={() => setHoverDir((d) => (d === r.dir ? "" : d))}
+                  style={{ textAlign: "left", padding: 0, borderRadius: 6, border: `1px solid ${sel.includes(r.dir) ? C.accent : C.line}`, boxShadow: sel.includes(r.dir) ? `0 0 0 1px ${C.accent}` : "none", background: C.card, color: C.text, cursor: "pointer", fontFamily: FONT, overflow: "hidden" }}>
+                  <div style={{ position: "relative", aspectRatio: "16 / 9", background: "#000" }}>
+                    {r.thumb && <img src={r.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                    {check(sel.includes(r.dir), () => toggle(sel, setSel, r.dir), hoverDir === r.dir || sel.length > 0, { position: "absolute", left: 8, top: 8 })}
+                  </div>
                   <div style={{ padding: "10px 12px" }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                    {nameRow(r)}
                     <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{r.ratio} · {fmtTime(r.duration || 0, false)} · {new Date(r.updatedAt).toLocaleDateString("ko-KR")}</div>
                   </div>
-                </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {shown.map((r) => (
+                <div key={r.dir} role="button" tabIndex={0} onClick={() => cardClick(r)} onKeyDown={(e) => e.key === "Enter" && cardClick(r)} onMouseEnter={() => setHoverDir(r.dir)} onMouseLeave={() => setHoverDir((d) => (d === r.dir ? "" : d))}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: 6, borderRadius: 6, border: `1px solid ${sel.includes(r.dir) ? C.accent : C.line}`, background: C.card, color: C.text, cursor: "pointer", fontFamily: FONT }}>
+                  {check(sel.includes(r.dir), () => toggle(sel, setSel, r.dir), true)}
+                  <div style={{ width: 96, height: 54, flexShrink: 0, borderRadius: 4, overflow: "hidden", background: "#000" }}>{r.thumb && <img src={r.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>{nameRow(r)}</div>
+                  <span style={{ fontSize: 13, color: C.sub, flexShrink: 0, width: 210, textAlign: "right" }}>{r.ratio} · {fmtTime(r.duration || 0, false)} · {new Date(r.updatedAt).toLocaleDateString("ko-KR")}</span>
+                </div>
               ))}
             </div>
           )}
@@ -175,14 +469,8 @@ async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name
     try {
       const a = await b.project.addAsset(items[i].id);
       p.assets[a.id] = a;
-      setWork({ title: `말소리 구간을 나누는 중… (${i + 1}/${items.length})`, detail: "PC에서 나눠요 (서버로 보내지 않아요)" });
-      const whole: Clip[] = [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } }];
-      let clips: Clip[] = whole;
-      try {
-        if (b.split) clips = (await b.split(p, a.id)).clips;
-      } catch {
-        clips = whole; // 나누지 못하면 영상 통째로 한 클립 (그래도 편집은 된다)
-      }
+      // 영상 통째로 한 클립 (전체 구간) — 앞뒤는 화면 메뉴 [시작·끝 자르기], 문장 나누기는 [자동 자막 만들기]가 한다
+      const clips: Clip[] = [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } }];
       p.scenes.push({ id: uid(), title: items.length > 1 ? a.name : "", clips });
     } finally {
       off();
@@ -195,6 +483,7 @@ async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name
 
 /* ── 촬영한 영상으로 편집하기 ── */
 export function VideoFlow({ method = "video", preset, onCancel, onDone }: { method?: Method; preset?: LibItem[]; onCancel: () => void; onDone: (p: Project) => void }) {
+  const b = videoBridge()!;
   const [step, setStep] = useState(preset?.length ? 1 : 0);
   const [picked, setPicked] = useState<LibItem[]>(preset || []);
   const [ratio, setRatio] = useState<Ratio>(() => {
@@ -229,9 +518,29 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
           </>
         ) : (
           <>
+            {/* 방금 녹화한 파일 — 어디에 저장됐는지 보여 주고 바로 열어 볼 수 있게 (이 창을 닫아도 파일은 남는다) */}
+            {method === "record" && picked[0] && (() => {
+              const f = picked[0];
+              const parts = (f.path || "").split(/[\\/]/);
+              parts.pop(); // 파일 이름 빼고 폴더만
+              const dir = parts.join("\\");
+              const di = parts.findIndex((x) => /^(documents|문서)$/i.test(x)); // "C:\Users\이름\Documents\…" → "문서 › …"
+              const shown = (di >= 0 ? ["문서", ...parts.slice(di + 1)] : parts).filter(Boolean).join(" › ");
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", marginBottom: 18, borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card }}>
+                  <Icon name="check" size={20} color="#22c55e" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 800 }}>녹화를 저장했어요 <span style={{ color: C.sub, fontWeight: 600 }}>· {f.name}{f.duration ? ` (${fmtTime(f.duration, false)})` : ""}</span></div>
+                    <div title={dir} style={{ fontSize: 13, color: C.sub, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shown || "PC"} · 이 창을 닫아도 파일은 폴더에 그대로 남아요</div>
+                  </div>
+                  <Btn small onClick={() => b.showFile(f.path || f.url)}><Icon name="folder" size={15} />폴더에서 보기</Btn>
+                  <Btn small onClick={() => b.openPath(f.path || f.url)}><Icon name="play" size={15} />바로 재생</Btn>
+                </div>
+              );
+            })()}
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>어떤 화면 비율로 만들까요?</div>
             <RatioPick value={ratio} onChange={setRatio} />
-            <div style={{ marginTop: 16 }}><Hint>[편집 시작]을 누르면 말하는 구간마다 클립으로 나눠요. PC에서 하니 금방 끝나고 비용이 없어요.</Hint></div>
+            <div style={{ marginTop: 16 }}><Hint>영상 전체가 한 클립으로 들어가요. 앞뒤 자르기·무음 줄이기·자동 자막은 편집 화면에서 할 수 있어요.</Hint></div>
           </>
         )}
         {err && <div style={{ marginTop: 12, color: C.danger, fontSize: 14.5 }}>{err}</div>}
@@ -418,6 +727,41 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
 }
 
 /* ── 영상 녹화하고 바로 편집하기 ── */
+// 화면 + 카메라의 카메라 — 녹화 캔버스(1920×1080) 기준 가운데(cx, cy)·반지름(r, 사각형은 한 변의 절반), 모양, 테두리 두께(line)·색(color)
+// 배치(layout) — pip: 화면 위에 작은 카메라, lr: 좌우 반반, tb: 상하 반반. swap: 반반일 때 화면·카메라 자리 바꾸기
+type CamBox = { cx: number; cy: number; r: number; shape: "circle" | "square"; line: number; color: string; layout: "pip" | "lr" | "tb"; swap: boolean };
+const CAM_DEFAULT: CamBox = { cx: 1920 - 210, cy: 1080 - 210, r: 170, shape: "circle", line: 6, color: "#ffffff", layout: "pip", swap: false };
+type Rect = [number, number, number, number]; // x, y, 너비, 높이 (캔버스 px)
+const splitRects = (b: CamBox): { scr: Rect; cam: Rect } | null => {
+  if (b.layout === "pip") return null;
+  const a: Rect = b.layout === "lr" ? [0, 0, 960, 1080] : [0, 0, 1920, 540];
+  const c: Rect = b.layout === "lr" ? [960, 0, 960, 1080] : [0, 540, 1920, 540];
+  return b.swap ? { scr: c, cam: a } : { scr: a, cam: c };
+};
+const rectPct = (r: Rect) => ({ left: `${(r[0] / 1920) * 100}%`, top: `${(r[1] / 1080) * 100}%`, width: `${(r[2] / 1920) * 100}%`, height: `${(r[3] / 1080) * 100}%` });
+const CAM_ROUND = 24; // 사각형 모서리 둥글기
+const CAM_COLORS = ["#ffffff", "#000000", "#22c55e", "#3b82f6", "#ef4444", "#facc15"];
+const fitCamBox = (b: CamBox): CamBox => {
+  const r = Math.round(Math.min(400, Math.max(80, b.r)));
+  return {
+    r,
+    cx: Math.round(Math.min(1920 - r, Math.max(r, b.cx))),
+    cy: Math.round(Math.min(1080 - r, Math.max(r, b.cy))),
+    shape: b.shape === "square" ? "square" : "circle",
+    line: Math.round(Math.min(30, Math.max(0, b.line))),
+    color: /^#[0-9a-f]{6}$/i.test(b.color) ? b.color : CAM_DEFAULT.color,
+    layout: b.layout === "lr" || b.layout === "tb" ? b.layout : "pip",
+    swap: !!b.swap,
+  };
+};
+// 테두리는 안쪽으로 그려서 미리보기(CSS 테두리)와 크기가 같게
+const camPath = (g: CanvasRenderingContext2D, b: CamBox, inset: number) => {
+  const r = b.r - inset;
+  g.beginPath();
+  if (b.shape === "circle") g.arc(b.cx, b.cy, r, 0, Math.PI * 2);
+  else g.roundRect(b.cx - r, b.cy - r, r * 2, r * 2, Math.max(0, CAM_ROUND - inset));
+};
+
 export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onRecorded: (item: LibItem) => void }) {
   const b = videoBridge()!;
   const [mode, setMode] = useState<"screen" | "camera" | "both">("screen");
@@ -437,6 +781,66 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const audioCtx = useRef<AudioContext | null>(null);
   const micGain = useRef<GainNode | null>(null);
   const pcGain = useRef<GainNode | null>(null);
+  // 카메라 원 자리·크기 — 미리보기에서 끌어서 옮기고 모서리 점으로 크기 조절. 녹화 중에도 바로 들어가고, 다음 녹화 때도 그대로
+  const [camBox, setCamBoxState] = useState<CamBox>(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("gsv:camBox") || "null");
+      if (v && typeof v.cx === "number" && typeof v.cy === "number" && typeof v.r === "number") return fitCamBox({ ...CAM_DEFAULT, ...v });
+    } catch {}
+    return CAM_DEFAULT;
+  });
+  const camBoxRef = useRef(camBox);
+  const setCamBox = (v: CamBox) => {
+    const n = fitCamBox(v);
+    camBoxRef.current = n;
+    setCamBoxState(n);
+    try {
+      localStorage.setItem("gsv:camBox", JSON.stringify(n));
+    } catch {}
+  };
+  // 저장할 곳·파일 이름 — 폴더는 처음 화면 [저장 폴더]의 "녹화 영상 저장 폴더"와 같은 값 (여기서 바꾸면 거기도 바뀐다).
+  // 이름은 비우면 "화면 녹화_날짜시각"
+  const [saveDir, setSaveDirState] = useState("");
+  const [defaultDir, setDefaultDir] = useState("");
+  const [fileName, setFileName] = useState("");
+  useEffect(() => {
+    if (b.project.folders) {
+      b.project.folders().then((f) => {
+        setDefaultDir(f.defaults.recordDir);
+        let old = "";
+        try {
+          old = localStorage.getItem("gsv:recDir") || ""; // 예전에 녹화 창에서만 고른 폴더 → 설정으로 옮긴다
+          localStorage.removeItem("gsv:recDir");
+        } catch {}
+        if (!f.recordDir && old) b.project.setFolders?.({ recordDir: old }).catch(() => {});
+        setSaveDirState(f.recordDir || old);
+      }).catch(() => {});
+    } else b.record.defaultDir?.().then(setDefaultDir).catch(() => {});
+  }, [b]);
+  const setSaveDir = (d: string) => {
+    setSaveDirState(d);
+    b.project.setFolders?.({ recordDir: d }).catch(() => {});
+  };
+  const dirShown = saveDir || defaultDir;
+  const stage = useRef<HTMLDivElement>(null);
+  const dragCam = (e: React.PointerEvent, kind: "move" | "size") => {
+    if (!stage.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const k = 1920 / stage.current.getBoundingClientRect().width;
+    const s = { x: e.clientX, y: e.clientY, ...camBoxRef.current };
+    const mv = (ev: PointerEvent) => {
+      const dx = (ev.clientX - s.x) * k, dy = (ev.clientY - s.y) * k;
+      if (kind === "move") setCamBox({ ...camBoxRef.current, cx: s.cx + dx, cy: s.cy + dy });
+      else setCamBox({ ...camBoxRef.current, r: s.r + (dx + dy) / 2 });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up);
+  };
   useEffect(() => {
     if (micGain.current) micGain.current.gain.value = micMuted ? 0 : micVol;
     if (pcGain.current) pcGain.current.gain.value = pcMuted ? 0 : pcVol;
@@ -490,6 +894,33 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveTarget, phase, mode]);
   useEffect(() => () => stopLive(), []);
+  // 화면 + 카메라 — 녹화 전에도 모니터 위에 카메라 원을 겹쳐 보여 준다 (녹화 결과와 같은 자리·크기)
+  const [camLive, setCamLive] = useState(false);
+  const camSt = useRef<MediaStream | null>(null);
+  const camVid = useRef<HTMLVideoElement>(null);
+  const stopCamLive = () => {
+    camSt.current?.getTracks().forEach((t) => t.stop());
+    camSt.current = null;
+    setCamLive(false);
+  };
+  useEffect(() => {
+    if (phase !== "setup" || mode !== "both") return stopCamLive();
+    let dead = false;
+    navigator.mediaDevices.getUserMedia({ video: cam ? { deviceId: { exact: cam } } : true, audio: false }).then((st) => {
+      if (dead) return st.getTracks().forEach((x) => x.stop());
+      camSt.current?.getTracks().forEach((t) => t.stop());
+      camSt.current = st;
+      if (camVid.current) {
+        camVid.current.srcObject = st;
+        camVid.current.play().catch(() => {});
+      }
+      setCamLive(true);
+    }).catch(() => setCamLive(false));
+    return () => {
+      dead = true;
+    };
+  }, [phase, mode, cam]);
+  useEffect(() => () => stopCamLive(), []);
 
   useEffect(() => {
     b.record.sources().then((s) => {
@@ -508,7 +939,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   }, []);
 
   const stopAll = () => {
-    cancelAnimationFrame(raf.current);
+    clearInterval(raf.current);
     audioCtx.current?.close().catch(() => {});
     audioCtx.current = null;
     micGain.current = null;
@@ -520,6 +951,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const buildStream = async (): Promise<MediaStream> => {
     stopAll();
     stopLive();
+    stopCamLive();
     setLive(false);
     let screen: MediaStream | null = null;
     let camera: MediaStream | null = null;
@@ -574,7 +1006,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     }
     let video: MediaStream;
     if (mode === "both" && screen && camera) {
-      // 화면 + 오른쪽 아래 둥근 카메라 — 캔버스로 합쳐서 녹화
+      // 화면 + 카메라(배치·자리·크기는 camBoxRef, 녹화 중에 바꿔도 바로) — 캔버스로 합쳐서 녹화
       const sv = document.createElement("video");
       const cv = document.createElement("video");
       sv.srcObject = screen;
@@ -589,25 +1021,49 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         g.fillStyle = "#000";
         g.fillRect(0, 0, 1920, 1080);
         const sw = sv.videoWidth || 1920, sh = sv.videoHeight || 1080;
+        const cb = camBoxRef.current;
+        const sp = splitRects(cb);
+        if (sp) {
+          // 반반 — 화면은 칸 안에 다 보이게, 카메라는 칸을 꽉 채우게(넘치는 곳은 잘라냄), 사이에 선
+          const [x, y, w, h] = sp.scr;
+          const k = Math.min(w / sw, h / sh);
+          g.drawImage(sv, x + (w - sw * k) / 2, y + (h - sh * k) / 2, sw * k, sh * k);
+          const [X, Y, W, H] = sp.cam;
+          const cw = cv.videoWidth || 1280, ch = cv.videoHeight || 720;
+          const kk = Math.max(W / cw, H / ch);
+          g.save();
+          g.beginPath();
+          g.rect(X, Y, W, H);
+          g.clip();
+          g.drawImage(cv, X + (W - cw * kk) / 2, Y + (H - ch * kk) / 2, cw * kk, ch * kk);
+          g.restore();
+          if (cb.line > 0) {
+            g.fillStyle = cb.color;
+            if (cb.layout === "lr") g.fillRect(960 - cb.line / 2, 0, cb.line, 1080);
+            else g.fillRect(0, 540 - cb.line / 2, 1920, cb.line);
+          }
+          return;
+        }
         const k = Math.min(1920 / sw, 1080 / sh);
         g.drawImage(sv, (1920 - sw * k) / 2, (1080 - sh * k) / 2, sw * k, sh * k);
-        const r = 170, cx = 1920 - r - 40, cy = 1080 - r - 40;
+        const { r, cx, cy } = cb;
         g.save();
-        g.beginPath();
-        g.arc(cx, cy, r, 0, Math.PI * 2);
+        camPath(g, cb, 0);
         g.clip();
         const cw = cv.videoWidth || 1280, ch = cv.videoHeight || 720;
         const kk = Math.max((r * 2) / cw, (r * 2) / ch);
         g.drawImage(cv, cx - (cw * kk) / 2, cy - (ch * kk) / 2, cw * kk, ch * kk);
         g.restore();
-        g.lineWidth = 6;
-        g.strokeStyle = "#fff";
-        g.beginPath();
-        g.arc(cx, cy, r, 0, Math.PI * 2);
-        g.stroke();
-        raf.current = requestAnimationFrame(draw);
+        if (cb.line > 0) {
+          g.lineWidth = cb.line;
+          g.strokeStyle = cb.color;
+          camPath(g, cb, cb.line / 2);
+          g.stroke();
+        }
       };
       draw();
+      // 화면 그리기 신호(requestAnimationFrame)는 창을 내리면 멈춘다 — 작게 하기 중에도 녹화되게 시계로 그린다
+      raf.current = window.setInterval(draw, 1000 / 30);
       video = canvas.captureStream(30);
     } else video = (screen || camera)!;
     const out = new MediaStream([...video.getVideoTracks(), ...(audio ? audio.getAudioTracks() : [])]);
@@ -628,7 +1084,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         setCount(i);
         await new Promise((r) => setTimeout(r, 1000));
       }
-      token.current = await b.record.start(mode === "camera" ? "카메라 녹화" : "화면 녹화");
+      token.current = await b.record.start(mode === "camera" ? "카메라 녹화" : "화면 녹화", { dir: saveDir || undefined, fileName: fileName.trim() || undefined });
       const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm";
       const r = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
       r.ondataavailable = async (e) => {
@@ -638,6 +1094,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       rec.current = r;
       setSec(0);
       setPhase("rec");
+      b.record.live?.(true, Date.now()).catch(() => {});
     } catch (e) {
       setErr(`녹화를 시작하지 못했어요: ${errText(e)}`);
       setPhase("setup");
@@ -653,6 +1110,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const stop = async () => {
     const r = rec.current;
     if (!r) return;
+    rec.current = null;
+    b.record.live?.(false).catch(() => {}); // 작은 막대 닫고 큰 창 다시
     setPhase("saving");
     await new Promise<void>((res) => {
       r.onstop = () => res();
@@ -669,11 +1128,18 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     }
   };
 
-  if (phase === "saving") return <Modal title=""><Working title="녹화 파일을 저장하는 중…" detail="PC에 저장하고 바로 편집 화면으로 가요" /></Modal>;
+  // 작은 막대의 [녹화 끝내기]
+  const stopRef = useRef(stop);
+  stopRef.current = stop;
+  useEffect(() => b.record.onMiniStop?.(() => stopRef.current()), [b]);
+  useEffect(() => () => void b.record.live?.(false).catch(() => {}), [b]);
+
+  if (phase === "saving") return <Modal title=""><Working title="녹화 파일을 저장하는 중…" detail={dirShown ? `${dirShown} 폴더에 저장하고 바로 편집 화면으로 가요` : "PC에 저장하고 바로 편집 화면으로 가요"} /></Modal>;
+  const split = mode === "both" ? splitRects(camBox) : null; // 반반 배치면 화면·카메라 칸
   const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: "0 16px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 });
   return (
     <Modal title="영상 녹화하기" onClose={phase === "rec" ? undefined : () => { stopAll(); onCancel(); }} width={980}
-      footer={phase === "rec" ? <Btn primary danger onClick={stop} style={{ background: C.danger, borderColor: C.danger, color: "#fff" }}><Icon name="pause" size={16} />녹화 끝내기 ({fmtTime(sec, false)})</Btn> : phase === "count" ? null : <Btn primary onClick={start}><Icon name="record" size={16} />녹화 시작</Btn>}>
+      footer={phase === "rec" ? <>{b.record.minimize && <Btn onClick={() => b.record.minimize?.()} title="스튜디오 창을 내리고 작은 막대로 (막대는 녹화에 안 찍혀요)">작게 하기</Btn>}<Btn primary danger onClick={stop} style={{ background: C.danger, borderColor: C.danger, color: "#fff" }}><Icon name="pause" size={16} />녹화 끝내기 ({fmtTime(sec, false)})</Btn></> : phase === "count" ? null : <Btn primary onClick={start}><Icon name="record" size={16} />녹화 시작</Btn>}>
       <div style={{ display: "flex", gap: 20, padding: 20 }}>
         <div style={{ width: 360, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
@@ -706,6 +1172,63 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
               </select>
             </div>
           )}
+          {mode === "both" && (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ ...label, flex: 1 }}>화면 배치</span>
+                {camBox.layout !== "pip" && (
+                  <button type="button" onClick={() => setCamBox({ ...camBox, swap: !camBox.swap })} style={{ height: 28, padding: "0 10px", borderRadius: 4, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontFamily: FONT, cursor: "pointer" }}>⇄ 자리 바꾸기</button>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                {([["pip", "기본"], ["lr", "좌우 반반"], ["tb", "상하 반반"]] as const).map(([v, t]) => {
+                  const on = camBox.layout === v;
+                  const box = (s: React.CSSProperties): React.CSSProperties => ({ position: "absolute", borderRadius: 2, ...s });
+                  const scr = on ? "#9ca3af" : "#6b7280", camC = on ? C.accent : "#9ca3af";
+                  return (
+                    <button key={v} type="button" onClick={() => setCamBox({ ...camBox, layout: v })} style={{ padding: 6, borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? "rgba(59,130,246,0.12)" : "transparent", color: on ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                      {/* 배치 모양 그림 — 회색: 화면, 색: 카메라 */}
+                      <span style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", background: "#111", borderRadius: 3 }}>
+                        {v === "pip" && <><span style={box({ inset: 2, background: scr })} /><span style={box({ right: 4, bottom: 4, width: "26%", aspectRatio: "1", borderRadius: "50%", background: camC })} /></>}
+                        {v === "lr" && <><span style={box({ left: 2, top: 2, bottom: 2, width: "calc(50% - 3px)", background: scr })} /><span style={box({ right: 2, top: 2, bottom: 2, width: "calc(50% - 3px)", background: camC })} /></>}
+                        {v === "tb" && <><span style={box({ left: 2, right: 2, top: 2, height: "calc(50% - 3px)", background: scr })} /><span style={box({ left: 2, right: 2, bottom: 2, height: "calc(50% - 3px)", background: camC })} /></>}
+                      </span>
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {camBox.layout === "pip" && <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13.5, color: C.sub, width: 64, flexShrink: 0 }}>모양</span>
+                    {([["circle", "원"], ["square", "사각형"]] as const).map(([v, t]) => (
+                      <button key={v} type="button" onClick={() => setCamBox({ ...camBox, shape: v })} style={{ height: 28, padding: "0 12px", borderRadius: 4, border: `1px solid ${camBox.shape === v ? C.accent : C.line2}`, background: camBox.shape === v ? C.accent : "transparent", color: camBox.shape === v ? "#fff" : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+                    ))}
+                    <span style={{ flex: 1 }} />
+                    <button type="button" onClick={() => setCamBox(CAM_DEFAULT)} style={{ height: 28, padding: "0 10px", borderRadius: 4, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13.5, color: C.sub, width: 64, flexShrink: 0 }}>크기</span>
+                    <input type="range" min={80} max={400} value={camBox.r} onChange={(e) => setCamBox({ ...camBox, r: Number(e.target.value) })} style={{ flex: 1, accentColor: C.accent }} />
+                  </div>
+                  </>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13.5, color: C.sub, width: 64, flexShrink: 0 }}>{camBox.layout === "pip" ? "테두리" : "가운데 선"}</span>
+                    <input type="range" min={0} max={30} value={camBox.line} onChange={(e) => setCamBox({ ...camBox, line: Number(e.target.value) })} style={{ flex: 1, accentColor: C.accent }} />
+                    <span style={{ fontSize: 12.5, color: C.sub, width: 30, textAlign: "right" }}>{camBox.line ? camBox.line : "없음"}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13.5, color: C.sub, width: 64, flexShrink: 0 }}>{camBox.layout === "pip" ? "테두리 색" : "선 색"}</span>
+                    {CAM_COLORS.map((c) => (
+                      <button key={c} type="button" title={c} onClick={() => setCamBox({ ...camBox, color: c })} style={{ width: 22, height: 22, padding: 0, borderRadius: 11, background: c, border: `2px solid ${camBox.color.toLowerCase() === c ? C.accent : C.line2}`, outline: camBox.color.toLowerCase() === c ? `2px solid ${C.accent}` : "none", outlineOffset: 1, cursor: "pointer" }} />
+                    ))}
+                    <input type="color" value={camBox.color} onChange={(e) => setCamBox({ ...camBox, color: e.target.value })} title="다른 색 고르기" style={{ width: 26, height: 24, padding: 0, border: "none", background: "transparent", cursor: "pointer" }} />
+                  </div>
+                  <div style={{ fontSize: 12, color: C.dim }}>{camBox.layout === "pip" ? "미리보기에서 카메라를 끌어 옮기고, 흰 점을 끌어 크기를 바꿔요. 녹화 중에는 흰 점이 숨고, 크기 막대로 바꿀 수 있어요." : "화면은 칸 안에 다 보이게, 카메라는 칸을 꽉 채워요. 녹화 중에도 바로 바뀌어요."}</div>
+                </div>
+            </div>
+          )}
           <div>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
               <span style={{ ...label, flex: 1 }}>마이크</span>
@@ -725,11 +1248,51 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
             {phase !== "setup" && pcMuted !== false && <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>녹화를 시작할 때 무음이었으면 녹화 중에 켤 수 없어요.</div>}
           </div>
           {err && <div style={{ color: C.danger, fontSize: 14.5, lineHeight: 1.5 }}>{err}</div>}
+          {b.record.defaultDir && (
+            <div>
+              <div style={{ ...label, marginBottom: 8 }}>저장</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 13.5, color: C.sub, width: 52, flexShrink: 0 }}>폴더</span>
+                <span title={dirShown} style={{ flex: 1, minWidth: 0, fontSize: 13, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dirShown || "…"}</span>
+                <button type="button" disabled={phase !== "setup"} onClick={async () => { const d = await b.record.pickDir?.(dirShown); if (d) setSaveDir(d === defaultDir ? "" : d); }} style={{ height: 28, padding: "0 10px", borderRadius: 4, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontFamily: FONT, cursor: "pointer", flexShrink: 0 }}>바꾸기</button>
+                <button type="button" onClick={() => dirShown && b.openPath(dirShown)} style={{ height: 28, padding: "0 10px", borderRadius: 4, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontFamily: FONT, cursor: "pointer", flexShrink: 0 }}>폴더 열기</button>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 13.5, color: C.sub, width: 52, flexShrink: 0 }}>파일 이름</span>
+                <input value={fileName} onChange={(e) => setFileName(e.target.value)} disabled={phase !== "setup"} placeholder={`비우면 자동 (${mode === "camera" ? "카메라 녹화" : "화면 녹화"}_날짜·시각)`} style={{ ...input, height: 34, fontSize: 13.5, flex: 1, minWidth: 0 }} />
+                <span style={{ fontSize: 13, color: C.dim, flexShrink: 0 }}>.mp4</span>
+              </div>
+              {saveDir && <button type="button" disabled={phase !== "setup"} onClick={() => setSaveDir("")} style={{ marginTop: 6, padding: 0, border: 0, background: "transparent", color: C.dim, fontSize: 12, fontFamily: FONT, cursor: "pointer", textDecoration: "underline" }}>기본 폴더로 되돌리기</button>}
+            </div>
+          )}
           <Hint>[녹화 시작]을 누르면 3초 뒤 녹화돼요. 끝나면 [녹화 끝내기]를 누르세요. 바로 편집 화면으로 가요.</Hint>
         </div>
-        <div style={{ flex: 1, position: "relative", background: "#000", borderRadius: 6, minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <video ref={preview} playsInline style={{ width: "100%", maxHeight: 520, display: phase === "setup" ? "none" : "block" }} />
-          <video ref={liveVid} playsInline muted style={{ width: "100%", maxHeight: 520, display: phase === "setup" && live ? "block" : "none" }} />
+        {/* 왼쪽 설정이 길어도 미리보기는 위에 붙어 따라온다 (늘어난 칸 한가운데로 내려가지 않게) */}
+        <div style={{ flex: 1, position: "sticky", top: 0, alignSelf: "flex-start", background: "#000", borderRadius: 6, minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* 화면 + 카메라는 녹화 캔버스(1920×1080)와 같은 비율 — 카메라 원을 같은 자리·크기로 겹쳐 끌 수 있게 */}
+          <div ref={stage} style={{ position: "relative", width: "100%", aspectRatio: mode === "both" ? "16 / 9" : undefined, containerType: "inline-size", display: phase !== "setup" || live ? "block" : "none" }}>
+            <video ref={preview} playsInline style={{ width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "none" : "block" }} />
+            <video ref={liveVid} playsInline muted style={split ? { position: "absolute", ...rectPct(split.scr), objectFit: "contain", display: phase === "setup" ? "block" : "none" } : { width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "block" : "none" }} />
+            {split && phase === "setup" && camBox.line > 0 && (
+              <div style={{ position: "absolute", background: camBox.color, ...(camBox.layout === "lr" ? { left: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, top: 0, bottom: 0, width: `${(camBox.line / 1920) * 100}cqw` } : { top: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, left: 0, right: 0, height: `${(camBox.line / 1920) * 100}cqw` }) }} />
+            )}
+            {mode === "both" && (
+              <div
+                onPointerDown={split ? undefined : (e) => dragCam(e, "move")}
+                title={split ? undefined : "끌어서 옮기기"}
+                style={split
+                  ? { position: "absolute", ...rectPct(split.cam), display: phase === "setup" && camLive ? "block" : "none" }
+                  : { position: "absolute", left: `${((camBox.cx - camBox.r) / 1920) * 100}%`, top: `${((camBox.cy - camBox.r) / 1080) * 100}%`, width: `${((camBox.r * 2) / 1920) * 100}%`, aspectRatio: "1", cursor: "move", touchAction: "none", display: phase !== "setup" || camLive ? "block" : "none" }}
+              >
+                {/* 녹화 중에는 캔버스에 이미 카메라가 그려지니 잡는 자리만. 두께·둥글기는 캔버스 px → 미리보기 너비 비율(cqw) */}
+                <div style={{ position: "absolute", inset: 0, borderRadius: split ? 0 : camBox.shape === "circle" ? "50%" : `${(CAM_ROUND / 1920) * 100}cqw`, overflow: "hidden", border: !split && phase === "setup" && camBox.line ? `${(camBox.line / 1920) * 100}cqw solid ${camBox.color}` : "none", background: phase === "setup" ? "#222" : "transparent" }}>
+                  <video ref={camVid} playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", display: phase === "setup" ? "block" : "none" }} />
+                </div>
+                {/* 크기 점은 녹화 전에만 — 녹화하는 모니터에 이 창이 있으면 점까지 찍히니까 */}
+                {!split && phase === "setup" && <div onPointerDown={(e) => dragCam(e, "size")} title="끌어서 크기 바꾸기" style={{ position: "absolute", right: camBox.shape === "circle" ? "14.6%" : "0%", bottom: camBox.shape === "circle" ? "14.6%" : "0%", width: 14, height: 14, transform: "translate(50%, 50%)", borderRadius: 7, background: "#fff", border: `2px solid ${C.accent}`, cursor: "nwse-resize", touchAction: "none" }} />}
+              </div>
+            )}
+          </div>
           {phase === "setup" && live && (
             <span style={{ position: "absolute", left: 12, top: 10, padding: "3px 10px", borderRadius: 4, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
               {mode === "camera" ? "카메라 미리보기" : `${sources.find((x) => x.id === liveTarget)?.name || "모니터"} 미리보기`}

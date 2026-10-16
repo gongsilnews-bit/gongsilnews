@@ -3,11 +3,12 @@ import type { Clip, Layer, Project, Settings, SubtitleSettings } from "./types";
 
 export const GAP = 0.12;
 
+/** 남길 구간 — 지운 단어와 무음 줄이기(clip.cuts)를 뺀 원본 구간. 영상·소리·자막 단어 시각이 모두 이걸로 계산된다 */
 export function keepRanges(clip: Clip): { s: number; e: number }[] {
   if (!clip.src) return [];
   let ranges = [{ s: clip.src.s, e: clip.src.e }];
-  for (const w of clip.words || []) {
-    if (!w.del) continue;
+  const holes: { s: number; e: number }[] = [...(clip.words || []).filter((w) => w.del), ...(clip.cuts || [])];
+  for (const w of holes) {
     const next: { s: number; e: number }[] = [];
     for (const r of ranges) {
       if (w.e <= r.s || w.s >= r.e) next.push(r);

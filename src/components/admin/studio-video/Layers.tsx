@@ -4,6 +4,7 @@
 //  음악: 크기·페이드·시작 지점·반복 / 사진: 자리·크기·투명도 / 화면 글자: 글·자리·크기·색·상자
 import React from "react";
 import type { Clip, Fill, Layer, Project } from "./types";
+import { fmtTime } from "./types";
 import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
 import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, VolumeControl, input, label } from "./ui";
@@ -170,6 +171,10 @@ export function SourcePanel({ selCount, allCount, muted, value, speed, onApply, 
 }
 
 /** 클립 속도·길이 — 클립 시간을 누르면 오른쪽에. 여러 클립을 고르면 고른 클립 모두 */
+// 속도 막대 자리(0~100) ↔ 배속 — 50 = 1배, 0 = 0.1배, 100 = 20배
+const speedToPos = (v: number) => (v <= 1 ? 50 + 50 * Math.log10(Math.max(0.1, v)) : 50 + (50 * Math.log(Math.min(20, v))) / Math.log(20));
+const posToSpeed = (x: number) => (x <= 50 ? Math.pow(10, (x - 50) / 50) : Math.pow(20, (x - 50) / 50));
+
 export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onReset, onClose }: {
   clips: Clip[];
   nums: number[]; // 클립 번호 (1부터)
@@ -201,16 +206,30 @@ export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onRe
   return (
     <Side title={many ? `속도·길이 · 고른 클립 ${clips.length}개` : `속도·길이 · 클립 ${nums[0]}`} onClose={onClose}
       footer={<Btn small onClick={onReset}><Icon name="undo" size={15} />원래대로</Btn>}>
+      {/* 어느 클립에 들어가는지 크게 — 목록에서 고른(파랗게 칠한) 클립 */}
+      <div style={{ ...row, display: "flex", alignItems: "center", gap: 10, background: C.accentDim }}>
+        <span style={{ fontSize: 13.5, color: C.sub, flexShrink: 0 }}>바꾸는 클립</span>
+        <span style={{ fontSize: 17, fontWeight: 800, color: C.text }}>{many ? nums.length > 6 ? `${nums.length}개` : nums.map((x) => `${x}번`).join(", ") : `${nums[0]}번`}</span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 12, color: C.dim }}>목록에서 다른 클립을 누르면 바뀌어요</span>
+      </div>
       <div style={row}>
         <div style={{ ...label, display: "flex", marginBottom: 6 }}>
           <span style={{ flex: 1 }}>속도</span>
           <span style={{ color: C.sub }}>{sp.length ? (same ? `${sp[0].toFixed(2).replace(/\.?0+$/, "")}배` : "클립마다 달라요") : "바꿀 수 없어요"}</span>
         </div>
-        {/* 0.1~20배 — 로그 눈금이라 1배 근처도 곱게 */}
-        <input type="range" min={-1} max={Math.log10(20)} step={0.01} value={Math.log10(same ? sp[0] : 1)} disabled={!sp.length}
-          onPointerDown={() => (first.current = true)}
-          onChange={(e) => { const v = Math.pow(10, Number(e.target.value)); onSpeed(+(v < 1 ? v.toFixed(2) : v < 5 ? v.toFixed(2) : v.toFixed(1)), first.current); first.current = false; }}
-          style={{ width: "100%", accentColor: C.accent }} />
+        {/* 가운데 = 1배 — 왼쪽 반은 0.1~1배, 오른쪽 반은 1~20배 (로그 눈금이라 1배 근처도 곱게) */}
+        <div style={{ position: "relative" }}>
+          <input type="range" min={0} max={100} step={0.5} value={speedToPos(same ? sp[0] : 1)} disabled={!sp.length}
+            onPointerDown={() => (first.current = true)}
+            onChange={(e) => { const v = posToSpeed(Number(e.target.value)); onSpeed(+(v < 5 ? v.toFixed(2) : v.toFixed(1)), first.current); first.current = false; }}
+            style={{ width: "100%", accentColor: C.accent, display: "block" }} />
+          <div style={{ position: "relative", height: 16, fontSize: 11.5, color: C.dim }}>
+            <span style={{ position: "absolute", left: 0 }}>0.1배</span>
+            <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", color: C.sub, fontWeight: 700 }}>| 1배</span>
+            <span style={{ position: "absolute", right: 0 }}>20배</span>
+          </div>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
           <input value={spd} onChange={(e) => setSpd(e.target.value.replace(/[^0-9.]/g, ""))} onKeyDown={(e) => e.key === "Enter" && applySpd()} onBlur={applySpd} disabled={!sp.length} inputMode="decimal"
             placeholder={same ? "" : "클립마다 달라요"} style={{ ...input, flex: 1, height: 34, textAlign: "center", fontSize: 15, fontWeight: 800 }} />
@@ -248,8 +267,9 @@ export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onRe
 }
 
 /** 클립 화면 속성 — 썸네일을 누르면 오른쪽에 (채우기·반전·교체·다른 클립에도 쓰기·지우기) */
-export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
+export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
   project: Project;
+  trim?: { s: number; e: number } | null; // 원본 영상 클립이면 지금 쓰는 구간 → [시작·끝 자르기]
   clip: Clip;
   n: number; // 이 클립 번호 (1부터)
   total: number;
@@ -288,8 +308,13 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, 
         {a && <div style={{ fontSize: 12.5, color: C.dim, marginTop: 4 }}>{a.kind === "video" ? `영상 ${Math.round(a.duration || 0)}초` : "사진"}{a.width ? ` · ${a.width}×${a.height}` : ""}</div>}
         {onStart && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-            <Btn small onClick={onStart}><Icon name="video" size={15} />비디오 시작점 변경</Btn>
-            <span style={{ fontSize: 13, color: C.sub }}>{(clip.visual?.s || 0) > 0 ? `${Math.floor((clip.visual?.s || 0) / 60)}:${String(Math.floor((clip.visual?.s || 0) % 60)).padStart(2, "0")}부터` : "처음부터"}</span>
+            {trim ? (
+              <>
+                <Btn small onClick={onStart}><Icon name="cut" size={15} />시작·끝 자르기</Btn>
+                <span style={{ fontSize: 13, color: C.sub }}>{fmtTime(trim.s, false)} ~ {fmtTime(trim.e, false)}</span>
+              </>
+            ) : <><Btn small onClick={onStart}><Icon name="video" size={15} />비디오 시작점 변경</Btn>
+            <span style={{ fontSize: 13, color: C.sub }}>{(clip.visual?.s || 0) > 0 ? `${Math.floor((clip.visual?.s || 0) / 60)}:${String(Math.floor((clip.visual?.s || 0) % 60)).padStart(2, "0")}부터` : "처음부터"}</span></>}
           </div>
         )}
       </div>
