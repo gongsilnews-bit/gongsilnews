@@ -450,6 +450,46 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const rec = useRef<MediaRecorder | null>(null);
   const token = useRef("");
   const raf = useRef(0);
+  // 녹화 전 실시간 보기 — 모니터에 마우스를 올리면 그 모니터, 아니면 고른 모니터 (카메라 모드는 카메라)
+  const [hover, setHover] = useState("");
+  const [live, setLive] = useState(false);
+  const liveSt = useRef<MediaStream | null>(null);
+  const liveVid = useRef<HTMLVideoElement>(null);
+  const stopLive = () => {
+    liveSt.current?.getTracks().forEach((t) => t.stop());
+    liveSt.current = null;
+  };
+  const liveTarget = mode === "camera" ? `cam:${cam}` : hover || source;
+  useEffect(() => {
+    if (phase !== "setup" || !liveTarget) return;
+    let dead = false;
+    const t = setTimeout(async () => {
+      try {
+        let st: MediaStream;
+        if (mode === "camera") st = await navigator.mediaDevices.getUserMedia({ video: cam ? { deviceId: { exact: cam } } : true, audio: false });
+        else {
+          await b.record.choose(liveTarget);
+          st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 15 }, audio: false });
+        }
+        if (dead) return st.getTracks().forEach((x) => x.stop());
+        stopLive();
+        liveSt.current = st;
+        if (liveVid.current) {
+          liveVid.current.srcObject = st;
+          liveVid.current.play().catch(() => {});
+        }
+        setLive(true);
+      } catch {
+        setLive(false);
+      }
+    }, hover ? 180 : 0); // 마우스를 지나가기만 할 때 여러 번 켜지지 않게
+    return () => {
+      dead = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveTarget, phase, mode]);
+  useEffect(() => () => stopLive(), []);
 
   useEffect(() => {
     b.record.sources().then((s) => {
@@ -479,6 +519,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
 
   const buildStream = async (): Promise<MediaStream> => {
     stopAll();
+    stopLive();
+    setLive(false);
     let screen: MediaStream | null = null;
     let camera: MediaStream | null = null;
     if (mode !== "camera") {
@@ -647,7 +689,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
               <div style={{ ...label, marginBottom: 8 }}>녹화할 모니터</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                 {sources.map((s) => (
-                  <button key={s.id} type="button" disabled={phase !== "setup"} onClick={() => setSource(s.id)} title={s.name} style={{ padding: 0, border: `2px solid ${source === s.id ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", overflow: "hidden" }}>
+                  <button key={s.id} type="button" disabled={phase !== "setup"} onClick={() => setSource(s.id)} onMouseEnter={() => setHover(s.id)} onMouseLeave={() => setHover("")} title={s.name} style={{ padding: 0, border: `2px solid ${source === s.id ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", overflow: "hidden" }}>
                     <img src={s.thumb} alt="" style={{ width: "100%", display: "block" }} />
                     <div style={{ fontSize: 12, color: C.sub, padding: "3px 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: C.card }}>{s.name}</div>
                   </button>
@@ -687,7 +729,13 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         </div>
         <div style={{ flex: 1, position: "relative", background: "#000", borderRadius: 6, minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <video ref={preview} playsInline style={{ width: "100%", maxHeight: 520, display: phase === "setup" ? "none" : "block" }} />
-          {phase === "setup" && <span style={{ color: C.sub, fontSize: 15 }}>녹화를 시작하면 여기에 보여요</span>}
+          <video ref={liveVid} playsInline muted style={{ width: "100%", maxHeight: 520, display: phase === "setup" && live ? "block" : "none" }} />
+          {phase === "setup" && live && (
+            <span style={{ position: "absolute", left: 12, top: 10, padding: "3px 10px", borderRadius: 4, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+              {mode === "camera" ? "카메라 미리보기" : `${sources.find((x) => x.id === liveTarget)?.name || "모니터"} 미리보기`}
+            </span>
+          )}
+          {phase === "setup" && !live && <span style={{ color: C.sub, fontSize: 15 }}>모니터에 마우스를 올리면 여기에 보여요</span>}
           {phase === "count" && <span style={{ position: "absolute", fontSize: 96, fontWeight: 800, color: "#fff" }}>{count}</span>}
           {phase === "rec" && <span style={{ position: "absolute", left: 14, top: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: "#fff" }}><span style={{ width: 12, height: 12, borderRadius: 6, background: C.danger }} />녹화 중 {fmtTime(sec, false)}</span>}
         </div>
