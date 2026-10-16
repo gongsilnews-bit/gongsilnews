@@ -158,6 +158,7 @@ export type VideoBridge = {
   };
   voice: (dir: string, text: string, voiceId: string) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
+  split?: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>; // 받아쓰기 없이 말소리 구간으로만 (무료, 앱 0.1.4부터)
   ai: {
     script: (o: { topic?: string; style?: string; request?: string; chars?: number; vacancy?: unknown; source?: string }) => Promise<{ title?: string; scenes: { title: string; lines: { text: string; desc: string; keywords: string; kind: string }[] }[] }>;
     scenes: (lines: string[]) => Promise<{ desc: string; keywords: string; kind: string }[]>;

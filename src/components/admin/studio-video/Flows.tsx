@@ -161,7 +161,10 @@ function VideoPicker({ multi, picked, setPicked }: { multi: boolean; picked: Lib
   );
 }
 
-/** 영상들 → 새 프로젝트 (받아쓰기해서 문장 클립으로) */
+/**
+ * 영상들 → 새 프로젝트. 받아쓰기(AI 비용)는 하지 않고, PC에서 말소리 구간만 나눠 클립으로 (무료).
+ * 예전 앱이면 영상 통째로 한 클립
+ */
 async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name: string, setWork: (w: { title: string; detail?: string; frac?: number | null }) => void): Promise<Project> {
   const b = videoBridge()!;
   const p = await b.project.create({ method, ratio, name });
@@ -172,14 +175,13 @@ async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name
     try {
       const a = await b.project.addAsset(items[i].id);
       p.assets[a.id] = a;
-      setWork({ title: `영상 속 말소리를 글로 바꾸는 중… (${i + 1}/${items.length})`, detail: "소리만 보내고, 영상은 PC에 그대로 있어요" });
-      let clips: Clip[];
+      setWork({ title: `말소리 구간을 나누는 중… (${i + 1}/${items.length})`, detail: "PC에서 나눠요 (서버로 보내지 않아요)" });
+      const whole: Clip[] = [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } }];
+      let clips: Clip[] = whole;
       try {
-        clips = (await b.transcribe(p, a.id)).clips;
-      } catch (e) {
-        // 받아쓰기가 안 되면 영상 통째로 한 클립 (그래도 편집은 된다)
-        clips = [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } }];
-        setWork({ title: "받아쓰기를 못 했어요 — 영상만 넣을게요", detail: errText(e) });
+        if (b.split) clips = (await b.split(p, a.id)).clips;
+      } catch {
+        clips = whole; // 나누지 못하면 영상 통째로 한 클립 (그래도 편집은 된다)
       }
       p.scenes.push({ id: uid(), title: items.length > 1 ? a.name : "", clips });
     } finally {
@@ -229,7 +231,7 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
           <>
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>어떤 화면 비율로 만들까요?</div>
             <RatioPick value={ratio} onChange={setRatio} />
-            <div style={{ marginTop: 16 }}><Hint>[편집 시작]을 누르면 영상 속 말소리를 글로 바꿔 문장마다 클립을 만들어요. 10분 영상이면 1~2분 걸려요.</Hint></div>
+            <div style={{ marginTop: 16 }}><Hint>[편집 시작]을 누르면 말하는 구간마다 클립으로 나눠요. PC에서 하니 금방 끝나고 비용이 없어요.</Hint></div>
           </>
         )}
         {err && <div style={{ marginTop: 12, color: C.danger, fontSize: 14.5 }}>{err}</div>}
@@ -256,17 +258,12 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
   const find = async () => {
     setErr("");
     try {
-      const p = await importVideos("longform", "16:9", picked.slice(0, 1), `원본_${picked[0].name.replace(/\.[^.]+$/, "")}`, (w) => setWork(w));
-      setSrc(p);
-      setWork({ title: `${writer}가 볼만한 구간을 고르는 중…`, detail: "1~2분 걸려요" });
-      const off = b.onProgress((t) => setWork({ title: t }));
-      try {
-        const r = await b.ai.shorts(p.scenes.flatMap((s) => s.clips), { count, maxSec, request });
-        setShorts(r.map((s) => ({ ...s, on: true })));
-        setStep(2);
-      } finally {
-        off();
-      }
+      // 받아쓰기(AI 비용) 없이 — 말소리 구간으로만 나눠 바로 편집 화면으로.
+      // 볼만한 구간 자동 고르기(AI)는 나중에 받아쓰기 단추와 함께 (setSrc·setShorts 는 그때 다시 쓴다)
+      const p = await importVideos("longform", ratio, picked.slice(0, 1), picked[0].name.replace(/\.[^.]+$/, ""), (w) => setWork(w));
+      setWork(null);
+      onDone(p);
+      return;
     } catch (e) {
       setErr(errText(e));
     }

@@ -264,6 +264,42 @@ async function transcribe(p, assetId, onProgress = () => {}) {
 }
 
 /* 문장 시각을 실제 말소리 구간에 맞추고, 사이의 무음은 따로 클립으로 (브루처럼) */
+/**
+ * 받아쓰기 없이 넣기 — PC에서 말소리 구간만 찾아(ffmpeg, 무료) 말하는 구간 = 클립, 긴 침묵 = 말 없는 구간.
+ * 서버로 아무것도 보내지 않는다 (AI 비용 없음). 글은 비어 있고, 나중에 받아쓰기로 채울 수 있다
+ */
+async function splitBySpeech(p, assetId, onProgress = () => {}) {
+  const a = p.assets[assetId];
+  if (!a) throw new Error("영상을 찾지 못했습니다.");
+  const dur = a.duration;
+  const whole = [{ id: uid(), type: "source", text: "", src: { asset: assetId, s: 0, e: dur }, words: [] }];
+  if (!a.hasAudio || a.kind !== "video" || !(dur > 0)) return { clips: whole, speech: [] };
+  onProgress("말소리 구간을 나누는 중… (PC에서)", 0.5);
+  const speech = await ff.speech(a.path, dur).catch(() => []);
+  // 가까운 말소리는 한 덩어리로 (0.6초보다 짧게 쉰 곳은 이어서), 너무 짧은 덩어리는 옆에 붙인다
+  const runs = [];
+  for (const r of speech) {
+    const last = runs[runs.length - 1];
+    if (last && r.s - last.e < 0.6) last.e = r.e;
+    else runs.push({ s: r.s, e: r.e });
+  }
+  if (!runs.length) return { clips: whole, speech };
+  const clips = [];
+  let t = 0;
+  for (const r of runs) {
+    const s = Math.max(t, r.s - 0.08);
+    const e = Math.min(dur, r.e + 0.12);
+    if (s - t > 0.6) clips.push({ id: uid(), type: "silence", text: "", src: { asset: assetId, s: t, e: s } });
+    const prev = clips[clips.length - 1];
+    if (prev && prev.type === "source" && (e - s < 0.5 || s - prev.src.e <= 0.6)) prev.src.e = e;
+    else clips.push({ id: uid(), type: "source", text: "", src: { asset: assetId, s: s - t <= 0.6 ? t : s, e }, words: [] });
+    t = e;
+  }
+  if (dur - t > 0.6) clips.push({ id: uid(), type: "silence", text: "", src: { asset: assetId, s: t, e: dur } });
+  else if (clips.length) clips[clips.length - 1].src.e = dur;
+  return { clips, speech };
+}
+
 function buildClips(assetId, segs, speech, dur) {
   const snap = (t, edge) => {
     let best = t;
@@ -350,4 +386,4 @@ function exportText(p, kind) {
   return file;
 }
 
-module.exports = { create, open, save, saveAs, recent, addAsset, voiceFor, transcribe, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };
+module.exports = { create, open, save, saveAs, recent, addAsset, voiceFor, transcribe, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };

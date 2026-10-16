@@ -782,10 +782,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   const placeMedia = async (a: Asset, refId: string | undefined, before: boolean) => {
     if (a.kind === "video" && a.hasAudio) {
-      setWork({ title: "영상 속 말소리를 글로 바꾸는 중…" });
+      // 받아쓰기(AI 비용) 없이 — PC에서 말소리 구간만 나눠 클립으로 (예전 앱이면 통째로 한 클립)
+      setWork({ title: "말소리 구간을 나누는 중… (PC에서)" });
       const off = b.onProgress((t, f) => setWork({ title: t, frac: typeof f === "number" ? f : null }));
       try {
-        const r = await b.transcribe(pref.current, a.id);
+        const r = b.split ? await b.split(pref.current, a.id) : { clips: [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } } as Clip] };
         insertAt(r.clips, refId, before);
         say(`영상을 넣었어요 (클립 ${r.clips.length}개)`);
       } catch (e) {

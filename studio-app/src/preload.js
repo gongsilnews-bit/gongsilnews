@@ -137,6 +137,7 @@ if (allowed) {
       },
       voice: (dir, text, voiceId) => ipcRenderer.invoke("video:voice", dir, text, voiceId),
       transcribe: (p, assetId) => ipcRenderer.invoke("video:transcribe", p, assetId),
+      split: (p, assetId) => ipcRenderer.invoke("video:split", p, assetId),
       ai: {
         script: (opts) => ipcRenderer.invoke("video:ai-script", opts),
         scenes: (lines) => ipcRenderer.invoke("video:ai-scenes", lines),
