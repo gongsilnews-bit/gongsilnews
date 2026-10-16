@@ -376,12 +376,12 @@ export function VoicePanel({ project, targetCount, onApply, onClose }: { project
   );
 }
 
-/* ── 자막 서식 ── */
+/* ── 메인자막 (자막 서식) ── */
 export function SubtitlePanel({ settings, onChange, onClose }: { settings: Settings; onChange: (patch: Partial<Settings["subtitle"]>) => void; onClose: () => void }) {
   const s = settings.subtitle;
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` };
   return (
-    <Side title="자막 서식" onClose={onClose}>
+    <Side title="메인자막" onClose={onClose}>
       <div style={row}><span style={{ ...label, flex: 1 }}>자막 보이기</span><Toggle on={s.on} onChange={(v) => onChange({ on: v })} /></div>
       <div style={{ ...row, flexWrap: "wrap" }}>
         <span style={{ ...label, width: "100%" }}>위치</span>

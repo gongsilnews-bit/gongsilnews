@@ -921,7 +921,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     ],
     자막: [
       { icon: "sub", label: project.settings.subtitle.on ? "자막 숨기기" : "자막 보이기", onClick: () => change((p) => { p.settings.subtitle.on = !p.settings.subtitle.on; }) },
-      { icon: "font", label: "자막 서식", onClick: () => setPanel("subtitle") },
+      { icon: "font", label: "메인자막 서식", onClick: () => setPanel("subtitle") },
       "|",
       { icon: "copy", label: "전체 자막 복사하기", onClick: () => { navigator.clipboard.writeText(flat.items.map((x) => (typeof x.clip.subText === "string" ? x.clip.subText : clipText(x.clip))).filter(Boolean).join("\n")); say("전체 자막을 복사했어요"); } },
       { icon: "file", label: "자막 파일 내보내기", onClick: () => b.project.exportText(pref.current, "srt").then(() => say("자막 파일(.srt)을 저장했어요")) },
@@ -932,7 +932,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "sub", label: "고른 클립 자막 끄기/켜기", disabled: !selected.length, onClick: () => change((p) => { for (const id of selected) { const c = findClip(p, id)?.clip; if (c) c.sub = c.sub === false; } }) },
     ],
     서식: [
-      { icon: "font", label: "자막 서식 열기", onClick: () => setPanel("subtitle") },
+      { icon: "font", label: "메인자막 서식 열기", onClick: () => setPanel("subtitle") },
       "|",
       { icon: "zoom", label: "글자 크게", onClick: () => change((p) => { p.settings.subtitle.size = Math.min(170, p.settings.subtitle.size + 10); }) },
       { icon: "zoom", label: "글자 작게", onClick: () => change((p) => { p.settings.subtitle.size = Math.max(60, p.settings.subtitle.size - 10); }) },
