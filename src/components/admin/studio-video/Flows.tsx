@@ -240,6 +240,64 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
   );
 }
 
+/** 마이크 소리 크기 막대 — 말하면 움직인다 (녹화 전·녹화 중 모두). 너무 크면 노랑·빨강 */
+function MicMeter({ deviceId }: { deviceId: string }) {
+  const [level, setLevel] = useState(0); // 0~1
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    let dead = false;
+    let raf = 0;
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    navigator.mediaDevices
+      .getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true, video: false })
+      .then((st) => {
+        if (dead) return st.getTracks().forEach((t) => t.stop());
+        stream = st;
+        ctx = new AudioContext();
+        const an = ctx.createAnalyser();
+        an.fftSize = 1024;
+        ctx.createMediaStreamSource(st).connect(an);
+        const buf = new Float32Array(an.fftSize);
+        let shown = 0;
+        const tick = () => {
+          an.getFloatTimeDomainData(buf);
+          let sum = 0;
+          for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+          const rms = Math.sqrt(sum / buf.length);
+          // dB(-60~0) → 0~1, 올라갈 땐 바로 내려갈 땐 천천히
+          const v = Math.max(0, Math.min(1, (20 * Math.log10(rms || 1e-6) + 60) / 60));
+          shown = v > shown ? v : shown * 0.92 + v * 0.08;
+          setLevel(shown);
+          raf = requestAnimationFrame(tick);
+        };
+        tick();
+        setErr("");
+      })
+      .catch(() => setErr("마이크 소리를 받을 수 없어요"));
+    return () => {
+      dead = true;
+      cancelAnimationFrame(raf);
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+    };
+  }, [deviceId]);
+  const color = level > 0.9 ? C.danger : level > 0.75 ? "#eab308" : "#22c55e";
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Icon name="mic" size={16} color={level > 0.05 ? color : C.dim} />
+        <div style={{ flex: 1, height: 10, borderRadius: 5, background: C.panel2, overflow: "hidden", border: `1px solid ${C.line}` }}>
+          <div style={{ width: `${Math.round(level * 100)}%`, height: "100%", background: color, transition: "width 60ms linear" }} />
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: err ? C.danger : C.dim, marginTop: 4 }}>
+        {err || (level < 0.05 ? "말해 보세요 — 막대가 움직이면 마이크가 잘 들려요" : level > 0.9 ? "소리가 너무 커요. 마이크에서 조금 떨어져 주세요" : "마이크가 잘 들려요")}
+      </div>
+    </div>
+  );
+}
+
 /* ── 롱폼으로 자동 숏폼 만들기 ── */
 export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDone: (p: Project) => void }) {
   const b = videoBridge()!;
@@ -558,6 +616,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                 {mics.map((m) => <option key={m.deviceId} value={m.deviceId}>{m.label || "마이크"}</option>)}
               </select>
             )}
+            {micOn && <MicMeter deviceId={mic} />}
           </div>
           {err && <div style={{ color: C.danger, fontSize: 14.5, lineHeight: 1.5 }}>{err}</div>}
           <Hint>[녹화 시작]을 누르면 3초 뒤 녹화돼요. 끝나면 [녹화 끝내기]를 누르세요. 바로 편집 화면으로 가요.</Hint>
