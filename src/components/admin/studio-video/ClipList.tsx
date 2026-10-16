@@ -47,8 +47,18 @@ type Props = {
   onDropLayer?: (clipId: string, raw: string) => void;
 };
 
-/** 썸네일 크게 보기 — 마우스를 올린 동안 옆에 크게 (영상은 소리 없이 재생) */
+/** 썸네일 크게 보기 — 마우스를 올린 동안 왼쪽 미리보기 자리에 그 화면을 (영상은 소리 없이 재생). 미리보기가 안 보이면 썸네일 옆에 */
 function Peek({ asset, rect, start, flipX, flipY }: { asset: { url: string; kind: string; name: string }; rect: DOMRect; start: number; flipX?: boolean; flipY?: boolean }) {
+  const box = Array.from(document.querySelectorAll<HTMLElement>("[data-preview]")).map((el) => el.getBoundingClientRect()).find((r) => r.width > 0 && r.height > 0);
+  if (box)
+    return (
+      <div style={{ position: "fixed", left: box.left, top: box.top, width: box.width, height: box.height, zIndex: 60, borderRadius: 4, overflow: "hidden", background: "#000", outline: `2px solid ${C.accent}`, pointerEvents: "none" }}>
+        {asset.kind === "video"
+          ? <video src={`${asset.url}#t=${start.toFixed(2)}`} muted autoPlay loop playsInline style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform: flipX || flipY ? `scale(${flipX ? -1 : 1}, ${flipY ? -1 : 1})` : undefined }} />
+          : <img src={asset.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform: flipX || flipY ? `scale(${flipX ? -1 : 1}, ${flipY ? -1 : 1})` : undefined }} />}
+        <span style={{ position: "absolute", left: 6, bottom: 6, maxWidth: "90%", padding: "2px 8px", borderRadius: 4, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset.name}</span>
+      </div>
+    );
   const W = 360;
   const H = Math.round((W * 9) / 16);
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;

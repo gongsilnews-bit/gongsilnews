@@ -391,7 +391,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const vUrl = visual?.url || "";
 
   return (
-    <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}>
+    <div ref={boxRef} data-preview="1" style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}>
       {visual && fill === "blur" && (visual.kind === "image" ? (
         <img src={vUrl} alt="" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
       ) : (
