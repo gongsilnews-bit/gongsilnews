@@ -75,6 +75,7 @@ export type Layer = {
   y?: number;
   w?: number; // 화면 폭에 대한 비율 0~1
   opacity?: number; // 0~1
+  off?: boolean; // 레이어 끄기 (보이기·듣기) — 설정은 그대로
   fit?: "free" | "contain" | "cover"; // free(기본) = x·y·w 자리 / contain = 비율 유지하며 채우기 / cover = 잘라서 채우기
   flipX?: boolean;
   flipY?: boolean;
@@ -103,6 +104,8 @@ export type Settings = {
   voice: { id: string; speed: number; volume: number };
   music: { on: boolean; mood?: string; file: string; url?: string; name: string; volume: number };
   sourceVolume: number;
+  /** 레이어 켜고 끄기 (프리미어의 눈·스피커) — 클립마다 맞춘 값은 그대로 두고 이것만 켜고 끈다 */
+  off?: { visual?: boolean; source?: boolean; voice?: boolean };
 };
 
 export type Project = {

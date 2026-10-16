@@ -115,6 +115,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
 
   const visualOf = (c?: Clip) => {
     if (!c) return null;
+    if (project.settings.off?.visual) return null; // 화면 레이어 끔
     if (c.visual && project.assets[c.visual.asset]) return project.assets[c.visual.asset];
     if (c.type !== "voice" && c.src) return project.assets[c.src.asset] || null;
     return null;
@@ -146,7 +147,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       const st = project.settings;
       // 원래 촬영 화면이면 원본 소리, 첨부한 영상이면 그 영상 소리를 올렸을 때만 (기본 무음)
       const vv = Math.max(0, Math.min(2, c.visualVolume || 0));
-      v.muted = sameSource ? Boolean(c.muted) : vv <= 0;
+      v.muted = sameSource ? Boolean(c.muted) || Boolean(project.settings.off?.source) : vv <= 0;
       v.volume = sameSource ? Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1))) : Math.min(1, vv);
       v.playbackRate = rateOk(previewRate * (sameSource ? srcSpeed(c) : 1));
       if (bgRef.current && fill === "blur") {
@@ -165,7 +166,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     // 화면만 바꾼 촬영 클립: 원본 소리를 따로
     const a = voiceRef.current;
     if (a) {
-      if (c.type === "voice" && c.voice?.url && !c.muted) {
+      if (c.type === "voice" && c.voice?.url && !c.muted && !project.settings.off?.voice) {
         const sp = speedOf(c, project.settings);
         const target = loc * sp;
         a.playbackRate = rateOk(sp * previewRate);
@@ -178,7 +179,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         if (playRef.current && target < (c.voice.duration || 0)) {
           if (a.paused) a.play().catch(() => {});
         } else a.pause();
-      } else if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted) {
+      } else if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted && !project.settings.off?.source) {
         a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
         a.playbackRate = rateOk(previewRate * srcSpeed(c));
         const target = sourceTimeAt(c, loc);
@@ -331,7 +332,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   // 쓰인 글꼴을 받아 둔다 (처음 한 번)
   useFonts([project.settings.subtitle.font, ...project.scenes.flatMap((sc) => sc.clips.map((c) => c.subStyle?.font)), ...(project.layers || []).filter((l) => l.type === "text").map((l) => l.font)]);
   // 지금 클립에 걸린 사진·화면 글자 애셋 (굽기와 같은 자리·크기)
-  const over = clip ? layersAt(project, clip.id, order) : [];
+  const over = clip ? layersAt(project, clip.id, order).filter((l) => !l.off) : [];
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
 

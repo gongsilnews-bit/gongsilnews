@@ -1239,15 +1239,25 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               {(() => {
                 const c = cur.clip;
                 const vis = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
+                const off = project.settings.off || {};
+                const setOff = (k: "visual" | "source" | "voice", v: boolean) => change((p) => { p.settings.off = { ...(p.settings.off || {}), [k]: v || undefined }; });
+                const silent = c.muted || c.volume === 0;
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, color: C.sub }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Icon name={vis?.kind === "image" ? "image" : "video"} size={16} /><span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vis ? vis.name : "화면 없음 (검은 화면)"}</span></div>
-                    {c.type === "voice" ? <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Icon name="voice" size={16} />{c.voice ? `AI 목소리 ${(c.voice.duration || 0).toFixed(1)}초` : "목소리 없음"}</div> : <div style={{ display: "flex", gap: 8, alignItems: "center", color: c.muted || c.volume === 0 ? C.danger : undefined }}><Icon name={c.muted || c.volume === 0 ? "mute" : "mic"} size={16} />{c.muted || c.volume === 0 ? "원본 소리 무음" : `원본 소리${c.volume && c.volume !== 1 ? ` ${Math.round(c.volume * 100)}%` : ""}`}</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, color: C.sub }}>
+                    <TrackRow kind="eye" on={!off.visual} icon={vis?.kind === "image" ? "image" : "video"} name={vis ? vis.name : "화면 없음 (검은 화면)"} hint="화면 레이어 — 모든 클립"
+                      onToggle={() => setOff("visual", !off.visual)} onOpen={() => (vis ? actions.openMedia(c.id, 420, 300) : actions.openVisual(c.id))} />
+                    {c.type === "voice" ? (
+                      <TrackRow kind="ear" on={!off.voice} icon="voice" name={c.voice ? `AI 목소리 ${(c.voice.duration || 0).toFixed(1)}초${silent ? " · 이 클립 무음" : ""}` : "목소리 없음"} danger={silent} hint="AI 목소리 레이어 — 모든 클립"
+                        onToggle={() => setOff("voice", !off.voice)} onOpen={() => { setSelected([c.id]); setPanel("voice"); }} />
+                    ) : (
+                      <TrackRow kind="ear" on={!off.source} icon={silent ? "mute" : "mic"} name={silent ? "원본 소리 무음" : `원본 소리${c.volume && c.volume !== 1 ? ` ${Math.round(c.volume * 100)}%` : ""}`} danger={silent} hint="원본 소리 레이어 — 모든 클립"
+                        onToggle={() => setOff("source", !off.source)} onOpen={() => { setSelected([c.id]); setPanel("source"); }} />
+                    )}
+                    <TrackRow kind="eye" on={project.settings.subtitle.on} icon="sub" name="메인자막" hint="메인자막 — 모든 클립"
+                      onToggle={() => change((p) => { p.settings.subtitle.on = !p.settings.subtitle.on; })} onOpen={() => setPanel("subtitle")} />
                     {layersAt(project, c.id).map((l) => (
-                      <button key={l.id} type="button" onClick={() => openLayer(l.id)} title="눌러서 고치기"
-                        style={{ display: "flex", gap: 8, alignItems: "center", padding: 0, border: 0, background: "transparent", color: l.id === selLayer ? C.text : C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}>
-                        <Icon name={LAYER_ICON[l.type]} size={16} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{layerTitle(l)}</span>
-                      </button>
+                      <TrackRow key={l.id} kind={l.type === "music" ? "ear" : "eye"} on={!l.off} icon={LAYER_ICON[l.type]} name={layerTitle(l)} active={l.id === selLayer} hint="이 애셋 전체"
+                        onToggle={() => updateLayer(l.id, { off: !l.off || undefined })} onOpen={() => openLayer(l.id)} />
                     ))}
                   </div>
                 );
@@ -1488,6 +1498,38 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 }
 
 /* ── 내보내기 ── */
+/** 레이어 줄 — 앞 단추로 보이기(눈)·듣기(스피커) 켜고 끄기, 이름을 누르면 설정. 끄기는 설정과 따로라 다시 켜면 그대로 */
+function TrackRow({ kind, on, icon, name, hint, danger, active, onToggle, onOpen }: { kind: "eye" | "ear"; on: boolean; icon: string; name: string; hint: string; danger?: boolean; active?: boolean; onToggle: () => void; onOpen: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, opacity: on ? 1 : 0.45 }}>
+      <button type="button" onClick={onToggle} title={`${on ? (kind === "eye" ? "숨기기" : "소리 끄기") : kind === "eye" ? "보이기" : "소리 켜기"} · ${hint}`}
+        style={{ width: 28, height: 26, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${on ? C.line2 : C.danger}`, borderRadius: 5, background: on ? "transparent" : "rgba(239,68,68,0.12)", color: on ? C.text : C.danger, cursor: "pointer", padding: 0 }}>
+        {kind === "eye" ? (
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />{!on && <path d="M3 3l18 18" />}</svg>
+        ) : (
+          <Icon name={on ? "volume" : "mute"} size={16} />
+        )}
+      </button>
+      <button type="button" onClick={onOpen} title="눌러서 설정"
+        style={{ flex: 1, minWidth: 0, display: "flex", gap: 8, alignItems: "center", padding: "3px 4px", border: 0, borderRadius: 4, background: "transparent", color: danger ? C.danger : active ? C.text : C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer", textAlign: "left", textDecoration: on ? undefined : "line-through" }}>
+        <Icon name={icon} size={16} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+      </button>
+    </div>
+  );
+}
+
+/** 꺼 둔 레이어 이름들 (내보내기 전에 알려 주기) */
+function offNames(p: Project) {
+  const o = p.settings.off || {};
+  const n: string[] = [];
+  if (o.visual) n.push("화면");
+  if (o.source) n.push("원본 소리");
+  if (o.voice) n.push("AI 목소리");
+  if (!p.settings.subtitle.on) n.push("메인자막");
+  for (const l of p.layers || []) if (l.off) n.push(layerTitle(l));
+  return n;
+}
+
 function ExportDialog({ project, selected, sceneOf, onClose }: { project: Project; selected: string[]; sceneOf?: string; onClose: () => void }) {
   const b = videoBridge()!;
   const [scope, setScope] = useState<"all" | "scene" | "selected">("all");
@@ -1540,6 +1582,12 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   return (
     <Modal title="영상 내보내기" onClose={onClose} width={560} footer={<><Btn onClick={onClose}>취소</Btn><Btn primary onClick={go}><Icon name="export" size={16} />내보내기</Btn></>}>
       <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 18 }}>
+        {offNames(project).length > 0 && (
+          <div style={{ padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, background: "rgba(239,68,68,0.1)", fontSize: 14, lineHeight: 1.6 }}>
+            <b style={{ color: C.danger }}>꺼 둔 레이어가 있어요:</b> {offNames(project).join(", ")}<br />
+            <span style={{ color: C.sub }}>꺼 둔 것은 영상에 들어가지 않아요. 넣으려면 미리보기 아래에서 다시 켜 주세요.</span>
+          </div>
+        )}
         <div>
           <div style={{ ...label, marginBottom: 10 }}>내보낼 클립</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

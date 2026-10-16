@@ -172,7 +172,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
 
   // 화면 — 글 클립: 화면 자료 / 촬영 클립: 그 영상 (화면만 바꾼 경우 바꾼 자료, 소리는 원본)
   const srcAsset = clip.src ? p.assets[clip.src.asset] : null;
-  const visual = clip.visual && p.assets[clip.visual.asset] ? p.assets[clip.visual.asset] : clip.type === "voice" ? null : srcAsset;
+  const offs = st.off || {}; // 꺼 둔 레이어 (화면·원본 소리·AI 목소리)
+  const visual = offs.visual ? null : clip.visual && p.assets[clip.visual.asset] ? p.assets[clip.visual.asset] : clip.type === "voice" ? null : srcAsset;
   const ranges = clip.type === "voice" ? null : tl.keepRanges(clip);
   const sameAsSource = ranges && visual && srcAsset && visual === srcAsset;
   const ok = (a) => a && !a.missing && fs.existsSync(assetFile(a));
@@ -321,7 +322,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   // 첨부한 화면 영상의 소리 (올렸을 때만) — 원본 메인 소리와 섞는다
   const vv = visIn >= 0 && visual && visual.hasAudio ? Math.max(0, Math.min(2, Number(clip.visualVolume) || 0)) : 0;
   if (vv > 0) filters.push(`[${visIn}:a]volume=${vv.toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[avis]`);
-  if (clip.type === "voice" && !clip.muted && clip.voice && clip.voice.file && fs.existsSync(clip.voice.file)) {
+  if (clip.type === "voice" && !clip.muted && !offs.voice && clip.voice && clip.voice.file && fs.existsSync(clip.voice.file)) {
     args.push("-i", clip.voice.file);
     const k = n++;
     const sp = tl.speedOf(clip, st);
@@ -334,7 +335,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     if (vv > 0) filters.push(`[avo][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else if (vv > 0) {
     filters.push(`[avis]anull[aout]`);
-  } else if (aIn && !clip.muted) {
+  } else if (aIn && !clip.muted && !offs.source) {
     filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "aso" : "aout"}]`);
     if (vv > 0) filters.push(`[aso][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else {
@@ -401,7 +402,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     for (let i = 0; i < items.length; i++) {
       if (isCancelled()) throw new Error("내보내기를 멈췄습니다.");
       onProgress(`클립 ${i + 1} / ${items.length} 만드는 중…`, (done / total) * 0.9);
-      const over = tl.layersAt(p, items[i].clip.id, order).filter((l) => l.type !== "music");
+      const over = tl.layersAt(p, items[i].clip.id, order).filter((l) => l.type !== "music" && !l.off);
       segs.push(await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over));
       done += items[i].dur;
     }

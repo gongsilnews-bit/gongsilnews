@@ -142,7 +142,7 @@ function layersAt(p, clipId, order = clipOrder(p)) {
 
 /** 음악 애셋 — 예전 프로젝트의 "전체 배경 음악"도 처음~끝 음악 애셋으로 본다 */
 function musicLayers(p, items) {
-  const ls = (p.layers || []).filter((l) => l.type === "music" && l.file);
+  const ls = (p.layers || []).filter((l) => l.type === "music" && l.file && !l.off);
   if (ls.length) return ls;
   const m = p.settings && p.settings.music;
   if (m && m.on && m.file && items.length) return [{ id: "bgm", type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, name: m.name, file: m.file, volume: m.volume ?? 0.15, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }];

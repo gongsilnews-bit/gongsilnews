@@ -56,11 +56,12 @@ export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entrie
         const e = entries.find((x) => x.lane === lane && (pass ? x.a < idx && x.b >= idx : x.a <= idx && x.b >= idx));
         if (!e) return <div key={lane} style={{ width: LANE_W }} />;
         const on = e.layer.id === selLayer;
+        const dim = e.layer.off ? 0.35 : 1; // 꺼 둔 애셋은 흐리게
         const color = on ? C.accent : C.line2;
         const first = !pass && e.a === idx;
         const last = !pass && e.b === idx;
         return (
-          <div key={lane} style={{ width: LANE_W, position: "relative" }}>
+          <div key={lane} style={{ width: LANE_W, position: "relative", opacity: dim }} title={e.layer.off ? "꺼 둔 애셋 (미리보기 아래에서 다시 켤 수 있어요)" : undefined}>
             <span style={{ position: "absolute", left: LANE_W / 2 - 1, width: 2, top: first ? 22 : 0, bottom: last ? 18 : 0, background: color, borderRadius: 1 }} />
             {last && (
               <span onPointerDown={(ev) => onDrag(e.layer.id, "to", ev)} onClick={(ev) => ev.stopPropagation()} title="위아래로 끌어서 끝 클립 바꾸기"
