@@ -7,6 +7,7 @@ import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } fr
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
 import { clipOrder, clipText, flatten, layerItems, layersAt, splitScript, wordTimes } from "./timeline";
 import MediaMenu, { type MediaFit, type MediaOrder } from "./MediaMenu";
+import VideoStart from "./VideoStart";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
@@ -93,6 +94,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [selLayer, setSelLayer] = useState("");
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
+  const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
   const [overlayTarget, setOverlayTarget] = useState(""); // 사진을 바꿀 애셋
@@ -561,6 +563,8 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     setSelected(ids);
     say(`클립 ${a}~${b}번 화면을 똑같이 했어요`);
   };
+  /** 영상 화면이면 시작점을 고를 수 있다 (촬영 원본 그대로인 클립은 빼고) */
+  const canStart = (c: Clip) => Boolean(c.visual && project.assets[c.visual.asset]?.kind === "video" && !(c.src && c.src.asset === c.visual.asset));
   const clipRemoveVisual = (id: string) => {
     change((p) => {
       const c = findClip(p, id)?.clip;
@@ -628,7 +632,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
           c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
         }
       });
-      say(`화면을 바꿨어요 (클립 ${selected.length}개)`);
+      say(`화면을 바꿨어요 (클립 ${selected.length}개)${a.kind === "video" ? " · 영상 시작점은 썸네일을 눌러 고를 수 있어요" : ""}`);
       return;
     }
     await placeMedia(a, lastSelected(), false);
@@ -697,7 +701,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         }
       });
       setSelected(ids);
-      say(ids.length > 1 ? `고른 클립 ${ids.length}개 화면을 바꿨어요` : "이 클립 화면을 바꿨어요");
+      say((ids.length > 1 ? `고른 클립 ${ids.length}개 화면을 바꿨어요` : "이 클립 화면을 바꿨어요") + (a.kind === "video" ? " · 영상 시작점은 썸네일을 눌러 고를 수 있어요" : ""));
     } else await placeMedia(a, clipId, where === "before");
   };
   /** 왼쪽 애셋 줄에 놓으면 사진 올리기 — 그 클립부터 끝까지 (고른 클립 중 하나에 놓으면 고른 범위) */
@@ -1082,6 +1086,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             <VisualPanel key={c.id} project={project} clip={c} n={i + 1} total={flat.items.length} cur={i + 1}
               many={r ? { a: pos(r.from), b: pos(r.to), n: r.n } : null}
               onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
+              onStart={canStart(c) ? () => setStartClip(c.id) : undefined}
               onRange={(a, b) => clipRange(c.id, a, b)} onRemove={() => clipRemoveVisual(c.id)} onClose={() => setPanel("")} />
           );
         })()}
@@ -1097,6 +1102,13 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         })()}
       </div>
 
+      {startClip && (() => {
+        const it = flat.items.find((x) => x.clip.id === startClip);
+        const a = it?.clip.visual ? project.assets[it.clip.visual.asset] : null;
+        if (!it || !a || a.kind !== "video") return null;
+        return <VideoStart key={startClip} asset={a} dur={it.dur} start={it.clip.visual?.s || 0} onClose={() => setStartClip("")}
+          onApply={(s) => { change((p) => { const c = findClip(p, startClip)?.clip; if (c?.visual) c.visual.s = s; }); say(s > 0 ? "시작점을 바꿨어요" : "처음부터 나가요"); }} />;
+      })()}
       {media && (() => {
         const items = flat.items;
         const total = items.length;
@@ -1111,6 +1123,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             fit={c.fill || project.settings.fill} fits={["contain", "cover", "blur"]} flipX={c.flipX} flipY={c.flipY}
             range={{ a: n, b: n, cur: n, total }} canRemove={Boolean(c.visual)}
             onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
+            onStart={canStart(c) ? () => setStartClip(c.id) : undefined}
             onRange={(x, y) => clipRange(c.id, x, y)} onRemove={() => clipRemoveVisual(c.id)} onClose={close} />;
         }
         const l = (project.layers || []).find((x) => x.id === media.id);

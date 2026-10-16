@@ -32,6 +32,7 @@ type Props = {
   onFit: (f: MediaFit) => void;
   onFlip: (axis: "x" | "y") => void;
   onReplace: () => void;
+  onStart?: () => void; // 비디오 시작점 변경 (영상일 때만)
   onRange: (a: number, b: number) => void;
   onOrder?: (o: MediaOrder) => void;
   onRemove: () => void;
@@ -73,6 +74,7 @@ export default function MediaMenu(p: Props) {
     items = [
       { icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") },
       { icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") },
+      ...(p.onStart ? [{ icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
       { icon: "swap", label: "교체", desc: `다른 사진·영상으로 바꿔요. 채우기·반전·범위는 그대로예요`, run: done(p.onReplace) },
       { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : "이 사진이 몇 번 클립부터 몇 번 클립까지 나올지 정해요", sub: true, run: go("range") },
       ...(p.kind === "layer" ? [{ icon: "layers", label: "순서", desc: "사진이 여러 장 겹칠 때 어느 사진을 위에 둘지 정해요", sub: true, off: !p.order?.up && !p.order?.down, run: go("order") }] : []),

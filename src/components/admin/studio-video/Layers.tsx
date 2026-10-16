@@ -118,7 +118,7 @@ const GRID: [number, number, string][] = [
 ];
 
 /** 클립 화면 속성 — 썸네일을 누르면 오른쪽에 (채우기·반전·교체·다른 클립에도 쓰기·지우기) */
-export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip, onReplace, onRange, onRemove, onClose }: {
+export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
   project: Project;
   clip: Clip;
   n: number; // 이 클립 번호 (1부터)
@@ -128,6 +128,7 @@ export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip,
   onFit: (f: Fill) => void;
   onFlip: (axis: "x" | "y") => void;
   onReplace: () => void;
+  onStart?: () => void;
   onRange: (a: number, b: number) => void;
   onRemove: () => void;
   onClose: () => void;
@@ -154,6 +155,12 @@ export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip,
           <Btn small onClick={onReplace}><Icon name="swap" size={15} />교체</Btn>
         </div>
         {a && <div style={{ fontSize: 12.5, color: C.dim, marginTop: 4 }}>{a.kind === "video" ? `영상 ${Math.round(a.duration || 0)}초` : "사진"}{a.width ? ` · ${a.width}×${a.height}` : ""}</div>}
+        {onStart && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+            <Btn small onClick={onStart}><Icon name="video" size={15} />비디오 시작점 변경</Btn>
+            <span style={{ fontSize: 13, color: C.sub }}>{(clip.visual?.s || 0) > 0 ? `${Math.floor((clip.visual?.s || 0) / 60)}:${String(Math.floor((clip.visual?.s || 0) % 60)).padStart(2, "0")}부터` : "처음부터"}</span>
+          </div>
+        )}
       </div>
       <div style={row}>
         <div style={{ ...label, marginBottom: 8 }}>채우기</div>
