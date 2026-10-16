@@ -112,7 +112,9 @@ function spawnChrome(args) {
   if (!found) throw new Error("이 PC에서 크롬이나 엣지를 찾지 못했습니다. 크롬을 설치한 뒤 다시 시도해 주세요.");
   seedProfile();
   log.info(`[전용 크롬] 켜기 ${found.exe} ${args.join(" ")}`);
-  return spawn(found.exe, [`--user-data-dir=${profileDir()}`, "--no-first-run", "--no-default-browser-check", ...args], { detached: true, stdio: "ignore" });
+  // 뒤로 간 탭·가려진 창도 절전하지 않는다 — AI 가 글을 쓰는 탭에서 다른 탭으로 옮기면 멈추던 문제 (2026-10-16)
+  const awake = ["--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows"];
+  return spawn(found.exe, [`--user-data-dir=${profileDir()}`, "--no-first-run", "--no-default-browser-check", ...awake, ...args], { detached: true, stdio: "ignore" });
 }
 
 /** 조종 중인 전용 크롬을 닫는다 */
@@ -278,7 +280,26 @@ async function openPage(host, url) {
   }
   await placeOnScreen(page);
   await page.bringToFront();
+  await keepAwake(page);
   return page;
+}
+
+/**
+ * 이 탭은 계속 "보고 있는 탭"으로 — 회원이 다른 탭으로 옮겨도 AI 가 쓰는 글이 멈추지 않게.
+ * (조종 연결을 붙여 둔 동안만 — 연결을 떼면 풀리므로 탭마다 한 번 붙여 둔다)
+ */
+const awakePages = new WeakSet();
+async function keepAwake(page) {
+  if (awakePages.has(page)) return;
+  try {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await cdp.send("Page.enable").catch(() => {});
+    await cdp.send("Page.setWebLifecycleState", { state: "active" }).catch(() => {});
+    awakePages.add(page);
+  } catch (e) {
+    log.warn("[전용 크롬] 탭 깨워 두기 실패", e.message);
+  }
 }
 
 /** 이미 열린 해당 사이트 탭 (없으면 null, 새로 열지 않는다) */

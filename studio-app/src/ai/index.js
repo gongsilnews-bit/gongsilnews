@@ -26,9 +26,11 @@ function current() {
   return other || want;
 }
 
+const busy = require("../ai-busy"); // 쓰는 동안 스튜디오 창 전체를 덮는다 ("AI가 기사를 작성하고 있습니다… 0:42")
+
 function ask(prompt, opts = {}) {
   const id = providerOfUrl(opts.chatUrl) || opts.provider || current();
-  return AIS[id].mod().ask(prompt, opts);
+  return busy.during(`${AIS[id].name}가 ${opts.busyLabel || "글을 작성하고 있습니다"}`, () => AIS[id].mod().ask(prompt, opts));
 }
 
 /** 지금 그림을 그릴 AI — [내 AI 연결]의 기본 이미지 생성 AI ("준비 중"·미연결이면 ChatGPT) */
@@ -42,7 +44,7 @@ function askImage(prompt, opts = {}) {
   const id = opts.provider || currentImager();
   const mod = AIS[id].mod();
   if (!mod.askImage) throw new Error(`${AIS[id].name} 그림 그리기는 준비 중입니다. [내 AI 연결]에서 기본 이미지 생성 AI 를 ChatGPT 로 골라 주세요.`);
-  return mod.askImage(prompt, opts);
+  return busy.during(`${AIS[id].name}가 그림을 그리고 있습니다`, () => mod.askImage(prompt, opts));
 }
 
 module.exports = { ask, askImage, current, currentImager, providerOfUrl, nameOf: (id) => (AIS[id] || AIS.chatgpt).name, AIS };

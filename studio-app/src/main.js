@@ -20,6 +20,7 @@ const marketingWriter = require("./marketing-writer");
 // 영상 편집기 (동영상제작) — PC 파일 재생 주소는 앱 준비 전에 등록해야 한다
 const videoMedia = require("./video/media");
 const videoIpc = require("./video/ipc");
+const aiBusy = require("./ai-busy");
 videoMedia.registerScheme();
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
@@ -245,6 +246,8 @@ async function createWindow() {
     videoIpc.leave(r === 0);
     e.preventDefault(); // 나간다
   });
+  aiBusy.setWindow(() => mainWindow);
+  aiBusy.attach(mainWindow);
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
