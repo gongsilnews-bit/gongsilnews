@@ -27,6 +27,8 @@ type Props = {
   /** 미리보기에서 클립 화면을 끌어 옮기기·크기 / 자막을 끌어 옮기기·줄 너비 */
   onVisualMove?: (clipId: string, box: { x: number; y: number; w: number }, first: boolean) => void;
   onSubMove?: (patch: { x?: number; y?: number; wrap?: number }, first: boolean) => void;
+  /** 클립 화면·자막을 눌러 고르면 (오른쪽 속성 칸 열기) */
+  onBoxPick?: (kind: "visual" | "sub", clipId: string) => void;
 };
 
 /** 화면 위 글자를 그 자리에서 고치는 칸 — 엔터: 저장, Shift+엔터: 줄바꿈, Esc: 취소 */
@@ -68,7 +70,7 @@ function InlineEdit({ text, style, onDone }: { text: string; style: React.CSSPro
   );
 }
 
-const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText, onVisualMove, onSubMove }, ref) {
+const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText, onVisualMove, onSubMove, onBoxPick }, ref) {
   const [editing, setEditing] = useState(""); // 고치는 중: 애셋 id 또는 "sub:클립id"
   const boxRef = useRef<HTMLDivElement>(null);
   const [W, H] = RATIO_SIZE[project.ratio] || RATIO_SIZE["16:9"];
@@ -378,13 +380,15 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   };
   /* ── 클립 화면·자막 고르기 (화면 글자·사진 올리기와 같은 손잡이) ── */
   const [pick, setPick] = useState<"" | "visual" | "sub">("");
-  useEffect(() => setPick(""), [clip?.id, selLayer]);
+  useEffect(() => setPick(""), [clip?.id]);
+  useEffect(() => { if (selLayer) setPick(""); }, [selLayer]);
   const startBox = (kind: "visual" | "sub", mode: "move" | Corner | "e" | "w", e: React.PointerEvent) => {
     const can = kind === "visual" ? onVisualMove && clip : onSubMove;
     if (!can) return;
     e.preventDefault();
     e.stopPropagation();
     setPick(kind);
+    if (clip) onBoxPick?.(kind, clip.id);
     const box = boxRef.current?.getBoundingClientRect();
     const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-layer]")?.getBoundingClientRect();
     if (!box || !el) return;

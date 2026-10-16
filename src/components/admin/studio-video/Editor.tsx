@@ -1065,6 +1065,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             onDragOver={(e) => { if (e.dataTransfer.types.includes(DRAG_MEDIA)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } }} onDrop={onDropPreview}>
             <Player ref={player} project={project} width={big ? bigW : previewW} onTime={setTime} onPlaying={setPlaying} previewRate={rate}
               selLayer={panel === "layer" ? selLayer : ""} onLayerPick={openLayer}
+              onBoxPick={(kind, id) => {
+                setSelLayer("");
+                if (kind === "sub") setPanel("subtitle");
+                else { setVisualClip(id); setPanel("visual"); }
+              }}
               onVisualMove={(id, box, first) => change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box; }, first)}
               onSubMove={(patch, first) => change((p) => { Object.assign(p.settings.subtitle, patch); }, first)}
               onLayerMove={(id, patch, first) => change((p) => {
