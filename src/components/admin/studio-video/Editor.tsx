@@ -104,6 +104,14 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const listRef = useRef<HTMLDivElement>(null);
   const [big, setBig] = useState(false);
   const [win, setWin] = useState({ w: 1440, h: 900 });
+  // 왼쪽 미리보기 칸 너비 — 경계선을 끌어 크게·작게 (이 PC에 기억)
+  const [leftW, setLeftW] = useState(412);
+  useEffect(() => {
+    try {
+      const v = Number(localStorage.getItem("studioVideo.leftW"));
+      if (v >= 300) setLeftW(v);
+    } catch {}
+  }, []);
   useEffect(() => {
     const on = () => setWin({ w: window.innerWidth, h: window.innerHeight });
     on();
@@ -934,7 +942,31 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
 
   /* ── 레이아웃 ── */
   const [W, H] = project.ratio === "9:16" ? [9, 16] : project.ratio === "4:5" ? [4, 5] : project.ratio === "1:1" ? [1, 1] : project.ratio === "4:3" ? [4, 3] : [16, 9];
-  const previewW = Math.round(Math.min(380, (380 * W) / H > 380 ? 380 : 420 * (W / H)));
+  const sideW0 = panel ? 380 : 0;
+  const leftMax = Math.max(300, win.w - sideW0 - 72 - 520); // 클립 목록은 520 은 남긴다
+  const leftNow = Math.max(300, Math.min(leftMax, leftW));
+  const previewW = Math.round(Math.min(leftNow - 32, ((win.h - 330) * W) / H));
+  /** 경계선 끌기 — 두 번 누르면 처음 너비로 */
+  const dragSplit = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const x0 = e.clientX;
+    const w0 = leftNow;
+    let last = w0;
+    const move = (ev: PointerEvent) => {
+      last = Math.max(300, Math.min(leftMax, w0 + ev.clientX - x0));
+      setLeftW(last);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      document.body.style.cursor = "";
+      try {
+        localStorage.setItem("studioVideo.leftW", String(Math.round(last)));
+      } catch {}
+    };
+    document.body.style.cursor = "col-resize";
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  };
   // 크게 보기 — 미리보기만 화면 가운데에 크게 (클립 목록 위에 겹쳐서)
   // 오른쪽 설정 칸(속성값)은 가리지 않고 그 왼쪽 자리에 크게
   const sideW = panel ? 380 : 0;
@@ -976,7 +1008,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
 
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* 왼쪽: 미리보기 */}
-        <div style={{ width: 412, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, padding: 16, background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto" }}>
+        <div style={{ width: leftNow, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, padding: 16, background: C.panel, overflowY: "auto" }}>
           {big && (
             <>
               <div onClick={() => setBig(false)} style={{ position: "fixed", top: 0, bottom: 0, left: 0, right: sideW, background: "rgba(0,0,0,0.65)", zIndex: 60 }} />
@@ -1040,6 +1072,14 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             </div>
           )}
           <Hint>단어를 누르면 그 자리로 가요. 지울 단어를 누르고 [이 단어 지우기]를 누르면 그 부분이 영상에서 잘려요.</Hint>
+        </div>
+
+        {/* 경계선 — 끌어서 미리보기 크게·작게 */}
+        <div onPointerDown={dragSplit} onDoubleClick={() => { setLeftW(412); try { localStorage.removeItem("studioVideo.leftW"); } catch {} }}
+          title="끌어서 미리보기 크게·작게 (두 번 누르면 처음 크기)"
+          style={{ width: 7, flexShrink: 0, cursor: "col-resize", background: C.line, position: "relative", touchAction: "none" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = C.accent)} onMouseLeave={(e) => (e.currentTarget.style.background = C.line)}>
+          <span style={{ position: "absolute", top: "50%", left: 1, width: 5, height: 36, marginTop: -18, borderRadius: 3, background: C.sub, opacity: 0.7, pointerEvents: "none" }} />
         </div>
 
         {/* 가운데: 클립 목록 */}
