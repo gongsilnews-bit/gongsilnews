@@ -23,8 +23,8 @@ export function keepRanges(clip: Clip): { s: number; e: number }[] {
 
 export const speedOf = (clip: Clip, settings?: Settings) => Number(clip.speed || settings?.voice?.speed || 1) || 1;
 
-/** 촬영 클립 빠르기 (영상·소리 같이). 목소리 클립은 1 */
-export const srcSpeed = (clip: Clip) => (clip.type === "voice" ? 1 : Math.max(0.5, Math.min(2, Number(clip.speed) || 1)));
+/** 촬영 클립 빠르기 (영상·소리 같이, 0.1~20배). 목소리 클립은 1 */
+export const srcSpeed = (clip: Clip) => (clip.type === "voice" ? 1 : Math.max(0.1, Math.min(20, Number(clip.speed) || 1)));
 
 export function estimateSeconds(text: string, speed = 1) {
   const n = String(text || "").replace(/\s/g, "").length;

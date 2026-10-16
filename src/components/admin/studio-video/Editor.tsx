@@ -614,17 +614,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           const nat = vd / speedOf(c, p.settings) + GAP;
           if (T >= nat - 0.01) c.pad = T - nat > 0.01 ? +(T - nat).toFixed(2) : undefined;
           else {
-            c.speed = +Math.max(0.5, Math.min(2, vd / Math.max(0.1, T - GAP))).toFixed(3);
+            c.speed = +Math.max(0.1, Math.min(20, vd / Math.max(0.05, T - GAP))).toFixed(3);
             c.pad = undefined;
           }
         } else if (c.type === "voice") c.hold = +Math.max(0.5, T).toFixed(2);
         else {
           const raw = keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0);
-          if (raw > 0) c.speed = +Math.max(0.5, Math.min(2, raw / T)).toFixed(3);
+          if (raw > 0) c.speed = +Math.max(0.1, Math.min(20, raw / T)).toFixed(3);
         }
       }
     });
-    say(`길이를 ${T}초로 맞췄어요 (속도는 0.5~2배 안에서)`);
+    say(`길이를 ${T}초로 맞췄어요 (속도는 0.1~20배 안에서)`);
   };
   const resetTiming = () => change((p) => {
     for (const id of timingIds()) {

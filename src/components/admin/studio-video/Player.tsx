@@ -31,6 +31,9 @@ type Props = {
   onBoxPick?: (kind: "visual" | "sub", clipId: string) => void;
 };
 
+/** 브라우저가 낼 수 있는 재생 빠르기 (0.0625~16배) — 20배는 미리보기에서 16배로 */
+const rateOk = (r: number) => Math.max(0.0625, Math.min(16, r));
+
 /** 화면 위 글자를 그 자리에서 고치는 칸 — 엔터: 저장, Shift+엔터: 줄바꿈, Esc: 취소 */
 function InlineEdit({ text, style, onDone }: { text: string; style: React.CSSProperties; onDone: (t: string | null) => void }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -140,7 +143,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       const st = project.settings;
       v.muted = !sameSource || Boolean(c.muted);
       v.volume = Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1)));
-      v.playbackRate = previewRate * (sameSource ? srcSpeed(c) : 1);
+      v.playbackRate = rateOk(previewRate * (sameSource ? srcSpeed(c) : 1));
       if (bgRef.current && fill === "blur") {
         try {
           if (force || Math.abs(bgRef.current.currentTime - target) > 0.5) bgRef.current.currentTime = target;
@@ -160,7 +163,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       if (c.type === "voice" && c.voice?.url) {
         const sp = speedOf(c, project.settings);
         const target = loc * sp;
-        a.playbackRate = sp * previewRate;
+        a.playbackRate = rateOk(sp * previewRate);
         a.volume = Math.max(0, Math.min(1, project.settings.voice?.volume ?? 1));
         if (force || Math.abs(a.currentTime - target) > 0.3) {
           try {
@@ -172,7 +175,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         } else a.pause();
       } else if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted) {
         a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
-        a.playbackRate = previewRate * srcSpeed(c);
+        a.playbackRate = rateOk(previewRate * srcSpeed(c));
         const target = sourceTimeAt(c, loc);
         if (force || Math.abs(a.currentTime - target) > 0.3) {
           try {

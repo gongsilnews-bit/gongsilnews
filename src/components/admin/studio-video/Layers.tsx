@@ -134,6 +134,12 @@ export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onRe
   const total = durs.reduce((a, b) => a + b, 0);
   const sameLen = durs.length > 0 && durs.every((d) => Math.abs(d - durs[0]) < 0.01);
   const [len, setLen] = React.useState(sameLen ? durs[0].toFixed(1) : "");
+  const [spd, setSpd] = React.useState(same ? String(+sp[0].toFixed(2)) : "");
+  React.useEffect(() => setSpd(same ? String(+sp[0].toFixed(2)) : ""), [same, sp[0]]); // eslint-disable-line react-hooks/exhaustive-deps
+  const applySpd = () => {
+    const v = Number(spd);
+    if (v > 0 && !(same && Math.abs(v - sp[0]) < 0.001)) onSpeed(Math.max(0.1, Math.min(20, v)), true);
+  };
   React.useEffect(() => setLen(sameLen ? durs[0].toFixed(1) : ""), [sameLen, durs[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const apply = (v: number) => {
     if (!(v > 0)) return;
@@ -148,13 +154,20 @@ export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onRe
           <span style={{ flex: 1 }}>속도</span>
           <span style={{ color: C.sub }}>{sp.length ? (same ? `${sp[0].toFixed(2).replace(/\.?0+$/, "")}배` : "클립마다 달라요") : "바꿀 수 없어요"}</span>
         </div>
-        <input type="range" min={0.5} max={2} step={0.05} value={same ? sp[0] : 1} disabled={!sp.length}
-          onPointerDown={() => (first.current = true)} onChange={(e) => { onSpeed(Number(e.target.value), first.current); first.current = false; }}
+        {/* 0.1~20배 — 로그 눈금이라 1배 근처도 곱게 */}
+        <input type="range" min={-1} max={Math.log10(20)} step={0.01} value={Math.log10(same ? sp[0] : 1)} disabled={!sp.length}
+          onPointerDown={() => (first.current = true)}
+          onChange={(e) => { const v = Math.pow(10, Number(e.target.value)); onSpeed(+(v < 1 ? v.toFixed(2) : v < 5 ? v.toFixed(2) : v.toFixed(1)), first.current); first.current = false; }}
           style={{ width: "100%", accentColor: C.accent }} />
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-          {[0.5, 0.75, 1, 1.25, 1.5, 2].map((v) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+          <input value={spd} onChange={(e) => setSpd(e.target.value.replace(/[^0-9.]/g, ""))} onKeyDown={(e) => e.key === "Enter" && applySpd()} onBlur={applySpd} disabled={!sp.length} inputMode="decimal"
+            placeholder={same ? "" : "클립마다 달라요"} style={{ ...input, flex: 1, height: 34, textAlign: "center", fontSize: 15, fontWeight: 800 }} />
+          <span style={{ fontSize: 14 }}>배</span>
+        </div>
+        <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
+          {[0.1, 0.5, 1, 1.5, 2, 5, 10, 20].map((v) => (
             <button key={v} type="button" disabled={!sp.length} onClick={() => onSpeed(v, true)}
-              style={{ ...chip(same && Math.abs(sp[0] - v) < 0.001), flex: 1, padding: 0, height: 32, fontSize: 13 }}>{v}배</button>
+              style={{ ...chip(same && Math.abs(sp[0] - v) < 0.001), flex: 1, padding: 0, height: 32, fontSize: 12.5 }}>{v}</button>
           ))}
         </div>
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>AI 목소리 클립은 목소리가, 촬영 영상 클립은 영상과 소리가 함께 빨라지거나 느려져요.</div>
@@ -175,7 +188,7 @@ export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onRe
           <Btn small primary onClick={() => apply(Number(len))} disabled={!Number(len)}>{many ? `고른 클립 모두 ${Number(len) || 0}초로` : "이 길이로"}</Btn>
         </div>
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>
-          늘리면 AI 목소리 클립은 말이 끝난 뒤 그만큼 화면이 머물러요. 줄이면 빠르게 해서 맞춰요 (최대 2배).<br />촬영 영상 클립은 속도를 바꿔서 맞추고, 화면만 있는 클립은 그 시간만큼 보여요.
+          늘리면 AI 목소리 클립은 말이 끝난 뒤 그만큼 화면이 머물러요. 줄이면 빠르게 해서 맞춰요 (0.1~20배 안에서).<br />촬영 영상 클립은 속도를 바꿔서 맞추고, 화면만 있는 클립은 그 시간만큼 보여요.
         </div>
       </div>
     </Side>

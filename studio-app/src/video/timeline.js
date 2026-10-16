@@ -28,7 +28,7 @@ function keepRanges(clip) {
 const speedOf = (clip, settings) => Number(clip.speed || (settings && settings.voice && settings.voice.speed) || 1) || 1;
 
 /** 촬영 클립 빠르기 (영상·소리 같이). 목소리 클립은 1 */
-const srcSpeed = (clip) => (clip.type === "voice" ? 1 : Math.max(0.5, Math.min(2, Number(clip.speed) || 1)));
+const srcSpeed = (clip) => (clip.type === "voice" ? 1 : Math.max(0.1, Math.min(20, Number(clip.speed) || 1)));
 
 function clipDuration(clip, settings) {
   if (clip.del) return 0;

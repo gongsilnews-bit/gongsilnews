@@ -215,7 +215,11 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
       vIn = "vspd";
     }
     if (aIn) {
-      filters.push(`[${aIn}]atempo=${ssp.toFixed(4)}[aspd]`);
+      const tempo = [];
+      let s = ssp;
+      while (s < 0.5) { tempo.push("atempo=0.5"); s /= 0.5; }
+      tempo.push(`atempo=${s.toFixed(4)}`);
+      filters.push(`[${aIn}]${tempo.join(",")}[aspd]`);
       aIn = "aspd";
     }
   }
