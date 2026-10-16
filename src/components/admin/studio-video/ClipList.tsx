@@ -263,7 +263,7 @@ export default function ClipList(p: Props) {
                   <ClipCard project={project} it={it} n={++n} p={p} />
                   {drop?.id === it.clip.id && (drop.where === "replace" ? (
                     <div style={{ position: "absolute", inset: "6px 0", border: `2px solid ${C.accent}`, borderRadius: 8, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59,130,246,0.12)" }}>
-                      <span style={{ padding: "6px 12px", borderRadius: 5, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800 }}>여기 놓으면 이 클립 화면을 바꿔요</span>
+                      <span style={{ padding: "6px 12px", borderRadius: 5, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800 }}>{p.selected.length > 1 && p.selected.includes(it.clip.id) ? `여기 놓으면 고른 클립 ${p.selected.length}개 화면을 바꿔요` : "여기 놓으면 이 클립 화면을 바꿔요"}</span>
                     </div>
                   ) : (
                     <div style={{ position: "absolute", left: 0, right: 0, [drop.where === "before" ? "top" : "bottom"]: 1, height: 4, borderRadius: 2, background: C.accent, pointerEvents: "none" }}>

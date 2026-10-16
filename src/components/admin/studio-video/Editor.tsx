@@ -623,12 +623,16 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     if (!item) return;
     const a = await ensureAsset(item);
     if (where === "replace") {
+      // 고른 클립 중 하나에 놓으면 고른 클립 전부
+      const ids = selected.length > 1 && selected.includes(clipId) ? selected : [clipId];
       change((p) => {
-        const c = findClip(p, clipId)?.clip;
-        if (c) c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
+        for (const id of ids) {
+          const c = findClip(p, id)?.clip;
+          if (c) c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
+        }
       });
-      setSelected([clipId]);
-      say("이 클립 화면을 바꿨어요");
+      setSelected(ids);
+      say(ids.length > 1 ? `고른 클립 ${ids.length}개 화면을 바꿨어요` : "이 클립 화면을 바꿨어요");
     } else await placeMedia(a, clipId, where === "before");
   };
   /** 미리보기에 놓으면 그 자리에 사진 올리기 */
