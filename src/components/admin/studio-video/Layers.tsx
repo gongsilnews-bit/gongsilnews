@@ -268,8 +268,6 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
   onRemove: () => void;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = React.useState(layer.text || "");
-  React.useEffect(() => setDraft(layer.text || ""), [layer.id, layer.text]);
   React.useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -279,6 +277,25 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
   const pos = new Map(items.map((it, i) => [it.clip.id, i + 1]));
   const a = cov.length ? pos.get(cov[0].clip.id) : 0;
   const b = cov.length ? pos.get(cov[cov.length - 1].clip.id) : 0;
+  // 숫자로 적용 범위 (클립 번호 1부터)
+  const [na, setNa] = React.useState(String(a || 1));
+  const [nb, setNb] = React.useState(String(b || 1));
+  React.useEffect(() => {
+    setNa(String(a || 1));
+    setNb(String(b || 1));
+  }, [a, b]);
+  const applyNum = () => {
+    const n = items.length;
+    if (!n) return;
+    let x = Math.max(1, Math.min(n, parseInt(na, 10) || 1));
+    let z = Math.max(1, Math.min(n, parseInt(nb, 10) || x));
+    if (x > z) [x, z] = [z, x];
+    onChange({ from: items[x - 1].clip.id, to: items[z - 1].clip.id });
+  };
+  const numBox = (v: string, set: (s: string) => void) => (
+    <input value={v} onChange={(e) => set(e.target.value.replace(/[^0-9]/g, ""))} data-num="1" onBlur={(e) => !(e.relatedTarget as HTMLElement | null)?.dataset?.num && applyNum()} onKeyDown={(e) => e.key === "Enter" && applyNum()} inputMode="numeric"
+      style={{ ...input, width: 64, height: 36, padding: "0 8px", textAlign: "center", fontSize: 15, fontWeight: 700 }} />
+  );
   const top = Math.max(8, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 900) - 420));
   const line: React.CSSProperties = { padding: "10px 12px", borderBottom: `1px solid ${C.line}` };
   const mini = (title: string, value: number, min: number, max: number, step: number, show: string, set: (v: number) => void) => (
@@ -301,7 +318,10 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
           <button type="button" onClick={onClose} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", padding: 0 }}><Icon name="close" size={18} /></button>
         </div>
         <div style={line}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 6 }}>적용 범위 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {a}{a !== b ? ` ~ ${b}` : ""}</span></div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 6 }}>적용 범위 <span style={{ color: C.sub, fontWeight: 600 }}>· 전체 클립 {items.length}개</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontSize: 14 }}>
+            클립 {numBox(na, setNa)} ~ {numBox(nb, setNb)}
+          </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to })}>고른 클립 {selRange.n}개로</Btn>}
             {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id })}>처음부터 끝까지</Btn>}
@@ -322,15 +342,7 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
             {mini("진하기", layer.opacity ?? 1, 0.2, 1, 0.05, `${Math.round((layer.opacity ?? 1) * 100)}%`, (v) => onChange({ opacity: v }))}
           </>
         )}
-        {layer.type === "text" && (
-          <>
-            <div style={line}>
-              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && draft.trim() && onChange({ text: draft.trim() })} onBlur={() => draft.trim() && draft !== layer.text && onChange({ text: draft.trim() })}
-                placeholder="화면에 나올 글" style={{ ...input, height: 36, fontSize: 14 }} />
-            </div>
-            {mini("글자 크기", layer.size ?? 100, 40, 260, 5, `${layer.size ?? 100}%`, (v) => onChange({ size: v }))}
-          </>
-        )}
+        {layer.type === "text" && mini("글자 크기", layer.size ?? 100, 40, 260, 5, `${layer.size ?? 100}%`, (v) => onChange({ size: v }))}
         <div style={{ padding: "8px 12px", display: "flex", alignItems: "center" }}>
           <span style={{ flex: 1, fontSize: 12, color: C.dim }}>자세한 설정은 오른쪽 칸</span>
           <Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />삭제</Btn>

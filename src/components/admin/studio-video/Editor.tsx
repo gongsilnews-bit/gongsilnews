@@ -787,7 +787,9 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [W, H] = project.ratio === "9:16" ? [9, 16] : project.ratio === "4:5" ? [4, 5] : project.ratio === "1:1" ? [1, 1] : project.ratio === "4:3" ? [4, 3] : [16, 9];
   const previewW = Math.round(Math.min(380, (380 * W) / H > 380 ? 380 : 420 * (W / H)));
   // 크게 보기 — 미리보기만 화면 가운데에 크게 (클립 목록 위에 겹쳐서)
-  const bigW = Math.round(Math.min(win.w - 220, ((win.h - 230) * W) / H, 1600));
+  // 오른쪽 설정 칸(속성값)은 가리지 않고 그 왼쪽 자리에 크게
+  const sideW = panel ? 380 : 0;
+  const bigW = Math.round(Math.min(win.w - sideW - 160, ((win.h - 230) * W) / H, 1600));
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg, color: C.text, fontFamily: FONT }}>
@@ -828,11 +830,11 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         <div style={{ width: 412, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, padding: 16, background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto" }}>
           {big && (
             <>
-              <div onClick={() => setBig(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 60 }} />
+              <div onClick={() => setBig(false)} style={{ position: "fixed", top: 0, bottom: 0, left: 0, right: sideW, background: "rgba(0,0,0,0.65)", zIndex: 60 }} />
               <div style={{ height: Math.round((previewW * H) / W), display: "flex", alignItems: "center", justifyContent: "center", background: "#000", borderRadius: 4, color: C.sub, fontSize: 14 }}>크게 보는 중</div>
             </>
           )}
-          <div style={big ? { position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 61, width: bigW + 32, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" } : { display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={big ? { position: "fixed", left: `calc((100vw - ${sideW}px) / 2)`, top: "50%", transform: "translate(-50%, -50%)", zIndex: 61, width: bigW + 32, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" } : { display: "flex", flexDirection: "column", gap: 10 }}>
           {big && (
             <div style={{ display: "flex", alignItems: "center" }}>
               <span style={{ flex: 1, fontSize: 16, fontWeight: 800 }}>크게 보기 <span style={{ fontSize: 13.5, color: C.sub, fontWeight: 600 }}>· 글자·사진을 끌어 옮길 수 있어요 · Esc 로 닫기</span></span>
@@ -859,7 +861,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             <select value={rate} onChange={(e) => setRate(Number(e.target.value))} title="미리보기 빠르기" style={{ height: 34, borderRadius: 5, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT }}>
               {[0.75, 1, 1.25, 1.5, 2].map((r) => <option key={r} value={r}>{r}배</option>)}
             </select>
-            <button type="button" onClick={() => setBig(!big)} title={big ? "작게 보기 (Esc)" : "미리보기를 크게 보기"}
+            <button type="button" onClick={() => { if (!big && !panel && selLayer) setPanel("layer"); setBig(!big); }} title={big ? "작게 보기 (Esc)" : "미리보기를 크게 보기"}
               style={{ height: 34, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, borderRadius: 5, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
               <Icon name="zoom" size={16} />{big ? "작게" : "크게"}
             </button>
