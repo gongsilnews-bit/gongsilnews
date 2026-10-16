@@ -1152,7 +1152,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               many={r ? { a: pos(r.from), b: pos(r.to), n: r.n } : null}
               onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
               onStart={canStart(c) ? () => setStartClip(c.id) : undefined}
-              onRange={(a, b) => clipRange(c.id, a, b)} onRemove={() => clipRemoveVisual(c.id)} onClose={() => setPanel("")} />
+              onRange={(a, b) => clipRange(c.id, a, b)} onRemove={() => clipRemoveVisual(c.id)} onClose={() => openLib("mine")} />
           );
         })()}
         {panel === "layer" && (() => {
