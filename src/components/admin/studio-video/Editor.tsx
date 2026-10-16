@@ -1294,16 +1294,26 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             onClose={() => (musicTarget && (project.layers || []).some((l) => l.id === musicTarget) ? openLayer(musicTarget) : setPanel(""))} />
         )}
         {panel === "source" && (() => {
-          const ids = srcTargets();
-          const c0 = ids.length ? findClip(project, ids[0])?.clip : null;
+          const sel = selected.filter((id) => isSrc(findClip(project, id)?.clip));
+          const all = flat.items.map((x) => x.clip).filter(isSrc).map((c) => c.id);
+          const c0 = findClip(project, sel[0] || all[0] || "")?.clip;
           if (!c0) return null;
           return (
-            <SourcePanel mode={srcMode} selCount={selected.filter((id) => isSrc(findClip(project, id)?.clip)).length || 1} allCount={flat.items.filter((x) => isSrc(x.clip)).length}
-              muted={Boolean(c0.muted)} value={c0.volume ?? 1} speed={srcSpeed(c0)} onMode={setSrcMode}
-              onMute={(v) => srcEach((c) => { c.muted = v || undefined; })}
-              onVolume={(v, first) => srcEach((c) => { c.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
-              onSpeed={(v, first) => srcEach((c) => { c.speed = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
-              onToVoice={() => { setSelected(srcTargets()); setPanel("voice"); }} onClose={() => setPanel("")} />
+            <SourcePanel selCount={sel.length} allCount={all.length} muted={Boolean(c0.muted)} value={c0.volume ?? 1} speed={srcSpeed(c0)}
+              onApply={(o, scope) => {
+                const ids = scope === "all" ? all : sel;
+                change((p) => {
+                  for (const id of ids) {
+                    const c = findClip(p, id)?.clip;
+                    if (!c) continue;
+                    c.muted = o.muted || undefined;
+                    c.volume = Math.abs(o.volume - 1) < 0.001 ? undefined : +o.volume.toFixed(2);
+                    c.speed = Math.abs(o.speed - 1) < 0.001 ? undefined : +o.speed.toFixed(2);
+                  }
+                });
+                say(`원본 소리를 바꿨어요 (클립 ${ids.length}개)`);
+              }}
+              onToVoice={() => { if (!sel.length) setSelected(all); setPanel("voice"); }} onClose={() => setPanel("")} />
           );
         })()}
         {panel === "timing" && (() => {
