@@ -86,6 +86,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
+  // 왼쪽 메뉴 줄이 숨었는지 (관리자 화면이 알려 준다) — 숨었으면 [처음 화면] 옆에 [»]
+  const [railHidden, setRailHidden] = useState(false);
+  useEffect(() => {
+    setRailHidden(Boolean((window as unknown as { __studioRailHidden?: boolean }).__studioRailHidden));
+    const on = (e: Event) => setRailHidden(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("studio:rail-state", on);
+    return () => window.removeEventListener("studio:rail-state", on);
+  }, []);
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
   const [saved, setSaved] = useState("");
@@ -1140,6 +1148,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       `}</style>
       {/* 맨 위 탭 */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, height: 44, padding: "0 12px", background: C.panel, borderBottom: `1px solid ${C.line}` }}>
+        {railHidden && (
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("studio:rail", { detail: false }))} title="왼쪽 메뉴 보이기"
+            style={{ width: 32, height: 32, border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: C.text, fontSize: 17, fontWeight: 800, cursor: "pointer", marginRight: 4 }}>»</button>
+        )}
         <button type="button" onClick={onHome} title="처음 화면" style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", border: 0, borderRadius: 4, background: "transparent", color: C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
           <span style={{ transform: "rotate(180deg)", display: "inline-flex" }}><Icon name="chevron" size={16} /></span>처음 화면
         </button>

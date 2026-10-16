@@ -101,6 +101,24 @@ function RealtyAdminContent() {
   }, [menuParam]);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  // 영상 편집에서 왼쪽 메뉴 줄 숨기기 — 편집 화면 맨 위 [»]가 'studio:rail' 신호로 다시 보이게 한다 (이 기기에 기억)
+  const [railHidden, setRailHidden] = useState(false);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem("studio.railHidden") === "1") setRailHidden(true);
+    } catch {}
+    const on = (e: Event) => setRailHidden(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("studio:rail", on);
+    return () => window.removeEventListener("studio:rail", on);
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem("studio.railHidden", railHidden ? "1" : "0");
+    } catch {}
+    (window as unknown as { __studioRailHidden?: boolean }).__studioRailHidden = railHidden;
+    window.dispatchEvent(new CustomEvent("studio:rail-state", { detail: railHidden }));
+  }, [railHidden]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
@@ -305,6 +323,8 @@ function RealtyAdminContent() {
           appVersion={studioApp.version}
           badges={STUDIO_BADGES}
           autoCollapse={activeMenu === "marketing" || activeMenu === "video"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
+          hidden={activeMenu === "video" && studioApp.isApp && railHidden}
+          onHide={activeMenu === "video" && studioApp.isApp ? () => setRailHidden(true) : undefined}
         />
       ) : (
       /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */

@@ -39,11 +39,14 @@ type Props = {
   badges?: Record<string, string>;
   /** 넓은 작업 화면(공실마케팅의 매물보고서 등)일 때 잠시 아이콘만 남게 접는다 — 기억된 설정은 바꾸지 않는다 */
   autoCollapse?: boolean;
+  /** 영상 편집처럼 화면을 넓게 쓸 때 — 메뉴 줄을 통째로 숨긴다 (다시 보이기는 그 화면의 [»]) */
+  hidden?: boolean;
+  onHide?: () => void;
 };
 
 const COLLAPSE_KEY = "realty_menu_collapsed";
 
-export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false }: Props) {
+export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false, hidden = false, onHide }: Props) {
   const [savedCollapsed, setCollapsed] = useState(false);
   // 자동으로 접힌 동안 [»]를 누르면 그때만 펼친다 (다른 메뉴로 가면 원래 설정으로)
   const [peek, setPeek] = useState(false);
@@ -124,6 +127,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
 
   const plainBtn: React.CSSProperties = { border: "none", background: "transparent", color: "rgba(255,255,255,0.75)", cursor: "pointer", fontFamily: "inherit" };
 
+  if (hidden) return null;
   return (
     <aside style={{ width, background, display: "flex", flexDirection: "column", zIndex: 10, boxShadow: "2px 0 8px rgba(0,0,0,0.12)", flexShrink: 0, transition: "width 0.18s ease" }}>
       <style>{`.studio-nav-btn:not([data-active]):hover{background:rgba(255,255,255,0.10)!important;color:#fff!important}`}</style>
@@ -144,6 +148,12 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
         </button>
       </div>
 
+      {onHide && (
+        <button onClick={onHide} title="메뉴 숨기기 — 편집 화면을 넓게 (다시 보려면 편집 화면 맨 위 [»])" className="studio-nav-btn"
+          style={{ ...plainBtn, height: 36, margin: collapsed ? "8px 8px 0" : "8px 10px 0", borderRadius: 8, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px dashed rgba(255,255,255,0.25)" }}>
+          <span style={{ fontSize: 16 }}>⇤</span>{!collapsed && "메뉴 숨기기"}
+        </button>
+      )}
       <nav style={{ flex: 1, overflowY: "auto", padding: collapsed ? "14px 8px" : "14px 10px", scrollbarWidth: "none" as const }}>
         {!collapsed && <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "1px", padding: "0 12px 8px" }}>업무</div>}
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
