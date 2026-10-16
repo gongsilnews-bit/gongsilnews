@@ -96,7 +96,7 @@ function subtitleStyle(W, H, st) {
 
 /** 클립 하나의 자막 줄들 [{s, e, text}] (클립 시작 = 0) */
 function subtitleLines(clip, dur, settings, W) {
-  const st = settings.subtitle || {};
+  const st = tl.subStyleOf(settings, clip);
   const custom = typeof clip.subText === "string";
   const text = tl.subtitleText(clip).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [];
@@ -273,11 +273,11 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   // 자막 + 화면 글자 애셋
   const lines = subtitleLines(clip, dur, st, W);
   // 미리보기에서 끌어 옮긴 자막은 그 자리(가운데 기준)에
-  const sst = st.subtitle || {};
+  const sst = tl.subStyleOf(st, clip);
   const subPos = typeof sst.x === "number" && typeof sst.y === "number" ? `{\\an5\\pos(${Math.round(sst.x * W)},${Math.round(sst.y * H)})}` : "";
   const texts = layers.filter((l) => l.type === "text" && String(l.text || "").trim());
   if (lines.length || texts.length) {
-    const styles = [subtitleStyle(W, H, st.subtitle || {}).style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
+    const styles = [subtitleStyle(W, H, sst).style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
     const events = [
       ...lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${subPos}${assEsc(l.text)}`),
       // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
@@ -358,7 +358,8 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(tmp, "fonts", f));
   }
   // 자막·화면 글자에 쓴 글꼴 (처음이면 받는다)
-  await fonts.copyTo([p.settings && p.settings.subtitle && p.settings.subtitle.font, ...(p.layers || []).filter((l) => l.type === "text").map((l) => l.font)], path.join(tmp, "fonts"));
+  const clipFonts = (p.scenes || []).flatMap((sc) => (sc.clips || []).map((c) => c.subStyle && c.subStyle.font)).filter(Boolean);
+  await fonts.copyTo([p.settings && p.settings.subtitle && p.settings.subtitle.font, ...clipFonts, ...(p.layers || []).filter((l) => l.type === "text").map((l) => l.font)], path.join(tmp, "fonts"));
   const enc = await ff.encoder();
   const t0 = Date.now();
   try {

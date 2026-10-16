@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } from "./types";
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
-import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, wordTimes } from "./timeline";
+import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
 import MediaMenu, { type MediaFit, type MediaOrder } from "./MediaMenu";
 import VideoStart from "./VideoStart";
 import Player, { type PlayerHandle } from "./Player";
@@ -94,6 +94,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [selLayer, setSelLayer] = useState("");
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
+  const [subMode, setSubMode] = useState<"all" | "sel">("all"); // 메인자막 서식 적용 범위
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
@@ -635,6 +636,27 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       delete c.pad;
     }
   });
+  /* ── 메인자막 서식 — 전체 / 고른 클립만 ── */
+  const subSel = subMode === "sel" && selected.length > 0;
+  /** 서식 바꾸기 — 고른 클립만이면 그 클립들에 바꾼 항목만 따로 (값이 undefined 면 그 항목을 지운다) */
+  const applySub = (patch: Partial<Project["settings"]["subtitle"]>, history = true) => change((p) => {
+    if (!subSel) {
+      p.settings.subtitle = { ...p.settings.subtitle, ...patch };
+      return;
+    }
+    for (const id of selected) {
+      const c = findClip(p, id)?.clip;
+      if (!c) continue;
+      const o: Record<string, unknown> = { ...(c.subStyle || {}) };
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === undefined) delete o[k];
+        else o[k] = v;
+      }
+      c.subStyle = Object.keys(o).length ? (o as Clip["subStyle"]) : undefined;
+    }
+  }, history);
+  /** 지금 서식 (고른 클립만이면 처음 고른 클립 것) */
+  const subNow = () => (subSel ? subStyleOf(project.settings, findClip(project, selected[0])?.clip) : project.settings.subtitle);
   const clipRemoveVisual = (id: string) => {
     change((p) => {
       const c = findClip(p, id)?.clip;
@@ -984,14 +1006,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     서식: [
       { icon: "font", label: "메인자막 서식 열기", onClick: () => setPanel("subtitle") },
       "|",
-      { icon: "zoom", label: "글자 크게", onClick: () => change((p) => { p.settings.subtitle.size = Math.min(170, p.settings.subtitle.size + 10); }) },
-      { icon: "zoom", label: "글자 작게", onClick: () => change((p) => { p.settings.subtitle.size = Math.max(60, p.settings.subtitle.size - 10); }) },
+      { icon: "zoom", label: "글자 크게", onClick: () => applySub({ size: Math.min(260, (subNow().size || 100) + 10) }) },
+      { icon: "zoom", label: "글자 작게", onClick: () => applySub({ size: Math.max(40, (subNow().size || 100) - 10) }) },
       "|",
-      { icon: "sub", label: "위치: 하단", onClick: () => change((p) => { p.settings.subtitle.position = "bottom"; }) },
-      { icon: "sub", label: "위치: 중단", onClick: () => change((p) => { p.settings.subtitle.position = "middle"; }) },
-      { icon: "sub", label: "위치: 상단", onClick: () => change((p) => { p.settings.subtitle.position = "top"; }) },
+      { icon: "sub", label: "위치: 하단", onClick: () => applySub({ position: "bottom", x: undefined, y: undefined }) },
+      { icon: "sub", label: "위치: 중단", onClick: () => applySub({ position: "middle", x: undefined, y: undefined }) },
+      { icon: "sub", label: "위치: 상단", onClick: () => applySub({ position: "top", x: undefined, y: undefined }) },
       "|",
-      { icon: "bg", label: project.settings.subtitle.bg ? "검은 상자 빼기" : "검은 상자 넣기", onClick: () => change((p) => { p.settings.subtitle.bg = !p.settings.subtitle.bg; }) },
+      { icon: "bg", label: subNow().bg ? "검은 상자 빼기" : "검은 상자 넣기", onClick: () => applySub({ bg: !subNow().bg }) },
     ],
     삽입: [
       { icon: "text", label: "글 클립 넣기", onClick: () => setDialog("addText") },
@@ -1121,7 +1143,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                 else { setVisualClip(id); setPanel("visual"); }
               }}
               onVisualMove={(id, box, first) => change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box; }, first)}
-              onSubMove={(patch, first) => change((p) => { Object.assign(p.settings.subtitle, patch); }, first)}
+              onSubMove={(patch, first) => applySub(patch, first)}
               onLayerMove={(id, patch, first) => change((p) => {
                 const l = (p.layers || []).find((x) => x.id === id);
                 if (l) Object.assign(l, patch);
@@ -1209,8 +1231,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           // 이 클립 자막 — 고른 클립(하나)이 있으면 그것, 없으면 지금 재생 위치 클립
           const it = (selected.length === 1 && flat.items.find((x) => x.clip.id === selected[0])) || cur;
           const sc = it ? { id: it.clip.id, n: flat.items.indexOf(it) + 1, text: typeof it.clip.subText === "string" ? it.clip.subText : clipText(it.clip), custom: typeof it.clip.subText === "string" } : null;
-          return <SubtitlePanel settings={project.settings} onChange={(patch) => change((p) => { p.settings.subtitle = { ...p.settings.subtitle, ...patch }; })} onClose={() => setPanel("")}
-            clip={sc} onSubText={(id, t) => actions.editSub(id, t)} />;
+          const own = flat.items.filter((x) => x.clip.subStyle && Object.keys(x.clip.subStyle).length).length;
+          return <SubtitlePanel settings={project.settings} onChange={(patch) => applySub(patch)} onClose={() => setPanel("")}
+            clip={sc} onSubText={(id, t) => actions.editSub(id, t)}
+            range={{ mode: subSel ? "sel" : "all", selCount: selected.length, own, style: subNow(), onMode: setSubMode,
+              onReset: () => { change((p) => { for (const id of selected) { const c = findClip(p, id)?.clip; if (c) delete c.subStyle; } }); say("고른 클립 자막을 전체 서식으로 되돌렸어요"); } }} />;
         })()}
         {panel === "ratio" && <RatioPanel ratio={project.ratio} fill={project.settings.fill} onRatio={(r: Ratio) => change((p) => { p.ratio = r; })} onFill={(f) => change((p) => { p.settings.fill = f; })} onClose={() => setPanel("")} />}
         {panel === "music" && (

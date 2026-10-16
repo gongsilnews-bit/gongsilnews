@@ -41,6 +41,7 @@ export type Clip = {
   muted?: boolean;
   volume?: number;
   sub?: boolean;
+  subStyle?: Partial<SubtitleSettings>; // 이 클립만 따로 바꾼 메인자막 서식 (바꾼 항목만, 나머지는 전체 서식)
   subText?: string; // 자막만 따로 쓴 글 (말소리·목소리는 그대로). 무음 클립에도 자막을 넣을 수 있다
   del?: boolean;
   hint?: { desc?: string; keywords?: string; kind?: string };

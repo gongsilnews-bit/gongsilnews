@@ -27,6 +27,19 @@ function keepRanges(clip) {
 
 const speedOf = (clip, settings) => Number(clip.speed || (settings && settings.voice && settings.voice.speed) || 1) || 1;
 
+/** 클립의 메인자막 서식 — 전체 위에 이 클립만 따로 바꾼 항목 (timeline.ts subStyleOf 와 같음) */
+function subStyleOf(settings, clip) {
+  const base = (settings && settings.subtitle) || {};
+  const o = clip && clip.subStyle;
+  if (!o || !Object.keys(o).length) return base;
+  const m = { ...base, ...o };
+  if ("position" in o && !("x" in o)) {
+    delete m.x;
+    delete m.y;
+  }
+  return m;
+}
+
 /** 촬영 클립 빠르기 (영상·소리 같이). 목소리 클립은 1 */
 const srcSpeed = (clip) => (clip.type === "voice" ? 1 : Math.max(0.1, Math.min(20, Number(clip.speed) || 1)));
 
@@ -139,4 +152,4 @@ function musicLayers(p, items) {
 /** 자막에 쓸 글 — 자막만 따로 쓴 글이 있으면 그것 */
 const subtitleText = (clip) => (typeof clip.subText === "string" ? clip.subText : clipText(clip));
 
-module.exports = { srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, musicLayers, subtitleText };
+module.exports = { subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, musicLayers, subtitleText };

@@ -252,6 +252,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         </button>
         {c.type === "voice" && speedOf(c, project.settings) !== 1 && <span style={{ fontSize: 12, color: C.dim }}>빠르기 {speedOf(c, project.settings)}배</span>}
         {c.type !== "voice" && srcSpeed(c) !== 1 && <span style={{ fontSize: 12, color: C.dim }}>빠르기 {srcSpeed(c)}배</span>}
+        {c.subStyle && Object.keys(c.subStyle).length > 0 && <span title="이 클립은 메인자막 서식을 따로 바꿨어요" style={{ fontSize: 11.5, fontWeight: 700, color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 4, padding: "0 5px" }}>자막 따로</span>}
       </div>
     </div>
   );

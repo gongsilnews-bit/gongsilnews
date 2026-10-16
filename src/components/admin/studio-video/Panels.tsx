@@ -377,20 +377,37 @@ export function VoicePanel({ project, targetCount, onApply, onClose }: { project
 }
 
 /* ── 메인자막 (자막 서식) ── */
-export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText }: {
+export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, range }: {
   settings: Settings;
   onChange: (patch: Partial<Settings["subtitle"]>) => void;
   onClose: () => void;
   /** 이 클립 자막 글 — 고르거나 재생 중인 클립 */
   clip?: { id: string; n: number; text: string; custom: boolean } | null;
   onSubText?: (clipId: string, text: string | null) => void;
+  /** 적용 범위 — all: 전체 클립 / sel: 고른 클립만 (selCount 개). style = 지금 보여 줄 서식 */
+  range?: { mode: "all" | "sel"; selCount: number; own: number; style: Settings["subtitle"]; onMode: (m: "all" | "sel") => void; onReset: () => void };
 }) {
-  const s = settings.subtitle;
+  const s = range ? range.style : settings.subtitle;
   const [draft, setDraft] = useState(clip?.text || "");
   useEffect(() => setDraft(clip?.text || ""), [clip?.id, clip?.text]);
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` };
   return (
     <Side title="메인자막" onClose={onClose}>
+      {range && (
+        <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 8, background: range.mode === "sel" ? C.accentDim : undefined }}>
+          <span style={label}>적용 범위</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button type="button" onClick={() => range.onMode("all")} style={{ ...chip(range.mode === "all"), flex: 1 }}>전체 클립</button>
+            <button type="button" onClick={() => range.onMode("sel")} disabled={!range.selCount} title={range.selCount ? "" : "클립을 먼저 골라 주세요 (카드 왼쪽 네모 칸)"}
+              style={{ ...chip(range.mode === "sel"), flex: 1, opacity: range.selCount ? 1 : 0.4, cursor: range.selCount ? "pointer" : "default" }}>고른 클립만{range.selCount ? ` (${range.selCount}개)` : ""}</button>
+          </div>
+          <span style={{ fontSize: 12.5, color: range.mode === "sel" ? C.text : C.dim, lineHeight: 1.5 }}>
+            {range.mode === "sel" ? `아래에서 바꾸는 서식은 고른 클립 ${range.selCount}개에만 들어가요. 미리보기에서 끌어 옮기는 것도요.` : "아래에서 바꾸는 서식은 영상 전체 자막에 들어가요."}
+            {range.own > 0 && range.mode === "all" ? ` 따로 바꾼 클립 ${range.own}개는 바꾼 항목만 그대로예요.` : ""}
+          </span>
+          {range.mode === "sel" && <div><Btn small onClick={range.onReset}><Icon name="undo" size={15} />전체 서식으로 되돌리기</Btn></div>}
+        </div>
+      )}
       {clip && onSubText && (
         <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
           <span style={label}>이 클립 자막 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {clip.n}</span></span>

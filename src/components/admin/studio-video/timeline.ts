@@ -1,5 +1,5 @@
 // 클립 길이·남길 구간·단어 시각 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 완성 영상). 둘을 같이 고친다.
-import type { Clip, Layer, Project, Settings } from "./types";
+import type { Clip, Layer, Project, Settings, SubtitleSettings } from "./types";
 
 export const GAP = 0.12;
 
@@ -125,9 +125,25 @@ export function wrap(text: string, max: number) {
   return lines;
 }
 
+/**
+ * 클립의 메인자막 서식 — 전체 서식 위에 이 클립만 따로 바꾼 항목을 덮는다 (render.js 와 같음).
+ * 따로 위치(상단·하단…)를 골랐으면 전체의 옮긴 자리(x·y)는 쓰지 않는다
+ */
+export function subStyleOf(settings: Settings, clip?: Clip | null): SubtitleSettings {
+  const base = settings.subtitle;
+  const o = clip?.subStyle;
+  if (!o || !Object.keys(o).length) return base;
+  const m = { ...base, ...o };
+  if ("position" in o && !("x" in o)) {
+    delete m.x;
+    delete m.y;
+  }
+  return m;
+}
+
 /** 클립 하나의 자막 줄들 (render.js subtitleLines 와 같음) */
 export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: number) {
-  const st = settings.subtitle;
+  const st = subStyleOf(settings, clip);
   const custom = typeof clip.subText === "string";
   const text = (custom ? clip.subText! : clipText(clip)).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [] as { s: number; e: number; text: string }[];

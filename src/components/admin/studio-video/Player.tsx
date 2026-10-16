@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, srcSpeed, subtitleLines } from "./timeline";
+import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
@@ -319,7 +319,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   useEffect(() => () => stop(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 자막
-  const st = project.settings.subtitle;
+  const st = subStyleOf(project.settings, clip);
   const lines = clip && item ? subtitleLines(clip, item.dur, project.settings, W) : [];
   const line = lines.find((l) => local >= l.s && local < l.e + 0.001) || null;
   const fontPx = Math.min(W, H) * 0.062 * ((st.size || 100) / 100) * k;
@@ -327,7 +327,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     st.position === "top" ? { top: H * 0.08 * k } : st.position === "middle" ? { top: "50%", transform: "translateY(-50%)" } : st.position === "middle-low" ? { bottom: H * 0.24 * k } : { bottom: H * 0.07 * k };
 
   // 쓰인 글꼴을 받아 둔다 (처음 한 번)
-  useFonts([project.settings.subtitle.font, ...(project.layers || []).filter((l) => l.type === "text").map((l) => l.font)]);
+  useFonts([project.settings.subtitle.font, ...project.scenes.flatMap((sc) => sc.clips.map((c) => c.subStyle?.font)), ...(project.layers || []).filter((l) => l.type === "text").map((l) => l.font)]);
   // 지금 클립에 걸린 사진·화면 글자 애셋 (굽기와 같은 자리·크기)
   const over = clip ? layersAt(project, clip.id, order) : [];
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
