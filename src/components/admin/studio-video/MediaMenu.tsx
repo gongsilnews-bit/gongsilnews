@@ -174,11 +174,15 @@ export default function MediaMenu(p: Props) {
 }
 
 /** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
-export function SoundMenu({ title, x, y, count, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose }: {
+export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose }: {
   title: string;
   x: number;
   y: number;
   count: number; // 적용되는 클립 수
+  scope: "sel" | "all"; // 적용 범위 — 이 클립(고른 클립) / 모든 클립
+  selCount: number;
+  allCount: number;
+  onScope: (s: "sel" | "all") => void;
   muted: boolean;
   value: number;
   speed: number;
@@ -202,7 +206,13 @@ export function SoundMenu({ title, x, y, count, muted, value, speed, onMute, onV
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 69 }} />
       <div onClick={(e) => e.stopPropagation()}
         style={{ position: "fixed", left, top, zIndex: 70, width: W, padding: 12, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
-        <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}{count > 1 ? ` · 고른 클립 ${count}개` : ""}</div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>적용 범위</div>
+        <div style={{ display: "flex", gap: 5, marginBottom: 4 }}>
+          <button type="button" onClick={() => onScope("sel")} style={{ ...chipS(scope === "sel"), height: 30 }}>{selCount > 1 ? `고른 클립 ${selCount}개` : "이 클립에만"}</button>
+          <button type="button" onClick={() => onScope("all")} style={{ ...chipS(scope === "all"), height: 30 }}>모든 클립 ({allCount}개)</button>
+        </div>
+        <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 10 }}>아래에서 바꾸면 클립 {count}개에 들어가요.</div>
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>볼륨</div>
         <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
         <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>빠르기 <span style={{ color: C.sub, fontWeight: 600 }}>{+speed.toFixed(2)}배</span></div>

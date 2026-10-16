@@ -1352,11 +1352,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       {soundPop && (() => {
         const c = findClip(project, soundPop.id)?.clip;
         if (!c) return null;
-        const ids = selected.length > 1 && selected.includes(c.id) ? selected : [c.id];
-        const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
         const isVoice = c.type === "voice";
+        // 모든 클립 = 같은 종류(AI 목소리 / 원본 소리) 클립 모두
+        const same = flat.items.map((x) => x.clip).filter((x) => (isVoice ? x.type === "voice" : isSrc(x))).map((x) => x.id);
+        const sel = selected.length > 1 && selected.includes(c.id) ? selected : [c.id];
+        const ids = srcMode === "all" ? same : sel;
+        const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
         const sp = isVoice ? speedOf(c, project.settings) : srcSpeed(c);
-        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length}
+        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length} scope={srcMode} selCount={sel.length} allCount={same.length} onScope={setSrcMode}
           muted={Boolean(c.muted)} value={c.volume ?? 1} speed={sp}
           onMute={(v) => each((x) => { x.muted = v || undefined; })}
           onVolume={(v, first) => each((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
