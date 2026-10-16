@@ -3,8 +3,8 @@
 // 편집 화면 — 브루와 같은 짜임: 맨 위 탭 + 리본, 왼쪽 미리보기, 가운데 클립 목록, 오른쪽 자료·설정 칸
 // 진짜 편집이 되면서 어르신도 쉽게: 모든 기능을 눈에 보이는 단추로, 되돌리기, 자동 저장
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene } from "./types";
-import { errText, fmtTime, uid, videoBridge } from "./types";
+import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } from "./types";
+import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
 import { clipOrder, clipText, flatten, layersAt, splitScript, wordTimes } from "./timeline";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { type ClipActions } from "./ClipList";
@@ -566,13 +566,25 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       say(`화면을 바꿨어요 (클립 ${selected.length}개)`);
       return;
     }
-    // 넣기 — 말소리 있는 영상은 받아써서 클립으로, 사진·소리 없는 영상은 화면 클립으로
+    await placeMedia(a, lastSelected(), false);
+  };
+
+  /** 자료를 클립으로 넣기 — 말소리 있는 영상은 받아써서 클립으로, 사진·소리 없는 영상은 화면 클립으로 (refId 앞/뒤, 없으면 끝) */
+  const insertAt = (clips: Clip[], refId: string | undefined, before: boolean) => {
+    if (!before) return insertAfter(clips, refId);
+    change((p) => {
+      const f = refId ? findClip(p, refId) : null;
+      if (f) f.scene.clips.splice(f.idx, 0, ...clips);
+      else p.scenes[p.scenes.length - 1].clips.push(...clips);
+    });
+  };
+  const placeMedia = async (a: Asset, refId: string | undefined, before: boolean) => {
     if (a.kind === "video" && a.hasAudio) {
       setWork({ title: "영상 속 말소리를 글로 바꾸는 중…" });
       const off = b.onProgress((t, f) => setWork({ title: t, frac: typeof f === "number" ? f : null }));
       try {
         const r = await b.transcribe(pref.current, a.id);
-        insertAfter(r.clips, lastSelected());
+        insertAt(r.clips, refId, before);
         say(`영상을 넣었어요 (클립 ${r.clips.length}개)`);
       } catch (e) {
         say(errText(e));
@@ -583,9 +595,55 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       return;
     }
     const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: { asset: a.id, s: 0 }, hold: a.kind === "video" ? Math.min(10, a.duration || 5) : 3 };
-    insertAfter([clip], lastSelected());
+    insertAt([clip], refId, before);
     setSelected([clip.id]);
     say("화면 클립을 넣었어요. 글을 쓰면 AI 목소리로 읽어요");
+  };
+
+  /* ── 오른쪽 자료 칸에서 끌어 놓기 ── */
+  const dropItem = async (raw: string): Promise<LibItem | null> => {
+    try {
+      const d = JSON.parse(raw) as { lib?: LibItem; stock?: StockItem };
+      if (d.lib) return d.lib;
+      if (d.stock) {
+        setWork({ title: "무료 자료를 PC로 받는 중…" });
+        try {
+          return await b.stock.get(pref.current.dir, d.stock);
+        } finally {
+          setWork(null);
+        }
+      }
+    } catch (e) {
+      say(errText(e));
+    }
+    return null;
+  };
+  const onDropMedia = async (clipId: string, where: "before" | "after" | "replace", raw: string) => {
+    const item = await dropItem(raw);
+    if (!item) return;
+    const a = await ensureAsset(item);
+    if (where === "replace") {
+      change((p) => {
+        const c = findClip(p, clipId)?.clip;
+        if (c) c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
+      });
+      setSelected([clipId]);
+      say("이 클립 화면을 바꿨어요");
+    } else await placeMedia(a, clipId, where === "before");
+  };
+  /** 미리보기에 놓으면 그 자리에 사진 올리기 */
+  const onDropPreview = async (e: React.DragEvent<HTMLDivElement>) => {
+    const raw = e.dataTransfer.getData(DRAG_MEDIA);
+    if (!raw) return;
+    e.preventDefault();
+    const box = (e.currentTarget.firstElementChild as HTMLElement | null)?.getBoundingClientRect();
+    const x = box ? Math.max(0, Math.min(1, (e.clientX - box.left) / box.width)) : 0.5;
+    const y = box ? Math.max(0, Math.min(1, (e.clientY - box.top) / box.height)) : 0.5;
+    const item = await dropItem(raw);
+    if (!item) return;
+    if (item.kind !== "image") return say("화면 위에는 사진만 올릴 수 있어요. 영상은 클립 목록에 놓아 주세요");
+    const a = await ensureAsset(item);
+    addLayer({ type: "image", asset: a.id, name: a.name, x: +x.toFixed(4), y: +y.toFixed(4), w: 0.3, opacity: 1 }, false);
   };
 
   /* ── 글 클립 넣기 ── */
@@ -841,7 +899,8 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
               <button type="button" onClick={() => setBig(false)} title="작게 보기 (Esc)" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer" }}><Icon name="close" size={22} /></button>
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "center", background: "#000", borderRadius: 4 }}>
+          <div style={{ display: "flex", justifyContent: "center", background: "#000", borderRadius: 4 }}
+            onDragOver={(e) => { if (e.dataTransfer.types.includes(DRAG_MEDIA)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } }} onDrop={onDropPreview}>
             <Player ref={player} project={project} width={big ? bigW : previewW} onTime={setTime} onPlaying={setPlaying} previewRate={rate}
               selLayer={panel === "layer" ? selLayer : ""} onLayerPick={openLayer}
               onLayerMove={(id, patch, first) => change((p) => {
@@ -910,7 +969,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             </div>
           )}
           <div ref={listRef} style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
-            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} />
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} />
           </div>
         </div>
 

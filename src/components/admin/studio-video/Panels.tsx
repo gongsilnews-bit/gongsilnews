@@ -3,7 +3,7 @@
 // 오른쪽 칸 — 자료 고르기(내 자료·공실 사진·무료 자료·AI 그림·자료 창고) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
 import React, { useEffect, useRef, useState } from "react";
 import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
-import { RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
+import { DRAG_MEDIA, RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
@@ -150,6 +150,12 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
         const dur = "duration" in it && it.duration ? it.duration : 0;
         return (
           <button type="button" key={it.id} onClick={() => onClick(it)} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
+            draggable title="눌러서 고르기 · 클립 목록이나 미리보기로 끌어다 놓기"
+            onDragStart={(e) => {
+              setHover(null);
+              e.dataTransfer.setData(DRAG_MEDIA, JSON.stringify("ready" in it ? { lib: it } : { stock: it }));
+              e.dataTransfer.effectAllowed = "copy";
+            }}
             style={{ position: "relative", aspectRatio: "16 / 10", padding: 0, borderRadius: 4, overflow: "hidden", border: `2px solid ${on ? C.accent : "transparent"}`, background: "#000", cursor: "pointer" }}>
             {it.thumb ? <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 12 }}>준비 중</span>}
             {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{dur ? fmtTime(dur, false) : "영상"}</span>}

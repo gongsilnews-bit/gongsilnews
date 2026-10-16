@@ -193,3 +193,6 @@ export const rgba = (hex: string | undefined, a: number) => {
   const n = parseInt(m ? m[1] : "000000", 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Math.max(0, Math.min(1, a))})`;
 };
+
+/** 오른쪽 자료 칸에서 끌어 놓기 — dataTransfer 종류 이름 */
+export const DRAG_MEDIA = "application/x-gsv-media";

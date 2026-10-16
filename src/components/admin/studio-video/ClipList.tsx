@@ -4,7 +4,7 @@
 // 어르신도 쉽게: 고른 카드·단어 아래에 할 수 있는 일을 단추로 늘 보여 준다 (숨은 기능 없음)
 import React from "react";
 import type { Clip, Project, Word } from "./types";
-import { fmtTime } from "./types";
+import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, wordTimes } from "./timeline";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
@@ -39,6 +39,8 @@ type Props = {
   lanes: { entries: LaneEntry[]; lanes: number };
   selLayer: string;
   onLayerDrag: LayerDrag;
+  /** 자료 칸에서 끌어 놓기 — before/after: 그 자리에 새 클립, replace: 그 클립 화면 바꾸기 */
+  onDropMedia?: (clipId: string, where: "before" | "after" | "replace", raw: string) => void;
 };
 
 const voiceName = (id?: string) => STUDIO_VOICES.find((v) => v.id === id)?.name || "AI 목소리";
@@ -208,6 +210,32 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
 
 export default function ClipList(p: Props) {
   const { project } = p;
+  const [drop, setDrop] = React.useState<{ id: string; where: "before" | "after" | "replace" } | null>(null);
+  const dropProps = (id: string) =>
+    p.onDropMedia
+      ? {
+          onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+            if (!e.dataTransfer.types.includes(DRAG_MEDIA)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            const r = e.currentTarget.getBoundingClientRect();
+            const f = (e.clientY - r.top) / Math.max(1, r.height);
+            const where = f < 0.25 ? "before" : f > 0.75 ? "after" : "replace";
+            if (!drop || drop.id !== id || drop.where !== where) setDrop({ id, where });
+          },
+          onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop((d) => (d && d.id === id ? null : d));
+          },
+          onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+            const raw = e.dataTransfer.getData(DRAG_MEDIA);
+            const where = drop && drop.id === id ? drop.where : "replace";
+            setDrop(null);
+            if (!raw) return;
+            e.preventDefault();
+            p.onDropMedia!(id, where, raw);
+          },
+        }
+      : {};
   let n = 0;
   const byId = new Map(p.items.map((x) => [x.clip.id, x]));
   return (
@@ -231,7 +259,18 @@ export default function ClipList(p: Props) {
             {its.map((it) => (
               <div key={it.clip.id} data-row={it.clip.id} style={{ display: "flex" }}>
                 <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={it.index} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
-                <div style={{ flex: 1, minWidth: 0 }}><ClipCard project={project} it={it} n={++n} p={p} /></div>
+                <div style={{ flex: 1, minWidth: 0, position: "relative" }} {...dropProps(it.clip.id)}>
+                  <ClipCard project={project} it={it} n={++n} p={p} />
+                  {drop?.id === it.clip.id && (drop.where === "replace" ? (
+                    <div style={{ position: "absolute", inset: "6px 0", border: `2px solid ${C.accent}`, borderRadius: 8, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59,130,246,0.12)" }}>
+                      <span style={{ padding: "6px 12px", borderRadius: 5, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800 }}>여기 놓으면 이 클립 화면을 바꿔요</span>
+                    </div>
+                  ) : (
+                    <div style={{ position: "absolute", left: 0, right: 0, [drop.where === "before" ? "top" : "bottom"]: 1, height: 4, borderRadius: 2, background: C.accent, pointerEvents: "none" }}>
+                      <span style={{ position: "absolute", left: 8, top: -12, padding: "2px 8px", borderRadius: 4, background: C.accent, color: "#fff", fontSize: 12.5, fontWeight: 800 }}>{drop.where === "before" ? "이 클립 앞에 넣기" : "이 클립 뒤에 넣기"}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
             {its.length > 0 && (
