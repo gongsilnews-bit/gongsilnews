@@ -115,6 +115,40 @@ export function Btn({ children, onClick, primary, disabled, small, title, style,
   );
 }
 
+/**
+ * 클립 소리 — 무음 켜고 끄기 + 크기(0~200%). 한 번 끄는 동안은 되돌리기 한 번 (first)
+ * 미리보기는 100%까지만 크게 들리고, 내보낸 영상에는 200%까지 들어간다
+ */
+export function VolumeControl({ muted, value, onMute, onVolume }: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void }) {
+  const first = React.useRef(true);
+  const pct = Math.round(value * 100);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Icon name={muted ? "mute" : "volume"} size={17} color={muted ? C.danger : C.text} />
+        <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>무음</span>
+        <Toggle on={muted} onChange={onMute} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: muted ? 0.4 : 1 }}>
+        <input type="range" min={0} max={2} step={0.05} value={value} disabled={muted}
+          onPointerDown={() => (first.current = true)}
+          onChange={(e) => { onVolume(Number(e.target.value), first.current); first.current = false; }}
+          style={{ flex: 1, accentColor: C.accent }} />
+        <span style={{ width: 46, textAlign: "right", fontSize: 13.5, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{pct}%</span>
+      </div>
+      <div style={{ display: "flex", gap: 6, opacity: muted ? 0.4 : 1 }}>
+        {[0.5, 1, 1.5, 2].map((v) => (
+          <button key={v} type="button" disabled={muted} onClick={() => onVolume(v, true)}
+            style={{ flex: 1, height: 28, borderRadius: 5, border: `1px solid ${Math.abs(value - v) < 0.01 ? C.accent : C.line2}`, background: Math.abs(value - v) < 0.01 ? C.accentDim : "transparent", color: C.text, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: muted ? "default" : "pointer" }}>
+            {Math.round(v * 100)}%
+          </button>
+        ))}
+      </div>
+      {pct > 100 && !muted && <div style={{ fontSize: 12, color: C.dim }}>100%보다 크게 한 소리는 내보낸 영상에서 들려요 (미리보기는 100%까지).</div>}
+    </div>
+  );
+}
+
 export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button type="button" onClick={() => !disabled && onChange(!on)} aria-pressed={on}

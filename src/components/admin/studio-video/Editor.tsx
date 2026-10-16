@@ -573,6 +573,16 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   /** 영상 화면이면 시작점을 고를 수 있다 (촬영 원본 그대로인 클립은 빼고) */
   const canStart = (c: Clip) => Boolean(c.visual && project.assets[c.visual.asset]?.kind === "video" && !(c.src && c.src.asset === c.visual.asset));
+  /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
+  const soundOf = (c: Clip) =>
+    c.type !== "voice" && c.src && project.assets[c.src.asset]?.hasAudio
+      ? {
+          muted: Boolean(c.muted),
+          value: c.volume ?? 1,
+          onMute: (v: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.muted = v || undefined; }),
+          onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first),
+        }
+      : undefined;
   const clipRemoveVisual = (id: string) => {
     change((p) => {
       const c = findClip(p, id)?.clip;
@@ -1151,7 +1161,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             <VisualPanel key={c.id} project={project} clip={c} n={i + 1} total={flat.items.length} cur={i + 1}
               many={r ? { a: pos(r.from), b: pos(r.to), n: r.n } : null}
               onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
-              onStart={canStart(c) ? () => setStartClip(c.id) : undefined}
+              onStart={canStart(c) ? () => setStartClip(c.id) : undefined} sound={soundOf(c)}
               onRange={(a, b) => clipRange(c.id, a, b)} onRemove={() => clipRemoveVisual(c.id)} onClose={() => openLib("mine")} />
           );
         })()}
@@ -1188,7 +1198,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             fit={c.fill || project.settings.fill} fits={["contain", "cover", "blur"]} flipX={c.flipX} flipY={c.flipY}
             range={{ a: n, b: n, cur: n, total }} canRemove={Boolean(c.visual)}
             onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
-            onStart={canStart(c) ? () => setStartClip(c.id) : undefined}
+            onStart={canStart(c) ? () => setStartClip(c.id) : undefined} sound={soundOf(c)}
             onRange={(x, y) => clipRange(c.id, x, y)} onRemove={() => clipRemoveVisual(c.id)} onClose={close} />;
         }
         const l = (project.layers || []).find((x) => x.id === media.id);

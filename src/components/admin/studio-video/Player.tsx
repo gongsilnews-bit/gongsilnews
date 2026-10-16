@@ -166,6 +166,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           if (a.paused) a.play().catch(() => {});
         } else a.pause();
       } else if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted) {
+        a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
         const target = sourceTimeAt(c, loc);
         if (force || Math.abs(a.currentTime - target) > 0.3) {
           try {

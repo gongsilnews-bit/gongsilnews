@@ -3,7 +3,7 @@
 // 사진·영상 메뉴 — 브루처럼 클립 화면 썸네일이나 사진 올리기 아이콘을 누르면 바로 옆에 뜬다.
 // 채우기·반전·교체·적용 범위·순서·삭제. 항목에 마우스를 올리면 옆에 설명이 뜬다
 import React from "react";
-import { C, FONT, Icon, input } from "./ui";
+import { C, FONT, Icon, VolumeControl, input } from "./ui";
 
 export type MediaFit = "free" | "contain" | "cover" | "blur";
 export type MediaOrder = "top" | "up" | "down" | "bottom";
@@ -33,6 +33,8 @@ type Props = {
   onFlip: (axis: "x" | "y") => void;
   onReplace: () => void;
   onStart?: () => void; // 비디오 시작점 변경 (영상일 때만)
+  /** 클립 소리 (원본 소리가 있는 영상 클립만) */
+  sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void };
   onRange: (a: number, b: number) => void;
   onOrder?: (o: MediaOrder) => void;
   onRemove: () => void;
@@ -42,7 +44,7 @@ type Props = {
 type Item = { icon: string; label: string; desc: string; on?: boolean; off?: boolean; sub?: boolean; danger?: boolean; run: () => void };
 
 export default function MediaMenu(p: Props) {
-  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order">("");
+  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume">("");
   const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
   const [na, setNa] = React.useState(String(p.range.a));
   const [nb, setNb] = React.useState(String(p.range.b));
@@ -75,6 +77,7 @@ export default function MediaMenu(p: Props) {
       { icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") },
       { icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") },
       ...(p.onStart ? [{ icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
+      ...(p.sound ? [{ icon: p.sound.muted ? "mute" : "volume", label: "볼륨 조절", desc: "이 클립의 소리를 끄거나 크게·작게 해요", sub: true, run: go("volume") }] : []),
       { icon: "swap", label: "교체", desc: `다른 사진·영상으로 바꿔요. 채우기·반전·범위는 그대로예요`, run: done(p.onReplace) },
       { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : "이 사진이 몇 번 클립부터 몇 번 클립까지 나올지 정해요", sub: true, run: go("range") },
       ...(p.kind === "layer" ? [{ icon: "layers", label: "순서", desc: "사진이 여러 장 겹칠 때 어느 사진을 위에 둘지 정해요", sub: true, off: !p.order?.up && !p.order?.down, run: go("order") }] : []),
@@ -96,6 +99,8 @@ export default function MediaMenu(p: Props) {
       { icon: "range", label: "처음부터 현재 클립까지", desc: `클립 1번부터 ${cur}번까지`, run: done(() => p.onRange(1, cur)) },
       { icon: "range", label: "현재 클립부터 끝까지", desc: `클립 ${cur}번부터 ${total}번까지`, run: done(() => p.onRange(cur, total)) },
     ];
+  } else if (page === "volume") {
+    head = "볼륨 조절";
   } else if (page === "order") {
     head = "순서";
     const o = p.order || { up: false, down: false };
@@ -139,6 +144,11 @@ export default function MediaMenu(p: Props) {
             </button>
           </React.Fragment>
         ))}
+        {page === "volume" && p.sound && (
+          <div style={{ padding: "8px 10px 6px" }}>
+            <VolumeControl muted={p.sound.muted} value={p.sound.value} onMute={p.sound.onMute} onVolume={p.sound.onVolume} />
+          </div>
+        )}
         {page === "range" && (
           <div style={{ padding: "8px 10px 6px", borderTop: `1px solid ${C.line}`, marginTop: 4 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>직접 입력 <span style={{ color: C.dim, fontWeight: 600 }}>· 지금 {a}~{b}번</span></div>

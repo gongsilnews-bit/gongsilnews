@@ -6,7 +6,7 @@ import React from "react";
 import type { Clip, Fill, Layer, Project } from "./types";
 import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
 import { Side } from "./Panels";
-import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
+import { Btn, C, FONT, Hint, Icon, Toggle, VolumeControl, input, label } from "./ui";
 import { ColorPick, FontPick } from "./Pickers";
 
 export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text" };
@@ -118,13 +118,14 @@ const GRID: [number, number, string][] = [
 ];
 
 /** 클립 화면 속성 — 썸네일을 누르면 오른쪽에 (채우기·반전·교체·다른 클립에도 쓰기·지우기) */
-export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
+export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
   project: Project;
   clip: Clip;
   n: number; // 이 클립 번호 (1부터)
   total: number;
   cur: number;
   many: { a: number; b: number; n: number } | null; // 고른 클립 범위 (여러 개 골랐을 때)
+  sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void };
   onFit: (f: Fill) => void;
   onFlip: (axis: "x" | "y") => void;
   onReplace: () => void;
@@ -162,6 +163,12 @@ export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip,
           </div>
         )}
       </div>
+      {sound && (
+        <div style={row}>
+          <div style={{ ...label, marginBottom: 8 }}>소리 <span style={{ color: C.sub, fontWeight: 600 }}>· 이 클립의 원본 소리</span></div>
+          <VolumeControl muted={sound.muted} value={sound.value} onMute={sound.onMute} onVolume={sound.onVolume} />
+        </div>
+      )}
       <div style={row}>
         <div style={{ ...label, marginBottom: 8 }}>채우기</div>
         <div style={{ display: "flex", gap: 6 }}>
