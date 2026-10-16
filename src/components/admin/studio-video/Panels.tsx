@@ -40,6 +40,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [q, setQ] = useState("");
   const [items, setItems] = useState<LibItem[] | null>(null);
   const [picked, setPicked] = useState<LibItem | null>(null);
+  const [inlineId, setInlineId] = useState(""); // 목록에서 눌러 고른 자료 — 단추를 그 바로 아래에
   const [hover, setHover] = useState<{ item: LibItem | StockItem; y: number } | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");
@@ -149,7 +150,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
         const on = picked && "ready" in it && picked.id === it.id;
         const dur = "duration" in it && it.duration ? it.duration : 0;
         return (
-          <button type="button" key={it.id} onClick={() => onClick(it)} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
+          <React.Fragment key={it.id}>
+          <button type="button" onClick={() => { if ("ready" in it) setInlineId(it.id); onClick(it); }} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
             draggable title="눌러서 고르기 · 클립 목록이나 미리보기로 끌어다 놓기"
             onDragStart={(e) => {
               setHover(null);
@@ -161,16 +163,27 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{dur ? fmtTime(dur, false) : "영상"}</span>}
             {"fav" in it && it.fav && <span style={{ position: "absolute", right: 5, top: 4, color: "#fff" }}><Icon name="star" size={15} /></span>}
           </button>
+          {/* 고른 자료가 있는 줄 바로 아래에 단추 (두 칸 줄이라 줄 끝에서) */}
+          {inlinePick && (() => {
+            const pi = list.findIndex((x) => x.id === inlinePick.id);
+            const i = list.indexOf(it);
+            return pi >= 0 && (i === Math.min(list.length - 1, pi - (pi % 2) + 1)) ? (
+              <div ref={(el) => el?.scrollIntoView({ block: "nearest", behavior: "smooth" })}
+                style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 6, border: `1px solid ${C.accent}`, background: C.panel2 }}>
+                {pickActions}
+              </div>
+            ) : null;
+          })()}
+          </React.Fragment>
         );
       })}
     </div>
   );
 
-  const footer = (
+  const pickActions = picked && (
     <>
-      {picked ? (
-        <>
-          <div style={{ width: "100%", fontSize: 13.5, color: C.sub, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>고른 자료: {picked.name}</div>
+      <div style={{ width: "100%", fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>고른 자료: {picked.name}</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {overlay ? (
             <Btn primary small onClick={() => act("overlay")} disabled={picked.kind !== "image"}><Icon name="image" size={16} />{picked.kind === "image" ? "화면 위에 올리기" : "사진만 올릴 수 있어요"}</Btn>
           ) : (
@@ -182,7 +195,17 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           {"fav" in picked && (
             <Btn small onClick={async () => { await b?.lib.fav(picked.id, !picked.fav); setPicked({ ...picked, fav: !picked.fav }); load(); }}><Icon name="star" size={16} />{picked.fav ? "즐겨찾기 빼기" : "즐겨찾기"}</Btn>
           )}
-        </>
+      </div>
+    </>
+  );
+  // 목록에서 고른 자료면 단추를 그 아래에, 무료 자료·AI 그림처럼 목록 밖이면 맨 아래에
+  const inlinePick = picked && inlineId === picked.id ? picked : null;
+  const footer = (
+    <>
+      {picked && !inlinePick ? (
+        pickActions
+      ) : picked ? (
+        <span style={{ fontSize: 14, color: C.sub }}>고른 자료 바로 아래 단추를 눌러 주세요.</span>
       ) : (
         <span style={{ fontSize: 14, color: C.sub }}>사진이나 영상을 눌러 고르세요.</span>
       )}
