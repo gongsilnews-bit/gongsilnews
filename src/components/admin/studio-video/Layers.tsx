@@ -3,7 +3,7 @@
 // 애셋(레이어) — 브루처럼 클립 목록 왼쪽에 아이콘과 범위 막대, 누르면 오른쪽에 설정 칸
 //  음악: 크기·페이드·시작 지점·반복 / 사진: 자리·크기·투명도 / 화면 글자: 글·자리·크기·색·상자
 import React from "react";
-import type { Layer, Project } from "./types";
+import type { Clip, Fill, Layer, Project } from "./types";
 import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
 import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
@@ -116,6 +116,76 @@ const GRID: [number, number, string][] = [
   [0.2, 0.5, "왼쪽"], [0.5, 0.5, "가운데"], [0.8, 0.5, "오른쪽"],
   [0.2, 0.82, "왼쪽 아래"], [0.5, 0.82, "아래"], [0.8, 0.82, "오른쪽 아래"],
 ];
+
+/** 클립 화면 속성 — 썸네일을 누르면 오른쪽에 (채우기·반전·교체·다른 클립에도 쓰기·지우기) */
+export function VisualPanel({ project, clip, n, total, cur, many, onFit, onFlip, onReplace, onRange, onRemove, onClose }: {
+  project: Project;
+  clip: Clip;
+  n: number; // 이 클립 번호 (1부터)
+  total: number;
+  cur: number;
+  many: { a: number; b: number; n: number } | null; // 고른 클립 범위 (여러 개 골랐을 때)
+  onFit: (f: Fill) => void;
+  onFlip: (axis: "x" | "y") => void;
+  onReplace: () => void;
+  onRange: (a: number, b: number) => void;
+  onRemove: () => void;
+  onClose: () => void;
+}) {
+  const a = clip.visual ? project.assets[clip.visual.asset] : clip.src ? project.assets[clip.src.asset] : null;
+  const fill = clip.fill || project.settings.fill;
+  const flip = clip.flipX || clip.flipY ? `scale(${clip.flipX ? -1 : 1}, ${clip.flipY ? -1 : 1})` : undefined;
+  const FILLS: [Fill, string, string, string][] = [
+    ["contain", "fitContain", "비율 유지", "사진이 잘리지 않게 화면 안에 다 보여요"],
+    ["cover", "fitCover", "잘라서 채우기", "빈 곳 없이 꽉 채우고 가장자리는 잘려요"],
+    ["blur", "fill", "흐린 배경", "사진은 다 보이고 빈 곳은 같은 사진을 흐리게 깔아요"],
+  ];
+  return (
+    <Side title={`화면 속성 · 클립 ${n}`} onClose={onClose}
+      footer={clip.visual ? <Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />이 클립 화면 지우기</Btn> : undefined}>
+      <div style={row}>
+        <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 6, overflow: "hidden", background: "#000", marginBottom: 10 }}>
+          {a && (a.kind === "video"
+            ? <video src={a.url} muted autoPlay loop playsInline style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform: flip }} />
+            : <img src={a.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform: flip }} />)}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a?.name || "화면 없음"}</span>
+          <Btn small onClick={onReplace}><Icon name="swap" size={15} />교체</Btn>
+        </div>
+        {a && <div style={{ fontSize: 12.5, color: C.dim, marginTop: 4 }}>{a.kind === "video" ? `영상 ${Math.round(a.duration || 0)}초` : "사진"}{a.width ? ` · ${a.width}×${a.height}` : ""}</div>}
+      </div>
+      <div style={row}>
+        <div style={{ ...label, marginBottom: 8 }}>채우기</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {FILLS.map(([v, ic, t, d]) => (
+            <button key={v} type="button" onClick={() => onFit(v)} title={`${t} — ${d}`}
+              style={{ ...chip(fill === v), flex: 1, height: 58, padding: "4px 2px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, fontSize: 12 }}>
+              <Icon name={ic} size={20} />
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ ...row, display: "flex", gap: 6 }}>
+        <button type="button" onClick={() => onFlip("x")} title="왼쪽과 오른쪽을 거울처럼 뒤집어요" style={{ ...chip(Boolean(clip.flipX)), flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon name="flipH" size={17} />좌우 반전</button>
+        <button type="button" onClick={() => onFlip("y")} title="위와 아래를 뒤집어요" style={{ ...chip(Boolean(clip.flipY)), flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon name="flipV" size={17} />상하 반전</button>
+      </div>
+      {a && total > 1 && (
+        <div style={row}>
+          <div style={{ ...label, marginBottom: 8 }}>이 화면을 다른 클립에도</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {many && <Btn small onClick={() => onRange(many.a, many.b)}>고른 클립 {many.n}개</Btn>}
+            <Btn small onClick={() => onRange(1, total)}>전체 클립</Btn>
+            <Btn small onClick={() => onRange(1, cur)}>처음~이 클립</Btn>
+            <Btn small onClick={() => onRange(cur, total)}>이 클립~끝</Btn>
+          </div>
+          <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>채우기·반전도 똑같이 들어가요.</div>
+        </div>
+      )}
+    </Side>
+  );
+}
 
 export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose }: {
   project: Project;

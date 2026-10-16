@@ -47,6 +47,25 @@ type Props = {
   onDropLayer?: (clipId: string, raw: string) => void;
 };
 
+/** 썸네일 크게 보기 — 마우스를 올린 동안 옆에 크게 (영상은 소리 없이 재생) */
+function Peek({ asset, rect, start, flipX, flipY }: { asset: { url: string; kind: string; name: string }; rect: DOMRect; start: number; flipX?: boolean; flipY?: boolean }) {
+  const W = 360;
+  const H = Math.round((W * 9) / 16);
+  const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+  const top = Math.max(8, Math.min(rect.top + rect.height / 2 - H / 2, vh - H - 40));
+  const transform = flipX || flipY ? `scale(${flipX ? -1 : 1}, ${flipY ? -1 : 1})` : undefined;
+  return (
+    <div style={{ position: "fixed", left: rect.right + 12, top, zIndex: 60, width: W, padding: 6, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 12px 36px rgba(0,0,0,0.5)", pointerEvents: "none" }}>
+      <div style={{ width: "100%", height: H, borderRadius: 5, overflow: "hidden", background: "#000" }}>
+        {asset.kind === "video"
+          ? <video src={`${asset.url}#t=${start.toFixed(2)}`} muted autoPlay loop playsInline style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform }} />
+          : <img src={asset.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform }} />}
+      </div>
+      <div style={{ padding: "6px 4px 2px", fontSize: 12.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset.name} · 눌러서 메뉴</div>
+    </div>
+  );
+}
+
 /** 여러 클립 한꺼번에 고르기/풀기 — 다 골랐으면 체크, 일부면 반쯤 */
 export function AllBox({ ids, selected, onChange, title, label }: { ids: string[]; selected: string[]; onChange: (ids: string[], on: boolean) => void; title: string; label?: string }) {
   const n = ids.filter((id) => selected.includes(id)).length;
@@ -108,6 +127,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const playingHere = p.curClip === c.id;
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState("");
+  const [peek, setPeek] = React.useState<DOMRect | null>(null); // 썸네일에 마우스를 올리면 크게
   const asset = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
   const thumb = asset?.thumb || (asset?.kind === "image" ? asset.url : "");
   const busy = p.busy[c.id];
@@ -190,10 +210,12 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {/* 2줄: 화면 자료 + 자막 */}
         {p.view === "detail" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
-            <button type="button" onClick={(e) => { e.stopPropagation(); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
+            <button type="button" onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
+              onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
               style={{ width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
             </button>
+            {peek && asset && <Peek asset={asset} rect={peek} start={c.visual ? c.visual.s : c.src?.s || 0} flipX={c.flipX} flipY={c.flipY} />}
             <Icon name="sub" size={18} color={C.dim} />
             <SubLine c={c} p={p} empty="자막 넣기" />
             {busy && <span style={{ fontSize: 13, color: C.sub }}>{busy}</span>}

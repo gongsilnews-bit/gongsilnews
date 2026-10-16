@@ -11,9 +11,9 @@ import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
-import { LAYER_ICON, LayerPanel, LayerPopup, computeLanes, layerTitle } from "./Layers";
+import { LAYER_ICON, LayerPanel, LayerPopup, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer";
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -92,6 +92,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [selLayer, setSelLayer] = useState("");
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
+  const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
   const [overlayTarget, setOverlayTarget] = useState(""); // 사진을 바꿀 애셋
@@ -356,6 +357,8 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     openMedia: (id, x, y) => {
       setSelected([id]);
       setMedia({ kind: "clip", id, x, y });
+      setVisualClip(id);
+      setPanel("visual");
     },
     toggleMute: (id) => change((p) => {
       const c = findClip(p, id)?.clip;
@@ -1069,6 +1072,19 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic}
             onClose={() => (musicTarget && (project.layers || []).some((l) => l.id === musicTarget) ? openLayer(musicTarget) : setPanel(""))} />
         )}
+        {panel === "visual" && (() => {
+          const i = flat.items.findIndex((x) => x.clip.id === visualClip);
+          if (i < 0) return null;
+          const c = flat.items[i].clip;
+          const r = selected.length > 1 ? selRange() : null;
+          const pos = (id: string) => flat.items.findIndex((x) => x.clip.id === id) + 1;
+          return (
+            <VisualPanel key={c.id} project={project} clip={c} n={i + 1} total={flat.items.length} cur={i + 1}
+              many={r ? { a: pos(r.from), b: pos(r.to), n: r.n } : null}
+              onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
+              onRange={(a, b) => clipRange(c.id, a, b)} onRemove={() => clipRemoveVisual(c.id)} onClose={() => setPanel("")} />
+          );
+        })()}
         {panel === "layer" && (() => {
           const l = (project.layers || []).find((x) => x.id === selLayer);
           if (!l) return null;
