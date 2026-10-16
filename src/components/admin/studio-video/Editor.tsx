@@ -92,7 +92,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     setRailHidden(Boolean((window as unknown as { __studioRailHidden?: boolean }).__studioRailHidden));
     const on = (e: Event) => setRailHidden(Boolean((e as CustomEvent<boolean>).detail));
     window.addEventListener("studio:rail-state", on);
-    return () => window.removeEventListener("studio:rail-state", on);
+    // 편집 화면이 열려 있다고 관리자 화면에 알린다 (메뉴 숨기기는 편집 화면에서만)
+    window.dispatchEvent(new CustomEvent("studio:editor", { detail: true }));
+    return () => {
+      window.removeEventListener("studio:rail-state", on);
+      window.dispatchEvent(new CustomEvent("studio:editor", { detail: false }));
+    };
   }, []);
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");

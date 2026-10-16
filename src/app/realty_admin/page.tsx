@@ -103,6 +103,12 @@ function RealtyAdminContent() {
   const [darkMode, setDarkMode] = useState(false);
   // 영상 편집에서 왼쪽 메뉴 줄 숨기기 — 편집 화면 맨 위 [»]가 'studio:rail' 신호로 다시 보이게 한다 (이 기기에 기억)
   const [railHidden, setRailHidden] = useState(false);
+  const [videoEditing, setVideoEditing] = useState(false); // 편집 화면이 열려 있을 때만 숨긴다 (처음 화면에는 메뉴가 늘 보이게)
+  useEffect(() => {
+    const ed = (e: Event) => setVideoEditing(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("studio:editor", ed);
+    return () => window.removeEventListener("studio:editor", ed);
+  }, []);
   useEffect(() => {
     try {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -323,8 +329,8 @@ function RealtyAdminContent() {
           appVersion={studioApp.version}
           badges={STUDIO_BADGES}
           autoCollapse={activeMenu === "marketing" || activeMenu === "video"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
-          hidden={activeMenu === "video" && studioApp.isApp && railHidden}
-          onHide={activeMenu === "video" && studioApp.isApp ? () => setRailHidden(true) : undefined}
+          hidden={activeMenu === "video" && studioApp.isApp && videoEditing && railHidden}
+          onHide={activeMenu === "video" && studioApp.isApp && videoEditing ? () => setRailHidden(true) : undefined}
         />
       ) : (
       /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */
