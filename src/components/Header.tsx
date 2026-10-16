@@ -283,7 +283,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               </div>
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();
-                await supabase.auth.signOut();
+                await supabase.auth.signOut({ scope: "local" });
                 window.location.reload();
               }}>로그아웃</div>
             </div>

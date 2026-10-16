@@ -17,7 +17,7 @@ export default function FooterAuthButtons() {
 
   const handleLogout = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     setIsLoggedIn(false);
     window.location.reload();
   };

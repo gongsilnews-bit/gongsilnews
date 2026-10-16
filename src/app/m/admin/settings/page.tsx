@@ -321,7 +321,7 @@ function MobileSettings() {
     if (confirm("정말로 회원을 탈퇴하시겠습니까?\n탈퇴 시 모든 회원 정보가 파기되며 복구할 수 없습니다.")) {
       alert("회원 탈퇴 요청이 정상적으로 접수되었습니다.\n1~2영업일 내에 처리 완료 후 안내 이메일이 발송됩니다.");
       const supabase = createClient();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       router.push("/m");
     }
   };

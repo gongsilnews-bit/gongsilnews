@@ -64,7 +64,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
 
   const handleLogout = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     window.location.reload();
   };
 

@@ -1910,7 +1910,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 alert("회원 탈퇴 요청이 정상적으로 접수되었습니다. 1~2영업일 내에 처리 완료 후 안내 이메일이 발송됩니다.");
                 const { createClient } = await import("@/utils/supabase/client");
                 const supabase = createClient();
-                await supabase.auth.signOut();
+                await supabase.auth.signOut({ scope: "local" });
                 window.location.href = "/";
               }
             }}
