@@ -1127,7 +1127,16 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const bigW = Math.round(Math.min(win.w - sideW - 160, ((win.h - 230) * W) / H, 1600));
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg, color: C.text, fontFamily: FONT }}>
+    <div className="sv-dark" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg, color: C.text, fontFamily: FONT, colorScheme: "dark" }}>
+      {/* 다크 모드 스크롤바 — 진한 회색 (편집 화면 안과 그 위에 뜨는 창들) */}
+      <style>{`
+        .sv-dark ::-webkit-scrollbar, body:has(.sv-dark) ::-webkit-scrollbar { width: 10px; height: 10px; }
+        .sv-dark ::-webkit-scrollbar-track, body:has(.sv-dark) ::-webkit-scrollbar-track { background: #1b1d22; }
+        .sv-dark ::-webkit-scrollbar-thumb, body:has(.sv-dark) ::-webkit-scrollbar-thumb { background: #3a3e46; border-radius: 6px; border: 2px solid #1b1d22; }
+        .sv-dark ::-webkit-scrollbar-thumb:hover, body:has(.sv-dark) ::-webkit-scrollbar-thumb:hover { background: #4b505a; }
+        .sv-dark ::-webkit-scrollbar-corner, body:has(.sv-dark) ::-webkit-scrollbar-corner { background: #1b1d22; }
+        .sv-dark ::-webkit-scrollbar-button, body:has(.sv-dark) ::-webkit-scrollbar-button { display: none; }
+      `}</style>
       {/* 맨 위 탭 */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, height: 44, padding: "0 12px", background: C.panel, borderBottom: `1px solid ${C.line}` }}>
         <button type="button" onClick={onHome} title="처음 화면" style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", border: 0, borderRadius: 4, background: "transparent", color: C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
