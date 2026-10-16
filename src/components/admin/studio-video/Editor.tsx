@@ -71,7 +71,7 @@ function spreadIn(text: string, s: number, e: number) {
   });
 }
 
-export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Project; onHome: () => void; onNew: () => void; onOpen: () => void }) {
+export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { initial: Project; onHome: () => void; onNew: () => void; onOpen: () => void; onSwitch?: (p: Project) => void }) {
   const b = videoBridge()!;
   const [project, setProjectState] = useState<Project>(() => migrate(initial));
   const pref = useRef(project);
@@ -89,7 +89,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [toast, setToast] = useState("");
   const [saved, setSaved] = useState("");
   const [view, setView] = useState<"detail" | "simple">("detail");
-  const [dialog, setDialog] = useState<"" | "export" | "formats" | "addText" | "help" | "find">("");
+  const [dialog, setDialog] = useState<"" | "export" | "formats" | "addText" | "help" | "find" | "saveAs">("");
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [selLayer, setSelLayer] = useState("");
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
@@ -745,6 +745,24 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     addLayer({ type: "image", asset: a.id, name: a.name, x: +x.toFixed(4), y: +y.toFixed(4), w: 0.3, opacity: 1 }, false);
   };
 
+  /* ── 다른 이름으로 저장 ── */
+  const [saveAsName, setSaveAsName] = useState("");
+  const doSaveAs = async () => {
+    const name = saveAsName.trim();
+    if (!name) return;
+    if (!b.project.saveAs) return say("앱을 새 버전으로 업데이트하면 쓸 수 있어요");
+    setDialog("");
+    setWork({ title: "다른 이름으로 저장하는 중…", detail: name });
+    try {
+      const np = await b.project.saveAs(pref.current, name);
+      setWork(null);
+      onSwitch?.(np);
+    } catch (e) {
+      setWork(null);
+      say(errText(e));
+    }
+  };
+
   /* ── 글 클립 넣기 ── */
   const [addText, setAddText] = useState("");
   const doAddText = () => {
@@ -840,6 +858,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       { icon: "ratio", label: "화면 비율", onClick: () => setPanel("ratio") },
       "|",
       { icon: "save", label: "프로젝트 저장하기", onClick: () => b.project.save(pref.current).then(() => say("저장했어요")) },
+      { icon: "copy", label: "다른 이름으로 저장", onClick: () => { setSaveAsName(`${pref.current.name}_사본`); setDialog("saveAs"); } },
       { icon: "folder", label: "프로젝트 폴더 열기", onClick: () => b.openPath(project.dir) },
       "|",
       { icon: "export", label: "영상으로 내보내기", onClick: () => setDialog("export") },
@@ -1192,6 +1211,20 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       {work && <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac} /></Modal>}
       {dialog === "export" && <ExportDialog project={project} selected={selected} sceneOf={sel1?.scene.id} onClose={() => setDialog("")} />}
       {dialog === "formats" && <FormatsDialog project={project} onClose={() => setDialog("")} />}
+      {dialog === "saveAs" && (
+        <Modal title="다른 이름으로 저장" onClose={() => setDialog("")} width={520}
+          footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn primary onClick={doSaveAs} disabled={!saveAsName.trim()}>저장</Btn></>}>
+          <div style={{ padding: 20 }}>
+            <div style={{ ...label, marginBottom: 8 }}>새 프로젝트 이름</div>
+            <input value={saveAsName} onChange={(e) => setSaveAsName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doSaveAs()} autoFocus
+              onFocus={(e) => e.currentTarget.select()} style={{ ...input }} />
+            <div style={{ fontSize: 13.5, color: C.sub, marginTop: 10, lineHeight: 1.6 }}>
+              지금 편집한 내용 그대로 새 프로젝트로 복사하고, 새 프로젝트를 열어요.<br />
+              원래 프로젝트 「{project.name}」는 그대로 남아요.
+            </div>
+          </div>
+        </Modal>
+      )}
       {dialog === "addText" && (
         <Modal title="글 클립 넣기 (AI 목소리)" onClose={() => setDialog("")} width={620} footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn primary onClick={doAddText} disabled={!addText.trim()}>넣기</Btn></>}>
           <div style={{ padding: 20 }}>

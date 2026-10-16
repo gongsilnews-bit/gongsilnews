@@ -96,6 +96,50 @@ function save(p) {
   return { updatedAt: p.updatedAt, duration: p.duration };
 }
 
+/**
+ * 다른 이름으로 저장 — 프로젝트 폴더를 통째로 새 이름 폴더로 복사 (자동 저장 기록은 빼고)
+ * 폴더 안 파일(목소리 등)을 가리키는 위치는 새 폴더로 고친다. 내 자료처럼 폴더 밖 파일은 그대로 같이 쓴다.
+ * 원본은 마지막으로 저장된 그대로 두고, 지금 편집 중인 내용은 사본에 담는다
+ */
+function saveAs(p, name) {
+  if (!p || !p.dir || !fs.existsSync(p.dir)) throw new Error("프로젝트 정보가 없습니다.");
+  const nm = safeName(name);
+  if (!nm) throw new Error("새 이름을 써 주세요.");
+  const base = path.dirname(p.dir);
+  let dir = path.join(base, nm);
+  for (let n = 2; fs.existsSync(dir); n++) dir = path.join(base, `${nm}_${n}`);
+  const auto = path.join(p.dir, "autosave").toLowerCase();
+  const own = path.join(p.dir, "project.json").toLowerCase();
+  fs.cpSync(p.dir, dir, {
+    recursive: true,
+    filter: (src) => {
+      const s = src.toLowerCase();
+      return s !== auto && !s.startsWith(auto + path.sep) && s !== own && !s.endsWith(".tmp");
+    },
+  });
+  // 폴더 안을 가리키는 위치 → 새 폴더
+  const from = p.dir.toLowerCase() + path.sep;
+  const fix = (v) => {
+    if (typeof v === "string") return v.toLowerCase().startsWith(from) ? path.join(dir, v.slice(from.length)) : v;
+    if (Array.isArray(v)) return v.map(fix);
+    if (v && typeof v === "object") {
+      const o = {};
+      for (const [k, x] of Object.entries(v)) o[k] = fix(x);
+      return o;
+    }
+    return v;
+  };
+  const { dir: _old, ...data } = p;
+  const now = new Date().toISOString();
+  const q = { ...fix(data), id: uid(), name: path.basename(dir), createdAt: now, updatedAt: now, dir };
+  writeProject(q);
+  log.info(`[영상] 다른 이름으로 저장 ${p.dir} → ${dir}`);
+  const opened = open(dir);
+  // 음악 애셋 주소도 새로
+  for (const l of opened.layers || []) if (l.file) l.url = media.urlOf(l.file);
+  return opened;
+}
+
 /** 열기 — 없어진 원본 파일 표시 (missing) */
 function open(dir) {
   const file = path.join(dir, "project.json");
@@ -301,4 +345,4 @@ function exportText(p, kind) {
   return file;
 }
 
-module.exports = { create, open, save, recent, addAsset, voiceFor, transcribe, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };
+module.exports = { create, open, save, saveAs, recent, addAsset, voiceFor, transcribe, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };

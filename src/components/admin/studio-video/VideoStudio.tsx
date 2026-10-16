@@ -55,7 +55,7 @@ export default function VideoStudio() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg }}>
       {project ? (
-        <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={() => setFlow("new")} onOpen={openPick} />
+        <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={() => setFlow("new")} onOpen={openPick} onSwitch={setProject} />
       ) : (
         <Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} />
       )}

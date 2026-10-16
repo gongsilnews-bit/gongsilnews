@@ -129,6 +129,7 @@ if (allowed) {
         open: (dir) => ipcRenderer.invoke("video:project-open", dir),
         openPick: () => ipcRenderer.invoke("video:project-open-pick"),
         save: (p) => ipcRenderer.invoke("video:project-save", p),
+        saveAs: (p, name) => ipcRenderer.invoke("video:project-save-as", p, name),
         recent: () => ipcRenderer.invoke("video:project-recent"),
         addAsset: (libId) => ipcRenderer.invoke("video:project-add-asset", libId),
         exportText: (p, kind) => ipcRenderer.invoke("video:project-export-text", p, kind),

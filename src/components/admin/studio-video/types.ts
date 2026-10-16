@@ -137,6 +137,7 @@ export type VideoBridge = {
     open: (dir: string) => Promise<Project>;
     openPick: () => Promise<Project | null>;
     save: (p: Project) => Promise<{ updatedAt: string; duration: number }>;
+    saveAs?: (p: Project, name: string) => Promise<Project>; // 앱 0.1.4부터
     recent: () => Promise<Recent[]>;
     addAsset: (libId: string) => Promise<Asset>;
     exportText: (p: Project, kind: "srt" | "txt") => Promise<string>;
