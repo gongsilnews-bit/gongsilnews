@@ -132,6 +132,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState("");
   const [peek, setPeek] = React.useState<DOMRect | null>(null); // 썸네일에 마우스를 올리면 크게
+  const silent = Boolean(c.muted) || c.volume === 0; // 무음이면 빨갛게
   const asset = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
   const thumb = asset?.thumb || (asset?.kind === "image" ? asset.url : "");
   const busy = p.busy[c.id];
@@ -166,9 +167,9 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {/* 1줄: 목소리 + 단어 단추 */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px" }}>
           <button type="button" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openSound(c.id, r.left, r.bottom + 6); }} title="눌러서 볼륨·빠르기·목소리 바꾸기"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", flexShrink: 0 }}>
-            <Icon name={c.type === "voice" ? "voice" : "mic"} size={16} />
-            {c.muted ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} (끔)` : "소리 끔") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${silent ? C.danger : C.line2}`, background: silent ? "rgba(239,68,68,0.12)" : "transparent", color: silent ? C.danger : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", flexShrink: 0 }}>
+            <Icon name={silent ? "mute" : c.type === "voice" ? "voice" : "mic"} size={16} />
+            {silent ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
           </button>
           {editing ? (
             <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>
