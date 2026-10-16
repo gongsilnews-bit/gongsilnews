@@ -610,7 +610,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
   /* ── 원본 소리 설정 (촬영 클립) — 고른 클립 / 모든 클립 ── */
   const isSrc = (c?: Clip | null) => Boolean(c && c.type !== "voice" && c.src);
-  const srcTargets = () => (srcMode === "all" ? flat.items.map((x) => x.clip).filter(isSrc).map((c) => c.id) : selected.filter((id) => isSrc(findClip(pref.current, id)?.clip)));
   /** 썸네일 메뉴·화면 속성의 볼륨 = 첨부한 영상의 소리 (원래 촬영 화면 그대로인 클립·사진에는 없음). 기본 무음 */
   const soundOf = (c: Clip) => {
     const a = c.visual ? project.assets[c.visual.asset] : null;
