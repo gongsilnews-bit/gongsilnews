@@ -206,8 +206,21 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
       aIn = "araw";
     }
   }
+  // 촬영 클립 빠르기 — 영상(setpts)·소리(atempo) 같이
+  const ssp = tl.srcSpeed(clip);
+  let vIn = "vraw";
+  if (ssp !== 1 && ranges) {
+    if (sameAsSource && ok(visual) && visual.kind === "video") {
+      filters.push(`[vraw]setpts=PTS/${ssp.toFixed(4)}[vspd]`);
+      vIn = "vspd";
+    }
+    if (aIn) {
+      filters.push(`[${aIn}]atempo=${ssp.toFixed(4)}[aspd]`);
+      aIn = "aspd";
+    }
+  }
   const cflip = flipChain(clip);
-  if (cflip) filters.push(`[vraw]${cflip}[vflip]`);
+  if (cflip) filters.push(`[${vIn}]${cflip}[vflip]`);
   const vb = clip.box && ok(visual) ? clip.box : null;
   if (vb) {
     // 직접 크기 — 검은 바탕 위 그 자리에 (미리보기 Player.tsx 와 같은 계산)
@@ -216,10 +229,10 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     const ph = Math.max(2, Math.round(pw / ar / 2) * 2);
     const x0 = Math.round(W * Number(vb.x) - pw / 2);
     const y0 = Math.round(H * Number(vb.y) - ph / 2);
-    filters.push(`[${cflip ? "vflip" : "vraw"}]scale=${pw}:${ph},setsar=1[vbx]`);
+    filters.push(`[${cflip ? "vflip" : vIn}]scale=${pw}:${ph},setsar=1[vbx]`);
     filters.push(`color=c=black:s=${W}x${H}:r=${FPS}:d=${dur.toFixed(3)}[vbg]`);
     filters.push(`[vbg][vbx]overlay=x=${x0}:y=${y0}:eof_action=pass,setsar=1[vfit]`);
-  } else filters.push(fitFilter(cflip ? "vflip" : "vraw", W, H, fill, "vfit"));
+  } else filters.push(fitFilter(cflip ? "vflip" : vIn, W, H, fill, "vfit"));
   let vOut = "vfit";
 
   // 사진 올리기 애셋 (자막·화면 글자 아래)

@@ -117,6 +117,71 @@ const GRID: [number, number, string][] = [
   [0.2, 0.82, "왼쪽 아래"], [0.5, 0.82, "아래"], [0.8, 0.82, "오른쪽 아래"],
 ];
 
+/** 클립 속도·길이 — 클립 시간을 누르면 오른쪽에. 여러 클립을 고르면 고른 클립 모두 */
+export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onReset, onClose }: {
+  clips: Clip[];
+  nums: number[]; // 클립 번호 (1부터)
+  durs: number[]; // 지금 길이 (초)
+  speeds: (number | null)[]; // 지금 빠르기 (바꿀 수 없는 클립은 null)
+  onSpeed: (v: number, first: boolean) => void;
+  onLength: (sec: number) => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  const first = React.useRef(true);
+  const sp = speeds.filter((x): x is number => x !== null);
+  const same = sp.length > 0 && sp.every((x) => Math.abs(x - sp[0]) < 0.001);
+  const total = durs.reduce((a, b) => a + b, 0);
+  const sameLen = durs.length > 0 && durs.every((d) => Math.abs(d - durs[0]) < 0.01);
+  const [len, setLen] = React.useState(sameLen ? durs[0].toFixed(1) : "");
+  React.useEffect(() => setLen(sameLen ? durs[0].toFixed(1) : ""), [sameLen, durs[0]]); // eslint-disable-line react-hooks/exhaustive-deps
+  const apply = (v: number) => {
+    if (!(v > 0)) return;
+    onLength(Math.max(0.3, Math.min(600, v)));
+  };
+  const many = clips.length > 1;
+  return (
+    <Side title={many ? `속도·길이 · 고른 클립 ${clips.length}개` : `속도·길이 · 클립 ${nums[0]}`} onClose={onClose}
+      footer={<Btn small onClick={onReset}><Icon name="undo" size={15} />원래대로</Btn>}>
+      <div style={row}>
+        <div style={{ ...label, display: "flex", marginBottom: 6 }}>
+          <span style={{ flex: 1 }}>속도</span>
+          <span style={{ color: C.sub }}>{sp.length ? (same ? `${sp[0].toFixed(2).replace(/\.?0+$/, "")}배` : "클립마다 달라요") : "바꿀 수 없어요"}</span>
+        </div>
+        <input type="range" min={0.5} max={2} step={0.05} value={same ? sp[0] : 1} disabled={!sp.length}
+          onPointerDown={() => (first.current = true)} onChange={(e) => { onSpeed(Number(e.target.value), first.current); first.current = false; }}
+          style={{ width: "100%", accentColor: C.accent }} />
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          {[0.5, 0.75, 1, 1.25, 1.5, 2].map((v) => (
+            <button key={v} type="button" disabled={!sp.length} onClick={() => onSpeed(v, true)}
+              style={{ ...chip(same && Math.abs(sp[0] - v) < 0.001), flex: 1, padding: 0, height: 32, fontSize: 13 }}>{v}배</button>
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>AI 목소리 클립은 목소리가, 촬영 영상 클립은 영상과 소리가 함께 빨라지거나 느려져요.</div>
+      </div>
+      <div style={row}>
+        <div style={{ ...label, display: "flex", marginBottom: 8 }}>
+          <span style={{ flex: 1 }}>길이</span>
+          <span style={{ color: C.sub }}>{many ? `모두 ${total.toFixed(1)}초` : ""}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Btn small onClick={() => apply((sameLen ? durs[0] : Number(len) || 0) - 0.5)}>-0.5초</Btn>
+          <input value={len} onChange={(e) => setLen(e.target.value.replace(/[^0-9.]/g, ""))} onKeyDown={(e) => e.key === "Enter" && apply(Number(len))} placeholder={sameLen ? "" : "클립마다 달라요"} inputMode="decimal"
+            style={{ ...input, flex: 1, height: 36, textAlign: "center", fontSize: 15, fontWeight: 800 }} />
+          <span style={{ fontSize: 14 }}>초</span>
+          <Btn small onClick={() => apply((sameLen ? durs[0] : Number(len) || 0) + 0.5)}>+0.5초</Btn>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          <Btn small primary onClick={() => apply(Number(len))} disabled={!Number(len)}>{many ? `고른 클립 모두 ${Number(len) || 0}초로` : "이 길이로"}</Btn>
+        </div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>
+          늘리면 AI 목소리 클립은 말이 끝난 뒤 그만큼 화면이 머물러요. 줄이면 빠르게 해서 맞춰요 (최대 2배).<br />촬영 영상 클립은 속도를 바꿔서 맞추고, 화면만 있는 클립은 그 시간만큼 보여요.
+        </div>
+      </div>
+    </Side>
+  );
+}
+
 /** 클립 화면 속성 — 썸네일을 누르면 오른쪽에 (채우기·반전·교체·다른 클립에도 쓰기·지우기) */
 export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
   project: Project;

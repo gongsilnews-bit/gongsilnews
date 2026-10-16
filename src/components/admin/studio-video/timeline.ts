@@ -23,6 +23,9 @@ export function keepRanges(clip: Clip): { s: number; e: number }[] {
 
 export const speedOf = (clip: Clip, settings?: Settings) => Number(clip.speed || settings?.voice?.speed || 1) || 1;
 
+/** 촬영 클립 빠르기 (영상·소리 같이). 목소리 클립은 1 */
+export const srcSpeed = (clip: Clip) => (clip.type === "voice" ? 1 : Math.max(0.5, Math.min(2, Number(clip.speed) || 1)));
+
 export function estimateSeconds(text: string, speed = 1) {
   const n = String(text || "").replace(/\s/g, "").length;
   return Math.max(1.2, n / 5 / speed);
@@ -31,10 +34,10 @@ export function estimateSeconds(text: string, speed = 1) {
 export function clipDuration(clip: Clip, settings?: Settings) {
   if (clip.del) return 0;
   if (clip.type === "voice") {
-    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + GAP;
+    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + GAP + Math.max(0, Number(clip.pad) || 0);
     return Math.max(0.5, Number(clip.hold) || estimateSeconds(clip.text, speedOf(clip, settings)));
   }
-  return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0);
+  return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(clip);
 }
 
 function spread(tokens: string[], dur: number) {
@@ -66,13 +69,14 @@ export function wordTimes(clip: Clip, settings?: Settings): { w: string; s: numb
     }
     return acc;
   };
-  return all.map((w, i) => ({ w: w.w, s: map(w.s), e: map(w.e), i })).filter((_, i) => !all[i].del);
+  const ss = srcSpeed(clip);
+  return all.map((w, i) => ({ w: w.w, s: map(w.s) / ss, e: map(w.e) / ss, i })).filter((_, i) => !all[i].del);
 }
 
 /** 클립 안 시각 → 원본 영상 시각 (촬영 클립) */
 export function sourceTimeAt(clip: Clip, local: number) {
   const ranges = keepRanges(clip);
-  let rem = local;
+  let rem = local * srcSpeed(clip);
   for (const r of ranges) {
     const d = r.e - r.s;
     if (rem <= d) return r.s + rem;

@@ -124,22 +124,23 @@ export function VolumeControl({ muted, value, onMute, onVolume }: { muted: boole
   const pct = Math.round(value * 100);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name={muted ? "mute" : "volume"} size={17} color={muted ? C.danger : C.text} />
-        <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>무음</span>
-        <Toggle on={muted} onChange={onMute} />
-      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: muted ? 0.4 : 1 }}>
+        <Icon name={muted ? "mute" : "volume"} size={17} color={muted ? C.danger : C.text} />
         <input type="range" min={0} max={2} step={0.05} value={value} disabled={muted}
           onPointerDown={() => (first.current = true)}
           onChange={(e) => { onVolume(Number(e.target.value), first.current); first.current = false; }}
           style={{ flex: 1, accentColor: C.accent }} />
-        <span style={{ width: 46, textAlign: "right", fontSize: 13.5, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{pct}%</span>
+        <span style={{ width: 46, textAlign: "right", fontSize: 13.5, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{muted ? "무음" : `${pct}%`}</span>
       </div>
-      <div style={{ display: "flex", gap: 6, opacity: muted ? 0.4 : 1 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        {/* 무음 — 50% 옆, 다시 누르면 소리 켜기 */}
+        <button type="button" onClick={() => onMute(!muted)} title={muted ? "다시 누르면 소리 켜기" : "이 클립 소리 끄기"}
+          style={{ flex: 1, height: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 3, borderRadius: 5, border: `1px solid ${muted ? C.danger : C.line2}`, background: muted ? "rgba(239,68,68,0.15)" : "transparent", color: muted ? C.danger : C.text, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+          <Icon name="mute" size={13} />무음
+        </button>
         {[0.5, 1, 1.5, 2].map((v) => (
-          <button key={v} type="button" disabled={muted} onClick={() => onVolume(v, true)}
-            style={{ flex: 1, height: 28, borderRadius: 5, border: `1px solid ${Math.abs(value - v) < 0.01 ? C.accent : C.line2}`, background: Math.abs(value - v) < 0.01 ? C.accentDim : "transparent", color: C.text, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: muted ? "default" : "pointer" }}>
+          <button key={v} type="button" onClick={() => { if (muted) onMute(false); onVolume(v, true); }}
+            style={{ flex: 1, height: 28, borderRadius: 5, border: `1px solid ${!muted && Math.abs(value - v) < 0.01 ? C.accent : C.line2}`, background: !muted && Math.abs(value - v) < 0.01 ? C.accentDim : "transparent", color: C.text, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
             {Math.round(v * 100)}%
           </button>
         ))}

@@ -5,7 +5,7 @@
 import React from "react";
 import type { Clip, Project, Word } from "./types";
 import { DRAG_MEDIA, fmtTime } from "./types";
-import { clipText, type FlatItem, speedOf, wordTimes } from "./timeline";
+import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
 import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
@@ -22,6 +22,7 @@ export type ClipActions = {
   openVoice: (id: string) => void;
   openVisual: (id: string) => void;
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
+  openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
   toggleMute: (id: string) => void;
   sceneBreak: (id: string) => void;
   play: (id: string) => void;
@@ -244,8 +245,13 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         <div style={{ width: 104, height: 58, borderRadius: 4, overflow: "hidden", background: "#000" }}>
           {thumb && <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
         </div>
-        <span style={{ fontSize: 12.5, color: C.sub, fontVariantNumeric: "tabular-nums" }}>{fmtTime(it.start, false)} + {it.dur.toFixed(2)}초</span>
+        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTiming(c.id); }} title="눌러서 속도·길이 바꾸기"
+          style={{ border: `1px solid transparent`, borderRadius: 4, background: "transparent", padding: "2px 4px", fontSize: 12.5, color: C.sub, fontVariantNumeric: "tabular-nums", fontFamily: FONT, cursor: "pointer" }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "transparent")}>
+          {fmtTime(it.start, false)} + {it.dur.toFixed(2)}초
+        </button>
         {c.type === "voice" && speedOf(c, project.settings) !== 1 && <span style={{ fontSize: 12, color: C.dim }}>빠르기 {speedOf(c, project.settings)}배</span>}
+        {c.type !== "voice" && srcSpeed(c) !== 1 && <span style={{ fontSize: 12, color: C.dim }}>빠르기 {srcSpeed(c)}배</span>}
       </div>
     </div>
   );

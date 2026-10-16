@@ -5,16 +5,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } from "./types";
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
-import { clipOrder, clipText, flatten, layerItems, layersAt, splitScript, wordTimes } from "./timeline";
+import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, wordTimes } from "./timeline";
 import MediaMenu, { type MediaFit, type MediaOrder } from "./MediaMenu";
 import VideoStart from "./VideoStart";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
-import { LAYER_ICON, LayerPanel, LayerPopup, VisualPanel, computeLanes, layerTitle } from "./Layers";
+import { LAYER_ICON, LayerPanel, LayerPopup, TimingPanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual";
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -364,6 +364,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setSelected([id]);
       openLib("mine");
     },
+    openTiming: (id) => {
+      if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
+      setPanel("timing");
+    },
     openMedia: (id, x, y) => {
       setSelected([id]);
       setMedia({ kind: "clip", id, x, y });
@@ -587,6 +591,48 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first),
         }
       : undefined;
+  /* ── 속도·길이 (고른 클립 모두) ── */
+  const timingIds = () => (selected.length ? selected : cur ? [cur.clip.id] : []);
+  /** 빠르기를 바꿀 수 있는 클립: 목소리가 있는 AI 목소리 클립, 촬영 영상 클립 */
+  const canSpeed = (c: Clip) => (c.type === "voice" ? Boolean(c.voice?.duration) : Boolean(c.src));
+  const setSpeed = (v: number, first: boolean) => change((p) => {
+    for (const id of timingIds()) {
+      const c = findClip(p, id)?.clip;
+      if (!c || !canSpeed(c)) continue;
+      c.speed = Math.abs(v - 1) < 0.001 && c.type !== "voice" ? undefined : +v.toFixed(2);
+    }
+  }, first);
+  /** 길이 맞추기 — 목소리 클립: 늘리면 끝에 머물기(pad), 줄이면 빠르게 / 화면만: 그 시간 / 촬영: 빠르기로 */
+  const setLength = (T: number) => {
+    change((p) => {
+      for (const id of timingIds()) {
+        const c = findClip(p, id)?.clip;
+        if (!c) continue;
+        if (c.type === "voice" && c.voice?.duration) {
+          const vd = c.voice.duration;
+          const nat = vd / speedOf(c, p.settings) + GAP;
+          if (T >= nat - 0.01) c.pad = T - nat > 0.01 ? +(T - nat).toFixed(2) : undefined;
+          else {
+            c.speed = +Math.max(0.5, Math.min(2, vd / Math.max(0.1, T - GAP))).toFixed(3);
+            c.pad = undefined;
+          }
+        } else if (c.type === "voice") c.hold = +Math.max(0.5, T).toFixed(2);
+        else {
+          const raw = keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0);
+          if (raw > 0) c.speed = +Math.max(0.5, Math.min(2, raw / T)).toFixed(3);
+        }
+      }
+    });
+    say(`길이를 ${T}초로 맞췄어요 (속도는 0.5~2배 안에서)`);
+  };
+  const resetTiming = () => change((p) => {
+    for (const id of timingIds()) {
+      const c = findClip(p, id)?.clip;
+      if (!c) continue;
+      delete c.speed;
+      delete c.pad;
+    }
+  });
   const clipRemoveVisual = (id: string) => {
     change((p) => {
       const c = findClip(p, id)?.clip;
@@ -909,6 +955,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "check", label: "모든 클립 고르기", onClick: () => setSelected(flat.items.map((x) => x.clip.id)) },
       { icon: "close", label: "고르기 풀기", onClick: () => { setSelected([]); setSelWord(null); } },
       "|",
+      { icon: "speed", label: "속도·길이", onClick: () => setPanel("timing"), title: "고른 클립의 속도와 길이 (클립 시간을 눌러도 열려요)" },
+      "|",
       { icon: "trash", label: selWord ? "단어 지우기/되살리기" : "단어 지우기", onClick: () => (selWord ? actions.toggleWord(selWord.clip, selWord.i) : say("지울 단어를 먼저 누르세요")) },
       { icon: "trash", label: "클립 지우기", onClick: () => actions.removeClip(selected), disabled: !selected.length },
       "|",
@@ -1162,6 +1210,16 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic}
             onClose={() => (musicTarget && (project.layers || []).some((l) => l.id === musicTarget) ? openLayer(musicTarget) : setPanel(""))} />
         )}
+        {panel === "timing" && (() => {
+          const ids = timingIds();
+          const its = flat.items.filter((x) => ids.includes(x.clip.id));
+          if (!its.length) return null;
+          return (
+            <TimingPanel clips={its.map((x) => x.clip)} nums={its.map((x) => flat.items.indexOf(x) + 1)} durs={its.map((x) => x.dur)}
+              speeds={its.map((x) => (canSpeed(x.clip) ? (x.clip.type === "voice" ? speedOf(x.clip, project.settings) : srcSpeed(x.clip)) : null))}
+              onSpeed={setSpeed} onLength={setLength} onReset={resetTiming} onClose={() => setPanel("")} />
+          );
+        })()}
         {panel === "visual" && (() => {
           const i = flat.items.findIndex((x) => x.clip.id === visualClip);
           if (i < 0) return null;

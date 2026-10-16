@@ -30,7 +30,8 @@ export type Clip = {
   src?: { asset: string; s: number; e: number };
   voice?: { file: string; url?: string; duration: number; id: string; text: string } | null;
   voiceId?: string; // 클립만 다른 목소리
-  speed?: number; // 클립만 다른 빠르기
+  speed?: number; // 클립만 다른 빠르기 (AI 목소리 클립: 목소리 빠르기 / 촬영 클립: 영상·소리 빠르기 0.5~2)
+  pad?: number; // AI 목소리 클립 끝에 더 머무는 시간 (초) — 클립 길이를 늘릴 때
   visual?: { asset: string; s: number } | null; // 화면 자료 (글 클립 배경 · 촬영 클립 화면 바꾸기)
   hold?: number; // 목소리 없을 때 길이
   fill?: Fill;

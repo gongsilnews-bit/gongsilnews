@@ -27,13 +27,16 @@ function keepRanges(clip) {
 
 const speedOf = (clip, settings) => Number(clip.speed || (settings && settings.voice && settings.voice.speed) || 1) || 1;
 
+/** 촬영 클립 빠르기 (영상·소리 같이). 목소리 클립은 1 */
+const srcSpeed = (clip) => (clip.type === "voice" ? 1 : Math.max(0.5, Math.min(2, Number(clip.speed) || 1)));
+
 function clipDuration(clip, settings) {
   if (clip.del) return 0;
   if (clip.type === "voice") {
-    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + GAP;
+    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + GAP + Math.max(0, Number(clip.pad) || 0);
     return Math.max(0.5, Number(clip.hold) || estimateSeconds(clip.text, speedOf(clip, settings)));
   }
-  return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0);
+  return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(clip);
 }
 
 /** 성우 없이 글만 있을 때 예상 길이 (한국어 1분 약 300자) */
@@ -60,7 +63,8 @@ function wordTimes(clip, settings) {
     }
     return acc;
   };
-  return words.map((w) => ({ w: w.w, s: map(w.s), e: map(w.e) }));
+  const ss = srcSpeed(clip);
+  return words.map((w) => ({ w: w.w, s: map(w.s) / ss, e: map(w.e) / ss }));
 }
 
 function spread(tokens, dur) {
@@ -135,4 +139,4 @@ function musicLayers(p, items) {
 /** 자막에 쓸 글 — 자막만 따로 쓴 글이 있으면 그것 */
 const subtitleText = (clip) => (typeof clip.subText === "string" ? clip.subText : clipText(clip));
 
-module.exports = { keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, musicLayers, subtitleText };
+module.exports = { srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, musicLayers, subtitleText };

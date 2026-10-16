@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
+import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, srcSpeed, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
@@ -140,7 +140,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       const st = project.settings;
       v.muted = !sameSource || Boolean(c.muted);
       v.volume = Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1)));
-      v.playbackRate = previewRate;
+      v.playbackRate = previewRate * (sameSource ? srcSpeed(c) : 1);
       if (bgRef.current && fill === "blur") {
         try {
           if (force || Math.abs(bgRef.current.currentTime - target) > 0.5) bgRef.current.currentTime = target;
@@ -172,6 +172,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         } else a.pause();
       } else if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted) {
         a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
+        a.playbackRate = previewRate * srcSpeed(c);
         const target = sourceTimeAt(c, loc);
         if (force || Math.abs(a.currentTime - target) > 0.3) {
           try {
