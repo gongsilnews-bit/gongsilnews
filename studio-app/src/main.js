@@ -31,7 +31,7 @@ const ext = require("./ext");
 ext.configure(BASE_URL);
 const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
-  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
+  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
   "studio:save-file", "studio:open-out-folder",
 ]);
@@ -490,6 +490,8 @@ ipcMain.handle("studio:ai-writer", () => {
 });
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
+// [창 열기] — 스튜디오 전용 크롬을 그 AI 사이트로 그냥 열어 본다 (연결 확인 없이, 닫을 때까지 기다리지 않음)
+ipcMain.handle("studio:ai-open", (_e, id) => aiConnect.open(id));
 ipcMain.handle("studio:blog-styles", (_e, vacancyId) => blogWriter.styles(vacancyId));
 ipcMain.handle("studio:naver-designs", () => naverWrite.designs());
 ipcMain.handle("studio:sns-channels", () => snsWriter.channelInfo());

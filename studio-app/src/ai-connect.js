@@ -178,6 +178,14 @@ async function connect(id, onProgress = () => {}) {
   return check(id);
 }
 
+/** [창 열기] — 스튜디오 전용 크롬을 그 AI 사이트로 연다. 회원이 중간중간 대화 내용·로그인을 직접 확인하려고 */
+function open(id) {
+  const p = PROVIDERS[id];
+  if (!p) throw new Error("알 수 없는 AI입니다.");
+  chrome.openPlain(p.checkUrl || p.url).catch(() => {});
+  return true;
+}
+
 /* 실제로 글·그림을 받아 왔으면 연결된 것이다 — 확인 기록을 "연결됨"으로 남긴다 (계정 이름은 이전 값 유지) */
 function markConnected(id) {
   const prev = loadStatus()[id] || {};
@@ -185,4 +193,4 @@ function markConnected(id) {
   saveStatus(id, { ...prev, ok: true });
 }
 
-module.exports = { PROVIDERS, list, check, connect, markConnected, getWriter, setWriter, getImager, setImager, finishLogin: () => chrome.closePlain() };
+module.exports = { PROVIDERS, list, check, connect, open, markConnected, getWriter, setWriter, getImager, setImager, finishLogin: () => chrome.closePlain() };

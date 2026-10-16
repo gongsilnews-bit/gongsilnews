@@ -228,6 +228,8 @@ if (allowed) {
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
       check: (id) => ipcRenderer.invoke("studio:ai-check", id),
       finishLogin: () => ipcRenderer.invoke("studio:ai-finish-login"),
+      /** [창 열기] 스튜디오 전용 크롬을 그 AI 사이트로 */
+      open: (id) => ipcRenderer.invoke("studio:ai-open", id),
       /** 기본 글쓰기 AI 고르기 (chatgpt | gemini) */
       setWriter: (id) => ipcRenderer.invoke("studio:ai-set-writer", id),
       /** 지금 새 글을 쓸 AI { id, name } */
