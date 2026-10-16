@@ -147,8 +147,8 @@ async function check(id) {
   const p = PROVIDERS[id];
   if (!p || !p.ready) throw new Error("준비 중인 AI입니다.");
   const r = await chrome.withHiddenPage(p.checkUrl || p.url, async (page) => {
-    // 첫 화면이 뜨고 세션 정보를 읽을 수 있을 때까지 잠깐 기다린다
-    for (let i = 0; i < 10; i++) {
+    // 첫 화면이 뜨고 세션 정보를 읽을 수 있을 때까지 기다린다 — 처음 쓰는 PC는 사이트 보안 확인 화면이 먼저 떠서 느리다 (최대 45초)
+    for (let i = 0; i < 30; i++) {
       if (p.anyHost || chrome.hostOf(page) === p.host) {
         const res = await p.check(page).catch(() => null);
         if (res && res.ok) return res;
@@ -174,6 +174,7 @@ async function connect(id, onProgress = () => {}) {
   onProgress(`새로 뜬 "공실뉴스 스튜디오" 크롬 창에서 ${p.name}에 로그인한 뒤 [로그인 다 했어요]를 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)`);
   await chrome.openPlain(p.url);
   onProgress(`${p.name} 로그인을 확인하는 중…`);
+  await chrome.sleep(1500); // 크롬이 로그인 정보를 다 쓰고 닫힐 틈
   return check(id);
 }
 

@@ -162,10 +162,11 @@ function closePlain() {
   const proc = plainProc;
   if (!proc || proc.exitCode !== null) return;
   execFile("taskkill", ["/PID", String(proc.pid), "/T"], () => {});
-  // 창 없이 뒤에서 도는 크롬은 창 닫기에 답하지 않는다 — 6초 뒤에도 살아 있으면 강제로 끝낸다
+  // 창 없이 뒤에서 도는 크롬은 창 닫기에 답하지 않는다 — 25초 뒤에도 살아 있으면 강제로 끝낸다
+  // (처음 설치한 PC의 크롬은 첫 로그인 쿠키를 쓰며 닫히는 데 6초 넘게 걸린다 — 일찍 강제로 끄면 로그인이 사라졌다, 2026-10-16)
   setTimeout(() => {
     if (proc.exitCode === null) execFile("taskkill", ["/PID", String(proc.pid), "/T", "/F"], () => {});
-  }, 6000);
+  }, 25000);
 }
 
 /* 이 프로필로 떠 있는 크롬 본체 프로세스 번호들 (조종용·로그인용 모두) */
