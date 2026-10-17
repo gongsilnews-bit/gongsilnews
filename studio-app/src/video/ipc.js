@@ -401,6 +401,8 @@ function register(base) {
   ipcMain.handle("video:show-file", (_e, file) => shell.showItemInFolder(media.fileOf(file) || file));
   // 윈도우 카메라·마이크 권한 화면 (녹화 창 — 카메라 사용이 꺼져 있을 때)
   ipcMain.handle("video:open-settings", (_e, what) => shell.openExternal(what === "microphone" ? "ms-settings:privacy-microphone" : "ms-settings:privacy-webcam"));
+  // 윈도우 카메라·마이크 장치 설정 (녹화 창 [설정] 톱니바퀴 — 밝기·대비, 쓸 장치, 입력 크기·마이크 테스트)
+  ipcMain.handle("video:open-device-settings", (_e, what) => shell.openExternal(what === "microphone" ? "ms-settings:sound" : "ms-settings:camera"));
   ipcMain.handle("video:open-path", (_e, p) => shell.openPath(media.fileOf(p) || p));
 }
 

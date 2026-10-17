@@ -231,6 +231,7 @@ export type VideoBridge = {
   };
   showFile: (file: string) => Promise<void>;
   openSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 설정 화면 (옛 앱에는 없음)
+  openDeviceSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 장치 설정 — 밝기·쓸 장치·입력 크기 (앱 0.1.8부터)
   openPath: (p: string) => Promise<string>;
   onProgress: (fn: (text: string, frac?: number) => void) => () => void;
   onRender: (fn: (text: string, frac: number, jobId?: string) => void) => () => void;

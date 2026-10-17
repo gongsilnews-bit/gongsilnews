@@ -635,6 +635,35 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
   );
 }
 
+/** 카메라·마이크 고르는 칸 옆 [설정] — 누르면 윈도우 장치 설정이 바로 열린다 (옛 앱은 권한 화면) */
+function SettingsBtn({ what, onOpen }: { what: "camera" | "microphone"; onOpen: (w: "camera" | "microphone") => void }) {
+  const b = videoBridge()!;
+  const open = b.openDeviceSettings || b.openSettings;
+  if (!open) return null;
+  const name = what === "camera" ? "카메라" : "마이크";
+  return (
+    <button type="button" onClick={() => { void open(what); onOpen(what); }} title={`윈도우 ${name} 설정을 열어요 (${what === "camera" ? "밝기·대비, 쓸 카메라" : "쓸 마이크, 소리 크기, 마이크 테스트"})`}
+      style={{ height: 42, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+      <Icon name="gear" size={18} />설정
+    </button>
+  );
+}
+
+/** [설정]을 누른 뒤 — 무엇을 하면 되는지 한 줄 안내 */
+function SettingsNote({ what }: { what: "camera" | "microphone" }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 8, marginBottom: 8, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, fontSize: 14, lineHeight: 1.6 }}>
+      <Icon name="info" size={17} />
+      <span>
+        {what === "camera"
+          ? <>윈도우 <b>카메라 설정</b> 창이 열렸어요. 카메라 이름을 누르면 <b>밝기·대비</b>를 바꿀 수 있어요.</>
+          : <>윈도우 <b>소리 설정</b> 창이 열렸어요. 아래 <b>입력</b>에서 쓸 마이크와 <b>소리 크기</b>를 바꿀 수 있어요.</>}
+        {" "}다 고치고 이 창으로 돌아오면 저절로 다시 잡아요.
+      </span>
+    </div>
+  );
+}
+
 /** 마이크 소리 크기 막대 — 말하면 움직인다 (녹화 전·녹화 중 모두). 너무 크면 노랑·빨강 */
 function MicMeter({ deviceId, gain = 1, auto = true }: { deviceId: string; gain?: number; auto?: boolean }) {
   const [level, setLevel] = useState(0); // 0~1
@@ -1062,6 +1091,20 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   // 카메라·마이크 찾기 — 카메라는 따로 열어 봐서, 못 열면 이유를 알려 준다 (노트북에서 안 잡히던 문제, 2026-10-16)
   //  denied: 윈도우 카메라 권한 꺼짐 · busy: 다른 프로그램이 쓰는 중이거나 카메라 끄기 키·가림막 · none: 카메라 없음
   const [camErr, setCamErr] = useState("");
+  const [setOpened, setSetOpened] = useState<"" | "camera" | "microphone">(""); // [설정]으로 윈도우 설정을 열었다는 안내 (이 창으로 돌아오면 사라짐)
+  useEffect(() => {
+    if (!setOpened) return;
+    // 윈도우 설정 창이 앞으로 나간 뒤 이 창으로 돌아오면 안내를 접는다 (돌아올 때 장치는 저절로 다시 찾는다)
+    let away = false;
+    const blur = () => (away = true);
+    const back = () => away && setTimeout(() => setSetOpened(""), 4000);
+    window.addEventListener("blur", blur);
+    window.addEventListener("focus", back);
+    return () => {
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("focus", back);
+    };
+  }, [setOpened]);
   const [micErr, setMicErr] = useState("");
   const errOf = (e: unknown) => {
     const n = (e as DOMException)?.name || "";
@@ -1399,10 +1442,14 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           {mode !== "screen" && (
             <div>
               <div style={{ ...label, marginBottom: 8 }}>카메라</div>
-              <select value={cam} onChange={(e) => setCam(e.target.value)} style={input} disabled={phase !== "setup"}>
-                <option value="">기본 카메라</option>
-                {cams.map((c) => <option key={c.deviceId} value={c.deviceId}>{(c.label || "카메라") + (camScore(c) === 1 ? " (가상 카메라)" : camScore(c) === 2 ? " (얼굴 인식용)" : "")}</option>)}
-              </select>
+              <div style={{ display: "flex", gap: 8 }}>
+                <select value={cam} onChange={(e) => setCam(e.target.value)} style={{ ...input, flex: 1, minWidth: 0 }} disabled={phase !== "setup"}>
+                  <option value="">기본 카메라</option>
+                  {cams.map((c) => <option key={c.deviceId} value={c.deviceId}>{(c.label || "카메라") + (camScore(c) === 1 ? " (가상 카메라)" : camScore(c) === 2 ? " (얼굴 인식용)" : "")}</option>)}
+                </select>
+                <SettingsBtn what="camera" onOpen={setSetOpened} />
+              </div>
+              {setOpened === "camera" && <SettingsNote what="camera" />}
               {camErr && (
                 <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 6, background: "rgba(239,68,68,0.10)", border: `1px solid ${C.danger}`, fontSize: 13.5, lineHeight: 1.6 }}>
                   {camErr === "denied" ? <>윈도우에서 <b>카메라 사용이 꺼져 있어요.</b> [설정] → [개인 정보 및 보안] → [카메라]에서 <b>“데스크톱 앱이 카메라에 액세스하도록 허용”</b>을 켜 주세요.</>
@@ -1481,10 +1528,14 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
               <span style={{ fontSize: 13, color: C.sub, marginRight: 6 }}>자동 조절</span>
               <Toggle on={micAuto} onChange={setMicAuto} disabled={phase !== "setup" || micMuted} />
             </div>
-            <select value={mic} onChange={(e) => setMic(e.target.value)} style={{ ...input, marginBottom: 8 }} disabled={phase !== "setup" || micMuted}>
-              <option value="">기본 마이크</option>
-              {mics.map((m) => <option key={m.deviceId} value={m.deviceId}>{m.label || "마이크"}</option>)}
-            </select>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <select value={mic} onChange={(e) => setMic(e.target.value)} style={{ ...input, flex: 1, minWidth: 0 }} disabled={phase !== "setup" || micMuted}>
+                <option value="">기본 마이크</option>
+                {mics.map((m) => <option key={m.deviceId} value={m.deviceId}>{m.label || "마이크"}</option>)}
+              </select>
+              <SettingsBtn what="microphone" onOpen={setSetOpened} />
+            </div>
+            {setOpened === "microphone" && <SettingsNote what="microphone" />}
             <VolumeControl muted={micMuted} value={micVol} onMute={setMicMuted} onVolume={(v) => { setMicVol(v); if (v > 0) setMicMuted(false); }} />
             {micOn && <MicMeter deviceId={mic} gain={micVol} auto={micAuto} />}
             {micErr && !micMuted && (
