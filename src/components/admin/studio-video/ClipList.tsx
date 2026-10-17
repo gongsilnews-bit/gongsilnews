@@ -266,10 +266,15 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
 
   return (
     <div onClick={(e) => p.actions.selectClip(c.id, e.ctrlKey || e.metaKey || e.shiftKey)} data-clip={c.id}
-      // 끌어서 옮기기 — 고른 클립 중 하나를 끌면 고른 클립 모두
+      // 끌어서 옮기기 — 고른 클립 중 하나를 끌면 고른 클립 모두.
+      //  빈 곳·번호 쪽을 잡았을 때만 (막대·단추·단어·글 칸·떠 있는 칸을 끌 때 클립이 같이 끌려 흔들리던 문제)
       draggable={!editing && !aiOpen}
+      onPointerDown={(e) => {
+        const t = e.target as HTMLElement;
+        e.currentTarget.draggable = !editing && !aiOpen && !t.closest("input, textarea, select, button, [data-keepword], [data-nodrag]");
+      }}
       onDragStart={(e) => {
-        if ((e.target as HTMLElement).closest?.("input, textarea")) return e.preventDefault();
+        if (!e.currentTarget.draggable) return e.preventDefault();
         dragging = p.selected.length > 1 && p.selected.includes(c.id) ? [...p.selected] : [c.id];
         e.dataTransfer.setData(DRAG_CLIP, JSON.stringify(dragging));
         e.dataTransfer.effectAllowed = "move";
