@@ -238,15 +238,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   return (
     <div onClick={(e) => p.actions.selectClip(c.id, e.ctrlKey || e.metaKey || e.shiftKey)} data-clip={c.id}
       style={{ position: "relative", display: "flex", gap: 0, margin: "8px 0", borderRadius: 8, border: `1px solid ${sel ? C.accent : playingHere ? C.line2 : C.line}`, background: C.card, cursor: "pointer", fontFamily: FONT }}>
-      {/* 고른 단어로 할 수 있는 일 — 브루처럼 클립 칸 오른쪽 위에 떠 있는 단추 줄 (아래 줄을 차지하지 않게) */}
-      {p.selWord?.clip === c.id && !editing && words[p.selWord.i] && (
-        <div onClick={(e) => e.stopPropagation()}
-          style={{ position: "absolute", right: 140, top: 0, transform: "translateY(-70%)", zIndex: 20, display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
-          <span style={{ fontSize: 13, color: C.sub, padding: "0 8px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>“{words[p.selWord.i].w}”</span>
-          <ActionBtn icon={words[p.selWord.i].del ? "undo" : "trash"} label={words[p.selWord.i].del ? "되살리기" : "이 단어 지우기"} onClick={() => p.actions.toggleWord(c.id, p.selWord!.i)} danger={!words[p.selWord.i].del} />
-          {p.selWord.i > 0 && <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, p.selWord!.i)} />}
-        </div>
-      )}
       {/* 번호 + 고르기 칸 */}
       <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 14, borderRight: `1px solid ${C.line}` }}>
         <span style={{ fontSize: 15, fontWeight: 800, color: playingHere ? C.text : C.sub }}>{n}</span>
@@ -294,11 +285,21 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 return (
                   <React.Fragment key={i}>
                   {before.map((g, j) => pauseChip(g, i * 10 + j))}
+                  <span style={{ position: "relative", display: "inline-flex" }}>
+                  {/* 고른 단어로 할 수 있는 일 — 브루처럼 그 단어 바로 위에서 오른쪽으로 */}
+                  {isSel && !editing && (
+                    <span onClick={(e) => e.stopPropagation()}
+                      style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
+                      <ActionBtn icon={w.del ? "undo" : "trash"} label={w.del ? "되살리기" : "이 단어 지우기"} onClick={() => p.actions.toggleWord(c.id, i)} danger={!w.del} />
+                      {i > 0 && <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, i)} />}
+                    </span>
+                  )}
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
                       color: w.del ? C.dim : active ? "#fff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}
                   </button>
+                  </span>
                   </React.Fragment>
                 );
               })}
