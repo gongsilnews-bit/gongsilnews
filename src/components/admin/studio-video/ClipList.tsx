@@ -570,25 +570,53 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
 
 /** 클립 사이 화면전환 자리 — 카드 사이 틈에 겹쳐 띄운다 (자리를 차지하지 않게). 있으면 칩, 없으면 마우스를 올릴 때 [+ 화면전환] */
 function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
+  // 틈에 0.3초 머물 때만 작은 (＋) 하나 — 누르면 메뉴 (지나가기만 해도 단추가 튀어나와 잘못 누르던 문제)
   const [hover, setHover] = React.useState(false);
+  const [menu, setMenu] = React.useState(false);
+  const timer = React.useRef(0);
   const t = c.trans;
+  const enter = () => {
+    clearTimeout(timer.current);
+    if (dragging.length) return; // 클립을 끌어 옮기는 동안은 안 나온다
+    timer.current = window.setTimeout(() => setHover(true), 300);
+  };
+  const leave = () => {
+    clearTimeout(timer.current);
+    if (!menu) setHover(false);
+  };
+  React.useEffect(() => () => clearTimeout(timer.current), []);
+  const item = (icon: string, label: string, run: () => void) => (
+    <button type="button" onClick={(e) => { e.stopPropagation(); setMenu(false); setHover(false); run(); }}
+      style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", height: 36, padding: "0 12px", border: 0, borderRadius: 5, background: "transparent", color: C.text, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap", textAlign: "left" }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+      <Icon name={icon} size={16} />{label}
+    </button>
+  );
   return (
-    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ position: "absolute", left: 0, right: 0, top: -10, height: 20, zIndex: 3, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto" }}>
-      {/* 마우스를 올리면 [+ 새 클립] [+ 화면전환] [여기서 새 씬] */}
-      {hover && (
-        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.newClipBefore(c.id); }} title="이 두 클립 사이에 새 글 클립 넣기"
-          style={{ height: 22, padding: "0 10px", marginRight: 6, borderRadius: 11, border: `1px solid ${C.line2}`, background: C.panel, color: C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>＋ 새 클립</button>
-      )}
-      {(t || hover) && (
-        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTrans(c.id, !t); }} title={t ? "눌러서 화면전환 바꾸기" : "이 두 클립 사이에 화면전환 넣기"}
-          style={{ height: 22, padding: "0 10px", borderRadius: 11, border: `1px solid ${t || open ? C.accent : C.line2}`, background: t ? (open ? C.accent : C.accentDim) : C.panel, color: t && open ? "#fff" : t ? C.text : C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
-          {t ? <>↔ {transLabel(t.type)} · {(Number(t.a) + Number(t.b)).toFixed(1)}초</> : <>＋ 화면전환</>}
+    <div onMouseEnter={enter} onMouseLeave={leave}
+      style={{ position: "absolute", left: 0, right: 0, top: -10, height: 20, zIndex: menu ? 30 : 3, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, pointerEvents: "auto" }}>
+      {/* 넣은 화면전환은 늘 칩으로 */}
+      {t && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTrans(c.id, false); }} title="눌러서 화면전환 바꾸기"
+          style={{ height: 22, padding: "0 10px", borderRadius: 11, border: `1px solid ${C.accent}`, background: open ? C.accent : C.accentDim, color: open ? "#fff" : C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+          ↔ {transLabel(t.type)} · {(Number(t.a) + Number(t.b)).toFixed(1)}초
         </button>
       )}
-      {hover && (
-        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.sceneBreak(c.id); }} title="이 클립부터 아래를 새 씬으로"
-          style={{ height: 22, padding: "0 10px", marginLeft: 6, borderRadius: 11, border: `1px solid ${C.line2}`, background: C.panel, color: C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>여기서 새 씬</button>
+      {(hover || menu) && (
+        <span style={{ position: "relative", display: "inline-flex" }}>
+          <button type="button" onClick={(e) => { e.stopPropagation(); setMenu((v) => !v); }} title="여기에 넣기 — 새 클립 · 화면전환 · 새 씬"
+            style={{ width: 22, height: 22, padding: 0, borderRadius: 11, border: `1px solid ${menu ? C.accent : C.line2}`, background: menu ? C.accent : C.panel, color: menu ? "#fff" : C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, lineHeight: 1 }}>＋</button>
+          {menu && (
+            <>
+              <span onClick={(e) => { e.stopPropagation(); setMenu(false); setHover(false); }} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+              <span onClick={(e) => e.stopPropagation()} style={{ position: "absolute", left: "50%", top: 28, transform: "translateX(-50%)", zIndex: 31, display: "flex", flexDirection: "column", minWidth: 170, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 10px 26px rgba(0,0,0,0.45)" }}>
+                {item("plus", "새 클립 넣기", () => p.actions.newClipBefore(c.id))}
+                {item("transition", t ? "화면전환 바꾸기" : "화면전환 넣기", () => p.actions.openTrans(c.id, !t))}
+                {item("scene", "여기서 새 씬", () => p.actions.sceneBreak(c.id))}
+              </span>
+            </>
+          )}
+        </span>
       )}
     </div>
   );
