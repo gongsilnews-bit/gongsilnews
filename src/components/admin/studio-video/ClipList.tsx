@@ -14,7 +14,7 @@ import { transLabel } from "./transitions";
 export type ClipActions = {
   selectClip: (id: string, multi: boolean) => void;
   selectMany: (ids: string[], on: boolean) => void; // 씬 전체·클립 전체 고르기/풀기
-  selectWord: (clipId: string, i: number) => void;
+  selectWord: (clipId: string, i: number, multi?: boolean) => void; // multi = Ctrl+클릭 (여러 단어)
   toggleWord: (clipId: string, i: number) => void;
   splitAt: (clipId: string, i: number) => void;
   editText: (clipId: string, text: string) => void;
@@ -50,6 +50,7 @@ type Props = {
   selWord: { clip: string; i: number } | null;
   curClip: string;
   curWord: number;
+  selWordIs?: number[]; // 고른 단어들 (selWord 클립 안, Ctrl+클릭)
   playing?: boolean; // 지금 재생 중 (클립 칸 ▶/■)
   busy: Record<string, string>;
   actions: ClipActions;
@@ -286,7 +287,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
               {words.length === 0 && <span style={{ fontSize: 15, color: C.dim, padding: "5px 0" }}>{c.type === "voice" ? "(글 없음 — 화면만 보여요)" : "(말소리 없음)"}</span>}
               {words.map((w, i) => {
-                const isSel = p.selWord?.clip === c.id && p.selWord.i === i;
+                const isSel = p.selWord?.clip === c.id && (p.selWordIs?.length ? p.selWordIs.includes(i) : p.selWord.i === i);
+                const isLead = p.selWord?.clip === c.id && p.selWord.i === i; // 단추 막대는 마지막으로 누른 단어 위에
                 const active = !w.del && times.find((x) => (x as { i: number }).i === i) && activeIdx === i;
                 // 이 단어 앞의 쉼 [..]
                 const before = pauses.filter((g) => g.at === i);
@@ -302,7 +304,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     </button>
                   )}
                   {/* 고른 단어 — 그 단어 바로 위에 단추 막대 (브루처럼). 지우기는 마우스를 올리면 나오는 ⓧ */}
-                  {isSel && !editing && (() => {
+                  {isLead && !editing && (() => {
                     const ib = (icon: string, tip: string, onClick: () => void, dis = false) => (
                       <button type="button" title={tip} disabled={dis} onClick={onClick}
                         style={{ width: 34, height: 32, padding: 0, border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -346,7 +348,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       </span>
                     );
                   })()}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i, e.ctrlKey || e.metaKey); }} title="누르면 그 자리로 · Ctrl+누르기로 여러 단어 고르기"
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
                       color: w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}

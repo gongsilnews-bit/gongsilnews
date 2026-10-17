@@ -3,7 +3,7 @@
 // 편집 화면 — 브루와 같은 짜임: 맨 위 탭 + 리본, 왼쪽 미리보기, 가운데 클립 목록, 오른쪽 자료·설정 칸
 // 진짜 편집이 되면서 어르신도 쉽게: 모든 기능을 눈에 보이는 단추로, 되돌리기, 자동 저장
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } from "./types";
+import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem, Word } from "./types";
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
 import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
 import MediaMenu, { SoundMenu, type MediaFit, type MediaOrder } from "./MediaMenu";
@@ -87,6 +87,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   const [selected, setSelected] = useState<string[]>([]);
   const [selWord, setSelWord] = useState<{ clip: string; i: number } | null>(null);
+  // Ctrl+클릭으로 더 고른 단어들 (selWord 와 같은 클립일 때만 쓴다)
+  const [selWordSet, setSelWordSet] = useState<{ clip: string; is: number[] } | null>(null);
+  const wordIs = (): number[] => (selWord ? (selWordSet && selWordSet.clip === selWord.clip && selWordSet.is.length ? [...selWordSet.is].sort((a, b) => a - b) : [selWord.i]) : []);
+  // 단어 복사 보관함 — 촬영 영상은 그 단어를 말한 구간, AI 목소리는 글자
+  const wordClip = useRef<{ kind: "src"; asset: string; runs: { s: number; e: number; words: Word[] }[] } | { kind: "text"; text: string } | null>(null);
+  const lastCopy = useRef<"clips" | "words">("clips");
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
@@ -325,8 +331,22 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setSelWord(null);
       setSelected((s) => (on ? [...s, ...ids.filter((id) => !s.includes(id))] : s.filter((id) => !ids.includes(id))));
     },
-    selectWord: (clipId, i) => {
+    selectWord: (clipId, i, multi) => {
       setSelected([clipId]);
+      // Ctrl+클릭 — 같은 클립 안에서 단어를 더 고르거나 빼기
+      if (multi && selWord && selWord.clip === clipId) {
+        const cur = selWordSet && selWordSet.clip === clipId ? selWordSet.is : [selWord.i];
+        const is = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i];
+        if (!is.length) {
+          setSelWord(null);
+          setSelWordSet(null);
+          return;
+        }
+        setSelWordSet({ clip: clipId, is });
+        setSelWord({ clip: clipId, i: is.includes(i) ? i : is[is.length - 1] });
+        return;
+      }
+      setSelWordSet(null);
       setSelWord({ clip: clipId, i });
       const f = findClip(pref.current, clipId);
       if (!f) return;
@@ -1325,6 +1345,112 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     } else say("목소리 설정을 바꿨어요");
   };
 
+  /* ── 단어 복사·붙여넣기·지우기 (Ctrl+클릭으로 여러 단어) ── */
+  const deleteWords = () => {
+    if (!selWord) return;
+    const is = wordIs();
+    const f = findClip(pref.current, selWord.clip);
+    if (!f?.clip.words) return;
+    change((p) => {
+      const c = findClip(p, selWord.clip)!.clip;
+      // 모두 지운 단어면 되살리고, 아니면 모두 지운다
+      const allDel = is.every((i) => c.words![i]?.del);
+      for (const i of is) if (c.words![i]) c.words![i].del = !allDel;
+      if (c.type === "voice") {
+        c.text = clipText(c);
+        c.words = c.words!.filter((w) => !w.del);
+        c.voice = null;
+      }
+    });
+    setSelWord(null);
+    setSelWordSet(null);
+    if (f.clip.type === "voice") revoice([f.clip.id]);
+  };
+  const copyWords = () => {
+    if (!selWord) return;
+    const c = findClip(pref.current, selWord.clip)?.clip;
+    if (!c?.words) return;
+    const is = wordIs().filter((i) => c.words![i]);
+    if (!is.length) return;
+    if (c.type === "voice" || !c.src) wordClip.current = { kind: "text", text: is.map((i) => c.words![i].w).join(" ") };
+    else {
+      // 이어진 단어끼리 한 구간 (떨어져 있으면 구간 여러 개)
+      const runs: { s: number; e: number; words: Word[] }[] = [];
+      let prev = -2;
+      for (const i of is) {
+        const w = { ...c.words[i], del: undefined };
+        const last = runs[runs.length - 1];
+        if (last && i === prev + 1) {
+          last.e = w.e;
+          last.words.push(w);
+        } else runs.push({ s: w.s, e: w.e, words: [w] });
+        prev = i;
+      }
+      wordClip.current = { kind: "src", asset: c.src.asset, runs };
+    }
+    lastCopy.current = "words";
+    say(is.length > 1 ? `단어 ${is.length}개를 복사했어요 (단어를 고르고 Ctrl+V)` : "단어를 복사했어요 (단어를 고르고 Ctrl+V)");
+  };
+  /** 고른 단어 바로 뒤에 붙여넣기 — AI 목소리에 글자면 그 자리에 글을 넣고, 아니면 그 자리에서 클립을 나눠 사이에 새 클립 */
+  const pasteWords = () => {
+    const wc = wordClip.current;
+    if (!wc) return;
+    const target = selWord ? findClip(pref.current, selWord.clip) : null;
+    const t = selWord ? Math.max(...wordIs()) : -1;
+    if (wc.kind === "text" && target?.clip.type === "voice") {
+      const ws = (target.clip.words || []).map((w) => w.w);
+      ws.splice(t + 1, 0, ...wc.text.split(/\s+/).filter(Boolean));
+      actions.editText(target.clip.id, ws.join(" "));
+      say("글을 넣었어요 · 목소리를 새로 만들어요");
+      return;
+    }
+    const made: Clip[] = wc.kind === "src"
+      ? wc.runs.map((r) => ({ id: uid(), type: "source", text: r.words.map((w) => w.w).join(" "), words: r.words.map((w) => ({ ...w })), src: { asset: wc.asset, s: r.s, e: r.e } }) as Clip)
+      : [{ id: uid(), type: "voice", text: wc.text, words: wc.text.split(/\s+/).filter(Boolean).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: target?.clip.visual || null } as Clip];
+    let tail = "";
+    change((p) => {
+      const g = target ? findClip(p, target.clip.id) : null;
+      if (!g) {
+        if (!p.scenes.length) p.scenes.push({ id: uid(), clips: [] });
+        p.scenes[p.scenes.length - 1].clips.push(...made);
+        return;
+      }
+      const c = g.clip;
+      // 고른 단어가 끝 단어가 아니면 그 뒤에서 나눈다 (splitAt 과 같은 방식)
+      if (c.words && t >= 0 && t < c.words.length - 1) {
+        const a = c.words.slice(0, t + 1), bw = c.words.slice(t + 1);
+        const second: Clip = structuredClone(c);
+        second.id = tail = uid();
+        delete second.subText;
+        if (c.type === "voice") {
+          c.words = a;
+          c.text = a.filter((w) => !w.del).map((w) => w.w).join(" ");
+          c.voice = null;
+          second.words = bw;
+          second.text = bw.filter((w) => !w.del).map((w) => w.w).join(" ");
+          second.voice = null;
+        } else if (c.src) {
+          const at = bw[0].s;
+          c.words = a;
+          c.text = a.map((w) => w.w).join(" ");
+          second.words = bw;
+          second.text = bw.map((w) => w.w).join(" ");
+          second.src = { ...c.src, s: at };
+          c.src = { ...c.src, e: at };
+        }
+        g.scene.clips.splice(g.idx + 1, 0, second);
+        for (const l of p.layers || []) if (l.to === c.id) l.to = second.id;
+      }
+      g.scene.clips.splice(g.idx + 1, 0, ...made);
+    });
+    setSelWord(null);
+    setSelWordSet(null);
+    setSelected(made.map((x) => x.id));
+    const re = [...made.filter((x) => x.type === "voice").map((x) => x.id), ...(tail && target?.clip.type === "voice" ? [target.clip.id, tail] : [])];
+    if (re.length) revoice(re);
+    say(made.length > 1 ? `구간 ${made.length}개를 붙여넣었어요` : "붙여넣었어요");
+  };
+
   /* ── 키보드 ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1350,13 +1476,22 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         e.preventDefault();
         redo();
       } else if (e.key === "Delete") {
-        if (selWord) actions.toggleWord(selWord.clip, selWord.i);
+        if (selWord) deleteWords();
         else if (selected.length) actions.removeClip(selected);
         else if (panel === "layer" && selLayer) removeLayer(selLayer);
+      } else if (ctrl && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x") && selWord) {
+        // 단어를 골랐으면 — 고른 단어만 복사 (Ctrl+X 는 복사하고 지우기)
+        e.preventDefault();
+        copyWords();
+        if (e.key.toLowerCase() === "x") deleteWords();
+      } else if (ctrl && e.key.toLowerCase() === "v" && lastCopy.current === "words" && wordClip.current) {
+        e.preventDefault();
+        pasteWords();
       } else if (ctrl && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x") && selected.length) {
         // Ctrl+C 복사 · Ctrl+X 잘라내기 — 고른 클립 (리본 [복사하기][잘라내기]와 같다)
         e.preventDefault();
         clipboard.current = selected.map((id) => structuredClone(findClip(pref.current, id)!.clip)).filter(Boolean);
+        lastCopy.current = "clips";
         if (e.key.toLowerCase() === "x") actions.removeClip(selected);
         else say(`클립 ${selected.length}개를 복사했어요 (Ctrl+V 로 붙여넣기)`);
       } else if (ctrl && e.key.toLowerCase() === "v" && clipboard.current.length) {
@@ -1758,7 +1893,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             </div>
           )}
           <div ref={listRef} style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
-            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} playing={playing} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} transClip={panel === "trans" ? transClip : ""} />
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} selWordIs={wordIs()} playing={playing} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} transClip={panel === "trans" ? transClip : ""} />
           </div>
         </div>
 
