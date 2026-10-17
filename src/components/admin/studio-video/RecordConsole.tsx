@@ -504,7 +504,8 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
   phaseRef.current = phase;
   useEffect(() => {
     if (!canPop) return;
-    const w = window.open("about:blank", "gsv-console");
+    // 열 때마다 새 이름 — 개발 모드에서 두 번 열고 닫을 때 닫히는 창을 다시 잡지 않게
+    const w = window.open("about:blank", `gsv-console-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
     if (!w) return setPopFail(true);
     const d = w.document;
     d.title = "영상 녹화하기";

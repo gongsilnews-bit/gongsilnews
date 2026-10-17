@@ -62,7 +62,8 @@ function setConsole(win, main) {
   win.setMenuBarVisibility(false);
   if (main && !main.isDestroyed()) main.webContents.setBackgroundThrottling(false);
   win.on("closed", () => {
-    if (consoleWin === win) consoleWin = null;
+    if (consoleWin !== win) return; // 새 조정실이 이미 떠 있다
+    consoleWin = null;
     if (main && !main.isDestroyed() && !live) main.webContents.setBackgroundThrottling(true);
   });
 }
