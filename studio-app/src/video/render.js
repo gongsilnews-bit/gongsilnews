@@ -246,6 +246,12 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   } else filters.push(fitFilter(cflip ? "vflip" : vIn, W, H, fill, "vfit"));
   let vOut = "vfit";
 
+  // 단어 구간 레이어 — 그 단어를 말하는 동안만 (ffmpeg enable / 자막 시각)
+  const winOf = (l) => tl.layerWindow(l, clip, st);
+  const en = (l) => {
+    const w = winOf(l);
+    return w ? `:enable='between(t,${w.s.toFixed(3)},${w.e.toFixed(3)})'` : "";
+  };
   // 사진 올리기 애셋 (자막·화면 글자 아래)
   layers.filter((l) => l.type === "image").forEach((l, j) => {
     const a = l.asset && p.assets[l.asset];
@@ -258,7 +264,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     if (l.fit === "cover" || l.fit === "contain") {
       const sc = l.fit === "cover" ? `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}` : `scale=${W}:${H}:force_original_aspect_ratio=decrease`;
       filters.push(`[${k}:v]${sc},${lflip ? lflip + "," : ""}setsar=1,format=rgba,colorchannelmixer=aa=${op0.toFixed(3)}[ov${j}]`);
-      filters.push(`[${vOut}][ov${j}]overlay=x=(W-w)/2:y=(H-h)/2:eof_action=pass[vo${j}]`);
+      filters.push(`[${vOut}][ov${j}]overlay=x=(W-w)/2:y=(H-h)/2:eof_action=pass${en(l)}[vo${j}]`);
       vOut = `vo${j}`;
       return;
     }
@@ -269,7 +275,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     const x0 = Math.round(Math.max(0, Math.min(W - pw, W * Number(l.x ?? 0.5) - pw / 2)));
     const y0 = Math.round(Math.max(0, Math.min(H - ph, H * Number(l.y ?? 0.5) - ph / 2)));
     filters.push(`[${k}:v]scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
-    filters.push(`[${vOut}][ov${j}]overlay=x=${x0}:y=${y0}:eof_action=pass[vo${j}]`);
+    filters.push(`[${vOut}][ov${j}]overlay=x=${x0}:y=${y0}:eof_action=pass${en(l)}[vo${j}]`);
     vOut = `vo${j}`;
   });
 
@@ -308,7 +314,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     const events = [
       ...lines.flatMap(subEvents),
       // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
-      ...texts.map((l, j) => `Dialogue: 1,${assTime(0)},${assTime(dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${assEsc(String(l.text).trim())}`),
+      ...texts.map((l, j) => `Dialogue: 1,${assTime(winOf(l) ? winOf(l).s : 0)},${assTime(winOf(l) ? winOf(l).e : dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${assEsc(String(l.text).trim())}`),
     ];
     const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";
     fs.writeFileSync(path.join(tmp, `s${idx}.ass`), ass, "utf8");

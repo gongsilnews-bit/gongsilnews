@@ -62,6 +62,9 @@ export type Layer = {
   type: LayerType;
   from: string; // 시작 클립 id
   to: string; // 끝 클립 id
+  // 단어 구간 (브루 [삽입]처럼) — 있으면 from 클립의 w0번째 단어부터 w1번째 단어를 말하는 동안만 나온다
+  w0?: number;
+  w1?: number;
   name?: string;
   // 음악
   file?: string;

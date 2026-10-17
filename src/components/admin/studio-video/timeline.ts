@@ -223,6 +223,15 @@ export function layerItems(p: Project, layer: Layer, items: FlatItem[], order = 
   });
 }
 
+/** 단어 구간 레이어가 그 클립 안에서 나오는 시간 (클립 시작 기준 초). 단어 구간이 없으면 null = 클립 전체 */
+export function layerWindow(layer: Layer, clip: Clip, settings?: Settings): { s: number; e: number } | null {
+  if (typeof layer.w0 !== "number" || layer.from !== clip.id) return null;
+  const w1 = typeof layer.w1 === "number" ? layer.w1 : layer.w0;
+  const ts = wordTimes(clip, settings).filter((w) => w.i >= layer.w0! && w.i <= w1);
+  if (!ts.length) return null;
+  return { s: ts[0].s, e: ts[ts.length - 1].e };
+}
+
 /** 클립 하나에 걸린 애셋들 */
 export function layersAt(p: Project, clipId: string, order = clipOrder(p)) {
   const k = order.get(clipId);

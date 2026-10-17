@@ -24,6 +24,7 @@ export type ClipActions = {
   openVisual: (id: string) => void;
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
   openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
+  openLayer: (id: string) => void; // 단어 앞 작은 표시를 누르면 그 사진·글자 설정
   setPad: (ids: string[], sec: number) => void; // AI 목소리 다 읽은 뒤 쉬기 (문장 끝 [..])
   // 단어를 누르면 위에 뜨는 단추 막대 (브루처럼) — 이 클립 잘라내기·복사·붙여넣기, 삽입
   cutClip: (id: string) => void;
@@ -292,9 +293,21 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 const active = !w.del && times.find((x) => (x as { i: number }).i === i) && activeIdx === i;
                 // 이 단어 앞의 쉼 [..]
                 const before = pauses.filter((g) => g.at === i);
+                // 이 단어부터 나오는 사진·글자 (단어 구간 레이어) — 단어 앞에 작은 표시
+                const marks = (project.layers || []).filter((l) => l.from === c.id && l.w0 === i && (l.type === "image" || l.type === "text"));
                 return (
                   <React.Fragment key={i}>
                   {before.map((g, j) => pauseChip(g, i * 10 + j))}
+                  {marks.map((l) => {
+                    const a = l.type === "image" && l.asset ? project.assets[l.asset] : null;
+                    const th = a ? a.thumb || (a.kind === "image" ? a.url : "") : "";
+                    return (
+                      <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); p.actions.openLayer(l.id); }} title={l.type === "image" ? "이 단어부터 나오는 사진 — 눌러서 설정" : `화면 글자 “${String(l.text || "").slice(0, 20)}” — 눌러서 설정`}
+                        style={{ width: 30, height: 34, padding: 0, borderRadius: 4, border: `1px solid ${C.accent}`, background: C.panel2, overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.accent, fontSize: 14, fontWeight: 800, fontFamily: FONT, opacity: l.off ? 0.4 : 1 }}>
+                        {l.type === "image" ? (th ? <img src={th} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <Icon name="image" size={15} />) : "T"}
+                      </button>
+                    );
+                  })}
                   <span style={{ position: "relative", display: "inline-flex" }} onMouseEnter={() => setHoverW(i)} onMouseLeave={() => setHoverW((h) => (h === i ? -1 : h))}>
                   {/* 마우스를 올리면 오른쪽 위 ⓧ — 누르면 바로 이 단어 지우기 (지운 단어는 ↺ 되살리기) */}
                   {hoverW === i && !editing && (

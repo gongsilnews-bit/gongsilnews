@@ -464,6 +464,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setSelected([id]);
       openLib("mine");
     },
+    openLayer: (id) => {
+      setSelLayer(id);
+      setPanel("layer");
+    },
     openTiming: (id) => {
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
       setPanel("timing");
@@ -528,6 +532,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     },
     canPaste: () => (lastCopy.current === "words" ? Boolean(wordClip.current) : clipboard.current.length > 0),
     insert: (kind) => {
+      // 단어를 골랐으면 그 단어(Ctrl 로 여러 개면 첫 단어~끝 단어) 동안만
+      const is = wordIs();
+      wordPick.current = selWord && is.length ? { clip: selWord.clip, w0: is[0], w1: is[is.length - 1] } : null;
       if (kind === "title") return addTextLayer();
       // 이 클립(고른 클립) 화면 위에 사진·영상 올리기 — 자료 칸을 그 탭으로
       setOverlayTarget("");
@@ -798,7 +805,21 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     const id = cur?.clip.id || items[0].clip.id;
     return { from: id, to: id, n: 1 };
   };
+  // 단어를 고르고 [삽입]을 눌렀으면 — 다음에 넣는 사진·글자는 그 단어 구간에만 (브루처럼)
+  const wordPick = useRef<{ clip: string; w0: number; w1: number } | null>(null);
   const addLayer = (l: Omit<Layer, "id" | "from" | "to">, all: boolean) => {
+    const wp = wordPick.current;
+    wordPick.current = null;
+    if (wp && l.type !== "music" && findClip(pref.current, wp.clip)) {
+      const id = uid();
+      change((p) => {
+        p.layers = [...(p.layers || []), { ...l, id, from: wp.clip, to: wp.clip, w0: wp.w0, w1: wp.w1 } as Layer];
+      });
+      setSelLayer(id);
+      setPanel("layer");
+      say(`${l.type === "image" ? "사진을" : "화면 글자를"} 고른 단어 동안만 넣었어요`);
+      return;
+    }
     const r = rangeFor(all);
     if (!r) return say("클립을 먼저 넣어 주세요");
     const id = uid();

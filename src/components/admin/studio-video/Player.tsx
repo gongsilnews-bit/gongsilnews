@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { clipOrder, clipText, flatten, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
 
@@ -335,7 +335,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   // 쓰인 글꼴을 받아 둔다 (처음 한 번)
   useFonts([project.settings.subtitle.font, ...project.scenes.flatMap((sc) => sc.clips.map((c) => c.subStyle?.font)), ...(project.layers || []).filter((l) => l.type === "text").map((l) => l.font)]);
   // 지금 클립에 걸린 사진·화면 글자 애셋 (굽기와 같은 자리·크기)
-  const over = clip ? layersAt(project, clip.id, order).filter((l) => !l.off) : [];
+  // 단어 구간 레이어는 그 단어를 말하는 동안만
+  const over = clip ? layersAt(project, clip.id, order).filter((l) => {
+    if (l.off) return false;
+    const w = layerWindow(l, clip, project.settings);
+    return !w || (local >= w.s && local < w.e + 0.001);
+  }) : [];
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
 

@@ -136,6 +136,16 @@ function layerItems(p, layer, items, order = clipOrder(p)) {
 }
 
 /** 클립 하나에 걸린 애셋들 */
+/** 단어 구간 레이어가 그 클립 안에서 나오는 시간 (클립 시작 기준 초). 없으면 null = 클립 전체 (웹 timeline.ts layerWindow 와 같다) */
+function layerWindow(layer, clip, settings) {
+  if (typeof layer.w0 !== "number" || layer.from !== clip.id) return null;
+  const w1 = typeof layer.w1 === "number" ? layer.w1 : layer.w0;
+  const idx = (clip.words || []).map((w, i) => (w.del ? -1 : i)).filter((i) => i >= 0);
+  const ts = wordTimes(clip, settings);
+  const pick = ts.filter((_, k) => idx[k] !== undefined && idx[k] >= layer.w0 && idx[k] <= w1);
+  if (!pick.length) return null;
+  return { s: pick[0].s, e: pick[pick.length - 1].e };
+}
 function layersAt(p, clipId, order = clipOrder(p)) {
   return (p.layers || []).filter((l) => inLayer(order, l, clipId));
 }
@@ -152,4 +162,4 @@ function musicLayers(p, items) {
 /** 자막에 쓸 글 — 자막만 따로 쓴 글이 있으면 그것 */
 const subtitleText = (clip) => (typeof clip.subText === "string" ? clip.subText : clipText(clip));
 
-module.exports = { subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, musicLayers, subtitleText };
+module.exports = { subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };
