@@ -220,13 +220,20 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
   }, [onClose]);
   const W = 320;
   const left = Math.max(8, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 1600) - W - 16));
-  const top = Math.max(8, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 900) - 330));
+  // 실제 높이를 재서 — 아래에 자리가 없으면 위로 올린다 (메뉴가 길어져 화면 아래로 잘리던 문제). 그래도 길면 메뉴 안에서 굴린다
+  const box = React.useRef<HTMLDivElement>(null);
+  const [top, setTop] = React.useState(y);
+  React.useLayoutEffect(() => {
+    const h = box.current?.offsetHeight || 0;
+    const H = window.innerHeight;
+    setTop(y + h <= H - 8 ? y : Math.max(8, Math.min(y - h - 44, H - h - 8)));
+  }, [y, len, onLength]);
   const chipS = (on: boolean): React.CSSProperties => ({ flex: 1, height: 28, padding: 0, borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 69 }} />
-      <div onClick={(e) => e.stopPropagation()}
-        style={{ position: "fixed", left, top, zIndex: 70, width: W, padding: 12, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
+      <div ref={box} onClick={(e) => e.stopPropagation()}
+        style={{ position: "fixed", left, top, zIndex: 70, width: W, maxHeight: "calc(100vh - 16px)", overflowY: "auto", boxSizing: "border-box", padding: 12, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
         <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>적용 범위</div>
         <div style={{ display: "flex", gap: 5, marginBottom: 4 }}>
