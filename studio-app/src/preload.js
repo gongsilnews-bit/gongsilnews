@@ -206,6 +206,12 @@ if (allowed) {
           ipcRenderer.on("video:record-min", h);
           return () => ipcRenderer.removeListener("video:record-min", h);
         },
+        tiny: () => ipcRenderer.invoke("video:record-tiny"), // [더 작게 하기] — 얇은 막대
+        onTinyExpand: (fn) => {
+          const h = () => fn();
+          ipcRenderer.on("video:record-mini-expand", h);
+          return () => ipcRenderer.removeListener("video:record-mini-expand", h);
+        },
         onRestored: (fn) => {
           const h = () => fn();
           ipcRenderer.on("video:record-restore", h);

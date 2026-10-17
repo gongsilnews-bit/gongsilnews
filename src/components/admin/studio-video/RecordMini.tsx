@@ -24,6 +24,7 @@ export type MiniProps = {
   setPcMuted: (v: boolean) => void;
   onStop: () => void;
   onBig: () => void; // [크게 보기] — 녹화하기 창으로
+  onTiny?: () => void; // [더 작게 하기] — 단추만 있는 얇은 막대로
 };
 
 /** 열기 — 스튜디오 창의 글꼴·스타일을 옮겨 담은 빈 창. 닫으면 onGone */
@@ -195,6 +196,7 @@ export function RecordMini(p: MiniProps) {
         </span>
         <span style={{ flex: 1 }} />
         <button type="button" onClick={p.onBig} style={{ height: 40, padding: "0 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>크게 보기</button>
+        {p.onTiny && <button type="button" onClick={p.onTiny} title="단추만 있는 얇은 막대로" style={{ height: 40, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>더 작게</button>}
         <button type="button" onClick={p.onStop} style={{ height: 40, padding: "0 14px", borderRadius: 6, border: 0, background: C.danger, color: "#fff", fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>■ 녹화 끝내기</button>
       </div>
     </>

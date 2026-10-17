@@ -470,6 +470,7 @@ function register(base) {
     const tell = (ch) => !win.isDestroyed() && win.webContents.send(ch);
     live = {
       win,
+      noMini,
       startedAt: Number(startedAt) || Date.now(),
       onMin: () => (noMini ? tell("video:record-min") : openMini()),
       onRestore: () => (closeMini(), noMini && tell("video:record-restore")),
@@ -483,7 +484,15 @@ function register(base) {
     if (win) win.minimize();
     return true;
   });
-  ipcMain.on("record-mini:expand", () => live && showBig(live.win));
+  // 얇은 막대 [크게 보기] — 웹 화면이 작은 창을 맡으면(noMini) 카톡 크기 작은 창으로, 아니면 앱 창
+  ipcMain.on("record-mini:expand", () => {
+    if (!live) return;
+    if (!live.noMini) return showBig(live.win);
+    closeMini();
+    if (!live.win.isDestroyed()) live.win.webContents.send("video:record-mini-expand");
+  });
+  // 작은 창 [더 작게 하기] — 맨 처음의 얇은 막대 (● 녹화 중 · 크게 보기 · 녹화 끝내기)
+  ipcMain.handle("video:record-tiny", () => (openMini(), true));
   // 녹화 조정실 창 — 옮기기·투명도·작게·크게 (앱 0.1.8부터)
   let consoleFrom = null;
   ipcMain.handle("video:console", (_e, act, a, b) => {

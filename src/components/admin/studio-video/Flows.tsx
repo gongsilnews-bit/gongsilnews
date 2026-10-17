@@ -1727,6 +1727,16 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       if (openMini()) closeBig();
     } else b.record.minimize?.().catch(() => {});
   };
+  // [더 작게 하기] — 작은 창 → 얇은 막대 (앱이 띄운다, 녹화에 안 찍힘)
+  const goTiny = () => {
+    if (!b.record.tiny) return;
+    closeMini();
+    b.record.tiny().catch(() => {});
+  };
+  useEffect(() => b.record.onTinyExpand?.(() => {
+    if (phaseRef.current === "rec") openMini(); // 얇은 막대 [크게 보기] → 작은 창
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [b]);
   // [크게 보기] — 작은 창 → 녹화하기 창
   const goBig = () => {
     if (openBig()) closeMini();
@@ -1785,7 +1795,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const miniView = mini && createPortal(
     <RecordMini mode={mode} setMode={setMode} stream={outVideo.current} sec={sec} levels={levels}
       micVol={micVol} micMuted={micMuted} setMicVol={setMicVol} setMicMuted={setMicMuted}
-      pcVol={pcVol} pcMuted={pcMuted} setPcVol={setPcVol} setPcMuted={setPcMuted} onStop={() => void stop()} onBig={goBig} />,
+      pcVol={pcVol} pcMuted={pcMuted} setPcVol={setPcVol} setPcMuted={setPcMuted} onStop={() => void stop()} onBig={goBig} onTiny={b.record.tiny ? goTiny : undefined} />,
     mini.root,
   );
   if (phase === "saving") return <Modal title=""><Working title="녹화 파일을 저장하는 중…" detail={dirShown ? `${dirShown} 폴더에 저장하고 바로 편집 화면으로 가요` : "PC에 저장하고 바로 편집 화면으로 가요"} /></Modal>;

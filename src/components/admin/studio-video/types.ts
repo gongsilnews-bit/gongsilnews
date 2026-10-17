@@ -231,6 +231,8 @@ export type VideoBridge = {
     // 녹화 중 앱 창을 내렸다·올렸다 — 작은 녹화 창(카톡 크기)을 띄우고 닫으려고 (앱 0.1.8부터)
     onMinimized?: (fn: () => void) => () => void;
     onRestored?: (fn: () => void) => () => void;
+    tiny?: () => Promise<boolean>; // [더 작게 하기] — 얇은 막대 (앱 0.1.8부터)
+    onTinyExpand?: (fn: () => void) => () => void; // 얇은 막대 [크게 보기] → 작은 창
     minimize?: () => Promise<boolean>;
     onMiniStop?: (fn: () => void) => () => void;
     // 프롬프터 — 녹화하는 모니터 위쪽 대본 창, 녹화에 안 찍힘 (앱 0.1.8부터)
