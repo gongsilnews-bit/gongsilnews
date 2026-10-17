@@ -158,6 +158,31 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   };
 
   const picking = selMode && tab === "mine"; // 고르기는 [내 자료]에서만
+  // 목록에서 빼기 (PC 파일은 그대로) — 그림 위 ✕ · Del 키 · [고르기] 여러 개
+  const drop = async (ids: string[]) => {
+    if (!b || !ids.length) return;
+    try {
+      for (const id of ids) await b.lib.remove(id);
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setHover(null);
+    if (picked && ids.includes(picked.id)) setPicked(null);
+    setChk((v) => v.filter((x) => !ids.includes(x)));
+    load();
+  };
+  useEffect(() => {
+    if (tab !== "mine" || !picked) return;
+    const k = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (e.key !== "Delete" || t?.closest?.("input, textarea, [contenteditable]")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void drop([picked.id]);
+    };
+    window.addEventListener("keydown", k, true);
+    return () => window.removeEventListener("keydown", k, true);
+  });
   const grid = (list: (LibItem | StockItem)[], onClick: (x: LibItem | StockItem) => void) => (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "10px 14px" }}>
       {list.map((it) => {
@@ -183,6 +208,14 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
               </span>
             )}
             {it.thumb ? <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 12 }}>준비 중</span>}
+            {/* 마우스를 올리면 왼쪽 위 ✕ — 목록에서 빼기 */}
+            {tab === "mine" && !picking && "ready" in it && hover?.item.id === it.id && (
+              <span role="button" title="목록에서 빼기 (PC 파일은 그대로)" draggable={false}
+                onClick={(e) => { e.stopPropagation(); void drop([it.id]); }}
+                style={{ position: "absolute", left: 4, top: 4, zIndex: 1, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", color: "#fff", cursor: "pointer" }}>
+                <Icon name="close" size={15} stroke={2.2} />
+              </span>
+            )}
             {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{dur ? fmtTime(dur, false) : "영상"}</span>}
             {"fav" in it && (
               <span role="button" title={it.fav ? "즐겨찾기 빼기" : "즐겨찾기"} draggable={false}
@@ -280,19 +313,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
                   {items.length > 0 && chk.length === items.length ? "모두 풀기" : "모두 선택"}
                 </button>
                 <span style={{ flex: 1, fontSize: 13.5, color: C.sub }}>{chk.length}개 고름</span>
-                <Btn small danger disabled={!chk.length || Boolean(busy)} title="창의 목록에서만 빼요. PC 파일은 지우지 않아요 (다시 불러오면 다시 보여요)"
-                  onClick={async () => {
-                    if (!b) return;
-                    setBusy("목록에서 빼는 중…");
-                    try {
-                      for (const id of chk) await b.lib.remove(id);
-                    } catch (e) {
-                      setMsg(errText(e));
-                    }
-                    setBusy("");
-                    setChk([]);
-                    load();
-                  }}>
+                <Btn small danger disabled={!chk.length} title="창의 목록에서만 빼요. PC 파일은 지우지 않아요 (다시 불러오면 다시 보여요)"
+                  onClick={() => void drop(chk)}>
                   <Icon name="trash" size={15} />목록에서 빼기
                 </Btn>
               </div>
