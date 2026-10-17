@@ -13,10 +13,10 @@ import { ColorPick, FontPick } from "./Pickers";
 import { DEFAULT_FONT } from "@/lib/studio-video/fonts";
 
 // 성우 얼굴 동그라미 — public/studio-voices/{id}.webp, 없으면 이름 첫 글자
-function VoiceFace({ id, name }: { id: string; name: string }) {
+function VoiceFace({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
   const [bad, setBad] = useState(false);
   return (
-    <div style={{ width: 52, height: 52, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.line, border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, color: C.sub }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.line, border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, color: C.sub }}>
       {bad ? name.slice(0, 1) : <img src={voicePhoto(id)} alt={name} onError={() => setBad(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
     </div>
   );
@@ -324,10 +324,11 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
   const [volume, setVolume] = useState(cur.volume ?? 1);
   const [g, setG] = useState<"all" | "여성" | "남성">("all");
   const [rec, setRec] = useState(true);
+  const [age, setAge] = useState("");
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
-  const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!rec || v.recommended));
+  const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!age || v.age === age) && (!rec || v.recommended));
   const sample = project.scenes.flatMap((sc) => sc.clips).find((c) => c.type === "voice" && c.text)?.text.slice(0, 60) || "안녕하세요. 공실뉴스입니다. 오늘 소개할 매물을 함께 보시죠.";
   const preview = async (vid: string) => {
     if (!b) return;
@@ -347,45 +348,97 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
     setBusy("");
   };
   useEffect(() => () => audio.current?.pause(), []);
+  // 브루처럼 — 오른쪽 칸이 아니라 화면 가운데 큰 창 (왼쪽 거르기 · 가운데 성우 카드 · 아래 볼륨·빠르기). 글자는 크고 또렷하게
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const pick = STUDIO_VOICES.find((v) => v.id === id);
+  const fchip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 18, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
+  const tab = (on: boolean): React.CSSProperties => ({ height: 46, padding: "0 4px", border: 0, borderBottom: `3px solid ${on ? C.accent : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 17, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
+  const head: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 };
   return (
-    <Side title="AI 목소리 설정" onClose={onClose}
-      footer={
-        <>
-          {/* 단어를 골랐으면 — 클립은 그대로, 고른 단어만 새 목소리로 (소리 안에서 잇는다) */}
-          {wordCount > 0 && <Btn primary small onClick={() => onApply({ id, speed, volume, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={16} />고른 단어만 ({wordCount}개)</Btn>}
-          {targetCount > 0 && <Btn primary={wordCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={16} />고른 클립 {targetCount}개에만</Btn>}
-          <Btn primary={targetCount === 0 && wordCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={16} />모든 클립에 쓰기</Btn>
-        </>
-      }>
-      <div style={{ padding: "12px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => setRec(!rec)} style={chip(rec)}>추천</button>
-        {(["all", "여성", "남성"] as const).map((k) => <button key={k} type="button" onClick={() => setG(k)} style={chip(g === k)}>{k === "all" ? "전체" : k}</button>)}
-      </div>
-      {msg && <div style={{ padding: "10px 14px 0", fontSize: 14, color: C.danger }}>{msg}</div>}
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-        {list.map((v) => (
-          <div key={v.id} onClick={() => setId(v.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 6, border: `1px solid ${id === v.id ? C.accent : C.line}`, background: id === v.id ? C.accentDim : C.card, cursor: "pointer" }}>
-            <VoiceFace id={v.id} name={v.name} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 800 }}>{v.name} <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· {v.kind} · {v.age}</span></div>
-              <div style={{ fontSize: 13, color: C.sub, marginTop: 2 }}>{v.tags.map((t) => `#${t}`).join(" ")}</div>
-            </div>
-            <Btn small onClick={() => preview(v.id)} disabled={busy === v.id}>{busy === v.id ? "만드는 중…" : <><Icon name="play" size={14} />미리듣기</>}</Btn>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 900, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(1000px, calc(100vw - 32px))", height: "min(760px, calc(100vh - 32px))", display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text }}>
+        {/* 제목 */}
+        <div style={{ display: "flex", alignItems: "center", padding: "18px 22px 12px" }}>
+          <div style={{ flex: 1, fontSize: 23, fontWeight: 800 }}>AI 목소리 설정</div>
+          <button type="button" onClick={onClose} title="닫기 (Esc)" style={{ width: 40, height: 40, border: 0, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="close" size={26} /></button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, margin: "0 22px", border: `1px solid ${C.line2}`, borderRadius: 8, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* 위 탭 */}
+          <div style={{ display: "flex", gap: 22, padding: "0 18px", borderBottom: `1px solid ${C.line2}` }}>
+            <button type="button" onClick={() => setRec(true)} style={tab(rec)}>추천</button>
+            <button type="button" onClick={() => setRec(false)} style={tab(!rec)}>전체</button>
           </div>
-        ))}
-      </div>
-      <div style={{ padding: "6px 14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-        <div>
-          <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>빠르기</span><span>{speed.toFixed(1)}배</span></div>
-          <input type="range" min={0.7} max={1.6} step={0.1} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: C.dim }}><span>느리게</span><span>보통</span><span>빠르게</span></div>
+          <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+            {/* 왼쪽 거르기 */}
+            <div style={{ width: 200, flexShrink: 0, padding: 16, borderRight: `1px solid ${C.line2}`, overflowY: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
+                <span style={{ flex: 1, fontSize: 16, fontWeight: 800 }}>거르기</span>
+                <button type="button" onClick={() => { setG("all"); setAge(""); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
+              </div>
+              <div style={head}>성별</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
+                {(["all", "여성", "남성"] as const).map((k) => <button key={k} type="button" onClick={() => setG(k)} style={fchip(g === k)}>{k === "all" ? "모두" : k}</button>)}
+              </div>
+              <div style={head}>나이</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["", "20대", "30대", "40대", "50대", "60대"].map((k) => <button key={k || "all"} type="button" onClick={() => setAge(k)} style={fchip(age === k)}>{k || "모두"}</button>)}
+              </div>
+            </div>
+            {/* 성우 카드 */}
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "12px 16px 8px", fontSize: 15, color: C.sub }}>성우 <b style={{ color: C.text }}>{list.length}</b>명</div>
+              {msg && <div style={{ padding: "0 16px 8px", fontSize: 15, color: C.danger }}>{msg}</div>}
+              <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 16px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12, alignContent: "start" }}>
+                {list.length === 0 && <div style={{ fontSize: 15, color: C.sub, padding: "20px 0" }}>맞는 성우가 없어요. 거르기를 바꿔 보세요.</div>}
+                {list.map((v) => (
+                  <div key={v.id} onClick={() => setId(v.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: 14, borderRadius: 8, border: `${id === v.id ? 2 : 1}px solid ${id === v.id ? C.accent : C.line2}`, background: id === v.id ? C.accentDim : C.card, cursor: "pointer" }}>
+                    <VoiceFace id={v.id} name={v.name} size={80} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 19, fontWeight: 800 }}>{v.name}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px" }}>{v.gender} · {v.age}</span>
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 5 }}>{v.kind}</div>
+                      <div style={{ fontSize: 14, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>{v.tags.map((t) => `#${t}`).join("  ")}</div>
+                    </div>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setId(v.id); preview(v.id); }} disabled={busy === v.id} title="미리 듣기"
+                      style={{ width: 42, height: 42, flexShrink: 0, borderRadius: "50%", border: `1px solid ${C.line2}`, background: "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {busy === v.id ? <span style={{ fontSize: 13 }}>…</span> : <Icon name="play" size={17} />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* 아래 — 고른 성우 · 목소리 크기 · 빠르기 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 18, padding: "12px 18px", borderTop: `1px solid ${C.line2}`, flexWrap: "wrap" }}>
+            <span style={{ height: 38, padding: "0 16px", borderRadius: 5, background: C.card, border: `1px solid ${C.line2}`, display: "inline-flex", alignItems: "center", fontSize: 16, fontWeight: 800 }}>{pick ? `${pick.name} · ${pick.kind}` : "목소리"}</span>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: C.text }}>
+              목소리 크기 <input type="range" min={0.3} max={2} step={0.1} value={volume} onChange={(e) => setVolume(Number(e.target.value))} style={{ width: 120, accentColor: C.accent }} />
+              <span style={{ minWidth: 44 }}>{Math.round(volume * 100)}%</span>
+            </label>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: C.text }}>
+              빠르기 <input type="range" min={0.7} max={1.6} step={0.1} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: 120, accentColor: C.accent }} />
+              <span style={{ minWidth: 40 }}>{speed.toFixed(1)}배</span>
+            </label>
+            <button type="button" onClick={() => { setSpeed(1); setVolume(1); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
+            <span style={{ flex: 1 }} />
+            <Btn onClick={() => preview(id)} disabled={busy === id}><Icon name="play" size={15} />{busy === id ? "만드는 중…" : "미리 듣기"}</Btn>
+          </div>
         </div>
-        <div>
-          <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>목소리 크기</span><span>{Math.round(volume * 100)}%</span></div>
-          <input type="range" min={0.3} max={2} step={0.1} value={volume} onChange={(e) => setVolume(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
+        {/* 넣기 */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 22px 18px" }}>
+          {/* 단어를 골랐으면 — 클립은 그대로, 고른 단어만 새 목소리로 (소리 안에서 잇는다) */}
+          {wordCount > 0 && <Btn primary onClick={() => onApply({ id, speed, volume, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={17} />고른 단어만 ({wordCount}개)</Btn>}
+          {targetCount > 0 && <Btn primary={wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={17} />고른 클립 {targetCount}개에만</Btn>}
+          <Btn primary={targetCount === 0 && wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={17} />모든 클립에 쓰기</Btn>
         </div>
       </div>
-    </Side>
+    </div>
   );
 }
 

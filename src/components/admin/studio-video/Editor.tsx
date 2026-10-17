@@ -537,7 +537,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
       const c = findClip(pref.current, id)?.clip;
       setSoundScope("one");
-      setPanel(c && c.type !== "voice" ? "source" : "voice");
+      if (c && c.type !== "voice") setPanel("source"); // AI 목소리 칩은 작은 메뉴만 — 목소리 설정은 가운데 큰 창이라 [AI 목소리 바꾸기]를 누를 때만
       setSoundPop({ id, x, y });
     },
     openVoice: (id) => {
