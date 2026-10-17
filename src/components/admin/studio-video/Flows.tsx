@@ -947,18 +947,58 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const liveSt = useRef<MediaStream | null>(null);
   const liveVid = useRef<HTMLVideoElement>(null);
   const stopLive = () => {
-    liveSt.current?.getTracks().forEach((t) => t.stop());
+    // 같이 쓰는 카메라는 끄지 않는다 (releaseCam 이 끈다)
+    if (liveSt.current && liveSt.current !== liveFromCam.current) liveSt.current.getTracks().forEach((t) => t.stop());
     liveSt.current = null;
+    liveFromCam.current = null;
   };
-  const liveTarget = mode === "camera" ? `cam:${cam}` : hover || source;
+  // 카메라는 한 번만 연다 (윈도우는 카메라를 한 번 여는 데 0.5~2초) — 검사·미리보기·화면+카메라 원·녹화가 같은 카메라를 같이 쓴다.
+  //  예전엔 검사·미리보기가 따로 열고, 카메라를 고르면 또 열어 2~5초씩 늦게 잡혔다 (2026-10-17)
+  const camPool = useRef<{ id: string; p: Promise<MediaStream> } | null>(null);
+  const releaseCam = () => {
+    const c = camPool.current;
+    camPool.current = null;
+    c?.p.then((st) => st.getTracks().forEach((t) => t.stop())).catch(() => {});
+  };
+  const camAlive = (st: MediaStream) => st.getVideoTracks().some((t) => t.readyState === "live");
+  const openCam = async (id: string): Promise<MediaStream> => {
+    const c = camPool.current;
+    if (c && c.id === id) {
+      const st = await c.p.catch(() => null);
+      if (st && camAlive(st)) return st;
+      if (camPool.current === c) camPool.current = null;
+    } else releaseCam();
+    const p = navigator.mediaDevices.getUserMedia({ video: id ? { deviceId: { exact: id }, width: 1280, height: 720 } : { width: 1280, height: 720 }, audio: false });
+    const mine = { id, p };
+    camPool.current = mine;
+    p.catch(() => {
+      if (camPool.current === mine) camPool.current = null;
+    });
+    return p;
+  };
+  const liveFromCam = useRef<MediaStream | null>(null);
+  const [camPicked, setCamPicked] = useState(false); // 쓸 카메라를 정한 뒤에 연다 (정하기 전에 열면 고른 뒤 또 열어야 한다)
+  const liveTarget = mode === "camera" ? (camPicked ? `cam:${cam}` : "") : hover || source;
   useEffect(() => {
     if (phase !== "setup" || !liveTarget) return;
     let dead = false;
     const t = setTimeout(async () => {
       try {
         let st: MediaStream;
-        if (mode === "camera") st = await navigator.mediaDevices.getUserMedia({ video: cam ? { deviceId: { exact: cam } } : true, audio: false });
-        else {
+        if (mode === "camera") {
+          st = await openCam(cam);
+          if (dead) return;
+          stopLive();
+          liveFromCam.current = st;
+          liveSt.current = st;
+          if (liveVid.current) {
+            liveVid.current.srcObject = st;
+            liveVid.current.play().catch(() => {});
+          }
+          setCamErr("");
+          setLive(true);
+          return;
+        } else {
           await b.record.choose(liveTarget);
           st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 15 }, audio: false });
         }
@@ -970,7 +1010,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           liveVid.current.play().catch(() => {});
         }
         setLive(true);
-      } catch {
+      } catch (e) {
+        if (!dead && mode === "camera") setCamErr(errOf(e));
         setLive(false);
       }
     }, hover ? 180 : 0); // 마우스를 지나가기만 할 때 여러 번 켜지지 않게
@@ -986,28 +1027,37 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const camSt = useRef<MediaStream | null>(null);
   const camVid = useRef<HTMLVideoElement>(null);
   const stopCamLive = () => {
-    camSt.current?.getTracks().forEach((t) => t.stop());
-    camSt.current = null;
+    camSt.current = null; // 같이 쓰는 카메라라 끄지 않는다
     setCamLive(false);
   };
   useEffect(() => {
     if (phase !== "setup" || mode !== "both") return stopCamLive();
+    if (!camPicked) return;
     let dead = false;
-    navigator.mediaDevices.getUserMedia({ video: cam ? { deviceId: { exact: cam } } : true, audio: false }).then((st) => {
-      if (dead) return st.getTracks().forEach((x) => x.stop());
-      camSt.current?.getTracks().forEach((t) => t.stop());
+    openCam(cam).then((st) => {
+      if (dead) return;
+      setCamErr("");
       camSt.current = st;
       if (camVid.current) {
         camVid.current.srcObject = st;
         camVid.current.play().catch(() => {});
       }
       setCamLive(true);
-    }).catch(() => setCamLive(false));
+    }).catch((e) => {
+      if (!dead) setCamErr(errOf(e));
+      setCamLive(false);
+    });
     return () => {
       dead = true;
     };
-  }, [phase, mode, cam]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, mode, cam, camPicked]);
   useEffect(() => () => stopCamLive(), []);
+  // 화면만 녹화할 땐 카메라를 꺼 둔다 (카메라 불이 켜져 있지 않게) · 창을 닫으면 끈다
+  useEffect(() => {
+    if (mode === "screen") releaseCam();
+  }, [mode]);
+  useEffect(() => () => releaseCam(), []);
 
   // 카메라·마이크 찾기 — 카메라는 따로 열어 봐서, 못 열면 이유를 알려 준다 (노트북에서 안 잡히던 문제, 2026-10-16)
   //  denied: 윈도우 카메라 권한 꺼짐 · busy: 다른 프로그램이 쓰는 중이거나 카메라 끄기 키·가림막 · none: 카메라 없음
@@ -1018,36 +1068,69 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     return /NotAllowed|Security|PermissionDenied/.test(n) ? "denied" : /NotReadable|TrackStart|Abort/.test(n) ? "busy" : /NotFound|DevicesNotFound|Overconstrained/.test(n) ? "none" : `other:${n}`;
   };
   const probing = useRef(false);
+  const micOk = useRef(false);
+  // 얼굴 인식용 적외선(IR) 카메라(검은 화면)와 가상 카메라(OBS·줌 등 — 진짜 얼굴이 아니라 그 프로그램 화면)는 뒤로
+  const camScore = (v: MediaDeviceInfo) => (/\bIR\b|infrared|적외선/i.test(v.label) ? 2 : /virtual|가상|\bOBS\b|snap camera|xsplit|manycam|vcam|e2esoft|nvidia broadcast/i.test(v.label) ? 1 : 0);
+  const pickCam = (vids: MediaDeviceInfo[]) => [...vids].sort((a, b2) => camScore(a) - camScore(b2))[0]?.deviceId || "";
   const probeDevices = async () => {
     if (probing.current || phase !== "setup") return; // 녹화 중에는 장치를 건드리지 않는다
     probing.current = true;
-    let err = "";
-    let merr = "";
     try {
-      const st = await navigator.mediaDevices.getUserMedia({ video: true });
-      st.getTracks().forEach((t) => t.stop());
-    } catch (e) {
-      err = errOf(e);
+      let d = await navigator.mediaDevices.enumerateDevices().catch(() => [] as MediaDeviceInfo[]);
+      const named = d.some((x) => x.kind === "videoinput" && x.label);
+      const needCam = mode !== "screen";
+      let err = "";
+      let curCam = cam;
+      // 카메라 이름을 이미 알면(권한을 준 PC) 먼저 정하고 연다 → 한 번만 열린다
+      if (named && !curCam) {
+        curCam = pickCam(d.filter((x) => x.kind === "videoinput"));
+        if (curCam) setCam(curCam);
+      }
+      if (needCam || !named) {
+        try {
+          const st = await openCam(curCam);
+          if (!curCam) {
+            // 처음 쓰는 PC — 기본 카메라로 열어 권한을 받고 나서 고른다. 고른 게 지금 연 것과 같으면 다시 열지 않는다
+            d = await navigator.mediaDevices.enumerateDevices().catch(() => d);
+            const want = pickCam(d.filter((x) => x.kind === "videoinput"));
+            const now = st.getVideoTracks()[0]?.getSettings().deviceId || "";
+            if (want && want === now && camPool.current) camPool.current.id = want;
+            if (want) {
+              curCam = want;
+              setCam(want);
+            }
+          }
+          if (!needCam) releaseCam(); // 이름만 알려고 연 것 — 화면 녹화 중엔 카메라 불을 끈다
+        } catch (e) {
+          err = errOf(e);
+        }
+      }
+      let merr = "";
+      if (!micOk.current) {
+        try {
+          const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+          st.getTracks().forEach((t) => t.stop());
+          micOk.current = true;
+        } catch (e) {
+          merr = errOf(e);
+        }
+        d = await navigator.mediaDevices.enumerateDevices().catch(() => d);
+      }
+      const vids = d.filter((x) => x.kind === "videoinput");
+      const auds = d.filter((x) => x.kind === "audioinput");
+      setCams(vids);
+      setMics(auds);
+      if (!vids.length && !err) err = "none";
+      if (!auds.length && !merr) merr = "none";
+      // 고른 카메라를 뺐으면 다른 카메라로
+      if (curCam && vids.length && !vids.some((v) => v.deviceId === curCam)) setCam(pickCam(vids));
+      if (needCam || err === "none" || err === "denied") setCamErr(err);
+      setMicErr(merr);
+      if (merr) micOk.current = false;
+      setCamPicked(true);
+    } finally {
+      probing.current = false;
     }
-    try {
-      const st = await navigator.mediaDevices.getUserMedia({ audio: true });
-      st.getTracks().forEach((t) => t.stop());
-    } catch (e) {
-      merr = errOf(e);
-    }
-    const d = await navigator.mediaDevices.enumerateDevices().catch(() => [] as MediaDeviceInfo[]);
-    const vids = d.filter((x) => x.kind === "videoinput");
-    const auds = d.filter((x) => x.kind === "audioinput");
-    setCams(vids);
-    setMics(auds);
-    if (!vids.length && !err) err = "none";
-    if (!auds.length && !merr) merr = "none";
-    setCamErr(err);
-    setMicErr(merr);
-    probing.current = false;
-    // 얼굴 인식용 적외선(IR) 카메라는 검은 화면이라 빼고 일반 카메라를 먼저 고른다
-    const normal = vids.find((v) => v.label && !/\bIR\b|infrared|적외선/i.test(v.label));
-    if (normal && vids.length > 1) setCam((cur) => cur || normal.deviceId);
   };
   const probeRef = useRef(probeDevices);
   probeRef.current = probeDevices;
@@ -1065,6 +1148,9 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     const t = setInterval(() => void probeRef.current(), 3000);
     return () => clearInterval(t);
   }, [camErr, micErr]);
+  useEffect(() => {
+    if (mode !== "screen") void probeRef.current();
+  }, [mode]);
   useEffect(() => {
     b.record.sources().then((s) => {
       setSources(s);
@@ -1112,7 +1198,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       }
     }
     if (mode !== "screen") {
-      camera = await navigator.mediaDevices.getUserMedia({ video: cam ? { deviceId: { exact: cam }, width: 1280, height: 720 } : { width: 1280, height: 720 }, audio: false });
+      camera = await openCam(cam); // 미리보기로 열어 둔 카메라 그대로 (다시 열지 않음)
+      camPool.current = null; // 이제 녹화가 맡는다 — 녹화가 끝나면 stopAll 이 끈다
       streams.current.push(camera);
     }
     // 마이크 + PC 소리를 각각 크기 조절해서 섞는다
@@ -1314,7 +1401,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
               <div style={{ ...label, marginBottom: 8 }}>카메라</div>
               <select value={cam} onChange={(e) => setCam(e.target.value)} style={input} disabled={phase !== "setup"}>
                 <option value="">기본 카메라</option>
-                {cams.map((c) => <option key={c.deviceId} value={c.deviceId}>{c.label || "카메라"}</option>)}
+                {cams.map((c) => <option key={c.deviceId} value={c.deviceId}>{(c.label || "카메라") + (camScore(c) === 1 ? " (가상 카메라)" : camScore(c) === 2 ? " (얼굴 인식용)" : "")}</option>)}
               </select>
               {camErr && (
                 <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 6, background: "rgba(239,68,68,0.10)", border: `1px solid ${C.danger}`, fontSize: 13.5, lineHeight: 1.6 }}>
