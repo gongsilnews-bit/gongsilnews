@@ -4,7 +4,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("prompter", {
   init: () => ipcRenderer.invoke("prompter:init"),
   close: () => ipcRenderer.send("prompter:close"),
-  opacity: (v) => ipcRenderer.send("prompter:opacity", v), // 창 투명도 (0.3~1)
+  resizeStart: () => ipcRenderer.send("prompter:resize-start"),
+  resize: (dw, dh) => ipcRenderer.send("prompter:resize", dw, dh), // 크기 조절 손잡이
   min: () => ipcRenderer.send("prompter:min"),
   max: () => ipcRenderer.invoke("prompter:max"), // 크게/원래대로 → 지금 크게인지
   prefs: (o) => ipcRenderer.send("prompter:prefs", o), // 바꾼 빠르기·글자 크기·내 빠르기 → 녹화 창이 기억

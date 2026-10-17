@@ -111,7 +111,9 @@ async function openPrompter(win, opts) {
     x: Math.round(wa.x + (wa.width - W) / 2),
     y: wa.y + 8,
     frame: false,
-    backgroundColor: "#0c0d10", // 투명 창은 윈도우에서 그리기가 느려 글이 끊겼다 — 바탕을 채운다
+    // 바탕만 비치게 (투명도 막대) — 뒤가 비치는 창. 크기 조절은 창 안의 손잡이로 (윈도우는 이런 창의 가장자리 끌기를 막는다)
+    transparent: true,
+    backgroundColor: "#00000000",
     resizable: true,
     minimizable: true,
     maximizable: true,
@@ -513,7 +515,12 @@ function register(base) {
   ipcMain.handle("video:prompter-close", () => (closePrompter(), true));
   ipcMain.handle("prompter:init", () => prompterOpts);
   ipcMain.on("prompter:close", () => closePrompter());
-  ipcMain.on("prompter:opacity", (_e, v) => prompter && !prompter.isDestroyed() && prompter.setOpacity(Math.min(1, Math.max(0.3, Number(v) || 1))));
+  let prompterFrom = null;
+  ipcMain.on("prompter:resize-start", () => (prompterFrom = prompter && !prompter.isDestroyed() && !prompter.isMaximized() ? prompter.getBounds() : null));
+  ipcMain.on("prompter:resize", (_e, dw, dh) => {
+    if (!prompterFrom || !prompter || prompter.isDestroyed()) return;
+    prompter.setBounds({ ...prompterFrom, width: Math.max(420, Math.round(prompterFrom.width + dw)), height: Math.max(200, Math.round(prompterFrom.height + dh)) });
+  });
   ipcMain.on("prompter:min", () => prompter && !prompter.isDestroyed() && prompter.minimize());
   ipcMain.handle("prompter:max", () => {
     if (!prompter || prompter.isDestroyed()) return false;
