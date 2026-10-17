@@ -25,7 +25,7 @@ export type ClipActions = {
   openVoice: (id: string) => void;
   openVisual: (id: string) => void;
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
-  openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
+  openTiming: (id: string, x?: number, y?: number) => void; // 시간을 누르면 볼륨·빠르기·길이 메뉴
   openLayer: (id: string) => void; // 단어 앞 작은 표시를 누르면 그 사진·글자 설정
   // 상세 편집 (촬영 영상 단어의 시작·끝)
   setWordTime: (clipId: string, i: number, s: number, e: number) => void;
@@ -493,7 +493,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         <div style={{ width: 104, height: 58, borderRadius: 4, overflow: "hidden", background: "#000" }}>
           {thumb && <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
         </div>
-        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTiming(c.id); }} title="눌러서 속도·길이 바꾸기"
+        <button type="button" data-cliptime="" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openTiming(c.id, r.right - 320, r.bottom + 6); }} title="이 클립이 시작하는 때 + 길이 · 눌러서 빠르기·길이 바꾸기"
           style={{ border: `1px solid transparent`, borderRadius: 4, background: "transparent", padding: "2px 4px", fontSize: 12.5, color: C.sub, fontVariantNumeric: "tabular-nums", fontFamily: FONT, cursor: "pointer" }}
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "transparent")}>
           {fmtTime(it.start, false)} + {it.dur.toFixed(2)}초

@@ -16,7 +16,7 @@ import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type L
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
 import { TransPanel } from "./TransPanel";
 import { TRANS_DEFAULT } from "./transitions";
-import { LAYER_ICON, LayerPanel, LayerPopup, SourcePanel, TimingPanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
+import { LAYER_ICON, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
 type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
@@ -563,9 +563,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const t = typeof l.w0 === "number" ? wordTimes(f.clip, pref.current.settings).find((x) => x.i === l.w0) : null;
       seekClip(l.from, t ? t.s + 0.02 : 0.02);
     },
-    openTiming: (id) => {
+    openTiming: (id, x, y) => {
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
-      setPanel("timing");
+      // 오른쪽 '속도·길이' 칸은 없앴다 — 목소리 칩과 같은 메뉴 (볼륨·빠르기·길이)를 시간 자리에
+      const r = document.querySelector(`[data-clip="${id}"] [data-cliptime]`)?.getBoundingClientRect();
+      setSoundScope("one");
+      setSoundPop({ id, x: x ?? (r ? r.left - 200 : 400), y: y ?? (r ? r.bottom + 6 : 300) });
     },
     openMedia: (id, x, y) => {
       setSelected([id]);
@@ -1058,17 +1061,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const timingIds = () => (selected.length ? selected : cur ? [cur.clip.id] : []);
   /** 빠르기를 바꿀 수 있는 클립: 목소리가 있는 AI 목소리 클립, 촬영 영상 클립 */
   const canSpeed = (c: Clip) => (c.type === "voice" ? Boolean(c.voice?.duration) : Boolean(c.src));
-  const setSpeed = (v: number, first: boolean) => change((p) => {
-    for (const id of timingIds()) {
-      const c = findClip(p, id)?.clip;
-      if (!c || !canSpeed(c)) continue;
-      c.speed = Math.abs(v - 1) < 0.001 && c.type !== "voice" ? undefined : +v.toFixed(2);
-    }
-  }, first);
   /** 길이 맞추기 — 목소리 클립: 늘리면 끝에 머물기(pad), 줄이면 빠르게 / 화면만: 그 시간 / 촬영: 빠르기로 */
-  const setLength = (T: number) => {
+  const setLength = (T: number, only?: string[]) => {
     change((p) => {
-      for (const id of timingIds()) {
+      for (const id of only || timingIds()) {
         const c = findClip(p, id)?.clip;
         if (!c) continue;
         if (c.type === "voice" && c.voice?.duration) {
@@ -1088,14 +1084,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     });
     say(`길이를 ${T}초로 맞췄어요 (속도는 0.1~20배 안에서)`);
   };
-  const resetTiming = () => change((p) => {
-    for (const id of timingIds()) {
-      const c = findClip(p, id)?.clip;
-      if (!c) continue;
-      delete c.speed;
-      delete c.pad;
-    }
-  });
   /* ── 메인자막 서식 — 전체 / 고른 클립만 ── */
   const subSel = subMode === "sel" && selected.length > 0;
   /** 서식 바꾸기 — 고른 클립만이면 그 클립들에 바꾼 항목만 따로 (값이 undefined 면 그 항목을 지운다) */
@@ -1777,7 +1765,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "check", label: "모든 클립 고르기", onClick: () => setSelected(flat.items.map((x) => x.clip.id)) },
       { icon: "close", label: "고르기 풀기", onClick: () => { setSelected([]); setSelWord(null); } },
       "|",
-      { icon: "speed", label: "속도·길이", onClick: () => setPanel("timing"), title: "고른 클립의 속도와 길이 (클립 시간을 눌러도 열려요)" },
+      { icon: "speed", label: "속도·길이", disabled: !lastSelected(), onClick: () => lastSelected() && actions.openTiming(lastSelected()), title: "고른 클립의 빠르기와 길이 (클립 시간을 눌러도 열려요)" },
       "|",
       { icon: "trash", label: selWord ? "단어 지우기/되살리기" : "단어 지우기", onClick: () => (selWord ? actions.toggleWord(selWord.clip, selWord.i) : say("지울 단어를 먼저 누르세요")) },
       { icon: "trash", label: "클립 지우기", onClick: () => actions.removeClip(selected), disabled: !selected.length },
@@ -2174,16 +2162,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               onClose={() => setPanel("")} />
           );
         })()}
-        {panel === "timing" && (() => {
-          const ids = timingIds();
-          const its = flat.items.filter((x) => ids.includes(x.clip.id));
-          if (!its.length) return null;
-          return (
-            <TimingPanel clips={its.map((x) => x.clip)} nums={its.map((x) => flat.items.indexOf(x) + 1)} durs={its.map((x) => x.dur)}
-              speeds={its.map((x) => (canSpeed(x.clip) ? (x.clip.type === "voice" ? speedOf(x.clip, project.settings) : srcSpeed(x.clip)) : null))}
-              onSpeed={setSpeed} onLength={setLength} onReset={resetTiming} onClose={() => setPanel("")} />
-          );
-        })()}
         {panel === "visual" && (() => {
           const i = flat.items.findIndex((x) => x.clip.id === visualClip);
           if (i < 0) return null;
@@ -2258,15 +2236,38 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         const same = flat.items.map((x) => x.clip).filter((x) => (isVoice ? x.type === "voice" : isSrc(x))).map((x) => x.id);
         // 적용 범위 — 이 클립에만(처음) / 선택 클립(고른 클립) / 모든 클립(같은 종류)
         const sel = selected.length > 1 && selected.includes(c.id) ? selected : [c.id];
-        const ids = soundScope === "all" ? same : soundScope === "sel" ? sel : [c.id];
+        // 바꾸는 동안은 이 클립만 — 위 [이 클립에만][선택 클립][모든 클립]을 누르면 그 클립들에 넣고 닫는다
+        const ids = [c.id];
+        const applyScope = (sc: "one" | "sel" | "all") => {
+          const targets = (sc === "all" ? same : sc === "sel" ? sel : []).filter((x) => x !== c.id);
+          if (targets.length) {
+            change((p) => {
+              const src = findClip(p, c.id)?.clip;
+              if (!src) return;
+              for (const id of targets) {
+                const x = findClip(p, id)?.clip;
+                if (!x) continue;
+                x.volume = src.volume;
+                x.muted = src.muted;
+                if (x.type === "voice" ? x.voice?.duration || src.speed : x.src) x.speed = src.speed;
+              }
+            });
+            say(`볼륨·빠르기를 클립 ${targets.length + 1}개에 넣었어요`);
+          }
+          setSoundPop(null);
+        };
         const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
         const sp = isVoice ? speedOf(c, project.settings) : srcSpeed(c);
-        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={setSoundScope}
+        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={applyScope}
           muted={Boolean(c.muted)} value={c.volume ?? 1} speed={sp}
           onMute={(v) => each((x) => { x.muted = v || undefined; })}
           onVolume={(v, first) => each((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
           onSpeed={(v) => each((x) => { if (x.type === "voice" ? x.voice?.duration : x.src) x.speed = x.type !== "voice" && Math.abs(v - 1) < 0.001 ? undefined : v; })}
-          onVoice={isVoice ? () => setPanel("voice") : undefined} onClose={() => setSoundPop(null)} />;
+          onVoice={isVoice ? () => setPanel("voice") : undefined} onClose={() => setSoundPop(null)}
+          len={flat.items.find((x) => x.clip.id === c.id)?.dur}
+          base={isVoice ? (c.voice?.duration ? c.voice.duration / speedOf(c, project.settings) + GAP : undefined) : c.src ? keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(c) : undefined}
+          pad={isVoice ? Number(c.pad) || 0 : 0}
+          onLength={(T) => setLength(T, ids)} />;
       })()}
       {media && (() => {
         const items = flat.items;

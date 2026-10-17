@@ -177,7 +177,7 @@ export default function MediaMenu(p: Props) {
 }
 
 /** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
-export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose }: {
+export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose, len, base, pad, onLength }: {
   title: string;
   x: number;
   y: number;
@@ -194,7 +194,15 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
   onSpeed: (v: number) => void;
   onVoice?: () => void; // AI 목소리 클립만 — 촬영한 영상(원본 소리)은 목소리를 바꾸지 않는다
   onClose: () => void;
+  // 길이 — 지금 길이 / 목소리(또는 영상) 길이 / 끝에 머무는 쉼. 늘리면 쉼, 줄이면 쉼부터 줄이고 빠르게
+  len?: number;
+  base?: number;
+  pad?: number;
+  onLength?: (sec: number) => void;
 }) {
+  const [lenDraft, setLenDraft] = React.useState("");
+  React.useEffect(() => setLenDraft(len ? len.toFixed(1) : ""), [len]);
+  const lenOff = false; // 길이는 늘 이 클립만 (적용 범위 단추는 볼륨·빠르기를 넓혀 넣는다)
   React.useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -217,13 +225,30 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
           <button type="button" disabled={selCount < 2} onClick={() => onScope("sel")} title={selCount < 2 ? "클립을 2개 이상 고르면 쓸 수 있어요" : undefined} style={{ ...chipS(scope === "sel"), height: 30, opacity: selCount < 2 ? 0.4 : 1, cursor: selCount < 2 ? "default" : "pointer" }}>선택 클립 ({selCount}개)</button>
           <button type="button" onClick={() => onScope("all")} style={{ ...chipS(scope === "all"), height: 30 }}>모든 클립 ({allCount}개)</button>
         </div>
-        <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 10 }}>아래에서 바꾸면 클립 {count}개에 들어가요.</div>
+        <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 10 }}>아래에서 바꾸고 누르면 그 클립들에 넣고 닫혀요 (바꾸는 동안은 이 클립에서 들어 봐요).</div>
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>볼륨</div>
         <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
         <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>빠르기 <span style={{ color: C.sub, fontWeight: 600 }}>{+speed.toFixed(2)}배</span></div>
         <div style={{ display: "flex", gap: 5 }}>
           {[0.75, 1, 1.25, 1.5, 2].map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
         </div>
+        {onLength && typeof len === "number" && (
+          <>
+            <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>길이 <span style={{ color: C.sub, fontWeight: 600 }}>{len.toFixed(1)}초</span></div>
+            <div style={{ display: "flex", gap: 5, alignItems: "center", opacity: lenOff ? 0.4 : 1 }}>
+              <button type="button" disabled={lenOff} onClick={() => onLength(Math.max(0.3, +(len - 0.5).toFixed(2)))} style={{ ...chipS(false), flex: "0 0 58px", height: 32 }}>−0.5초</button>
+              <input value={lenDraft} disabled={lenOff} onChange={(e) => setLenDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { const v = Number(lenDraft); if (v > 0.2) onLength(+v.toFixed(2)); } }}
+                onBlur={() => { const v = Number(lenDraft); if (v > 0.2 && Math.abs(v - len) > 0.04) onLength(+v.toFixed(2)); else setLenDraft(len.toFixed(1)); }}
+                style={{ ...input, flex: 1, minWidth: 0, height: 32, padding: "0 8px", textAlign: "center", fontSize: 14, fontWeight: 800 }} />
+              <span style={{ fontSize: 12.5, color: C.sub }}>초</span>
+              <button type="button" disabled={lenOff} onClick={() => onLength(+(len + 0.5).toFixed(2))} style={{ ...chipS(false), flex: "0 0 58px", height: 32 }}>+0.5초</button>
+            </div>
+            <div style={{ fontSize: 11.5, color: C.dim, marginTop: 5 }}>
+              {lenOff ? "모든 클립 길이는 한 번에 못 바꿔요 — [이 클립에만]을 고르세요" : typeof base === "number" ? `${onVoice ? "목소리" : "영상"} ${base.toFixed(1)}초${pad ? ` + 쉼 ${pad.toFixed(1)}초` : ""} · 늘리면 끝에 머물고, 줄이면 빨라져요` : ""}
+            </div>
+          </>
+        )}
         {onVoice && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
           <Icon name="voice" size={16} />AI 목소리 바꾸기<Icon name="chevron" size={14} color={C.sub} />
         </button>}
