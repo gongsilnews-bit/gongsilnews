@@ -645,6 +645,41 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setOverlayTarget("");
       openLib(kind, true);
     },
+    /**
+     * 원본 영상 클립에 AI 목소리 넣기 — 영상은 화면으로, 원본 소리는 그대로 깔리고 ([원본 소리] 칩), 길이는 영상 구간에 맞춘다.
+     * (말소리가 있던 클립도 같다. Ctrl+Z 로 원래대로)
+     */
+    addAiVoice: (clipId, text) => {
+      const t = text.replace(/\s+/g, " ").trim();
+      if (!t) return;
+      change((p) => {
+        const c = findClip(p, clipId)?.clip;
+        if (!c?.src) return;
+        const len = keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(c);
+        const a = p.assets[c.src.asset];
+        const orig = c.muted ? 0 : c.volume ?? 1;
+        c.type = "voice";
+        c.visual = { asset: c.src.asset, s: c.src.s };
+        c.visualVolume = a?.hasAudio === false || orig <= 0 ? undefined : orig;
+        c.fitLen = +len.toFixed(2);
+        c.text = t;
+        c.words = t.split(" ").map((w) => ({ w, s: 0, e: 0 }));
+        c.voice = null;
+        delete c.src;
+        delete c.cuts;
+        delete c.speed;
+        delete c.volume;
+        delete c.muted;
+        delete c.subText;
+      });
+      setSelected([clipId]);
+      revoice([clipId]);
+      say("AI 목소리를 넣었어요 · 원본 소리는 [원본 소리] 칩에서 조절해요");
+    },
+    setOrigVolume: (clipId, v, muted, first) => change((p) => {
+      const c = findClip(p, clipId)?.clip;
+      if (c) c.visualVolume = muted || v <= 0 ? undefined : +v.toFixed(2);
+    }, first),
     // 문장 끝 [..] — AI 목소리를 다 읽고 쉬는 시간 (빠르기를 바꿔도 그대로)
     setPad: (ids, sec) => {
       change((p) => {
