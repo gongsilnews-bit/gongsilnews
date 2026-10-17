@@ -1059,8 +1059,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   /* ── 속도·길이 (고른 클립 모두) ── */
   const timingIds = () => (selected.length ? selected : cur ? [cur.clip.id] : []);
-  /** 빠르기를 바꿀 수 있는 클립: 목소리가 있는 AI 목소리 클립, 촬영 영상 클립 */
-  const canSpeed = (c: Clip) => (c.type === "voice" ? Boolean(c.voice?.duration) : Boolean(c.src));
   /** 길이 맞추기 — 목소리 클립: 늘리면 끝에 머물기(pad), 줄이면 빠르게 / 화면만: 그 시간 / 촬영: 빠르기로 */
   const setLength = (T: number, only?: string[]) => {
     change((p) => {
