@@ -368,7 +368,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       {w.del ? "↺" : "✕"}
                     </button>
                   )}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i, e.ctrlKey || e.metaKey); }} title={w.v ? `목소리: ${voiceName(w.v)} · 누르면 그 자리로` : "누르면 그 자리로 · Ctrl+누르기로 여러 단어 고르기"}
+                  <button type="button" data-keepword="" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i, e.ctrlKey || e.metaKey); }} title={w.v ? `목소리: ${voiceName(w.v)} · 누르면 그 자리로` : "누르면 그 자리로 · Ctrl+누르기로 여러 단어 고르기"}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : active ? "rgba(59,130,246,0.6)" : C.line2}`,
                       // 고른 단어(Ctrl 로 여러 개) = 파랗게 칠함 · 지금 재생 위치 = 연한 파랑
                       background: isSel ? C.accent : active ? "rgba(59,130,246,0.28)" : w.del ? "transparent" : C.panel2,
@@ -553,7 +553,7 @@ function FloatBar({ anchor, children }: { anchor: React.RefObject<HTMLDivElement
     };
   });
   return createPortal(
-    <div ref={bar} onClick={(e) => e.stopPropagation()} style={{ position: "fixed", left: pos?.left ?? -9999, top: pos?.top ?? -9999, zIndex: 3000 }}>{children}</div>,
+    <div ref={bar} data-keepword="" onClick={(e) => e.stopPropagation()} style={{ position: "fixed", left: pos?.left ?? -9999, top: pos?.top ?? -9999, zIndex: 3000 }}>{children}</div>,
     document.body,
   );
 }

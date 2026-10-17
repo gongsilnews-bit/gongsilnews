@@ -1584,6 +1584,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     say(made.length > 1 ? `구간 ${made.length}개를 붙여넣었어요` : "붙여넣었어요");
   };
 
+  // 다른 곳을 누르면 고른 단어를 푼다 — 단어·단추 막대·오른쪽 설정 칸(목소리 바꾸기 등)·창은 빼고
+  useEffect(() => {
+    if (!selWord) return;
+    const down = (e: PointerEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest?.("[data-keepword], aside, [data-gsv-modal]")) return;
+      setSelWord(null);
+      setSelWordSet(null);
+    };
+    document.addEventListener("pointerdown", down, true);
+    return () => document.removeEventListener("pointerdown", down, true);
+  }, [selWord]);
   // 재생을 시작하면(스페이스바·▶) 고른 단어를 푼다 — 단추 막대가 재생 화면을 가리지 않게
   useEffect(() => {
     if (!playing) return;
