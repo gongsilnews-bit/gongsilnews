@@ -334,7 +334,7 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
   const openPrompter = (startAt: number, rehearse = false) => {
     if (!b.record.prompterOpen) return;
     setPrOpen(true);
-    b.record.prompterOpen({ text: pr.text.trim(), cps: pr.cps, size: pr.size, mine: pr.mine, startAt, rehearse }).catch(() => setPrOpen(false));
+    b.record.prompterOpen({ text: pr.text.trim(), cps: pr.cps, size: pr.size, opacity: pr.opacity, mine: pr.mine, startAt, rehearse }).catch(() => setPrOpen(false));
   };
   const closePrompter = () => {
     setPrOpen(false);

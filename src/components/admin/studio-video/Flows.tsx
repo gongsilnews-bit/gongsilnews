@@ -2,10 +2,12 @@
 
 // 처음 화면(새로 만들기 · 프로젝트 열기) · 새로 만들기 창(만들 방법 4가지) · 촬영 영상 편집 · 롱폼→숏폼 · 녹화
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Clip, Folders, LibItem, Method, Project, Ratio, Recent, TrashItem } from "./types";
 import { RATIO_LABEL, errText, fmtTime, uid, videoBridge } from "./types";
 import { splitScript } from "./timeline";
 import { useStudioWriter } from "@/components/admin/sections/useStudioWriter";
+import { RecordMini, openMiniWindow } from "./RecordMini";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
 
@@ -910,7 +912,8 @@ export const camPath = (g: CanvasRenderingContext2D, b: CamBox, inset: number) =
 /* ── 프롬프터 (뉴스 방송처럼) — 녹화 창에서 대본을 넣으면 녹화할 때 녹화하는 모니터 위쪽에 대본 창이 뜬다 (녹화에 안 찍힘).
    녹화가 끝나면 대본이 그대로 자막 글이 된다 (시각은 PC에서 말소리에 맞춤, 무료) ── */
 /** cps = 1초에 읽는 글자 수 (3~8, 보통 5) · size = 프롬프터 글자 px (28~96) · mine = 프롬프터 창에서 [저장]한 내 설정 */
-export type Prompter = { on: boolean; text: string; size: number; cps: number; mine: { cps: number; size: number } | null };
+export type Prompter = { on: boolean; text: string; size: number; cps: number; opacity: number; mine: { cps: number; size: number } | null };
+const clampOpacity = (v: number) => Math.min(1, Math.max(0.3, Number(v) || 1)); // 프롬프터 창 투명도
 const OLD_SIZE: Record<string, number> = { s: 40, m: 52, l: 66 };
 const OLD_CPS: Record<string, number> = { slow: 4, mid: 5, fast: 6 };
 const PROMPTER_KEY = "gsv:prompter";
@@ -925,10 +928,11 @@ export function loadPrompter(): Prompter {
         text: v.text,
         size: clampSize(typeof v.size === "number" ? v.size : OLD_SIZE[v.size] || 52),
         cps: clampCps(typeof v.cps === "number" ? v.cps : OLD_CPS[v.speed] || 5),
+        opacity: clampOpacity(v.opacity ?? 1),
         mine: v.mine && typeof v.mine.cps === "number" ? { cps: clampCps(v.mine.cps), size: clampSize(v.mine.size) } : null,
       };
   } catch {}
-  return { on: true, text: "", size: 52, cps: 5, mine: null };
+  return { on: true, text: "", size: 52, cps: 5, opacity: 1, mine: null };
 }
 export function savePrompter(p: Prompter) {
   try {
@@ -1038,7 +1042,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const openPrompter = (startAt: number, rehearse = false) => {
     if (!b.record.prompterOpen) return;
     setPrOpen(true);
-    b.record.prompterOpen({ text: pr.text.trim(), cps: pr.cps, size: pr.size, mine: pr.mine, startAt, rehearse }).catch(() => setPrOpen(false));
+    b.record.prompterOpen({ text: pr.text.trim(), cps: pr.cps, size: pr.size, opacity: pr.opacity, mine: pr.mine, startAt, rehearse }).catch(() => setPrOpen(false));
   };
   const closePrompter = () => {
     setPrOpen(false);
@@ -1047,7 +1051,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   useEffect(() => b.record.onPrompterClosed?.(() => setPrOpen(false)), [b]);
   // 프롬프터 창에서 바꾼 빠르기·글자 크기·내 빠르기 → 여기에도 (다음 녹화 때도 그대로)
   useEffect(() => b.record.onPrompterPrefs?.((o) => setPr((p) => {
-    const n = { ...p, cps: clampCps(o.cps), size: clampSize(o.size), mine: o.mine ? { cps: clampCps(o.mine.cps), size: clampSize(o.mine.size) } : p.mine };
+    const n = { ...p, cps: clampCps(o.cps), size: clampSize(o.size), opacity: o.opacity ? clampOpacity(o.opacity) : p.opacity, mine: o.mine ? { cps: clampCps(o.mine.cps), size: clampSize(o.mine.size) } : p.mine };
     savePrompter(n);
     return n;
   })), [b]);
@@ -1069,6 +1073,9 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const audioCtx = useRef<AudioContext | null>(null);
   const micGain = useRef<GainNode | null>(null);
   const pcGain = useRef<GainNode | null>(null);
+  const micAn = useRef<AnalyserNode | null>(null); // 작은 녹화 창의 소리 막대
+  const pcAn = useRef<AnalyserNode | null>(null);
+  const outVideo = useRef<MediaStream | null>(null); // 지금 녹화되는 화면 (작은 녹화 창에 보여 준다)
   // 카메라 원 자리·크기 — 미리보기에서 끌어서 옮기고 모서리 점으로 크기 조절. 녹화 중에도 바로 들어가고, 다음 녹화 때도 그대로
   const [camBox, setCamBoxState] = useState<CamBox>(() => {
     try {
@@ -1386,6 +1393,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     streams.current.forEach((s) => s.getTracks().forEach((t) => t.stop()));
     streams.current = [];
     comp.current = null;
+    micAn.current = pcAn.current = null;
+    outVideo.current = null;
   };
 
   // 녹화 중 화면 바꾸기 — 녹화는 늘 1920×1080 화판(캔버스)에 그려서 한다. 화면 / 카메라 / 화면+카메라를 녹화를 멈추지 않고 바꾼다.
@@ -1485,12 +1494,18 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         g.gain.value = micMuted ? 0 : micVol;
         ctx.createMediaStreamSource(micStream).connect(g).connect(dest);
         micGain.current = g;
+        micAn.current = ctx.createAnalyser();
+        micAn.current.fftSize = 1024;
+        g.connect(micAn.current);
       }
       if (pcAudio.length) {
         const g = ctx.createGain();
         g.gain.value = pcMuted ? 0 : pcVol;
         ctx.createMediaStreamSource(new MediaStream(pcAudio)).connect(g).connect(dest);
         pcGain.current = g;
+        pcAn.current = ctx.createAnalyser();
+        pcAn.current.fftSize = 1024;
+        g.connect(pcAn.current);
       }
       audio = dest.stream;
     }
@@ -1554,6 +1569,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     // 화면 그리기 신호(requestAnimationFrame)는 창을 내리면 멈춘다 — 작게 하기 중에도 녹화되게 시계로 그린다
     raf.current = window.setInterval(draw, 1000 / 30);
     const video = canvas.captureStream(30);
+    outVideo.current = video;
     const out = new MediaStream([...video.getVideoTracks(), ...(audio ? audio.getAudioTracks() : [])]);
     if (preview.current) {
       preview.current.srcObject = out;
@@ -1591,7 +1607,9 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       rec.current = r;
       setSec(0);
       setPhase("rec");
-      b.record.live?.(true, Date.now()).catch(() => {});
+      const own = Boolean(b.record.console && b.record.onMinimized); // 앱 0.1.8부터 — 작은 녹화 창을 여기서 띄운다
+      await b.record.live?.(true, Date.now(), { console: own }).catch(() => {});
+      if (own) b.record.minimize?.().catch(() => {});
     } catch (e) {
       setErr(`녹화를 시작하지 못했어요: ${errText(e)}`);
       closePrompter();
@@ -1610,6 +1628,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     if (!r) return;
     rec.current = null;
     b.record.live?.(false).catch(() => {}); // 작은 막대 닫고 큰 창 다시
+    closeMini();
     closePrompter();
     setPhase("saving");
     await new Promise<void>((res) => {
@@ -1635,10 +1654,67 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   useEffect(() => b.record.onMiniStop?.(() => stopRef.current()), [b]);
   useEffect(() => () => void b.record.live?.(false).catch(() => {}), [b]);
 
+  /* ── 작은 녹화 창 (카톡 크기) — 녹화 중 앱 창을 내리면 뜨고, 올리면 닫힌다 ── */
+  const [mini, setMini] = useState<{ root: HTMLElement; close: () => void } | null>(null);
+  const miniRef = useRef(mini);
+  miniRef.current = mini;
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const closeMini = () => {
+    miniRef.current?.close();
+    miniRef.current = null;
+    setMini(null);
+  };
+  useEffect(() => {
+    const offMin = b.record.onMinimized?.(() => {
+      if (phaseRef.current !== "rec" || miniRef.current) return;
+      // 창을 윈도우에서 닫으면(Alt+F4) — 녹화는 계속, 앱 창을 다시 올린다
+      const m = openMiniWindow(() => {
+        miniRef.current = null;
+        setMini(null);
+        if (phaseRef.current === "rec") void b.record.console?.("big");
+      });
+      if (m) {
+        miniRef.current = m;
+        setMini(m);
+      }
+    });
+    const offRes = b.record.onRestored?.(() => closeMini());
+    return () => {
+      offMin?.();
+      offRes?.();
+      miniRef.current?.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [b]);
+  // 소리 막대 — 작은 녹화 창이 떠 있을 때만 잰다
+  const [levels, setLevels] = useState({ mic: 0, pc: 0 });
+  useEffect(() => {
+    if (!mini) return;
+    const buf = new Float32Array(1024);
+    const lv = (an: AnalyserNode | null) => {
+      if (!an) return 0;
+      an.getFloatTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+      return Math.max(0, Math.min(1, (20 * Math.log10(Math.sqrt(sum / buf.length) || 1e-6) + 60) / 60));
+    };
+    const t = setInterval(() => setLevels({ mic: lv(micAn.current), pc: lv(pcAn.current) }), 100);
+    return () => clearInterval(t);
+  }, [mini]);
+
+  const miniView = mini && createPortal(
+    <RecordMini mode={mode} setMode={setMode} stream={outVideo.current} sec={sec} levels={levels}
+      micVol={micVol} micMuted={micMuted} setMicVol={setMicVol} setMicMuted={setMicMuted}
+      pcVol={pcVol} pcMuted={pcMuted} setPcVol={setPcVol} setPcMuted={setPcMuted} onStop={() => void stop()} />,
+    mini.root,
+  );
   if (phase === "saving") return <Modal title=""><Working title="녹화 파일을 저장하는 중…" detail={dirShown ? `${dirShown} 폴더에 저장하고 바로 편집 화면으로 가요` : "PC에 저장하고 바로 편집 화면으로 가요"} /></Modal>;
   const split = mode === "both" ? splitRects(camBox) : null; // 반반 배치면 화면·카메라 칸
   const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: "0 16px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 });
   return (
+    <>
+    {miniView}
     <Modal title="영상 녹화하기" onClose={phase === "rec" ? undefined : () => { stopAll(); onCancel(); }} width={980} controls
       // 녹화 중 [작게] = 지금 있는 [작게 하기]와 같이 스튜디오 창을 내리고 작은 막대로 (막대는 녹화에 안 찍힌다)
       onMinimize={phase === "rec" && b.record.minimize ? () => b.record.minimize?.() : undefined}
@@ -1854,5 +1930,6 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         </div>
       </div>
     </Modal>
+    </>
   );
 }

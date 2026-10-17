@@ -18,6 +18,7 @@ let baseUrl = "";
 const jobs = new Map(); // 굽기 멈추기
 const recs = new Map(); // 녹화 중 파일
 let chosenSource = null; // 화면 녹화로 고른 화면
+const sourceDisplay = new Map(); // 화면 id → 모니터 번호
 let pendingFile = ""; // 탐색기에서 두 번 눌러 연 .gss
 let dirty = false; // 편집 화면에 저장 안 한 내용이 있음
 let dirtyWork = { dir: "", file: "" }; // 그 프로젝트 (작업 폴더·.gss)
@@ -35,8 +36,19 @@ let prompter = null; // 녹화 중 프롬프터 창 (녹화에 안 찍힘)
 const hideFromCapture = (w) => w.setContentProtection(!(!require("electron").app.isPackaged && process.env.STUDIO_SHOW_IN_CAPTURE === "1"));
 let consoleWin = null; // 녹화 조정실 창 (OBS 스튜디오 모드처럼 — 녹화에 안 찍힘)
 
-/** 녹화 조정실 창 모양 — 스튜디오 창이 있는 모니터 가운데 */
-function consoleOptions(main) {
+/** 녹화 조정실 창 모양 — 스튜디오 창이 있는 모니터 가운데. mini = 녹화 중 [작게 하기] 창 (카톡 크기, 녹화하는 모니터 오른쪽 아래) */
+function consoleOptions(main, kind) {
+  if (kind === "mini") {
+    let d = null;
+    try {
+      // 고른 화면(녹화하는 모니터) — [화면 목록]을 받을 때 적어 둔 모니터 번호로
+      const id = sourceDisplay.get(chosenSource);
+      d = screen.getAllDisplays().find((x) => String(x.id) === id) || null;
+    } catch {}
+    const wa = (d || screen.getDisplayMatching(main.getBounds())).workArea;
+    const W = 400, H = Math.min(640, wa.height - 40);
+    return { width: W, height: H, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - H - 20, minWidth: 320, minHeight: 420, frame: false, backgroundColor: "#111317", title: "녹화 중", alwaysOnTop: true, autoHideMenuBar: true, show: true };
+  }
   const wa = screen.getDisplayMatching(main.getBounds()).workArea;
   const W = Math.min(1240, wa.width - 40), H = Math.min(760, wa.height - 40);
   return {
@@ -418,6 +430,7 @@ function register(base) {
     const xOf = (s) => (displays.find((d) => String(d.id) === String(s.display_id)) || { bounds: { x: 0 } }).bounds.x;
     const sorted = [...list].sort((a, b) => xOf(a) - xOf(b));
     const names = sorted.length === 1 ? ["모니터"] : sorted.length === 2 ? ["왼쪽 모니터", "오른쪽 모니터"] : sorted.map((_, i) => `모니터 ${i + 1} (왼쪽부터)`);
+    for (const s of list) sourceDisplay.set(s.id, String(s.display_id)); // 작은 녹화 창을 그 모니터에 띄우려고
     return sorted.map((s, i) => ({ id: s.id, name: names[i] + (String(s.display_id) === String(primary) ? " · 주 모니터" : ""), thumb: s.thumbnail.toDataURL() }));
   });
   ipcMain.handle("video:record-choose", (_e, id) => {
@@ -450,9 +463,15 @@ function register(base) {
     const win = winOf(e);
     if (!win || live) return true;
     win.webContents.setBackgroundThrottling(false);
-    // 조정실로 녹화하면 작은 막대는 안 띄운다 (조정실이 대신한다)
+    // 웹 화면이 작은 녹화 창을 직접 띄우면(opt.console) 얇은 막대 대신 — 내렸다·올렸다만 알린다
     const noMini = Boolean(opt && opt.console);
-    live = { win, startedAt: Number(startedAt) || Date.now(), onMin: () => !noMini && openMini(), onRestore: () => closeMini() };
+    const tell = (ch) => !win.isDestroyed() && win.webContents.send(ch);
+    live = {
+      win,
+      startedAt: Number(startedAt) || Date.now(),
+      onMin: () => (noMini ? tell("video:record-min") : openMini()),
+      onRestore: () => (closeMini(), noMini && tell("video:record-restore")),
+    };
     win.on("minimize", live.onMin);
     win.on("restore", live.onRestore);
     return true;
@@ -476,6 +495,8 @@ function register(base) {
       if (w.isMaximized()) w.unmaximize();
       else w.maximize();
       return w.isMaximized();
+    } else if (act === "big") {
+      if (live) showBig(live.win); // [크게 보기] — 스튜디오 창 다시
     } else if (act === "show") {
       if (w.isMinimized()) w.restore();
       w.show();
@@ -492,6 +513,7 @@ function register(base) {
   ipcMain.handle("video:prompter-close", () => (closePrompter(), true));
   ipcMain.handle("prompter:init", () => prompterOpts);
   ipcMain.on("prompter:close", () => closePrompter());
+  ipcMain.on("prompter:opacity", (_e, v) => prompter && !prompter.isDestroyed() && prompter.setOpacity(Math.min(1, Math.max(0.3, Number(v) || 1))));
   ipcMain.on("prompter:min", () => prompter && !prompter.isDestroyed() && prompter.minimize());
   ipcMain.handle("prompter:max", () => {
     if (!prompter || prompter.isDestroyed()) return false;

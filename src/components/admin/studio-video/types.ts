@@ -227,15 +227,18 @@ export type VideoBridge = {
     // 녹화 중 작게 하기 (옛 앱에는 없음)
     live?: (on: boolean, startedAt?: number, opt?: { console?: boolean }) => Promise<boolean>;
     // 녹화 조정실 창 (앱 0.1.8부터) — drag-start·drag(dx, dy)·opacity(0.3~1)·min·max(→ 크게인지)·show
-    console?: (act: "drag-start" | "drag" | "opacity" | "min" | "max" | "show", a?: number, b?: number) => Promise<boolean>;
+    console?: (act: "drag-start" | "drag" | "opacity" | "min" | "max" | "show" | "big", a?: number, b?: number) => Promise<boolean>;
+    // 녹화 중 앱 창을 내렸다·올렸다 — 작은 녹화 창(카톡 크기)을 띄우고 닫으려고 (앱 0.1.8부터)
+    onMinimized?: (fn: () => void) => () => void;
+    onRestored?: (fn: () => void) => () => void;
     minimize?: () => Promise<boolean>;
     onMiniStop?: (fn: () => void) => () => void;
     // 프롬프터 — 녹화하는 모니터 위쪽 대본 창, 녹화에 안 찍힘 (앱 0.1.8부터)
-    prompterOpen?: (o: { text: string; cps: number; size: number; mine: { cps: number; size: number } | null; startAt: number; rehearse?: boolean }) => Promise<boolean>;
+    prompterOpen?: (o: { text: string; cps: number; size: number; opacity: number; mine: { cps: number; size: number } | null; startAt: number; rehearse?: boolean }) => Promise<boolean>;
     prompterClose?: () => Promise<boolean>;
     prompterShow?: () => Promise<boolean>;
     onPrompterClosed?: (fn: () => void) => () => void;
-    onPrompterPrefs?: (fn: (o: { cps: number; size: number; mine: { cps: number; size: number } | null }) => void) => () => void;
+    onPrompterPrefs?: (fn: (o: { cps: number; size: number; opacity?: number; mine: { cps: number; size: number } | null }) => void) => () => void;
   };
   showFile: (file: string) => Promise<void>;
   openSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 설정 화면 (옛 앱에는 없음)

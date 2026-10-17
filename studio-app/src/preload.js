@@ -200,6 +200,17 @@ if (allowed) {
         live: (on, startedAt, opt) => ipcRenderer.invoke("video:record-live", on, startedAt, opt),
         // 녹화 조정실 창 — drag-start·drag(dx, dy)·opacity(0.3~1)·min·max·show (0.1.8부터)
         console: (act, a, b) => ipcRenderer.invoke("video:console", act, a, b),
+        // 녹화 중 스튜디오 창을 내렸다·올렸다 (작은 녹화 창을 띄우고 닫으려고)
+        onMinimized: (fn) => {
+          const h = () => fn();
+          ipcRenderer.on("video:record-min", h);
+          return () => ipcRenderer.removeListener("video:record-min", h);
+        },
+        onRestored: (fn) => {
+          const h = () => fn();
+          ipcRenderer.on("video:record-restore", h);
+          return () => ipcRenderer.removeListener("video:record-restore", h);
+        },
         minimize: () => ipcRenderer.invoke("video:record-minimize"),
         // 프롬프터 — 녹화하는 모니터 위쪽에 뜨는 대본 창 (녹화에 안 찍힘, 0.1.8부터)
         prompterOpen: (opts) => ipcRenderer.invoke("video:prompter-open", opts),

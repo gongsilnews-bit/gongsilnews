@@ -15,6 +15,8 @@
   .tag { display: none; padding: 2px 8px; border-radius: 4px; background: #3b82f6; color: #fff; font-size: 12.5px; font-weight: 800; }
   .tb { height: 30px; padding: 0 12px; border-radius: 5px; border: 1px solid #4b5160; background: #1c1f26; color: #e5e7eb; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .tb:hover { background: #2d3240; }
+  .olab { font-size: 12.5px; color: #aab0bb; white-space: nowrap; }
+  input.op { flex: 0 0 90px; min-width: 70px; }
   .tb.mine { border-color: #3b82f6; }
   /* 윈도우 창처럼 — 작게 · 크게 · 닫기 */
   .wb { display: flex; margin-right: -6px; height: 40px; }
@@ -51,6 +53,8 @@
     <span class="tag" id="tag">미리 읽어 보기</span>
     <span class="title" title="녹화에 안 찍혀요 · 위 줄을 끌어 옮기고, 가장자리를 끌어 크기를 바꿔요"><b>프롬프터</b></span>
     <span class="msg" id="msg"></span>
+    <span class="olab">투명도</span>
+    <input type="range" id="opacity" class="op" min="0.3" max="1" step="0.05" title="창을 비치게 (녹화에는 안 찍혀요)" />
     <button class="tb mine" id="mine" title="저장한 내 빠르기·글자 크기로">★ 내 설정</button>
     <button class="tb" id="save" title="지금 빠르기·글자 크기를 내 설정으로 저장">설정 저장</button>
     <span class="wb">
@@ -93,7 +97,7 @@
   const SIZE_NAME = (v) => (v <= 38 ? "작게" : v <= 58 ? "보통" : v <= 76 ? "크게" : "아주 크게");
   const $ = (id) => document.getElementById(id);
   const view = $("view"), text = $("text");
-  let cps = 5, size = 52, mine = null, y = 0, playing = false, last = 0, startAt = 0, chars = 1, lines = [];
+  let cps = 5, size = 52, opacity = 1, mine = null, y = 0, playing = false, last = 0, startAt = 0, chars = 1, lines = [];
 
   const render = (script) => {
     text.innerHTML = "";
@@ -146,7 +150,14 @@
     clearTimeout(flash);
     flash = setTimeout(() => ($("msg").textContent = ""), 2500);
   };
-  const report = () => window.prompter.prefs && window.prompter.prefs({ cps, size, mine });
+  const report = () => window.prompter.prefs && window.prompter.prefs({ cps, size, opacity, mine });
+  // 투명도 — 창 전체를 비치게 (뒤 화면을 보면서 읽게)
+  const setOpacity = (v, tell = true) => {
+    opacity = Math.min(1, Math.max(0.3, Number(v) || 1));
+    $("opacity").value = opacity;
+    window.prompter.opacity && window.prompter.opacity(opacity);
+    if (tell) report();
+  };
   const setSpeed = (v, tell = true) => {
     cps = Math.min(8, Math.max(3, Math.round(v * 2) / 2));
     $("speed").value = cps;
@@ -232,6 +243,8 @@
   };
   $("mine").addEventListener("pointerdown", (e) => e.stopPropagation());
   $("save").addEventListener("pointerdown", (e) => e.stopPropagation());
+  $("opacity").oninput = (e) => setOpacity(e.target.value);
+  $("opacity").addEventListener("pointerdown", (e) => e.stopPropagation());
   $("smaller").onclick = () => setSize(size - 6);
   $("bigger").onclick = () => setSize(size + 6);
   $("size").oninput = (e) => setSize(Number(e.target.value));
@@ -293,6 +306,7 @@
     mine = o.mine && o.mine.cps ? { cps: Number(o.mine.cps), size: Number(o.mine.size) || 52 } : null;
     setSpeed(Number(o.cps) || 5, false);
     setSize(Number(o.size) || 52, false);
+    setOpacity(Number(o.opacity) || 1, false);
     startAt = Number(o.startAt) || 0;
     if (!startAt) setPlaying(true);
     requestAnimationFrame(tick);
