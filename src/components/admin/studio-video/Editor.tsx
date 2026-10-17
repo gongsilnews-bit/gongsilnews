@@ -1353,6 +1353,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         if (selWord) actions.toggleWord(selWord.clip, selWord.i);
         else if (selected.length) actions.removeClip(selected);
         else if (panel === "layer" && selLayer) removeLayer(selLayer);
+      } else if (ctrl && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x") && selected.length) {
+        // Ctrl+C 복사 · Ctrl+X 잘라내기 — 고른 클립 (리본 [복사하기][잘라내기]와 같다)
+        e.preventDefault();
+        clipboard.current = selected.map((id) => structuredClone(findClip(pref.current, id)!.clip)).filter(Boolean);
+        if (e.key.toLowerCase() === "x") actions.removeClip(selected);
+        else say(`클립 ${selected.length}개를 복사했어요 (Ctrl+V 로 붙여넣기)`);
+      } else if (ctrl && e.key.toLowerCase() === "v" && clipboard.current.length) {
+        // Ctrl+V 붙여넣기 — 고른 클립 뒤에 (없으면 맨 끝)
+        e.preventDefault();
+        insertAfter(clipboard.current.map((c) => ({ ...structuredClone(c), id: uid() })), lastSelected());
+        say(clipboard.current.length > 1 ? `클립 ${clipboard.current.length}개를 붙여넣었어요` : "붙여넣었어요");
       } else if (ctrl && e.key.toLowerCase() === "s") {
         e.preventDefault();
         saveNow(); // .gss 파일로 바로 묶기
