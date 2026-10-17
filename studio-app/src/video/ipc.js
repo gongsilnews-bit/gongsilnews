@@ -204,7 +204,8 @@ function closePrompter() {
 }
 
 /** 녹화 중 큰 창을 내리면 — 녹화하는 모니터 위쪽 가운데에 작은 막대. 막대는 녹화에 찍히지 않게(화면 캡처 제외) */
-async function openMini() {
+/** at = 이 자리 아래쪽에 (작은 창 [더 작게] — 작은 창이 있던 자리 아래쪽 가운데) */
+async function openMini(at) {
   if (!live || mini || miniOpening) return;
   miniOpening = true;
   try {
@@ -222,8 +223,8 @@ async function openMini() {
     mini = new BrowserWindow({
       width: W,
       height: H,
-      x: pb ? Math.round(pb.x + (pb.width - W) / 2) : Math.round(wa.x + (wa.width - W) / 2),
-      y: pb ? pb.y + pb.height + 8 : wa.y + 12,
+      x: at ? Math.round(at.x + (at.width - W) / 2) : pb ? Math.round(pb.x + (pb.width - W) / 2) : Math.round(wa.x + (wa.width - W) / 2),
+      y: at ? at.y + at.height - H : pb ? pb.y + pb.height + 8 : wa.y + 12,
       frame: false,
       transparent: true,
       backgroundColor: "#00000000",
@@ -556,7 +557,12 @@ function register(base) {
     if (!live.win.isDestroyed()) live.win.webContents.send("video:record-mini-expand");
   });
   // 작은 창 [더 작게 하기] — 맨 처음의 얇은 막대 (● 녹화 중 · 크게 보기 · 녹화 끝내기)
-  ipcMain.handle("video:record-tiny", () => (openMini(), true));
+  ipcMain.handle("video:record-tiny", () => {
+    // 작은 창이 있던 자리 아래쪽에 얇은 막대 (작은 창은 웹 화면이 그 뒤에 닫는다)
+    const at = consoleWin && !consoleWin.isDestroyed() ? consoleWin.getBounds() : null;
+    openMini(at);
+    return true;
+  });
   // 녹화 조정실 창 — 옮기기·투명도·작게·크게 (앱 0.1.8부터)
   let consoleFrom = null;
   ipcMain.handle("video:console", (_e, act, a, b, c, d, e) => {

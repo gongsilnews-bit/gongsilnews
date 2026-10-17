@@ -1735,8 +1735,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   // [더 작게 하기] — 작은 창 → 얇은 막대 (앱이 띄운다, 녹화에 안 찍힘)
   const goTiny = () => {
     if (!b.record.tiny) return;
-    closeMini();
-    b.record.tiny().catch(() => {});
+    // 먼저 얇은 막대(작은 창 자리 아래쪽에) → 그다음 작은 창 닫기
+    b.record.tiny().catch(() => {}).finally(() => closeMini());
   };
   useEffect(() => b.record.onTinyExpand?.(() => {
     if (phaseRef.current === "rec") openMini(); // 얇은 막대 [크게 보기] → 작은 창
