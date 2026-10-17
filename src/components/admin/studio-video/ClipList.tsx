@@ -320,8 +320,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                         {ib("copy", "고른 단어 복사하기 (Ctrl+C)", () => p.actions.copyClip(c.id))}
                         {ib("paste", "고른 단어 뒤에 붙여넣기 (Ctrl+V)", () => p.actions.pasteAfter(c.id), !p.actions.canPaste())}
                         {sep}
-                        {tb("speed", "상세 편집", () => (isSrc ? setDetail((v) => !v) : p.actions.openTiming(c.id)), false, isSrc ? "이 단어 소리 모양을 보며 시작·끝 맞추기" : "속도·길이 자세히")}
-                        {sep}
+                        {/* 상세 편집 — 촬영·녹화 영상 클립만 (AI 목소리는 없음) */}
+                        {isSrc && <>{tb("speed", "상세 편집", () => setDetail((v) => !v), false, "이 단어 소리 모양을 보며 시작·끝 맞추기")}{sep}</>}
                         {tb("split", "클립 나누기", () => p.actions.splitAt(c.id, i), i === 0, i === 0 ? "맨 앞 단어에서는 나눌 수 없어요" : "이 단어 앞에서 클립 나누기")}
                         {sep}
                         {tb("voice", c.type === "voice" ? "목소리 바꾸기" : "소리 크기", () => p.actions.openVoice(c.id))}
