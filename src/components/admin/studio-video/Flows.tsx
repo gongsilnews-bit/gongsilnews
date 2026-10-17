@@ -1698,12 +1698,16 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   // 녹화하기 창 열기 — 윈도우에서 닫으면(Alt+F4) 녹화는 계속, 작은 창으로
   const openBig = (): boolean => {
     if (bigRef.current) return true;
+    // 앱 안에서 보이던 녹화하기 창 자리·크기를 재 둔다 — 따로 뜬 창도 꼭 그 자리·그 크기로 (모양이 바뀌지 않게)
+    const boxes = document.querySelectorAll("[data-gsv-modal]");
+    const r = boxes.length ? boxes[boxes.length - 1].getBoundingClientRect() : null;
     const w = openMiniWindow(() => {
       bigRef.current = null;
       setBigWin(null);
       if (phaseRef.current === "rec") openMini();
     }, "console");
     if (!w) return false;
+    if (r && r.width > 100) b.record.console?.("place", r.left, r.top, r.width, r.height).catch(() => {});
     bigRef.current = w;
     setBigWin(w);
     return true;

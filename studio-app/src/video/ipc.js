@@ -67,8 +67,10 @@ function consoleOptions(main, kind) {
   };
 }
 /** 조정실 창이 생기면 — 녹화에 안 찍히게, 스튜디오 창은 가려져도 그리기를 늦추지 않게 (녹화 화판을 거기서 그린다) */
+let consoleMain = null; // 조정실을 연 스튜디오 창 (자리 맞추기 기준)
 function setConsole(win, main) {
   consoleWin = win;
+  consoleMain = main;
   hideFromCapture(win);
   win.setAlwaysOnTop(true, "floating");
   win.setMenuBarVisibility(false);
@@ -495,7 +497,7 @@ function register(base) {
   ipcMain.handle("video:record-tiny", () => (openMini(), true));
   // 녹화 조정실 창 — 옮기기·투명도·작게·크게 (앱 0.1.8부터)
   let consoleFrom = null;
-  ipcMain.handle("video:console", (_e, act, a, b) => {
+  ipcMain.handle("video:console", (_e, act, a, b, c, d) => {
     const w = consoleWin && !consoleWin.isDestroyed() ? consoleWin : null;
     if (!w) return false;
     if (act === "drag-start") consoleFrom = w.isMaximized() ? null : w.getPosition();
@@ -506,6 +508,10 @@ function register(base) {
       if (w.isMaximized()) w.unmaximize();
       else w.maximize();
       return w.isMaximized();
+    } else if (act === "place") {
+      // 앱 안에서 보이던 녹화하기 창 자리·크기 그대로 (스튜디오 창 안쪽 기준 좌표 → 화면 좌표)
+      const m = consoleMain && !consoleMain.isDestroyed() ? consoleMain.getContentBounds() : { x: 0, y: 0 };
+      w.setBounds({ x: Math.round(m.x + a), y: Math.round(m.y + b), width: Math.round(c), height: Math.round(d) });
     } else if (act === "big") {
       if (live) showBig(live.win); // [크게 보기] — 스튜디오 창 다시
     } else if (act === "show") {
