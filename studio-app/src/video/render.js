@@ -326,7 +326,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   // 소리
   const vol = (x) => Math.max(0, Math.min(3, Number(x ?? 1)));
   // 첨부한 화면 영상의 소리 (올렸을 때만) — 원본 메인 소리와 섞는다
-  const vv = visIn >= 0 && visual && visual.hasAudio ? Math.max(0, Math.min(2, Number(clip.visualVolume) || 0)) : 0;
+  // 넣은 영상 소리 × 클립 전체 볼륨 (위 목소리 칩의 볼륨·무음은 클립 안 모든 소리에 — 미리보기 Player.tsx 와 같게)
+  const vv = visIn >= 0 && visual && visual.hasAudio && !clip.muted ? Math.max(0, Math.min(2, (Number(clip.visualVolume) || 0) * vol(clip.volume))) : 0;
   if (vv > 0) filters.push(`[${visIn}:a]volume=${vv.toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[avis]`);
   if (clip.type === "voice" && !clip.muted && !offs.voice && clip.voice && clip.voice.file && fs.existsSync(clip.voice.file)) {
     args.push("-i", clip.voice.file);

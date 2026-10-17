@@ -149,7 +149,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       }
       const st = project.settings;
       // 원래 촬영 화면이면 원본 소리, 첨부한 영상이면 그 영상 소리를 올렸을 때만 (기본 무음)
-      const vv = Math.max(0, Math.min(2, c.visualVolume || 0));
+      // 넣은 영상 소리 × 클립 전체 볼륨 (위 목소리 칩의 볼륨·무음은 클립 안 모든 소리에)
+      const vv = c.muted ? 0 : Math.max(0, Math.min(2, (c.visualVolume || 0) * (c.volume ?? 1)));
       v.muted = sameSource ? Boolean(c.muted) || Boolean(project.settings.off?.source) : vv <= 0;
       v.volume = sameSource ? Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1))) : Math.min(1, vv);
       v.playbackRate = rateOk(previewRate * (sameSource ? srcSpeed(c) : 1));
