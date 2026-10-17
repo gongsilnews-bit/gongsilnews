@@ -199,6 +199,13 @@ if (allowed) {
         // 녹화 중 작게 하기 — 큰 창은 내려가고 작은 막대(녹화에 안 찍힘)가 뜬다. 끝나면 다시 크게
         live: (on, startedAt) => ipcRenderer.invoke("video:record-live", on, startedAt),
         minimize: () => ipcRenderer.invoke("video:record-minimize"),
+        // 녹화 중 화면 바꾸기 — 작은 막대에 지금 모양 알리기 / 작은 막대에서 고른 모양 받기
+        setMode: (m) => ipcRenderer.invoke("video:record-mode", m),
+        onMiniMode: (fn) => {
+          const h = (_e, m) => fn(m);
+          ipcRenderer.on("video:record-mini-mode", h);
+          return () => ipcRenderer.removeListener("video:record-mini-mode", h);
+        },
         // 프롬프터 — 녹화하는 모니터 위쪽에 뜨는 대본 창 (녹화에 안 찍힘, 0.1.8부터)
         prompterOpen: (opts) => ipcRenderer.invoke("video:prompter-open", opts),
         prompterClose: () => ipcRenderer.invoke("video:prompter-close"),

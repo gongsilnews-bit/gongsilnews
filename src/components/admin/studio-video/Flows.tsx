@@ -1385,26 +1385,77 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     pcGain.current = null;
     streams.current.forEach((s) => s.getTracks().forEach((t) => t.stop()));
     streams.current = [];
+    comp.current = null;
   };
+
+  // 녹화 중 화면 바꾸기 — 녹화는 늘 1920×1080 화판(캔버스)에 그려서 한다. 화면 / 카메라 / 화면+카메라를 녹화를 멈추지 않고 바꾼다.
+  //  필요한 것만 그때 연다: 카메라는 카메라가 들어가는 모양으로 바꿀 때 켜고, 화면만으로 돌아가면 끈다 (카메라 불). 모니터도 바꿀 수 있다
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const comp = useRef<{ sv: HTMLVideoElement; cv: HTMLVideoElement; screen: MediaStream | null; screenSrc: string; camera: MediaStream | null; busy: Promise<void> } | null>(null);
+  const attachScreen = async (src: string) => {
+    const c = comp.current;
+    if (!c) return;
+    await b.record.choose(src);
+    const st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+    if (comp.current !== c) return st.getTracks().forEach((t) => t.stop());
+    const old = c.screen;
+    c.screen = st;
+    c.screenSrc = src;
+    streams.current.push(st);
+    c.sv.srcObject = st;
+    await c.sv.play().catch(() => {});
+    old?.getTracks().forEach((t) => t.stop());
+  };
+  const attachCam = async () => {
+    const c = comp.current;
+    if (!c || c.camera) return;
+    const st = await openCam(cam);
+    camPool.current = null; // 이제 녹화가 맡는다 — 녹화가 끝나거나 화면만으로 바꾸면 끈다
+    if (comp.current !== c) return st.getTracks().forEach((t) => t.stop());
+    c.camera = st;
+    streams.current.push(st);
+    c.cv.srcObject = st;
+    await c.cv.play().catch(() => {});
+  };
+  const detachCam = () => {
+    const c = comp.current;
+    if (!c?.camera) return;
+    c.camera.getTracks().forEach((t) => t.stop());
+    c.camera = null;
+    c.cv.srcObject = null;
+  };
+  // 녹화 중에 모양·모니터를 바꾸면 — 필요한 것을 차례대로 연다 (한꺼번에 열지 않게 줄 세움)
+  useEffect(() => {
+    const c = comp.current;
+    if (!c || (phase !== "rec" && phase !== "count")) return;
+    c.busy = c.busy.then(async () => {
+      try {
+        if (mode !== "camera" && (!c.screen || c.screenSrc !== source)) await attachScreen(source);
+        if (mode !== "screen") await attachCam();
+        else detachCam();
+      } catch (e) {
+        setErr(`${mode === "screen" ? "화면" : "카메라"}을 열지 못했어요: ${errText(e)}`);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, source, phase]);
+  // 작은 막대에서 고른 모양 → 여기로. 여기서 바꾼 모양 → 작은 막대에
+  useEffect(() => b.record.onMiniMode?.((m) => setMode(m)), [b]);
+  useEffect(() => {
+    if (phase === "rec") b.record.setMode?.(mode).catch(() => {});
+  }, [b, mode, phase]);
 
   const buildStream = async (): Promise<MediaStream> => {
     stopAll();
     stopLive();
     stopCamLive();
     setLive(false);
-    let screen: MediaStream | null = null;
-    let camera: MediaStream | null = null;
-    if (mode !== "camera") {
-      await b.record.choose(source);
-      // PC 소리는 화면과 함께 받는다 (윈도우 루프백)
-      screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !pcMuted });
-      streams.current.push(screen);
-    }
-    // 카메라만 녹화해도 PC 소리를 넣으려면 소리만 따로 받는다
-    let pcAudio: MediaStreamTrack[] = screen ? screen.getAudioTracks() : [];
-    if (mode === "camera" && !pcMuted) {
+    // PC 소리는 따로 받는다 (윈도우 루프백) — 녹화 중에 모니터·모양을 바꿔도 소리는 끊기지 않게
+    let pcAudio: MediaStreamTrack[] = [];
+    if (!pcMuted) {
       try {
-        if (sources[0]) await b.record.choose(sources[0].id);
+        await b.record.choose(source || sources[0]?.id || "");
         const d = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         d.getVideoTracks().forEach((t) => t.stop());
         streams.current.push(d);
@@ -1413,11 +1464,15 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         pcAudio = [];
       }
     }
-    if (mode !== "screen") {
-      camera = await openCam(cam); // 미리보기로 열어 둔 카메라 그대로 (다시 열지 않음)
-      camPool.current = null; // 이제 녹화가 맡는다 — 녹화가 끝나면 stopAll 이 끈다
-      streams.current.push(camera);
-    }
+    const sv = document.createElement("video");
+    const cv = document.createElement("video");
+    sv.muted = cv.muted = true;
+    sv.playsInline = cv.playsInline = true;
+    const c = { sv, cv, screen: null, screenSrc: "", camera: null, busy: Promise.resolve() };
+    comp.current = c;
+    if (mode !== "camera") await attachScreen(source);
+    else await b.record.choose(source); // 작은 막대·프롬프터는 고른 모니터에
+    if (mode !== "screen") await attachCam();
     // 마이크 + PC 소리를 각각 크기 조절해서 섞는다
     let audio: MediaStream | null = null;
     let micStream: MediaStream | null = null;
@@ -1444,68 +1499,66 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       }
       audio = dest.stream;
     }
-    let video: MediaStream;
-    if (mode === "both" && screen && camera) {
-      // 화면 + 카메라(배치·자리·크기는 camBoxRef, 녹화 중에 바꿔도 바로) — 캔버스로 합쳐서 녹화
-      const sv = document.createElement("video");
-      const cv = document.createElement("video");
-      sv.srcObject = screen;
-      cv.srcObject = camera;
-      sv.muted = cv.muted = true;
-      await Promise.all([sv.play(), cv.play()]);
-      const canvas = document.createElement("canvas");
-      canvas.width = 1920;
-      canvas.height = 1080;
-      const g = canvas.getContext("2d")!;
-      const draw = () => {
-        g.fillStyle = "#000";
-        g.fillRect(0, 0, 1920, 1080);
-        const sw = sv.videoWidth || 1920, sh = sv.videoHeight || 1080;
-        const cb = camBoxRef.current;
-        const sp = splitRects(cb);
-        if (sp) {
-          // 반반 — 화면은 칸 안에 다 보이게, 카메라는 칸을 꽉 채우게(넘치는 곳은 잘라냄), 사이에 선
-          const [x, y, w, h] = sp.scr;
-          const k = Math.min(w / sw, h / sh);
-          g.drawImage(sv, x + (w - sw * k) / 2, y + (h - sh * k) / 2, sw * k, sh * k);
-          const [X, Y, W, H] = sp.cam;
-          const cw = cv.videoWidth || 1280, ch = cv.videoHeight || 720;
-          const kk = Math.max(W / cw, H / ch);
-          g.save();
-          g.beginPath();
-          g.rect(X, Y, W, H);
-          g.clip();
-          g.drawImage(cv, X + (W - cw * kk) / 2, Y + (H - ch * kk) / 2, cw * kk, ch * kk);
-          g.restore();
-          if (cb.line > 0) {
-            g.fillStyle = cb.color;
-            if (cb.layout === "lr") g.fillRect(960 - cb.line / 2, 0, cb.line, 1080);
-            else g.fillRect(0, 540 - cb.line / 2, 1920, cb.line);
-          }
-          return;
-        }
-        const k = Math.min(1920 / sw, 1080 / sh);
-        g.drawImage(sv, (1920 - sw * k) / 2, (1080 - sh * k) / 2, sw * k, sh * k);
-        const { r, cx, cy } = cb;
-        g.save();
-        camPath(g, cb, 0);
-        g.clip();
-        const cw = cv.videoWidth || 1280, ch = cv.videoHeight || 720;
-        const kk = Math.max((r * 2) / cw, (r * 2) / ch);
-        g.drawImage(cv, cx - (cw * kk) / 2, cy - (ch * kk) / 2, cw * kk, ch * kk);
-        g.restore();
+    const canvas = document.createElement("canvas");
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const g = canvas.getContext("2d")!;
+    const fit = (v: HTMLVideoElement, X: number, Y: number, W: number, H: number, cover: boolean) => {
+      const vw = v.videoWidth || 1920, vh = v.videoHeight || 1080;
+      const k = cover ? Math.max(W / vw, H / vh) : Math.min(W / vw, H / vh);
+      g.save();
+      g.beginPath();
+      g.rect(X, Y, W, H);
+      g.clip();
+      g.drawImage(v, X + (W - vw * k) / 2, Y + (H - vh * k) / 2, vw * k, vh * k);
+      g.restore();
+    };
+    const draw = () => {
+      const m = modeRef.current;
+      const sOk = Boolean(c.screen) && sv.readyState >= 2;
+      const cOk = Boolean(c.camera) && cv.readyState >= 2;
+      // 바꾸는 중이라 아직 안 열린 것은 — 바로 앞 화면을 그대로 둔다 (검은 화면으로 깜빡이지 않게)
+      if (m === "camera" ? !cOk : m === "screen" ? !sOk : !sOk && !cOk) return;
+      g.fillStyle = "#000";
+      g.fillRect(0, 0, 1920, 1080);
+      if (m === "camera" || (m === "both" && !sOk)) return fit(cv, 0, 0, 1920, 1080, true);
+      if (m === "screen" || !cOk) return fit(sv, 0, 0, 1920, 1080, false);
+      // 화면 + 카메라 (배치·자리·크기는 camBoxRef, 녹화 중에 바꿔도 바로)
+      const cb = camBoxRef.current;
+      const sp = splitRects(cb);
+      if (sp) {
+        // 반반 — 화면은 칸 안에 다 보이게, 카메라는 칸을 꽉 채우게(넘치는 곳은 잘라냄), 사이에 선
+        fit(sv, ...sp.scr, false);
+        fit(cv, ...sp.cam, true);
         if (cb.line > 0) {
-          g.lineWidth = cb.line;
-          g.strokeStyle = cb.color;
-          camPath(g, cb, cb.line / 2);
-          g.stroke();
+          g.fillStyle = cb.color;
+          if (cb.layout === "lr") g.fillRect(960 - cb.line / 2, 0, cb.line, 1080);
+          else g.fillRect(0, 540 - cb.line / 2, 1920, cb.line);
         }
-      };
-      draw();
-      // 화면 그리기 신호(requestAnimationFrame)는 창을 내리면 멈춘다 — 작게 하기 중에도 녹화되게 시계로 그린다
-      raf.current = window.setInterval(draw, 1000 / 30);
-      video = canvas.captureStream(30);
-    } else video = (screen || camera)!;
+        return;
+      }
+      fit(sv, 0, 0, 1920, 1080, false);
+      const { r, cx, cy } = cb;
+      g.save();
+      camPath(g, cb, 0);
+      g.clip();
+      const cw = cv.videoWidth || 1280, ch = cv.videoHeight || 720;
+      const kk = Math.max((r * 2) / cw, (r * 2) / ch);
+      g.drawImage(cv, cx - (cw * kk) / 2, cy - (ch * kk) / 2, cw * kk, ch * kk);
+      g.restore();
+      if (cb.line > 0) {
+        g.lineWidth = cb.line;
+        g.strokeStyle = cb.color;
+        camPath(g, cb, cb.line / 2);
+        g.stroke();
+      }
+    };
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, 1920, 1080);
+    draw();
+    // 화면 그리기 신호(requestAnimationFrame)는 창을 내리면 멈춘다 — 작게 하기 중에도 녹화되게 시계로 그린다
+    raf.current = window.setInterval(draw, 1000 / 30);
+    const video = canvas.captureStream(30);
     const out = new MediaStream([...video.getVideoTracks(), ...(audio ? audio.getAudioTracks() : [])]);
     if (preview.current) {
       preview.current.srcObject = out;
@@ -1601,9 +1654,9 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           <div>
             <div style={{ ...label, marginBottom: 8 }}>무엇을 녹화할까요?</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <button type="button" disabled={phase !== "setup"} onClick={() => setMode("screen")} style={chip(mode === "screen")}><Icon name="screen" size={18} />화면</button>
-              <button type="button" disabled={phase !== "setup"} onClick={() => setMode("camera")} style={chip(mode === "camera")}><Icon name="camera" size={18} />카메라</button>
-              <button type="button" disabled={phase !== "setup"} onClick={() => setMode("both")} style={chip(mode === "both")}>화면 + 카메라</button>
+              <button type="button" onClick={() => setMode("screen")} style={chip(mode === "screen")}><Icon name="screen" size={18} />화면</button>
+              <button type="button" onClick={() => setMode("camera")} style={chip(mode === "camera")}><Icon name="camera" size={18} />카메라</button>
+              <button type="button" onClick={() => setMode("both")} style={chip(mode === "both")}>화면 + 카메라</button>
             </div>
           </div>
           {mode !== "camera" && (
@@ -1611,7 +1664,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
               <div style={{ ...label, marginBottom: 8 }}>녹화할 모니터</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                 {sources.map((s) => (
-                  <button key={s.id} type="button" disabled={phase !== "setup"} onClick={() => setSource(s.id)} onMouseEnter={() => setHover(s.id)} onMouseLeave={() => setHover("")} title={s.name} style={{ padding: 0, border: `2px solid ${source === s.id ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", overflow: "hidden" }}>
+                  <button key={s.id} type="button" onClick={() => setSource(s.id)} onMouseEnter={() => setHover(s.id)} onMouseLeave={() => setHover("")} title={s.name} style={{ padding: 0, border: `2px solid ${source === s.id ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", overflow: "hidden" }}>
                     <img src={s.thumb} alt="" style={{ width: "100%", display: "block" }} />
                     <div style={{ fontSize: 12, color: C.sub, padding: "3px 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: C.card }}>{s.name}</div>
                   </button>
