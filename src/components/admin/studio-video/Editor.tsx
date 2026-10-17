@@ -644,6 +644,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         p.scenes = p.scenes.filter((sc, i) => sc.clips.length || i === 0);
       });
       setSelected(ids);
+      // 파란 테두리(재생 위치)도 옮긴 클립으로 — 옮긴 클립 중 맨 앞 클립의 처음으로
+      const first = flatten(pref.current).items.find((x) => ids.includes(x.clip.id));
+      if (first) {
+        player.current?.pause();
+        seekClip(first.clip.id, 0.01);
+      }
       say(ids.length > 1 ? `클립 ${ids.length}개를 옮겼어요` : "클립을 옮겼어요");
     },
     // 클립 사이 [+ 새 클립] — 앞 클립 뒤(= 이 클립 앞)에 글 클립 넣기 창
