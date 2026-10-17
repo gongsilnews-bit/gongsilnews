@@ -734,7 +734,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       });
       setSelected([clipId]);
       revoice([clipId]);
-      say("AI 목소리를 넣었어요 · 원본 소리는 [원본 소리] 칩에서 조절해요");
+      say("AI 목소리를 넣었어요 · 영상 소리는 [영상 소리] 칩에서 조절해요");
     },
     setOrigVolume: (clipId, v, muted, first) => change((p) => {
       const c = findClip(p, clipId)?.clip;
@@ -1161,7 +1161,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     }
     return {
       none: a.hasAudio === false,
-      note: "화면에 넣은 영상의 소리예요 (위 [원본 소리] 칩과 같은 값, AI 목소리 크기와는 따로)",
+      note: "화면 영상의 소리예요 (위 [영상 소리] 칩과 같은 값, AI 목소리 크기와는 따로)",
       muted: !(c.visualVolume && c.visualVolume > 0),
       value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
       onMute: (v: boolean) => set((x) => { x.visualVolume = v ? undefined : x.visualVolume || 1; }),

@@ -293,15 +293,15 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
           </button>
           {hasOrig && (
             <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }} data-keepword="">
-              <button type="button" onClick={(e) => { e.stopPropagation(); setOrigOpen((v) => !v); }} title="영상 원래 소리 크기 (AI 목소리와 같이 들려요)"
+              <button type="button" onClick={(e) => { e.stopPropagation(); setOrigOpen((v) => !v); }} title="화면 영상의 소리 크기 (AI 목소리와 같이 들려요)"
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${c.visualVolume ? C.line2 : C.danger}`, background: c.visualVolume ? "transparent" : "rgba(239,68,68,0.12)", color: c.visualVolume ? C.sub : C.danger, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-                <Icon name={c.visualVolume ? "mic" : "mute"} size={16} />{c.visualVolume ? "원본 소리" : "원본 소리 무음"}
+                <Icon name={c.visualVolume ? "mic" : "mute"} size={16} />{c.visualVolume ? "영상 소리" : "영상 소리 무음"}
               </button>
               {origOpen && (
                 <>
                   <span onClick={(e) => { e.stopPropagation(); setOrigOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
                   <span onClick={(e) => e.stopPropagation()} style={{ position: "absolute", left: 0, top: 38, zIndex: 61, width: 260, padding: 12, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 12px 30px rgba(0,0,0,0.45)", cursor: "default" }}>
-                    <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>원본 소리 <span style={{ color: C.sub, fontWeight: 600, fontSize: 12 }}>· 영상 원래 소리</span></span>
+                    <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>영상 소리 <span style={{ color: C.sub, fontWeight: 600, fontSize: 12 }}>· 화면 영상의 소리</span></span>
                     <VolumeControl muted={!c.visualVolume} value={c.visualVolume || 1} onMute={(m) => p.actions.setOrigVolume(c.id, c.visualVolume || 1, m, true)} onVolume={(v, first) => p.actions.setOrigVolume(c.id, v, v === 0, first)} />
                   </span>
                 </>
