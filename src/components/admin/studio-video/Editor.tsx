@@ -271,6 +271,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           continue;
         }
         setBusy((x) => ({ ...x, [id]: "목소리 만드는 중…" }));
+        const t0 = Date.now();
         try {
           const r = await b.voice(pref.current.dir, text, f.clip.voiceId || pref.current.settings.voice.id);
           change((p) => {
@@ -283,6 +284,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         } catch (e) {
           say(`목소리를 만들지 못했어요: ${errText(e)}`);
         }
+        // 전에 만든 목소리(PC에 저장된 것)면 순식간에 끝나 돌아가는 표시가 안 보인다 — 0.8초는 보이게
+        const left = 800 - (Date.now() - t0);
+        if (left > 0) await new Promise((r) => setTimeout(r, left));
         setBusy((x) => {
           const y = { ...x };
           delete y[id];
