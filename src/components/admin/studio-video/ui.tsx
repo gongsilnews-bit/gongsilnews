@@ -212,7 +212,8 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
   };
   const isBig = win ? win.big : big;
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: win ? C.bg : mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+    // 창(묻는 창 등)은 늘 맨 앞 — 단어 단추 막대(3000)·메뉴보다 위
+    <div style={{ position: "fixed", inset: 0, zIndex: 5000, background: win ? C.bg : mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
       {mini && (
         // 작게 한 창 — 오른쪽 아래 작은 막대. 누르면 다시 커진다
         <div style={{ position: "fixed", right: 24, bottom: 24, pointerEvents: "auto", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px 12px 18px", borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", color: C.text }}>

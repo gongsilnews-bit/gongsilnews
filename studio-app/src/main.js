@@ -236,6 +236,10 @@ async function createWindow() {
   mainWindow.on("close", (e) => {
     if (!videoIpc.wantsAsk()) return;
     e.preventDefault();
+    // 묻는 창이 다른 창 뒤에 숨지 않게 — 앱 창을 맨 앞으로
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
     mainWindow.webContents.send("video:want-close");
   });
   // F5·다른 주소로 이동 — 편집기에 저장 안 한 내용이 있으면 앱이 직접 묻는다 (웹 화면은 나가는 중이라 창을 못 띄움)
