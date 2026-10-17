@@ -63,8 +63,7 @@ async function openPrompter(win, opts) {
     x: Math.round(wa.x + (wa.width - W) / 2),
     y: wa.y + 8,
     frame: false,
-    transparent: true,
-    backgroundColor: "#00000000",
+    backgroundColor: "#0c0d10", // 투명 창은 윈도우에서 그리기가 느려 글이 끊겼다 — 바탕을 채운다
     resizable: true,
     minimizable: false,
     maximizable: false,
@@ -73,7 +72,8 @@ async function openPrompter(win, opts) {
     alwaysOnTop: true,
     show: false,
     title: "프롬프터",
-    webPreferences: { preload: path.join(__dirname, "prompter-preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    // 앞에 나와 있지 않아도(포커스 없음) 그리기를 늦추지 않게
+    webPreferences: { preload: path.join(__dirname, "prompter-preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
   });
   prompter.setAlwaysOnTop(true, "screen-saver");
   prompter.setContentProtection(true); // 윈도우: 화면 녹화·캡처에서 빠진다

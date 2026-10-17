@@ -5,8 +5,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
 <title>프롬프터</title>
 <style>
-  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; user-select: none; }
-  .wrap { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; background: rgba(12, 13, 16, 0.94); border: 1px solid #3a3f4b; border-radius: 10px; color: #fff; overflow: hidden; }
+  html, body { margin: 0; height: 100%; background: #0c0d10; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; user-select: none; }
+  .wrap { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; background: #0c0d10; border: 1px solid #3a3f4b; color: #fff; overflow: hidden; }
   /* 위 줄을 잡고 끌어 옮긴다 — 마우스 모양은 ✥ 열십자 (윈도우 끌기 영역은 화살표만 돼서 직접 옮긴다) */
   .top { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 12px; border-bottom: 1px solid #2a2e37; flex-shrink: 0; cursor: move; background: #16181d; }
   .grip { font-size: 18px; color: #aab0bb; }
@@ -23,7 +23,7 @@
   .guide { position: absolute; left: 0; right: 0; top: 33%; height: 0; border-top: 2px solid rgba(59, 130, 246, 0.85); z-index: 2; pointer-events: none; }
   .guide::before { content: "▶"; position: absolute; left: 4px; top: -13px; color: #3b82f6; font-size: 18px; }
   .text { position: absolute; left: 0; right: 0; top: 0; padding: 0 44px; white-space: pre-wrap; word-break: keep-all; line-height: 1.45; font-weight: 700; will-change: transform; }
-  .text span.l { display: block; transition: color 0.2s; color: rgba(255, 255, 255, 0.95); }
+  .text span.l { display: block; color: rgba(255, 255, 255, 0.95); }
   .text span.l.past { color: rgba(255, 255, 255, 0.32); }
   .text span.gap { display: block; height: 0.7em; }
   .count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 120px; font-weight: 800; background: rgba(0, 0, 0, 0.55); z-index: 3; }
@@ -110,14 +110,28 @@
     chars = Math.max(1, String(script || "").replace(/\s/g, "").length);
   };
   const guideY = () => view.clientHeight * 0.33;
-  const maxY = () => Math.max(0, text.scrollHeight - 10);
+  // 높이·줄 위치는 대본·글자 크기·창 크기가 바뀔 때만 잰다 (매 화면마다 재면 버벅인다)
+  let H = 1, G = 0, ends = [], pastN = -1, ended = null;
+  const measure = () => {
+    H = text.scrollHeight || 1;
+    G = view.clientHeight * 0.33;
+    ends = lines.map((el) => el.offsetTop + el.offsetHeight);
+    pastN = -1;
+  };
+  const maxY = () => Math.max(0, H - 10);
   const apply = () => {
     y = Math.min(Math.max(0, y), maxY());
-    // 첫 줄 윗부분이 읽는 줄에 오게 시작
-    text.style.transform = `translateY(${guideY() - size * 0.75 - y}px)`;
-    const g = y + size * 0.75;
-    for (const el of lines) el.classList.toggle("past", el.offsetTop + el.offsetHeight < g - 4);
-    $("end").style.display = y >= maxY() - 2 ? "block" : "none";
+    // 첫 줄 윗부분이 읽는 줄에 오게 시작 — 그래픽 카드로 옮긴다
+    text.style.transform = `translate3d(0, ${(G - size * 0.75 - y).toFixed(1)}px, 0)`;
+    const g = y + size * 0.75 - 4;
+    let n = 0;
+    while (n < ends.length && ends[n] < g) n++;
+    if (n !== pastN) {
+      for (let i = 0; i < lines.length; i++) lines[i].classList.toggle("past", i < n);
+      pastN = n;
+    }
+    const e = y >= maxY() - 2;
+    if (e !== ended) $("end").style.display = (ended = e) ? "block" : "none";
   };
   let flash = 0;
   const say = (t) => {
@@ -140,13 +154,14 @@
   };
   const setSize = (v, tell = true) => {
     // 크기를 바꿔도 읽던 자리는 그대로
-    const k = text.scrollHeight ? y / text.scrollHeight : 0;
+    const k = y / H;
     size = Math.min(96, Math.max(28, Math.round(v / 2) * 2));
     text.style.fontSize = size + "px";
     $("size").value = size;
     $("sizeName").textContent = SIZE_NAME(size);
     showMine();
-    y = k * text.scrollHeight;
+    measure();
+    y = k * H;
     apply();
     if (tell) report();
   };
@@ -173,7 +188,7 @@
     } else if (playing) {
       // 1초에 cps 글자 → 글자 하나가 차지하는 높이 × cps 만큼
       const dt = Math.min(0.1, (now - last) / 1000);
-      y += (text.scrollHeight / chars) * cps * dt;
+      y += (H / chars) * cps * dt;
       apply();
     }
     last = now;
@@ -243,7 +258,12 @@
     } else if (e.key === "ArrowUp") $("back").click();
     else if (e.key === "ArrowDown") (y += size * 1.45), apply();
   });
-  window.addEventListener("resize", apply);
+  window.addEventListener("resize", () => {
+    const k = y / H;
+    measure();
+    y = k * H;
+    apply();
+  });
 
   window.prompter.init().then((o) => {
     o = o || {};
