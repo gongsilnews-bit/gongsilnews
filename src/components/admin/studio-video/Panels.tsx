@@ -562,15 +562,6 @@ export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, ra
         <span style={{ width: "100%", fontSize: 12.5, color: C.dim }}>미리보기에서 자막을 끌어 옮기고, 양옆 손잡이로 줄 너비를 바꿀 수 있어요.</span>
       </div>
       <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
-        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>줄 너비</span><span>{Math.round((s.wrap ?? 1) * 100)}%</span></div>
-        <input type="range" min={0.3} max={1} step={0.05} value={s.wrap ?? 1} onChange={(e) => onChange({ wrap: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
-      </div>
-      <div style={{ ...row, flexWrap: "wrap" }}>
-        <span style={{ ...label, width: "100%" }}>길이</span>
-        <button type="button" onClick={() => onChange({ length: "long" })} style={chip(s.length === "long")}>길게 (문장 그대로)</button>
-        <button type="button" onClick={() => onChange({ length: "short" })} style={chip(s.length === "short")}>짧게 (말하는 대로)</button>
-      </div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
         <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>글자 크기</span><span>{s.size}%</span></div>
         <input type="range" min={40} max={260} step={5} value={s.size} onChange={(e) => onChange({ size: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
       </div>
