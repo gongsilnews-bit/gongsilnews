@@ -195,7 +195,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const [origOpen, setOrigOpen] = React.useState(false); // [원본 소리] 칩 (AI 목소리를 얹은 영상)
   // AI 목소리를 얹은 영상 — 화면이 소리 있는 영상이면 [원본 소리] 칩을 하나 더
   const origAsset = c.type === "voice" && c.visual ? project.assets[c.visual.asset] : null;
-  const hasOrig = Boolean(origAsset && origAsset.kind === "video" && origAsset.hasAudio !== false);
+  // 영상 소리를 켰을 때만 칩 (꺼 둔 기본 상태에서는 안 보인다 — 켜기는 썸네일 메뉴 [볼륨 조절])
+  const hasOrig = Boolean(origAsset && origAsset.kind === "video" && origAsset.hasAudio !== false && c.visualVolume && c.visualVolume > 0);
   const [hoverW, setHoverW] = React.useState(-1); // 마우스를 올린 단어 — 오른쪽 위 ⓧ(지우기)
   const [insOpen, setInsOpen] = React.useState(false); // 단추 막대 [삽입 ▾]
   const [detail, setDetail] = React.useState(false); // 상세 편집 (파형) 펼침
