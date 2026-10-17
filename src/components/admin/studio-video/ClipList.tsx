@@ -301,7 +301,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                   <span style={{ position: "relative", display: "inline-flex" }}>
                     <button type="button" title={pad ? `다 읽고 ${pad}초 쉬어요 — 눌러서 바꾸기` : "다 읽고 쉬기 — 눌러서 정하기"} onClick={(e) => { e.stopPropagation(); setPadOpen((v) => !v); }}
                       style={{ height: 34, padding: "0 8px", borderRadius: 4, border: `1px ${pad ? "solid" : "dashed"} ${pad ? C.accent : C.line2}`, background: pad ? C.accentDim : C.panel2, color: "#9ecbff", fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
-                      [..]{pad ? ` ${pad}초` : ""}
+                      {pad ? `[${pad}초]` : "[..]"}
                     </button>
                     {padOpen && (
                       <>
