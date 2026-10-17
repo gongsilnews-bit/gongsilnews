@@ -276,7 +276,25 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         if (!text) {
           change((p) => {
             const c = findClip(p, id)?.clip;
-            if (c) c.voice = null;
+            if (!c) return;
+            c.voice = null;
+            // 원본 영상에 AI 목소리를 얹었던 클립(fitLen)에서 글을 다 지우면 — 원래 원본 영상 클립으로 (원본 소리 크기는 그대로 이어서)
+            const a = c.visual ? p.assets[c.visual.asset] : null;
+            if (c.fitLen && c.visual && a?.kind === "video") {
+              const s0 = c.visual.s || 0;
+              c.type = "source";
+              c.src = { asset: c.visual.asset, s: s0, e: +Math.min(a.duration || s0 + c.fitLen, s0 + c.fitLen).toFixed(3) };
+              if (c.visualVolume && Math.abs(c.visualVolume - 1) > 0.001) c.volume = c.visualVolume;
+              if (!c.visualVolume && a.hasAudio !== false) c.muted = true;
+              c.text = "";
+              c.words = [];
+              delete c.visual;
+              delete c.visualVolume;
+              delete c.fitLen;
+              delete c.pad;
+              delete c.voiceId;
+              delete c.speed;
+            }
           }, false);
           continue;
         }
