@@ -72,6 +72,16 @@ function memPlace(kind, camOnly) {
   if (!d || String(d.id) === recDisplayId(camOnly)) return null;
   return { m, d };
 }
+// 다시 키울 때의 기준 — 누른 단추가 있던 창 (얇은 막대 → 작은 창, 작은 창 → 녹화하기 창).
+// 2모니터에서 기억해 둔 다른 모니터로 튀지 않고, 누른 자리(그 모니터)에 뜨게 (사장님 2026-10-17)
+let anchor = null; // { b: 창 자리, from: "bar", at: 시각 }
+let popMini = null; // 떠 있는 카톡 크기 작은 창
+const setAnchor = (b, from) => (anchor = b ? { b, from, at: Date.now() } : null);
+const takeAnchor = (from) => {
+  const a = anchor && anchor.from === from && Date.now() - anchor.at < 15000 ? anchor : null;
+  if (a) anchor = null;
+  return a && a.b;
+};
 function clampTo(d, x, y, w, h) {
   const wa = d.workArea;
   return { x: Math.round(Math.min(Math.max(wa.x, x), wa.x + wa.width - Math.min(w, wa.width))), y: Math.round(Math.min(Math.max(wa.y, y), wa.y + wa.height - Math.min(h, wa.height))) };
@@ -81,6 +91,14 @@ function clampTo(d, x, y, w, h) {
 function consoleOptions(main, kind) {
   if (kind === "mini") {
     const base = { minWidth: 320, minHeight: 420, frame: false, backgroundColor: "#111317", title: "녹화 중", alwaysOnTop: true, autoHideMenuBar: true, show: true };
+    // 0) 얇은 막대 [크게 보기]로 왔으면 — 막대가 있던 자리에 (막대는 작은 창 아래쪽 가운데에 붙어 있었다)
+    const ab = takeAnchor("bar");
+    if (ab) {
+      const m = mem().mini;
+      const w = (m && m.width) || 400, h = (m && m.height) || 560;
+      const d = screen.getDisplayMatching(ab);
+      return { ...base, width: w, height: h, ...clampTo(d, ab.x + ab.width / 2 - w / 2, ab.y + ab.height - h, w, h) };
+    }
     // 1) 끌어 옮겨 둔 자리  2) 녹화하지 않는 모니터 오른쪽 아래  3) 녹화하는 모니터 오른쪽 아래
     const mp = memPlace("mini", lastCamOnly);
     if (mp) {
@@ -133,6 +151,11 @@ function setConsole(win, main, kind = "console") {
   };
   win.on("moved", remember);
   win.on("resized", remember);
+  // 작은 창 — [크게 보기]를 누르면 녹화하기 창이 먼저 뜨고 작은 창이 닫힌다 → 자리 잡을 때 이 창 자리를 읽는다
+  if (kind === "mini") {
+    popMini = win;
+    win.on("closed", () => popMini === win && (popMini = null));
+  }
   hideFromCapture(win);
   win.setAlwaysOnTop(true, "floating");
   win.setMenuBarVisibility(false);
@@ -561,6 +584,7 @@ function register(base) {
   ipcMain.on("record-mini:expand", () => {
     if (!live) return;
     if (!live.noMini) return showBig(live.win);
+    if (mini && !mini.isDestroyed()) setAnchor(mini.getBounds(), "bar");
     closeMini();
     if (!live.win.isDestroyed()) live.win.webContents.send("video:record-mini-expand");
   });
@@ -589,9 +613,14 @@ function register(base) {
       //  1) 끌어 옮겨 둔 자리  2) 모니터가 두 대면 녹화하지 않는 모니터 가운데  3) 앱 안에서 보이던 자리 그대로
       lastCamOnly = Boolean(e);
       const width = Math.round(c), height = Math.round(d);
-      const mp = memPlace("console", lastCamOnly);
-      const od = otherDisplay(lastCamOnly);
-      if (mp) w.setBounds({ width, height, ...clampTo(mp.d, mp.m.x, mp.m.y, width, height) });
+      // 0) 작은 창 [크게 보기]로 왔으면 — 작은 창이 있던 모니터·자리에 (가운데 맞춤, 위는 작은 창 위쪽)
+      const ab = popMini && !popMini.isDestroyed() ? popMini.getBounds() : null;
+      const mp = ab ? null : memPlace("console", lastCamOnly);
+      const od = ab ? null : otherDisplay(lastCamOnly);
+      if (ab) {
+        const ad = screen.getDisplayMatching(ab);
+        w.setBounds({ width, height, ...clampTo(ad, ab.x + ab.width / 2 - width / 2, ab.y, width, height) });
+      } else if (mp) w.setBounds({ width, height, ...clampTo(mp.d, mp.m.x, mp.m.y, width, height) });
       else if (od) {
         const wa = od.workArea;
         w.setBounds({ width, height, ...clampTo(od, wa.x + (wa.width - width) / 2, wa.y + (wa.height - height) / 2, width, height) });
