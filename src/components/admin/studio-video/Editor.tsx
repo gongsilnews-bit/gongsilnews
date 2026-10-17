@@ -1292,7 +1292,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return; // 화면 위 글 고치기 칸 등에서 이미 처리한 키 (Esc 로 고치기만 취소)
       const tg = e.target as HTMLElement;
-      if (tg && (tg.tagName === "INPUT" || tg.tagName === "TEXTAREA" || tg.tagName === "SELECT" || tg.isContentEditable)) return;
+      // 글을 치는 칸에서만 무시 — 체크칸·막대·단추에 초점이 있어도 Del·스페이스바는 된다 (클립 체크 후 Del 이 안 먹던 문제)
+      const typing = tg && (tg.tagName === "TEXTAREA" || tg.tagName === "SELECT" || tg.isContentEditable || (tg.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|color)$/i.test((tg as HTMLInputElement).type)));
+      if (typing) return;
+      // 체크칸·단추에서 스페이스바는 그 칸을 누르는 대신 재생·멈춤으로
+      if (e.code === "Space" && tg && (tg.tagName === "INPUT" || tg.tagName === "BUTTON")) tg.blur();
       const ctrl = e.ctrlKey || e.metaKey;
       if (e.key === "Escape" && big) {
         setBig(false);
