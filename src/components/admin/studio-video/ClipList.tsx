@@ -284,7 +284,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }} data-keepword="">
               <button type="button" onClick={(e) => { e.stopPropagation(); setOrigOpen((v) => !v); }} title="영상 원래 소리 크기 (AI 목소리와 같이 들려요)"
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${c.visualVolume ? C.line2 : C.danger}`, background: c.visualVolume ? "transparent" : "rgba(239,68,68,0.12)", color: c.visualVolume ? C.sub : C.danger, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-                <Icon name={c.visualVolume ? "mic" : "mute"} size={16} />원본 소리 {c.visualVolume ? `${Math.round(c.visualVolume * 100)}%` : "끔"}
+                <Icon name={c.visualVolume ? "mic" : "mute"} size={16} />{c.visualVolume ? "원본 소리" : "원본 소리 무음"}
               </button>
               {origOpen && (
                 <>

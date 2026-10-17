@@ -263,6 +263,43 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (need < -0.3) setTimeout(() => say(`글이 영상보다 ${(-need).toFixed(1)}초 길어요 — 글을 줄이거나 목소리를 조금 빠르게 해 주세요`), 0);
   };
 
+  /**
+   * 글 없는 AI 목소리 클립인데 화면이 소리 있는 영상이면 — 원본 영상 클립으로 (원본 소리 크기는 그대로 이어서).
+   * 원본 영상에 AI 목소리를 얹었다가 글을 다 지운 경우. 바꿨으면 true
+   */
+  const toSource = (c: Clip, p: Project): boolean => {
+    if (c.type !== "voice" || clipText(c).trim() || !c.visual) return false;
+    const a = p.assets[c.visual.asset];
+    if (!a || a.kind !== "video" || a.hasAudio === false) return false;
+    const s0 = c.visual.s || 0;
+    const len = c.fitLen || c.hold || Math.max(0.3, (a.duration || s0 + 3) - s0);
+    c.type = "source";
+    c.src = { asset: c.visual.asset, s: s0, e: +Math.min(a.duration || s0 + len, s0 + len).toFixed(3) };
+    c.volume = c.visualVolume && Math.abs(c.visualVolume - 1) > 0.001 ? c.visualVolume : undefined;
+    c.muted = c.visualVolume ? undefined : true;
+    c.voice = null;
+    c.text = "";
+    c.words = [];
+    delete c.visual;
+    delete c.visualVolume;
+    delete c.fitLen;
+    delete c.pad;
+    delete c.hold;
+    delete c.voiceId;
+    delete c.speed;
+    return true;
+  };
+  // 열려 있는 프로젝트에 이미 그런 클립이 있으면 한 번 고친다
+  useEffect(() => {
+    const need = flatten(pref.current).items.some((x) => {
+      const c = x.clip;
+      const a = c.visual ? pref.current.assets[c.visual.asset] : null;
+      return c.type === "voice" && !clipText(c).trim() && a?.kind === "video" && a.hasAudio !== false && (c.fitLen || typeof c.visualVolume === "number");
+    });
+    if (need) change((p) => { for (const sc of p.scenes) for (const c of sc.clips) if (c.fitLen || typeof c.visualVolume === "number") toSource(c, p); }, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project]);
+
   /* ── AI 목소리 만들기 (한 번에 3개씩) ── */
   const revoice = useCallback(async (ids: string[]) => {
     const list = ids.filter((id) => findClip(pref.current, id)?.clip.type === "voice");
@@ -278,23 +315,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             const c = findClip(p, id)?.clip;
             if (!c) return;
             c.voice = null;
-            // 원본 영상에 AI 목소리를 얹었던 클립(fitLen)에서 글을 다 지우면 — 원래 원본 영상 클립으로 (원본 소리 크기는 그대로 이어서)
-            const a = c.visual ? p.assets[c.visual.asset] : null;
-            if (c.fitLen && c.visual && a?.kind === "video") {
-              const s0 = c.visual.s || 0;
-              c.type = "source";
-              c.src = { asset: c.visual.asset, s: s0, e: +Math.min(a.duration || s0 + c.fitLen, s0 + c.fitLen).toFixed(3) };
-              if (c.visualVolume && Math.abs(c.visualVolume - 1) > 0.001) c.volume = c.visualVolume;
-              if (!c.visualVolume && a.hasAudio !== false) c.muted = true;
-              c.text = "";
-              c.words = [];
-              delete c.visual;
-              delete c.visualVolume;
-              delete c.fitLen;
-              delete c.pad;
-              delete c.voiceId;
-              delete c.speed;
-            }
+            toSource(c, p);
           }, false);
           continue;
         }
