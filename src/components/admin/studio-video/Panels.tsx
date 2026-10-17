@@ -504,8 +504,9 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
 }
 
 /* ── 메인자막 (자막 서식) ── */
-export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, range }: {
+export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, range, onAnim }: {
   settings: Settings;
+  onAnim?: () => void; // 메인자막 애니메이션 칸
   onChange: (patch: Partial<Settings["subtitle"]>) => void;
   onClose: () => void;
   /** 이 클립 자막 글 — 고르거나 재생 중인 클립 */
@@ -520,6 +521,11 @@ export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, ra
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` };
   return (
     <Side title="메인자막" onClose={onClose}>
+      {onAnim && (
+        <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.line}` }}>
+          <Btn small onClick={onAnim} style={{ width: "100%" }}><Icon name="transition" size={15} />애니메이션{s.anim ? " · 들어감" : ""}</Btn>
+        </div>
+      )}
       {range && (
         <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 8, background: range.mode === "sel" ? C.accentDim : undefined }}>
           <span style={label}>적용 범위</span>

@@ -19,7 +19,7 @@ import { AnimPanel } from "./Anim";
 import { TRANS_DEFAULT } from "./transitions";
 import { LAYER_ICON, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim";
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim" | "subanim";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -2224,7 +2224,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           const sc = it ? { id: it.clip.id, n: flat.items.indexOf(it) + 1, text: typeof it.clip.subText === "string" ? it.clip.subText : clipText(it.clip), custom: typeof it.clip.subText === "string" } : null;
           const own = flat.items.filter((x) => x.clip.subStyle && Object.keys(x.clip.subStyle).length).length;
           return <SubtitlePanel settings={project.settings} onChange={(patch) => applySub(patch)} onClose={() => setPanel("")}
-            clip={sc} onSubText={(id, t) => actions.editSub(id, t)}
+            clip={sc} onSubText={(id, t) => actions.editSub(id, t)} onAnim={() => setPanel("subanim")}
             range={{ mode: subSel ? "sel" : "all", selCount: selected.length, own, style: subNow(), onMode: setSubMode,
               onReset: () => { change((p) => { for (const id of selected) { const c = findClip(p, id)?.clip; if (c) delete c.subStyle; } }); say("고른 클립 자막을 전체 서식으로 되돌렸어요"); } }} />;
         })()}
@@ -2237,7 +2237,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         {panel === "anim" && (() => {
           const l = (project.layers || []).find((x) => x.id === animTarget);
           if (!l) return null;
-          return <AnimPanel key={l.id} project={project} layer={l} onClose={() => setPanel("")}
+          return <AnimPanel key={l.id} value={l.anim} what={l.type === "image" ? "사진" : "글자"} onClose={() => setPanel("")}
+            thumb={l.type === "image" && l.asset ? project.assets[l.asset]?.url : undefined} text={l.type === "text" ? String(l.text || "가").trim().slice(0, 4) : undefined}
+            count={(project.layers || []).filter((x) => x.type === l.type).length}
             onChange={(fn, all) => change((p) => {
               for (const x of p.layers || []) {
                 if (all ? x.type !== l.type : x.id !== l.id) continue;
@@ -2247,6 +2249,16 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               }
             })} />;
         })()}
+        {panel === "subanim" && (
+          // 메인자막 애니메이션 — 메인자막 칸의 적용 범위(전체 / 고른 클립만)를 따른다
+          <AnimPanel what="자막" text="자막" value={subNow().anim} onClose={() => setPanel("")} onBack={() => setPanel("subtitle")}
+            scopeNote={subSel ? `고른 클립 ${selected.length}개에만 (메인자막 칸에서 바꿔요)` : "전체 클립 (메인자막 칸에서 바꿔요)"}
+            onChange={(fn) => {
+              const n = fn({ ...(subNow().anim || {}) });
+              const clean = Object.fromEntries(Object.entries(n).filter(([, v]) => v !== undefined));
+              applySub({ anim: Object.keys(clean).length ? clean : undefined });
+            }} />
+        )}
         {panel === "source" && (() => {
           const sel = selected.filter((id) => isSrc(findClip(project, id)?.clip));
           const all = flat.items.map((x) => x.clip).filter(isSrc).map((c) => c.id);

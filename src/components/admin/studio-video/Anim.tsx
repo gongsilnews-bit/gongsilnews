@@ -3,7 +3,7 @@
 // 사진 올리기·화면 글자 애니메이션 칸 (브루처럼) — 선택된 효과 · [등장/퇴장][강조][확대] 효과 카드 · 빠르기 · 적용 범위.
 // 카드에 마우스를 올리면 그 효과가 실제로 움직여 보인다 (미리보기·굽기와 같은 계산 timeline.animAt)
 import React, { useEffect, useRef, useState } from "react";
-import type { AnimIn, Layer, LayerAnim, Project } from "./types";
+import type { AnimIn, LayerAnim } from "./types";
 import { animAt, animCss } from "./timeline";
 import { Side } from "./Panels";
 import { C, FONT } from "./ui";
@@ -73,21 +73,23 @@ function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string
   );
 }
 
-export function AnimPanel({ project, layer, onChange, onClose }: {
-  project: Project;
-  layer: Layer;
-  /** 애니메이션 바꾸기 — all 이면 같은 종류(사진/글자) 레이어 모두 */
+export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange, onClose, onBack }: {
+  value?: LayerAnim;
+  what: string; // 사진 · 글자 · 자막
+  thumb?: string; // 카드 시연 그림
+  text?: string; // 카드 시연 글자
+  /** 같은 종류 수 — 있으면 [이 ○만][모든 ○] 범위 단추. 없으면 scopeNote 로 안내 (자막은 메인자막 칸 범위를 따른다) */
+  count?: number;
+  scopeNote?: string;
+  /** 애니메이션 바꾸기 — all 이면 같은 종류 모두 */
   onChange: (fn: (a: LayerAnim) => LayerAnim, all: boolean) => void;
   onClose: () => void;
+  onBack?: () => void; // 앞 칸으로 (메인자막 칸)
 }) {
   const [tab, setTab] = useState<"inout" | "emph" | "grow">("inout");
   const [side, setSide] = useState<"in" | "out">("in");
   const [all, setAll] = useState(false);
-  const a = layer.anim || {};
-  const what = layer.type === "image" ? "사진" : "글자";
-  const count = (project.layers || []).filter((l) => l.type === layer.type).length;
-  const thumb = layer.type === "image" && layer.asset ? project.assets[layer.asset]?.url : undefined;
-  const text = layer.type === "text" ? String(layer.text || "가").trim().slice(0, 4) : undefined;
+  const a = value || {};
   const set = (fn: (a: LayerAnim) => LayerAnim) => onChange(fn, all);
   // 등장을 고르면 — 퇴장이 비었거나 등장과 같았으면 퇴장도 같은 효과 (거꾸로)
   const pickIn = (id?: AnimIn) => set((x) => ({ ...x, in: id, out: !x.out || x.out === x.in ? id : x.out }));
@@ -101,7 +103,12 @@ export function AnimPanel({ project, layer, onChange, onClose }: {
   ].filter(Boolean) as string[];
   const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "12px 16px" };
   return (
-    <Side title="애니메이션" onClose={onClose}>
+    <Side title={what === "자막" ? "메인자막 애니메이션" : "애니메이션"} onClose={onClose}>
+      {onBack && (
+        <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", padding: "10px 16px", border: 0, borderBottom: `1px solid ${C.line}`, background: "transparent", color: C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+          ‹ 메인자막 칸으로
+        </button>
+      )}
       <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>선택된 효과</span>
@@ -164,13 +171,19 @@ export function AnimPanel({ project, layer, onChange, onClose }: {
         )}
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>적용 범위 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 고른 뒤 효과를 누르세요</span></div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button type="button" onClick={() => setAll(false)} style={{ ...tabBtn(!all), flex: 1 }}>이 {what}만</button>
-            <button type="button" onClick={() => setAll(true)} style={{ ...tabBtn(all), flex: 1 }}>모든 {what} ({count}개)</button>
-          </div>
+          {typeof count === "number" ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              <button type="button" onClick={() => setAll(false)} style={{ ...tabBtn(!all), flex: 1 }}>이 {what}만</button>
+              <button type="button" onClick={() => setAll(true)} style={{ ...tabBtn(all), flex: 1 }}>모든 {what} ({count}개)</button>
+            </div>
+          ) : (
+            <div style={{ fontSize: 13.5, color: C.sub }}>{scopeNote}</div>
+          )}
         </div>
         <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
-          효과 그림에 마우스를 올리면 움직임을 미리 볼 수 있어요. [자동]은 {what}마다 팝·날아오기·다가오기·페이드·굴러오기를 차례로 써요. 여러 클립에 걸친 {what}는 첫 클립에서 나타나고 마지막 클립에서 사라져요.
+          {what === "자막"
+            ? "효과 그림에 마우스를 올리면 움직임을 미리 볼 수 있어요. 자막 한 줄이 나올 때마다 나타나고 사라져요. [자동]은 클립마다 팝·날아오기·다가오기·페이드·굴러오기를 차례로 써요."
+            : `효과 그림에 마우스를 올리면 움직임을 미리 볼 수 있어요. [자동]은 ${what}마다 팝·날아오기·다가오기·페이드·굴러오기를 차례로 써요. 여러 클립에 걸친 ${what}는 첫 클립에서 나타나고 마지막 클립에서 사라져요.`}
         </div>
       </div>
     </Side>

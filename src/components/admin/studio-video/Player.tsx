@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { animAt, animCss, animOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
 
@@ -673,8 +673,15 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); const tidy = (x: string) => x.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); if (t !== null && tidy(t) !== tidy(full)) onSubText(clip.id, t); }} />
             ) : (
+              <span style={(() => {
+                // 메인자막 애니메이션 — 지금 보이는 자막 조각(line.s~line.e)마다 나타나고 사라진다
+                const sa = clip && line ? subAnimOf(project, clip) : null;
+                const lk = sa && line ? animCss(animAt(sa, local, line.s, line.e), boxW, boxH) : undefined;
+                return lk ? { display: "inline-block", ...lk } : undefined;
+              })()}>
               <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장 (목소리는 그대로)" : undefined}
                 style={{ ...look, pointerEvents: onSubText ? "auto" : "none", cursor: onSubText ? "text" : undefined }}>{line?.text}</span>
+              </span>
             )}
           </div>
         );

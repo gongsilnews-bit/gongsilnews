@@ -214,6 +214,15 @@ function animOf(p, layer) {
   const out = a.out === "auto" ? (inn && a.in !== undefined ? inn : pickAuto()) : a.out;
   return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
 }
+function subAnimOf(p, clip) {
+  const a = subStyleOf(p.settings || {}, clip).anim;
+  if (!a || (!a.in && !a.out && !a.emph && !a.grow)) return null;
+  const i = Math.max(0, clipOrder(p).get(clip.id) || 0);
+  const auto = AUTO_ANIMS[i % AUTO_ANIMS.length];
+  const inn = a.in === "auto" ? auto : a.in;
+  const out = a.out === "auto" ? inn || auto : a.out;
+  return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
+}
 function layerSpan(p, layer, items, clipId, settings, order = clipOrder(p)) {
   const cur = items.find((x) => x.clip.id === clipId);
   if (!cur) return null;
@@ -254,4 +263,4 @@ function animAt(an, local, a, b) {
   return r;
 }
 
-module.exports = { animOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };
+module.exports = { animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };

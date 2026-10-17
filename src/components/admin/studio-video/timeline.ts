@@ -332,6 +332,16 @@ export function animOf(p: Project, layer: Layer): { in?: string; out?: string; e
   const out = a.out === "auto" ? (inn && a.in !== undefined ? inn : pickAuto()) : a.out;
   return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
 }
+/** 메인자막 애니메이션 — 이 클립 서식(전체 서식 + 클립만 바꾼 것)의 anim. 자동은 클립 차례대로 돌려 쓴다 */
+export function subAnimOf(p: Project, clip: Clip): ReturnType<typeof animOf> {
+  const a = subStyleOf(p.settings, clip).anim;
+  if (!a || (!a.in && !a.out && !a.emph && !a.grow)) return null;
+  const i = Math.max(0, clipOrder(p).get(clip.id) ?? 0);
+  const auto = AUTO_ANIMS[i % AUTO_ANIMS.length];
+  const inn = a.in === "auto" ? auto : a.in;
+  const out = a.out === "auto" ? inn || auto : a.out;
+  return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
+}
 /** 레이어가 보이는 동안 — 지금 클립 안 시각(초)으로 시작 a·끝 b (여러 클립에 걸치면 첫 클립에서 등장, 마지막 클립에서 퇴장) */
 export function layerSpan(p: Project, layer: Layer, items: FlatItem[], clipId: string, settings?: Settings, order = clipOrder(p)): { a: number; b: number } | null {
   const cur = items.find((x) => x.clip.id === clipId);
