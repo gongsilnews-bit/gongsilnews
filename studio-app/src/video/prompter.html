@@ -35,14 +35,18 @@
   .end { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 22px; color: #aab0bb; display: none; z-index: 2; }
   .bar { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-top: 1px solid #2a2e37; flex-shrink: 0; }
   .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .lab { font-size: 14px; color: #aab0bb; width: 48px; }
+  .lab { font-size: 14px; color: #aab0bb; flex-shrink: 0; }
+  .row.two { flex-wrap: nowrap; gap: 12px; }
+  .half { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; }
+  .half input[type=range] { min-width: 40px; }
+  .vsep { width: 1px; align-self: stretch; background: #2a2e37; flex-shrink: 0; }
   button.b { height: 38px; padding: 0 12px; border-radius: 6px; border: 1px solid #4b5160; background: #1c1f26; color: #e5e7eb; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   button.b:hover { background: #2d3240; }
   button.b.main { background: #3b82f6; border-color: #3b82f6; color: #fff; min-width: 104px; }
   button.b.main:hover { background: #2563eb; }
   button.b.mine { border-color: #3b82f6; }
   input[type=range] { flex: 1; min-width: 90px; accent-color: #3b82f6; height: 26px; cursor: pointer; }
-  .val { font-size: 14px; color: #fff; font-weight: 700; min-width: 76px; text-align: center; }
+  .val { font-size: 14px; color: #fff; font-weight: 700; min-width: 64px; text-align: center; flex-shrink: 0; }
   .msg { font-size: 13px; color: #86efac; min-width: 0; }
 </style>
 </head>
@@ -75,19 +79,23 @@
       <button class="b" id="back" title="조금 앞 줄로">⏪ 뒤로</button>
       <button class="b" id="again" title="처음부터 다시">⏮ 처음부터</button>
     </div>
-    <div class="row">
-      <span class="lab">빠르기</span>
-      <button class="b" id="slower">느리게</button>
-      <input type="range" id="speed" min="3" max="8" step="0.5" />
-      <button class="b" id="faster">빠르게</button>
-      <span class="val" id="speedName"></span>
-    </div>
-    <div class="row">
-      <span class="lab">글자</span>
-      <button class="b" id="smaller">가 작게</button>
-      <input type="range" id="size" min="28" max="96" step="2" />
-      <button class="b" id="bigger">가 크게</button>
-      <span class="val" id="sizeName"></span>
+    <!-- 빠르기 · 글자 크기 — 한 줄에 반씩 -->
+    <div class="row two">
+      <div class="half">
+        <span class="lab">빠르기</span>
+        <button class="b" id="slower">느리게</button>
+        <input type="range" id="speed" min="3" max="8" step="0.5" />
+        <button class="b" id="faster">빠르게</button>
+        <span class="val" id="speedName"></span>
+      </div>
+      <span class="vsep"></span>
+      <div class="half">
+        <span class="lab">글자</span>
+        <button class="b" id="smaller">가 작게</button>
+        <input type="range" id="size" min="28" max="96" step="2" />
+        <button class="b" id="bigger">가 크게</button>
+        <span class="val" id="sizeName"></span>
+      </div>
     </div>
   </div>
 </div>
