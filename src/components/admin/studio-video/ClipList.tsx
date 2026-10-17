@@ -309,10 +309,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     {busy && i === words.length - 1 && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginLeft: 7, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} />}
                   </button>
                   </span>
-                      <button type="button" onClick={() => p.actions.toggleWord(c.id, i)} title={w.del ? "이 단어 되살리기" : "이 단어 지우기 (영상에서 잘려요)"}
-                        style={{ width: 26, height: 26, padding: 0, borderRadius: 5, border: 0, background: C.line2, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{w.del ? "↺" : "✕"}</button>
-                    </span>
-                  )}
                   </React.Fragment>
                 );
               })}
