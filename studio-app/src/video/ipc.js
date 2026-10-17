@@ -30,6 +30,64 @@ function openFile(file, win) {
 let live = null; // 녹화 중인 창 { win, startedAt, onMin, onRestore }
 let mini = null; // 녹화 중 작은 막대 창
 let miniOpening = false;
+let prompter = null; // 녹화 중 프롬프터 창 (녹화에 안 찍힘)
+let prompterOpts = null; // { text, cps, size, startAt }
+let prompterOwner = null; // 프롬프터를 연 창의 webContents (닫으면 알린다)
+
+/** 녹화하는 모니터 (화면 녹화면 고른 화면, 아니면 스튜디오 창이 있는 모니터) */
+async function recordDisplay(win) {
+  let d = null;
+  try {
+    const srcs = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: 0, height: 0 } });
+    const s = srcs.find((x) => x.id === chosenSource);
+    if (s) d = screen.getAllDisplays().find((x) => String(x.id) === String(s.display_id)) || null;
+  } catch {}
+  return d || screen.getDisplayMatching((win && !win.isDestroyed() ? win : BrowserWindow.getAllWindows()[0]).getBounds());
+}
+
+/**
+ * 프롬프터 — 녹화하는 모니터 위쪽 가운데(카메라 바로 아래, 눈이 카메라를 보듯이)에 뜬다.
+ * 화면 캡처에서 빠져서 화면을 녹화해도 영상에 나오지 않는다. 포커스를 뺏지 않게 조용히 띄운다
+ */
+async function openPrompter(win, opts) {
+  closePrompter();
+  prompterOpts = opts || {};
+  const d = await recordDisplay(win);
+  const wa = d.workArea;
+  const W = Math.round(Math.min(960, wa.width * 0.62)), H = Math.round(Math.min(340, wa.height * 0.36));
+  prompter = new BrowserWindow({
+    width: W,
+    height: H,
+    minWidth: 420,
+    minHeight: 200,
+    x: Math.round(wa.x + (wa.width - W) / 2),
+    y: wa.y + 8,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    resizable: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    show: false,
+    title: "프롬프터",
+    webPreferences: { preload: path.join(__dirname, "prompter-preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  prompter.setAlwaysOnTop(true, "screen-saver");
+  prompter.setContentProtection(true); // 윈도우: 화면 녹화·캡처에서 빠진다
+  prompter.loadFile(path.join(__dirname, "prompter.html"));
+  prompter.once("ready-to-show", () => prompter && prompter.showInactive());
+  prompter.on("closed", () => {
+    prompter = null;
+    if (prompterOwner && !prompterOwner.isDestroyed()) prompterOwner.send("video:prompter-closed");
+  });
+}
+function closePrompter() {
+  if (prompter && !prompter.isDestroyed()) prompter.close();
+  prompter = null;
+}
 
 /** 녹화 중 큰 창을 내리면 — 녹화하는 모니터 위쪽 가운데에 작은 막대. 막대는 녹화에 찍히지 않게(화면 캡처 제외) */
 async function openMini() {
@@ -45,11 +103,13 @@ async function openMini() {
     if (!live) return;
     if (!d) d = screen.getDisplayMatching(live.win.getBounds());
     const W = 340, H = 54, wa = d.workArea;
+    // 프롬프터가 떠 있으면 그 바로 아래에 (겹치지 않게)
+    const pb = prompter && !prompter.isDestroyed() ? prompter.getBounds() : null;
     mini = new BrowserWindow({
       width: W,
       height: H,
-      x: Math.round(wa.x + (wa.width - W) / 2),
-      y: wa.y + 12,
+      x: pb ? Math.round(pb.x + (pb.width - W) / 2) : Math.round(wa.x + (wa.width - W) / 2),
+      y: pb ? pb.y + pb.height + 8 : wa.y + 12,
       frame: false,
       transparent: true,
       backgroundColor: "#00000000",
@@ -365,6 +425,15 @@ function register(base) {
     return true;
   });
   ipcMain.on("record-mini:expand", () => live && showBig(live.win));
+  // 프롬프터 (앱 0.1.8부터)
+  ipcMain.handle("video:prompter-open", async (e, opts) => {
+    prompterOwner = e.sender;
+    await openPrompter(winOf(e), opts);
+    return true;
+  });
+  ipcMain.handle("video:prompter-close", () => (closePrompter(), true));
+  ipcMain.handle("prompter:init", () => prompterOpts);
+  ipcMain.on("prompter:close", () => closePrompter());
   ipcMain.on("record-mini:stop", () => {
     if (!live || live.win.isDestroyed()) return closeMini();
     live.win.webContents.send("video:record-mini-stop");

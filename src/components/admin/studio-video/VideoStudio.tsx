@@ -18,6 +18,7 @@ export default function VideoStudio() {
   const [project, setProject] = useState<Project | null>(null);
   const [flow, setFlow] = useState<"" | "new" | Method>("");
   const [recorded, setRecorded] = useState<LibItem | null>(null);
+  const [recScript, setRecScript] = useState(""); // 녹화할 때 프롬프터로 읽은 대본 → 자막
   const [err, setErr] = useState("");
   // .gss 를 열었는데 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로 열기]
   const [recover, setRecover] = useState<Recover | null>(null);
@@ -118,8 +119,8 @@ export default function VideoStudio() {
       {flow === "text" && <TextWizard onCancel={() => setFlow("")} onDone={done} />}
       {flow === "video" && <VideoFlow onCancel={() => setFlow("")} onDone={done} />}
       {flow === "longform" && <LongformFlow onCancel={() => setFlow("")} onDone={done} />}
-      {flow === "record" && !recorded && <RecordFlow onCancel={() => setFlow("")} onRecorded={(item) => setRecorded(item)} />}
-      {flow === "record" && recorded && <VideoFlow method="record" preset={[recorded]} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />}
+      {flow === "record" && !recorded && <RecordFlow onCancel={() => setFlow("")} onRecorded={(item, script) => { setRecScript(script || ""); setRecorded(item); }} />}
+      {flow === "record" && recorded && <VideoFlow method="record" preset={[recorded]} script={recScript} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />}
     </div>
   );
 }

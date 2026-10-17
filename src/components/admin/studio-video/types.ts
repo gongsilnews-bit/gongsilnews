@@ -228,6 +228,10 @@ export type VideoBridge = {
     live?: (on: boolean, startedAt?: number) => Promise<boolean>;
     minimize?: () => Promise<boolean>;
     onMiniStop?: (fn: () => void) => () => void;
+    // 프롬프터 — 녹화하는 모니터 위쪽 대본 창, 녹화에 안 찍힘 (앱 0.1.8부터)
+    prompterOpen?: (o: { text: string; cps: number; size: number; startAt: number }) => Promise<boolean>;
+    prompterClose?: () => Promise<boolean>;
+    onPrompterClosed?: (fn: () => void) => () => void;
   };
   showFile: (file: string) => Promise<void>;
   openSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 설정 화면 (옛 앱에는 없음)

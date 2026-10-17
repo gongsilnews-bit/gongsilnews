@@ -199,6 +199,14 @@ if (allowed) {
         // 녹화 중 작게 하기 — 큰 창은 내려가고 작은 막대(녹화에 안 찍힘)가 뜬다. 끝나면 다시 크게
         live: (on, startedAt) => ipcRenderer.invoke("video:record-live", on, startedAt),
         minimize: () => ipcRenderer.invoke("video:record-minimize"),
+        // 프롬프터 — 녹화하는 모니터 위쪽에 뜨는 대본 창 (녹화에 안 찍힘, 0.1.8부터)
+        prompterOpen: (opts) => ipcRenderer.invoke("video:prompter-open", opts),
+        prompterClose: () => ipcRenderer.invoke("video:prompter-close"),
+        onPrompterClosed: (fn) => {
+          const h = () => fn();
+          ipcRenderer.on("video:prompter-closed", h);
+          return () => ipcRenderer.removeListener("video:prompter-closed", h);
+        },
         onMiniStop: (fn) => {
           const h = () => fn();
           ipcRenderer.on("video:record-mini-stop", h);

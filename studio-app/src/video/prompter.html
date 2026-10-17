@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+<title>프롬프터</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; user-select: none; }
+  .wrap { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; background: rgba(12, 13, 16, 0.94); border: 1px solid #3a3f4b; border-radius: 10px; color: #fff; overflow: hidden; }
+  /* 위 줄을 잡고 끌어 옮긴다 (단추는 빼고) */
+  .top { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 14px; border-bottom: 1px solid #2a2e37; -webkit-app-region: drag; flex-shrink: 0; }
+  .title { flex: 1; font-size: 13.5px; font-weight: 700; color: #aab0bb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title b { color: #fff; }
+  .x { -webkit-app-region: no-drag; width: 34px; height: 30px; border: 0; border-radius: 4px; background: transparent; color: #aab0bb; font-size: 18px; cursor: pointer; }
+  .x:hover { background: #ef4444; color: #fff; }
+  .view { position: relative; flex: 1; overflow: hidden; }
+  /* 읽는 줄 — 위쪽 1/3 (카메라에 가깝게) */
+  .guide { position: absolute; left: 0; right: 0; top: 33%; height: 0; border-top: 2px solid rgba(59, 130, 246, 0.85); z-index: 2; pointer-events: none; }
+  .guide::before { content: "▶"; position: absolute; left: 4px; top: -13px; color: #3b82f6; font-size: 18px; }
+  .text { position: absolute; left: 0; right: 0; top: 0; padding: 0 44px; white-space: pre-wrap; word-break: keep-all; line-height: 1.45; font-weight: 700; will-change: transform; }
+  .text span.l { display: block; transition: color 0.2s; color: rgba(255, 255, 255, 0.95); }
+  .text span.l.past { color: rgba(255, 255, 255, 0.32); }
+  .text span.gap { display: block; height: 0.7em; }
+  .count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 120px; font-weight: 800; background: rgba(0, 0, 0, 0.55); z-index: 3; }
+  .end { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 22px; color: #aab0bb; display: none; z-index: 2; }
+  .bar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-top: 1px solid #2a2e37; flex-shrink: 0; flex-wrap: wrap; }
+  button.b { height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid #4b5160; background: #1c1f26; color: #e5e7eb; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  button.b:hover { background: #2d3240; }
+  button.b.main { background: #3b82f6; border-color: #3b82f6; color: #fff; min-width: 108px; }
+  button.b.main:hover { background: #2563eb; }
+  .val { font-size: 14px; color: #aab0bb; min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+  .sp { flex: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="title"><b>프롬프터</b> · 녹화에 안 찍혀요 · 끌어서 옮기고, 가장자리를 끌어 크기를 바꿔요</span>
+    <button class="x" id="close" title="프롬프터 닫기">✕</button>
+  </div>
+  <div class="view" id="view">
+    <div class="guide"></div>
+    <div class="text" id="text"></div>
+    <div class="end" id="end">— 대본 끝 —</div>
+    <div class="count" id="count" style="display:none"></div>
+  </div>
+  <div class="bar">
+    <button class="b main" id="play" title="멈추기·다시 (스페이스바)">⏸ 멈춤</button>
+    <button class="b" id="back" title="조금 앞 줄로">⏪ 뒤로</button>
+    <span class="sp"></span>
+    <button class="b" id="slower">느리게</button>
+    <span class="val" id="speed"></span>
+    <button class="b" id="faster">빠르게</button>
+    <span class="sp"></span>
+    <button class="b" id="smaller">가 작게</button>
+    <button class="b" id="bigger">가 크게</button>
+  </div>
+</div>
+<script>
+  // 1초에 읽는 글자 수(cps)로 올라간다. 처음 값은 녹화 창에서 고른 빠르기
+  const SPEEDS = [3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8];
+  const SPEED_NAME = (v) => (v <= 3.5 ? "아주 느리게" : v <= 4.5 ? "느리게" : v <= 5.5 ? "보통" : v <= 6.5 ? "빠르게" : "아주 빠르게");
+  const $ = (id) => document.getElementById(id);
+  const view = $("view"), text = $("text");
+  let cps = 5, size = 52, y = 0, playing = false, last = 0, startAt = 0, chars = 1, lines = [];
+
+  const render = (script) => {
+    text.innerHTML = "";
+    lines = [];
+    for (const block of String(script || "").replace(/\r/g, "").split(/\n\s*\n/)) {
+      const ls = block.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (!ls.length) continue;
+      if (text.childNodes.length) {
+        const g = document.createElement("span");
+        g.className = "gap";
+        text.appendChild(g);
+      }
+      for (const l of ls) {
+        const el = document.createElement("span");
+        el.className = "l";
+        el.textContent = l;
+        text.appendChild(el);
+        lines.push(el);
+      }
+    }
+    chars = Math.max(1, String(script || "").replace(/\s/g, "").length);
+  };
+  const guideY = () => view.clientHeight * 0.33;
+  const maxY = () => Math.max(0, text.scrollHeight - 10);
+  const apply = () => {
+    y = Math.min(Math.max(0, y), maxY());
+    // 첫 줄 윗부분이 읽는 줄에 오게 시작
+    text.style.transform = `translateY(${guideY() - size * 0.75 - y}px)`;
+    const g = y + size * 0.75;
+    for (const el of lines) el.classList.toggle("past", el.offsetTop + el.offsetHeight < g - 4);
+    $("end").style.display = y >= maxY() - 2 ? "block" : "none";
+  };
+  const setSize = (v) => {
+    size = Math.min(110, Math.max(26, v));
+    text.style.fontSize = size + "px";
+    apply();
+  };
+  const showSpeed = () => ($("speed").textContent = SPEED_NAME(cps));
+  const setPlaying = (v) => {
+    playing = v;
+    $("play").textContent = v ? "⏸ 멈춤" : "▶ 다시";
+    last = performance.now();
+  };
+  const tick = (now) => {
+    if (startAt) {
+      const left = Math.ceil((startAt - Date.now()) / 1000);
+      if (left > 0) {
+        $("count").style.display = "flex";
+        $("count").textContent = left;
+      } else {
+        $("count").style.display = "none";
+        startAt = 0;
+        setPlaying(true);
+      }
+    } else if (playing) {
+      // 1초에 cps 글자 → 글자 하나가 차지하는 높이 × cps 만큼
+      const dt = Math.min(0.1, (now - last) / 1000);
+      y += (text.scrollHeight / chars) * cps * dt;
+      apply();
+    }
+    last = now;
+    requestAnimationFrame(tick);
+  };
+
+  $("play").onclick = () => {
+    if (startAt) startAt = 0, $("count").style.display = "none";
+    setPlaying(!playing);
+  };
+  $("back").onclick = () => {
+    y -= size * 1.45 * 2;
+    apply();
+  };
+  $("slower").onclick = () => {
+    cps = SPEEDS[Math.max(0, SPEEDS.findIndex((v) => v >= cps) - 1)];
+    showSpeed();
+  };
+  $("faster").onclick = () => {
+    const i = SPEEDS.findIndex((v) => v > cps);
+    cps = SPEEDS[i < 0 ? SPEEDS.length - 1 : i];
+    showSpeed();
+  };
+  $("smaller").onclick = () => setSize(size - 6);
+  $("bigger").onclick = () => setSize(size + 6);
+  $("close").onclick = () => window.prompter.close();
+  // 손으로 굴려서 맞추기 (마우스 휠)
+  view.addEventListener("wheel", (e) => {
+    y += e.deltaY * 0.6;
+    apply();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      $("play").click();
+    } else if (e.key === "ArrowUp") $("back").click();
+    else if (e.key === "ArrowDown") (y += size * 1.45), apply();
+  });
+  window.addEventListener("resize", apply);
+
+  window.prompter.init().then((o) => {
+    o = o || {};
+    render(o.text);
+    cps = Number(o.cps) || 5;
+    showSpeed();
+    setSize(Number(o.size) || 52);
+    startAt = Number(o.startAt) || 0;
+    if (!startAt) setPlaying(true);
+    requestAnimationFrame(tick);
+  });
+</script>
+</body>
+</html>
