@@ -231,6 +231,7 @@ export type VideoBridge = {
     // 프롬프터 — 녹화하는 모니터 위쪽 대본 창, 녹화에 안 찍힘 (앱 0.1.8부터)
     prompterOpen?: (o: { text: string; cps: number; size: number; mine: { cps: number; size: number } | null; startAt: number; rehearse?: boolean }) => Promise<boolean>;
     prompterClose?: () => Promise<boolean>;
+    prompterShow?: () => Promise<boolean>;
     onPrompterClosed?: (fn: () => void) => () => void;
     onPrompterPrefs?: (fn: (o: { cps: number; size: number; mine: { cps: number; size: number } | null }) => void) => () => void;
   };

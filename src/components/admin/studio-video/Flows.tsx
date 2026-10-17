@@ -1799,6 +1799,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, fontSize: 14.5 }}>
             <Icon name="text" size={18} />
             <span style={{ flex: 1 }}>{prOpen ? "프롬프터는 녹화하는 모니터 위쪽 창에 떠 있어요 (녹화에는 안 찍혀요)" : "프롬프터 창을 닫았어요"}</span>
+            {prOpen && b.record.prompterShow && <Btn small onClick={() => void b.record.prompterShow?.()}>프롬프터 보이기</Btn>}
             {!prOpen && <Btn small primary onClick={() => openPrompter(0)}>프롬프터 다시 열기</Btn>}
           </div>
         )}

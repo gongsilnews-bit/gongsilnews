@@ -16,8 +16,11 @@
   .tb { height: 30px; padding: 0 12px; border-radius: 5px; border: 1px solid #4b5160; background: #1c1f26; color: #e5e7eb; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .tb:hover { background: #2d3240; }
   .tb.mine { border-color: #3b82f6; }
-  .x { width: 34px; height: 30px; border: 0; border-radius: 4px; background: transparent; color: #aab0bb; font-size: 18px; cursor: pointer; }
-  .x:hover { background: #ef4444; color: #fff; }
+  /* 윈도우 창처럼 — 작게 · 크게 · 닫기 */
+  .wb { display: flex; margin-right: -6px; height: 40px; }
+  .x { width: 44px; height: 40px; border: 0; background: transparent; color: #aab0bb; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .x:hover { background: #2d3240; color: #fff; }
+  .x.cl:hover { background: #ef4444; color: #fff; }
   .view { position: relative; flex: 1; overflow: hidden; }
   /* 읽는 줄 — 위쪽 1/3 (카메라에 가깝게) */
   .guide { position: absolute; left: 0; right: 0; top: 33%; height: 0; border-top: 2px solid rgba(59, 130, 246, 0.85); z-index: 2; pointer-events: none; }
@@ -50,7 +53,11 @@
     <span class="msg" id="msg"></span>
     <button class="tb mine" id="mine" title="저장한 내 빠르기·글자 크기로">★ 내 설정</button>
     <button class="tb" id="save" title="지금 빠르기·글자 크기를 내 설정으로 저장">저장</button>
-    <button class="x" id="close" title="프롬프터 닫기">✕</button>
+    <span class="wb">
+      <button class="x" id="wmin" title="작게 (작업 표시줄로)"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h10" stroke="currentColor" stroke-width="1.3"/></svg></button>
+      <button class="x" id="wmax" title="크게 (화면 가득)"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
+      <button class="x cl" id="close" title="프롬프터 닫기"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3"/></svg></button>
+    </span>
   </div>
   <div class="view" id="view">
     <div class="guide"></div>
@@ -230,9 +237,23 @@
   $("size").oninput = (e) => setSize(Number(e.target.value));
   $("close").onclick = () => window.prompter.close();
   // 위 줄 끌어 옮기기
-  $("close").addEventListener("pointerdown", (e) => e.stopPropagation());
+  for (const id of ["close", "wmin", "wmax"]) $(id).addEventListener("pointerdown", (e) => e.stopPropagation());
+  const MAX_ICON = '<svg width="16" height="16" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>', RES_ICON = '<svg width="16" height="16" viewBox="0 0 16 16"><rect x="3.5" y="5.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 5.5V3.5h7v7h-2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>';
+  let big = false;
+  const toggleBig = async () => {
+    big = await window.prompter.max();
+    $("wmax").innerHTML = big ? RES_ICON : MAX_ICON;
+    $("wmax").title = big ? "원래 크기로" : "크게 (화면 가득)";
+    document.querySelector(".top").style.cursor = big ? "default" : "move";
+  };
+  $("wmin").onclick = () => window.prompter.min();
+  $("wmax").onclick = toggleBig;
+  // 위 줄 두 번 누르기 = 크게/원래대로 (윈도우처럼)
+  document.querySelector(".top").addEventListener("dblclick", (e) => {
+    if (!e.target.closest("button")) toggleBig();
+  });
   document.querySelector(".top").addEventListener("pointerdown", (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || big) return; // 크게 한 동안은 옮기지 않는다
     const top = e.currentTarget;
     top.setPointerCapture(e.pointerId);
     const sx = e.screenX, sy = e.screenY;

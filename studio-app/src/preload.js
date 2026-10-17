@@ -202,6 +202,7 @@ if (allowed) {
         // 프롬프터 — 녹화하는 모니터 위쪽에 뜨는 대본 창 (녹화에 안 찍힘, 0.1.8부터)
         prompterOpen: (opts) => ipcRenderer.invoke("video:prompter-open", opts),
         prompterClose: () => ipcRenderer.invoke("video:prompter-close"),
+        prompterShow: () => ipcRenderer.invoke("video:prompter-show"),
         onPrompterClosed: (fn) => {
           const h = () => fn();
           ipcRenderer.on("video:prompter-closed", h);

@@ -65,10 +65,10 @@ async function openPrompter(win, opts) {
     frame: false,
     backgroundColor: "#0c0d10", // 투명 창은 윈도우에서 그리기가 느려 글이 끊겼다 — 바탕을 채운다
     resizable: true,
-    minimizable: false,
-    maximizable: false,
+    minimizable: true,
+    maximizable: true,
     fullscreenable: false,
-    skipTaskbar: true,
+    skipTaskbar: false, // [작게] 하면 작업 표시줄에서 다시 연다
     alwaysOnTop: true,
     show: false,
     title: "프롬프터",
@@ -434,11 +434,25 @@ function register(base) {
   ipcMain.handle("video:prompter-close", () => (closePrompter(), true));
   ipcMain.handle("prompter:init", () => prompterOpts);
   ipcMain.on("prompter:close", () => closePrompter());
+  ipcMain.on("prompter:min", () => prompter && !prompter.isDestroyed() && prompter.minimize());
+  ipcMain.handle("prompter:max", () => {
+    if (!prompter || prompter.isDestroyed()) return false;
+    if (prompter.isMaximized()) prompter.unmaximize();
+    else prompter.maximize();
+    return prompter.isMaximized();
+  });
+  // 녹화 창 [프롬프터 보이기] — 작게 했거나 다른 창 뒤에 있으면 다시 앞으로
+  ipcMain.handle("video:prompter-show", () => {
+    if (!prompter || prompter.isDestroyed()) return false;
+    if (prompter.isMinimized()) prompter.restore();
+    prompter.showInactive();
+    return true;
+  });
   ipcMain.on("prompter:prefs", (_e, o) => {
     if (prompterOwner && !prompterOwner.isDestroyed()) prompterOwner.send("video:prompter-prefs", o);
   });
   let dragFrom = null;
-  ipcMain.on("prompter:drag-start", () => (dragFrom = prompter && !prompter.isDestroyed() ? prompter.getPosition() : null));
+  ipcMain.on("prompter:drag-start", () => (dragFrom = prompter && !prompter.isDestroyed() && !prompter.isMaximized() ? prompter.getPosition() : null));
   ipcMain.on("prompter:drag", (_e, dx, dy) => {
     if (dragFrom && prompter && !prompter.isDestroyed()) prompter.setPosition(Math.round(dragFrom[0] + dx), Math.round(dragFrom[1] + dy));
   });
