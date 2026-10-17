@@ -2,6 +2,9 @@
 export type Ratio = "16:9" | "9:16" | "1:1" | "4:5" | "4:3";
 export type Method = "text" | "video" | "longform" | "record";
 export type Fill = "cover" | "contain" | "blur";
+// 사진 움직임 (브루처럼) — auto = 사진 클립 차례대로 줌인·좌→우·줌아웃·우→좌·위→아래 를 돌려 쓴다
+export type Motion = "auto" | "none" | "zoomIn" | "zoomOut" | "leftRight" | "rightLeft" | "topBottom" | "bottomTop";
+export type MotionPower = "low" | "mid" | "high";
 
 export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */ };
 
@@ -41,6 +44,8 @@ export type Clip = {
   box?: { x: number; y: number; w: number }; // 화면 직접 크기 — 가운데 자리(0~1)·폭(화면 폭 비율). 있으면 채우기 대신 이 자리에
   flipX?: boolean; // 화면 좌우 반전
   flipY?: boolean; // 화면 상하 반전
+  motion?: Motion; // 사진 움직임 — 없으면 전체 설정(settings.motion, 기본 자동)
+  motionPower?: MotionPower; // 움직임 크기 (기본 보통)
   muted?: boolean;
   volume?: number;
   visualVolume?: number; // 첨부한 화면 영상의 소리 (0~2, 없으면 0 = 무음) — 원본 메인 소리(말소리·AI 목소리)와 섞인다
@@ -110,6 +115,8 @@ export type Settings = {
   voice: { id: string; speed: number; volume: number };
   music: { on: boolean; mood?: string; file: string; url?: string; name: string; volume: number };
   sourceVolume: number;
+  /** 사진 자동 움직임 — "none" 이면 끔 (클립에서 따로 고른 움직임은 그대로). 없으면 자동 */
+  motion?: "auto" | "none";
   /** 레이어 켜고 끄기 (프리미어의 눈·스피커) — 클립마다 맞춘 값은 그대로 두고 이것만 켜고 끈다 */
   off?: { visual?: boolean; source?: boolean; voice?: boolean };
 };

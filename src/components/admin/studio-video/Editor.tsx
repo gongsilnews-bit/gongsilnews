@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem, Word } from "./types";
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
-import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
+import { GAP, clipOrder, clipText, flatten, isPhotoClip, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
 import MediaMenu, { SoundMenu, type MediaFit, type MediaOrder } from "./MediaMenu";
 import { NewClipDialog, type NewClipSpec } from "./NewClip";
 import VideoStart from "./VideoStart";
@@ -2394,7 +2394,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             range={{ a: n, b: n, cur: n, total }} canRemove={Boolean(c.visual)}
             onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
             onStart={canStart(c) ? () => setStartClip(c.id) : undefined} trim={canTrim(c)} sound={soundOf(c)}
-            onRange={(x, y) => clipRange(c.id, x, y)} onRemove={() => clipRemoveVisual(c.id)} onClose={close} />;
+            onRange={(x, y) => clipRange(c.id, x, y)} onRemove={() => clipRemoveVisual(c.id)} onClose={close}
+            motion={isPhotoClip(project, c) ? (() => {
+              const photos = items.map((x) => x.clip).filter((x) => isPhotoClip(project, x)).map((x) => x.id);
+              const sel = selected.filter((id) => photos.includes(id));
+              const ids = (sc: "one" | "sel" | "all") => (sc === "all" ? photos : sc === "sel" && sel.length > 1 ? sel : [c.id]);
+              return {
+                value: c.motion || "auto", power: c.motionPower || "mid", selCount: sel.length, allCount: photos.length,
+                // 사진 움직임 — 모든 사진에 [자동]이면 클립 값을 지워 전체 설정(자동)을 따르게
+                onPick: (m, sc) => change((p) => { for (const id of ids(sc)) { const x = findClip(p, id)?.clip; if (x) x.motion = m === "auto" ? undefined : (m as Clip["motion"]); } if (sc === "all") p.settings.motion = m === "none" ? "none" : "auto"; }),
+                onPower: (pw, sc) => change((p) => { for (const id of ids(sc)) { const x = findClip(p, id)?.clip; if (x) x.motionPower = pw === "mid" ? undefined : (pw as Clip["motionPower"]); } }),
+              };
+            })() : undefined} />;
         }
         const l = (project.layers || []).find((x) => x.id === media.id);
         if (!l) return null;

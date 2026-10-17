@@ -52,6 +52,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const [subPos, setSubPos] = useState<"bottom" | "middle-low" | "middle" | "top">("bottom");
   const [subLen, setSubLen] = useState<"long" | "short">("long");
   const [voiceOn, setVoiceOn] = useState(true);
+  const [motionOn, setMotionOn] = useState(true); // 사진 자동 움직임 (줌인·좌우·상하)
   const [voiceId, setVoiceId] = useState("Charon");
   const [voicePick, setVoicePick] = useState(false); // 목소리 고르기 창 (편집 화면과 같은 얼굴 카드 창)
   const [speed, setSpeed] = useState(1);
@@ -130,6 +131,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       p.settings.fill = fill;
       p.settings.subtitle = { ...p.settings.subtitle, on: subOn, position: subPos, length: subLen };
       p.settings.voice = { id: voiceId, speed, volume: 1 };
+      p.settings.motion = motionOn ? "auto" : "none";
       // 클립
       p.scenes = scenes.map((ls) => ({ id: uid(), clips: ls.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] }) as Clip) }));
       const clips = p.scenes.flatMap((s) => s.clips);
@@ -384,6 +386,10 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
                   </div>
                 </div>
               )}
+            </div>
+            <div style={{ ...row, flexWrap: "wrap" }}>
+              <span style={{ ...label, flex: 1 }}>사진 자동 움직임 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· 줌인·좌우·상하로 천천히</span></span>
+              <Toggle on={motionOn} onChange={setMotionOn} />
             </div>
             <div style={{ ...row, flexWrap: "wrap" }}>
               <span style={{ ...label, flex: 1 }}>배경 음악</span>

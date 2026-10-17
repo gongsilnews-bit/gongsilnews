@@ -245,6 +245,21 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     filters.push(`[vbg][vbx]overlay=x=${x0}:y=${y0}:eof_action=pass,setsar=1[vfit]`);
   } else filters.push(fitFilter(cflip ? "vflip" : vIn, W, H, fill, "vfit"));
   let vOut = "vfit";
+  // 사진 움직임 (브루처럼 줌인·좌우·상하) — 미리보기 Player.tsx 와 같은 계산 (timeline.motionAt, 처음→끝 고르게)
+  const mo = !vb && ok(visual) && visual.kind === "image" ? tl.motionOf(p, clip) : null;
+  if (mo) {
+    const a0 = tl.motionAt(mo, 0);
+    const a1 = tl.motionAt(mo, 1);
+    const N1 = Math.max(1, Math.round(dur * FPS) - 1);
+    const U = `min(1,on/${N1})`;
+    const lin = (v0, v1) => `(${v0.toFixed(5)}+(${(v1 - v0).toFixed(5)})*${U})`;
+    const Z = lin(a0.z, a1.z);
+    // 보이는 창의 왼쪽 위 = (0.5 - 옮김/확대 - 0.5/확대) × 입력 크기
+    const X = `(0.5-${lin(a0.x, a1.x)}/${Z}-0.5/${Z})*iw`;
+    const Y = `(0.5-${lin(a0.y, a1.y)}/${Z}-0.5/${Z})*ih`;
+    filters.push(`[vfit]scale=${W * 2}:${H * 2}:flags=bicubic,zoompan=z='${Z}':x='${X}':y='${Y}':d=1:s=${W}x${H}:fps=${FPS},setsar=1,format=yuv420p[vmo]`);
+    vOut = "vmo";
+  }
 
   // 단어 구간 레이어 — 그 단어를 말하는 동안만 (ffmpeg enable / 자막 시각)
   const winOf = (l) => tl.layerWindow(l, clip, st);

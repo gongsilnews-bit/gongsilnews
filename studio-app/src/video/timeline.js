@@ -114,6 +114,44 @@ function flatten(project) {
 
 /* ── 애셋(레이어) — 편집 화면 timeline.ts 와 같은 계산 ──
  * layer { id, type: music|image|text, from: 시작 클립 id, to: 끝 클립 id, ... } */
+/* ── 사진 움직임 — src/components/admin/studio-video/timeline.ts 와 같은 계산 (미리보기 = 굽기) ── */
+const AUTO_MOTIONS = ["zoomIn", "leftRight", "zoomOut", "rightLeft", "topBottom"];
+const MOTION_POWER = { low: 1.06, mid: 1.12, high: 1.2 };
+function photoOf(p, c) {
+  if (c.box || c.del) return null;
+  const id = (c.visual && c.visual.asset) || (c.type !== "voice" && c.src ? c.src.asset : undefined);
+  const a = id ? (p.assets || {})[id] : null;
+  return a && a.kind === "image" ? a : null;
+}
+function motionOf(p, clip) {
+  if (!photoOf(p, clip)) return null;
+  let m = clip.motion || ((p.settings || {}).motion === "none" ? "none" : "auto");
+  if (m === "none") return null;
+  if (m === "auto") {
+    let i = 0;
+    outer: for (const sc of p.scenes || []) for (const c of sc.clips || []) {
+      if (c.id === clip.id) break outer;
+      if (photoOf(p, c)) i++;
+    }
+    m = AUTO_MOTIONS[i % AUTO_MOTIONS.length];
+  }
+  return { m, s: MOTION_POWER[clip.motionPower || "mid"] || MOTION_POWER.mid };
+}
+function motionAt(mo, u) {
+  const k = Math.max(0, Math.min(1, u));
+  const s = mo.s;
+  const d = (s - 1) / 2;
+  switch (mo.m) {
+    case "zoomIn": return { z: 1 + (s - 1) * k, x: 0, y: 0 };
+    case "zoomOut": return { z: s - (s - 1) * k, x: 0, y: 0 };
+    case "leftRight": return { z: s, x: d - 2 * d * k, y: 0 };
+    case "rightLeft": return { z: s, x: -d + 2 * d * k, y: 0 };
+    case "topBottom": return { z: s, x: 0, y: d - 2 * d * k };
+    case "bottomTop": return { z: s, x: 0, y: -d + 2 * d * k };
+    default: return { z: 1, x: 0, y: 0 };
+  }
+}
+
 function clipOrder(p) {
   const m = new Map();
   let i = 0;
@@ -162,4 +200,4 @@ function musicLayers(p, items) {
 /** 자막에 쓸 글 — 자막만 따로 쓴 글이 있으면 그것 */
 const subtitleText = (clip) => (typeof clip.subText === "string" ? clip.subText : clipText(clip));
 
-module.exports = { subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };
+module.exports = { motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };

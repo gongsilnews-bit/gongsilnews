@@ -15,6 +15,19 @@ const FIT_INFO: Record<MediaFit, { icon: string; label: string; desc: string }> 
   blur: { icon: "fill", label: "흐린 배경으로 채우기", desc: "사진은 다 보이게 두고, 빈 곳은 같은 사진을 흐리게 깔아 채워요" },
 };
 
+// 사진 움직임 (브루처럼)
+export const MOTION_INFO: { id: string; label: string; desc: string }[] = [
+  { id: "auto", label: "자동", desc: "사진 클립마다 차례로 줌인·좌→우·줌아웃·우→좌·위→아래로 바뀌어요 (옆 클립과 겹치지 않게)" },
+  { id: "none", label: "움직임 없음", desc: "사진이 가만히 있어요" },
+  { id: "zoomIn", label: "줌인", desc: "천천히 다가가며 커져요" },
+  { id: "zoomOut", label: "줌아웃", desc: "크게 시작해서 천천히 멀어져요" },
+  { id: "leftRight", label: "좌 → 우", desc: "왼쪽에서 오른쪽으로 천천히 훑어요" },
+  { id: "rightLeft", label: "우 → 좌", desc: "오른쪽에서 왼쪽으로 천천히 훑어요" },
+  { id: "topBottom", label: "위 → 아래", desc: "위에서 아래로 천천히 훑어요" },
+  { id: "bottomTop", label: "아래 → 위", desc: "아래에서 위로 천천히 훑어요" },
+];
+const POWER_LABEL: Record<string, string> = { low: "약하게", mid: "보통", high: "강하게" };
+
 type Props = {
   title: string;
   x: number;
@@ -37,6 +50,8 @@ type Props = {
   /** 클립 소리 (원본 소리가 있는 영상 클립만) */
   sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void; none?: boolean /* 소리 없는 영상 — 흐리게 */; note?: string };
   onRange: (a: number, b: number) => void;
+  /** 사진 움직임 (클립 화면이 사진일 때만) — 지금 값, 크기, 고른 클립 수·사진 클립 수, 바꾸기 (적용 범위 one/sel/all) */
+  motion?: { value: string; power: string; selCount: number; allCount: number; onPick: (m: string, scope: "one" | "sel" | "all") => void; onPower: (pw: string, scope: "one" | "sel" | "all") => void };
   onOrder?: (o: MediaOrder) => void;
   onRemove: () => void;
   onClose: () => void;
@@ -45,7 +60,8 @@ type Props = {
 type Item = { icon: string; label: string; desc: string; on?: boolean; off?: boolean; sub?: boolean; danger?: boolean; run: () => void };
 
 export default function MediaMenu(p: Props) {
-  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume">("");
+  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume" | "motion">("");
+  const [mScope, setMScope] = React.useState<"one" | "sel" | "all">("one");
   const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
   const [na, setNa] = React.useState(String(p.range.a));
   const [nb, setNb] = React.useState(String(p.range.b));
@@ -77,6 +93,7 @@ export default function MediaMenu(p: Props) {
     items = [
       { icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") },
       { icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") },
+      ...(p.motion ? [{ icon: "zoom", label: `움직임 · ${MOTION_INFO.find((x) => x.id === p.motion!.value)?.label || "자동"}`, desc: "사진이 줌인·좌우·상하로 천천히 움직여요. 기본은 자동", sub: true, run: go("motion") }] : []),
       ...(p.onStart ? [p.trim
         ? { icon: "cut", label: "시작·끝 자르기", desc: "영상 앞뒤를 잘라 쓸 부분만 남겨요 (프리미어·캡컷처럼). 소리·자막도 같이 잘려요", run: done(p.onStart) }
         : { icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
@@ -104,6 +121,10 @@ export default function MediaMenu(p: Props) {
     ];
   } else if (page === "volume") {
     head = "볼륨 조절";
+  } else if (page === "motion" && p.motion) {
+    head = "움직임";
+    const mo = p.motion;
+    items = MOTION_INFO.map((x) => ({ icon: x.id === "none" ? "close" : "zoom", label: x.label, desc: x.desc, on: mo.value === x.id, run: done(() => mo.onPick(x.id, mScope)) }));
   } else if (page === "order") {
     head = "순서";
     const o = p.order || { up: false, down: false };
@@ -147,6 +168,22 @@ export default function MediaMenu(p: Props) {
             </button>
           </React.Fragment>
         ))}
+        {page === "motion" && p.motion && (
+          <div style={{ padding: "8px 10px 6px", borderTop: `1px solid ${C.line}`, marginTop: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>크기</div>
+            <div style={{ display: "flex", gap: 5, marginBottom: 10 }}>
+              {["low", "mid", "high"].map((pw) => (
+                <button key={pw} type="button" onClick={() => p.motion!.onPower(pw, mScope)} style={{ ...chipStyle(p.motion!.power === pw), flex: 1 }}>{POWER_LABEL[pw]}</button>
+              ))}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>적용 범위 <span style={{ color: C.dim, fontWeight: 600, fontSize: 11.5 }}>· 고르고 위에서 움직임을 누르세요</span></div>
+            <div style={{ display: "flex", gap: 5 }}>
+              <button type="button" onClick={() => setMScope("one")} style={{ ...chipStyle(mScope === "one"), flex: 1 }}>이 클립에만</button>
+              <button type="button" disabled={p.motion.selCount < 2} onClick={() => setMScope("sel")} style={{ ...chipStyle(mScope === "sel"), flex: 1, opacity: p.motion.selCount < 2 ? 0.4 : 1 }}>선택 ({p.motion.selCount})</button>
+              <button type="button" onClick={() => setMScope("all")} style={{ ...chipStyle(mScope === "all"), flex: 1 }}>모든 사진 ({p.motion.allCount})</button>
+            </div>
+          </div>
+        )}
         {page === "volume" && p.sound && (
           <div style={{ padding: "8px 10px 6px" }}>
             {p.sound.none ? (
@@ -283,6 +320,8 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
     </>
   );
 }
+
+const chipStyle = (on: boolean): React.CSSProperties => ({ height: 30, padding: "0 4px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" });
 
 const rowStyle: React.CSSProperties = { width: "100%", display: "flex", alignItems: "center", gap: 9, height: 36, padding: "0 10px", border: 0, borderRadius: 5, background: "transparent", fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" };
 const numStyle: React.CSSProperties = { ...input, width: 52, height: 32, padding: "0 6px", textAlign: "center", fontSize: 14, fontWeight: 700 };

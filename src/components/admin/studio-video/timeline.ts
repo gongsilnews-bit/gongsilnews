@@ -204,6 +204,53 @@ export function evenLines(text: string, dur: number, max: number, perChunk: numb
 /* ── 애셋(레이어) — render.js 와 같은 계산 ── */
 
 /** 모든 클립 차례 (지운 것 포함) id → 자리 */
+/* ── 사진 움직임 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 굽기) ── */
+const AUTO_MOTIONS = ["zoomIn", "leftRight", "zoomOut", "rightLeft", "topBottom"] as const;
+const MOTION_POWER = { low: 1.06, mid: 1.12, high: 1.2 } as const;
+/** 클립 화면이 사진이면 그 사진 (직접 크기로 둔 화면은 움직이지 않는다) */
+function photoOf(p: Project, c: Clip) {
+  if (c.box || c.del) return null;
+  const id = c.visual?.asset ?? (c.type !== "voice" ? c.src?.asset : undefined);
+  const a = id ? p.assets[id] : null;
+  return a && a.kind === "image" ? a : null;
+}
+export const isPhotoClip = (p: Project, c: Clip) => Boolean(photoOf(p, c));
+/** 이 클립 사진의 움직임 — 없으면 null. 자동은 사진 클립 차례대로 돌려 써서 옆 클립과 겹치지 않는다 */
+export function motionOf(p: Project, clip: Clip): { m: string; s: number } | null {
+  if (!photoOf(p, clip)) return null;
+  let m: string = clip.motion || (p.settings.motion === "none" ? "none" : "auto");
+  if (m === "none") return null;
+  if (m === "auto") {
+    let i = 0;
+    outer: for (const sc of p.scenes || []) for (const c of sc.clips || []) {
+      if (c.id === clip.id) break outer;
+      if (photoOf(p, c)) i++;
+    }
+    m = AUTO_MOTIONS[i % AUTO_MOTIONS.length];
+  }
+  return { m, s: MOTION_POWER[clip.motionPower || "mid"] || MOTION_POWER.mid };
+}
+/** 움직임 u(0~1) 때 — 확대 z, 옮김 x·y (화면 크기에 대한 비율). 처음→끝 고르게 */
+export function motionAt(mo: { m: string; s: number }, u: number) {
+  const k = Math.max(0, Math.min(1, u));
+  const s = mo.s;
+  const d = (s - 1) / 2;
+  switch (mo.m) {
+    case "zoomIn": return { z: 1 + (s - 1) * k, x: 0, y: 0 };
+    case "zoomOut": return { z: s - (s - 1) * k, x: 0, y: 0 };
+    case "leftRight": return { z: s, x: d - 2 * d * k, y: 0 };
+    case "rightLeft": return { z: s, x: -d + 2 * d * k, y: 0 };
+    case "topBottom": return { z: s, x: 0, y: d - 2 * d * k };
+    case "bottomTop": return { z: s, x: 0, y: -d + 2 * d * k };
+    default: return { z: 1, x: 0, y: 0 };
+  }
+}
+export const motionCss = (mo: { m: string; s: number } | null, u: number) => {
+  if (!mo) return undefined;
+  const { z, x, y } = motionAt(mo, u);
+  return `translate(${(x * 100).toFixed(3)}%, ${(y * 100).toFixed(3)}%) scale(${z.toFixed(4)})`;
+};
+
 export function clipOrder(p: Project) {
   const m = new Map<string, number>();
   let i = 0;

@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { clipOrder, clipText, flatten, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
 
@@ -557,18 +557,25 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       onPointerDown={(e) => { if (e.target === e.currentTarget) setPick(""); }}>
       {/* 지금 클립 화면 — 화면전환 중이면 효과대로 움직인다 */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: mainZ, ...(trLook ? (tr!.live === "from" ? trLook.from : trLook.to) : {}) }}>
-        {visual && fill === "blur" && !vbox && (visual.kind === "image" ? (
-          <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
-        ) : (
+        {visual?.kind === "image" ? (
+          // 사진 움직임 — 채운 화면 통째로 (굽기 render.js zoompan 과 같은 계산)
+          <div style={{ position: "absolute", inset: 0, transform: motionCss(clip ? motionOf(project, clip) : null, item ? (t - item.start) / Math.max(0.01, item.dur) : 0), transformOrigin: "50% 50%" }}>
+            {fill === "blur" && !vbox && <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />}
+            <img src={vUrl} alt="" style={mediaStyle} />
+          </div>
+        ) : visual && fill === "blur" && !vbox && (
           <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
-        ))}
-        {visual?.kind === "image" && <img src={vUrl} alt="" style={mediaStyle} />}
+        )}
         <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
           onLoadedData={() => sync(tRef.current, true)} />
       </div>
       {/* 화면전환 상대 — 뒤 클립 첫 장면 / 앞 클립 마지막 장면 (멈춘 채) */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: trLook ? (mainZ === 2 ? 1 : 2) : undefined, pointerEvents: "none", display: trLook && otherVis ? "block" : "none", background: "#000", ...(trLook ? (tr!.live === "from" ? trLook.to : trLook.from) : {}) }}>
-        {otherVis?.kind === "image" && <img src={otherVis.url} alt="" style={otherMedia} />}
+        {otherVis?.kind === "image" && (
+          <div style={{ position: "absolute", inset: 0, transform: motionCss(other ? motionOf(project, other.clip) : null, tr?.live === "from" ? 0 : 1), transformOrigin: "50% 50%" }}>
+            <img src={otherVis.url} alt="" style={otherMedia} />
+          </div>
+        )}
         <video ref={otherRef} src={otherVis?.kind === "video" ? otherVis.url : undefined} muted playsInline preload="auto" style={{ ...otherMedia, display: otherVis?.kind === "video" ? "block" : "none" }} />
       </div>
       {trLook?.veil && <div style={{ position: "absolute", inset: 0, zIndex: 3, pointerEvents: "none", ...trLook.veil }} />}
