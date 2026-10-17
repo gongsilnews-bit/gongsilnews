@@ -25,6 +25,12 @@ export type ClipActions = {
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
   openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
   setPad: (ids: string[], sec: number) => void; // AI 목소리 다 읽은 뒤 쉬기 (문장 끝 [..])
+  // 단어를 누르면 위에 뜨는 단추 막대 (브루처럼) — 이 클립 잘라내기·복사·붙여넣기, 삽입
+  cutClip: (id: string) => void;
+  copyClip: (id: string) => void;
+  pasteAfter: (id: string) => void;
+  canPaste: () => boolean;
+  insert: (kind: "text" | "title" | "photo" | "music") => void;
   toggleMute: (id: string) => void;
   setSource: (id: string, patch: { muted?: boolean; volume?: number }, first: boolean) => void; // 원본 소리 무음·크기
   openSound: (id: string, x: number, y: number) => void; // 소리 칩을 누르면 옆에 볼륨·빠르기 창
@@ -170,6 +176,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const [editing, setEditing] = React.useState(false);
   const [padOpen, setPadOpen] = React.useState(false); // 문장 끝 [..] 메뉴
   const [hoverW, setHoverW] = React.useState(-1); // 마우스를 올린 단어 — 오른쪽 위 ⓧ(지우기)
+  const [insOpen, setInsOpen] = React.useState(false); // 단추 막대 [삽입 ▾]
   const [padScope, setPadScope] = React.useState<"one" | "sel" | "all">("one"); // 적용 범위 — 처음엔 늘 이 클립에만
   // 촬영한 영상(원본 소리) 클립은 말한 내용·목소리를 못 바꾼다 — 연필·[자막 고치기]는 자막 줄을 연다 (AI 목소리 클립만 글 고치기)
   const isSrc = c.type !== "voice";
@@ -294,13 +301,51 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       {w.del ? "↺" : "✕"}
                     </button>
                   )}
-                  {/* 고른 단어 — 그 단어 바로 위에서 오른쪽으로 [클립 나누기] (지우기는 마우스를 올리면 나오는 ⓧ) */}
-                  {isSel && !editing && i > 0 && (
-                    <span onClick={(e) => e.stopPropagation()}
-                      style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
-                      <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, i)} />
-                    </span>
-                  )}
+                  {/* 고른 단어 — 그 단어 바로 위에 단추 막대 (브루처럼). 지우기는 마우스를 올리면 나오는 ⓧ */}
+                  {isSel && !editing && (() => {
+                    const ib = (icon: string, tip: string, onClick: () => void, dis = false) => (
+                      <button type="button" title={tip} disabled={dis} onClick={onClick}
+                        style={{ width: 34, height: 32, padding: 0, border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        onMouseEnter={(e) => !dis && (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                        <Icon name={icon} size={18} />
+                      </button>
+                    );
+                    const tb = (icon: string, label: string, onClick: () => void, dis = false, tip?: string) => (
+                      <button type="button" title={tip || label} disabled={dis} onClick={onClick}
+                        style={{ height: 32, padding: "0 10px", border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" }}
+                        onMouseEnter={(e) => !dis && (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                        <Icon name={icon} size={17} />{label}
+                      </button>
+                    );
+                    const sep = <span style={{ width: 1, height: 20, background: C.line2, margin: "0 3px" }} />;
+                    return (
+                      <span onClick={(e) => e.stopPropagation()}
+                        style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 1, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
+                        {ib("cut", "이 클립 잘라내기", () => p.actions.cutClip(c.id))}
+                        {ib("copy", "이 클립 복사하기", () => p.actions.copyClip(c.id))}
+                        {ib("paste", "이 클립 뒤에 붙여넣기", () => p.actions.pasteAfter(c.id), !p.actions.canPaste())}
+                        {sep}
+                        {tb("speed", "상세 편집", () => p.actions.openTiming(c.id), false, "속도·길이 자세히")}
+                        {sep}
+                        {tb("split", "클립 나누기", () => p.actions.splitAt(c.id, i), i === 0, i === 0 ? "맨 앞 단어에서는 나눌 수 없어요" : "이 단어 앞에서 클립 나누기")}
+                        {sep}
+                        {tb("voice", c.type === "voice" ? "목소리 바꾸기" : "소리 크기", () => p.actions.openVoice(c.id))}
+                        {sep}
+                        <span style={{ position: "relative", display: "inline-flex" }}>
+                          {tb("plus", "삽입 ▾", () => setInsOpen((v) => !v))}
+                          {insOpen && (
+                            <span style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 21, display: "flex", flexDirection: "column", minWidth: 150, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                              {([["text", "text", "글 클립"], ["title", "font", "화면 글자"], ["photo", "image", "사진 올리기"], ["music", "music", "배경 음악"]] as const).map(([k, icon, label]) => (
+                                <span key={k}>{tb(icon, label, () => { setInsOpen(false); p.actions.insert(k); })}</span>
+                              ))}
+                            </span>
+                          )}
+                        </span>
+                        {sep}
+                        {ib("image", "화면(사진·영상) 바꾸기", () => p.actions.openVisual(c.id))}
+                      </span>
+                    );
+                  })()}
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
                       color: w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>

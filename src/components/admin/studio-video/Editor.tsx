@@ -479,6 +479,33 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setTimeout(() => player.current?.play(), 50);
     },
     stop: () => player.current?.pause(),
+    // 단어 단추 막대 — 이 클립 잘라내기·복사·붙여넣기 (리본과 같은 클립 보관함)
+    cutClip: (id) => {
+      const c = findClip(pref.current, id)?.clip;
+      if (!c) return;
+      clipboard.current = [structuredClone(c)];
+      actions.removeClip([id]);
+    },
+    copyClip: (id) => {
+      const c = findClip(pref.current, id)?.clip;
+      if (!c) return;
+      clipboard.current = [structuredClone(c)];
+      say("클립을 복사했어요");
+    },
+    pasteAfter: (id) => {
+      if (!clipboard.current.length) return say("먼저 클립을 복사하세요");
+      insertAfter(clipboard.current.map((x) => ({ ...structuredClone(x), id: uid() })), id);
+      say("붙여넣었어요");
+    },
+    canPaste: () => clipboard.current.length > 0,
+    insert: (kind) => {
+      if (kind === "text") setDialog("addText");
+      else if (kind === "title") addTextLayer();
+      else if (kind === "photo") {
+        setOverlayTarget("");
+        openLib("mine", true);
+      } else openMusic("");
+    },
     // 문장 끝 [..] — AI 목소리를 다 읽고 쉬는 시간 (빠르기를 바꿔도 그대로)
     setPad: (ids, sec) => {
       change((p) => {
