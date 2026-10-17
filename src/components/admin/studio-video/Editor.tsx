@@ -519,12 +519,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     },
     canPaste: () => clipboard.current.length > 0,
     insert: (kind) => {
-      if (kind === "text") setDialog("addText");
-      else if (kind === "title") addTextLayer();
-      else if (kind === "photo") {
-        setOverlayTarget("");
-        openLib("mine", true);
-      } else openMusic("");
+      if (kind === "title") return addTextLayer();
+      // 이 클립(고른 클립) 화면 위에 사진·영상 올리기 — 자료 칸을 그 탭으로
+      setOverlayTarget("");
+      openLib(kind, true);
     },
     // 문장 끝 [..] — AI 목소리를 다 읽고 쉬는 시간 (빠르기를 바꿔도 그대로)
     setPad: (ids, sec) => {
