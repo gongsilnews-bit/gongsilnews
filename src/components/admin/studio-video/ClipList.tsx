@@ -169,6 +169,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const playingHere = p.curClip === c.id;
   const [editing, setEditing] = React.useState(false);
   const [padOpen, setPadOpen] = React.useState(false); // 문장 끝 [..] 메뉴
+  const [hoverW, setHoverW] = React.useState(-1); // 마우스를 올린 단어 — 오른쪽 위 ⓧ(지우기)
   const [padScope, setPadScope] = React.useState<"one" | "sel" | "all">("one"); // 적용 범위 — 처음엔 늘 이 클립에만
   // 촬영한 영상(원본 소리) 클립은 말한 내용·목소리를 못 바꾼다 — 연필·[자막 고치기]는 자막 줄을 연다 (AI 목소리 클립만 글 고치기)
   const isSrc = c.type !== "voice";
@@ -285,7 +286,14 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 return (
                   <React.Fragment key={i}>
                   {before.map((g, j) => pauseChip(g, i * 10 + j))}
-                  <span style={{ position: "relative", display: "inline-flex" }}>
+                  <span style={{ position: "relative", display: "inline-flex" }} onMouseEnter={() => setHoverW(i)} onMouseLeave={() => setHoverW((h) => (h === i ? -1 : h))}>
+                  {/* 마우스를 올리면 오른쪽 위 ⓧ — 누르면 바로 이 단어 지우기 (지운 단어는 ↺ 되살리기) */}
+                  {hoverW === i && !editing && (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.toggleWord(c.id, i); }} title={w.del ? "이 단어 되살리기" : "이 단어 지우기 (영상에서 잘려요)"}
+                      style={{ position: "absolute", right: -7, top: -7, zIndex: 15, width: 18, height: 18, padding: 0, borderRadius: 9, border: `1.5px solid ${w.del ? C.accent : "#5fb8ff"}`, background: C.bg, color: w.del ? C.accent : "#5fb8ff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, lineHeight: 1 }}>
+                      {w.del ? "↺" : "✕"}
+                    </button>
+                  )}
                   {/* 고른 단어로 할 수 있는 일 — 브루처럼 그 단어 바로 위에서 오른쪽으로 */}
                   {isSel && !editing && (
                     <span onClick={(e) => e.stopPropagation()}
