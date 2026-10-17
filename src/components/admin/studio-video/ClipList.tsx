@@ -368,10 +368,12 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       {w.del ? "↺" : "✕"}
                     </button>
                   )}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i, e.ctrlKey || e.metaKey); }} title="누르면 그 자리로 · Ctrl+누르기로 여러 단어 고르기"
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i, e.ctrlKey || e.metaKey); }} title={w.v ? `목소리: ${voiceName(w.v)} · 누르면 그 자리로` : "누르면 그 자리로 · Ctrl+누르기로 여러 단어 고르기"}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : active ? "rgba(59,130,246,0.6)" : C.line2}`,
                       // 고른 단어(Ctrl 로 여러 개) = 파랗게 칠함 · 지금 재생 위치 = 연한 파랑
                       background: isSel ? C.accent : active ? "rgba(59,130,246,0.28)" : w.del ? "transparent" : C.panel2,
+                      // 이 단어만 다른 AI 목소리 — 아래 주황 줄
+                      boxShadow: w.v && !w.del ? "inset 0 -3px 0 #f59e0b" : undefined,
                       color: isSel ? "#fff" : w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}
                     {/* 목소리를 만드는 동안 — 고른 단어 칸 안에 돌아가는 동그라미 (고른 단어가 없으면 마지막 단어에) */}

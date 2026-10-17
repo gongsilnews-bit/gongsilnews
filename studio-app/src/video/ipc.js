@@ -397,6 +397,8 @@ function register(base) {
 
   /* ── AI 목소리 ── */
   ipcMain.handle("video:voice", (_e, dir, text, voiceId) => project.voiceFor({ dir }, text, voiceId));
+  // 단어마다 목소리가 다른 클립 — 조각을 한 파일로 (0.1.8부터)
+  ipcMain.handle("video:voice-join", (_e, dir, files) => project.voiceJoin({ dir }, files));
 
   /* ── 받아쓰기 ── */
   ipcMain.handle("video:transcribe", (e, p, assetId) => project.transcribe(p, assetId, (t, f) => send(e, "video:progress", t, f)));

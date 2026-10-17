@@ -341,8 +341,8 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
     <Side title="AI 목소리 설정" onClose={onClose}
       footer={
         <>
-          {/* 단어를 골랐으면 — 그 단어 앞뒤에서 클립을 나눠 고른 단어만 새 목소리로 */}
-          {wordCount > 0 && <Btn primary small onClick={() => onApply({ id, speed, volume, scope: "words" })} title="고른 단어 앞뒤에서 클립을 나눠, 고른 단어만 이 목소리로 다시 만들어요"><Icon name="check" size={16} />고른 단어만 ({wordCount}개)</Btn>}
+          {/* 단어를 골랐으면 — 클립은 그대로, 고른 단어만 새 목소리로 (소리 안에서 잇는다) */}
+          {wordCount > 0 && <Btn primary small onClick={() => onApply({ id, speed, volume, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={16} />고른 단어만 ({wordCount}개)</Btn>}
           {targetCount > 0 && <Btn primary={wordCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={16} />고른 클립 {targetCount}개에만</Btn>}
           <Btn primary={targetCount === 0 && wordCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={16} />모든 클립에 쓰기</Btn>
         </>

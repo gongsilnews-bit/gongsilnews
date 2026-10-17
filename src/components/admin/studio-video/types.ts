@@ -3,7 +3,7 @@ export type Ratio = "16:9" | "9:16" | "1:1" | "4:5" | "4:3";
 export type Method = "text" | "video" | "longform" | "record";
 export type Fill = "cover" | "contain" | "blur";
 
-export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */ };
+export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */ };
 
 export type Asset = {
   id: string;
@@ -191,6 +191,7 @@ export type VideoBridge = {
     addAsset: (libId: string) => Promise<Asset>;
     exportText: (p: Project, kind: "srt" | "txt") => Promise<string>;
   };
+  voiceJoin?: (dir: string, files: string[]) => Promise<{ file: string; url: string; duration: number }>; // 앱 0.1.8부터
   voice: (dir: string, text: string, voiceId: string) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
   // 무음 줄이기 — 영상별 실제 말소리 구간 (PC에서, 옛 앱에는 없음)

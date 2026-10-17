@@ -273,14 +273,44 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         setBusy((x) => ({ ...x, [id]: "목소리 만드는 중…" }));
         const t0 = Date.now();
         try {
-          const r = await b.voice(pref.current.dir, text, f.clip.voiceId || pref.current.settings.voice.id);
-          change((p) => {
-            const c = findClip(p, id)?.clip;
-            if (!c) return;
-            c.voice = { file: r.file, url: r.url, duration: r.duration, id: r.id, text: r.text };
-            c.words = r.words;
-            c.text = text;
-          }, false);
+          const base = f.clip.voiceId || pref.current.settings.voice.id;
+          // 단어마다 목소리가 다르면 (고른 단어만 목소리 바꾸기) — 같은 목소리끼리 조각으로 만들어 한 파일로 잇는다
+          const ws = (f.clip.words || []).filter((w) => !w.del);
+          const runs: { v: string; tokens: string[] }[] = [];
+          for (const w of ws) {
+            const v = w.v || base;
+            const last = runs[runs.length - 1];
+            if (last && last.v === v) last.tokens.push(w.w);
+            else runs.push({ v, tokens: [w.w] });
+          }
+          if (runs.length > 1 && b.voiceJoin) {
+            const parts = [];
+            for (const r of runs) parts.push(await b.voice(pref.current.dir, r.tokens.join(" "), r.v));
+            const j = await b.voiceJoin(pref.current.dir, parts.map((x) => x.file));
+            // 단어 시각 — 조각 길이만큼 밀어서 잇고, 다른 목소리 표시는 그대로
+            const words: Word[] = [];
+            let off = 0;
+            parts.forEach((x, k) => {
+              for (const w of x.words) words.push({ w: w.w, s: +(w.s + off).toFixed(3), e: +(w.e + off).toFixed(3), ...(runs[k].v !== base ? { v: runs[k].v } : {}) });
+              off += x.duration;
+            });
+            change((p) => {
+              const c = findClip(p, id)?.clip;
+              if (!c) return;
+              c.voice = { file: j.file, url: j.url, duration: j.duration, id: base, text };
+              c.words = words;
+              c.text = text;
+            }, false);
+          } else {
+            const r = await b.voice(pref.current.dir, text, base);
+            change((p) => {
+              const c = findClip(p, id)?.clip;
+              if (!c) return;
+              c.voice = { file: r.file, url: r.url, duration: r.duration, id: r.id, text: r.text };
+              c.words = r.words;
+              c.text = text;
+            }, false);
+          }
         } catch (e) {
           say(`목소리를 만들지 못했어요: ${errText(e)}`);
         }
@@ -1419,66 +1449,24 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     } else say("목소리 설정을 바꿨어요");
   };
 
-  /** 고른 단어만 목소리 바꾸기 — 첫 고른 단어 ~ 끝 고른 단어 앞뒤에서 클립을 나눠 (최대 3개) 가운데만 새 목소리. 되돌리기 한 번 */
+  /** 고른 단어만 목소리 바꾸기 — 클립은 그대로 하나, 고른 단어에 목소리 표시만 하고 소리 안에서 조각을 잇는다 (되돌리기 한 번) */
   const voiceForWords = async (o: { id: string; speed: number }) => {
     if (!selWord) return;
     const f = findClip(pref.current, selWord.clip);
     if (!f || f.clip.type !== "voice" || !f.clip.words?.length) return say("AI 목소리 클립의 단어를 골라 주세요");
+    if (!b.voiceJoin) return say("공실뉴스 스튜디오를 새 버전으로 다시 켜 주세요 (단어 목소리 잇기)");
     const is = wordIs();
-    const a = is[0], z = is[is.length - 1];
-    const made: string[] = [];
-    let midId = "";
+    const id = f.clip.id;
     change((p) => {
-      const g = findClip(p, selWord.clip)!;
-      const c = g.clip;
-      const ws = c.words!;
-      const part = (from: number, to: number): Clip => {
-        const piece: Clip = structuredClone(c);
-        piece.id = uid();
-        piece.words = ws.slice(from, to).map((w) => ({ ...w }));
-        piece.text = piece.words.filter((w) => !w.del).map((w) => w.w).join(" ");
-        piece.voice = null;
-        delete piece.subText;
-        delete piece.pad; // 쉼은 마지막 조각에만
-        return piece;
-      };
-      const pieces: Clip[] = [];
-      if (a > 0) pieces.push(part(0, a));
-      const mid = part(a, z + 1);
-      mid.voiceId = o.id;
-      mid.speed = o.speed;
-      pieces.push(mid);
-      if (z < ws.length - 1) pieces.push(part(z + 1, ws.length));
-      pieces[0].id = c.id; // 첫 조각은 원래 클립 자리·이름 그대로
-      if (c.pad) pieces[pieces.length - 1].pad = c.pad;
-      g.scene.clips.splice(g.idx, 1, ...pieces);
-      const lastId = pieces[pieces.length - 1].id;
-      for (const l of p.layers || []) {
-        if (l.to === c.id && lastId !== c.id) l.to = lastId;
-        // 단어 구간 사진·글자 — 나뉜 조각으로 옮기고 단어 번호를 맞춘다
-        if (l.from === c.id && typeof l.w0 === "number") {
-          let off = 0;
-          for (const pc of pieces) {
-            const n = pc.words!.length;
-            if (l.w0 < off + n) {
-              l.from = l.to = pc.id;
-              l.w0 -= off;
-              if (typeof l.w1 === "number") l.w1 = Math.min(n - 1, l.w1 - off);
-              break;
-            }
-            off += n;
-          }
-        }
-      }
-      made.push(...pieces.map((x) => x.id));
-      midId = mid.id;
+      const c = findClip(p, id)?.clip;
+      if (!c?.words) return;
+      const base = c.voiceId || p.settings.voice.id;
+      for (const i of is) if (c.words[i]) c.words[i].v = o.id === base ? undefined : o.id;
+      c.voice = null;
     });
-    setSelWord(null);
-    setSelWordSet(null);
-    setSelected(midId ? [midId] : []);
     setPanel("");
-    say(made.length > 1 ? `고른 단어만 새 목소리로 — 클립을 ${made.length}개로 나눴어요 (Ctrl+Z 로 되돌리기)` : "목소리를 새로 만들어요");
-    await revoice(made);
+    say(`고른 단어 ${is.length}개만 새 목소리로 만들어요 (클립은 그대로)`);
+    await revoice([id]);
   };
 
   /* ── 단어 복사·붙여넣기·지우기 (Ctrl+클릭으로 여러 단어) ── */

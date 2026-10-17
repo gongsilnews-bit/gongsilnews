@@ -546,6 +546,27 @@ async function voiceFor(p, text, voiceId) {
   return { file, url: media.urlOf(file), duration: info.duration, id: voiceId, text: t, words: spreadWords(t, info.duration) };
 }
 
+/**
+ * 한 클립 안에서 단어마다 목소리가 다를 때 — 조각별로 만든 목소리 파일을 한 파일로 잇는다 (PC에서, ffmpeg).
+ * 같은 조각 묶음이면 저장해 둔 파일을 다시 쓴다
+ */
+async function voiceJoin(p, files) {
+  const list = (files || []).filter((f) => f && fs.existsSync(f));
+  if (!list.length) throw new Error("이을 목소리가 없습니다.");
+  const h = crypto.createHash("sha1").update(list.join("\n")).digest("hex").slice(0, 16);
+  const file = path.join(p.dir, "voice", `join_${h}.wav`);
+  if (!fs.existsSync(file)) {
+    const args = ["-y", "-hide_banner", "-loglevel", "error"];
+    for (const f of list) args.push("-i", f);
+    const norm = list.map((_, i) => `[${i}:a]aresample=24000,aformat=sample_fmts=s16:channel_layouts=mono[a${i}]`).join(";");
+    args.push("-filter_complex", `${norm};${list.map((_, i) => `[a${i}]`).join("")}concat=n=${list.length}:v=0:a=1[out]`, "-map", "[out]", file);
+    await ff.run(ff.ff(), args);
+  }
+  media.allow(file);
+  const info = await ff.probe(file);
+  return { file, url: media.urlOf(file), duration: info.duration };
+}
+
 /** 문장 길이에 맞춰 단어 시각을 나눈다 (성우 음성에는 단어 시각이 없어서 글자 수로 나눈다) */
 function spreadWords(text, dur) {
   const tokens = String(text).split(/\s+/).filter(Boolean);
@@ -907,4 +928,4 @@ function exportText(p, kind) {
   return file;
 }
 
-module.exports = { create, open, save, flush, discard, backup, backups, saveWork, discardWork, convert, packageInfo, makePackage, relink, saveAs, rename, trashList, trash, restore, purge, recent, addAsset, voiceFor, transcribe, transcribeClips, realign, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };
+module.exports = { create, open, save, flush, discard, backup, backups, saveWork, discardWork, convert, packageInfo, makePackage, relink, saveAs, rename, trashList, trash, restore, purge, recent, addAsset, voiceFor, voiceJoin, transcribe, transcribeClips, realign, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };

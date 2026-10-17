@@ -165,6 +165,7 @@ if (allowed) {
         exportText: (p, kind) => ipcRenderer.invoke("video:project-export-text", p, kind),
       },
       voice: (dir, text, voiceId) => ipcRenderer.invoke("video:voice", dir, text, voiceId),
+      voiceJoin: (dir, files) => ipcRenderer.invoke("video:voice-join", dir, files), // 단어마다 목소리가 다를 때 조각 잇기 (0.1.8부터)
       transcribe: (p, assetId) => ipcRenderer.invoke("video:transcribe", p, assetId),
       split: (p, assetId) => ipcRenderer.invoke("video:split", p, assetId),
       speech: (p, assetIds) => ipcRenderer.invoke("video:speech", p, assetIds), // 무음 줄이기 — 실제 말소리 구간 (PC에서)
