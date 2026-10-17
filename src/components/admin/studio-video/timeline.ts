@@ -1,3 +1,4 @@
+import type React from "react";
 // 클립 길이·남길 구간·단어 시각 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 완성 영상). 둘을 같이 고친다.
 import type { Clip, Layer, Project, Settings, SubtitleSettings } from "./types";
 
@@ -315,3 +316,66 @@ export function splitScript(script: string): string[][] {
     )
     .filter((b) => b.length);
 }
+
+/* ── 사진 올리기·화면 글자 애니메이션 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 굽기) ── */
+export const AUTO_ANIMS = ["pop", "fly", "zoom", "fade", "roll"] as const;
+/** 자동 → 실제 효과 (같은 종류 레이어 중 몇 번째인지로 돌려 쓴다) */
+export function animOf(p: Project, layer: Layer): { in?: string; out?: string; emph?: string; grow?: string; dur: number } | null {
+  const a = layer.anim;
+  if (!a || (!a.in && !a.out && !a.emph && !a.grow)) return null;
+  const pickAuto = () => {
+    const same = (p.layers || []).filter((l) => l.type === layer.type);
+    const i = Math.max(0, same.findIndex((l) => l.id === layer.id));
+    return AUTO_ANIMS[i % AUTO_ANIMS.length];
+  };
+  const inn = a.in === "auto" ? pickAuto() : a.in;
+  const out = a.out === "auto" ? (inn && a.in !== undefined ? inn : pickAuto()) : a.out;
+  return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
+}
+/** 레이어가 보이는 동안 — 지금 클립 안 시각(초)으로 시작 a·끝 b (여러 클립에 걸치면 첫 클립에서 등장, 마지막 클립에서 퇴장) */
+export function layerSpan(p: Project, layer: Layer, items: FlatItem[], clipId: string, settings?: Settings, order = clipOrder(p)): { a: number; b: number } | null {
+  const cur = items.find((x) => x.clip.id === clipId);
+  if (!cur) return null;
+  const w = layerWindow(layer, cur.clip, settings);
+  if (w) return { a: w.s, b: w.e };
+  const cov = layerItems(p, layer, items, order);
+  if (!cov.length) return null;
+  const last = cov[cov.length - 1];
+  return { a: cov[0].start - cur.start, b: last.start + last.dur - cur.start };
+}
+const easeOut = (x: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+const backOut = (x: number) => { const k = Math.max(0, Math.min(1, x)) - 1; return 1 + 2.70158 * k * k * k + 1.70158 * k * k; };
+export type AnimLook = { op: number; sc: number; sx: number; rot: number; dx: number; dy: number };
+/** 지금(local) 모양 — 투명도·크기·가로 크기(뒤집기)·회전(도)·옮김(화면 크기에 대한 비율) */
+export function animAt(an: ReturnType<typeof animOf>, local: number, a: number, b: number): AnimLook {
+  const r: AnimLook = { op: 1, sc: 1, sx: 1, rot: 0, dx: 0, dy: 0 };
+  if (!an) return r;
+  const D = Math.max(0.05, Math.min(an.dur, (b - a) / 3));
+  const put = (kind: string, x: number) => {
+    const e = easeOut(x);
+    if (kind === "fade") r.op *= e;
+    else if (kind === "fly") { r.dy += (1 - e) * 0.25; r.op *= e; }
+    else if (kind === "zoom") { r.sc *= 0.3 + 0.7 * e; r.op *= e; }
+    else if (kind === "pop") { r.sc *= Math.max(0, backOut(x)); r.op *= Math.min(1, x * 3); }
+    else if (kind === "spin") { r.rot += (1 - e) * -180; r.sc *= 0.4 + 0.6 * e; r.op *= e; }
+    else if (kind === "flip") r.sx *= Math.max(0.001, e);
+    else if (kind === "roll") { r.dx += -(1 - e) * 0.35; r.rot += -(1 - e) * 360; r.op *= e; }
+  };
+  const tin = (local - a) / D;
+  const tout = (b - local) / D;
+  if (an.in && tin < 1) put(an.in, tin);
+  if (an.out && tout < 1) put(an.out, tout);
+  const tt = Math.max(0, local - a);
+  if (an.emph === "pulse") r.sc *= 1 + 0.06 * Math.sin((2 * Math.PI * tt) / 1.1);
+  else if (an.emph === "shake") r.rot += 5 * Math.sin((2 * Math.PI * tt) / 0.6);
+  else if (an.emph === "blink") r.op *= 0.6 + 0.4 * (0.5 + 0.5 * Math.cos((2 * Math.PI * tt) / 1.2));
+  const u = b > a ? Math.max(0, Math.min(1, (local - a) / (b - a))) : 0;
+  if (an.grow === "grow") r.sc *= 1 + 0.15 * u;
+  else if (an.grow === "shrink") r.sc *= 1.15 - 0.15 * u;
+  return r;
+}
+/** 미리보기 CSS — 옮김은 화면 px */
+export const animCss = (r: AnimLook, boxW: number, boxH: number): React.CSSProperties | undefined =>
+  r.op === 1 && r.sc === 1 && r.sx === 1 && r.rot === 0 && r.dx === 0 && r.dy === 0
+    ? undefined
+    : { opacity: r.op, transform: `translate(${(r.dx * boxW).toFixed(2)}px, ${(r.dy * boxH).toFixed(2)}px) rotate(${r.rot.toFixed(2)}deg) scale(${(r.sc * r.sx).toFixed(4)}, ${r.sc.toFixed(4)})` };

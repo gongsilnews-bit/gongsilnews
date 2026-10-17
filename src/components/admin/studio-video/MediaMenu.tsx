@@ -53,6 +53,7 @@ type Props = {
   /** 사진 움직임 (클립 화면이 사진일 때만) — 지금 값, 크기, 고른 클립 수·사진 클립 수, 바꾸기 (적용 범위 one/sel/all) */
   motion?: { value: string; power: string; selCount: number; allCount: number; onPick: (m: string, scope: "one" | "sel" | "all") => void; onPower: (pw: string, scope: "one" | "sel" | "all") => void };
   onOrder?: (o: MediaOrder) => void;
+  onAnim?: () => void; // 애니메이션 (사진 올리기만) — 오른쪽 칸
   onRemove: () => void;
   onClose: () => void;
 };
@@ -93,6 +94,7 @@ export default function MediaMenu(p: Props) {
     items = [
       { icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") },
       { icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") },
+      ...(p.onAnim ? [{ icon: "transition", label: "애니메이션", desc: "나타날 때·사라질 때 움직임, 강조, 천천히 커지기를 넣어요 (오른쪽 칸)", run: done(p.onAnim) }] : []),
       ...(p.motion ? [{ icon: "zoom", label: `움직임 · ${MOTION_INFO.find((x) => x.id === p.motion!.value)?.label || "자동"}`, desc: "사진이 줌인·좌우·상하로 천천히 움직여요. 기본은 자동", sub: true, run: go("motion") }] : []),
       ...(p.onStart ? [p.trim
         ? { icon: "cut", label: "시작·끝 자르기", desc: "영상 앞뒤를 잘라 쓸 부분만 남겨요 (프리미어·캡컷처럼). 소리·자막도 같이 잘려요", run: done(p.onStart) }

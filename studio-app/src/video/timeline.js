@@ -200,4 +200,58 @@ function musicLayers(p, items) {
 /** 자막에 쓸 글 — 자막만 따로 쓴 글이 있으면 그것 */
 const subtitleText = (clip) => (typeof clip.subText === "string" ? clip.subText : clipText(clip));
 
-module.exports = { motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };
+/* ── 사진 올리기·화면 글자 애니메이션 — src/components/admin/studio-video/timeline.ts 와 같은 계산 ── */
+const AUTO_ANIMS = ["pop", "fly", "zoom", "fade", "roll"];
+function animOf(p, layer) {
+  const a = layer.anim;
+  if (!a || (!a.in && !a.out && !a.emph && !a.grow)) return null;
+  const pickAuto = () => {
+    const same = (p.layers || []).filter((l) => l.type === layer.type);
+    const i = Math.max(0, same.findIndex((l) => l.id === layer.id));
+    return AUTO_ANIMS[i % AUTO_ANIMS.length];
+  };
+  const inn = a.in === "auto" ? pickAuto() : a.in;
+  const out = a.out === "auto" ? (inn && a.in !== undefined ? inn : pickAuto()) : a.out;
+  return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
+}
+function layerSpan(p, layer, items, clipId, settings, order = clipOrder(p)) {
+  const cur = items.find((x) => x.clip.id === clipId);
+  if (!cur) return null;
+  const w = layerWindow(layer, cur.clip, settings);
+  if (w) return { a: w.s, b: w.e };
+  const cov = layerItems(p, layer, items, order);
+  if (!cov.length) return null;
+  const last = cov[cov.length - 1];
+  return { a: cov[0].start - cur.start, b: last.start + last.dur - cur.start };
+}
+const easeOut = (x) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+const backOut = (x) => { const k = Math.max(0, Math.min(1, x)) - 1; return 1 + 2.70158 * k * k * k + 1.70158 * k * k; };
+function animAt(an, local, a, b) {
+  const r = { op: 1, sc: 1, sx: 1, rot: 0, dx: 0, dy: 0 };
+  if (!an) return r;
+  const D = Math.max(0.05, Math.min(an.dur, (b - a) / 3));
+  const put = (kind, x) => {
+    const e = easeOut(x);
+    if (kind === "fade") r.op *= e;
+    else if (kind === "fly") { r.dy += (1 - e) * 0.25; r.op *= e; }
+    else if (kind === "zoom") { r.sc *= 0.3 + 0.7 * e; r.op *= e; }
+    else if (kind === "pop") { r.sc *= Math.max(0, backOut(x)); r.op *= Math.min(1, x * 3); }
+    else if (kind === "spin") { r.rot += (1 - e) * -180; r.sc *= 0.4 + 0.6 * e; r.op *= e; }
+    else if (kind === "flip") r.sx *= Math.max(0.001, e);
+    else if (kind === "roll") { r.dx += -(1 - e) * 0.35; r.rot += -(1 - e) * 360; r.op *= e; }
+  };
+  const tin = (local - a) / D;
+  const tout = (b - local) / D;
+  if (an.in && tin < 1) put(an.in, tin);
+  if (an.out && tout < 1) put(an.out, tout);
+  const tt = Math.max(0, local - a);
+  if (an.emph === "pulse") r.sc *= 1 + 0.06 * Math.sin((2 * Math.PI * tt) / 1.1);
+  else if (an.emph === "shake") r.rot += 5 * Math.sin((2 * Math.PI * tt) / 0.6);
+  else if (an.emph === "blink") r.op *= 0.6 + 0.4 * (0.5 + 0.5 * Math.cos((2 * Math.PI * tt) / 1.2));
+  const u = b > a ? Math.max(0, Math.min(1, (local - a) / (b - a))) : 0;
+  if (an.grow === "grow") r.sc *= 1 + 0.15 * u;
+  else if (an.grow === "shrink") r.sc *= 1.15 - 0.15 * u;
+  return r;
+}
+
+module.exports = { animOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };

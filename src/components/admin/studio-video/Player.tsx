@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { animAt, animCss, animOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
 
@@ -342,6 +342,13 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const w = layerWindow(l, clip, project.settings);
     return !w || (local >= w.s && local < w.e + 0.001);
   }) : [];
+  // 애니메이션 (등장·퇴장·강조·확대) — 굽기와 같은 계산 (timeline.animAt)
+  const lookOf = (l: Layer): React.CSSProperties | undefined => {
+    const an = animOf(project, l);
+    if (!an || !clip) return undefined;
+    const sp = layerSpan(project, l, flat.items, clip.id, project.settings, order);
+    return sp ? animCss(animAt(an, local, sp.a, sp.b), boxW, boxH) : undefined;
+  };
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
 
@@ -595,7 +602,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           return (
             <div key={l.id} data-layer={l.id} onPointerDown={(e) => { if (onLayerMove) { e.stopPropagation(); onLayerPick?.(l.id); } }} title="채우기 중 — [직접 크기]로 바꾸면 끌어 옮길 수 있어요"
               style={{ position: "absolute", inset: 0, ...(onLayerMove ? { pointerEvents: "auto" } : { pointerEvents: "none" }) }}>
-              <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", objectFit: l.fit, opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
+              <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
+                <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", objectFit: l.fit, opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
+              </div>
               {l.id === selLayer && onLayerMove && <span style={{ position: "absolute", inset: 1, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />}
             </div>
           );
@@ -607,7 +616,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         return (
           <div key={l.id} data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
             style={{ position: "absolute", left, top, width: pw, height: ph, ...dragStyle(l) }}>
-            <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
+            <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
+              <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
+            </div>
             {frame(l)}
           </div>
         );
@@ -631,9 +642,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
               if (editing === l.id && onLayerText)
                 return <InlineEdit text={String(l.text).trim()} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.trim() && t.trim() !== String(l.text).trim()) onLayerText(l.id, t.trim()); }} />;
               return (
-                <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
-                  title={onLayerText ? "끌어서 옮기기 · 두 번 누르면 글 고치기" : undefined} style={{ ...look, ...dragStyle(l) }}>
-                  {String(l.text).trim()}{frame(l)}
+                <span style={{ display: "inline-block", ...lookOf(l) }}>
+                  <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
+                    title={onLayerText ? "끌어서 옮기기 · 두 번 누르면 글 고치기" : undefined} style={{ ...look, ...dragStyle(l) }}>
+                    {String(l.text).trim()}{frame(l)}
+                  </span>
                 </span>
               );
             })()}

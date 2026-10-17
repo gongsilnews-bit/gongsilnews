@@ -5,6 +5,9 @@ export type Fill = "cover" | "contain" | "blur";
 // 사진 움직임 (브루처럼) — auto = 사진 클립 차례대로 줌인·좌→우·줌아웃·우→좌·위→아래 를 돌려 쓴다
 export type Motion = "auto" | "none" | "zoomIn" | "zoomOut" | "leftRight" | "rightLeft" | "topBottom" | "bottomTop";
 export type MotionPower = "low" | "mid" | "high";
+// 사진 올리기·화면 글자 애니메이션 (브루처럼) — 등장·퇴장 / 강조 / 확대. auto = 레이어 차례대로 돌려 쓰기
+export type AnimIn = "auto" | "fade" | "fly" | "zoom" | "pop" | "spin" | "flip" | "roll";
+export type LayerAnim = { in?: AnimIn; out?: AnimIn; emph?: "pulse" | "shake" | "blink"; grow?: "grow" | "shrink"; dur?: number /* 등장·퇴장 걸리는 초 (기본 0.5) */ };
 
 export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */ };
 
@@ -87,6 +90,7 @@ export type Layer = {
   w?: number; // 화면 폭에 대한 비율 0~1
   opacity?: number; // 0~1
   off?: boolean; // 레이어 끄기 (보이기·듣기) — 설정은 그대로
+  anim?: LayerAnim; // 사진·화면 글자 애니메이션
   fit?: "free" | "contain" | "cover"; // free(기본) = x·y·w 자리 / contain = 비율 유지하며 채우기 / cover = 잘라서 채우기
   flipX?: boolean;
   flipY?: boolean;

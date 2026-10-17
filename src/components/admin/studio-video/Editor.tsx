@@ -15,10 +15,11 @@ import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
 import { TransPanel } from "./TransPanel";
+import { AnimPanel } from "./Anim";
 import { TRANS_DEFAULT } from "./transitions";
 import { LAYER_ICON, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans";
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -71,6 +72,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [, force] = useState(0);
   const [tab, setTab] = useState<(typeof TABS)[number]>("홈");
   const [panel, setPanel] = useState<PanelKind>("");
+  const [animTarget, setAnimTarget] = useState(""); // 애니메이션 칸이 맡은 사진·글자 레이어
   const [transClip, setTransClip] = useState(""); // 오른쪽 칸에 연 화면전환 (뒤 클립 id)
   const [libTab, setLibTab] = useState("mine");
   const [libOpen, setLibOpenState] = useState(() => {
@@ -2232,6 +2234,19 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic}
             onClose={() => (musicTarget && (project.layers || []).some((l) => l.id === musicTarget) ? openLayer(musicTarget) : setPanel(""))} />
         )}
+        {panel === "anim" && (() => {
+          const l = (project.layers || []).find((x) => x.id === animTarget);
+          if (!l) return null;
+          return <AnimPanel key={l.id} project={project} layer={l} onClose={() => setPanel("")}
+            onChange={(fn, all) => change((p) => {
+              for (const x of p.layers || []) {
+                if (all ? x.type !== l.type : x.id !== l.id) continue;
+                const n = fn({ ...(x.anim || {}) });
+                const clean = Object.fromEntries(Object.entries(n).filter(([, v]) => v !== undefined));
+                if (Object.keys(clean).length) x.anim = clean; else delete x.anim;
+              }
+            })} />;
+        })()}
         {panel === "source" && (() => {
           const sel = selected.filter((id) => isSrc(findClip(project, id)?.clip));
           const all = flat.items.map((x) => x.clip).filter(isSrc).map((c) => c.id);
@@ -2422,13 +2437,15 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           onFlip={(ax) => updateLayer(l.id, ax === "x" ? { flipX: !l.flipX || undefined } : { flipY: !l.flipY || undefined })}
           onReplace={() => { setOverlayTarget(l.id); openLib("mine", true); }}
           onRange={(x, y) => total && updateLayer(l.id, { from: items[x - 1].clip.id, to: items[y - 1].clip.id })}
-          onOrder={(o) => layerOrder(l.id, o)} onRemove={() => removeLayer(l.id)} onClose={close} />;
+          onOrder={(o) => layerOrder(l.id, o)} onRemove={() => removeLayer(l.id)} onClose={close}
+          onAnim={() => { setAnimTarget(l.id); setSelLayer(l.id); setPanel("anim"); }} />;
       })()}
       {pop && (() => {
         const l = (project.layers || []).find((x) => x.id === pop.id);
         if (!l) return null;
         return <LayerPopup key={l.id} project={project} layer={l} items={flat.items} selRange={selRange()} x={pop.x} y={pop.y}
-          onChange={(patch) => updateLayer(l.id, patch)} onRemove={() => removeLayer(l.id)} onClose={() => setPop(null)} />;
+          onChange={(patch) => updateLayer(l.id, patch)} onRemove={() => removeLayer(l.id)} onClose={() => setPop(null)}
+          onAnim={l.type === "text" ? () => { setAnimTarget(l.id); setSelLayer(l.id); setPanel("anim"); setPop(null); } : undefined} />;
       })()}
       {work && <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac} /></Modal>}
       {dialog === "export" && <ExportDialog project={project} selected={selected} sceneOf={sel1?.scene.id} onClose={() => setDialog("")} />}

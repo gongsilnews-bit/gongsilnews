@@ -524,7 +524,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
 }
 
 /* ── 아이콘을 누르면 바로 옆에 뜨는 작은 메뉴 (브루처럼) — 적용 범위·간단한 조절·삭제. 자세한 것은 오른쪽 칸 ── */
-export function LayerPopup({ project, layer, items, selRange, x, y, onChange, onRemove, onClose }: {
+export function LayerPopup({ project, layer, items, selRange, x, y, onChange, onRemove, onClose, onAnim }: {
   project: Project;
   layer: Layer;
   items: FlatItem[];
@@ -534,6 +534,7 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
   onChange: (patch: Partial<Layer>) => void;
   onRemove: () => void;
   onClose: () => void;
+  onAnim?: () => void; // 화면 글자 애니메이션 — 오른쪽 칸
 }) {
   React.useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -610,6 +611,11 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
           </>
         )}
         {layer.type === "text" && mini("글자 크기", layer.size ?? 100, 40, 260, 5, `${layer.size ?? 100}%`, (v) => onChange({ size: v }))}
+        {onAnim && (
+          <div style={line}>
+            <Btn small onClick={onAnim} style={{ width: "100%" }}><Icon name="transition" size={15} />애니메이션{layer.anim ? " · 들어감" : ""}</Btn>
+          </div>
+        )}
         <div style={{ padding: "8px 12px", display: "flex", alignItems: "center" }}>
           <span style={{ flex: 1, fontSize: 12, color: C.dim }}>자세한 설정은 오른쪽 칸</span>
           <Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />삭제</Btn>
