@@ -1059,29 +1059,28 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   /* ── 속도·길이 (고른 클립 모두) ── */
   const timingIds = () => (selected.length ? selected : cur ? [cur.clip.id] : []);
-  /** 길이 맞추기 — 목소리 클립: 늘리면 끝에 머물기(pad), 줄이면 빠르게 / 화면만: 그 시간 / 촬영: 빠르기로 */
-  const setLength = (T: number, only?: string[]) => {
-    change((p) => {
-      for (const id of only || timingIds()) {
-        const c = findClip(p, id)?.clip;
-        if (!c) continue;
-        if (c.type === "voice" && c.voice?.duration) {
-          const vd = c.voice.duration;
-          const nat = vd / speedOf(c, p.settings) + GAP;
-          if (T >= nat - 0.01) c.pad = T - nat > 0.01 ? +(T - nat).toFixed(2) : undefined;
-          else {
-            c.speed = +Math.max(0.1, Math.min(20, vd / Math.max(0.05, T - GAP))).toFixed(3);
-            c.pad = undefined;
-          }
-        } else if (c.type === "voice") c.hold = +Math.max(0.5, T).toFixed(2);
-        else {
-          const raw = keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0);
-          if (raw > 0) c.speed = +Math.max(0.1, Math.min(20, raw / T)).toFixed(3);
-        }
-      }
-    });
-    say(`길이를 ${T}초로 맞췄어요 (속도는 0.1~20배 안에서)`);
-  };
+  /**
+   * 클립 길이 (소리 칩 메뉴) — AI 목소리: 다 읽는 시간보다 짧게는 안 되고, 길면 끝에 쉼(pad). 빠르기는 그대로.
+   * 촬영 영상: 시작점은 그대로 끝만 (빠르기 그대로), 원본 영상 끝까지만
+   */
+  const setClipLength = (id: string, T: number) => change((p) => {
+    const c = findClip(p, id)?.clip;
+    if (!c) return;
+    if (c.type === "voice") {
+      if (c.voice?.duration) {
+        const nat = c.voice.duration / speedOf(c, p.settings) + GAP;
+        const extra = Math.max(0, T - nat);
+        c.pad = extra > 0.01 ? +extra.toFixed(2) : undefined;
+      } else c.hold = +Math.max(0.5, T).toFixed(2);
+      return;
+    }
+    if (c.src) {
+      const sp = srcSpeed(c);
+      const end = p.assets[c.src.asset]?.duration ?? c.src.e;
+      c.src.e = +Math.min(end, Math.max(c.src.s + 0.3, c.src.s + T * sp)).toFixed(3);
+    }
+  });
+
   /* ── 메인자막 서식 — 전체 / 고른 클립만 ── */
   const subSel = subMode === "sel" && selected.length > 0;
   /** 서식 바꾸기 — 고른 클립만이면 그 클립들에 바꾼 항목만 따로 (값이 undefined 면 그 항목을 지운다) */
@@ -2265,7 +2264,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           len={flat.items.find((x) => x.clip.id === c.id)?.dur}
           base={isVoice ? (c.voice?.duration ? c.voice.duration / speedOf(c, project.settings) + GAP : undefined) : c.src ? keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(c) : undefined}
           pad={isVoice ? Number(c.pad) || 0 : 0}
-          onLength={(T) => setLength(T, ids)} />;
+          onLength={(T) => setClipLength(c.id, T)}
+          lenMin={isVoice ? (c.voice?.duration ? c.voice.duration / speedOf(c, project.settings) + GAP : 0.5) : 0.3}
+          lenMax={isVoice ? undefined : c.src ? (project.assets[c.src.asset]?.duration ?? c.src.e) - c.src.s : undefined} />;
       })()}
       {media && (() => {
         const items = flat.items;

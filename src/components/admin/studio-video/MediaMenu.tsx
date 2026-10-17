@@ -177,7 +177,7 @@ export default function MediaMenu(p: Props) {
 }
 
 /** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
-export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose, len, base, pad, onLength }: {
+export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose, len, base, pad, onLength, lenMin, lenMax }: {
   title: string;
   x: number;
   y: number;
@@ -199,10 +199,15 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
   base?: number;
   pad?: number;
   onLength?: (sec: number) => void;
+  lenMin?: number; // AI 목소리: 다 읽는 시간 (그 아래로는 못 줄임) / 영상: 0.3초
+  lenMax?: number; // 영상: 원본이 끝나는 곳까지 / AI 목소리: 넉넉히
 }) {
   const [lenDraft, setLenDraft] = React.useState("");
   React.useEffect(() => setLenDraft(len ? len.toFixed(1) : ""), [len]);
   const lenOff = false; // 길이는 늘 이 클립만 (적용 범위 단추는 볼륨·빠르기를 넓혀 넣는다)
+  const lo = Math.max(0.3, lenMin ?? 0.3);
+  const hi = Math.max(lo + 0.1, lenMax ?? Math.max(30, (len ?? 0) + 10));
+  const clampLen = (v: number) => +Math.min(hi, Math.max(lo, v)).toFixed(2);
   React.useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -229,6 +234,8 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>볼륨</div>
         <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
         <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>빠르기 <span style={{ color: C.sub, fontWeight: 600 }}>{+speed.toFixed(2)}배</span></div>
+        {/* 막대 — 0.5~2배 */}
+        <input type="range" min={0.5} max={2} step={0.05} value={Math.min(2, Math.max(0.5, speed))} onChange={(e) => onSpeed(+Number(e.target.value).toFixed(2))} style={{ width: "100%", accentColor: C.accent, marginBottom: 6 }} />
         <div style={{ display: "flex", gap: 5 }}>
           {[0.75, 1, 1.25, 1.5, 2].map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
         </div>
@@ -236,16 +243,20 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
           <>
             <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>길이 <span style={{ color: C.sub, fontWeight: 600 }}>{len.toFixed(1)}초</span></div>
             <div style={{ display: "flex", gap: 5, alignItems: "center", opacity: lenOff ? 0.4 : 1 }}>
-              <button type="button" disabled={lenOff} onClick={() => onLength(Math.max(0.3, +(len - 0.5).toFixed(2)))} style={{ ...chipS(false), flex: "0 0 58px", height: 32 }}>−0.5초</button>
+              <button type="button" disabled={lenOff || len <= lo + 0.01} onClick={() => onLength(Math.max(lo, +(len - 0.5).toFixed(2)))} style={{ ...chipS(false), flex: "0 0 58px", height: 32, opacity: len <= lo + 0.01 ? 0.4 : 1 }}>−0.5초</button>
               <input value={lenDraft} disabled={lenOff} onChange={(e) => setLenDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { const v = Number(lenDraft); if (v > 0.2) onLength(+v.toFixed(2)); } }}
-                onBlur={() => { const v = Number(lenDraft); if (v > 0.2 && Math.abs(v - len) > 0.04) onLength(+v.toFixed(2)); else setLenDraft(len.toFixed(1)); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { const v = Number(lenDraft); if (v > 0.2) onLength(clampLen(v)); } }}
+                onBlur={() => { const v = Number(lenDraft); if (v > 0.2 && Math.abs(v - len) > 0.04) onLength(clampLen(v)); else setLenDraft(len.toFixed(1)); }}
                 style={{ ...input, flex: 1, minWidth: 0, height: 32, padding: "0 8px", textAlign: "center", fontSize: 14, fontWeight: 800 }} />
               <span style={{ fontSize: 12.5, color: C.sub }}>초</span>
-              <button type="button" disabled={lenOff} onClick={() => onLength(+(len + 0.5).toFixed(2))} style={{ ...chipS(false), flex: "0 0 58px", height: 32 }}>+0.5초</button>
+              <button type="button" disabled={lenOff || len >= hi - 0.01} onClick={() => onLength(Math.min(hi, +(len + 0.5).toFixed(2)))} style={{ ...chipS(false), flex: "0 0 58px", height: 32, opacity: len >= hi - 0.01 ? 0.4 : 1 }}>+0.5초</button>
             </div>
+            {/* 막대 — 가장 짧게(다 읽는 시간 / 0.3초) ~ 가장 길게(영상은 원본 끝까지) */}
+            <input type="range" min={lo} max={hi} step={0.1} value={Math.min(hi, Math.max(lo, len))} onChange={(e) => onLength(clampLen(Number(e.target.value)))} style={{ width: "100%", accentColor: C.accent, marginTop: 6 }} />
             <div style={{ fontSize: 11.5, color: C.dim, marginTop: 5 }}>
-              {lenOff ? "모든 클립 길이는 한 번에 못 바꿔요 — [이 클립에만]을 고르세요" : typeof base === "number" ? `${onVoice ? "목소리" : "영상"} ${base.toFixed(1)}초${pad ? ` + 쉼 ${pad.toFixed(1)}초` : ""} · 늘리면 끝에 머물고, 줄이면 빨라져요` : ""}
+              {onVoice
+                ? `목소리 ${(base ?? len).toFixed(1)}초${pad ? ` + 쉼 ${pad.toFixed(1)}초` : ""} · 늘리면 다 읽고 끝에 머물러요 (다 읽는 시간보다 짧게는 안 돼요)`
+                : `시작점은 그대로, 끝만 당기거나 늘려요 · 원본 영상 끝까지 ${hi.toFixed(1)}초`}
             </div>
           </>
         )}
