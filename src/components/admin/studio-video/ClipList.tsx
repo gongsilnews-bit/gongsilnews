@@ -295,11 +295,11 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     </button>
                   )}
                   {/* 고른 단어로 할 수 있는 일 — 브루처럼 그 단어 바로 위에서 오른쪽으로 */}
-                  {isSel && !editing && (
+                  {isSel && !editing && i > 0 && (
                     <span onClick={(e) => e.stopPropagation()}
                       style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
-                      <ActionBtn icon={w.del ? "undo" : "trash"} label={w.del ? "되살리기" : "이 단어 지우기"} onClick={() => p.actions.toggleWord(c.id, i)} danger={!w.del} />
-                      {i > 0 && <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, i)} />}
+                      {/* 지우기는 단어 오른쪽 위 ⓧ 로 */}
+                      <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, i)} />
                     </span>
                   )}
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
