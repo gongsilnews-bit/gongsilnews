@@ -508,11 +508,13 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
         return { l, s, len: e - s };
       })
       .filter((x) => x && x.len > 0.05);
+    // 애니메이션 효과음 (사진·글자 나타날 때, 메인자막) — 파일은 앱 안 src/video/sfx
+    const sfxs = tl.sfxEvents(p, items, order).filter((e) => /^[a-z0-9-]+$/.test(e.name) && fs.existsSync(path.join(__dirname, "sfx", `${e.name}.mp3`)));
     const resize = scale !== 1 ? ["-vf", `scale=-2:${Math.round(H0 * scale / 2) * 2}`] : null;
-    if (musics.length || resize) {
-      onProgress(musics.length ? "배경 음악을 섞는 중…" : "해상도를 맞추는 중…", 0.95);
+    if (musics.length || resize || sfxs.length) {
+      onProgress(musics.length ? "배경 음악을 섞는 중…" : sfxs.length ? "효과음을 섞는 중…" : "해상도를 맞추는 중…", 0.95);
       const a = ["-y", "-hide_banner", "-loglevel", "error", "-i", joined];
-      if (musics.length) {
+      if (musics.length || sfxs.length) {
         const fl = [];
         musics.forEach(({ l, s, len }, i) => {
           if (l.loop !== false) a.push("-stream_loop", "-1");
@@ -530,11 +532,23 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
               `[m${i}]`
           );
         });
-        fl.push(musics.length > 1 ? `${musics.map((_, i) => `[m${i}]`).join("")}amix=inputs=${musics.length}:duration=longest:normalize=0[mm]` : `[m0]anull[mm]`);
-        fl.push(`[mm]apad,atrim=duration=${total.toFixed(3)}[mt]`);
-        fl.push(`[0:a]asplit=2[v1][v2]`);
-        fl.push(`[mt][v1]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=400[md]`);
-        fl.push(`[v2][md]amix=inputs=2:duration=first:normalize=0[a]`);
+        const mix = []; // 말소리에 더할 것 — 줄인 음악, 효과음들
+        let voice = "[0:a]";
+        if (musics.length) {
+          fl.push(musics.length > 1 ? `${musics.map((_, i) => `[m${i}]`).join("")}amix=inputs=${musics.length}:duration=longest:normalize=0[mm]` : `[m0]anull[mm]`);
+          fl.push(`[mm]apad,atrim=duration=${total.toFixed(3)}[mt]`);
+          fl.push(`[0:a]asplit=2[v1][v2]`);
+          fl.push(`[mt][v1]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=400[md]`);
+          voice = "[v2]";
+          mix.push("[md]");
+        }
+        sfxs.forEach((e, i) => {
+          a.push("-i", path.join(__dirname, "sfx", `${e.name}.mp3`));
+          const ms = Math.max(0, Math.round(e.t * 1000));
+          fl.push(`[${musics.length + 1 + i}:a]volume=${e.vol.toFixed(2)},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""}[x${i}]`);
+          mix.push(`[x${i}]`);
+        });
+        fl.push(`${voice}${mix.join("")}amix=inputs=${mix.length + 1}:duration=first:normalize=0[a]`);
         a.push("-filter_complex", fl.join(";"), "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "192k");
       } else a.push("-map", "0:v", "-map", "0:a", "-c:a", "copy");
       if (resize) a.push(...resize, ...enc.args("final"));

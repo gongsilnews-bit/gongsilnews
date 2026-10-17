@@ -389,3 +389,48 @@ export const animCss = (r: AnimLook, boxW: number, boxH: number): React.CSSPrope
   r.op === 1 && r.sc === 1 && r.sx === 1 && r.rot === 0 && r.dx === 0 && r.dy === 0
     ? undefined
     : { opacity: r.op, transform: `translate(${(r.dx * boxW).toFixed(2)}px, ${(r.dy * boxH).toFixed(2)}px) rotate(${r.rot.toFixed(2)}deg) scale(${(r.sc * r.sx).toFixed(4)}, ${r.sc.toFixed(4)})` };
+
+/* ── 애니메이션 효과음 — studio-app/src/video/timeline.js 와 같은 계산. 파일: public/studio-sfx · studio-app/src/video/sfx ── */
+export const SFX_LIST: { id: string; label: string }[] = [
+  { id: "whoosh", label: "쉭" }, { id: "whoosh-short", label: "휙" }, { id: "pop", label: "뽁" }, { id: "click", label: "딸깍" },
+  { id: "key-press", label: "엔터" }, { id: "typing", label: "타자" }, { id: "sparkle", label: "반짝" }, { id: "chime", label: "딩동" },
+  { id: "ping", label: "띵" }, { id: "notification", label: "알림" }, { id: "impact-bass-1", label: "쿵" },
+];
+const SFX_AUTO: Record<string, string> = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click" }; // 페이드는 조용히
+/** 이 효과(kind)에 낼 소리 — set: 고른 값 (없으면 dflt) */
+export function sfxName(kind: string | undefined, set: string | undefined, dflt: "auto" | "none", isText: boolean): string | null {
+  if (!kind) return null;
+  const v = set || dflt;
+  if (v === "none") return null;
+  if (v !== "auto") return v;
+  return isText ? "key-press" : SFX_AUTO[kind] || null; // 화면 글자는 엔터 "탁"
+}
+export type SfxEvent = { t: number; name: string; vol: number };
+/** 영상 전체 효과음 — 사진·글자는 나타날 때(켜면 사라질 때도), 메인자막은 고른 경우 클립 첫 줄에만. 0.12초 안에 겹치면 하나만 */
+export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): SfxEvent[] {
+  const ev: SfxEvent[] = [];
+  for (const l of p.layers || []) {
+    if (l.off || (l.type !== "image" && l.type !== "text")) continue;
+    const an = animOf(p, l);
+    if (!an || !l.anim) continue;
+    const cov = layerItems(p, l, items, order);
+    if (!cov.length) continue;
+    const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
+    if (!sp) continue;
+    const a = cov[0].start + sp.a, b = cov[0].start + sp.b;
+    const vol = Math.max(0, Math.min(1, l.anim.sfxVol ?? 0.6));
+    const n1 = sfxName(an.in, l.anim.sfx, "auto", l.type === "text");
+    if (n1) ev.push({ t: a, name: n1, vol });
+    const n2 = l.anim.sfxOut ? sfxName(an.out, l.anim.sfx, "auto", l.type === "text") : null;
+    if (n2) ev.push({ t: Math.max(a, b - Math.min(an.dur, (b - a) / 3)), name: n2, vol });
+  }
+  for (const it of items) {
+    const sa = subAnimOf(p, it.clip);
+    const st = subStyleOf(p.settings, it.clip).anim;
+    if (!sa || !st || p.settings.subtitle.on === false || it.clip.sub === false) continue;
+    const n = sfxName(sa.in, st.sfx, "none", true);
+    if (n) ev.push({ t: it.start, name: n, vol: Math.max(0, Math.min(1, st.sfxVol ?? 0.6)) });
+  }
+  ev.sort((x, y) => x.t - y.t);
+  return ev.filter((e, i) => !i || e.t - ev[i - 1].t > 0.12);
+}

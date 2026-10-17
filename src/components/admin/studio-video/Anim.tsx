@@ -4,9 +4,9 @@
 // 카드에 마우스를 올리면 그 효과가 실제로 움직여 보인다 (미리보기·굽기와 같은 계산 timeline.animAt)
 import React, { useEffect, useRef, useState } from "react";
 import type { AnimIn, LayerAnim } from "./types";
-import { animAt, animCss } from "./timeline";
+import { SFX_LIST, animAt, animCss } from "./timeline";
 import { Side } from "./Panels";
-import { C, FONT } from "./ui";
+import { C, FONT, Toggle } from "./ui";
 
 const IN_LIST: { id: AnimIn; label: string }[] = [
   { id: "auto", label: "자동" },
@@ -73,7 +73,7 @@ function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string
   );
 }
 
-export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange, onClose, onBack, onPreview }: {
+export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange, onClose, onBack, onPreview, sfxDefault = "auto" }: {
   value?: LayerAnim;
   what: string; // 사진 · 글자 · 자막
   thumb?: string; // 카드 시연 그림
@@ -87,6 +87,7 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
   onBack?: () => void; // 앞 칸으로 (메인자막 칸)
   /** 효과를 고르면 미리보기에서 그 부분을 바로 틀어 보여 준다 (등장: 처음, 퇴장: 끝, 강조·확대: 처음부터 조금) */
   onPreview?: (part: "in" | "out" | "all") => void;
+  sfxDefault?: "auto" | "none"; // 효과음을 안 골랐을 때 (사진·글자 자동, 자막 없음)
 }) {
   const [tab, setTab] = useState<"inout" | "emph" | "grow">("inout");
   const [side, setSide] = useState<"in" | "out">("in");
@@ -174,6 +175,44 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
             </div>
           </div>
         )}
+        {/* 효과음 — 나타날 때 (고르면 바로 들려준다) */}
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>효과음 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 나타날 때{what === "자막" ? " (클립 첫 줄에만)" : ""}</span></div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {[{ id: "auto", label: "자동" }, { id: "none", label: "없음" }, ...SFX_LIST].map((x) => {
+              const cur = a.sfx || sfxDefault;
+              return (
+                <button key={x.id} type="button" title={x.id === "auto" ? (what === "사진" ? "효과에 맞게 (팝=뽁, 날아오기·다가오기=쉭, 뒤집기=딸깍, 페이드=없음)" : "엔터 소리 (탁)") : undefined}
+                  onClick={() => {
+                    set((y) => ({ ...y, sfx: x.id === sfxDefault ? undefined : x.id }), "in");
+                    if (x.id !== "auto" && x.id !== "none") {
+                      try {
+                        const au = new Audio(`/studio-sfx/${x.id}.mp3`);
+                        au.volume = Math.min(1, a.sfxVol ?? 0.6);
+                        void au.play().catch(() => {});
+                      } catch {}
+                    }
+                  }}
+                  style={{ ...tabBtn(cur === x.id), height: 30, padding: "0 10px", fontSize: 13 }}>{x.label}</button>
+              );
+            })}
+          </div>
+          {(a.sfx || sfxDefault) !== "none" && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                <span style={{ fontSize: 13, color: C.sub, width: 64, flexShrink: 0 }}>소리 크기</span>
+                <input type="range" min={0.1} max={1} step={0.05} value={a.sfxVol ?? 0.6} onChange={(e) => onChange((y) => ({ ...y, sfxVol: Number(e.target.value) }), all)} style={{ flex: 1, accentColor: C.accent }} />
+                <span style={{ fontSize: 12.5, color: C.sub, width: 36, textAlign: "right" }}>{Math.round((a.sfxVol ?? 0.6) * 100)}%</span>
+              </div>
+              {what !== "자막" && (
+                <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
+                  <span style={{ flex: 1, fontSize: 13, color: C.sub }}>사라질 때도 소리</span>
+                  <Toggle on={Boolean(a.sfxOut)} onChange={(v) => set((y) => ({ ...y, sfxOut: v || undefined }), "out")} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>적용 범위 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 고른 뒤 효과를 누르세요</span></div>
           {typeof count === "number" ? (

@@ -263,4 +263,42 @@ function animAt(an, local, a, b) {
   return r;
 }
 
-module.exports = { animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };
+/* ── 애니메이션 효과음 — src/components/admin/studio-video/timeline.ts 와 같은 계산 ── */
+const SFX_AUTO = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click" };
+function sfxName(kind, set, dflt, isText) {
+  if (!kind) return null;
+  const v = set || dflt;
+  if (v === "none") return null;
+  if (v !== "auto") return v;
+  return isText ? "key-press" : SFX_AUTO[kind] || null;
+}
+function sfxEvents(p, items, order = clipOrder(p)) {
+  const ev = [];
+  for (const l of p.layers || []) {
+    if (l.off || (l.type !== "image" && l.type !== "text")) continue;
+    const an = animOf(p, l);
+    if (!an || !l.anim) continue;
+    const cov = layerItems(p, l, items, order);
+    if (!cov.length) continue;
+    const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
+    if (!sp) continue;
+    const a = cov[0].start + sp.a, b = cov[0].start + sp.b;
+    const vol = Math.max(0, Math.min(1, l.anim.sfxVol ?? 0.6));
+    const n1 = sfxName(an.in, l.anim.sfx, "auto", l.type === "text");
+    if (n1) ev.push({ t: a, name: n1, vol });
+    const n2 = l.anim.sfxOut ? sfxName(an.out, l.anim.sfx, "auto", l.type === "text") : null;
+    if (n2) ev.push({ t: Math.max(a, b - Math.min(an.dur, (b - a) / 3)), name: n2, vol });
+  }
+  const sub = (p.settings && p.settings.subtitle) || {};
+  for (const it of items) {
+    const sa = subAnimOf(p, it.clip);
+    const st = subStyleOf(p.settings || {}, it.clip).anim;
+    if (!sa || !st || sub.on === false || it.clip.sub === false) continue;
+    const n = sfxName(sa.in, st.sfx, "none", true);
+    if (n) ev.push({ t: it.start, name: n, vol: Math.max(0, Math.min(1, st.sfxVol ?? 0.6)) });
+  }
+  ev.sort((x, y) => x.t - y.t);
+  return ev.filter((e, i) => !i || e.t - ev[i - 1].t > 0.12);
+}
+
+module.exports = { sfxEvents, animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };

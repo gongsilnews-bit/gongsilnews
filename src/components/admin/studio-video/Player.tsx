@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { sfxEvents, animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
 
@@ -104,6 +104,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const musicEls = useRef<Record<string, HTMLAudioElement | null>>({});
   const [t, setT] = useState(0);
   const lastFrame = useRef(0);
+  const sfxPrev = useRef(-1); // 효과음 — 지난번 확인한 시각 (그 사이에 있는 소리를 낸다)
   const [playing, setPlaying] = useState(false);
   const tRef = useRef(0);
   const playRef = useRef(false);
@@ -111,6 +112,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const curClip = useRef<string>("");
   const lastReport = useRef(0);
 
+  const sfxList = useMemo(() => sfxEvents(project, flat.items), [project, flat]); // 애니메이션 효과음 (굽기와 같은 목록)
   const itemAt = (time: number) => flat.items.find((x) => time >= x.start && time < x.start + x.dur) || flat.items[flat.items.length - 1];
   const item = itemAt(t);
   const clip = item?.clip;
@@ -256,6 +258,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       time = flat.total;
       stop();
     }
+    // 효과음 — 지난 프레임과 지금 사이에 있는 것 (멀리 건너뛰면 내지 않는다)
+    if (sfxPrev.current >= 0 && time - sfxPrev.current < 0.5)
+      for (const e of sfxList) if (e.t > sfxPrev.current - 0.001 && e.t <= time) {
+        try {
+          const au = new Audio(`/studio-sfx/${e.name}.mp3`);
+          au.volume = Math.min(1, e.vol);
+          void au.play().catch(() => {});
+        } catch {}
+      }
+    sfxPrev.current = time;
     tRef.current = time;
     const it = itemAt(time);
     const changed = it && it.clip.id !== curClip.current;
@@ -302,6 +314,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const v = Math.max(0, Math.min(flat.total, time));
     tRef.current = v;
     clock.current = { t0: performance.now(), base: v };
+    sfxPrev.current = v - 0.02; // 옮긴 자리 바로 그 시각의 효과음도 (효과 미리 보기)
     setT(v);
     onTime?.(v);
     const it = itemAt(v);

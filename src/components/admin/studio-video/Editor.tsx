@@ -2271,7 +2271,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         })()}
         {panel === "subanim" && (
           // 메인자막 애니메이션 — 메인자막 칸의 적용 범위(전체 / 고른 클립만)를 따른다
-          <AnimPanel what="자막" text="자막" value={subNow().anim} onClose={() => setPanel("")} onBack={() => setPanel("subtitle")}
+          <AnimPanel what="자막" text="자막" sfxDefault="none" value={subNow().anim} onClose={() => setPanel("")} onBack={() => setPanel("subtitle")}
             onPreview={(part) => {
               // 고른 클립(없으면 지금 클립)의 첫 자막 조각
               const it = (subSel && flat.items.find((x) => selected.includes(x.clip.id))) || cur || flat.items[0];

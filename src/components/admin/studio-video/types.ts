@@ -7,7 +7,11 @@ export type Motion = "auto" | "none" | "zoomIn" | "zoomOut" | "leftRight" | "rig
 export type MotionPower = "low" | "mid" | "high";
 // 사진 올리기·화면 글자 애니메이션 (브루처럼) — 등장·퇴장 / 강조 / 확대. auto = 레이어 차례대로 돌려 쓰기
 export type AnimIn = "auto" | "fade" | "fly" | "zoom" | "pop" | "spin" | "flip" | "roll";
-export type LayerAnim = { in?: AnimIn; out?: AnimIn; emph?: "pulse" | "shake" | "blink"; grow?: "grow" | "shrink"; dur?: number /* 등장·퇴장 걸리는 초 (기본 0.5) */ };
+export type LayerAnim = {
+  in?: AnimIn; out?: AnimIn; emph?: "pulse" | "shake" | "blink"; grow?: "grow" | "shrink"; dur?: number /* 등장·퇴장 걸리는 초 (기본 0.5) */;
+  // 효과음 — 나타날 때 (auto = 효과에 맞게, none = 없음, 그 밖 = 소리 이름 public/studio-sfx). 없으면 사진·글자는 자동, 자막은 없음
+  sfx?: string; sfxVol?: number /* 0~1, 기본 0.6 */; sfxOut?: boolean /* 사라질 때도 */;
+};
 
 export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */ };
 
