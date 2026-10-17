@@ -93,6 +93,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   // 단어 복사 보관함 — 촬영 영상은 그 단어를 말한 구간, AI 목소리는 글자
   const wordClip = useRef<{ kind: "src"; asset: string; runs: { s: number; e: number; words: Word[] }[] } | { kind: "text"; text: string } | null>(null);
   const lastCopy = useRef<"clips" | "words">("clips");
+  const keepWordOnPlay = useRef(false); // 상세 편집 [▶ 이 단어 듣기]는 고른 단어를 그대로 둔다
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
@@ -535,6 +536,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const t = wordTimes(f.clip, pref.current.settings).find((x) => x.i === i);
       if (!t) return;
       seekClip(clipId, t.s);
+      keepWordOnPlay.current = true;
       setTimeout(() => player.current?.play(), 30);
       const ms = ((t.e - t.s) * 1000) / Math.max(0.1, rate || 1);
       setTimeout(() => player.current?.pause(), 30 + ms);
@@ -1581,6 +1583,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (re.length) revoice(re);
     say(made.length > 1 ? `구간 ${made.length}개를 붙여넣었어요` : "붙여넣었어요");
   };
+
+  // 재생을 시작하면(스페이스바·▶) 고른 단어를 푼다 — 단추 막대가 재생 화면을 가리지 않게
+  useEffect(() => {
+    if (!playing) return;
+    if (keepWordOnPlay.current) {
+      keepWordOnPlay.current = false;
+      return;
+    }
+    setSelWord(null);
+    setSelWordSet(null);
+  }, [playing]);
 
   /* ── 키보드 ── */
   useEffect(() => {
