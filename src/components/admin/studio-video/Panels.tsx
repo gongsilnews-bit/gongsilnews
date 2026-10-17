@@ -13,7 +13,7 @@ import { ColorPick, FontPick } from "./Pickers";
 import { DEFAULT_FONT } from "@/lib/studio-video/fonts";
 
 // 성우 얼굴 동그라미 — public/studio-voices/{id}.webp, 없으면 이름 첫 글자
-function VoiceFace({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
+export function VoiceFace({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
   const [bad, setBad] = useState(false);
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.line, border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, color: C.sub }}>
@@ -316,8 +316,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
 }
 
 /* ── AI 목소리 ── */
-export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClose }: { project: Project; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
-  const cur = project.settings.voice;
+export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose }: { project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
+  const cur = initial ?? project?.settings.voice ?? { id: "Charon", speed: 1, volume: 1 };
   const [id, setId] = useState(cur.id);
   const [speed, setSpeed] = useState(cur.speed || 1);
   const [volume, setVolume] = useState(cur.volume ?? 1);
@@ -356,7 +356,7 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
   const tab = (on: boolean): React.CSSProperties => ({ height: 46, padding: "0 4px", border: 0, borderBottom: `3px solid ${on ? C.accent : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 17, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
   const head: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 };
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 900, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 5100, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: "min(1000px, calc(100vw - 32px))", height: "min(760px, calc(100vh - 32px))", display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text }}>
         {/* 제목 */}
         <div style={{ display: "flex", alignItems: "center", padding: "18px 22px 12px" }}>
@@ -433,9 +433,10 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
         {/* 넣기 */}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 22px 18px" }}>
           {/* 단어를 골랐으면 — 클립은 그대로, 고른 단어만 새 목소리로 (소리 안에서 잇는다) */}
-          {wordCount > 0 && <Btn primary onClick={() => onApply({ id, speed, volume, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={17} />고른 단어만 ({wordCount}개)</Btn>}
-          {targetCount > 0 && <Btn primary={wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={17} />고른 클립 {targetCount}개에만</Btn>}
-          <Btn primary={targetCount === 0 && wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={17} />모든 클립에 쓰기</Btn>
+          {pickLabel && <Btn primary onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={17} />{pickLabel}</Btn>}
+          {!pickLabel && wordCount > 0 && <Btn primary onClick={() => onApply({ id, speed, volume, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={17} />고른 단어만 ({wordCount}개)</Btn>}
+          {!pickLabel && targetCount > 0 && <Btn primary={wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={17} />고른 클립 {targetCount}개에만</Btn>}
+          {!pickLabel && <Btn primary={targetCount === 0 && wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={17} />모든 클립에 쓰기</Btn>}
         </div>
       </div>
     </div>

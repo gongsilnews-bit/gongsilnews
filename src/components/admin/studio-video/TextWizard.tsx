@@ -11,6 +11,7 @@ import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
+import { VoiceFace, VoicePanel } from "./Panels";
 
 export type VideoStyle = { id: string; name: string; desc: string; icon: string; prompt: string; voice: string; speed: number; music: string; ratio?: Ratio; subtitle?: "long" | "short"; chars: number };
 
@@ -52,6 +53,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const [subLen, setSubLen] = useState<"long" | "short">("long");
   const [voiceOn, setVoiceOn] = useState(true);
   const [voiceId, setVoiceId] = useState("Charon");
+  const [voicePick, setVoicePick] = useState(false); // 목소리 고르기 창 (편집 화면과 같은 얼굴 카드 창)
   const [speed, setSpeed] = useState(1);
   const [musicOn, setMusicOn] = useState(true);
   const [mood, setMood] = useState<string>("잔잔한");
@@ -358,11 +360,23 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
               <Toggle on={voiceOn} onChange={setVoiceOn} />
               {voiceOn && (
                 <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <select value={voiceId} onChange={(e) => setVoiceId(e.target.value)} style={{ ...input, flex: 1 }}>
-                      {STUDIO_VOICES.map((v) => <option key={v.id} value={v.id}>{v.name} · {v.kind} ({v.age}){v.recommended ? " · 추천" : ""}</option>)}
-                    </select>
-                  </div>
+                  {/* 목록 대신 — 고른 성우 얼굴 카드, 누르면 얼굴 카드 창 */}
+                  {(() => {
+                    const v = STUDIO_VOICES.find((x) => x.id === voiceId);
+                    return (
+                      <button type="button" onClick={() => setVoicePick(true)} title="눌러서 목소리 바꾸기"
+                        style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}>
+                        {v && <VoiceFace id={v.id} name={v.name} size={56} />}
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{v?.name || "목소리"}</span>
+                          {v && <span style={{ display: "block", fontSize: 14, color: C.sub, marginTop: 3 }}>{v.kind} · {v.age} · {v.mood}</span>}
+                        </span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }}>바꾸기<Icon name="chevron" size={14} /></span>
+                      </button>
+                    );
+                  })()}
+                  {voicePick && <VoicePanel initial={{ id: voiceId, speed }} pickLabel="이 목소리로" targetCount={0}
+                    onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setVoicePick(false); }} onClose={() => setVoicePick(false)} />}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 14, color: C.sub, width: 50 }}>빠르기</span>
                     <input type="range" min={0.7} max={1.6} step={0.05} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ flex: 1, accentColor: C.accent }} />
