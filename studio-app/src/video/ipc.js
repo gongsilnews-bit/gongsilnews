@@ -50,7 +50,7 @@ function consoleOptions(main, kind) {
     return { width: W, height: H, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - H - 20, minWidth: 320, minHeight: 420, frame: false, backgroundColor: "#111317", title: "녹화 중", alwaysOnTop: true, autoHideMenuBar: true, show: true };
   }
   const wa = screen.getDisplayMatching(main.getBounds()).workArea;
-  const W = Math.min(1240, wa.width - 40), H = Math.min(760, wa.height - 40);
+  const W = Math.min(1000, wa.width - 40), H = Math.min(980, wa.height - 40); // 녹화하기 창(980px)이 그대로 들어가게
   return {
     width: W,
     height: H,

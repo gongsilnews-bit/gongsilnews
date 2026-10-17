@@ -23,14 +23,16 @@ export type MiniProps = {
   setPcVol: (v: number) => void;
   setPcMuted: (v: boolean) => void;
   onStop: () => void;
+  onBig: () => void; // [크게 보기] — 녹화하기 창으로
 };
 
 /** 열기 — 스튜디오 창의 글꼴·스타일을 옮겨 담은 빈 창. 닫으면 onGone */
-export function openMiniWindow(onGone: () => void): { w: Window; root: HTMLElement; close: () => void } | null {
-  const w = window.open("about:blank", `gsv-mini-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+export function openMiniWindow(onGone: () => void, kind: "mini" | "console" = "mini"): { w: Window; root: HTMLElement; close: () => void } | null {
+  // console = 녹화 중 [영상 녹화하기] 창 (앱 틀 밖에 혼자), mini = [작게 하기] 창 (카톡 크기)
+  const w = window.open("about:blank", `gsv-${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
   if (!w) return null;
   const d = w.document;
-  d.title = "녹화 중";
+  d.title = kind === "mini" ? "녹화 중" : "영상 녹화하기";
   document.querySelectorAll('link[rel="stylesheet"], style').forEach((n) => {
     const c = n.cloneNode(true) as HTMLElement;
     if (n instanceof HTMLLinkElement) (c as HTMLLinkElement).href = n.href;
@@ -163,7 +165,7 @@ export function RecordMini(p: MiniProps) {
         <span style={{ flex: 1 }} />
         {winBtn("winMin", "작게 (작업 표시줄로)", () => void b.record.console?.("min"))}
         {winBtn(big ? "winRestore" : "winMax", big ? "원래 크기로" : "크게 (화면 가득)", () => void toggleBig())}
-        {winBtn("close", "닫고 스튜디오 창 크게 보기", () => void b.record.console?.("big"), true)}
+        {winBtn("close", "닫고 녹화하기 창 크게 보기", p.onBig, true)}
       </div>
       {/* 내용만큼만 — PC 소리 줄 바로 아래에 녹화 끝내기 줄 (남는 칸은 맨 아래로) */}
       <div style={{ flex: "0 1 auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: 12, overflowY: "auto" }}>
@@ -192,7 +194,7 @@ export function RecordMini(p: MiniProps) {
           <span style={{ fontSize: 16, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{fmtTime(p.sec, false)}</span>
         </span>
         <span style={{ flex: 1 }} />
-        <button type="button" onClick={() => void b.record.console?.("big")} style={{ height: 40, padding: "0 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>크게 보기</button>
+        <button type="button" onClick={p.onBig} style={{ height: 40, padding: "0 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>크게 보기</button>
         <button type="button" onClick={p.onStop} style={{ height: 40, padding: "0 14px", borderRadius: 6, border: 0, background: C.danger, color: "#fff", fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>■ 녹화 끝내기</button>
       </div>
     </>

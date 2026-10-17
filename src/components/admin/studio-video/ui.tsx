@@ -168,13 +168,13 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
  * 공용 창. controls 면 오른쪽 위에 윈도우처럼 [— 작게][□ 크게][✕ 닫기].
  *  작게: 창을 숨기고 아래에 작은 막대만 (안의 내용은 그대로 살아 있다 — 카메라 미리보기 등). onMinimize 를 주면 그걸 대신 한다
  */
-export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote }: { title?: string; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode }) {
+export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote, win }: { title?: string; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode; /** 혼자 떠 있는 창 안 — 창 전체를 채우고, 위 줄 끌기·크게는 그 윈도우 창을 */ win?: { drag: (e: React.PointerEvent<HTMLDivElement>) => void; max: () => void; big: boolean } }) {
   const [mini, setMini] = React.useState(false);
   const [big, setBig] = React.useState(false);
   // 제목 줄을 잡고 끌면 창이 옮겨진다 (뒤 화면을 보려고 — 녹화 창 등). 제목 줄은 화면 밖으로 나가지 않게
   const [pos, setPos] = React.useState({ x: 0, y: 0 });
   const box = React.useRef<HTMLDivElement>(null);
-  const drag = (e: React.PointerEvent<HTMLDivElement>) => {
+  const dragIn = (e: React.PointerEvent<HTMLDivElement>) => {
     if (big || e.button !== 0 || (e.target as HTMLElement).closest("button, input, select, a")) return;
     const r = box.current?.getBoundingClientRect();
     if (!r) return;
@@ -203,13 +203,16 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
       <Icon name={icon} size={20} />
     </button>
   );
+  const drag = win ? win.drag : dragIn;
   const minimize = () => (onMinimize ? onMinimize() : setMini(true));
   const toggleBig = () => {
+    if (win) return win.max();
     setBig((v) => !v);
     setPos({ x: 0, y: 0 });
   };
+  const isBig = win ? win.big : big;
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: win ? C.bg : mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
       {mini && (
         // 작게 한 창 — 오른쪽 아래 작은 막대. 누르면 다시 커진다
         <div style={{ position: "fixed", right: 24, bottom: 24, pointerEvents: "auto", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px 12px 18px", borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", color: C.text }}>
@@ -219,9 +222,9 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
           {onClose && <Btn onClick={onClose}><Icon name="close" size={16} />닫기</Btn>}
         </div>
       )}
-      <div ref={box} style={{ width: big ? "calc(100vw - 24px)" : width, maxWidth: big ? undefined : "94vw", height: big ? "calc(100vh - 24px)" : undefined, maxHeight: big ? undefined : "92vh", display: mini ? "none" : "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: big ? 6 : 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: !big && (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
-        <div onPointerDown={drag} onDoubleClick={() => (controls ? toggleBig() : setPos({ x: 0, y: 0 }))} title={big ? "두 번 누르면 원래 크기로" : controls ? "끌어서 창을 옮길 수 있어요 (두 번 누르면 크게)" : "끌어서 창을 옮길 수 있어요 (두 번 누르면 가운데로)"}
-          style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${C.line}`, cursor: "move", userSelect: "none" }}>
+      <div ref={box} style={win ? { width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: C.panel, color: C.text } : { width: big ? "calc(100vw - 24px)" : width, maxWidth: big ? undefined : "94vw", height: big ? "calc(100vh - 24px)" : undefined, maxHeight: big ? undefined : "92vh", display: mini ? "none" : "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: big ? 6 : 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: !big && (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
+        <div onPointerDown={drag} onDoubleClick={(e) => !(e.target as HTMLElement).closest("button") && (controls ? toggleBig() : setPos({ x: 0, y: 0 }))} title={isBig ? "두 번 누르면 원래 크기로" : controls ? "끌어서 창을 옮길 수 있어요 (두 번 누르면 크게)" : "끌어서 창을 옮길 수 있어요 (두 번 누르면 가운데로)"}
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${C.line}`, cursor: isBig && win ? "default" : "move", userSelect: "none" }}>
           {steps ? (
             <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
               {steps.map((s, i) => (
@@ -240,7 +243,7 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
           {controls ? (
             <div style={{ display: "flex", gap: 2, margin: "-6px -10px -6px 0" }}>
               {winBtn("winMin", "작게 (아래 막대로)", minimize)}
-              {winBtn(big ? "winRestore" : "winMax", big ? "원래 크기로" : "크게 (화면 가득)", toggleBig)}
+              {winBtn(isBig ? "winRestore" : "winMax", isBig ? "원래 크기로" : "크게 (화면 가득)", toggleBig)}
               {onClose && winBtn("close", "닫기", onClose, true)}
             </div>
           ) : onClose && (

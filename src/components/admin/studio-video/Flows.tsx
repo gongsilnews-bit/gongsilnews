@@ -1077,6 +1077,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const micAn = useRef<AnalyserNode | null>(null); // 작은 녹화 창의 소리 막대
   const pcAn = useRef<AnalyserNode | null>(null);
   const outVideo = useRef<MediaStream | null>(null); // 지금 녹화되는 화면 (작은 녹화 창에 보여 준다)
+  const outAll = useRef<MediaStream | null>(null); // 녹화 화면 + 소리 (녹화하기 창 미리보기)
   // 카메라 원 자리·크기 — 미리보기에서 끌어서 옮기고 모서리 점으로 크기 조절. 녹화 중에도 바로 들어가고, 다음 녹화 때도 그대로
   const [camBox, setCamBoxState] = useState<CamBox>(() => {
     try {
@@ -1121,6 +1122,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const stage = useRef<HTMLDivElement>(null);
   const dragCam = (e: React.PointerEvent, kind: "move" | "size") => {
     if (!stage.current) return;
+    const window = (e.currentTarget as HTMLElement).ownerDocument.defaultView || globalThis.window; // 녹화하기 창이 따로 떠 있어도
     e.preventDefault();
     e.stopPropagation();
     const k = 1920 / stage.current.getBoundingClientRect().width;
@@ -1145,7 +1147,16 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const [count, setCount] = useState(3);
   const [sec, setSec] = useState(0);
   const [err, setErr] = useState("");
-  const preview = useRef<HTMLVideoElement>(null);
+  const preview = useRef<HTMLVideoElement | null>(null);
+  const bindPreview = (el: HTMLVideoElement | null) => {
+    preview.current = el;
+    const st = outAll.current;
+    if (el && st && el.srcObject !== st) {
+      el.srcObject = st;
+      el.muted = true;
+      el.play().catch(() => {});
+    }
+  };
   const streams = useRef<MediaStream[]>([]);
   const rec = useRef<MediaRecorder | null>(null);
   const writes = useRef<Promise<void>>(Promise.resolve()); // 녹화 조각 쓰기 줄 (차례대로)
@@ -1572,6 +1583,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     const video = canvas.captureStream(30);
     outVideo.current = video;
     const out = new MediaStream([...video.getVideoTracks(), ...(audio ? audio.getAudioTracks() : [])]);
+    outAll.current = out;
     if (preview.current) {
       preview.current.srcObject = out;
       preview.current.muted = true;
@@ -1586,6 +1598,9 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       const stream = await buildStream();
       // 프롬프터 — 3·2·1 이 끝나는 때에 맞춰 올라가기 시작한다
       if (prUse) openPrompter(Date.now() + 3000);
+      // 녹화하기 창은 앱 틀 밖에 혼자 뜨고, 뒤의 앱 창은 내려간다 (3·2·1 전에 — 화면 녹화 첫 장면에 앱이 안 찍히게)
+      const own = Boolean(b.record.console && b.record.onMinimized); // 앱 0.1.8부터
+      if (own && openBig()) await b.record.minimize?.().catch(() => {});
       setPhase("count");
       for (let i = 3; i > 0; i--) {
         setCount(i);
@@ -1608,11 +1623,13 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       rec.current = r;
       setSec(0);
       setPhase("rec");
-      const own = Boolean(b.record.console && b.record.onMinimized); // 앱 0.1.8부터 — 작은 녹화 창을 여기서 띄운다
       await b.record.live?.(true, Date.now(), { console: own }).catch(() => {});
-      if (own) b.record.minimize?.().catch(() => {});
     } catch (e) {
       setErr(`녹화를 시작하지 못했어요: ${errText(e)}`);
+      if (bigRef.current) {
+        closeBig();
+        void b.record.live?.(true, Date.now(), { console: true }).then(() => b.record.live?.(false)).catch(() => {}); // 앱 창 다시 올리기
+      }
       closePrompter();
       setPhase("setup");
       stopAll();
@@ -1630,6 +1647,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     rec.current = null;
     b.record.live?.(false).catch(() => {}); // 작은 막대 닫고 큰 창 다시
     closeMini();
+    closeBig();
     closePrompter();
     setPhase("saving");
     await new Promise<void>((res) => {
@@ -1655,10 +1673,15 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   useEffect(() => b.record.onMiniStop?.(() => stopRef.current()), [b]);
   useEffect(() => () => void b.record.live?.(false).catch(() => {}), [b]);
 
-  /* ── 작은 녹화 창 (카톡 크기) — 녹화 중 앱 창을 내리면 뜨고, 올리면 닫힌다 ── */
-  const [mini, setMini] = useState<{ root: HTMLElement; close: () => void } | null>(null);
+  /* ── 녹화 중 창 — 녹화하기 창(앱 틀 밖에 혼자) ↔ [작게 하기] 작은 창(카톡 크기). 뒤의 앱 창은 내려가 있다 ── */
+  type Win = { root: HTMLElement; close: () => void };
+  const [mini, setMini] = useState<Win | null>(null);
+  const [bigWin, setBigWin] = useState<Win | null>(null);
+  const [bigMax, setBigMax] = useState(false);
   const miniRef = useRef(mini);
   miniRef.current = mini;
+  const bigRef = useRef(bigWin);
+  bigRef.current = bigWin;
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const closeMini = () => {
@@ -1666,25 +1689,80 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     miniRef.current = null;
     setMini(null);
   };
-  useEffect(() => {
-    const offMin = b.record.onMinimized?.(() => {
-      if (phaseRef.current !== "rec" || miniRef.current) return;
-      // 창을 윈도우에서 닫으면(Alt+F4) — 녹화는 계속, 앱 창을 다시 올린다
-      const m = openMiniWindow(() => {
-        miniRef.current = null;
-        setMini(null);
-        if (phaseRef.current === "rec") void b.record.console?.("big");
-      });
-      if (m) {
-        miniRef.current = m;
-        setMini(m);
-      }
+  const closeBig = () => {
+    bigRef.current?.close();
+    bigRef.current = null;
+    setBigWin(null);
+    setBigMax(false);
+  };
+  // 녹화하기 창 열기 — 윈도우에서 닫으면(Alt+F4) 녹화는 계속, 작은 창으로
+  const openBig = (): boolean => {
+    if (bigRef.current) return true;
+    const w = openMiniWindow(() => {
+      bigRef.current = null;
+      setBigWin(null);
+      if (phaseRef.current === "rec") openMini();
+    }, "console");
+    if (!w) return false;
+    bigRef.current = w;
+    setBigWin(w);
+    return true;
+  };
+  // 작은 창 열기 — 윈도우에서 닫으면 녹화하기 창으로
+  const openMini = (): boolean => {
+    if (miniRef.current) return true;
+    const m = openMiniWindow(() => {
+      miniRef.current = null;
+      setMini(null);
+      if (phaseRef.current === "rec") openBig();
     });
-    const offRes = b.record.onRestored?.(() => closeMini());
+    if (!m) return false;
+    miniRef.current = m;
+    setMini(m);
+    return true;
+  };
+  // [작게 하기] — 녹화하기 창 → 작은 창 (녹화하기 창이 앱 안에 있으면 앱 창을 내린다 → 작은 창)
+  const goMini = () => {
+    if (bigRef.current) {
+      if (openMini()) closeBig();
+    } else b.record.minimize?.().catch(() => {});
+  };
+  // [크게 보기] — 작은 창 → 녹화하기 창
+  const goBig = () => {
+    if (openBig()) closeMini();
+    else void b.record.console?.("big");
+  };
+  // 녹화하기 창 위 줄 끌기·크게 (그 윈도우 창을)
+  const winDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (bigMax || e.button !== 0 || (e.target as HTMLElement).closest("button, input, select, a")) return;
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    const sx = e.screenX, sy = e.screenY;
+    b.record.console?.("drag-start").catch(() => {});
+    const mv = (ev: PointerEvent) => void b.record.console?.("drag", ev.screenX - sx, ev.screenY - sy).catch(() => {});
+    const up = () => {
+      el.removeEventListener("pointermove", mv);
+      el.removeEventListener("pointerup", up);
+    };
+    el.addEventListener("pointermove", mv);
+    el.addEventListener("pointerup", up);
+  };
+  useEffect(() => {
+    // 앱 안의 녹화하기 창에서 [작게 하기] → 앱 창이 내려가면 작은 창
+    const offMin = b.record.onMinimized?.(() => {
+      if (phaseRef.current !== "rec" || miniRef.current || bigRef.current) return;
+      openMini();
+    });
+    // 앱 창을 직접 다시 올리면 — 따로 뜬 창은 닫고 앱 안에서 계속
+    const offRes = b.record.onRestored?.(() => {
+      closeMini();
+      closeBig();
+    });
     return () => {
       offMin?.();
       offRes?.();
       miniRef.current?.close();
+      bigRef.current?.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [b]);
@@ -1707,20 +1785,19 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const miniView = mini && createPortal(
     <RecordMini mode={mode} setMode={setMode} stream={outVideo.current} sec={sec} levels={levels}
       micVol={micVol} micMuted={micMuted} setMicVol={setMicVol} setMicMuted={setMicMuted}
-      pcVol={pcVol} pcMuted={pcMuted} setPcVol={setPcVol} setPcMuted={setPcMuted} onStop={() => void stop()} />,
+      pcVol={pcVol} pcMuted={pcMuted} setPcVol={setPcVol} setPcMuted={setPcMuted} onStop={() => void stop()} onBig={goBig} />,
     mini.root,
   );
   if (phase === "saving") return <Modal title=""><Working title="녹화 파일을 저장하는 중…" detail={dirShown ? `${dirShown} 폴더에 저장하고 바로 편집 화면으로 가요` : "PC에 저장하고 바로 편집 화면으로 가요"} /></Modal>;
   const split = mode === "both" ? splitRects(camBox) : null; // 반반 배치면 화면·카메라 칸
   const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: "0 16px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 });
-  return (
-    <>
-    {miniView}
+  const dialog = (
     <Modal title="영상 녹화하기" onClose={phase === "rec" ? undefined : () => { stopAll(); onCancel(); }} width={980} controls
-      // 녹화 중 [작게] = 지금 있는 [작게 하기]와 같이 스튜디오 창을 내리고 작은 막대로 (막대는 녹화에 안 찍힌다)
-      onMinimize={phase === "rec" && b.record.minimize ? () => b.record.minimize?.() : undefined}
+      win={bigWin ? { drag: winDrag, max: () => void b.record.console?.("max").then((v) => setBigMax(Boolean(v))), big: bigMax } : undefined}
+      // 녹화 중 [작게] = [작게 하기] — 작은 창(카톡 크기)으로
+      onMinimize={phase === "rec" && b.record.minimize ? goMini : undefined}
       minNote={phase === "rec" ? <span style={{ fontSize: 14, color: C.danger, fontWeight: 700 }}>● 녹화 중 {fmtTime(sec, false)}</span> : null}
-      footer={phase === "rec" ? <>{b.record.minimize && <Btn onClick={() => b.record.minimize?.()} title="스튜디오 창을 내리고 작은 막대로 (막대는 녹화에 안 찍혀요)">작게 하기</Btn>}<Btn primary danger onClick={stop} style={{ background: C.danger, borderColor: C.danger, color: "#fff" }}><Icon name="pause" size={16} />녹화 끝내기 ({fmtTime(sec, false)})</Btn></> : phase === "count" ? null : <Btn primary onClick={start}><Icon name="record" size={16} />녹화 시작</Btn>}>
+      footer={phase === "rec" ? <>{b.record.minimize && <Btn onClick={goMini} title="작은 녹화 창으로 (녹화에 안 찍혀요)">작게 하기</Btn>}<Btn primary danger onClick={stop} style={{ background: C.danger, borderColor: C.danger, color: "#fff" }}><Icon name="pause" size={16} />녹화 끝내기 ({fmtTime(sec, false)})</Btn></> : phase === "count" ? null : <Btn primary onClick={start}><Icon name="record" size={16} />녹화 시작</Btn>}>
       <div style={{ display: "flex", gap: 20, padding: 20 }}>
         <div style={{ width: 360, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
@@ -1887,7 +1964,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         <div style={{ position: "relative", background: "#000", borderRadius: 6, minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {/* 화면 + 카메라는 녹화 캔버스(1920×1080)와 같은 비율 — 카메라 원을 같은 자리·크기로 겹쳐 끌 수 있게 */}
           <div ref={stage} style={{ position: "relative", width: "100%", aspectRatio: mode === "both" ? "16 / 9" : undefined, containerType: "inline-size", display: phase !== "setup" || live ? "block" : "none" }}>
-            <video ref={preview} playsInline style={{ width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "none" : "block" }} />
+            <video ref={bindPreview} playsInline style={{ width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "none" : "block" }} />
             <video ref={liveVid} playsInline muted style={split ? { position: "absolute", ...rectPct(split.scr), objectFit: "contain", display: phase === "setup" ? "block" : "none" } : { width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "block" : "none" }} />
             {split && phase === "setup" && camBox.line > 0 && (
               <div style={{ position: "absolute", background: camBox.color, ...(camBox.layout === "lr" ? { left: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, top: 0, bottom: 0, width: `${(camBox.line / 1920) * 100}cqw` } : { top: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, left: 0, right: 0, height: `${(camBox.line / 1920) * 100}cqw` }) }} />
@@ -1931,6 +2008,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
         </div>
       </div>
     </Modal>
-    </>
   );
+  // 녹화 중 녹화하기 창이 따로 떠 있으면 그 창에, 아니면 앱 안에
+  return <>{miniView}{bigWin ? createPortal(dialog, bigWin.root) : dialog}</>;
 }
