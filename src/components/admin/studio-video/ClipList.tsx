@@ -336,9 +336,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                             </span>
                           )}
                         </span>
-                        {sep}
-                        {/* 빠른 넣기 — 내 이미지·비디오 (기본 텍스트는 [삽입 ▾]에서, 화면 바꾸기는 오른쪽 썸네일을 누르면) */}
-                        {ib("image", "내 이미지·비디오 넣기", () => p.actions.insert("mine"))}
                       </span>}</FloatBar>;
               })()}
               {words.length === 0 && <span style={{ fontSize: 15, color: C.dim, padding: "5px 0" }}>{c.type === "voice" ? "(글 없음 — 화면만 보여요)" : "(말소리 없음)"}</span>}
