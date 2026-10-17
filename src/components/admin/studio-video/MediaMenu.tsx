@@ -35,7 +35,7 @@ type Props = {
   onStart?: () => void; // 비디오 시작점 변경 (영상일 때만)
   trim?: boolean; // 녹화·촬영 영상 클립이면 "시작·끝 자르기"로
   /** 클립 소리 (원본 소리가 있는 영상 클립만) */
-  sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void };
+  sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void; none?: boolean /* 소리 없는 영상 — 흐리게 */; note?: string };
   onRange: (a: number, b: number) => void;
   onOrder?: (o: MediaOrder) => void;
   onRemove: () => void;
@@ -149,7 +149,12 @@ export default function MediaMenu(p: Props) {
         ))}
         {page === "volume" && p.sound && (
           <div style={{ padding: "8px 10px 6px" }}>
-            <VolumeControl muted={p.sound.muted} value={p.sound.value} onMute={p.sound.onMute} onVolume={p.sound.onVolume} />
+            {p.sound.none ? (
+              <div style={{ fontSize: 13.5, color: C.dim, padding: "6px 2px" }}>이 영상에는 소리가 없어요.</div>
+            ) : (
+              <VolumeControl muted={p.sound.muted} value={p.sound.value} onMute={p.sound.onMute} onVolume={p.sound.onVolume} />
+            )}
+            {p.sound.note && <div style={{ fontSize: 12, color: C.dim, marginTop: 6, lineHeight: 1.5 }}>{p.sound.note}</div>}
           </div>
         )}
         {page === "range" && (

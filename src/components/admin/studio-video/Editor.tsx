@@ -1045,16 +1045,32 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
   /* ── 원본 소리 설정 (촬영 클립) — 고른 클립 / 모든 클립 ── */
   const isSrc = (c?: Clip | null) => Boolean(c && c.type !== "voice" && c.src);
-  /** 썸네일 메뉴·화면 속성의 볼륨 = 첨부한 영상의 소리 (원래 촬영 화면 그대로인 클립·사진에는 없음). 기본 무음 */
+  /**
+   * 썸네일 메뉴의 볼륨 — 영상이 보이면 늘 있다.
+   *  넣은 영상: 그 영상 소리만 (클립 볼륨과 곱해진다) · 녹화·촬영 영상 자체: 원본 소리 칩과 같은 값 · 소리 없는 영상: 흐리게
+   */
   const soundOf = (c: Clip) => {
-    const a = c.visual ? project.assets[c.visual.asset] : null;
-    if (!a || a.kind !== "video" || !a.hasAudio || (c.src && c.src.asset === c.visual!.asset)) return undefined;
+    const own = !c.visual && c.src ? project.assets[c.src.asset] : c.visual && c.src && c.src.asset === c.visual.asset ? project.assets[c.src.asset] : null;
+    const a = own || (c.visual ? project.assets[c.visual.asset] : null);
+    if (!a || a.kind !== "video") return undefined;
+    const set = (fn: (x: Clip) => void, first = true) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) fn(x); }, first);
+    if (own) {
+      return {
+        none: a.hasAudio === false,
+        note: "이 클립의 원본 소리예요 (위 [원본 소리] 칩과 같은 값)",
+        muted: Boolean(c.muted),
+        value: c.volume ?? 1,
+        onMute: (v: boolean) => set((x) => { x.muted = v || undefined; }),
+        onVolume: (v: number, first: boolean) => set((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first),
+      };
+    }
     return {
-      label: "첨부한 영상의 소리 (원본 소리와 섞여요)",
+      none: a.hasAudio === false,
+      note: "화면에 넣은 영상의 소리예요 · 위 목소리 칩의 클립 볼륨과 함께 커지고 작아져요",
       muted: !(c.visualVolume && c.visualVolume > 0),
       value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
-      onMute: (v: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v ? undefined : x.visualVolume || 1; }),
-      onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v > 0 ? +v.toFixed(2) : undefined; }, first),
+      onMute: (v: boolean) => set((x) => { x.visualVolume = v ? undefined : x.visualVolume || 1; }),
+      onVolume: (v: number, first: boolean) => set((x) => { x.visualVolume = v > 0 ? +v.toFixed(2) : undefined; }, first),
     };
   };
   /**
