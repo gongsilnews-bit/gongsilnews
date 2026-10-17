@@ -127,7 +127,15 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
           setEdit(false);
         }}>
         <input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus placeholder="화면에 나올 자막"
-          onKeyDown={(e) => { if (e.key === "Enter") { p.actions.editSub(c.id, draft); setEdit(false); } if (e.key === "Escape") setEdit(false); }}
+          // 엔터 = 자막 바꾸기 (한글을 치는 중이어도 칸에 보이는 글 그대로), Esc = 그만두기
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              p.actions.editSub(c.id, e.currentTarget.value);
+              setEdit(false);
+            }
+            if (e.key === "Escape") setEdit(false);
+          }}
           style={{ flex: 1, minWidth: 200, height: 34, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15, fontFamily: FONT }} />
         <ActionBtn icon="check" label="자막 바꾸기" onClick={() => { p.actions.editSub(c.id, draft); setEdit(false); }} />
         {custom && c.type !== "silence" && <ActionBtn icon="undo" label="말한 그대로" onClick={() => { p.actions.editSub(c.id, null); setEdit(false); }} />}
@@ -247,11 +255,20 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 if (draft === clipText(c)) setEditing(false);
               }}>
               <textarea value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus rows={2}
+                // 엔터 = 고치기 끝 (줄 바꿈은 Shift+엔터), Esc = 그만두기
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    p.actions.editText(c.id, e.currentTarget.value);
+                    setEditing(false);
+                  }
+                  if (e.key === "Escape") setEditing(false);
+                }}
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, borderRadius: 6, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 16, lineHeight: 1.5, fontFamily: FONT, resize: "vertical" }} />
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                 <ActionBtn icon="check" label="고치기 끝" onClick={() => { p.actions.editText(c.id, draft); setEditing(false); }} />
                 <ActionBtn icon="close" label="그만두기" onClick={() => setEditing(false)} />
-                {c.type === "voice" && <span style={{ fontSize: 13, color: C.dim, alignSelf: "center" }}>고치면 AI 목소리를 새로 만들어요</span>}
+                {c.type === "voice" && <span style={{ fontSize: 13, color: C.dim, alignSelf: "center" }}>엔터를 누르면 고쳐져요 · 고치면 AI 목소리를 새로 만들어요</span>}
               </div>
             </div>
           ) : (
