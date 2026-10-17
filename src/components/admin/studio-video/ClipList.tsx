@@ -375,9 +375,9 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       // 이 단어만 다른 AI 목소리 — 아래 주황 줄
                       boxShadow: w.v && !w.del ? "inset 0 -3px 0 #f59e0b" : undefined,
                       color: isSel ? "#fff" : w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {/* 목소리를 만드는 동안 — 단어 앞에 돌아가는 동그라미 (고른 단어마다, 고른 단어가 없으면 모든 단어) */}
+                    {busy && (p.selWord?.clip === c.id ? isSel : true) && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginRight: 6, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${isSel ? "#fff" : C.accent}`, borderRightColor: "transparent" }} />}
                     {w.w}
-                    {/* 목소리를 만드는 동안 — 고른 단어 칸 안에 돌아가는 동그라미 (고른 단어가 없으면 마지막 단어에) */}
-                    {busy && (p.selWord?.clip === c.id ? isSel : i === words.length - 1) && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginLeft: 7, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} />}
                   </button>
                   </span>
                   </React.Fragment>
