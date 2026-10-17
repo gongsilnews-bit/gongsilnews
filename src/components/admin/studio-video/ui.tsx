@@ -180,10 +180,11 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
     if (!r) return;
     const sx = e.clientX - pos.x;
     const sy = e.clientY - pos.y;
-    const base = { left: r.left - pos.x, top: r.top - pos.y, w: r.width };
+    const base = { left: r.left - pos.x, top: r.top - pos.y, w: r.width, h: r.height };
     const move = (ev: PointerEvent) => {
-      const x = Math.min(Math.max(ev.clientX - sx, 80 - base.left - base.w), window.innerWidth - 80 - base.left);
-      const y = Math.min(Math.max(ev.clientY - sy, -base.top), window.innerHeight - 60 - base.top);
+      // 창 전체가 화면 안에 남게 — 아래 단추([녹화 끝내기] 등)가 화면 밖으로 사라지지 않게 (2026-10-17)
+      const x = Math.min(Math.max(ev.clientX - sx, -base.left), Math.max(-base.left, window.innerWidth - base.left - base.w));
+      const y = Math.min(Math.max(ev.clientY - sy, -base.top), Math.max(-base.top, window.innerHeight - base.top - base.h));
       setPos({ x, y });
     };
     const up = () => {
