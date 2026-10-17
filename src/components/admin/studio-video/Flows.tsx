@@ -880,8 +880,17 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
 /* ── 영상 녹화하고 바로 편집하기 ── */
 // 화면 + 카메라의 카메라 — 녹화 캔버스(1920×1080) 기준 가운데(cx, cy)·반지름(r, 사각형은 한 변의 절반), 모양, 테두리 두께(line)·색(color)
 // 배치(layout) — pip: 화면 위에 작은 카메라, lr: 좌우 반반, tb: 상하 반반. swap: 반반일 때 화면·카메라 자리 바꾸기
-export type CamBox = { cx: number; cy: number; r: number; shape: "circle" | "square"; line: number; color: string; layout: "pip" | "lr" | "tb"; swap: boolean };
-export const CAM_DEFAULT: CamBox = { cx: 1920 - 210, cy: 1080 - 210, r: 170, shape: "circle", line: 6, color: "#ffffff", layout: "pip", swap: false };
+// sx·sy·sz — 반반일 때 화면 칸에 보일 곳 (0 = 왼쪽/위 끝, 0.5 = 가운데, 1 = 오른쪽/아래 끝)·확대 (1 = 칸을 꽉 채운 크기)
+export type CamBox = { cx: number; cy: number; r: number; shape: "circle" | "square"; line: number; color: string; layout: "pip" | "lr" | "tb"; swap: boolean; sx: number; sy: number; sz: number };
+export const CAM_DEFAULT: CamBox = { cx: 1920 - 210, cy: 1080 - 210, r: 170, shape: "circle", line: 6, color: "#ffffff", layout: "pip", swap: false, sx: 0.5, sy: 0.5, sz: 1 };
+const clamp01 = (v: unknown, d = 0.5) => (typeof v === "number" && isFinite(v) ? Math.min(1, Math.max(0, v)) : d);
+/** 반반 화면 칸 — 화면을 그릴 네모 (칸보다 크면 칸 밖은 잘린다). 녹화 캔버스와 미리보기가 같은 계산 */
+export const panRect = (cell: Rect, vw: number, vh: number, b: CamBox): Rect => {
+  const [X, Y, W, H] = cell;
+  const k = Math.max(W / vw, H / vh) * b.sz;
+  const dw = vw * k, dh = vh * k;
+  return [X + (W - dw) * b.sx, Y + (H - dh) * b.sy, dw, dh];
+};
 export type Rect = [number, number, number, number]; // x, y, 너비, 높이 (캔버스 px)
 export const splitRects = (b: CamBox): { scr: Rect; cam: Rect } | null => {
   if (b.layout === "pip") return null;
@@ -903,6 +912,9 @@ export const fitCamBox = (b: CamBox): CamBox => {
     color: /^#[0-9a-f]{6}$/i.test(b.color) ? b.color : CAM_DEFAULT.color,
     layout: b.layout === "lr" || b.layout === "tb" ? b.layout : "pip",
     swap: !!b.swap,
+    sx: clamp01(b.sx),
+    sy: clamp01(b.sy),
+    sz: typeof b.sz === "number" && isFinite(b.sz) ? Math.min(3, Math.max(1, b.sz)) : 1,
   };
 };
 // 테두리는 안쪽으로 그려서 미리보기(CSS 테두리)와 크기가 같게
@@ -1124,6 +1136,30 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   };
   const dirShown = saveDir || defaultDir;
   const stage = useRef<HTMLDivElement>(null);
+  // 반반 화면 칸 — 끌어서 보일 곳 옮기기 (녹화 중에도)
+  const dragPan = (e: React.PointerEvent) => {
+    const sp = splitRects(camBoxRef.current);
+    if (!stage.current || !sp) return;
+    const window = (e.currentTarget as HTMLElement).ownerDocument.defaultView || globalThis.window;
+    e.preventDefault();
+    e.stopPropagation();
+    const k = 1920 / stage.current.getBoundingClientRect().width;
+    const vv = liveVid.current;
+    const vw = vv?.videoWidth || 1920, vh = vv?.videoHeight || 1080;
+    const s = { x: e.clientX, y: e.clientY, ...camBoxRef.current };
+    const mv = (ev: PointerEvent) => {
+      const [, , dw, dh] = panRect(sp.scr, vw, vh, camBoxRef.current);
+      const ox = dw - sp.scr[2], oy = dh - sp.scr[3]; // 칸 밖으로 넘치는 만큼만 옮길 수 있다
+      const dx = (ev.clientX - s.x) * k, dy = (ev.clientY - s.y) * k;
+      setCamBox({ ...camBoxRef.current, sx: ox > 1 ? s.sx - dx / ox : 0.5, sy: oy > 1 ? s.sy - dy / oy : 0.5 });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up);
+  };
   const dragCam = (e: React.PointerEvent, kind: "move" | "size") => {
     if (!stage.current) return;
     const window = (e.currentTarget as HTMLElement).ownerDocument.defaultView || globalThis.window; // 녹화하기 창이 따로 떠 있어도
@@ -1554,7 +1590,16 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       const sp = splitRects(cb);
       if (sp) {
         // 반반 — 화면·카메라 모두 칸을 꽉 채우게 (가운데 기준, 넘치는 곳은 잘라냄 — 검은 띠 없이, 사장님 2026-10-17), 사이에 선
-        fit(sv, ...sp.scr, true);
+        {
+          const [X, Y, W, H] = sp.scr;
+          const [dx, dy, dw, dh] = panRect(sp.scr, sv.videoWidth || 1920, sv.videoHeight || 1080, cb);
+          g.save();
+          g.beginPath();
+          g.rect(X, Y, W, H);
+          g.clip();
+          g.drawImage(sv, dx, dy, dw, dh);
+          g.restore();
+        }
         fit(cv, ...sp.cam, true);
         if (cb.line > 0) {
           g.fillStyle = cb.color;
@@ -1907,6 +1952,15 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                     <input type="range" min={80} max={400} value={camBox.r} onChange={(e) => setCamBox({ ...camBox, r: Number(e.target.value) })} style={{ flex: 1, accentColor: C.accent }} />
                   </div>
                   </>}
+                  {camBox.layout !== "pip" && (
+                    // 반반 — 화면 칸 확대 (미리보기에서 끌면 보일 곳이 옮겨져요)
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13.5, color: C.sub, width: 64, flexShrink: 0 }}>화면 확대</span>
+                      <input type="range" min={1} max={3} step={0.05} value={camBox.sz} onChange={(e) => setCamBox({ ...camBox, sz: Number(e.target.value) })} style={{ flex: 1, accentColor: C.accent }} />
+                      <span style={{ fontSize: 12.5, color: C.sub, width: 38, textAlign: "right" }}>{Math.round(camBox.sz * 100)}%</span>
+                      <button type="button" onClick={() => setCamBox({ ...camBox, sx: 0.5, sy: 0.5, sz: 1 })} title="화면을 가운데·처음 크기로" style={{ height: 26, padding: "0 8px", borderRadius: 4, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>가운데로</button>
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ fontSize: 13.5, color: C.sub, width: 64, flexShrink: 0 }}>{camBox.layout === "pip" ? "테두리" : "가운데 선"}</span>
                     <input type="range" min={0} max={30} value={camBox.line} onChange={(e) => setCamBox({ ...camBox, line: Number(e.target.value) })} style={{ flex: 1, accentColor: C.accent }} />
@@ -1919,7 +1973,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                     ))}
                     <input type="color" value={camBox.color} onChange={(e) => setCamBox({ ...camBox, color: e.target.value })} title="다른 색 고르기" style={{ width: 26, height: 24, padding: 0, border: "none", background: "transparent", cursor: "pointer" }} />
                   </div>
-                  <div style={{ fontSize: 12, color: C.dim }}>{camBox.layout === "pip" ? "미리보기에서 카메라를 끌어 옮기고, 흰 점을 끌어 크기를 바꿔요. 녹화 중에는 흰 점이 숨고, 크기 막대로 바꿀 수 있어요." : "화면과 카메라 모두 칸을 꽉 채워요 (가운데를 기준으로 넘치는 곳은 잘려요). 녹화 중에도 바로 바뀌어요."}</div>
+                  <div style={{ fontSize: 12, color: C.dim }}>{camBox.layout === "pip" ? "미리보기에서 카메라를 끌어 옮기고, 흰 점을 끌어 크기를 바꿔요. 녹화 중에는 흰 점이 숨고, 크기 막대로 바꿀 수 있어요." : "화면과 카메라 모두 칸을 꽉 채워요. 미리보기에서 화면을 끌면 보일 곳이 옮겨지고, [화면 확대]로 더 크게 볼 수 있어요. 녹화 중에도 바로 바뀌어요."}</div>
                 </div>
             </div>
           )}
@@ -1984,7 +2038,15 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           {/* 화면 + 카메라는 녹화 캔버스(1920×1080)와 같은 비율 — 카메라 원을 같은 자리·크기로 겹쳐 끌 수 있게 */}
           <div ref={stage} style={{ position: "relative", width: "100%", aspectRatio: mode === "both" ? "16 / 9" : undefined, containerType: "inline-size", display: phase !== "setup" || live ? "block" : "none" }}>
             <video ref={bindPreview} playsInline style={{ width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "none" : "block" }} />
-            <video ref={liveVid} playsInline muted style={split ? { position: "absolute", ...rectPct(split.scr), objectFit: "cover", display: phase === "setup" ? "block" : "none" } : { width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "block" : "none" }} />
+            <video ref={liveVid} playsInline muted style={split ? (() => {
+              const lv = liveVid.current;
+              const [bx, by, bw, bh] = panRect(split.scr, lv?.videoWidth || 1920, lv?.videoHeight || 1080, camBox);
+              const [X, Y, W, H] = split.scr;
+              const pc = (v: number, d: number) => `${Math.max(0, (v / d) * 100).toFixed(3)}%`;
+              return { position: "absolute", ...rectPct([bx, by, bw, bh]), objectFit: "fill", clipPath: `inset(${pc(Y - by, bh)} ${pc(bx + bw - X - W, bw)} ${pc(by + bh - Y - H, bh)} ${pc(X - bx, bw)})`, display: phase === "setup" ? "block" : "none" } as React.CSSProperties;
+            })() : { width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "block" : "none" }} />
+            {/* 반반 화면 칸 — 끌어서 보일 곳 옮기기 (녹화 중에도) */}
+            {split && <div onPointerDown={dragPan} title="끌어서 보일 곳 옮기기" style={{ position: "absolute", ...rectPct(split.scr), cursor: "grab", touchAction: "none" }} />}
             {split && phase === "setup" && camBox.line > 0 && (
               <div style={{ position: "absolute", background: camBox.color, ...(camBox.layout === "lr" ? { left: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, top: 0, bottom: 0, width: `${(camBox.line / 1920) * 100}cqw` } : { top: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, left: 0, right: 0, height: `${(camBox.line / 1920) * 100}cqw` }) }} />
             )}
