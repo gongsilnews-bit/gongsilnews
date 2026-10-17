@@ -73,7 +73,7 @@ function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string
   );
 }
 
-export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange, onClose, onBack }: {
+export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange, onClose, onBack, onPreview }: {
   value?: LayerAnim;
   what: string; // 사진 · 글자 · 자막
   thumb?: string; // 카드 시연 그림
@@ -85,15 +85,20 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
   onChange: (fn: (a: LayerAnim) => LayerAnim, all: boolean) => void;
   onClose: () => void;
   onBack?: () => void; // 앞 칸으로 (메인자막 칸)
+  /** 효과를 고르면 미리보기에서 그 부분을 바로 틀어 보여 준다 (등장: 처음, 퇴장: 끝, 강조·확대: 처음부터 조금) */
+  onPreview?: (part: "in" | "out" | "all") => void;
 }) {
   const [tab, setTab] = useState<"inout" | "emph" | "grow">("inout");
   const [side, setSide] = useState<"in" | "out">("in");
   const [all, setAll] = useState(false);
   const a = value || {};
-  const set = (fn: (a: LayerAnim) => LayerAnim) => onChange(fn, all);
+  const set = (fn: (a: LayerAnim) => LayerAnim, part: "in" | "out" | "all" = "all") => {
+    onChange(fn, all);
+    setTimeout(() => onPreview?.(part), 30); // 바뀐 값이 들어간 뒤에
+  };
   // 등장을 고르면 — 퇴장이 비었거나 등장과 같았으면 퇴장도 같은 효과 (거꾸로)
-  const pickIn = (id?: AnimIn) => set((x) => ({ ...x, in: id, out: !x.out || x.out === x.in ? id : x.out }));
-  const pickOut = (id?: AnimIn) => set((x) => ({ ...x, out: id }));
+  const pickIn = (id?: AnimIn) => set((x) => ({ ...x, in: id, out: !x.out || x.out === x.in ? id : x.out }), "in");
+  const pickOut = (id?: AnimIn) => set((x) => ({ ...x, out: id }), "out");
   const tabBtn = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const chosen = [
     a.in && `등장 · ${nameOf(a.in)}`,

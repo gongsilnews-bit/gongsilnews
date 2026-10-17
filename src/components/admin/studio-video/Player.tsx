@@ -103,6 +103,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const voiceRef = useRef<HTMLAudioElement>(null);
   const musicEls = useRef<Record<string, HTMLAudioElement | null>>({});
   const [t, setT] = useState(0);
+  const lastFrame = useRef(0);
   const [playing, setPlaying] = useState(false);
   const tRef = useRef(0);
   const playRef = useRef(false);
@@ -261,9 +262,13 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     if (it) curClip.current = it.clip.id;
     sync(time, Boolean(changed));
     syncMusic(time, false);
+    // 화면은 1초에 30번쯤 (애니메이션·사진 움직임이 부드럽게), 편집기에 알리기는 지금처럼 띄엄띄엄
+    if (now - lastFrame.current > 30 || changed) {
+      lastFrame.current = now;
+      setT(time);
+    }
     if (now - lastReport.current > 90 || changed) {
       lastReport.current = now;
-      setT(time);
       onTime?.(time);
     }
     if (playRef.current) requestAnimationFrame(tick);

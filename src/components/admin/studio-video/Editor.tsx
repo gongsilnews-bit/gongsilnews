@@ -4,8 +4,8 @@
 // 진짜 편집이 되면서 어르신도 쉽게: 모든 기능을 눈에 보이는 단추로, 되돌리기, 자동 저장
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem, Word } from "./types";
-import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
-import { GAP, clipOrder, clipText, flatten, isPhotoClip, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
+import { DRAG_MEDIA, RATIO_SIZE, errText, fmtTime, uid, videoBridge } from "./types";
+import { GAP, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
 import MediaMenu, { SoundMenu, type MediaFit, type MediaOrder } from "./MediaMenu";
 import { NewClipDialog, type NewClipSpec } from "./NewClip";
 import VideoStart from "./VideoStart";
@@ -73,6 +73,20 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [tab, setTab] = useState<(typeof TABS)[number]>("홈");
   const [panel, setPanel] = useState<PanelKind>("");
   const [animTarget, setAnimTarget] = useState(""); // 애니메이션 칸이 맡은 사진·글자 레이어
+  // 애니메이션을 고르면 미리보기에서 그 구간을 잠깐 틀어 보여 준다 (a~b = 영상 전체 시각)
+  const demoTimer = useRef(0);
+  const demoPlay = (a: number, b: number, part: "in" | "out" | "all") => {
+    const pl = player.current;
+    if (!pl || !(b > a)) return;
+    const dur = 1.6;
+    const from = part === "out" ? Math.max(a, b - dur) : a;
+    const to = part === "out" ? b - 0.02 : Math.min(b - 0.02, a + (part === "in" ? 1.4 : 2.4));
+    window.clearTimeout(demoTimer.current);
+    pl.pause();
+    pl.seek(from + 0.001);
+    pl.play();
+    demoTimer.current = window.setTimeout(() => { player.current?.pause(); player.current?.seek(to); }, Math.max(300, (to - from) * 1000));
+  };
   const [transClip, setTransClip] = useState(""); // 오른쪽 칸에 연 화면전환 (뒤 클립 id)
   const [libTab, setLibTab] = useState("mine");
   const [libOpen, setLibOpenState] = useState(() => {
@@ -2240,6 +2254,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           return <AnimPanel key={l.id} value={l.anim} what={l.type === "image" ? "사진" : "글자"} onClose={() => setPanel("")}
             thumb={l.type === "image" && l.asset ? project.assets[l.asset]?.url : undefined} text={l.type === "text" ? String(l.text || "가").trim().slice(0, 4) : undefined}
             count={(project.layers || []).filter((x) => x.type === l.type).length}
+            onPreview={(part) => {
+              const cov = layerItems(project, l, flat.items);
+              if (!cov.length) return;
+              const sp = layerSpan(project, l, flat.items, cov[0].clip.id, project.settings);
+              if (sp) demoPlay(cov[0].start + sp.a, cov[0].start + sp.b, part);
+            }}
             onChange={(fn, all) => change((p) => {
               for (const x of p.layers || []) {
                 if (all ? x.type !== l.type : x.id !== l.id) continue;
@@ -2252,6 +2272,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         {panel === "subanim" && (
           // 메인자막 애니메이션 — 메인자막 칸의 적용 범위(전체 / 고른 클립만)를 따른다
           <AnimPanel what="자막" text="자막" value={subNow().anim} onClose={() => setPanel("")} onBack={() => setPanel("subtitle")}
+            onPreview={(part) => {
+              // 고른 클립(없으면 지금 클립)의 첫 자막 조각
+              const it = (subSel && flat.items.find((x) => selected.includes(x.clip.id))) || cur || flat.items[0];
+              if (!it) return;
+              const ln = subtitleLines(it.clip, it.dur, project.settings, RATIO_SIZE[project.ratio][0])[0];
+              if (ln) demoPlay(it.start + ln.s, it.start + ln.e, part);
+            }}
             scopeNote={subSel ? `고른 클립 ${selected.length}개에만 (메인자막 칸에서 바꿔요)` : "전체 클립 (메인자막 칸에서 바꿔요)"}
             onChange={(fn) => {
               const n = fn({ ...(subNow().anim || {}) });
