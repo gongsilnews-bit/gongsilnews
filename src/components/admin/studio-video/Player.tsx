@@ -502,12 +502,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
                 <span key={c} onPointerDown={(e) => startBox("sub", c, e)} title="끌어서 글자 크기 바꾸기"
                   style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: -8, [c[1] === "w" ? "left" : "right"]: -8, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none", pointerEvents: "auto" }} />
               ))}
-              {onSubText && clip && (
-                <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditing(`sub:${clip.id}`); }} title="메인자막 글 고치기 (두 번 눌러도 돼요)"
-                  style={{ position: "absolute", right: -8, top: -38, height: 26, padding: "0 8px", display: "flex", alignItems: "center", gap: 4, borderRadius: 5, border: "1.5px solid #000", background: "#fff", color: "#111", fontSize: 12, fontWeight: 800, cursor: "pointer", pointerEvents: "auto", whiteSpace: "nowrap" }}>
-                  <Icon name="pen" size={13} />글 고치기
-                </button>
-              )}
+              {/* [글 고치기] 단추는 없앰 (사장님 2026-10-17) — 자막을 두 번 누르면 고친다 */}
             </>
           )}
       </>
