@@ -1101,7 +1101,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     }
     return {
       none: a.hasAudio === false,
-      note: "화면에 넣은 영상의 소리예요 · 위 목소리 칩의 클립 볼륨과 함께 커지고 작아져요",
+      note: "화면에 넣은 영상의 소리예요 (위 [원본 소리] 칩과 같은 값, AI 목소리 크기와는 따로)",
       muted: !(c.visualVolume && c.visualVolume > 0),
       value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
       onMute: (v: boolean) => set((x) => { x.visualVolume = v ? undefined : x.visualVolume || 1; }),

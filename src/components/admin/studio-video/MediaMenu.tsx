@@ -236,7 +236,7 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
           <button type="button" onClick={() => onScope("all")} style={{ ...chipS(scope === "all"), height: 30 }}>모든 클립 ({allCount}개)</button>
         </div>
         <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 10 }}>아래에서 바꾸고 누르면 그 클립들에 넣고 닫혀요 (바꾸는 동안은 이 클립에서 들어 봐요).</div>
-        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>클립 볼륨 <span style={{ color: C.sub, fontWeight: 600, fontSize: 12 }}>· 클립 안의 소리 모두 (목소리 + 넣은 영상 소리)</span></div>
+        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>볼륨 <span style={{ color: C.sub, fontWeight: 600, fontSize: 12 }}>· {onVoice ? "이 AI 목소리만" : "이 원본 소리만"}</span></div>
         <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
         <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>빠르기 <span style={{ color: C.sub, fontWeight: 600 }}>{+speed.toFixed(2)}배</span></div>
         {/* 막대 — 0.5~2배 */}
