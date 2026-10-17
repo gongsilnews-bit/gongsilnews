@@ -1958,7 +1958,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       )}
       {closeAsk && (
         <Modal title="저장하지 않은 내용이 있어요" onClose={() => { pendingNext.current = null; setCloseAsk(false); }} width={560}
-          footer={<><Btn onClick={() => { pendingNext.current = null; setCloseAsk(false); }}>취소</Btn><Btn onClick={askDiscard} style={{ color: C.danger }}>저장 안 함</Btn><Btn onClick={askSaveAs}>다른 이름으로 저장</Btn><Btn primary onClick={askSave}><Icon name="save" size={16} />저장</Btn></>}>
+          footer={<><Btn primary onClick={askSave}><Icon name="save" size={16} />저장</Btn><Btn onClick={askSaveAs}>다른 이름으로 저장</Btn><Btn onClick={askDiscard} style={{ color: C.danger }}>저장 안 함</Btn><Btn onClick={() => { pendingNext.current = null; setCloseAsk(false); }}>취소</Btn></>}>
           <div style={{ padding: 20, fontSize: 15, lineHeight: 1.7 }}>
             <b>{project.name}</b>을(를) 고친 뒤 아직 저장하지 않았어요. 저장할까요?
             <div style={{ fontSize: 13.5, color: C.sub, marginTop: 6 }}>{project.savedAt === "" ? "[저장 안 함]을 누르면 한 번도 저장하지 않은 이 새 프로젝트는 지워져요." : "[저장 안 함]을 누르면 마지막으로 저장한 상태로 돌아가요."}</div>
