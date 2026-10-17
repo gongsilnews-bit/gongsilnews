@@ -109,6 +109,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const view = "detail" as const; // 클립 목록은 늘 상세 (텍스트 편집). 타임라인 편집(캡컷식)은 준비 중
   const [dialog, setDialog] = useState<"" | "export" | "formats" | "addText" | "help" | "find" | "saveAs" | "autoSub" | "silence">("");
   const [autoScope, setAutoScope] = useState<"empty" | "selected" | "all">("empty");
+  const [photoHintHide, setPhotoHintHide] = useState(false); // 클립 목록 위 "사진 클립에 글 쓰기" 안내 줄 닫기
   const [autoSubHide, setAutoSubHide] = useState(false); // 클립 목록 위 "자동 자막" 안내 줄 닫기
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [selLayer, setSelLayer] = useState("");
@@ -1324,6 +1325,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   // 자동 자막 대상 — 녹화·촬영 영상 클립 중 글이 없는 것 / 고른 것
   const srcItems = flat.items.filter((x) => x.clip.type === "source" && x.clip.src);
   const noTextIds = srcItems.filter((x) => !clipText(x.clip)).map((x) => x.clip.id);
+  // 사진·화면만 있고 글이 없는 클립 — 소리 없이 넘어간다 (사진·영상으로 편집하기로 시작하면 처음엔 전부 이렇다)
+  const silentShots = flat.items.filter((x) => x.clip.type === "voice" && x.clip.visual && !clipText(x.clip).trim());
   const selSrcIds = srcItems.filter((x) => selected.includes(x.clip.id)).map((x) => x.clip.id);
   const hasCuts = flat.items.some((x) => x.clip.cuts?.length);
   const secOf = (ids: string[]) => srcItems.filter((x) => ids.includes(x.clip.id)).reduce((a, x) => a + (x.clip.src!.e - x.clip.src!.s), 0);
@@ -1682,6 +1685,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               <Icon name="image" size={18} />
               <span style={{ flex: 1 }}>화면이 비어 있는 클립이 {blank.length}개 있어요 (검은 화면으로 나와요). 사진이나 영상을 넣어 주세요.</span>
               <Btn small primary onClick={() => { setSelected(blank.map((x) => x.clip.id)); openLib("mine"); }}>빈 클립에 화면 넣기</Btn>
+            </div>
+          )}
+          {!photoHintHide && silentShots.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", borderBottom: `1px solid ${C.line}`, background: C.panel, fontSize: 14.5 }}>
+              <Icon name="text" size={18} />
+              <span style={{ flex: 1 }}>글이 없는 사진 클립이 {silentShots.length}개 있어요 (소리 없이 넘어가요). 클립에 글을 쓰면 AI 목소리로 읽어 줘요.</span>
+              <Btn small primary onClick={() => setSelected([silentShots[0].clip.id])}>첫 클립 고르기</Btn>
+              <button type="button" onClick={() => setPhotoHintHide(true)} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", display: "flex" }}><Icon name="close" size={18} /></button>
             </div>
           )}
           {/* 녹화·촬영 영상에 글이 하나도 없을 때만 — 자동 자막 안내 */}

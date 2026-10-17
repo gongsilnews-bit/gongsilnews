@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import type { Clip, Folders, LibItem, Method, Project, Ratio, Recent, TrashItem } from "./types";
 import { RATIO_LABEL, errText, fmtTime, uid, videoBridge } from "./types";
 import { useStudioWriter } from "@/components/admin/sections/useStudioWriter";
+import { listMyStudioVacancies } from "@/app/actions/studio";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
 
 /* ── 저장 폴더 설정 (처음 화면 [저장 폴더]) — 프로젝트·녹화·내보낸 영상. 앞으로 새로 만드는 것부터 ── */
@@ -349,7 +350,7 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
 /* ── 새로 만들기 창 — 만들 방법 4가지 (사장님 확정) ── */
 export const METHODS: { id: Method; icon: string; title: string; desc: string }[] = [
   { id: "text", icon: "text", title: "텍스트로 영상 만들기", desc: "대본만 있으면 AI 목소리와 사진·영상으로 만들어요" },
-  { id: "video", icon: "video", title: "촬영한 영상으로 편집하기", desc: "찍은 영상을 글로 보며 자르고, 자막을 자동으로 달아요" },
+  { id: "video", icon: "video", title: "사진·영상으로 편집하기", desc: "찍은 영상이나 사진을 불러와 자르고, 자막·AI 목소리를 넣어요" },
   { id: "longform", icon: "shorts", title: "롱폼으로 자동 숏폼 만들기", desc: "긴 영상에서 볼만한 구간을 골라 짧은 영상으로 만들어요" },
   { id: "record", icon: "record", title: "영상 녹화하고 바로 편집하기", desc: "화면이나 카메라를 녹화하면 바로 편집 화면으로 가요" },
 ];
@@ -416,62 +417,132 @@ export function RatioPick({ value, onChange }: { value: Ratio; onChange: (r: Rat
   );
 }
 
-/* ── 영상 고르기 (내 자료 + PC에서) ── */
-function VideoPicker({ multi, picked, setPicked }: { multi: boolean; picked: LibItem[]; setPicked: (x: LibItem[]) => void }) {
+/* ── 영상 고르기 (내 자료 + PC에서) — photos 면 사진도 같이 고르고 [공실 사진] 칸도 ── */
+function VideoPicker({ multi, photos = false, picked, setPicked, onVacancy }: { multi: boolean; photos?: boolean; picked: LibItem[]; setPicked: (x: LibItem[]) => void; onVacancy?: (id: string) => void }) {
   const b = videoBridge()!;
+  const [tab, setTab] = useState<"mine" | "vacancy">("mine");
   const [items, setItems] = useState<LibItem[] | null>(null);
-  const load = () => b.lib.list({ kind: "video" }).then(setItems).catch(() => setItems([]));
+  const [vacs, setVacs] = useState<{ id: string; label: string }[] | null>(null);
+  const [vac, setVac] = useState("");
+  const [vacItems, setVacItems] = useState<LibItem[] | null>(null);
+  const [vacErr, setVacErr] = useState("");
+  const okKind = (x: LibItem) => x.kind === "video" || (photos && x.kind === "image");
+  const load = () => b.lib.list(photos ? {} : { kind: "video" }).then((r) => setItems(r.filter(okKind))).catch(() => setItems([]));
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    if (tab !== "vacancy" || vacs) return;
+    listMyStudioVacancies().then((r) => setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address} · 사진 ${v.photoCount}장` })) : [])).catch(() => setVacs([]));
+  }, [tab, vacs]);
+  const chooseVac = (id: string) => {
+    setVac(id);
+    setVacItems(null);
+    setVacErr("");
+    if (!id) return;
+    b.vacancy(id)
+      .then((r) => {
+        setVacItems(r.photos);
+        onVacancy?.(id);
+      })
+      .catch((e) => {
+        setVacErr(errText(e));
+        setVacItems([]);
+      });
+  };
+  const add = (xs: LibItem[]) => setPicked(multi ? [...picked, ...xs.filter((a) => !picked.some((p) => p.id === a.id))] : xs.slice(0, 1));
   const fromPc = async () => {
-    const added = (await b.lib.pick()).filter((x) => x.kind === "video");
+    const added = (await b.lib.pick()).filter(okKind);
     if (!added.length) return;
-    setPicked(multi ? [...picked, ...added.filter((a) => !picked.some((p) => p.id === a.id))] : [added[0]]);
+    add(added);
     load();
   };
   const toggle = (it: LibItem) => setPicked(picked.some((p) => p.id === it.id) ? picked.filter((p) => p.id !== it.id) : multi ? [...picked, it] : [it]);
+  const what = photos ? "사진·영상" : "영상";
+  const grid = (list: LibItem[]) => (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, maxHeight: 300, overflowY: "auto" }}>
+      {list.map((it) => {
+        const n = picked.findIndex((p) => p.id === it.id);
+        return (
+          <button key={it.id} type="button" onClick={() => toggle(it)} title={it.name} style={{ position: "relative", padding: 0, border: `2px solid ${n >= 0 ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", aspectRatio: "16 / 10", overflow: "hidden" }}>
+            {(it.thumb || it.kind === "image") && <img src={it.thumb || it.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+            <span style={{ position: "absolute", left: 5, bottom: 4, display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>
+              <Icon name={it.kind === "image" ? "image" : "video"} size={12} />{it.kind === "image" ? "사진" : fmtTime(it.duration || 0, false)}
+            </span>
+            {/* 고른 순서 번호 — 이 순서대로 이어 붙인다 */}
+            {n >= 0 && <span style={{ position: "absolute", right: 5, top: 5, minWidth: 22, height: 22, padding: "0 4px", borderRadius: 11, background: C.accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{multi ? n + 1 : <Icon name="check" size={14} stroke={2.4} />}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+  const chip = (on: boolean): React.CSSProperties => ({ height: 38, padding: "0 16px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : C.card, color: C.text, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: FONT });
   return (
     <div>
-      <Btn primary onClick={fromPc} style={{ height: 50, fontSize: 16 }}><Icon name="plus" size={18} />PC에서 영상 불러오기</Btn>
-      {picked.length > 0 && <div style={{ marginTop: 12, fontSize: 15 }}>고른 영상: <b>{picked.map((p) => p.name).join(", ")}</b></div>}
-      <div style={{ ...label, margin: "18px 0 8px" }}>내 자료의 영상</div>
-      {items === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : !items.length ? <div style={{ color: C.sub, fontSize: 14 }}>아직 영상이 없어요.</div> : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, maxHeight: 300, overflowY: "auto" }}>
-          {items.map((it) => {
-            const on = picked.some((p) => p.id === it.id);
-            return (
-              <button key={it.id} type="button" onClick={() => toggle(it)} style={{ position: "relative", padding: 0, border: `2px solid ${on ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", aspectRatio: "16 / 10", overflow: "hidden" }}>
-                {it.thumb && <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-                <span style={{ position: "absolute", left: 5, bottom: 4, fontSize: 12, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{fmtTime(it.duration || 0, false)}</span>
-                {on && <span style={{ position: "absolute", right: 5, top: 5, width: 22, height: 22, borderRadius: 11, background: C.accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="check" size={14} stroke={2.4} /></span>}
-              </button>
-            );
-          })}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <Btn primary onClick={fromPc} style={{ height: 50, fontSize: 16 }}><Icon name="plus" size={18} />PC에서 {what} 불러오기</Btn>
+        {photos && (
+          <>
+            <span style={{ width: 1, height: 28, background: C.line2, margin: "0 4px" }} />
+            <button type="button" onClick={() => setTab("mine")} style={chip(tab === "mine")}>내 자료</button>
+            <button type="button" onClick={() => setTab("vacancy")} style={chip(tab === "vacancy")}>공실 사진</button>
+          </>
+        )}
+      </div>
+      {picked.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, fontSize: 15 }}>
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>고른 {what} {picked.length}개: <b>{picked.map((p) => p.name).join(", ")}</b></span>
+          {multi && <Btn small onClick={() => setPicked([])}>모두 빼기</Btn>}
         </div>
+      )}
+      {tab === "mine" ? (
+        <>
+          <div style={{ ...label, margin: "18px 0 8px" }}>내 자료의 {what}</div>
+          {items === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : !items.length ? <div style={{ color: C.sub, fontSize: 14 }}>아직 {what}이 없어요. [PC에서 {what} 불러오기]를 눌러 주세요.</div> : grid(items)}
+        </>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0 8px" }}>
+            <select value={vac} onChange={(e) => chooseVac(e.target.value)} style={{ ...input, flex: 1, fontSize: 15 }}>
+              <option value="">{vacs === null ? "내 공실 불러오는 중…" : `공실을 고르세요 (${vacs.length}개)`}</option>
+              {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+            </select>
+            {multi && vacItems && vacItems.length > 0 && <Btn small onClick={() => add(vacItems)}><Icon name="check" size={15} />사진 모두 고르기</Btn>}
+          </div>
+          {!vac ? <div style={{ color: C.sub, fontSize: 14 }}>공실을 고르면 그 공실 사진이 나와요.</div> : vacItems === null ? <div style={{ color: C.sub }}>공실 사진을 PC로 받는 중…</div> : vacErr ? <div style={{ color: C.danger, fontSize: 14 }}>{vacErr}</div> : !vacItems.length ? <div style={{ color: C.sub, fontSize: 14 }}>이 공실에는 사진이 없어요.</div> : grid(vacItems)}
+        </>
       )}
     </div>
   );
 }
 
 /**
- * 영상들 → 새 프로젝트. 받아쓰기(AI 비용)는 하지 않고, PC에서 말소리 구간만 나눠 클립으로 (무료).
- * 예전 앱이면 영상 통째로 한 클립
+ * 사진·영상들 → 새 프로젝트 (고른 순서대로). 받아쓰기(AI 비용)는 하지 않는다.
+ * 말소리 있는 영상은 통째로 한 클립, 사진·소리 없는 영상은 화면 클립 (편집 화면에서 끌어 놓을 때와 같은 규칙)
  */
-async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name: string, setWork: (w: { title: string; detail?: string; frac?: number | null }) => void): Promise<Project> {
+async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name: string, setWork: (w: { title: string; detail?: string; frac?: number | null }) => void, photoSec = 3, vacancyId = ""): Promise<Project> {
   const b = videoBridge()!;
-  const p = await b.project.create({ method, ratio, name });
+  const p = await b.project.create({ method, ratio, name, vacancyId });
   p.scenes = [];
+  let shots: Clip[] | null = null; // 이어지는 사진·화면 클립은 한 묶음으로
   for (let i = 0; i < items.length; i++) {
-    setWork({ title: `영상을 준비하는 중… (${i + 1}/${items.length})`, detail: items[i].name });
+    setWork({ title: `${items[i].kind === "image" ? "사진" : "영상"}을 준비하는 중… (${i + 1}/${items.length})`, detail: items[i].name });
     const off = b.onProgress((t, f) => setWork({ title: t, detail: items[i].name, frac: typeof f === "number" ? f : null }));
     try {
       const a = await b.project.addAsset(items[i].id);
       p.assets[a.id] = a;
-      // 영상 통째로 한 클립 (전체 구간) — 앞뒤는 화면 메뉴 [시작·끝 자르기], 문장 나누기는 [자동 자막 만들기]가 한다
-      const clips: Clip[] = [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } }];
-      p.scenes.push({ id: uid(), title: items.length > 1 ? a.name : "", clips });
+      if (a.kind === "video" && a.hasAudio) {
+        // 영상 통째로 한 클립 (전체 구간) — 앞뒤는 화면 메뉴 [시작·끝 자르기], 문장 나누기는 [자동 자막 만들기]가 한다
+        p.scenes.push({ id: uid(), title: items.length > 1 ? a.name : "", clips: [{ id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } }] });
+        shots = null;
+      } else {
+        if (!shots) {
+          shots = [];
+          p.scenes.push({ id: uid(), clips: shots });
+        }
+        shots.push({ id: uid(), type: "voice", text: "", words: [], voice: null, visual: { asset: a.id, s: 0 }, hold: a.kind === "video" ? a.duration || photoSec : photoSec });
+      }
     } finally {
       off();
     }
@@ -481,7 +552,7 @@ async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name
   return p;
 }
 
-/* ── 촬영한 영상으로 편집하기 ── */
+/* ── 사진·영상으로 편집하기 (녹화하고 바로 편집하기도 여기로) ── */
 export function VideoFlow({ method = "video", preset, onCancel, onDone }: { method?: Method; preset?: LibItem[]; onCancel: () => void; onDone: (p: Project) => void }) {
   const b = videoBridge()!;
   const [step, setStep] = useState(preset?.length ? 1 : 0);
@@ -492,14 +563,19 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
   });
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [err, setErr] = useState("");
+  const [photoSec, setPhotoSec] = useState(3);
+  const [vacancyId, setVacancyId] = useState("");
+  const photos = method === "video";
+  const hasPhoto = picked.some((x) => x.kind === "image");
+  // 화면 비율은 첫 번째 파일 모양에 맞춰 미리 골라 둔다 (세로면 9:16)
   const pick = (x: LibItem[]) => {
     setPicked(x);
-    if (x[0] && x[0].height > x[0].width) setRatio("9:16");
+    if (x[0]) setRatio(x[0].height > x[0].width ? "9:16" : "16:9");
   };
   const go = async () => {
     setErr("");
     try {
-      const p = await importVideos(method, ratio, picked, "", (w) => setWork(w));
+      const p = await importVideos(method, ratio, picked, "", (w) => setWork(w), photoSec, vacancyId);
       onDone(p);
     } catch (e) {
       setErr(errText(e));
@@ -508,13 +584,13 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
   };
   if (work) return <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac ?? null} /></Modal>;
   return (
-    <Modal steps={["영상 고르기", "화면 비율"]} step={step} onClose={onCancel} width={900}
+    <Modal steps={[photos ? "사진·영상 고르기" : "영상 고르기", "화면 비율"]} step={step} onClose={onCancel} width={900}
       footer={<>{step > 0 && <Btn onClick={() => setStep(0)}>이전</Btn>}{step === 0 ? <Btn primary disabled={!picked.length} onClick={() => setStep(1)}>다음 <Icon name="chevron" size={16} /></Btn> : <Btn primary onClick={go}>편집 시작 <Icon name="chevron" size={16} /></Btn>}</>}>
       <div style={{ padding: "20px 26px" }}>
         {step === 0 ? (
           <>
-            <VideoPicker multi picked={picked} setPicked={pick} />
-            <div style={{ marginTop: 14 }}><Hint>영상은 PC에 그대로 두고 편집해요 (올리지 않아요). 여러 개를 고르면 차례로 이어 붙여요.</Hint></div>
+            <VideoPicker multi photos={photos} picked={picked} setPicked={pick} onVacancy={setVacancyId} />
+            <div style={{ marginTop: 14 }}><Hint>{photos ? "사진·영상은 PC에 그대로 두고 편집해요 (올리지 않아요). 여러 개를 고르면 고른 순서(번호)대로 이어 붙여요." : "영상은 PC에 그대로 두고 편집해요 (올리지 않아요). 여러 개를 고르면 차례로 이어 붙여요."}</Hint></div>
           </>
         ) : (
           <>
@@ -540,7 +616,17 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
             })()}
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>어떤 화면 비율로 만들까요?</div>
             <RatioPick value={ratio} onChange={setRatio} />
-            <div style={{ marginTop: 16 }}><Hint>영상 전체가 한 클립으로 들어가요. 앞뒤 자르기·무음 줄이기·자동 자막은 편집 화면에서 할 수 있어요.</Hint></div>
+            {hasPhoto && (
+              <div style={{ marginTop: 22 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>사진 한 장을 몇 초 보여 줄까요?</div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  {[2, 3, 5].map((n) => (
+                    <button key={n} type="button" onClick={() => setPhotoSec(n)} style={{ width: 110, height: 52, borderRadius: 6, border: `1px solid ${photoSec === n ? C.accent : C.line2}`, background: photoSec === n ? C.accentDim : C.card, color: C.text, fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: FONT }}>{n}초</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div style={{ marginTop: 16 }}><Hint>{hasPhoto ? "사진은 한 장씩 클립이 돼요. 클립에 글을 쓰면 AI 목소리로 읽어 주고, 시간은 편집 화면에서 바꿀 수 있어요." : "영상 전체가 한 클립으로 들어가요. 앞뒤 자르기·무음 줄이기·자동 자막은 편집 화면에서 할 수 있어요."}</Hint></div>
           </>
         )}
         {err && <div style={{ marginTop: 12, color: C.danger, fontSize: 14.5 }}>{err}</div>}
