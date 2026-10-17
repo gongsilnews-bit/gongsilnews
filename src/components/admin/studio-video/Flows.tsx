@@ -1553,8 +1553,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       const cb = camBoxRef.current;
       const sp = splitRects(cb);
       if (sp) {
-        // 반반 — 화면은 칸 안에 다 보이게, 카메라는 칸을 꽉 채우게(넘치는 곳은 잘라냄), 사이에 선
-        fit(sv, ...sp.scr, false);
+        // 반반 — 화면·카메라 모두 칸을 꽉 채우게 (가운데 기준, 넘치는 곳은 잘라냄 — 검은 띠 없이, 사장님 2026-10-17), 사이에 선
+        fit(sv, ...sp.scr, true);
         fit(cv, ...sp.cam, true);
         if (cb.line > 0) {
           g.fillStyle = cb.color;
@@ -1919,7 +1919,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                     ))}
                     <input type="color" value={camBox.color} onChange={(e) => setCamBox({ ...camBox, color: e.target.value })} title="다른 색 고르기" style={{ width: 26, height: 24, padding: 0, border: "none", background: "transparent", cursor: "pointer" }} />
                   </div>
-                  <div style={{ fontSize: 12, color: C.dim }}>{camBox.layout === "pip" ? "미리보기에서 카메라를 끌어 옮기고, 흰 점을 끌어 크기를 바꿔요. 녹화 중에는 흰 점이 숨고, 크기 막대로 바꿀 수 있어요." : "화면은 칸 안에 다 보이게, 카메라는 칸을 꽉 채워요. 녹화 중에도 바로 바뀌어요."}</div>
+                  <div style={{ fontSize: 12, color: C.dim }}>{camBox.layout === "pip" ? "미리보기에서 카메라를 끌어 옮기고, 흰 점을 끌어 크기를 바꿔요. 녹화 중에는 흰 점이 숨고, 크기 막대로 바꿀 수 있어요." : "화면과 카메라 모두 칸을 꽉 채워요 (가운데를 기준으로 넘치는 곳은 잘려요). 녹화 중에도 바로 바뀌어요."}</div>
                 </div>
             </div>
           )}
@@ -1984,7 +1984,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           {/* 화면 + 카메라는 녹화 캔버스(1920×1080)와 같은 비율 — 카메라 원을 같은 자리·크기로 겹쳐 끌 수 있게 */}
           <div ref={stage} style={{ position: "relative", width: "100%", aspectRatio: mode === "both" ? "16 / 9" : undefined, containerType: "inline-size", display: phase !== "setup" || live ? "block" : "none" }}>
             <video ref={bindPreview} playsInline style={{ width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "none" : "block" }} />
-            <video ref={liveVid} playsInline muted style={split ? { position: "absolute", ...rectPct(split.scr), objectFit: "contain", display: phase === "setup" ? "block" : "none" } : { width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "block" : "none" }} />
+            <video ref={liveVid} playsInline muted style={split ? { position: "absolute", ...rectPct(split.scr), objectFit: "cover", display: phase === "setup" ? "block" : "none" } : { width: "100%", height: mode === "both" ? "100%" : undefined, maxHeight: 520, objectFit: "contain", display: phase === "setup" ? "block" : "none" }} />
             {split && phase === "setup" && camBox.line > 0 && (
               <div style={{ position: "absolute", background: camBox.color, ...(camBox.layout === "lr" ? { left: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, top: 0, bottom: 0, width: `${(camBox.line / 1920) * 100}cqw` } : { top: `calc(50% - ${(camBox.line / 2 / 1920) * 100}cqw)`, left: 0, right: 0, height: `${(camBox.line / 1920) * 100}cqw` }) }} />
             )}
