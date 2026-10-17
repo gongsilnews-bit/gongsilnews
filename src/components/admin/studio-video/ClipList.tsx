@@ -239,16 +239,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
       <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 14, borderRight: `1px solid ${C.line}` }}>
         <span style={{ fontSize: 15, fontWeight: 800, color: playingHere ? C.text : C.sub }}>{n}</span>
         <input type="checkbox" checked={sel} onChange={() => p.actions.selectClip(c.id, true)} onClick={(e) => e.stopPropagation()} style={{ width: 18, height: 18, accentColor: C.accent, cursor: "pointer" }} title="여러 클립 고르기" />
-        {/* ▶ 여기부터 듣기 / ■ 멈춤 (스페이스바도 같다) */}
-        {(() => {
-          const on = Boolean(p.playing && playingHere);
-          return (
-            <button type="button" onClick={(e) => { e.stopPropagation(); if (on) p.actions.stop(); else p.actions.play(c.id); }} title={on ? "멈춤 (스페이스바)" : "여기부터 듣기 (스페이스바)"}
-              style={{ width: 32, height: 32, borderRadius: 16, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-              {on ? <span style={{ width: 10, height: 10, borderRadius: 2, background: "#fff" }} /> : <Icon name="play" size={15} />}
-            </button>
-          );
-        })()}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -342,6 +332,16 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
             </button>
             {peek && asset && <Peek asset={asset} rect={peek} start={c.visual ? c.visual.s : c.src?.s || 0} flipX={c.flipX} flipY={c.flipY} />}
+            {/* ▶ 여기부터 듣기 / ■ 멈춤 — 흰 선 아이콘 (스페이스바도 같다) */}
+            {(() => {
+              const on = Boolean(p.playing && playingHere);
+              return (
+                <button type="button" onClick={(e) => { e.stopPropagation(); if (on) p.actions.stop(); else p.actions.play(c.id); }} title={on ? "멈춤 (스페이스바)" : "여기부터 듣기 (스페이스바)"}
+                  style={{ width: 30, height: 30, padding: 0, border: 0, background: "transparent", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {on ? <Icon name="pause" size={20} stroke={1.8} /> : <Icon name="play" size={20} stroke={1.8} />}
+                </button>
+              );
+            })()}
             <Icon name="sub" size={18} color={C.dim} />
             <SubLine c={c} p={p} empty="자막 넣기" open={subOpen} />
             {busy && <span style={{ fontSize: 13, color: C.sub }}>{busy}</span>}
