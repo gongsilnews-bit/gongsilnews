@@ -22,6 +22,8 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
   const order = clipOrder(p);
   const pos = new Map(items.map((x, i) => [x.clip.id, i]));
   const spans = (p.layers || [])
+    // 단어 구간으로 넣은 사진·글자는 왼쪽 줄에 안 그린다 (단어 앞 작은 표시로 보인다)
+    .filter((layer) => typeof layer.w0 !== "number")
     .map((layer) => {
       const cov = layerItems(p, layer, items, order);
       return cov.length ? { layer, a: pos.get(cov[0].clip.id)!, b: pos.get(cov[cov.length - 1].clip.id)! } : null;
