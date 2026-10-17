@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
 import { DRAG_MEDIA, RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
-import { STUDIO_VOICES, voicePhoto } from "@/lib/studio-video/voices";
+import { STUDIO_VOICES, VOICE_MOODS, voicePhoto } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioImager } from "@/components/admin/sections/useStudioWriter";
@@ -324,9 +324,10 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
   const [g, setG] = useState<"all" | "여성" | "남성">("all");
   const [rec, setRec] = useState(true);
   const [age, setAge] = useState("");
+  const [mood, setMood] = useState("");
   const [msg, setMsg] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
-  const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!age || v.age === age) && (!rec || v.recommended));
+  const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!age || v.age === age) && (!mood || v.mood === mood) && (!rec || v.recommended));
   // 미리 듣기는 미리 녹음해 둔 파일만 — 새로 만들면 공실뉴스 API 비용이 나가서 [내 대본으로 듣기]는 없앴다 (2026-10-17)
   useEffect(() => () => audio.current?.pause(), []);
   // 카드 ▷ — 미리 녹음해 둔 성우 음성 (public/studio-voices/{id}.mp3) 을 바로 튼다. 다시 누르면 멈춤
@@ -373,7 +374,7 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
             <div style={{ width: 200, flexShrink: 0, padding: 16, borderRight: `1px solid ${C.line2}`, overflowY: "auto" }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
                 <span style={{ flex: 1, fontSize: 16, fontWeight: 800 }}>거르기</span>
-                <button type="button" onClick={() => { setG("all"); setAge(""); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
+                <button type="button" onClick={() => { setG("all"); setAge(""); setMood(""); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
               </div>
               <div style={head}>성별</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
@@ -382,6 +383,10 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
               <div style={head}>나이</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {["", "20대", "30대", "40대", "50대", "60대"].map((k) => <button key={k || "all"} type="button" onClick={() => setAge(k)} style={fchip(age === k)}>{k || "모두"}</button>)}
+              </div>
+              <div style={{ ...head, marginTop: 20 }}>분위기</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["", ...VOICE_MOODS].map((k) => <button key={k || "all"} type="button" onClick={() => setMood(k)} style={fchip(mood === k)}>{k || "모두"}</button>)}
               </div>
             </div>
             {/* 성우 카드 */}
@@ -396,7 +401,7 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 19, fontWeight: 800 }}>{v.name}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px" }}>{v.gender} · {v.age}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px" }}>{v.gender} · {v.age} · {v.mood}</span>
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 5 }}>{v.kind}</div>
                       <div style={{ fontSize: 14, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>{v.tags.map((t) => `#${t}`).join("  ")}</div>
