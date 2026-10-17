@@ -584,6 +584,25 @@ ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_
 // 웹 화면이 "스튜디오 앱"임을 알아보도록 브라우저 정보 끝에 영어 이름을 붙인다
 app.userAgentFallback = `${app.userAgentFallback} GongsilStudio/${app.getVersion()}`;
 
+// 오른쪽 클릭 — 글 칸이나 고른 글자에서 잘라내기·복사·붙여넣기 (Electron 은 기본 메뉴가 없다).
+// 페이지가 자기 메뉴를 띄우며 막은 곳(편집기 클립 등)에서는 이 이벤트가 오지 않는다
+app.on("web-contents-created", (_e, wc) => {
+  wc.on("context-menu", (_ev, p) => {
+    const f = p.editFlags || {};
+    if (!p.isEditable && !p.selectionText) return;
+    const items = p.isEditable
+      ? [
+          { label: "잘라내기", accelerator: "CmdOrCtrl+X", role: "cut", enabled: f.canCut },
+          { label: "복사", accelerator: "CmdOrCtrl+C", role: "copy", enabled: f.canCopy },
+          { label: "붙여넣기", accelerator: "CmdOrCtrl+V", role: "paste", enabled: f.canPaste },
+          { type: "separator" },
+          { label: "모두 선택", accelerator: "CmdOrCtrl+A", role: "selectAll", enabled: f.canSelectAll },
+        ]
+      : [{ label: "복사", accelerator: "CmdOrCtrl+C", role: "copy", enabled: f.canCopy }];
+    Menu.buildFromTemplate(items).popup({ window: BrowserWindow.fromWebContents(wc) || undefined });
+  });
+});
+
 app.whenReady().then(async () => {
   videoMedia.handle();
   videoIpc.register(BASE_URL);
