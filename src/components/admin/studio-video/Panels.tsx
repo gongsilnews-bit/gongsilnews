@@ -306,7 +306,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
 }
 
 /* ── AI 목소리 ── */
-export function VoicePanel({ project, targetCount, onApply, onClose }: { project: Project; targetCount: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" }) => Promise<void> | void; onClose: () => void }) {
+export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClose }: { project: Project; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
   const b = videoBridge();
   const cur = project.settings.voice;
   const [id, setId] = useState(cur.id);
@@ -341,8 +341,10 @@ export function VoicePanel({ project, targetCount, onApply, onClose }: { project
     <Side title="AI 목소리 설정" onClose={onClose}
       footer={
         <>
-          {targetCount > 0 && <Btn primary small onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={16} />고른 클립 {targetCount}개에만</Btn>}
-          <Btn primary={targetCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={16} />모든 클립에 쓰기</Btn>
+          {/* 단어를 골랐으면 — 그 단어 앞뒤에서 클립을 나눠 고른 단어만 새 목소리로 */}
+          {wordCount > 0 && <Btn primary small onClick={() => onApply({ id, speed, volume, scope: "words" })} title="고른 단어 앞뒤에서 클립을 나눠, 고른 단어만 이 목소리로 다시 만들어요"><Icon name="check" size={16} />고른 단어만 ({wordCount}개)</Btn>}
+          {targetCount > 0 && <Btn primary={wordCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={16} />고른 클립 {targetCount}개에만</Btn>}
+          <Btn primary={targetCount === 0 && wordCount === 0} small onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={16} />모든 클립에 쓰기</Btn>
         </>
       }>
       <div style={{ padding: "12px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>

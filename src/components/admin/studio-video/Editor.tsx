@@ -1381,7 +1381,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
 
   /* ── 목소리 바꾸기 ── */
-  const applyVoice = async (o: { id: string; speed: number; volume: number; scope: "all" | "selected" }) => {
+  const applyVoice = async (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => {
+    if (o.scope === "words") return voiceForWords(o);
     const ids: string[] = [];
     change((p) => {
       if (o.scope === "all") {
@@ -1416,6 +1417,68 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       say(`목소리를 새로 만들어요 (클립 ${ids.length}개)`);
       await revoice(ids);
     } else say("목소리 설정을 바꿨어요");
+  };
+
+  /** 고른 단어만 목소리 바꾸기 — 첫 고른 단어 ~ 끝 고른 단어 앞뒤에서 클립을 나눠 (최대 3개) 가운데만 새 목소리. 되돌리기 한 번 */
+  const voiceForWords = async (o: { id: string; speed: number }) => {
+    if (!selWord) return;
+    const f = findClip(pref.current, selWord.clip);
+    if (!f || f.clip.type !== "voice" || !f.clip.words?.length) return say("AI 목소리 클립의 단어를 골라 주세요");
+    const is = wordIs();
+    const a = is[0], z = is[is.length - 1];
+    const made: string[] = [];
+    let midId = "";
+    change((p) => {
+      const g = findClip(p, selWord.clip)!;
+      const c = g.clip;
+      const ws = c.words!;
+      const part = (from: number, to: number): Clip => {
+        const piece: Clip = structuredClone(c);
+        piece.id = uid();
+        piece.words = ws.slice(from, to).map((w) => ({ ...w }));
+        piece.text = piece.words.filter((w) => !w.del).map((w) => w.w).join(" ");
+        piece.voice = null;
+        delete piece.subText;
+        delete piece.pad; // 쉼은 마지막 조각에만
+        return piece;
+      };
+      const pieces: Clip[] = [];
+      if (a > 0) pieces.push(part(0, a));
+      const mid = part(a, z + 1);
+      mid.voiceId = o.id;
+      mid.speed = o.speed;
+      pieces.push(mid);
+      if (z < ws.length - 1) pieces.push(part(z + 1, ws.length));
+      pieces[0].id = c.id; // 첫 조각은 원래 클립 자리·이름 그대로
+      if (c.pad) pieces[pieces.length - 1].pad = c.pad;
+      g.scene.clips.splice(g.idx, 1, ...pieces);
+      const lastId = pieces[pieces.length - 1].id;
+      for (const l of p.layers || []) {
+        if (l.to === c.id && lastId !== c.id) l.to = lastId;
+        // 단어 구간 사진·글자 — 나뉜 조각으로 옮기고 단어 번호를 맞춘다
+        if (l.from === c.id && typeof l.w0 === "number") {
+          let off = 0;
+          for (const pc of pieces) {
+            const n = pc.words!.length;
+            if (l.w0 < off + n) {
+              l.from = l.to = pc.id;
+              l.w0 -= off;
+              if (typeof l.w1 === "number") l.w1 = Math.min(n - 1, l.w1 - off);
+              break;
+            }
+            off += n;
+          }
+        }
+      }
+      made.push(...pieces.map((x) => x.id));
+      midId = mid.id;
+    });
+    setSelWord(null);
+    setSelWordSet(null);
+    setSelected(midId ? [midId] : []);
+    setPanel("");
+    say(made.length > 1 ? `고른 단어만 새 목소리로 — 클립을 ${made.length}개로 나눴어요 (Ctrl+Z 로 되돌리기)` : "목소리를 새로 만들어요");
+    await revoice(made);
   };
 
   /* ── 단어 복사·붙여넣기·지우기 (Ctrl+클릭으로 여러 단어) ── */
@@ -1978,7 +2041,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             setPanel("");
             setLibOpen(false);
           }} />}
-        {panel === "voice" && <VoicePanel project={project} targetCount={selected.filter((id) => { const c = findClip(project, id)?.clip; return c && (c.type === "voice" || c.src); }).length} onApply={applyVoice} onClose={() => setPanel("")} />}
+        {panel === "voice" && <VoicePanel project={project} wordCount={selWord && findClip(project, selWord.clip)?.clip.type === "voice" ? wordIs().length : 0} targetCount={selected.filter((id) => { const c = findClip(project, id)?.clip; return c && (c.type === "voice" || c.src); }).length} onApply={applyVoice} onClose={() => setPanel("")} />}
         {panel === "subtitle" && (() => {
           // 이 클립 자막 — 고른 클립(하나)이 있으면 그것, 없으면 지금 재생 위치 클립
           const it = (selected.length === 1 && flat.items.find((x) => x.clip.id === selected[0])) || cur;
