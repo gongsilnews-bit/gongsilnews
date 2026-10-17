@@ -479,6 +479,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setTimeout(() => player.current?.play(), 50);
     },
     stop: () => player.current?.pause(),
+    // 문장 끝 [..] — AI 목소리를 다 읽고 쉬는 시간 (빠르기를 바꿔도 그대로)
+    setPad: (id, sec) => {
+      change((p) => {
+        const c = findClip(p, id)?.clip;
+        if (c) c.pad = sec > 0 ? sec : undefined;
+      });
+      say(sec > 0 ? `다 읽고 ${sec}초 쉬어요` : "쉬지 않고 바로 다음 클립으로 가요");
+    },
     openTrans: (id, add) => {
       if (add) change((p) => { const c = findClip(p, id)?.clip; if (c && !c.trans) c.trans = { ...TRANS_DEFAULT }; });
       setTransClip(id);

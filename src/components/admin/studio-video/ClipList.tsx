@@ -24,6 +24,7 @@ export type ClipActions = {
   openVisual: (id: string) => void;
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
   openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
+  setPad: (id: string, sec: number) => void; // AI 목소리 다 읽은 뒤 쉬기 (문장 끝 [..])
   toggleMute: (id: string) => void;
   setSource: (id: string, patch: { muted?: boolean; volume?: number }, first: boolean) => void; // 원본 소리 무음·크기
   openSound: (id: string, x: number, y: number) => void; // 소리 칩을 누르면 옆에 볼륨·빠르기 창
@@ -167,6 +168,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const sel = p.selected.includes(c.id);
   const playingHere = p.curClip === c.id;
   const [editing, setEditing] = React.useState(false);
+  const [padOpen, setPadOpen] = React.useState(false); // 문장 끝 [..] 메뉴
   // 촬영한 영상(원본 소리) 클립은 말한 내용·목소리를 못 바꾼다 — 연필·[자막 고치기]는 자막 줄을 연다 (AI 목소리 클립만 글 고치기)
   const isSrc = c.type !== "voice";
   const [subOpen, setSubOpen] = React.useState(0);
@@ -292,6 +294,34 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
               })}
               {/* 마지막 단어 뒤의 쉼 [..] */}
               {pauses.filter((g) => g.at === words.length).map((g, j) => pauseChip(g, 100000 + j))}
+              {/* AI 목소리 — 다 읽은 뒤 쉬기 [..] (누르면 쉼 없음·0.5·1·2·3초) */}
+              {c.type === "voice" && words.length > 0 && (() => {
+                const pad = Number(c.pad) || 0;
+                return (
+                  <span style={{ position: "relative", display: "inline-flex" }}>
+                    <button type="button" title={pad ? `다 읽고 ${pad}초 쉬어요 — 눌러서 바꾸기` : "다 읽고 쉬기 — 눌러서 정하기"} onClick={(e) => { e.stopPropagation(); setPadOpen((v) => !v); }}
+                      style={{ height: 34, padding: "0 8px", borderRadius: 4, border: `1px ${pad ? "solid" : "dashed"} ${pad ? C.accent : C.line2}`, background: pad ? C.accentDim : C.panel2, color: "#9ecbff", fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      [..]{pad ? ` ${pad}초` : ""}
+                    </button>
+                    {padOpen && (
+                      <>
+                        <span onClick={(e) => { e.stopPropagation(); setPadOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
+                        <span onClick={(e) => e.stopPropagation()} style={{ position: "absolute", left: 0, top: 40, zIndex: 61, display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 12px 30px rgba(0,0,0,0.45)", cursor: "default" }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: C.text, whiteSpace: "nowrap" }}>다 읽고 쉬기</span>
+                          <span style={{ display: "flex", gap: 5 }}>
+                            {[0, 0.5, 1, 2, 3].map((v) => (
+                              <button key={v} type="button" onClick={() => { p.actions.setPad(c.id, v); setPadOpen(false); }}
+                                style={{ height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${Math.abs(pad - v) < 0.01 ? C.accent : C.line2}`, background: Math.abs(pad - v) < 0.01 ? C.accentDim : "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+                                {v ? `${v}초` : "없음"}
+                              </button>
+                            ))}
+                          </span>
+                        </span>
+                      </>
+                    )}
+                  </span>
+                );
+              })()}
               {/* 글 고치기는 AI 목소리 클립만 — 촬영한 영상(원본 소리)은 말한 내용을 못 고치고, 자막 줄의 연필로 자막만 */}
               {!isSrc && (
                 <button type="button" title="글 고치기" onClick={(e) => { e.stopPropagation(); editPen(); }}
