@@ -346,6 +346,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         setSelWord({ clip: clipId, i: is.includes(i) ? i : is[is.length - 1] });
         return;
       }
+      // 고른 단어를 한 번 더 누르면 — 고르기 풀기 (단추 막대 닫힘)
+      if (!multi && selWord && selWord.clip === clipId && selWord.i === i && !(selWordSet && selWordSet.clip === clipId && selWordSet.is.length > 1)) {
+        setSelWord(null);
+        setSelWordSet(null);
+        return;
+      }
       setSelWordSet(null);
       setSelWord({ clip: clipId, i });
       const f = findClip(pref.current, clipId);
