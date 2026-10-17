@@ -372,8 +372,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : active ? "rgba(59,130,246,0.6)" : C.line2}`,
                       // 고른 단어(Ctrl 로 여러 개) = 파랗게 칠함 · 지금 재생 위치 = 연한 파랑
                       background: isSel ? C.accent : active ? "rgba(59,130,246,0.28)" : w.del ? "transparent" : C.panel2,
-                      // 이 단어만 다른 AI 목소리 — 아래 주황 줄
-                      boxShadow: w.v && !w.del ? "inset 0 -3px 0 #f59e0b" : undefined,
                       color: isSel ? "#fff" : w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {/* 목소리를 만드는 동안 — 고른 단어마다 앞에 돌아가는 동그라미 (클립 전체를 바꿀 땐 목소리 칩에만) */}
                     {busy && p.selWord?.clip === c.id && isSel && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginRight: 6, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${isSel ? "#fff" : C.accent}`, borderRightColor: "transparent" }} />}
