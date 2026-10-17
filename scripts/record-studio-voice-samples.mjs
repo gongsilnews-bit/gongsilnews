@@ -65,17 +65,67 @@ async function tts(text, voice) {
   throw new Error(`${voice}: ${last}`);
 }
 
+// 성우 음성 맨 끝 "찌직"·맨 앞 "틱" 잡음 자르기 — src/lib/reels/gemini.ts 와 같은 방식 (24kHz 기준)
+function cutEdgeNoise(pcm) {
+  const W = 240;
+  const n = Math.floor(pcm.length / 2 / W);
+  const loud = Array.from({ length: n }, (_, k) => {
+    let sum = 0;
+    for (let j = 0; j < W; j++) sum += pcm.readInt16LE((k * W + j) * 2) ** 2;
+    return Math.sqrt(sum / W) > 300;
+  });
+  const MAX = 40, GAP = 3;
+  let start = 0, end = n, k = 0;
+  while (k < n && loud[k]) k++;
+  if (k > 0 && k <= MAX && loud.slice(k, k + GAP).every((v) => !v)) start = k;
+  k = n - 1;
+  while (k >= 0 && loud[k]) k--;
+  if (n - 1 - k > 0 && n - 1 - k <= MAX && loud.slice(Math.max(0, k - GAP + 1), k + 1).every((v) => !v)) end = k + 1;
+  return pcm.subarray(start * W * 2, end * W * 2);
+}
+function trimSilence(pcm, threshold = 400, pad = 2400) {
+  const n = pcm.length / 2;
+  let start = 0, end = n - 1;
+  while (start < n && Math.abs(pcm.readInt16LE(start * 2)) < threshold) start++;
+  while (end > start && Math.abs(pcm.readInt16LE(end * 2)) < threshold) end--;
+  return pcm.subarray(Math.max(0, start - pad) * 2, Math.min(n, end + pad) * 2);
+}
+function fadeEdges(pcm) {
+  const out = Buffer.from(pcm);
+  const n = out.length / 2;
+  const F = Math.min(240, Math.floor(n / 2));
+  for (let i = 0; i < F; i++) {
+    const g = i / F;
+    out.writeInt16LE(Math.round(out.readInt16LE(i * 2) * g), i * 2);
+    out.writeInt16LE(Math.round(out.readInt16LE((n - 1 - i) * 2) * g), (n - 1 - i) * 2);
+  }
+  return out;
+}
+const clean = (pcm) => fadeEdges(trimSilence(cutEdgeNoise(pcm)));
+const toMp3 = (pcm, rate, mp3) => {
+  const raw = mp3.replace(/\.mp3$/, ".pcm");
+  fs.writeFileSync(raw, pcm);
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "s16le", "-ar", String(rate), "-ac", "1", "-i", raw, "-codec:a", "libmp3lame", "-b:a", "64k", mp3]);
+  fs.unlinkSync(raw);
+};
+
+// --clean : 이미 녹음한 mp3 를 다시 받지 않고 잡음만 다시 자른다
+if (process.argv.includes("--clean")) {
+  for (const voice of Object.keys(SAMPLES)) {
+    const mp3 = path.join(OUT, `${voice.toLowerCase()}.mp3`);
+    if (!fs.existsSync(mp3)) continue;
+    const pcm = execFileSync("ffmpeg", ["-loglevel", "error", "-i", mp3, "-f", "s16le", "-ar", "24000", "-ac", "1", "-"], { maxBuffer: 1 << 26 });
+    toMp3(clean(trimSilence(pcm, 400, 0)), 24000, mp3); // mp3 앞뒤에 붙는 무음을 먼저 걷어야 끝 잡음이 맨 끝에 온다
+    console.log("clean", voice);
+  }
+  process.exit(0);
+}
+
 const only = process.argv.slice(2);
 fs.mkdirSync(OUT, { recursive: true });
 for (const [voice, text] of Object.entries(SAMPLES)) {
   if (only.length && !only.includes(voice)) continue;
-  const raw = path.join(OUT, `${voice.toLowerCase()}.pcm`);
   const { pcm, rate } = await tts(text, voice);
-  fs.writeFileSync(raw, pcm);
-  // 앞뒤 잡음·무음 자르고 (앞 틱·끝 찌직), 짧게 페이드, mp3 로
-  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "s16le", "-ar", String(rate), "-ac", "1", "-i", raw,
-    "-af", "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,areverse,afade=t=in:d=0.03",
-    "-codec:a", "libmp3lame", "-b:a", "64k", path.join(OUT, `${voice.toLowerCase()}.mp3`)]);
-  fs.unlinkSync(raw);
+  toMp3(clean(pcm), rate, path.join(OUT, `${voice.toLowerCase()}.mp3`));
   console.log("ok", voice);
 }
