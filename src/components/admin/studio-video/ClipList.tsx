@@ -32,6 +32,7 @@ export type ClipActions = {
   resetWordTime: (clipId: string, i: number) => void;
   playWord: (clipId: string, i: number) => void;
   setPad: (ids: string[], sec: number) => void; // AI 목소리 다 읽은 뒤 쉬기 (문장 끝 [..])
+  moveClips: (ids: string[], targetId: string, before: boolean) => void; // 클립 끌어 옮기기 (Ctrl 로 고른 여러 개 함께)
   addAiVoice: (clipId: string, text: string) => void; // 원본 영상 클립에 글 → AI 목소리 (원본 소리도 그대로)
   setOrigVolume: (clipId: string, v: number, muted: boolean, first: boolean) => void; // AI 목소리를 얹은 영상의 원본 소리
   // 단어를 누르면 위에 뜨는 단추 막대 (브루처럼) — 이 클립 잘라내기·복사·붙여넣기, 삽입
@@ -265,6 +266,15 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
 
   return (
     <div onClick={(e) => p.actions.selectClip(c.id, e.ctrlKey || e.metaKey || e.shiftKey)} data-clip={c.id}
+      // 끌어서 옮기기 — 고른 클립 중 하나를 끌면 고른 클립 모두
+      draggable={!editing && !aiOpen}
+      onDragStart={(e) => {
+        if ((e.target as HTMLElement).closest?.("input, textarea")) return e.preventDefault();
+        dragging = p.selected.length > 1 && p.selected.includes(c.id) ? [...p.selected] : [c.id];
+        e.dataTransfer.setData(DRAG_CLIP, JSON.stringify(dragging));
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => (dragging = [])}
       // 파란 테두리는 지금 재생 위치 클립 하나만 (재생하면 말소리를 따라 내려간다) · 고른 클립은 체크칸으로
       style={{ position: "relative", display: "flex", gap: 0, margin: "8px 0", borderRadius: 8, border: `1px solid ${C.line}`, outline: playingHere ? `1px solid ${C.accent}` : "none", outlineOffset: -1, background: C.card, cursor: "pointer", fontFamily: FONT }}>
       {/* 번호 + 고르기 칸 */}
@@ -615,6 +625,10 @@ function FloatBar({ anchor, children }: { anchor: React.RefObject<HTMLDivElement
   );
 }
 
+// 클립 끌어 옮기기 — 끄는 동안 옮기는 클립 (dragover 에서는 dataTransfer 를 읽을 수 없어서)
+const DRAG_CLIP = "application/x-gsv-clip";
+let dragging: string[] = [];
+
 // 돌아가는 동그라미 (목소리 만드는 중)
 const SPIN_CSS = "@keyframes gsvSpin{to{transform:rotate(360deg)}}.gsv-spin{animation:gsvSpin .8s linear infinite}";
 
@@ -625,6 +639,15 @@ export default function ClipList(p: Props) {
     p.onDropMedia
       ? {
           onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+            if (e.dataTransfer.types.includes(DRAG_CLIP)) {
+              if (dragging.includes(id)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              const r = e.currentTarget.getBoundingClientRect();
+              const where = e.clientY - r.top < r.height / 2 ? "before" : "after";
+              if (!drop || drop.id !== id || drop.where !== where) setDrop({ id, where });
+              return;
+            }
             if (!e.dataTransfer.types.includes(DRAG_MEDIA)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "copy";
@@ -637,6 +660,18 @@ export default function ClipList(p: Props) {
             if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop((d) => (d && d.id === id ? null : d));
           },
           onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+            const moved = e.dataTransfer.getData(DRAG_CLIP);
+            if (moved) {
+              e.preventDefault();
+              const where = drop && drop.id === id ? drop.where : "after";
+              setDrop(null);
+              dragging = [];
+              try {
+                const ids = JSON.parse(moved) as string[];
+                if (!ids.includes(id)) p.actions.moveClips(ids, id, where === "before");
+              } catch {}
+              return;
+            }
             const raw = e.dataTransfer.getData(DRAG_MEDIA);
             const where = drop && drop.id === id ? drop.where : "replace";
             setDrop(null);
@@ -722,7 +757,7 @@ export default function ClipList(p: Props) {
                     </div>
                   ) : (
                     <div style={{ position: "absolute", left: 0, right: 0, [drop.where === "before" ? "top" : "bottom"]: 1, height: 4, borderRadius: 2, background: C.accent, pointerEvents: "none" }}>
-                      <span style={{ position: "absolute", left: 8, top: -12, padding: "2px 8px", borderRadius: 4, background: C.accent, color: "#fff", fontSize: 12.5, fontWeight: 800 }}>{drop.where === "before" ? "이 클립 앞에 넣기" : "이 클립 뒤에 넣기"}</span>
+                      <span style={{ position: "absolute", left: 8, top: -12, padding: "2px 8px", borderRadius: 4, background: C.accent, color: "#fff", fontSize: 12.5, fontWeight: 800 }}>{dragging.length ? `여기로 옮기기${dragging.length > 1 ? ` (클립 ${dragging.length}개)` : ""}` : drop.where === "before" ? "이 클립 앞에 넣기" : "이 클립 뒤에 넣기"}</span>
                     </div>
                   ))}
                 </div>

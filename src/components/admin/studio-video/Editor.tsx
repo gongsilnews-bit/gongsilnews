@@ -625,6 +625,27 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const c = findClip(p, id)?.clip;
       if (c) c.muted = !c.muted;
     }),
+    // 클립 끌어 옮기기 — 옮기는 클립들은 목록 순서대로 붙여서 대상 클립 앞/뒤에 (빈 씬은 지운다, 첫 씬은 남긴다)
+    moveClips: (ids, targetId, before) => {
+      if (ids.includes(targetId)) return;
+      change((p) => {
+        const order = flatten(p).items.map((x) => x.clip.id);
+        const want = order.filter((id) => ids.includes(id));
+        const moved: Clip[] = [];
+        for (const id of want) {
+          const f = findClip(p, id);
+          if (!f) continue;
+          moved.push(f.clip);
+          f.scene.clips.splice(f.idx, 1);
+        }
+        const t = findClip(p, targetId);
+        if (!t || !moved.length) return;
+        t.scene.clips.splice(before ? t.idx : t.idx + 1, 0, ...moved);
+        p.scenes = p.scenes.filter((sc, i) => sc.clips.length || i === 0);
+      });
+      setSelected(ids);
+      say(ids.length > 1 ? `클립 ${ids.length}개를 옮겼어요` : "클립을 옮겼어요");
+    },
     // 클립 사이 [+ 새 클립] — 앞 클립 뒤(= 이 클립 앞)에 글 클립 넣기 창
     newClipBefore: (id) => {
       const it = flatten(pref.current).items;
