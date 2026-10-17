@@ -7,7 +7,8 @@ import type { LibItem, Method, Project, Recover } from "./types";
 import { errText, isRecover, videoBridge } from "./types";
 import Editor from "./Editor";
 import TextWizard from "./TextWizard";
-import { Home, LongformFlow, NewDialog, RecordFlow, VideoFlow } from "./Flows";
+import { Home, LongformFlow, NewDialog, VideoFlow } from "./Flows";
+import { RecordConsole } from "./RecordConsole";
 import { Btn, C, FONT, Icon, Modal } from "./ui";
 
 /** 동영상제작을 쓸 수 있는 가장 낮은 스튜디오 앱 버전 (.gss 저장 방식 — 0.1.4) */
@@ -119,7 +120,7 @@ export default function VideoStudio() {
       {flow === "text" && <TextWizard onCancel={() => setFlow("")} onDone={done} />}
       {flow === "video" && <VideoFlow onCancel={() => setFlow("")} onDone={done} />}
       {flow === "longform" && <LongformFlow onCancel={() => setFlow("")} onDone={done} />}
-      {flow === "record" && !recorded && <RecordFlow onCancel={() => setFlow("")} onRecorded={(item, script) => { setRecScript(script || ""); setRecorded(item); }} />}
+      {flow === "record" && !recorded && <RecordConsole onCancel={() => setFlow("")} onRecorded={(item, script) => { setRecScript(script || ""); setRecorded(item); }} />}
       {flow === "record" && recorded && <VideoFlow method="record" preset={[recorded]} script={recScript} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />}
     </div>
   );

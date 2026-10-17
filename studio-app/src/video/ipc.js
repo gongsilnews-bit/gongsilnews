@@ -31,6 +31,41 @@ let live = null; // 녹화 중인 창 { win, startedAt, onMin, onRestore }
 let mini = null; // 녹화 중 작은 막대 창
 let miniOpening = false;
 let prompter = null; // 녹화 중 프롬프터 창 (녹화에 안 찍힘)
+// 개발판 시험용 — STUDIO_SHOW_IN_CAPTURE=1 이면 조정실·프롬프터가 캡처에 보인다 (설치판은 늘 안 찍힘)
+const hideFromCapture = (w) => w.setContentProtection(!(!require("electron").app.isPackaged && process.env.STUDIO_SHOW_IN_CAPTURE === "1"));
+let consoleWin = null; // 녹화 조정실 창 (OBS 스튜디오 모드처럼 — 녹화에 안 찍힘)
+
+/** 녹화 조정실 창 모양 — 스튜디오 창이 있는 모니터 가운데 */
+function consoleOptions(main) {
+  const wa = screen.getDisplayMatching(main.getBounds()).workArea;
+  const W = Math.min(1240, wa.width - 40), H = Math.min(760, wa.height - 40);
+  return {
+    width: W,
+    height: H,
+    x: Math.round(wa.x + (wa.width - W) / 2),
+    y: Math.round(wa.y + (wa.height - H) / 2),
+    minWidth: 900,
+    minHeight: 560,
+    frame: false,
+    backgroundColor: "#111317",
+    title: "영상 녹화하기",
+    alwaysOnTop: true,
+    autoHideMenuBar: true,
+    show: true,
+  };
+}
+/** 조정실 창이 생기면 — 녹화에 안 찍히게, 스튜디오 창은 가려져도 그리기를 늦추지 않게 (녹화 화판을 거기서 그린다) */
+function setConsole(win, main) {
+  consoleWin = win;
+  hideFromCapture(win);
+  win.setAlwaysOnTop(true, "floating");
+  win.setMenuBarVisibility(false);
+  if (main && !main.isDestroyed()) main.webContents.setBackgroundThrottling(false);
+  win.on("closed", () => {
+    if (consoleWin === win) consoleWin = null;
+    if (main && !main.isDestroyed() && !live) main.webContents.setBackgroundThrottling(true);
+  });
+}
 let prompterOpts = null; // { text, cps, size, startAt }
 let prompterOwner = null; // 프롬프터를 연 창의 webContents (닫으면 알린다)
 
@@ -76,7 +111,7 @@ async function openPrompter(win, opts) {
     webPreferences: { preload: path.join(__dirname, "prompter-preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
   });
   prompter.setAlwaysOnTop(true, "screen-saver");
-  prompter.setContentProtection(true); // 윈도우: 화면 녹화·캡처에서 빠진다
+  hideFromCapture(prompter); // 윈도우: 화면 녹화·캡처에서 빠진다
   prompter.loadFile(path.join(__dirname, "prompter.html"));
   prompter.once("ready-to-show", () => prompter && prompter.showInactive());
   prompter.on("closed", () => {
@@ -153,7 +188,7 @@ function endLive() {
   if (!win.isDestroyed()) {
     win.removeListener("minimize", onMin);
     win.removeListener("restore", onRestore);
-    win.webContents.setBackgroundThrottling(true);
+    win.webContents.setBackgroundThrottling(Boolean(!consoleWin)); // 조정실이 떠 있으면 계속 안 늦춤
     showBig(win);
   }
 }
@@ -409,12 +444,14 @@ function register(base) {
     return token;
   });
   // 녹화 시작·끝 — 녹화 중에는 큰 창을 내려도 녹화가 멈추지 않게(백그라운드 느려짐 끔), 내리면 작은 막대
-  ipcMain.handle("video:record-live", (e, on, startedAt) => {
+  ipcMain.handle("video:record-live", (e, on, startedAt, opt) => {
     if (!on) return endLive(), true;
     const win = winOf(e);
     if (!win || live) return true;
     win.webContents.setBackgroundThrottling(false);
-    live = { win, startedAt: Number(startedAt) || Date.now(), onMin: () => openMini(), onRestore: () => closeMini() };
+    // 조정실로 녹화하면 작은 막대는 안 띄운다 (조정실이 대신한다)
+    const noMini = Boolean(opt && opt.console);
+    live = { win, startedAt: Number(startedAt) || Date.now(), onMin: () => !noMini && openMini(), onRestore: () => closeMini() };
     win.on("minimize", live.onMin);
     win.on("restore", live.onRestore);
     return true;
@@ -425,6 +462,26 @@ function register(base) {
     return true;
   });
   ipcMain.on("record-mini:expand", () => live && showBig(live.win));
+  // 녹화 조정실 창 — 옮기기·투명도·작게·크게 (앱 0.1.8부터)
+  let consoleFrom = null;
+  ipcMain.handle("video:console", (_e, act, a, b) => {
+    const w = consoleWin && !consoleWin.isDestroyed() ? consoleWin : null;
+    if (!w) return false;
+    if (act === "drag-start") consoleFrom = w.isMaximized() ? null : w.getPosition();
+    else if (act === "drag" && consoleFrom) w.setPosition(Math.round(consoleFrom[0] + a), Math.round(consoleFrom[1] + b));
+    else if (act === "opacity") w.setOpacity(Math.min(1, Math.max(0.3, Number(a) || 1)));
+    else if (act === "min") w.minimize();
+    else if (act === "max") {
+      if (w.isMaximized()) w.unmaximize();
+      else w.maximize();
+      return w.isMaximized();
+    } else if (act === "show") {
+      if (w.isMinimized()) w.restore();
+      w.show();
+      w.focus();
+    }
+    return true;
+  });
   // 프롬프터 (앱 0.1.8부터)
   ipcMain.handle("video:prompter-open", async (e, opts) => {
     prompterOwner = e.sender;
@@ -524,4 +581,4 @@ function leave(save) {
   }
   dirty = false;
 }
-module.exports = { register, setupCapture, openFile, wantsAsk, leave };
+module.exports = { register, setupCapture, openFile, wantsAsk, leave, consoleOptions, setConsole };

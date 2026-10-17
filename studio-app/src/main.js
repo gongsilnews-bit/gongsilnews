@@ -215,13 +215,19 @@ async function createWindow() {
     } catch {}
   });
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName }) => {
+    // 영상 녹화 조정실 (OBS 스튜디오 모드처럼) — 테두리 없는 따로 창, 항상 위, 녹화에 안 찍힘 (video/ipc.js 가 맡는다)
+    if (url === "about:blank" && frameName === "gsv-console") return { action: "allow", overrideBrowserWindowOptions: videoIpc.consoleOptions(mainWindow) };
     if (url === "about:blank" || url.startsWith(BASE_ORIGIN)) return { action: "allow", overrideBrowserWindowOptions: { autoHideMenuBar: true } };
     try {
       if (IN_APP_POPUP_HOSTS.some((re) => re.test(new URL(url).hostname))) return { action: "allow" };
     } catch {}
     shell.openExternal(url);
     return { action: "deny" };
+  });
+
+  mainWindow.webContents.on("did-create-window", (win, { frameName }) => {
+    if (frameName === "gsv-console") videoIpc.setConsole(win, mainWindow);
   });
 
   // 영상 편집기에 저장 안 한 내용이 있으면 — 닫기를 멈추고 [저장 / 다른 이름으로 / 저장 안 함 / 취소] 를 묻는다

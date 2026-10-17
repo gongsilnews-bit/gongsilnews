@@ -666,7 +666,7 @@ export function VideoFlow({ method = "video", preset, script = "", onCancel, onD
 }
 
 /** 카메라·마이크 고르는 칸 옆 [설정] — 누르면 윈도우 장치 설정이 바로 열린다 (옛 앱은 권한 화면) */
-function SettingsBtn({ what, onOpen }: { what: "camera" | "microphone"; onOpen: (w: "camera" | "microphone") => void }) {
+export function SettingsBtn({ what, onOpen }: { what: "camera" | "microphone"; onOpen: (w: "camera" | "microphone") => void }) {
   const b = videoBridge()!;
   const open = b.openDeviceSettings || b.openSettings;
   if (!open) return null;
@@ -680,7 +680,7 @@ function SettingsBtn({ what, onOpen }: { what: "camera" | "microphone"; onOpen: 
 }
 
 /** [설정]을 누른 뒤 — 무엇을 하면 되는지 한 줄 안내 */
-function SettingsNote({ what }: { what: "camera" | "microphone" }) {
+export function SettingsNote({ what }: { what: "camera" | "microphone" }) {
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 8, marginBottom: 8, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, fontSize: 14, lineHeight: 1.6 }}>
       <Icon name="info" size={17} />
@@ -695,7 +695,7 @@ function SettingsNote({ what }: { what: "camera" | "microphone" }) {
 }
 
 /** 마이크 소리 크기 막대 — 말하면 움직인다 (녹화 전·녹화 중 모두). 너무 크면 노랑·빨강 */
-function MicMeter({ deviceId, gain = 1, auto = true }: { deviceId: string; gain?: number; auto?: boolean }) {
+export function MicMeter({ deviceId, gain = 1, auto = true }: { deviceId: string; gain?: number; auto?: boolean }) {
   const [level, setLevel] = useState(0); // 0~1
   const [err, setErr] = useState("");
   const gainRef = useRef(gain);
@@ -874,10 +874,10 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
 /* ── 영상 녹화하고 바로 편집하기 ── */
 // 화면 + 카메라의 카메라 — 녹화 캔버스(1920×1080) 기준 가운데(cx, cy)·반지름(r, 사각형은 한 변의 절반), 모양, 테두리 두께(line)·색(color)
 // 배치(layout) — pip: 화면 위에 작은 카메라, lr: 좌우 반반, tb: 상하 반반. swap: 반반일 때 화면·카메라 자리 바꾸기
-type CamBox = { cx: number; cy: number; r: number; shape: "circle" | "square"; line: number; color: string; layout: "pip" | "lr" | "tb"; swap: boolean };
-const CAM_DEFAULT: CamBox = { cx: 1920 - 210, cy: 1080 - 210, r: 170, shape: "circle", line: 6, color: "#ffffff", layout: "pip", swap: false };
-type Rect = [number, number, number, number]; // x, y, 너비, 높이 (캔버스 px)
-const splitRects = (b: CamBox): { scr: Rect; cam: Rect } | null => {
+export type CamBox = { cx: number; cy: number; r: number; shape: "circle" | "square"; line: number; color: string; layout: "pip" | "lr" | "tb"; swap: boolean };
+export const CAM_DEFAULT: CamBox = { cx: 1920 - 210, cy: 1080 - 210, r: 170, shape: "circle", line: 6, color: "#ffffff", layout: "pip", swap: false };
+export type Rect = [number, number, number, number]; // x, y, 너비, 높이 (캔버스 px)
+export const splitRects = (b: CamBox): { scr: Rect; cam: Rect } | null => {
   if (b.layout === "pip") return null;
   const a: Rect = b.layout === "lr" ? [0, 0, 960, 1080] : [0, 0, 1920, 540];
   const c: Rect = b.layout === "lr" ? [960, 0, 960, 1080] : [0, 540, 1920, 540];
@@ -885,8 +885,8 @@ const splitRects = (b: CamBox): { scr: Rect; cam: Rect } | null => {
 };
 const rectPct = (r: Rect) => ({ left: `${(r[0] / 1920) * 100}%`, top: `${(r[1] / 1080) * 100}%`, width: `${(r[2] / 1920) * 100}%`, height: `${(r[3] / 1080) * 100}%` });
 const CAM_ROUND = 24; // 사각형 모서리 둥글기
-const CAM_COLORS = ["#ffffff", "#000000", "#22c55e", "#3b82f6", "#ef4444", "#facc15"];
-const fitCamBox = (b: CamBox): CamBox => {
+export const CAM_COLORS = ["#ffffff", "#000000", "#22c55e", "#3b82f6", "#ef4444", "#facc15"];
+export const fitCamBox = (b: CamBox): CamBox => {
   const r = Math.round(Math.min(400, Math.max(80, b.r)));
   return {
     r,
@@ -900,7 +900,7 @@ const fitCamBox = (b: CamBox): CamBox => {
   };
 };
 // 테두리는 안쪽으로 그려서 미리보기(CSS 테두리)와 크기가 같게
-const camPath = (g: CanvasRenderingContext2D, b: CamBox, inset: number) => {
+export const camPath = (g: CanvasRenderingContext2D, b: CamBox, inset: number) => {
   const r = b.r - inset;
   g.beginPath();
   if (b.shape === "circle") g.arc(b.cx, b.cy, r, 0, Math.PI * 2);
@@ -914,8 +914,8 @@ export type Prompter = { on: boolean; text: string; size: number; cps: number; m
 const OLD_SIZE: Record<string, number> = { s: 40, m: 52, l: 66 };
 const OLD_CPS: Record<string, number> = { slow: 4, mid: 5, fast: 6 };
 const PROMPTER_KEY = "gsv:prompter";
-const clampCps = (v: number) => Math.min(8, Math.max(3, Math.round(v * 2) / 2));
-const clampSize = (v: number) => Math.min(96, Math.max(28, Math.round(v / 2) * 2));
+export const clampCps = (v: number) => Math.min(8, Math.max(3, Math.round(v * 2) / 2));
+export const clampSize = (v: number) => Math.min(96, Math.max(28, Math.round(v / 2) * 2));
 export function loadPrompter(): Prompter {
   try {
     const v = JSON.parse(localStorage.getItem(PROMPTER_KEY) || "null");
@@ -930,14 +930,14 @@ export function loadPrompter(): Prompter {
   } catch {}
   return { on: true, text: "", size: 52, cps: 5, mine: null };
 }
-function savePrompter(p: Prompter) {
+export function savePrompter(p: Prompter) {
   try {
     localStorage.setItem(PROMPTER_KEY, JSON.stringify(p));
   } catch {}
 }
 const PROMPTER_LEN = [[30, "30초"], [60, "1분"], [120, "2분"], [180, "3분"]] as const;
 
-function PrompterPanel({ value, onChange, disabled, rehearsing, onRehearse }: { value: Prompter; onChange: (p: Prompter) => void; disabled: boolean; rehearsing: boolean; onRehearse: () => void }) {
+export function PrompterPanel({ value, onChange, disabled, rehearsing, onRehearse }: { value: Prompter; onChange: (p: Prompter) => void; disabled: boolean; rehearsing: boolean; onRehearse: () => void }) {
   const b = videoBridge()!;
   const writer = useStudioWriter();
   const [ai, setAi] = useState<"" | "topic" | "vacancy">("");

@@ -225,7 +225,9 @@ export type VideoBridge = {
     chunk: (token: string, buf: ArrayBuffer) => Promise<boolean>;
     stop: (token: string) => Promise<LibItem>;
     // 녹화 중 작게 하기 (옛 앱에는 없음)
-    live?: (on: boolean, startedAt?: number) => Promise<boolean>;
+    live?: (on: boolean, startedAt?: number, opt?: { console?: boolean }) => Promise<boolean>;
+    // 녹화 조정실 창 (앱 0.1.8부터) — drag-start·drag(dx, dy)·opacity(0.3~1)·min·max(→ 크게인지)·show
+    console?: (act: "drag-start" | "drag" | "opacity" | "min" | "max" | "show", a?: number, b?: number) => Promise<boolean>;
     minimize?: () => Promise<boolean>;
     onMiniStop?: (fn: () => void) => () => void;
     // 프롬프터 — 녹화하는 모니터 위쪽 대본 창, 녹화에 안 찍힘 (앱 0.1.8부터)
