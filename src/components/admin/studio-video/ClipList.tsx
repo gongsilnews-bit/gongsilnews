@@ -265,7 +265,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
 
   return (
     <div onClick={(e) => p.actions.selectClip(c.id, e.ctrlKey || e.metaKey || e.shiftKey)} data-clip={c.id}
-      style={{ position: "relative", display: "flex", gap: 0, margin: "8px 0", borderRadius: 8, border: `1px solid ${sel ? C.accent : playingHere ? C.line2 : C.line}`, background: C.card, cursor: "pointer", fontFamily: FONT }}>
+      // 지금 재생 위치 클립 = 파란 두꺼운 테두리 (재생하면 말소리를 따라 내려간다) · 고른 클립 = 옅은 파란 테두리
+      style={{ position: "relative", display: "flex", gap: 0, margin: "8px 0", borderRadius: 8, border: `1px solid ${sel ? "rgba(59,130,246,0.55)" : C.line}`, outline: playingHere ? `2px solid ${C.accent}` : "none", outlineOffset: -1, background: C.card, cursor: "pointer", fontFamily: FONT }}>
       {/* 번호 + 고르기 칸 */}
       <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 14, borderRight: `1px solid ${C.line}` }}>
         <span style={{ fontSize: 15, fontWeight: 800, color: playingHere ? C.text : C.sub }}>{n}</span>
