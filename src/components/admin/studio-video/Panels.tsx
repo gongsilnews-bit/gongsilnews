@@ -317,7 +317,6 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
 
 /* ── AI 목소리 ── */
 export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClose }: { project: Project; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
-  const b = videoBridge();
   const cur = project.settings.voice;
   const [id, setId] = useState(cur.id);
   const [speed, setSpeed] = useState(cur.speed || 1);
@@ -325,28 +324,10 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
   const [g, setG] = useState<"all" | "여성" | "남성">("all");
   const [rec, setRec] = useState(true);
   const [age, setAge] = useState("");
-  const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
   const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!age || v.age === age) && (!rec || v.recommended));
-  const sample = project.scenes.flatMap((sc) => sc.clips).find((c) => c.type === "voice" && c.text)?.text.slice(0, 60) || "안녕하세요. 공실뉴스입니다. 오늘 소개할 매물을 함께 보시죠.";
-  const preview = async (vid: string) => {
-    if (!b) return;
-    setBusy(vid);
-    setMsg("");
-    try {
-      const r = await b.voice(project.dir, sample, vid);
-      audio.current?.pause();
-      const a = new Audio(r.url);
-      a.playbackRate = speed;
-      a.volume = Math.min(1, volume);
-      audio.current = a;
-      a.play().catch(() => {});
-    } catch (e) {
-      setMsg(errText(e));
-    }
-    setBusy("");
-  };
+  // 미리 듣기는 미리 녹음해 둔 파일만 — 새로 만들면 공실뉴스 API 비용이 나가서 [내 대본으로 듣기]는 없앴다 (2026-10-17)
   useEffect(() => () => audio.current?.pause(), []);
   // 카드 ▷ — 미리 녹음해 둔 성우 음성 (public/studio-voices/{id}.mp3) 을 바로 튼다. 다시 누르면 멈춤
   const [playing, setPlaying] = useState("");
@@ -358,7 +339,7 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
     a.playbackRate = speed;
     a.volume = Math.min(1, volume);
     a.onended = () => setPlaying("");
-    a.onerror = () => { setPlaying(""); preview(vid); }; // 녹음이 없으면 만들어서
+    a.onerror = () => { setPlaying(""); setMsg("이 목소리는 들어 볼 녹음이 아직 없어요."); };
     audio.current = a;
     setPlaying(vid);
     a.play().catch(() => setPlaying(""));
@@ -420,9 +401,9 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
                       <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 5 }}>{v.kind}</div>
                       <div style={{ fontSize: 14, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>{v.tags.map((t) => `#${t}`).join("  ")}</div>
                     </div>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); setId(v.id); playSample(v.id); }} disabled={busy === v.id} title={playing === v.id ? "멈추기" : "목소리 들어 보기"}
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setId(v.id); playSample(v.id); }} title={playing === v.id ? "멈추기" : "목소리 들어 보기"}
                       style={{ width: 42, height: 42, flexShrink: 0, borderRadius: "50%", border: `1px solid ${playing === v.id ? C.accent : C.line2}`, background: playing === v.id ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {busy === v.id ? <span style={{ fontSize: 13 }}>…</span> : playing === v.id ? <span style={{ width: 12, height: 12, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={17} />}
+                      {playing === v.id ? <span style={{ width: 12, height: 12, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={17} />}
                     </button>
                   </div>
                 ))}
@@ -442,7 +423,6 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
             </label>
             <button type="button" onClick={() => { setSpeed(1); setVolume(1); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
             <span style={{ flex: 1 }} />
-            <Btn onClick={() => { audio.current?.pause(); setPlaying(""); preview(id); }} disabled={busy === id} title="내 영상의 첫 문장을 이 목소리로 읽어 봐요"><Icon name="play" size={15} />{busy === id ? "만드는 중…" : "내 대본으로 듣기"}</Btn>
           </div>
         </div>
         {/* 넣기 */}
