@@ -675,8 +675,12 @@ export function SettingsBtn({ what, onOpen }: { what: "camera" | "microphone"; o
   const name = what === "camera" ? "카메라" : "마이크";
   return (
     <button type="button" onClick={() => { void open(what); onOpen(what); }} title={`윈도우 ${name} 설정을 열어요 (${what === "camera" ? "밝기·대비, 쓸 카메라" : "쓸 마이크, 소리 크기, 마이크 테스트"})`}
-      style={{ height: 42, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-      <Icon name="gear" size={18} />설정
+      aria-label={`${name} 설정`}
+      onMouseEnter={(e) => { e.currentTarget.style.background = C.cardHover; e.currentTarget.style.borderColor = C.sub; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = C.card; e.currentTarget.style.borderColor = C.line2; }}
+      style={{ width: 42, height: 42, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, color: C.text, cursor: "pointer" }}>
+      {/* 글자 없이 아이콘만 (사장님 2026-10-17) — 이름은 마우스를 올리면 */}
+      <Icon name="winGear" size={22} stroke={1.5} />
     </button>
   );
 }

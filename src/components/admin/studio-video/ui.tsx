@@ -76,6 +76,8 @@ const P: Record<string, React.ReactNode> = {
   winMin: <><path d="M5 12h14" /></>,
   winMax: <><rect x="5" y="5" width="14" height="14" rx="1" /></>,
   winRestore: <><rect x="5" y="8" width="11" height="11" rx="1" /><path d="M8 8V5h11v11h-3" /></>,
+  // 창 + 톱니 (장치 설정 열기) — 단정한 선 아이콘
+  winGear: <><path d="M20 10.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h5.5" /><path d="M3 8.5h17" /><circle cx="17.5" cy="17.5" r="2" /><path d="M17.5 13.5v1.2M17.5 20.3v1.2M13.5 17.5h1.2M20.3 17.5h1.2M14.7 14.7l.85.85M19.45 19.45l.85.85M14.7 20.3l.85-.85M19.45 15.55l.85-.85" /></>,
   gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></>,
   file: <><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /></>,
   ai: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 15l2-6 2 6M9 13h2M15 9v6" /></>,
