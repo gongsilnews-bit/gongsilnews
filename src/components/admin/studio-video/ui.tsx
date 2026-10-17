@@ -162,10 +162,34 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
 
 /** 가운데 뜨는 창 (뒤는 어둡게) */
 export function Modal({ title, onClose, children, width = 760, footer, steps, step }: { title?: string; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number }) {
+  // 제목 줄을 잡고 끌면 창이 옮겨진다 (뒤 화면을 보려고 — 녹화 창 등). 제목 줄은 화면 밖으로 나가지 않게
+  const [pos, setPos] = React.useState({ x: 0, y: 0 });
+  const box = React.useRef<HTMLDivElement>(null);
+  const drag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button, input, select, a")) return;
+    const r = box.current?.getBoundingClientRect();
+    if (!r) return;
+    const sx = e.clientX - pos.x;
+    const sy = e.clientY - pos.y;
+    const base = { left: r.left - pos.x, top: r.top - pos.y, w: r.width };
+    const move = (ev: PointerEvent) => {
+      const x = Math.min(Math.max(ev.clientX - sx, 80 - base.left - base.w), window.innerWidth - 80 - base.left);
+      const y = Math.min(Math.max(ev.clientY - sy, -base.top), window.innerHeight - 60 - base.top);
+      setPos({ x, y });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    e.preventDefault();
+  };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
-      <div style={{ width, maxWidth: "94vw", maxHeight: "92vh", display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${C.line}` }}>
+      <div ref={box} style={{ width, maxWidth: "94vw", maxHeight: "92vh", display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: pos.x || pos.y ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
+        <div onPointerDown={drag} onDoubleClick={() => setPos({ x: 0, y: 0 })} title="끌어서 창을 옮길 수 있어요 (두 번 누르면 가운데로)"
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${C.line}`, cursor: "move", userSelect: "none" }}>
           {steps ? (
             <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
               {steps.map((s, i) => (
