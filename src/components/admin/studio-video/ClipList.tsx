@@ -294,20 +294,25 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       {w.del ? "↺" : "✕"}
                     </button>
                   )}
-                  {/* 고른 단어로 할 수 있는 일 — 브루처럼 그 단어 바로 위에서 오른쪽으로 */}
-                  {isSel && !editing && i > 0 && (
-                    <span onClick={(e) => e.stopPropagation()}
-                      style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
-                      {/* 지우기는 단어 오른쪽 위 ⓧ 로 */}
-                      <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, i)} />
-                    </span>
-                  )}
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
-                      color: w.del ? C.dim : active ? "#fff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      color: w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}
+                    {/* ③ 목소리를 만드는 동안 — 단어 칸 안에 돌아가는 동그라미 (마지막 단어에) */}
+                    {busy && i === words.length - 1 && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginLeft: 7, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} />}
                   </button>
                   </span>
+                  {/* ① 고른 단어 바로 뒤 — [↵] 여기서 클립 나누기 · [✕] 이 단어 지우기 (브루처럼) */}
+                  {isSel && !editing && (
+                    <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 3, cursor: "default" }}>
+                      {i < words.length - 1 && (
+                        <button type="button" onClick={() => p.actions.splitAt(c.id, i + 1)} title="이 단어 뒤에서 클립 나누기"
+                          style={{ width: 26, height: 26, padding: 0, borderRadius: 5, border: 0, background: C.accent, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800 }}>↵</button>
+                      )}
+                      <button type="button" onClick={() => p.actions.toggleWord(c.id, i)} title={w.del ? "이 단어 되살리기" : "이 단어 지우기 (영상에서 잘려요)"}
+                        style={{ width: 26, height: 26, padding: 0, borderRadius: 5, border: 0, background: C.line2, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{w.del ? "↺" : "✕"}</button>
+                    </span>
+                  )}
                   </React.Fragment>
                 );
               })}
@@ -445,6 +450,9 @@ function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
 
 const SPARE_W = 30; // 애셋 줄 끝 빈 칸 (사진을 놓는 자리)
 
+// 돌아가는 동그라미 (목소리 만드는 중)
+const SPIN_CSS = "@keyframes gsvSpin{to{transform:rotate(360deg)}}.gsv-spin{animation:gsvSpin .8s linear infinite}";
+
 export default function ClipList(p: Props) {
   const { project } = p;
   const [drop, setDrop] = React.useState<{ id: string; where: "before" | "after" | "replace" } | null>(null);
@@ -519,6 +527,7 @@ export default function ClipList(p: Props) {
   const byId = new Map(p.items.map((x) => [x.clip.id, x]));
   return (
     <div style={{ padding: "8px 24px 120px" }}>
+      <style>{SPIN_CSS}</style>
       {project.scenes.map((sc, si) => {
         const its = sc.clips.map((c) => byId.get(c.id)).filter(Boolean) as FlatItem[];
         if (!its.length && project.scenes.length > 1) return null;
