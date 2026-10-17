@@ -182,10 +182,10 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
   x: number;
   y: number;
   count: number; // 적용되는 클립 수
-  scope: "sel" | "all"; // 적용 범위 — 이 클립(고른 클립) / 모든 클립
+  scope: "one" | "sel" | "all"; // 적용 범위 — 이 클립에만 / 선택 클립 / 모든 클립
   selCount: number;
   allCount: number;
-  onScope: (s: "sel" | "all") => void;
+  onScope: (s: "one" | "sel" | "all") => void;
   muted: boolean;
   value: number;
   speed: number;
@@ -200,7 +200,7 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
-  const W = 280;
+  const W = 320;
   const left = Math.max(8, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 1600) - W - 16));
   const top = Math.max(8, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 900) - 330));
   const chipS = (on: boolean): React.CSSProperties => ({ flex: 1, height: 28, padding: 0, borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
@@ -212,7 +212,9 @@ export function SoundMenu({ title, x, y, count, scope, selCount, allCount, onSco
         <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>적용 범위</div>
         <div style={{ display: "flex", gap: 5, marginBottom: 4 }}>
-          <button type="button" onClick={() => onScope("sel")} style={{ ...chipS(scope === "sel"), height: 30 }}>{selCount > 1 ? `고른 클립 ${selCount}개` : "이 클립에만"}</button>
+          <button type="button" onClick={() => onScope("one")} style={{ ...chipS(scope === "one"), height: 30 }}>이 클립에만</button>
+          {/* 선택 클립 — 클립을 2개 이상 골랐을 때만 */}
+          <button type="button" disabled={selCount < 2} onClick={() => onScope("sel")} title={selCount < 2 ? "클립을 2개 이상 고르면 쓸 수 있어요" : undefined} style={{ ...chipS(scope === "sel"), height: 30, opacity: selCount < 2 ? 0.4 : 1, cursor: selCount < 2 ? "default" : "pointer" }}>선택 클립 ({selCount}개)</button>
           <button type="button" onClick={() => onScope("all")} style={{ ...chipS(scope === "all"), height: 30 }}>모든 클립 ({allCount}개)</button>
         </div>
         <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 10 }}>아래에서 바꾸면 클립 {count}개에 들어가요.</div>

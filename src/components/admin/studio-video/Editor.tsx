@@ -117,6 +117,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
   const [subMode, setSubMode] = useState<"all" | "sel">("all"); // 메인자막 서식 적용 범위
   const [srcMode, setSrcMode] = useState<"sel" | "all">("sel"); // 원본 소리 설정 적용 범위
+  const [soundScope, setSoundScope] = useState<"one" | "sel" | "all">("one"); // 소리 칩 메뉴 적용 범위 — 처음엔 늘 [이 클립에만]
   const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number } | null>(null); // 소리 칩 옆 작은 창
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
@@ -426,6 +427,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
       const c = findClip(pref.current, id)?.clip;
       setSrcMode("sel");
+      setSoundScope("one");
       setPanel(c && c.type !== "voice" ? "source" : "voice");
       setSoundPop({ id, x, y });
     },
@@ -1854,11 +1856,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         const isVoice = c.type === "voice";
         // 모든 클립 = 같은 종류(AI 목소리 / 원본 소리) 클립 모두
         const same = flat.items.map((x) => x.clip).filter((x) => (isVoice ? x.type === "voice" : isSrc(x))).map((x) => x.id);
+        // 적용 범위 — 이 클립에만(처음) / 선택 클립(고른 클립) / 모든 클립(같은 종류)
         const sel = selected.length > 1 && selected.includes(c.id) ? selected : [c.id];
-        const ids = srcMode === "all" ? same : sel;
+        const ids = soundScope === "all" ? same : soundScope === "sel" ? sel : [c.id];
         const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
         const sp = isVoice ? speedOf(c, project.settings) : srcSpeed(c);
-        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length} scope={srcMode} selCount={sel.length} allCount={same.length} onScope={setSrcMode}
+        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={setSoundScope}
           muted={Boolean(c.muted)} value={c.volume ?? 1} speed={sp}
           onMute={(v) => each((x) => { x.muted = v || undefined; })}
           onVolume={(v, first) => each((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
