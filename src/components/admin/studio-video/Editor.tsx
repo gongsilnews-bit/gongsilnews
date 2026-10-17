@@ -542,6 +542,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     openLayer: (id) => {
       setSelLayer(id);
       setPanel("layer");
+      // 미리보기도 그 자리로 — 단어 구간이면 그 단어 시작, 아니면 시작 클립 처음 (넣은 사진·글자가 바로 보이게)
+      const l = (pref.current.layers || []).find((x) => x.id === id);
+      const f = l ? findClip(pref.current, l.from) : null;
+      if (!l || !f) return;
+      player.current?.pause();
+      const t = typeof l.w0 === "number" ? wordTimes(f.clip, pref.current.settings).find((x) => x.i === l.w0) : null;
+      seekClip(l.from, t ? t.s + 0.02 : 0.02);
     },
     openTiming: (id) => {
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
