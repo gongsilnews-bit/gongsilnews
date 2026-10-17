@@ -237,7 +237,16 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
 
   return (
     <div onClick={(e) => p.actions.selectClip(c.id, e.ctrlKey || e.metaKey || e.shiftKey)} data-clip={c.id}
-      style={{ display: "flex", gap: 0, margin: "8px 0", borderRadius: 8, border: `1px solid ${sel ? C.accent : playingHere ? C.line2 : C.line}`, background: C.card, cursor: "pointer", fontFamily: FONT }}>
+      style={{ position: "relative", display: "flex", gap: 0, margin: "8px 0", borderRadius: 8, border: `1px solid ${sel ? C.accent : playingHere ? C.line2 : C.line}`, background: C.card, cursor: "pointer", fontFamily: FONT }}>
+      {/* 고른 단어로 할 수 있는 일 — 브루처럼 클립 칸 오른쪽 위에 떠 있는 단추 줄 (아래 줄을 차지하지 않게) */}
+      {p.selWord?.clip === c.id && !editing && words[p.selWord.i] && (
+        <div onClick={(e) => e.stopPropagation()}
+          style={{ position: "absolute", right: 140, top: 0, transform: "translateY(-70%)", zIndex: 20, display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+          <span style={{ fontSize: 13, color: C.sub, padding: "0 8px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>“{words[p.selWord.i].w}”</span>
+          <ActionBtn icon={words[p.selWord.i].del ? "undo" : "trash"} label={words[p.selWord.i].del ? "되살리기" : "이 단어 지우기"} onClick={() => p.actions.toggleWord(c.id, p.selWord!.i)} danger={!words[p.selWord.i].del} />
+          {p.selWord.i > 0 && <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, p.selWord!.i)} />}
+        </div>
+      )}
       {/* 번호 + 고르기 칸 */}
       <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 14, borderRight: `1px solid ${C.line}` }}>
         <span style={{ fontSize: 15, fontWeight: 800, color: playingHere ? C.text : C.sub }}>{n}</span>
@@ -354,14 +363,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
           </div>
         )}
 
-        {/* 고른 단어로 할 수 있는 일 */}
-        {p.selWord?.clip === c.id && !editing && words[p.selWord.i] && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 12px 10px 12px" }} onClick={(e) => e.stopPropagation()}>
-            <span style={{ fontSize: 13.5, color: C.sub, alignSelf: "center", marginRight: 4 }}>“{words[p.selWord.i].w}”</span>
-            <ActionBtn icon={words[p.selWord.i].del ? "undo" : "trash"} label={words[p.selWord.i].del ? "이 단어 되살리기" : "이 단어 지우기"} onClick={() => p.actions.toggleWord(c.id, p.selWord!.i)} danger={!words[p.selWord.i].del} />
-            {p.selWord.i > 0 && <ActionBtn icon="split" label="여기서 클립 나누기" onClick={() => p.actions.splitAt(c.id, p.selWord!.i)} />}
-          </div>
-        )}
 
         {/* 2줄: 화면 자료 + 자막 */}
         {(p.view === "detail" || (isSrc && subOpen > 0)) && (
