@@ -1057,8 +1057,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v > 0 ? +v.toFixed(2) : undefined; }, first),
     };
   };
-  /* ── 속도·길이 (고른 클립 모두) ── */
-  const timingIds = () => (selected.length ? selected : cur ? [cur.clip.id] : []);
   /**
    * 클립 길이 (소리 칩 메뉴) — AI 목소리: 다 읽는 시간보다 짧게는 안 되고, 길면 끝에 쉼(pad). 빠르기는 그대로.
    * 촬영 영상: 시작점은 그대로 끝만 (빠르기 그대로), 원본 영상 끝까지만
