@@ -46,7 +46,7 @@ function consoleOptions(main, kind) {
       d = screen.getAllDisplays().find((x) => String(x.id) === id) || null;
     } catch {}
     const wa = (d || screen.getDisplayMatching(main.getBounds())).workArea;
-    const W = 400, H = Math.min(640, wa.height - 40);
+    const W = 400, H = Math.min(560, wa.height - 40); // 내용 높이에 맞게 (빈칸 없이)
     return { width: W, height: H, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - H - 20, minWidth: 320, minHeight: 420, frame: false, backgroundColor: "#111317", title: "녹화 중", alwaysOnTop: true, autoHideMenuBar: true, show: true };
   }
   const wa = screen.getDisplayMatching(main.getBounds()).workArea;

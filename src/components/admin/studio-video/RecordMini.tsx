@@ -165,7 +165,8 @@ export function RecordMini(p: MiniProps) {
         {winBtn(big ? "winRestore" : "winMax", big ? "원래 크기로" : "크게 (화면 가득)", () => void toggleBig())}
         {winBtn("close", "닫고 스튜디오 창 크게 보기", () => void b.record.console?.("big"), true)}
       </div>
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: 12, overflowY: "auto" }}>
+      {/* 내용만큼만 — PC 소리 줄 바로 아래에 녹화 끝내기 줄 (남는 칸은 맨 아래로) */}
+      <div style={{ flex: "0 1 auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: 12, overflowY: "auto" }}>
         {/* 2. 화면 · 카메라 · 화면+카메라 */}
         <div style={{ display: "flex", gap: 6 }}>
           {MODES.map((m) => (
