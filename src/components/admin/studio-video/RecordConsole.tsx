@@ -430,6 +430,8 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
       const tracks = await buildAudio();
       const out = new MediaStream([...media.stream!.getVideoTracks(), ...tracks]);
       if (prUse) openPrompter(Date.now() + 3000);
+      popRef.current = openPop();
+      if (popRef.current) b.record.minimize?.().catch(() => {}); // 화면 녹화에 스튜디오 창이 안 찍히게
       setPhase("count");
       for (let i = 3; i > 0; i--) {
         setCount(i);
@@ -452,13 +454,13 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
       rec.current = r;
       setSec(0);
       setPhase("rec");
-      await b.record.live?.(true, Date.now(), { console: popup }).catch(() => {});
-      // 조정실 창이 따로 떠 있으면 스튜디오 창은 내린다 (화면 녹화에 안 찍히게)
-      if (popup) b.record.minimize?.().catch(() => {});
+      await b.record.live?.(true, Date.now(), { console: popRef.current }).catch(() => {});
     } catch (e) {
       setErr(`녹화를 시작하지 못했어요: ${errText(e)}`);
       closePrompter();
       stopAudio();
+      // 내려 둔 스튜디오 창을 다시 올린다
+      if (popRef.current) void b.record.live?.(true, Date.now(), { console: true }).then(() => b.record.live?.(false)).catch(() => {});
       setPhase("setup");
     }
   };
@@ -496,17 +498,18 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
 
   /* ── 따로 뜨는 창 ── */
   const [pop, setPop] = useState<{ w: Window; root: HTMLElement } | null>(null);
-  const [popFail, setPopFail] = useState(false);
-  const popup = Boolean(pop);
+  const popRef = useRef(false); // 녹화 시작 때 바로 쓰려고 (상태는 한 박자 늦다)
   const cancelRef = useRef(onCancel);
   cancelRef.current = onCancel;
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
-  useEffect(() => {
-    if (!canPop) return;
-    // 열 때마다 새 이름 — 개발 모드에서 두 번 열고 닫을 때 닫히는 창을 다시 잡지 않게
+  const popOff = useRef<(() => void) | null>(null);
+  /** [녹화 시작] 때 — 조정실을 따로 뜨는 창으로 옮긴다 (스튜디오 창은 내려간다). 못 열면 스튜디오 안에서 그대로 */
+  const openPop = (): boolean => {
+    if (!canPop) return false;
+    // 열 때마다 새 이름 — 닫히는 중인 창을 다시 잡지 않게
     const w = window.open("about:blank", `gsv-console-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
-    if (!w) return setPopFail(true);
+    if (!w) return false;
     const d = w.document;
     d.title = "영상 녹화하기";
     // 글꼴·기본 스타일을 그대로
@@ -520,29 +523,31 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
     root.style.cssText = "height:100vh;display:flex;flex-direction:column;";
     d.body.appendChild(root);
     let mine = true;
-    // 창을 윈도우에서 닫으면 (Alt+F4 등) — 녹화 중이면 녹화를 끝내 저장, 아니면 닫기
+    // 창을 윈도우에서 닫으면 (Alt+F4 등) — 녹화 중이면 녹화를 끝내 저장
     const gone = () => {
       if (!mine) return;
       mine = false;
-      if (phaseRef.current === "rec") void stopRef.current();
-      else if (phaseRef.current !== "saving") cancelRef.current();
+      if (phaseRef.current === "rec" || phaseRef.current === "count") void stopRef.current();
     };
     w.addEventListener("pagehide", gone);
     w.addEventListener("beforeunload", gone);
-    setPop({ w, root });
-    const op = Number(loadJSON("gsv:consoleOpacity", 1)) || 1;
-    if (op < 1) b.record.console?.("opacity", op).catch(() => {});
-    return () => {
+    popOff.current = () => {
       mine = false;
       w.removeEventListener("pagehide", gone);
       w.removeEventListener("beforeunload", gone);
       w.close();
+      popOff.current = null;
       setPop(null);
     };
-  }, [b, canPop]);
+    setPop({ w, root });
+    const op = Number(loadJSON("gsv:consoleOpacity", 1)) || 1;
+    if (op < 1) setTimeout(() => b.record.console?.("opacity", op).catch(() => {}), 300);
+    return true;
+  };
+  useEffect(() => () => popOff.current?.(), []);
   useEffect(() => {
-    if (phase === "saving" && pop) pop.w.close();
-  }, [phase, pop]);
+    if (phase === "saving" || phase === "setup") popOff.current?.();
+  }, [phase]);
   const [opacity, setOpacityState] = useState(() => Number(loadJSON("gsv:consoleOpacity", 1)) || 1);
   const setOpacity = (v: number) => {
     setOpacityState(v);
@@ -698,7 +703,7 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
 
   const body = (
     <>
-      {popup && (
+      {pop && (
         // 위 줄 — 끌어 옮기기(✥), 투명도, 작게·크게·닫기
         <div onPointerDown={dragTitle} onDoubleClick={(e) => !(e.target as HTMLElement).closest("button, input") && void toggleBig()}
           style={{ display: "flex", alignItems: "center", gap: 12, height: 40, paddingLeft: 14, borderBottom: `1px solid ${C.line}`, background: "#0b0c0f", cursor: big ? "default" : "move", userSelect: "none", flexShrink: 0 }}>
@@ -796,17 +801,16 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
     return (
       <>
         {createPortal(body, pop.root)}
-        {/* 스튜디오 창 쪽 — 조정실 창을 가리키는 안내 */}
-        <Modal title="영상 녹화하기" onClose={phase === "setup" ? close : undefined} width={520}
-          footer={<><Btn primary onClick={() => void b.record.console?.("show")}>녹화 창 앞으로</Btn>{phase === "setup" && <Btn onClick={close}>닫기</Btn>}</>}>
+        {/* 스튜디오 창을 다시 올렸을 때 — 녹화 창을 가리키는 안내 */}
+        <Modal title="녹화 중" width={520}
+          footer={<><Btn primary onClick={() => void b.record.console?.("show")}>녹화 창 앞으로</Btn><Btn onClick={stop} style={{ color: C.danger }}>녹화 끝내기</Btn></>}>
           <div style={{ padding: 20, fontSize: 15, lineHeight: 1.7 }}>
-            <b>녹화 창</b>이 따로 열려 있어요. 그 창에서 화면을 고르고 [녹화 시작]을 누르세요.
-            <div style={{ fontSize: 13.5, color: C.sub, marginTop: 6 }}>녹화 창은 녹화에 찍히지 않아요. 위 줄을 끌어 옮기고, 투명도를 바꿀 수 있어요.</div>
+            지금 <b>녹화 창</b>에서 녹화하고 있어요 <span style={{ color: C.danger, fontWeight: 800 }}>● {fmtTime(sec, false)}</span>
+            <div style={{ fontSize: 13.5, color: C.sub, marginTop: 6 }}>녹화 창은 녹화에 찍히지 않아요. 화면을 녹화한다면 이 스튜디오 창은 내려 두세요.</div>
           </div>
         </Modal>
       </>
     );
-  if (canPop && !popFail) return null; // 창이 열리는 중
   return (
     <Modal title="영상 녹화하기" onClose={phase === "setup" ? close : undefined} width={1180} controls>
       <div style={{ height: "78vh", display: "flex", flexDirection: "column" }}>{body}</div>
