@@ -4,13 +4,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
 import { DRAG_MEDIA, RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
-import { STUDIO_VOICES } from "@/lib/studio-video/voices";
+import { STUDIO_VOICES, voicePhoto } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
 import { ColorPick, FontPick } from "./Pickers";
 import { DEFAULT_FONT } from "@/lib/studio-video/fonts";
+
+// 성우 얼굴 동그라미 — public/studio-voices/{id}.webp, 없으면 이름 첫 글자
+function VoiceFace({ id, name }: { id: string; name: string }) {
+  const [bad, setBad] = useState(false);
+  return (
+    <div style={{ width: 52, height: 52, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.line, border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, color: C.sub }}>
+      {bad ? name.slice(0, 1) : <img src={voicePhoto(id)} alt={name} onError={() => setBad(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+    </div>
+  );
+}
 
 export function Side({ title, onClose, children, footer }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
   return (
@@ -355,8 +365,9 @@ export function VoicePanel({ project, targetCount, wordCount = 0, onApply, onClo
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         {list.map((v) => (
           <div key={v.id} onClick={() => setId(v.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 6, border: `1px solid ${id === v.id ? C.accent : C.line}`, background: id === v.id ? C.accentDim : C.card, cursor: "pointer" }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 800 }}>{v.name} <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· {v.gender}</span></div>
+            <VoiceFace id={v.id} name={v.name} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 800 }}>{v.name} <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· {v.kind} · {v.age}</span></div>
               <div style={{ fontSize: 13, color: C.sub, marginTop: 2 }}>{v.tags.map((t) => `#${t}`).join(" ")}</div>
             </div>
             <Btn small onClick={() => preview(v.id)} disabled={busy === v.id}>{busy === v.id ? "만드는 중…" : <><Icon name="play" size={14} />미리듣기</>}</Btn>

@@ -360,7 +360,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
                 <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     <select value={voiceId} onChange={(e) => setVoiceId(e.target.value)} style={{ ...input, flex: 1 }}>
-                      {STUDIO_VOICES.map((v) => <option key={v.id} value={v.id}>{v.name} ({v.gender}){v.recommended ? " · 추천" : ""}</option>)}
+                      {STUDIO_VOICES.map((v) => <option key={v.id} value={v.id}>{v.name} · {v.kind} ({v.age}){v.recommended ? " · 추천" : ""}</option>)}
                     </select>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
