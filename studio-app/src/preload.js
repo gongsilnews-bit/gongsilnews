@@ -168,6 +168,7 @@ if (allowed) {
       transcribe: (p, assetId) => ipcRenderer.invoke("video:transcribe", p, assetId),
       split: (p, assetId) => ipcRenderer.invoke("video:split", p, assetId),
       speech: (p, assetIds) => ipcRenderer.invoke("video:speech", p, assetIds), // 무음 줄이기 — 실제 말소리 구간 (PC에서)
+      peaks: (p, assetId) => ipcRenderer.invoke("video:peaks", p, assetId), // 상세 편집 — 소리 파형 (1초 100칸, 0.1.8부터)
       realign: (p, items) => ipcRenderer.invoke("video:realign", p, items), // 자막 시각 맞추기 — 글은 그대로, 시각만 (무료)
       transcribeClips: (p, targets) => ipcRenderer.invoke("video:transcribe-clips", p, targets), // 자동 자막 — 지금 클립에 글만 채우기
       ai: {

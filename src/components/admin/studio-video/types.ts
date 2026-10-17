@@ -3,7 +3,7 @@ export type Ratio = "16:9" | "9:16" | "1:1" | "4:5" | "4:3";
 export type Method = "text" | "video" | "longform" | "record";
 export type Fill = "cover" | "contain" | "blur";
 
-export type Word = { w: string; s: number; e: number; del?: boolean };
+export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */ };
 
 export type Asset = {
   id: string;
@@ -195,6 +195,8 @@ export type VideoBridge = {
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
   // 무음 줄이기 — 영상별 실제 말소리 구간 (PC에서, 옛 앱에는 없음)
   speech?: (p: Project, assetIds: string[]) => Promise<Record<string, { s: number; e: number }[]>>;
+  // 상세 편집 — 원본 영상 소리 파형 (1초 rate 칸, data = 0~255 base64, 앱 0.1.8부터)
+  peaks?: (p: Project, assetId: string) => Promise<{ rate: number; data: string }>;
   // 자막 시각 맞추기 — 글은 그대로, 단어 시각만 실제 말소리에 (무료, 옛 앱에는 없음)
   realign?: (p: Project, items: { id: string; asset: string; s: number; e: number; text: string }[]) => Promise<{ id: string; words: Word[] }[]>;
   // 자동 자막 — 지금 클립은 그대로, 글만 채우기 (옛 앱에는 없음)

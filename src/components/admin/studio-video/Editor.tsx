@@ -464,6 +464,41 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setSelected([id]);
       openLib("mine");
     },
+    // 상세 편집 — 촬영 영상 단어의 시작·끝 (앞뒤 단어와 클립 앞뒤 경계도 따라간다)
+    setWordTime: (clipId, i, s, e) => {
+      change((p) => {
+        const c = findClip(p, clipId)?.clip;
+        const w = c?.words?.[i];
+        if (!c || !w || !c.src) return;
+        if (!w.o) w.o = [w.s, w.e];
+        w.s = s;
+        w.e = e;
+        const prev = c.words![i - 1], next = c.words![i + 1];
+        if (prev && prev.e > s) prev.e = s;
+        if (next && next.s < e) next.s = e;
+        if (i === 0 && s < c.src.s) c.src.s = s;
+        if (i === c.words!.length - 1 && e > c.src.e) c.src.e = e;
+      });
+    },
+    resetWordTime: (clipId, i) => {
+      change((p) => {
+        const w = findClip(p, clipId)?.clip.words?.[i];
+        if (!w?.o) return;
+        [w.s, w.e] = w.o;
+        delete w.o;
+      });
+      say("처음 받아쓴 자리로 되돌렸어요");
+    },
+    playWord: (clipId, i) => {
+      const f = findClip(pref.current, clipId);
+      if (!f) return;
+      const t = wordTimes(f.clip, pref.current.settings).find((x) => x.i === i);
+      if (!t) return;
+      seekClip(clipId, t.s);
+      setTimeout(() => player.current?.play(), 30);
+      const ms = ((t.e - t.s) * 1000) / Math.max(0.1, rate || 1);
+      setTimeout(() => player.current?.pause(), 30 + ms);
+    },
     openLayer: (id) => {
       setSelLayer(id);
       setPanel("layer");

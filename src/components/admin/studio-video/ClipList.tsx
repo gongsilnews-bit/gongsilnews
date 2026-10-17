@@ -3,6 +3,8 @@
 // 가운데 클립 목록 — 브루처럼 문장 하나 = 클립 카드, 단어를 단추로. 단어를 지우면 그 소리·영상이 잘린다.
 // 어르신도 쉽게: 고른 카드·단어 아래에 할 수 있는 일을 단추로 늘 보여 준다 (숨은 기능 없음)
 import React from "react";
+import { createPortal } from "react-dom";
+import { WordDetail } from "./WordDetail";
 import type { Clip, Project, Word } from "./types";
 import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
@@ -25,6 +27,10 @@ export type ClipActions = {
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
   openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
   openLayer: (id: string) => void; // 단어 앞 작은 표시를 누르면 그 사진·글자 설정
+  // 상세 편집 (촬영 영상 단어의 시작·끝)
+  setWordTime: (clipId: string, i: number, s: number, e: number) => void;
+  resetWordTime: (clipId: string, i: number) => void;
+  playWord: (clipId: string, i: number) => void;
   setPad: (ids: string[], sec: number) => void; // AI 목소리 다 읽은 뒤 쉬기 (문장 끝 [..])
   // 단어를 누르면 위에 뜨는 단추 막대 (브루처럼) — 이 클립 잘라내기·복사·붙여넣기, 삽입
   cutClip: (id: string) => void;
@@ -179,6 +185,9 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const [padOpen, setPadOpen] = React.useState(false); // 문장 끝 [..] 메뉴
   const [hoverW, setHoverW] = React.useState(-1); // 마우스를 올린 단어 — 오른쪽 위 ⓧ(지우기)
   const [insOpen, setInsOpen] = React.useState(false); // 단추 막대 [삽입 ▾]
+  const [detail, setDetail] = React.useState(false); // 상세 편집 (파형) 펼침
+  const wordsRow = React.useRef<HTMLDivElement>(null);
+  const lead = p.selWord?.clip === c.id ? p.selWord.i : -1; // 마지막으로 누른 단어 (단추 막대·상세 편집 기준)
   const [padScope, setPadScope] = React.useState<"one" | "sel" | "all">("one"); // 적용 범위 — 처음엔 늘 이 클립에만
   // 촬영한 영상(원본 소리) 클립은 말한 내용·목소리를 못 바꾼다 — 연필·[자막 고치기]는 자막 줄을 연다 (AI 목소리 클립만 글 고치기)
   const isSrc = c.type !== "voice";
@@ -285,7 +294,54 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
               <ActionBtn icon="close" label="그만두기" onClick={() => setEditing(false)} />
             </div>
           ) : (
-            <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
+            <div ref={wordsRow} style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {/* 고른 단어 단추 막대 — 맨 위 층에, 단어 줄 위 왼쪽에서 (오른쪽 속성 칸을 넘지 않게) */}
+              {lead >= 0 && !editing && words[lead] && (() => {
+                const i = lead;
+
+                    const ib = (icon: string, tip: string, onClick: () => void, dis = false) => (
+                      <button type="button" title={tip} disabled={dis} onClick={onClick}
+                        style={{ width: 34, height: 32, padding: 0, border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        onMouseEnter={(e) => !dis && (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                        <Icon name={icon} size={18} />
+                      </button>
+                    );
+                    const tb = (icon: string, label: string, onClick: () => void, dis = false, tip?: string) => (
+                      <button type="button" title={tip || label} disabled={dis} onClick={onClick}
+                        style={{ height: 32, padding: "0 10px", border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" }}
+                        onMouseEnter={(e) => !dis && (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                        <Icon name={icon} size={17} />{label}
+                      </button>
+                    );
+                    const sep = <span style={{ width: 1, height: 20, background: C.line2, margin: "0 3px" }} />;
+                                    return <FloatBar anchor={wordsRow}>{<span onClick={(e) => e.stopPropagation()}
+                        style={{ display: "flex", alignItems: "center", gap: 1, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
+                        {ib("cut", "고른 단어 잘라내기 (Ctrl+X)", () => p.actions.cutClip(c.id))}
+                        {ib("copy", "고른 단어 복사하기 (Ctrl+C)", () => p.actions.copyClip(c.id))}
+                        {ib("paste", "고른 단어 뒤에 붙여넣기 (Ctrl+V)", () => p.actions.pasteAfter(c.id), !p.actions.canPaste())}
+                        {sep}
+                        {tb("speed", "상세 편집", () => (isSrc ? setDetail((v) => !v) : p.actions.openTiming(c.id)), false, isSrc ? "이 단어 소리 모양을 보며 시작·끝 맞추기" : "속도·길이 자세히")}
+                        {sep}
+                        {tb("split", "클립 나누기", () => p.actions.splitAt(c.id, i), i === 0, i === 0 ? "맨 앞 단어에서는 나눌 수 없어요" : "이 단어 앞에서 클립 나누기")}
+                        {sep}
+                        {tb("voice", c.type === "voice" ? "목소리 바꾸기" : "소리 크기", () => p.actions.openVoice(c.id))}
+                        {sep}
+                        <span style={{ position: "relative", display: "inline-flex" }}>
+                          {tb("plus", "삽입 ▾", () => setInsOpen((v) => !v))}
+                          {insOpen && (
+                            <span style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 21, display: "flex", flexDirection: "column", minWidth: 190, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                              {([["mine", "image", "내 이미지·비디오"], ["vacancy", "image", "공실 사진"], ["free", "search", "무료 이미지·비디오"], ["ai", "ai", "AI 이미지"], ["title", "font", "기본 텍스트"]] as const).map(([k, icon, label]) => (
+                                <span key={k}>{tb(icon, label, () => { setInsOpen(false); p.actions.insert(k); })}</span>
+                              ))}
+                            </span>
+                          )}
+                        </span>
+                        {sep}
+                        {/* 빠른 넣기 — 내 이미지·비디오 / 기본 텍스트 (화면 바꾸기는 오른쪽 썸네일을 누르면) */}
+                        {ib("image", "내 이미지·비디오 넣기", () => p.actions.insert("mine"))}
+                        {ib("font", "기본 텍스트 넣기", () => p.actions.insert("title"))}
+                      </span>}</FloatBar>;
+              })()}
               {words.length === 0 && <span style={{ fontSize: 15, color: C.dim, padding: "5px 0" }}>{c.type === "voice" ? "(글 없음 — 화면만 보여요)" : "(말소리 없음)"}</span>}
               {words.map((w, i) => {
                 const isSel = p.selWord?.clip === c.id && (p.selWordIs?.length ? p.selWordIs.includes(i) : p.selWord.i === i);
@@ -316,53 +372,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       {w.del ? "↺" : "✕"}
                     </button>
                   )}
-                  {/* 고른 단어 — 그 단어 바로 위에 단추 막대 (브루처럼). 지우기는 마우스를 올리면 나오는 ⓧ */}
-                  {isLead && !editing && (() => {
-                    const ib = (icon: string, tip: string, onClick: () => void, dis = false) => (
-                      <button type="button" title={tip} disabled={dis} onClick={onClick}
-                        style={{ width: 34, height: 32, padding: 0, border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                        onMouseEnter={(e) => !dis && (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                        <Icon name={icon} size={18} />
-                      </button>
-                    );
-                    const tb = (icon: string, label: string, onClick: () => void, dis = false, tip?: string) => (
-                      <button type="button" title={tip || label} disabled={dis} onClick={onClick}
-                        style={{ height: 32, padding: "0 10px", border: 0, borderRadius: 5, background: "transparent", color: dis ? C.dim : C.text, cursor: dis ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" }}
-                        onMouseEnter={(e) => !dis && (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                        <Icon name={icon} size={17} />{label}
-                      </button>
-                    );
-                    const sep = <span style={{ width: 1, height: 20, background: C.line2, margin: "0 3px" }} />;
-                    return (
-                      <span onClick={(e) => e.stopPropagation()}
-                        style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 1, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
-                        {ib("cut", "고른 단어 잘라내기 (Ctrl+X)", () => p.actions.cutClip(c.id))}
-                        {ib("copy", "고른 단어 복사하기 (Ctrl+C)", () => p.actions.copyClip(c.id))}
-                        {ib("paste", "고른 단어 뒤에 붙여넣기 (Ctrl+V)", () => p.actions.pasteAfter(c.id), !p.actions.canPaste())}
-                        {sep}
-                        {tb("speed", "상세 편집", () => p.actions.openTiming(c.id), false, "속도·길이 자세히")}
-                        {sep}
-                        {tb("split", "클립 나누기", () => p.actions.splitAt(c.id, i), i === 0, i === 0 ? "맨 앞 단어에서는 나눌 수 없어요" : "이 단어 앞에서 클립 나누기")}
-                        {sep}
-                        {tb("voice", c.type === "voice" ? "목소리 바꾸기" : "소리 크기", () => p.actions.openVoice(c.id))}
-                        {sep}
-                        <span style={{ position: "relative", display: "inline-flex" }}>
-                          {tb("plus", "삽입 ▾", () => setInsOpen((v) => !v))}
-                          {insOpen && (
-                            <span style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 21, display: "flex", flexDirection: "column", minWidth: 190, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
-                              {([["mine", "image", "내 이미지·비디오"], ["vacancy", "image", "공실 사진"], ["free", "search", "무료 이미지·비디오"], ["ai", "ai", "AI 이미지"], ["title", "font", "기본 텍스트"]] as const).map(([k, icon, label]) => (
-                                <span key={k}>{tb(icon, label, () => { setInsOpen(false); p.actions.insert(k); })}</span>
-                              ))}
-                            </span>
-                          )}
-                        </span>
-                        {sep}
-                        {/* 빠른 넣기 — 내 이미지·비디오 / 기본 텍스트 (화면 바꾸기는 오른쪽 썸네일을 누르면) */}
-                        {ib("image", "내 이미지·비디오 넣기", () => p.actions.insert("mine"))}
-                        {ib("font", "기본 텍스트 넣기", () => p.actions.insert("title"))}
-                      </span>
-                    );
-                  })()}
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i, e.ctrlKey || e.metaKey); }} title="누르면 그 자리로 · Ctrl+누르기로 여러 단어 고르기"
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
                       color: w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -425,6 +434,15 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             </div>
           )}
         </div>
+
+        {/* 상세 편집 — 고른 단어 소리 모양 (촬영·녹화 영상 클립만) */}
+        {detail && isSrc && !editing && words.length > 0 && (
+          <WordDetail project={project} clip={c} index={lead >= 0 ? lead : 0}
+            onSet={(s, e) => p.actions.setWordTime(c.id, lead >= 0 ? lead : 0, s, e)}
+            onReset={() => p.actions.resetWordTime(c.id, lead >= 0 ? lead : 0)}
+            onPlay={() => p.actions.playWord(c.id, lead >= 0 ? lead : 0)}
+            onClose={() => setDetail(false)} />
+        )}
 
         {/* 무음 줄이기 요약 */}
         {cuts.length > 0 && !editing && (
@@ -508,6 +526,40 @@ function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
 
 const SPARE_W = 30; // 애셋 줄 끝 빈 칸 (사진을 놓는 자리)
 
+/**
+ * 단어 단추 막대 — 맨 위 층(문서 맨 끝)에 띄운다. 단어 줄 위 왼쪽에서 시작하고, 클립 목록 오른쪽 끝(속성 칸)을 넘지 않게 왼쪽으로 당긴다.
+ * 위에 자리가 없으면 단어 줄 아래에
+ */
+function FloatBar({ anchor, children }: { anchor: React.RefObject<HTMLDivElement | null>; children: React.ReactNode }) {
+  const bar = React.useRef<HTMLDivElement>(null);
+  const [pos, setPos] = React.useState<{ left: number; top: number } | null>(null);
+  React.useLayoutEffect(() => {
+    const place = () => {
+      const a = anchor.current, el = bar.current;
+      if (!a || !el) return;
+      const r = a.getBoundingClientRect();
+      const list = a.closest("[data-cliplist]")?.getBoundingClientRect();
+      const right = (list ? list.right : window.innerWidth) - 8;
+      const leftEdge = (list ? list.left : 0) + 8;
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const left = Math.max(leftEdge, Math.min(r.left, right - w));
+      const top = r.top - h - 8 < (list ? list.top : 0) ? r.bottom + 6 : r.top - h - 8;
+      setPos((p) => (p && p.left === left && p.top === top ? p : { left, top }));
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  });
+  return createPortal(
+    <div ref={bar} onClick={(e) => e.stopPropagation()} style={{ position: "fixed", left: pos?.left ?? -9999, top: pos?.top ?? -9999, zIndex: 3000 }}>{children}</div>,
+    document.body,
+  );
+}
+
 // 돌아가는 동그라미 (목소리 만드는 중)
 const SPIN_CSS = "@keyframes gsvSpin{to{transform:rotate(360deg)}}.gsv-spin{animation:gsvSpin .8s linear infinite}";
 
@@ -584,7 +636,7 @@ export default function ClipList(p: Props) {
   let n = 0;
   const byId = new Map(p.items.map((x) => [x.clip.id, x]));
   return (
-    <div style={{ padding: "8px 24px 120px" }}>
+    <div data-cliplist="" style={{ padding: "8px 24px 120px" }}>
       <style>{SPIN_CSS}</style>
       {project.scenes.map((sc, si) => {
         const its = sc.clips.map((c) => byId.get(c.id)).filter(Boolean) as FlatItem[];

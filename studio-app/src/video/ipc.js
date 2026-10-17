@@ -411,6 +411,12 @@ function register(base) {
     }
     return out;
   });
+  // 상세 편집 — 원본 영상 소리 파형 (PC에서, 무료). 앱 데이터 폴더에 저장해 두고 다음부터 바로
+  ipcMain.handle("video:peaks", (_e, p, assetId) => {
+    const a = p && p.assets && p.assets[assetId];
+    if (!a || !a.path) throw new Error("원본 영상을 찾지 못했어요.");
+    return ff.peaks(a.path, path.join(require("electron").app.getPath("userData"), "peaks"));
+  });
   ipcMain.handle("video:realign", (e, p, items) => project.realign(p, items, (t, f) => send(e, "video:progress", t, f)));
   ipcMain.handle("video:transcribe-clips", (e, p, targets) => project.transcribeClips(p, targets, (t, f) => send(e, "video:progress", t, f)));
   ipcMain.handle("video:split", (e, p, assetId) => project.splitBySpeech(p, assetId, (t, f) => send(e, "video:progress", t, f)));

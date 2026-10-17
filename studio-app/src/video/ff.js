@@ -159,6 +159,57 @@ async function speech(file, duration, { noise = -35, min = 0.35 } = {}) {
 
 /* 쓸 수 있는 H.264 인코더 — 그래픽카드 가속(NVENC·QSV·AMF) → 윈도우 MediaFoundation → OpenH264 (처음 한 번 시험) */
 let encCache = null;
+/**
+ * 파형 (상세 편집) — 소리를 1초에 100칸으로 나눠 칸마다 가장 큰 소리 (0~255). 처음 한 번 뽑아 저장, 그다음부터 바로.
+ * 8kHz 한 채널로 풀어 읽는다 (빠르고 가볍다)
+ */
+async function peaks(file, cacheDir) {
+  let st;
+  try {
+    st = fs.statSync(file);
+  } catch {
+    throw new Error("원본 영상을 찾지 못했어요.");
+  }
+  const key = require("crypto").createHash("md5").update(`${file}|${st.size}|${st.mtimeMs}`).digest("hex").slice(0, 16);
+  const cache = path.join(cacheDir, `${key}.peaks`);
+  if (fs.existsSync(cache)) return { rate: 100, data: fs.readFileSync(cache).toString("base64") };
+  const RATE = 8000, PER = RATE / 100; // 한 칸 = 80 샘플 = 0.01초
+  const out = [];
+  await new Promise((resolve, reject) => {
+    const p = spawn(ff(), ["-hide_banner", "-loglevel", "error", "-i", file, "-vn", "-ac", "1", "-ar", String(RATE), "-f", "s16le", "-"], { windowsHide: true });
+    let carry = Buffer.alloc(0);
+    let n = 0, mx = 0;
+    p.stdout.on("data", (d) => {
+      const buf = carry.length ? Buffer.concat([carry, d]) : d;
+      const even = buf.length - (buf.length % 2);
+      for (let i = 0; i < even; i += 2) {
+        const v = Math.abs(buf.readInt16LE(i));
+        if (v > mx) mx = v;
+        if (++n === PER) {
+          out.push(mx);
+          n = mx = 0;
+        }
+      }
+      carry = buf.subarray(even);
+    });
+    let err = "";
+    p.stderr.on("data", (d) => (err += d));
+    p.on("error", reject);
+    p.on("close", (code) => {
+      if (n) out.push(mx);
+      code === 0 || out.length ? resolve() : reject(new Error(err.trim() || "소리를 읽지 못했어요."));
+    });
+  });
+  // 0~255 로 (작은 소리도 보이게 제곱근으로 키운다)
+  const top = Math.max(1, ...out);
+  const bytes = Buffer.from(out.map((v) => Math.round(Math.sqrt(v / top) * 255)));
+  try {
+    fs.mkdirSync(cacheDir, { recursive: true });
+    fs.writeFileSync(cache, bytes);
+  } catch {}
+  return { rate: 100, data: bytes.toString("base64") };
+}
+
 async function encoder() {
   if (encCache) return encCache;
   const tries = [
@@ -181,4 +232,4 @@ async function encoder() {
 }
 const fallbackEncoder = () => ({ name: "libopenh264", args: () => ["-c:v", "libopenh264", "-b:v", "8M"] });
 
-module.exports = { ff, ffprobe, run, probe, thumb, prepare, audioForSpeech, speech, encoder, fallbackEncoder, kindOf, IMAGE_EXT, VIDEO_EXT, AUDIO_EXT };
+module.exports = { ff, ffprobe, run, probe, thumb, prepare, audioForSpeech, speech, peaks, encoder, fallbackEncoder, kindOf, IMAGE_EXT, VIDEO_EXT, AUDIO_EXT };
