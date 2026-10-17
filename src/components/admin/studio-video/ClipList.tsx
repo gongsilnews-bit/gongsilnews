@@ -268,7 +268,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px" }}>
           <button type="button" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openSound(c.id, r.left, r.bottom + 6); }} title="눌러서 볼륨·빠르기·목소리 바꾸기"
             style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${silent ? C.danger : C.line2}`, background: silent ? "rgba(239,68,68,0.12)" : "transparent", color: silent ? C.danger : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", flexShrink: 0 }}>
-            <Icon name={silent ? "mute" : c.type === "voice" ? "voice" : "mic"} size={16} />
+            {busy && c.type === "voice" ? <span className="gsv-spin" title="목소리 만드는 중" style={{ display: "inline-block", width: 14, height: 14, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} /> : <Icon name={silent ? "mute" : c.type === "voice" ? "voice" : "mic"} size={16} />}
             {silent ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
           </button>
           {editing ? (
@@ -374,8 +374,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                       background: isSel ? C.accent : active ? "rgba(59,130,246,0.28)" : w.del ? "transparent" : C.panel2,
                       color: isSel ? "#fff" : w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}
-                    {/* ③ 목소리를 만드는 동안 — 단어 칸 안에 돌아가는 동그라미 (마지막 단어에) */}
-                    {busy && i === words.length - 1 && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginLeft: 7, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} />}
+                    {/* 목소리를 만드는 동안 — 고른 단어 칸 안에 돌아가는 동그라미 (고른 단어가 없으면 마지막 단어에) */}
+                    {busy && (p.selWord?.clip === c.id ? isSel : i === words.length - 1) && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginLeft: 7, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} />}
                   </button>
                   </span>
                   </React.Fragment>
