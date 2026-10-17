@@ -165,11 +165,14 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
     );
   }
   return (
-    <button type="button" title="자막만 고치기 (목소리는 그대로)" onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
-      style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 6px", border: 0, borderRadius: 4, background: "transparent", cursor: "text", textAlign: "left", fontFamily: FONT }}>
+    // 자막은 연필(✎)을 눌러야 고친다 — 글자를 눌러도 열리지 않게 (잘못 눌러 고치기 칸이 열리던 것)
+    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 6px", borderRadius: 4, textAlign: "left", fontFamily: FONT }}>
       <span style={{ flex: "0 1 auto", minWidth: 0, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text || empty || " "}</span>
-      {/* 자막을 고치는 곳은 여기 — 연필 표시 */}
-      <Icon name="pen" size={16} color={C.sub} />
+      <button type="button" title="자막만 고치기 (목소리는 그대로)" onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
+        style={{ width: 28, height: 28, padding: 0, border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+        <Icon name="pen" size={16} />
+      </button>
       <span style={{ flex: 1 }} />
       {custom && text && <span style={{ fontSize: 12, color: C.dim, flexShrink: 0 }}>자막만 고침</span>}
       {/* 말한 단어와 자막이 다를 때 바로 되돌리기 */}
@@ -177,7 +180,7 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
         <span role="button" title="말한 단어 그대로 자막에 보여요" onClick={(e) => { e.stopPropagation(); p.actions.editSub(c.id, null); }}
           style={{ flexShrink: 0, padding: "2px 8px", borderRadius: 4, border: `1px solid ${C.line2}`, color: C.sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>말한 그대로</span>
       )}
-    </button>
+    </div>
   );
 }
 
