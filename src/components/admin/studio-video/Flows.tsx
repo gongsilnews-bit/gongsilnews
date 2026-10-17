@@ -909,8 +909,8 @@ const camPath = (g: CanvasRenderingContext2D, b: CamBox, inset: number) => {
 
 /* ── 프롬프터 (뉴스 방송처럼) — 녹화 창에서 대본을 넣으면 녹화할 때 녹화하는 모니터 위쪽에 대본 창이 뜬다 (녹화에 안 찍힘).
    녹화가 끝나면 대본이 그대로 자막 글이 된다 (시각은 PC에서 말소리에 맞춤, 무료) ── */
-/** cps = 1초에 읽는 글자 수 (3~8, 보통 5) · size = 프롬프터 글자 px (28~96) · mine = 저장한 내 빠르기 */
-export type Prompter = { on: boolean; text: string; size: number; cps: number; mine: number | null };
+/** cps = 1초에 읽는 글자 수 (3~8, 보통 5) · size = 프롬프터 글자 px (28~96) · mine = 프롬프터 창에서 [저장]한 내 설정 */
+export type Prompter = { on: boolean; text: string; size: number; cps: number; mine: { cps: number; size: number } | null };
 const OLD_SIZE: Record<string, number> = { s: 40, m: 52, l: 66 };
 const OLD_CPS: Record<string, number> = { slow: 4, mid: 5, fast: 6 };
 const PROMPTER_KEY = "gsv:prompter";
@@ -925,7 +925,7 @@ export function loadPrompter(): Prompter {
         text: v.text,
         size: clampSize(typeof v.size === "number" ? v.size : OLD_SIZE[v.size] || 52),
         cps: clampCps(typeof v.cps === "number" ? v.cps : OLD_CPS[v.speed] || 5),
-        mine: typeof v.mine === "number" ? clampCps(v.mine) : null,
+        mine: v.mine && typeof v.mine.cps === "number" ? { cps: clampCps(v.mine.cps), size: clampSize(v.mine.size) } : null,
       };
   } catch {}
   return { on: true, text: "", size: 52, cps: 5, mine: null };
@@ -1047,7 +1047,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   useEffect(() => b.record.onPrompterClosed?.(() => setPrOpen(false)), [b]);
   // 프롬프터 창에서 바꾼 빠르기·글자 크기·내 빠르기 → 여기에도 (다음 녹화 때도 그대로)
   useEffect(() => b.record.onPrompterPrefs?.((o) => setPr((p) => {
-    const n = { ...p, cps: clampCps(o.cps), size: clampSize(o.size), mine: o.mine ? clampCps(o.mine) : p.mine };
+    const n = { ...p, cps: clampCps(o.cps), size: clampSize(o.size), mine: o.mine ? { cps: clampCps(o.mine.cps), size: clampSize(o.mine.size) } : p.mine };
     savePrompter(n);
     return n;
   })), [b]);
