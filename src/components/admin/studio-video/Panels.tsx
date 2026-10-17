@@ -47,6 +47,9 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [tab, setTab] = useState(initialTab);
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
   const [fav, setFav] = useState(false);
+  // 고르기 — 여러 개 골라 목록에서 빼기 (PC 파일은 그대로, 다시 불러오면 다시 보인다)
+  const [selMode, setSelMode] = useState(false);
+  const [chk, setChk] = useState<string[]>([]);
   const [q, setQ] = useState("");
   const [items, setItems] = useState<LibItem[] | null>(null);
   const [picked, setPicked] = useState<LibItem | null>(null);
@@ -154,6 +157,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     setBusy("");
   };
 
+  const picking = selMode && tab === "mine"; // 고르기는 [내 자료]에서만
   const grid = (list: (LibItem | StockItem)[], onClick: (x: LibItem | StockItem) => void) => (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "10px 14px" }}>
       {list.map((it) => {
@@ -161,14 +165,23 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
         const dur = "duration" in it && it.duration ? it.duration : 0;
         return (
           <React.Fragment key={it.id}>
-          <button type="button" onClick={() => { if ("ready" in it) setInlineId(it.id); onClick(it); }} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
+          <button type="button" onClick={() => {
+            if (picking && "ready" in it) return setChk((v) => (v.includes(it.id) ? v.filter((x) => x !== it.id) : [...v, it.id]));
+            if ("ready" in it) setInlineId(it.id);
+            onClick(it);
+          }} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
             draggable title="눌러서 고르기 · 클립 목록이나 미리보기로 끌어다 놓기"
             onDragStart={(e) => {
               setHover(null);
               e.dataTransfer.setData(DRAG_MEDIA, JSON.stringify("ready" in it ? { lib: it } : { stock: it }));
               e.dataTransfer.effectAllowed = "copy";
             }}
-            style={{ position: "relative", aspectRatio: "16 / 10", padding: 0, borderRadius: 4, overflow: "hidden", border: `2px solid ${on ? C.accent : "transparent"}`, background: "#000", cursor: "pointer" }}>
+            style={{ position: "relative", aspectRatio: "16 / 10", padding: 0, borderRadius: 4, overflow: "hidden", border: `2px solid ${(picking ? chk.includes(it.id) : on) ? C.accent : "transparent"}`, background: "#000", cursor: "pointer" }}>
+            {picking && "ready" in it && (
+              <span style={{ position: "absolute", left: 5, top: 5, zIndex: 1, width: 22, height: 22, borderRadius: 4, border: `2px solid ${chk.includes(it.id) ? C.accent : "#fff"}`, background: chk.includes(it.id) ? C.accent : "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                {chk.includes(it.id) && <Icon name="check" size={15} stroke={2.6} />}
+              </span>
+            )}
             {it.thumb ? <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 12 }}>준비 중</span>}
             {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{dur ? fmtTime(dur, false) : "영상"}</span>}
             {"fav" in it && (
@@ -258,7 +271,32 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
               {(["all", "image", "video"] as const).map((k) => <button key={k} type="button" onClick={() => setKind(k)} style={chip(kind === k)}>{k === "all" ? "전체" : k === "image" ? "사진" : "영상"}</button>)}
               <button type="button" onClick={() => setFav(!fav)} style={chip(fav)}>즐겨찾기</button>
+              <span style={{ flex: 1 }} />
+              <button type="button" onClick={() => { setSelMode(!selMode); setChk([]); setPicked(null); }} style={chip(selMode)} title="여러 개 골라 목록에서 빼기">{selMode ? "고르기 끝" : "고르기"}</button>
             </div>
+            {selMode && items && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "8px 10px", borderRadius: 6, background: C.card, border: `1px solid ${C.line2}` }}>
+                <button type="button" onClick={() => setChk(chk.length === items.length ? [] : items.map((x) => x.id))} style={chip(items.length > 0 && chk.length === items.length)}>
+                  {items.length > 0 && chk.length === items.length ? "모두 풀기" : "모두 선택"}
+                </button>
+                <span style={{ flex: 1, fontSize: 13.5, color: C.sub }}>{chk.length}개 고름</span>
+                <Btn small danger disabled={!chk.length || Boolean(busy)} title="창의 목록에서만 빼요. PC 파일은 지우지 않아요 (다시 불러오면 다시 보여요)"
+                  onClick={async () => {
+                    if (!b) return;
+                    setBusy("목록에서 빼는 중…");
+                    try {
+                      for (const id of chk) await b.lib.remove(id);
+                    } catch (e) {
+                      setMsg(errText(e));
+                    }
+                    setBusy("");
+                    setChk([]);
+                    load();
+                  }}>
+                  <Icon name="trash" size={15} />목록에서 빼기
+                </Btn>
+              </div>
+            )}
             <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
               <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} placeholder="파일 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
               <Btn small onClick={load}><Icon name="search" size={16} /></Btn>
