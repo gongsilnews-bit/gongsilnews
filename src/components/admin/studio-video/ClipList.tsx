@@ -536,7 +536,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         <div style={{ width: 104, height: 58, borderRadius: 4, overflow: "hidden", background: "#000" }}>
           {thumb && <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
         </div>
-        <button type="button" data-cliptime="" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openTiming(c.id, r.right - 320, r.bottom + 6); }} title="이 클립이 시작하는 때 + 길이 · 눌러서 빠르기·길이 바꾸기"
+        <button type="button" data-cliptime="" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openTiming(c.id, r.right - 320, r.bottom + 6); }} title="이 클립이 시작하는 때 + 길이 · 눌러서 길이 바꾸기"
           style={{ border: `1px solid transparent`, borderRadius: 4, background: "transparent", padding: "2px 4px", fontSize: 12.5, color: C.sub, fontVariantNumeric: "tabular-nums", fontFamily: FONT, cursor: "pointer" }}
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "transparent")}>
           {fmtTime(it.start, false)} + {it.dur.toFixed(2)}초

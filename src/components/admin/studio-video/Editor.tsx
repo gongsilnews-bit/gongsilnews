@@ -125,7 +125,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
   const [subMode, setSubMode] = useState<"all" | "sel">("all"); // 메인자막 서식 적용 범위
   const [soundScope, setSoundScope] = useState<"one" | "sel" | "all">("one"); // 소리 칩 메뉴 적용 범위 — 처음엔 늘 [이 클립에만]
-  const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number } | null>(null); // 소리 칩 옆 작은 창
+  const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number; lenOnly?: boolean } | null>(null); // 소리 칩 옆 작은 창 (오른쪽 시간을 누르면 길이만)
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
@@ -607,7 +607,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       // 오른쪽 '속도·길이' 칸은 없앴다 — 목소리 칩과 같은 메뉴 (볼륨·빠르기·길이)를 시간 자리에
       const r = document.querySelector(`[data-clip="${id}"] [data-cliptime]`)?.getBoundingClientRect();
       setSoundScope("one");
-      setSoundPop({ id, x: x ?? (r ? r.left - 200 : 400), y: y ?? (r ? r.bottom + 6 : 300) });
+      setSoundPop({ id, x: x ?? (r ? r.left - 200 : 400), y: y ?? (r ? r.bottom + 6 : 300), lenOnly: true });
     },
     openMedia: (id, x, y) => {
       setSelected([id]);
@@ -1873,7 +1873,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "check", label: "모든 클립 고르기", onClick: () => setSelected(flat.items.map((x) => x.clip.id)) },
       { icon: "close", label: "고르기 풀기", onClick: () => { setSelected([]); setSelWord(null); } },
       "|",
-      { icon: "speed", label: "속도·길이", disabled: !lastSelected(), onClick: () => lastSelected() && actions.openTiming(lastSelected()), title: "고른 클립의 빠르기와 길이 (클립 시간을 눌러도 열려요)" },
+      { icon: "speed", label: "길이", disabled: !lastSelected(), onClick: () => lastSelected() && actions.openTiming(lastSelected()), title: "고른 클립의 길이 (클립 시간을 눌러도 열려요)" },
       "|",
       { icon: "trash", label: selWord ? "단어 지우기/되살리기" : "단어 지우기", onClick: () => (selWord ? actions.toggleWord(selWord.clip, selWord.i) : say("지울 단어를 먼저 누르세요")) },
       { icon: "trash", label: "클립 지우기", onClick: () => actions.removeClip(selected), disabled: !selected.length },
@@ -2366,7 +2366,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         };
         const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
         const sp = isVoice ? speedOf(c, project.settings) : srcSpeed(c);
-        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={applyScope}
+        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} lenOnly={soundPop.lenOnly} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={applyScope}
           muted={Boolean(c.muted)} value={c.volume ?? 1} speed={sp}
           onMute={(v) => each((x) => { x.muted = v || undefined; })}
           onVolume={(v, first) => each((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}

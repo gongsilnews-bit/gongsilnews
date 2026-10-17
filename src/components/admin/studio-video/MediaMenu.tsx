@@ -182,7 +182,7 @@ export default function MediaMenu(p: Props) {
 }
 
 /** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
-export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose, len, base, pad, onLength, lenMin, lenMax }: {
+export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose, len, base, pad, onLength, lenMin, lenMax, lenOnly }: {
   title: string;
   x: number;
   y: number;
@@ -206,6 +206,7 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
   onLength?: (sec: number) => void;
   lenMin?: number; // AI 목소리: 다 읽는 시간 (그 아래로는 못 줄임) / 영상: 0.3초
   lenMax?: number; // 영상: 원본이 끝나는 곳까지 / AI 목소리: 넉넉히
+  lenOnly?: boolean; // 오른쪽 클립 시간을 눌렀을 때 — 길이만 (소리 칩에서는 길이 없이 볼륨·빠르기만)
 }) {
   const [lenDraft, setLenDraft] = React.useState("");
   React.useEffect(() => setLenDraft(len ? len.toFixed(1) : ""), [len]);
@@ -235,6 +236,7 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
       <div ref={box} onClick={(e) => e.stopPropagation()}
         style={{ position: "fixed", left, top, zIndex: 70, width: W, maxHeight: "calc(100vh - 16px)", overflowY: "auto", boxSizing: "border-box", padding: 12, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
         <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        {!lenOnly && <>
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>적용 범위</div>
         <div style={{ display: "flex", gap: 5, marginBottom: 4 }}>
           <button type="button" onClick={() => onScope("one")} style={{ ...chipS(scope === "one"), height: 30 }}>이 클립에만</button>
@@ -251,9 +253,10 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
         <div style={{ display: "flex", gap: 5 }}>
           {[0.75, 1, 1.25, 1.5, 2].map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
         </div>
-        {onLength && typeof len === "number" && (
+        </>}
+        {lenOnly && onLength && typeof len === "number" && (
           <>
-            <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>길이 <span style={{ color: C.sub, fontWeight: 600 }}>{len.toFixed(1)}초</span></div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, margin: "0 0 6px" }}>길이 <span style={{ color: C.sub, fontWeight: 600 }}>{len.toFixed(1)}초</span></div>
             <div style={{ display: "flex", gap: 5, alignItems: "center", opacity: lenOff ? 0.4 : 1 }}>
               <button type="button" disabled={lenOff || len <= lo + 0.01} onClick={() => onLength(Math.max(lo, +(len - 0.5).toFixed(2)))} style={{ ...chipS(false), flex: "0 0 58px", height: 32, opacity: len <= lo + 0.01 ? 0.4 : 1 }}>−0.5초</button>
               <input value={lenDraft} disabled={lenOff} onChange={(e) => setLenDraft(e.target.value)}
@@ -272,10 +275,10 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
             </div>
           </>
         )}
-        {onVoice && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
+        {onVoice && !lenOnly && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
           <Icon name="voice" size={16} />AI 목소리 바꾸기<Icon name="chevron" size={14} color={C.sub} />
         </button>}
-        <div style={{ fontSize: 11.5, color: C.dim, marginTop: 6 }}>자세한 설정은 오른쪽 칸 · Esc 로 닫기</div>
+        <div style={{ fontSize: 11.5, color: C.dim, marginTop: 6 }}>{lenOnly ? "볼륨·빠르기는 위 소리 칩에서 · Esc 로 닫기" : "길이는 오른쪽 클립 시간을 눌러서 · Esc 로 닫기"}</div>
       </div>
     </>
   );
