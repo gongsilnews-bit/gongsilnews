@@ -585,11 +585,12 @@ function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
     if (!menu) setHover(false);
   };
   React.useEffect(() => () => clearTimeout(timer.current), []);
+  // 가로 단추 (아까처럼 크게) — 누르면 실행하고 닫힘
   const item = (icon: string, label: string, run: () => void) => (
     <button type="button" onClick={(e) => { e.stopPropagation(); setMenu(false); setHover(false); run(); }}
-      style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", height: 36, padding: "0 12px", border: 0, borderRadius: 5, background: "transparent", color: C.text, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap", textAlign: "left" }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-      <Icon name={icon} size={16} />{label}
+      style={{ height: 30, padding: "0 14px", borderRadius: 15, border: `1px solid ${C.line2}`, background: C.panel, color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 14px rgba(0,0,0,0.4)" }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.accent)} onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.line2)}>
+      <Icon name={icon} size={15} />{label}
     </button>
   );
   return (
@@ -602,21 +603,20 @@ function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
           ↔ {transLabel(t.type)} · {(Number(t.a) + Number(t.b)).toFixed(1)}초
         </button>
       )}
-      {(hover || menu) && (
-        <span style={{ position: "relative", display: "inline-flex" }}>
-          <button type="button" onClick={(e) => { e.stopPropagation(); setMenu((v) => !v); }} title="여기에 넣기 — 새 클립 · 화면전환 · 새 씬"
-            style={{ width: 22, height: 22, padding: 0, borderRadius: 11, border: `1px solid ${menu ? C.accent : C.line2}`, background: menu ? C.accent : C.panel, color: menu ? "#fff" : C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, lineHeight: 1 }}>＋</button>
-          {menu && (
-            <>
-              <span onClick={(e) => { e.stopPropagation(); setMenu(false); setHover(false); }} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
-              <span onClick={(e) => e.stopPropagation()} style={{ position: "absolute", left: "50%", top: 28, transform: "translateX(-50%)", zIndex: 31, display: "flex", flexDirection: "column", minWidth: 170, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 10px 26px rgba(0,0,0,0.45)" }}>
-                {item("plus", "새 클립 넣기", () => p.actions.newClipBefore(c.id))}
-                {item("transition", t ? "화면전환 바꾸기" : "화면전환 넣기", () => p.actions.openTrans(c.id, !t))}
-                {item("scene", "여기서 새 씬", () => p.actions.sceneBreak(c.id))}
-              </span>
-            </>
-          )}
-        </span>
+      {(hover || menu) && !menu && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); setMenu(true); }} title="여기에 넣기 — 새 클립 · 화면전환 · 새 씬"
+          style={{ width: 22, height: 22, padding: 0, borderRadius: 11, border: `1px solid ${C.line2}`, background: C.panel, color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, lineHeight: 1 }}>＋</button>
+      )}
+      {/* (＋)를 누르면 — 좌우 가운데에 가로로 [＋ 새 클립] [↔ 화면전환] [⊟ 여기서 새 씬] */}
+      {menu && (
+        <>
+          <span onClick={(e) => { e.stopPropagation(); setMenu(false); setHover(false); }} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+          <span onClick={(e) => e.stopPropagation()} style={{ position: "relative", zIndex: 31, display: "inline-flex", alignItems: "center", gap: 8 }}>
+            {item("plus", "새 클립", () => p.actions.newClipBefore(c.id))}
+            {item("transition", t ? "화면전환 바꾸기" : "화면전환", () => p.actions.openTrans(c.id, !t))}
+            {item("scene", "여기서 새 씬", () => p.actions.sceneBreak(c.id))}
+          </span>
+        </>
       )}
     </div>
   );
