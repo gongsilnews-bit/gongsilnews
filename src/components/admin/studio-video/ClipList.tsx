@@ -250,28 +250,26 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             {silent ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
           </button>
           {editing ? (
-            <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}
+            // 한 줄로 — 글 칸 + [고치기 끝][그만두기] (아래 자막 고치기와 같은 모양)
+            <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}
               onBlur={(e) => {
                 // 다른 곳을 누르면 닫는다 — 고친 게 있으면(AI 목소리를 새로 만들 수 있으니) 열어 둔다
                 if (e.currentTarget.contains(e.relatedTarget as Node)) return;
                 if (draft === clipText(c)) setEditing(false);
               }}>
-              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus rows={2}
-                // 엔터 = 고치기 끝 (줄 바꿈은 Shift+엔터), Esc = 그만두기
+              <input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus title={c.type === "voice" ? "엔터를 누르면 고쳐져요 · 고치면 AI 목소리를 새로 만들어요" : undefined}
+                // 엔터 = 고치기 끝, Esc = 그만두기
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter") {
                     e.preventDefault();
                     p.actions.editText(c.id, e.currentTarget.value);
                     setEditing(false);
                   }
                   if (e.key === "Escape") setEditing(false);
                 }}
-                style={{ width: "100%", boxSizing: "border-box", padding: 10, borderRadius: 6, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 16, lineHeight: 1.5, fontFamily: FONT, resize: "vertical" }} />
-              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                <ActionBtn icon="check" label="고치기 끝" onClick={() => { p.actions.editText(c.id, draft); setEditing(false); }} />
-                <ActionBtn icon="close" label="그만두기" onClick={() => setEditing(false)} />
-                {c.type === "voice" && <span style={{ fontSize: 13, color: C.dim, alignSelf: "center" }}>엔터를 누르면 고쳐져요 · 고치면 AI 목소리를 새로 만들어요</span>}
-              </div>
+                style={{ flex: 1, minWidth: 200, height: 34, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15.5, fontFamily: FONT }} />
+              <ActionBtn icon="check" label="고치기 끝" onClick={() => { p.actions.editText(c.id, draft); setEditing(false); }} />
+              <ActionBtn icon="close" label="그만두기" onClick={() => setEditing(false)} />
             </div>
           ) : (
             <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
