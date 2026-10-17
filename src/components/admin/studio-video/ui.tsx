@@ -73,6 +73,9 @@ const P: Record<string, React.ReactNode> = {
   volume: <><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M17 8a5 5 0 010 8" /></>,
   scene: <><path d="M4 4h16v16H4z" /><path d="M4 12h16" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 015 .5c0 2-2.5 2-2.5 4M12 17h.01" /></>,
+  winMin: <><path d="M5 12h14" /></>,
+  winMax: <><rect x="5" y="5" width="14" height="14" rx="1" /></>,
+  winRestore: <><rect x="5" y="8" width="11" height="11" rx="1" /><path d="M8 8V5h11v11h-3" /></>,
   gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></>,
   file: <><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /></>,
   ai: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 15l2-6 2 6M9 13h2M15 9v6" /></>,
@@ -161,12 +164,18 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
 }
 
 /** 가운데 뜨는 창 (뒤는 어둡게) */
-export function Modal({ title, onClose, children, width = 760, footer, steps, step }: { title?: string; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number }) {
+/**
+ * 공용 창. controls 면 오른쪽 위에 윈도우처럼 [— 작게][□ 크게][✕ 닫기].
+ *  작게: 창을 숨기고 아래에 작은 막대만 (안의 내용은 그대로 살아 있다 — 카메라 미리보기 등). onMinimize 를 주면 그걸 대신 한다
+ */
+export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote }: { title?: string; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode }) {
+  const [mini, setMini] = React.useState(false);
+  const [big, setBig] = React.useState(false);
   // 제목 줄을 잡고 끌면 창이 옮겨진다 (뒤 화면을 보려고 — 녹화 창 등). 제목 줄은 화면 밖으로 나가지 않게
   const [pos, setPos] = React.useState({ x: 0, y: 0 });
   const box = React.useRef<HTMLDivElement>(null);
   const drag = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 || (e.target as HTMLElement).closest("button, input, select, a")) return;
+    if (big || e.button !== 0 || (e.target as HTMLElement).closest("button, input, select, a")) return;
     const r = box.current?.getBoundingClientRect();
     if (!r) return;
     const sx = e.clientX - pos.x;
@@ -185,10 +194,32 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
     window.addEventListener("pointerup", up);
     e.preventDefault();
   };
+  const winBtn = (icon: string, tip: string, onClick: () => void, danger = false) => (
+    <button type="button" onClick={onClick} title={tip} aria-label={tip}
+      style={{ width: 40, height: 34, border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = danger ? C.danger : C.line2; e.currentTarget.style.color = danger ? "#fff" : C.text; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.sub; }}>
+      <Icon name={icon} size={20} />
+    </button>
+  );
+  const minimize = () => (onMinimize ? onMinimize() : setMini(true));
+  const toggleBig = () => {
+    setBig((v) => !v);
+    setPos({ x: 0, y: 0 });
+  };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
-      <div ref={box} style={{ width, maxWidth: "94vw", maxHeight: "92vh", display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: pos.x || pos.y ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
-        <div onPointerDown={drag} onDoubleClick={() => setPos({ x: 0, y: 0 })} title="끌어서 창을 옮길 수 있어요 (두 번 누르면 가운데로)"
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+      {mini && (
+        // 작게 한 창 — 오른쪽 아래 작은 막대. 누르면 다시 커진다
+        <div style={{ position: "fixed", right: 24, bottom: 24, pointerEvents: "auto", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px 12px 18px", borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", color: C.text }}>
+          <span style={{ fontSize: 16, fontWeight: 800 }}>{title || "창"}</span>
+          {minNote}
+          <Btn primary onClick={() => setMini(false)}><Icon name="winRestore" size={16} />다시 열기</Btn>
+          {onClose && <Btn onClick={onClose}><Icon name="close" size={16} />닫기</Btn>}
+        </div>
+      )}
+      <div ref={box} style={{ width: big ? "calc(100vw - 24px)" : width, maxWidth: big ? undefined : "94vw", height: big ? "calc(100vh - 24px)" : undefined, maxHeight: big ? undefined : "92vh", display: mini ? "none" : "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: big ? 6 : 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: !big && (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
+        <div onPointerDown={drag} onDoubleClick={() => (controls ? toggleBig() : setPos({ x: 0, y: 0 }))} title={big ? "두 번 누르면 원래 크기로" : controls ? "끌어서 창을 옮길 수 있어요 (두 번 누르면 크게)" : "끌어서 창을 옮길 수 있어요 (두 번 누르면 가운데로)"}
           style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${C.line}`, cursor: "move", userSelect: "none" }}>
           {steps ? (
             <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
@@ -205,7 +236,13 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
           ) : (
             <div style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>{title}</div>
           )}
-          {onClose && (
+          {controls ? (
+            <div style={{ display: "flex", gap: 2, margin: "-6px -10px -6px 0" }}>
+              {winBtn("winMin", "작게 (아래 막대로)", minimize)}
+              {winBtn(big ? "winRestore" : "winMax", big ? "원래 크기로" : "크게 (화면 가득)", toggleBig)}
+              {onClose && winBtn("close", "닫기", onClose, true)}
+            </div>
+          ) : onClose && (
             <button type="button" onClick={onClose} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", padding: 4 }}>
               <Icon name="close" size={22} />
             </button>

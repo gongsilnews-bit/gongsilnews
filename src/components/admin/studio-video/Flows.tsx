@@ -1414,7 +1414,10 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const split = mode === "both" ? splitRects(camBox) : null; // 반반 배치면 화면·카메라 칸
   const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: "0 16px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 });
   return (
-    <Modal title="영상 녹화하기" onClose={phase === "rec" ? undefined : () => { stopAll(); onCancel(); }} width={980}
+    <Modal title="영상 녹화하기" onClose={phase === "rec" ? undefined : () => { stopAll(); onCancel(); }} width={980} controls
+      // 녹화 중 [작게] = 지금 있는 [작게 하기]와 같이 스튜디오 창을 내리고 작은 막대로 (막대는 녹화에 안 찍힌다)
+      onMinimize={phase === "rec" && b.record.minimize ? () => b.record.minimize?.() : undefined}
+      minNote={phase === "rec" ? <span style={{ fontSize: 14, color: C.danger, fontWeight: 700 }}>● 녹화 중 {fmtTime(sec, false)}</span> : null}
       footer={phase === "rec" ? <>{b.record.minimize && <Btn onClick={() => b.record.minimize?.()} title="스튜디오 창을 내리고 작은 막대로 (막대는 녹화에 안 찍혀요)">작게 하기</Btn>}<Btn primary danger onClick={stop} style={{ background: C.danger, borderColor: C.danger, color: "#fff" }}><Icon name="pause" size={16} />녹화 끝내기 ({fmtTime(sec, false)})</Btn></> : phase === "count" ? null : <Btn primary onClick={start}><Icon name="record" size={16} />녹화 시작</Btn>}>
       <div style={{ display: "flex", gap: 20, padding: 20 }}>
         <div style={{ width: 360, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
