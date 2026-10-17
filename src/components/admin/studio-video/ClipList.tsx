@@ -323,9 +323,9 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     return (
                       <span onClick={(e) => e.stopPropagation()}
                         style={{ position: "absolute", left: 0, bottom: "calc(100% + 6px)", zIndex: 20, display: "flex", alignItems: "center", gap: 1, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", whiteSpace: "nowrap", cursor: "default" }}>
-                        {ib("cut", "이 클립 잘라내기", () => p.actions.cutClip(c.id))}
-                        {ib("copy", "이 클립 복사하기", () => p.actions.copyClip(c.id))}
-                        {ib("paste", "이 클립 뒤에 붙여넣기", () => p.actions.pasteAfter(c.id), !p.actions.canPaste())}
+                        {ib("cut", "고른 단어 잘라내기 (Ctrl+X)", () => p.actions.cutClip(c.id))}
+                        {ib("copy", "고른 단어 복사하기 (Ctrl+C)", () => p.actions.copyClip(c.id))}
+                        {ib("paste", "고른 단어 뒤에 붙여넣기 (Ctrl+V)", () => p.actions.pasteAfter(c.id), !p.actions.canPaste())}
                         {sep}
                         {tb("speed", "상세 편집", () => p.actions.openTiming(c.id), false, "속도·길이 자세히")}
                         {sep}

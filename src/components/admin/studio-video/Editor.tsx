@@ -499,25 +499,34 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setTimeout(() => player.current?.play(), 50);
     },
     stop: () => player.current?.pause(),
-    // 단어 단추 막대 — 이 클립 잘라내기·복사·붙여넣기 (리본과 같은 클립 보관함)
+    // 단어 단추 막대 ✂ ⧉ 📋 — 고른 단어를 (Ctrl+X·C·V 와 같다). 단어를 안 골랐으면 클립을
     cutClip: (id) => {
+      if (selWord?.clip === id) {
+        copyWords();
+        return deleteWords();
+      }
       const c = findClip(pref.current, id)?.clip;
       if (!c) return;
       clipboard.current = [structuredClone(c)];
+      lastCopy.current = "clips";
       actions.removeClip([id]);
     },
     copyClip: (id) => {
+      if (selWord?.clip === id) return copyWords();
       const c = findClip(pref.current, id)?.clip;
       if (!c) return;
       clipboard.current = [structuredClone(c)];
+      lastCopy.current = "clips";
       say("클립을 복사했어요");
     },
     pasteAfter: (id) => {
-      if (!clipboard.current.length) return say("먼저 클립을 복사하세요");
+      // 마지막에 복사한 것 — 단어면 고른 단어 뒤에, 클립이면 이 클립 뒤에
+      if (lastCopy.current === "words" && wordClip.current) return pasteWords();
+      if (!clipboard.current.length) return say("먼저 복사하세요");
       insertAfter(clipboard.current.map((x) => ({ ...structuredClone(x), id: uid() })), id);
       say("붙여넣었어요");
     },
-    canPaste: () => clipboard.current.length > 0,
+    canPaste: () => (lastCopy.current === "words" ? Boolean(wordClip.current) : clipboard.current.length > 0),
     insert: (kind) => {
       if (kind === "title") return addTextLayer();
       // 이 클립(고른 클립) 화면 위에 사진·영상 올리기 — 자료 칸을 그 탭으로
