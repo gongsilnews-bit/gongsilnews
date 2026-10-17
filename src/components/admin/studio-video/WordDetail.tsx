@@ -165,7 +165,7 @@ export function WordDetail({ project, clip, index, onSet, onReset, onPlay, onClo
   const labels = useMemo(() => ({ L: fmt(L), R: fmt(R) }), [L, R]);
   if (!w || !clip.src) return null;
   return (
-    <div onClick={(ev) => ev.stopPropagation()} style={{ padding: "6px 12px 12px", fontFamily: FONT, cursor: "default" }}>
+    <div data-keepword="" onClick={(ev) => ev.stopPropagation()} style={{ padding: "6px 12px 12px", fontFamily: FONT, cursor: "default" }}>
       <div ref={box} style={{ position: "relative", height: H + 44 }}>
         {/* 위: 시작 시각 */}
         <span style={{ position: "absolute", left: Math.min(width - 70, Math.max(0, xOf(s) - 32)), top: 0, padding: "1px 7px", borderRadius: 4, background: C.accent, color: "#fff", fontSize: 12, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{fmt(s)}</span>
