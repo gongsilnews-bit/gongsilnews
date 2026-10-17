@@ -1648,7 +1648,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               })()}
             </div>
           )}
-          <Hint>단어를 누르면 그 자리로 가요. 지울 단어를 누르고 [이 단어 지우기]를 누르면 그 부분이 영상에서 잘려요.</Hint>
+          <Hint>단어를 누르면 그 자리로 가요. 단어에 마우스를 올려 오른쪽 위 ⓧ를 누르면 그 부분이 영상에서 잘려요.</Hint>
         </div>
 
         {/* 경계선 — 끌어서 미리보기 크게·작게 */}
@@ -2070,7 +2070,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       {dialog === "help" && (
         <Modal title="쉬운 사용법" onClose={() => setDialog("")} width={640}>
           <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.9, color: C.text }}>
-            <div>1. <b>단어를 누르면</b> 그 자리로 가요. [이 단어 지우기]를 누르면 그 부분이 영상에서 잘려요.</div>
+            <div>1. <b>단어를 누르면</b> 그 자리로 가요. 단어에 마우스를 올려 오른쪽 위 ⓧ를 누르면 그 부분이 영상에서 잘려요 (Del 키도 돼요).</div>
             <div>2. <b>클립을 누르면</b> 아래에 [글 고치기] [화면 바꾸기] [목소리] [클립 지우기] 단추가 나와요.</div>
             <div>3. 실수했으면 위 [홈] 탭의 <b>[되돌리기]</b>를 누르세요. 몇 번이든 돼요.</div>
             <div>4. 다 됐으면 오른쪽 위 <b>[내보내기]</b>를 누르면 영상 파일이 만들어져요.</div>
