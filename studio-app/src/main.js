@@ -229,7 +229,7 @@ async function createWindow() {
   });
 
   mainWindow.webContents.on("did-create-window", (win, { frameName }) => {
-    if (/^gsv-(console|mini)/.test(String(frameName))) videoIpc.setConsole(win, mainWindow);
+    if (/^gsv-(console|mini)/.test(String(frameName))) videoIpc.setConsole(win, mainWindow, String(frameName).startsWith("gsv-mini") ? "mini" : "console");
   });
 
   // 영상 편집기에 저장 안 한 내용이 있으면 — 닫기를 멈추고 [저장 / 다른 이름으로 / 저장 안 함 / 취소] 를 묻는다

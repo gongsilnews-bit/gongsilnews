@@ -1707,7 +1707,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       if (phaseRef.current === "rec") openMini();
     }, "console");
     if (!w) return false;
-    if (r && r.width > 100) b.record.console?.("place", r.left, r.top, r.width, r.height).catch(() => {});
+    // 자리 — 앱이 정한다 (두 모니터면 녹화하지 않는 모니터, 끌어 옮겨 둔 자리 기억). 크기는 앱 안에서 보이던 그대로
+    if (r && r.width > 100) b.record.console?.("place", r.left, r.top, r.width, r.height, mode === "camera" ? 1 : 0).catch(() => {});
     bigRef.current = w;
     setBigWin(w);
     return true;

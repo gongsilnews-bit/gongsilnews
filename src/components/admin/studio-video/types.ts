@@ -227,7 +227,7 @@ export type VideoBridge = {
     // 녹화 중 작게 하기 (옛 앱에는 없음)
     live?: (on: boolean, startedAt?: number, opt?: { console?: boolean }) => Promise<boolean>;
     // 녹화 조정실 창 (앱 0.1.8부터) — drag-start·drag(dx, dy)·opacity(0.3~1)·min·max(→ 크게인지)·show
-    console?: (act: "drag-start" | "drag" | "opacity" | "min" | "max" | "show" | "big" | "place", a?: number, b?: number, c?: number, d?: number) => Promise<boolean>;
+    console?: (act: "drag-start" | "drag" | "opacity" | "min" | "max" | "show" | "big" | "place", a?: number, b?: number, c?: number, d?: number, e?: number) => Promise<boolean>;
     // 녹화 중 앱 창을 내렸다·올렸다 — 작은 녹화 창(카톡 크기)을 띄우고 닫으려고 (앱 0.1.8부터)
     onMinimized?: (fn: () => void) => () => void;
     onRestored?: (fn: () => void) => () => void;

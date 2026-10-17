@@ -36,18 +36,67 @@ let prompter = null; // 녹화 중 프롬프터 창 (녹화에 안 찍힘)
 const hideFromCapture = (w) => w.setContentProtection(!(!require("electron").app.isPackaged && process.env.STUDIO_SHOW_IN_CAPTURE === "1"));
 let consoleWin = null; // 녹화 조정실 창 (OBS 스튜디오 모드처럼 — 녹화에 안 찍힘)
 
+/* ── 녹화 중 창 자리 — 모니터가 두 대면 녹화하지 않는 모니터에 (카메라만이면 오른쪽), 끌어 옮긴 자리는 기억해 다음에도 ── */
+let lastCamOnly = false; // 이번 녹화가 카메라만인지 (작은 창 자리도 같은 기준)
+let winMem = null; // { console: {x, y, display}, mini: {x, y, width, height, display} }
+const memFile = () => path.join(require("electron").app.getPath("userData"), "record-windows.json");
+function mem() {
+  if (!winMem) {
+    try {
+      winMem = JSON.parse(fs.readFileSync(memFile(), "utf8")) || {};
+    } catch {
+      winMem = {};
+    }
+  }
+  return winMem;
+}
+function saveMem() {
+  try {
+    fs.writeFileSync(memFile(), JSON.stringify(winMem || {}));
+  } catch {}
+}
+const recDisplayId = (camOnly) => (camOnly ? "" : String(sourceDisplay.get(chosenSource) || ""));
+/** 녹화하지 않는 모니터 중 오른쪽 것 (모니터가 한 대면 null) */
+function otherDisplay(camOnly) {
+  const ds = screen.getAllDisplays();
+  if (ds.length < 2) return null;
+  const rec = recDisplayId(camOnly);
+  const others = ds.filter((d) => String(d.id) !== rec).sort((a, b) => a.bounds.x - b.bounds.x);
+  return others[others.length - 1] || null;
+}
+/** 기억한 자리 — 그 모니터가 아직 있고, 녹화하는 모니터가 아니면 */
+function memPlace(kind, camOnly) {
+  const m = mem()[kind];
+  if (!m) return null;
+  const d = screen.getAllDisplays().find((x) => String(x.id) === String(m.display));
+  if (!d || String(d.id) === recDisplayId(camOnly)) return null;
+  return { m, d };
+}
+function clampTo(d, x, y, w, h) {
+  const wa = d.workArea;
+  return { x: Math.round(Math.min(Math.max(wa.x, x), wa.x + wa.width - Math.min(w, wa.width))), y: Math.round(Math.min(Math.max(wa.y, y), wa.y + wa.height - Math.min(h, wa.height))) };
+}
+
 /** 녹화 조정실 창 모양 — 스튜디오 창이 있는 모니터 가운데. mini = 녹화 중 [작게 하기] 창 (카톡 크기, 녹화하는 모니터 오른쪽 아래) */
 function consoleOptions(main, kind) {
   if (kind === "mini") {
-    let d = null;
-    try {
-      // 고른 화면(녹화하는 모니터) — [화면 목록]을 받을 때 적어 둔 모니터 번호로
-      const id = sourceDisplay.get(chosenSource);
-      d = screen.getAllDisplays().find((x) => String(x.id) === id) || null;
-    } catch {}
+    const base = { minWidth: 320, minHeight: 420, frame: false, backgroundColor: "#111317", title: "녹화 중", alwaysOnTop: true, autoHideMenuBar: true, show: true };
+    // 1) 끌어 옮겨 둔 자리  2) 녹화하지 않는 모니터 오른쪽 아래  3) 녹화하는 모니터 오른쪽 아래
+    const mp = memPlace("mini", lastCamOnly);
+    if (mp) {
+      const w = mp.m.width || 400, h = mp.m.height || 560;
+      return { ...base, width: w, height: h, ...clampTo(mp.d, mp.m.x, mp.m.y, w, h) };
+    }
+    let d = otherDisplay(lastCamOnly);
+    if (!d) {
+      try {
+        const id = sourceDisplay.get(chosenSource);
+        d = screen.getAllDisplays().find((x) => String(x.id) === id) || null;
+      } catch {}
+    }
     const wa = (d || screen.getDisplayMatching(main.getBounds())).workArea;
     const W = 400, H = Math.min(560, wa.height - 40); // 내용 높이에 맞게 (빈칸 없이)
-    return { width: W, height: H, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - H - 20, minWidth: 320, minHeight: 420, frame: false, backgroundColor: "#111317", title: "녹화 중", alwaysOnTop: true, autoHideMenuBar: true, show: true };
+    return { ...base, width: W, height: H, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - H - 20 };
   }
   const wa = screen.getDisplayMatching(main.getBounds()).workArea;
   const W = Math.min(1000, wa.width - 40), H = Math.min(980, wa.height - 40); // 녹화하기 창(980px)이 그대로 들어가게
@@ -68,9 +117,22 @@ function consoleOptions(main, kind) {
 }
 /** 조정실 창이 생기면 — 녹화에 안 찍히게, 스튜디오 창은 가려져도 그리기를 늦추지 않게 (녹화 화판을 거기서 그린다) */
 let consoleMain = null; // 조정실을 연 스튜디오 창 (자리 맞추기 기준)
-function setConsole(win, main) {
+function setConsole(win, main, kind = "console") {
   consoleWin = win;
   consoleMain = main;
+  // 끌어 옮기거나 크기를 바꾸면 기억 (다음 녹화 때 그 자리에)
+  let t = 0;
+  const remember = () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      if (win.isDestroyed() || win.isMaximized() || win.isMinimized()) return;
+      const b = win.getBounds();
+      mem()[kind] = { x: b.x, y: b.y, width: b.width, height: b.height, display: screen.getDisplayMatching(b).id };
+      saveMem();
+    }, 400);
+  };
+  win.on("moved", remember);
+  win.on("resized", remember);
   hideFromCapture(win);
   win.setAlwaysOnTop(true, "floating");
   win.setMenuBarVisibility(false);
@@ -497,7 +559,7 @@ function register(base) {
   ipcMain.handle("video:record-tiny", () => (openMini(), true));
   // 녹화 조정실 창 — 옮기기·투명도·작게·크게 (앱 0.1.8부터)
   let consoleFrom = null;
-  ipcMain.handle("video:console", (_e, act, a, b, c, d) => {
+  ipcMain.handle("video:console", (_e, act, a, b, c, d, e) => {
     const w = consoleWin && !consoleWin.isDestroyed() ? consoleWin : null;
     if (!w) return false;
     if (act === "drag-start") consoleFrom = w.isMaximized() ? null : w.getPosition();
@@ -509,9 +571,20 @@ function register(base) {
       else w.maximize();
       return w.isMaximized();
     } else if (act === "place") {
-      // 앱 안에서 보이던 녹화하기 창 자리·크기 그대로 (스튜디오 창 안쪽 기준 좌표 → 화면 좌표)
-      const m = consoleMain && !consoleMain.isDestroyed() ? consoleMain.getContentBounds() : { x: 0, y: 0 };
-      w.setBounds({ x: Math.round(m.x + a), y: Math.round(m.y + b), width: Math.round(c), height: Math.round(d) });
+      // 녹화하기 창 — 크기는 앱 안에서 보이던 그대로(모양이 바뀌지 않게). 자리는
+      //  1) 끌어 옮겨 둔 자리  2) 모니터가 두 대면 녹화하지 않는 모니터 가운데  3) 앱 안에서 보이던 자리 그대로
+      lastCamOnly = Boolean(e);
+      const width = Math.round(c), height = Math.round(d);
+      const mp = memPlace("console", lastCamOnly);
+      const od = otherDisplay(lastCamOnly);
+      if (mp) w.setBounds({ width, height, ...clampTo(mp.d, mp.m.x, mp.m.y, width, height) });
+      else if (od) {
+        const wa = od.workArea;
+        w.setBounds({ width, height, ...clampTo(od, wa.x + (wa.width - width) / 2, wa.y + (wa.height - height) / 2, width, height) });
+      } else {
+        const m = consoleMain && !consoleMain.isDestroyed() ? consoleMain.getContentBounds() : { x: 0, y: 0 };
+        w.setBounds({ x: Math.round(m.x + a), y: Math.round(m.y + b), width, height });
+      }
     } else if (act === "big") {
       if (live) showBig(live.win); // [크게 보기] — 스튜디오 창 다시
     } else if (act === "show") {

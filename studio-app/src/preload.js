@@ -199,7 +199,7 @@ if (allowed) {
         // 녹화 중 작게 하기 — 큰 창은 내려가고 작은 막대(녹화에 안 찍힘)가 뜬다. 끝나면 다시 크게
         live: (on, startedAt, opt) => ipcRenderer.invoke("video:record-live", on, startedAt, opt),
         // 녹화 조정실 창 — drag-start·drag(dx, dy)·opacity(0.3~1)·min·max·show (0.1.8부터)
-        console: (act, a, b, c, d) => ipcRenderer.invoke("video:console", act, a, b, c, d),
+        console: (act, a, b, c, d, e) => ipcRenderer.invoke("video:console", act, a, b, c, d, e),
         // 녹화 중 스튜디오 창을 내렸다·올렸다 (작은 녹화 창을 띄우고 닫으려고)
         onMinimized: (fn) => {
           const h = () => fn();
