@@ -29,6 +29,7 @@ export type ClipActions = {
   openSound: (id: string, x: number, y: number) => void; // 소리 칩을 누르면 옆에 볼륨·빠르기 창
   sceneBreak: (id: string) => void;
   play: (id: string) => void;
+  stop: () => void; // 재생 멈춤 (클립 칸 ■)
   editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
   restoreCut: (id: string, i: number | "all") => void; // 무음 줄이기 원래대로 (한 곳 / 모두)
   addCut: (id: string, g: { s: number; e: number }) => void; // 쉼 [..] 하나 줄이기
@@ -42,6 +43,7 @@ type Props = {
   selWord: { clip: string; i: number } | null;
   curClip: string;
   curWord: number;
+  playing?: boolean; // 지금 재생 중 (클립 칸 ▶/■)
   busy: Record<string, string>;
   actions: ClipActions;
   view: "detail" | "simple";
@@ -237,6 +239,16 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
       <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 14, borderRight: `1px solid ${C.line}` }}>
         <span style={{ fontSize: 15, fontWeight: 800, color: playingHere ? C.text : C.sub }}>{n}</span>
         <input type="checkbox" checked={sel} onChange={() => p.actions.selectClip(c.id, true)} onClick={(e) => e.stopPropagation()} style={{ width: 18, height: 18, accentColor: C.accent, cursor: "pointer" }} title="여러 클립 고르기" />
+        {/* ▶ 여기부터 듣기 / ■ 멈춤 (스페이스바도 같다) */}
+        {(() => {
+          const on = Boolean(p.playing && playingHere);
+          return (
+            <button type="button" onClick={(e) => { e.stopPropagation(); if (on) p.actions.stop(); else p.actions.play(c.id); }} title={on ? "멈춤 (스페이스바)" : "여기부터 듣기 (스페이스바)"}
+              style={{ width: 32, height: 32, borderRadius: 16, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+              {on ? <span style={{ width: 10, height: 10, borderRadius: 2, background: "#fff" }} /> : <Icon name="play" size={15} />}
+            </button>
+          );
+        })()}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -337,23 +349,17 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
           </div>
         )}
 
-        {/* 고른 클립으로 할 수 있는 일 */}
-        {sel && !editing && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px 12px", borderTop: `1px solid ${C.line}` }} onClick={(e) => e.stopPropagation()}>
-            <ActionBtn icon="play" label="여기부터 듣기" onClick={() => p.actions.play(c.id)} />
-            <ActionBtn icon="pen" label={isSrc ? "자막 고치기" : "글 고치기"} onClick={editPen} />
-            <ActionBtn icon="image" label="화면 바꾸기" onClick={() => p.actions.openVisual(c.id)} />
-            <ActionBtn icon={isSrc ? "volume" : "voice"} label={isSrc ? "소리 크기" : "목소리"} onClick={() => p.actions.openVoice(c.id)} />
-
-            {n > 1 && <ActionBtn icon="merge" label="윗 클립과 합치기" onClick={() => p.actions.mergeUp(c.id)} />}
-            {n > 1 && <ActionBtn icon="scene" label="여기서 씬 나누기" onClick={() => p.actions.sceneBreak(c.id)} />}
-            <ActionBtn icon="trash" label="클립 지우기" onClick={() => p.actions.removeClip([c.id])} danger />
-          </div>
-        )}
       </div>
 
       {/* 오른쪽: 화면 + 시간 */}
-      <div style={{ width: 128, flexShrink: 0, padding: "10px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, borderLeft: `1px solid ${C.line}` }}>
+      <div style={{ position: "relative", width: 128, flexShrink: 0, padding: "10px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, borderLeft: `1px solid ${C.line}` }}>
+        {/* 🗑 클립 지우기 (Del 키도 같다) */}
+        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.removeClip([c.id]); }} title="클립 지우기 (Del)"
+          style={{ position: "absolute", top: -1, right: -1, transform: "translate(40%, -40%)", width: 26, height: 26, borderRadius: 13, border: `1px solid ${C.line2}`, background: C.panel, color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = C.danger; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = C.danger; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = C.panel; e.currentTarget.style.color = C.sub; e.currentTarget.style.borderColor = C.line2; }}>
+          <Icon name="trash" size={14} />
+        </button>
         <div style={{ width: 104, height: 58, borderRadius: 4, overflow: "hidden", background: "#000" }}>
           {thumb && <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
         </div>

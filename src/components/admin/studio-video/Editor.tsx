@@ -116,7 +116,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
   const [subMode, setSubMode] = useState<"all" | "sel">("all"); // 메인자막 서식 적용 범위
-  const [srcMode, setSrcMode] = useState<"sel" | "all">("sel"); // 원본 소리 설정 적용 범위
   const [soundScope, setSoundScope] = useState<"one" | "sel" | "all">("one"); // 소리 칩 메뉴 적용 범위 — 처음엔 늘 [이 클립에만]
   const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number } | null>(null); // 소리 칩 옆 작은 창
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
@@ -426,7 +425,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     openSound: (id, x, y) => {
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
       const c = findClip(pref.current, id)?.clip;
-      setSrcMode("sel");
       setSoundScope("one");
       setPanel(c && c.type !== "voice" ? "source" : "voice");
       setSoundPop({ id, x, y });
@@ -436,7 +434,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       // 촬영 클립 [원본 소리] → 원본 소리 설정 (고른 클립 중 하나면 고른 클립 모두)
       if (c && c.type !== "voice") {
         if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
-        setSrcMode("sel");
         setPanel("source");
         return;
       }
@@ -481,6 +478,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       seekClip(id);
       setTimeout(() => player.current?.play(), 50);
     },
+    stop: () => player.current?.pause(),
     openTrans: (id, add) => {
       if (add) change((p) => { const c = findClip(p, id)?.clip; if (c && !c.trans) c.trans = { ...TRANS_DEFAULT }; });
       setTransClip(id);
@@ -1309,7 +1307,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       } else if (ctrl && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
         e.preventDefault();
         redo();
-      } else if (e.key === "Delete" || e.key === "Backspace") {
+      } else if (e.key === "Delete") {
         if (selWord) actions.toggleWord(selWord.clip, selWord.i);
         else if (selected.length) actions.removeClip(selected);
         else if (panel === "layer" && selLayer) removeLayer(selLayer);
@@ -1707,7 +1705,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             </div>
           )}
           <div ref={listRef} style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
-            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} transClip={panel === "trans" ? transClip : ""} />
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} playing={playing} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} transClip={panel === "trans" ? transClip : ""} />
           </div>
         </div>
 
