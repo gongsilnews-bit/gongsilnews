@@ -909,16 +909,26 @@ const camPath = (g: CanvasRenderingContext2D, b: CamBox, inset: number) => {
 
 /* ── 프롬프터 (뉴스 방송처럼) — 녹화 창에서 대본을 넣으면 녹화할 때 녹화하는 모니터 위쪽에 대본 창이 뜬다 (녹화에 안 찍힘).
    녹화가 끝나면 대본이 그대로 자막 글이 된다 (시각은 PC에서 말소리에 맞춤, 무료) ── */
-export type Prompter = { on: boolean; text: string; size: "s" | "m" | "l"; speed: "slow" | "mid" | "fast" };
-export const PROMPTER_SIZE = { s: 40, m: 52, l: 66 } as const;
-export const PROMPTER_CPS = { slow: 4, mid: 5, fast: 6 } as const; // 1초에 읽는 글자 수
+/** cps = 1초에 읽는 글자 수 (3~8, 보통 5) · size = 프롬프터 글자 px (28~96) · mine = 저장한 내 빠르기 */
+export type Prompter = { on: boolean; text: string; size: number; cps: number; mine: number | null };
+const OLD_SIZE: Record<string, number> = { s: 40, m: 52, l: 66 };
+const OLD_CPS: Record<string, number> = { slow: 4, mid: 5, fast: 6 };
 const PROMPTER_KEY = "gsv:prompter";
+const clampCps = (v: number) => Math.min(8, Math.max(3, Math.round(v * 2) / 2));
+const clampSize = (v: number) => Math.min(96, Math.max(28, Math.round(v / 2) * 2));
 export function loadPrompter(): Prompter {
   try {
     const v = JSON.parse(localStorage.getItem(PROMPTER_KEY) || "null");
-    if (v && typeof v.text === "string") return { on: v.on !== false, text: v.text, size: v.size in PROMPTER_SIZE ? v.size : "m", speed: v.speed in PROMPTER_CPS ? v.speed : "mid" };
+    if (v && typeof v.text === "string")
+      return {
+        on: v.on !== false,
+        text: v.text,
+        size: clampSize(typeof v.size === "number" ? v.size : OLD_SIZE[v.size] || 52),
+        cps: clampCps(typeof v.cps === "number" ? v.cps : OLD_CPS[v.speed] || 5),
+        mine: typeof v.mine === "number" ? clampCps(v.mine) : null,
+      };
   } catch {}
-  return { on: true, text: "", size: "m", speed: "mid" };
+  return { on: true, text: "", size: 52, cps: 5, mine: null };
 }
 function savePrompter(p: Prompter) {
   try {
@@ -927,7 +937,7 @@ function savePrompter(p: Prompter) {
 }
 const PROMPTER_LEN = [[30, "30초"], [60, "1분"], [120, "2분"], [180, "3분"]] as const;
 
-function PrompterPanel({ value, onChange, disabled }: { value: Prompter; onChange: (p: Prompter) => void; disabled: boolean }) {
+function PrompterPanel({ value, onChange, disabled, rehearsing, onRehearse }: { value: Prompter; onChange: (p: Prompter) => void; disabled: boolean; rehearsing: boolean; onRehearse: () => void }) {
   const b = videoBridge()!;
   const writer = useStudioWriter();
   const [ai, setAi] = useState<"" | "topic" | "vacancy">("");
@@ -952,7 +962,7 @@ function PrompterPanel({ value, onChange, disabled }: { value: Prompter; onChang
     const off = b.onProgress((t) => setWriting(t));
     try {
       const vacancy = ai === "vacancy" && vac ? (await b.vacancy(vac)).vacancy : null;
-      const r = await b.ai.script({ topic: ai === "topic" ? topic.trim() : "", chars: len * PROMPTER_CPS.mid, vacancy, request: "카메라를 보고 직접 읽을 대본. 말하듯 짧은 문장으로." });
+      const r = await b.ai.script({ topic: ai === "topic" ? topic.trim() : "", chars: len * 5, vacancy, request: "카메라를 보고 직접 읽을 대본. 말하듯 짧은 문장으로." });
       const text = r.scenes.map((s) => s.lines.map((l) => l.text).join("\n")).join("\n\n").trim();
       if (!text) throw new Error("대본을 받지 못했어요. 다시 눌러 주세요.");
       set({ text, on: true });
@@ -965,15 +975,15 @@ function PrompterPanel({ value, onChange, disabled }: { value: Prompter; onChang
     }
   };
   const chars = value.text.replace(/\s/g, "").length;
-  const secs = Math.round(chars / PROMPTER_CPS[value.speed]);
+  const secs = Math.round(chars / value.cps);
+
   const chip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const can = Boolean(b.record.prompterOpen);
   return (
     <div style={{ border: `1px solid ${C.line2}`, borderRadius: 6, background: C.card, padding: 14, opacity: disabled ? 0.6 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Icon name="text" size={18} />
-        <span style={{ fontSize: 16, fontWeight: 800 }}>프롬프터</span>
-        <span style={{ flex: 1, fontSize: 13, color: C.sub }}>읽을 대본을 넣으면 녹화할 때 화면 위쪽에 떠요 (녹화에는 안 찍혀요)</span>
+        <span style={{ flex: 1, fontSize: 16, fontWeight: 800 }}>프롬프터</span>
         <span style={{ fontSize: 13.5, color: C.sub }}>켜기</span>
         <Toggle on={value.on} onChange={(v) => set({ on: v })} disabled={disabled} />
       </div>
@@ -1005,18 +1015,15 @@ function PrompterPanel({ value, onChange, disabled }: { value: Prompter; onChang
           {writing && <div style={{ marginTop: 8, fontSize: 14, color: C.sub }}>{writing}</div>}
           {err && <div style={{ marginTop: 8, fontSize: 14, color: C.danger }}>{err}</div>}
           <textarea value={value.text} onChange={(e) => set({ text: e.target.value })} disabled={disabled} rows={6}
-            placeholder={"읽을 대본을 쓰거나 붙여 넣으세요.\n한 줄에 한 문장씩 쓰면 읽기 쉬워요. 빈 줄을 넣으면 잠깐 쉬어 가요."}
+            placeholder="읽을 대본을 쓰거나 붙여 넣으세요"
             style={{ ...input, height: "auto", marginTop: 10, padding: 12, fontSize: 16, lineHeight: 1.6, resize: "vertical" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14, color: C.sub, marginRight: 2 }}>글자</span>
-            {([["s", "작게"], ["m", "보통"], ["l", "크게"]] as const).map(([k, l]) => <button key={k} type="button" disabled={disabled} onClick={() => set({ size: k })} style={chip(value.size === k)}>{l}</button>)}
-            <span style={{ width: 12 }} />
-            <span style={{ fontSize: 14, color: C.sub, marginRight: 2 }}>빠르기</span>
-            {([["slow", "느리게"], ["mid", "보통"], ["fast", "빠르게"]] as const).map(([k, l]) => <button key={k} type="button" disabled={disabled} onClick={() => set({ speed: k })} style={chip(value.speed === k)}>{l}</button>)}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+            <Btn primary={!rehearsing} disabled={disabled || !can || !value.text.trim()} onClick={onRehearse} title="녹화하지 않고 프롬프터만 띄워 읽어 봐요 (빠르기·글자 크기는 프롬프터 창에서)">
+              <Icon name={rehearsing ? "close" : "play"} size={16} />{rehearsing ? "미리보기 닫기" : "미리 읽어 보기"}
+            </Btn>
             <span style={{ flex: 1 }} />
-            {chars > 0 && <span style={{ fontSize: 14, color: C.sub }}>예상 길이 약 <b style={{ color: C.text }}>{fmtTime(secs, false)}</b></span>}
+            {chars > 0 && <span style={{ fontSize: 14, color: C.sub }}>약 <b style={{ color: C.text }}>{fmtTime(secs, false)}</b></span>}
           </div>
-          <div style={{ marginTop: 10 }}><Hint>3·2·1 뒤에 저절로 올라가요. 프롬프터 창의 [멈춤]·[느리게]·[빠르게]로 바꿀 수 있어요. 녹화가 끝나면 이 대본이 그대로 자막이 돼요.</Hint></div>
         </>
       )}
     </div>
@@ -1028,16 +1035,22 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const [pr, setPr] = useState<Prompter>(() => loadPrompter()); // 프롬프터 대본·글자·빠르기 (다음 녹화 때도 그대로)
   const [prOpen, setPrOpen] = useState(false); // 녹화 중 프롬프터 창이 떠 있음
   const prUse = pr.on && Boolean(pr.text.trim()) && Boolean(b.record.prompterOpen);
-  const openPrompter = (startAt: number) => {
+  const openPrompter = (startAt: number, rehearse = false) => {
     if (!b.record.prompterOpen) return;
     setPrOpen(true);
-    b.record.prompterOpen({ text: pr.text.trim(), cps: PROMPTER_CPS[pr.speed], size: PROMPTER_SIZE[pr.size], startAt }).catch(() => setPrOpen(false));
+    b.record.prompterOpen({ text: pr.text.trim(), cps: pr.cps, size: pr.size, mine: pr.mine, startAt, rehearse }).catch(() => setPrOpen(false));
   };
   const closePrompter = () => {
     setPrOpen(false);
     b.record.prompterClose?.().catch(() => {});
   };
   useEffect(() => b.record.onPrompterClosed?.(() => setPrOpen(false)), [b]);
+  // 프롬프터 창에서 바꾼 빠르기·글자 크기·내 빠르기 → 여기에도 (다음 녹화 때도 그대로)
+  useEffect(() => b.record.onPrompterPrefs?.((o) => setPr((p) => {
+    const n = { ...p, cps: clampCps(o.cps), size: clampSize(o.size), mine: o.mine ? clampCps(o.mine) : p.mine };
+    savePrompter(n);
+    return n;
+  })), [b]);
   useEffect(() => () => void b.record.prompterClose?.().catch(() => {}), [b]);
   const [mode, setMode] = useState<"screen" | "camera" | "both">("screen");
   const [sources, setSources] = useState<{ id: string; name: string; thumb: string }[]>([]);
@@ -1781,7 +1794,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           {phase === "rec" && <span style={{ position: "absolute", left: 14, top: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: "#fff" }}><span style={{ width: 12, height: 12, borderRadius: 6, background: C.danger }} />녹화 중 {fmtTime(sec, false)}</span>}
         </div>
         {phase === "setup" ? (
-          <PrompterPanel value={pr} onChange={setPr} disabled={false} />
+          <PrompterPanel value={pr} onChange={setPr} disabled={false} rehearsing={prOpen} onRehearse={() => (prOpen ? closePrompter() : openPrompter(Date.now() + 3000, true))} />
         ) : prUse && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, fontSize: 14.5 }}>
             <Icon name="text" size={18} />

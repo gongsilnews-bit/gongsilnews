@@ -434,6 +434,14 @@ function register(base) {
   ipcMain.handle("video:prompter-close", () => (closePrompter(), true));
   ipcMain.handle("prompter:init", () => prompterOpts);
   ipcMain.on("prompter:close", () => closePrompter());
+  ipcMain.on("prompter:prefs", (_e, o) => {
+    if (prompterOwner && !prompterOwner.isDestroyed()) prompterOwner.send("video:prompter-prefs", o);
+  });
+  let dragFrom = null;
+  ipcMain.on("prompter:drag-start", () => (dragFrom = prompter && !prompter.isDestroyed() ? prompter.getPosition() : null));
+  ipcMain.on("prompter:drag", (_e, dx, dy) => {
+    if (dragFrom && prompter && !prompter.isDestroyed()) prompter.setPosition(Math.round(dragFrom[0] + dx), Math.round(dragFrom[1] + dy));
+  });
   ipcMain.on("record-mini:stop", () => {
     if (!live || live.win.isDestroyed()) return closeMini();
     live.win.webContents.send("video:record-mini-stop");

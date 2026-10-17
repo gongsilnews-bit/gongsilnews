@@ -207,6 +207,11 @@ if (allowed) {
           ipcRenderer.on("video:prompter-closed", h);
           return () => ipcRenderer.removeListener("video:prompter-closed", h);
         },
+        onPrompterPrefs: (fn) => {
+          const h = (_e, o) => fn(o);
+          ipcRenderer.on("video:prompter-prefs", h);
+          return () => ipcRenderer.removeListener("video:prompter-prefs", h);
+        },
         onMiniStop: (fn) => {
           const h = () => fn();
           ipcRenderer.on("video:record-mini-stop", h);

@@ -7,11 +7,13 @@
 <style>
   html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; user-select: none; }
   .wrap { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; background: rgba(12, 13, 16, 0.94); border: 1px solid #3a3f4b; border-radius: 10px; color: #fff; overflow: hidden; }
-  /* 위 줄을 잡고 끌어 옮긴다 (단추는 빼고) */
-  .top { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 14px; border-bottom: 1px solid #2a2e37; -webkit-app-region: drag; flex-shrink: 0; }
+  /* 위 줄을 잡고 끌어 옮긴다 — 마우스 모양은 ✥ 열십자 (윈도우 끌기 영역은 화살표만 돼서 직접 옮긴다) */
+  .top { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 12px; border-bottom: 1px solid #2a2e37; flex-shrink: 0; cursor: move; background: #16181d; }
+  .grip { font-size: 18px; color: #aab0bb; }
   .title { flex: 1; font-size: 13.5px; font-weight: 700; color: #aab0bb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .title b { color: #fff; }
-  .x { -webkit-app-region: no-drag; width: 34px; height: 30px; border: 0; border-radius: 4px; background: transparent; color: #aab0bb; font-size: 18px; cursor: pointer; }
+  .tag { display: none; padding: 2px 8px; border-radius: 4px; background: #3b82f6; color: #fff; font-size: 12.5px; font-weight: 800; }
+  .x { width: 34px; height: 30px; border: 0; border-radius: 4px; background: transparent; color: #aab0bb; font-size: 18px; cursor: pointer; }
   .x:hover { background: #ef4444; color: #fff; }
   .view { position: relative; flex: 1; overflow: hidden; }
   /* 읽는 줄 — 위쪽 1/3 (카메라에 가깝게) */
@@ -23,19 +25,25 @@
   .text span.gap { display: block; height: 0.7em; }
   .count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 120px; font-weight: 800; background: rgba(0, 0, 0, 0.55); z-index: 3; }
   .end { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 22px; color: #aab0bb; display: none; z-index: 2; }
-  .bar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-top: 1px solid #2a2e37; flex-shrink: 0; flex-wrap: wrap; }
-  button.b { height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid #4b5160; background: #1c1f26; color: #e5e7eb; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .bar { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-top: 1px solid #2a2e37; flex-shrink: 0; }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .lab { font-size: 14px; color: #aab0bb; width: 48px; }
+  button.b { height: 38px; padding: 0 12px; border-radius: 6px; border: 1px solid #4b5160; background: #1c1f26; color: #e5e7eb; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   button.b:hover { background: #2d3240; }
-  button.b.main { background: #3b82f6; border-color: #3b82f6; color: #fff; min-width: 108px; }
+  button.b.main { background: #3b82f6; border-color: #3b82f6; color: #fff; min-width: 104px; }
   button.b.main:hover { background: #2563eb; }
-  .val { font-size: 14px; color: #aab0bb; min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
-  .sp { flex: 1; }
+  button.b.mine { border-color: #3b82f6; }
+  input[type=range] { flex: 1; min-width: 90px; accent-color: #3b82f6; height: 26px; cursor: pointer; }
+  .val { font-size: 14px; color: #fff; font-weight: 700; min-width: 76px; text-align: center; }
+  .msg { font-size: 13px; color: #86efac; min-width: 0; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
-    <span class="title"><b>프롬프터</b> · 녹화에 안 찍혀요 · 끌어서 옮기고, 가장자리를 끌어 크기를 바꿔요</span>
+    <span class="grip">✥</span>
+    <span class="tag" id="tag">미리 읽어 보기</span>
+    <span class="title" title="녹화에 안 찍혀요 · 위 줄을 끌어 옮기고, 가장자리를 끌어 크기를 바꿔요"><b>프롬프터</b></span>
     <button class="x" id="close" title="프롬프터 닫기">✕</button>
   </div>
   <div class="view" id="view">
@@ -45,24 +53,37 @@
     <div class="count" id="count" style="display:none"></div>
   </div>
   <div class="bar">
-    <button class="b main" id="play" title="멈추기·다시 (스페이스바)">⏸ 멈춤</button>
-    <button class="b" id="back" title="조금 앞 줄로">⏪ 뒤로</button>
-    <span class="sp"></span>
-    <button class="b" id="slower">느리게</button>
-    <span class="val" id="speed"></span>
-    <button class="b" id="faster">빠르게</button>
-    <span class="sp"></span>
-    <button class="b" id="smaller">가 작게</button>
-    <button class="b" id="bigger">가 크게</button>
+    <div class="row">
+      <button class="b main" id="play" title="멈추기·다시 (스페이스바)">⏸ 멈춤</button>
+      <button class="b" id="back" title="조금 앞 줄로">⏪ 뒤로</button>
+      <button class="b" id="again" title="처음부터 다시">⏮ 처음부터</button>
+      <span class="msg" id="msg"></span>
+    </div>
+    <div class="row">
+      <span class="lab">빠르기</span>
+      <button class="b" id="slower">느리게</button>
+      <input type="range" id="speed" min="3" max="8" step="0.5" />
+      <button class="b" id="faster">빠르게</button>
+      <span class="val" id="speedName"></span>
+      <button class="b mine" id="mine" title="저장한 내 빠르기로">★ 내 빠르기</button>
+      <button class="b" id="save" title="지금 빠르기를 내 빠르기로 저장">저장</button>
+    </div>
+    <div class="row">
+      <span class="lab">글자</span>
+      <button class="b" id="smaller">가 작게</button>
+      <input type="range" id="size" min="28" max="96" step="2" />
+      <button class="b" id="bigger">가 크게</button>
+      <span class="val" id="sizeName"></span>
+    </div>
   </div>
 </div>
 <script>
-  // 1초에 읽는 글자 수(cps)로 올라간다. 처음 값은 녹화 창에서 고른 빠르기
-  const SPEEDS = [3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8];
+  // 1초에 읽는 글자 수(cps)로 올라간다. 처음 값은 녹화 창에서 고른 빠르기. 바꾼 빠르기·글자 크기는 녹화 창에 알려 다음에도 그대로
   const SPEED_NAME = (v) => (v <= 3.5 ? "아주 느리게" : v <= 4.5 ? "느리게" : v <= 5.5 ? "보통" : v <= 6.5 ? "빠르게" : "아주 빠르게");
+  const SIZE_NAME = (v) => (v <= 38 ? "작게" : v <= 58 ? "보통" : v <= 76 ? "크게" : "아주 크게");
   const $ = (id) => document.getElementById(id);
   const view = $("view"), text = $("text");
-  let cps = 5, size = 52, y = 0, playing = false, last = 0, startAt = 0, chars = 1, lines = [];
+  let cps = 5, size = 52, mine = null, y = 0, playing = false, last = 0, startAt = 0, chars = 1, lines = [];
 
   const render = (script) => {
     text.innerHTML = "";
@@ -95,16 +116,40 @@
     for (const el of lines) el.classList.toggle("past", el.offsetTop + el.offsetHeight < g - 4);
     $("end").style.display = y >= maxY() - 2 ? "block" : "none";
   };
-  const setSize = (v) => {
-    size = Math.min(110, Math.max(26, v));
-    text.style.fontSize = size + "px";
-    apply();
+  let flash = 0;
+  const say = (t) => {
+    $("msg").textContent = t;
+    clearTimeout(flash);
+    flash = setTimeout(() => ($("msg").textContent = ""), 2500);
   };
-  const showSpeed = () => ($("speed").textContent = SPEED_NAME(cps));
+  const report = () => window.prompter.prefs && window.prompter.prefs({ cps, size, mine });
+  const setSpeed = (v, tell = true) => {
+    cps = Math.min(8, Math.max(3, Math.round(v * 2) / 2));
+    $("speed").value = cps;
+    $("speedName").textContent = SPEED_NAME(cps);
+    $("mine").style.display = mine ? "" : "none";
+    $("mine").textContent = mine && mine === cps ? "★ 내 빠르기 (지금)" : "★ 내 빠르기";
+    if (tell) report();
+  };
+  const setSize = (v, tell = true) => {
+    // 크기를 바꿔도 읽던 자리는 그대로
+    const k = text.scrollHeight ? y / text.scrollHeight : 0;
+    size = Math.min(96, Math.max(28, Math.round(v / 2) * 2));
+    text.style.fontSize = size + "px";
+    $("size").value = size;
+    $("sizeName").textContent = SIZE_NAME(size);
+    y = k * text.scrollHeight;
+    apply();
+    if (tell) report();
+  };
   const setPlaying = (v) => {
     playing = v;
     $("play").textContent = v ? "⏸ 멈춤" : "▶ 다시";
     last = performance.now();
+  };
+  const countFrom = (ms) => {
+    startAt = Date.now() + ms;
+    setPlaying(false);
   };
   const tick = (now) => {
     if (startAt) {
@@ -128,31 +173,54 @@
   };
 
   $("play").onclick = () => {
-    if (startAt) startAt = 0, $("count").style.display = "none";
+    if (startAt) (startAt = 0), ($("count").style.display = "none");
     setPlaying(!playing);
   };
   $("back").onclick = () => {
     y -= size * 1.45 * 2;
     apply();
   };
-  $("slower").onclick = () => {
-    cps = SPEEDS[Math.max(0, SPEEDS.findIndex((v) => v >= cps) - 1)];
-    showSpeed();
+  $("again").onclick = () => {
+    y = 0;
+    apply();
+    countFrom(3000);
   };
-  $("faster").onclick = () => {
-    const i = SPEEDS.findIndex((v) => v > cps);
-    cps = SPEEDS[i < 0 ? SPEEDS.length - 1 : i];
-    showSpeed();
+  $("slower").onclick = () => setSpeed(cps - 0.5);
+  $("faster").onclick = () => setSpeed(cps + 0.5);
+  $("speed").oninput = (e) => setSpeed(Number(e.target.value));
+  $("mine").onclick = () => mine && (setSpeed(mine), say("내 빠르기로 바꿨어요"));
+  $("save").onclick = () => {
+    mine = cps;
+    setSpeed(cps);
+    say(`내 빠르기로 저장했어요 (${SPEED_NAME(cps)})`);
   };
   $("smaller").onclick = () => setSize(size - 6);
   $("bigger").onclick = () => setSize(size + 6);
+  $("size").oninput = (e) => setSize(Number(e.target.value));
   $("close").onclick = () => window.prompter.close();
+  // 위 줄 끌어 옮기기
+  $("close").addEventListener("pointerdown", (e) => e.stopPropagation());
+  document.querySelector(".top").addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const top = e.currentTarget;
+    top.setPointerCapture(e.pointerId);
+    const sx = e.screenX, sy = e.screenY;
+    window.prompter.dragStart();
+    const move = (ev) => window.prompter.drag(ev.screenX - sx, ev.screenY - sy);
+    const up = () => {
+      top.removeEventListener("pointermove", move);
+      top.removeEventListener("pointerup", up);
+    };
+    top.addEventListener("pointermove", move);
+    top.addEventListener("pointerup", up);
+  });
   // 손으로 굴려서 맞추기 (마우스 휠)
   view.addEventListener("wheel", (e) => {
     y += e.deltaY * 0.6;
     apply();
   });
   document.addEventListener("keydown", (e) => {
+    if (e.target && e.target.tagName === "INPUT") return;
     if (e.code === "Space") {
       e.preventDefault();
       $("play").click();
@@ -163,10 +231,11 @@
 
   window.prompter.init().then((o) => {
     o = o || {};
+    if (o.rehearse) $("tag").style.display = "inline-block";
     render(o.text);
-    cps = Number(o.cps) || 5;
-    showSpeed();
-    setSize(Number(o.size) || 52);
+    mine = Number(o.mine) || null;
+    setSpeed(Number(o.cps) || 5, false);
+    setSize(Number(o.size) || 52, false);
     startAt = Number(o.startAt) || 0;
     if (!startAt) setPlaying(true);
     requestAnimationFrame(tick);

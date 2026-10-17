@@ -4,4 +4,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("prompter", {
   init: () => ipcRenderer.invoke("prompter:init"),
   close: () => ipcRenderer.send("prompter:close"),
+  prefs: (o) => ipcRenderer.send("prompter:prefs", o), // 바꾼 빠르기·글자 크기·내 빠르기 → 녹화 창이 기억
+  dragStart: () => ipcRenderer.send("prompter:drag-start"),
+  drag: (dx, dy) => ipcRenderer.send("prompter:drag", dx, dy),
 });
