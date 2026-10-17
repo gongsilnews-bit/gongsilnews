@@ -102,7 +102,7 @@ async function openMini() {
     } catch {}
     if (!live) return;
     if (!d) d = screen.getDisplayMatching(live.win.getBounds());
-    const W = 600, H = 54, wa = d.workArea;
+    const W = 340, H = 54, wa = d.workArea;
     // 프롬프터가 떠 있으면 그 바로 아래에 (겹치지 않게)
     const pb = prompter && !prompter.isDestroyed() ? prompter.getBounds() : null;
     mini = new BrowserWindow({
@@ -125,7 +125,7 @@ async function openMini() {
     });
     mini.setAlwaysOnTop(true, "screen-saver");
     mini.setContentProtection(true); // 윈도우: 화면 녹화·캡처에서 빠진다
-    mini.loadFile(path.join(__dirname, "record-mini.html"), { query: { t: String(live.startedAt), m: live.mode || "screen" } });
+    mini.loadFile(path.join(__dirname, "record-mini.html"), { query: { t: String(live.startedAt) } });
     mini.once("ready-to-show", () => mini && mini.showInactive());
     mini.on("closed", () => {
       mini = null;
@@ -425,18 +425,6 @@ function register(base) {
     return true;
   });
   ipcMain.on("record-mini:expand", () => live && showBig(live.win));
-  // 녹화 중 화면 바꾸기 — 큰 창 ↔ 작은 막대
-  ipcMain.handle("video:record-mode", (_e, m) => {
-    if (!live) return false;
-    live.mode = m;
-    if (mini && !mini.isDestroyed()) mini.webContents.send("mini:mode", m);
-    return true;
-  });
-  ipcMain.on("record-mini:mode", (_e, m) => {
-    if (!live || live.win.isDestroyed()) return;
-    live.mode = m;
-    live.win.webContents.send("video:record-mini-mode", m);
-  });
   // 프롬프터 (앱 0.1.8부터)
   ipcMain.handle("video:prompter-open", async (e, opts) => {
     prompterOwner = e.sender;

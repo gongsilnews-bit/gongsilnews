@@ -4,6 +4,4 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("mini", {
   stop: () => ipcRenderer.send("record-mini:stop"),
   expand: () => ipcRenderer.send("record-mini:expand"),
-  mode: (m) => ipcRenderer.send("record-mini:mode", m), // 녹화 중 화면 바꾸기
-  onMode: (fn) => ipcRenderer.on("mini:mode", (_e, m) => fn(m)),
 });

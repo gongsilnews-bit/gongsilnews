@@ -13,8 +13,6 @@
   .time { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; flex: 1; }
   button { -webkit-app-region: no-drag; height: 34px; padding: 0 12px; border-radius: 6px; border: 1px solid #4b5160; background: transparent; color: #e5e7eb; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   button:hover { background: #2d3240; }
-  button.m.on { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-  .sep { width: 1px; height: 26px; background: #3a3f4b; margin: 0 2px; }
   button.stop { background: #ef4444; border-color: #ef4444; color: #fff; }
   button.stop:hover { background: #dc2626; }
 </style>
@@ -23,10 +21,6 @@
 <div class="bar">
   <span class="dot"></span>
   <span class="time" id="t">녹화 중 0:00</span>
-  <button class="m" data-m="screen" title="화면만 녹화">화면</button>
-  <button class="m" data-m="camera" title="카메라만 녹화">카메라</button>
-  <button class="m" data-m="both" title="화면 위에 카메라">화면+카메라</button>
-  <span class="sep"></span>
   <button id="expand" title="스튜디오 창을 다시 크게">크게 보기</button>
   <button id="stop" class="stop">■ 녹화 끝내기</button>
 </div>
@@ -42,12 +36,6 @@
   tick();
   setInterval(tick, 500);
   document.getElementById("expand").onclick = () => window.mini.expand();
-  // 녹화 중 화면 바꾸기 — 누르면 다음 순간부터 그 모양으로 녹화된다
-  const modes = [...document.querySelectorAll("button.m")];
-  const showMode = (m) => modes.forEach((b) => b.classList.toggle("on", b.dataset.m === m));
-  showMode(new URLSearchParams(location.search).get("m") || "screen");
-  modes.forEach((b) => (b.onclick = () => (showMode(b.dataset.m), window.mini.mode(b.dataset.m))));
-  window.mini.onMode && window.mini.onMode(showMode);
   document.getElementById("stop").onclick = (e) => {
     e.currentTarget.disabled = true;
     window.mini.stop();

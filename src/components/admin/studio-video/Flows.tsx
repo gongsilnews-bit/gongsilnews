@@ -1440,11 +1440,6 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, source, phase]);
-  // 작은 막대에서 고른 모양 → 여기로. 여기서 바꾼 모양 → 작은 막대에
-  useEffect(() => b.record.onMiniMode?.((m) => setMode(m)), [b]);
-  useEffect(() => {
-    if (phase === "rec") b.record.setMode?.(mode).catch(() => {});
-  }, [b, mode, phase]);
 
   const buildStream = async (): Promise<MediaStream> => {
     stopAll();

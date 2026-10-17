@@ -228,9 +228,6 @@ export type VideoBridge = {
     live?: (on: boolean, startedAt?: number) => Promise<boolean>;
     minimize?: () => Promise<boolean>;
     onMiniStop?: (fn: () => void) => () => void;
-    // 녹화 중 화면 바꾸기 — 작은 막대와 주고받기 (앱 0.1.8부터)
-    setMode?: (m: "screen" | "camera" | "both") => Promise<boolean>;
-    onMiniMode?: (fn: (m: "screen" | "camera" | "both") => void) => () => void;
     // 프롬프터 — 녹화하는 모니터 위쪽 대본 창, 녹화에 안 찍힘 (앱 0.1.8부터)
     prompterOpen?: (o: { text: string; cps: number; size: number; mine: { cps: number; size: number } | null; startAt: number; rehearse?: boolean }) => Promise<boolean>;
     prompterClose?: () => Promise<boolean>;
