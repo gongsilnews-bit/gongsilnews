@@ -9,7 +9,7 @@ import type { Clip, Project, Word } from "./types";
 import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
-import { C, Icon, FONT, VolumeControl } from "./ui";
+import { C, Icon, FONT } from "./ui";
 import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
 import { transLabel } from "./transitions";
 
@@ -34,7 +34,6 @@ export type ClipActions = {
   setPad: (ids: string[], sec: number) => void; // AI 목소리 다 읽은 뒤 쉬기 (문장 끝 [..])
   moveClips: (ids: string[], targetId: string, before: boolean) => void; // 클립 끌어 옮기기 (Ctrl 로 고른 여러 개 함께)
   addAiVoice: (clipId: string, text: string) => void; // 원본 영상 클립에 글 → AI 목소리 (원본 소리도 그대로)
-  setOrigVolume: (clipId: string, v: number, muted: boolean, first: boolean) => void; // AI 목소리를 얹은 영상의 원본 소리
   // 단어를 누르면 위에 뜨는 단추 막대 (브루처럼) — 이 클립 잘라내기·복사·붙여넣기, 삽입
   cutClip: (id: string) => void;
   copyClip: (id: string) => void;
@@ -192,11 +191,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   const [padOpen, setPadOpen] = React.useState(false); // 문장 끝 [..] 메뉴
   const [aiOpen, setAiOpen] = React.useState(false); // 원본 영상 클립 [✎ AI 목소리 넣기]
   const [aiDraft, setAiDraft] = React.useState("");
-  const [origOpen, setOrigOpen] = React.useState(false); // [원본 소리] 칩 (AI 목소리를 얹은 영상)
-  // AI 목소리를 얹은 영상 — 화면이 소리 있는 영상이면 [원본 소리] 칩을 하나 더
-  const origAsset = c.type === "voice" && c.visual ? project.assets[c.visual.asset] : null;
-  // 영상 소리를 켰을 때만 칩 (꺼 둔 기본 상태에서는 안 보인다 — 켜기는 썸네일 메뉴 [볼륨 조절])
-  const hasOrig = Boolean(origAsset && origAsset.kind === "video" && origAsset.hasAudio !== false && c.visualVolume && c.visualVolume > 0);
   const [hoverW, setHoverW] = React.useState(-1); // 마우스를 올린 단어 — 오른쪽 위 ⓧ(지우기)
   const [insOpen, setInsOpen] = React.useState(false); // 단추 막대 [삽입 ▾]
   const [detail, setDetail] = React.useState(false); // 상세 편집 (파형) 펼침
@@ -300,23 +294,6 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             {busy && c.type === "voice" ? <span className="gsv-spin" title="목소리 만드는 중" style={{ display: "inline-block", width: 14, height: 14, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} /> : <Icon name={silent ? "mute" : c.type === "voice" ? "voice" : "mic"} size={16} />}
             {silent ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
           </button>
-          {hasOrig && (
-            <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }} data-keepword="">
-              <button type="button" onClick={(e) => { e.stopPropagation(); setOrigOpen((v) => !v); }} title="화면 영상의 소리 크기 (AI 목소리와 같이 들려요)"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${c.visualVolume ? C.line2 : C.danger}`, background: c.visualVolume ? "transparent" : "rgba(239,68,68,0.12)", color: c.visualVolume ? C.sub : C.danger, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-                <Icon name={c.visualVolume ? "mic" : "mute"} size={16} />{c.visualVolume ? "영상 소리" : "영상 소리 무음"}
-              </button>
-              {origOpen && (
-                <>
-                  <span onClick={(e) => { e.stopPropagation(); setOrigOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
-                  <span onClick={(e) => e.stopPropagation()} style={{ position: "absolute", left: 0, top: 38, zIndex: 61, width: 260, padding: 12, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 12px 30px rgba(0,0,0,0.45)", cursor: "default" }}>
-                    <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>영상 소리 <span style={{ color: C.sub, fontWeight: 600, fontSize: 12 }}>· 화면 영상의 소리</span></span>
-                    <VolumeControl muted={!c.visualVolume} value={c.visualVolume || 1} onMute={(m) => p.actions.setOrigVolume(c.id, c.visualVolume || 1, m, true)} onVolume={(v, first) => p.actions.setOrigVolume(c.id, v, v === 0, first)} />
-                  </span>
-                </>
-              )}
-            </span>
-          )}
           {editing ? (
             // 한 줄로 — 글 칸 + [고치기 끝][그만두기] (아래 자막 고치기와 같은 모양)
             <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}

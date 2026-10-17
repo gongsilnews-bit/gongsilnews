@@ -740,12 +740,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       });
       setSelected([clipId]);
       revoice([clipId]);
-      say("AI 목소리를 넣었어요 · 영상 소리는 [영상 소리] 칩에서 조절해요");
+      say("AI 목소리를 넣었어요 · 영상 소리 크기는 썸네일을 눌러 [볼륨 조절]에서 바꿔요");
     },
-    setOrigVolume: (clipId, v, muted, first) => change((p) => {
-      const c = findClip(p, clipId)?.clip;
-      if (c) c.visualVolume = muted || v <= 0 ? undefined : +v.toFixed(2);
-    }, first),
     // 문장 끝 [..] — AI 목소리를 다 읽고 쉬는 시간 (빠르기를 바꿔도 그대로)
     setPad: (ids, sec) => {
       change((p) => {
@@ -1167,7 +1163,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     }
     return {
       none: a.hasAudio === false,
-      note: "화면 영상의 소리예요 (위 [영상 소리] 칩과 같은 값, AI 목소리 크기와는 따로)",
+      note: "화면 영상의 소리예요 (AI 목소리 크기와는 따로)",
       muted: !(c.visualVolume && c.visualVolume > 0),
       value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
       onMute: (v: boolean) => set((x) => { x.visualVolume = v ? undefined : x.visualVolume || 1; }),
