@@ -1426,6 +1426,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     revoice(clips.map((c) => c.id));
   };
 
+  // 빈 클립 — 글 없이 화면만 3초 (앞 클립 화면 그대로). 나중에 글을 쓰면 AI 목소리로
+  const doAddEmpty = () => {
+    const prev = lastSelected() ? findClip(pref.current, lastSelected()) : null;
+    const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: prev?.clip.visual || null, hold: 3 };
+    insertAfter([clip], lastSelected());
+    setSelected([clip.id]);
+    setDialog("");
+    setAddText("");
+    say("빈 클립을 넣었어요 · 연필을 눌러 글을 쓰면 AI 목소리로 읽어요");
+  };
+
   /* ── 목소리 바꾸기 ── */
   const applyVoice = async (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => {
     if (o.scope === "words") return voiceForWords(o);
@@ -2284,7 +2295,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         </Modal>
       )}
       {dialog === "addText" && (
-        <Modal title="글 클립 넣기 (AI 목소리)" onClose={() => setDialog("")} width={620} footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn primary onClick={doAddText} disabled={!addText.trim()}>넣기</Btn></>}>
+        <Modal title="글 클립 넣기 (AI 목소리)" onClose={() => setDialog("")} width={620} footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn onClick={doAddEmpty} title="글 없이 화면만 3초 (나중에 글을 쓸 수 있어요)">빈 클립 넣기</Btn><Btn primary onClick={doAddText} disabled={!addText.trim()}>넣기</Btn></>}>
           <div style={{ padding: 20 }}>
             <div style={{ ...label, marginBottom: 8 }}>AI 목소리가 읽을 글</div>
             <textarea value={addText} onChange={(e) => setAddText(e.target.value)} rows={7} autoFocus placeholder={"문장마다 클립 하나가 돼요.\n예) 이번에 소개할 곳은 논현동 빌라입니다. 지하철역까지 걸어서 5분이에요."}
