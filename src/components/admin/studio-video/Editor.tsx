@@ -7,6 +7,7 @@ import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem, Wor
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
 import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
 import MediaMenu, { SoundMenu, type MediaFit, type MediaOrder } from "./MediaMenu";
+import { NewClipDialog, type NewClipSpec } from "./NewClip";
 import VideoStart from "./VideoStart";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import Player, { type PlayerHandle } from "./Player";
@@ -254,6 +255,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     document.querySelector(`[data-clip="${cur.clip.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [playing, cur?.clip.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** 영상 위에 얹은 AI 목소리 — 영상 구간(fitLen)보다 짧으면 끝에 머물기(pad)로 맞추고, 길면 알린다 */
+  const fitVoice = (c: Clip, dur: number, p: Project) => {
+    if (!c.fitLen) return;
+    const need = c.fitLen - (dur / speedOf(c, p.settings) + GAP);
+    c.pad = need > 0.01 ? +need.toFixed(2) : undefined;
+    if (need < -0.3) setTimeout(() => say(`글이 영상보다 ${(-need).toFixed(1)}초 길어요 — 글을 줄이거나 목소리를 조금 빠르게 해 주세요`), 0);
+  };
+
   /* ── AI 목소리 만들기 (한 번에 3개씩) ── */
   const revoice = useCallback(async (ids: string[]) => {
     const list = ids.filter((id) => findClip(pref.current, id)?.clip.type === "voice");
@@ -301,6 +310,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               c.voice = { file: j.file, url: j.url, duration: j.duration, id: base, text };
               c.words = words;
               c.text = text;
+              fitVoice(c, j.duration, p);
             }, false);
           } else {
             const r = await b.voice(pref.current.dir, text, base);
@@ -310,6 +320,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               c.voice = { file: r.file, url: r.url, duration: r.duration, id: r.id, text: r.text };
               c.words = r.words;
               c.text = text;
+              fitVoice(c, r.duration, p);
             }, false);
           }
         } catch (e) {
@@ -1413,28 +1424,57 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
 
   /* ── 글 클립 넣기 ── */
-  const [addText, setAddText] = useState("");
-  const doAddText = () => {
-    const sentences = splitScript(addText).flat();
-    if (!sentences.length) return;
-    const prev = lastSelected() ? findClip(pref.current, lastSelected()) : null;
-    const visual = prev?.clip.visual || null;
-    const clips: Clip[] = sentences.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual }));
-    insertAfter(clips, lastSelected());
-    setDialog("");
-    setAddText("");
-    revoice(clips.map((c) => c.id));
-  };
 
-  // 빈 클립 — 글 없이 화면만 3초 (앞 클립 화면 그대로). 나중에 글을 쓰면 AI 목소리로
-  const doAddEmpty = () => {
-    const prev = lastSelected() ? findClip(pref.current, lastSelected()) : null;
-    const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: prev?.clip.visual || null, hold: 3 };
-    insertAfter([clip], lastSelected());
-    setSelected([clip.id]);
+  /** 새 클립 넣기 — AI 목소리 글 / 빈 클립 / 사진 / 영상(앞뒤·소리) / 텍스트. 고른 클립 뒤에 (없으면 맨 끝) */
+  const addNewClip = (sp: NewClipSpec) => {
+    const after = lastSelected();
+    const prev = after ? findClip(pref.current, after) : null;
+    const words = (t: string) => t.split(/\s+/).filter(Boolean).map((w) => ({ w, s: 0, e: 0 }));
     setDialog("");
-    setAddText("");
-    say("빈 클립을 넣었어요 · 연필을 눌러 글을 쓰면 AI 목소리로 읽어요");
+    if (sp.kind === "ai") {
+      const clips: Clip[] = splitScript(sp.text).flat().map((t) => ({ id: uid(), type: "voice", text: t, words: words(t), voice: null, visual: prev?.clip.visual || null }));
+      if (!clips.length) return;
+      insertAfter(clips, after);
+      setSelected([clips[clips.length - 1].id]);
+      revoice(clips.map((c) => c.id));
+      return say(`AI 목소리 클립 ${clips.length}개를 넣었어요`);
+    }
+    if (sp.kind === "empty") {
+      const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: prev?.clip.visual || null, hold: sp.sec };
+      insertAfter([clip], after);
+      setSelected([clip.id]);
+      return say("빈 클립을 넣었어요 · 연필을 눌러 글을 쓰면 AI 목소리로 읽어요");
+    }
+    if (sp.kind === "photo") {
+      const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: { asset: sp.asset.id, s: 0 }, hold: sp.sec };
+      insertAfter([clip], after);
+      setSelected([clip.id]);
+      return say("사진 클립을 넣었어요 · 글을 쓰면 AI 목소리로 읽어요");
+    }
+    if (sp.kind === "video") {
+      const len = Math.max(0.3, sp.e - sp.s);
+      let clip: Clip;
+      if (sp.sound === "orig" && sp.asset.hasAudio) clip = { id: uid(), type: "source", text: "", words: [], src: { asset: sp.asset.id, s: sp.s, e: sp.e } };
+      else if (sp.sound === "ai" && sp.text.trim()) {
+        const t = sp.text.replace(/\s+/g, " ").trim();
+        clip = { id: uid(), type: "voice", text: t, words: words(t), voice: null, visual: { asset: sp.asset.id, s: sp.s }, visualVolume: sp.asset.hasAudio && sp.vol > 0 ? sp.vol : undefined, fitLen: len };
+      } else clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: { asset: sp.asset.id, s: sp.s }, hold: len };
+      insertAfter([clip], after);
+      setSelected([clip.id]);
+      if (clip.type === "voice" && clip.text) revoice([clip.id]);
+      return say(sp.sound === "ai" ? "영상 위에 AI 목소리를 얹어 넣었어요" : `영상 ${len.toFixed(1)}초를 넣었어요`);
+    }
+    // 텍스트 화면 — 글 없는 클립 + 그 클립에만 큰 화면 글자
+    const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: sp.bg === "prev" ? prev?.clip.visual || null : null, hold: sp.sec };
+    const lid = uid();
+    insertAfter([clip], after);
+    change((p) => {
+      p.layers = [...(p.layers || []), { id: lid, type: "text", from: clip.id, to: clip.id, text: sp.text.trim(), pos: "middle", size: 160, color: "#FFFFFF", font: "Pretendard", box: false } as Layer];
+    });
+    setSelected([clip.id]);
+    setSelLayer(lid);
+    setPanel("layer");
+    say("텍스트 화면을 넣었어요 · 오른쪽에서 글자 모양을 바꿀 수 있어요");
   };
 
   /* ── 목소리 바꾸기 ── */
@@ -1784,7 +1824,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "bg", label: subNow().bg ? "검은 상자 빼기" : "검은 상자 넣기", onClick: () => applySub({ bg: !subNow().bg }) },
     ],
     삽입: [
-      { icon: "text", label: "글 클립 넣기", onClick: () => setDialog("addText") },
+      { icon: "plus", label: "새 클립 넣기", onClick: () => setDialog("addText"), title: "AI 목소리 글 · 빈 클립 · 사진 · 영상 · 텍스트" },
       "|",
       { icon: "font", label: "화면 글자", onClick: addTextLayer, title: "고른 클립(없으면 지금 클립)에 글자를 올려요" },
       { icon: "image", label: "사진 올리기", onClick: () => { setOverlayTarget(""); openLib("mine", true); }, title: "고른 클립(없으면 지금 클립) 화면 위에 사진을 올려요" },
@@ -1799,7 +1839,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "voice", label: "목소리 바꾸기", onClick: () => setPanel("voice") },
       { icon: "redo", label: "목소리 다시 만들기", disabled: !selected.length, onClick: () => revoice(selected) },
       "|",
-      { icon: "text", label: "AI 목소리 클립 넣기", onClick: () => setDialog("addText") },
+      { icon: "plus", label: "새 클립 넣기", onClick: () => setDialog("addText") },
     ],
     효과: [
       { icon: "merge", label: "화면전환 모두 넣기", onClick: () => allTrans({ ...TRANS_DEFAULT }), disabled: flat.items.length < 2, title: "모든 클립 사이에 디졸브 0.6초 (클립 사이 칩을 누르면 바꿀 수 있어요)" },
@@ -2295,14 +2335,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         </Modal>
       )}
       {dialog === "addText" && (
-        <Modal title="글 클립 넣기 (AI 목소리)" onClose={() => setDialog("")} width={620} footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn onClick={doAddEmpty} title="글 없이 화면만 3초 (나중에 글을 쓸 수 있어요)">빈 클립 넣기</Btn><Btn primary onClick={doAddText} disabled={!addText.trim()}>넣기</Btn></>}>
-          <div style={{ padding: 20 }}>
-            <div style={{ ...label, marginBottom: 8 }}>AI 목소리가 읽을 글</div>
-            <textarea value={addText} onChange={(e) => setAddText(e.target.value)} rows={7} autoFocus placeholder={"문장마다 클립 하나가 돼요.\n예) 이번에 소개할 곳은 논현동 빌라입니다. 지하철역까지 걸어서 5분이에요."}
-              style={{ ...input, height: "auto", padding: 12, lineHeight: 1.6, resize: "vertical" }} />
-            <div style={{ fontSize: 13.5, color: C.sub, marginTop: 8 }}>{selected.length ? "고른 클립 뒤에" : "맨 끝에"} 넣어요. 화면은 앞 클립과 같게 시작해요.</div>
-          </div>
-        </Modal>
+        <NewClipDialog where={selected.length ? "고른 클립 뒤에" : "맨 끝에"} ensureAsset={ensureAsset} onAdd={addNewClip} onClose={() => setDialog("")} />
       )}
       {backups && (
         <Modal title="자동 저장본" onClose={() => setBackups(null)} width={600} footer={<><Btn onClick={() => backups[0] && b.showFile(backups[0].file)}><Icon name="folder" size={15} />폴더 열기</Btn><Btn primary onClick={() => setBackups(null)}>닫기</Btn></>}>

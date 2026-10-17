@@ -36,6 +36,7 @@ export type Clip = {
   pad?: number; // AI 목소리 클립 끝에 더 머무는 시간 (초) — 클립 길이를 늘릴 때
   visual?: { asset: string; s: number } | null; // 화면 자료 (글 클립 배경 · 촬영 클립 화면 바꾸기)
   hold?: number; // 목소리 없을 때 길이
+  fitLen?: number; // 영상 위에 AI 목소리를 얹은 클립 — 이 길이(영상 구간)에 맞춘다 (목소리가 짧으면 끝에 머물기 pad)
   fill?: Fill;
   box?: { x: number; y: number; w: number }; // 화면 직접 크기 — 가운데 자리(0~1)·폭(화면 폭 비율). 있으면 채우기 대신 이 자리에
   flipX?: boolean; // 화면 좌우 반전
