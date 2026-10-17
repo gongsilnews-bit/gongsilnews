@@ -572,6 +572,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const c = findClip(p, id)?.clip;
       if (c) c.muted = !c.muted;
     }),
+    // 클립 사이 [+ 새 클립] — 앞 클립 뒤(= 이 클립 앞)에 글 클립 넣기 창
+    newClipBefore: (id) => {
+      const it = flatten(pref.current).items;
+      const k = it.findIndex((x) => x.clip.id === id);
+      if (k > 0) setSelected([it[k - 1].clip.id]);
+      setDialog("addText");
+    },
     sceneBreak: (id) => {
       change((p) => {
         const f = findClip(p, id);

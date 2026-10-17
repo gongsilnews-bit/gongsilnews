@@ -47,6 +47,7 @@ export type ClipActions = {
   editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
   restoreCut: (id: string, i: number | "all") => void; // 무음 줄이기 원래대로 (한 곳 / 모두)
   addCut: (id: string, g: { s: number; e: number }) => void; // 쉼 [..] 하나 줄이기
+  newClipBefore: (id: string) => void; // 클립 사이 [+ 새 클립] — 이 클립 앞에 글 클립
   openTrans: (id: string, add: boolean) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
 };
 
@@ -512,11 +513,20 @@ function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ position: "absolute", left: 0, right: 0, top: -10, height: 20, zIndex: 3, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto" }}>
+      {/* 마우스를 올리면 [+ 새 클립] [+ 화면전환] [여기서 새 씬] */}
+      {hover && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.newClipBefore(c.id); }} title="이 두 클립 사이에 새 글 클립 넣기"
+          style={{ height: 22, padding: "0 10px", marginRight: 6, borderRadius: 11, border: `1px solid ${C.line2}`, background: C.panel, color: C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>＋ 새 클립</button>
+      )}
       {(t || hover) && (
         <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTrans(c.id, !t); }} title={t ? "눌러서 화면전환 바꾸기" : "이 두 클립 사이에 화면전환 넣기"}
           style={{ height: 22, padding: "0 10px", borderRadius: 11, border: `1px solid ${t || open ? C.accent : C.line2}`, background: t ? (open ? C.accent : C.accentDim) : C.panel, color: t && open ? "#fff" : t ? C.text : C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
           {t ? <>↔ {transLabel(t.type)} · {(Number(t.a) + Number(t.b)).toFixed(1)}초</> : <>＋ 화면전환</>}
         </button>
+      )}
+      {hover && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.sceneBreak(c.id); }} title="이 클립부터 아래를 새 씬으로"
+          style={{ height: 22, padding: "0 10px", marginLeft: 6, borderRadius: 11, border: `1px solid ${C.line2}`, background: C.panel, color: C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>여기서 새 씬</button>
       )}
     </div>
   );
