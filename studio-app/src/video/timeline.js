@@ -5,7 +5,11 @@
 //  silence : 말이 없는 구간 (무음 구간 줄이기로 지운다) src {asset, s, e}
 //  voice   : 글로 만든 클립 — AI 목소리 voice {file, duration} (+ 화면 자료 visual {asset, s}), words (목소리 파일 시각, 1배속 기준)
 // clip.del = 지운 클립, word.del = 지운 단어, clip.cuts = 무음 줄이기로 건너뛰는 구간 [{s, e}] (원본 시각) — 그 소리·영상 구간이 잘린다
-const GAP = 0.12; // 목소리 클립 뒤 숨 쉬는 틈
+const GAP = 0.4; // 목소리 클립 뒤 숨 쉬는 틈 (기본) — gapOf(settings) 로 [AI 목소리 설정]의 문장 사이 쉼
+const gapOf = (settings) => {
+  const g = Number(settings && settings.voice && settings.voice.gap);
+  return Number.isFinite(g) && g >= 0 ? Math.min(2, g) : GAP;
+};
 
 function keepRanges(clip) {
   if (!clip.src) return [];
@@ -46,7 +50,7 @@ const srcSpeed = (clip) => (clip.type === "voice" ? 1 : Math.max(0.1, Math.min(2
 function clipDuration(clip, settings) {
   if (clip.del) return 0;
   if (clip.type === "voice") {
-    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + GAP + Math.max(0, Number(clip.pad) || 0);
+    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + gapOf(settings) + Math.max(0, Number(clip.pad) || 0);
     return Math.max(0.5, Number(clip.hold) || estimateSeconds(clip.text, speedOf(clip, settings)));
   }
   return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(clip);
@@ -184,6 +188,28 @@ function layerWindow(layer, clip, settings) {
   if (!pick.length) return null;
   return { s: pick[0].s, e: pick[pick.length - 1].e };
 }
+/** 화면 위에 겹치는 것의 쌓는 순서 — 뒤 → 앞. src/components/admin/studio-video/timeline.ts zLayers 와 같다 (회의 3-26) */
+function zLayers(p, layers) {
+  const vis = (layers || []).filter((l) => l.type === "image" || l.type === "text");
+  if (p && p.layerZ) return vis;
+  return [...vis.filter((l) => l.type !== "text"), ...vis.filter((l) => l.type === "text")];
+}
+/* ── 문자 간격·줄 간격 자동 (기본) — src/components/admin/studio-video/timeline.ts 와 같은 계산 ── */
+function autoLeading(s) {
+  const f = (s && s.font) || "";
+  let v = /Black Han Sans|Do Hyeon|Jua/.test(f) ? 1.15 : /Myeongjo|Song Myung|Nanum Pen|Yeon Sung/.test(f) ? 1.35 : 1.28;
+  if (s.bg || s.box) v += 0.12;
+  else if (s.glow || Number(s.outlineWidth ?? 3) >= 6 || Number(s.shadow) > 0) v += 0.06;
+  return Math.round(v * 100) / 100;
+}
+function autoSpacing(s) {
+  const f = (s && s.font) || "";
+  if (/Black Han Sans|Do Hyeon|Jua|Myeongjo|Song Myung/.test(f)) return 0;
+  if (/Nanum Pen|Yeon Sung/.test(f)) return 0.02;
+  return -0.02;
+}
+const effSpacing = (s) => Math.max(-0.1, Math.min(0.5, typeof s.spacing === "number" ? s.spacing : autoSpacing(s)));
+const effLeading = (s) => Math.max(0.9, Math.min(2.5, typeof s.leading === "number" ? s.leading : autoLeading(s)));
 function layersAt(p, clipId, order = clipOrder(p)) {
   return (p.layers || []).filter((l) => inLayer(order, l, clipId));
 }
@@ -248,6 +274,14 @@ function animAt(an, local, a, b) {
     else if (kind === "spin") { r.rot += (1 - e) * -180; r.sc *= 0.4 + 0.6 * e; r.op *= e; }
     else if (kind === "flip") r.sx *= Math.max(0.001, e);
     else if (kind === "roll") { r.dx += -(1 - e) * 0.35; r.rot += -(1 - e) * 360; r.op *= e; }
+    // 더 (회의 3-28 ⑤, 2026-10-19) — 떨어지기·옆에서·크게에서·늘어나기·흔들며·젤리
+    else if (kind === "drop") { r.dy += -(1 - backOut(x)) * 0.3; r.op *= Math.min(1, x * 3); }
+    else if (kind === "slideL") { r.dx += -(1 - e) * 0.4; r.op *= e; }
+    else if (kind === "slideR") { r.dx += (1 - e) * 0.4; r.op *= e; }
+    else if (kind === "big") { r.sc *= 1 + (1 - e) * 1.4; r.op *= e; }
+    else if (kind === "stretch") { r.sx *= Math.max(0.001, backOut(x)); r.sc *= 0.7 + 0.3 * e; r.op *= Math.min(1, x * 3); }
+    else if (kind === "swing") { r.rot += (1 - backOut(x)) * -40; r.op *= e; }
+    else if (kind === "jelly") { r.sc *= Math.max(0, e * (1 + 0.3 * Math.sin(Math.max(0, Math.min(1, x)) * Math.PI * 3) * (1 - Math.max(0, Math.min(1, x))))); r.op *= Math.min(1, x * 3); }
   };
   const tin = (local - a) / D;
   const tout = (b - local) / D;
@@ -257,6 +291,11 @@ function animAt(an, local, a, b) {
   if (an.emph === "pulse") r.sc *= 1 + 0.06 * Math.sin((2 * Math.PI * tt) / 1.1);
   else if (an.emph === "shake") r.rot += 5 * Math.sin((2 * Math.PI * tt) / 0.6);
   else if (an.emph === "blink") r.op *= 0.6 + 0.4 * (0.5 + 0.5 * Math.cos((2 * Math.PI * tt) / 1.2));
+  else if (an.emph === "float") r.dy += 0.012 * Math.sin((2 * Math.PI * tt) / 2);
+  else if (an.emph === "sway") r.rot += 8 * Math.sin((2 * Math.PI * tt) / 1.6);
+  else if (an.emph === "bounce") r.dy -= 0.025 * Math.abs(Math.sin((Math.PI * tt) / 0.5));
+  else if (an.emph === "beat") { const q = tt % 1; r.sc *= 1 + 0.07 * (Math.exp(-(((q - 0.1) / 0.05) ** 2)) + Math.exp(-(((q - 0.3) / 0.05) ** 2))); }
+  else if (an.emph === "wiggle") { r.dx += 0.006 * Math.sin((2 * Math.PI * tt) / 0.12); r.rot += 1.5 * Math.sin((2 * Math.PI * tt) / 0.18); }
   const u = b > a ? Math.max(0, Math.min(1, (local - a) / (b - a))) : 0;
   if (an.grow === "grow") r.sc *= 1 + 0.15 * u;
   else if (an.grow === "shrink") r.sc *= 1.15 - 0.15 * u;
@@ -264,7 +303,7 @@ function animAt(an, local, a, b) {
 }
 
 /* ── 애니메이션 효과음 — src/components/admin/studio-video/timeline.ts 와 같은 계산 ── */
-const SFX_AUTO = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click" };
+const SFX_AUTO = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click", drop: "pop", slideL: "whoosh-short", slideR: "whoosh-short", big: "whoosh", stretch: "pop", swing: "whoosh-short", jelly: "pop" };
 function sfxName(kind, set, dflt, isText) {
   if (!kind) return null;
   const v = set || dflt;
@@ -289,6 +328,14 @@ function sfxEvents(p, items, order = clipOrder(p)) {
     const n2 = l.anim.sfxOut ? sfxName(an.out, l.anim.sfx, "auto", l.type === "text") : null;
     if (n2) ev.push({ t: Math.max(a, b - Math.min(an.dur, (b - a) / 3)), name: n2, vol });
   }
+  // 효과음 레이어 — 그 클립(단어) 시작에 한 번 (timeline.ts 와 같다)
+  for (const l of p.layers || []) {
+    if (l.off || l.type !== "sfx" || !l.sfx) continue;
+    const cov = layerItems(p, l, items, order);
+    if (!cov.length) continue;
+    const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
+    ev.push({ t: cov[0].start + (sp ? Math.max(0, sp.a) : 0), name: l.sfx, vol: Math.max(0, Math.min(1, l.volume ?? 0.8)), keep: true });
+  }
   const sub = (p.settings && p.settings.subtitle) || {};
   for (const it of items) {
     const sa = subAnimOf(p, it.clip);
@@ -298,7 +345,7 @@ function sfxEvents(p, items, order = clipOrder(p)) {
     if (n) ev.push({ t: it.start, name: n, vol: Math.max(0, Math.min(1, st.sfxVol ?? 0.6)) });
   }
   ev.sort((x, y) => x.t - y.t);
-  return ev.filter((e, i) => !i || e.t - ev[i - 1].t > 0.12);
+  return ev.filter((e, i) => e.keep || !i || e.t - ev[i - 1].t > 0.12);
 }
 
-module.exports = { sfxEvents, animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText };
+module.exports = { sfxEvents, animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText, zLayers, effSpacing, effLeading };

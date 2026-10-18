@@ -17,11 +17,15 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
   const [st, setSt] = useState<MyVoiceStatus | null>(null);
   const [busy, setBusy] = useState<{ text: string; frac: number } | null>(null);
   const [err, setErr] = useState("");
-  const [mode, setMode] = useState<"" | "record">("");
   const [again, setAgain] = useState(false); // 등록돼 있어도 다시 등록 화면
-  const [agree, setAgree] = useState(false);
+  const [wiz, setWiz] = useState<WizStep>("intro");
+  const [takes, setTakes] = useState<Take[]>([]);
+  const [mic, setMic] = useState("");
+  const [fileMode, setFileMode] = useState(false);
   const audio = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
+  // 듣기 — 어느 소리를 틀고 있는지 (load: 누름 → 소리 나오기 전 ⟳, play: 나오는 중 ■)
+  const [pl, setPl] = useState<{ url: string; phase: "load" | "play" } | null>(null);
+  const playing = Boolean(pl);
 
   useEffect(() => {
     mv?.status().then(setSt).catch((e) => setErr(errText(e)));
@@ -48,20 +52,37 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
   // 등록 직후 — 샘플 문장을 만들어 바로 들려준다
   const afterRegister = async (r: MyVoiceStatus | null) => {
     if (!r) return;
-    setMode("");
     setAgain(false);
+    setWiz("intro");
+    setTakes([]);
     onPick();
     const s = await run(() => mv!.sample(), "내 목소리로 샘플 문장을 만드는 중… (처음엔 30초쯤 걸려요)");
     if (s?.sampleUrl) play(s.sampleUrl);
   };
-  const play = (url: string) => {
+  const play = (url: string, lead = 0) => {
     audio.current?.pause();
-    if (playing) return setPlaying(false);
+    audio.current = null;
+    if (pl?.url === url) return setPl(null); // 같은 것을 다시 누르면 멈춤
     const a = new Audio(url);
-    a.onended = () => setPlaying(false);
+    // 앞에 무음(3·2·1)이 있으면 목소리가 나오는 때까지 ⟳ 를 보여 준다
+    const live = () => setPl((x) => (x && x.url === url ? { url, phase: "play" } : x));
+    a.onplaying = () => { if (lead <= 0.05) live(); };
+    a.ontimeupdate = () => { if (lead > 0.05 && a.currentTime >= lead - 0.05) live(); };
+    a.onended = () => setPl((x) => (x && x.url === url ? null : x));
+    a.onerror = () => setPl((x) => (x && x.url === url ? null : x));
     audio.current = a;
-    setPlaying(true);
-    a.play().catch(() => setPlaying(false));
+    setPl({ url, phase: "load" });
+    a.play().catch(() => setPl((x) => (x && x.url === url ? null : x)));
+  };
+  /** 듣기 단추 — 누르면 바로 ⟳, 소리가 나오면 ■ 멈추기, 끝나면 ▷ */
+  const playBtn = (url: string, label = "듣기", lead = 0) => {
+    const me = pl?.url === url ? pl.phase : "";
+    return (
+      <Btn small onClick={() => play(url, lead)}>
+        {me === "load" ? <span className="gsv-mv-spin" style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid currentColor", borderTopColor: "transparent", display: "inline-block" }} /> : me === "play" ? <span style={{ width: 10, height: 10, background: "currentColor", borderRadius: 2, display: "inline-block" }} /> : <Icon name="play" size={14} />}
+        {me === "play" ? "멈추기" : me === "load" ? "준비 중…" : label}
+      </Btn>
+    );
   };
   // 이름·녹음한 글자 고치기
   const [editName, setEditName] = useState<string | null>(null);
@@ -85,7 +106,7 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
     if (s?.sampleUrl) play(s.sampleUrl);
   };
 
-  const wrap = (children: React.ReactNode) => <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14, fontFamily: FONT }}>{children}{err && <div style={{ fontSize: 15, color: C.danger, lineHeight: 1.6 }}>{err}</div>}</div>;
+  const wrap = (children: React.ReactNode) => <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14, fontFamily: FONT }}><style>{"@keyframes gsvMvSpin{to{transform:rotate(360deg)}}.gsv-mv-spin{animation:gsvMvSpin .8s linear infinite}"}</style>{children}{err && <div style={{ fontSize: 15, color: C.danger, lineHeight: 1.6 }}>{err}</div>}</div>;
 
   if (!mv) return wrap(<div style={box}><div style={big}>공실뉴스 스튜디오를 새로 받아 주세요</div><div style={{ ...sub, marginTop: 6 }}>내 목소리 성우는 스튜디오 앱 새 버전부터 쓸 수 있어요.</div></div>);
   if (!st) return wrap(<div style={sub}>불러오는 중…</div>);
@@ -110,34 +131,14 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
     );
   }
 
-  // ② 등록 (처음 또는 다시 등록)
+  // ② 등록 (처음 또는 다시 등록) — 브루처럼 단계별: 소개 → 동의 → 녹음 안내 → 마이크 → 3문장 녹음 → 고르기 (2026-10-18 사장님)
   if (!st.voice || again) {
-    if (mode === "record") return wrap(<Recorder text={st.readText} onCancel={() => setMode("")} onDone={(bytes) => run(() => mv.record(bytes, st.readText), "녹음을 살펴보는 중…").then(afterRegister)} />);
+    const cancel = st.voice ? () => { setAgain(false); setWiz("intro"); setTakes([]); } : undefined;
     return wrap(
-      <>
-        <div style={box}>
-          <div style={big}>내 목소리 등록</div>
-          <div style={{ ...sub, marginTop: 6 }}>두 가지 중 편한 방법으로 등록하세요. 조용한 곳에서 평소 말투로 하면 가장 좋아요.</div>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, fontSize: 15.5, fontWeight: 700, color: C.text, cursor: "pointer" }}>
-            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 19, height: 19, accentColor: C.accent }} />
-            본인 목소리만 등록합니다 (다른 사람 목소리는 등록하지 않아요)
-          </label>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <button type="button" disabled={!agree} onClick={() => setMode("record")} style={choice(agree)}>
-            <Icon name="mic" size={30} />
-            <span style={{ fontSize: 18, fontWeight: 800 }}>직접 녹음</span>
-            <span style={{ ...sub, fontSize: 14 }}>화면에 나오는 문장을 읽어요 (약 10초)<br />가장 잘 닮아요</span>
-          </button>
-          <button type="button" disabled={!agree} onClick={() => run(() => mv.file(), "파일을 고르는 중…").then(afterRegister)} style={choice(agree)}>
-            <Icon name="folder" size={30} />
-            <span style={{ fontSize: 18, fontWeight: 800 }}>녹음 파일 넣기</span>
-            <span style={{ ...sub, fontSize: 14 }}>내 목소리 녹음·영상 파일 (mp3·m4a·mp4 등)<br />앞부분 10초쯤을 받아 적어 써요</span>
-          </button>
-        </div>
-        {!agree && <div style={{ ...sub, fontSize: 14 }}>위 확인 칸을 먼저 눌러 주세요.</div>}
-        {st.voice && <div><Btn onClick={() => { setAgain(false); setMode(""); }}>등록한 목소리 그대로 쓰기</Btn></div>}
-      </>,
+      <Wizard step={wiz} setStep={setWiz} takes={takes} setTakes={setTakes} mic={mic} setMic={setMic} fileMode={fileMode} setFileMode={setFileMode} onCancel={cancel}
+        onFile={() => run(() => mv.file(), "파일을 고르는 중…").then(afterRegister)}
+        onPick={(t) => run(() => mv.record(t.bytes, t.text), "녹음을 살펴보는 중… (실제로 말한 글자를 받아 적어요)").then(afterRegister)}
+        playBtn={playBtn} />,
     );
   }
 
@@ -174,7 +175,7 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
         <div style={{ ...box, padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 800, flex: 1 }}>녹음한 글자</span>
-            {st.refUrl && <Btn small onClick={() => play(st.refUrl!)}><Icon name="play" size={14} />원래 녹음 듣기</Btn>}
+            {st.refUrl && playBtn(st.refUrl, "원래 녹음 듣기")}
             {editText === null && <Btn small onClick={() => setEditText(st.text || "")}><Icon name="pen" size={14} />고치기</Btn>}
           </div>
           {editText === null ? (
@@ -196,17 +197,12 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
         내 목소리는 PC 안에서 만들어서 성우보다 느려요 (문장 하나에 10초 안팎). 처음 쓸 때는 프로그램을 올리느라 더 걸려요.
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <Btn onClick={() => { setAgain(true); setAgree(false); }}><Icon name="mic" size={16} />다시 등록</Btn>
+        <Btn onClick={() => { setAgain(true); setWiz("intro"); setTakes([]); }}><Icon name="mic" size={16} />다시 등록</Btn>
         <Btn onClick={() => window.confirm("등록한 내 목소리를 지울까요?") && run(() => mv.remove(), "지우는 중…")}>지우기</Btn>
       </div>
     </>,
   );
 }
-
-const choice = (on: boolean): React.CSSProperties => ({
-  display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "22px 14px", borderRadius: 8, border: `1px solid ${C.line2}`,
-  background: C.card, color: C.text, fontFamily: FONT, textAlign: "center", cursor: on ? "pointer" : "default", opacity: on ? 1 : 0.45,
-});
 
 function Progress({ text, frac }: { text: string; frac: number }) {
   return (
@@ -221,10 +217,10 @@ function Progress({ text, frac }: { text: string; frac: number }) {
 }
 
 /* ── 직접 녹음 — 프롬프터(큰 글씨, 읽을 곳을 차례로 밝힘) + 마이크 고르기 + 소리 크기 막대 ── */
-const CPS = 5.2; // 읽는 빠르기 (글자/초) — 프롬프터 밝힘 속도
-function Recorder({ text, onDone, onCancel }: { text: string; onDone: (bytes: ArrayBuffer) => void; onCancel: () => void }) {
+function Recorder({ text, onDone, onCancel, initialMic = "", doneLabel = "이 목소리로 등록", head }: { text: string; onDone: (bytes: ArrayBuffer, lead: number) => void; onCancel: () => void; initialMic?: string; doneLabel?: string; head?: string }) {
+  const recAt = useRef(0); // [녹음 시작]을 누른 때 — 3·2·1 무음 길이(lead)를 재려고
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
-  const [mic, setMic] = useState("");
+  const [mic, setMic] = useState(initialMic);
   const [level, setLevel] = useState(0);
   const [phase, setPhase] = useState<"ready" | "count" | "rec" | "done">("ready");
   const [count, setCount] = useState(3);
@@ -283,10 +279,11 @@ function Recorder({ text, onDone, onCancel }: { text: string; onDone: (bytes: Ar
       t0.current = performance.now();
       setSec(0);
       setPhase("rec");
-    }, 800);
+    }, 600);
     return () => clearTimeout(id);
   }, [phase, count]);
   const begin = () => {
+    recAt.current = performance.now();
     const r = new MediaRecorder(stream.current!, { mimeType: "audio/webm" });
     const parts: Blob[] = [];
     r.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
@@ -317,16 +314,18 @@ function Recorder({ text, onDone, onCancel }: { text: string; onDone: (bytes: Ar
   };
 
   // 프롬프터 — 읽을 곳까지 밝게 (글자 수 기준)
-  const lit = phase === "rec" ? Math.floor(sec * CPS) : phase === "done" ? text.length : 0;
+  // 글자를 차례로 밝히지 않는다 — 밝아지는 속도에 맞춰 읽으면 느려지고, 엔진이 그 느린 말투까지 흉내 낸다 (2026-10-18 사장님). 평소 속도로
+  const lit = text.length;
   return (
     <>
       <div style={{ ...box, padding: "26px 28px", background: "#0b0d12" }}>
+        {head && <div style={{ fontSize: 13, fontWeight: 800, color: C.accent, marginBottom: 6 }}>{head}</div>}
         <div style={{ fontSize: 14, color: C.sub, marginBottom: 12 }}>
-          {phase === "ready" ? "[녹음 시작]을 누르고, 3·2·1 뒤에 아래 문장을 평소 말투로 읽어 주세요." : phase === "count" ? "곧 시작해요…" : phase === "rec" ? "밝아지는 곳을 따라 읽어 주세요. 다 읽으면 [멈추기]" : "녹음했어요. 들어 보고 괜찮으면 [이 목소리로 등록]"}
+          {phase === "ready" ? "[녹음 시작]을 누르고, 3·2·1 뒤에 아래 문장을 평소 말투로 읽어 주세요." : phase === "count" ? "곧 시작해요…" : phase === "rec" ? "평소 말하는 속도·말투로 편하게 읽어 주세요. 다 읽으면 [멈추기]" : `녹음했어요. 들어 보고 괜찮으면 [${doneLabel}]`}
         </div>
         <div style={{ fontSize: 30, lineHeight: 1.75, fontWeight: 700, wordBreak: "keep-all", letterSpacing: "-0.01em" }}>
           <span style={{ color: "#fff" }}>{text.slice(0, lit)}</span>
-          <span style={{ color: phase === "ready" ? "#e5e7eb" : "#5b6170" }}>{text.slice(lit)}</span>
+          <span>{text.slice(lit)}</span>
         </div>
         {phase === "count" && <div style={{ fontSize: 64, fontWeight: 900, color: C.accent, textAlign: "center", marginTop: 8 }}>{count}</div>}
       </div>
@@ -341,19 +340,210 @@ function Recorder({ text, onDone, onCancel }: { text: string; onDone: (bytes: Ar
       </div>
       {err && <div style={{ fontSize: 15, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {/* 뒤로는 왼쪽, 녹음 단추는 오른쪽 (2026-10-18 사장님) */}
+        <Btn onClick={onCancel}>뒤로</Btn>
+        <span style={{ flex: 1 }} />
         {phase === "ready" && <Btn primary disabled={!mics.length} onClick={start}><span style={{ width: 12, height: 12, borderRadius: "50%", background: "#ef4444" }} />녹음 시작</Btn>}
         {phase === "rec" && <Btn primary onClick={stopRec}><span style={{ width: 11, height: 11, background: "#fff", borderRadius: 2 }} />멈추기 · {sec.toFixed(0)}초</Btn>}
         {phase === "done" && (
           <>
             <Btn onClick={listen}><Icon name="play" size={16} />들어 보기</Btn>
             <Btn onClick={start}><Icon name="mic" size={16} />다시 녹음</Btn>
-            <Btn primary onClick={async () => blob && onDone(await blob.arrayBuffer())}><Icon name="check" size={16} />이 목소리로 등록</Btn>
+            <Btn primary onClick={async () => blob && onDone(await blob.arrayBuffer(), Math.max(0, (t0.current - recAt.current) / 1000))}><Icon name="check" size={16} />{doneLabel}</Btn>
           </>
         )}
-        <span style={{ flex: 1 }} />
-        <Btn onClick={onCancel}>뒤로</Btn>
       </div>
       <div style={{ fontSize: 13.5, color: C.sub }}>녹음은 이 PC 에만 저장돼요.</div>
     </>
+  );
+}
+
+/* ── 등록 단계 (브루식) ── */
+type WizStep = "intro" | "consent" | "tips" | "mic" | "rec" | "pick";
+type Take = { text: string; bytes: ArrayBuffer; url: string; lead: number }; // lead: 앞의 3·2·1 무음 (초)
+// 읽을 문장 3개 (각 10초 안팎) — 우리 엔진은 녹음 하나(10초)를 보고 흉내 내서, 길게(30문장) 녹음해도 나아지지 않는다. 대신 셋 중 잘된 것을 고른다
+const SENTENCES = [
+  "안녕하세요. 공실뉴스 스튜디오에서 제 목소리로 성우를 만들고 있습니다. 좋은 매물을 찾고 계신다면 언제든 편하게 연락 주세요.",
+  "이번에 소개해 드릴 매물은 역세권에 있는 깨끗한 오피스텔입니다. 채광이 좋고 관리 상태도 아주 훌륭합니다.",
+  "궁금하신 점은 언제든 편하게 문의해 주세요. 직접 방문하시면 더 자세히 안내해 드리겠습니다.",
+];
+
+function Wizard({ step, setStep, takes, setTakes, mic, setMic, fileMode, setFileMode, onCancel, onFile, onPick, playBtn }: {
+  step: WizStep; setStep: (s: WizStep) => void; takes: Take[]; setTakes: (t: Take[]) => void; mic: string; setMic: (m: string) => void;
+  fileMode: boolean; setFileMode: (v: boolean) => void; onCancel?: () => void; onFile: () => void; onPick: (t: Take) => void; playBtn: (url: string, label?: string, lead?: number) => React.ReactNode;
+}) {
+  const [agree, setAgree] = useState(false);
+  const panel: React.CSSProperties = { ...box, padding: 28, display: "flex", flexDirection: "column", gap: 16, minHeight: 360 };
+  const foot = (next: React.ReactNode, back?: () => void) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
+      {back && <Btn onClick={back}>뒤로</Btn>}
+      {onCancel && <Btn onClick={onCancel}>그만두기</Btn>}
+      <span style={{ flex: 1 }} />
+      {next}
+    </div>
+  );
+  if (step === "intro") {
+    return (
+      <div style={{ ...panel, flexDirection: "row", gap: 28, alignItems: "stretch" }}>
+        <div style={{ width: 210, flexShrink: 0, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, alignContent: "center" }}>
+          {["#16a34a", "#f9a8d4", "#06b6d4", "#16a34a", "#06b6d4", "#06b6d4", "#06b6d4", "#f97316", "#16a34a"].map((c, i) => (
+            <span key={i} style={{ aspectRatio: "1", borderRadius: "50%", background: c, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name={i % 3 === 0 ? "mic" : i % 3 === 1 ? "voice" : "play"} size={22} /></span>
+          ))}
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>나와 똑 닮은 AI 내 목소리</div>
+          <div style={sub}>만들고 싶은 언어를 고르세요</div>
+          {[["ko", "한국어", ""], ["en", "영어 (English)", "준비 중"], ["ja", "일본어 (日本語)", "준비 중"]].map(([k, l, tag]) => (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 8, border: `1px solid ${k === "ko" ? C.accent : C.line2}`, opacity: k === "ko" ? 1 : 0.5, fontSize: 15, fontWeight: 700 }}>
+              <span style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${k === "ko" ? C.accent : C.sub}`, background: k === "ko" ? C.accent : "transparent", boxShadow: k === "ko" ? `inset 0 0 0 3px ${C.card}` : "none" }} />
+              {l}<span style={{ flex: 1 }} />{tag && <span style={{ fontSize: 12, color: C.sub }}>{tag}</span>}
+            </div>
+          ))}
+          {foot(<>
+            <Btn onClick={() => { setFileMode(true); setStep("consent"); }}><Icon name="folder" size={16} />녹음 파일로 만들기</Btn>
+            <Btn primary onClick={() => { setFileMode(false); setStep("consent"); }}>시작하기 →</Btn>
+          </>)}
+        </div>
+      </div>
+    );
+  }
+  if (step === "consent") {
+    return (
+      <div style={panel}>
+        <div style={big}>음성 데이터 수집 및 이용 안내</div>
+        <div style={{ ...sub, fontSize: 14.5 }}>
+          녹음한 목소리는 AI 내 목소리를 만드는 데만 쓰이며, <b style={{ color: C.text }}>이 PC 안에만 저장되고 공실뉴스 서버로 보내지 않아요.</b>
+          내 목소리를 지우면 녹음도 바로 지워지고, 그 뒤에는 그 녹음으로 만든 목소리를 쓸 수 없어요.
+        </div>
+        <div style={{ ...sub, fontSize: 14.5 }}>반드시 본인의 목소리로 녹음해야 하며, 다른 사람의 목소리를 녹음해 생기는 문제의 책임은 녹음한 분에게 있어요.</div>
+        <div style={{ borderTop: `1px solid ${C.line2}`, paddingTop: 16 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15.5, fontWeight: 700, cursor: "pointer" }}>
+            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 19, height: 19, accentColor: C.accent }} />
+            음성 데이터 수집 및 이용 안내를 확인했고 동의합니다.
+          </label>
+        </div>
+        {foot(<Btn primary disabled={!agree} onClick={() => (fileMode ? onFile() : setStep("tips"))}>{fileMode ? "녹음 파일 고르기" : "다음"}</Btn>, () => setStep("intro"))}
+      </div>
+    );
+  }
+  if (step === "tips") {
+    const card = (icon: string, title: string, text: string) => (
+      <div style={{ flex: 1, borderRadius: 8, border: `1px solid ${C.line2}`, overflow: "hidden" }}>
+        <div style={{ height: 120, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#0f172a" }}><Icon name={icon} size={52} /></div>
+        <div style={{ padding: 14 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 800 }}>{title}</div>
+          <div style={{ ...sub, fontSize: 14, marginTop: 6 }}>{text}</div>
+        </div>
+      </div>
+    );
+    return (
+      <div style={panel}>
+        <div style={big}>앞으로 30초 정도 녹음을 진행합니다. (총 3문장)</div>
+        <div style={{ display: "flex", gap: 14 }}>
+          {card("mute", "조용한 공간에서 진행해 주세요.", "주변 소리가 함께 녹음되면 AI 내 목소리의 품질이 떨어집니다.")}
+          {card("voice", "원하는 목소리의 톤을 생각하며 읽어 주세요.", "발랄한 목소리, 차분한 목소리 등 영상에 쓰고 싶은 말투로 녹음해 주세요.")}
+        </div>
+        <div style={{ ...sub, fontSize: 13.5 }}>3문장을 녹음한 뒤, 가장 잘된 녹음을 골라 등록해요.</div>
+        {foot(<Btn primary onClick={() => setStep("mic")}>다음</Btn>, () => setStep("consent"))}
+      </div>
+    );
+  }
+  if (step === "mic") return <MicTest mic={mic} setMic={setMic} onNext={() => { setTakes([]); setStep("rec"); }} onBack={() => setStep("tips")} panel={panel} />;
+  if (step === "rec") {
+    const k = takes.length;
+    return (
+      <Recorder key={k} text={SENTENCES[k]} initialMic={mic} head={`문장 ${k + 1} / ${SENTENCES.length}`} doneLabel={k + 1 < SENTENCES.length ? "다음 문장" : "녹음 끝 · 고르기"}
+        onCancel={() => (k ? setTakes(takes.slice(0, -1)) : setStep("mic"))}
+        onDone={(bytes, lead) => {
+          const next = [...takes, { text: SENTENCES[k], bytes, lead, url: URL.createObjectURL(new Blob([bytes], { type: "audio/webm" })) }];
+          setTakes(next);
+          if (next.length >= SENTENCES.length) setStep("pick");
+        }} />
+    );
+  }
+  // pick
+  return (
+    <div style={panel}>
+      <div style={big}>가장 잘된 녹음을 골라 주세요</div>
+      <div style={{ ...sub, fontSize: 14 }}>들어 보고 또렷하고 자연스러운 것을 고르세요. 고른 녹음 하나로 내 목소리를 만들어요 (나머지는 저장하지 않아요).</div>
+      {takes.map((t, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 8, border: `1px solid ${C.line2}` }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: C.sub, width: 46 }}>문장 {i + 1}</span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.text}</span>
+          {playBtn(t.url, "듣기", t.lead)}
+          <Btn small primary onClick={() => onPick(t)}><Icon name="check" size={14} />이걸로 등록</Btn>
+        </div>
+      ))}
+      {foot(<Btn onClick={() => { setTakes([]); setStep("rec"); }}><Icon name="mic" size={15} />처음부터 다시 녹음</Btn>)}
+    </div>
+  );
+}
+
+/** 마이크 설정 — 고르고 말해 보면 소리 막대가 움직이는지 (움직여야 [다음]) */
+function MicTest({ mic, setMic, onNext, onBack, panel }: { mic: string; setMic: (m: string) => void; onNext: () => void; onBack: () => void; panel: React.CSSProperties }) {
+  const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
+  const [level, setLevel] = useState(0);
+  const [heard, setHeard] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    let stop = false;
+    let raf = 0;
+    let ctx: AudioContext | null = null;
+    let s: MediaStream | null = null;
+    (async () => {
+      try {
+        s = await navigator.mediaDevices.getUserMedia({ audio: mic ? { deviceId: { exact: mic } } : true });
+        if (stop) return s.getTracks().forEach((t) => t.stop());
+        setMics((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput"));
+        if (!mic) setMic(s.getAudioTracks()[0]?.getSettings().deviceId || "");
+        ctx = new AudioContext();
+        const an = ctx.createAnalyser();
+        an.fftSize = 512;
+        ctx.createMediaStreamSource(s).connect(an);
+        const buf = new Uint8Array(an.fftSize);
+        const tick = () => {
+          an.getByteTimeDomainData(buf);
+          let peak = 0;
+          for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
+          const lv = peak / 128;
+          setLevel(lv);
+          if (lv > 0.15) setHeard(true);
+          raf = requestAnimationFrame(tick);
+        };
+        tick();
+      } catch (e) {
+        setErr(`마이크를 열지 못했어요: ${errText(e)}. 마이크가 꽂혀 있는지, 윈도우 설정에서 마이크를 허용했는지 확인해 주세요.`);
+      }
+    })();
+    return () => {
+      stop = true;
+      cancelAnimationFrame(raf);
+      ctx?.close();
+      s?.getTracks().forEach((t) => t.stop());
+    };
+  }, [mic, setMic]);
+  return (
+    <div style={panel}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <span style={big}>마이크 설정</span>
+        <span style={{ fontSize: 15, fontWeight: 700, marginLeft: 16 }}>마이크 선택</span>
+        <select value={mic} onChange={(e) => { setHeard(false); setMic(e.target.value); }} style={{ flex: 1, height: 38, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14.5, fontFamily: FONT }}>
+          {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId}>{m.label || `마이크 ${i + 1}`}</option>)}
+        </select>
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: "20px 0" }}>
+        <span style={{ color: heard ? "#22c55e" : "#22d3ee" }}><Icon name="mic" size={64} /></span>
+        <div style={{ width: 320, height: 12, borderRadius: 6, background: C.line, overflow: "hidden" }}>
+          <div style={{ width: `${Math.min(100, level * 140)}%`, height: "100%", background: level > 0.85 ? C.danger : "#22c55e", transition: "width .08s" }} />
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>{heard ? "잘 들려요! [다음]을 눌러 주세요" : "마이크가 잘 작동하는지 말해서 테스트해 보세요"}</div>
+        {err && <div style={{ fontSize: 14.5, color: C.danger, lineHeight: 1.6, textAlign: "center" }}>{err}</div>}
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <Btn onClick={onBack}>뒤로</Btn>
+        <span style={{ flex: 1 }} />
+        <Btn primary disabled={!heard} onClick={onNext}>다음</Btn>
+      </div>
+    </div>
   );
 }

@@ -27,7 +27,7 @@ const stamp = () => {
 
 const DEFAULT_SETTINGS = {
   fill: "cover", // cover 꽉 채우기 · contain 맞추기 · blur 맞추고 흐린 배경
-  subtitle: { on: true, position: "bottom", length: "long", size: 100, font: "Malgun Gothic", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bold: true },
+  subtitle: { on: true, position: "bottom", posAuto: true, length: "long", size: 100, font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bold: true },
   voice: { id: "Charon", speed: 1, volume: 1 },
   music: { on: false, mood: "calm", file: "", name: "", volume: 0.15 },
   sourceVolume: 1,
@@ -67,6 +67,8 @@ function create({ method = "video", ratio = "16:9", name = "", vacancyId = "" } 
   fs.mkdirSync(dir, { recursive: true });
   const now = new Date().toISOString();
   const p = { v: 1, id: uid(), name: path.basename(file, gss.EXT), method, ratio, vacancyId: vacancyId || "", createdAt: now, updatedAt: now, savedAt: "", settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), assets: {}, scenes: [{ id: uid(), clips: [] }], dir, file };
+  // 자막 위치 자동 — 세로(9:16·4:5)는 쇼츠·릴스 아래쪽 글·단추에 안 가리게 중하단 (편집 화면 types.autoSubPosition 과 같다)
+  if (p.settings.subtitle.posAuto) p.settings.subtitle.position = ratio === "9:16" || ratio === "4:5" ? "middle-low" : "bottom";
   writeProject(p);
   gss.setSource(dir, file);
   gss.pack(dir, file);

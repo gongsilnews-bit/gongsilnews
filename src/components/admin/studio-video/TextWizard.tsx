@@ -5,7 +5,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import type { LibItem, Project, Ratio, Fill, Clip } from "./types";
 import { RATIO_LABEL, errText, uid, videoBridge } from "./types";
-import { splitScript, estimateSeconds } from "./timeline";
+import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
 import { findVoice } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
@@ -41,6 +41,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const [chars, setChars] = useState(500);
   const [script, setScript] = useState("");
   const hints = useRef<Record<string, Hint>>({});
+  const sceneTitles = useRef<Record<string, string>>({}); // 첫 문장 → AI 가 지은 씬 이름
   const [writing, setWriting] = useState("");
   const [err, setErr] = useState("");
   const [vacs, setVacs] = useState<Vac[] | null>(null);
@@ -49,7 +50,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   // ③ 꾸미기
   const [ratio, setRatio] = useState<Ratio>("16:9");
   const [subOn, setSubOn] = useState(true);
-  const [subPos, setSubPos] = useState<"bottom" | "middle-low" | "middle" | "top">("bottom");
+  const [subPos, setSubPos] = useState<"bottom" | "middle-low" | "middle" | "middle-high" | "top">("bottom");
   const [subLen, setSubLen] = useState<"long" | "short">("long");
   const [voiceOn, setVoiceOn] = useState(true);
   const [motionOn, setMotionOn] = useState(true); // 사진 자동 움직임 (줌인·좌우·상하)
@@ -61,7 +62,12 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const [usePhotos, setUsePhotos] = useState(true);
   const [useStock, setUseStock] = useState(true);
   const [useAi, setUseAi] = useState(false);
-  const [visualLater, setVisualLater] = useState(false); // 화면은 나중에 — 목소리(·자막·음악)만 먼저 만들고 편집 화면에서 클립마다 넣기 (2026-10-18 사장님)
+  const [visualLater, setVisualLater] = useState(false);
+  // 내 영상에서 고르기 — 찍어 둔 영상·사진을 AI 가 문장에 맞춰 고른다 (회의 3-19). 첨부하면 [내 자료]에도 자동으로 담긴다
+  const [footOn, setFootOn] = useState(false);
+  const [foot, setFoot] = useState<LibItem[]>([]);
+  const [footPick, setFootPick] = useState<LibItem[] | null>(null); // [내 자료에서 고르기] 창 — 목록
+  const [footSel, setFootSel] = useState<string[]>([]); // 화면은 나중에 — 목소리(·자막·음악)만 먼저 만들고 편집 화면에서 클립마다 넣기 (2026-10-18 사장님)
   const [fill, setFill] = useState<Fill>("cover");
   const [confirm, setConfirm] = useState(false);
   const [gen, setGen] = useState<{ title: string; detail?: string; frac?: number } | null>(null);
@@ -103,7 +109,9 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
     try {
       const r = await b.ai.script({ topic, style: style ? `${style.name} — ${style.prompt}` : "", request, chars: useChars ? chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null });
       hints.current = {};
-      const text = r.scenes.map((s) => s.lines.map((l) => {
+      sceneTitles.current = {};
+      const text = r.scenes.map((s) => s.lines.map((l, li) => {
+        if (li === 0 && s.title) sceneTitles.current[l.text] = s.title; // 씬 이름 — 그 씬 첫 문장으로 찾는다 (회의 3-22)
         hints.current[l.text] = { desc: l.desc, keywords: l.keywords, kind: l.kind };
         return l.text;
       }).join("\n")).join("\n\n");
@@ -134,7 +142,8 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       p.settings.voice = { id: voiceId, speed, volume: 1 };
       p.settings.motion = motionOn ? "auto" : "none";
       // 클립
-      p.scenes = scenes.map((ls) => ({ id: uid(), clips: ls.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] }) as Clip) }));
+      // 씬 — AI 가 지은 이름을 붙이고, 클립 하나짜리 씬이 이어지면 묶는다 (회의 3-22)
+      p.scenes = mergeSingleScenes(scenes.map((ls) => ({ id: uid(), title: sceneTitles.current[ls[0]] || undefined, clips: ls.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] }) as Clip) })));
       const clips = p.scenes.flatMap((s) => s.clips);
       // 음악
       if (musicOn) {
@@ -156,8 +165,26 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
         setGen({ title: "공실 사진을 넣는 중…", frac: 0.08 });
         for (const ph of vacInfo.photos) photos.push(await addAsset(ph));
       }
+      // 내 영상에서 고르기 — AI 가 장면 모음을 보고 문장마다 영상·시작 초를 고른다
+      const footIds: Record<string, string> = {};
+      if (!visualLater && footOn && foot.length && b.ai.footage) {
+        setGen({ title: `${writer}가 내 영상에서 문장마다 장면을 고르는 중…`, detail: "장면 모음을 만들어 AI 에 보내요 (원본 영상은 보내지 않아요)", frac: 0.1 });
+        try {
+          const ok = foot.filter((f) => f.path && (f.kind === "video" || f.kind === "image"));
+          const r = await b.ai.footage(clips.map((c) => c.text), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })));
+          for (let i = 0; i < clips.length; i++) {
+            const m = r[i];
+            if (!m || m.v < 0 || !ok[m.v]) continue;
+            const f = ok[m.v];
+            if (!footIds[f.id]) footIds[f.id] = await addAsset(f);
+            clips[i].visual = { asset: footIds[f.id], s: m.t };
+          }
+        } catch (e) {
+          setErr(`내 영상에서 장면을 고르지 못했어요 (나머지로 채워요): ${errText(e)}`);
+        }
+      }
       // 화면 검색어가 없는 문장은 회원 AI 에게 한 번에 묻는다
-      const needHint = clips.filter((c) => !c.hint?.keywords);
+      const needHint = clips.filter((c) => !c.hint?.keywords && !c.visual);
       if (!visualLater && (useStock || useAi) && needHint.length && (!photos.length || photos.length < clips.length)) {
         setGen({ title: `${writer}가 문장마다 어울리는 화면을 고르는 중…`, frac: 0.12 });
         try {
@@ -169,6 +196,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       let aiLeft = useAi ? 8 : 0;
       for (let i = 0; i < (visualLater ? 0 : clips.length); i++) {
         const c = clips[i];
+        if (c.visual) continue; // 내 영상에서 이미 골랐다
         setGen({ title: `화면 자료를 고르는 중… (${i + 1}/${clips.length})`, frac: 0.15 + (i / clips.length) * 0.45 });
         if (photos.length && (i < photos.length || (!stockOk && !aiLeft))) {
           c.visual = { asset: photos[i % photos.length], s: 0 };
@@ -351,7 +379,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
               <Toggle on={subOn} onChange={setSubOn} />
               {subOn && (
                 <div style={{ width: "100%", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {([["top", "상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setSubPos(k)} style={chip(subPos === k)}>{l}</button>)}
+                  {([["top", "상단"], ["middle-high", "중상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setSubPos(k)} style={chip(subPos === k)}>{l}</button>)}
                   <span style={{ width: 10 }} />
                   <button type="button" onClick={() => setSubLen("long")} style={chip(subLen === "long")}>길게</button>
                   <button type="button" onClick={() => setSubLen("short")} style={chip(subLen === "short")}>짧게</button>
@@ -404,6 +432,35 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
                 <button type="button" onClick={() => setVisualLater(true)} style={chip(visualLater)}>나중에 넣기 (목소리만 먼저)</button>
               </div>
               {visualLater && <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>목소리·자막·음악만 먼저 만들어요 (빨라요). 화면은 검게 두고, 편집 화면에서 클립마다 [사진·영상]으로 넣으면 돼요.</div>}
+              {!visualLater && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>내 영상에서 고르기 <span style={{ fontSize: 12.5, color: C.sub }}>· AI가 문장에 맞춰 장면을 골라요</span></span><Toggle on={footOn} onChange={setFootOn} /></div>
+                  {footOn && (
+                    <>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <Btn small onClick={async () => {
+                          // 첨부 = [내 자료]에 담기 (PC에서 불러오기와 같다)
+                          const added = await b.lib.pick().catch(() => []);
+                          const ok = added.filter((x) => x.kind === "video" || x.kind === "image");
+                          if (ok.length) setFoot((v) => [...v, ...ok.filter((x) => !v.some((y) => y.id === x.id))]);
+                        }}><Icon name="plus" size={15} />영상·사진 첨부</Btn>
+                        <Btn small onClick={async () => { setFootSel(foot.map((x) => x.id)); setFootPick(await b.lib.list({ kind: "all" }).catch(() => [])); }}><Icon name="folder" size={15} />내 자료에서 고르기</Btn>
+                      </div>
+                      {foot.length > 0 ? (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {foot.map((f) => (
+                            <span key={f.id} title={f.name} style={{ position: "relative", width: 72, height: 44, borderRadius: 4, overflow: "hidden", background: "#000", border: `1px solid ${C.line2}` }}>
+                              {f.thumb && <img src={f.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                              {f.kind === "video" && <span style={{ position: "absolute", left: 3, bottom: 2, fontSize: 10.5, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "0 3px", borderRadius: 2 }}>{Math.round(f.duration)}초</span>}
+                              <button type="button" title="빼기" onClick={() => setFoot((v) => v.filter((x) => x.id !== f.id))} style={{ position: "absolute", right: 2, top: 2, width: 18, height: 18, borderRadius: 9, border: 0, background: "rgba(0,0,0,0.65)", color: "#fff", cursor: "pointer", fontSize: 11, lineHeight: "18px", padding: 0 }}>✕</button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : <div style={{ fontSize: 13, color: C.sub }}>찍어 둔 영상·사진을 넣어 주세요 (10개 안팎). 첨부한 것은 [내 자료]에도 담겨요.</div>}
+                    </>
+                  )}
+                </div>
+              )}
               {!visualLater && src === "vacancy" && vacInfo && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>공실 사진 쓰기 ({vacInfo.photos.length}장)</span><Toggle on={usePhotos} onChange={setUsePhotos} /></div>}
               {!visualLater && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>무료 영상·사진 (Pexels·Pixabay)</span><Toggle on={useStock} onChange={setUseStock} /></div>}
               {!visualLater && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>AI 그림 ({imager}, 느림 · 최대 8장)</span><Toggle on={useAi} onChange={setUseAi} /></div>}
@@ -422,7 +479,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
               return (
                 <div style={{ position: "relative", width: W, height: H, background: "#2a2b30", border: `1px solid ${C.line2}`, borderRadius: 4, overflow: "hidden" }}>
                   {subOn && (
-                    <div style={{ position: "absolute", left: 10, right: 10, textAlign: "center", ...(subPos === "top" ? { top: H * 0.08 } : subPos === "middle" ? { top: "45%" } : subPos === "middle-low" ? { bottom: H * 0.24 } : { bottom: H * 0.07 }) }}>
+                    <div style={{ position: "absolute", left: 10, right: 10, textAlign: "center", ...(subPos === "top" ? { top: H * 0.08 } : subPos === "middle-high" ? { top: H * 0.24 } : subPos === "middle" ? { top: "45%" } : subPos === "middle-low" ? { bottom: H * 0.24 } : { bottom: H * 0.07 }) }}>
                       <span style={{ fontFamily: "'Malgun Gothic', sans-serif", fontWeight: 700, fontSize: Math.min(W, H) * 0.075, color: "#fff", WebkitTextStroke: "2px #000", paintOrder: "stroke fill" }}>자막은 이 위치에 보여요</span>
                     </div>
                   )}
@@ -440,13 +497,32 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
         </div>
       )}
 
+      {footPick && (
+        <Modal title="내 자료에서 고르기" onClose={() => setFootPick(null)} width={720}
+          footer={<><Btn onClick={() => setFootPick(null)}>취소</Btn><Btn primary onClick={() => { setFoot(footPick.filter((x) => footSel.includes(x.id))); setFootPick(null); }}><Icon name="check" size={16} />{footSel.length}개 넣기</Btn></>}>
+          <div style={{ padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8, maxHeight: "60vh", overflowY: "auto" }}>
+            {footPick.filter((x) => x.kind === "video" || x.kind === "image").map((x) => {
+              const on = footSel.includes(x.id);
+              return (
+                <button key={x.id} type="button" onClick={() => setFootSel((v) => (on ? v.filter((y) => y !== x.id) : [...v, x.id]))}
+                  style={{ position: "relative", aspectRatio: "16 / 10", padding: 0, borderRadius: 4, overflow: "hidden", border: `2px solid ${on ? C.accent : "transparent"}`, background: "#000", cursor: "pointer" }}>
+                  {x.thumb && <img src={x.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                  {on && <span style={{ position: "absolute", left: 5, top: 5, width: 22, height: 22, borderRadius: 4, background: C.accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="check" size={15} /></span>}
+                  {x.kind === "video" && <span style={{ position: "absolute", left: 5, bottom: 4, fontSize: 11.5, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "0 4px", borderRadius: 3 }}>{Math.round(x.duration)}초</span>}
+                </button>
+              );
+            })}
+            {!footPick.length && <div style={{ color: C.sub, fontSize: 14 }}>아직 [내 자료]가 없어요. [영상·사진 첨부]로 넣어 주세요.</div>}
+          </div>
+        </Modal>
+      )}
       {confirm && (
         <Modal title="확인" onClose={() => setConfirm(false)} width={520} footer={<><Btn onClick={() => setConfirm(false)}>취소</Btn><Btn primary onClick={build}>확인</Btn></>}>
           <div style={{ padding: 22, fontSize: 16, lineHeight: 1.8 }}>
             <div style={{ fontWeight: 800, marginBottom: 6 }}>영상 만들기를 시작할까요?</div>
             <div style={{ color: C.sub, fontSize: 15 }}>
               클립 {lineCount}개 · {voiceOn ? findVoice(voiceId)?.name : "목소리 없음"}
-              {visualLater ? " · 화면은 나중에" : <>{photoCount ? ` · 공실 사진 ${photoCount}장` : ""}{useStock ? " · 무료 영상" : ""}{useAi ? ` · AI 그림(${imager})` : ""}</>}
+              {visualLater ? " · 화면은 나중에" : <>{footOn && foot.length ? ` · 내 영상 ${foot.length}개 (AI가 골라요)` : ""}{photoCount ? ` · 공실 사진 ${photoCount}장` : ""}{useStock ? " · 무료 영상" : ""}{useAi ? ` · AI 그림(${imager})` : ""}</>}
               <br />예상 {visualLater ? "1분 안팎" : useAi ? "5~10분" : lineCount > 20 ? "2~4분" : "1~2분"}
             </div>
           </div>

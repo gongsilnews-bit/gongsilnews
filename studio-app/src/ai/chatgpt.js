@@ -180,6 +180,7 @@ async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = 
   const send = await firstVisible(page, SEL.SEND, 8000);
   if (send && (await send.isEnabled().catch(() => false))) await send.click();
   else await page.keyboard.press("Enter");
+  await chrome.backstage(page); // 작업 중 띠 + 창 내리기 (실수로 닫지 않게)
   return { page, prev };
 }
 
@@ -190,6 +191,7 @@ async function exclusive(fn) {
     return await fn();
   } finally {
     running = false;
+    chrome.idle().catch(() => {});
   }
 }
 
@@ -209,9 +211,13 @@ function connected(result) {
  * onChat(url): 답을 받은 대화 주소 — 글에 남겨 두었다가 수정 요청을 그 대화에 이어 보낸다.
  * chatUrl·fallbackPrompt: 수정 요청 (openAndSend 참고)
  */
-function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "" } = {}) {
+function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [] } = {}) {
   return exclusive(async () => {
-    const { page, prev } = await openAndSend(prompt, onProgress, { chatUrl, fallbackPrompt });
+    const sent = await openAndSend(prompt, onProgress, { chatUrl, fallbackPrompt, files }); // files: 함께 보낼 사진 (영상 장면 모음 등)
+    let page = sent.page;
+    const prev = sent.prev;
+    let conv = ""; // 대화 주소 — 창이 닫히면 여기로 다시 열어 이어 받는다
+    let reopened = 0;
     const done = (text) => {
       try {
         onChat(page.url());
@@ -226,8 +232,15 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
     let stable = 0;
     while (Date.now() < deadline) {
       await chrome.sleep(3000); // 너무 자주 읽으면 ChatGPT 가 429 로 막는다
-      if (page.isClosed()) throw new Error("ChatGPT 창이 닫혔습니다.");
+      if (page.isClosed()) {
+        const again = reopened < 3 ? await chrome.reopen("chatgpt.com", conv, onProgress) : null;
+        if (!again) throw new Error("ChatGPT 창이 닫혔습니다.");
+        page = again;
+        reopened++;
+        continue;
+      }
       if (!/\/c\/[0-9a-f-]{36}/.test(page.url())) continue; // 아직 대화가 만들어지지 않음
+      conv = page.url();
 
       // 1순위: 대화 원문 — 답변이 끝났다고(finished_successfully) 표시되면 바로 끝
       const api = await readByConversationApi(page);
@@ -318,14 +331,24 @@ function downloadImage(page, conversationId, fileId) {
 /* chatUrl: 그 대화에 이어서 그린다 (시뮬레이션: 설계 지시서를 받은 대화) · files: 첨부할 사진 경로 · onChat: 대화 주소 */
 function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onChat = () => {} } = {}) {
   return exclusive(async () => {
-    const { page } = await openAndSend(prompt, onProgress, { chatUrl, files });
+    let { page } = await openAndSend(prompt, onProgress, { chatUrl, files });
+    let conv = "";
+    let reopened = 0;
     onProgress("ChatGPT가 그림을 그리는 중… (1~3분)");
     const deadline = Date.now() + 5 * 60 * 1000;
     let lastText = "";
     while (Date.now() < deadline) {
       await chrome.sleep(3000);
-      if (page.isClosed()) throw new Error("ChatGPT 창이 닫혔습니다.");
+      if (page.isClosed()) {
+        // ChatGPT 는 창을 닫아도 서버에서 계속 그린다 — 그 대화로 다시 가서 받아 온다
+        const again = reopened < 3 ? await chrome.reopen("chatgpt.com", conv, onProgress) : null;
+        if (!again) throw new Error("ChatGPT 창이 닫혔습니다.");
+        page = again;
+        reopened++;
+        continue;
+      }
       if (!/\/c\/[0-9a-f-]{36}/.test(page.url())) continue;
+      conv = page.url();
       const st = await readImages(page);
       if (st.error) continue;
       lastText = st.text || lastText;

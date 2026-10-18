@@ -10,7 +10,7 @@ import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
 import { findVoice } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
-import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
+import { Gutter, isSticker, type LaneEntry, type LayerDrag } from "./Layers";
 import { transLabel } from "./transitions";
 
 export type ClipActions = {
@@ -39,7 +39,7 @@ export type ClipActions = {
   copyClip: (id: string) => void;
   pasteAfter: (id: string) => void;
   canPaste: () => boolean;
-  insert: (kind: "mine" | "vacancy" | "free" | "ai" | "title") => void; // 브루 [삽입]처럼 — 사진·영상은 이 클립 화면 위에, 글자는 화면 글자
+  insert: (kind: "mine" | "vacancy" | "free" | "ai" | "title" | "sticker") => void; // 브루 [삽입]처럼 — 사진·영상은 이 클립 화면 위에, 글자는 화면 글자
   toggleMute: (id: string) => void;
   setSource: (id: string, patch: { muted?: boolean; volume?: number }, first: boolean) => void; // 원본 소리 무음·크기
   openSound: (id: string, x: number, y: number) => void; // 소리 칩을 누르면 옆에 볼륨·빠르기 창
@@ -357,7 +357,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                           {tb("plus", "삽입 ▾", () => setInsOpen((v) => !v))}
                           {insOpen && (
                             <span style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 21, display: "flex", flexDirection: "column", minWidth: 190, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
-                              {([["mine", "image", "내 이미지·비디오"], ["vacancy", "image", "공실 사진"], ["free", "search", "무료 이미지·비디오"], ["ai", "ai", "AI 이미지"], ["title", "font", "기본 텍스트"]] as const).map(([k, icon, label]) => (
+                              {([["mine", "image", "내 이미지·비디오"], ["vacancy", "image", "공실 사진"], ["free", "search", "무료 이미지·비디오"], ["ai", "ai", "AI 이미지"], ["title", "font", "기본 텍스트"], ["sticker", "star", "스티커"]] as const).map(([k, icon, label]) => (
                                 <span key={k}>{tb(icon, label, () => { setInsOpen(false); p.actions.insert(k); })}</span>
                               ))}
                             </span>
@@ -402,7 +402,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     const a = l.type === "image" && l.asset ? project.assets[l.asset] : null;
                     const th = a ? a.thumb || (a.kind === "image" ? a.url : "") : "";
                     return (
-                      <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); p.actions.openLayer(l.id); }} title={l.type === "image" ? "이 단어부터 나오는 사진 — 눌러서 설정" : `화면 글자 “${String(l.text || "").slice(0, 20)}” — 눌러서 설정`}
+                      <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); p.actions.openLayer(l.id); }} title={isSticker(l) ? "이 단어부터 나오는 스티커 — 눌러서 설정" : l.type === "image" ? "이 단어부터 나오는 사진 — 눌러서 설정" : `화면 글자 “${String(l.text || "").slice(0, 20)}” — 눌러서 설정`}
                         style={{ width: 30, height: 34, padding: 0, borderRadius: 4, border: `1px solid ${C.accent}`, background: C.panel2, overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.accent, fontSize: 14, fontWeight: 800, fontFamily: FONT, opacity: l.off ? 0.4 : 1 }}>
                         {l.type === "image" ? (th ? <img src={th} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <Icon name="image" size={15} />) : "T"}
                       </button>

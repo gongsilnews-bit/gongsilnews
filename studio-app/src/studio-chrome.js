@@ -284,6 +284,43 @@ async function openPage(host, url) {
   return page;
 }
 
+/* ── AI 가 일하는 동안 (2026-10-18 사장님: 실수로 창을 닫았다) ──
+   보낸 뒤: 창 위에 "작업 중 — 닫지 마세요" 띠 + 창을 작업 표시줄로 내린다 (가려진 창도 절전하지 않게 켜 둠 — spawnChrome)
+   닫혔으면: 기억한 대화 주소로 다시 열어 이어서 기다린다 · 끝나면 띠를 지운다 */
+const BANNER = `(() => { if (document.getElementById("gw-busy-banner")) return; const d = document.createElement("div"); d.id = "gw-busy-banner";
+  d.textContent = "공실뉴스 스튜디오가 이 창으로 작업 중이에요 — 끝날 때까지 닫지 마세요 (닫아도 다시 열어 이어서 받아요)";
+  Object.assign(d.style, { position: "fixed", top: "0", left: "0", right: "0", zIndex: "2147483647", background: "#1a3a6b", color: "#fff", font: "600 13px sans-serif", padding: "6px 12px", textAlign: "center", pointerEvents: "none" });
+  (document.body || document.documentElement).appendChild(d); })()`;
+async function backstage(page) {
+  try {
+    await page.evaluate(BANNER);
+  } catch {}
+  try {
+    const cdp = await page.context().newCDPSession(page);
+    const { windowId } = await cdp.send("Browser.getWindowForTarget");
+    await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "minimized" } });
+    await cdp.detach();
+  } catch (e) {
+    log.warn("[전용 크롬] 창 내리기 실패", e.message);
+  }
+}
+/** 작업이 끝나면 띠를 지운다 (모든 탭) */
+async function idle() {
+  if (!browser || !browser.isConnected()) return;
+  for (const p of context().pages()) await p.evaluate(`document.getElementById("gw-busy-banner")?.remove()`).catch(() => {});
+}
+/** 닫힌 AI 창을 다시 연다 — 대화 주소(url)로 가서 이어 기다리게. 주소가 없으면 null */
+async function reopen(host, url, onProgress = () => {}) {
+  if (!url) return null;
+  log.warn(`[전용 크롬] AI 창이 닫혀 다시 엶: ${url}`);
+  onProgress("AI 창이 닫혀서 다시 여는 중… (하던 것을 이어서 받아요)");
+  const page = await openPage(host, url);
+  if (page.url().split(/[?#]/)[0] !== url.split(/[?#]/)[0]) await page.goto(url, { waitUntil: "domcontentloaded" });
+  await sleep(2500);
+  await backstage(page);
+  return page;
+}
+
 /**
  * 이 탭은 계속 "보고 있는 탭"으로 — 회원이 다른 탭으로 옮겨도 AI 가 쓰는 글이 멈추지 않게.
  * (조종 연결을 붙여 둔 동안만 — 연결을 떼면 풀리므로 탭마다 한 번 붙여 둔다)
@@ -327,4 +364,4 @@ async function withHiddenPage(url, fn) {
   }
 }
 
-module.exports = { findBrowser, ensureBrowser, isRunning, openPage, findPage, openPages, openPlain, closePlain, withHiddenPage, closeControlled, hostOf, sleep };
+module.exports = { findBrowser, ensureBrowser, isRunning, openPage, findPage, openPages, openPlain, closePlain, withHiddenPage, closeControlled, hostOf, sleep, backstage, idle, reopen };

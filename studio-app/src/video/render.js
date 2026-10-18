@@ -50,17 +50,76 @@ const assHead = (W, H) =>
   `[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n`;
 const assEvents = "\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
 
+/* ── 글자 애니메이션 (화면 글자·메인자막) — 미리보기 timeline.animAt 과 같은 계산을 칸(1/30초)마다 자막 엔진 표시로 ──
+   덩어리 가운데를 축으로 키우기(\fscx\fscy)·돌리기(\frz \org)·옮기기(\pos)·흐리기(\1a\3a\4a). 같은 모양이 이어지면 한 줄로 묶는다 (2026-10-19) */
+const hex2 = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0").toUpperCase();
+/**
+ * o: { layer, style, lines(줄 글자), bc{x,y}(덩어리 가운데), lh(줄 높이), an, a, b(애니메이션 구간, 클립 시각), s0, s1(보이는 구간), end(마지막 줄 끝 시각),
+ *      W, H, base{a1,a3,a4}(원래 투명도 0=불투명~255), extra(덧붙일 표시, 예: \blur) }
+ */
+function animTextEvents(o) {
+  const out = [];
+  const n = o.lines.length;
+  const N = Math.max(1, Math.round((o.s1 - o.s0) * FPS));
+  let prevKey = null;
+  let prevTags = null;
+  let from = o.s0;
+  const flush = (to) => {
+    if (prevTags && to > from + 0.004) for (const tx of prevTags) out.push(`Dialogue: ${o.layer},${assTime(from)},${assTime(to)},${o.style},,0,0,0,,${tx}`);
+  };
+  for (let k = 0; k <= N; k++) {
+    const t = Math.min(o.s1, o.s0 + k / FPS);
+    let tags = null;
+    let key = "END";
+    if (k < N) {
+      const r = tl.animAt(o.an, t, o.a, o.b);
+      if (r.op > 0.004 && r.sc > 0.004 && Math.abs(r.sx) > 0.004) {
+        const cx = o.bc.x + r.dx * o.W, cy = o.bc.y + r.dy * o.H;
+        const al = (base) => hex2(255 - (255 - base) * Math.max(0, Math.min(1, r.op)));
+        const common = `\\org(${cx.toFixed(1)},${cy.toFixed(1)})\\frz${(-r.rot).toFixed(2)}\\fscx${(100 * r.sc * r.sx).toFixed(1)}\\fscy${(100 * r.sc).toFixed(1)}\\1a&H${al(o.base.a1)}&\\3a&H${al(o.base.a3)}&\\4a&H${al(o.base.a4)}&${o.extra || ""}`;
+        // 정렬 — 왼쪽/오른쪽이면 덩어리 가장자리에 붙인다 (halfW = 덩어리 반 너비)
+        const an = o.align === "left" ? 4 : o.align === "right" ? 6 : 5;
+        const ax = o.align === "left" ? cx - (o.halfW || 0) * r.sc * r.sx : o.align === "right" ? cx + (o.halfW || 0) * r.sc * r.sx : cx;
+        tags = o.lines.map((txt, i) => `{\\an${an}\\pos(${ax.toFixed(1)},${(cy + (i - (n - 1) / 2) * o.lh * r.sc).toFixed(1)})${common}}${assEsc(txt)}`);
+        key = tags.join("|");
+      } else key = "HIDE";
+    }
+    if (key !== prevKey) {
+      flush(k === N ? o.end : t);
+      prevKey = key;
+      prevTags = tags;
+      from = t;
+    }
+  }
+  return out;
+}
+
+/** 대소문자 (TT·tt·Tt) — 미리보기 CSS text-transform 과 같게 (2026-10-19) */
+const caseOf = (t, c) => (c === "upper" ? String(t).toUpperCase() : c === "lower" ? String(t).toLowerCase() : c === "title" ? String(t).replace(/(^|[\s(["'])([a-z])/g, (m, a, b) => a + b.toUpperCase()) : String(t));
+/** 정렬 → 자막 엔진 자리 번호 (row: top|middle|bottom) */
+const alignNo = (row, align) => (row === "top" ? 7 : row === "middle" ? 4 : 1) + (align === "left" ? 0 : align === "right" ? 2 : 1);
+
 /** 화면 글자 애셋 스타일 (미리보기 Player.tsx 와 같은 크기·자리) */
 function textLayerStyle(name, W, H, l) {
   const size = Math.round(Math.min(W, H) * 0.08 * ((Number(l.size) || 100) / 100));
   const pos = l.pos || "top";
-  const align = pos === "top" ? 8 : pos === "middle" ? 5 : 2;
+  const align = alignNo(pos === "top" ? "top" : pos === "middle" ? "middle" : "bottom", l.align);
   const marginV = pos === "top" ? Math.round(H * 0.06) : pos === "middle" ? 0 : Math.round(H * 0.07);
   // 상자(BorderStyle 3)는 libass 가 테두리 색(OutlineColour)으로 칠한다
   const boxCol = assColor(l.boxColor || "#000000", Math.round((1 - Math.max(0, Math.min(1, l.boxOpacity ?? 0.62))) * 255));
-  const back = assColor("#000000", 0xff);
-  return `Style: ${name},${l.font || fonts.DEFAULT_FAMILY},${size},${assColor(l.color || "#FFFFFF")},${assColor(l.color || "#FFFFFF")},${l.box ? boxCol : assColor(String(l.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000")},${back},${fonts.assBold(l.font, true) ? -1 : 0},0,0,0,100,100,0,0,${l.box ? 3 : 1},${l.box ? Math.round(size * 0.25) : 4},0,${align},${Math.round(W * 0.05)},${Math.round(W * 0.05)},${marginV},1`;
+  // 테두리·그림자·빛·자간·굵게 — 메인자막과 같은 규칙 (없으면 예전대로 테두리 4, 검정/흰색 자동) · 미리보기 Player.tsx textEl
+  const glow = !l.box && l.glow ? l.glow : "";
+  const ow = Number(l.outlineWidth ?? 4);
+  const gs = Math.max(0.3, Math.min(3, Number(l.glowSize ?? 1)));
+  const outCol = l.box ? boxCol : glow ? assColor(glow, Math.round(Math.max(0, Math.min(1, Number(l.glowAlpha) || 0)) * 255)) : assColor(l.outline || (String(l.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000"), Math.round(Math.max(0, Math.min(1, Number(l.outlineAlpha) || 0)) * 255));
+  const outW = l.box ? Math.round(size * 0.25 * Math.max(0.3, Math.min(2.5, Number(l.bgPad ?? 1)))) : glow ? Math.max(ow, Math.round(size * 0.11 * gs)) : ow;
+  const shadow = l.box ? 0 : Math.round(size * Math.max(0, Math.min(0.2, Number(l.shadow) || 0)));
+  const back = shadow ? assColor(l.shadowColor || "#000000", Math.round(Math.max(0, Math.min(1, Number(l.shadowAlpha) || 0)) * 255)) : assColor("#000000", 0xff);
+  const spacing = (tl.effSpacing(l) * size).toFixed(1); // 문자 간격 — 없으면 자동
+  return `Style: ${name},${l.font || fonts.DEFAULT_FAMILY},${size},${assColor(l.color || "#FFFFFF", Math.round(Math.max(0, Math.min(1, Number(l.textAlpha) || 0)) * 255))},${assColor(l.color || "#FFFFFF")},${outCol},${back},${fonts.assBold(l.font, l.bold !== false) ? -1 : 0},${l.italic ? -1 : 0},${l.underline ? -1 : 0},0,100,100,${spacing},0,${l.box ? 3 : 1},${outW},${shadow},${align},${Math.round(W * 0.05)},${Math.round(W * 0.05)},${marginV},1`;
 }
+/** 화면 글자 빛(글로우) — 테두리를 흐리게 번지게 */
+const textLayerBlur = (W, H, l) => (!l.box && l.glow ? `\\blur${Math.max(2, Math.round(Math.min(W, H) * 0.08 * ((Number(l.size) || 100) / 100) * 0.2 * Math.max(0.3, Math.min(3, Number(l.glowSize ?? 1)))))}` : "");
 
 /** 자막만 따로 쓴 글 — 글자 수만큼 시간을 나눠 차례로 (timeline.ts evenLines 와 같음) */
 function evenLines(text, dur, max, perChunk) {
@@ -81,16 +140,28 @@ function subtitleStyle(W, H, st) {
   const base = Math.min(W, H) * 0.062 * ((Number(st.size) || 100) / 100);
   const size = Math.round(base);
   const pos = st.position || "bottom";
-  const align = pos === "top" ? 8 : pos === "middle" ? 5 : 2;
-  const marginV = pos === "top" ? Math.round(H * 0.08) : pos === "middle-low" ? Math.round(H * 0.24) : pos === "middle" ? 0 : Math.round(H * 0.07);
+  const align = alignNo(pos === "top" || pos === "middle-high" ? "top" : pos === "middle" ? "middle" : "bottom", st.align);
+  const marginV = pos === "top" ? Math.round(H * 0.08) : pos === "middle-high" || pos === "middle-low" ? Math.round(H * 0.24) : pos === "middle" ? 0 : Math.round(H * 0.07);
+  // 줄 너비 칸 (미리보기 subW = 화면 88% × 줄 너비) — 왼쪽·오른쪽 정렬은 이 칸 가장자리에
+  const halfW = (W * 0.88 * Math.max(0.3, Math.min(1, Number(st.wrap ?? 1)))) / 2;
+  const margin = Math.round(W / 2 - halfW);
   const borderStyle = st.bg ? 3 : 1; // 3 = 글자 뒤 상자
   // 상자(BorderStyle 3)는 libass 가 테두리 색(OutlineColour)으로 칠한다
   const boxCol = assColor(st.bgColor || "#000000", Math.round((1 - Math.max(0, Math.min(1, st.bgOpacity ?? 0.62))) * 255));
-  const back = assColor("#000000", 0xff);
+  // 그림자 (상자가 아닐 때) — 글자 크기에 대한 비율 · 미리보기 SubPresets.subLookCss 와 같은 값
+  const shadow = st.bg ? 0 : Math.round(size * Math.max(0, Math.min(0.2, Number(st.shadow) || 0)));
+  const back = shadow ? assColor(st.shadowColor || "#000000", Math.round(Math.max(0, Math.min(1, Number(st.shadowAlpha) || 0)) * 255)) : assColor("#000000", 0xff);
+  // 네온 빛 — 테두리를 빛 색으로 굵게 하고 흐리게 번지게 ({\blur}) · 두께(glowSize)·투명도(glowAlpha)
+  const glow = !st.bg && st.glow ? st.glow : "";
+  const gs = Math.max(0.3, Math.min(3, Number(st.glowSize ?? 1)));
+  const outCol = st.bg ? boxCol : glow ? assColor(glow, Math.round(Math.max(0, Math.min(1, Number(st.glowAlpha) || 0)) * 255)) : assColor(st.outline || "#000000", Math.round(Math.max(0, Math.min(1, Number(st.outlineAlpha) || 0)) * 255));
+  const outW = st.bg ? Math.round(size * 0.25 * Math.max(0.3, Math.min(2.5, Number(st.bgPad ?? 1)))) : glow ? Math.max(Number(st.outlineWidth ?? 3), Math.round(size * 0.11 * gs)) : Number(st.outlineWidth ?? 3);
   return {
     size,
+    halfW,
+    tag: glow ? `{\\blur${Math.max(2, Math.round(size * 0.2 * gs))}}` : "",
     style:
-      `Style: S,${st.font || "Malgun Gothic"},${size},${assColor(st.color)},${assColor(st.color)},${st.bg ? boxCol : assColor(st.outline || "#000000")},${back},${fonts.assBold(st.font, st.bold) ? -1 : 0},0,0,0,100,100,${(Math.max(-0.1, Math.min(0.5, Number(st.spacing) || 0)) * size).toFixed(1)},0,${borderStyle},${st.bg ? Math.round(size * 0.25) : Number(st.outlineWidth ?? 3)},0,${align},${Math.round(W * 0.06)},${Math.round(W * 0.06)},${marginV},1`,
+      `Style: S,${st.font || "Malgun Gothic"},${size},${assColor(st.color, Math.round(Math.max(0, Math.min(1, Number(st.textAlpha) || 0)) * 255))},${assColor(st.color)},${outCol},${back},${fonts.assBold(st.font, st.bold) ? -1 : 0},${st.italic ? -1 : 0},${st.underline ? -1 : 0},0,100,100,${(tl.effSpacing(st) * size).toFixed(1)},0,${borderStyle},${outW},${shadow},${align},${margin},${margin},${marginV},1`,
   };
 }
 
@@ -101,7 +172,7 @@ function subtitleLines(clip, dur, settings, W) {
   const text = tl.subtitleText(clip).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [];
   // 한 줄 글자 수 — 줄 너비만큼, 글자가 작으면 더 많이 (timeline.ts 와 같은 계산)
-  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, Number(st.wrap ?? 1))) * 100) / Math.max(40, Number(st.size) || 100) / (1 + Math.max(-0.1, Math.min(0.5, Number(st.spacing) || 0)))));
+  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, Number(st.wrap ?? 1))) * 100) / Math.max(40, Number(st.size) || 100) / (1 + tl.effSpacing(st))));
   if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
@@ -175,7 +246,7 @@ const rangeAudio = (k, r, i, n) => {
  *  소리는 원음으로 이어 붙여 맨 마지막에 한 번만 압축한다 — 조각마다 AAC 로 압축해 이으면 이음매마다 "뚝" (2026-10-18)
  *  frames: 화면 칸 수 (앞에서부터 누적으로 맞춰 소리와 어긋나지 않게)  edge: { in, out } 앞·뒤가 원본에서 이어지지 않으면 true
  */
-async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, edge = { in: true, out: true }) {
+async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, edge = { in: true, out: true }, ctx = null) {
   const [W, H] = RATIOS[p.ratio] || RATIOS["16:9"];
   const st = p.settings || {};
   const fill = clip.fill || st.fill || "cover";
@@ -283,8 +354,18 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     const w = winOf(l);
     return w ? `:enable='between(t,${w.s.toFixed(3)},${w.e.toFixed(3)})'` : "";
   };
-  // 사진 올리기 애셋 (자막·화면 글자 아래)
-  layers.filter((l) => l.type === "image").forEach((l, j) => {
+  // 사진 올리기·스티커 애셋 하나 얹기 — 아래 겹치는 순서 루프에서 부른다
+  const overlayImage = (l, j) => {
+    // 애니메이션 — 편집 화면이 미리보기와 같은 계산으로 칸마다 그려 둔 그림(투명 PNG)을 그대로 얹는다 (2026-10-19, Stickers·사진 올리기)
+    const bk = l.bake && l.bake[clip.id];
+    if (bk && bk.dir && fs.existsSync(path.join(bk.dir, "00000.png"))) {
+      args.push("-itsoffset", Math.max(0, Number(bk.s0) || 0).toFixed(3), "-framerate", String(FPS), "-start_number", "0", "-i", path.join(bk.dir, "%05d.png"));
+      const k = n++;
+      filters.push(`[${k}:v]format=rgba,setsar=1[ov${j}]`);
+      filters.push(`[${vOut}][ov${j}]overlay=x=${Math.round(bk.x)}:y=${Math.round(bk.y)}:eof_action=pass[vo${j}]`);
+      vOut = `vo${j}`;
+      return;
+    }
     const a = l.asset && p.assets[l.asset];
     if (!ok(a) || a.kind !== "image") return;
     args.push("-loop", "1", "-framerate", String(FPS), "-t", dur.toFixed(3), "-i", assetFile(a));
@@ -308,22 +389,70 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     filters.push(`[${k}:v]scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
     filters.push(`[${vOut}][ov${j}]overlay=x=${x0}:y=${y0}:eof_action=pass${en(l)}[vo${j}]`);
     vOut = `vo${j}`;
-  });
+  };
 
-  // 자막 + 화면 글자 애셋
+  // 겹치는 것 — 뒤 → 앞 (회의 3-26): 사진·스티커는 하나씩 얹고, 이어진 화면 글자는 묶어서 자막 엔진으로 한 번에
+  const isImg = (l) => l.type === "image";
+  const isText = (l) => l.type === "text" && String(l.text || "").trim();
+  const zs = tl.zLayers(p, layers).filter((l) => isImg(l) || isText(l));
+  let tg = 0;
+  for (let zi = 0; zi < zs.length; ) {
+    if (isImg(zs[zi])) {
+      overlayImage(zs[zi], zi);
+      zi++;
+      continue;
+    }
+    const run = [];
+    while (zi < zs.length && isText(zs[zi])) run.push(zs[zi++]);
+    const ass =
+      assHead(W, H) +
+      run.map((l, j) => textLayerStyle(`T${j}`, W, H, l)).join("\n") +
+      "\n" +
+      assEvents +
+      run.flatMap((l, j) => {
+        // 애니메이션 — 미리보기와 같은 움직임을 칸마다 (2026-10-19)
+        const an = ctx ? tl.animOf(p, l) : null;
+        const sp = an ? tl.layerSpan(p, l, ctx.items, clip.id, st, ctx.order) : null;
+        if (an && sp) {
+          const size = Math.round(Math.min(W, H) * 0.08 * ((Number(l.size) || 100) / 100));
+          const lines = caseOf(String(l.text).trim(), l.textCase).split(/\r?\n/);
+          const lh = size * 1.25;
+          const pos = l.pos || "top";
+          const free = typeof l.x === "number" && typeof l.y === "number";
+          const bc = free ? { x: l.x * W, y: l.y * H } : { x: W / 2, y: pos === "top" ? H * 0.06 + (lines.length * lh) / 2 : pos === "middle" ? H / 2 : H - H * 0.07 - (lines.length * lh) / 2 };
+          const s0 = Math.max(0, sp.a), s1 = Math.min(dur, sp.b);
+          if (s1 <= s0) return [];
+          return animTextEvents({ layer: 1, style: `T${j}`, lines, bc, lh, an, a: sp.a, b: sp.b, s0, s1, end: sp.b >= dur - 0.001 ? dur + 0.05 : s1, W, H, align: free ? undefined : l.align, halfW: W * 0.45,
+            base: { a1: Math.round(Math.max(0, Math.min(1, Number(l.textAlpha) || 0)) * 255), a3: l.box ? Math.round((1 - Math.max(0, Math.min(1, l.boxOpacity ?? 0.62))) * 255) : l.glow ? Math.round(Math.max(0, Math.min(1, Number(l.glowAlpha) || 0)) * 255) : Math.round(Math.max(0, Math.min(1, Number(l.outlineAlpha) || 0)) * 255), a4: !l.box && Number(l.shadow) > 0 ? Math.round(Math.max(0, Math.min(1, Number(l.shadowAlpha) || 0)) * 255) : 255 }, extra: textLayerBlur(W, H, l) });
+        }
+        // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
+        const blur = textLayerBlur(W, H, l);
+        return [`Dialogue: 1,${assTime(winOf(l) ? winOf(l).s : 0)},${assTime(winOf(l) ? winOf(l).e : dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${blur ? `{${blur}}` : ""}${assEsc(caseOf(String(l.text).trim(), l.textCase))}`];
+      }).join("\n") +
+      "\n";
+    fs.writeFileSync(path.join(tmp, `t${idx}_${tg}.ass`), ass, "utf8");
+    filters.push(`[${vOut}]subtitles=t${idx}_${tg}.ass:fontsdir=fonts[vt${tg}]`);
+    vOut = `vt${tg}`;
+    tg++;
+  }
+
+  // 메인자막 — 늘 맨 위
   const lines = subtitleLines(clip, dur, st, W);
   // 미리보기에서 끌어 옮긴 자막은 그 자리(가운데 기준)에
   const sst = tl.subStyleOf(st, clip);
-  const subPos = typeof sst.x === "number" && typeof sst.y === "number" ? `{\\an5\\pos(${Math.round(sst.x * W)},${Math.round(sst.y * H)})}` : "";
-  const texts = layers.filter((l) => l.type === "text" && String(l.text || "").trim());
-  if (lines.length || texts.length) {
+  const subHalf = (W * 0.88 * Math.max(0.3, Math.min(1, Number(sst.wrap ?? 1)))) / 2;
+  const ax = (cx) => (sst.align === "left" ? cx - subHalf : sst.align === "right" ? cx + subHalf : cx); // 정렬 — 줄 너비 칸 가장자리
+  const anRow = (row) => alignNo(row, sst.align);
+  const subPos = typeof sst.x === "number" && typeof sst.y === "number" ? `{\\an${anRow("middle")}\\pos(${Math.round(ax(sst.x * W))},${Math.round(sst.y * H)})}` : "";
+  for (const l of lines) l.text = caseOf(l.text, sst.textCase);
+  if (lines.length) {
     const sub = subtitleStyle(W, H, sst);
-    const styles = [sub.style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
+    const styles = [sub.style];
     // 행간을 바꿨으면 줄마다 자리를 계산해 따로 놓는다 (자막 엔진에 행간 설정이 없어서). 미리보기 Player.tsx 와 같은 줄 높이
-    const lead = typeof sst.leading === "number" ? Math.max(0.9, Math.min(2.5, sst.leading)) : 0;
+    const lead = tl.effLeading(sst); // 줄 간격 — 없으면 자동 (미리보기 lineHeight 와 같게 줄마다 자리)
     const subEvents = (l) => {
       const parts = String(l.text).split(/\r?\n/);
-      if (!lead || parts.length < 2) return [`Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${subPos}${assEsc(l.text)}`];
+      if (!lead || parts.length < 2) return [`Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${subPos}${sub.tag}${assEsc(l.text)}`];
       const lh = sub.size * lead;
       const n = parts.length;
       const pos = sst.position || "bottom";
@@ -333,20 +462,32 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
         if (free || pos === "middle") {
           const cx = free ? sst.x * W : W / 2;
           const cy = free ? sst.y * H : H / 2;
-          tag = `{\\an5\\pos(${Math.round(cx)},${Math.round(cy + (i - (n - 1) / 2) * lh)})}`;
-        } else if (pos === "top") tag = `{\\an8\\pos(${Math.round(W / 2)},${Math.round(H * 0.08 + i * lh)})}`;
+          tag = `{\\an${anRow("middle")}\\pos(${Math.round(ax(cx))},${Math.round(cy + (i - (n - 1) / 2) * lh)})}`;
+        } else if (pos === "top" || pos === "middle-high") tag = `{\\an${anRow("top")}\\pos(${Math.round(ax(W / 2))},${Math.round(H * (pos === "top" ? 0.08 : 0.24) + i * lh)})}`;
         else {
           const bottom = H - (pos === "middle-low" ? H * 0.24 : H * 0.07);
-          tag = `{\\an2\\pos(${Math.round(W / 2)},${Math.round(bottom - (n - 1 - i) * lh)})}`;
+          tag = `{\\an${anRow("bottom")}\\pos(${Math.round(ax(W / 2))},${Math.round(bottom - (n - 1 - i) * lh)})}`;
         }
-        return `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${tag}${assEsc(t)}`;
+        return `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${tag}${sub.tag}${assEsc(t)}`;
       });
     };
-    const events = [
-      ...lines.flatMap(subEvents),
-      // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
-      ...texts.map((l, j) => `Dialogue: 1,${assTime(winOf(l) ? winOf(l).s : 0)},${assTime(winOf(l) ? winOf(l).e : dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${assEsc(String(l.text).trim())}`),
-    ];
+    // 메인자막 애니메이션 — 자막 한 조각(줄 묶음)마다 나타나고 사라진다 (미리보기 Player.tsx 와 같은 계산)
+    const sa = tl.subAnimOf(p, clip);
+    const subAnim = (l) => {
+      const parts = String(l.text).split(/\r?\n/);
+      const n = parts.length;
+      const lh = sub.size * (lead || 1.25);
+      const pos = sst.position || "bottom";
+      const free = typeof sst.x === "number" && typeof sst.y === "number";
+      const bc = free
+        ? { x: sst.x * W, y: sst.y * H }
+        : { x: W / 2, y: pos === "top" ? H * 0.08 + (n * lh) / 2 : pos === "middle-high" ? H * 0.24 + (n * lh) / 2 : pos === "middle" ? H / 2 : H - (pos === "middle-low" ? H * 0.24 : H * 0.07) - (n * lh) / 2 };
+      const shadowOn = !sst.bg && Number(sst.shadow) > 0;
+      return animTextEvents({ layer: 0, style: "S", lines: parts, bc, lh, an: sa, a: l.s, b: l.e, s0: l.s, s1: l.e, end: l.e, W, H, align: sst.align, halfW: sub.halfW,
+        base: { a1: Math.round(Math.max(0, Math.min(1, Number(sst.textAlpha) || 0)) * 255), a3: sst.bg ? Math.round((1 - Math.max(0, Math.min(1, sst.bgOpacity ?? 0.62))) * 255) : sst.glow ? Math.round(Math.max(0, Math.min(1, Number(sst.glowAlpha) || 0)) * 255) : Math.round(Math.max(0, Math.min(1, Number(sst.outlineAlpha) || 0)) * 255), a4: shadowOn ? Math.round(Math.max(0, Math.min(1, Number(sst.shadowAlpha) || 0)) * 255) : 255 },
+        extra: sub.tag ? sub.tag.replace(/^\{|\}$/g, "") : "" });
+    };
+    const events = sa ? lines.flatMap(subAnim) : lines.flatMap(subEvents);
     const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";
     fs.writeFileSync(path.join(tmp, `s${idx}.ass`), ass, "utf8");
     filters.push(`[${vOut}]subtitles=s${idx}.ass:fontsdir=fonts[vsub]`);
@@ -516,7 +657,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
       // 화면 칸 수 — 앞에서부터 누적으로 (조각마다 반올림하면 뒤로 갈수록 입 모양이 소리와 어긋난다)
       const frames = Math.max(1, Math.round((items[i].start + items[i].dur) * FPS) - Math.round(items[i].start * FPS));
       const edge = { in: !continuous(items[i - 1] && items[i - 1].clip, items[i].clip), out: !continuous(items[i].clip, items[i + 1] && items[i + 1].clip) };
-      const seg = await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over, frames, edge);
+      const seg = await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over, frames, edge, { items, order });
       segs.push(seg.video);
       auds.push(seg.audio);
       done += items[i].dur;

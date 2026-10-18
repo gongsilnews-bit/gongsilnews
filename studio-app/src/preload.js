@@ -124,6 +124,7 @@ if (allowed) {
         addFolder: () => ipcRenderer.invoke("video:lib-add-folder"),
         removeFolder: (dir) => ipcRenderer.invoke("video:lib-remove-folder", dir),
         musicFolder: () => ipcRenderer.invoke("video:lib-music-folder"),
+        saveImage: (dir, dataUrl, name) => ipcRenderer.invoke("video:lib-save-image", dir, dataUrl, name), // 스티커 (0.1.10부터)
       },
       project: {
         create: (opts) => ipcRenderer.invoke("video:project-create", opts),
@@ -192,6 +193,9 @@ if (allowed) {
         script: (opts) => ipcRenderer.invoke("video:ai-script", opts),
         scenes: (lines) => ipcRenderer.invoke("video:ai-scenes", lines),
         shorts: (clips, opts) => ipcRenderer.invoke("video:ai-shorts", clips, opts),
+        footage: (lines, items) => ipcRenderer.invoke("video:ai-footage", lines, items), // 대본 + 내 영상 → 문장마다 장면 (0.1.10부터)
+        edit: (lines, items, opts) => ipcRenderer.invoke("video:ai-edit", lines, items, opts), // [AI 편집] 편집 계획 (0.1.10부터)
+        group: (lines) => ipcRenderer.invoke("video:ai-group", lines), // [씬 정리] (0.1.10부터)
         image: (dir, prompt) => ipcRenderer.invoke("video:ai-image", dir, prompt),
       },
       vacancy: (vacancyId) => ipcRenderer.invoke("video:vacancy", vacancyId),
@@ -203,6 +207,7 @@ if (allowed) {
       musicUse: (dir, libId) => ipcRenderer.invoke("video:music-use", dir, libId),
       fonts: { ensure: (family) => ipcRenderer.invoke("video:font-ensure", family) },
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
+      animFrames: (dir, key, start, urls) => ipcRenderer.invoke("video:anim-frames", dir, key, start, urls), // 애니메이션 칸 그림 (0.1.10부터)
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
       exportAudio: (p, kind, opts) => ipcRenderer.invoke("video:export-audio", p, kind, opts),
       snapshot: (p, file, at) => ipcRenderer.invoke("video:snapshot", p, file, at),

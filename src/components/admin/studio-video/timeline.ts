@@ -1,8 +1,14 @@
 import type React from "react";
 // 클립 길이·남길 구간·단어 시각 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 완성 영상). 둘을 같이 고친다.
 import type { Clip, Layer, Project, Settings, SubtitleSettings } from "./types";
+import { uid } from "./types";
 
-export const GAP = 0.12;
+export const GAP = 0.4; // 예전 고정값 자리 — 이제 gapOf(settings) 를 쓴다
+/** AI 목소리 문장 사이 쉼 (초) — [AI 목소리 설정]의 문장 사이 쉼. 기본 0.4 (예전 0.12 는 급하게 들렸다, 2026-10-18 사장님) */
+export const gapOf = (settings?: { voice?: { gap?: number } }) => {
+  const g = Number(settings?.voice?.gap);
+  return Number.isFinite(g) && g >= 0 ? Math.min(2, g) : 0.4;
+};
 
 /** 남길 구간 — 지운 단어와 무음 줄이기(clip.cuts)를 뺀 원본 구간. 영상·소리·자막 단어 시각이 모두 이걸로 계산된다 */
 export function keepRanges(clip: Clip): { s: number; e: number }[] {
@@ -36,7 +42,7 @@ export function estimateSeconds(text: string, speed = 1) {
 export function clipDuration(clip: Clip, settings?: Settings) {
   if (clip.del) return 0;
   if (clip.type === "voice") {
-    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + GAP + Math.max(0, Number(clip.pad) || 0);
+    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + gapOf(settings) + Math.max(0, Number(clip.pad) || 0);
     return Math.max(0.5, Number(clip.hold) || estimateSeconds(clip.text, speedOf(clip, settings)));
   }
   return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(clip);
@@ -150,7 +156,7 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
   const text = (custom ? clip.subText! : clipText(clip)).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [] as { s: number; e: number; text: string }[];
   // 한 줄 글자 수 — 줄 너비만큼, 글자가 작으면 더 많이 (render.js 와 같은 계산)
-  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, st.wrap ?? 1)) * 100) / Math.max(40, st.size || 100) / (1 + Math.max(-0.1, Math.min(0.5, st.spacing ?? 0)))));
+  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, st.wrap ?? 1)) * 100) / Math.max(40, st.size || 100) / (1 + effSpacing(st))));
   if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
@@ -280,6 +286,39 @@ export function layerWindow(layer: Layer, clip: Clip, settings?: Settings): { s:
   return { s: ts[0].s, e: ts[ts.length - 1].e };
 }
 
+/**
+ * 화면 위에 겹치는 것(사진·스티커·화면 글자)을 쌓는 순서 — 뒤 → 앞 (회의 3-26, 2026-10-19)
+ *  p.layerZ 가 있으면 배열 순서 그대로, 없으면(예전 프로젝트) 사진 먼저·글자 위. 음악은 뺀다. 굽기 timeline.js 와 같다
+ */
+export function zLayers<T extends { type: string }>(p: { layerZ?: number }, layers: T[]): T[] {
+  const vis = layers.filter((l) => l.type === "image" || l.type === "text"); // 화면에 보이는 것만 (음악·효과음 빼고)
+  if (p.layerZ) return vis;
+  return [...vis.filter((l) => l.type !== "text"), ...vis.filter((l) => l.type === "text")];
+}
+
+/* ── 문자 간격·줄 간격 자동 (기본) — 값이 없으면 글꼴·모양에 맞춘 자동 값, 직접 고르면 그 값 (2026-10-19 사장님) ──
+   render.js·timeline.js 와 같은 계산 */
+type SpacingLook = { font?: string; bg?: boolean; box?: boolean; glow?: string; outlineWidth?: number; shadow?: number; spacing?: number; leading?: number };
+/** 줄 간격 자동 — 굵고 키 큰 글꼴은 좁게, 명조·손글씨는 넓게, 상자·굵은 테두리·빛·그림자가 있으면 조금 더 */
+export function autoLeading(s: SpacingLook) {
+  const f = s.font || "";
+  let v = /Black Han Sans|Do Hyeon|Jua/.test(f) ? 1.15 : /Myeongjo|Song Myung|Nanum Pen|Yeon Sung/.test(f) ? 1.35 : 1.28;
+  if (s.bg || s.box) v += 0.12;
+  else if (s.glow || Number(s.outlineWidth ?? 3) >= 6 || Number(s.shadow) > 0) v += 0.06;
+  return Math.round(v * 100) / 100;
+}
+/** 문자 간격 자동 — 한글 고딕·Pretendard 는 살짝 좁게(-2%), 굵은 제목 글꼴·명조는 그대로, 손글씨는 살짝 넓게(+2%) */
+export function autoSpacing(s: SpacingLook) {
+  const f = s.font || "";
+  if (/Black Han Sans|Do Hyeon|Jua|Myeongjo|Song Myung/.test(f)) return 0;
+  if (/Nanum Pen|Yeon Sung/.test(f)) return 0.02;
+  return -0.02;
+}
+/** 실제로 쓰는 문자 간격 (글자 크기 비율) */
+export const effSpacing = (s: SpacingLook) => Math.max(-0.1, Math.min(0.5, typeof s.spacing === "number" ? s.spacing : autoSpacing(s)));
+/** 실제로 쓰는 줄 간격 (글자 크기 배수) */
+export const effLeading = (s: SpacingLook) => Math.max(0.9, Math.min(2.5, typeof s.leading === "number" ? s.leading : autoLeading(s)));
+
 /** 클립 하나에 걸린 애셋들 */
 export function layersAt(p: Project, clipId: string, order = clipOrder(p)) {
   const k = order.get(clipId);
@@ -300,6 +339,34 @@ export function musicLayers(p: Project, items: FlatItem[]): Layer[] {
   const m = p.settings.music;
   if (m?.on && m.file && items.length) return [{ id: "bgm", type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, name: m.name, file: m.file, url: m.url, volume: m.volume ?? 0.15, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }];
   return [];
+}
+
+/**
+ * 클립 하나짜리 씬이 이어지면 하나로 묶기 (문장마다 빈 줄이 있는 대본 — 회의 3-22)
+ *  이름이 있는 씬은 그대로 두고, 이름 없는 1클립 씬끼리만 5개까지 묶는다
+ */
+export function mergeSingleScenes<T extends { title?: string; clips: unknown[] }>(scenes: T[], max = 5): T[] {
+  const out: T[] = [];
+  let run: T | null = null;
+  for (const s of scenes) {
+    const single = s.clips.length === 1 && !s.title;
+    if (single && run && run.clips.length < max) {
+      run.clips.push(...s.clips);
+      continue;
+    }
+    out.push(s);
+    run = single ? s : null;
+  }
+  return out;
+}
+
+/** [씬 정리] 결과로 씬 다시 나누기 — 클립 순서는 그대로 (from = 시작 클립 번호, 1부터) */
+export function regroupScenes(p: Project, groups: { title: string; from: number }[]) {
+  const clips = p.scenes.flatMap((s) => s.clips);
+  if (!clips.length) return;
+  const starts = groups.filter((g) => g.from >= 1 && g.from <= clips.length).sort((a, b) => a.from - b.from);
+  if (!starts.length || starts[0].from !== 1) starts.unshift({ title: "", from: 1 });
+  p.scenes = starts.map((g, i) => ({ id: uid(), title: g.title || undefined, clips: clips.slice(g.from - 1, (starts[i + 1]?.from ?? clips.length + 1) - 1) })).filter((s) => s.clips.length);
 }
 
 /** 글을 문장(클립)으로 나누기 — 빈 줄 = 장면, 줄바꿈·마침표 = 문장 */
@@ -390,6 +457,14 @@ export function animAt(an: ReturnType<typeof animOf>, local: number, a: number, 
     else if (kind === "spin") { r.rot += (1 - e) * -180; r.sc *= 0.4 + 0.6 * e; r.op *= e; }
     else if (kind === "flip") r.sx *= Math.max(0.001, e);
     else if (kind === "roll") { r.dx += -(1 - e) * 0.35; r.rot += -(1 - e) * 360; r.op *= e; }
+    // 더 (회의 3-28 ⑤, 2026-10-19) — 떨어지기·옆에서·크게에서·늘어나기·흔들며·젤리
+    else if (kind === "drop") { r.dy += -(1 - backOut(x)) * 0.3; r.op *= Math.min(1, x * 3); }
+    else if (kind === "slideL") { r.dx += -(1 - e) * 0.4; r.op *= e; }
+    else if (kind === "slideR") { r.dx += (1 - e) * 0.4; r.op *= e; }
+    else if (kind === "big") { r.sc *= 1 + (1 - e) * 1.4; r.op *= e; }
+    else if (kind === "stretch") { r.sx *= Math.max(0.001, backOut(x)); r.sc *= 0.7 + 0.3 * e; r.op *= Math.min(1, x * 3); }
+    else if (kind === "swing") { r.rot += (1 - backOut(x)) * -40; r.op *= e; }
+    else if (kind === "jelly") { r.sc *= Math.max(0, e * (1 + 0.3 * Math.sin(Math.max(0, Math.min(1, x)) * Math.PI * 3) * (1 - Math.max(0, Math.min(1, x))))); r.op *= Math.min(1, x * 3); }
   };
   const tin = (local - a) / D;
   const tout = (b - local) / D;
@@ -399,6 +474,11 @@ export function animAt(an: ReturnType<typeof animOf>, local: number, a: number, 
   if (an.emph === "pulse") r.sc *= 1 + 0.06 * Math.sin((2 * Math.PI * tt) / 1.1);
   else if (an.emph === "shake") r.rot += 5 * Math.sin((2 * Math.PI * tt) / 0.6);
   else if (an.emph === "blink") r.op *= 0.6 + 0.4 * (0.5 + 0.5 * Math.cos((2 * Math.PI * tt) / 1.2));
+  else if (an.emph === "float") r.dy += 0.012 * Math.sin((2 * Math.PI * tt) / 2);
+  else if (an.emph === "sway") r.rot += 8 * Math.sin((2 * Math.PI * tt) / 1.6);
+  else if (an.emph === "bounce") r.dy -= 0.025 * Math.abs(Math.sin((Math.PI * tt) / 0.5));
+  else if (an.emph === "beat") { const q = tt % 1; r.sc *= 1 + 0.07 * (Math.exp(-(((q - 0.1) / 0.05) ** 2)) + Math.exp(-(((q - 0.3) / 0.05) ** 2))); }
+  else if (an.emph === "wiggle") { r.dx += 0.006 * Math.sin((2 * Math.PI * tt) / 0.12); r.rot += 1.5 * Math.sin((2 * Math.PI * tt) / 0.18); }
   const u = b > a ? Math.max(0, Math.min(1, (local - a) / (b - a))) : 0;
   if (an.grow === "grow") r.sc *= 1 + 0.15 * u;
   else if (an.grow === "shrink") r.sc *= 1.15 - 0.15 * u;
@@ -416,7 +496,7 @@ export const SFX_LIST: { id: string; label: string }[] = [
   { id: "key-press", label: "엔터" }, { id: "typing", label: "타자" }, { id: "sparkle", label: "반짝" }, { id: "chime", label: "딩동" },
   { id: "ping", label: "띵" }, { id: "notification", label: "알림" }, { id: "impact-bass-1", label: "쿵" },
 ];
-const SFX_AUTO: Record<string, string> = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click" }; // 페이드는 조용히
+const SFX_AUTO: Record<string, string> = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click", drop: "pop", slideL: "whoosh-short", slideR: "whoosh-short", big: "whoosh", stretch: "pop", swing: "whoosh-short", jelly: "pop" }; // 페이드는 조용히
 /** 이 효과(kind)에 낼 소리 — set: 고른 값 (없으면 dflt) */
 export function sfxName(kind: string | undefined, set: string | undefined, dflt: "auto" | "none", isText: boolean): string | null {
   if (!kind) return null;
@@ -425,7 +505,7 @@ export function sfxName(kind: string | undefined, set: string | undefined, dflt:
   if (v !== "auto") return v;
   return isText ? "key-press" : SFX_AUTO[kind] || null; // 화면 글자는 엔터 "탁"
 }
-export type SfxEvent = { t: number; name: string; vol: number };
+export type SfxEvent = { keep?: boolean; t: number; name: string; vol: number };
 /** 영상 전체 효과음 — 사진·글자는 나타날 때(켜면 사라질 때도), 메인자막은 고른 경우 클립 첫 줄에만. 0.12초 안에 겹치면 하나만 */
 export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): SfxEvent[] {
   const ev: SfxEvent[] = [];
@@ -444,6 +524,14 @@ export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): 
     const n2 = l.anim.sfxOut ? sfxName(an.out, l.anim.sfx, "auto", l.type === "text") : null;
     if (n2) ev.push({ t: Math.max(a, b - Math.min(an.dur, (b - a) / 3)), name: n2, vol });
   }
+  // 효과음 레이어 — 그 클립(단어를 골라 넣었으면 그 단어) 시작에 한 번, 겹쳐도 빼지 않는다 (회의 3-29)
+  for (const l of p.layers || []) {
+    if (l.off || l.type !== "sfx" || !l.sfx) continue;
+    const cov = layerItems(p, l, items, order);
+    if (!cov.length) continue;
+    const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
+    ev.push({ t: cov[0].start + (sp ? Math.max(0, sp.a) : 0), name: l.sfx, vol: Math.max(0, Math.min(1, l.volume ?? 0.8)), keep: true });
+  }
   for (const it of items) {
     const sa = subAnimOf(p, it.clip);
     const st = subStyleOf(p.settings, it.clip).anim;
@@ -452,5 +540,5 @@ export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): 
     if (n) ev.push({ t: it.start, name: n, vol: Math.max(0, Math.min(1, st.sfxVol ?? 0.6)) });
   }
   ev.sort((x, y) => x.t - y.t);
-  return ev.filter((e, i) => !i || e.t - ev[i - 1].t > 0.12);
+  return ev.filter((e, i) => e.keep || !i || e.t - ev[i - 1].t > 0.12);
 }

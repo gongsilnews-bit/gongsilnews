@@ -69,7 +69,7 @@ function readByApi(page) {
     .catch((e) => ({ error: e.message }));
 }
 
-async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = "" } = {}) {
+async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = "", files = [] } = {}) {
   onProgress("스튜디오 전용 크롬에서 Claude를 여는 중…");
   const page = await chrome.openPage("claude.ai", SEL.NEW);
   let prev = null;
@@ -129,10 +129,25 @@ async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = 
   }
   if ((await filled()) < Math.min(20, prompt.trim().length)) throw new Error("Claude 입력칸에 글을 넣지 못했습니다. Claude 화면을 확인해 주세요.");
   await humanPause(700, 1500);
+  // 함께 보낼 사진 (영상 장면 모음 등) — 올라가는 동안 보내기 단추가 잠긴다
+  if (files.length) {
+    onProgress(`사진 ${files.length}장을 Claude에 올리는 중…`);
+    const fileInput = page.locator('input[type="file"]').first();
+    if (!(await fileInput.count())) throw new Error("Claude 사진 올리기 칸을 찾지 못했습니다.");
+    await fileInput.setInputFiles(files);
+    await chrome.sleep(3000);
+    const until = Date.now() + 90 * 1000;
+    while (Date.now() < until) {
+      const b = await firstVisible(page, SEL.SEND, 2000);
+      if (b && (await b.isEnabled().catch(() => false))) break;
+      await chrome.sleep(800);
+    }
+  }
 
   const send = await firstVisible(page, SEL.SEND, 8000);
   if (send && (await send.isEnabled().catch(() => false))) await send.click();
   else await page.keyboard.press("Enter");
+  await chrome.backstage(page); // 작업 중 띠 + 창 내리기 (실수로 닫지 않게)
   return { page, prev };
 }
 
@@ -143,6 +158,7 @@ async function exclusive(fn) {
     return await fn();
   } finally {
     running = false;
+    chrome.idle().catch(() => {});
   }
 }
 
@@ -157,9 +173,13 @@ function connected(result) {
  * 프롬프트를 보내고 답변 글을 돌려준다 (chatgpt.ask 와 같은 모양).
  * 끝: 중지 단추가 없고, 답이 두 번 연달아 같고, isComplete(text) 가 맞으면 (최대 4분)
  */
-function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "" } = {}) {
+function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [] } = {}) {
   return exclusive(async () => {
-    const { page, prev } = await openAndSend(prompt, onProgress, { chatUrl, fallbackPrompt });
+    const sent = await openAndSend(prompt, onProgress, { chatUrl, fallbackPrompt, files });
+    let page = sent.page;
+    const prev = sent.prev;
+    let conv = "";
+    let reopened = 0;
     const isOld = (api, text) => Boolean(prev && (prev.id && api.id ? api.id === prev.id : text === prev.text));
     onProgress(prev ? "Claude가 고치는 중… (1~2분)" : "Claude가 글을 쓰는 중… (1~2분)");
     const t0 = Date.now();
@@ -168,8 +188,15 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
     let stable = 0;
     while (Date.now() < deadline) {
       await chrome.sleep(2500);
-      if (page.isClosed()) throw new Error("Claude 창이 닫혔습니다.");
+      if (page.isClosed()) {
+        const again = reopened < 3 ? await chrome.reopen("claude.ai", conv, onProgress) : null;
+        if (!again) throw new Error("Claude 창이 닫혔습니다.");
+        page = again;
+        reopened++;
+        continue;
+      }
       if (!chatIdOf(page.url())) continue; // 아직 대화가 만들어지지 않음
+      conv = page.url();
       const busy = await anyVisible(page, SEL.STOP);
       const api = await readByApi(page);
       const text = api.text || (await readScreen(page));

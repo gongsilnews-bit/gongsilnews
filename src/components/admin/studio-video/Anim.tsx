@@ -17,11 +17,23 @@ const IN_LIST: { id: AnimIn; label: string }[] = [
   { id: "spin", label: "돌아오기" },
   { id: "flip", label: "뒤집기" },
   { id: "roll", label: "굴러오기" },
+  { id: "drop", label: "떨어지기" },
+  { id: "slideL", label: "왼쪽에서" },
+  { id: "slideR", label: "오른쪽에서" },
+  { id: "big", label: "크게에서" },
+  { id: "stretch", label: "늘어나기" },
+  { id: "swing", label: "흔들며" },
+  { id: "jelly", label: "젤리" },
 ];
 const EMPH_LIST: { id: NonNullable<LayerAnim["emph"]>; label: string }[] = [
   { id: "pulse", label: "두근두근" },
   { id: "shake", label: "흔들기" },
   { id: "blink", label: "깜빡이기" },
+  { id: "float", label: "둥실둥실" },
+  { id: "sway", label: "좌우 흔들" },
+  { id: "bounce", label: "콩콩" },
+  { id: "beat", label: "쿵쾅쿵쾅" },
+  { id: "wiggle", label: "부르르" },
 ];
 const GROW_LIST: { id: NonNullable<LayerAnim["grow"]>; label: string }[] = [
   { id: "grow", label: "천천히 커지기" },
@@ -73,7 +85,7 @@ function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string
   );
 }
 
-export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange, onClose, onBack, onPreview, sfxDefault = "auto" }: {
+export type AnimBodyProps = {
   value?: LayerAnim;
   what: string; // 사진 · 글자 · 자막
   thumb?: string; // 카드 시연 그림
@@ -83,14 +95,49 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
   scopeNote?: string;
   /** 애니메이션 바꾸기 — all 이면 같은 종류 모두 */
   onChange: (fn: (a: LayerAnim) => LayerAnim, all: boolean) => void;
-  onClose: () => void;
-  onBack?: () => void; // 앞 칸으로 (메인자막 칸)
+  /** 효과를 고르면 미리보기에서 그 부분을 바로 틀어 보여 준다 (등장: 처음, 퇴장: 끝, 강조·확대: 처음부터 조금) */
+  onPreview?: (part: "in" | "out" | "all") => void;
+  sfxDefault?: "auto" | "none"; // 효과음을 안 골랐을 때 (사진·글자 자동, 자막 없음)
+};
+
+/** 오른쪽 칸 — 애니메이션 (스티커·사진·글자, 메인자막). 글자는 글자 칸의 [애니메이션] 탭 안에 AnimBody 로 들어간다 */
+export function AnimPanel({ onClose, onBack, ...body }: AnimBodyProps & { onClose: () => void; onBack?: () => void }) {
+  return (
+    <Side title={body.what === "자막" ? "메인자막 애니메이션" : "애니메이션"} onClose={onClose}>
+      {onBack && (
+        <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", padding: "10px 16px", border: 0, borderBottom: `1px solid ${C.line}`, background: "transparent", color: C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+          ‹ 메인자막 칸으로
+        </button>
+      )}
+      <AnimBody {...body} />
+    </Side>
+  );
+}
+
+/**
+ * 애니메이션 고르기 — 캡컷처럼 [인 / 아웃 / 반복] (회의 3-28, 2026-10-19)
+ *  반복 = 나와 있는 동안 계속 (두근두근·흔들기·깜빡이기 + 천천히 커지기·작아지기)
+ */
+export function AnimBody({ value, what, thumb, text, count, scopeNote, onChange, onPreview, sfxDefault = "auto" }: AnimBodyProps) {
+  return <AnimInner value={value} what={what} thumb={thumb} text={text} count={count} scopeNote={scopeNote} onChange={onChange} onPreview={onPreview} sfxDefault={sfxDefault} />;
+}
+
+function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPreview, sfxDefault = "auto" }: {
+  value?: LayerAnim;
+  what: string; // 사진 · 글자 · 자막
+  thumb?: string; // 카드 시연 그림
+  text?: string; // 카드 시연 글자
+  /** 같은 종류 수 — 있으면 [이 ○만][모든 ○] 범위 단추. 없으면 scopeNote 로 안내 (자막은 메인자막 칸 범위를 따른다) */
+  count?: number;
+  scopeNote?: string;
+  /** 애니메이션 바꾸기 — all 이면 같은 종류 모두 */
+  onChange: (fn: (a: LayerAnim) => LayerAnim, all: boolean) => void;
   /** 효과를 고르면 미리보기에서 그 부분을 바로 틀어 보여 준다 (등장: 처음, 퇴장: 끝, 강조·확대: 처음부터 조금) */
   onPreview?: (part: "in" | "out" | "all") => void;
   sfxDefault?: "auto" | "none"; // 효과음을 안 골랐을 때 (사진·글자 자동, 자막 없음)
 }) {
-  const [tab, setTab] = useState<"inout" | "emph" | "grow">("inout");
-  const [side, setSide] = useState<"in" | "out">("in");
+  const [tab, setTab] = useState<"in" | "out" | "loop">("in");
+  const side: "in" | "out" = tab === "out" ? "out" : "in";
   const [all, setAll] = useState(false);
   const a = value || {};
   const set = (fn: (a: LayerAnim) => LayerAnim, part: "in" | "out" | "all" = "all") => {
@@ -102,19 +149,14 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
   const pickOut = (id?: AnimIn) => set((x) => ({ ...x, out: id }), "out");
   const tabBtn = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const chosen = [
-    a.in && `등장 · ${nameOf(a.in)}`,
-    a.out && `퇴장 · ${nameOf(a.out)}`,
-    a.emph && `강조 · ${nameOf(a.emph)}`,
-    a.grow && `확대 · ${nameOf(a.grow)}`,
+    a.in && `인 · ${nameOf(a.in)}`,
+    a.out && `아웃 · ${nameOf(a.out)}`,
+    a.emph && `반복 · ${nameOf(a.emph)}`,
+    a.grow && `반복 · ${nameOf(a.grow)}`,
   ].filter(Boolean) as string[];
   const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "12px 16px" };
   return (
-    <Side title={what === "자막" ? "메인자막 애니메이션" : "애니메이션"} onClose={onClose}>
-      {onBack && (
-        <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", padding: "10px 16px", border: 0, borderBottom: `1px solid ${C.line}`, background: "transparent", color: C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-          ‹ 메인자막 칸으로
-        </button>
-      )}
+    <>
       <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
           <span style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>선택된 효과</span>
@@ -128,24 +170,20 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
           <div style={{ fontSize: 14, color: C.sub }}>애니메이션 없음</div>
         )}
       </div>
-      <div style={{ padding: "14px 16px 0" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>모든 효과</div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <button type="button" onClick={() => setTab("inout")} style={tabBtn(tab === "inout")}>등장/퇴장</button>
-          <button type="button" onClick={() => setTab("emph")} style={tabBtn(tab === "emph")}>강조</button>
-          <button type="button" onClick={() => setTab("grow")} style={tabBtn(tab === "grow")}>확대</button>
+      <div style={{ padding: "12px 16px 0" }}>
+        <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
+          {([["in", "인"], ["out", "아웃"], ["loop", "반복"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setTab(k)}
+              style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: tab === k ? C.panel2 : "transparent", color: tab === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+              {l}
+            </button>
+          ))}
         </div>
-        {tab === "inout" && (
-          <div style={{ display: "flex", marginTop: 12, borderBottom: `1px solid ${C.line}` }}>
-            {(["in", "out"] as const).map((k) => (
-              <button key={k} type="button" onClick={() => setSide(k)} style={{ flex: 1, height: 36, border: 0, borderBottom: `2px solid ${side === k ? C.text : "transparent"}`, background: "transparent", color: side === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-                {k === "in" ? "등장" : "퇴장"}
-              </button>
-            ))}
-          </div>
-        )}
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>
+          {tab === "in" ? "나타날 때" : tab === "out" ? "사라질 때" : "나와 있는 동안 계속"}
+        </div>
       </div>
-      {tab === "inout" && (
+      {tab !== "loop" && (
         <div style={grid}>
           <Card label="없음" kind="none" on={!(side === "in" ? a.in : a.out)} onClick={() => (side === "in" ? pickIn(undefined) : pickOut(undefined))} />
           {IN_LIST.map((x) => (
@@ -154,22 +192,23 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
           ))}
         </div>
       )}
-      {tab === "emph" && (
-        <div style={grid}>
-          <Card label="없음" kind="none" on={!a.emph} onClick={() => set((x) => ({ ...x, emph: undefined }))} />
-          {EMPH_LIST.map((x) => <Card key={x.id} label={x.label} kind="emph" effect={x.id} thumb={thumb} text={text} on={a.emph === x.id} onClick={() => set((y) => ({ ...y, emph: x.id }))} />)}
-        </div>
-      )}
-      {tab === "grow" && (
-        <div style={grid}>
-          <Card label="없음" kind="none" on={!a.grow} onClick={() => set((x) => ({ ...x, grow: undefined }))} />
-          {GROW_LIST.map((x) => <Card key={x.id} label={x.label} kind="grow" effect={x.id} thumb={thumb} text={text} on={a.grow === x.id} onClick={() => set((y) => ({ ...y, grow: x.id }))} />)}
-        </div>
+      {tab === "loop" && (
+        <>
+          <div style={grid}>
+            <Card label="없음" kind="none" on={!a.emph} onClick={() => set((x) => ({ ...x, emph: undefined }))} />
+            {EMPH_LIST.map((x) => <Card key={x.id} label={x.label} kind="emph" effect={x.id} thumb={thumb} text={text} on={a.emph === x.id} onClick={() => set((y) => ({ ...y, emph: x.id }))} />)}
+          </div>
+          <div style={{ padding: "0 16px", fontSize: 13.5, fontWeight: 800 }}>천천히 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 나와 있는 동안 조금씩</span></div>
+          <div style={grid}>
+            <Card label="없음" kind="none" on={!a.grow} onClick={() => set((x) => ({ ...x, grow: undefined }))} />
+            {GROW_LIST.map((x) => <Card key={x.id} label={x.label} kind="grow" effect={x.id} thumb={thumb} text={text} on={a.grow === x.id} onClick={() => set((y) => ({ ...y, grow: x.id }))} />)}
+          </div>
+        </>
       )}
       <div style={{ padding: "4px 16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-        {tab === "inout" && (
+        {tab !== "loop" && (
           <div>
-            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>등장·퇴장 빠르기</div>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>인·아웃 빠르기</div>
             <div style={{ display: "flex", gap: 6 }}>
               {SPEEDS.map((sp) => <button key={sp.v} type="button" onClick={() => set((x) => ({ ...x, dur: sp.v === 0.5 ? undefined : sp.v }))} style={{ ...tabBtn((a.dur ?? 0.5) === sp.v), flex: 1 }}>{sp.label}</button>)}
             </div>
@@ -230,6 +269,6 @@ export function AnimPanel({ value, what, thumb, text, count, scopeNote, onChange
             : `효과 그림에 마우스를 올리면 움직임을 미리 볼 수 있어요. [자동]은 ${what}마다 팝·날아오기·다가오기·페이드·굴러오기를 차례로 써요. 여러 클립에 걸친 ${what}는 첫 클립에서 나타나고 마지막 클립에서 사라져요.`}
         </div>
       </div>
-    </Side>
+    </>
   );
 }

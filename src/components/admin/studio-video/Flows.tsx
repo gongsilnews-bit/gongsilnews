@@ -350,6 +350,93 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
   );
 }
 
+/* ── 카메라 없음 알아채기 — 가상 카메라(OBS 등)는 켜져 있지 않으면 멈춘 그림만 보낸다. 1.5초 동안 한 점도 안 바뀌면 "카메라 없음" →
+   미리보기·녹화 영상에 공실뉴스 로고 (2026-10-18 사장님). 진짜 웹캠은 늘 조금씩 바뀌어서 걸리지 않고, 가상 카메라를 골랐을 때만 본다 ── */
+export const CAM_LOGO = "/studio-cam-logo.png"; // 공실뉴스 재생 로고 (앱 아이콘)
+/**
+ * "카메라 없음" 그림 — OBS 기본 그림과 같은 모양 (파란 사선 배경 + 가운데 동그라미 로고 + 아래 카메라 꺼짐), 로고만 공실뉴스 (2026-10-18 사장님)
+ *  미리보기(<img>)와 녹화 캔버스가 같은 그림을 쓴다. 로고를 다 받으면 onReady
+ */
+let noCamCache: HTMLCanvasElement | null = null;
+export function noCamCanvas(onReady?: (c: HTMLCanvasElement) => void): HTMLCanvasElement {
+  if (noCamCache) return noCamCache;
+  const c = document.createElement("canvas");
+  c.width = 1280;
+  c.height = 720;
+  const g = c.getContext("2d")!;
+  const paint = (logo?: HTMLImageElement) => {
+    g.fillStyle = "#1b2559";
+    g.fillRect(0, 0, 1280, 720);
+    // 왼쪽 아래 → 오른쪽 위로 밝은 사선 띠
+    g.fillStyle = "#2c3d86";
+    g.beginPath();
+    g.moveTo(0, 470);
+    g.lineTo(1280, 300);
+    g.lineTo(1280, 0);
+    g.lineTo(0, 140);
+    g.closePath();
+    g.fill();
+    // 가운데 로고 (동그라미)
+    if (logo) g.drawImage(logo, 640 - 165, 300 - 165, 330, 330);
+    // 카메라 꺼짐 표시
+    g.save();
+    g.translate(640, 560);
+    g.fillStyle = "#cbd5e1";
+    g.strokeStyle = "#cbd5e1";
+    g.lineWidth = 10;
+    g.lineJoin = "round";
+    g.beginPath();
+    g.roundRect?.(-62, -36, 92, 72, 8);
+    g.fill();
+    g.beginPath();
+    g.moveTo(34, -10);
+    g.lineTo(66, -32);
+    g.lineTo(66, 32);
+    g.lineTo(34, 10);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = "#1b2559";
+    g.lineWidth = 16;
+    g.beginPath();
+    g.moveTo(-74, -54);
+    g.lineTo(78, 54);
+    g.stroke();
+    g.strokeStyle = "#cbd5e1";
+    g.lineWidth = 8;
+    g.stroke();
+    g.restore();
+  };
+  paint();
+  const img = new Image();
+  img.onload = () => {
+    paint(img);
+    onReady?.(c);
+  };
+  img.src = CAM_LOGO;
+  noCamCache = c;
+  return c;
+}
+export const isVirtualCam = (label?: string) => /virtual|가상|\bOBS\b|snap camera|xsplit|manycam|vcam|e2esoft|nvidia broadcast/i.test(label || "");
+export function stillDetector() {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 36;
+  const g = c.getContext("2d", { willReadFrequently: true })!;
+  let prev: Uint8ClampedArray | null = null;
+  let changed = performance.now();
+  return (v: HTMLVideoElement | null): boolean => {
+    if (!v || v.readyState < 2) return false;
+    g.drawImage(v, 0, 0, 64, 36);
+    const d = g.getImageData(0, 0, 64, 36).data;
+    let diff = 0;
+    if (prev) for (let i = 0; i < d.length; i += 4) diff += Math.abs(d[i] - prev[i]) + Math.abs(d[i + 1] - prev[i + 1]) + Math.abs(d[i + 2] - prev[i + 2]);
+    const now = performance.now();
+    if (!prev || diff > 6) changed = now;
+    prev = d.slice();
+    return now - changed > 1500;
+  };
+}
+
 /* ── 새로 만들기 창 — 만들 방법 4가지 (사장님 확정) ── */
 export const METHODS: { id: Method; icon: string; title: string; desc: string }[] = [
   { id: "text", icon: "text", title: "텍스트로 영상 만들기", desc: "대본만 있으면 AI 목소리와 사진·영상으로 만들어요" },
@@ -1077,6 +1164,12 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const [sources, setSources] = useState<{ id: string; name: string; thumb: string }[]>([]);
   const [source, setSource] = useState("");
   const [cams, setCams] = useState<MediaDeviceInfo[]>([]);
+  const [camStill, setCamStill] = useState(false); // 가상 카메라가 멈춘 그림만 보냄 → 공실뉴스 로고
+  const [noCamUrl, setNoCamUrl] = useState("");
+  useEffect(() => {
+    const c = noCamCanvas((cv) => setNoCamUrl(cv.toDataURL("image/png")));
+    setNoCamUrl(c.toDataURL("image/png"));
+  }, []);
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [cam, setCam] = useState("");
   const [mic, setMic] = useState("");
@@ -1452,6 +1545,20 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   // 녹화 중 화면 바꾸기 — 녹화는 늘 1920×1080 화판(캔버스)에 그려서 한다. 화면 / 카메라 / 화면+카메라를 녹화를 멈추지 않고 바꾼다.
   //  필요한 것만 그때 연다: 카메라는 카메라가 들어가는 모양으로 바꿀 때 켜고, 화면만으로 돌아가면 끈다 (카메라 불). 모니터도 바꿀 수 있다
   const modeRef = useRef(mode);
+  // 고른 카메라가 가상 카메라인지 (녹화 캔버스도 본다)
+  const virtualCam = mode !== "screen" && (cams.length === 0 || isVirtualCam(cams.find((x) => x.deviceId === cam)?.label));
+  const virtualCamRef = useRef(virtualCam);
+  virtualCamRef.current = virtualCam;
+  useEffect(() => {
+    if (phase !== "setup" || !virtualCam) {
+      setCamStill(false);
+      return;
+    }
+    const det = stillDetector();
+    const id = setInterval(() => setCamStill(det(mode === "camera" ? liveVid.current : camVid.current)), 400);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, virtualCam, mode, cam]);
   modeRef.current = mode;
   const comp = useRef<{ sv: HTMLVideoElement; cv: HTMLVideoElement; screen: MediaStream | null; screenSrc: string; camera: MediaStream | null; busy: Promise<void> } | null>(null);
   const attachScreen = async (src: string) => {
@@ -1565,7 +1672,26 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     canvas.width = 1920;
     canvas.height = 1080;
     const g = canvas.getContext("2d")!;
+    // 카메라가 멈춘 그림만 보내면(가상 카메라) 그 자리에 공실뉴스 로고
+    const noCam = noCamCanvas();
+    const camDet = stillDetector();
+    let camStillRec = false;
+    let camChk = 0;
+    const logoIn = (X: number, Y: number, W: number, H: number) => {
+      // "카메라 없음" 그림을 칸에 꽉 채워 (가운데 기준)
+      const k = Math.max(W / 1280, H / 720);
+      g.drawImage(noCam, X + (W - 1280 * k) / 2, Y + (H - 720 * k) / 2, 1280 * k, 720 * k);
+    };
     const fit = (v: HTMLVideoElement, X: number, Y: number, W: number, H: number, cover: boolean) => {
+      if (v === cv && camStillRec) {
+        g.save();
+        g.beginPath();
+        g.rect(X, Y, W, H);
+        g.clip();
+        logoIn(X, Y, W, H);
+        g.restore();
+        return;
+      }
       const vw = v.videoWidth || 1920, vh = v.videoHeight || 1080;
       const k = cover ? Math.max(W / vw, H / vh) : Math.min(W / vw, H / vh);
       g.save();
@@ -1577,6 +1703,10 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     };
     const draw = () => {
       const m = modeRef.current;
+      if (virtualCamRef.current && performance.now() - camChk > 400) {
+        camChk = performance.now();
+        camStillRec = camDet(cv);
+      }
       const sOk = Boolean(c.screen) && sv.readyState >= 2;
       const cOk = Boolean(c.camera) && cv.readyState >= 2;
       // 바꾸는 중이라 아직 안 열린 것은 — 바로 앞 화면을 그대로 둔다 (검은 화면으로 깜빡이지 않게)
@@ -1615,7 +1745,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       g.clip();
       const cw = cv.videoWidth || 1280, ch = cv.videoHeight || 720;
       const kk = Math.max((r * 2) / cw, (r * 2) / ch);
-      g.drawImage(cv, cx - (cw * kk) / 2, cy - (ch * kk) / 2, cw * kk, ch * kk);
+      if (camStillRec) logoIn(cx - r, cy - r, r * 2, r * 2);
+      else g.drawImage(cv, cx - (cw * kk) / 2, cy - (ch * kk) / 2, cw * kk, ch * kk);
       g.restore();
       if (cb.line > 0) {
         g.lineWidth = cb.line;
@@ -2061,12 +2192,18 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                 {/* 녹화 중에는 캔버스에 이미 카메라가 그려지니 잡는 자리만. 두께·둥글기는 캔버스 px → 미리보기 너비 비율(cqw) */}
                 <div style={{ position: "absolute", inset: 0, borderRadius: split ? 0 : camBox.shape === "circle" ? "50%" : `${(CAM_ROUND / 1920) * 100}cqw`, overflow: "hidden", border: !split && phase === "setup" && camBox.line ? `${(camBox.line / 1920) * 100}cqw solid ${camBox.color}` : "none", background: phase === "setup" ? "#222" : "transparent" }}>
                   <video ref={camVid} playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", display: phase === "setup" ? "block" : "none" }} />
+                  {phase === "setup" && camStill && noCamUrl && <img src={noCamUrl} alt="카메라 없음" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
                 </div>
                 {/* 크기 점은 녹화 전에만 — 녹화하는 모니터에 이 창이 있으면 점까지 찍히니까 */}
                 {!split && phase === "setup" && <div onPointerDown={(e) => dragCam(e, "size")} title="끌어서 크기 바꾸기" style={{ position: "absolute", right: camBox.shape === "circle" ? "14.6%" : "0%", bottom: camBox.shape === "circle" ? "14.6%" : "0%", width: 14, height: 14, transform: "translate(50%, 50%)", borderRadius: 7, background: "#fff", border: `2px solid ${C.accent}`, cursor: "nwse-resize", touchAction: "none" }} />}
               </div>
             )}
           </div>
+          {phase === "setup" && live && mode === "camera" && camStill && (
+            <div title="카메라 화면이 멈춰 있어요 (가상 카메라) — 이 그림으로 녹화돼요" style={{ position: "absolute", inset: 0, borderRadius: 6, overflow: "hidden", background: "#1b2559" }}>
+              {noCamUrl && <img src={noCamUrl} alt="카메라 없음" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />}
+            </div>
+          )}
           {phase === "setup" && live && (
             <span style={{ position: "absolute", left: 12, top: 10, padding: "3px 10px", borderRadius: 4, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
               {mode === "camera" ? "카메라 미리보기" : `${sources.find((x) => x.id === liveTarget)?.name || "모니터"} 미리보기`}

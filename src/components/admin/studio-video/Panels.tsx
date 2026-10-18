@@ -3,15 +3,16 @@
 // 오른쪽 칸 — 자료 고르기(내 자료·공실 사진·무료 자료·AI 그림·자료 창고) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
-import { DRAG_MEDIA, RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
+import { DRAG_MEDIA, RATIO_LABEL, autoSubPosition, errText, videoBridge, fmtTime } from "./types";
 import { STUDIO_VOICES, VOICE_MOODS, voicePhoto, findVoice, MY_VOICE_ID } from "@/lib/studio-video/voices";
 import { MyVoicePane } from "./MyVoice";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
-import { ColorPick, FontPick } from "./Pickers";
-import { DEFAULT_FONT } from "@/lib/studio-video/fonts";
+import { type SubLook } from "./SubPresets";
+import { TextTabs } from "./TextTabs";
+import type { AnimBodyProps } from "./Anim";
 
 // 성우 얼굴 동그라미 — public/studio-voices/{id}.webp, 없으면 이름 첫 글자
 export function VoiceFace({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
@@ -23,11 +24,12 @@ export function VoiceFace({ id, name, size = 52 }: { id: string; name: string; s
   );
 }
 
-export function Side({ title, onClose, children, footer }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
+export function Side({ title, onClose, children, footer, titleExtra }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; /** 제목 오른쪽 작은 단추들 */ titleExtra?: React.ReactNode }) {
   return (
     <aside style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", background: C.panel, borderLeft: `1px solid ${C.line}`, fontFamily: FONT, color: C.text, minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
-        <span style={{ flex: 1, fontSize: 17, fontWeight: 800 }}>{title}</span>
+        <span style={{ flex: titleExtra ? undefined : 1, fontSize: 17, fontWeight: 800, whiteSpace: "nowrap" }}>{title}</span>
+        {titleExtra && <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "flex-end", gap: 4, marginRight: 8 }}>{titleExtra}</span>}
         <button type="button" onClick={onClose} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer" }}>
           <Icon name="close" size={22} />
         </button>
@@ -507,7 +509,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
 }
 
 /* ── AI 목소리 ── */
-export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose }: { project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
+export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose, gap, onGap }: { /** 문장 사이 쉼 (초) — 편집 화면에서만 */ gap?: number; onGap?: (g: number) => void; project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
   const cur = initial ?? project?.settings.voice ?? { id: "Charon", speed: 1, volume: 1 };
   const [id, setId] = useState(cur.id);
   const [speed, setSpeed] = useState(cur.speed || 1);
@@ -621,6 +623,14 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
               <span style={{ minWidth: 40 }}>{speed.toFixed(1)}배</span>
             </label>
             <button type="button" onClick={() => { setSpeed(1); setVolume(1); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
+            {onGap && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, color: C.text }} title="AI 목소리 클립과 클립 사이 쉬는 시간 (모든 클립)">
+                문장 사이 쉼
+                {([[0.2, "짧게"], [0.4, "보통"], [0.7, "길게"]] as const).map(([g, l]) => (
+                  <button key={g} type="button" onClick={() => onGap(g)} style={{ height: 30, padding: "0 10px", borderRadius: 15, border: `1px solid ${Math.abs((gap ?? 0.4) - g) < 0.01 ? C.accent : C.line2}`, background: Math.abs((gap ?? 0.4) - g) < 0.01 ? C.accentDim : "transparent", color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{l} {g}초</button>
+                ))}
+              </span>
+            )}
             <span style={{ flex: 1 }} />
           </div>
         </div>
@@ -638,9 +648,16 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
 }
 
 /* ── 메인자막 (자막 서식) ── */
-export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, range, onAnim }: {
+export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onSubText, range, anim, pxPer100, ratio }: {
   settings: Settings;
-  onAnim?: () => void; // 메인자막 애니메이션 칸
+  /** 영상 비율 — 위치 [자동] */
+  ratio?: Ratio;
+  /** 글자 크기 100% = 완성 영상 몇 px (영상 짧은 변 × 0.062) */
+  pxPer100?: number;
+  /** 사전 설정 스타일 — 클립마다 따로 바꾼 모양까지 덮어 그 모양 그대로 */
+  onPreset?: (look: SubLook) => void;
+  /** [애니메이션] 탭 (인·아웃·반복) */
+  anim: AnimBodyProps;
   onChange: (patch: Partial<Settings["subtitle"]>) => void;
   onClose: () => void;
   /** 이 클립 자막 글 — 고르거나 재생 중인 클립 */
@@ -651,89 +668,96 @@ export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, ra
 }) {
   const s = range ? range.style : settings.subtitle;
   const [draft, setDraft] = useState(clip?.text || "");
-  useEffect(() => setDraft(clip?.text || ""), [clip?.id, clip?.text]);
+  const subFocus = useRef(false); // 쓰는 중에는 바뀐 자막(띄어쓰기 정리)으로 칸을 덮지 않는다 — 끝 띄어쓰기·엔터가 지워지지 않게
+  useEffect(() => { if (!subFocus.current) setDraft(clip?.text || ""); }, [clip?.id, clip?.text]);
+  // 이 클립 자막 — 쓰는 대로 바로 (멈추고 0.5초 뒤, 칸을 벗어나면 바로). [자막 바꾸기] 단추 없음 (2026-10-19 사장님)
+  const subTimer = useRef<number | undefined>(undefined);
+  const commitSub = (id: string, was: string, t: string) => {
+    window.clearTimeout(subTimer.current);
+    if (onSubText && t !== was) onSubText(id, t);
+  };
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` };
-  return (
-    <Side title="메인자막" onClose={onClose}>
-      {onAnim && (
-        <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.line}` }}>
-          <Btn small onClick={onAnim} style={{ width: "100%" }}><Icon name="transition" size={15} />애니메이션{s.anim ? " · 들어감" : ""}</Btn>
-        </div>
-      )}
-      {range && (
-        <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 8, background: range.mode === "sel" ? C.accentDim : undefined }}>
-          <span style={label}>적용 범위</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button type="button" onClick={() => range.onMode("all")} style={{ ...chip(range.mode === "all"), flex: 1 }}>전체 클립</button>
-            <button type="button" onClick={() => range.onMode("sel")} disabled={!range.selCount} title={range.selCount ? "" : "클립을 먼저 골라 주세요 (카드 왼쪽 네모 칸)"}
-              style={{ ...chip(range.mode === "sel"), flex: 1, opacity: range.selCount ? 1 : 0.4, cursor: range.selCount ? "pointer" : "default" }}>고른 클립만{range.selCount ? ` (${range.selCount}개)` : ""}</button>
-          </div>
-          <span style={{ fontSize: 12.5, color: range.mode === "sel" ? C.text : C.dim, lineHeight: 1.5 }}>
-            {range.mode === "sel" ? `아래에서 바꾸는 서식은 고른 클립 ${range.selCount}개에만 들어가요. 미리보기에서 끌어 옮기는 것도요.` : "아래에서 바꾸는 서식은 영상 전체 자막에 들어가요."}
-            {range.own > 0 && range.mode === "all" ? ` 따로 바꾼 클립 ${range.own}개는 바꾼 항목만 그대로예요.` : ""}
-          </span>
-          {range.mode === "sel" && <div><Btn small onClick={range.onReset}><Icon name="undo" size={15} />전체 서식으로 되돌리기</Btn></div>}
-        </div>
-      )}
+  // 글자 칸 탭 (회의 3-28) — [텍스트 › 기본] 맨 위에 적용 범위·이 클립 자막·보이기·위치, 그 아래 모양은 TextTabs 가 그린다
+  const top = (
+    <>
+      {!(clip && onSubText) && <div style={row}><span style={{ ...label, flex: 1 }}>자막 보이기</span><Toggle on={s.on} onChange={(v) => onChange({ on: v })} /></div>}
       {clip && onSubText && (
         <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-          <span style={label}>이 클립 자막 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {clip.n}</span></span>
-          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={3}
-            onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onSubText(clip.id, draft); } }}
+          {/* 자막 보이기 — 이 클립 자막 오른쪽 (2026-10-19 사장님) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ ...label, flex: 1 }}>이 클립 자막 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {clip.n}</span></span>
+            <span style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>자막 보이기</span>
+            <Toggle on={s.on} onChange={(v) => onChange({ on: v })} />
+          </div>
+          <textarea value={draft} rows={3}
+            onChange={(e) => {
+              const t = e.target.value;
+              setDraft(t);
+              window.clearTimeout(subTimer.current);
+              const id = clip.id, was = clip.text;
+              subTimer.current = window.setTimeout(() => commitSub(id, was, t), 500);
+            }}
+            onFocus={() => { subFocus.current = true; }}
+            onBlur={() => { subFocus.current = false; commitSub(clip.id, clip.text, draft); }}
             style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical", fontSize: 15 }} />
-          <div style={{ display: "flex", gap: 6 }}>
-            <Btn small primary onClick={() => onSubText(clip.id, draft)} disabled={draft === clip.text}>자막 바꾸기</Btn>
-            {clip.custom && <Btn small onClick={() => onSubText(clip.id, null)}>말한 그대로</Btn>}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ flex: 1 }} />
+            {clip.custom && <Btn small onClick={() => { window.clearTimeout(subTimer.current); onSubText(clip.id, null); }}>말한 그대로</Btn>}
           </div>
-          <span style={{ fontSize: 12.5, color: C.dim }}>엔터로 줄을 나누면 그대로 두 줄이 돼요. 목소리는 그대로예요.</span>
         </div>
       )}
-      <div style={row}><span style={{ ...label, flex: 1 }}>자막 보이기</span><Toggle on={s.on} onChange={(v) => onChange({ on: v })} /></div>
-      <div style={{ ...row, flexWrap: "wrap" }}>
-        <span style={{ ...label, width: "100%" }}>위치</span>
-        {([["top", "상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => onChange({ position: k, x: undefined, y: undefined })} style={chip(typeof s.x !== "number" && s.position === k)}>{l}</button>)}
-        {typeof s.x === "number" && <button type="button" style={chip(true)}>옮긴 자리</button>}
-        <span style={{ width: "100%", fontSize: 12.5, color: C.dim }}>미리보기에서 자막을 끌어 옮기고, 양옆 손잡이로 줄 너비를 바꿀 수 있어요.</span>
-      </div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
-        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>글자 크기</span><span>{s.size}%</span></div>
-        <input type="range" min={40} max={260} step={5} value={s.size} onChange={(e) => onChange({ size: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
-      </div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
-        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>행간 (줄 사이)</span><span>{Math.round(((s.leading ?? 1.25) / 1.25) * 100)}%</span></div>
-        <input type="range" min={0.9} max={2.5} step={0.05} value={s.leading ?? 1.25} onChange={(e) => onChange({ leading: Math.abs(Number(e.target.value) - 1.25) < 0.001 ? undefined : Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
-        <div style={{ display: "flex", gap: 6, marginTop: 6, marginBottom: 14 }}>
-          {[[1, "좁게"], [1.25, "기본"], [1.6, "넓게"], [2, "더 넓게"]].map(([v, t]) => (
-            <button key={String(v)} type="button" onClick={() => onChange({ leading: v === 1.25 ? undefined : (v as number) })} style={{ ...chip(Math.abs((s.leading ?? 1.25) - (v as number)) < 0.001), flex: 1, padding: 0 }}>{t}</button>
-          ))}
-        </div>
-        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>자간 (글자 사이)</span><span>{Math.round((s.spacing ?? 0) * 100)}%</span></div>
-        <input type="range" min={-0.1} max={0.5} step={0.01} value={s.spacing ?? 0} onChange={(e) => onChange({ spacing: Number(e.target.value) || undefined })} style={{ width: "100%", accentColor: C.accent }} />
-        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-          {[[-0.05, "좁게"], [0, "기본"], [0.1, "넓게"], [0.2, "더 넓게"]].map(([v, t]) => (
-            <button key={String(v)} type="button" onClick={() => onChange({ spacing: (v as number) || undefined })} style={{ ...chip(Math.abs((s.spacing ?? 0) - (v as number)) < 0.001), flex: 1, padding: 0 }}>{t}</button>
-          ))}
-        </div>
-      </div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>글꼴</span><FontPick value={s.font} onChange={(f) => onChange({ font: f })} /></div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>글자 색</span><ColorPick value={s.color} onChange={(c) => onChange({ color: c })} /></div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>테두리 색</span><ColorPick value={s.outline || "#000000"} onChange={(c) => onChange({ outline: c })} /></div>
-      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
-        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>테두리 두께</span><span>{s.outlineWidth}</span></div>
-        <input type="range" min={0} max={8} step={1} value={s.outlineWidth} onChange={(e) => onChange({ outlineWidth: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
-      </div>
-      <div style={row}><span style={{ ...label, flex: 1 }}>글자 뒤 상자</span><Toggle on={s.bg} onChange={(v) => onChange({ bg: v })} /></div>
-      {s.bg && (
-        <>
-          <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>상자 색</span><ColorPick value={s.bgColor || "#000000"} onChange={(c) => onChange({ bgColor: c })} /></div>
-          <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
-            <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>상자 진하기</span><span>{Math.round((s.bgOpacity ?? 0.62) * 100)}%</span></div>
-            <input type="range" min={0.1} max={1} step={0.05} value={s.bgOpacity ?? 0.62} onChange={(e) => onChange({ bgOpacity: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
+    </>
+  );
+  // 위치 — [기본]에서 색상 아래, 문자 간격 위 (2026-10-19 사장님)
+  const posEl = (
+    <>
+      {/* 위치 — [자동]이 기본(접힘). 누르면 자동이 꺼지고 [상단][중단][중하단][하단]이 펼쳐진다 (2026-10-19 사장님) */}
+      {(() => {
+        const auto = s.posAuto === true && typeof s.x !== "number";
+        return (
+          <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: auto ? 0 : 8 }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span style={{ ...label, flex: 1 }}>위치</span>
+              <button type="button"
+                onClick={() => (auto ? onChange({ posAuto: false }) : onChange({ posAuto: true, position: autoSubPosition(ratio), x: undefined, y: undefined }))}
+                title={auto ? "자동 — 영상 비율에 맞춰 (누르면 직접 고르기)" : "눌러서 자동으로 (세로 영상 = 중하단, 가로·정사각 = 하단)"}
+                style={{ height: 28, padding: "0 12px", borderRadius: 5, border: `1px solid ${auto ? C.text : C.line2}`, background: auto ? C.text : "transparent", color: auto ? C.bg : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>자동</button>
+            </div>
+            {!auto && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {([["top", "상단"], ["middle-high", "중상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => (
+                  <button key={k} type="button" onClick={() => onChange({ position: k, x: undefined, y: undefined, posAuto: false })} style={chip(typeof s.x !== "number" && s.position === k)}>{l}</button>
+                ))}
+                {typeof s.x === "number" && <button type="button" style={chip(true)}>옮긴 자리</button>}
+              </div>
+            )}
           </div>
-        </>
-      )}
-      {(!s.font || s.font === DEFAULT_FONT) && <div style={row}><span style={{ ...label, flex: 1 }}>굵게</span><Toggle on={s.bold} onChange={(v) => onChange({ bold: v })} /></div>}
-    </Side>
+        );
+      })()}
+    </>
+  );
+  return (
+    <TextTabs title="메인자막" kind="sub" onClose={onClose} basicTop={top} anim={anim} posEl={posEl}
+      footerTop={range && (() => {
+        // 적용 범위 — 맨 아래 고정 줄 [전체 적용][선택 클립 적용][↺] (2026-10-19 사장님)
+        const b = (icon: string, on: boolean, ok: boolean, text: string, title: string, go: () => void) => (
+          <button type="button" onClick={go} disabled={!ok} title={title}
+            style={{ height: 40, padding: "0 12px", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 6, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: ok ? "pointer" : "default", whiteSpace: "nowrap" }}>
+            <Icon name={icon} size={16} />{text}
+          </button>
+        );
+        return (
+          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+            {b("applyAll", range.mode === "all", true, "전체 클립 적용", `바꾸는 서식·애니메이션을 영상 전체 자막에${range.own > 0 ? ` (따로 바꾼 클립 ${range.own}개는 바꾼 항목만 그대로)` : ""}`, () => range.onMode("all"))}
+            {b("applySel", range.mode === "sel", range.selCount > 0, `선택 클립 적용 (${range.selCount})`, range.selCount ? `고른 클립 ${range.selCount}개에만` : "클립을 먼저 골라 주세요 (카드 왼쪽 네모 칸)", () => range.onMode("sel"))}
+            <button type="button" onClick={range.onReset} disabled={range.mode !== "sel"} title="고른 클립을 전체 서식으로 (되돌리기)"
+              style={{ width: 40, height: 40, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: range.mode === "sel" ? C.text : C.dim, opacity: range.mode === "sel" ? 1 : 0.45, cursor: range.mode === "sel" ? "pointer" : "default", padding: 0 }}>
+              <Icon name="undo" size={16} />
+            </button>
+          </div>
+        );
+      })()} pxPer100={pxPer100}
+      look={s} onLook={(patch) => onChange(patch as Partial<Settings["subtitle"]>)} onPresetLook={(look) => (onPreset ? onPreset(look) : onChange({ ...look, on: true }))} />
   );
 }
 

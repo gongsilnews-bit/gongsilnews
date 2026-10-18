@@ -4,15 +4,25 @@
 //  음악: 크기·페이드·시작 지점·반복 / 사진: 자리·크기·투명도 / 화면 글자: 글·자리·크기·색·상자
 import React from "react";
 import type { Clip, Fill, Layer, Project } from "./types";
-import { fmtTime } from "./types";
-import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
+import { RATIO_SIZE, fmtTime } from "./types";
+import { type FlatItem, SFX_LIST, clipOrder, clipText, layerItems, zLayers } from "./timeline";
 import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, VolumeControl, input, label } from "./ui";
 import { ColorPick, FontPick } from "./Pickers";
+import { TextTabs } from "./TextTabs";
+import type { AnimBodyProps } from "./Anim";
+import type { TextLook } from "./SubPresets";
+import { BubbleGrid, type Sticker } from "./Stickers";
 
-export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text" };
-export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자" };
-export const layerTitle = (l: Layer) => (l.type === "text" ? String(l.text || "").trim() || "화면 글자" : l.name || LAYER_NAME[l.type]);
+export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text", sfx: "bell" };
+export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자", sfx: "효과음" };
+/** 화면에 보이는 것 (겹치는 순서가 있는 것) — 사진·스티커·화면 글자 */
+const isVis = (l: Layer) => l.type === "image" || l.type === "text";
+export const layerTitle = (l: Layer) => (l.type === "text" ? String(l.text || "").trim() || "화면 글자" : (l.name || "").replace(/^스티커_/, "") || layerName(l));
+/** 스티커는 사진 레이어로 그리지만 이름·아이콘은 따로 (먼저 넣은 것은 이름 "스티커_…" 로 알아본다) */
+export const isSticker = (l: Layer) => Boolean(l.sticker) || (l.type === "image" && /^스티커_/.test(l.name || ""));
+export const layerName = (l: Layer) => (isSticker(l) ? "스티커" : LAYER_NAME[l.type]);
+export const layerIcon = (l: Layer) => (isSticker(l) ? "star" : LAYER_ICON[l.type]);
 
 /* ── 클립 목록 왼쪽 줄 ── */
 export type LaneEntry = { layer: Layer; lane: number; a: number; b: number }; // a·b = 보이는 클립 차례
@@ -29,10 +39,11 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
       return cov.length ? { layer, a: pos.get(cov[0].clip.id)!, b: pos.get(cov[cov.length - 1].clip.id)! } : null;
     })
     .filter(Boolean) as { layer: Layer; a: number; b: number }[];
-  spans.sort((x, y) => x.a - y.a || y.b - x.b);
+  // 음악·효과음 — 맨 왼쪽 줄들 (화면에 안 보여 겹치는 순서와 상관없다)
+  const mus = spans.filter((s) => !isVis(s.layer)).sort((x, y) => x.a - y.a || y.b - x.b);
   const laneEnd: number[] = [];
   const entries: LaneEntry[] = [];
-  for (const sp of spans) {
+  for (const sp of mus) {
     let lane = laneEnd.findIndex((e) => e < sp.a);
     if (lane < 0) {
       lane = laneEnd.length;
@@ -40,10 +51,114 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
     } else laneEnd[lane] = sp.b;
     entries.push({ ...sp, lane });
   }
-  return { entries, lanes: laneEnd.length };
+  // 화면 위에 겹치는 것 — 겹치는 순서대로 (회의 3-26): 브루처럼 왼쪽 줄일수록 앞, 클립 쪽(오른쪽)일수록 뒤.
+  //  뒤 → 앞으로 쌓아 줄을 정한 뒤 좌우를 뒤집는다. 시간이 겹치는 것과는 다른 줄, 안 겹치면 같은 줄을 같이 쓴다
+  const base = laneEnd.length;
+  let lanes = base;
+  const zi = new Map(zLayers(p, p.layers || []).map((l, i) => [l.id, i]));
+  const vis = spans.filter((s) => isVis(s.layer)).sort((x, y) => (zi.get(x.layer.id) ?? 0) - (zi.get(y.layer.id) ?? 0));
+  const placed: LaneEntry[] = [];
+  for (const sp of vis) {
+    let lane = base;
+    for (const q of placed) if (q.a <= sp.b && sp.a <= q.b) lane = Math.max(lane, q.lane + 1);
+    placed.push({ ...sp, lane });
+    lanes = Math.max(lanes, lane + 1);
+  }
+  // 좌우 뒤집기 — 가장 앞 = 음악 바로 오른쪽, 가장 뒤 = 클립 바로 옆 (2026-10-19 사장님)
+  for (const q of placed) q.lane = base + (lanes - 1 - q.lane);
+  return { entries: [...entries, ...placed], lanes };
 }
 
-const LANE_W = 30;
+/** 오른쪽 칸 맨 위 — 스티커 글자 고치기 (같은 모양으로 다시 그린다) */
+function StickerText({ text, ok, onText }: { text: string; ok: boolean; onText: (t: string) => Promise<void> }) {
+  const [v, setV] = React.useState(text);
+  const [busy, setBusy] = React.useState(false);
+  const go = async () => {
+    const t = v.trim();
+    if (!t || t === text || busy) return;
+    setBusy(true);
+    try { await onText(t); } finally { setBusy(false); }
+  };
+  return (
+    <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
+      <div style={{ ...label, marginBottom: 8 }}>스티커 글자</div>
+      {ok ? (
+        <>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input value={v} onChange={(e) => setV(e.target.value)} maxLength={20} onKeyDown={(e) => { if (e.key === "Enter") go(); }}
+              style={{ ...input, flex: 1, minWidth: 0 }} />
+            <Btn small primary onClick={go} disabled={busy || !v.trim() || v.trim() === text}>{busy ? "그리는 중…" : "바꾸기"}</Btn>
+          </div>
+          <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>모양·색·움직임은 그대로, 글자만 바뀌어요 (엔터로 바꾸기).</div>
+        </>
+      ) : (
+        <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.5 }}>이 스티커는 모양을 알 수 없어 글자를 고칠 수 없어요. [스티커]에서 다시 넣어 주세요.</div>
+      )}
+    </div>
+  );
+}
+
+/* ── 겹치는 순서 바꾸기 (맨 앞으로·앞으로·뒤로·맨 뒤로) — 시간이 겹치는 것끼리만 따진다 (회의 3-26) ── */
+export type ZMove = "top" | "up" | "down" | "bottom";
+function zParts(p: Project, items: FlatItem[], id: string) {
+  const order = clipOrder(p);
+  const pos = new Map(items.map((x, i) => [x.clip.id, i]));
+  const span = (l: Layer): [number, number] | null => {
+    const cov = layerItems(p, l, items, order);
+    return cov.length ? [pos.get(cov[0].clip.id)!, pos.get(cov[cov.length - 1].clip.id)!] : null;
+  };
+  const vis = zLayers(p, p.layers || []);
+  const i = vis.findIndex((l) => l.id === id);
+  const s = i >= 0 ? span(vis[i]) : null;
+  const ov = (l: Layer) => {
+    const t = span(l);
+    return Boolean(s && t && t[0] <= s[1] && s[0] <= t[1]);
+  };
+  const above = s ? vis.map((_, k) => k).filter((k) => k > i && ov(vis[k])) : [];
+  const below = s ? vis.map((_, k) => k).filter((k) => k < i && ov(vis[k])) : [];
+  return { vis, i, above, below };
+}
+/** 앞으로·뒤로 갈 수 있는지 (겹치는 것이 위·아래에 있는지) */
+export function zCan(p: Project, items: FlatItem[], id: string) {
+  const z = zParts(p, items, id);
+  return { up: z.above.length > 0, down: z.below.length > 0 };
+}
+/** 순서 바꾸기 — 바꿨으면 true. 처음 바꿀 때 예전 순서(사진 먼저·글자 위)를 배열에 옮겨 적고 p.layerZ = 1 */
+export function zReorder(p: Project, items: FlatItem[], id: string, o: ZMove) {
+  const { vis, i, above, below } = zParts(p, items, id);
+  if (i < 0) return false;
+  let at = -1; // 나를 뺀 배열에서 넣을 자리
+  if (o === "up" && above.length) at = above[0];
+  else if (o === "top" && above.length) at = above[above.length - 1];
+  else if (o === "down" && below.length) at = below[below.length - 1];
+  else if (o === "bottom" && below.length) at = below[0];
+  if (at < 0) return false;
+  const me = vis[i];
+  const rest = vis.filter((_, k) => k !== i);
+  rest.splice(at, 0, me);
+  p.layers = [...(p.layers || []).filter((l) => !isVis(l)), ...rest];
+  p.layerZ = 1;
+  return true;
+}
+/** 순서 단추 4개 (오른쪽 칸·작은 메뉴) */
+export function ZButtons({ can, onMove }: { can: { up: boolean; down: boolean }; onMove: (o: ZMove) => void }) {
+  const b = (o: ZMove, icon: string, text: string, ok: boolean, title: string) => (
+    <button type="button" disabled={!ok} onClick={() => onMove(o)} title={ok ? title : "겹치는 것이 없어요"}
+      style={{ flex: 1, minWidth: 0, height: 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: ok ? "pointer" : "default", whiteSpace: "nowrap" }}>
+      <Icon name={icon} size={14} />{text}
+    </button>
+  );
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+      {b("top", "front", "맨 앞으로", can.up, "겹친 것 중 가장 위에 보이게")}
+      {b("up", "front", "앞으로", can.up, "한 칸 위로")}
+      {b("down", "down", "뒤로", can.down, "한 칸 아래로")}
+      {b("bottom", "down", "맨 뒤로", can.down, "겹친 것 중 가장 아래로 (클립 화면보다는 늘 위)")}
+    </div>
+  );
+}
+
+export const LANE_W = 30;
 
 export type LayerDrag = (id: string, end: "from" | "to", ev: React.PointerEvent) => void;
 
@@ -73,9 +188,9 @@ export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entrie
               </span>
             )}
             {first && (
-              <button type="button" onPointerDown={(ev) => onDrag(e.layer.id, "from", ev)} onClick={(ev) => ev.stopPropagation()} title={`${LAYER_NAME[e.layer.type]}: ${layerTitle(e.layer)} (누르면 설정, 위아래로 끌면 시작 클립 바꾸기)`}
+              <button type="button" onPointerDown={(ev) => onDrag(e.layer.id, "from", ev)} onClick={(ev) => ev.stopPropagation()} title={`${layerName(e.layer)}: ${layerTitle(e.layer)} (누르면 설정, 위아래로 끌면 시작 클립 바꾸기)`}
                 style={{ position: "absolute", left: LANE_W / 2 - 13, top: 10, width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none" }}>
-                <Icon name={LAYER_ICON[e.layer.type]} size={15} />
+                <Icon name={layerIcon(e.layer)} size={15} />
               </button>
             )}
           </div>
@@ -361,7 +476,15 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, o
   );
 }
 
-export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose }: {
+export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, textAnim, onBubble }: {
+  /** 화면 글자 → 말풍선 스티커로 바꾸기 */
+  onBubble?: (s: Sticker) => Promise<void>;
+  /** 화면 글자 — [애니메이션] 탭 (글자 칸 탭, 회의 3-28) */
+  textAnim?: AnimBodyProps;
+  /** 스티커 글자 고치기 — 지금 글자, 고칠 수 있는지, 바꾸기 */
+  sticker?: { text: string; ok: boolean; onText: (t: string) => Promise<void> };
+  /** 겹치는 순서 (사진·스티커·화면 글자) */
+  onZ?: (o: ZMove) => void;
   project: Project;
   layer: Layer;
   items: FlatItem[];
@@ -388,9 +511,8 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
     else onChange({ [key]: id });
   };
 
-  return (
-    <Side title={LAYER_NAME[layer.type]} onClose={onClose}
-      footer={<Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={16} />이 {LAYER_NAME[layer.type]} 지우기</Btn>}>
+  const rangeEl = (
+    <>
       {/* 적용 범위 */}
       <div style={row}>
         <div style={{ ...label, marginBottom: 8 }}>적용 범위 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {cov.length}개</span></div>
@@ -409,7 +531,97 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id })}>처음부터 끝까지</Btn>}
         </div>
       </div>
+      {onZ && layer.type !== "music" && (
+        <div style={row}>
+          <div style={{ ...label, marginBottom: 8 }}>순서 <span style={{ color: C.sub, fontWeight: 600 }}>· 겹친 스티커·사진·글자 사이</span></div>
+          <ZButtons can={zCan(project, items, layer.id)} onMove={onZ} />
+          <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>클립 옆 아이콘을 좌우로 끌어도 바뀌어요. 왼쪽 줄일수록 앞이에요.</div>
+        </div>
+      )}
 
+    </>
+  );
+  // 효과음 — 소리 고르기·크기·언제 (회의 3-29)
+  if (layer.type === "sfx") {
+    const play = (id: string, v: number) => {
+      try {
+        const au = new Audio(`/studio-sfx/${id}.mp3`);
+        au.volume = Math.min(1, v);
+        void au.play().catch(() => {});
+      } catch {}
+    };
+    const v = layer.volume ?? 0.8;
+    return (
+      <Side title="효과음" onClose={onClose}
+        footer={<Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={16} />이 효과음 지우기</Btn>}>
+        <div style={row}>
+          <div style={{ ...label, marginBottom: 8 }}>소리 <span style={{ color: C.sub, fontWeight: 600 }}>· 누르면 들어 보고 바뀌어요</span></div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {SFX_LIST.map((x) => (
+              <button key={x.id} type="button" onClick={() => { onChange({ sfx: x.id, name: x.label }); play(x.id, v); }}
+                style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${layer.sfx === x.id ? C.accent : C.line2}`, background: layer.sfx === x.id ? C.accentDim : "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+                {x.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Slider title="소리 크기" value={v} min={0.1} max={1} step={0.05} show={`${Math.round(v * 100)}%`} onChange={(x) => onChange({ volume: x })} />
+        <div style={row}>
+          <div style={{ ...label, marginBottom: 8 }}>언제 <span style={{ color: C.sub, fontWeight: 600 }}>· 이 클립이 시작할 때 한 번</span></div>
+          <select value={layer.from} onChange={(e) => onChange({ from: e.target.value, to: e.target.value, w0: undefined, w1: undefined })} style={input}>
+            {items.map((x, i) => <option key={x.clip.id} value={x.clip.id}>{clipLabel(x, i)}</option>)}
+          </select>
+          {typeof layer.w0 === "number" && <div style={{ fontSize: 12.5, color: C.sub, marginTop: 6 }}>고른 단어를 말할 때 나와요.</div>}
+          <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>클립 옆 종 아이콘을 위아래로 끌어도 바뀌어요.</div>
+        </div>
+      </Side>
+    );
+  }
+  // 화면 글자 — 메인자막과 같은 글자 칸 탭 (텍스트 / 애니메이션 / 사전설정)
+  if (layer.type === "text" && textAnim) {
+    const autoOutline = String(layer.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000";
+    const look: TextLook = {
+      font: layer.font, color: layer.color || "#FFFFFF", outline: layer.outline || autoOutline, outlineWidth: layer.outlineWidth ?? 4, bold: layer.bold,
+      bg: Boolean(layer.box), bgColor: layer.boxColor, bgOpacity: layer.boxOpacity, shadow: layer.shadow, shadowColor: layer.shadowColor, glow: layer.glow, size: layer.size ?? 100, spacing: layer.spacing,
+    };
+    const toLayer = (p: TextLook): Partial<Layer> => {
+      const o: Partial<Layer> = {};
+      for (const [k, v] of Object.entries(p)) {
+        if (k === "leading") continue;
+        const key = k === "bg" ? "box" : k === "bgColor" ? "boxColor" : k === "bgOpacity" ? "boxOpacity" : k;
+        (o as Record<string, unknown>)[key] = v;
+      }
+      return o;
+    };
+    return (
+      <TextTabs title="화면 글자" kind="layer" onClose={onClose} look={look} anim={textAnim} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
+        bubble={onBubble ? <BubbleGrid text={layer.text || ""} onPick={onBubble} /> : undefined}
+        onLook={(p) => onChange(toLayer(p))} onPresetLook={(lk) => onChange(toLayer(lk))}
+        basicTop={
+          <>
+            <div style={row}>
+              <div style={{ ...label, marginBottom: 8 }}>글</div>
+              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => draft !== layer.text && onChange({ text: draft })} rows={3}
+                style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical" }} />
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <Btn small primary onClick={() => onChange({ text: draft })} disabled={draft === layer.text}>글 바꾸기</Btn>
+                <span style={{ flex: 1 }} />
+                <Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />지우기</Btn>
+              </div>
+            </div>
+            <Choice title="자리" value={typeof layer.x === "number" ? "free" : layer.pos || "top"} options={[["top", "상단"], ["middle", "가운데"], ["bottom", "하단"], ...(typeof layer.x === "number" ? [["free", "옮긴 자리"] as ["free", string]] : [])]}
+              onChange={(v) => v !== "free" && onChange({ pos: v as Layer["pos"], x: undefined, y: undefined })} />
+            {rangeEl}
+          </>
+        } />
+    );
+  }
+
+  return (
+    <Side title={layerName(layer)} onClose={onClose}
+      footer={<Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={16} />이 {layerName(layer)} 지우기</Btn>}>
+      {sticker && <StickerText key={layer.id + sticker.text} {...sticker} />}
+      {rangeEl}
       {layer.type === "music" && (
         <>
           <div style={{ ...row, display: "flex", alignItems: "center", gap: 10 }}>
@@ -446,8 +658,8 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             <div style={{ width: 64, height: 40, borderRadius: 4, overflow: "hidden", background: "#000", flexShrink: 0 }}>
               {asset && <img src={asset.thumb || asset.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
             </div>
-            <button type="button" onClick={onReplace} title="눌러서 사진 바꾸기" style={{ flex: 1, minWidth: 0, padding: 0, border: 0, background: "transparent", color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset?.name || "사진"}</button>
-            <Btn small onClick={onReplace}>사진 바꾸기</Btn>
+            <button type="button" onClick={onReplace} title={isSticker(layer) ? "눌러서 스티커 바꾸기" : "눌러서 사진 바꾸기"} style={{ flex: 1, minWidth: 0, padding: 0, border: 0, background: "transparent", color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset?.name || "사진"}</button>
+            <Btn small onClick={onReplace}>{isSticker(layer) ? "스티커 바꾸기" : "사진 바꾸기"}</Btn>
           </div>
           <div style={row}>
             <div style={{ ...label, marginBottom: 8 }}>채우기</div>
@@ -524,7 +736,8 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
 }
 
 /* ── 아이콘을 누르면 바로 옆에 뜨는 작은 메뉴 (브루처럼) — 적용 범위·간단한 조절·삭제. 자세한 것은 오른쪽 칸 ── */
-export function LayerPopup({ project, layer, items, selRange, x, y, onChange, onRemove, onClose, onAnim }: {
+export function LayerPopup({ project, layer, items, selRange, x, y, onChange, onRemove, onClose, onAnim, onZ }: {
+  onZ?: (o: ZMove) => void; // 겹치는 순서 (화면 글자)
   project: Project;
   layer: Layer;
   items: FlatItem[];
@@ -581,7 +794,7 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
       <div onClick={(e) => e.stopPropagation()}
         style={{ position: "fixed", left: x, top, zIndex: 70, width: 270, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${C.line}` }}>
-          <Icon name={LAYER_ICON[layer.type]} size={17} />
+          <Icon name={layerIcon(layer)} size={17} />
           <span style={{ flex: 1, fontSize: 14, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{layerTitle(layer)}</span>
           <button type="button" onClick={onClose} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", padding: 0 }}><Icon name="close" size={18} /></button>
         </div>
@@ -614,6 +827,12 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
         {onAnim && (
           <div style={line}>
             <Btn small onClick={onAnim} style={{ width: "100%" }}><Icon name="transition" size={15} />애니메이션{layer.anim ? " · 들어감" : ""}</Btn>
+          </div>
+        )}
+        {onZ && layer.type !== "music" && (
+          <div style={line}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 6 }}>순서</div>
+            <ZButtons can={zCan(project, items, layer.id)} onMove={onZ} />
           </div>
         )}
         <div style={{ padding: "8px 12px", display: "flex", alignItems: "center" }}>

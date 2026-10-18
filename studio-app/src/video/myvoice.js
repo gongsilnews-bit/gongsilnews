@@ -261,7 +261,7 @@ function say(text, out) {
       w.pending.set(id, { res, rej });
       w.proc.stdin.write(JSON.stringify({ id, text, out: raw, ref: ME.wav, refText: me.text }) + "\n");
     });
-    await trim(raw, out, 0.08);
+    await trim(raw, out, 0.25); // 말끝 여유 — 0.08 은 끝소리가 잘려 급하게 들렸다 (2026-10-18)
     fs.rmSync(raw, { force: true });
     idle = setTimeout(stopWorker, 10 * 60 * 1000);
     return out;

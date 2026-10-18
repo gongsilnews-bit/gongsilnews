@@ -6,9 +6,10 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { sfxEvents, animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { effLeading, effSpacing, zLayers, sfxEvents, animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
+import { patternCss, subLookCss, withAlpha } from "./SubPresets";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
 
@@ -101,6 +102,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const bgRef = useRef<HTMLVideoElement>(null);
   const otherRef = useRef<HTMLVideoElement>(null); // 화면전환 상대 클립의 멈춘 장면
   const voiceRef = useRef<HTMLAudioElement>(null);
+  // 클립 경계 검은 화면 막기 (2026-10-18) — 화면 파일이 바뀌는 순간 앞 장면을 그림으로 떠서 덮어 두고, 새 화면이 뜨면 걷는다
+  const imgRef = useRef<HTMLImageElement>(null);
+  const holdRef = useRef<HTMLCanvasElement>(null);
+  const [hold, setHold] = useState<React.CSSProperties | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const releaseHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    setHold(null);
+  };
   const musicEls = useRef<Record<string, HTMLAudioElement | null>>({});
   const [t, setT] = useState(0);
   const lastFrame = useRef(0);
@@ -251,6 +262,27 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     }
   };
 
+  /** 지금 보이는 화면을 그림으로 떠서 덮기 — 새 화면이 뜨면(seeked·playing·load) 걷는다. 늦어도 1.2초 뒤엔 걷는다 */
+  const grabFrame = (el: HTMLVideoElement | HTMLImageElement | null) => {
+    const cv = holdRef.current;
+    if (!el || !cv) return;
+    const w = el instanceof HTMLVideoElement ? el.videoWidth : el.naturalWidth;
+    const h = el instanceof HTMLVideoElement ? el.videoHeight : el.naturalHeight;
+    if (!w || !h) return;
+    try {
+      cv.width = w;
+      cv.height = h;
+      cv.getContext("2d")!.drawImage(el, 0, 0, w, h);
+    } catch {
+      return;
+    }
+    // 원래 화면과 같은 자리·크기·채우기로 덮는다
+    const cs = getComputedStyle(el);
+    setHold({ position: "absolute", left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight, objectFit: cs.objectFit as React.CSSProperties["objectFit"], transform: cs.transform !== "none" ? cs.transform : undefined });
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = setTimeout(() => setHold(null), 1200);
+  };
+
   const tick = () => {
     if (!playRef.current) return;
     const now = performance.now();
@@ -272,6 +304,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     tRef.current = time;
     const it = itemAt(time);
     const changed = it && it.clip.id !== curClip.current;
+    if (changed && it) {
+      const prev = flat.items.find((x) => x.clip.id === curClip.current);
+      const a = prev ? visualOf(prev.clip) : null;
+      const bVis = visualOf(it.clip);
+      if (a && bVis && a.id !== bVis.id) grabFrame(a.kind === "video" ? videoRef.current : imgRef.current);
+    }
     if (it) curClip.current = it.clip.id;
     sync(time, Boolean(changed));
     syncMusic(time, false);
@@ -350,7 +388,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const line = lines.find((l) => local >= l.s && local < l.e + 0.001) || null;
   const fontPx = Math.min(W, H) * 0.062 * ((st.size || 100) / 100) * k;
   const posStyle: React.CSSProperties =
-    st.position === "top" ? { top: H * 0.08 * k } : st.position === "middle" ? { top: "50%", transform: "translateY(-50%)" } : st.position === "middle-low" ? { bottom: H * 0.24 * k } : { bottom: H * 0.07 * k };
+    st.position === "top" ? { top: H * 0.08 * k } : st.position === "middle-high" ? { top: H * 0.24 * k } : st.position === "middle" ? { top: "50%", transform: "translateY(-50%)" } : st.position === "middle-low" ? { bottom: H * 0.24 * k } : { bottom: H * 0.07 * k };
 
   // 쓰인 글꼴을 받아 둔다 (처음 한 번)
   useFonts([project.settings.subtitle.font, ...project.scenes.flatMap((sc) => sc.clips.map((c) => c.subStyle?.font)), ...(project.layers || []).filter((l) => l.type === "text").map((l) => l.font)]);
@@ -363,13 +401,17 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   }) : [];
   // 애니메이션 (등장·퇴장·강조·확대) — 굽기와 같은 계산 (timeline.animAt)
   const lookOf = (l: Layer): React.CSSProperties | undefined => {
-    const an = animOf(project, l);
-    if (!an || !clip) return undefined;
+    const a0 = animOf(project, l);
+    if (!a0 || !clip) return undefined;
+    // 멈춰 있을 때는 다 나온 모습 — 클립을 누르면 그 클립 처음(등장 직전)으로 가서 스티커·사진이 안 보이던 것 (2026-10-19)
+    const an = playing ? a0 : { ...a0, in: undefined, out: undefined };
     const sp = layerSpan(project, l, flat.items, clip.id, project.settings, order);
     return sp ? animCss(animAt(an, local, sp.a, sp.b), boxW, boxH) : undefined;
   };
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
+  // 겹치는 순서 (뒤 → 앞) — 스티커·사진·화면 글자 함께. 굽기와 같다 (timeline.zLayers)
+  const overZ = zLayers(project, over).filter((l) => overImages.includes(l) || overTexts.includes(l));
 
   /**
    * 끌기 — move: 자리 / 모서리(nw·ne·sw·se): 크기. 크기는 잡은 모서리의 반대쪽 모서리를 고정하고
@@ -573,6 +615,40 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const otherFit = other ? other.clip.fill || project.settings.fill : "contain";
   const otherMedia: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: otherFit === "cover" ? "cover" : "contain", transform: flipOf(other?.clip) };
 
+  /** 화면 글자 하나 그리기 — 겹치는 순서대로 사진·스티커 사이에 끼워 그린다 (회의 3-26) */
+  const textEl = (l: Layer) => {
+    const px = Math.min(W, H) * 0.08 * ((l.size || 100) / 100) * k;
+    const pos = l.pos || "top";
+    const free = typeof l.x === "number" && typeof l.y === "number"; // 끌어서 옮긴 글자
+    const ps: React.CSSProperties = free
+      ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: "translate(-50%, -50%)" }
+      : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
+    return (
+      <div key={l.id} style={{ position: "absolute", textAlign: l.align || "center", ...ps, pointerEvents: "none" }}>
+        {(() => {
+          const look: React.CSSProperties = {
+            position: "relative", display: "inline-block",
+            whiteSpace: "pre", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font, l.bold !== false), fontSize: px, lineHeight: 1.25, color: withAlpha(l.color || "#FFFFFF", l.textAlpha ?? 0),
+            ...patternCss(l),
+            letterSpacing: `${effSpacing(l) * px}px`,
+            // 테두리·그림자·빛 — 메인자막과 같은 규칙 (없으면 예전대로 테두리 4, 검정/흰색 자동)
+            ...subLookCss({ bg: l.box, outline: l.outline || (String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"), outlineWidth: l.outlineWidth ?? 4, shadow: l.shadow, shadowColor: l.shadowColor, glow: l.glow }, px, k), paintOrder: "stroke fill",
+            background: l.box ? rgba(l.boxColor || "#000000", l.boxOpacity ?? 0.62) : undefined, padding: l.box ? `${px * 0.12 * (l.bgPad ?? 1)}px ${px * 0.3 * (l.bgPad ?? 1)}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+          };
+          if (editing === l.id && onLayerText)
+            return <InlineEdit text={String(l.text).trim()} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.trim() && t.trim() !== String(l.text).trim()) onLayerText(l.id, t.trim()); }} />;
+          return (
+            <span style={{ display: "inline-block", ...lookOf(l) }}>
+              <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
+                title={onLayerText ? "끌어서 옮기기 · 두 번 누르면 글 고치기" : undefined} style={{ ...look, ...dragStyle(l) }}>
+                {String(l.text).trim()}{frame(l)}
+              </span>
+            </span>
+          );
+        })()}
+      </div>
+    );
+  };
   return (
     <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}
       onPointerDown={(e) => { if (e.target === e.currentTarget) setPick(""); }}>
@@ -582,14 +658,30 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           // 사진 움직임 — 채운 화면 통째로 (굽기 render.js zoompan 과 같은 계산)
           <div style={{ position: "absolute", inset: 0, transform: motionCss(clip ? motionOf(project, clip) : null, item ? (t - item.start) / Math.max(0.01, item.dur) : 0), transformOrigin: "50% 50%" }}>
             {fill === "blur" && !vbox && <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />}
-            <img src={vUrl} alt="" style={mediaStyle} />
+            <img ref={imgRef} src={vUrl} alt="" style={mediaStyle} onLoad={releaseHold} />
           </div>
         ) : visual && fill === "blur" && !vbox && (
           <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
         )}
         <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
-          onLoadedData={() => sync(tRef.current, true)} />
+          onLoadedData={() => sync(tRef.current, true)} onSeeked={() => hold && releaseHold()} onPlaying={() => hold && releaseHold()} />
+        {/* 앞 장면 붙잡기 — 새 화면 파일이 뜰 때까지 (검은 화면 대신) */}
+        <canvas ref={holdRef} style={{ ...(hold || {}), display: hold ? "block" : "none", pointerEvents: "none" }} />
       </div>
+      {/* 다음 클립 화면·목소리 미리 열기 — 경계에서 바로 뜨게 (보이지 않음) */}
+      {(() => {
+        const i = item ? flat.items.indexOf(item) : -1;
+        const nx = i >= 0 ? flat.items[i + 1] : undefined;
+        if (!nx) return null;
+        const nv = visualOf(nx.clip);
+        const voiceUrl = nx.clip.type === "voice" ? nx.clip.voice?.url : "";
+        return (
+          <div style={{ display: "none" }} aria-hidden>
+            {nv && nv.id !== visual?.id && (nv.kind === "video" ? <video src={nv.url} preload="auto" muted /> : <img src={nv.url} alt="" />)}
+            {voiceUrl && <audio src={voiceUrl} preload="auto" />}
+          </div>
+        );
+      })()}
       {/* 화면전환 상대 — 뒤 클립 첫 장면 / 앞 클립 마지막 장면 (멈춘 채) */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: trLook ? (mainZ === 2 ? 1 : 2) : undefined, pointerEvents: "none", display: trLook && otherVis ? "block" : "none", background: "#000", ...(trLook ? (tr!.live === "from" ? trLook.to : trLook.from) : {}) }}>
         {otherVis?.kind === "image" && (
@@ -608,7 +700,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           {boxFrame("visual")}
         </div>
       )}
-      {overImages.map((l) => {
+      {overZ.map((l) => {
+        if (l.type === "text") return textEl(l);
         const a = project.assets[l.asset!];
         const op = Math.max(0.05, Math.min(1, l.opacity ?? 1));
         // 채우기 — 화면 전체에 (잘라서 / 비율 유지하며). 끌어 옮기기·크기 손잡이는 없다
@@ -637,41 +730,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           </div>
         );
       })}
-      {overTexts.map((l) => {
-        const px = Math.min(W, H) * 0.08 * ((l.size || 100) / 100) * k;
-        const pos = l.pos || "top";
-        const free = typeof l.x === "number" && typeof l.y === "number"; // 끌어서 옮긴 글자
-        const ps: React.CSSProperties = free
-          ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: "translate(-50%, -50%)" }
-          : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
-        return (
-          <div key={l.id} style={{ position: "absolute", textAlign: "center", ...ps, pointerEvents: "none" }}>
-            {(() => {
-              const look: React.CSSProperties = {
-                position: "relative", display: "inline-block",
-                whiteSpace: "pre", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font), fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
-                WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
-                background: l.box ? rgba(l.boxColor || "#000000", l.boxOpacity ?? 0.62) : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
-              };
-              if (editing === l.id && onLayerText)
-                return <InlineEdit text={String(l.text).trim()} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.trim() && t.trim() !== String(l.text).trim()) onLayerText(l.id, t.trim()); }} />;
-              return (
-                <span style={{ display: "inline-block", ...lookOf(l) }}>
-                  <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
-                    title={onLayerText ? "끌어서 옮기기 · 두 번 누르면 글 고치기" : undefined} style={{ ...look, ...dragStyle(l) }}>
-                    {String(l.text).trim()}{frame(l)}
-                  </span>
-                </span>
-              );
-            })()}
-          </div>
-        );
-      })}
       {(line || (clip && editing === `sub:${clip.id}`)) && (() => {
         const look: React.CSSProperties = {
           display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
-          fontSize: fontPx, lineHeight: Math.max(0.9, Math.min(2.5, st.leading ?? 1.25)), letterSpacing: `${Math.max(-0.1, Math.min(0.5, st.spacing ?? 0)) * fontPx}px`, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
-          paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+          fontSize: fontPx, lineHeight: effLeading(st), letterSpacing: `${effSpacing(st) * fontPx}px`, color: withAlpha(st.color || "#FFFFFF", st.textAlpha ?? 0), ...subLookCss(st, fontPx, k), ...patternCss(st),
+          paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12 * (st.bgPad ?? 1)}px ${fontPx * 0.3 * (st.bgPad ?? 1)}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
         };
         const full = clip ? (typeof clip.subText === "string" ? clip.subText : clipText(clip)) : "";
         // 줄 너비·옮긴 자리 (굽기와 같은 계산)
@@ -682,7 +745,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           : { left: (boxW - subW) / 2, ...posStyle };
         return (
           <div data-layer="__sub" onPointerDown={onSubMove && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
-            style={{ position: "absolute", width: subW, textAlign: "center", ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
+            style={{ position: "absolute", width: subW, textAlign: st.align || "center", ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
             {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); const tidy = (x: string) => x.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); if (t !== null && tidy(t) !== tidy(full)) onSubText(clip.id, t); }} />
@@ -690,7 +753,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
               <span style={(() => {
                 // 메인자막 애니메이션 — 지금 보이는 자막 조각(line.s~line.e)마다 나타나고 사라진다
                 const sa = clip && line ? subAnimOf(project, clip) : null;
-                const lk = sa && line ? animCss(animAt(sa, local, line.s, line.e), boxW, boxH) : undefined;
+                const lk = sa && line ? animCss(animAt(playing ? sa : { ...sa, in: undefined, out: undefined }, local, line.s, line.e), boxW, boxH) : undefined;
                 return lk ? { display: "inline-block", ...lk } : undefined;
               })()}>
               <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장 (목소리는 그대로)" : undefined}

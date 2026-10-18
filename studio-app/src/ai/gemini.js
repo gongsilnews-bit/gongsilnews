@@ -46,6 +46,7 @@ async function exclusive(fn) {
     return await fn();
   } finally {
     running = false;
+    chrome.idle().catch(() => {});
   }
 }
 
@@ -122,18 +123,23 @@ async function fillAndSend(w, prompt) {
  * 프롬프트를 보내고 답변 글을 돌려준다 (chatgpt.ask 와 같은 모양).
  * isComplete(text): 답 형식 확인 (JSON 등). onChat(url): 답을 받은 대화 주소 — 수정 요청을 그 대화에 이어 보낸다.
  */
-function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "" } = {}) {
+function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [] } = {}) {
   return exclusive(async () => {
     const opened = await openChat(onProgress, { chatUrl, fallbackPrompt, prompt });
-    const { page, revise } = opened;
-    const w = worldOf(page);
+    let { page } = opened;
+    const { revise } = opened;
+    let w = worldOf(page);
+    let conv = ""; // 대화 주소 — 창이 닫히면 다시 열어 이어 받는다
+    let reopened = 0;
     try {
       const t0 = Date.now();
       const sec = () => `${Math.round((Date.now() - t0) / 1000)}초`;
       const before = Number(await w.run("GwAi.countAnswers(GW.GEMINI)")) || 0;
       await humanPause();
+      if (files.length) await attachPhotos(page, files, onProgress); // 함께 보낼 사진 (영상 장면 모음 등)
       onProgress("Gemini에 요청을 넣는 중…");
       const sent = await fillAndSend(w, opened.prompt);
+      await chrome.backstage(page); // 작업 중 띠 + 창 내리기
       log.info(`[Gemini] 보냄 ${sec()} (이전 답 ${before}개)${sent.note ? " " + sent.note : ""}`);
 
       onProgress(revise ? "Gemini가 고치는 중… (1~2분)" : "Gemini가 글을 쓰는 중… (1~2분)");
@@ -145,7 +151,15 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
       let firstSeen = 0;
       while (Date.now() < deadline) {
         await chrome.sleep(1000);
-        if (page.isClosed()) throw new Error("Gemini 창이 닫혔습니다.");
+        if (page.isClosed()) {
+          const again = reopened < 3 ? await chrome.reopen("gemini.google.com", conv, onProgress) : null;
+          if (!again) throw new Error("Gemini 창이 닫혔습니다.");
+          page = again;
+          w = worldOf(page);
+          reopened++;
+          continue;
+        }
+        if (chatIdOf(page.url())) conv = page.url();
         let st;
         try {
           st = await w.run("({ count: GwAi.countAnswers(GW.GEMINI), busy: GwAi.isBusy(GW.GEMINI), text: GwAi.readLast(GW.GEMINI), settle: Number(GW.GEMINI.SETTLE_MS) || 3000 })");
@@ -260,8 +274,10 @@ async function download(page, src) {
 /** 그림을 그려 data URL 로 돌려준다 (chatgpt.askImage 와 같은 모양). files: 붙일 사진 (시뮬레이션) */
 function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onChat = () => {} } = {}) {
   return exclusive(async () => {
-    const { page } = await openChat(onProgress, { chatUrl, prompt });
-    const w = worldOf(page);
+    let { page } = await openChat(onProgress, { chatUrl, prompt });
+    let w = worldOf(page);
+    let conv = "";
+    let reopened = 0;
     try {
       const t0 = Date.now();
       const sec = () => `${Math.round((Date.now() - t0) / 1000)}초`;
@@ -270,6 +286,7 @@ function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onC
       const tool = await pickImageTool(page);
       onProgress("Gemini에 그림을 요청하는 중…");
       await fillAndSend(w, prompt);
+      await chrome.backstage(page); // 작업 중 띠 + 창 내리기
       log.info(`[Gemini 그림] 보냄 ${sec()} (사진 ${files.length}장, 이미지 도구 ${tool ? "켬" : "못 찾음"})`);
       onProgress("Gemini가 그림을 그리는 중… (1~3분)");
 
@@ -280,7 +297,15 @@ function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onC
       let textSince = 0;
       while (Date.now() < deadline) {
         await chrome.sleep(1500);
-        if (page.isClosed()) throw new Error("Gemini 창이 닫혔습니다.");
+        if (page.isClosed()) {
+          const again = reopened < 3 ? await chrome.reopen("gemini.google.com", conv, onProgress) : null;
+          if (!again) throw new Error("Gemini 창이 닫혔습니다.");
+          page = again;
+          w = worldOf(page);
+          reopened++;
+          continue;
+        }
+        if (chatIdOf(page.url())) conv = page.url();
         let st;
         try {
           st = await w.run(`GwAi.turnState(GW.GEMINI, ${before})`);

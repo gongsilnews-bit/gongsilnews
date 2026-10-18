@@ -196,7 +196,9 @@ async function list({ kind = "all", fav = false, q = "", source = "", limit = 30
     d.scannedAt = Date.now();
     await scan();
   }
-  let items = Object.values(d.items).filter((it) => (kind === "all" ? it.kind !== "audio" : it.kind === kind) && (!fav || it.fav) && (!source || it.source === source) && (!q || it.name.toLowerCase().includes(q.toLowerCase())));
+  // 스티커는 [내 자료]에 섞지 않는다 (2026-10-19 사장님: 스티커는 스티커로 따로)
+  const sticker = (it) => it.source === "sticker" || /^스티커_/.test(it.name || "");
+  let items = Object.values(d.items).filter((it) => (source === "sticker" || !sticker(it)) && (kind === "all" ? it.kind !== "audio" : it.kind === kind) && (!fav || it.fav) && (!source || it.source === source) && (!q || it.name.toLowerCase().includes(q.toLowerCase())));
   // 음악은 즐겨찾기 먼저, 그다음 최근에 넣은 것
   if (kind === "audio") items.sort((a, b) => Number(b.fav) - Number(a.fav) || (b.addedAt || 0) - (a.addedAt || 0));
   else items.sort((a, b) => b.mtime - a.mtime);

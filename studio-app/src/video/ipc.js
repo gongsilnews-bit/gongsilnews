@@ -319,6 +319,28 @@ function register(base) {
     return library.add(r.filePaths, { source: "local" });
   });
   ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
+  // 애니메이션 칸 그림 (스티커·사진 올리기 움직임) — 굽기 전에 편집 화면이 그려 보낸다. start 0 이면 폴더를 비우고 새로
+  ipcMain.handle("video:anim-frames", (_e, dir, key, start, urls) => {
+    const safe = String(key || "a").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80) || "a";
+    const out = path.join(dir || library.studioRoot(), "anim", safe);
+    if (!start) fs.rmSync(out, { recursive: true, force: true });
+    fs.mkdirSync(out, { recursive: true });
+    (urls || []).forEach((u, i) => {
+      const m = /^data:image\/png;base64,(.+)$/s.exec(String(u || ""));
+      if (m) fs.writeFileSync(path.join(out, `${String((start || 0) + i).padStart(5, "0")}.png`), Buffer.from(m[1], "base64"));
+    });
+    return out;
+  });
+  // 편집기에서 그린 그림(스티커 등, PNG data URL) → 프로젝트 assets 에 저장하고 내 자료에 담기
+  ipcMain.handle("video:lib-save-image", async (_e, dir, dataUrl, name) => {
+    const m = /^data:image\/(png|jpeg|webp);base64,(.+)$/s.exec(String(dataUrl || ""));
+    if (!m) throw new Error("그림을 저장하지 못했습니다.");
+    const safe = String(name || "그림").replace(/[\/:*?"<>|\s]+/g, "").slice(0, 40) || "그림";
+    const file = path.join(dir || path.join(library.studioRoot(), "영상", "스티커"), "assets", `${safe}_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, Buffer.from(m[2], "base64"));
+    return (await library.add([file], { source: "sticker" }))[0];
+  });
   ipcMain.handle("video:lib-remove", (_e, id) => library.remove(id));
   ipcMain.handle("video:lib-folders", () => library.folders());
   ipcMain.handle("video:lib-add-folder", async (e) => {
@@ -489,6 +511,11 @@ function register(base) {
   ipcMain.handle("video:ai-script", (e, opts) => vai.script(opts || {}, (t) => send(e, "video:progress", t)));
   ipcMain.handle("video:ai-scenes", (e, lines) => vai.scenesFor(lines || [], (t) => send(e, "video:progress", t)));
   ipcMain.handle("video:ai-shorts", (e, clips, opts) => vai.shorts(clips || [], opts || {}, (t) => send(e, "video:progress", t)));
+  // 대본 + 내 영상 → 문장마다 장면 (items: 내 자료 [{ path, kind, duration }])
+  ipcMain.handle("video:ai-footage", (e, lines, items) => vai.matchFootage(lines || [], items || [], (t) => send(e, "video:progress", t)));
+  // [AI 편집] — 글 AI 의 편집 계획 (화면·화면 글자·자막 강조·화면전환·음악)
+  ipcMain.handle("video:ai-edit", (e, lines, items, opts) => vai.aiEdit(lines || [], items || [], opts || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-group", (e, lines) => vai.groupScenes(lines || [], (t) => send(e, "video:progress", t))); // [씬 정리]
   ipcMain.handle("video:ai-image", async (e, dir, prompt) => {
     const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t));
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");

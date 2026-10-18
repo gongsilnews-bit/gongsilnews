@@ -131,10 +131,10 @@ export default function MediaMenu(p: Props) {
     head = "순서";
     const o = p.order || { up: false, down: false };
     items = [
-      { icon: "front", label: "맨 앞으로 가져오기", desc: "겹친 사진 중 가장 위에 보이게", off: !o.up, run: done(() => p.onOrder?.("top")) },
+      { icon: "front", label: "맨 앞으로 가져오기", desc: "겹친 스티커·사진·글자 중 가장 위에 보이게", off: !o.up, run: done(() => p.onOrder?.("top")) },
       { icon: "front", label: "앞으로 가져오기", desc: "한 칸 위로", off: !o.up, run: done(() => p.onOrder?.("up")) },
       { icon: "down", label: "뒤로 보내기", desc: "한 칸 아래로", off: !o.down, run: done(() => p.onOrder?.("down")) },
-      { icon: "down", label: "맨 뒤로 보내기", desc: "겹친 사진 중 가장 아래로 (클립 화면보다는 늘 위)", off: !o.down, run: done(() => p.onOrder?.("bottom")) },
+      { icon: "down", label: "맨 뒤로 보내기", desc: "겹친 것 중 가장 아래로 (클립 화면보다는 늘 위)", off: !o.down, run: done(() => p.onOrder?.("bottom")) },
     ];
   }
 
