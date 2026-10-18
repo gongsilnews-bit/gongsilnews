@@ -159,8 +159,23 @@ const flipChain = (o) => [o && o.flipX ? "hflip" : "", o && o.flipY ? "vflip" : 
 
 const assetFile = (a) => (a.edit && fs.existsSync(a.edit) ? a.edit : a.path);
 
-/** 클립 하나 → 조각 영상 (seg.mp4) */
-async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
+/* 소리 이음매 — 실제로 잘라 낸 곳만 아주 짧게 줄였다 키운다 ("뚝" 소리 막기, 귀로는 안 들림) */
+const EDGE = 0.008;
+/** 남길 구간 i 의 소리 자르기 — 구간 사이(지운 단어 자리)에만 줄였다 키우기 */
+const SR = 48000;
+const smp = (t) => Math.round(t * SR); // 시각 → 샘플 번호 (0.001초 반올림으로 자르면 이음매마다 틈·겹침이 쌓인다)
+const rangeAudio = (k, r, i, n) => {
+  const len = (smp(r.e) - smp(r.s)) / SR;
+  const f = len > EDGE * 3;
+  return `[${k}:a]aresample=${SR},atrim=start_sample=${smp(r.s)}:end_sample=${smp(r.e)},asetpts=PTS-STARTPTS${f && i > 0 ? `,afade=t=in:st=0:d=${EDGE}` : ""}${f && i < n - 1 ? `,afade=t=out:st=${(len - EDGE).toFixed(4)}:d=${EDGE}` : ""}[a${i}]`;
+};
+
+/**
+ * 클립 하나 → 화면 조각(seg.mp4, 소리 없음) + 소리 조각(seg.wav, 압축 안 한 원음)
+ *  소리는 원음으로 이어 붙여 맨 마지막에 한 번만 압축한다 — 조각마다 AAC 로 압축해 이으면 이음매마다 "뚝" (2026-10-18)
+ *  frames: 화면 칸 수 (앞에서부터 누적으로 맞춰 소리와 어긋나지 않게)  edge: { in, out } 앞·뒤가 원본에서 이어지지 않으면 true
+ */
+async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, edge = { in: true, out: true }) {
   const [W, H] = RATIOS[p.ratio] || RATIOS["16:9"];
   const st = p.settings || {};
   const fill = clip.fill || st.fill || "cover";
@@ -183,7 +198,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     const k = n++;
     ranges.forEach((r, i) => {
       filters.push(`[${k}:v]trim=start=${r.s.toFixed(3)}:end=${r.e.toFixed(3)},setpts=PTS-STARTPTS,fps=${FPS}[v${i}]`);
-      if (visual.hasAudio) filters.push(`[${k}:a]atrim=start=${r.s.toFixed(3)}:end=${r.e.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`);
+      if (visual.hasAudio) filters.push(rangeAudio(k, r, i, ranges.length));
     });
     if (visual.hasAudio) {
       filters.push(`${ranges.map((_, i) => `[v${i}][a${i}]`).join("")}concat=n=${ranges.length}:v=1:a=1[vraw][araw]`);
@@ -194,12 +209,13 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
       args.push("-loop", "1", "-framerate", String(FPS), "-t", dur.toFixed(3), "-i", assetFile(visual));
       filters.push(`[${n++}:v]format=yuv420p[vraw]`);
     } else if (ok(visual) && visual.kind === "video") {
-      // 배경 영상: 시작점부터 길이만큼 (클립보다 짧으면 마지막 장면에서 멈춰 채운다 — 처음부터 반복하지 않음)
+      // 배경 영상: 시작점부터 길이만큼 — 클립보다 짧으면 처음부터 다시 (반복, 미리보기와 같게. 2026-10-18 사장님)
       const vs = Number(clip.visual && clip.visual.s) || 0;
       const short = visual.duration ? dur - (visual.duration - vs) : 0;
+      if (short > 0) args.push("-stream_loop", "-1");
       args.push("-ss", vs.toFixed(3), "-t", dur.toFixed(3), "-i", assetFile(visual));
       visIn = n;
-      filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS${short > 0 ? `,tpad=stop_mode=clone:stop_duration=${(short + 0.5).toFixed(3)},trim=duration=${dur.toFixed(3)}` : ""}[vraw]`);
+      filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS,trim=duration=${dur.toFixed(3)}[vraw]`);
     } else {
       args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", `color=c=black:s=${W}x${H}:r=${FPS}`);
       filters.push(`[${n++}:v]null[vraw]`);
@@ -208,7 +224,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     if (ranges && ok(srcAsset) && srcAsset.hasAudio) {
       args.push("-i", assetFile(srcAsset));
       const k = n++;
-      ranges.forEach((r, i) => filters.push(`[${k}:a]atrim=start=${r.s.toFixed(3)}:end=${r.e.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`));
+      ranges.forEach((r, i) => filters.push(rangeAudio(k, r, i, ranges.length)));
       filters.push(`${ranges.map((_, i) => `[a${i}]`).join("")}concat=n=${ranges.length}:v=0:a=1[araw]`);
       aIn = "araw";
     }
@@ -336,7 +352,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     filters.push(`[${vOut}]subtitles=s${idx}.ass:fontsdir=fonts[vsub]`);
     vOut = "vsub";
   }
-  filters.push(`[${vOut}]format=yuv420p,trim=duration=${dur.toFixed(3)}[vout]`);
+  // 화면은 칸 수(frames)로 끊는다 — 모자라면 마지막 장면을 늘려 채운다
+  filters.push(frames ? `[${vOut}]format=yuv420p,tpad=stop_mode=clone:stop_duration=0.2[vout]` : `[${vOut}]format=yuv420p,trim=duration=${dur.toFixed(3)}[vout]`);
 
   // 소리
   const vol = (x) => Math.max(0, Math.min(3, Number(x ?? 1)));
@@ -358,24 +375,41 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   } else if (vv > 0) {
     filters.push(`[avis]anull[aout]`);
   } else if (aIn && !clip.muted && !offs.source) {
-    filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "aso" : "aout"}]`);
+    filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${(dur + 0.01).toFixed(3)}[${vv > 0 ? "aso" : "aout"}]`);
     if (vv > 0) filters.push(`[aso][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else {
     args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", "anullsrc=r=48000:cl=stereo");
     filters.push(`[${n++}:a]anull[aout]`);
   }
 
-  const out = path.join(tmp, `seg${String(idx).padStart(4, "0")}.mp4`);
-  const tail = ["-filter_complex", filters.join(";"), "-map", "[vout]", "-map", "[aout]", "-r", String(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", "-t", dur.toFixed(3), out];
+  // 클립 앞뒤 — 원본에서 이어지지 않는 쪽만 줄였다 키우기 (이어진 클립은 원본 소리 그대로)
+  const ef = [edge.in && dur > EDGE * 3 ? `afade=t=in:st=0:d=${EDGE}` : "", edge.out && dur > EDGE * 3 ? `afade=t=out:st=${(dur - EDGE).toFixed(4)}:d=${EDGE}` : ""].filter(Boolean);
+  // 소리 길이는 샘플 수로 딱 맞춘다 — 원본에서 이어진 클립끼리는 샘플 하나 틈 없이 붙는다
+  const nSmp = ranges && tl.srcSpeed(clip) === 1 && clip.type !== "voice" ? ranges.reduce((a, r) => a + smp(r.e) - smp(r.s), 0) : smp(dur);
+  filters.push(`[aout]${ef.length ? ef.join(",") + "," : ""}apad,atrim=end_sample=${nSmp}[afin]`);
+
+  const base = path.join(tmp, `seg${String(idx).padStart(4, "0")}`);
+  const out = { video: `${base}.mp4`, audio: `${base}.wav` };
+  const vt = frames ? ["-frames:v", String(frames)] : ["-t", dur.toFixed(3)];
+  const tail = (encArgs) => ["-filter_complex", filters.join(";"), "-map", "[vout]", ...encArgs, "-r", String(FPS), "-an", ...vt, out.video, "-map", "[afin]", "-c:a", "pcm_s16le", "-ar", String(SR), "-ac", "2", out.audio];
   try {
-    await ff.run(ff.ff(), [...args, ...enc.args("final"), ...tail], { cwd: tmp });
+    await ff.run(ff.ff(), [...args, ...tail(enc.args("final"))], { cwd: tmp });
   } catch (e) {
     // 그래픽카드 인코더가 실패하면 일반 인코더로 다시
     log.warn(`[굽기] 조각 ${idx} ${enc.name} 실패 → 일반 인코더: ${e.message}`);
-    const fb = ff.fallbackEncoder();
-    await ff.run(ff.ff(), [...args, ...fb.args("final"), ...tail], { cwd: tmp });
+    await ff.run(ff.ff(), [...args, ...tail(ff.fallbackEncoder().args("final"))], { cwd: tmp });
   }
   return out;
+}
+
+/** 두 클립 소리가 원본에서 바로 이어지는지 — 그러면 이음매에서 소리를 건드리지 않는다 */
+function continuous(a, b) {
+  if (!a || !b || a.type === "voice" || b.type === "voice" || !a.src || !b.src || a.src.asset !== b.src.asset) return false;
+  if (a.visual || b.visual || a.muted !== b.muted || Number(a.volume ?? 1) !== Number(b.volume ?? 1)) return false;
+  if (tl.srcSpeed(a) !== 1 || tl.srcSpeed(b) !== 1) return false;
+  const ra = tl.keepRanges(a);
+  const rb = tl.keepRanges(b);
+  return Boolean(ra.length && rb.length && Math.abs(ra[ra.length - 1].e - rb[0].s) < 0.002);
 }
 
 /* ── 화면전환 (transitions.ts 와 같은 규칙) ──
@@ -401,7 +435,8 @@ async function joinWithTransitions(segs, trs, out, tmp, enc) {
     const a = trs[k] ? trs[k].a : 0; // 이 조각 앞에 붙일 첫 장면 멈춤
     const b = trs[k + 1] ? trs[k + 1].b : 0; // 이 조각 끝에 붙일 마지막 장면 멈춤
     const pad = [a > 0 ? `tpad=start_mode=clone:start_duration=${a.toFixed(3)}` : "", b > 0 ? `tpad=stop_mode=clone:stop_duration=${b.toFixed(3)}` : ""].filter(Boolean);
-    f.push(`[${k}:v]settb=AVTB,fps=${FPS},format=yuv420p${pad.length ? "," + pad.join(",") : ""}[p${k}]`);
+    // 시간 단위(settb)는 맨 끝에 — fps 가 1/30 으로 바꿔 놓으면 xfade 가 "timebase 다름"으로 실패한다
+    f.push(`[${k}:v]fps=${FPS},format=yuv420p${pad.length ? "," + pad.join(",") : ""},settb=AVTB[p${k}]`);
   });
   let cur = "p0";
   let len = lens[0] + (trs[1] ? trs[1].b : 0);
@@ -419,9 +454,8 @@ async function joinWithTransitions(segs, trs, out, tmp, enc) {
     }
     cur = nx;
   }
-  // 소리는 그대로 이어 붙인다 (전환해도 말·자막 시각이 움직이지 않게)
-  f.push(`${segs.map((_, k) => `[${k}:a]`).join("")}concat=n=${segs.length}:v=0:a=1[aout]`);
-  const tail = ["-filter_complex", f.join(";"), "-map", `[${cur}]`, "-map", "[aout]", "-r", String(FPS), "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out];
+  // 소리는 따로 원음으로 이어 붙인다 (전환해도 말·자막 시각이 움직이지 않게) — 여기선 화면만
+  const tail = ["-filter_complex", f.join(";"), "-map", `[${cur}]`, "-r", String(FPS), "-an", out];
   try {
     await ff.run(ff.ff(), [...args, ...enc.args("final"), ...tail], { cwd: tmp });
   } catch (e) {
@@ -473,12 +507,18 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
   const t0 = Date.now();
   try {
     const segs = [];
+    const auds = [];
     let done = 0;
     for (let i = 0; i < items.length; i++) {
       if (isCancelled()) throw new Error("내보내기를 멈췄습니다.");
       onProgress(`클립 ${i + 1} / ${items.length} 만드는 중…`, (done / total) * 0.9);
       const over = tl.layersAt(p, items[i].clip.id, order).filter((l) => l.type !== "music" && !l.off);
-      segs.push(await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over));
+      // 화면 칸 수 — 앞에서부터 누적으로 (조각마다 반올림하면 뒤로 갈수록 입 모양이 소리와 어긋난다)
+      const frames = Math.max(1, Math.round((items[i].start + items[i].dur) * FPS) - Math.round(items[i].start * FPS));
+      const edge = { in: !continuous(items[i - 1] && items[i - 1].clip, items[i].clip), out: !continuous(items[i].clip, items[i + 1] && items[i + 1].clip) };
+      const seg = await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over, frames, edge);
+      segs.push(seg.video);
+      auds.push(seg.audio);
       done += items[i].dur;
     }
     onProgress("클립을 잇는 중…", 0.92);
@@ -489,8 +529,12 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
       await joinWithTransitions(segs, trs, joined, tmp, enc);
     } else {
       fs.writeFileSync(path.join(tmp, "list.txt"), segs.map((s) => `file '${path.basename(s)}'`).join("\n"));
-      await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", joined], { cwd: tmp });
+      await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", joined], { cwd: tmp });
     }
+    // 소리 — 원음 조각을 빈틈 없이 이어 한 줄로 (압축은 맨 마지막 한 번)
+    const joinedWav = path.join(tmp, "joined.wav");
+    fs.writeFileSync(path.join(tmp, "alist.txt"), auds.map((s) => `file '${path.basename(s)}'`).join("\n"));
+    await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "alist.txt", "-c", "copy", joinedWav], { cwd: tmp });
 
     const outDir = require("./folders").exportDir(p); // 처음 화면 [저장 폴더] (기본: .gss 파일 옆)
     fs.mkdirSync(outDir, { recursive: true });
@@ -511,9 +555,9 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     // 애니메이션 효과음 (사진·글자 나타날 때, 메인자막) — 파일은 앱 안 src/video/sfx
     const sfxs = tl.sfxEvents(p, items, order).filter((e) => /^[a-z0-9-]+$/.test(e.name) && fs.existsSync(path.join(__dirname, "sfx", `${e.name}.mp3`)));
     const resize = scale !== 1 ? ["-vf", `scale=-2:${Math.round(H0 * scale / 2) * 2}`] : null;
-    if (musics.length || resize || sfxs.length) {
-      onProgress(musics.length ? "배경 음악을 섞는 중…" : sfxs.length ? "효과음을 섞는 중…" : "해상도를 맞추는 중…", 0.95);
-      const a = ["-y", "-hide_banner", "-loglevel", "error", "-i", joined];
+    {
+      onProgress(musics.length ? "배경 음악을 섞는 중…" : sfxs.length ? "효과음을 섞는 중…" : "마무리하는 중…", 0.95);
+      const a = ["-y", "-hide_banner", "-loglevel", "error", "-i", joined, "-i", joinedWav];
       if (musics.length || sfxs.length) {
         const fl = [];
         musics.forEach(({ l, s, len }, i) => {
@@ -525,7 +569,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
           const fo = Math.min(len / 2, Math.max(0, Number(l.fadeOut) || 0));
           const ms = Math.round(s * 1000);
           fl.push(
-            `[${i + 1}:a]volume=${mv},aresample=48000,aformat=channel_layouts=stereo,atrim=duration=${len.toFixed(3)},asetpts=PTS-STARTPTS` +
+            `[${i + 2}:a]volume=${mv},aresample=48000,aformat=channel_layouts=stereo,atrim=duration=${len.toFixed(3)},asetpts=PTS-STARTPTS` +
               (fi > 0 ? `,afade=t=in:st=0:d=${fi.toFixed(2)}` : "") +
               (fo > 0 ? `,afade=t=out:st=${(len - fo).toFixed(3)}:d=${fo.toFixed(2)}` : "") +
               (ms > 0 ? `,adelay=${ms}|${ms}` : "") +
@@ -533,11 +577,11 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
           );
         });
         const mix = []; // 말소리에 더할 것 — 줄인 음악, 효과음들
-        let voice = "[0:a]";
+        let voice = "[1:a]";
         if (musics.length) {
           fl.push(musics.length > 1 ? `${musics.map((_, i) => `[m${i}]`).join("")}amix=inputs=${musics.length}:duration=longest:normalize=0[mm]` : `[m0]anull[mm]`);
           fl.push(`[mm]apad,atrim=duration=${total.toFixed(3)}[mt]`);
-          fl.push(`[0:a]asplit=2[v1][v2]`);
+          fl.push(`[1:a]asplit=2[v1][v2]`);
           fl.push(`[mt][v1]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=400[md]`);
           voice = "[v2]";
           mix.push("[md]");
@@ -545,17 +589,18 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
         sfxs.forEach((e, i) => {
           a.push("-i", path.join(__dirname, "sfx", `${e.name}.mp3`));
           const ms = Math.max(0, Math.round(e.t * 1000));
-          fl.push(`[${musics.length + 1 + i}:a]volume=${e.vol.toFixed(2)},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""}[x${i}]`);
+          fl.push(`[${musics.length + 2 + i}:a]volume=${e.vol.toFixed(2)},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""}[x${i}]`);
           mix.push(`[x${i}]`);
         });
         fl.push(`${voice}${mix.join("")}amix=inputs=${mix.length + 1}:duration=first:normalize=0[a]`);
-        a.push("-filter_complex", fl.join(";"), "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "192k");
-      } else a.push("-map", "0:v", "-map", "0:a", "-c:a", "copy");
+        a.push("-filter_complex", fl.join(";"), "-map", "0:v", "-map", "[a]");
+      } else a.push("-map", "0:v", "-map", "1:a");
+      a.push("-c:a", "aac", "-b:a", "192k"); // 소리 압축은 여기서 한 번만
       if (resize) a.push(...resize, ...enc.args("final"));
       else a.push("-c:v", "copy");
       a.push("-movflags", "+faststart", outFile);
       await ff.run(ff.ff(), a, { cwd: tmp });
-    } else fs.copyFileSync(joined, outFile);
+    }
     log.info(`[굽기] ${outFile} ${total.toFixed(1)}초 영상, ${((Date.now() - t0) / 1000).toFixed(1)}초 걸림 (${enc.name})`);
     onProgress("완성했어요", 1);
     return { file: outFile, seconds: total, took: (Date.now() - t0) / 1000, encoder: enc.name };
@@ -565,12 +610,14 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
 }
 
 /** 소리만 내보내기 (mp3·wav) — 영상 굽기 뒤 소리만 뽑는다 */
-async function exportAudio(p, kind = "mp3", onProgress) {
-  const r = await render(p, {}, onProgress);
+/** 소리만 내보내기 — 작은 화면(480p)으로 빨리 구운 뒤 소리만 꺼낸다. opts 는 render 와 같음 (내보낼 클립 범위) */
+async function exportAudio(p, kind = "mp3", onProgress, opts = {}, isCancelled) {
+  const r = await render(p, { ...opts, height: 480 }, onProgress, isCancelled);
   const out = r.file.replace(/\.mp4$/, `.${kind}`);
+  onProgress && onProgress("소리만 꺼내는 중…", 0.99);
   await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-i", r.file, "-vn", ...(kind === "mp3" ? ["-b:a", "192k"] : []), out]);
   fs.rmSync(r.file, { force: true });
-  return out;
+  return { file: out, seconds: r.seconds, took: r.took };
 }
 
 /** 지금 화면 한 장 (png) */

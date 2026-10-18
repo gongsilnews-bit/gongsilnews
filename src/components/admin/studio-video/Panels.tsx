@@ -1,10 +1,11 @@
 "use client";
 
 // 오른쪽 칸 — 자료 고르기(내 자료·공실 사진·무료 자료·AI 그림·자료 창고) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
 import { DRAG_MEDIA, RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
-import { STUDIO_VOICES, VOICE_MOODS, voicePhoto } from "@/lib/studio-video/voices";
+import { STUDIO_VOICES, VOICE_MOODS, voicePhoto, findVoice, MY_VOICE_ID } from "@/lib/studio-video/voices";
+import { MyVoicePane } from "./MyVoice";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioImager } from "@/components/admin/sections/useStudioWriter";
@@ -42,7 +43,18 @@ const chip = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12
 
 /* ── 자료 고르기 ── */
 export type LibPickAction = "replace" | "insert" | "overlay";
-export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean }) {
+/** 클립 글에서 찾기 낱말 — 조사·어미를 떼고 2글자 이상 (브루처럼 단추로) */
+const JOSA = /(으로써|으로|에서|에게|까지|부터|이라고|이라|이며|이고|입니다|였다|이었다|했다|된다|됐다|한다|하는|하며|으며|은|는|이|가|을|를|에|의|로|와|과|도|만)$/;
+export function keywordsOf(text: string): string[] {
+  const out: string[] = [];
+  for (const raw of String(text || "").replace(/[.,?!()"'“”‘’·%~…[\]]/g, " ").split(/\s+/)) {
+    const w = raw.replace(JOSA, "");
+    if (w.length >= 2 && !out.includes(w)) out.push(w);
+  }
+  return out.slice(0, 10);
+}
+
+export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null }) {
   const b = videoBridge();
   const [tab, setTab] = useState(initialTab);
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
@@ -62,8 +74,10 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [vac, setVac] = useState(project.vacancyId || "");
   // 무료 자료
   const [stockQ, setStockQ] = useState("");
-  const [stockType, setStockType] = useState<"photo" | "video">("video");
+  const [stockType, setStockType] = useState<"all" | "photo" | "video">("all");
   const [stock, setStock] = useState<StockItem[] | null>(null);
+  const [replaceOn, setReplaceOn] = useState(true); // [교체할 이미지] — 켜져 있으면 누르면 바로 바꾸기 (브루처럼)
+  const chips = useMemo(() => keywordsOf(target?.text || ""), [target?.text]);
   // AI 그림
   const [aiPrompt, setAiPrompt] = useState("");
   const imgAi = useStudioImager();
@@ -103,35 +117,131 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       setPicked(added[0]);
     }
   };
-  const searchStock = async () => {
-    if (!b || !stockQ.trim()) return;
+  const searchStock = async (word?: string, type = stockType) => {
+    const qq = (word ?? stockQ).trim();
+    if (!b || !qq) return;
+    if (word !== undefined) setStockQ(word);
     setBusy("찾는 중…");
     setStock(null);
     setMsg("");
     const orient = project.ratio === "9:16" || project.ratio === "4:5" ? "portrait" : project.ratio === "1:1" ? "square" : "landscape";
     try {
-      const r = await b.stock.search(stockQ.trim(), stockType, orient);
-      if (!r.success) {
-        setMsg(r.error || "찾지 못했어요.");
-        setStock([]);
-      } else setStock(r.items || []);
+      // 전체 = 사진·영상을 함께 찾아 번갈아
+      const kinds: ("photo" | "video")[] = type === "all" ? ["video", "photo"] : [type];
+      const rs = await Promise.all(kinds.map((k) => b.stock.search(qq, k, orient)));
+      const bad = rs.find((r) => !r.success);
+      const lists = rs.filter((r) => r.success).map((r) => r.items || []);
+      const mixed: StockItem[] = [];
+      for (let i = 0; i < Math.max(0, ...lists.map((l) => l.length)); i++) for (const l of lists) if (l[i]) mixed.push(l[i]);
+      if (!mixed.length && bad) setMsg(bad.error || "찾지 못했어요.");
+      setStock(mixed);
     } catch (e) {
       setMsg(errText(e));
       setStock([]);
     }
     setBusy("");
   };
+  // 무료 자료를 열면 고른 클립 글의 첫 낱말로 바로 찾는다
+  const lastAuto = useRef("");
+  useEffect(() => {
+    if (tab !== "free" || !chips.length || lastAuto.current === (target?.text || "")) return;
+    lastAuto.current = target?.text || "";
+    void searchStock(chips[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, chips]);
   const getStock = async (s: StockItem) => {
     if (!b) return;
     setBusy("무료 자료를 PC로 받는 중…");
     try {
       const it = await b.stock.get(project.dir, s);
-      setPicked(it);
+      // [교체할 이미지]가 켜져 있으면 바로 바꾼다
+      if (target && replaceOn && canReplace && !overlay) {
+        setBusy("화면을 바꾸는 중…");
+        await onPick(it, "replace");
+      } else setPicked(it);
     } catch (e) {
       setMsg(errText(e));
     }
     setBusy("");
   };
+  // 무료 자료 즐겨찾기 — ★ 누르면 PC로 받아 [내 자료]에 담고 즐겨찾기 (무료 자료 id → 내 자료 id 를 이 PC 에 기억)
+  const FAV_KEY = "gsv-stock-fav";
+  const [stockFav, setStockFav] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(FAV_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const saveFav = (m: Record<string, string>) => {
+    setStockFav(m);
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(m));
+    } catch {}
+  };
+  const toggleStockFav = async (s: StockItem) => {
+    if (!b) return;
+    const libId = stockFav[s.id];
+    try {
+      if (libId) {
+        await b.lib.fav(libId, false);
+        const m = { ...stockFav };
+        delete m[s.id];
+        saveFav(m);
+        setMsg("");
+        return;
+      }
+      setBusy("즐겨찾기에 담는 중… (PC로 받아요)");
+      // 프로젝트 작업 폴더가 아니라 [문서\공실뉴스 스튜디오\영상\받은 자료]에 — 프로젝트를 지워도 남게
+      const it = await b.stock.get("", s);
+      await b.lib.fav(it.id, true);
+      saveFav({ ...stockFav, [s.id]: it.id });
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setBusy("");
+  };
+  /** ⬇ PC에 받기 — [문서\공실뉴스 스튜디오\영상\받은 자료]에 받고 탐색기로 보여 준다 */
+  const saveStock = async (s: StockItem) => {
+    if (!b) return;
+    setBusy("PC로 받는 중…");
+    try {
+      const it = await b.stock.get("", s);
+      setMsg("");
+      if (it.path) b.showFile(it.path);
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setBusy("");
+  };
+  // 무료 자료 — 원래 비율 그대로 두 줄 벽돌 쌓기 (브루처럼), 영상은 길이
+  const masonry = (list: StockItem[]) => (
+    <div style={{ columnCount: 2, columnGap: 8, padding: "10px 14px" }}>
+      {list.map((it) => (
+        <button key={it.id} type="button" onClick={() => getStock(it)} draggable title={target && replaceOn ? "눌러서 바로 교체 · 클립으로 끌어다 놓기" : "눌러서 고르기 · 클립으로 끌어다 놓기"}
+          onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
+          onDragStart={(e) => {
+            setHover(null);
+            e.dataTransfer.setData(DRAG_MEDIA, JSON.stringify({ stock: it }));
+            e.dataTransfer.effectAllowed = "copy";
+          }}
+          style={{ position: "relative", display: "block", width: "100%", marginBottom: 8, breakInside: "avoid", aspectRatio: it.width && it.height ? `${it.width} / ${it.height}` : "16 / 10", padding: 0, border: 0, borderRadius: 4, overflow: "hidden", background: "#000", cursor: "pointer" }}>
+          {it.thumb && <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+          {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{it.duration ? fmtTime(it.duration, false) : "영상"}</span>}
+          <span role="button" title="PC에 받기 (문서\공실뉴스 스튜디오\영상\받은 자료)" draggable={false}
+            onClick={(e) => { e.stopPropagation(); void saveStock(it); }}
+            style={{ position: "absolute", right: 34, top: 4, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", color: "#fff", cursor: "pointer" }}>
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
+          </span>
+          <span role="button" title={stockFav[it.id] ? "즐겨찾기 빼기" : "즐겨찾기 (PC로 받아 [내 자료]에 담아요)"} draggable={false}
+            onClick={(e) => { e.stopPropagation(); void toggleStockFav(it); }}
+            style={{ position: "absolute", right: 4, top: 4, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", color: stockFav[it.id] ? "#FACC15" : "#fff", cursor: "pointer" }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill={stockFav[it.id] ? "#FACC15" : "none"} stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z" /></svg>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
   const drawAi = async () => {
     if (!b || !aiPrompt.trim()) return;
     setBusy(`${imgAi}가 그림을 그리는 중… (1~2분)`);
@@ -342,16 +452,37 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       )}
 
       {tab === "free" && (
-        <div style={{ padding: "12px 14px 0" }}>
-          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-            {(["video", "photo"] as const).map((k) => <button key={k} type="button" onClick={() => setStockType(k)} style={chip(stockType === k)}>{k === "video" ? "영상" : "사진"}</button>)}
+        <div>
+          {/* 교체할 이미지 — 고른 클립 화면. 켜져 있으면 누르면 바로 교체 */}
+          {target && canReplace && !overlay && replaceOn && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "rgba(14,116,144,0.25)", borderBottom: `1px solid ${C.line}` }}>
+              <span style={{ fontSize: 14.5, fontWeight: 800 }}>교체할 이미지</span>
+              <span style={{ width: 40, height: 28, borderRadius: 3, overflow: "hidden", background: "#000", border: `1px solid ${C.line2}` }}>{target.thumb && <img src={target.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}</span>
+              <span style={{ flex: 1 }} />
+              <button type="button" onClick={() => setReplaceOn(false)} style={{ border: 0, background: "transparent", color: "#22d3ee", fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>해제</button>
+            </div>
+          )}
+          {target && canReplace && !overlay && !replaceOn && (
+            <div style={{ padding: "8px 14px 0" }}><button type="button" onClick={() => setReplaceOn(true)} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 13, fontFamily: FONT, cursor: "pointer", padding: 0 }}>↺ 고른 클립 화면을 바로 교체하기</button></div>
+          )}
+          <div style={{ padding: "12px 14px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 10px", borderRadius: 8, border: "1px solid #22d3ee", background: C.bg }}>
+              <Icon name="search" size={17} />
+              <input value={stockQ} onChange={(e) => setStockQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchStock()} placeholder="예: 서울 아파트, 거실"
+                style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: C.text, fontSize: 15, fontFamily: FONT }} />
+              {stockQ && <button type="button" onClick={() => { setStockQ(""); setStock(null); }} title="지우기" style={{ width: 22, height: 22, borderRadius: 11, border: 0, background: C.sub, color: C.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={13} stroke={2.6} /></button>}
+            </div>
+            {chips.length > 0 && (
+              <div style={{ display: "flex", gap: 6, marginTop: 10, overflowX: "auto", paddingBottom: 2 }}>
+                {chips.map((w) => <button key={w} type="button" onClick={() => searchStock(w)} style={{ ...chip(stockQ === w), height: 30, borderRadius: 15, flexShrink: 0, fontSize: 13 }}>{w}</button>)}
+              </div>
+            )}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input value={stockQ} onChange={(e) => setStockQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchStock()} placeholder="예: 서울 아파트, apartment" style={{ ...input, height: 38, fontSize: 14 }} />
-            <Btn small onClick={searchStock}><Icon name="search" size={16} />찾기</Btn>
+          <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, marginTop: 8 }}>
+            {(["all", "photo", "video"] as const).map((k) => <button key={k} type="button" onClick={() => { setStockType(k); if (stockQ.trim()) void searchStock(undefined, k); }} style={tabBtn(stockType === k)}>{k === "all" ? "전체" : k === "photo" ? "이미지" : "비디오"}</button>)}
           </div>
-          <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요.</div>
-          {stock && (stock.length ? <div style={{ margin: "0 -14px" }}>{grid(stock, (x) => getStock(x as StockItem))}</div> : !msg && <div style={{ padding: "16px 0", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
+          {stock && (stock.length ? masonry(stock) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
+          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실뉴스 스튜디오\영상\받은 자료]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</div>
         </div>
       )}
 
@@ -383,6 +514,7 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
   const [volume, setVolume] = useState(cur.volume ?? 1);
   const [g, setG] = useState<"all" | "여성" | "남성">("all");
   const [rec, setRec] = useState(true);
+  const [meTab, setMeTab] = useState(cur.id === MY_VOICE_ID); // [내 목소리] 탭
   const [age, setAge] = useState("");
   const [mood, setMood] = useState("");
   const [msg, setMsg] = useState("");
@@ -411,7 +543,7 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
-  const pick = STUDIO_VOICES.find((v) => v.id === id);
+  const pick = findVoice(id);
   const fchip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 18, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const tab = (on: boolean): React.CSSProperties => ({ height: 46, padding: "0 4px", border: 0, borderBottom: `3px solid ${on ? C.accent : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 17, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
   const head: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 };
@@ -426,10 +558,12 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
         <div style={{ flex: 1, minHeight: 0, margin: "0 22px", border: `1px solid ${C.line2}`, borderRadius: 8, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* 위 탭 */}
           <div style={{ display: "flex", gap: 22, padding: "0 18px", borderBottom: `1px solid ${C.line2}` }}>
-            <button type="button" onClick={() => setRec(true)} style={tab(rec)}>추천</button>
-            <button type="button" onClick={() => setRec(false)} style={tab(!rec)}>전체</button>
+            <button type="button" onClick={() => { setRec(true); setMeTab(false); }} style={tab(rec && !meTab)}>추천</button>
+            <button type="button" onClick={() => { setRec(false); setMeTab(false); }} style={tab(!rec && !meTab)}>전체</button>
+            <button type="button" onClick={() => setMeTab(true)} style={tab(meTab)}>내 목소리</button>
           </div>
-          <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+          {meTab && <MyVoicePane selected={id === MY_VOICE_ID} onPick={() => setId(MY_VOICE_ID)} />}
+          <div style={{ flex: 1, minHeight: 0, display: meTab ? "none" : "flex" }}>
             {/* 왼쪽 거르기 */}
             <div style={{ width: 200, flexShrink: 0, padding: 16, borderRight: `1px solid ${C.line2}`, overflowY: "auto" }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>

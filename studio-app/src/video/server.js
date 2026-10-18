@@ -26,9 +26,15 @@ async function download(url, dest) {
   const res = await session.defaultSession.fetch(url, { headers: { "User-Agent": ua() } });
   if (!res.ok) throw new Error(`파일을 받지 못했습니다 (${res.status}).`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const tmp = `${dest}.part`;
+  // 임시 파일은 받을 때마다 다른 이름 — 같은 파일을 동시에 두 번 받으면 .part 를 함께 써서 이름 바꾸기가 막혔다 (EPERM, 2026-10-18)
+  const tmp = `${dest}.${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.part`;
   fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
-  fs.renameSync(tmp, dest);
+  try {
+    fs.renameSync(tmp, dest);
+  } catch (e) {
+    fs.rmSync(tmp, { force: true });
+    if (!fs.existsSync(dest)) throw e; // 다른 받기가 먼저 끝냈으면 그 파일을 쓴다
+  }
   return dest;
 }
 

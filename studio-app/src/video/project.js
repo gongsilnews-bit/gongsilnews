@@ -531,16 +531,21 @@ async function addAsset(p, libId, onProgress = () => {}) {
 }
 
 /* ── AI 목소리 ── 같은 문장·목소리는 한 번만 받는다 (프로젝트 voice\) */
-async function voiceFor(p, text, voiceId) {
+/** opts.fresh — [목소리 다시 만들기]: 저장해 둔 것을 쓰지 않고 새로 만든다 (새 파일 이름이라 미리보기도 바로 바뀜, 기본 파일도 새것으로) */
+async function voiceFor(p, text, voiceId, opts = {}) {
   const t = String(text || "").replace(/\s+/g, " ").trim();
   if (!t) throw new Error("읽을 문장이 없습니다.");
-  const h = crypto.createHash("sha1").update(`${voiceId}\n${t}`).digest("hex").slice(0, 16);
-  const file = path.join(p.dir, "voice", `${voiceId}_${h}.wav`);
-  if (!fs.existsSync(file)) {
-    const r = await server.call("/api/studio/video/voice", { method: "POST", body: { text: t, voice: voiceId } });
+  const my = voiceId === "me" ? require("./myvoice") : null; // 내 목소리 — PC 에서 만든다 (목소리를 다시 등록하면 새로)
+  const h = crypto.createHash("sha1").update(`${voiceId}\n${my ? my.stamp() + "\n" : ""}${t}`).digest("hex").slice(0, 16);
+  const base = path.join(p.dir, "voice", `${voiceId}_${h}.wav`);
+  const file = opts.fresh ? base.replace(/\.wav$/, `_${Date.now().toString(36)}.wav`) : base;
+  if (my && !fs.existsSync(file)) await my.say(t, file);
+  else if (!fs.existsSync(file)) {
+    const r = await server.call("/api/studio/video/voice", { method: "POST", body: { text: t, voice: voiceId, fresh: Boolean(opts.fresh) } });
     if (!r.success) throw new Error(r.error || "목소리를 만들지 못했습니다.");
     await server.download(r.url, file);
   }
+  if (opts.fresh) fs.copyFileSync(file, base); // 다음에 같은 문장을 부르면 새로 만든 것이 나오게
   media.allow(file);
   const info = await ff.probe(file);
   return { file, url: media.urlOf(file), duration: info.duration, id: voiceId, text: t, words: spreadWords(t, info.duration) };
@@ -581,6 +586,23 @@ function spreadWords(text, dur) {
 }
 
 /* ── 받아쓰기 ── 소리만 90초씩 서버로 (원본 영상은 보내지 않음) → 문장 + 무음 구간으로 시각 맞추기 */
+/**
+ * 소리 토막 받아쓰기 → { success, segments:[{start,end,text}] } (토막 기준 초)
+ *  PC 의 Whisper 로 (무료, 시각 정확, 글만 서버에서 교정). Whisper 가 없는 옛 설치면 예전처럼 서버(Gemini)로 소리를 보낸다
+ */
+async function listen(file, start, len, tmp) {
+  const wh = require("./whisper");
+  if (wh.ready()) return { success: true, segments: await wh.segments(file, { start, len }) };
+  await ff.audioForSpeech(file, tmp, { start, len });
+  const b64 = fs.readFileSync(tmp).toString("base64");
+  fs.rmSync(tmp, { force: true });
+  let r = null;
+  for (let tryNo = 0; tryNo < 3 && !(r && r.success); tryNo++) {
+    r = await server.call("/api/studio/video/transcribe", { method: "POST", body: { audio: b64, mime: "audio/mpeg" } }).catch((e) => ({ success: false, error: e.message }));
+  }
+  return r;
+}
+
 async function transcribe(p, assetId, onProgress = () => {}) {
   const a = p.assets[assetId];
   if (!a) throw new Error("영상을 찾지 못했습니다.");
@@ -592,13 +614,7 @@ async function transcribe(p, assetId, onProgress = () => {}) {
   for (let i = 0; i < parts; i++) {
     onProgress(`말소리를 글로 바꾸는 중… (${i + 1}/${parts})`, i / parts);
     const start = i * CH;
-    const tmp = path.join(p.dir, "audio", `${assetId}_${i}.mp3`);
-    await ff.audioForSpeech(a.path, tmp, { start, len: Math.min(CH + 1, dur - start) });
-    const b64 = fs.readFileSync(tmp).toString("base64");
-    let r = null;
-    for (let tryNo = 0; tryNo < 3 && !(r && r.success); tryNo++) {
-      r = await server.call("/api/studio/video/transcribe", { method: "POST", body: { audio: b64, mime: "audio/mpeg" } }).catch((e) => ({ success: false, error: e.message }));
-    }
+    const r = await listen(a.path, start, Math.min(CH + 1, dur - start), path.join(p.dir, "audio", `${assetId}_${i}.mp3`));
     if (!r || !r.success) throw new Error(`받아쓰기에 실패했습니다: ${(r && r.error) || ""}`);
     for (const s of r.segments || []) {
       const ss = start + s.start;
@@ -650,14 +666,7 @@ async function transcribeClips(p, targets, onProgress = () => {}) {
   for (let i = 0; i < pieces.length; i++) {
     const pc = pieces[i];
     onProgress(`말소리를 글로 바꾸는 중… (${i + 1}/${pieces.length})`, i / pieces.length);
-    const tmp = path.join(p.dir, "audio", `${pc.asset}_c${Math.round(pc.s * 1000)}.mp3`);
-    await ff.audioForSpeech(p.assets[pc.asset].path, tmp, { start: pc.s, len: pc.e - pc.s + 0.3 });
-    const b64 = fs.readFileSync(tmp).toString("base64");
-    fs.rmSync(tmp, { force: true });
-    let r = null;
-    for (let tryNo = 0; tryNo < 3 && !(r && r.success); tryNo++) {
-      r = await server.call("/api/studio/video/transcribe", { method: "POST", body: { audio: b64, mime: "audio/mpeg" } }).catch((e) => ({ success: false, error: e.message }));
-    }
+    const r = await listen(p.assets[pc.asset].path, pc.s, pc.e - pc.s + 0.3, path.join(p.dir, "audio", `${pc.asset}_c${Math.round(pc.s * 1000)}.mp3`));
     if (!r || !r.success) throw new Error(`받아쓰기에 실패했습니다: ${(r && r.error) || ""}`);
     const arr = (words[pc.asset] = words[pc.asset] || []);
     const sp = speechOf[pc.asset] || [];

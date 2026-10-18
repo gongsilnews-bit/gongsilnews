@@ -13,9 +13,11 @@ const server = require("./server");
 const media = require("./media");
 const ff = require("./ff");
 const vai = require("./ai");
+const myvoice = require("./myvoice");
 
 let baseUrl = "";
 const jobs = new Map(); // 굽기 멈추기
+const stockGets = new Map(); // 무료 자료 받는 중 (파일 → 받기)
 const recs = new Map(); // 녹화 중 파일
 let chosenSource = null; // 화면 녹화로 고른 화면
 const sourceDisplay = new Map(); // 화면 id → 모니터 번호
@@ -419,8 +421,45 @@ function register(base) {
   });
 
   /* ── AI 목소리 ── */
-  ipcMain.handle("video:voice", (_e, dir, text, voiceId) => project.voiceFor({ dir }, text, voiceId));
+  ipcMain.handle("video:voice", (_e, dir, text, voiceId, opts) => project.voiceFor({ dir }, text, voiceId, opts || {}));
   // 단어마다 목소리가 다른 클립 — 조각을 한 파일로 (0.1.8부터)
+  /* 내 목소리 성우 (PC 에서, 무료) — 켜기(내려받기)·등록(직접 녹음 / 파일)·샘플 */
+  const myStatus = () => {
+    const st = myvoice.status();
+    if (st.sample) media.allow(st.sample);
+    if (st.ref) media.allow(st.ref);
+    const q = `?t=${encodeURIComponent(st.registeredAt)}`;
+    return { ...st, sampleUrl: st.sample ? media.urlOf(st.sample) + q : "", refUrl: st.ref ? media.urlOf(st.ref) + q : "" };
+  };
+  ipcMain.handle("video:myvoice-update", (_e, patch) => {
+    myvoice.update(patch || {});
+    return myStatus();
+  });
+  // 받아쓰기 낱말장 — [말한 내용 고치기]로 고친 낱말 (내 PC 바로 + 서버에 모음)
+  ipcMain.handle("video:stt-words-add", (_e, pairs) => require("./whisper").addWords(pairs));
+  ipcMain.handle("video:myvoice-status", () => myStatus());
+  ipcMain.handle("video:myvoice-install", async (e) => {
+    await myvoice.install((t, f) => send(e, "video:myvoice-progress", t, f));
+    return myStatus();
+  });
+  ipcMain.handle("video:myvoice-record", async (_e, bytes, text) => {
+    await myvoice.register(bytes, text);
+    return myStatus();
+  });
+  ipcMain.handle("video:myvoice-file", async (e) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "내 목소리 녹음 파일 고르기", properties: ["openFile"], filters: [{ name: "녹음·영상", extensions: ["mp3", "m4a", "wav", "aac", "ogg", "flac", "opus", "mp4", "mov", "webm", "mkv"] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    await myvoice.registerFile(r.filePaths[0], (t, f) => send(e, "video:myvoice-progress", t, f));
+    return myStatus();
+  });
+  ipcMain.handle("video:myvoice-sample", async () => {
+    await myvoice.sample();
+    return myStatus();
+  });
+  ipcMain.handle("video:myvoice-remove", () => {
+    myvoice.remove();
+    return myStatus();
+  });
   ipcMain.handle("video:voice-join", (_e, dir, files) => project.voiceJoin({ dir }, files));
 
   /* ── 받아쓰기 ── */
@@ -482,7 +521,9 @@ function register(base) {
     const file = path.join(dir || path.join(library.studioRoot(), "영상", "받은 자료"), "assets", `${String(item.id).replace(/[^\w-]/g, "")}.${ext}`);
     if (!fs.existsSync(file)) {
       send(e, "video:progress", "무료 자료를 PC로 받는 중…");
-      await server.download(item.url, file);
+      // 같은 자료를 받는 중이면 (⬇·★·고르기를 연달아 누름) 그 받기를 함께 기다린다
+      if (!stockGets.has(file)) stockGets.set(file, server.download(item.url, file).finally(() => stockGets.delete(file)));
+      await stockGets.get(file);
     }
     return (await library.add([file], { source: "free", credit: `${item.source} · ${item.credit}` }))[0];
   });
@@ -509,7 +550,16 @@ function register(base) {
     }
   });
   ipcMain.handle("video:render-cancel", (_e, id) => jobs.set(id, true));
-  ipcMain.handle("video:export-audio", (e, p, kind) => render.exportAudio(p, kind, (t, f) => send(e, "video:render-progress", t, f)));
+  ipcMain.handle("video:export-audio", async (e, p, kind, opts) => {
+    const id = crypto.randomBytes(4).toString("hex");
+    jobs.set(id, false);
+    send(e, "video:render-job", id);
+    try {
+      return await render.exportAudio(p, kind, (t, f) => send(e, "video:render-progress", t, f), opts || {}, () => jobs.get(id));
+    } finally {
+      jobs.delete(id);
+    }
+  });
   ipcMain.handle("video:snapshot", async (_e, p, file, at) => {
     const out = path.join(folders.exportDir(p), `${p.name}_화면_${Date.now()}.png`);
     fs.mkdirSync(path.dirname(out), { recursive: true });

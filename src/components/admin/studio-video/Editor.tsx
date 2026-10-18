@@ -9,7 +9,7 @@ import { GAP, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLine
 import MediaMenu, { SoundMenu, type MediaFit, type MediaOrder } from "./MediaMenu";
 import { NewClipDialog, type NewClipSpec } from "./NewClip";
 import VideoStart from "./VideoStart";
-import { STUDIO_VOICES } from "@/lib/studio-video/voices";
+import { findVoice } from "@/lib/studio-video/voices";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
@@ -148,6 +148,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [overlayTarget, setOverlayTarget] = useState(""); // 사진을 바꿀 애셋
   const [musicTarget, setMusicTarget] = useState(""); // 음악을 바꿀 애셋
   const clipboard = useRef<Clip[]>([]);
+  const [learn, setLearn] = useState<{ wrong: string; right: string; context: string; on: boolean }[] | null>(null); // 받아쓰기 낱말장에 넣을까
   const player = useRef<PlayerHandle>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [big, setBig] = useState(false);
@@ -317,7 +318,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   }, [project]);
 
   /* ── AI 목소리 만들기 (한 번에 3개씩) ── */
-  const revoice = useCallback(async (ids: string[]) => {
+  /** fresh — [목소리 다시 만들기]: 저장해 둔 목소리를 쓰지 않고 새로 만든다 (내 목소리처럼 만들 때마다 다른 것) */
+  const revoice = useCallback(async (ids: string[], fresh = false) => {
     const list = ids.filter((id) => findClip(pref.current, id)?.clip.type === "voice");
     let k = 0;
     const one = async () => {
@@ -350,7 +352,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           }
           if (runs.length > 1 && b.voiceJoin) {
             const parts = [];
-            for (const r of runs) parts.push(await b.voice(pref.current.dir, r.tokens.join(" "), r.v));
+            for (const r of runs) parts.push(await b.voice(pref.current.dir, r.tokens.join(" "), r.v, { fresh }));
             const j = await b.voiceJoin(pref.current.dir, parts.map((x) => x.file));
             // 단어 시각 — 조각 길이만큼 밀어서 잇고, 다른 목소리 표시는 그대로
             const words: Word[] = [];
@@ -368,7 +370,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               fitVoice(c, j.duration, p);
             }, false);
           } else {
-            const r = await b.voice(pref.current.dir, text, base);
+            const r = await b.voice(pref.current.dir, text, base, { fresh });
             change((p) => {
               const c = findClip(p, id)?.clip;
               if (!c) return;
@@ -693,8 +695,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     // 단어 단추 막대 ✂ ⧉ 📋 — 고른 단어를 (Ctrl+X·C·V 와 같다). 단어를 안 골랐으면 클립을
     cutClip: (id) => {
       if (selWord?.clip === id) {
-        copyWords();
-        return deleteWords();
+        if (copyWords()) deleteWords();
+        return;
       }
       const c = findClip(pref.current, id)?.clip;
       if (!c) return;
@@ -703,7 +705,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       actions.removeClip([id]);
     },
     copyClip: (id) => {
-      if (selWord?.clip === id) return copyWords();
+      if (selWord?.clip === id) {
+        copyWords();
+        return;
+      }
       const c = findClip(pref.current, id)?.clip;
       if (!c) return;
       clipboard.current = [structuredClone(c)];
@@ -804,6 +809,36 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         else c.subText = t;
       });
       say(text === null ? "말한 그대로 자막을 보여 줘요" : "자막을 바꿨어요 (목소리는 그대로예요)");
+    },
+    // 말한 내용 고치기 — 자동 자막이 잘못 알아들었을 때. 단어 칸을 새 글로 바꾸고 단어 시각을 실제 말소리에 다시 맞춘다 (PC에서, 무료)
+    editSpoken: async (id, text) => {
+      const t = text.replace(/\s+/g, " ").trim();
+      const c0 = findClip(pref.current, id)?.clip;
+      if (!c0?.src || c0.type !== "source") return;
+      if (!t) return say("말한 내용을 적어 주세요");
+      if (!b.realign) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (말한 내용 고치기 기능을 새로 연결해요)");
+      setWork({ title: "단어 시각을 말소리에 맞추는 중… (PC에서)" });
+      try {
+        const before = (c0.words || []).map((w) => w.w);
+        const [r] = await b.realign(pref.current, [{ id, asset: c0.src.asset, s: c0.src.s, e: c0.src.e, text: t }]);
+        if (!r?.words?.length) return say("단어 시각을 맞추지 못했어요");
+        change((p) => {
+          const c = findClip(p, id)?.clip;
+          if (!c) return;
+          c.words = r.words; // 지운 단어 표시는 새로 시작 (글이 바뀌었으니)
+          c.text = t;
+          delete c.subText;
+        });
+        setSelWord(null);
+        say("말한 내용을 고쳤어요 — 단어 칸·자막이 함께 바뀌었어요");
+        // 받아쓰기 낱말장 — 바뀐 낱말을 찾아 "다음에도 이렇게 고칠까요?" (회의 3-18)
+        const pairs = changedWords(before, t.split(" "));
+        if (pairs.length && b.sttWords) setLearn(pairs.map((x) => ({ ...x, on: true })));
+      } catch (e) {
+        say(errText(e));
+      } finally {
+        setWork(null);
+      }
     },
   };
 
@@ -1669,12 +1704,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     setSelWordSet(null);
     if (f.clip.type === "voice") revoice([f.clip.id]);
   };
-  const copyWords = () => {
-    if (!selWord) return;
+  /** 고른 단어 복사 — 복사했으면 true. 녹화·촬영(원본 소리) 클립은 단어를 옮기지 않는다 (2026-10-18 회의: 떼어 붙이면 어색하고 클립이 쪼개짐) */
+  const copyWords = (): boolean => {
+    if (!selWord) return false;
     const c = findClip(pref.current, selWord.clip)?.clip;
-    if (!c?.words) return;
+    if (!c?.words) return false;
     const is = wordIs().filter((i) => c.words![i]);
-    if (!is.length) return;
+    if (!is.length) return false;
+    if (c.type !== "voice" && c.src) {
+      say("녹화한 말은 단어를 옮길 수 없어요 — 지우려면 단어의 ⓧ, 문장째 옮기려면 클립을 옮겨 주세요");
+      return false;
+    }
     if (c.type === "voice" || !c.src) wordClip.current = { kind: "text", text: is.map((i) => c.words![i].w).join(" ") };
     else {
       // 이어진 단어끼리 한 구간 (떨어져 있으면 구간 여러 개)
@@ -1693,6 +1733,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     }
     lastCopy.current = "words";
     say(is.length > 1 ? `단어 ${is.length}개를 복사했어요 (단어를 고르고 Ctrl+V)` : "단어를 복사했어요 (단어를 고르고 Ctrl+V)");
+    return true;
   };
   /** 고른 단어 바로 뒤에 붙여넣기 — AI 목소리에 글자면 그 자리에 글을 넣고, 아니면 그 자리에서 클립을 나눠 사이에 새 클립 */
   const pasteWords = () => {
@@ -1719,8 +1760,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         return;
       }
       const c = g.clip;
-      // 고른 단어가 끝 단어가 아니면 그 뒤에서 나눈다 (splitAt 과 같은 방식)
-      if (c.words && t >= 0 && t < c.words.length - 1) {
+      // 고른 단어가 끝 단어가 아니면 그 뒤에서 나눈다 (splitAt 과 같은 방식) — AI 목소리 클립만. 녹화 클립은 쪼개지 않고 클립 뒤에 붙인다
+      if (c.type === "voice" && c.words && t >= 0 && t < c.words.length - 1) {
         const a = c.words.slice(0, t + 1), bw = c.words.slice(t + 1);
         const second: Clip = structuredClone(c);
         second.id = tail = uid();
@@ -1808,8 +1849,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       } else if (ctrl && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x") && selWord) {
         // 단어를 골랐으면 — 고른 단어만 복사 (Ctrl+X 는 복사하고 지우기)
         e.preventDefault();
-        copyWords();
-        if (e.key.toLowerCase() === "x") deleteWords();
+        if (copyWords() && e.key.toLowerCase() === "x") deleteWords();
       } else if (ctrl && e.key.toLowerCase() === "v" && lastCopy.current === "words" && wordClip.current) {
         e.preventDefault();
         pasteWords();
@@ -1949,7 +1989,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     ],
     "AI 목소리": [
       { icon: "voice", label: "목소리 바꾸기", onClick: () => setPanel("voice") },
-      { icon: "redo", label: "목소리 다시 만들기", disabled: !selected.length, onClick: () => revoice(selected) },
+      { icon: "redo", label: "목소리 다시 만들기", disabled: !selected.length, title: "고른 클립 목소리를 새로 만들어요 (전에 만든 것을 다시 쓰지 않아요)", onClick: () => revoice(selected, true) },
       "|",
       { icon: "plus", label: "새 클립 넣기", onClick: () => setDialog("addText") },
     ],
@@ -2225,6 +2265,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
         {/* 오른쪽 칸 */}
         {side === "library" && <LibraryPanel key={panel ? `${libTab}${libOverlay}` : "default"} project={project} canReplace={selected.length > 0} onPick={onPick} initialTab={panel ? libTab : "mine"} overlay={panel ? libOverlay : false}
+          target={(() => {
+            // 무료 자료 [교체할 이미지]·찾기 낱말 — 마지막으로 고른 클립
+            const c = selected.length ? findClip(project, selected[selected.length - 1])?.clip : null;
+            if (!c) return null;
+            const a = project.assets[c.visual?.asset || c.src?.asset || ""];
+            return { thumb: a ? a.thumb || (a.kind === "image" ? a.url : "") : "", text: clipText(c) };
+          })()}
           onClose={() => {
             if (panel && libOverlay && overlayTarget && (project.layers || []).some((l) => l.id === overlayTarget)) return openLayer(overlayTarget);
             // 자료 칸 X = 닫기 ([개요·상세] 옆 [사진·영상]으로 다시 연다)
@@ -2420,12 +2467,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         };
         const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
         const sp = isVoice ? speedOf(c, project.settings) : srcSpeed(c);
-        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} lenOnly={soundPop.lenOnly} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={applyScope}
+        return <SoundMenu title={isVoice ? `AI 목소리 · ${findVoice(c.voiceId || project.settings.voice.id)?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} lenOnly={soundPop.lenOnly} count={ids.length} scope={soundScope} selCount={sel.length} allCount={same.length} onScope={applyScope}
           muted={Boolean(c.muted)} value={c.volume ?? 1} speed={sp}
           onMute={(v) => each((x) => { x.muted = v || undefined; })}
           onVolume={(v, first) => each((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
           onSpeed={(v) => each((x) => { if (x.type === "voice" ? x.voice?.duration : x.src) x.speed = x.type !== "voice" && Math.abs(v - 1) < 0.001 ? undefined : v; })}
-          onVoice={isVoice ? () => setPanel("voice") : undefined} onClose={() => setSoundPop(null)}
+          onVoice={isVoice ? () => setPanel("voice") : undefined} onRedo={isVoice ? () => revoice(ids, true) : undefined} onClose={() => setSoundPop(null)}
           len={flat.items.find((x) => x.clip.id === c.id)?.dur}
           base={isVoice ? (c.voice?.duration ? c.voice.duration / speedOf(c, project.settings) + GAP : undefined) : c.src ? keepRanges(c).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(c) : undefined}
           pad={isVoice ? Number(c.pad) || 0 : 0}
@@ -2487,6 +2534,28 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           onAnim={l.type === "text" ? () => { setAnimTarget(l.id); setSelLayer(l.id); setPanel("anim"); setPop(null); } : undefined} />;
       })()}
       {work && <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac} /></Modal>}
+      {learn && (
+        <Modal title="다음에도 이렇게 고칠까요?" onClose={() => setLearn(null)} width={560}
+          footer={<><Btn onClick={() => setLearn(null)}>아니요</Btn><Btn primary onClick={async () => {
+            const on = learn.filter((x) => x.on).map(({ wrong, right, context }) => ({ wrong, right, context }));
+            setLearn(null);
+            if (!on.length || !b.sttWords) return;
+            const n = await b.sttWords.add(on).catch(() => 0);
+            say(n ? `낱말 ${n}개를 기억했어요 — 다음 자동 자막부터 저절로 고쳐요` : "기억하지 못했어요");
+          }}><Icon name="check" size={16} />네, 기억하기</Btn></>}>
+          <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 10, fontSize: 15.5 }}>
+            {learn.map((x, i) => (
+              <label key={i} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={x.on} onChange={() => setLearn(learn.map((y, j) => (j === i ? { ...y, on: !y.on } : y)))} style={{ width: 18, height: 18, accentColor: C.accent }} />
+                <span style={{ color: C.sub, textDecoration: "line-through" }}>{x.wrong}</span> → <b>{x.right}</b>
+              </label>
+            ))}
+            <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.6, marginTop: 6 }}>
+              이 PC 의 자동 자막에 바로 쓰여요. 다른 대표님들 받아쓰기도 좋아지도록 공실뉴스에 낱말만 모아요 (녹음·대본은 보내지 않아요).
+            </div>
+          </div>
+        </Modal>
+      )}
       {dialog === "export" && <ExportDialog project={project} selected={selected} sceneOf={sel1?.scene.id} onClose={() => setDialog("")} />}
       {dialog === "formats" && <FormatsDialog project={project} onClose={() => setDialog("")} />}
       {dialog === "saveAs" && (
@@ -2677,10 +2746,34 @@ function offNames(p: Project) {
   return n;
 }
 
+/** 받아쓰기 낱말장 — 고치기 전·후 단어를 맞대어 바뀐 낱말 쌍 (글자 순서 맞추기, 짧은 것만) */
+function changedWords(a: string[], b: string[]) {
+  const strip = (w: string) => w.replace(/[.,?!~…"']+$/g, "");
+  const A = a.map(strip), B = b.map(strip);
+  const n = A.length, m = B.length;
+  const L = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out: { wrong: string; right: string; context: string }[] = [];
+  let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && A[i] === B[j]) { i++; j++; continue; }
+    const i0 = i, j0 = j;
+    while ((i < n || j < m) && !(i < n && j < m && A[i] === B[j])) {
+      if (j >= m || (i < n && L[i + 1][j] >= L[i][j + 1])) i++;
+      else j++;
+    }
+    const wrong = A.slice(i0, i).join(" "), right = B.slice(j0, j).join(" ");
+    if (wrong.length >= 2 && right && wrong !== right && wrong.length <= 20 && right.length <= 20 && i - i0 <= 3 && j - j0 <= 3)
+      out.push({ wrong, right, context: [A[i0 - 1], wrong, A[i]].filter(Boolean).join(" ") });
+  }
+  return out;
+}
+
 function ExportDialog({ project, selected, sceneOf, onClose }: { project: Project; selected: string[]; sceneOf?: string; onClose: () => void }) {
   const b = videoBridge()!;
   const [scope, setScope] = useState<"all" | "scene" | "selected">("all");
   const [height, setHeight] = useState(0);
+  const [kind, setKind] = useState<"mp4" | "mp3">("mp4"); // 영상 / 소리만(MP3)
   const [state, setState] = useState<{ text: string; frac: number } | null>(null);
   const [job, setJob] = useState("");
   const [done, setDone] = useState<{ file: string; seconds: number; took: number } | null>(null);
@@ -2694,8 +2787,11 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
       else setState({ text, frac });
     });
     try {
-      const r = await b.render(project, { scope, sceneId: sceneOf, clipIds: selected, height: height || undefined });
-      setDone(r);
+      const o = { scope, sceneId: sceneOf, clipIds: selected };
+      if (kind === "mp3") {
+        const r = await b.exportAudio(project, "mp3", o);
+        setDone(typeof r === "string" ? { file: r, seconds: 0, took: 0 } : r);
+      } else setDone(await b.render(project, { ...o, height: height || undefined }));
     } catch (e) {
       setErr(errText(e));
     } finally {
@@ -2705,9 +2801,9 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   };
   if (done) {
     return (
-      <Modal title="영상이 완성됐어요" onClose={onClose} width={560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />영상 열어 보기</Btn></>}>
+      <Modal title={kind === "mp3" ? "소리 파일이 완성됐어요" : "영상이 완성됐어요"} onClose={onClose} width={560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />{kind === "mp3" ? "소리 들어 보기" : "영상 열어 보기"}</Btn></>}>
         <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.8 }}>
-          <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>
+          {done.seconds > 0 && <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>}
           <div style={{ color: C.sub, fontSize: 14, wordBreak: "break-all" }}>{done.file}</div>
         </div>
       </Modal>
@@ -2736,6 +2832,13 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
           </div>
         )}
         <div>
+          <div style={{ ...label, marginBottom: 10 }}>내보낼 형식</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {radio(kind === "mp4", "영상 (MP4)", () => setKind("mp4"))}
+            {radio(kind === "mp3", "소리만 (MP3) — 목소리·음악 소리만", () => setKind("mp3"))}
+          </div>
+        </div>
+        <div>
           <div style={{ ...label, marginBottom: 10 }}>내보낼 클립</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {radio(scope === "all", "모든 씬, 모든 클립", () => setScope("all"))}
@@ -2743,14 +2846,14 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
             {radio(scope === "selected", `고른 클립만 (${selected.length}개)`, () => setScope("selected"), !selected.length)}
           </div>
         </div>
-        <div>
+        {kind === "mp4" && <div>
           <div style={{ ...label, marginBottom: 10 }}>해상도</div>
           <select value={height} onChange={(e) => setHeight(Number(e.target.value))} style={{ ...input }}>
             <option value={0}>원본 ({W0} × {H0})</option>
             <option value={720}>720p (파일이 작아요)</option>
             <option value={480}>480p (카톡으로 보내기 좋아요)</option>
           </select>
-        </div>
+        </div>}
         <div style={{ fontSize: 14, color: C.sub }}>저장 위치: 프로젝트 폴더의 output</div>
         {err && <div style={{ fontSize: 14.5, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
       </div>
@@ -2787,8 +2890,8 @@ function FormatsDialog({ project, onClose }: { project: Project; onClose: () => 
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
         {row("sub", "자막 (.srt)", "유튜브에 자막으로 올릴 수 있어요", () => run(() => b.project.exportText(project, "srt"), "자막 파일을 저장했어요"))}
         {row("file", "텍스트 (.txt)", "대본 글만", () => run(() => b.project.exportText(project, "txt"), "텍스트 파일을 저장했어요"))}
-        {row("music", "소리 (.mp3)", "목소리·음악 소리만", () => run(() => b.exportAudio(project, "mp3").then((f) => b.showFile(f)), "소리 파일을 저장했어요"))}
-        {row("music", "소리 (.wav)", "편집용 고음질 소리", () => run(() => b.exportAudio(project, "wav").then((f) => b.showFile(f)), "소리 파일을 저장했어요"))}
+        {row("music", "소리 (.mp3)", "목소리·음악 소리만", () => run(() => b.exportAudio(project, "mp3").then((r) => b.showFile(typeof r === "string" ? r : r.file)), "소리 파일을 저장했어요"))}
+        {row("music", "소리 (.wav)", "편집용 고음질 소리", () => run(() => b.exportAudio(project, "wav").then((r) => b.showFile(typeof r === "string" ? r : r.file)), "소리 파일을 저장했어요"))}
         {busy && <Working title="만드는 중…" />}
         {msg && <div style={{ fontSize: 14.5, color: C.sub, marginTop: 6 }}>{msg}</div>}
       </div>

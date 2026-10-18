@@ -616,7 +616,43 @@ app.whenReady().then(async () => {
   const gssFile = findGss(process.argv);
   if (gssFile) openGss(gssFile);
   log.info(`[시작] v${app.getVersion()} ${BASE_URL} ffmpeg=${ffmpegPath() || "없음"}`);
+  prefetchMyVoice();
+  // 받아쓰기 공용 낱말장 받아 두기 (목록만, 비용 0원)
+  setTimeout(() => require("./video/whisper").refreshShared().catch(() => {}), 20 * 1000);
 });
+
+/**
+ * 내 목소리 성우(Qwen3-TTS, 약 3.5GB) 미리 받아 두기 — 설치 파일엔 안 넣고, 앱을 켜고 3분 뒤 뒤에서 받는다 (회의 3-16)
+ *  대표님이 [내 목소리]를 처음 누를 땐 이미 준비돼 있게. 디스크가 10GB 안 남았으면 받지 않는다 (누를 때 안내)
+ *  끄기: ai-settings.json 에 "prefetchVoice": false
+ */
+function prefetchMyVoice() {
+  setTimeout(() => {
+    try {
+      const myvoice = require("./video/myvoice");
+      const st = myvoice.status();
+      if (st.engine || st.installing) return;
+      try {
+        if (JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "ai-settings.json"), "utf8")).prefetchVoice === false) return;
+      } catch {}
+      const free = (() => {
+        try {
+          const s = fs.statfsSync(path.dirname(myvoice.ROOT));
+          return s.bavail * s.bsize;
+        } catch {
+          return Infinity;
+        }
+      })();
+      if (free < 10e9) return log.info(`[내 목소리] 미리 받기 건너뜀 — 디스크 여유 ${(free / 1e9).toFixed(1)}GB`);
+      log.info("[내 목소리] 미리 받기 시작 (뒤에서)");
+      // 진행은 열린 창에 알린다 — [내 목소리] 탭을 열면 진행 막대가 보인다
+      const tell = (t, f) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("video:myvoice-progress", t, f));
+      myvoice.install(tell).then(() => log.info("[내 목소리] 미리 받기 끝")).catch((e) => log.warn(`[내 목소리] 미리 받기 실패 (누를 때 다시): ${e.message}`));
+    } catch (e) {
+      log.warn(`[내 목소리] 미리 받기 못 함: ${e.message}`);
+    }
+  }, 3 * 60 * 1000);
+}
 // 웹 화면의 [지금 업데이트] (필수 버전보다 낮을 때)
 ipcMain.handle("studio:check-update", () => checkForUpdates(true));
 

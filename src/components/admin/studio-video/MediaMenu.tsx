@@ -221,7 +221,7 @@ export default function MediaMenu(p: Props) {
 }
 
 /** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
-export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose, len, base, pad, onLength, lenMin, lenMax, lenOnly }: {
+export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onRedo, onClose, len, base, pad, onLength, lenMin, lenMax, lenOnly }: {
   title: string;
   x: number;
   y: number;
@@ -237,6 +237,7 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
   onVolume: (v: number, first: boolean) => void;
   onSpeed: (v: number) => void;
   onVoice?: () => void; // AI 목소리 클립만 — 촬영한 영상(원본 소리)은 목소리를 바꾸지 않는다
+  onRedo?: () => void; // AI 목소리 다시 만들기 — 저장해 둔 것 말고 새로 (내 목소리처럼 만들 때마다 다른 것)
   onClose: () => void;
   // 길이 — 지금 길이 / 목소리(또는 영상) 길이 / 끝에 머무는 쉼. 늘리면 쉼, 줄이면 쉼부터 줄이고 빠르게
   len?: number;
@@ -316,6 +317,9 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
         )}
         {onVoice && !lenOnly && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
           <Icon name="voice" size={16} />AI 목소리 바꾸기<Icon name="chevron" size={14} color={C.sub} />
+        </button>}
+        {onRedo && !lenOnly && <button type="button" onClick={() => { onRedo(); onClose(); }} title="이 목소리를 새로 만들어요 (마음에 안 들면 몇 번이든)" style={{ ...rowStyle, marginTop: 6, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
+          <Icon name="redo" size={16} />목소리 다시 만들기
         </button>}
         <div style={{ fontSize: 11.5, color: C.dim, marginTop: 6 }}>{lenOnly ? "볼륨·빠르기는 위 소리 칩에서 · Esc 로 닫기" : "길이는 오른쪽 클립 시간을 눌러서 · Esc 로 닫기"}</div>
       </div>

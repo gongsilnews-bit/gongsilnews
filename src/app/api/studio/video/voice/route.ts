@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getExtensionMember } from "@/utils/extensionMember";
-import { getVoice, signedVoiceUrl } from "@/lib/reels/voice";
+import { getVoice, revoice, signedVoiceUrl } from "@/lib/reels/voice";
 import { STUDIO_VOICE_IDS } from "@/lib/studio-video/voices";
 
 /**
@@ -14,13 +14,14 @@ export const maxDuration = 120;
 export async function POST(req: NextRequest) {
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401 });
-  const { text, voice } = await req.json().catch(() => ({}));
+  const { text, voice, fresh } = await req.json().catch(() => ({}));
   const tts = String(text || "").replace(/\s+/g, " ").trim();
   if (!tts) return NextResponse.json({ success: false, error: "읽을 문장이 없습니다." }, { status: 400 });
   if (tts.length > 300) return NextResponse.json({ success: false, error: "문장이 너무 깁니다 (300자 이하). 클립을 나눠 주세요." }, { status: 400 });
   if (!STUDIO_VOICE_IDS.includes(voice)) return NextResponse.json({ success: false, error: "지원하지 않는 목소리입니다." }, { status: 400 });
   try {
-    const { path, duration, cached } = await getVoice(`studio/${member.id}`, tts, voice);
+    // fresh — [목소리 다시 만들기]: 저장해 둔 것을 쓰지 않고 새로 녹음 (덮어씀)
+    const { path, duration, cached } = fresh ? { ...(await revoice(`studio/${member.id}`, tts, voice)), cached: false } : await getVoice(`studio/${member.id}`, tts, voice);
     return NextResponse.json({ success: true, url: await signedVoiceUrl(path), duration, cached });
   } catch (e) {
     return NextResponse.json({ success: false, error: e instanceof Error ? e.message : String(e) }, { status: 500 });

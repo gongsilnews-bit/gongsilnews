@@ -6,7 +6,7 @@ import React, { useMemo, useRef, useState } from "react";
 import type { LibItem, Project, Ratio, Fill, Clip } from "./types";
 import { RATIO_LABEL, errText, uid, videoBridge } from "./types";
 import { splitScript, estimateSeconds } from "./timeline";
-import { STUDIO_VOICES } from "@/lib/studio-video/voices";
+import { findVoice } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
@@ -61,6 +61,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const [usePhotos, setUsePhotos] = useState(true);
   const [useStock, setUseStock] = useState(true);
   const [useAi, setUseAi] = useState(false);
+  const [visualLater, setVisualLater] = useState(false); // 화면은 나중에 — 목소리(·자막·음악)만 먼저 만들고 편집 화면에서 클립마다 넣기 (2026-10-18 사장님)
   const [fill, setFill] = useState<Fill>("cover");
   const [confirm, setConfirm] = useState(false);
   const [gen, setGen] = useState<{ title: string; detail?: string; frac?: number } | null>(null);
@@ -118,7 +119,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const scenes = useMemo(() => splitScript(script), [script]);
   const lineCount = scenes.reduce((a, s) => a + s.length, 0);
   const seconds = useMemo(() => scenes.flat().reduce((a, t) => a + estimateSeconds(t, speed) + 0.12, 0), [scenes, speed]);
-  const photoCount = src === "vacancy" && usePhotos ? vacInfo?.photos.length || 0 : 0;
+  const photoCount = src === "vacancy" && usePhotos && !visualLater ? vacInfo?.photos.length || 0 : 0;
 
   /* ── 자동 만들기 ── */
   const build = async () => {
@@ -157,7 +158,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       }
       // 화면 검색어가 없는 문장은 회원 AI 에게 한 번에 묻는다
       const needHint = clips.filter((c) => !c.hint?.keywords);
-      if ((useStock || useAi) && needHint.length && (!photos.length || photos.length < clips.length)) {
+      if (!visualLater && (useStock || useAi) && needHint.length && (!photos.length || photos.length < clips.length)) {
         setGen({ title: `${writer}가 문장마다 어울리는 화면을 고르는 중…`, frac: 0.12 });
         try {
           const hs = await b.ai.scenes(needHint.map((c) => c.text));
@@ -166,7 +167,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       }
       let stockOk = useStock;
       let aiLeft = useAi ? 8 : 0;
-      for (let i = 0; i < clips.length; i++) {
+      for (let i = 0; i < (visualLater ? 0 : clips.length); i++) {
         const c = clips[i];
         setGen({ title: `화면 자료를 고르는 중… (${i + 1}/${clips.length})`, frac: 0.15 + (i / clips.length) * 0.45 });
         if (photos.length && (i < photos.length || (!stockOk && !aiLeft))) {
@@ -364,14 +365,14 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
                 <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
                   {/* 목록 대신 — 고른 성우 얼굴 카드, 누르면 얼굴 카드 창 */}
                   {(() => {
-                    const v = STUDIO_VOICES.find((x) => x.id === voiceId);
+                    const v = findVoice(voiceId);
                     return (
                       <button type="button" onClick={() => setVoicePick(true)} title="눌러서 목소리 바꾸기"
                         style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}>
                         {v && <VoiceFace id={v.id} name={v.name} size={56} />}
                         <span style={{ flex: 1, minWidth: 0 }}>
                           <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{v?.name || "목소리"}</span>
-                          {v && <span style={{ display: "block", fontSize: 14, color: C.sub, marginTop: 3 }}>{v.kind} · {v.age} · {v.mood}</span>}
+                          {v && <span style={{ display: "block", fontSize: 14, color: C.sub, marginTop: 3 }}>{v.kind}{"age" in v && "mood" in v ? ` · ${v.age} · ${v.mood}` : ""}</span>}
                         </span>
                         <span style={{ fontSize: 14, fontWeight: 700, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }}>바꾸기<Icon name="chevron" size={14} /></span>
                       </button>
@@ -398,9 +399,14 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
             </div>
             <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
               <span style={label}>화면 자료</span>
-              {src === "vacancy" && vacInfo && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>공실 사진 쓰기 ({vacInfo.photos.length}장)</span><Toggle on={usePhotos} onChange={setUsePhotos} /></div>}
-              <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>무료 영상·사진 (Pexels·Pixabay)</span><Toggle on={useStock} onChange={setUseStock} /></div>
-              <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>AI 그림 ({imager}, 느림 · 최대 8장)</span><Toggle on={useAi} onChange={setUseAi} /></div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setVisualLater(false)} style={chip(!visualLater)}>지금 함께 넣기</button>
+                <button type="button" onClick={() => setVisualLater(true)} style={chip(visualLater)}>나중에 넣기 (목소리만 먼저)</button>
+              </div>
+              {visualLater && <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>목소리·자막·음악만 먼저 만들어요 (빨라요). 화면은 검게 두고, 편집 화면에서 클립마다 [사진·영상]으로 넣으면 돼요.</div>}
+              {!visualLater && src === "vacancy" && vacInfo && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>공실 사진 쓰기 ({vacInfo.photos.length}장)</span><Toggle on={usePhotos} onChange={setUsePhotos} /></div>}
+              {!visualLater && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>무료 영상·사진 (Pexels·Pixabay)</span><Toggle on={useStock} onChange={setUseStock} /></div>}
+              {!visualLater && <div style={{ display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 15 }}>AI 그림 ({imager}, 느림 · 최대 8장)</span><Toggle on={useAi} onChange={setUseAi} /></div>}
             </div>
             <div style={{ ...row, flexWrap: "wrap", borderBottom: 0 }}>
               <span style={{ ...label, width: "100%" }}>채우기</span>
@@ -425,7 +431,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
             })()}
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", fontSize: 14, color: C.sub }}>
               <span>{ratio} {RATIO_LABEL[ratio]}</span>
-              {voiceOn && <span>{STUDIO_VOICES.find((v) => v.id === voiceId)?.name}</span>}
+              {voiceOn && <span>{findVoice(voiceId)?.name}</span>}
               {musicOn && <span>{mood} 음악</span>}
               <span>클립 {lineCount}개 · 약 {Math.round(seconds)}초</span>
             </div>
@@ -439,9 +445,9 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
           <div style={{ padding: 22, fontSize: 16, lineHeight: 1.8 }}>
             <div style={{ fontWeight: 800, marginBottom: 6 }}>영상 만들기를 시작할까요?</div>
             <div style={{ color: C.sub, fontSize: 15 }}>
-              클립 {lineCount}개 · {voiceOn ? STUDIO_VOICES.find((v) => v.id === voiceId)?.name : "목소리 없음"}
-              {photoCount ? ` · 공실 사진 ${photoCount}장` : ""}{useStock ? " · 무료 영상" : ""}{useAi ? ` · AI 그림(${imager})` : ""}
-              <br />예상 {useAi ? "5~10분" : lineCount > 20 ? "2~4분" : "1~2분"}
+              클립 {lineCount}개 · {voiceOn ? findVoice(voiceId)?.name : "목소리 없음"}
+              {visualLater ? " · 화면은 나중에" : <>{photoCount ? ` · 공실 사진 ${photoCount}장` : ""}{useStock ? " · 무료 영상" : ""}{useAi ? ` · AI 그림(${imager})` : ""}</>}
+              <br />예상 {visualLater ? "1분 안팎" : useAi ? "5~10분" : lineCount > 20 ? "2~4분" : "1~2분"}
             </div>
           </div>
         </Modal>

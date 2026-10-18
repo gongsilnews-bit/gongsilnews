@@ -208,8 +208,20 @@ export type VideoBridge = {
     addAsset: (libId: string) => Promise<Asset>;
     exportText: (p: Project, kind: "srt" | "txt") => Promise<string>;
   };
+  /** 내 목소리 성우 — 앱 0.1.10부터 (없으면 앱을 새로 받아야 함) */
+  sttWords?: { add: (pairs: { wrong: string; right: string; context?: string }[]) => Promise<number> }; // 받아쓰기 낱말장 (앱 0.1.10부터)
+  myVoice?: {
+    status: () => Promise<MyVoiceStatus>;
+    install: () => Promise<MyVoiceStatus>;
+    record: (bytes: ArrayBuffer, text: string) => Promise<MyVoiceStatus>;
+    file: () => Promise<MyVoiceStatus | null>;
+    sample: () => Promise<MyVoiceStatus>;
+    remove: () => Promise<MyVoiceStatus>;
+    update?: (patch: { name?: string; text?: string }) => Promise<MyVoiceStatus>;
+    onProgress: (fn: (text: string, frac: number) => void) => () => void;
+  };
   voiceJoin?: (dir: string, files: string[]) => Promise<{ file: string; url: string; duration: number }>; // 앱 0.1.8부터
-  voice: (dir: string, text: string, voiceId: string) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
+  voice: (dir: string, text: string, voiceId: string, opts?: { fresh?: boolean }) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
   // 무음 줄이기 — 영상별 실제 말소리 구간 (PC에서, 옛 앱에는 없음)
   speech?: (p: Project, assetIds: string[]) => Promise<Record<string, { s: number; e: number }[]>>;
@@ -236,7 +248,8 @@ export type VideoBridge = {
   fonts: { ensure: (family: string) => Promise<{ family: string; url: string }> };
   render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
   renderCancel: (id: string) => Promise<void>;
-  exportAudio: (p: Project, kind: "mp3" | "wav") => Promise<string>;
+  /** 예전 앱(0.1.9 이하)은 파일 경로(string)만, 범위(opts)도 무시 */
+  exportAudio: (p: Project, kind: "mp3" | "wav", o?: { scope?: string; sceneId?: string; clipIds?: string[] }) => Promise<string | { file: string; seconds: number; took: number }>;
   snapshot: (p: Project, file: string, at: number) => Promise<string>;
   record: {
     sources: () => Promise<{ id: string; name: string; thumb: string }[]>;
@@ -300,3 +313,6 @@ export const rgba = (hex: string | undefined, a: number) => {
 
 /** 오른쪽 자료 칸에서 끌어 놓기 — dataTransfer 종류 이름 */
 export const DRAG_MEDIA = "application/x-gsv-media";
+
+/** 내 목소리 성우 상태 (앱) */
+export type MyVoiceStatus = { engine: boolean; installing: boolean; voice: boolean; registeredAt: string; sampleUrl: string; readText: string; name?: string; text?: string; refUrl?: string };

@@ -142,10 +142,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       if (sameSource) target = sourceTimeAt(c, loc);
       else {
         const s = Number(c.visual?.s) || 0;
-        // 클립보다 짧으면 마지막 장면에서 멈춘다 (처음부터 반복하지 않음)
-        target = vis.duration ? Math.min(s + loc, Math.max(0, vis.duration - 0.05)) : s + loc;
+        // 클립보다 짧으면 처음부터 다시 (반복) — 마지막 장면에 멈추면 끝에서 튕겨 보였다 (2026-10-18 사장님)
+        target = vis.duration && s + loc >= vis.duration - 0.05 ? (s + loc) % Math.max(0.1, vis.duration - 0.05) : s + loc;
       }
-      if (force || Math.abs(v.currentTime - target) > 0.3) {
+      // 클립이 바뀌어도 원본에서 바로 이어지면(지금 위치 ≈ 갈 위치) 다시 찾아가지 않는다 — 찾아가면 소리가 잠깐 끊겨 "씹힌다" (2026-10-18)
+      if (Math.abs(v.currentTime - target) > (force ? 0.12 : 0.3)) {
         try {
           v.currentTime = target;
         } catch {}
@@ -190,7 +191,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
         a.playbackRate = rateOk(previewRate * srcSpeed(c));
         const target = sourceTimeAt(c, loc);
-        if (force || Math.abs(a.currentTime - target) > 0.3) {
+        if (Math.abs(a.currentTime - target) > (force ? 0.12 : 0.3)) {
           try {
             a.currentTime = target;
           } catch {}

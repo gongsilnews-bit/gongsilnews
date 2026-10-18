@@ -9,6 +9,8 @@ import Editor from "./Editor";
 import TextWizard from "./TextWizard";
 import { Home, LongformFlow, NewDialog, RecordFlow, VideoFlow } from "./Flows";
 import { Btn, C, FONT, Icon, Modal } from "./ui";
+import VideoMenu, { type VideoView } from "./VideoMenu";
+import { MyVoicePane } from "./MyVoice";
 
 /** 동영상제작을 쓸 수 있는 가장 낮은 스튜디오 앱 버전 (.gss 저장 방식 — 0.1.4) */
 const MIN_APP = "0.1.4";
@@ -20,6 +22,7 @@ export default function VideoStudio() {
   const [recorded, setRecorded] = useState<LibItem | null>(null);
   const [recScript, setRecScript] = useState(""); // 녹화할 때 프롬프터로 읽은 대본 → 자막
   const [err, setErr] = useState("");
+  const [view, setView] = useState<VideoView>("home"); // 왼쪽 메뉴 칸 (편집 화면 밖에서만)
   // .gss 를 열었는데 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로 열기]
   const [recover, setRecover] = useState<Recover | null>(null);
   const take = (r: Project | Recover | null) => {
@@ -103,7 +106,18 @@ export default function VideoStudio() {
       {project ? (
         <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={() => setFlow("new")} onOpen={openPick} onSwitch={setProject} />
       ) : (
-        <Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} />
+        <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+          <VideoMenu view={view} onView={setView} onMethod={(m) => setFlow(m)} />
+          {view === "myvoice" ? (
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", color: C.text, fontFamily: FONT }}>
+              <div style={{ padding: "26px 28px 0", fontSize: 22, fontWeight: 800 }}>내 목소리</div>
+              <div style={{ padding: "6px 28px 0", fontSize: 14.5, color: C.sub }}>내 목소리를 등록해 두면 영상 대본을 내 목소리로 읽어요 (이 PC 에서, 무료).</div>
+              <div style={{ flex: 1, minHeight: 0, display: "flex", maxWidth: 760 }}><MyVoicePane selected={false} onPick={() => {}} /></div>
+            </div>
+          ) : (
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} /></div>
+          )}
+        </div>
       )}
       {recover && (
         <Modal title="저장하지 않은 고친 내용이 있어요" onClose={() => setRecover(null)} width={520}

@@ -8,7 +8,7 @@ import { WordDetail } from "./WordDetail";
 import type { Clip, Project, Word } from "./types";
 import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
-import { STUDIO_VOICES } from "@/lib/studio-video/voices";
+import { findVoice } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
 import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
 import { transLabel } from "./transitions";
@@ -47,6 +47,7 @@ export type ClipActions = {
   play: (id: string) => void;
   stop: () => void; // 재생 멈춤 (클립 칸 ■)
   editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
+  editSpoken: (id: string, text: string) => void; // 말한 내용 고치기 — 단어 칸까지 고치고 단어 시각을 소리에 다시 맞춤 (녹화 클립)
   restoreCut: (id: string, i: number | "all") => void; // 무음 줄이기 원래대로 (한 곳 / 모두)
   addCut: (id: string, g: { s: number; e: number }) => void; // 쉼 [..] 하나 줄이기
   newClipBefore: (id: string) => void; // 클립 사이 [+ 새 클립] — 이 클립 앞에 글 클립
@@ -112,7 +113,7 @@ export function AllBox({ ids, selected, onChange, title, label }: { ids: string[
   );
 }
 
-const voiceName = (id?: string) => STUDIO_VOICES.find((v) => v.id === id)?.name || "AI 목소리";
+const voiceName = (id?: string) => findVoice(id)?.name || "AI 목소리";
 
 function ActionBtn({ icon, label, onClick, danger }: { icon: string; label: string; onClick: () => void; danger?: boolean }) {
   return (
@@ -130,6 +131,7 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
   const custom = typeof c.subText === "string";
   const text = custom ? c.subText! : clipText(c);
   const [draft, setDraft] = React.useState(text);
+  const spoken = c.type === "source" && Boolean(c.src) && Boolean(c.words?.length);
   // 촬영 클립의 연필·[자막 고치기]를 누르면 여기를 연다 (말한 내용은 못 고치고 자막만)
   React.useEffect(() => {
     if (!open) return;
@@ -157,7 +159,9 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
             if (e.key === "Escape") setEdit(false);
           }}
           style={{ flex: 1, minWidth: 200, height: 34, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15, fontFamily: FONT }} />
-        <ActionBtn icon="check" label="자막 바꾸기" onClick={() => { p.actions.editSub(c.id, draft); setEdit(false); }} />
+        <ActionBtn icon="check" label={spoken ? "자막만 바꾸기" : "자막 바꾸기"} onClick={() => { p.actions.editSub(c.id, draft); setEdit(false); }} />
+        {/* 녹화 클립 — 자동 자막이 잘못 알아들었을 때: 단어 칸(편집 기준)까지 고친다 */}
+        {spoken && <ActionBtn icon="pen" label="말한 내용 고치기" onClick={() => { p.actions.editSpoken(c.id, draft); setEdit(false); }} />}
         {custom && c.type !== "silence" && <ActionBtn icon="undo" label="말한 그대로" onClick={() => { p.actions.editSub(c.id, null); setEdit(false); }} />}
         <ActionBtn icon="close" label="그만두기" onClick={() => setEdit(false)} />
       </div>
@@ -167,7 +171,7 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
     // 자막은 연필(✎)을 눌러야 고친다 — 글자를 눌러도 열리지 않게 (잘못 눌러 고치기 칸이 열리던 것)
     <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 6px", borderRadius: 4, textAlign: "left", fontFamily: FONT }}>
       <span style={{ flex: "0 1 auto", minWidth: 0, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text || empty || " "}</span>
-      <button type="button" title="자막만 고치기 (목소리는 그대로)" onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
+      <button type="button" title={spoken ? "자막 고치기 · 말한 내용 고치기" : "자막만 고치기 (목소리는 그대로)"} onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
         style={{ width: 28, height: 28, padding: 0, border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
         onMouseEnter={(e) => (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
         <Icon name="pen" size={16} />
@@ -499,7 +503,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {/* 2줄: 화면 자료 + 자막 */}
         {(p.view === "detail" || (isSrc && subOpen > 0)) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
-            <button type="button" onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
+            <button type="button" data-drop-replace="" onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
               onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
               style={{ width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
@@ -533,7 +537,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
           onMouseLeave={(e) => { e.currentTarget.style.background = C.panel; e.currentTarget.style.color = C.sub; e.currentTarget.style.borderColor = C.line2; }}>
           <Icon name="trash" size={14} />
         </button>
-        <div style={{ width: 104, height: 58, borderRadius: 4, overflow: "hidden", background: "#000" }}>
+        <div data-drop-replace="" style={{ width: 104, height: 58, borderRadius: 4, overflow: "hidden", background: "#000" }}>
           {thumb && <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
         </div>
         <button type="button" data-cliptime="" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openTiming(c.id, r.right - 320, r.bottom + 6); }} title="이 클립이 시작하는 때 + 길이 · 눌러서 길이 바꾸기"
@@ -665,9 +669,11 @@ export default function ClipList(p: Props) {
             if (!e.dataTransfer.types.includes(DRAG_MEDIA)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "copy";
+            // 클립의 화면 칸(작은 칸·오른쪽 큰 칸)에 놓으면 늘 화면 바꾸기. 앞뒤 새 클립은 카드 맨 위·아래 가장자리에서만 (2026-10-18 사장님)
             const r = e.currentTarget.getBoundingClientRect();
-            const f = (e.clientY - r.top) / Math.max(1, r.height);
-            const where = f < 0.25 ? "before" : f > 0.75 ? "after" : "replace";
+            const y = e.clientY - r.top;
+            const onThumb = (e.target as HTMLElement).closest?.("[data-drop-replace]");
+            const where = onThumb ? "replace" : y < 14 ? "before" : y > r.height - 14 ? "after" : "replace";
             if (!drop || drop.id !== id || drop.where !== where) setDrop({ id, where });
           },
           onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {

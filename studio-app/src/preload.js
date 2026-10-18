@@ -164,7 +164,23 @@ if (allowed) {
         addAsset: (libId) => ipcRenderer.invoke("video:project-add-asset", libId),
         exportText: (p, kind) => ipcRenderer.invoke("video:project-export-text", p, kind),
       },
-      voice: (dir, text, voiceId) => ipcRenderer.invoke("video:voice", dir, text, voiceId),
+      voice: (dir, text, voiceId, opts) => ipcRenderer.invoke("video:voice", dir, text, voiceId, opts), // opts.fresh = 다시 만들기 (0.1.10부터)
+      sttWords: { add: (pairs) => ipcRenderer.invoke("video:stt-words-add", pairs) }, // 받아쓰기 낱말장 (0.1.10부터)
+      myVoice: {
+        // 내 목소리 성우 (0.1.10부터) — PC 에서 무료로 내 목소리 읽기
+        status: () => ipcRenderer.invoke("video:myvoice-status"),
+        install: () => ipcRenderer.invoke("video:myvoice-install"),
+        record: (bytes, text) => ipcRenderer.invoke("video:myvoice-record", bytes, text),
+        file: () => ipcRenderer.invoke("video:myvoice-file"),
+        sample: () => ipcRenderer.invoke("video:myvoice-sample"),
+        remove: () => ipcRenderer.invoke("video:myvoice-remove"),
+        update: (patch) => ipcRenderer.invoke("video:myvoice-update", patch), // 이름·녹음한 글자 고치기
+        onProgress: (fn) => {
+          const h = (_e, t, f) => fn(t, f);
+          ipcRenderer.on("video:myvoice-progress", h);
+          return () => ipcRenderer.removeListener("video:myvoice-progress", h);
+        },
+      },
       voiceJoin: (dir, files) => ipcRenderer.invoke("video:voice-join", dir, files), // 단어마다 목소리가 다를 때 조각 잇기 (0.1.8부터)
       transcribe: (p, assetId) => ipcRenderer.invoke("video:transcribe", p, assetId),
       split: (p, assetId) => ipcRenderer.invoke("video:split", p, assetId),
@@ -188,7 +204,7 @@ if (allowed) {
       fonts: { ensure: (family) => ipcRenderer.invoke("video:font-ensure", family) },
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
-      exportAudio: (p, kind) => ipcRenderer.invoke("video:export-audio", p, kind),
+      exportAudio: (p, kind, opts) => ipcRenderer.invoke("video:export-audio", p, kind, opts),
       snapshot: (p, file, at) => ipcRenderer.invoke("video:snapshot", p, file, at),
       record: {
         sources: () => ipcRenderer.invoke("video:record-sources"),

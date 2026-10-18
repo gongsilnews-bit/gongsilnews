@@ -303,6 +303,26 @@ export function musicLayers(p: Project, items: FlatItem[]): Layer[] {
 }
 
 /** 글을 문장(클립)으로 나누기 — 빈 줄 = 장면, 줄바꿈·마침표 = 문장 */
+/**
+ * 한 줄을 문장으로 — . ! ? 。 에서 끊되, 숫자 사이의 점(6008.81 · 8.00% · 102.5㎡)은 문장 끝이 아니다 (2026-10-18: 소수점에서 잘려 목소리가 토막 나던 것)
+ *  끝 문장부호 뒤의 따옴표·괄호·띄어쓰기는 그 문장에 붙인다
+ */
+export function sentencesOf(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    cur += ch;
+    const end = /[!?。]/.test(ch) || (ch === "." && !(/\d/.test(line[i - 1] || "") && /\d/.test(line[i + 1] || "")));
+    if (!end) continue;
+    while (i + 1 < line.length && /[.!?。\s"”’)]/.test(line[i + 1])) cur += line[++i];
+    out.push(cur);
+    cur = "";
+  }
+  if (cur.trim()) out.push(cur);
+  return out;
+}
+
 export function splitScript(script: string): string[][] {
   return String(script || "")
     .replace(/\r/g, "")
@@ -310,7 +330,7 @@ export function splitScript(script: string): string[][] {
     .map((block) =>
       block
         .split(/\n/)
-        .flatMap((line) => line.match(/[^.!?。]+[.!?。]*[\s"”’)]*|.+$/g) || [])
+        .flatMap(sentencesOf)
         .map((s) => s.trim())
         .filter(Boolean)
     )

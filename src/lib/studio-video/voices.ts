@@ -42,4 +42,10 @@ export const STUDIO_VOICES: StudioVoice[] = [
 ];
 
 export const STUDIO_VOICE_IDS = STUDIO_VOICES.map((v) => v.id);
+
+// 내 목소리 — 회원이 [AI 목소리 설정 → 내 목소리]에서 등록한 자기 목소리. PC(앱)에서 만들고 서버로 가지 않는다 (2026-10-18)
+export const MY_VOICE_ID = "me";
+export const MY_VOICE = { id: MY_VOICE_ID, name: "내 목소리", kind: "내가 등록한 목소리" };
+/** 성우 찾기 — "내 목소리"도 포함 (이름·설명만 쓰는 곳에서) */
+export const findVoice = (id?: string): { id: string; name: string; kind: string } | undefined => (id === MY_VOICE_ID ? MY_VOICE : STUDIO_VOICES.find((v) => v.id === id));
 export const voicePhoto = (id: string) => `/studio-voices/${id.toLowerCase()}.webp`;

@@ -156,7 +156,7 @@ JSON 으로만 답하세요: {"scenes":[{"tts":"","sticker":"","highlight":[""]}
 export function splitScript(text: string): string[] {
   const clean = text.replace(PHONE_RE, "").replace(/\r/g, "");
   let lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
-  if (lines.length <= 1) lines = (clean.match(/[^.!?~。]+[.!?~。]*/g) || []).map((l) => l.trim()).filter(Boolean);
+  if (lines.length <= 1) lines = (clean.match(/(?:\d\.(?=\d)|[^.!?~。])+[.!?~。]*/g) || []).map((l) => l.trim()).filter(Boolean);
   return lines.map((l) => l.slice(0, 80)).slice(0, 10);
 }
 
