@@ -12,6 +12,8 @@ import { STUDIO_VOICE_IDS } from "@/lib/studio-video/voices";
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
+  // 공실뉴스 서버 Gemini — 새 앱은 회원 키·PC 로 해서 여기를 부르지 않는다. 옛 앱(v0.1.10) 대표님을 위해 열어 둠, 끄려면 STUDIO_SERVER_GEMINI=off (2026-10-19 사장님: 나중에 정함)
+  if (process.env.STUDIO_SERVER_GEMINI === "off") return NextResponse.json({ success: false, error: "제미나이 성우는 이제 회원 본인 Gemini API 키로 만들어요. 스튜디오 앱을 새 버전으로 받은 뒤 [AI 설정] › Gemini 에 키를 넣어 주세요." }, { status: 410 });
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401 });
   const { text, voice, fresh } = await req.json().catch(() => ({}));

@@ -33,8 +33,19 @@ type Props = {
   x: number;
   y: number;
   kind: "clip" | "layer";
-  fit: MediaFit;
-  fits: MediaFit[];
+  /** 무엇의 메뉴 — 사진 · 스티커 · 글자 · 음악 · 효과음 (아래 안내·설명에) */
+  what?: string;
+  /** 그 종류만의 것 (맨 위) — 누르면 하고 닫힌다 */
+  extra?: { icon: string; label: string; desc: string; run: () => void }[];
+  /** [크기·설정 ›] 안의 끌개 · 켜고 끄기 (글자 크기 · 사진 크기·진하기 · 음악 볼륨·페이드) */
+  sliders?: { label: string; value: number; min: number; max: number; step: number; show: string; onChange: (v: number) => void }[];
+  toggles?: { label: string; on: boolean; set: (v: boolean) => void }[];
+  /** 영상 속도 (촬영·녹화 영상 클립만) — 0.25~4배, 소리·자막도 같이 */
+  speedCtl?: { value: number; onChange: (v: number) => void };
+  /** 적용 범위 — 고른 클립들 (2개 이상 골랐을 때) */
+  sel?: { a: number; b: number; n: number } | null;
+  fit?: MediaFit;
+  fits?: MediaFit[];
   flipX?: boolean;
   flipY?: boolean;
   /** 적용 범위 — 지금 범위(클립 번호 1부터), 지금 클립 번호, 전체 클립 수 */
@@ -42,9 +53,9 @@ type Props = {
   /** 순서 (사진 올리기만) — 앞으로/뒤로 갈 수 있는지 */
   order?: { up: boolean; down: boolean };
   canRemove: boolean;
-  onFit: (f: MediaFit) => void;
-  onFlip: (axis: "x" | "y") => void;
-  onReplace: () => void;
+  onFit?: (f: MediaFit) => void;
+  onFlip?: (axis: "x" | "y") => void;
+  onReplace?: () => void;
   onStart?: () => void; // 비디오 시작점 변경 (영상일 때만)
   trim?: boolean; // 녹화·촬영 영상 클립이면 "시작·끝 자르기"로
   /** 클립 소리 (원본 소리가 있는 영상 클립만) */
@@ -61,7 +72,7 @@ type Props = {
 type Item = { icon: string; label: string; desc: string; on?: boolean; off?: boolean; sub?: boolean; danger?: boolean; run: () => void };
 
 export default function MediaMenu(p: Props) {
-  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume" | "motion">("");
+  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume" | "motion" | "size" | "speed">("");
   const [mScope, setMScope] = React.useState<"one" | "sel" | "all">("one");
   const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
   const [na, setNa] = React.useState(String(p.range.a));
@@ -72,8 +83,17 @@ export default function MediaMenu(p: Props) {
     return () => window.removeEventListener("keydown", k);
   }, [p]);
   React.useEffect(() => setHover(null), [page]);
+  // 바깥을 누르면 닫는다 — 화면을 덮는 막 없이 (막이 있으면 아이콘을 바로 끌 수 없었다, 2026-10-19). 누른 것은 그대로 동작한다
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const down = (e: PointerEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) p.onClose();
+    };
+    const t = setTimeout(() => window.addEventListener("pointerdown", down, true), 0); // 메뉴를 연 그 누르기는 빼고
+    return () => { clearTimeout(t); window.removeEventListener("pointerdown", down, true); };
+  }, [p]);
 
-  const what = p.kind === "clip" ? "화면" : "사진";
+  const what = p.what || (p.kind === "clip" ? "화면" : "사진");
   const { a, b, cur, total } = p.range;
   const go = (pg: typeof page) => () => setPage(pg);
   const done = (f: () => void) => () => {
@@ -91,38 +111,48 @@ export default function MediaMenu(p: Props) {
   let head = "";
   let items: Item[] = [];
   if (page === "") {
+    // 모든 애셋이 같은 차례: ① 그 종류만의 것 → ② 애니메이션 → ③ 적용 범위 → ④ 순서 → 삭제 (회의 2026-10-19)
     items = [
-      { icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") },
-      { icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") },
+      ...(p.extra || []).map((x) => ({ ...x, run: done(x.run) })),
+      ...(p.sliders?.length || p.toggles?.length ? [{ icon: "ratio", label: p.what === "글자" ? "글자 크기" : p.what === "음악" || p.what === "효과음" ? "소리 크기" + (p.toggles?.length ? "·페이드" : "") : "크기·진하기", desc: "끌개로 바로 바꿔요 (미리보기에 바로 보여요)", sub: true, run: go("size") }] : []),
+      ...(p.fit && p.onFit ? [{ icon: FIT_INFO[p.fit].icon, label: "채우기", desc: "화면에 어떻게 채울지 골라요", sub: true, run: go("fit") }] : []),
+      ...(p.onFlip ? [{ icon: "flipH", label: "반전", desc: "거울처럼 좌우나 위아래를 뒤집어요", sub: true, run: go("flip") }] : []),
       ...(p.onAnim ? [{ icon: "transition", label: "애니메이션", desc: "나타날 때·사라질 때 움직임, 강조, 천천히 커지기를 넣어요 (오른쪽 칸)", run: done(p.onAnim) }] : []),
       ...(p.motion ? [{ icon: "zoom", label: `움직임 · ${MOTION_INFO.find((x) => x.id === p.motion!.value)?.label || "자동"}`, desc: "사진이 줌인·좌우·상하로 천천히 움직여요. 기본은 자동", sub: true, run: go("motion") }] : []),
       ...(p.onStart ? [p.trim
         ? { icon: "cut", label: "시작·끝 자르기", desc: "영상 앞뒤를 잘라 쓸 부분만 남겨요 (프리미어·캡컷처럼). 소리·자막도 같이 잘려요", run: done(p.onStart) }
         : { icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
+      ...(p.speedCtl ? [{ icon: "play", label: `속도 · ${+p.speedCtl.value.toFixed(2)}배`, desc: "영상을 빠르게·느리게 (소리·자막도 같이). 1배가 원래 속도", sub: true, run: go("speed") }] : []),
       ...(p.sound ? [{ icon: p.sound.muted ? "mute" : "volume", label: "볼륨 조절", desc: "이 클립의 소리를 끄거나 크게·작게 해요", sub: true, run: go("volume") }] : []),
-      { icon: "swap", label: "교체", desc: `다른 사진·영상으로 바꿔요. 채우기·반전·범위는 그대로예요`, run: done(p.onReplace) },
-      { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : "이 사진이 몇 번 클립부터 몇 번 클립까지 나올지 정해요", sub: true, run: go("range") },
-      ...(p.kind === "layer" ? [{ icon: "layers", label: "순서", desc: "사진이 여러 장 겹칠 때 어느 사진을 위에 둘지 정해요", sub: true, off: !p.order?.up && !p.order?.down, run: go("order") }] : []),
-      { icon: "trash", label: "삭제", desc: p.kind === "clip" ? "이 클립의 화면만 지워요. 글·목소리·자막은 그대로예요" : "이 사진 올리기를 지워요", danger: true, off: !p.canRemove, run: done(p.onRemove) },
+      ...(p.onReplace ? [{ icon: "swap", label: "교체", desc: `다른 ${p.what === "스티커" ? "스티커" : "사진·영상"}로 바꿔요. 자리·범위는 그대로예요`, run: done(p.onReplace) }] : []),
+      { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : `이 ${what}이(가) 몇 번 클립부터 몇 번 클립까지 나올지 정해요`, sub: true, run: go("range") },
+      ...(p.kind === "layer" && p.order ? [{ icon: "layers", label: "순서", desc: "스티커·사진·글자가 겹칠 때 어느 것을 위에 둘지 정해요", sub: true, off: !p.order.up && !p.order.down, run: go("order") }] : []),
+      { icon: "trash", label: "삭제", desc: p.kind === "clip" ? "이 클립의 화면만 지워요. 글·목소리·자막은 그대로예요" : `이 ${what}을(를) 지워요`, danger: true, off: !p.canRemove, run: done(p.onRemove) },
     ];
   } else if (page === "fit") {
     head = "채우기";
-    items = p.fits.map((f) => ({ icon: FIT_INFO[f].icon, label: FIT_INFO[f].label, desc: FIT_INFO[f].desc, on: p.fit === f, run: done(() => p.onFit(f)) }));
+    items = (p.fits || []).map((f) => ({ icon: FIT_INFO[f].icon, label: FIT_INFO[f].label, desc: FIT_INFO[f].desc, on: p.fit === f, run: done(() => p.onFit?.(f)) }));
   } else if (page === "flip") {
     head = "반전";
     items = [
-      { icon: "flipH", label: "좌우 반전", desc: "왼쪽과 오른쪽을 거울처럼 뒤집어요. 한 번 더 누르면 원래대로", on: p.flipX, run: done(() => p.onFlip("x")) },
-      { icon: "flipV", label: "상하 반전", desc: "위와 아래를 뒤집어요. 한 번 더 누르면 원래대로", on: p.flipY, run: done(() => p.onFlip("y")) },
+      { icon: "flipH", label: "좌우 반전", desc: "왼쪽과 오른쪽을 거울처럼 뒤집어요. 한 번 더 누르면 원래대로", on: p.flipX, run: done(() => p.onFlip?.("x")) },
+      { icon: "flipV", label: "상하 반전", desc: "위와 아래를 뒤집어요. 한 번 더 누르면 원래대로", on: p.flipY, run: done(() => p.onFlip?.("y")) },
     ];
   } else if (page === "range") {
     head = "적용 범위 변경";
     items = [
-      { icon: "range", label: "전체 클립으로", desc: `클립 1번부터 ${total}번까지 모두`, on: a === 1 && b === total, run: done(() => p.onRange(1, total)) },
+      ...(p.sel && p.sel.n > 1 ? [{ icon: "applySel", label: `고른 클립 ${p.sel.n}개로`, desc: `고른 클립 ${p.sel.a}번부터 ${p.sel.b}번까지`, on: a === p.sel.a && b === p.sel.b, run: done(() => p.onRange(p.sel!.a, p.sel!.b)) }] : []),
+      { icon: "range", label: "이 클립에만", desc: `클립 ${cur}번에서만`, on: a === cur && b === cur, run: done(() => p.onRange(cur, cur)) },
+      { icon: "range", label: "전체 클립으로 (처음부터 끝까지)", desc: `클립 1번부터 ${total}번까지 모두`, on: a === 1 && b === total, run: done(() => p.onRange(1, total)) },
       { icon: "range", label: "처음부터 현재 클립까지", desc: `클립 1번부터 ${cur}번까지`, run: done(() => p.onRange(1, cur)) },
       { icon: "range", label: "현재 클립부터 끝까지", desc: `클립 ${cur}번부터 ${total}번까지`, run: done(() => p.onRange(cur, total)) },
     ];
   } else if (page === "volume") {
     head = "볼륨 조절";
+  } else if (page === "speed") {
+    head = "속도";
+  } else if (page === "size") {
+    head = p.what === "글자" ? "글자 크기" : p.what === "음악" || p.what === "효과음" ? "소리" : "크기·진하기";
   } else if (page === "motion" && p.motion) {
     head = "움직임";
     const mo = p.motion;
@@ -143,8 +173,7 @@ export default function MediaMenu(p: Props) {
   const top = Math.max(8, Math.min(p.y, (typeof window !== "undefined" ? window.innerHeight : 900) - 360));
   return (
     <>
-      <div onClick={p.onClose} onContextMenu={(e) => { e.preventDefault(); p.onClose(); }} style={{ position: "fixed", inset: 0, zIndex: 69 }} />
-      <div onClick={(e) => e.stopPropagation()} onMouseLeave={() => setHover(null)}
+      <div ref={boxRef} onClick={(e) => e.stopPropagation()} onMouseLeave={() => setHover(null)}
         style={{ position: "fixed", left, top, zIndex: 70, width: W, padding: 6, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
         {head ? (
           <button type="button" onClick={go("")} style={{ ...rowStyle, fontWeight: 800, color: C.text }}>
@@ -184,6 +213,33 @@ export default function MediaMenu(p: Props) {
               <button type="button" disabled={p.motion.selCount < 2} onClick={() => setMScope("sel")} style={{ ...chipStyle(mScope === "sel"), flex: 1, opacity: p.motion.selCount < 2 ? 0.4 : 1 }}>선택 ({p.motion.selCount})</button>
               <button type="button" onClick={() => setMScope("all")} style={{ ...chipStyle(mScope === "all"), flex: 1 }}>모든 사진 ({p.motion.allCount})</button>
             </div>
+          </div>
+        )}
+        {page === "speed" && p.speedCtl && (
+          <div style={{ padding: "6px 10px 6px" }}>
+            <div style={{ display: "flex", fontSize: 13, fontWeight: 700, marginBottom: 4 }}><span style={{ flex: 1 }}>빠르기</span><span style={{ color: C.sub }}>{+p.speedCtl.value.toFixed(2)}배</span></div>
+            <input type="range" min={0.25} max={4} step={0.05} value={Math.min(4, Math.max(0.25, p.speedCtl.value))} onChange={(e) => p.speedCtl!.onChange(+Number(e.target.value).toFixed(2))} style={{ width: "100%", accentColor: C.accent }} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5, marginTop: 6 }}>
+              {[0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4].map((v) => (
+                <button key={v} type="button" onClick={() => p.speedCtl!.onChange(v)} style={chipStyle(Math.abs(p.speedCtl!.value - v) < 0.001)}>{v}배</button>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>빠르게 하면 클립이 짧아지고, 느리게 하면 길어져요. 소리 높낮이는 그대로예요.</div>
+          </div>
+        )}
+        {page === "size" && (
+          <div style={{ padding: "6px 10px 6px" }}>
+            {(p.sliders || []).map((s) => (
+              <div key={s.label} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", fontSize: 13, fontWeight: 700, marginBottom: 4 }}><span style={{ flex: 1 }}>{s.label}</span><span style={{ color: C.sub }}>{s.show}</span></div>
+                <input type="range" min={s.min} max={s.max} step={s.step} value={s.value} onChange={(e) => s.onChange(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
+              </div>
+            ))}
+            {(p.toggles || []).map((t) => (
+              <label key={t.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, padding: "5px 0", cursor: "pointer" }}>
+                <input type="checkbox" checked={t.on} onChange={(e) => t.set(e.target.checked)} style={{ width: 16, height: 16, accentColor: C.accent }} />{t.label}
+              </label>
+            ))}
           </div>
         )}
         {page === "volume" && p.sound && (
@@ -288,10 +344,10 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
         <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>볼륨 <span style={{ color: C.sub, fontWeight: 600, fontSize: 12 }}>· {onVoice ? "이 AI 목소리만" : "이 원본 소리만"}</span></div>
         <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
         <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>빠르기 <span style={{ color: C.sub, fontWeight: 600 }}>{+speed.toFixed(2)}배</span></div>
-        {/* 막대 — 0.5~2배 */}
-        <input type="range" min={0.5} max={2} step={0.05} value={Math.min(2, Math.max(0.5, speed))} onChange={(e) => onSpeed(+Number(e.target.value).toFixed(2))} style={{ width: "100%", accentColor: C.accent, marginBottom: 6 }} />
+        {/* 막대 — AI 목소리 0.5~2배 · 원본 영상 0.25~4배 (영상 메뉴 [속도]와 같은 값, 2026-10-19) */}
+        <input type="range" min={onVoice ? 0.5 : 0.25} max={onVoice ? 2 : 4} step={0.05} value={Math.min(onVoice ? 2 : 4, Math.max(onVoice ? 0.5 : 0.25, speed))} onChange={(e) => onSpeed(+Number(e.target.value).toFixed(2))} style={{ width: "100%", accentColor: C.accent, marginBottom: 6 }} />
         <div style={{ display: "flex", gap: 5 }}>
-          {[0.75, 1, 1.25, 1.5, 2].map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
+          {(onVoice ? [0.75, 1, 1.25, 1.5, 2] : [0.5, 1, 1.5, 2, 3, 4]).map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
         </div>
         </>}
         {lenOnly && onLength && typeof len === "number" && (

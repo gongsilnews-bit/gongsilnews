@@ -13,6 +13,7 @@ import { TextTabs } from "./TextTabs";
 import type { AnimBodyProps } from "./Anim";
 import type { TextLook } from "./SubPresets";
 import { BubbleGrid, type Sticker } from "./Stickers";
+import { TemplateFields } from "./Templates";
 
 export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text", sfx: "bell" };
 export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자", sfx: "효과음" };
@@ -28,7 +29,7 @@ export const layerIcon = (l: Layer) => (isSticker(l) ? "star" : LAYER_ICON[l.typ
 export type LaneEntry = { layer: Layer; lane: number; a: number; b: number }; // a·b = 보이는 클립 차례
 
 /** 애셋마다 줄(lane)을 나눠 준다 — 겹치는 애셋은 옆 줄로 */
-export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntry[]; lanes: number } {
+export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntry[]; lanes: number; singles: LaneEntry[] } {
   const order = clipOrder(p);
   const pos = new Map(items.map((x, i) => [x.clip.id, i]));
   const spans = (p.layers || [])
@@ -39,6 +40,13 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
       return cov.length ? { layer, a: pos.get(cov[0].clip.id)!, b: pos.get(cov[cov.length - 1].clip.id)! } : null;
     })
     .filter(Boolean) as { layer: Layer; a: number; b: number }[];
+  // 한 클립에만 있는 것은 그 클립 카드 안 아래 줄에 (왼쪽 줄은 2개 클립 이상만, 2026-10-19 사장님)
+  //  카드 안에서도 왼쪽 줄과 같은 차례 — 음악·효과음 먼저, 그다음 화면에 보이는 것은 앞(위)에 있는 것일수록 왼쪽
+  const zi0 = new Map(zLayers(p, p.layers || []).map((l, i) => [l.id, i]));
+  const singles: LaneEntry[] = spans.filter((s) => s.a === s.b)
+    .sort((x, y) => Number(isVis(x.layer)) - Number(isVis(y.layer)) || (zi0.get(y.layer.id) ?? 0) - (zi0.get(x.layer.id) ?? 0))
+    .map((s) => ({ ...s, lane: -1 }));
+  spans.splice(0, spans.length, ...spans.filter((s) => s.a !== s.b));
   // 음악·효과음 — 맨 왼쪽 줄들 (화면에 안 보여 겹치는 순서와 상관없다)
   const mus = spans.filter((s) => !isVis(s.layer)).sort((x, y) => x.a - y.a || y.b - x.b);
   const laneEnd: number[] = [];
@@ -66,7 +74,35 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
   }
   // 좌우 뒤집기 — 가장 앞 = 음악 바로 오른쪽, 가장 뒤 = 클립 바로 옆 (2026-10-19 사장님)
   for (const q of placed) q.lane = base + (lanes - 1 - q.lane);
-  return { entries: [...entries, ...placed], lanes };
+  return { entries: [...entries, ...placed], lanes, singles };
+}
+
+/** 카드 안 작은 아이콘 — 한 클립에만 있는 애셋 (누르면 설정, 아래로 끌면 범위를 늘려 왼쪽 줄로 나간다) */
+export function SingleChips({ list, selLayer, onDrag }: { list: LaneEntry[]; selLayer: string; onDrag: LayerDrag }) {
+  if (!list.length) return null;
+  return (
+    <span data-layer-ui="" style={{ display: "flex", gap: LANE_W - 26, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      {list.map(({ layer }) => {
+        const on = layer.id === selLayer;
+        return (
+          <button key={layer.id} type="button" data-nodrag="" draggable={false}
+            onPointerDown={(ev) => {
+              // 카드(클립) 끌기가 먼저 시작되지 않게 — 카드를 잠시 못 끌게 해 두고 (카드를 다시 누르면 풀린다)
+              const card = (ev.currentTarget as HTMLElement).closest<HTMLElement>("[data-clip]");
+              if (card) card.draggable = false;
+              onDrag(layer.id, "to", ev);
+            }}
+            onMouseDown={(ev) => ev.preventDefault()} onDragStart={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}
+            onClick={(ev) => ev.stopPropagation()}
+            title={`${layerName(layer)}: ${layerTitle(layer)} — 이 클립에만 있어요 (누르면 메뉴 · 좌우로 끌면 겹치는 순서, 왼쪽일수록 앞 · 위아래 클립으로 끌면 범위가 늘어나 왼쪽 줄로 나가요)`}
+            style={{ width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, opacity: layer.off ? 0.35 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none" }}>
+            <Icon name={layerIcon(layer)} size={14} />
+          </button>
+        );
+      })}
+    </span>
+  );
 }
 
 /** 오른쪽 칸 맨 위 — 스티커 글자 고치기 (같은 모양으로 다시 그린다) */
@@ -169,7 +205,7 @@ export type LayerDrag = (id: string, end: "from" | "to", ev: React.PointerEvent)
 export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entries: LaneEntry[]; lanes: number; idx: number; pass?: boolean; selLayer: string; onDrag: LayerDrag }) {
   if (!lanes) return null;
   return (
-    <div style={{ width: lanes * LANE_W + 6, flexShrink: 0, display: "flex" }}>
+    <div data-layer-ui="" style={{ width: lanes * LANE_W + 6, flexShrink: 0, display: "flex" }}>
       {Array.from({ length: lanes }, (_, lane) => {
         const e = entries.find((x) => x.lane === lane && (pass ? x.a < idx && x.b >= idx : x.a <= idx && x.b >= idx));
         if (!e) return <div key={lane} style={{ width: LANE_W }} />;
@@ -180,7 +216,14 @@ export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entrie
         const last = !pass && e.b === idx;
         return (
           <div key={lane} style={{ width: LANE_W, position: "relative", opacity: dim }} title={e.layer.off ? "꺼 둔 애셋 (미리보기 아래에서 다시 켤 수 있어요)" : undefined}>
-            <span style={{ position: "absolute", left: LANE_W / 2 - 1, width: 2, top: first ? 22 : 0, bottom: last ? 18 : 0, background: color, borderRadius: 1 }} />
+            <span style={{ position: "absolute", left: LANE_W / 2 - 1, width: 2, top: first ? (on ? 6 : 22) : 0, bottom: last ? 18 : 0, background: color, borderRadius: 1 }} />
+            {/* 고른 줄 — 위에도 손잡이 (위로도 늘이고 줄일 수 있게, 브루처럼) */}
+            {first && on && (
+              <span onPointerDown={(ev) => onDrag(e.layer.id, "from", ev)} onClick={(ev) => ev.stopPropagation()} title="위아래로 끌어서 시작 클립 바꾸기"
+                style={{ position: "absolute", left: LANE_W / 2 - 11, width: 22, height: 12, top: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "ns-resize", touchAction: "none", zIndex: 1 }}>
+                <span style={{ width: 16, height: 5, borderRadius: 3, background: color }} />
+              </span>
+            )}
             {last && (
               <span onPointerDown={(ev) => onDrag(e.layer.id, "to", ev)} onClick={(ev) => ev.stopPropagation()} title="위아래로 끌어서 끝 클립 바꾸기"
                 style={{ position: "absolute", left: LANE_W / 2 - 11, width: 22, height: 14, bottom: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "ns-resize", touchAction: "none" }}>
@@ -189,7 +232,7 @@ export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entrie
             )}
             {first && (
               <button type="button" onPointerDown={(ev) => onDrag(e.layer.id, "from", ev)} onClick={(ev) => ev.stopPropagation()} title={`${layerName(e.layer)}: ${layerTitle(e.layer)} (누르면 설정, 위아래로 끌면 시작 클립 바꾸기)`}
-                style={{ position: "absolute", left: LANE_W / 2 - 13, top: 10, width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none" }}>
+                style={{ position: "absolute", left: LANE_W / 2 - 13, top: on ? 14 : 10, width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none" }}>
                 <Icon name={layerIcon(e.layer)} size={15} />
               </button>
             )}
@@ -476,13 +519,17 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, o
   );
 }
 
-export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, textAnim, onBubble }: {
+export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, onBubble, curClip }: {
+  /** 지금 클립 (재생·고른) — [이 클립만] */
+  curClip?: string;
   /** 화면 글자 → 말풍선 스티커로 바꾸기 */
   onBubble?: (s: Sticker) => Promise<void>;
   /** 화면 글자 — [애니메이션] 탭 (글자 칸 탭, 회의 3-28) */
   textAnim?: AnimBodyProps;
   /** 스티커 글자 고치기 — 지금 글자, 고칠 수 있는지, 바꾸기 */
   sticker?: { text: string; ok: boolean; onText: (t: string) => Promise<void> };
+  /** 템플릿 글·색 고치기 (칸마다) */
+  template?: { style: string; text: string; color?: string; onSave: (text: string, color?: string) => Promise<void> };
   /** 겹치는 순서 (사진·스티커·화면 글자) */
   onZ?: (o: ZMove) => void;
   project: Project;
@@ -495,6 +542,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
   onClose: () => void;
 }) {
   const [draft, setDraft] = React.useState(layer.text || "");
+  const textTimer = React.useRef<number | undefined>(undefined);
   React.useEffect(() => setDraft(layer.text || ""), [layer.id, layer.text]); // 화면에서 고친 글도 칸에 바로
   const clipLabel = (x: FlatItem, i: number) => {
     const t = clipText(x.clip).trim() || (x.clip.type === "silence" ? "말 없는 구간" : "화면");
@@ -511,34 +559,35 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
     else onChange({ [key]: id });
   };
 
+  const orderEl = onZ && layer.type !== "music" && layer.type !== "sfx" && (
+    <div style={row}>
+      <div style={{ ...label, marginBottom: 8 }}>순서 <span style={{ color: C.sub, fontWeight: 600 }}>· 겹친 스티커·사진·글자 사이</span></div>
+      <ZButtons can={zCan(project, items, layer.id)} onMove={onZ} />
+      <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>클립 옆 아이콘을 좌우로 끌어도 바뀌어요. 왼쪽 줄일수록 앞이에요.</div>
+    </div>
+  );
   const rangeEl = (
     <>
       {/* 적용 범위 */}
       <div style={row}>
         <div style={{ ...label, marginBottom: 8 }}>적용 범위 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {cov.length}개</span></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <select value={layer.from} onChange={(e) => pickClip("from", e.target.value)} style={input}>
+        {/* [클립 ▼] 부터 [클립 ▼] 까지 — 한 줄 (2026-10-19 사장님) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <select value={layer.from} onChange={(e) => pickClip("from", e.target.value)} style={{ ...input, flex: 1, minWidth: 0 }}>
             {items.map((x, i) => <option key={x.clip.id} value={x.clip.id}>{clipLabel(x, i)}</option>)}
           </select>
-          <div style={{ fontSize: 13.5, color: C.sub, textAlign: "center" }}>부터</div>
-          <select value={layer.to} onChange={(e) => pickClip("to", e.target.value)} style={input}>
+          <span style={{ fontSize: 13.5, color: C.sub, flexShrink: 0 }}>부터</span>
+          <select value={layer.to} onChange={(e) => pickClip("to", e.target.value)} style={{ ...input, flex: 1, minWidth: 0 }}>
             {items.map((x, i) => <option key={x.clip.id} value={x.clip.id}>{clipLabel(x, i)}</option>)}
           </select>
-          <div style={{ fontSize: 13.5, color: C.sub, textAlign: "center" }}>까지</div>
+          <span style={{ fontSize: 13.5, color: C.sub, flexShrink: 0 }}>까지</span>
         </div>
         <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
           {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to })}>고른 클립 {selRange.n}개로 바꾸기</Btn>}
           {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id })}>처음부터 끝까지</Btn>}
         </div>
       </div>
-      {onZ && layer.type !== "music" && (
-        <div style={row}>
-          <div style={{ ...label, marginBottom: 8 }}>순서 <span style={{ color: C.sub, fontWeight: 600 }}>· 겹친 스티커·사진·글자 사이</span></div>
-          <ZButtons can={zCan(project, items, layer.id)} onMove={onZ} />
-          <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>클립 옆 아이콘을 좌우로 끌어도 바뀌어요. 왼쪽 줄일수록 앞이에요.</div>
-        </div>
-      )}
-
+      {orderEl}
     </>
   );
   // 효과음 — 소리 고르기·크기·언제 (회의 3-29)
@@ -601,19 +650,69 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           <>
             <div style={row}>
               <div style={{ ...label, marginBottom: 8 }}>글</div>
-              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => draft !== layer.text && onChange({ text: draft })} rows={3}
+              {/* 쓰는 대로 바로 (멈추고 0.5초 뒤, 칸을 벗어나면 바로) — [글 바꾸기]·[지우기] 단추 없음 (2026-10-19 사장님) */}
+              <textarea value={draft} rows={3}
+                onChange={(e) => {
+                  const t = e.target.value;
+                  setDraft(t);
+                  window.clearTimeout(textTimer.current);
+                  if (t.trim()) textTimer.current = window.setTimeout(() => onChange({ text: t }), 500);
+                }}
+                onBlur={() => { window.clearTimeout(textTimer.current); if (draft.trim() && draft !== layer.text) onChange({ text: draft }); }}
                 style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical" }} />
-              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                <Btn small primary onClick={() => onChange({ text: draft })} disabled={draft === layer.text}>글 바꾸기</Btn>
-                <span style={{ flex: 1 }} />
-                <Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />지우기</Btn>
+            </div>
+          </>
+        }
+        posEl={
+          // 자리 — 메인자막 위치처럼 색상 아래·문자 간격 위 (2026-10-19 사장님)
+          <div style={{ ...row, display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={label}>자리</span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {([["top", "상단"], ["middle", "가운데"], ["bottom", "하단"]] as const).map(([k, l]) => {
+                const on = typeof layer.x !== "number" && (layer.pos || "top") === k;
+                return (
+                  <button key={k} type="button" onClick={() => onChange({ pos: k, x: undefined, y: undefined })}
+                    style={{ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{l}</button>
+                );
+              })}
+              {typeof layer.x === "number" && <span style={{ height: 32, padding: "0 12px", display: "inline-flex", alignItems: "center", borderRadius: 5, background: C.text, color: C.bg, fontSize: 13.5, fontWeight: 700 }}>옮긴 자리</span>}
+            </div>
+          </div>
+        }
+        basicBottom={orderEl}
+        footerTop={items.length > 0 && (() => {
+          // 나오는 구간 — 맨 아래 고정 줄 (회의 3-30): [클립 ▼] ~ [클립 ▼] + [이 클립만][고른 클립들][처음~끝]
+          const first = items[0].clip.id, last = items[items.length - 1].clip.id;
+          const set = (from: string, to: string) => onChange({ from, to, w0: undefined, w1: undefined });
+          const one = curClip && items.some((x) => x.clip.id === curClip) ? curClip : "";
+          const quick = (on: boolean, ok: boolean, text: string, title: string, go: () => void) => (
+            <button type="button" onClick={go} disabled={!ok} title={title}
+              style={{ flex: 1, height: 34, padding: "0 8px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: ok ? "pointer" : "default", whiteSpace: "nowrap" }}>{text}</button>
+          );
+          const shortLabel = (x: FlatItem, i: number) => {
+            const t = clipText(x.clip).trim();
+            return `클립 ${i + 1}${t ? ` · ${t.length > 8 ? t.slice(0, 8) + "…" : t}` : ""}`;
+          };
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ ...label, flexShrink: 0 }}>나오는 구간</span>
+                <select value={layer.from} onChange={(e) => pickClip("from", e.target.value)} style={{ ...input, flex: 1, minWidth: 0, height: 32, fontSize: 13 }}>
+                  {items.map((x, i) => <option key={x.clip.id} value={x.clip.id}>{shortLabel(x, i)}</option>)}
+                </select>
+                <span style={{ fontSize: 13, color: C.sub, flexShrink: 0 }}>~</span>
+                <select value={layer.to} onChange={(e) => pickClip("to", e.target.value)} style={{ ...input, flex: 1, minWidth: 0, height: 32, fontSize: 13 }}>
+                  {items.map((x, i) => <option key={x.clip.id} value={x.clip.id}>{shortLabel(x, i)}</option>)}
+                </select>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {quick(Boolean(one) && layer.from === one && layer.to === one, Boolean(one), "이 클립만", "지금 클립에서만 나오게", () => one && set(one, one))}
+                {quick(Boolean(selRange && layer.from === selRange.from && layer.to === selRange.to), Boolean(selRange), `고른 클립들${selRange ? ` (${selRange.n})` : ""}`, selRange ? "고른 클립의 처음~끝 구간에 나오게" : "클립을 먼저 골라 주세요 (카드 왼쪽 네모 칸)", () => selRange && set(selRange.from, selRange.to))}
+                {quick(layer.from === first && layer.to === last, true, "처음~끝", "영상 처음부터 끝까지 나오게", () => set(first, last))}
               </div>
             </div>
-            <Choice title="자리" value={typeof layer.x === "number" ? "free" : layer.pos || "top"} options={[["top", "상단"], ["middle", "가운데"], ["bottom", "하단"], ...(typeof layer.x === "number" ? [["free", "옮긴 자리"] as ["free", string]] : [])]}
-              onChange={(v) => v !== "free" && onChange({ pos: v as Layer["pos"], x: undefined, y: undefined })} />
-            {rangeEl}
-          </>
-        } />
+          );
+        })()} />
     );
   }
 
@@ -621,6 +720,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
     <Side title={layerName(layer)} onClose={onClose}
       footer={<Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={16} />이 {layerName(layer)} 지우기</Btn>}>
       {sticker && <StickerText key={layer.id + sticker.text} {...sticker} />}
+      {template && <TemplateFields key={layer.id + template.text + (template.color || "")} {...template} />}
       {rangeEl}
       {layer.type === "music" && (
         <>

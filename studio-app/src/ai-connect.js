@@ -101,12 +101,32 @@ function saveStatus(id, value) {
   return all[id];
 }
 
+/* AI 마다 쓰는 방법 — "account"(내 계정으로, 처음 값) | "api"(내 API 키로). 한 AI 에 한 가지만 (2026-10-18 회의) */
+const API_IDS = ["chatgpt", "claude", "gemini"];
+function getMode(id) {
+  return API_IDS.includes(id) && (readSettings().modes || {})[id] === "api" ? "api" : "account";
+}
+function setMode(id, mode) {
+  if (!API_IDS.includes(id)) throw new Error("알 수 없는 AI입니다.");
+  const modes = { ...(readSettings().modes || {}), [id]: mode === "api" ? "api" : "account" };
+  writeSettings({ modes });
+  log.info(`[AI 연결] ${PROVIDERS[id].name} 방법: ${modes[id] === "api" ? "API 키" : "내 계정"}`);
+  return list();
+}
+
+/* ok = 지금 고른 방법으로 쓸 수 있나 (계정: 로그인 확인됨 · API: 키 있음). accountOk = 계정 로그인 여부 */
 function list() {
   const saved = loadStatus();
   const w = getWriter();
+  const api = require("./ai/api");
   return Object.entries(PROVIDERS)
     .filter(([, p]) => !p.hidden)
-    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), imageReady: Boolean(p.image && p.ready && p.imageReady !== false), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...(saved[id] || { ok: false }) }));
+    .map(([id, p]) => {
+      const st = saved[id] || { ok: false };
+      const mode = getMode(id);
+      const key = API_IDS.includes(id) ? api.status(id) : { has: false, masked: "" };
+      return { id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), imageReady: Boolean(p.image && p.ready && p.imageReady !== false), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...st, accountOk: Boolean(st.ok), mode, keyHas: key.has, keyMasked: key.masked, keyModel: key.model || "", ok: mode === "api" ? key.has : Boolean(st.ok) };
+    });
 }
 
 /* 기본 글쓰기 AI (ChatGPT · Claude · Gemini) · 기본 이미지 생성 AI (ChatGPT · Gemini) — [내 AI 연결]에서 고른다. 처음엔 둘 다 ChatGPT */
@@ -193,4 +213,4 @@ function markConnected(id) {
   saveStatus(id, { ...prev, ok: true });
 }
 
-module.exports = { PROVIDERS, list, check, connect, open, markConnected, getWriter, setWriter, getImager, setImager, finishLogin: () => chrome.closePlain() };
+module.exports = { PROVIDERS, list, check, connect, open, markConnected, getWriter, setWriter, getImager, setImager, getMode, setMode, finishLogin: () => chrome.closePlain() };

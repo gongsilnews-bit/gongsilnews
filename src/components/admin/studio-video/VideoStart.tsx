@@ -119,7 +119,7 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
     const v = mainRef.current;
     if (!v || !playing) return;
     let raf = 0;
-    v.currentTime = s;
+    v.currentTime = head >= s && head < s + span - 0.1 ? head : s;
     v.play().catch(() => setPlaying(false));
     const tick = () => {
       setHead(v.currentTime);
@@ -154,13 +154,19 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
       const s0 = s, e0 = e;
       const move = (ev: PointerEvent) => {
         if (inside === "left") setS(Math.max(0, Math.min(e0 - MIN, s0 + dt(ev))));
-        else setE(Math.min(D, Math.max(s0 + MIN, e0 + dt(ev))));
+        else {
+          const ne = Math.min(D, Math.max(s0 + MIN, e0 + dt(ev)));
+          setE(ne);
+          seekMain(Math.max(0, ne - 0.04)); // 끝 손잡이 — 큰 화면은 끝 장면
+        }
       };
       const up = () => window.removeEventListener("pointermove", move);
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up, { once: true });
       return;
     }
+    // 자르기 — 파란 창 밖 띠를 누르면 그 자리로 재생 위치만 옮긴다 (구간은 그대로)
+    if (trim && !inside) return scrub(ev0);
     const s0 = inside ? s : clampS(((ev0.clientX - box.left) / box.width) * D - span / 2);
     if (!inside) moveTo(s0);
     const move = (ev: PointerEvent) => moveTo(clampS(s0 + dt(ev)));
@@ -169,6 +175,21 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
     window.addEventListener("pointerup", up, { once: true });
   };
 
+  /** 재생 위치 옮기기 — 눈금 막대(또는 띠)를 누르고 끌면, 큰 화면이 그 장면으로 */
+  function scrub(ev0: React.PointerEvent) {
+    const box = stripRef.current?.getBoundingClientRect();
+    if (!box) return;
+    ev0.preventDefault();
+    setPlaying(false);
+    const at = (x: number) => seekMain(Math.max(0, Math.min(D - 0.04, ((x - box.left) / box.width) * D)));
+    at(ev0.clientX);
+    const move = (ev: PointerEvent) => at(ev.clientX);
+    const up = () => window.removeEventListener("pointermove", move);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  }
+  // 눈금 간격 — 영상 길이에 맞게 (10칸 안팎)
+  const tick = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600].find((x) => D / x <= 12) || 600;
   const pct = (t: number) => `${(t / D) * 100}%`;
   const s1 = Math.max(0, Math.min(D - MIN, start || 0));
   const e1 = Math.max(s1 + MIN, Math.min(D, end ?? s1 + Math.min(dur, D)));
@@ -178,20 +199,35 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
     <Modal title={trim ? "시작·끝 자르기" : "비디오 시작점 변경"} onClose={onClose} width={1000}
       footer={
         <>
-          <span style={{ flex: 1, fontSize: 13, color: C.dim }}>{trim ? "파란 창 양쪽 끝을 끌어 앞뒤를 잘라요. 가운데를 끌면 구간이 통째로 옮겨져요." : D < dur ? `영상이 클립보다 ${fmtTime(dur - D, false)} 짧아요. 남는 시간은 마지막 장면으로 채워요.` : "파란 창을 끌어 쓸 부분을 고르세요. 고르지 않으면 처음부터 나가요."}</span>
+          <span style={{ flex: 1, fontSize: 13, color: C.dim }}>{trim ? "파란 창 양쪽 끝을 끌어 앞뒤를 잘라요. 가운데를 끌면 구간이 통째로 옮겨져요. 위 눈금을 누르면 그 장면을 봐요." : D < dur ? `영상이 클립보다 ${fmtTime(dur - D, false)} 짧아요. 남는 시간은 마지막 장면으로 채워요.` : "파란 창을 끌어 쓸 부분을 고르세요. 고르지 않으면 처음부터 나가요."}</span>
           <Btn onClick={() => { if (trim) { setS(s1); setE(e1); } else setS(0); }} disabled={!changed}><Icon name="undo" size={16} />되돌리기</Btn>
           <Btn primary onClick={() => { onApply(+s.toFixed(2), +(trim ? e : s + span).toFixed(2)); onClose(); }}><Icon name="check" size={16} />적용</Btn>
         </>
       }>
       <div style={{ padding: "16px 20px 20px" }}>
-        <div style={{ width: "100%", aspectRatio: "16 / 8", background: "#000", borderRadius: 6, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ width: "100%", aspectRatio: "16 / 7", background: "#000", borderRadius: 6, overflow: "hidden", marginBottom: 12 }}>
           <video ref={mainRef} src={asset.url} muted={false} playsInline preload="auto" onLoadedData={() => seekMain(s)}
             style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
         </div>
 
+        {/* 눈금 막대 — 누르고 끌면 재생 위치(빨간 선)가 옮겨지고 위 화면이 그 장면으로 (2026-10-19 사장님) */}
+        <div onPointerDown={scrub} title="누르고 끌면 그 장면을 위 화면에서 봐요"
+          style={{ position: "relative", height: 26, marginBottom: 4, borderRadius: 5, background: "#1a1b1f", cursor: "ew-resize", userSelect: "none", touchAction: "none" }}>
+          {Array.from({ length: Math.floor(D / tick) + 1 }, (_, i) => i * tick).map((t) => (
+            <span key={t} style={{ position: "absolute", left: pct(t), bottom: 0, height: 8, width: 1, background: "#555" }}>
+              <span style={{ position: "absolute", left: 3, bottom: 5, fontSize: 10.5, color: C.dim, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fmtTime(t, false)}</span>
+            </span>
+          ))}
+          {/* 재생 위치 손잡이 + 시각 */}
+          <span style={{ position: "absolute", left: pct(head), top: 0, bottom: 0, width: 0, pointerEvents: "none" }}>
+            <span style={{ position: "absolute", left: -1.5, top: 0, bottom: 0, width: 3, background: "#ef4444" }} />
+            <span style={{ position: "absolute", left: "50%", top: 2, transform: "translateX(-50%)", padding: "1px 6px", borderRadius: 4, background: "#ef4444", color: "#fff", fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fmtTime(head, false)}</span>
+          </span>
+        </div>
+
         {/* 필름 띠 */}
         <div ref={stripRef} onPointerDown={(e) => drag(e, false)}
-          style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: "#111", cursor: "pointer", userSelect: "none", touchAction: "none" }}>
+          style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: "#111", cursor: trim ? "ew-resize" : "pointer", userSelect: "none", touchAction: "none" }}>
           <div style={{ height: 76, display: "flex" }}>
             {Array.from({ length: FRAMES }, (_, i) => (
               <canvas key={i} ref={(el) => { canvases.current[i] = el; }} width={160} height={90} style={{ flex: 1, minWidth: 0, height: "100%", objectFit: "cover", display: "block", opacity: 0.55 }} />
@@ -212,15 +248,22 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
             ))}
           </div>
           {/* 재생 위치 */}
-          <div style={{ position: "absolute", top: 0, bottom: 0, left: pct(head), width: 3, marginLeft: -1, background: "#f97316", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: 0, bottom: 0, left: pct(head), width: 3, marginLeft: -1, background: "#ef4444", boxShadow: "0 0 0 1px rgba(0,0,0,0.5)", pointerEvents: "none" }} />
         </div>
-        <div style={{ position: "relative", height: 20, fontSize: 12.5, color: C.accent, fontVariantNumeric: "tabular-nums" }}>
-          <span style={{ position: "absolute", left: pct(s), top: 4 }}>{fmtTime(s, false)}</span>
-          <span style={{ position: "absolute", left: pct(s + span), top: 4, transform: "translateX(-100%)" }}>{fmtTime(s + span, false)}</span>
+        <div style={{ position: "relative", height: 22, fontSize: 12.5, color: C.accent, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ position: "absolute", left: pct(s), top: 4, fontWeight: 800 }}>시작 {fmtTime(s, false)}</span>
+          <span style={{ position: "absolute", left: pct(s + span), top: 4, transform: "translateX(-100%)", fontWeight: 800 }}>끝 {fmtTime(s + span, false)}</span>
         </div>
+        {trim && (
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 4 }}>
+            <Btn small onClick={() => { setPlaying(false); seekMain(s); }}>시작 장면 보기</Btn>
+            <Btn small onClick={() => { setPlaying(false); seekMain(s + span / 2); }}>가운데 장면 보기</Btn>
+            <Btn small onClick={() => { setPlaying(false); seekMain(Math.max(0, s + span - 0.04)); }}>끝 장면 보기</Btn>
+          </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 10 }}>
-          <button type="button" onClick={() => setPlaying((v) => !v)} title={playing ? "멈추기" : "고른 부분 재생"}
+          <button type="button" onClick={() => setPlaying((v) => !v)} title={playing ? "멈추기" : "재생 위치(빨간 선)부터 고른 부분 재생"}
             style={{ width: 46, height: 46, borderRadius: "50%", border: 0, background: C.accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <Icon name={playing ? "pause" : "play"} size={22} />
           </button>

@@ -6,6 +6,8 @@ import React, { useEffect, useRef, useState } from "react";
 import type { MyVoiceStatus } from "./types";
 import { errText, videoBridge } from "./types";
 import { Btn, C, FONT, Icon } from "./ui";
+import { MY_VOICE_ID, setMyVoiceName } from "@/lib/studio-video/voices";
+import { FavStar, useVoiceFavs } from "./TypecastVoices";
 
 const box: React.CSSProperties = { border: `1px solid ${C.line2}`, borderRadius: 8, background: C.card, padding: 18 };
 const big: React.CSSProperties = { fontSize: 19, fontWeight: 800, color: C.text };
@@ -14,6 +16,7 @@ const sub: React.CSSProperties = { fontSize: 15, color: C.sub, lineHeight: 1.6 }
 export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: () => void }) {
   const b = videoBridge();
   const mv = b?.myVoice;
+  const [favs, toggleFav] = useVoiceFavs(); // 즐겨찾기 (☆)
   const [st, setSt] = useState<MyVoiceStatus | null>(null);
   const [busy, setBusy] = useState<{ text: string; frac: number } | null>(null);
   const [err, setErr] = useState("");
@@ -25,13 +28,15 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
   const audio = useRef<HTMLAudioElement | null>(null);
   // 듣기 — 어느 소리를 틀고 있는지 (load: 누름 → 소리 나오기 전 ⟳, play: 나오는 중 ■)
   const [pl, setPl] = useState<{ url: string; phase: "load" | "play" } | null>(null);
-  const playing = Boolean(pl);
+
 
   useEffect(() => {
     mv?.status().then(setSt).catch((e) => setErr(errText(e)));
     return () => audio.current?.pause();
   }, [mv]);
   useEffect(() => (mv ? mv.onProgress((text, frac) => setBusy({ text, frac })) : undefined), [mv]);
+  // 등록한 이름 — 클립의 목소리 단추에도 그 이름이 나오게
+  useEffect(() => { if (st) setMyVoiceName(st.name); }, [st]);
 
   const run = async (fn: () => Promise<MyVoiceStatus | null>, first: string) => {
     setErr("");
@@ -100,6 +105,8 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
     const s2 = await run(() => mv.sample(), "고친 글자로 샘플 문장을 다시 만드는 중…");
     if (s2?.sampleUrl) play(s2.sampleUrl);
   };
+  // 카드 ▶ 는 내 목소리 샘플을 틀 때만 ■ (원래 녹음 듣기 때는 그대로 ▶ — 2026-10-19 사장님)
+  const playing = Boolean(pl) && pl!.url !== st?.refUrl;
   const playSample = async () => {
     if (st?.sampleUrl) return play(st.sampleUrl);
     const s = await run(() => mv!.sample(), "내 목소리로 샘플 문장을 만드는 중…");
@@ -159,13 +166,14 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 19, fontWeight: 800 }}>{st.name || "내 목소리"}</span>
+              <FavStar on={favs.includes(MY_VOICE_ID)} onToggle={() => toggleFav(MY_VOICE_ID)} />
               {mv.update && <button type="button" title="이름 바꾸기" onClick={(e) => { e.stopPropagation(); setEditName(st.name || "내 목소리"); }}
                 style={{ width: 28, height: 28, border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="pen" size={15} /></button>}
             </div>
           )}
           <div style={{ fontSize: 14, color: C.sub, marginTop: 5 }}>{st.registeredAt ? `${new Date(st.registeredAt).toLocaleDateString("ko-KR")} 등록` : ""} · PC에서 무료로 만들어요</div>
         </div>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onPick(); playSample(); }} title={playing ? "멈추기" : "내 목소리 샘플 듣기"}
+        <button type="button" onClick={(e) => { e.stopPropagation(); onPick(); playSample(); }} title={playing ? "멈추기" : "녹음한 글자를 내 목소리로 듣기"}
           style={{ width: 42, height: 42, flexShrink: 0, borderRadius: "50%", border: `1px solid ${playing ? C.accent : C.line2}`, background: playing ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {playing ? <span style={{ width: 12, height: 12, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={17} />}
         </button>

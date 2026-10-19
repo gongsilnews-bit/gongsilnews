@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm, IconMegaphone } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm, IconImage, IconMegaphone } from "@/components/admin/sections/AdminIcons";
 
 /**
  * 중개사 관리자(/realty_admin) 메뉴 구성 — 2026-10-15 회의 (다)안
@@ -20,6 +20,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "marketing", label: "공실마케팅", icon: <IconMegaphone /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
+  { key: "photo", label: "이미지 편집", icon: <IconImage /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "article_ad", label: "광고관리", icon: <IconAd /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },
@@ -31,7 +32,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
 
 /** 공실뉴스가 처음 정한 기본 (최고관리자가 바꾸기 전) */
 export const FACTORY_LAYOUT: MenuLayout = {
-  main: ["dashboard", "gongsil", "article", "marketing", "sns", "video", "customer"],
+  main: ["dashboard", "gongsil", "article", "marketing", "sns", "video", "photo", "customer"],
   more: ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"],
 };
 

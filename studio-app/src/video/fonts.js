@@ -24,6 +24,55 @@ const FONTS = [
   { family: "Gowun Dodum", file: "GowunDodum-Regular.ttf", url: G + "gowundodum/GowunDodum-Regular.ttf" },
   { family: "Nanum Pen", file: "NanumPenScript-Regular.ttf", url: G + "nanumpenscript/NanumPenScript-Regular.ttf" },
   { family: "Song Myung", file: "SongMyung-Regular.ttf", url: G + "songmyung/SongMyung-Regular.ttf" },
+  // 예능 자막 글꼴 (2026-10-19) — 궁서·바탕은 윈도우 기본(batang.ttc), 나머지는 공실뉴스 서버(/studio-fonts)에서 받는다 (글꼴 안 이름 = family)
+  { family: "Gungsuh", system: ["batang.ttc"] },
+  { family: "Batang", system: ["batang.ttc"] },
+  { family: "CookieRunOTF", file: "CookieRunOTF.otf", url: "/studio-fonts/CookieRunOTF.otf" },
+  { family: "NEXON Lv1 Gothic", file: "NEXON-Lv1-Gothic.ttf", url: "/studio-fonts/NEXON-Lv1-Gothic.ttf" },
+  { family: "KOTRA_BOLD", file: "KOTRA-BOLD.ttf", url: "/studio-fonts/KOTRA-BOLD.ttf" },
+  { family: "Maplestory", file: "Maplestory.ttf", url: "/studio-fonts/Maplestory.ttf" },
+  { family: "ELAND Nice", file: "ELAND-Nice.ttf", url: "/studio-fonts/ELAND-Nice.ttf" },
+  { family: "Cafe24 Danjunghae", file: "Cafe24-Danjunghae.ttf", url: "/studio-fonts/Cafe24-Danjunghae.ttf" },
+  { family: "Gong Gothic Bold", file: "Gong-Gothic-Bold.ttf", url: "/studio-fonts/Gong-Gothic-Bold.ttf" },
+  { family: "AndongKaturiOTF", file: "AndongKaturiOTF.otf", url: "/studio-fonts/AndongKaturiOTF.otf" },
+  { family: "tvN Enjoystories", file: "tvN-Enjoystories.ttf", url: "/studio-fonts/tvN-Enjoystories.ttf" },
+  { family: "777Starlandmoon", file: "777Starlandmoon.ttf", url: "/studio-fonts/777Starlandmoon.ttf" },
+  { family: "VITRO PRIDE OTF", file: "VITRO-PRIDE-OTF.otf", url: "/studio-fonts/VITRO-PRIDE-OTF.otf" },
+  { family: "Cafe24 Dangdanghae", file: "Cafe24-Dangdanghae.ttf", url: "/studio-fonts/Cafe24-Dangdanghae.ttf" },
+  { family: "Wandohope", file: "Wandohope.ttf", url: "/studio-fonts/Wandohope.ttf" },
+  { family: "RixYeoljeongdo", file: "RixYeoljeongdo.ttf", url: "/studio-fonts/RixYeoljeongdo.ttf" },
+  { family: "NEXON Lv2 Gothic", file: "NEXON-Lv2-Gothic.ttf", url: "/studio-fonts/NEXON-Lv2-Gothic.ttf" },
+  { family: "VITRO CORE OTF", file: "VITRO-CORE-OTF.otf", url: "/studio-fonts/VITRO-CORE-OTF.otf" },
+  { family: "Gong Gothic Medium", file: "Gong-Gothic-Medium.ttf", url: "/studio-fonts/Gong-Gothic-Medium.ttf" },
+  { family: "Cafe24 Oneprettynight", file: "Cafe24-Oneprettynight.ttf", url: "/studio-fonts/Cafe24-Oneprettynight.ttf" },
+  { family: "Binggrae II", file: "Binggrae-II.ttf", url: "/studio-fonts/Binggrae-II.ttf" },
+  { family: "MapoBackpacking", file: "MapoBackpacking.ttf", url: "/studio-fonts/MapoBackpacking.ttf" },
+  { family: "BM EULJIRO TTF", file: "BM-EULJIRO-TTF.ttf", url: "/studio-fonts/BM-EULJIRO-TTF.ttf" },
+  { family: "MapoHongdaeFreedom", file: "MapoHongdaeFreedom.ttf", url: "/studio-fonts/MapoHongdaeFreedom.ttf" },
+  { family: "Binggrae Melona", file: "Binggrae-Melona.ttf", url: "/studio-fonts/Binggrae-Melona.ttf" },
+  { family: "MapoDPP", file: "MapoDPP.ttf", url: "/studio-fonts/MapoDPP.ttf" },
+  { family: "MARU Buri Beta", file: "MARU-Buri-Beta.ttf", url: "/studio-fonts/MARU-Buri-Beta.ttf" },
+  { family: "fromdami M", file: "fromdami-M.ttf", url: "/studio-fonts/fromdami-M.ttf" },
+  { family: "DAON_C_MYUNGSUNGCHE(B)", file: "DAON-C-MYUNGSUNGCHE-B.ttf", url: "/studio-fonts/DAON-C-MYUNGSUNGCHE-B.ttf" },
+  { family: "JejuHallasan", file: "JejuHallasan.ttf", url: "/studio-fonts/JejuHallasan.ttf" },
+  { family: "DAON_C_MYUNGSUNGCHE(M)", file: "DAON-C-MYUNGSUNGCHE-M.ttf", url: "/studio-fonts/DAON-C-MYUNGSUNGCHE-M.ttf" },
+  { family: "ChosunilboNM", file: "ChosunilboNM.ttf", url: "/studio-fonts/ChosunilboNM.ttf" },
+  { family: "Cafe24 Shiningstar", file: "Cafe24-Shiningstar.ttf", url: "/studio-fonts/Cafe24-Shiningstar.ttf" },
+  { family: "BM HANNA Air", file: "BM-HANNA-Air.ttf", url: "/studio-fonts/BM-HANNA-Air.ttf" },
+  { family: "WemakepriceOTF", file: "WemakepriceOTF.otf", url: "/studio-fonts/WemakepriceOTF.otf" },
+  { family: "Binggrae Samanco Bold", file: "Binggrae-Samanco-Bold.ttf", url: "/studio-fonts/Binggrae-Samanco-Bold.ttf" },
+  { family: "ELAND Choice", file: "ELAND-Choice.ttf", url: "/studio-fonts/ELAND-Choice.ttf" },
+  { family: "MapoPeacefull", file: "MapoPeacefull.ttf", url: "/studio-fonts/MapoPeacefull.ttf" },
+  { family: "Binggrae Samanco Regular", file: "Binggrae-Samanco-Regular.ttf", url: "/studio-fonts/Binggrae-Samanco-Regular.ttf" },
+  { family: "BM Euljiro 10 years later", file: "BM-Euljiro-10-years-later.ttf", url: "/studio-fonts/BM-Euljiro-10-years-later.ttf" },
+  { family: "BR B", file: "BR-B.ttf", url: "/studio-fonts/BR-B.ttf" },
+  { family: "Cafe24 Ohsquare", file: "Cafe24-Ohsquare.ttf", url: "/studio-fonts/Cafe24-Ohsquare.ttf" },
+  { family: "Jalnan OTF", file: "Jalnan-OTF.otf", url: "/studio-fonts/Jalnan-OTF.otf" },
+  { family: "NanumMyeongjo Regular", file: "NanumMyeongjo-Regular.ttf", url: "/studio-fonts/NanumMyeongjo-Regular.ttf" },
+  { family: "NanumSquareRound", file: "NanumSquareRound.ttf", url: "/studio-fonts/NanumSquareRound.ttf" },
+  { family: "NEXON Lv1 Gothic Low OTF", file: "NEXON-Lv1-Gothic-Low-OTF.otf", url: "/studio-fonts/NEXON-Lv1-Gothic-Low-OTF.otf" },
+  { family: "Yanolja Yache", file: "Yanolja-Yache.ttf", url: "/studio-fonts/Yanolja-Yache.ttf" },
+  { family: "YANGJIN", file: "YANGJIN.ttf", url: "/studio-fonts/YANGJIN.ttf" },
 ];
 const DEFAULT_FAMILY = "Malgun Gothic";
 const dir = () => path.join(app.getPath("userData"), "video-fonts");
@@ -121,7 +170,7 @@ async function files(family) {
       (async () => {
         fs.mkdirSync(dir(), { recursive: true });
         const tmp = dest + ".part";
-        await server.download(f.url, tmp);
+        await server.download(/^\//.test(f.url) ? server.base() + f.url : f.url, tmp);
         if (f.woff) fs.writeFileSync(dest, woffToSfnt(fs.readFileSync(tmp), f.family));
         else fs.renameSync(tmp, dest);
         fs.rmSync(tmp, { force: true });
@@ -155,6 +204,6 @@ async function copyTo(families, fontsDir) {
 }
 
 /** libass 굵게 — 맑은 고딕만 굵은 파일이 따로 있다. 나머지는 받은 파일 굵기 그대로 (가짜 굵게 안 함) */
-const assBold = (family, bold) => (find(family || DEFAULT_FAMILY)?.system || !find(family) ? bold !== false : false);
+const assBold = (family, bold) => ((family || DEFAULT_FAMILY) === DEFAULT_FAMILY || !find(family) ? bold !== false : false); // 궁서·바탕(PC 글꼴)도 가짜 굵게 안 함
 
 module.exports = { FONTS, DEFAULT_FAMILY, ensure, copyTo, files, assBold, woffToSfnt };

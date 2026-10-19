@@ -10,13 +10,14 @@ import { Btn, C, FONT, Icon } from "./ui";
 import { Side } from "./Panels";
 import { LookTile, SubPresetGrid, loadMyPresets, type TextLook } from "./SubPresets";
 
-export function TextInsertPanel({ onAdd, onClose }: { onAdd: (look: TextLook, anim?: LayerAnim) => void; onClose: () => void }) {
+export function TextInsertPanel({ onAdd, onClose, onTemplates }: { onAdd: (look: TextLook, anim?: LayerAnim) => void; onClose: () => void; onTemplates?: () => void }) {
   const [my] = useState(() => loadMyPresets());
   const head: React.CSSProperties = { fontSize: 14, fontWeight: 800, margin: "16px 0 8px" };
   return (
     <Side title="텍스트" onClose={onClose}>
       <div style={{ padding: "12px 16px 20px" }}>
         <Btn primary onClick={() => onAdd({})} style={{ width: "100%", justifyContent: "center" }}><Icon name="plus" size={16} />기본 글자 넣기</Btn>
+        {onTemplates && <Btn onClick={onTemplates} style={{ width: "100%", justifyContent: "center", marginTop: 8 }}>글자 템플릿 (자막바·제목·말풍선 카드·이름표·예능 …)</Btn>}
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>고른 클립(없으면 지금 클립)에 들어가요. 단어를 고르고 넣으면 그 말 할 때만. 글은 미리보기에서 두 번 눌러 고쳐요.</div>
         {my.length > 0 && (
           <>

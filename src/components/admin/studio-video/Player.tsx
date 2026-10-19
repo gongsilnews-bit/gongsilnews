@@ -6,10 +6,11 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { effLeading, effSpacing, zLayers, sfxEvents, animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines } from "./timeline";
+import { effLeading, effSpacing, zLayers, sfxEvents, animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layerItems, layersAt, layerWindow, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines, subWordOf, lineWords, wordState } from "./timeline";
 import { C, Icon } from "./ui";
 import { transAt, transStyle } from "./transitions";
-import { patternCss, subLookCss, withAlpha } from "./SubPresets";
+import { gradCss, patternCss, subLookCss, withAlpha } from "./SubPresets";
+import { TplMotion, isMotionStyle } from "./Templates";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
 
@@ -28,7 +29,7 @@ type Props = {
   onSubText?: (clipId: string, text: string) => void;
   /** 미리보기에서 클립 화면을 끌어 옮기기·크기 / 자막을 끌어 옮기기·줄 너비 */
   onVisualMove?: (clipId: string, box: { x: number; y: number; w: number }, first: boolean) => void;
-  onSubMove?: (patch: { x?: number; y?: number; wrap?: number; size?: number }, first: boolean) => void;
+  onSubMove?: (patch: { x?: number; y?: number; wrap?: number; size?: number; rot?: number }, first: boolean) => void;
   /** 클립 화면·자막을 눌러 고르면 (오른쪽 속성 칸 열기) */
   onBoxPick?: (kind: "visual" | "sub", clipId: string) => void;
 };
@@ -384,7 +385,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
 
   // 자막
   const st = subStyleOf(project.settings, clip);
-  const lines = clip && item ? subtitleLines(clip, item.dur, project.settings, W) : [];
+  const lines = clip && item ? subtitleLines(clip, item.dur, project.settings, W, H) : [];
   const line = lines.find((l) => local >= l.s && local < l.e + 0.001) || null;
   const fontPx = Math.min(W, H) * 0.062 * ((st.size || 100) / 100) * k;
   const posStyle: React.CSSProperties =
@@ -481,9 +482,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     if (!box || !el) return;
     const sx = e.clientX;
     const sy = e.clientY;
-    const cx = (el.left + el.width / 2 - box.left) / box.width;
-    const cy = (el.top + el.height / 2 - box.top) / box.height;
-    const w0 = el.width / box.width;
+    // 클립 화면 — 아직 직접 크기가 없으면 채우기대로 보이는 실제 그림 자리에서 시작 (잘라서 채우기면 화면보다 큰 그림)
+    //  (2026-10-19 사장님: 잘라서 채우기 하고 끌면 그림이 줄어 한쪽이 검게 비었다)
+    const r0 = kind === "visual" && !clip?.box ? vRect : null;
+    const cx = r0 ? (r0.left + r0.width / 2) / boxW : (el.left + el.width / 2 - box.left) / box.width;
+    const cy = r0 ? (r0.top + r0.height / 2) / boxH : (el.top + el.height / 2 - box.top) / box.height;
+    const w0 = r0 ? r0.width / boxW : el.width / box.width;
+    // 화면을 다 덮는 그림이면 옮겨도 빈 곳이 생기지 않게 (가장자리가 화면 밖에 머물도록) — 작은 그림은 자유롭게
+    const h0 = (w0 * boxW) / vAr / boxH;
+    const panX = (x: number) => (w0 >= 0.999 ? clamp(x, 1 - w0 / 2, w0 / 2) : clamp(x, 0, 1));
+    const panY = (y: number) => (h0 >= 0.999 ? clamp(y, 1 - h0 / 2, h0 / 2) : clamp(y, 0, 1));
     const right = mode === "ne" || mode === "se";
     const down = mode === "sw" || mode === "se";
     const fx = right ? el.left : el.right;
@@ -509,7 +517,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           onSubMove!({ wrap: +clamp(nw / (box.width * 0.88), 0.3, 1).toFixed(3) }, first);
         } else onSubMove!({ x: +clamp(cx + dx / box.width, 0.05, 0.95).toFixed(4), y: +clamp(cy + dy / box.height, 0.05, 0.95).toFixed(4) }, first);
       } else if (mode === "move") {
-        onVisualMove!(clip!.id, { x: +clamp(cx + dx / box.width, 0, 1).toFixed(4), y: +clamp(cy + dy / box.height, 0, 1).toFixed(4), w: +w0.toFixed(4) }, first);
+        onVisualMove!(clip!.id, { x: +panX(cx + dx / box.width).toFixed(4), y: +panY(cy + dy / box.height).toFixed(4), w: +w0.toFixed(4) }, first);
       } else {
         const kx = (right ? ev.clientX - fx : fx - ev.clientX) / Math.max(1, el.width);
         const ky = (down ? ev.clientY - fy : fy - ev.clientY) / Math.max(1, el.height);
@@ -526,10 +534,46 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
   };
+  /**
+   * 회전 손잡이 (포토샵처럼 위 가운데 동그라미) — 끌어서 돌리기, Shift = 15도씩, 0·90·180·270 근처는 딱 붙는다
+   *  돌리면 자리를 가운데 기준(x·y)으로 바꿔 둔다 (굽기와 같은 축으로 돌게)
+   */
+  const startRotate = (e: React.PointerEvent, rot0: number, apply: (patch: { rot: number; x?: number; y?: number }, first: boolean) => void, needXY: boolean) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-rot]")?.getBoundingClientRect();
+    const box = boxRef.current?.getBoundingClientRect();
+    if (!el || !box) return;
+    const cx = el.left + el.width / 2, cy = el.top + el.height / 2;
+    const a0 = Math.atan2(e.clientY - cy, e.clientX - cx);
+    const xy = needXY ? { x: +((cx - box.left) / box.width).toFixed(4), y: +((cy - box.top) / box.height).toFixed(4) } : {};
+    let first = true;
+    const move = (ev: PointerEvent) => {
+      let r = rot0 + ((Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180) / Math.PI;
+      r = ((r % 360) + 540) % 360 - 180; // -180 ~ 180
+      if (ev.shiftKey) r = Math.round(r / 15) * 15;
+      else { const k = Math.round(r / 90) * 90; if (Math.abs(r - k) < 3) r = k; }
+      apply({ rot: +r.toFixed(1), ...xy }, first);
+      first = false;
+    };
+    const up = () => window.removeEventListener("pointermove", move);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  };
+  // 회전 손잡이 — 오른쪽 아래 바깥에 파란 동그라미 + 돌리는 화살표 (2026-10-19 사장님: 위가 아니라 오른쪽 아래)
+  const rotHandle = (onDown: (e: React.PointerEvent) => void) => (
+    <span onPointerDown={onDown} title="끌어서 돌리기 (Shift = 15도씩)"
+      style={{ position: "absolute", right: -34, bottom: -34, width: 24, height: 24, borderRadius: "50%", background: "#2563EB", border: "2px solid #fff", boxShadow: "0 1px 4px rgba(0,0,0,.5)", cursor: "grab", touchAction: "none", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
+        <path d="M20 12a8 8 0 1 1-2.34-5.66" /><path d="M20 4v5h-5" />
+      </svg>
+    </span>
+  );
   const boxFrame = (kind: "visual" | "sub") =>
     pick === kind ? (
       <>
         <span style={{ position: "absolute", inset: -3, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />
+        {kind === "sub" && onSubMove && rotHandle((e) => startRotate(e, Number(st.rot) || 0, (pt, first) => onSubMove(pt, first), !(typeof st.x === "number" && typeof st.y === "number")))}
         {kind === "visual"
           ? (["nw", "ne", "sw", "se"] as Corner[]).map((c) => (
               <span key={c} onPointerDown={(e) => startBox("visual", c, e)} title="끌어서 크기 바꾸기 (반대쪽 모서리는 그대로)"
@@ -556,6 +600,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     l.id === selLayer && onLayerMove ? (
       <>
         <span style={{ position: "absolute", inset: -3, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />
+        {rotHandle((e) => startRotate(e, Number(l.rot) || 0, (pt, first) => onLayerMove!(l.id, pt, first), l.type === "text" && !(typeof l.x === "number" && typeof l.y === "number")))}
         {(["nw", "ne", "sw", "se"] as Corner[]).map((c) => (
           <span key={c} onPointerDown={(e) => startDrag(l, c, e)} title="끌어서 크기 바꾸기 (반대쪽 모서리는 그대로)"
             style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: -8, [c[1] === "w" ? "left" : "right"]: -8, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none" }} />
@@ -621,7 +666,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const pos = l.pos || "top";
     const free = typeof l.x === "number" && typeof l.y === "number"; // 끌어서 옮긴 글자
     const ps: React.CSSProperties = free
-      ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: "translate(-50%, -50%)" }
+      ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: `translate(-50%, -50%)${l.rot ? ` rotate(${l.rot}deg)` : ""}` }
       : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
     return (
       <div key={l.id} style={{ position: "absolute", textAlign: l.align || "center", ...ps, pointerEvents: "none" }}>
@@ -639,7 +684,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
             return <InlineEdit text={String(l.text).trim()} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.trim() && t.trim() !== String(l.text).trim()) onLayerText(l.id, t.trim()); }} />;
           return (
             <span style={{ display: "inline-block", ...lookOf(l) }}>
-              <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
+              <span data-layer={l.id} data-rot="" onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
                 title={onLayerText ? "끌어서 옮기기 · 두 번 누르면 글 고치기" : undefined} style={{ ...look, ...dragStyle(l) }}>
                 {String(l.text).trim()}{frame(l)}
               </span>
@@ -721,10 +766,14 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const left = Math.max(0, Math.min(boxW - pw, (l.x ?? 0.5) * boxW - pw / 2));
         const top = Math.max(0, Math.min(boxH - ph, (l.y ?? 0.5) * boxH - ph / 2));
         return (
-          <div key={l.id} data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
-            style={{ position: "absolute", left, top, width: pw, height: ph, ...dragStyle(l) }}>
+          <div key={l.id} data-layer={l.id} data-rot="" onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
+            style={{ position: "absolute", left, top, width: pw, height: ph, ...dragStyle(l), transform: l.rot ? `rotate(${l.rot}deg)` : undefined }}>
             <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
-              <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
+              {l.stk && isMotionStyle(l.stk.style) ? (() => {
+                // 움직이는 템플릿 — 나타난 뒤 지난 시간으로 칸마다 그린다 (굽기 AnimBake 와 같은 그림)
+                const sp = clip ? layerSpan(project, l, flat.items, clip.id, project.settings, order) : null;
+                return <TplMotion style={l.stk!.style} text={l.stk!.text} color={l.stk!.color} t={Math.max(0, local - (sp?.a ?? 0))} opacity={op} flip={flipOf(l)} />;
+              })() : <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: op, transform: flipOf(l), pointerEvents: "none" }} />}
             </div>
             {frame(l)}
           </div>
@@ -732,34 +781,89 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       })}
       {(line || (clip && editing === `sub:${clip.id}`)) && (() => {
         const look: React.CSSProperties = {
-          display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
+          // 직접 쓴 자막에 엔터를 넣었으면 그 줄 그대로 (글자 수로 다시 나누지 않음 — 굽기와 같게)
+          // 줄은 편집기가 나눈 그대로 — 미리보기가 따로 접지 않는다 (굽기와 같게, 2026-10-19)
+          display: "inline", whiteSpace: "pre", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
           fontSize: fontPx, lineHeight: effLeading(st), letterSpacing: `${effSpacing(st) * fontPx}px`, color: withAlpha(st.color || "#FFFFFF", st.textAlpha ?? 0), ...subLookCss(st, fontPx, k), ...patternCss(st),
           paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12 * (st.bgPad ?? 1)}px ${fontPx * 0.3 * (st.bgPad ?? 1)}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
         };
+        // 예능 자막 — 이중 테두리·그라데이션 (굽기 render.js fancySub 와 같은 모양)
+        const o2 = !st.bg && Number(st.outline2Width) > 0 ? Number(st.outline2Width) : 0;
+        const grad = !st.bg && st.gradTo ? st.gradTo : "";
+        const fancy = Boolean(o2 || grad);
+        const ow0 = Number(st.outlineWidth ?? 3);
+        const lc = subLookCss(st, fontPx, k);
+        // 아래 층들: [바깥 테두리(안쪽+바깥 두께) + 그림자·빛] → [안쪽 테두리] · 맨 위: 글자만 (테두리 없음 — 자막 엔진처럼 테두리는 글자 바깥으로만)
+        const oc = withAlpha(st.outline || "#000000", st.outlineAlpha ?? 0);
+        const unders: React.CSSProperties[] = !fancy ? [] : [
+          ...(o2 ? [{ color: "transparent", WebkitTextStroke: `${Math.max(1, (ow0 + o2) * k * 2)}px ${st.outline2 || "#FFFFFF"}`, textShadow: lc.textShadow } as React.CSSProperties] : []),
+          { color: "transparent", WebkitTextStroke: ow0 > 0 ? `${Math.max(1, ow0 * k * 2)}px ${oc}` : undefined, textShadow: o2 ? undefined : lc.textShadow },
+        ];
+        const mainCss: React.CSSProperties = fancy ? { textShadow: undefined, WebkitTextStroke: undefined, ...(grad ? { color: "transparent", backgroundImage: gradCss({ ...st, gradTo: grad }), WebkitBackgroundClip: "text", backgroundClip: "text" } : {}) } : {};
         const full = clip ? (typeof clip.subText === "string" ? clip.subText : clipText(clip)) : "";
         // 줄 너비·옮긴 자리 (굽기와 같은 계산)
         const subW = boxW * 0.88 * Math.max(0.3, Math.min(1, st.wrap ?? 1));
         const free = typeof st.x === "number" && typeof st.y === "number";
         const at: React.CSSProperties = free
-          ? { left: (st.x as number) * boxW, top: (st.y as number) * boxH, transform: "translate(-50%, -50%)" }
+          ? { left: (st.x as number) * boxW, top: (st.y as number) * boxH, transform: `translate(-50%, -50%)${st.rot ? ` rotate(${st.rot}deg)` : ""}` }
           : { left: (boxW - subW) / 2, ...posStyle };
         return (
-          <div data-layer="__sub" onPointerDown={onSubMove && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
-            style={{ position: "absolute", width: subW, textAlign: st.align || "center", ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
+          <div data-layer="__sub" data-rot="" onPointerDown={onSubMove && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
+            // 글자 크기·줄 간격을 바깥 칸에도 — 안 그러면 바깥 기본 줄 높이(작은 글자 1.5배)가 줄 간격을 막아 좁혀도 안 좁아진다 (2026-10-19)
+            style={{ position: "absolute", width: subW, textAlign: st.align || "center", fontSize: fontPx, lineHeight: effLeading(st), ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
             {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); const tidy = (x: string) => x.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); if (t !== null && tidy(t) !== tidy(full)) onSubText(clip.id, t); }} />
-            ) : (
+            ) : ((() => { const body = (under: React.CSSProperties | null) => (
               <span style={(() => {
                 // 메인자막 애니메이션 — 지금 보이는 자막 조각(line.s~line.e)마다 나타나고 사라진다
-                const sa = clip && line ? subAnimOf(project, clip) : null;
+                const sa0 = clip && line ? subAnimOf(project, clip) : null;
+                const wf0 = clip && line ? subWordOf(project, clip) : null;
+                // 한 줄씩 + [인] — 인 효과는 줄마다 (아래), 덩어리에는 아웃·반복만
+                const sa = sa0 && wf0?.show === "line" && sa0.in ? { ...sa0, in: undefined } : sa0;
                 const lk = sa && line ? animCss(animAt(playing ? sa : { ...sa, in: undefined, out: undefined }, local, line.s, line.e), boxW, boxH) : undefined;
                 return lk ? { display: "inline-block", ...lk } : undefined;
               })()}>
-              <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장 (목소리는 그대로)" : undefined}
-                style={{ ...look, pointerEvents: onSubText ? "auto" : "none", cursor: onSubText ? "text" : undefined }}>{line?.text}</span>
+              <span onDoubleClick={under ? undefined : () => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText && !under ? "두 번 누르면 자막 고치기 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장 (목소리는 그대로)" : undefined}
+                style={{ ...look, ...(under || mainCss), pointerEvents: onSubText && !under ? "auto" : "none", cursor: onSubText ? "text" : undefined }}>{(() => {
+                  // 단어별 효과 (쇼츠식) — 말하는 때에 맞춰 한 단어씩 · 지금 단어 강조 (굽기 render.js 와 같은 계산)
+                  const wfx = clip && line ? subWordOf(project, clip) : null;
+                  if (!wfx || !clip || !line) return line?.text;
+                  const ws = lineWords(clip, lines, project.settings, wfx)[lines.indexOf(line)] || [];
+                  const sa0 = subAnimOf(project, clip);
+                  const lineIn = wfx.show === "line" && sa0?.in ? { in: sa0.in, dur: sa0.dur } : null;
+                  let wi = 0;
+                  // 줄마다 (한 줄씩 + [인] 이면 그 줄이 나오는 때에 따로 들어온다)
+                  return line.text.split("\n").map((ln, li) => {
+                    const first = ws[wi];
+                    const words = ln.split(/(\s+)/).map((part, j) => {
+                      if (!part.trim()) return part;
+                      const w = ws[wi++];
+                      if (!w) return part;
+                      const stt = wordState(wfx, w, local);
+                      const col = stt.cur && wfx.hl !== "big", big = stt.cur && wfx.hl !== "color";
+                      // 멈춰 있을 때는 모두 보이게 (지금 단어 강조만)
+                      return <span key={j} style={{ opacity: playing ? stt.a : 1, color: col ? wfx.color : undefined, fontSize: big ? "1.18em" : undefined }}>{part}</span>;
+                    });
+                    const lk2 = lineIn && playing && first ? animCss(animAt(lineIn as Parameters<typeof animAt>[0], local, first.ls ?? first.s, 1e6), boxW, boxH) : undefined;
+                    return (
+                      <React.Fragment key={li}>
+                        {li > 0 && "\n"}
+                        {lk2 ? <span style={{ display: "inline-block", ...lk2 }}>{words}</span> : words}
+                      </React.Fragment>
+                    );
+                  });
+                })()}</span>
               </span>
-            )}
+            );
+            // 예능 자막이면 아래 한 벌(바깥 테두리·그림자·빛) 위에 글자 한 벌을 겹친다
+            return fancy ? (
+              <>
+                {unders.map((u, i) => <div key={i} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: "100%", pointerEvents: "none" }}>{body(u)}</div>)}
+                <span style={{ position: "relative" }}>{body(null)}</span>
+              </>
+            ) : body(null);
+            })())}
           </div>
         );
       })()}

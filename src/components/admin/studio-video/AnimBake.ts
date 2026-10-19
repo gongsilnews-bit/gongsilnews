@@ -4,6 +4,7 @@
 //  화면 글자·메인자막 애니메이션은 앱이 자막 엔진으로 칸마다 그린다 (render.js animTextEvents).
 import type { Layer, Project, VideoBridge } from "./types";
 import { animAt, animOf, clipOrder, flatten, layerSpan, layersAt, type FlatItem } from "./timeline";
+import { drawTemplate, isMotionStyle, tplFonts } from "./Templates";
 
 const FPS = 30;
 const RATIOS: Record<string, [number, number]> = { "16:9": [1920, 1080], "9:16": [1080, 1920], "1:1": [1080, 1080], "4:5": [1080, 1350], "4:3": [1440, 1080] };
@@ -47,7 +48,10 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
   const items = itemsFor(p, o);
   const order = clipOrder(p);
   const out: Project = structuredClone(p);
-  const layers = (out.layers || []).filter((l) => l.type === "image" && !l.off && l.asset && p.assets[l.asset]?.kind === "image" && animOf(p, l));
+  // 움직이는 템플릿(경로·카운트다운·슬롯머신 …)은 애니메이션이 없어도 칸마다 다시 그린다
+  const motion = (l: Layer) => Boolean(l.stk && isMotionStyle(l.stk.style));
+  const layers = (out.layers || []).filter((l) => l.type === "image" && !l.off && l.asset && p.assets[l.asset]?.kind === "image" && (animOf(p, l) || motion(l)));
+  if (layers.some(motion)) await tplFonts();
   // 할 일 (레이어 × 클립)
   const jobs: { l: Layer; it: FlatItem; a: number; b: number; s0: number; s1: number }[] = [];
   for (const it of items) {
@@ -74,10 +78,11 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
         img = await loadImg(a.url);
         imgs.set(a.id, img);
       }
-      const an = animOf(p, l)!;
+      const an = animOf(p, l) || { dur: 0.5 };
       const n = Math.max(1, Math.ceil((j.s1 - j.s0) * FPS));
       const looks = Array.from({ length: n }, (_, k) => animAt(an, j.s0 + k / FPS, j.a, j.b));
-      if (looks.every((r) => r.op === 1 && r.sc === 1 && r.sx === 1 && r.rot === 0 && r.dx === 0 && r.dy === 0)) continue; // 이 클립에선 안 움직인다
+      const mo = motion(l);
+      if (!mo && looks.every((r) => r.op === 1 && r.sc === 1 && r.sx === 1 && r.rot === 0 && r.dx === 0 && r.dy === 0)) continue; // 이 클립에선 안 움직인다 (돌린 것은 굽기가 그대로 돌린다)
       // 자리 — render.js overlayImage 와 같은 계산 (채우기면 화면 전체)
       const full = l.fit === "cover" || l.fit === "contain";
       let pw = W, ph = H, x0 = 0, y0 = 0;
@@ -93,7 +98,7 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
         if (r.op <= 0.004) continue;
         const cx = x0 + pw / 2 + r.dx * W, cy = y0 + ph / 2 + r.dy * H;
         const hw = (pw / 2) * Math.abs(r.sc * r.sx), hh = (ph / 2) * Math.abs(r.sc);
-        const t = (r.rot * Math.PI) / 180, c = Math.abs(Math.cos(t)), s = Math.abs(Math.sin(t));
+        const t = ((r.rot + (Number(l.rot) || 0)) * Math.PI) / 180, c = Math.abs(Math.cos(t)), s = Math.abs(Math.sin(t));
         const ex = hw * c + hh * s, ey = hw * s + hh * c;
         minX = Math.min(minX, cx - ex); maxX = Math.max(maxX, cx + ex);
         minY = Math.min(minY, cy - ey); maxY = Math.max(maxY, cy + ey);
@@ -118,7 +123,7 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
           g.save();
           g.globalAlpha = op0 * Math.min(1, r.op);
           g.translate(x0 + pw / 2 + r.dx * W - bx, y0 + ph / 2 + r.dy * H - by);
-          g.rotate((r.rot * Math.PI) / 180);
+          g.rotate(((r.rot + (Number(l.rot) || 0)) * Math.PI) / 180);
           g.scale(r.sc * r.sx * (l.flipX ? -1 : 1), r.sc * (l.flipY ? -1 : 1));
           if (full) {
             // 채우기 — 화면 크기 칸 안에 비율 유지(맞추기) / 잘라서(채우기)
@@ -127,7 +132,7 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
             g.rect(-W / 2, -H / 2, W, H);
             g.clip();
             g.drawImage(img, (-img.width * kk) / 2, (-img.height * kk) / 2, img.width * kk, img.height * kk);
-          } else g.drawImage(img, -pw / 2, -ph / 2, pw, ph);
+          } else g.drawImage(mo ? drawTemplate(l.stk!.style, l.stk!.text, l.stk!.color, Math.max(0, j.s0 + k / FPS - j.a)) : img, -pw / 2, -ph / 2, pw, ph);
           g.restore();
         }
         batch.push(cv.toDataURL("image/png"));

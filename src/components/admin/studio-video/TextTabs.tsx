@@ -11,7 +11,8 @@ import { ColorPick, FontPick } from "./Pickers";
 import { Side } from "./Panels";
 import { AnimBody, type AnimBodyProps } from "./Anim";
 import { effLeading, effSpacing } from "./timeline";
-import { BASIC_GROUPS, EFFECT_GROUPS, LookTile, SubPresetGrid, loadMyPresets, saveMyPresets, type MyPreset, type SubLook, type TextLook } from "./SubPresets";
+import { gradCss, BASIC_GROUPS, EFFECT_GROUPS, LookTile, SubPresetGrid, loadMyPresets, saveMyPresets, type MyPreset, type SubLook, type TextLook } from "./SubPresets";
+import { VarietyGrid } from "./Variety";
 
 type Tab = "text" | "anim" | "my";
 
@@ -37,18 +38,23 @@ type Sub = "basic" | "bubble" | "effect";
 // 마지막에 보던 탭 — 다른 글자를 골라도 그대로 (앱을 켠 동안)
 const last: { tab: Tab; sub: Sub } = { tab: "text", sub: "basic" };
 const remember = (k: "tab" | "sub", v: string) => { (last as Record<string, string>)[k] = v; };
+/** 새 글자를 넣을 때 — 칸을 [텍스트 › 기본]부터 */
+export const resetTextTabs = () => { remember("tab", "text"); remember("sub", "basic"); };
 
-export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, anim, bubble, onClose, footerTop, pxPer100 = 67, titleExtra, posEl }: {
+export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, anim, bubble, onClose, footerTop, pxPer100 = 67, titleExtra, posEl, basicBottom }: {
   title: string;
   /** 제목 줄 오른쪽 — 메인자막 적용 범위 단추 */
   titleExtra?: React.ReactNode;
   /** [기본] 색상 아래·문자 간격 위 — 메인자막 위치 */
   posEl?: React.ReactNode;
+  /** [기본] 맨 아래 — 화면 글자 적용 범위·순서 */
+  basicBottom?: React.ReactNode;
   /** 글자 크기 100% 일 때 완성 영상에서의 글자 크기 (px) — 크기를 % 대신 글자 크기 숫자로 보여 준다 */
   pxPer100?: number;
   /** 맨 아래 고정 줄 — 메인자막 적용 범위 [전체 적용][선택 클립 적용] (어느 탭에서나 보이게) */
   footerTop?: React.ReactNode;
-  kind: "sub" | "layer";
+  /** photo = 이미지 편집 글자 (애니메이션 탭 없음, 크기는 픽셀 그대로) */
+  kind: "sub" | "layer" | "photo";
   look: TextLook;
   /** 하나씩 바꾸기 */
   onLook: (patch: TextLook) => void;
@@ -56,12 +62,12 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
   onPresetLook: (look: SubLook) => void;
   /** [텍스트 › 기본] 맨 위 — 메인자막: 적용 범위·이 클립 자막·보이기·위치 / 화면 글자: 글·자리·적용 범위·순서 */
   basicTop?: React.ReactNode;
-  anim: AnimBodyProps;
+  anim?: AnimBodyProps;
   /** [텍스트 › 말풍선] — 화면 글자만 */
   bubble?: React.ReactNode;
   onClose: () => void;
 }) {
-  const [tab, setTabS] = useState<Tab>(last.tab);
+  const [tab, setTabS] = useState<Tab>(!anim && last.tab === "anim" ? "text" : last.tab);
   const [sub, setSubS] = useState<Sub>(last.sub);
   const setTab = (t: Tab) => { remember("tab", t); setTabS(t); };
   const setSub = (t: Sub) => { remember("sub", t); setSubS(t); };
@@ -103,24 +109,24 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
     const name = (naming || "").trim() || `내 글자 ${my.length + 1}`;
     const pick = <K extends keyof TextLook>(k: K) => look[k];
     const lk: TextLook = {};
-    for (const k of ["font", "color", "outline", "outlineWidth", "bg", "bgColor", "bgOpacity", "bold", "shadow", "shadowColor", "glow", "size", "spacing", "leading", "italic", "underline", "textCase", "align", "bgPad", "shadowAlpha", "glowSize", "glowAlpha", "outlineAlpha", "textAlpha"] as (keyof TextLook)[]) {
+    for (const k of ["font", "color", "outline", "outlineWidth", "bg", "bgColor", "bgOpacity", "bold", "shadow", "shadowColor", "glow", "size", "spacing", "leading", "italic", "underline", "textCase", "align", "bgPad", "shadowAlpha", "glowSize", "glowAlpha", "outlineAlpha", "textAlpha", "outline2", "outline2Width", "gradTo", "gradType", "gradAngle", "gradA", "gradB"] as (keyof TextLook)[]) {
       const v = pick(k);
       if (v !== undefined) (lk as Record<string, unknown>)[k] = v;
     }
-    const next = [{ id: `p${Date.now().toString(36)}`, name, look: lk, anim: anim.value && Object.keys(anim.value).length ? anim.value : undefined, at: Date.now() }, ...my];
+    const next = [{ id: `p${Date.now().toString(36)}`, name, look: lk, anim: anim?.value && Object.keys(anim.value).length ? anim.value : undefined, at: Date.now() }, ...my];
     setMy(next);
     saveMyPresets(next);
     setNaming(null);
   };
   const applyMy = (pr: MyPreset) => {
     const { size, spacing, leading, ...rest } = pr.look;
-    onPresetLook({ font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", ...rest } as SubLook);
+    onPresetLook({ font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", outline2Width: 0, gradTo: "", gradType: undefined, gradAngle: undefined, gradA: undefined, gradB: undefined, ...rest } as SubLook);
     const extra: TextLook = {};
     if (size !== undefined) extra.size = size;
     if (spacing !== undefined) extra.spacing = spacing;
-    if (kind === "sub" && leading !== undefined) extra.leading = leading;
+    if (kind !== "layer" && leading !== undefined) extra.leading = leading;
     if (Object.keys(extra).length) onLook(extra);
-    anim.onChange(() => ({ ...(pr.anim || {}) } as LayerAnim), false);
+    anim?.onChange(() => ({ ...(pr.anim || {}) } as LayerAnim), false);
   };
   const removeMy = (id: string) => {
     const next = my.filter((x) => x.id !== id);
@@ -134,10 +140,10 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
       footer={footerTop}>
       {/* 큰 탭 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        {([["text", "텍스트"], ["anim", "애니메이션"], ["my", "사전설정"]] as const).map(([k, l]) => (
+        {([["text", "텍스트"], ["anim", "애니메이션"], ["my", "사전설정"]] as const).filter(([k]) => k !== "anim" || anim).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             style={{ flex: 1, height: 42, border: 0, borderBottom: `2px solid ${tab === k ? C.accent : "transparent"}`, background: "transparent", color: tab === k ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-            {l}{k === "anim" && anim.value && Object.keys(anim.value).length ? " •" : ""}{k === "my" && my.length ? ` ${my.length}` : ""}
+            {l}{k === "anim" && anim?.value && Object.keys(anim.value).length ? " •" : ""}{k === "my" && my.length ? ` ${my.length}` : ""}
           </button>
         ))}
       </div>
@@ -146,7 +152,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
         <>
           <div style={{ padding: "12px 16px 0" }}>
             <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
-              {([["basic", "기본"], ["bubble", "말풍선"], ["effect", "편집효과"]] as const).map(([k, l]) => (
+              {([["basic", "기본"], ["bubble", kind === "sub" ? "예능 자막" : "말풍선"], ["effect", "편집효과"]] as const).map(([k, l]) => (
                 <button key={k} type="button" onClick={() => setSub(k)}
                   style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: sub === k ? C.panel2 : "transparent", color: sub === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
                   {l}
@@ -160,7 +166,19 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
               {basicTop}
               <div style={col}><span style={label}>글꼴</span><FontPick value={look.font} onChange={(f) => onLook({ font: f })} /></div>
               {/* 글자 크기 — % 대신 완성 영상 글자 크기 숫자로, 오른쪽에 입력 칸 (2026-10-19 사장님) */}
-              {(() => {
+              {kind === "photo" ? (() => {
+                // 이미지 글자 — 크기 = 픽셀 그대로 (포토샵 글자 크기와 같은 숫자)
+                const px = Math.round(look.size ?? 60);
+                return (
+                  <div style={col}>
+                    <span style={label}>글자 크기</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <input type="range" min={6} max={Math.max(400, px)} step={1} value={px} onChange={(e) => onLook({ size: Number(e.target.value) })} style={{ flex: 1, minWidth: 0, accentColor: C.accent }} />
+                      <Stepper title="" value={px} min={4} max={2000} step={1} onChange={(v) => onLook({ size: v })} />
+                    </div>
+                  </div>
+                );
+              })() : (() => {
                 const toPx = (pct: number) => Math.round((pct / 100) * pxPer100);
                 const toPct = (px: number) => Math.max(40, Math.min(260, Math.round((px / pxPer100) * 100)));
                 const px = toPx(look.size ?? 100);
@@ -233,7 +251,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 return (
                   <>
                     {bar("문자 간격", typeof look.spacing !== "number", Math.round(effSpacing(look) * 100), -10, 50, (v) => onLook({ spacing: v / 100 }), () => onLook({ spacing: undefined }))}
-                    {kind === "sub" && bar("줄 간격", typeof look.leading !== "number", Math.round((effLeading(look) / 1.25) * 100) - 100, -28, 100, (v) => onLook({ leading: Math.round(1.25 * (100 + v)) / 100 }), () => onLook({ leading: undefined }))}
+                    {kind !== "layer" && bar("줄 간격", typeof look.leading !== "number", Math.round((effLeading(look) / 1.25) * 100) - 100, -28, 100, (v) => onLook({ leading: Math.round(1.25 * (100 + v)) / 100 }), () => onLook({ leading: undefined }))}
                   </>
                 );
               })()}
@@ -255,6 +273,77 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 look.outline || "#000000", (c) => onLook({ outline: c }),
                 Math.round(Number(look.outlineWidth ?? (kind === "sub" ? 3 : 4))) || 3, 1, 12, (v) => onLook({ outlineWidth: v }),
                 Math.round((look.outlineAlpha ?? 0) * 100), (v) => onLook({ outlineAlpha: v ? v / 100 : undefined }))}
+              {/* 예능 자막 — 이중 테두리 · 그라데이션 (메인자막, 2026-10-19 사장님) */}
+              {kind === "sub" && (() => {
+                const o2 = Number(look.outline2Width || 0) > 0;
+                const ok2 = !look.bg;
+                const tw = Math.round(Number(look.outline2Width || 4)) || 4;
+                return (
+                  <>
+                    <div style={{ ...col, gap: o2 && ok2 ? 10 : 0 }}>
+                      <div style={{ display: "flex", alignItems: "center" }} title={ok2 ? "안쪽 테두리 바깥에 한 겹 더 (예능 자막)" : "글자 뒤 상자를 쓰면 이중 테두리는 안 나와요"}>
+                        <span style={{ ...label, flex: 1, opacity: ok2 ? 1 : 0.45 }}>이중 테두리</span>
+                        <Toggle on={o2 && ok2} onChange={(v) => ok2 && onLook({ outline2Width: v ? 4 : 0, outline2: look.outline2 || "#FFFFFF", ...(v && Number(look.outlineWidth ?? 3) <= 0 ? { outlineWidth: 3 } : {}) })} />
+                      </div>
+                      {o2 && ok2 && (
+                        <>
+                          <ColorPick value={look.outline2 || "#FFFFFF"} onChange={(c) => onLook({ outline2: c })} />
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ width: 44, flexShrink: 0, fontSize: 13, color: C.sub, fontWeight: 700 }}>두께</span>
+                            <input type="range" min={1} max={16} step={1} value={tw} onChange={(e) => onLook({ outline2Width: Number(e.target.value) })} style={{ flex: 1, minWidth: 0, accentColor: C.accent }} />
+                            <Stepper title="" value={tw} min={1} max={16} step={1} onChange={(v) => onLook({ outline2Width: v })} />
+                          </div>
+                          <div style={{ fontSize: 12, color: C.dim }}>위 [테두리]가 안쪽, 이 색이 바깥 테두리예요.</div>
+                        </>
+                      )}
+                    </div>
+                    <div style={{ ...col, gap: look.gradTo && !look.bg ? 10 : 0 }}>
+                      <div style={{ display: "flex", alignItems: "center" }} title={look.bg ? "글자 뒤 상자를 쓰면 그라데이션은 안 나와요" : "글자 색이 위에서 아래로 바뀌어요"}>
+                        <span style={{ ...label, flex: 1, opacity: look.bg ? 0.45 : 1 }}>그라데이션 글자</span>
+                        <Toggle on={Boolean(look.gradTo) && !look.bg} onChange={(v) => !look.bg && onLook({ gradTo: v ? "#FF8A00" : "" })} />
+                      </div>
+                      {look.gradTo && !look.bg && (() => {
+                        // 포토샵처럼 — 모양(선형·방사형·반사형) · 각도 · 시작/끝 색과 투명도 (2026-10-19 사장님)
+                        const gt = look.gradType || "linear";
+                        const ang = Math.round(Number(look.gradAngle ?? 180));
+                        const bar = (name: string, v: number, min: number, max: number, set: (x: number) => void, unit = "") => (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ width: 44, flexShrink: 0, fontSize: 13, color: C.sub, fontWeight: 700 }}>{name}</span>
+                            <input type="range" min={min} max={max} step={1} value={v} onChange={(e) => set(Number(e.target.value))} style={{ flex: 1, minWidth: 0, accentColor: C.accent }} />
+                            <Stepper title={unit} value={v} min={min} max={max} step={1} onChange={set} />
+                          </div>
+                        );
+                        const css = gradCss({ ...look, gradTo: look.gradTo! });
+                        return (
+                          <>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {([["linear", "선형"], ["radial", "방사형"], ["reflect", "반사형"]] as const).map(([v, t]) => (
+                                <button key={v} type="button" onClick={() => onLook({ gradType: v === "linear" ? undefined : v })}
+                                  style={{ flex: 1, height: 32, borderRadius: 5, border: `1px solid ${gt === v ? C.text : C.line2}`, background: gt === v ? C.text : "transparent", color: gt === v ? C.bg : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+                              ))}
+                            </div>
+                            {gt !== "radial" && bar("각도", ang, 0, 360, (v) => onLook({ gradAngle: v === 180 ? undefined : v }), "°")}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ width: 44, flexShrink: 0, fontSize: 13, color: C.sub, fontWeight: 700 }}>시작</span>
+                              <ColorPick value={look.color || "#FFFFFF"} onChange={(c) => onLook({ color: c })} />
+                            </div>
+                            {bar("투명도", Math.round((look.gradA ?? 0) * 100), 0, 100, (v) => onLook({ gradA: v ? v / 100 : undefined }), "%")}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ width: 44, flexShrink: 0, fontSize: 13, color: C.sub, fontWeight: 700 }}>끝</span>
+                              <ColorPick value={look.gradTo!} onChange={(c) => onLook({ gradTo: c })} />
+                            </div>
+                            {bar("투명도", Math.round((look.gradB ?? 0) * 100), 0, 100, (v) => onLook({ gradB: v ? v / 100 : undefined }), "%")}
+                            {/* 미리 보기 — 바둑판 위에 (투명한 곳이 보이게) */}
+                            <div style={{ height: 40, borderRadius: 4, backgroundColor: "#fff", backgroundImage: "linear-gradient(45deg,#ccc 25%,transparent 25%,transparent 75%,#ccc 75%),linear-gradient(45deg,#ccc 25%,transparent 25%,transparent 75%,#ccc 75%)", backgroundSize: "12px 12px", backgroundPosition: "0 0,6px 6px", overflow: "hidden" }}>
+                              <div style={{ width: "100%", height: "100%", backgroundImage: css }} />
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </>
+                );
+              })()}
               {/* 글자 뒤 상자 · 그림자 · 빛 — 같은 모양: 끄면 닫힘, 켜면 색 · 두께 · 투명도 (2026-10-19 사장님) */}
               {fxRow("글자 뒤 상자", Boolean(look.bg), true, "", (v) => onLook({ bg: v }),
                 look.bgColor || "#000000", (c) => onLook({ bgColor: c }),
@@ -269,6 +358,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 look.glow || "#22D3EE", (c) => onLook({ glow: c }),
                 Math.round((look.glowSize ?? 1) * 10), 3, 30, (v) => onLook({ glowSize: v === 10 ? undefined : v / 10 }),
                 Math.round((look.glowAlpha ?? 0) * 100), (v) => onLook({ glowAlpha: v ? v / 100 : undefined }))}
+              {basicBottom}
             </>
           )}
 
@@ -279,15 +369,15 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
             </div>
           )}
 
-          {sub === "bubble" && (bubble || (
-            <div style={{ padding: 16, fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>
-              {kind === "sub" ? "메인자막은 줄마다 글이 바뀌어서 말풍선 대신 [기본]의 글자 뒤 상자를 써요." : "말풍선은 곧 들어가요."}
-            </div>
+          {/* 메인자막은 말풍선 대신 예능 자막 160종 (2026-10-19 사장님) */}
+          {sub === "bubble" && kind === "sub" && <VarietyGrid value={look} onPick={(lk) => onPresetLook({ font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", outline2: undefined, outline2Width: 0, gradTo: "", gradType: undefined, gradAngle: undefined, gradA: undefined, gradB: undefined, glowSize: undefined, glowAlpha: undefined, textAlpha: undefined, shadowAlpha: undefined, outlineAlpha: undefined, ...lk } as SubLook)} />}
+          {sub === "bubble" && kind !== "sub" && (bubble || (
+            <div style={{ padding: 16, fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>말풍선은 곧 들어가요.</div>
           ))}
         </>
       )}
 
-      {tab === "anim" && <AnimBody {...anim} />}
+      {tab === "anim" && anim && <AnimBody {...anim} />}
 
       {tab === "my" && (
         <div style={{ padding: "14px 16px" }}>
@@ -302,7 +392,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
           ) : (
             <div style={{ marginBottom: 14 }}>
               <Btn primary onClick={() => setNaming("")} style={{ width: "100%", justifyContent: "center" }}><Icon name="star" size={15} />지금 글자를 사전 설정으로 저장</Btn>
-              <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>지금 모양과 애니메이션이 함께 담겨요.</div>
+              <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>{anim ? "지금 모양과 애니메이션이 함께 담겨요." : "지금 글자 모양이 담겨요. 영상 편집기에서도 같이 써요."}</div>
             </div>
           )}
           {my.length ? (

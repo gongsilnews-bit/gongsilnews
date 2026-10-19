@@ -46,6 +46,18 @@ export const STUDIO_VOICE_IDS = STUDIO_VOICES.map((v) => v.id);
 // 내 목소리 — 회원이 [AI 목소리 설정 → 내 목소리]에서 등록한 자기 목소리. PC(앱)에서 만들고 서버로 가지 않는다 (2026-10-18)
 export const MY_VOICE_ID = "me";
 export const MY_VOICE = { id: MY_VOICE_ID, name: "내 목소리", kind: "내가 등록한 목소리" };
+/** 등록할 때 붙인 이름 (예: 공실뉴스편집장) — 클립·목록에 그 이름으로 (2026-10-19 사장님) */
+export function setMyVoiceName(n?: string) {
+  MY_VOICE.name = String(n || "").trim() || "내 목소리";
+}
 /** 성우 찾기 — "내 목소리"도 포함 (이름·설명만 쓰는 곳에서) */
-export const findVoice = (id?: string): { id: string; name: string; kind: string } | undefined => (id === MY_VOICE_ID ? MY_VOICE : STUDIO_VOICES.find((v) => v.id === id));
+/* 타입캐스트 성우 (회원 자기 키로 앱이 받아 온 목록) — 이름을 찾을 수 있게 담아 둔다 */
+const EXTRA = new Map<string, { id: string; name: string; kind: string }>();
+export const isTypecast = (id?: string) => /^tc_/.test(String(id || ""));
+export const isEleven = (id?: string) => /^el_/.test(String(id || ""));
+export function addExtraVoices(list: { id: string; name: string; kind?: string }[]) {
+  for (const v of list) EXTRA.set(v.id, { id: v.id, name: v.name, kind: v.kind || "타입캐스트 성우" });
+}
+export const findVoice = (id?: string): { id: string; name: string; kind: string } | undefined =>
+  id === MY_VOICE_ID ? MY_VOICE : STUDIO_VOICES.find((v) => v.id === id) || (id ? EXTRA.get(id) || (isTypecast(id) ? { id, name: "타입캐스트 성우", kind: "타입캐스트" } : isEleven(id) ? { id, name: "일레븐랩스 성우", kind: "일레븐랩스" } : undefined) : undefined);
 export const voicePhoto = (id: string) => `/studio-voices/${id.toLowerCase()}.webp`;

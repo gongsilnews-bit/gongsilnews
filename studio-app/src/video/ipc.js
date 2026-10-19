@@ -22,6 +22,7 @@ const recs = new Map(); // 녹화 중 파일
 let chosenSource = null; // 화면 녹화로 고른 화면
 const sourceDisplay = new Map(); // 화면 id → 모니터 번호
 let pendingFile = ""; // 탐색기에서 두 번 눌러 연 .gss
+let lastExportDir = ""; // [내보내기]에서 마지막으로 고른 폴더 (앱을 켠 동안)
 let dirty = false; // 편집 화면에 저장 안 한 내용이 있음
 let dirtyWork = { dir: "", file: "" }; // 그 프로젝트 (작업 폴더·.gss)
 let closing = false; // [저장 안 함]·[저장] 뒤 정말 닫는 중
@@ -319,6 +320,31 @@ function register(base) {
     return library.add(r.filePaths, { source: "local" });
   });
   ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
+  // 무료 음악 사이트(픽사베이·유튜브 오디오 보관함)에서 받은 곡 — 다운로드 폴더에서 since 이후 받은 소리 파일 (2026-10-19 사장님)
+  const AUDIO_EXT = /\.(mp3|wav|m4a|aac|ogg|flac)$/i;
+  const dlDir = () => require("electron").app.getPath("downloads");
+  ipcMain.handle("video:lib-downloads-audio", (_e, since) => {
+    try {
+      return fs.readdirSync(dlDir())
+        .filter((n) => AUDIO_EXT.test(n))
+        .map((n) => {
+          const f = path.join(dlDir(), n);
+          const st = fs.statSync(f);
+          return { path: f, name: n, at: st.mtimeMs, size: st.size };
+        })
+        .filter((x) => x.at >= (Number(since) || 0) - 5000 && x.size > 1000)
+        .sort((a, b) => b.at - a.at)
+        .slice(0, 10);
+    } catch {
+      return [];
+    }
+  });
+  // 다운로드 폴더의 곡을 내 음악에 넣기 — 다운로드 폴더 안 소리 파일만
+  ipcMain.handle("video:lib-add-downloads", (_e, files) => {
+    const root = path.resolve(dlDir()).toLowerCase() + path.sep;
+    const ok = (files || []).map((f) => path.resolve(String(f))).filter((f) => f.toLowerCase().startsWith(root) && AUDIO_EXT.test(f) && fs.existsSync(f));
+    return ok.length ? library.add(ok, { source: "local", allowAudio: true }) : [];
+  });
   // 애니메이션 칸 그림 (스티커·사진 올리기 움직임) — 굽기 전에 편집 화면이 그려 보낸다. start 0 이면 폴더를 비우고 새로
   ipcMain.handle("video:anim-frames", (_e, dir, key, start, urls) => {
     const safe = String(key || "a").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80) || "a";
@@ -422,6 +448,12 @@ function register(base) {
     return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
   });
   ipcMain.handle("video:project-recent", () => project.recent());
+  // 새 프로젝트를 만들 기본 폴더 (만들기 창 [위치]에 보여 준다)
+  ipcMain.handle("video:project-dir", () => {
+    const d = folders.projectDir();
+    try { fs.mkdirSync(d, { recursive: true }); } catch {}
+    return d;
+  });
   // 저장 폴더 설정 — 프로젝트·녹화·내보내기 (비우면 기본)
   ipcMain.handle("video:folders-get", () => folders.get());
   ipcMain.handle("video:folders-set", (_e, patch) => {
@@ -436,14 +468,26 @@ function register(base) {
   ipcMain.handle("video:trash-restore", (_e, id) => project.restore(id));
   ipcMain.handle("video:trash-purge", (_e, id) => project.purge(id));
   ipcMain.handle("video:project-add-asset", (e, libId) => project.addAsset({}, libId, (f) => send(e, "video:progress", "편집용 사본 만드는 중…", f)));
-  ipcMain.handle("video:project-export-text", (_e, p, kind) => {
-    const f = project.exportText(p, kind);
+  ipcMain.handle("video:project-export-text", (_e, p, kind, outFile) => {
+    const f = project.exportText(p, kind, outFile);
     shell.showItemInFolder(f);
     return f;
   });
 
   /* ── AI 목소리 ── */
   ipcMain.handle("video:voice", (_e, dir, text, voiceId, opts) => project.voiceFor({ dir }, text, voiceId, opts || {}));
+  // 타입캐스트 — 회원 자기 키 (이 PC 에만)
+  const typecast = require("./typecast");
+  ipcMain.handle("video:tc-status", () => typecast.status());
+  ipcMain.handle("video:tc-set-key", (_e, k) => typecast.setKey(k));
+  ipcMain.handle("video:tc-clear", () => typecast.clear());
+  ipcMain.handle("video:tc-voices", (_e, refresh) => typecast.voices(Boolean(refresh)));
+  // 일레븐랩스 — 회원 자기 키 (이 PC 에만)
+  const eleven = require("./elevenlabs");
+  ipcMain.handle("video:el-status", () => eleven.status());
+  ipcMain.handle("video:el-set-key", (_e, k) => eleven.setKey(k));
+  ipcMain.handle("video:el-clear", () => eleven.clear());
+  ipcMain.handle("video:el-voices", (_e, refresh) => eleven.voices(Boolean(refresh)));
   // 단어마다 목소리가 다른 클립 — 조각을 한 파일로 (0.1.8부터)
   /* 내 목소리 성우 (PC 에서, 무료) — 켜기(내려받기)·등록(직접 녹음 / 파일)·샘플 */
   const myStatus = () => {
@@ -516,8 +560,9 @@ function register(base) {
   // [AI 편집] — 글 AI 의 편집 계획 (화면·화면 글자·자막 강조·화면전환·음악)
   ipcMain.handle("video:ai-edit", (e, lines, items, opts) => vai.aiEdit(lines || [], items || [], opts || {}, (t) => send(e, "video:progress", t)));
   ipcMain.handle("video:ai-group", (e, lines) => vai.groupScenes(lines || [], (t) => send(e, "video:progress", t))); // [씬 정리]
-  ipcMain.handle("video:ai-image", async (e, dir, prompt) => {
-    const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t));
+  ipcMain.handle("video:ai-image-prompts", (e, lines, opts) => vai.imagePrompts(lines || [], opts || {}, (t) => send(e, "video:progress", t))); // 클립별 AI 그림 — 영어 장면 설명
+  ipcMain.handle("video:ai-image", async (e, dir, prompt, opts) => {
+    const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t), opts || {});
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
     if (!m) throw new Error("그림을 받지 못했습니다.");
     const file = path.join(dir || path.join(library.studioRoot(), "영상", "AI 그림"), "assets", `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
@@ -577,6 +622,23 @@ function register(base) {
     }
   });
   ipcMain.handle("video:render-cancel", (_e, id) => jobs.set(id, true));
+  // [내보내기] — 저장할 폴더·파일 이름 고르기 (브루·윈도우 저장 창처럼). 고른 폴더는 다음에도 먼저 보여 준다
+  ipcMain.handle("video:export-pick", async (e, p, kind) => {
+    const ext = ["mp3", "wav", "srt", "txt"].includes(kind) ? kind : "mp4";
+    const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"] };
+    const dir = lastExportDir && fs.existsSync(lastExportDir) ? lastExportDir : folders.exportDir(p);
+    const base = `${String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_")}${ext === "mp4" && p && p.ratio ? `_${p.ratio.replace(":", "x")}` : ""}`;
+    let def = path.join(dir, `${base}.${ext}`);
+    for (let n = 2; fs.existsSync(def); n++) def = path.join(dir, `${base}_${n}.${ext}`);
+    const r = await dialog.showSaveDialog(winOf(e), {
+      title: NAMES[ext][0],
+      defaultPath: def,
+      filters: [{ name: NAMES[ext][1], extensions: [ext] }],
+    });
+    if (r.canceled || !r.filePath) return null;
+    lastExportDir = path.dirname(r.filePath);
+    return r.filePath;
+  });
   ipcMain.handle("video:export-audio", async (e, p, kind, opts) => {
     const id = crypto.randomBytes(4).toString("hex");
     jobs.set(id, false);

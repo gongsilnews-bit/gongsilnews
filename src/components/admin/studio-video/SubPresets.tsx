@@ -9,14 +9,14 @@ import { fontCss, STUDIO_FONTS } from "@/lib/studio-video/fonts";
 import { C, FONT } from "./ui";
 import { loadFont } from "./Pickers";
 
-export type SubLook = Pick<SubtitleSettings, "font" | "color" | "outline" | "outlineWidth" | "bg" | "bgColor" | "bgOpacity" | "bold" | "shadow" | "shadowColor" | "glow">;
+export type SubLook = Pick<SubtitleSettings, "font" | "color" | "outline" | "outlineWidth" | "bg" | "bgColor" | "bgOpacity" | "bold" | "shadow" | "shadowColor" | "glow" | "outline2" | "outline2Width" | "gradTo" | "gradType" | "gradAngle" | "gradA" | "gradB">;
 /** 글자 모양 (메인자막·화면 글자 같이 쓰는 이름) — 사전설정에 크기·자간·행간까지 */
 export type TextLook = Partial<SubLook> & { size?: number; spacing?: number; leading?: number; italic?: boolean; underline?: boolean; textCase?: "upper" | "lower" | "title"; align?: "left" | "center" | "right"; bgPad?: number; shadowAlpha?: number; glowSize?: number; glowAlpha?: number; outlineAlpha?: number; textAlpha?: number };
 type Preset = { id: string; label: string; look: SubLook };
 
 const P = (id: string, label: string, o: Partial<SubLook>): Preset => ({
   id, label,
-  look: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", ...o },
+  look: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", outline2Width: 0, gradTo: "", gradType: undefined, gradAngle: undefined, gradA: undefined, gradB: undefined, ...o },
 });
 
 export const SUB_PRESETS: { group: string; items: Preset[] }[] = [
@@ -135,6 +135,14 @@ export const withAlpha = (hex: string, alpha = 0) => {
   const n = parseInt(String(hex || "#000000").replace("#", "").padEnd(6, "0").slice(0, 6), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, 1 - alpha)).toFixed(3)})`;
 };
+/** 그라데이션 글자 CSS — 굽기 render.js gradBands 와 같은 모양 (선형·방사형·반사형 · 각도 · 시작/끝 투명도) */
+export function gradCss(s: { color?: string; gradTo: string; gradType?: string; gradAngle?: number; gradA?: number; gradB?: number }) {
+  const a = withAlpha(s.color || "#FFFFFF", s.gradA ?? 0), b = withAlpha(s.gradTo, s.gradB ?? 0);
+  const ang = Number(s.gradAngle ?? 180);
+  if (s.gradType === "radial") return `radial-gradient(ellipse farthest-corner at center, ${a}, ${b})`;
+  if (s.gradType === "reflect") return `linear-gradient(${ang}deg, ${b}, ${a} 50%, ${b})`;
+  return `linear-gradient(${ang}deg, ${a}, ${b})`;
+}
 export function subLookCss(s: Partial<SubtitleSettings>, px: number, k: number): React.CSSProperties {
   const glow = s.glow ? withAlpha(s.glow, s.glowAlpha ?? 0) : "";
   const gs = Math.max(0.3, Math.min(3, Number(s.glowSize ?? 1)));

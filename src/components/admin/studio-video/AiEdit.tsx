@@ -3,9 +3,13 @@
 // 오른쪽 칸 [AI 편집] — [AI 설정]에서 고른 글 AI 가 편집 계획을 세우고, 이미지 AI 가 그림을 그려 클립을 채운다 (회의 3-21, 사장님 2026-10-18)
 //  화면(그대로·내 영상·AI 그림·무료 자료) · 화면 글자 · 자막 강조 · 화면전환 · 배경음악 — 한 번에 넣고, 한 번에 되돌리기
 import React, { useState } from "react";
-import type { Asset, Clip, Layer, LibItem, Project, StockItem } from "./types";
+import type { AiEditCatalog, Asset, Clip, Layer, LayerAnim, LibItem, Project, StockItem } from "./types";
 import { errText, uid, videoBridge } from "./types";
-import { flatten, clipText, regroupScenes } from "./timeline";
+import { flatten, clipText, regroupScenes, SFX_LIST } from "./timeline";
+import { SUB_PRESETS } from "./SubPresets";
+import { PLAIN_LOOK } from "./SubFormatBar";
+import { EMPH_LIST, IN_LIST, WHL_LIST } from "./Anim";
+import { CATS, STYLE_LABEL, stickerAnim, stickerFileName, stickerGlyphs, stickerPng, type Sticker, type StickerStyle } from "./Stickers";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { useStudioImager, useStudioWriter } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Icon } from "./ui";
@@ -18,6 +22,19 @@ const STYLES = [
 ] as const;
 
 type Row = { n: number; text: string; what: string };
+
+/** AI 에게 보낼 고를 목록 — 자막 스타일 50개 · 나타나기 · 움직임 · 단어 강조 · 스티커 모양 · 효과음 (2026-10-19 사장님: AI 가 다 꾸미기) */
+export function aiEditCatalog(): AiEditCatalog {
+  return {
+    presets: SUB_PRESETS.flatMap((g) => g.items.map((x) => ({ id: x.id, label: `${g.group}·${x.label}` }))),
+    ins: IN_LIST.filter((x) => x.id !== "auto"),
+    emphs: EMPH_LIST,
+    whl: WHL_LIST,
+    stickers: (Object.keys(STYLE_LABEL) as StickerStyle[]).map((id) => ({ id, label: STYLE_LABEL[id] })),
+    sfx: SFX_LIST,
+    examples: CATS.flatMap((c) => c.items.slice(0, 4).map((x) => `${x.text}(${x.style})`)),
+  };
+}
 
 /**
  * 화면 바뀌는 곳 부드럽게 — 앞 클립과 화면(자료)이 다른 곳에 0.3초 겹치기 전환 (이미 전환이 있으면 그대로)
@@ -36,13 +53,15 @@ export function softCuts(p: Project) {
   return n;
 }
 
-export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onClose }: {
+export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onClose, autoStart }: {
   project: Project;
   selected: string[];
   ensureAsset: (item: LibItem) => Promise<Asset>;
   apply: (fn: (p: Project) => void) => void; // 한 번에 (되돌리기 한 번)
   onUndo: () => void;
   onClose: () => void;
+  /** 열자마자 [AI 편집 시작] — 텍스트로 만들기 [AI가 다 꾸미기] */
+  autoStart?: boolean;
 }) {
   const b = videoBridge()!;
   const writer = useStudioWriter();
@@ -54,6 +73,18 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
+  // AI 에게 맡길 것 (2026-10-19 사장님: 자막 효과·스타일·스티커까지 다)
+  const [doScreen, setDoScreen] = useState(!autoStart); // 다 꾸미기 — 화면은 만들 때 이미 골랐으니 그대로
+  const [doLook, setDoLook] = useState(true);
+  const [doSticker, setDoSticker] = useState(true);
+  const started = React.useRef(false);
+  React.useEffect(() => {
+    if (autoStart && !started.current) {
+      started.current = true;
+      void start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   const attach = async () => {
     const added = await b.lib.pick().catch(() => []);
@@ -98,7 +129,27 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
       // 1) 글 AI — 편집 계획
       setBusy(`${writer}가 편집 계획을 세우는 중… (1~2분)`);
       const ok = foot.filter((f) => f.path);
-      const plan = await b.ai.edit(targets.map((x) => clipText(x.clip)), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })), { aiMax, moods: [...MUSIC_MOODS] });
+      const full = doLook || doSticker;
+      const cat = full ? aiEditCatalog() : undefined;
+      if (cat && !doSticker) { cat.stickers = []; cat.sfx = []; }
+      if (cat && !doLook) { cat.presets = []; }
+      const plan = await b.ai.edit(targets.map((x) => clipText(x.clip)), doScreen ? ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })) : [], { aiMax: doScreen ? aiMax : 0, moods: [...MUSIC_MOODS], screen: doScreen, ratio: project.ratio, catalog: cat });
+      // 스티커 그림 — 편집기에서 그려 프로젝트에 저장 (스티커 칸과 같은 방법)
+      const stk: Record<string, { item: LibItem; spec: Sticker }> = {};
+      const wantStk = doSticker ? plan.clips.map((x, i) => ({ i, s: x.sticker })).filter((x) => x.s) : [];
+      if (wantStk.length && b.lib.saveImage) {
+        setBusy(`스티커를 그리는 중… (${wantStk.length}개)`);
+        await stickerGlyphs(wantStk.map((x) => x.s!.text)).catch(() => {});
+        for (const x of wantStk) {
+          try {
+            const spec: Sticker = { text: x.s!.text, style: x.s!.style as StickerStyle };
+            const item = await b.lib.saveImage(project.dir, await stickerPng(spec), stickerFileName(spec.text));
+            stk[targets[x.i].clip.id] = { item, spec };
+          } catch {}
+        }
+      }
+      const stkAsset: Record<string, Asset> = {};
+      for (const [cid, v] of Object.entries(stk)) stkAsset[cid] = await ensureAsset(v.item);
       // 2) 자료 준비 — 내 영상 · 이미지 AI 그림 · 무료 자료
       const vis: Record<string, { asset: string; s: number }> = {};
       const done: Row[] = [];
@@ -148,7 +199,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
         } catch (e) {
           what = `그대로 (못 넣음: ${errText(e)})`;
         }
-        const extra = [pl.title && `화면 글자 "${pl.title}"`, pl.emph && "자막 강조", pl.trans && "화면전환"].filter(Boolean).join(" · ");
+        const extra = [pl.title && `화면 글자 "${pl.title}"`, pl.emph && "자막 강조", pl.trans && "화면전환", stk[c.id] && `스티커 "${stk[c.id].spec.text}"`, doSticker && pl.sfx && `효과음 ${SFX_LIST.find((x) => x.id === pl.sfx)?.label || pl.sfx}`].filter(Boolean).join(" · ");
         done.push({ n: i + 1, text: clipText(c), what: extra ? `${what} · ${extra}` : what });
       }
       // 3) 배경음악
@@ -163,6 +214,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
       }
       // 4) 한 번에 넣기 (되돌리기 한 번)
       apply((p) => {
+        delete p.settings.aiAuto;
         const find = (id: string): Clip | undefined => p.scenes.flatMap((s) => s.clips).find((x) => x.id === id);
         p.layers = p.layers || [];
         targets.forEach((x, i) => {
@@ -175,7 +227,35 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
           if (pl.title) {
             p.layers!.push({ id: uid(), type: "text", from: c.id, to: c.id, text: pl.title, pos: "top", size: 130, color: "#FFFFFF", box: true, boxColor: "#1A3A6B", boxOpacity: 0.85, anim: { in: "pop", out: "fade" } } as Layer);
           }
+          // 스티커 — 자막·화면 글자를 가리지 않게 위쪽 옆으로, 번갈아 오른쪽·왼쪽 (움직임·효과음은 모양에 맞게 저절로)
+          const sa = stkAsset[c.id], sv = stk[c.id];
+          if (sa && sv) {
+            const tall = p.ratio === "9:16" || p.ratio === "4:5";
+            const k = Object.keys(stkAsset).indexOf(c.id);
+            p.layers!.push({ id: uid(), type: "image", from: c.id, to: c.id, asset: sa.id, name: sv.item.name.replace(/_\d+(\.\w+)?$/, ""), x: k % 2 ? 0.25 : 0.75, y: pl.title ? 0.45 : 0.3, w: tall ? 0.5 : 0.3, opacity: 1, anim: stickerAnim(sv.spec.style), sticker: true, stk: sv.spec } as Layer);
+          } else if (doSticker && pl.sfx) {
+            p.layers!.push({ id: uid(), type: "sfx", sfx: pl.sfx, name: SFX_LIST.find((x) => x.id === pl.sfx)?.label || pl.sfx, volume: 0.6, from: c.id, to: c.id } as Layer);
+          }
         });
+        // 영상 전체 자막 모양 — 스타일 · 나타나기·사라지기 · 단어 효과 · 최대 줄 수
+        const lk = doLook ? plan.look : null;
+        if (lk) {
+          const pre = SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === lk.preset);
+          const sub = p.settings.subtitle;
+          const anim: LayerAnim = { ...(sub.anim || {}) };
+          if (lk.in) anim.in = lk.in as LayerAnim["in"];
+          if (lk.out) anim.out = lk.out as LayerAnim["out"];
+          anim.emph = (lk.emph || undefined) as LayerAnim["emph"];
+          anim.wshow = (lk.wshow || undefined) as LayerAnim["wshow"];
+          anim.whl = lk.wshow ? ((lk.whl || undefined) as LayerAnim["whl"]) : undefined;
+          if (lk.wcolor) anim.wcolor = lk.wcolor;
+          p.settings.subtitle = {
+            ...sub,
+            ...(pre ? { ...(PLAIN_LOOK as Partial<typeof sub>), ...pre.look } : {}),
+            anim,
+            ...(lk.lines ? { maxLines: lk.lines as 1 | 2 | 3, length: lk.lines === 1 ? "short" : "long" } : {}),
+          };
+        }
         softCuts(p); // 화면이 다른 장면으로 바뀌는 곳마다 0.3초 겹치기 (툭툭 바뀌지 않게)
         if (music) {
           const items = flatten(p).items;
@@ -183,8 +263,15 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
         }
       });
       if (music) done.push({ n: 0, text: "", what: `배경음악 · ${music.name}` });
+      if (doLook && plan.look) {
+        const lk = plan.look;
+        const pre = SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === lk.preset);
+        const parts = [pre && `자막 스타일 "${pre.label}"`, lk.in && `나타나기 ${IN_LIST.find((x) => x.id === lk.in)?.label || lk.in}`, lk.wshow && (lk.wshow === "word" ? "한 단어씩" : "한 줄씩"), lk.whl && `단어 강조 ${WHL_LIST.find((x) => x.id === lk.whl)?.label || lk.whl}`, lk.lines && `최대 ${lk.lines}줄`].filter(Boolean);
+        if (parts.length) done.unshift({ n: 0, text: "", what: `자막 · ${parts.join(" · ")}` });
+      }
       setRows(done);
     } catch (e) {
+      if (autoStart) apply((p) => { delete p.settings.aiAuto; }); // 다시 열 때 또 시작하지 않게
       setErr(errText(e));
     } finally {
       off();
@@ -215,6 +302,15 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
         <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 8 }}>
           {writer}가 자막을 읽고 클립마다 화면·화면 글자·자막 강조·화면전환·배경음악을 정하고, {imager}가 필요한 그림을 그려 넣어요.
         </div>
+
+        {/* AI 에게 맡길 것 — 다 켜면 처음부터 끝까지 AI 가 꾸민다 */}
+        <div style={head}>AI에게 맡길 것</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button type="button" onClick={() => setDoScreen((v) => !v)} style={chip(doScreen)}>{doScreen ? "✓ " : ""}화면 (사진·영상·AI 그림)</button>
+          <button type="button" onClick={() => setDoLook((v) => !v)} style={chip(doLook)}>{doLook ? "✓ " : ""}자막 스타일·효과</button>
+          <button type="button" onClick={() => setDoSticker((v) => !v)} style={chip(doSticker)}>{doSticker ? "✓ " : ""}스티커·효과음</button>
+        </div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6, lineHeight: 1.6 }}>자막 스타일은 50가지 중 영상 분위기에 맞게 하나, 나타나기·단어 효과·최대 줄 수까지. 스티커는 강조할 곳에만 (움직임·효과음은 모양에 맞게 저절로).</div>
 
         <div style={head}>내 영상·사진 <span style={{ fontSize: 12.5, color: C.sub, fontWeight: 600 }}>(있으면 먼저 써요)</span></div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

@@ -2,9 +2,11 @@
 
 // 오른쪽 칸 — 자료 고르기(내 자료·공실 사진·무료 자료·AI 그림·자료 창고) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
+import type { Asset, Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
+import { AiImagesTab } from "./AiImages";
 import { DRAG_MEDIA, RATIO_LABEL, autoSubPosition, errText, videoBridge, fmtTime } from "./types";
-import { STUDIO_VOICES, VOICE_MOODS, voicePhoto, findVoice, MY_VOICE_ID } from "@/lib/studio-video/voices";
+import { STUDIO_VOICES, VOICE_MOODS, voicePhoto, findVoice, MY_VOICE_ID, isTypecast, isEleven } from "@/lib/studio-video/voices";
+import { ElevenMark, ElevenTab, FavStar, TypecastMark, TypecastTab, useVoiceFavs } from "./TypecastVoices";
 import { MyVoicePane } from "./MyVoice";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
@@ -56,7 +58,7 @@ export function keywordsOf(text: string): string[] {
   return out.slice(0, 10);
 }
 
-export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null }) {
+export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
   const b = videoBridge();
   const [tab, setTab] = useState(initialTab);
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
@@ -488,15 +490,17 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
         </div>
       )}
 
+      {tab === "ai" && aiClips && <AiImagesTab project={project} selected={aiClips.selected} ensureAsset={aiClips.ensureAsset} apply={aiClips.apply} />}
       {tab === "ai" && (
-        <div style={{ padding: "12px 14px 0" }}>
+        <details open={!aiClips} style={{ padding: "12px 14px 0" }}>
+          {aiClips && <summary style={{ fontSize: 14, fontWeight: 800, cursor: "pointer", color: C.sub, marginBottom: 8 }}>한 장만 직접 그리기 · 그린 그림 보기</summary>}
           <div style={label}>그릴 장면</div>
           <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={4} placeholder="예: 해 질 녘 강남 오피스텔 건물 정면, 실제 사진처럼"
             style={{ ...input, height: "auto", padding: 10, marginTop: 6, resize: "vertical", lineHeight: 1.5 }} />
           <Btn primary onClick={drawAi} disabled={!aiPrompt.trim() || Boolean(busy)} style={{ width: "100%", marginTop: 8 }}><Icon name="image" size={18} />{imgAi}로 그리기</Btn>
           <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>[내 AI 연결]에서 고른 이미지 AI가 그려요. 1~2분 걸려요.</div>
           {items && items.length > 0 && <div style={{ margin: "8px -14px 0" }}><div style={{ ...label, padding: "8px 14px 0", fontSize: 14 }}>그린 그림</div>{grid(items, (x) => setPicked(x as LibItem))}</div>}
-        </div>
+        </details>
       )}
 
       {tab === "store" && (
@@ -509,14 +513,36 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
 }
 
 /* ── AI 목소리 ── */
-export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose, gap, onGap }: { /** 문장 사이 쉼 (초) — 편집 화면에서만 */ gap?: number; onGap?: (g: number) => void; project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words" }) => Promise<void> | void; onClose: () => void }) {
+/** 앱의 [AI 설정] — 키 상태 읽기·창 열기 (웹 브라우저에서는 없음) */
+type StudioAi = { list: () => Promise<{ id: string; keyHas?: boolean }[]>; onWriterChanged?: (fn: () => void) => () => void; open?: () => void };
+function studioAi(): StudioAi | null {
+  if (typeof window === "undefined") return null;
+  const g = (window as unknown as { gongsilStudio?: { ai?: StudioAi; openAiConnect?: () => void } }).gongsilStudio;
+  return g?.ai ? { ...g.ai, open: g.openAiConnect } : null;
+}
+
+export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose, gap, onGap, startMe }: { /** 처음부터 [내 목소리] 탭 (AI 목소리 › AI 내 목소리 만들기) */ startMe?: boolean; /** 문장 사이 쉼 (초) — 편집 화면에서만 */ gap?: number; onGap?: (g: number) => void; project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words"; emotion?: string }) => Promise<void> | void; onClose: () => void }) {
   const cur = initial ?? project?.settings.voice ?? { id: "Charon", speed: 1, volume: 1 };
   const [id, setId] = useState(cur.id);
   const [speed, setSpeed] = useState(cur.speed || 1);
   const [volume, setVolume] = useState(cur.volume ?? 1);
   const [g, setG] = useState<"all" | "여성" | "남성">("all");
-  const [rec, setRec] = useState(true);
-  const [meTab, setMeTab] = useState(cur.id === MY_VOICE_ID); // [내 목소리] 탭
+  const [rec, setRec] = useState(false); // 예전 [추천] 탭 — 이제 [제미나이] 하나라 늘 모두
+  const [meTab, setMeTab] = useState(Boolean(startMe) || cur.id === MY_VOICE_ID); // [내 목소리] 탭
+  const [tcTab, setTcTab] = useState(!startMe && isTypecast(cur.id)); // [타입캐스트] 탭 (회원 자기 키)
+  const [elTab, setElTab] = useState(!startMe && isEleven(cur.id)); // [일레븐랩스] 탭 (회원 자기 키)
+  const [favs, toggleFav] = useVoiceFavs();
+  const [favTab, setFavTab] = useState(false); // [★ 즐겨찾기] 탭
+  // 제미나이 성우 = 회원 Gemini API 키 ([AI 설정], 이 PC). null = 아직 모름·앱이 아님 (2026-10-19 사장님: 공실뉴스 서버 Gemini 안 씀)
+  const [gemKey, setGemKey] = useState<boolean | null>(null);
+  useEffect(() => {
+    const ai = studioAi();
+    if (!ai?.list) return;
+    const load = () => ai.list().then((l) => setGemKey(Boolean(l.find((x) => x.id === "gemini")?.keyHas))).catch(() => {});
+    load();
+    return ai.onWriterChanged?.(load); // [AI 설정]에서 키를 넣으면 바로
+  }, []);
+  const [emotion, setEmotion] = useState<string>((cur as { emotion?: string }).emotion || "smart"); // 타입캐스트 말투
   const [age, setAge] = useState("");
   const [mood, setMood] = useState("");
   const [msg, setMsg] = useState("");
@@ -554,18 +580,56 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
       <div onClick={(e) => e.stopPropagation()} style={{ width: "min(1000px, calc(100vw - 32px))", height: "min(760px, calc(100vh - 32px))", display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text }}>
         {/* 제목 */}
         <div style={{ display: "flex", alignItems: "center", padding: "18px 22px 12px" }}>
-          <div style={{ flex: 1, fontSize: 23, fontWeight: 800 }}>AI 목소리 설정</div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 23, fontWeight: 800 }}>AI 목소리 설정</span>
+          </div>
           <button type="button" onClick={onClose} title="닫기 (Esc)" style={{ width: 40, height: 40, border: 0, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="close" size={26} /></button>
         </div>
         <div style={{ flex: 1, minHeight: 0, margin: "0 22px", border: `1px solid ${C.line2}`, borderRadius: 8, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* 위 탭 */}
           <div style={{ display: "flex", gap: 22, padding: "0 18px", borderBottom: `1px solid ${C.line2}` }}>
-            <button type="button" onClick={() => { setRec(true); setMeTab(false); }} style={tab(rec && !meTab)}>추천</button>
-            <button type="button" onClick={() => { setRec(false); setMeTab(false); }} style={tab(!rec && !meTab)}>전체</button>
-            <button type="button" onClick={() => setMeTab(true)} style={tab(meTab)}>내 목소리</button>
+            {/* 내 목소리 — 맨 앞 (2026-10-19 사장님) */}
+            <button type="button" onClick={() => { setMeTab(true); setTcTab(false); setElTab(false); setFavTab(false); }} style={tab(meTab)}>내 목소리</button>
+            <button type="button" onClick={() => { setFavTab(true); setMeTab(false); setTcTab(false); setElTab(false); }} style={{ ...tab(favTab), color: favTab ? C.text : "#facc15" }}>★ 즐겨찾기{favs.length ? ` ${favs.length}` : ""}</button>
+            {/* 제미나이 성우 — [추천]·[전체]를 하나로 (2026-10-19 사장님) */}
+            <button type="button" onClick={() => { setRec(false); setMeTab(false); setTcTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(!meTab && !tcTab && !elTab && !favTab), display: "inline-flex", alignItems: "center", gap: 6 }}><GeminiMark size={16} />제미나이</button>
+            {/* 타입캐스트 · 일레븐랩스 — 회원 자기 키 (2026-10-19 사장님) */}
+            <button type="button" onClick={() => { setTcTab(true); setMeTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(tcTab), display: "inline-flex", alignItems: "center", gap: 6 }}><TypecastMark size={16} />타입캐스트</button>
+            <button type="button" onClick={() => { setElTab(true); setMeTab(false); setTcTab(false); setFavTab(false); }} style={{ ...tab(elTab), display: "inline-flex", alignItems: "center", gap: 6 }}><ElevenMark size={16} />일레븐랩스</button>
           </div>
           {meTab && <MyVoicePane selected={id === MY_VOICE_ID} onPick={() => setId(MY_VOICE_ID)} />}
-          <div style={{ flex: 1, minHeight: 0, display: meTab ? "none" : "flex" }}>
+          {tcTab && <TypecastTab id={id} onPick={setId} emotion={emotion} onEmotion={setEmotion} />}
+          {elTab && <ElevenTab id={id} onPick={setId} emotion={emotion} onEmotion={setEmotion} />}
+          {favTab && (
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, alignContent: "start" }}>
+              {!favs.length && <div style={{ gridColumn: "1 / -1", fontSize: 15, color: C.sub, lineHeight: 1.7, padding: "10px 0" }}>아직 즐겨찾은 목소리가 없어요. 성우 카드의 ☆ 를 누르면 여기 모여요.</div>}
+              {favs.map((fid) => {
+                const v = findVoice(fid);
+                const tcV = isTypecast(fid), elV = isEleven(fid), mine = fid === MY_VOICE_ID;
+                const stock = STUDIO_VOICES.find((x) => x.id === fid);
+                return (
+                  <div key={fid} onClick={() => setId(fid)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, border: `${id === fid ? 2 : 1}px solid ${id === fid ? C.accent : C.line2}`, background: id === fid ? C.accentDim : C.card, cursor: "pointer" }}>
+                    {stock ? <VoiceFace id={fid} name={stock.name} size={56} /> : <div style={{ width: 56, height: 56, borderRadius: "50%", flexShrink: 0, background: "#3b3363", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>{(v?.name || "?").slice(0, 1)}</div>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 17, fontWeight: 800 }}>{v?.name || "목소리"}</div>
+                      <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{stock ? `${stock.gender} · ${stock.age} · ${stock.kind}` : v?.kind || ""}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: tcV ? "#b4a7ff" : elV ? "#e5e7eb" : mine ? "#6ee7b7" : "#8ab4ff" }}>
+                        {tcV ? <><TypecastMark size={13} />#타입캐스트API</> : elV ? <><ElevenMark size={13} />#일레븐랩스API</> : mine ? "#내목소리 (PC, 무료)" : <><GeminiMark size={13} />#제미나이API</>}
+                      </div>
+                    </div>
+                    <FavStar on onToggle={() => toggleFav(fid)} />
+                    {stock && (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setId(fid); playSample(fid); }} title={playing === fid ? "멈추기" : "목소리 들어 보기"}
+                        style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "50%", border: `1px solid ${playing === fid ? C.accent : C.line2}`, background: playing === fid ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {playing === fid ? <span style={{ width: 11, height: 11, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={16} />}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div style={{ flex: 1, minHeight: 0, display: meTab || tcTab || elTab || favTab ? "none" : "flex" }}>
             {/* 왼쪽 거르기 */}
             <div style={{ width: 200, flexShrink: 0, padding: 16, borderRight: `1px solid ${C.line2}`, overflowY: "auto" }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
@@ -587,7 +651,22 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
             </div>
             {/* 성우 카드 */}
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-              <div style={{ padding: "12px 16px 8px", fontSize: 15, color: C.sub }}>성우 <b style={{ color: C.text }}>{list.length}</b>명</div>
+              {/* 제미나이 성우는 Gemini API 로 만든다 — 이 칸에만 안내 (2026-10-19 사장님) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 8px", fontSize: 15, color: C.sub }}>
+                <span>성우 <b style={{ color: C.text }}>{list.length}</b>명</span>
+                <span title="제미나이 성우 목소리는 Google Gemini API로 만들어요."
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${C.line2}`, background: C.card, fontSize: 13, fontWeight: 700, color: C.text }}>
+                  <GeminiMark size={15} />Gemini API 필요
+                </span>
+                {gemKey === true && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#6ee7b7" }}>● 내 Gemini API 키 연결됨</span>}
+                {gemKey === false && (
+                  <>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: C.danger }}>Gemini API 키를 넣어야 쓸 수 있어요</span>
+                    <button type="button" onClick={() => studioAi()?.open?.()}
+                      style={{ height: 30, padding: "0 12px", borderRadius: 6, border: 0, background: C.accent, color: "#fff", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>AI 설정 열기</button>
+                  </>
+                )}
+              </div>
               {msg && <div style={{ padding: "0 16px 8px", fontSize: 15, color: C.danger }}>{msg}</div>}
               <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 16px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12, alignContent: "start" }}>
                 {list.length === 0 && <div style={{ fontSize: 15, color: C.sub, padding: "20px 0" }}>맞는 성우가 없어요. 거르기를 바꿔 보세요.</div>}
@@ -601,7 +680,12 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 5 }}>{v.kind}</div>
                       <div style={{ fontSize: 14, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>{v.tags.map((t) => `#${t}`).join("  ")}</div>
+                      {/* AI 성우 — Gemini API 로 만든다 (2026-10-19 사장님) */}
+                      <div title="이 목소리는 Google Gemini API로 만들어요" style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: "#8ab4ff" }}>
+                        <GeminiMark size={14} />#제미나이API
+                      </div>
                     </div>
+                    <FavStar on={favs.includes(v.id)} onToggle={() => toggleFav(v.id)} />
                     <button type="button" onClick={(e) => { e.stopPropagation(); setId(v.id); playSample(v.id); }} title={playing === v.id ? "멈추기" : "목소리 들어 보기"}
                       style={{ width: 42, height: 42, flexShrink: 0, borderRadius: "50%", border: `1px solid ${playing === v.id ? C.accent : C.line2}`, background: playing === v.id ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {playing === v.id ? <span style={{ width: 12, height: 12, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={17} />}
@@ -637,10 +721,10 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
         {/* 넣기 */}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 22px 18px" }}>
           {/* 단어를 골랐으면 — 클립은 그대로, 고른 단어만 새 목소리로 (소리 안에서 잇는다) */}
-          {pickLabel && <Btn primary onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={17} />{pickLabel}</Btn>}
-          {!pickLabel && wordCount > 0 && <Btn primary onClick={() => onApply({ id, speed, volume, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={17} />고른 단어만 ({wordCount}개)</Btn>}
-          {!pickLabel && targetCount > 0 && <Btn primary={wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "selected" })}><Icon name="check" size={17} />고른 클립 {targetCount}개에만</Btn>}
-          {!pickLabel && <Btn primary={targetCount === 0 && wordCount === 0} onClick={() => onApply({ id, speed, volume, scope: "all" })}><Icon name="check" size={17} />모든 클립에 쓰기</Btn>}
+          {pickLabel && <Btn primary onClick={() => onApply({ id, speed, volume, emotion: isTypecast(id) || isEleven(id) ? emotion : undefined, scope: "all" })}><Icon name="check" size={17} />{pickLabel}</Btn>}
+          {!pickLabel && wordCount > 0 && <Btn primary onClick={() => onApply({ id, speed, volume, emotion: isTypecast(id) || isEleven(id) ? emotion : undefined, scope: "words" })} title="클립은 그대로 두고, 고른 단어만 이 목소리로 바꿔요"><Icon name="check" size={17} />고른 단어만 ({wordCount}개)</Btn>}
+          {!pickLabel && targetCount > 0 && <Btn primary={wordCount === 0} onClick={() => onApply({ id, speed, volume, emotion: isTypecast(id) || isEleven(id) ? emotion : undefined, scope: "selected" })}><Icon name="check" size={17} />고른 클립 {targetCount}개에만</Btn>}
+          {!pickLabel && <Btn primary={targetCount === 0 && wordCount === 0} onClick={() => onApply({ id, speed, volume, emotion: isTypecast(id) || isEleven(id) ? emotion : undefined, scope: "all" })}><Icon name="check" size={17} />모든 클립에 쓰기</Btn>}
         </div>
       </div>
     </div>
@@ -742,7 +826,7 @@ export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onS
         // 적용 범위 — 맨 아래 고정 줄 [전체 적용][선택 클립 적용][↺] (2026-10-19 사장님)
         const b = (icon: string, on: boolean, ok: boolean, text: string, title: string, go: () => void) => (
           <button type="button" onClick={go} disabled={!ok} title={title}
-            style={{ height: 40, padding: "0 12px", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 6, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: ok ? "pointer" : "default", whiteSpace: "nowrap" }}>
+            style={{ height: 40, padding: "0 12px", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 6, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: ok ? "pointer" : "default", whiteSpace: "nowrap" }}>
             <Icon name={icon} size={16} />{text}
           </button>
         );
@@ -876,6 +960,38 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose }: { p
     if (!b) return;
     await b.openPath(await b.lib.musicFolder());
   };
+  // 무료 음악 사이트에서 받기 — 사이트를 브라우저로 열고, 창으로 돌아오면 다운로드 폴더에서 방금 받은 곡을 찾아 [넣기]로 (2026-10-19 사장님)
+  //  픽사베이·유튜브 곡은 앱 목록에 담아 나눠 주지 않는다 (약관) — 대표님이 직접 받아 쓰는 것만
+  const [dlSince, setDlSince] = useState(0);
+  const [dlNew, setDlNew] = useState<{ path: string; name: string }[]>([]);
+  const [dlDone, setDlDone] = useState<string[]>([]);
+  const openSite = (url: string) => {
+    const g = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => void } }).gongsilStudio;
+    if (g?.openInBrowser) g.openInBrowser(url);
+    else window.open(url, "_blank");
+    setDlSince(Date.now());
+  };
+  useEffect(() => {
+    if (!dlSince || !b?.lib.downloadsAudio) return;
+    const look = () => b.lib.downloadsAudio!(dlSince).then((l) => setDlNew(l)).catch(() => {});
+    look();
+    const t = window.setInterval(look, 3000);
+    window.addEventListener("focus", look);
+    return () => { window.clearInterval(t); window.removeEventListener("focus", look); };
+  }, [dlSince, b]);
+  const addDl = async (f: { path: string; name: string }) => {
+    if (!b?.lib.addDownloads) return;
+    setBusy(f.path);
+    try {
+      const added = await b.lib.addDownloads([f.path]);
+      setDlDone((v) => [...v, f.path]);
+      await loadMine();
+      setMsg(added.length ? `"${f.name.replace(/\.[^.]+$/, "")}"을 내 음악에 넣었어요 — 아래에서 [고르기]` : "넣지 못했어요");
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setBusy("");
+  };
   const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode) => (
     <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
       {playBtn}
@@ -925,6 +1041,30 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose }: { p
         <>
           <div style={{ padding: "12px 14px 0", display: "flex", flexDirection: "column", gap: 8 }}>
             <Btn primary onClick={fromPc} style={{ width: "100%" }}><Icon name="plus" size={18} />PC에서 음악 불러오기</Btn>
+            {/* 무료 음악 사이트 — 직접 받아서 넣기 */}
+            <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>무료 음악 찾으러 가기</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <Btn small onClick={() => openSite("https://pixabay.com/music/")} style={{ flex: 1, justifyContent: "center" }}>픽사베이 음악</Btn>
+                <Btn small onClick={() => openSite("https://studio.youtube.com/channel/UC/music")} style={{ flex: 1, justifyContent: "center" }}>유튜브 오디오 보관함</Btn>
+              </div>
+              <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6, marginTop: 8 }}>사이트에서 곡을 내려받고 이 창으로 돌아오면, 방금 받은 곡이 아래에 나와요. [넣기]를 누르면 내 음악에 들어가요.</div>
+              {dlSince > 0 && (b?.lib.downloadsAudio ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                  {!dlNew.length && <div style={{ fontSize: 13, color: C.dim }}>받은 곡을 기다리는 중… (다운로드 폴더)</div>}
+                  {dlNew.map((f) => {
+                    const done = dlDone.includes(f.path);
+                    return (
+                      <div key={f.path} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 }}>
+                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 700 }} title={f.name}>♪ {f.name}</span>
+                        <Btn small primary={!done} disabled={done || busy === f.path} onClick={() => addDl(f)}>{done ? "넣음" : busy === f.path ? "넣는 중…" : "넣기"}</Btn>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>받은 곡은 위 [PC에서 음악 불러오기]로 다운로드 폴더에서 넣어 주세요.</div>)}
+              <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginTop: 8 }}>픽사베이 곡 중 일부는 유튜브 저작권 알림이 올 수 있어요. 그럴 땐 받은 곡의 라이선스 문구로 이의 제기하면 돼요.</div>
+            </div>
             <div style={{ display: "flex", gap: 6 }}>
               <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && loadMine()} placeholder="음악 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
               <Btn small onClick={loadMine}><Icon name="search" size={16} /></Btn>
@@ -967,5 +1107,16 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose }: { p
         </>
       )}
     </Side>
+  );
+}
+
+/** Gemini 표시 (AI 성우가 Gemini API 로 만들어진다는 안내용) */
+function GeminiMark({ size = 16 }: { size?: number }) {
+  const id = React.useId();
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Gemini" style={{ flexShrink: 0 }}>
+      <defs><linearGradient id={id} x1="0" y1="24" x2="24" y2="0"><stop offset="0" stopColor="#1C7DFF" /><stop offset="0.52" stopColor="#1C69FF" /><stop offset="1" stopColor="#F0DCD6" /></linearGradient></defs>
+      <path d="M12 0C12 6.63 17.37 12 24 12C17.37 12 12 17.37 12 24C12 17.37 6.63 12 0 12C6.63 12 12 6.63 12 0Z" fill={`url(#${id})`} />
+    </svg>
   );
 }

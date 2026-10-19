@@ -27,7 +27,7 @@ const stamp = () => {
 
 const DEFAULT_SETTINGS = {
   fill: "cover", // cover 꽉 채우기 · contain 맞추기 · blur 맞추고 흐린 배경
-  subtitle: { on: true, position: "bottom", posAuto: true, length: "long", size: 100, font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bold: true },
+  subtitle: { on: true, position: "bottom", posAuto: true, length: "long", maxLines: 2, size: 100, font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bold: true },
   voice: { id: "Charon", speed: 1, volume: 1 },
   music: { on: false, mood: "calm", file: "", name: "", volume: 0.15 },
   sourceVolume: 1,
@@ -49,12 +49,19 @@ function remember(p) {
 }
 
 /** 새 프로젝트 — { method: text|video|longform|record, ratio, name?, vacancyId? } */
-function create({ method = "video", ratio = "16:9", name = "", vacancyId = "" } = {}) {
+function create({ method = "video", ratio = "16:9", name = "", vacancyId = "", folder = "" } = {}) {
   if (!RATIOS[ratio]) ratio = "16:9";
-  const label = { text: "텍스트 영상", video: "영상 편집", longform: "숏폼", record: "녹화 영상" }[method] || "영상";
-  const nm = safeName(name) || `${label}_${stamp()}`;
+  // 이름을 안 정하면 "무제" (포토샵·프리미어처럼, 2026-10-19 사장님) — 같은 이름이 있으면 무제_2
+  const nm = safeName(name) || "무제";
   let base = require("./folders").projectDir(); // 처음 화면 [저장 폴더]에서 고른 곳 (기본: 문서\공실뉴스 스튜디오\영상)
-  if (vacancyId) {
+  // 만들 때 [위치]에서 직접 고른 폴더가 있으면 그곳에
+  if (folder) {
+    try {
+      fs.mkdirSync(folder, { recursive: true });
+      base = folder;
+      vacancyId = vacancyId || "";
+    } catch {}
+  } else if (vacancyId) {
     try {
       base = require("../out-folder").folderFor(vacancyId, "영상");
     } catch {}
@@ -538,15 +545,17 @@ async function voiceFor(p, text, voiceId, opts = {}) {
   const t = String(text || "").replace(/\s+/g, " ").trim();
   if (!t) throw new Error("읽을 문장이 없습니다.");
   const my = voiceId === "me" ? require("./myvoice") : null; // 내 목소리 — PC 에서 만든다 (목소리를 다시 등록하면 새로)
-  const h = crypto.createHash("sha1").update(`${voiceId}\n${my ? my.stamp() + "\n" : ""}${t}`).digest("hex").slice(0, 16);
+  const tc = /^tc_/.test(String(voiceId)) ? require("./typecast") : null; // 타입캐스트 성우 — 회원 자기 키로 이 앱이 바로 (2026-10-19)
+  const el = /^el_/.test(String(voiceId)) ? require("./elevenlabs") : null; // 일레븐랩스 성우 — 회원 자기 키
+  const emo = tc ? String(opts.emotion || "smart") : el ? String(opts.emotion || "normal") : "";
+  const h = crypto.createHash("sha1").update(`${voiceId}\n${my ? my.stamp() + "\n" : ""}${emo ? emo + "\n" : ""}${t}`).digest("hex").slice(0, 16);
   const base = path.join(p.dir, "voice", `${voiceId}_${h}.wav`);
   const file = opts.fresh ? base.replace(/\.wav$/, `_${Date.now().toString(36)}.wav`) : base;
   if (my && !fs.existsSync(file)) await my.say(t, file);
-  else if (!fs.existsSync(file)) {
-    const r = await server.call("/api/studio/video/voice", { method: "POST", body: { text: t, voice: voiceId, fresh: Boolean(opts.fresh) } });
-    if (!r.success) throw new Error(r.error || "목소리를 만들지 못했습니다.");
-    await server.download(r.url, file);
-  }
+  else if (tc && !fs.existsSync(file)) await tc.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next });
+  else if (el && !fs.existsSync(file)) await el.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next });
+  // 제미나이 성우 — 회원 Gemini API 키로 이 PC 에서 (공실뉴스 서버 Gemini 는 쓰지 않음, 2026-10-19 사장님)
+  else if (!fs.existsSync(file)) await require("./geminitts").say(t, file, { voiceId });
   if (opts.fresh) fs.copyFileSync(file, base); // 다음에 같은 문장을 부르면 새로 만든 것이 나오게
   media.allow(file);
   const info = await ff.probe(file);
@@ -594,15 +603,9 @@ function spreadWords(text, dur) {
  */
 async function listen(file, start, len, tmp) {
   const wh = require("./whisper");
-  if (wh.ready()) return { success: true, segments: await wh.segments(file, { start, len }) };
-  await ff.audioForSpeech(file, tmp, { start, len });
-  const b64 = fs.readFileSync(tmp).toString("base64");
-  fs.rmSync(tmp, { force: true });
-  let r = null;
-  for (let tryNo = 0; tryNo < 3 && !(r && r.success); tryNo++) {
-    r = await server.call("/api/studio/video/transcribe", { method: "POST", body: { audio: b64, mime: "audio/mpeg" } }).catch((e) => ({ success: false, error: e.message }));
-  }
-  return r;
+  // 공실뉴스 서버 Gemini 받아쓰기는 쓰지 않는다 (2026-10-19 사장님) — PC 받아쓰기(Whisper)만
+  if (!wh.ready()) return { success: false, error: "PC 받아쓰기 프로그램이 없어요. 스튜디오를 새 버전으로 다시 설치해 주세요." };
+  return { success: true, segments: await wh.segments(file, { start, len }) };
 }
 
 async function transcribe(p, assetId, onProgress = () => {}) {
@@ -918,9 +921,10 @@ const srtTime = (t) => {
   const s = Math.floor((ms % 60000) / 1000);
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
 };
-function exportText(p, kind) {
+function exportText(p, kind, outFile) {
   const { items } = tl.flatten(p);
-  const out = require("./folders").exportDir(p); // 완성 영상과 같은 곳 (.gss 옆 · 예전 방식은 output)
+  // 저장할 곳 — [다른 형식으로 내보내기]에서 고른 파일 (없으면 완성 영상과 같은 곳: .gss 옆)
+  const out = outFile ? path.dirname(outFile) : require("./folders").exportDir(p);
   fs.mkdirSync(out, { recursive: true });
   let file;
   if (kind === "srt") {
@@ -929,11 +933,11 @@ function exportText(p, kind) {
       .filter((x) => x.clip.sub !== false && (x.clip.type !== "silence" || typeof x.clip.subText === "string") && tl.subtitleText(x.clip).trim())
       .map((x) => `${++n}\n${srtTime(x.start)} --> ${srtTime(x.start + x.dur)}\n${tl.subtitleText(x.clip)}\n`)
       .join("\n");
-    file = path.join(out, `${p.name}.srt`);
+    file = outFile || path.join(out, `${p.name}.srt`);
     fs.writeFileSync(file, body, "utf8");
   } else {
     const body = (p.scenes || []).map((sc) => sc.clips.filter((c) => !c.del && c.type !== "silence").map((c) => tl.clipText(c)).filter(Boolean).join("\n")).join("\n\n");
-    file = path.join(out, `${p.name}.txt`);
+    file = outFile || path.join(out, `${p.name}.txt`);
     fs.writeFileSync(file, body, "utf8");
   }
   return file;

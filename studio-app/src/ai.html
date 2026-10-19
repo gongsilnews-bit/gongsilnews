@@ -3,31 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-<title>내 AI 연결</title>
+<title>AI 설정</title>
 <style>
   body { margin:0; background:#f6f8fa; color:#16202b; font-family:'Pretendard Variable','Malgun Gothic',sans-serif; }
-  .wrap { padding:26px 24px; }
+  .wrap { padding:24px 24px 26px; }
   h1 { margin:0 0 6px; font-size:20px; font-weight:800; }
-  .lead { margin:0 0 18px; font-size:13px; line-height:1.7; color:#6b7684; word-break:keep-all; }
-  .row { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+  .lead { margin:0 0 16px; font-size:13px; line-height:1.7; color:#6b7684; word-break:keep-all; }
+  .row { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+  .row.on { border-color:#a7f3d0; background:#f0fdf4; }
+  .top { display:flex; align-items:center; gap:12px; }
   .dot { width:9px; height:9px; border-radius:50%; background:#cbd5e1; flex-shrink:0; }
   .dot.on { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.2); }
   .name { font-size:15px; font-weight:800; }
-  .sub { font-size:12px; color:#6b7684; margin-top:2px; }
+  .sub { font-size:12px; color:#6b7684; margin-top:2px; word-break:keep-all; }
   .sub.on { color:#16a34a; font-weight:700; }
-  .row.on { border-color:#a7f3d0; background:#f0fdf4; }
   .grow { flex:1; min-width:0; }
+  .seg { display:flex; border:1px solid #c7d2e3; border-radius:8px; overflow:hidden; flex-shrink:0; }
+  .seg button { border-radius:0; background:#fff; color:#4b5a6b; padding:7px 11px; font-size:12.5px; }
+  .seg button.on { background:#1a3a6b; color:#fff; }
+  .acts { display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:10px; flex-wrap:wrap; }
+  .keyin { flex:1; min-width:0; padding:9px 10px; border:1px solid #c7d2e3; border-radius:8px; font-size:13px; font-family:inherit; }
+  .keyin:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+  .help { margin-top:8px; font-size:12px; color:#6b7684; line-height:1.6; word-break:keep-all; }
+  .help a { color:#1a3a6b; font-weight:700; cursor:pointer; text-decoration:underline; }
   button { padding:9px 14px; border:0; border-radius:8px; background:#1a3a6b; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
   button:disabled { background:#cbd5e1; cursor:default; }
   button.ghost { background:#fff; color:#1a3a6b; border:1px solid #c7d2e3; }
+  button.ghost:disabled { color:#a3adba; background:#fff; }
   .msg { min-height:20px; margin:14px 2px 0; font-size:13px; color:#1a3a6b; line-height:1.6; word-break:keep-all; }
   .msg.err { color:#c53030; }
-  .done { display:none; width:100%; margin-top:12px; padding:13px 0; font-size:15px; background:#16a34a; }
   .writer { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
   .writer .t { font-size:13px; font-weight:800; margin-bottom:8px; }
   .writer .t span { font-weight:500; color:#6b7684; }
   .pills { display:flex; gap:8px; }
-  .pill { flex:1; padding:10px 0; border-radius:10px; background:#fff; color:#16202b; border:1px solid #d5dce5; font-size:14px; font-weight:800; }
+  .pill { flex:1; padding:9px 0 8px; border-radius:10px; background:#fff; color:#16202b; border:1px solid #d5dce5; font-size:14px; font-weight:800; line-height:1.3; }
+  .pill small { display:block; font-size:11px; font-weight:600; opacity:.75; }
   .pill.on { background:#1a3a6b; color:#fff; border-color:#1a3a6b; }
   .pill:disabled { background:#f1f4f7; color:#a3adba; border-color:#e8ecf0; }
   .note { margin-top:16px; padding:12px 14px; border-radius:10px; background:#fff8eb; border:1px solid #fde4b0; font-size:12px; line-height:1.7; color:#7a4b00; word-break:keep-all; }
@@ -35,93 +45,187 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>내 AI 연결</h1>
-    <p class="lead">소장님이 구독 중인 AI로 기사·블로그를 씁니다. [연결하기]를 누르면 <b>스튜디오 전용 크롬</b>이 열립니다. 그 창에서 로그인한 뒤 그 줄의 <b>[로그인 다 했어요]</b>를 누르면 연결이 끝납니다. 비밀번호는 공실뉴스에 저장되지 않습니다.<br>
-    <b>평소 쓰는 크롬에 로그인되어 있어도, 이 전용 창에서 처음 한 번은 따로 로그인해야 해요.</b> (스튜디오가 이 창으로 글을 쓰기 때문이에요) 연결한 뒤에는 [창 열기]로 전용 창을 언제든 열어 볼 수 있어요.</p>
+    <h1>AI 설정</h1>
+    <p class="lead">기사·블로그·SNS·유튜브·영상을 쓸 AI를 고르세요. AI마다 쓰는 방법을 하나 고릅니다.<br>
+    <b>내 계정으로</b> — 구독 중인 AI에 <b>스튜디오 전용 크롬</b>에서 로그인해 두면, 그 창으로 씁니다. (평소 크롬과 따로, 처음 한 번 로그인)<br>
+    <b>API 키로</b> — 내 API 키를 넣으면 창 없이 바로 주고받아 빠르고 안정적이에요. 쓴 만큼 AI 회사에 직접 결제되고, <b>키는 이 PC에만 잠가서 저장</b>돼요 (공실뉴스로 보내지 않음).</p>
     <div class="writer" id="writer"></div>
     <div id="list"></div>
     <div class="msg" id="msg"></div>
     <div class="note">
-      AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다.
-      Gemini는 지메일·유튜브에 쓰는 업무용 구글 계정 말고 별도 계정을 권합니다.
+      <b>내 계정으로</b>: AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다. Gemini는 업무용 구글 계정 말고 별도 계정을 권합니다.<br>
+      <b>API 키로</b>: 각 AI 사이트 결제 화면에서 <b>월 사용 한도</b>를 꼭 걸어 두세요. 키는 남에게 보여 주지 말고, 새 나갔으면 그 사이트에서 지우고 새로 만드세요.
     </div>
   </div>
 <script>
   const studio = window.gongsilStudio;
   const msg = document.getElementById("msg");
   const say = (t, err) => { msg.textContent = t || ""; msg.className = "msg" + (err ? " err" : ""); };
+  const clean = (e) => String(e && e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
   let busy = false;        // 확인·연결 중에는 다른 버튼을 잠근다 (동작이 겹치지 않게)
   let connectingId = null; // 로그인 창을 연 AI — 그 줄에 [로그인 다 했어요]를 띄운다
   const checking = new Set();
+  const editing = new Set(); // [바꾸기]를 눌러 키 칸을 다시 연 AI
+  const drafts = {};         // 키 칸에 쓰던 글 (다시 그려도 남게)
 
-  /* 기본 글쓰기 AI — 연결된 것 중에서 고른다. 수정 요청은 처음 쓴 AI 로 이어서 간다 */
+  // 키 만드는 곳 (각 회사 API 키 화면)
+  const KEY_PAGE = {
+    chatgpt: { url: "https://platform.openai.com/api-keys", site: "OpenAI 플랫폼", hint: "sk-로 시작" },
+    claude: { url: "https://console.anthropic.com/settings/keys", site: "Anthropic 콘솔", hint: "sk-ant-로 시작" },
+    gemini: { url: "https://aistudio.google.com/apikey", site: "Google AI Studio", hint: "AIza로 시작" },
+  };
+  const how = (it) => (it.mode === "api" ? "API 키" : "내 계정");
+
+  /* 기본 글쓰기·그림 AI — 고른 방법으로 쓸 수 있는 것만. 단추에 방법(계정/API 키)이 보인다 */
   function renderWriter(items) {
     const box = document.getElementById("writer");
-    box.innerHTML = '<div class="t">기본 글쓰기 AI <span>· 기사·블로그·SNS·유튜브를 이 AI로 씁니다</span></div><div class="pills" id="pw"></div>'
+    box.innerHTML = '<div class="t">기본 글쓰기 AI <span>· 기사·블로그·SNS·유튜브·영상 대본을 이 AI로 씁니다</span></div><div class="pills" id="pw"></div>'
       + '<div class="t" style="margin-top:14px">기본 이미지 생성 AI <span>· AI 표지·본문 그림을 이 AI로 그립니다 (Claude는 그림을 못 그림)</span></div><div class="pills" id="pi"></div>';
+    const pill = (it, on, usable, onPick) => {
+      const b = document.createElement("button");
+      b.className = "pill" + (on ? " on" : "");
+      b.innerHTML = "<span></span><small></small>";
+      b.querySelector("span").textContent = it.name + (on ? " ✓" : "");
+      b.querySelector("small").textContent = !it.ready ? "준비 중" : it.ok ? how(it) : "연결 안 됨";
+      b.disabled = busy || !usable;
+      b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결하거나 API 키를 넣어 주세요";
+      b.onclick = onPick;
+      return b;
+    };
+    for (const it of items.filter((x) => x.canWrite)) {
+      box.querySelector("#pw").appendChild(pill(it, it.isWriter, it.ok && it.ready, async () => {
+        if (it.isWriter) return;
+        render(await studio.ai.setWriter(it.id));
+        say(`이제 ${it.name}(${how(it)})로 글을 씁니다.`);
+      }));
+    }
     for (const it of items.filter((x) => x.canImage)) {
-      const b = document.createElement("button");
-      b.className = "pill" + (it.isImager ? " on" : "");
-      b.textContent = it.name + (it.isImager ? " ✓" : !it.imageReady ? " (준비 중)" : "");
-      b.disabled = busy || !it.ok || !it.imageReady;
-      b.title = !it.imageReady ? "그림 그리기는 준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
-      b.onclick = async () => { if (it.isImager) return; render(await studio.ai.setImager(it.id)); say(`이제 ${it.name}로 그림을 그립니다. (AI 표지·본문 그림·인테리어·리모델링 시뮬레이션)`); };
-      box.querySelector("#pi").appendChild(b);
+      box.querySelector("#pi").appendChild(pill(it, it.isImager, it.ok && it.imageReady, async () => {
+        if (it.isImager) return;
+        render(await studio.ai.setImager(it.id));
+        say(`이제 ${it.name}(${how(it)})로 그림을 그립니다. (AI 표지·본문 그림·인테리어·리모델링 시뮬레이션)`);
+      }));
     }
-    const pills = box.querySelector("#pw");
-    const writers = items.filter((x) => x.canWrite);
-    for (const it of writers) {
-      const b = document.createElement("button");
-      b.className = "pill" + (it.isWriter ? " on" : "");
-      b.textContent = it.name + (it.isWriter ? " ✓" : "");
-      b.disabled = busy || !it.ok || !it.ready;
-      b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
-      b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다. 그림은 아래 [기본 이미지 생성 AI]로 그립니다.`); };
-      pills.appendChild(b);
+  }
+
+  const btn = (text, cls, onclick, disabled) => {
+    const b = document.createElement("button");
+    b.textContent = text;
+    if (cls) b.className = cls;
+    b.disabled = Boolean(disabled);
+    b.onclick = onclick;
+    return b;
+  };
+
+  /* 계정 방식 줄 아래 단추: [창 열기] [연결하기 / 다시 확인] */
+  function accountActs(it, acts) {
+    if (connectingId === it.id) {
+      const b = btn("로그인 다 했어요", "", () => { b.disabled = true; b.textContent = "확인 중…"; studio.ai.finishLogin(); });
+      b.style.background = "#16a34a";
+      acts.appendChild(b);
+      return;
     }
+    if (it.accountOk && studio.ai.open) acts.appendChild(btn("창 열기", "ghost", () => { studio.ai.open(it.id); say(`${it.name} 전용 크롬 창을 열었어요. 다 보셨으면 그 창을 닫으세요.`); }, busy));
+    acts.appendChild(btn(it.accountOk ? "다시 확인" : "연결하기", it.accountOk ? "ghost" : "", () => run(it.id, it.name, it.accountOk ? "check" : "connect"), !it.ready || busy));
+  }
+
+  /* API 키 줄 아래: 키가 있으면 [키 확인][바꾸기][지우기], 없으면 키 칸 + [키 등록] + 만드는 곳 안내 */
+  function apiActs(it, row, acts) {
+    const kp = KEY_PAGE[it.id];
+    if (it.keyHas && !editing.has(it.id)) {
+      acts.appendChild(btn("키 확인", "ghost", () => keyJob(it, () => studio.ai.testKey(it.id), `${it.name} 키가 잘 맞아요.`), busy));
+      acts.appendChild(btn("바꾸기", "ghost", () => { editing.add(it.id); load(); }, busy));
+      acts.appendChild(btn("지우기", "ghost", async () => {
+        if (!confirm(`${it.name} API 키를 이 PC에서 지울까요?`)) return;
+        render(await studio.ai.clearKey(it.id));
+        say(`${it.name} API 키를 지웠어요.`);
+      }, busy));
+      return;
+    }
+    const inp = document.createElement("input");
+    inp.className = "keyin";
+    inp.type = "password";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    inp.placeholder = `${it.name} API 키 붙여넣기 (${kp.hint})`;
+    inp.value = drafts[it.id] || "";
+    inp.disabled = busy;
+    inp.oninput = () => { drafts[it.id] = inp.value; };
+    const save = () => {
+      const k = inp.value.trim();
+      if (!k) return say("API 키를 붙여 넣어 주세요.", true);
+      keyJob(it, () => studio.ai.setKey(it.id, k), `${it.name} API 키를 넣었어요. 이제 ${it.name}는 API 키로 씁니다.`, () => { drafts[it.id] = ""; editing.delete(it.id); });
+    };
+    inp.onkeydown = (e) => { if (e.key === "Enter") save(); };
+    acts.appendChild(inp);
+    acts.appendChild(btn("키 등록", "", save, busy));
+    if (it.keyHas) acts.appendChild(btn("취소", "ghost", () => { editing.delete(it.id); drafts[it.id] = ""; load(); }, busy));
+    const help = document.createElement("div");
+    help.className = "help";
+    help.innerHTML = `키가 없으신가요? <a>${kp.site}에서 키 만들기</a> — 결제(충전)를 먼저 등록해야 키가 작동해요.`;
+    help.querySelector("a").onclick = () => studio.openInBrowser(kp.url);
+    row.appendChild(help);
+  }
+
+  async function keyJob(it, fn, okText, after) {
+    if (busy) return;
+    busy = true;
+    checking.add(it.id);
+    await load();
+    say(`${it.name} 키를 확인하는 중…`);
+    try {
+      const r = await fn();
+      if (after) after();
+      busy = false;
+      checking.delete(it.id);
+      render(r);
+      say(okText);
+      return;
+    } catch (e) {
+      say(clean(e), true);
+    }
+    busy = false;
+    checking.delete(it.id);
+    await load();
   }
 
   function render(items) {
     renderWriter(items);
     const list = document.getElementById("list");
+    const focused = document.activeElement && document.activeElement.classList.contains("keyin");
     list.innerHTML = "";
     for (const it of items) {
       const row = document.createElement("div");
       row.className = "row";
+      const api = it.mode === "api";
       const sub = !it.ready ? "준비 중"
         : connectingId === it.id ? "오른쪽 크롬 창에서 로그인해 주세요"
         : checking.has(it.id) ? "확인 중…"
-        : it.ok ? `● 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}${it.noImage ? " · 글쓰기만 (그림은 못 그림)" : ""}`
+        : api ? (it.keyHas ? `● API 키 ${it.keyMasked}${it.keyModel ? " · " + it.keyModel : ""}${it.noImage ? " · 글쓰기만" : ""}` : "API 키를 넣어 주세요")
+        : it.accountOk ? `● 계정 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}${it.noImage ? " · 글쓰기만 (그림은 못 그림)" : ""}`
         : "연결 안 됨";
-      if (it.ok && connectingId !== it.id) row.classList.add("on");
-      row.innerHTML = `<span class="dot ${it.ok ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub ${it.ok && connectingId !== it.id ? "on" : ""}"></div></div>`;
+      const on = it.ok && connectingId !== it.id && !checking.has(it.id);
+      if (on) row.classList.add("on");
+      row.innerHTML = `<div class="top"><span class="dot ${on ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub ${on ? "on" : ""}"></div></div></div><div class="acts"></div>`;
       row.querySelector(".name").textContent = it.name;
       row.querySelector(".sub").textContent = sub;
-      const btn = document.createElement("button");
-      if (connectingId === it.id) {
-        btn.textContent = "로그인 다 했어요";
-        btn.style.background = "#16a34a";
-        btn.onclick = () => { btn.disabled = true; btn.textContent = "확인 중…"; studio.ai.finishLogin(); };
-      } else {
-        btn.textContent = it.ok ? "다시 확인" : "연결하기";
-        if (it.ok) btn.className = "ghost";
-        btn.disabled = !it.ready || busy;
-        btn.onclick = () => (it.ok ? run(it.id, it.name, "check") : run(it.id, it.name, "connect"));
+      // [내 계정으로 | API 키로] — 한 AI 에 하나만
+      const seg = document.createElement("div");
+      seg.className = "seg";
+      for (const [m, t] of [["account", "내 계정으로"], ["api", "API 키로"]]) {
+        const b = btn(t, it.mode === m ? "on" : "", async () => {
+          if (it.mode === m) return;
+          render(await studio.ai.setMode(it.id, m));
+          say(m === "api" ? (it.keyHas ? `${it.name}는 이제 API 키로 씁니다.` : `${it.name} API 키를 붙여 넣고 [키 등록]을 눌러 주세요.`) : `${it.name}는 이제 내 계정(전용 크롬)으로 씁니다.`);
+        }, busy || !it.ready || connectingId === it.id);
+        seg.appendChild(b);
       }
-      // [창 열기] — 연결된 AI 는 전용 크롬을 그 사이트로 그냥 열어 본다 (대화 내용·로그인 확인용)
-      if (it.ok && connectingId !== it.id && studio.ai.open) {
-        const view = document.createElement("button");
-        view.className = "ghost";
-        view.textContent = "창 열기";
-        view.title = "스튜디오 전용 크롬을 열어 봐요";
-        view.style.marginRight = "6px";
-        view.disabled = busy;
-        view.onclick = () => { studio.ai.open(it.id); say(`${it.name} 전용 크롬 창을 열었어요. 다 보셨으면 그 창을 닫으세요.`); };
-        row.appendChild(view);
-      }
-      row.appendChild(btn);
+      row.querySelector(".top").appendChild(seg);
+      const acts = row.querySelector(".acts");
+      if (api) apiActs(it, row, acts); else accountActs(it, acts);
       list.appendChild(row);
     }
+    if (focused) { const k = list.querySelector(".keyin:not(:disabled)"); if (k) k.focus(); }
   }
 
   async function load() { render(await studio.ai.list()); }
@@ -136,7 +240,7 @@
       const r = await studio.ai[how](id);
       say(r && r.ok ? `${name} 연결이 끝났습니다.` : `${name} 로그인이 확인되지 않았습니다. 다시 [연결하기]를 눌러 주세요.`, !(r && r.ok));
     } catch (e) {
-      say(String(e && e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true);
+      say(clean(e), true);
     }
     connectingId = null;
     checking.delete(id);
@@ -145,11 +249,11 @@
   }
 
   studio.ai.onProgress((t) => say(t));
-  // 한 번도 확인하지 않은 AI는 창을 열 때 자동으로 확인한다 (이미 로그인되어 있을 수 있다)
+  // 계정 방식인데 한 번도 확인하지 않은 AI는 창을 열 때 자동으로 확인한다 (이미 로그인되어 있을 수 있다)
   (async () => {
     const items = await studio.ai.list();
     render(items);
-    for (const it of items.filter((x) => x.ready && !x.ok && !x.checkedAt)) await run(it.id, it.name, "check");
+    for (const it of items.filter((x) => x.ready && x.mode !== "api" && !x.accountOk && !x.checkedAt)) await run(it.id, it.name, "check");
     if (!busy) say("");
   })();
 </script>

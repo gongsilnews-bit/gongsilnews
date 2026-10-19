@@ -20,6 +20,7 @@ const marketingWriter = require("./marketing-writer");
 // 영상 편집기 (동영상제작) — PC 파일 재생 주소는 앱 준비 전에 등록해야 한다
 const videoMedia = require("./video/media");
 const videoIpc = require("./video/ipc");
+const photoIpc = require("./photo/ipc");
 const aiBusy = require("./ai-busy");
 videoMedia.registerScheme();
 
@@ -33,6 +34,7 @@ ext.configure(BASE_URL);
 const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
+  "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
   "studio:save-file", "studio:open-out-folder",
 ]);
@@ -234,6 +236,16 @@ async function createWindow() {
 
   // 영상 편집기에 저장 안 한 내용이 있으면 — 닫기를 멈추고 [저장 / 다른 이름으로 / 저장 안 함 / 취소] 를 묻는다
   mainWindow.on("close", (e) => {
+    // 이미지 편집에 저장 안 한 파일 — 닫을지 묻는다
+    if (photoIpc.dirtyCount() > 0) {
+      const r = dialog.showMessageBoxSync(mainWindow, {
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실뉴스 스튜디오",
+        message: `이미지 편집에 저장하지 않은 파일이 ${photoIpc.dirtyCount()}개 있어요.`,
+        detail: "[취소]를 누르고 이미지 편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
+      });
+      if (r === 1) return e.preventDefault();
+      photoIpc.clearDirty();
+    }
     if (!videoIpc.wantsAsk()) return;
     e.preventDefault();
     // 묻는 창이 다른 창 뒤에 숨지 않게 — 앱 창을 맨 앞으로
@@ -285,10 +297,10 @@ function openAiWindow() {
     return;
   }
   aiWindow = new BrowserWindow({
-    width: 520,
-    height: 700,
+    width: 560,
+    height: 860,
     parent: mainWindow || undefined,
-    title: "내 AI 연결",
+    title: "AI 설정",
     autoHideMenuBar: true,
     resizable: false,
     minimizable: false,
@@ -320,7 +332,7 @@ function buildMenu() {
     },
     {
       label: "AI",
-      submenu: [{ label: "내 AI 연결 (ChatGPT·Claude·Gemini)", click: () => openAiWindow() }],
+      submenu: [{ label: "AI 설정 (ChatGPT·Claude·Gemini)", click: () => openAiWindow() }],
     },
     {
       label: "계정",
@@ -504,6 +516,15 @@ ipcMain.handle("studio:ai-writer", () => {
   return { id, name: ai.nameOf(id) };
 });
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
+// [내 계정으로 | API 키로] · API 키 등록·확인·지우기 — 키는 이 PC 에만 (ai/api.js)
+const aiChanged = () => {
+  for (const w of BrowserWindow.getAllWindows()) w.webContents.send("studio:ai-writer-changed");
+  return aiConnect.list();
+};
+ipcMain.handle("studio:ai-set-mode", (_e, id, mode) => (aiConnect.setMode(id, mode), aiChanged()));
+ipcMain.handle("studio:ai-set-key", async (_e, id, key) => (await require("./ai/api").setKey(id, key), aiChanged()));
+ipcMain.handle("studio:ai-test-key", async (_e, id) => (await require("./ai/api").test(id), aiConnect.list()));
+ipcMain.handle("studio:ai-clear-key", (_e, id) => (require("./ai/api").clear(id), aiChanged()));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 // [창 열기] — 스튜디오 전용 크롬을 그 AI 사이트로 그냥 열어 본다 (연결 확인 없이, 닫을 때까지 기다리지 않음)
 ipcMain.handle("studio:ai-open", (_e, id) => aiConnect.open(id));
@@ -606,6 +627,7 @@ app.on("web-contents-created", (_e, wc) => {
 app.whenReady().then(async () => {
   videoMedia.handle();
   videoIpc.register(BASE_URL);
+  photoIpc.register();
   videoIpc.setupCapture();
   const url = findDeepLink(process.argv);
   if (url) pendingDeepLink = url;

@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import NotificationBell from "@/components/common/NotificationBell";
 import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm, IconImage } from "@/components/admin/sections/AdminIcons";
 import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
 import { FACTORY_LAYOUT, normalizeLayout, menuItem, MenuLayoutEditor, type MenuLayout } from "@/components/admin/realtyMenu";
 import { getRealtyMenu, saveMyRealtyMenu } from "@/app/actions/realtyMenu";
@@ -33,6 +33,7 @@ const StudioComingSoon = lazy(() => import("@/components/admin/sections/StudioCo
 const StudioMarketingSection = lazy(() => import("@/components/admin/sections/StudioMarketingSection"));
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
 const VideoStudio = lazy(() => import("@/components/admin/studio-video/VideoStudio"));
+const PhotoStudio = lazy(() => import("@/components/admin/studio-photo/PhotoStudio"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -60,14 +61,15 @@ const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "marketing", label: "공실마케팅", icon: <IconSend /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
+  { key: "photo", label: "이미지 편집", icon: <IconImage /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
 ];
 const STUDIO_MORE_KEYS = ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"];
 const STUDIO_MORE_MENU = REALTY_MENU.filter((m) => STUDIO_MORE_KEYS.includes(m.key));
 const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
-const STUDIO_BADGES = { sns: "NEW", video: "NEW" };
+const STUDIO_BADGES = { sns: "NEW", video: "NEW", photo: "NEW" };
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
-const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "marketing");
+const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing");
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
@@ -334,9 +336,10 @@ function RealtyAdminContent() {
           isApp={studioApp.isApp}
           appVersion={studioApp.version}
           badges={STUDIO_BADGES}
-          autoCollapse={activeMenu === "marketing" || activeMenu === "video"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
-          hidden={activeMenu === "video" && studioApp.isApp && videoEditing && railHidden}
-          onHide={activeMenu === "video" && studioApp.isApp && videoEditing ? () => setRailHidden(true) : undefined}
+          autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
+          // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
+          hidden={((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing && railHidden}
+          onHide={((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing ? () => setRailHidden(true) : undefined}
         />
       ) : (
       /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */
@@ -372,7 +375,7 @@ function RealtyAdminContent() {
 
       {/* ===== 우측 메인 영역 ===== */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
-        <header style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5, ...(activeMenu === "video" && studioApp.isApp ? { display: "none" } : {}) /* 영상 편집기는 화면을 넓게 */ }}>
+        <header style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5, ...((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo" ? { display: "none" } : {}) /* 영상 편집기는 화면을 넓게 */ }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
             onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}
@@ -465,6 +468,7 @@ function RealtyAdminContent() {
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
           {activeMenu === "marketing" && <StudioMarketingSection theme={theme} />}
           {activeMenu === "video" && studioApp.isApp && <VideoStudio />}
+          {activeMenu === "photo" && <PhotoStudio menu={null} />}
           {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}

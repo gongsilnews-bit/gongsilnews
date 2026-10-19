@@ -4,11 +4,12 @@
 // 카드에 마우스를 올리면 그 효과가 실제로 움직여 보인다 (미리보기·굽기와 같은 계산 timeline.animAt)
 import React, { useEffect, useRef, useState } from "react";
 import type { AnimIn, LayerAnim } from "./types";
-import { SFX_LIST, animAt, animCss } from "./timeline";
+import { SFX_LIST, animAt, animCss, wordState, type WordFx } from "./timeline";
+import { ColorPick } from "./Pickers";
 import { Side } from "./Panels";
 import { C, FONT, Toggle } from "./ui";
 
-const IN_LIST: { id: AnimIn; label: string }[] = [
+export const IN_LIST: { id: AnimIn; label: string }[] = [
   { id: "auto", label: "자동" },
   { id: "fade", label: "페이드" },
   { id: "fly", label: "날아오기" },
@@ -25,7 +26,7 @@ const IN_LIST: { id: AnimIn; label: string }[] = [
   { id: "swing", label: "흔들며" },
   { id: "jelly", label: "젤리" },
 ];
-const EMPH_LIST: { id: NonNullable<LayerAnim["emph"]>; label: string }[] = [
+export const EMPH_LIST: { id: NonNullable<LayerAnim["emph"]>; label: string }[] = [
   { id: "pulse", label: "두근두근" },
   { id: "shake", label: "흔들기" },
   { id: "blink", label: "깜빡이기" },
@@ -85,6 +86,54 @@ function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string
   );
 }
 
+/* ── 단어별 (쇼츠식) — 말하는 때에 맞춰 한 단어씩 나타나기 · 지금 단어 강조 (2026-10-19 회의) ── */
+const WSHOW_LIST: { id: "word" | "line"; label: string }[] = [{ id: "word", label: "한 단어씩" }, { id: "line", label: "한 줄씩" }];
+export const WHL_LIST: { id: NonNullable<LayerAnim["whl"]>; label: string }[] = [
+  { id: "color", label: "색 바꾸기" },
+  { id: "big", label: "커지기" },
+  { id: "both", label: "색+커지기" },
+];
+const WCOLORS = ["#FFE000", "#3DFF7A", "#38D9FF", "#FF4FA3", "#FF8A00", "#FF3B30"];
+const DEMO = ["지금", "보는", "이", "매물"];
+/** 단어별 카드 — 마우스를 올리면 단어가 차례로 (0.35초씩) */
+function WordCard({ label, on, fx, onClick }: { label: string; on: boolean; fx: WordFx | null; onClick: () => void }) {
+  const [t, setT] = useState(-1);
+  const raf = useRef(0);
+  const start = () => {
+    if (!fx) return;
+    const t0 = performance.now();
+    const tick = () => {
+      setT(((performance.now() - t0) / 1000) % 2.0);
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+  };
+  const stop = () => {
+    cancelAnimationFrame(raf.current);
+    setT(-1);
+  };
+  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  return (
+    <button type="button" onClick={onClick} onMouseEnter={start} onMouseLeave={stop}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: 0, border: 0, background: "transparent", color: on ? C.text : C.sub, fontFamily: FONT, cursor: "pointer" }}>
+      <span style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 6, border: `${on ? 2 : 1}px solid ${on ? C.accent : C.line2}`, background: "#222", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, padding: "0 4px" }}>
+        {!fx ? <span style={{ fontSize: 12.5, color: "#aaa", fontWeight: 700 }}>없음</span> : (
+          // 한 줄씩은 두 줄로 보여 준다 (지금 보는 / 이 매물)
+          <span style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0 3px", width: fx.show === "line" ? 70 : undefined }}>
+            {DEMO.map((w, i) => {
+              const s0 = 0.15 + i * 0.35;
+              const st = t < 0 ? { a: 1, cur: i === 1 && Boolean(fx.hl) } : wordState(fx, { s: s0, e: s0 + 0.35, ls: i < 2 ? 0.15 : 0.85 }, t);
+              const col = st.cur && fx.hl !== "big", big = st.cur && fx.hl !== "color";
+              return <span key={w} style={{ opacity: st.a, color: col ? fx.color : "#fff", fontSize: big ? 15 : 12.5, fontWeight: 900, whiteSpace: "nowrap" }}>{w}</span>;
+            })}
+          </span>
+        )}
+      </span>
+      <span style={{ fontSize: 13, fontWeight: 700 }}>{label}</span>
+    </button>
+  );
+}
+
 export type AnimBodyProps = {
   value?: LayerAnim;
   what: string; // 사진 · 글자 · 자막
@@ -136,7 +185,8 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
   onPreview?: (part: "in" | "out" | "all") => void;
   sfxDefault?: "auto" | "none"; // 효과음을 안 골랐을 때 (사진·글자 자동, 자막 없음)
 }) {
-  const [tab, setTab] = useState<"in" | "out" | "loop">("in");
+  const [tab, setTab] = useState<"in" | "out" | "loop" | "word">("in");
+  const wordsOk = what === "자막"; // 단어별은 메인자막부터 (말 시각이 있어서)
   const side: "in" | "out" = tab === "out" ? "out" : "in";
   const [all, setAll] = useState(false);
   const a = value || {};
@@ -153,7 +203,10 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
     a.out && `아웃 · ${nameOf(a.out)}`,
     a.emph && `반복 · ${nameOf(a.emph)}`,
     a.grow && `반복 · ${nameOf(a.grow)}`,
+    a.wshow && (a.wshow === "line" ? "단어·줄 · 한 줄씩" : "단어·줄 · 한 단어씩"),
+    a.whl && `단어·줄 · ${WHL_LIST.find((x) => x.id === a.whl)?.label}`,
   ].filter(Boolean) as string[];
+  const wcol = a.wcolor || WCOLORS[0];
   const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "12px 16px" };
   return (
     <>
@@ -172,7 +225,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
       </div>
       <div style={{ padding: "12px 16px 0" }}>
         <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
-          {([["in", "인"], ["out", "아웃"], ["loop", "반복"]] as const).map(([k, l]) => (
+          {([["in", "인"], ["out", "아웃"], ["loop", "반복"], ["word", "단어·줄"]] as const).filter(([k]) => k !== "word" || wordsOk).map(([k, l]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
               style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: tab === k ? C.panel2 : "transparent", color: tab === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
               {l}
@@ -180,10 +233,50 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
           ))}
         </div>
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>
-          {tab === "in" ? "나타날 때" : tab === "out" ? "사라질 때" : "나와 있는 동안 계속"}
+          {tab === "in" ? "나타날 때" : tab === "out" ? "사라질 때" : tab === "word" ? "말하는 때에 맞춰 단어마다 · 줄마다 (쇼츠식)" : "나와 있는 동안 계속"}
         </div>
       </div>
-      {tab !== "loop" && (
+      {tab === "word" && (
+        <>
+          <div style={{ padding: "12px 16px 0", fontSize: 13.5, fontWeight: 800 }}>나타나기</div>
+          <div style={grid}>
+            <WordCard label="없음" on={!a.wshow} fx={null} onClick={() => set((x) => ({ ...x, wshow: undefined }))} />
+            {WSHOW_LIST.map((x) => <WordCard key={x.id} label={x.label} on={a.wshow === x.id} fx={{ show: x.id, hl: a.whl, color: wcol, gap: 0.6 }} onClick={() => set((y) => ({ ...y, wshow: x.id }))} />)}
+          </div>
+          <div style={{ padding: "0 16px", fontSize: 13.5, fontWeight: 800 }}>지금 단어 강조</div>
+          <div style={grid}>
+            <WordCard label="없음" on={!a.whl} fx={null} onClick={() => set((x) => ({ ...x, whl: undefined }))} />
+            {WHL_LIST.map((x) => <WordCard key={x.id} label={x.label} on={a.whl === x.id} fx={{ show: a.wshow, hl: x.id, color: wcol, gap: 0.6 }} onClick={() => set((y) => ({ ...y, whl: x.id }))} />)}
+          </div>
+          {a.whl && a.whl !== "big" && (
+            <div style={{ padding: "0 16px 8px" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>강조색</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {WCOLORS.map((c) => (
+                  <button key={c} type="button" title={c} onClick={() => set((y) => ({ ...y, wcolor: c === WCOLORS[0] ? undefined : c }))}
+                    style={{ width: 28, height: 28, borderRadius: 6, background: c, border: `2px solid ${wcol.toUpperCase() === c ? "#fff" : "transparent"}`, cursor: "pointer", padding: 0 }} />
+                ))}
+                <ColorPick value={wcol} onChange={(c) => set((y) => ({ ...y, wcolor: c }))} />
+              </div>
+            </div>
+          )}
+          {a.wshow && (
+            <div style={{ padding: "0 16px 10px" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>나오는 빠르기 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 직접 쓴 자막 ({a.wshow === "line" ? "줄" : "단어"} 사이)</span></div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[{ v: 0.3, label: "빠르게" }, { v: 0.6, label: "보통" }, { v: 1, label: "느리게" }].map((sp) => (
+                  <button key={sp.v} type="button" onClick={() => set((x) => ({ ...x, wgap: sp.v === 0.6 ? undefined : sp.v }))}
+                    style={{ ...tabBtn((a.wgap ?? 0.6) === sp.v), flex: 1 }}>{sp.label} {a.wshow === "line" ? sp.v : sp.v / 2}초</button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ padding: "0 16px 6px", fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
+            한 줄씩 + [인] 효과를 고르면 줄마다 그 효과로 들어와요. 목소리에서 받은 단어 시각에 맞춰 움직여요. 자막을 직접 고친 클립은 글자 수로 시간을 나눠요. 인·아웃·반복과 함께 써도 돼요.
+          </div>
+        </>
+      )}
+      {(tab === "in" || tab === "out") && (
         <div style={grid}>
           <Card label="없음" kind="none" on={!(side === "in" ? a.in : a.out)} onClick={() => (side === "in" ? pickIn(undefined) : pickOut(undefined))} />
           {IN_LIST.map((x) => (
@@ -206,7 +299,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
         </>
       )}
       <div style={{ padding: "4px 16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-        {tab !== "loop" && (
+        {(tab === "in" || tab === "out") && (
           <div>
             <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>인·아웃 빠르기</div>
             <div style={{ display: "flex", gap: 6 }}>

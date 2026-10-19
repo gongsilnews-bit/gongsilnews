@@ -14,7 +14,7 @@ import { loadFont } from "./Pickers";
 export type StickerStyle = "burst" | "tag" | "pin" | "bubble" | "stamp" | "ribbon" | "neon" | "check" | "marker" | "badge" | "arrow" | "ticket" | "cloud" | "sign" | "circle" | "block";
 export type Sticker = { text: string; style: StickerStyle; color?: string; icon?: string };
 
-const STYLE_LABEL: Record<StickerStyle, string> = {
+export const STYLE_LABEL: Record<StickerStyle, string> = {
   burst: "펑!", tag: "가격표", pin: "위치 핀", bubble: "말풍선", stamp: "도장", ribbon: "리본", neon: "네온", check: "체크", marker: "형광펜", badge: "아이콘",
   arrow: "화살표", ticket: "티켓", cloud: "구름", sign: "나무 간판", circle: "동그라미", block: "입체 글자",
 };
@@ -771,6 +771,14 @@ function stickerFonts() {
   return fontsOnce;
 }
 
+/** 칸 그림 하나 (이미지 편집의 스티커 칸) — 글꼴을 받은 뒤, 한 번 그린 것은 기억 */
+export async function stickerThumb(x: Sticker) {
+  await stickerFonts();
+  const k = keyOf(x);
+  if (!thumbCache.has(k)) thumbCache.set(k, small(drawSticker(x), 160));
+  return thumbCache.get(k)!;
+}
+
 /** 편집 화면이 열리면 쉬는 틈에 글꼴·첫 분류 그림을 미리 (스티커 칸을 처음 열 때도 바로) */
 export function warmStickers() {
   if (typeof document === "undefined") return;
@@ -787,7 +795,9 @@ export function warmStickers() {
   });
 }
 
-export function StickerPanel({ project, onInsert, onClose, replacing }: {
+export function StickerPanel({ project, onInsert, onClose, replacing, onTemplates }: {
+  /** [가리키기·반응·움직이는 템플릿] 열기 */
+  onTemplates?: () => void;
   /** [스티커 바꾸기]로 열었을 때 — 새로 넣지 않고 그 스티커 모양만 바꾼다 */
   replacing?: boolean;
   project: Project;
@@ -898,6 +908,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing }: {
           {([[0.3, "작게"], [0.45, "보통"], [0.65, "크게"]] as const).map(([v, l]) => <button key={v} type="button" onClick={() => setSize(v)} style={chip(size === v)}>{l}</button>)}
         </div>
 
+        {onTemplates && !replacing && <Btn onClick={onTemplates} style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>가리키기·반응·움직이는 템플릿 (화살표 20종·경로·카운트다운 …)</Btn>}
         {/* 스티커 고르기 */}
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="스티커 찾기 (예: 역세권, 주차, 도장)"
           style={{ width: "100%", height: 36, marginTop: 18, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT, boxSizing: "border-box" }} />

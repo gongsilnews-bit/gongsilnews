@@ -6,9 +6,10 @@ const log = require("electron-log/main");
 let getWin = () => null;
 let depth = 0; // 겹쳐 부르면 마지막이 끝날 때 닫는다
 let label = "";
+let subText = ""; // 아래 작은 글 — API 키로 쓸 때는 "크롬 창" 안내 대신
 let since = 0;
 
-const overlay = (text, startedAt) => `(() => {
+const overlay = (text, startedAt, sub) => `(() => {
   const id = "__gsAiBusy";
   let el = document.getElementById(id);
   if (!el) {
@@ -31,6 +32,8 @@ const overlay = (text, startedAt) => `(() => {
     document.documentElement.appendChild(el);
   }
   el.querySelector(".t").textContent = ${JSON.stringify(text)};
+  if (!el.__gsSub) el.__gsSub = el.querySelector(".s").innerHTML; // 처음 문구 (크롬 창 안내)
+  el.querySelector(".s").innerHTML = ${JSON.stringify(sub || "")} || el.__gsSub;
   const t0 = ${startedAt};
   clearInterval(window.__gsAiBusyT);
   const tick = () => { const s = Math.max(0, Math.floor((Date.now() - t0) / 1000)); el.querySelector(".e").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
@@ -42,7 +45,7 @@ const remove = `(() => { clearInterval(window.__gsAiBusyT); const el = document.
 function paint() {
   const w = getWin();
   if (!w || w.isDestroyed()) return;
-  w.webContents.executeJavaScript(depth > 0 ? overlay(label, since) : remove).catch(() => {});
+  w.webContents.executeJavaScript(depth > 0 ? overlay(label, since, subText) : remove).catch(() => {});
 }
 
 /** main.js 가 앱 창을 알려 준다. 쓰는 중에 화면이 다시 뜨면(새로고침 등) 덮개도 다시 */
@@ -54,10 +57,11 @@ function attach(win) {
 }
 
 /** fn 이 끝날 때까지 덮개 — text: "ChatGPT가 기사를 작성하고 있어요" */
-async function during(text, fn) {
+async function during(text, fn, sub = "") {
   depth++;
   if (depth === 1) since = Date.now();
   label = text;
+  subText = sub;
   paint();
   try {
     return await fn();

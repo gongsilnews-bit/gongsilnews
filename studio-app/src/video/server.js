@@ -38,4 +38,4 @@ async function download(url, dest) {
   return dest;
 }
 
-module.exports = { configure, call, download };
+module.exports = { configure, call, download, base: () => baseUrl };

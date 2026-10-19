@@ -26,4 +26,5 @@ export const IconHomepage = (props: any) => <SvgIcon {...props}><path d="M3 9l9-
 export const IconRobot = (props: any) => <SvgIcon {...props}><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></SvgIcon>;
 export const IconSend = (props: any) => <SvgIcon {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></SvgIcon>;
 export const IconMegaphone = (props: any) => <SvgIcon {...props}><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M19 5a9 9 0 0 1 0 14"/></SvgIcon>;
+export const IconImage = (props: any) => <SvgIcon {...props}><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></SvgIcon>;
 export const IconFilm = (props: any) => <SvgIcon {...props}><rect x="2" y="3" width="20" height="18" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/></SvgIcon>;

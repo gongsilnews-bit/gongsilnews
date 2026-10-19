@@ -118,6 +118,9 @@ if (allowed) {
       lib: {
         list: (opts) => ipcRenderer.invoke("video:lib-list", opts),
         pick: (opts) => ipcRenderer.invoke("video:lib-pick", opts),
+        /** 다운로드 폴더에서 since(ms) 이후 받은 소리 파일 · 그 파일들을 내 음악에 넣기 (0.1.11부터) */
+        downloadsAudio: (since) => ipcRenderer.invoke("video:lib-downloads-audio", since),
+        addDownloads: (files) => ipcRenderer.invoke("video:lib-add-downloads", files),
         fav: (id, fav) => ipcRenderer.invoke("video:lib-fav", id, fav),
         remove: (id) => ipcRenderer.invoke("video:lib-remove", id),
         folders: () => ipcRenderer.invoke("video:lib-folders"),
@@ -132,6 +135,7 @@ if (allowed) {
         openPick: () => ipcRenderer.invoke("video:project-open-pick"),
         save: (p) => ipcRenderer.invoke("video:project-save", p),
         flush: (p) => ipcRenderer.invoke("video:project-flush", p), // [저장] — .gss 로 묶기
+        defaultDir: () => ipcRenderer.invoke("video:project-dir"), // 새 프로젝트 기본 폴더 (0.1.11부터)
         discard: (p) => ipcRenderer.invoke("video:project-discard", p), // [저장 안 함]
         setDirty: (v, dir, file) => ipcRenderer.invoke("video:set-dirty", v, dir, file),
         backup: (p) => ipcRenderer.invoke("video:backup", p), // 자동 저장본 (5분마다)
@@ -163,9 +167,23 @@ if (allowed) {
         restore: (id) => ipcRenderer.invoke("video:trash-restore", id),
         purge: (id) => ipcRenderer.invoke("video:trash-purge", id), // 영구 삭제 (id 또는 "all")
         addAsset: (libId) => ipcRenderer.invoke("video:project-add-asset", libId),
-        exportText: (p, kind) => ipcRenderer.invoke("video:project-export-text", p, kind),
+        exportText: (p, kind, outFile) => ipcRenderer.invoke("video:project-export-text", p, kind, outFile),
       },
       voice: (dir, text, voiceId, opts) => ipcRenderer.invoke("video:voice", dir, text, voiceId, opts), // opts.fresh = 다시 만들기 (0.1.10부터)
+      // 타입캐스트 성우 — 회원 자기 키 (키는 이 PC 에만, 0.1.11부터)
+      typecast: {
+        status: () => ipcRenderer.invoke("video:tc-status"),
+        setKey: (k) => ipcRenderer.invoke("video:tc-set-key", k),
+        clear: () => ipcRenderer.invoke("video:tc-clear"),
+        voices: (refresh) => ipcRenderer.invoke("video:tc-voices", refresh),
+      },
+      // 일레븐랩스 성우 — 회원 자기 키 (0.1.11부터)
+      eleven: {
+        status: () => ipcRenderer.invoke("video:el-status"),
+        setKey: (k) => ipcRenderer.invoke("video:el-set-key", k),
+        clear: () => ipcRenderer.invoke("video:el-clear"),
+        voices: (refresh) => ipcRenderer.invoke("video:el-voices", refresh),
+      },
       sttWords: { add: (pairs) => ipcRenderer.invoke("video:stt-words-add", pairs) }, // 받아쓰기 낱말장 (0.1.10부터)
       myVoice: {
         // 내 목소리 성우 (0.1.10부터) — PC 에서 무료로 내 목소리 읽기
@@ -196,7 +214,8 @@ if (allowed) {
         footage: (lines, items) => ipcRenderer.invoke("video:ai-footage", lines, items), // 대본 + 내 영상 → 문장마다 장면 (0.1.10부터)
         edit: (lines, items, opts) => ipcRenderer.invoke("video:ai-edit", lines, items, opts), // [AI 편집] 편집 계획 (0.1.10부터)
         group: (lines) => ipcRenderer.invoke("video:ai-group", lines), // [씬 정리] (0.1.10부터)
-        image: (dir, prompt) => ipcRenderer.invoke("video:ai-image", dir, prompt),
+        image: (dir, prompt, opts) => ipcRenderer.invoke("video:ai-image", dir, prompt, opts),
+        imagePrompts: (lines, opts) => ipcRenderer.invoke("video:ai-image-prompts", lines, opts), // 클립별 AI 그림 영어 장면 설명 (0.1.11부터)
       },
       vacancy: (vacancyId) => ipcRenderer.invoke("video:vacancy", vacancyId),
       stock: {
@@ -207,6 +226,7 @@ if (allowed) {
       musicUse: (dir, libId) => ipcRenderer.invoke("video:music-use", dir, libId),
       fonts: { ensure: (family) => ipcRenderer.invoke("video:font-ensure", family) },
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
+      exportPick: (p, kind) => ipcRenderer.invoke("video:export-pick", p, kind), // 저장할 곳 고르기 (0.1.11부터)
       animFrames: (dir, key, start, urls) => ipcRenderer.invoke("video:anim-frames", dir, key, start, urls), // 애니메이션 칸 그림 (0.1.10부터)
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
       exportAudio: (p, kind, opts) => ipcRenderer.invoke("video:export-audio", p, kind, opts),
@@ -281,6 +301,17 @@ if (allowed) {
         };
       },
     },
+    /* 이미지 편집 (포토랩) — PSD 는 편집 화면이 읽고 쓴다. 여기는 파일만 */
+    photo: {
+      open: (opts) => ipcRenderer.invoke("photo:open", opts),
+      read: (file) => ipcRenderer.invoke("photo:read", file),
+      save: (opts) => ipcRenderer.invoke("photo:save", opts),
+      recent: () => ipcRenderer.invoke("photo:recent"),
+      recentRemove: (file) => ipcRenderer.invoke("photo:recent-remove", file),
+      recentThumb: (file, thumb) => ipcRenderer.invoke("photo:recent-thumb", file, thumb),
+      reveal: (file) => ipcRenderer.invoke("photo:reveal", file),
+      setDirty: (n) => ipcRenderer.invoke("photo:set-dirty", n),
+    },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
@@ -295,6 +326,11 @@ if (allowed) {
       /** 기본 이미지 생성 AI 고르기 (chatgpt | gemini) · 지금 그림을 그릴 AI { id, name } */
       setImager: (id) => ipcRenderer.invoke("studio:ai-set-imager", id),
       imager: () => ipcRenderer.invoke("studio:ai-imager"),
+      /** 쓰는 방법 "account" | "api" · API 키 등록(확인 뒤 저장)·다시 확인·지우기 — 키는 이 PC 에만 (0.1.11부터) */
+      setMode: (id, mode) => ipcRenderer.invoke("studio:ai-set-mode", id, mode),
+      setKey: (id, key) => ipcRenderer.invoke("studio:ai-set-key", id, key),
+      testKey: (id) => ipcRenderer.invoke("studio:ai-test-key", id),
+      clearKey: (id) => ipcRenderer.invoke("studio:ai-clear-key", id),
       onWriterChanged: (fn) => {
         const h = () => fn();
         ipcRenderer.on("studio:ai-writer-changed", h);

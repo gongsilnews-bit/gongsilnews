@@ -11,6 +11,8 @@ export type LayerAnim = {
   in?: AnimIn; out?: AnimIn; emph?: "pulse" | "shake" | "blink" | "float" | "sway" | "bounce" | "beat" | "wiggle"; grow?: "grow" | "shrink"; dur?: number /* 등장·퇴장 걸리는 초 (기본 0.5) */;
   // 효과음 — 나타날 때 (auto = 효과에 맞게, none = 없음, 그 밖 = 소리 이름 public/studio-sfx). 없으면 사진·글자는 자동, 자막은 없음
   sfx?: string; sfxVol?: number /* 0~1, 기본 0.6 */; sfxOut?: boolean /* 사라질 때도 */;
+  // 단어별 (쇼츠식, 메인자막) — 말하는 때에 맞춰 한 단어씩 나타나기 · 지금 단어 강조 (2026-10-19 회의)
+  wshow?: "word" | "line"; whl?: "color" | "big" | "both"; wcolor?: string /* 강조색, 기본 노랑 */; wgap?: number /* 직접 쓴 자막 — 줄(단어는 절반) 사이 초, 기본 0.6 */;
 };
 
 export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */ };
@@ -97,6 +99,7 @@ export type Layer = {
   x?: number; // 가운데 위치 0~1
   y?: number;
   w?: number; // 화면 폭에 대한 비율 0~1
+  rot?: number; // 회전 (도, 시계 방향 +) — 미리보기 회전 손잡이 (2026-10-19 사장님)
   opacity?: number; // 0~1
   off?: boolean; // 레이어 끄기 (보이기·듣기) — 설정은 그대로
   anim?: LayerAnim; // 사진·화면 글자 애니메이션
@@ -133,8 +136,9 @@ export type Layer = {
 };
 
 export type SubtitleSettings = {
-  on: boolean; position: "top" | "middle-high" | "middle" | "middle-low" | "bottom"; /* middle-high = 중상단 (위에서 24%, 중하단과 짝) */ length: "long" | "short"; size: number; font: string; color: string; outline: string; outlineWidth: number; bg: boolean; bgColor?: string; bgOpacity?: number; bold: boolean;
+  on: boolean; position: "top" | "middle-high" | "middle" | "middle-low" | "bottom"; /* middle-high = 중상단 (위에서 24%, 중하단과 짝) */ length: "long" | "short"; /** 한 화면 최대 줄 수 (1·2·3) — 있으면 length 대신 이것 (2026-10-19) */ maxLines?: 1 | 2 | 3; size: number; font: string; color: string; outline: string; outlineWidth: number; bg: boolean; bgColor?: string; bgOpacity?: number; bold: boolean;
   x?: number; y?: number; // 미리보기에서 끌어 옮긴 자리 (가운데 기준 0~1). 있으면 position 대신
+  rot?: number; // 메인자막 회전 (도, 시계 방향 +) — 돌리면 x·y 자리로 바뀐다
   posAuto?: boolean; // 위치 자동 — 영상 비율에 맞춰 (세로 9:16·4:5 = 중하단, 나머지 = 하단). 비율을 바꾸면 따라간다
   wrap?: number; // 줄 너비 (1 = 기본, 0.3~1) — 한 줄 글자 수를 그만큼 줄인다
   spacing?: number; // 자간 — 글자 크기에 대한 비율 (-0.1~0.5, 0 = 기본)
@@ -152,6 +156,14 @@ export type SubtitleSettings = {
   shadow?: number; // 그림자 거리 — 글자 크기에 대한 비율 (0 = 없음, 0.06 안팎) · 상자일 때는 안 씀
   shadowColor?: string;
   glow?: string; // 네온 빛 색 ("" = 없음) — 테두리를 그 색으로 번지게 (사전 설정 스타일, 2026-10-18)
+  // 예능 자막 (2026-10-19 사장님) — 이중 테두리: 안쪽 테두리(outline) 바깥에 한 겹 더 · 그라데이션: 글자 위(color) → 아래(gradTo)
+  outline2?: string; // 바깥 테두리 색
+  outline2Width?: number; // 바깥 테두리 두께 (0 = 없음, 안쪽 테두리와 같은 단위)
+  gradTo?: string; // 그라데이션 끝 색 ("" = 없음) — 시작 색은 글자 색(color)
+  gradType?: "linear" | "radial" | "reflect"; // 모양 — 선형(기본) · 방사형 · 반사형 (포토샵처럼)
+  gradAngle?: number; // 선형·반사형 각도 (CSS 와 같게 180 = 위→아래, 기본 180)
+  gradA?: number; // 시작 투명도 0~1 (0 = 진하게)
+  gradB?: number; // 끝 투명도 0~1
   anim?: LayerAnim; // 메인자막 애니메이션 — 자막 한 줄(조각)마다 나타나고 사라질 때
 };
 
@@ -165,6 +177,8 @@ export type Settings = {
   motion?: "auto" | "none";
   /** 레이어 켜고 끄기 (프리미어의 눈·스피커) — 클립마다 맞춘 값은 그대로 두고 이것만 켜고 끈다 */
   off?: { visual?: boolean; source?: boolean; voice?: boolean };
+  /** 텍스트로 만들기 [AI가 다 꾸미기] — 편집 화면이 열리면 AI 편집(자막 스타일·효과·스티커)을 저절로 시작하고 지운다 */
+  aiAuto?: boolean;
 };
 
 export type Project = {
@@ -189,6 +203,9 @@ export type Project = {
   thumb?: string;
 };
 
+/** [AI 편집] 이 고를 수 있는 목록 — AI 는 이 안에서만 고른다 */
+export type AiEditCatalog = { presets: { id: string; label: string }[]; ins: { id: string; label: string }[]; emphs: { id: string; label: string }[]; whl: { id: string; label: string }[]; stickers: { id: string; label: string }[]; sfx: { id: string; label: string }[]; examples: string[] };
+
 export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
 /** .gss 를 열 때 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로] 를 묻는다 */
 export type Recover = { recover: true; file: string; name: string };
@@ -208,6 +225,9 @@ export type VideoBridge = {
   lib: {
     list: (o?: { kind?: string; fav?: boolean; q?: string; source?: string }) => Promise<LibItem[]>;
     pick: (o?: { kinds?: "media" | "audio" }) => Promise<(LibItem & { path?: string })[]>;
+    /** 다운로드 폴더에서 since(ms) 이후 받은 소리 파일 · 내 음악에 넣기 — 0.1.11부터 */
+    downloadsAudio?: (since: number) => Promise<{ path: string; name: string; at: number; size: number }[]>;
+    addDownloads?: (files: string[]) => Promise<LibItem[]>;
     fav: (id: string, fav: boolean) => Promise<boolean>;
     remove: (id: string) => Promise<void>;
     folders: () => Promise<string[]>;
@@ -218,7 +238,9 @@ export type VideoBridge = {
     saveImage?: (dir: string, dataUrl: string, name: string) => Promise<LibItem>;
   };
   project: {
-    create: (o: { method: Method; ratio: Ratio; name?: string; vacancyId?: string }) => Promise<Project>;
+    create: (o: { method: Method; ratio: Ratio; name?: string; vacancyId?: string; folder?: string }) => Promise<Project>;
+    /** 새 프로젝트 기본 폴더 (0.1.11부터) */
+    defaultDir?: () => Promise<string>;
     open: (dir: string, choice?: "work" | "file") => Promise<Project | Recover>;
     openPick: () => Promise<Project | null>;
     save: (p: Project) => Promise<{ updatedAt: string; duration: number }>;
@@ -249,7 +271,7 @@ export type VideoBridge = {
     restore?: (id: string) => Promise<string>;
     purge?: (id: string | "all") => Promise<number>;
     addAsset: (libId: string) => Promise<Asset>;
-    exportText: (p: Project, kind: "srt" | "txt") => Promise<string>;
+    exportText: (p: Project, kind: "srt" | "txt", outFile?: string) => Promise<string>;
   };
   /** 내 목소리 성우 — 앱 0.1.10부터 (없으면 앱을 새로 받아야 함) */
   sttWords?: { add: (pairs: { wrong: string; right: string; context?: string }[]) => Promise<number> }; // 받아쓰기 낱말장 (앱 0.1.10부터)
@@ -264,7 +286,21 @@ export type VideoBridge = {
     onProgress: (fn: (text: string, frac: number) => void) => () => void;
   };
   voiceJoin?: (dir: string, files: string[]) => Promise<{ file: string; url: string; duration: number }>; // 앱 0.1.8부터
-  voice: (dir: string, text: string, voiceId: string, opts?: { fresh?: boolean }) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
+  /** 타입캐스트 성우 — 회원 자기 키 (키는 이 PC 에만, 0.1.11부터) */
+  typecast?: {
+    status: () => Promise<{ has: boolean; masked: string; count: number; at: number }>;
+    setKey: (k: string) => Promise<{ has: boolean; masked: string; count: number; at: number }>;
+    clear: () => Promise<{ has: boolean; masked: string; count: number; at: number }>;
+    voices: (refresh?: boolean) => Promise<TypecastVoice[]>;
+  };
+  /** 일레븐랩스 성우 — 회원 자기 키 (0.1.11부터). 성우 id 는 "el_…" */
+  eleven?: {
+    status: () => Promise<{ has: boolean; masked: string; count: number; at: number }>;
+    setKey: (k: string) => Promise<{ has: boolean; masked: string; count: number; at: number }>;
+    clear: () => Promise<{ has: boolean; masked: string; count: number; at: number }>;
+    voices: (refresh?: boolean) => Promise<TypecastVoice[]>;
+  };
+  voice: (dir: string, text: string, voiceId: string, opts?: { fresh?: boolean; emotion?: string; prev?: string; next?: string }) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
   // 무음 줄이기 — 영상별 실제 말소리 구간 (PC에서, 옛 앱에는 없음)
   speech?: (p: Project, assetIds: string[]) => Promise<Record<string, { s: number; e: number }[]>>;
@@ -282,11 +318,16 @@ export type VideoBridge = {
     /** 대본 + 내 영상 → 문장마다 장면 (v: 자료 번호, -1 = 없음 · t: 시작 초). 앱 0.1.10부터 */
     footage?: (lines: string[], items: { path: string; kind: string; duration: number }[]) => Promise<{ v: number; t: number }[]>;
     /** [AI 편집] 글 AI 의 편집 계획 — 앱 0.1.10부터 */
-    edit?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts: { aiMax: number; moods: string[] }) => Promise<{
+    edit?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts: { aiMax: number; moods: string[]; screen?: boolean; ratio?: string; catalog?: AiEditCatalog }) => Promise<{
       music: string;
-      clips: { act: "keep" | "foot" | "ai" | "stock" | "same"; v?: number; t?: number; desc?: string; keywords?: string; title?: string; emph?: boolean; trans?: boolean }[];
+      clips: { act: "keep" | "foot" | "ai" | "stock" | "same"; v?: number; t?: number; desc?: string; keywords?: string; title?: string; emph?: boolean; trans?: boolean; sticker?: { text: string; style: string }; sfx?: string }[];
+      /** 영상 전체 자막 모양 (catalog 를 보냈을 때) — 0.1.11부터 */
+      look?: { preset: string; in: string; out: string; emph: string; wshow: string; whl: string; wcolor: string; lines: number } | null;
     }>;
-    image: (dir: string, prompt: string) => Promise<LibItem>;
+    /** opts.ratio — 영상 비율로 그리기 (0.1.11부터) */
+    image: (dir: string, prompt: string, opts?: { ratio?: string }) => Promise<LibItem>;
+    /** 클립별 AI 그림 — 클립 글 → 영어 장면 설명 (0.1.11부터) */
+    imagePrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; modify?: { current: string; request: string } }) => Promise<string[]>;
     /** [씬 정리] 클립 글 → 씬 나누기 (from = 시작 클립 번호, 1부터) — 앱 0.1.10부터 */
     group?: (lines: string[]) => Promise<{ title: string; from: number }[]>;
   };
@@ -298,12 +339,14 @@ export type VideoBridge = {
   musicGet: (dir: string, rel: string) => Promise<{ file: string; url: string }>;
   musicUse: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
   fonts: { ensure: (family: string) => Promise<{ family: string; url: string }> };
-  render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
+  render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number; outFile?: string }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
   /** 애니메이션 칸 그림 저장 (투명 PNG data URL 들) → 폴더 경로. 앱 0.1.10부터 */
   animFrames?: (dir: string, key: string, start: number, urls: string[]) => Promise<string>;
   renderCancel: (id: string) => Promise<void>;
+  /** [내보내기] 저장할 곳 고르기 — 취소하면 null (0.1.11부터) */
+  exportPick?: (p: Project, kind: "mp4" | "mp3" | "wav" | "srt" | "txt") => Promise<string | null>;
   /** 예전 앱(0.1.9 이하)은 파일 경로(string)만, 범위(opts)도 무시 */
-  exportAudio: (p: Project, kind: "mp3" | "wav", o?: { scope?: string; sceneId?: string; clipIds?: string[] }) => Promise<string | { file: string; seconds: number; took: number }>;
+  exportAudio: (p: Project, kind: "mp3" | "wav", o?: { scope?: string; sceneId?: string; clipIds?: string[]; outFile?: string }) => Promise<string | { file: string; seconds: number; took: number }>;
   snapshot: (p: Project, file: string, at: number) => Promise<string>;
   record: {
     sources: () => Promise<{ id: string; name: string; thumb: string }[]>;
@@ -370,3 +413,6 @@ export const DRAG_MEDIA = "application/x-gsv-media";
 
 /** 내 목소리 성우 상태 (앱) */
 export type MyVoiceStatus = { engine: boolean; installing: boolean; voice: boolean; registeredAt: string; sampleUrl: string; readText: string; name?: string; text?: string; refUrl?: string };
+
+/** 타입캐스트 성우 (앱이 회원 키로 받아 온 목록) */
+export type TypecastVoice = { id: string; name: string; gender: string; age: string; useCases: string[]; preview: string; emotions: string[]; type: string; korean?: boolean };

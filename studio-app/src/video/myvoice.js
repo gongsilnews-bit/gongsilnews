@@ -94,7 +94,7 @@ function status() {
     installing: Boolean(installing),
     voice: Boolean(me && fs.existsSync(ME.wav)),
     registeredAt: me ? me.at : "",
-    sample: fs.existsSync(ME.sample) ? ME.sample : "",
+    sample: fs.existsSync(ME.sample) && me && me.sampleText === sampleText(me) ? ME.sample : "", // 녹음한 글자로 만든 것만
     readText: READ_TEXT,
     name: (me && me.name) || "내 목소리", // 대표님이 고친 이름
     text: me ? me.text : "", // 녹음한 글자 (엔진에 함께 넣는 글 — 녹음과 딱 맞아야 잘 읽는다)
@@ -343,13 +343,9 @@ async function registerFile(file, onProgress = () => {}) {
     // Whisper(PC) — 문장 시각이 정확해서 문장 끝에서 딱 자를 수 있다 (녹음 끝·글자 끝이 어긋나면 엔진이 녹음 속 말을 앞에 붙여 읽는다)
     const wh = require("./whisper");
     let r = null;
+    // 공실뉴스 서버 Gemini 받아쓰기는 쓰지 않는다 (2026-10-19 사장님) — PC 받아쓰기(Whisper)만
     if (wh.ready()) r = { success: true, segments: await wh.segments(file, { len: 30 }) };
-    else {
-      await ff.audioForSpeech(file, mp3, { len: 30 });
-      for (let i = 0; i < 3 && !(r && r.success); i++) {
-        r = await require("./server").call("/api/studio/video/transcribe", { method: "POST", body: { audio: fs.readFileSync(mp3).toString("base64"), mime: "audio/mpeg" } }).catch((e) => ({ success: false, error: e.message }));
-      }
-    }
+    else r = { success: false, error: "PC 받아쓰기 프로그램이 없어요. 스튜디오를 새 버전으로 다시 설치해 주세요." };
     if (!r || !r.success) throw new Error(`녹음을 받아 적지 못했습니다: ${(r && r.error) || ""}`);
     const segs = (r.segments || []).filter((x) => String(x.text || "").trim());
     if (!segs.length) throw new Error("녹음에서 말소리를 찾지 못했어요. 말소리가 또렷한 파일을 넣어 주세요.");
@@ -373,9 +369,16 @@ async function registerFile(file, onProgress = () => {}) {
   }
 }
 
-/** 등록한 목소리로 샘플 문장 — 등록 직후 들려준다 */
+/** 샘플로 읽을 글 — 녹음한 글자 그대로 (2026-10-19 사장님: ▶ 누르면 녹음한 글자가 나와야) */
+const sampleText = (me) => (me && me.text) || SAMPLE_TEXT;
+/** 등록한 목소리로 샘플 — 녹음한 글자를 내 목소리로 읽는다. 등록 직후·카드 ▶ 에서 들려준다 */
 async function sample() {
-  if (!fs.existsSync(ME.sample)) await say(SAMPLE_TEXT, ME.sample);
+  const me = readJson(ME.json);
+  const t = sampleText(me);
+  if (!fs.existsSync(ME.sample) || !me || me.sampleText !== t) {
+    await say(t, ME.sample);
+    if (me) fs.writeFileSync(ME.json, JSON.stringify({ ...me, sampleText: t }));
+  }
   return ME.sample;
 }
 

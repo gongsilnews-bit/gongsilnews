@@ -10,7 +10,7 @@ import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
 import { findVoice } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
-import { Gutter, isSticker, type LaneEntry, type LayerDrag } from "./Layers";
+import { Gutter, SingleChips, isSticker, type LaneEntry, type LayerDrag } from "./Layers";
 import { transLabel } from "./transitions";
 
 export type ClipActions = {
@@ -44,6 +44,8 @@ export type ClipActions = {
   setSource: (id: string, patch: { muted?: boolean; volume?: number }, first: boolean) => void; // 원본 소리 무음·크기
   openSound: (id: string, x: number, y: number) => void; // 소리 칩을 누르면 옆에 볼륨·빠르기 창
   sceneBreak: (id: string) => void;
+  sceneMergeUp: (sceneId: string) => void; // 씬 제목 [↑ 위 씬과 합치기] (2026-10-19 사장님)
+  renameScene: (sceneId: string, title: string) => void; // 씬 이름 고치기
   play: (id: string) => void;
   stop: () => void; // 재생 멈춤 (클립 칸 ■)
   editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
@@ -66,7 +68,7 @@ type Props = {
   busy: Record<string, string>;
   actions: ClipActions;
   view: "detail" | "simple";
-  lanes: { entries: LaneEntry[]; lanes: number };
+  lanes: { entries: LaneEntry[]; lanes: number; singles?: LaneEntry[] };
   selLayer: string;
   onLayerDrag: LayerDrag;
   /** 자료 칸에서 끌어 놓기 — before/after: 그 자리에 새 클립, replace: 그 클립 화면 바꾸기 */
@@ -503,6 +505,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {/* 2줄: 화면 자료 + 자막 */}
         {(p.view === "detail" || (isSrc && subOpen > 0)) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
+            {/* 이 클립에만 있는 애셋 (글자·스티커·사진·효과음) — 2개 클립 이상이면 왼쪽 줄로 나간다 */}
+            <SingleChips list={(p.lanes.singles || []).filter((x) => x.a === it.index)} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
             <button type="button" data-drop-replace="" onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
               onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
               style={{ width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
@@ -731,7 +735,25 @@ export default function ClipList(p: Props) {
     return (
       <div {...drop} style={{ display: "flex", flexShrink: 0, position: "relative", alignSelf: "stretch" }}>
         <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={idx} pass={pass} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
-        <div style={{ width: SPARE_W }} />
+        <div data-layer-ui="" style={{ width: SPARE_W, position: "relative" }}>
+          {/* 한 클립에만 있는 애셋을 고르면 — 그 클립 옆에 파란 세로줄 하나 (왼쪽 줄과 같은 모양, 브루처럼). 위·아래 손잡이를 끌면 범위가 늘어난다 */}
+          {!pass && (() => {
+            const one = (p.lanes.singles || []).find((x) => x.a === idx && x.layer.id === p.selLayer);
+            if (!one) return null;
+            const cap = (end: "from" | "to"): React.CSSProperties => ({ position: "absolute", left: SPARE_W / 2 - 11, width: 22, height: 12, [end === "from" ? "top" : "bottom"]: 2, cursor: "ns-resize", touchAction: "none", display: "flex", alignItems: "center", justifyContent: "center" });
+            return (
+              <>
+                <span style={{ position: "absolute", left: SPARE_W / 2 - 1, width: 2, top: 8, bottom: 8, background: C.accent, borderRadius: 1, pointerEvents: "none" }} />
+                {(["from", "to"] as const).map((end) => (
+                  <span key={end} onPointerDown={(ev) => p.onLayerDrag(one.layer.id, end, ev)} onClick={(ev) => ev.stopPropagation()}
+                    title={end === "from" ? "위로 끌면 앞 클립까지 늘어나요" : "아래로 끌면 뒤 클립까지 늘어나요"} style={cap(end)}>
+                    <span style={{ width: 16, height: 5, borderRadius: 3, background: C.accent }} />
+                  </span>
+                ))}
+              </>
+            );
+          })()}
+        </div>
         {on && (
           <>
             <div style={{ position: "absolute", inset: "6px 0", border: `2px dashed ${C.accent}`, borderRadius: 8, background: "rgba(59,130,246,0.15)", pointerEvents: "none" }} />
@@ -744,12 +766,14 @@ export default function ClipList(p: Props) {
     );
   };
   let n = 0;
+  const [sceneEdit, setSceneEdit] = React.useState(""); // 이름 고치는 씬
   const byId = new Map(p.items.map((x) => [x.clip.id, x]));
   return (
     <div data-cliplist="" style={{ padding: "8px 24px 120px" }}>
-      <style>{SPIN_CSS}</style>
+      <style>{SPIN_CSS + ".gsv-scene-merge{opacity:0;transition:opacity .15s}.gsv-scene-head:hover .gsv-scene-merge{opacity:1}"}</style>
       {project.scenes.map((sc, si) => {
         const its = sc.clips.map((c) => byId.get(c.id)).filter(Boolean) as FlatItem[];
+        const prevHas = project.scenes.slice(0, si).some((x) => x.clips.length > 0);
         if (!its.length && project.scenes.length > 1) return null;
         const start = its[0]?.start || 0;
         const dur = its.reduce((a, x) => a + x.dur, 0);
@@ -757,10 +781,23 @@ export default function ClipList(p: Props) {
           <div key={sc.id}>
             <div style={{ display: "flex" }}>
             {its.length > 0 && gutter(its[0].index, true)}
-            <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
+            <div className="gsv-scene-head" style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
               {its.length > 0 && <AllBox ids={its.map((x) => x.clip.id)} selected={p.selected} onChange={p.actions.selectMany} title={`씬 ${si + 1} 클립 모두 고르기 / 풀기`} />}
               <span style={{ fontSize: 19, fontWeight: 800, color: C.sub }}>씬 {si + 1}</span>
-              {sc.title && <span style={{ fontSize: 15, color: C.dim }}>{sc.title}</span>}
+              {/* 씬 이름 — 누르면 바로 고치기 */}
+              {sceneEdit === sc.id ? (
+                <input autoFocus defaultValue={sc.title || ""} placeholder="씬 이름 (예: 도입, 가격·조건)"
+                  onBlur={(e) => { p.actions.renameScene(sc.id, e.currentTarget.value); setSceneEdit(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") setSceneEdit(""); }}
+                  style={{ height: 28, minWidth: 220, padding: "0 8px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 14.5, fontFamily: "inherit" }} />
+              ) : (
+                <button type="button" onClick={() => setSceneEdit(sc.id)} title="씬 이름 고치기"
+                  style={{ border: 0, background: "transparent", padding: 0, cursor: "text", fontSize: 15, color: sc.title ? C.dim : C.line2, fontFamily: "inherit" }}>{sc.title || "이름 넣기"}</button>
+              )}
+              {si > 0 && prevHas && its.length > 0 && (
+                <button type="button" className="gsv-scene-merge" onClick={() => p.actions.sceneMergeUp(sc.id)} title="이 씬의 클립을 위 씬 끝에 붙여 하나로 (되돌리기 돼요)"
+                  style={{ height: 26, padding: "0 10px", borderRadius: 13, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>↑ 위 씬과 합치기</button>
+              )}
               <span style={{ flex: 1 }} />
               <span style={{ fontSize: 13.5, color: C.dim, fontVariantNumeric: "tabular-nums" }}>{fmtTime(start, false)} + {Math.floor(dur / 60) ? `${Math.floor(dur / 60)}분 ` : ""}{Math.round(dur % 60)}초</span>
             </div>

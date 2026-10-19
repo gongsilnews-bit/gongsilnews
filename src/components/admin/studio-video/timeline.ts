@@ -115,15 +115,34 @@ export function flatten(p: Project): { items: FlatItem[]; total: number } {
   return { items, total: t };
 }
 
+/** 글꼴마다 글자 폭 (글자 크기 배수) — [한글, 띄어쓰기, 숫자·영문] · 글꼴 파일에서 잰 값 (studio-app timeline.js 와 같음, 2026-10-19) */
+export const FONT_W: Record<string, [number, number, number]> = { "777Starlandmoon": [0.76, 0.146, 0.445], "AndongKaturiOTF": [0.824, 0.28, 0.557], "BM EULJIRO TTF": [0.838, 0.27, 0.55], "BM Euljiro 10 years later": [0.838, 0.27, 0.55], "BM HANNA Air": [0.82, 0.312, 0.53], "BR B": [0.873, 0.312, 0.544], "Batang": [1.0, 0.333, 0.596], "Binggrae II": [0.94, 0.32, 0.642], "Binggrae Melona": [0.91, 0.3, 0.579], "Binggrae Samanco Bold": [0.651, 0.25, 0.412], "Binggrae Samanco Regular": [0.634, 0.25, 0.408], "Black Han Sans": [0.834, 0.3, 0.6], "Cafe24 Dangdanghae": [0.843, 0.297, 0.518], "Cafe24 Danjunghae": [0.841, 0.296, 0.516], "Cafe24 Ohsquare": [0.887, 0.27, 0.629], "Cafe24 Oneprettynight": [0.822, 0.244, 0.456], "Cafe24 Shiningstar": [0.573, 0.31, 0.289], "ChosunilboNM": [0.91, 0.3, 0.5], "CookieRunOTF": [0.882, 0.28, 0.586], "DAON_C_MYUNGSUNGCHE(B)": [0.834, 0.244, 0.551], "DAON_C_MYUNGSUNGCHE(M)": [0.834, 0.244, 0.551], "Do Hyeon": [0.768, 0.3, 0.51], "ELAND Choice": [0.94, 0.28, 0.585], "ELAND Nice": [0.93, 0.299, 0.627], "GmarketSans": [0.962, 0.3, 0.652], "Gong Gothic Bold": [0.95, 0.275, 0.731], "Gong Gothic Medium": [0.92, 0.25, 0.672], "Gowun Dodum": [0.907, 0.31, 0.531], "Gungsuh": [1.0, 0.333, 0.583], "Jalnan OTF": [1.0, 0.28, 0.629], "JejuHallasan": [0.899, 0.28, 0.549], "Jua": [0.809, 0.3, 0.576], "KOTRA_BOLD": [0.987, 0.283, 0.635], "MARU Buri Beta": [0.97, 0.28, 0.554], "Malgun Gothic": [1.0, 0.352, 0.58], "Maplestory": [0.858, 0.265, 0.593], "MapoBackpacking": [0.84, 0.28, 0.536], "MapoDPP": [0.9, 0.29, 0.622], "MapoHongdaeFreedom": [0.95, 0.286, 0.626], "MapoPeacefull": [0.92, 0.28, 0.62], "NEXON Lv1 Gothic": [0.944, 0.328, 0.618], "NEXON Lv1 Gothic Low OTF": [0.944, 0.328, 0.618], "NEXON Lv2 Gothic": [0.874, 0.25, 0.636], "Nanum Pen": [0.595, 0.28, 0.34], "NanumGothic": [0.94, 0.28, 0.606], "NanumMyeongjo": [0.95, 0.273, 0.537], "NanumMyeongjo Regular": [0.95, 0.3, 0.537], "NanumSquareRound": [0.91, 0.25, 0.61], "Pretendard": [0.864, 0.23, 0.617], "RixYeoljeongdo": [0.98, 0.236, 0.745], "Song Myung": [0.88, 0.226, 0.493], "VITRO CORE OTF": [1.0, 0.25, 0.658], "VITRO PRIDE OTF": [0.86, 0.25, 0.54], "Wandohope": [0.879, 0.28, 0.493], "WemakepriceOTF": [0.92, 0.2, 0.64], "YANGJIN": [0.871, 0.268, 0.702], "Yanolja Yache": [0.63, 0.21, 0.435], "Yeon Sung": [0.694, 0.3, 0.468], "fromdami M": [0.684, 0.35, 0.449], "tvN Enjoystories": [0.593, 0.26, 0.336] };
+const HANGUL = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7a3\u4e00-\u9fff\uff00-\uffef]/;
+/** 글 한 줄의 폭 (글자 크기 배수) */
+export function textEm(s: string, st: { font?: string; spacing?: number; bold?: boolean }) {
+  const [h, sp, d] = FONT_W[st.font || "Malgun Gothic"] || FONT_W["Malgun Gothic"];
+  const ls = effSpacing(st);
+  let w = 0;
+  for (const ch of s) w += (ch === " " ? sp : HANGUL.test(ch) ? h : /[0-9A-Za-z]/.test(ch) ? d : 0.45) + ls;
+  return w;
+}
+/** 한 줄에 들어가는 폭 (글자 크기 배수) — 화면 줄 너비(88% × 줄 너비)에서 테두리·상자 여백을 뺀다 */
+export function capEm(st: { size?: number; wrap?: number; bg?: boolean; bgPad?: number; outlineWidth?: number; outline2Width?: number }, W: number, H: number) {
+  const px = Math.min(W, H) * 0.062 * ((st.size || 100) / 100);
+  const edge = st.bg ? px * 0.3 * (st.bgPad ?? 1) : Number(st.outlineWidth ?? 3) + Number(st.outline2Width || 0);
+  return Math.max(1.5, ((W * 0.88 * Math.max(0.3, Math.min(1, st.wrap ?? 1)) - 2 * edge) / px) * 0.96);
+}
+
 /** 자막 줄 나누기 (render.js wrap 과 같음) */
-/** 줄 나누기 — 직접 넣은 줄바꿈(엔터)은 그대로 두고, 긴 줄만 글자 수로 나눈다 */
-export function wrap(text: string, max: number) {
+/** 줄 나누기 — 직접 넣은 줄바꿈(엔터)은 그대로 두고, 긴 줄만 나눈다 (max: 글자 수, 또는 "이 줄이 들어가나" 판정) */
+export function wrap(text: string, max: number | ((line: string) => boolean)) {
+  const fits = typeof max === "number" ? (l: string) => l.length <= max : max;
   const lines: string[] = [];
   for (const part of String(text).split(/\r?\n/)) {
     const words = part.split(/\s+/).filter(Boolean);
     let cur = "";
     for (const w of words) {
-      if (cur && (cur + " " + w).length > max) {
+      if (cur && !fits(cur + " " + w)) {
         lines.push(cur);
         cur = w;
       } else cur = cur ? `${cur} ${w}` : w;
@@ -150,18 +169,28 @@ export function subStyleOf(settings: Settings, clip?: Clip | null): SubtitleSett
 }
 
 /** 클립 하나의 자막 줄들 (render.js subtitleLines 와 같음) */
-export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: number) {
+/** 한 화면 최대 줄 수 — 고른 값(1·2·3), 없으면 예전 길게(제한 없음)·짧게(1줄) */
+export const maxLinesOf = (st: { maxLines?: number; length?: string }) => st.maxLines || (st.length === "short" ? 1 : 999);
+
+export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: number, H = Math.round((W * 9) / 16)) {
   const st = subStyleOf(settings, clip);
   const custom = typeof clip.subText === "string";
   const text = (custom ? clip.subText! : clipText(clip)).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [] as { s: number; e: number; text: string }[];
-  // 한 줄 글자 수 — 줄 너비만큼, 글자가 작으면 더 많이 (render.js 와 같은 계산)
-  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, st.wrap ?? 1)) * 100) / Math.max(40, st.size || 100) / (1 + effSpacing(st))));
-  if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
-  if (st.length !== "short") {
-    const lines = wrap(text, max);
+  // 한 줄 — 실제 글자 폭(글꼴마다)으로 줄 너비에 들어가는 만큼 (글자를 키우면 줄이 짧아져 자동으로 나뉘어 나간다, render.js 와 같은 계산)
+  const cap = capEm(st, W, H);
+  const fit = (k = 1) => (s: string) => textEm(s, st) <= cap * k;
+  // 직접 쓴 자막에 줄바꿈(엔터)을 넣었으면 — 엔터 친 그대로 줄을 나눠 한 화면에 다 (글자 수로 다시 나누지도, 시간 따라 넘기지도 않음 — 2026-10-19 사장님)
+  if (custom && text.includes("\n")) return [{ s: 0, e: dur, text: text.split(/\r?\n/).map((x) => x.trim()).filter(Boolean).join("\n") }];
+  // 한 화면 최대 줄 수 (1·2·3줄, 2026-10-19 사장님). 없으면 예전 프로젝트 — 길게: 한 화면에 다, 짧게: 짧은 한 줄씩
+  const per = maxLinesOf(st);
+  if (custom) return evenLines(text, dur, !st.maxLines && st.length === "short" ? fit(0.7) : fit(), per);
+  if (st.maxLines || st.length !== "short") {
+    const lines = wrap(text, fit());
+    // 최대 줄 수 안이면 한 화면에 다 — 넘을 때만 그 줄 수씩 말하는 때에 맞춰 넘긴다
+    if (lines.length <= per) return [{ s: 0, e: dur, text: lines.join("\n") }];
     const chunks: string[] = [];
-    for (let i = 0; i < lines.length; i += 2) chunks.push(lines.slice(i, i + 2).join("\n"));
+    for (let i = 0; i < lines.length; i += per) chunks.push(lines.slice(i, i + per).join("\n"));
     if (chunks.length === 1) return [{ s: 0, e: dur, text: chunks[0] }];
     const words = wordTimes(clip, settings);
     let wi = 0;
@@ -182,7 +211,7 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
     cur = [];
   };
   for (const w of words) {
-    if (cur.length && (cur.map((x) => x.w).join(" ") + " " + w.w).length > Math.round(max * 0.7)) flush();
+    if (cur.length && !fit(0.7)(cur.map((x) => x.w).join(" ") + " " + w.w)) flush();
     cur.push(w);
   }
   flush();
@@ -194,7 +223,7 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
 }
 
 /** 자막만 따로 쓴 글 — 말 시각을 모르니 글자 수만큼 시간을 나눠 차례로 (render.js evenLines 와 같음) */
-export function evenLines(text: string, dur: number, max: number, perChunk: number) {
+export function evenLines(text: string, dur: number, max: number | ((line: string) => boolean), perChunk: number) {
   const lines = wrap(text, max);
   const chunks: string[] = [];
   for (let i = 0; i < lines.length; i += perChunk) chunks.push(lines.slice(i, i + perChunk).join("\n"));
@@ -428,6 +457,62 @@ export function subAnimOf(p: Project, clip: Clip): ReturnType<typeof animOf> {
   const inn = a.in === "auto" ? auto : a.in;
   const out = a.out === "auto" ? inn || auto : a.out;
   return { in: inn, out, emph: a.emph, grow: a.grow, dur: Math.max(0.1, Math.min(2, Number(a.dur) || 0.5)) };
+}
+/* ── 단어별 효과 (메인자막, 쇼츠식) — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 굽기) ── */
+export type WordFx = { show?: "word" | "line"; hl?: "color" | "big" | "both"; color: string; gap: number };
+export const WORD_FADE = 0.12; // 단어가 나타나는 데 걸리는 초
+export function subWordOf(p: Project, clip: Clip): WordFx | null {
+  const a = subStyleOf(p.settings, clip).anim;
+  if (!a || (!a.wshow && !a.whl)) return null;
+  return { show: a.wshow, hl: a.whl, color: a.wcolor || "#FFE000", gap: Math.max(0.1, Math.min(3, Number(a.wgap) || 0.6)) };
+}
+/** 자막 줄마다 단어 시각 [{w, s, e}] — 말 시각을 알면 그대로, 모르면(직접 쓴 자막) 줄 안에서 글자 수로 나눈다. e = 다음 단어 시작(강조 끝) */
+export function lineWords(clip: Clip, lines: { s: number; e: number; text: string }[], settings: Settings, fx?: WordFx | null) {
+  const toks = lines.map((l) => l.text.split(/\s+/).filter(Boolean));
+  const total = toks.reduce((a, t) => a + t.length, 0);
+  const wt = typeof clip.subText === "string" ? [] : wordTimes(clip, settings);
+  const seq = wt.length === total;
+  let k = 0;
+  return lines.map((l, li) => {
+    const ts = toks[li];
+    let ws: { w: string; s: number; e: number; ls?: number }[];
+    if (seq) ws = ts.map((w) => { const x = wt[k++]; return { w, s: x.s, e: x.e }; });
+    else if (fx?.show) {
+      // 말 시각이 없으면 (직접 쓴 자막) — 고른 빠르기로 줄마다(한 줄씩) · 단어마다(한 단어씩, 절반 간격) 차례로
+      const gap = fx.gap;
+      const parts = l.text.split(/\r?\n/).map((x) => x.split(/\s+/).filter(Boolean));
+      ws = [];
+      let q = 0;
+      parts.forEach((pw, pi) => pw.forEach((w, j) => {
+        const s = fx.show === "line" ? l.s + 0.05 + pi * gap + (j / Math.max(1, pw.length)) * gap : l.s + 0.05 + q * gap * 0.5;
+        ws.push({ w, s, e: s });
+        q++;
+      }));
+    } else {
+      const len = ts.reduce((a, w) => a + w.length, 0) || 1;
+      let t = l.s;
+      ws = ts.map((w) => { const d = (w.length / len) * (l.e - l.s); const r = { w, s: t, e: t + d }; t += d; return r; });
+    }
+    ws.forEach((x, i) => {
+      x.s = Math.max(l.s, Math.min(l.e, x.s));
+      x.e = i < ws.length - 1 ? Math.max(x.s, Math.min(l.e, ws[i + 1].s)) : l.e;
+    });
+    // 한 줄씩 — 화면 줄(엔터·줄바꿈)마다 그 줄 첫 단어 시각에 줄 전체가 나타난다
+    let wi = 0;
+    for (const part of l.text.split(/\r?\n/)) {
+      const n = part.split(/\s+/).filter(Boolean).length;
+      const first = ws[wi];
+      for (let q = 0; q < n && ws[wi + q]; q++) (ws[wi + q] as { ls?: number }).ls = first ? first.s : l.s;
+      wi += n;
+    }
+    return ws;
+  });
+}
+/** 그 시각 단어 모습 — a: 보이는 정도(0~1), cur: 지금 말하는 단어 */
+export function wordState(fx: WordFx, w: { s: number; e: number; ls?: number }, t: number) {
+  const at = fx.show === "line" ? w.ls ?? w.s : w.s;
+  const a = fx.show ? Math.max(0, Math.min(1, (t - at) / WORD_FADE)) : 1;
+  return { a, cur: Boolean(fx.hl) && t >= w.s && t < w.e };
 }
 /** 레이어가 보이는 동안 — 지금 클립 안 시각(초)으로 시작 a·끝 b (여러 클립에 걸치면 첫 클립에서 등장, 마지막 클립에서 퇴장) */
 export function layerSpan(p: Project, layer: Layer, items: FlatItem[], clipId: string, settings?: Settings, order = clipOrder(p)): { a: number; b: number } | null {

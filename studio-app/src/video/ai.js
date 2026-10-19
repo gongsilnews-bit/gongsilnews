@@ -63,9 +63,72 @@ async function shorts(clips, { count = 3, maxSec = 60, request = "" } = {}, onPr
     .filter((s) => s.end > s.start);
 }
 
-/** AI 그림 (기본 이미지 생성 AI) → data URL */
-function image(prompt, onProgress) {
-  return ai.askImage(prompt, { onProgress });
+/** AI 그림 (기본 이미지 생성 AI) → data URL. opts.ratio — 영상 비율 (API 키면 그 비율로, 계정이면 글로 부탁) */
+function image(prompt, onProgress, opts = {}) {
+  const ratio = String(opts.ratio || "");
+  const word = { "16:9": "wide 16:9 landscape", "9:16": "tall 9:16 vertical", "1:1": "square 1:1", "4:5": "vertical 4:5", "4:3": "4:3 landscape" }[ratio];
+  return ai.askImage(word ? `${prompt} Image aspect ratio: ${word}.` : prompt, { onProgress, ratio });
+}
+
+/* ── 클립별 AI 그림 — 대본 → 영어 장면 설명 (2026-10-19 사장님, 공실뉴스 AI 스튜디오 앱 방식) ──
+   lines: 클립 글 · opts: { kinds?: ("auto"|"background"|"character"|"graph")[], style?: 스타일 이름, character?: 그 스타일 주인공 설명,
+                          modify?: { current, request } (한 줄 고치기) }
+   → 영어 설명 문자열 배열 (같은 순서) */
+const VISUAL_RULES = [
+  "VISUAL RULES:",
+  "1. NO TEXT in the image. ABSOLUTELY NO KOREAN (Hangul) letters — image AIs render them as broken artifacts.",
+  "2. Do NOT use currency symbols ($, ₩) unless the segment is about physical cash or a close-up financial chart (then ₩ for Korean news).",
+  "3. The setting is modern South Korea unless the script says otherwise.",
+].join("\n");
+const KIND_FOCUS = {
+  background: "Focus EXCLUSIVELY on places: buildings, rooms, streets, skylines, architectural details. No people in focus. Static and atmospheric.",
+  character: "Focus on PEOPLE: Korean office workers, real estate agents, tenants or citizens in a modern setting, with expressions that fit the script. Mid-shot or close-up.",
+  graph: "Focus on an INFOGRAPHIC: clean 3D visualization, abstract bar charts, rising/falling arrows or pictograms for the data. Minimalist corporate look. NO TEXT, NO NUMBERS.",
+  auto: "Focus on architectural details, urban scenes, interiors, or a clear visual metaphor for the real estate topic.",
+};
+async function imagePrompts(lines, opts = {}, onProgress = () => {}) {
+  const list = (lines || []).map((t) => String(t || "").replace(/\s+/g, " ").trim());
+  if (!list.length) return [];
+  const kinds = list.map((_, i) => (opts.kinds && KIND_FOCUS[opts.kinds[i]] ? opts.kinds[i] : "auto"));
+  const hero = opts.character ? `\nEvery scene stars this character (describe what the character is doing in the scene): ${opts.character}` : "";
+  const parse = (t) => {
+    const m = /\[[\s\S]*\]/.exec(String(t || ""));
+    try {
+      const a = m ? JSON.parse(m[0]) : null;
+      return Array.isArray(a) ? a.map((x) => String(typeof x === "string" ? x : (x && (x.prompt || x.visualPrompt)) || "").trim()) : null;
+    } catch {
+      return null;
+    }
+  };
+  let prompt;
+  if (opts.modify && list.length === 1) {
+    prompt = [
+      "You are an expert prompt engineer for AI image generation.",
+      `Current prompt: "${String(opts.modify.current || "")}"`,
+      `User request (Korean): "${String(opts.modify.request || "")}"`,
+      `Script of this scene (Korean): "${list[0]}"`,
+      "Rewrite the prompt in English to include the user's request, keeping it professional and cinematic." + hero,
+      VISUAL_RULES,
+      'Answer JSON only: ["new English prompt"]',
+    ].join("\n");
+  } else {
+    prompt = [
+      'You are a professional storyboard artist for "Gongsil News" (Korean real estate news & listings).',
+      "Below are the video clips in order (Korean narration). For EACH clip write one highly descriptive English prompt for an AI image generator.",
+      "Keep continuity: the same property / neighborhood / character should look consistent across clips." + hero,
+      opts.style ? `The final art style will be added separately (${opts.style}) — describe the scene content, composition, lighting and camera, not the art style.` : "",
+      VISUAL_RULES,
+      "",
+      "[Clips]",
+      list.map((t, i) => `${i + 1}. (${kinds[i]}: ${KIND_FOCUS[kinds[i]]}) ${t}`).join("\n"),
+      "",
+      `Answer JSON only: an array of exactly ${list.length} English prompt strings in the same order.`,
+    ].filter((x) => x !== "").join("\n");
+  }
+  onProgress("글 AI가 클립마다 장면 설명을 쓰는 중…");
+  const text = await ai.ask(prompt, { onProgress, busyLabel: "그림 장면 설명을 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
+  const out = parse(text) || [];
+  return list.map((_, i) => out[i] || "");
 }
 
 /* ── 대본 + 내 영상 → 문장마다 어울리는 장면 (회의 3-19) ──
@@ -153,15 +216,40 @@ async function matchFootage(lines, items, onProgress = () => {}) {
 /**
  * [AI 편집] — 글 AI(기본 글쓰기 AI)가 클립 글 + (내 영상 장면 모음)을 보고 편집 계획을 세운다 (회의 3-21)
  *  화면(그대로·내 영상·AI 그림·무료 자료) · 화면 글자 · 자막 강조 · 화면전환 · 배경음악 분위기
- *  opts: { aiMax, moods: string[] }
- *  돌려줌: { clips: [{ act, v, t, keywords, desc, title, emph, trans }], music }
+ *  opts: { aiMax, moods: string[], screen?: false(화면은 그대로), catalog?: 자막 스타일·효과·스티커·효과음 목록 (있으면 그것까지 — 2026-10-19 사장님) }
+ *  돌려줌: { clips: [{ act, v, t, keywords, desc, title, emph, trans, sticker?, sfx? }], music, look? }
+ *  AI 는 우리가 보낸 목록 안에서만 고른다 (없는 이름은 버림) → 미리보기 = 완성 영상
  */
 async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
   if (!lines.length) return { clips: [], music: "" };
   const useFoot = items.length > 0;
   const made = useFoot ? await footageSheets(items, onProgress) : { sheets: [], dir: "" };
   try {
-    const aiMax = Number(opts.aiMax) || 8;
+    const aiMax = opts.aiMax === 0 ? 0 : Number(opts.aiMax) || 8;
+    const screen = opts.screen !== false;
+    const cat = opts.catalog || null;
+    const ids = (l) => (Array.isArray(l) ? l.map((x) => String(x.id)) : []);
+    const show = (l) => l.map((x) => `${x.id}(${x.label})`).join(", ");
+    const lookAsk = cat
+      ? [
+          "",
+          "[영상 전체 자막 모양 — look] 영상 분위기(뉴스·해설은 차분·신뢰, 매물 소개·쇼츠는 밝고 눈에 띄게)에 맞게 아래 목록에서만 고르세요:",
+          `- preset (자막 스타일): ${show(cat.presets || [])}`,
+          `- in (나타나기): ${show(cat.ins || [])} · out (사라지기): fade 또는 ""`,
+          `- emph (계속 움직임, 보통 ""): ${show(cat.emphs || [])}`,
+          `- wshow (단어·줄 효과 — 쇼츠·빠른 영상이면 "word", 강의·해설은 보통 ""): word(한 단어씩), line(한 줄씩), ""`,
+          `- whl (말하는 단어 강조, wshow 를 쓸 때만): ${show(cat.whl || [])}, "" · wcolor: 강조색 #RRGGBB`,
+          `- lines (자막 한 화면 최대 줄 수): ${opts.ratio === "9:16" ? "1 (세로 영상)" : "2 또는 1"}`,
+        ]
+      : [];
+    const stkAsk = cat && (cat.stickers || []).length
+      ? [
+          "5) sticker — 강조할 클립에만 스티커 (전체의 1/5 안팎, 이어지는 클립에 연달아 넣지 말기). 없으면 null.",
+          `   {"text":"짧은 글 2~8자, 말한 내용에서 (예: 역 1분!, 남향, 전세 5억, 풀옵션, 초품아)","style":"모양"} — style: ${show(cat.stickers)}`,
+          `   예시: ${(cat.examples || []).slice(0, 24).join(" / ")}`,
+          `6) sfx — 스티커 없이 소리만 넣을 강조 순간이면 효과음 이름 (드물게), 아니면 "": ${show(cat.sfx || [])}`,
+        ]
+      : [];
     const list = items.map((it, i) => (it.kind === "image" ? `P${i + 1}: 사진` : `V${i + 1}: 영상 ${Math.round(Number(it.duration) || 0)}초`)).join("\n");
     const prompt = [
       "부동산 중개사가 만든 영상(강의·매물 소개)을 편집해 주세요. 아래는 클립마다 말한 내용(자막)이에요.",
@@ -172,7 +260,8 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       lines.map((t, i) => `${i + 1}. ${t}`).join("\n"),
       "",
       "클립마다 정해 주세요:",
-      "1) act — 화면: \"keep\"(원래 화면 그대로 — 화면을 설명하는 말 '여기를 누르면'·인사·말하는 얼굴이 중요한 곳)" +
+      screen ? "" : '1) act — 화면은 모두 "keep" (화면은 바꾸지 않기).',
+      !screen ? "" : "1) act — 화면: \"keep\"(원래 화면 그대로 — 화면을 설명하는 말 '여기를 누르면'·인사·말하는 얼굴이 중요한 곳)" +
         (useFoot ? ', "foot"(내 자료 — src 와 t(시작 초))' : "") +
         `, "ai"(AI 그림 — desc 에 그릴 장면을 한국어로 구체적으로, 전체 ${aiMax}개까지), "stock"(무료 사진·영상 — keywords 에 한국어 검색어 2~3낱말).` +
         " 매물·동네·건물·방·생활 이야기는 바꾸고, 내 자료에 맞는 장면이 있으면 그것을 먼저 쓰세요." +
@@ -180,8 +269,12 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       "2) title — 화면에 크게 띄울 핵심 글 (숫자·가격·면적·위치 등 꼭 기억할 것, 10자 안팎). 없으면 \"\". 전체의 1/4 안팎만.",
       "3) emph — 자막을 강조할 중요한 문장이면 true.",
       "4) trans — 이야기 주제가 바뀌어 화면전환을 넣을 클립이면 true (첫 클립 제외, 가끔만).",
+      ...stkAsk,
       `그리고 영상 전체 배경음악 분위기 music 을 하나: ${(opts.moods || []).join(", ")}.`,
-      'JSON 만: {"music":"잔잔한","clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false}]}',
+      ...lookAsk,
+      cat
+        ? 'JSON 만: {"music":"잔잔한","look":{"preset":"plain","in":"pop","out":"fade","emph":"","wshow":"","whl":"","wcolor":"#FFE000","lines":2},"clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false,"sticker":null,"sfx":""},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false,"sticker":{"text":"남향!","style":"burst"},"sfx":""}]}'
+        : 'JSON 만: {"music":"잔잔한","clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false}]}',
     ].filter((x) => x !== "").join("\n");
     const parse = (t) => {
       const m = /\{[\s\S]*\}/.exec(String(t || ""));
@@ -198,6 +291,11 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
     const clips = lines.map((_, i) => {
       const l = (j.clips || []).find((x) => Number(x.n) === i + 1) || {};
       const extra = { title: String(l.title || "").trim().slice(0, 24), emph: Boolean(l.emph), trans: i > 0 && Boolean(l.trans) };
+      // 스티커·효과음 — 보낸 목록에 있는 것만
+      if (cat && l.sticker && typeof l.sticker === "object" && ids(cat.stickers).includes(String(l.sticker.style)) && String(l.sticker.text || "").trim())
+        extra.sticker = { text: String(l.sticker.text).trim().slice(0, 12), style: String(l.sticker.style) };
+      if (cat && !extra.sticker && ids(cat.sfx).includes(String(l.sfx || ""))) extra.sfx = String(l.sfx);
+      if (!screen) return { act: "keep", ...extra };
       const act = String(l.act || "keep");
       if (act === "same" && i > 0) return { act: "same", ...extra };
       if (act === "foot" && useFoot) {
@@ -215,7 +313,23 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       if ((act === "stock" || act === "ai") && (l.keywords || l.desc)) return { act: "stock", keywords: String(l.keywords || l.desc).slice(0, 40), ...extra };
       return { act: "keep", ...extra };
     });
-    return { clips, music: String(j.music || "") };
+    // 영상 전체 자막 모양 — 목록에 없는 이름은 버린다
+    let look = null;
+    if (cat && j.look && typeof j.look === "object") {
+      const lk = j.look;
+      const pick = (v, l) => (ids(l).includes(String(v || "")) ? String(v) : "");
+      look = {
+        preset: pick(lk.preset, cat.presets),
+        in: pick(lk.in, cat.ins),
+        out: String(lk.out || "") === "fade" ? "fade" : "",
+        emph: pick(lk.emph, cat.emphs),
+        wshow: ["word", "line"].includes(String(lk.wshow || "")) ? String(lk.wshow) : "",
+        whl: pick(lk.whl, cat.whl),
+        wcolor: /^#[0-9a-f]{6}$/i.test(String(lk.wcolor || "")) ? String(lk.wcolor) : "",
+        lines: [1, 2, 3].includes(Number(lk.lines)) ? Number(lk.lines) : 0,
+      };
+    }
+    return { clips, music: String(j.music || ""), look };
   } finally {
     if (made.dir) fs.rmSync(made.dir, { recursive: true, force: true });
   }
@@ -257,4 +371,4 @@ async function groupScenes(lines, onProgress = () => {}) {
   return out;
 }
 
-module.exports = { script, scenesFor, shorts, image, matchFootage, footageSheets, aiEdit, groupScenes, facts: (v) => lib.gwVideoFacts(v), tl };
+module.exports = { imagePrompts, script, scenesFor, shorts, image, matchFootage, footageSheets, aiEdit, groupScenes, facts: (v) => lib.gwVideoFacts(v), tl };

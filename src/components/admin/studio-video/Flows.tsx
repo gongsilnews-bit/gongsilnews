@@ -611,9 +611,9 @@ function VideoPicker({ multi, photos = false, picked, setPicked, onVacancy }: { 
  * 사진·영상들 → 새 프로젝트 (고른 순서대로). 받아쓰기(AI 비용)는 하지 않는다.
  * 말소리 있는 영상은 통째로 한 클립, 사진·소리 없는 영상은 화면 클립 (편집 화면에서 끌어 놓을 때와 같은 규칙)
  */
-async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name: string, setWork: (w: { title: string; detail?: string; frac?: number | null }) => void, photoSec = 3, vacancyId = "", script = ""): Promise<Project> {
+async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name: string, setWork: (w: { title: string; detail?: string; frac?: number | null }) => void, photoSec = 3, vacancyId = "", script = "", folder = ""): Promise<Project> {
   const b = videoBridge()!;
-  const p = await b.project.create({ method, ratio, name, vacancyId });
+  const p = await b.project.create({ method, ratio, name, vacancyId, folder: folder || undefined });
   p.scenes = [];
   let shots: Clip[] | null = null; // 이어지는 사진·화면 클립은 한 묶음으로
   for (let i = 0; i < items.length; i++) {
@@ -684,6 +684,8 @@ export function VideoFlow({ method = "video", preset, script = "", onCancel, onD
   const [err, setErr] = useState("");
   const [photoSec, setPhotoSec] = useState(3);
   const [vacancyId, setVacancyId] = useState("");
+  const [projName, setProjName] = useState("무제");
+  const [folder, setFolder] = useState("");
   const photos = method === "video";
   const hasPhoto = picked.some((x) => x.kind === "image");
   // 화면 비율은 첫 번째 파일 모양에 맞춰 미리 골라 둔다 (세로면 9:16)
@@ -694,7 +696,7 @@ export function VideoFlow({ method = "video", preset, script = "", onCancel, onD
   const go = async () => {
     setErr("");
     try {
-      const p = await importVideos(method, ratio, picked, "", (w) => setWork(w), photoSec, vacancyId, script);
+      const p = await importVideos(method, ratio, picked, projName.trim(), (w) => setWork(w), photoSec, vacancyId, script, folder);
       onDone(p);
     } catch (e) {
       setErr(errText(e));
@@ -733,6 +735,7 @@ export function VideoFlow({ method = "video", preset, script = "", onCancel, onD
                 </div>
               );
             })()}
+            <SaveAsFields name={projName} setName={setProjName} folder={folder} setFolder={setFolder} />
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>어떤 화면 비율로 만들까요?</div>
             <RatioPick value={ratio} onChange={setRatio} />
             {hasPhoto && (
@@ -751,6 +754,43 @@ export function VideoFlow({ method = "video", preset, script = "", onCancel, onD
         {err && <div style={{ marginTop: 12, color: C.danger, fontSize: 14.5 }}>{err}</div>}
       </div>
     </Modal>
+  );
+}
+
+/**
+ * 새 프로젝트 — 이름 · 위치 · 파일 형식 (프리미어 [새 프로젝트] 처럼, 2026-10-19 사장님)
+ *  이름을 비우면 "무제", 위치는 [찾아보기]로 바꾼다 (기본: 저장 폴더 설정의 프로젝트 폴더). 같은 이름이 있으면 _2
+ */
+export function SaveAsFields({ name, setName, folder, setFolder, note, compact }: { name: string; setName: (v: string) => void; folder: string; setFolder: (v: string) => void; /** 파일 형식 줄 설명 (없으면 "이름.gss 로 저장돼요") */ note?: string; /** 좁은 칸 (텍스트로 영상 설정 칸) */ compact?: boolean }) {
+  const b = videoBridge()!;
+  const [dflt, setDflt] = useState("");
+  useEffect(() => {
+    b.project.defaultDir?.().then(setDflt).catch(() => {});
+  }, [b]);
+  const shown = folder || dflt;
+  const row: React.CSSProperties = { display: "grid", gridTemplateColumns: compact ? "70px 1fr auto" : "92px 1fr auto", gap: compact ? 8 : 10, alignItems: "center" };
+  const lab: React.CSSProperties = { fontSize: 14, fontWeight: 700, color: C.sub };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", marginBottom: 20, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card }}>
+      <div style={row}>
+        <span style={lab}>프로젝트 이름</span>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="무제" maxLength={60} onKeyDown={(e) => e.stopPropagation()}
+          onFocus={(e) => { if (e.target.value === "무제") e.target.select(); }} style={{ ...input, height: 38, border: `2px solid ${C.accent}`, boxShadow: "0 0 0 3px rgba(59,130,246,0.18)" }} />
+        <span />
+      </div>
+      {(b.project.defaultDir || folder) && (
+        <div style={row}>
+          <span style={lab}>위치</span>
+          <div title={shown} style={{ ...input, height: 38, display: "flex", alignItems: "center", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", color: shown ? C.text : C.dim }}>{shown || "기본 폴더"}</div>
+          {b.project.pickFolder && <Btn small onClick={async () => { const d = await b.project.pickFolder!("프로젝트를 저장할 폴더", shown || undefined); if (d) setFolder(d); }}><Icon name="folder" size={15} />찾아보기…</Btn>}
+        </div>
+      )}
+      <div style={row}>
+        <span style={lab}>파일 형식</span>
+        <span style={{ fontSize: 14, color: C.text }}>공실뉴스 스튜디오 (*.gss) <span style={{ color: C.dim, fontSize: 12.5 }}>· {note || `${(name.trim() || "무제").replace(/[\\/:*?"<>|]/g, "_")}.gss 로 저장돼요 (같은 이름이 있으면 _2)`}</span></span>
+        <span />
+      </div>
+    </div>
   );
 }
 
@@ -858,6 +898,8 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
   const [count, setCount] = useState(3);
   const [maxSec, setMaxSec] = useState(60);
   const [ratio, setRatio] = useState<Ratio>("9:16");
+  const [projName, setProjName] = useState("무제");
+  const [folder, setFolder] = useState("");
   const [request, setRequest] = useState("");
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [err, setErr] = useState("");
@@ -869,7 +911,7 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
     try {
       // 받아쓰기(AI 비용) 없이 — 말소리 구간으로만 나눠 바로 편집 화면으로.
       // 볼만한 구간 자동 고르기(AI)는 나중에 받아쓰기 단추와 함께 (setSrc·setShorts 는 그때 다시 쓴다)
-      const p = await importVideos("longform", ratio, picked.slice(0, 1), picked[0].name.replace(/\.[^.]+$/, ""), (w) => setWork(w));
+      const p = await importVideos("longform", ratio, picked.slice(0, 1), picked[0].name.replace(/\.[^.]+$/, ""), (w) => setWork(w), 3, "", "", folder);
       setWork(null);
       onDone(p);
       return;
@@ -887,9 +929,11 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
       for (let i = 0; i < chosen.length; i++) {
         const s = chosen[i];
         setWork({ title: `숏폼 만드는 중… (${i + 1}/${chosen.length})`, detail: s.title });
-        const p = await b.project.create({ method: "longform", ratio, name: s.title });
+        // 이름을 정했으면 "이름_숏폼 제목", 아니면 숏폼 제목 — 모두 [위치] 폴더에
+        const nm = projName.trim() && projName.trim() !== "무제" ? `${projName.trim()}_${s.title}` : s.title;
+        const p = await b.project.create({ method: "longform", ratio, name: nm, folder: folder || undefined });
         p.assets = src.assets;
-        p.settings.subtitle = { ...p.settings.subtitle, length: "short", position: ratio === "9:16" ? "middle-low" : "bottom" };
+        p.settings.subtitle = { ...p.settings.subtitle, length: "short", maxLines: 1, position: ratio === "9:16" ? "middle-low" : "bottom" };
         const clips: Clip[] = [];
         for (const c of src.scenes.flatMap((x) => x.clips)) {
           if (!c.src || c.src.e <= s.start || c.src.s >= s.end) continue;
@@ -925,6 +969,8 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
         {step === 0 && <VideoPicker multi={false} picked={picked} setPicked={setPicked} />}
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <SaveAsFields name={projName} setName={setProjName} folder={folder} setFolder={setFolder}
+              note={projName.trim() && projName.trim() !== "무제" ? `숏폼마다 "${projName.trim()}_숏폼 제목.gss" 로 저장돼요` : "숏폼마다 숏폼 제목.gss 로 저장돼요 (원본 영상 프로젝트도 같은 폴더에)"} />
             <div>
               <div style={{ ...label, marginBottom: 8 }}>몇 개 만들까요?</div>
               <div style={{ display: "flex", gap: 8 }}>{[1, 2, 3, 4, 5].map((n) => <Btn key={n} small primary={count === n} onClick={() => setCount(n)}>{n}개</Btn>)}</div>

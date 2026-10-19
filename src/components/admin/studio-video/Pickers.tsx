@@ -1,7 +1,8 @@
 "use client";
 
 // 글꼴 고르기 · 색 고르기 (자주 쓰는 색 저장) — 화면 글자·자막 칸에서 같이 쓴다
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DEFAULT_FONT, STUDIO_FONTS, fontCss, fontLabel } from "@/lib/studio-video/fonts";
 import { videoBridge, errText } from "./types";
 import { C, FONT } from "./ui";
@@ -57,6 +58,16 @@ const writeList = (k: string, v: string[]) => {
  * 글꼴 고르기 — 캡컷처럼 눌러서 펼치는 목록 (2026-10-19 사장님): 찾기 · 최근 사용 · 즐겨찾기(★) · 전체 글꼴
  *  글꼴 이름은 그 글꼴 모양으로 보여 준다
  */
+/** 펼친 칸을 화면 기준 자리에 — 위 줄(리본)처럼 넘치면 잘리는 곳에서도 다 보이게 (2026-10-19) */
+function useAnchor(open: boolean, box: React.RefObject<HTMLDivElement | null>) {
+  const [r, setR] = useState<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setR(open && box.current ? box.current.getBoundingClientRect() : null);
+  }, [open, box]);
+  return r;
+}
+
 export function FontPick({ value, onChange }: { value?: string; onChange: (family: string) => void }) {
   const cur = value || DEFAULT_FONT;
   const [open, setOpen] = useState(false);
@@ -67,10 +78,12 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const box = useRef<HTMLDivElement>(null);
+  const at = useAnchor(open, box);
+  const pop = useRef<HTMLDivElement>(null); // 펼친 칸 (화면 맨 위에 따로 그린다)
   useFonts(open ? STUDIO_FONTS.map((f) => f.family) : [cur]); // 펼치면 모든 글꼴 이름을 그 글꼴로
   useEffect(() => {
     if (!open) return;
-    const out = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const out = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node) && !pop.current?.contains(e.target as Node)) setOpen(false); };
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     window.addEventListener("mousedown", out);
     window.addEventListener("keydown", esc);
@@ -126,8 +139,8 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
         <span style={{ flex: 1, textAlign: "left", fontSize: 16, fontFamily: fontCss(cur), fontWeight: cur === DEFAULT_FONT ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fontLabel(cur)}</span>
         <span style={{ color: C.sub, fontSize: 12 }}>{open ? "▲" : "▼"}</span>
       </button>
-      {open && (
-        <div style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", zIndex: 40, maxHeight: 380, overflowY: "auto", padding: 8, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 12px 32px rgba(0,0,0,0.5)", fontFamily: FONT }}>
+      {open && createPortal(
+        <div ref={pop} data-keep-drop="" style={{ position: "fixed", left: at ? Math.min(at.left, window.innerWidth - Math.max(260, at.width) - 8) : 0, width: at ? Math.max(260, at.width) : 260, top: at ? Math.min(at.bottom + 4, window.innerHeight - 390) : 0, zIndex: 90, maxHeight: 380, overflowY: "auto", padding: 8, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 12px 32px rgba(0,0,0,0.5)", fontFamily: FONT }}>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="글꼴 찾기" autoFocus
             style={{ width: "100%", height: 34, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT, boxSizing: "border-box" }} />
           <div style={{ display: "flex", gap: 6, margin: "8px 0 4px" }}>
@@ -159,7 +172,7 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
             </>
           )}
         </div>
-      )}
+      , document.body)}
       {err && <div style={{ color: C.danger, fontSize: 13.5, marginTop: 6 }}>{err}</div>}
     </div>
   );
@@ -217,10 +230,12 @@ export function ColorPick({ value, onChange }: { value?: string; onChange: (hex:
   const [mine, setMine] = useState<string[]>(() => (typeof window === "undefined" ? [] : readColors()));
   const box = useRef<HTMLDivElement>(null);
   const sv = useRef<HTMLDivElement>(null);
+  const at = useAnchor(open, box);
+  const pop = useRef<HTMLDivElement>(null); // 펼친 칸 (화면 맨 위에 따로 그린다)
   const shown = hsvToHex(hsv.h, hsv.s, hsv.v);
   useEffect(() => {
     if (!open) return;
-    const out = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const out = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node) && !pop.current?.contains(e.target as Node)) setOpen(false); };
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     window.addEventListener("mousedown", out);
     window.addEventListener("keydown", esc);
@@ -291,8 +306,8 @@ export function ColorPick({ value, onChange }: { value?: string; onChange: (hex:
         <span title={cur} style={{ width: 64, height: 24, borderRadius: 4, background: cur, border: "1px solid rgba(255,255,255,0.25)" }} />
         <span style={{ color: C.sub, fontSize: 11 }}>{open ? "▲" : "▼"}</span>
       </button>
-      {open && (
-        <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 45, width: 268, padding: 12, borderRadius: 9, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 14px 36px rgba(0,0,0,0.55)", fontFamily: FONT }}>
+      {open && createPortal(
+        <div ref={pop} data-keep-drop="" style={{ position: "fixed", left: at ? Math.min(at.left, window.innerWidth - 276) : 0, top: at ? Math.min(at.bottom + 6, window.innerHeight - 420) : 0, zIndex: 90, width: 268, padding: 12, borderRadius: 9, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 14px 36px rgba(0,0,0,0.55)", fontFamily: FONT }}>
           {/* 색판 — 왼쪽 위 흰색, 아래 검정 */}
           <div ref={sv} onPointerDown={dragSv}
             style={{ position: "relative", height: 130, borderRadius: 6, cursor: "crosshair", touchAction: "none", background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), ${hsvToHex(hsv.h, 1, 1)}` }}>
@@ -327,7 +342,7 @@ export function ColorPick({ value, onChange }: { value?: string; onChange: (hex:
             {PALETTE.map((h) => chip(h, h))}
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }

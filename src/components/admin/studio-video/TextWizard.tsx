@@ -12,6 +12,7 @@ import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
 import { VoiceFace, VoicePanel } from "./Panels";
+import { SaveAsFields } from "./Flows";
 
 export type VideoStyle = { id: string; name: string; desc: string; icon: string; prompt: string; voice: string; speed: number; music: string; ratio?: Ratio; subtitle?: "long" | "short"; chars: number };
 
@@ -49,11 +50,15 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
   const [vacInfo, setVacInfo] = useState<{ vacancy: unknown; photos: LibItem[] } | null>(null);
   // ③ 꾸미기
   const [ratio, setRatio] = useState<Ratio>("16:9");
+  const [projName, setProjName] = useState<string | null>(null); // null = 정하지 않음 (스타일 이름_날짜, 없으면 무제)
+  const [folder, setFolder] = useState("");
   const [subOn, setSubOn] = useState(true);
   const [subPos, setSubPos] = useState<"bottom" | "middle-low" | "middle" | "middle-high" | "top">("bottom");
-  const [subLen, setSubLen] = useState<"long" | "short">("long");
+  // 자막 한 화면 최대 줄 수 — 가로 2줄, 세로(쇼츠) 1줄이 처음 값 (2026-10-19 사장님: 길게·짧게 대신 구체적으로)
+  const [subLines, setSubLines] = useState<1 | 2 | 3>(2);
   const [voiceOn, setVoiceOn] = useState(true);
   const [motionOn, setMotionOn] = useState(true); // 사진 자동 움직임 (줌인·좌우·상하)
+  const [aiDeco, setAiDeco] = useState(false); // AI가 다 꾸미기 — 자막 스타일·효과·스티커·효과음 (2026-10-19 사장님)
   const [voiceId, setVoiceId] = useState("Charon");
   const [voicePick, setVoicePick] = useState(false); // 목소리 고르기 창 (편집 화면과 같은 얼굴 카드 창)
   const [speed, setSpeed] = useState(1);
@@ -80,7 +85,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       setMood(s.music);
       setChars(s.chars);
       if (s.ratio) setRatio(s.ratio);
-      if (s.subtitle) setSubLen(s.subtitle);
+      if (s.subtitle) setSubLines(s.subtitle === "short" ? 1 : 2);
       if (s.id === "listing") setSrc("vacancy");
     }
   };
@@ -124,6 +129,7 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
     }
   };
 
+  const defaultName = style ? `${style.name}_${new Date().getMonth() + 1}월${new Date().getDate()}일` : "무제";
   const scenes = useMemo(() => splitScript(script), [script]);
   const lineCount = scenes.reduce((a, s) => a + s.length, 0);
   const seconds = useMemo(() => scenes.flat().reduce((a, t) => a + estimateSeconds(t, speed) + 0.12, 0), [scenes, speed]);
@@ -136,11 +142,12 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
     const off = b.onProgress((t, f) => setGen((g) => ({ title: g?.title || "만드는 중…", detail: t, frac: typeof f === "number" ? f : g?.frac })));
     try {
       setGen({ title: "프로젝트를 만드는 중…", frac: 0.02 });
-      const p = await b.project.create({ method: "text", ratio, vacancyId: src === "vacancy" ? vacId : "", name: style ? `${style.name}_${new Date().getMonth() + 1}월${new Date().getDate()}일` : "" });
+      const p = await b.project.create({ method: "text", ratio, vacancyId: src === "vacancy" ? vacId : "", name: (projName ?? defaultName).trim(), folder: folder || undefined });
       p.settings.fill = fill;
-      p.settings.subtitle = { ...p.settings.subtitle, on: subOn, position: subPos, length: subLen };
+      p.settings.subtitle = { ...p.settings.subtitle, on: subOn, position: subPos, length: subLines === 1 ? "short" : "long", maxLines: subLines };
       p.settings.voice = { id: voiceId, speed, volume: 1 };
       p.settings.motion = motionOn ? "auto" : "none";
+      if (aiDeco) p.settings.aiAuto = true;
       // 클립
       // 씬 — AI 가 지은 이름을 붙이고, 클립 하나짜리 씬이 이어지면 묶는다 (회의 3-22)
       p.scenes = mergeSingleScenes(scenes.map((ls) => ({ id: uid(), title: sceneTitles.current[ls[0]] || undefined, clips: ls.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] }) as Clip) })));
@@ -370,9 +377,13 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
       {step === 2 && (
         <div style={{ display: "flex", minHeight: 520 }}>
           <div style={{ width: 460, flexShrink: 0, padding: "8px 22px 18px", borderRight: `1px solid ${C.line}` }}>
+            <div style={{ marginTop: 10 }}>
+              <SaveAsFields compact name={projName ?? defaultName} setName={setProjName} folder={folder} setFolder={setFolder}
+                note={src === "vacancy" && !folder ? "공실 영상은 기본으로 그 매물 폴더에 저장돼요" : undefined} />
+            </div>
             <div style={{ ...row, flexWrap: "wrap" }}>
               <span style={{ ...label, width: "100%" }}>화면 비율</span>
-              {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => <button key={r} type="button" onClick={() => setRatio(r)} style={chip(ratio === r)}>{r}</button>)}
+              {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => <button key={r} type="button" onClick={() => { setRatio(r); setSubLines(r === "9:16" ? 1 : 2); }} style={chip(ratio === r)}>{r}</button>)}
             </div>
             <div style={{ ...row, flexWrap: "wrap" }}>
               <span style={{ ...label, flex: 1 }}>자막</span>
@@ -381,8 +392,10 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
                 <div style={{ width: "100%", display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {([["top", "상단"], ["middle-high", "중상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setSubPos(k)} style={chip(subPos === k)}>{l}</button>)}
                   <span style={{ width: 10 }} />
-                  <button type="button" onClick={() => setSubLen("long")} style={chip(subLen === "long")}>길게</button>
-                  <button type="button" onClick={() => setSubLen("short")} style={chip(subLen === "short")}>짧게</button>
+                  <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                    <span style={{ fontSize: 14, color: C.sub, marginRight: 4 }} title="자막이 이보다 길면 이 줄 수만큼씩 말하는 때에 맞춰 넘어가요">한 화면 최대</span>
+                    {([1, 2, 3] as const).map((n) => <button key={n} type="button" onClick={() => setSubLines(n)} style={chip(subLines === n)}>{n}줄</button>)}
+                  </div>
                 </div>
               )}
             </div>
@@ -415,6 +428,11 @@ export default function TextWizard({ onCancel, onDone }: { onCancel: () => void;
                   </div>
                 </div>
               )}
+            </div>
+            <div style={{ ...row, flexWrap: "wrap", padding: 12, borderRadius: 8, border: `1px solid ${aiDeco ? C.accent : C.line2}`, background: aiDeco ? C.accentDim : "transparent" }}>
+              <span style={{ ...label, flex: 1 }}>✦ AI가 다 꾸미기 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· {writer}가 자막 스타일·효과·스티커·효과음까지</span></span>
+              <Toggle on={aiDeco} onChange={setAiDeco} />
+              {aiDeco && <div style={{ width: "100%", fontSize: 12.5, color: C.sub, lineHeight: 1.6, marginTop: 4 }}>영상이 만들어지면 편집 화면에서 AI 편집이 저절로 시작돼요 (1~2분). 마음에 안 들면 한 번에 되돌릴 수 있어요.</div>}
             </div>
             <div style={{ ...row, flexWrap: "wrap" }}>
               <span style={{ ...label, flex: 1 }}>사진 자동 움직임 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· 줌인·좌우·상하로 천천히</span></span>
