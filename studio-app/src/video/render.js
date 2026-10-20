@@ -9,6 +9,7 @@ const os = require("os");
 const log = require("electron-log/main");
 const ff = require("./ff");
 const tl = require("./timeline");
+const adv = require("./transAdv");
 const { RATIOS } = require("./project");
 const fonts = require("./fonts");
 
@@ -105,6 +106,11 @@ function animTextEvents(o) {
     let key = "END";
     if (k < N) {
       const r = tl.animAt(o.an, t, o.a, o.b);
+      // 키프레임 (2026-10-20) — 그 시각 자리·크기·회전·진하기를 애니메이션 위에 더한다
+      if (o.kf) {
+        const q = o.kf(t);
+        r.dx += q.dx; r.dy += q.dy; r.sc *= q.sc; r.rot += q.rot; r.op *= q.op;
+      }
       if (r.op > 0.004 && r.sc > 0.004 && Math.abs(r.sx) > 0.004 && o.lineIn) {
         // 한 줄씩 + [인] 효과 — 줄마다 그 줄이 나오는 때에 따로 들어온다 (덩어리 효과[아웃·반복]와 겹쳐서)
         const an = o.align === "left" ? 4 : o.align === "right" ? 6 : 5;
@@ -386,7 +392,15 @@ function subtitleLines(clip, dur, settings, W, H = Math.round((W * 9) / 16)) {
 }
 
 /* ── 화면 맞추기 ── */
-function fitFilter(inLabel, W, H, fill, outLabel) {
+function fitFilter(inLabel, W, H, fill, outLabel, bgLabel) {
+  if (fill === "blur" && bgLabel) {
+    // 흐린 배경은 자르기 전 원본으로 (미리보기와 같게)
+    return (
+      `[${bgLabel}]scale=${Math.round(W / 4)}:${Math.round(H / 4)}:force_original_aspect_ratio=increase,crop=${Math.round(W / 4)}:${Math.round(H / 4)},gblur=sigma=8,scale=${W}:${H},colorchannelmixer=rr=0.8:gg=0.8:bb=0.8[bg];` +
+      `[${inLabel}]scale=${W}:${H}:force_original_aspect_ratio=decrease[fg];` +
+      `[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1[${outLabel}]`
+    );
+  }
   if (fill === "contain") return `[${inLabel}]scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[${outLabel}]`;
   if (fill === "blur") {
     return (
@@ -401,6 +415,40 @@ function fitFilter(inLabel, W, H, fill, outLabel) {
 
 /** 반전 — 좌우(hflip)·상하(vflip). 없으면 빈 문자열 */
 const flipChain = (o) => [o && o.flipX ? "hflip" : "", o && o.flipY ? "vflip" : ""].filter(Boolean).join(",");
+
+/** 자르기 (프리미어 효과 컨트롤) — 가장자리를 잘라 내고 원래 크기로 투명하게 채운다 (미리보기 clip-path 와 같은 값). rgba 입력 */
+const cropChain = (cr) => {
+  const f = (v) => v.toFixed(5);
+  const kw = 1 - cr.l - cr.r, kh = 1 - cr.t - cr.b;
+  return `crop=w='iw*${f(kw)}':h='ih*${f(kh)}':x='iw*${f(cr.l)}':y='ih*${f(cr.t)}',pad=w='ceil(iw/${f(kw)}/2)*2':h='ceil(ih/${f(kh)}/2)*2':x='floor(iw/${f(kw)}*${f(cr.l)})':y='floor(ih/${f(kh)}*${f(cr.t)})':color=black@0`;
+};
+/** 색 보정·필터 — 색 행렬(3×4) → colorchannelmixer (rgba 의 알파=1 을 "더하기" 칸으로 쓴다). 미리보기 SVG feColorMatrix 와 같은 값 */
+const ccmOf = (M) => ["r", "g", "b"].map((c, i) => `${c}r=${M[i][0]}:${c}g=${M[i][1]}:${c}b=${M[i][2]}:${c}a=${M[i][3]}`).join(":");
+
+/**
+ * 키프레임 → ffmpeg 식 (t = 클립 안 시각). 점 사이는 timeline.easeVal 과 같은 모양으로 (일정하게·부드럽게·천천히 시작·천천히 끝)
+ *  get(점) = 그 점의 값 (숫자)
+ */
+function kfExpr(keys, get, prop, base) {
+  // 항목마다 ◇ (2026-10-20) — 이 항목을 정한 점만, 없으면 base 값 하나
+  if (prop) {
+    const pts = keys.filter((k) => tl.kfHas(k, prop));
+    if (!pts.length) return String(+get(base).toFixed(5));
+    keys = pts;
+  }
+  const n = (v) => (Math.abs(v) < 1e-9 ? "0" : String(+v.toFixed(5)));
+  let ex = n(get(keys[keys.length - 1]));
+  for (let i = keys.length - 2; i >= 0; i--) {
+    const a = keys[i], b = keys[i + 1];
+    const va = get(a), vb = get(b);
+    const d = Math.max(1e-4, b.t - a.t);
+    const U = `clip((t-${n(a.t)})/${n(d)},0,1)`;
+    const E = a.e === "inout" ? `(${U}*${U}*(3-2*${U}))` : a.e === "in" ? `(${U}*${U})` : a.e === "out" ? `(${U}*(2-${U}))` : U;
+    const seg = Math.abs(vb - va) < 1e-9 ? n(va) : `(${n(va)}+(${n(vb - va)})*${E})`;
+    ex = `if(lt(t,${n(b.t)}),${seg},${ex})`;
+  }
+  return ex;
+}
 
 const assetFile = (a) => (a.edit && fs.existsSync(a.edit) ? a.edit : a.path);
 
@@ -493,18 +541,83 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
   }
   const cflip = flipChain(clip);
   if (cflip) filters.push(`[${vIn}]${cflip}[vflip]`);
+  let srcLbl = cflip ? "vflip" : vIn;
+  // 색 보정·필터 (2026-10-20) — 채우기 전에 (흐린 배경도 같은 색)
+  const adjM = ok(visual) ? tl.adjMatrix(clip.adj) : null;
+  if (adjM) {
+    filters.push(`[${srcLbl}]format=rgba,colorchannelmixer=${ccmOf(adjM)}[vadj]`);
+    srcLbl = "vadj";
+  }
+  // 자르기 (2026-10-20, 프리미어 효과 컨트롤) — 반전 뒤라 좌우·위아래를 바꿔 원본 기준으로 (미리보기와 같게)
+  const ccr0 = ok(visual) ? tl.cropOf(clip.crop) : null;
+  let cropBg = null;
+  if (ccr0) {
+    const cr = { l: clip.flipX ? ccr0.r : ccr0.l, r: clip.flipX ? ccr0.l : ccr0.r, t: clip.flipY ? ccr0.b : ccr0.t, b: clip.flipY ? ccr0.t : ccr0.b };
+    if ((clip.fill || st.fill || "cover") === "blur" && !clip.box) {
+      filters.push(`[${srcLbl}]split=2[ccsrc][ccbg]`);
+      cropBg = "ccbg";
+      filters.push(`[ccsrc]format=rgba,${cropChain(cr)}[ccrop]`);
+    } else filters.push(`[${srcLbl}]format=rgba,${cropChain(cr)}[ccrop]`);
+    srcLbl = "ccrop";
+  }
   const vb = clip.box && ok(visual) ? clip.box : null;
-  if (vb) {
+  // 화면 키프레임·돌리기·진하기 (2026-10-20, 캡컷처럼) — 미리보기 Player.tsx 와 같은 계산
+  //  칸마다 크기(scale) → 큰 투명 판(대각선 크기)의 "돌리기 전 자리"에 얹기 → 판 가운데로 돌리기 → 화면 크기로 자르기 → 진하기 → 바탕(검정·흐린 배경) 위에
+  //  돌리기 전 자리 q = 판 가운데 + R(-r)·d (d = 가운데에서 옮긴 거리) 라서 돌린 뒤에 딱 그 자리에 온다
+  const keys = ok(visual) ? tl.clipKeys(p, clip, W, H) : null;
+  if (keys) {
+    const br = tl.clipBaseRect(p, clip, W, H);
+    const D = Math.ceil(Math.hypot(W, H) / 2) * 2 + 4;
+    const bw = br.w * W, bh = br.h * H;
+    const kb = tl.clipKeyBase(p, clip, W, H);
+    const S = kfExpr(keys, (k) => k.s, "s", kb);
+    const X = kfExpr(keys, (k) => k.x * W - W / 2, "x", kb);
+    const Y = kfExpr(keys, (k) => k.y * H - H / 2, "y", kb);
+    const R = kfExpr(keys, (k) => (k.r * Math.PI) / 180, "r", kb);
+    let fg = srcLbl;
+    if ((clip.fill || st.fill || "cover") === "blur" && !clip.box && cropBg) {
+      filters.push(`[${cropBg}]scale=${Math.round(W / 4)}:${Math.round(H / 4)}:force_original_aspect_ratio=increase,crop=${Math.round(W / 4)}:${Math.round(H / 4)},gblur=sigma=8,scale=${W}:${H},colorchannelmixer=rr=0.8:gg=0.8:bb=0.8,setsar=1[kbg]`);
+    } else if ((clip.fill || st.fill || "cover") === "blur" && !clip.box) {
+      filters.push(`[${srcLbl}]split=2[kbs][kfg]`);
+      filters.push(`[kbs]scale=${Math.round(W / 4)}:${Math.round(H / 4)}:force_original_aspect_ratio=increase,crop=${Math.round(W / 4)}:${Math.round(H / 4)},gblur=sigma=8,scale=${W}:${H},colorchannelmixer=rr=0.8:gg=0.8:bb=0.8,setsar=1[kbg]`);
+      fg = "kfg";
+    } else filters.push(`color=c=black:s=${W}x${H}:r=${FPS}:d=${(dur + 0.2).toFixed(3)},setsar=1[kbg]`);
+    filters.push(`[${fg}]scale=w='max(2,2*trunc(${bw.toFixed(2)}*(${S})/2))':h='max(2,2*trunc(${bh.toFixed(2)}*(${S})/2))':eval=frame,setsar=1,format=rgba[kfs]`);
+    filters.push(`color=c=black@0:s=${D}x${D}:r=${FPS}:d=${(dur + 0.2).toFixed(3)},format=rgba[kcv]`);
+    const qx = `${D / 2}+(${X})*cos(${R})+(${Y})*sin(${R})`;
+    const qy = `${D / 2}-(${X})*sin(${R})+(${Y})*cos(${R})`;
+    filters.push(`[kcv][kfs]overlay=x='${qx}-w/2':y='${qy}-h/2':eval=frame:format=auto:eof_action=pass[kpl]`);
+    let rot = `[kpl]rotate=a='${R}':c=none,crop=${W}:${H}:${(D - W) / 2}:${(D - H) / 2}`;
+    // 진하기 — 모든 점이 같으면 한 번에, 다르면 칸마다 명령(sendcmd)으로
+    const os = [kb, ...keys.filter((k) => tl.kfHas(k, "o"))].map((k) => Math.max(0, Math.min(1, Number(k.o ?? 1))));
+    if (os.some((o) => Math.abs(o - os[0]) > 1e-3)) {
+      const N = Math.max(1, Math.ceil(dur * FPS));
+      const lines = [];
+      let prev = -1;
+      for (let f = 0; f <= N; f++) {
+        const tt = f / FPS;
+        const k = tl.kfAt(keys, tt, kb);
+        const o = Math.max(0, Math.min(1, Number(k.o ?? 1)));
+        if (Math.abs(o - prev) < 0.002) continue;
+        prev = o;
+        lines.push(`${tt.toFixed(4)} colorchannelmixer@kfo${idx} aa ${o.toFixed(3)};`);
+      }
+      fs.writeFileSync(path.join(tmp, `kfo${idx}.cmd`), lines.join("\n"), "utf8");
+      rot += `,sendcmd=f=kfo${idx}.cmd,colorchannelmixer@kfo${idx}=aa=1`;
+    } else if (os[0] < 0.999) rot += `,colorchannelmixer=aa=${os[0].toFixed(3)}`;
+    filters.push(`${rot}[kop]`);
+    filters.push(`[kbg][kop]overlay=0:0:format=auto:eof_action=pass,setsar=1[vfit]`);
+  } else if (vb) {
     // 직접 크기 — 검은 바탕 위 그 자리에 (미리보기 Player.tsx 와 같은 계산)
     const ar = visual.width && visual.height ? visual.width / visual.height : W / H;
     const pw = Math.max(2, Math.round((W * Number(vb.w)) / 2) * 2);
     const ph = Math.max(2, Math.round(pw / ar / 2) * 2);
     const x0 = Math.round(W * Number(vb.x) - pw / 2);
     const y0 = Math.round(H * Number(vb.y) - ph / 2);
-    filters.push(`[${cflip ? "vflip" : vIn}]scale=${pw}:${ph},setsar=1[vbx]`);
+    filters.push(`[${srcLbl}]scale=${pw}:${ph},setsar=1[vbx]`);
     filters.push(`color=c=black:s=${W}x${H}:r=${FPS}:d=${dur.toFixed(3)}[vbg]`);
     filters.push(`[vbg][vbx]overlay=x=${x0}:y=${y0}:eof_action=pass,setsar=1[vfit]`);
-  } else filters.push(fitFilter(cflip ? "vflip" : vIn, W, H, fill, "vfit"));
+  } else filters.push(fitFilter(srcLbl, W, H, fill, "vfit", cropBg));
   let vOut = "vfit";
   // 사진 움직임 (브루처럼 줌인·좌우·상하) — 미리보기 Player.tsx 와 같은 계산 (timeline.motionAt, 처음→끝 고르게)
   const mo = !vb && ok(visual) && visual.kind === "image" ? tl.motionOf(p, clip) : null;
@@ -541,6 +654,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
       return;
     }
     const a = l.asset && p.assets[l.asset];
+    if (ok(a) && a.kind === "video") return overlayVideo(l, j, a);
     if (!ok(a) || a.kind !== "image") return;
     args.push("-loop", "1", "-framerate", String(FPS), "-t", dur.toFixed(3), "-i", assetFile(a));
     const k = n++;
@@ -561,16 +675,93 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     const x0 = Math.round(Math.max(0, Math.min(W - pw, W * Number(l.x ?? 0.5) - pw / 2)));
     const y0 = Math.round(Math.max(0, Math.min(H - ph, H * Number(l.y ?? 0.5) - ph / 2)));
     const rot = (Number(l.rot) || 0) * Math.PI / 180;
+    const lcr = tl.cropOf(l.crop);
+    const lpre = lcr ? `format=rgba,${cropChain(lcr)},` : ""; // 자르기 — 원본 기준, 반전 전
     if (Math.abs(rot) > 0.0001) {
       const cx = x0 + pw / 2, cy = y0 + ph / 2;
-      filters.push(`[${k}:v]scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)},rotate=${rot.toFixed(5)}:c=none:ow=rotw(${rot.toFixed(5)}):oh=roth(${rot.toFixed(5)})[ov${j}]`);
+      filters.push(`[${k}:v]${lpre}scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)},rotate=${rot.toFixed(5)}:c=none:ow=rotw(${rot.toFixed(5)}):oh=roth(${rot.toFixed(5)})[ov${j}]`);
       filters.push(`[${vOut}][ov${j}]overlay=x=${cx.toFixed(1)}-w/2:y=${cy.toFixed(1)}-h/2:eof_action=pass${en(l)}[vo${j}]`);
     } else {
-      filters.push(`[${k}:v]scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
+      filters.push(`[${k}:v]${lpre}scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
       filters.push(`[${vOut}][ov${j}]overlay=x=${x0}:y=${y0}:eof_action=pass${en(l)}[vo${j}]`);
     }
     vOut = `vo${j}`;
   };
+
+  /**
+   * 영상 올리기 (타임라인 V2 위, 화면 속 화면 — 2026-10-20) — 미리보기 Player.tsx 와 같은 자리·크기·키프레임
+   *  l.vs = 영상 안 시작 초 · l.volume = 소리 (0 = 무음, 기본 1). 짧으면 처음부터 다시 (반복)
+   */
+  const overlayVideo = (l, j, a) => {
+    const sp = ctx ? tl.layerSpan(p, l, ctx.items, clip.id, st, ctx.order) : { a: 0, b: dur };
+    if (!sp) return;
+    const s0 = Math.max(0, sp.a), s1 = Math.min(dur, sp.b), len = s1 - s0;
+    if (len < 0.02) return;
+    let src = (Number(l.vs) || 0) + (s0 - sp.a);
+    const D0 = Number(a.duration) || 0;
+    const loop = D0 > 0.1 && src + len > D0 - 0.05;
+    if (D0 > 0.1) src = src % D0;
+    const file = assetFile(a);
+    if (loop) args.push("-stream_loop", "-1");
+    args.push("-itsoffset", s0.toFixed(3), "-ss", src.toFixed(3), "-t", len.toFixed(3), "-i", file);
+    const k = n++;
+    const lflip = flipChain(l);
+    const op0 = Math.max(0, Math.min(1, Number(l.opacity ?? 1)));
+    const vcr = l.fit === "cover" || l.fit === "contain" ? null : tl.cropOf(l.crop);
+    const pre = `[${k}:v]fps=${FPS},${vcr ? `format=rgba,${cropChain(vcr)},` : ""}${lflip ? lflip + "," : ""}`;
+    if (l.fit === "cover" || l.fit === "contain") {
+      const sc = l.fit === "cover" ? `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}` : `scale=${W}:${H}:force_original_aspect_ratio=decrease`;
+      filters.push(`${pre}${sc},setsar=1,format=rgba,colorchannelmixer=aa=${op0.toFixed(3)}[ov${j}]`);
+      filters.push(`[${vOut}][ov${j}]overlay=x=(W-w)/2:y=(H-h)/2:eof_action=pass:enable='between(t,${s0.toFixed(3)},${s1.toFixed(3)})'[vo${j}]`);
+      vOut = `vo${j}`;
+    } else if (l.kf && l.kf.length) {
+      // 키프레임 — 칸마다 크기 → 투명 판 가운데 → 돌리기 → 그 자리에 (클립 화면 키프레임과 같은 방식)
+      const ks = l.kf.map((x) => ({ ...x, t: x.t + sp.a }));
+      const base = { x: Number(l.x ?? 0.5), y: Number(l.y ?? 0.5), s: 1, r: Number(l.rot) || 0, o: 1 };
+      const pw0 = W * Math.max(0.03, Math.min(4, Number(l.w ?? 0.35)));
+      const ph0 = a.width && a.height ? (pw0 * a.height) / a.width : pw0;
+      const smax = Math.max(1, ...ks.filter((x) => tl.kfHas(x, "s")).map((x) => Number(x.s) || 1));
+      const D = Math.ceil((Math.hypot(pw0, ph0) * smax) / 2) * 2 + 4;
+      const S = kfExpr(ks, (x) => x.s, "s", base), X = kfExpr(ks, (x) => x.x * W, "x", base), Y = kfExpr(ks, (x) => x.y * H, "y", base), R = kfExpr(ks, (x) => (x.r * Math.PI) / 180, "r", base);
+      filters.push(`${pre}scale=w='max(2,2*trunc(${pw0.toFixed(2)}*(${S})/2))':h='max(2,2*trunc(${ph0.toFixed(2)}*(${S})/2))':eval=frame,setsar=1,format=rgba[ovs${j}]`);
+      filters.push(`color=c=black@0:s=${D}x${D}:r=${FPS}:d=${(dur + 0.2).toFixed(3)},format=rgba[ovc${j}]`);
+      filters.push(`[ovc${j}][ovs${j}]overlay=x='(W-w)/2':y='(H-h)/2':eval=frame:format=auto:eof_action=pass[ovp${j}]`);
+      let chain = `[ovp${j}]rotate=a='${R}':c=none`;
+      const N = Math.max(1, Math.ceil(dur * FPS));
+      const lines = [];
+      let prev = -1;
+      for (let f = 0; f <= N; f++) {
+        const tt = f / FPS;
+        const o = Math.max(0, Math.min(1, op0 * tl.kfAt(ks, tt, base).o));
+        if (Math.abs(o - prev) < 0.002) continue;
+        prev = o;
+        lines.push(`${tt.toFixed(4)} colorchannelmixer@vko${idx}_${j} aa ${o.toFixed(3)};`);
+      }
+      fs.writeFileSync(path.join(tmp, `vko${idx}_${j}.cmd`), lines.join(String.fromCharCode(10)), "utf8");
+      chain += `,sendcmd=f=vko${idx}_${j}.cmd,colorchannelmixer@vko${idx}_${j}=aa=1`;
+      filters.push(`${chain}[ov${j}]`);
+      filters.push(`[${vOut}][ov${j}]overlay=x='${X}-${D / 2}':y='${Y}-${D / 2}':eval=frame:eof_action=pass:enable='between(t,${s0.toFixed(3)},${s1.toFixed(3)})'[vo${j}]`);
+      vOut = `vo${j}`;
+    } else {
+      const rr = tl.imgRect(l, a, W, H);
+      const pw = Math.max(2, Math.round(rr.width / 2) * 2), ph = Math.max(2, Math.round(rr.height / 2) * 2);
+      const rot = ((Number(l.rot) || 0) * Math.PI) / 180;
+      const cx = rr.left + rr.width / 2, cy = rr.top + rr.height / 2;
+      filters.push(`${pre}scale=${pw}:${ph},setsar=1,format=rgba,colorchannelmixer=aa=${op0.toFixed(3)}${Math.abs(rot) > 0.0001 ? `,rotate=${rot.toFixed(5)}:c=none:ow=rotw(${rot.toFixed(5)}):oh=roth(${rot.toFixed(5)})` : ""}[ov${j}]`);
+      filters.push(`[${vOut}][ov${j}]overlay=x=${cx.toFixed(1)}-w/2:y=${cy.toFixed(1)}-h/2:eof_action=pass:enable='between(t,${s0.toFixed(3)},${s1.toFixed(3)})'[vo${j}]`);
+      vOut = `vo${j}`;
+    }
+    // 소리 — 올린 영상 소리 (A 트랙). 0 이면 무음
+    const vol = Math.max(0, Math.min(2, Number(l.volume ?? 1)));
+    if (a.hasAudio && vol > 0 && !l.muted) {
+      if (loop) args.push("-stream_loop", "-1");
+      args.push("-ss", src.toFixed(3), "-t", len.toFixed(3), "-i", file);
+      const ka = n++;
+      const ms = Math.round(s0 * 1000);
+      ovAud.push(`[${ka}:a]volume=${vol.toFixed(3)},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""},apad,atrim=duration=${dur.toFixed(3)}[ova${j}]`);
+    }
+  };
+  const ovAud = [];
 
   // 겹치는 것 — 뒤 → 앞 (회의 3-26): 사진·스티커는 하나씩 얹고, 이어진 화면 글자는 묶어서 자막 엔진으로 한 번에
   const isImg = (l) => l.type === "image";
@@ -593,8 +784,11 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
       run.flatMap((l, j) => {
         // 애니메이션 — 미리보기와 같은 움직임을 칸마다 (2026-10-19)
         const an = ctx ? tl.animOf(p, l) : null;
-        const sp = an ? tl.layerSpan(p, l, ctx.items, clip.id, st, ctx.order) : null;
-        if (an && sp) {
+        // 예능 자막 모양 (이중 테두리·그라데이션) — 자리를 \pos 로 박는 길로 그린 뒤 fancySub 로 겹친다 (2026-10-20)
+        const fancyL = !l.box && ((Number(l.outline2Width) > 0) || Boolean(l.gradTo));
+        const hasKf = Boolean(ctx && ((l.kf && l.kf.length) || (l.opacity ?? 1) < 0.999 || fancyL)); // 키프레임 또는 진하기 (타임라인 속성 칸)
+        const sp = an || hasKf ? tl.layerSpan(p, l, ctx.items, clip.id, st, ctx.order) : null;
+        if ((an || hasKf) && sp) {
           const size = Math.round(Math.min(W, H) * 0.08 * ((Number(l.size) || 100) / 100));
           const lines = caseOf(String(l.text).trim(), l.textCase).split(/\r?\n/);
           const lh = size * 1.25;
@@ -603,8 +797,16 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
           const bc = free ? { x: l.x * W, y: l.y * H } : { x: W / 2, y: pos === "top" ? H * 0.06 + (lines.length * lh) / 2 : pos === "middle" ? H / 2 : H - H * 0.07 - (lines.length * lh) / 2 };
           const s0 = Math.max(0, sp.a), s1 = Math.min(dur, sp.b);
           if (s1 <= s0) return [];
-          return animTextEvents({ layer: 1, style: `T${j}`, rot0: Number(l.rot) || 0, lines, bc, lh, an, a: sp.a, b: sp.b, s0, s1, end: sp.b >= dur - 0.001 ? dur + 0.05 : s1, W, H, align: free ? undefined : l.align, halfW: W * 0.45,
+          // 키프레임 — 처음 자리(bc)에서 그 시각 자리까지 옮김·크기·돌림·진하기 (미리보기 layerAtTime 과 같은 값)
+          const kfFn = hasKf ? (t) => {
+            const k = (l.kf && l.kf.length ? tl.kfAt(l.kf, t - sp.a, { x: bc.x / W, y: bc.y / H, s: 1, r: Number(l.rot) || 0, o: 1 }) : null) || { x: bc.x / W, y: bc.y / H, s: 1, r: Number(l.rot) || 0, o: 1 };
+            return { dx: (k.x * W - bc.x) / W, dy: (k.y * H - bc.y) / H, sc: Math.max(0.01, k.s), rot: k.r - (Number(l.rot) || 0), op: Math.max(0, Math.min(1, k.o * (l.opacity ?? 1))) };
+          } : null;
+          const evs = animTextEvents({ kf: kfFn, layer: 1, style: `T${j}`, rot0: Number(l.rot) || 0, lines, bc, lh, an: an || { dur: 0.5 }, a: sp.a, b: sp.b, s0, s1, end: sp.b >= dur - 0.001 ? dur + 0.05 : s1, W, H, align: free || hasKf ? undefined : l.align, halfW: W * 0.45,
             base: { a1: Math.round(Math.max(0, Math.min(1, Number(l.textAlpha) || 0)) * 255), a3: l.box ? Math.round((1 - Math.max(0, Math.min(1, l.boxOpacity ?? 0.62))) * 255) : l.glow ? Math.round(Math.max(0, Math.min(1, Number(l.glowAlpha) || 0)) * 255) : Math.round(Math.max(0, Math.min(1, Number(l.outlineAlpha) || 0)) * 255), a4: !l.box && Number(l.shadow) > 0 ? Math.round(Math.max(0, Math.min(1, Number(l.shadowAlpha) || 0)) * 255) : 255 }, extra: textLayerBlur(W, H, l) });
+          if (!fancyL) return evs;
+          // 이중 테두리·그라데이션 — 메인자막 fancySub 와 같은 그리기 (빛은 글자 스타일이 이미 그린다)
+          return fancySub(evs, { color: l.color || "#FFFFFF", outline: l.outline || (String(l.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000"), outlineWidth: l.outlineWidth ?? 4, outlineAlpha: l.outlineAlpha, outline2: l.outline2, outline2Width: l.outline2Width, gradTo: l.gradTo, gradType: l.gradType, gradAngle: l.gradAngle, gradA: l.gradA, gradB: l.gradB, bg: false, glow: "", wrap: 1, position: "middle" }, size, W, H);
         }
         // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
         const blur = textLayerBlur(W, H, l);
@@ -679,13 +881,18 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
           k += c;
         }
       }
-      return animTextEvents({ layer: 0, style: "S", rot0: Number(sst.rot) || 0, lines: parts, bc, lh, an: lineMode ? { ...sa, in: undefined } : sa || { dur: 0.5 }, a: l.s, b: l.e,
+      // 메인자막 키프레임 (2026-10-20) — 그 시각 자리·크기·돌림·진하기 (미리보기 Player 와 같은 값)
+      const kfFn = clip.subKf && clip.subKf.length ? (t) => {
+        const k = tl.kfAt(clip.subKf, t, { x: bc.x / W, y: bc.y / H, s: 1, r: Number(sst.rot) || 0, o: 1 });
+        return { dx: (k.x * W - bc.x) / W, dy: (k.y * H - bc.y) / H, sc: Math.max(0.01, k.s), rot: k.r - (Number(sst.rot) || 0), op: Math.max(0, Math.min(1, k.o)) };
+      } : null;
+      return animTextEvents({ kf: kfFn, layer: 0, style: "S", rot0: Number(sst.rot) || 0, lines: parts, bc, lh, an: lineMode ? { ...sa, in: undefined } : sa || { dur: 0.5 }, a: l.s, b: l.e,
         lineIn: lineMode ? { in: sa.in, dur: sa.dur } : null, lineAt,
         words: wfx ? { fx: wfx, list: lws[li] || [], color: sst.color || "#FFFFFF" } : null, s0: l.s, s1: l.e, end: l.e, W, H, align: sst.align, halfW: sub.halfW,
         base: { a1: Math.round(Math.max(0, Math.min(1, Number(sst.textAlpha) || 0)) * 255), a3: sst.bg ? Math.round((1 - Math.max(0, Math.min(1, sst.bgOpacity ?? 0.62))) * 255) : Math.round(Math.max(0, Math.min(1, Number(sst.outlineAlpha) || 0)) * 255), a4: shadowOn ? Math.round(Math.max(0, Math.min(1, Number(sst.shadowAlpha) || 0)) * 255) : 255 },
         extra: sub.tag ? sub.tag.replace(/^\{|\}$/g, "") : "" });
     };
-    const events = fancySub(sa || wfx || Number(sst.rot) ? lines.flatMap((l, li) => subAnim(l, li)) : lines.flatMap(subEvents), sst, sub.size, W, H);
+    const events = fancySub(sa || wfx || Number(sst.rot) || (clip.subKf && clip.subKf.length) ? lines.flatMap((l, li) => subAnim(l, li)) : lines.flatMap(subEvents), sst, sub.size, W, H);
     const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";
     fs.writeFileSync(path.join(tmp, `s${idx}.ass`), ass, "utf8");
     filters.push(`[${vOut}]subtitles=s${idx}.ass:fontsdir=fonts[vsub]`);
@@ -709,7 +916,10 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     while (s > 2) { tempo.push("atempo=2"); s /= 2; }
     while (s < 0.5) { tempo.push("atempo=0.5"); s /= 0.5; }
     if (Math.abs(s - 1) > 0.001) tempo.push(`atempo=${s.toFixed(3)}`);
-    filters.push(`[${k}:a]${tempo.length ? tempo.join(",") + "," : ""}volume=${(vol(st.voice && st.voice.volume) * vol(clip.volume)).toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "avo" : "aout"}]`);
+    // 나눈 클립 — 같은 목소리 파일의 o 초부터 duration 초만 (다시 만들지 않는다)
+    const vo = Number(clip.voice.o) || 0;
+    const vcut = vo > 0 || clip.voice.ng ? `atrim=start=${vo.toFixed(3)}:duration=${Number(clip.voice.duration).toFixed(3)},asetpts=PTS-STARTPTS,` : "";
+    filters.push(`[${k}:a]${vcut}${tempo.length ? tempo.join(",") + "," : ""}volume=${(vol(st.voice && st.voice.volume) * vol(clip.volume)).toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "avo" : "aout"}]`);
     if (vv > 0) filters.push(`[avo][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else if (vv > 0) {
     filters.push(`[avis]anull[aout]`);
@@ -721,11 +931,18 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     filters.push(`[${n++}:a]anull[aout]`);
   }
 
+  // 올린 영상 소리 섞기 (타임라인 V2 위 영상)
+  let aMain = "aout";
+  if (ovAud.length) {
+    filters.push(...ovAud);
+    filters.push(`[aout]${ovAud.map((x) => "[" + /\[(ova\d+)\]$/.exec(x)[1] + "]").join("")}amix=inputs=${ovAud.length + 1}:duration=first:normalize=0[aoutm]`);
+    aMain = "aoutm";
+  }
   // 클립 앞뒤 — 원본에서 이어지지 않는 쪽만 줄였다 키우기 (이어진 클립은 원본 소리 그대로)
   const ef = [edge.in && dur > EDGE * 3 ? `afade=t=in:st=0:d=${EDGE}` : "", edge.out && dur > EDGE * 3 ? `afade=t=out:st=${(dur - EDGE).toFixed(4)}:d=${EDGE}` : ""].filter(Boolean);
   // 소리 길이는 샘플 수로 딱 맞춘다 — 원본에서 이어진 클립끼리는 샘플 하나 틈 없이 붙는다
   const nSmp = ranges && tl.srcSpeed(clip) === 1 && clip.type !== "voice" ? ranges.reduce((a, r) => a + smp(r.e) - smp(r.s), 0) : smp(dur);
-  filters.push(`[aout]${ef.length ? ef.join(",") + "," : ""}apad,atrim=end_sample=${nSmp}[afin]`);
+  filters.push(`[${aMain}]${ef.length ? ef.join(",") + "," : ""}apad,atrim=end_sample=${nSmp}[afin]`);
 
   const base = path.join(tmp, `seg${String(idx).padStart(4, "0")}`);
   const out = { video: `${base}.mp4`, audio: `${base}.wav` };
@@ -762,34 +979,91 @@ function transOf(prev, cur) {
   const a = Math.max(0, Math.min(Number(t.a) || 0, prev.dur * 0.45));
   const b = Math.max(0, Math.min(Number(t.b) || 0, cur.dur * 0.45));
   if (a + b < 0.05) return null;
-  return { type: TRANS_FF.has(t.type) ? t.type : "fade", a, b };
+  return { type: TRANS_FF.has(t.type) || adv.isAdv(t.type) ? t.type : "fade", a, b };
+}
+const isAdvTr = (tr) => Boolean(tr && adv.isAdv(tr.type));
+
+/**
+ * 고급 화면전환 한 곳 굽기 (2026-10-20) — 앞 조각 끝 a초(+마지막 칸 멈춤 b초)와 뒤 조각(첫 칸 멈춤 a초+) 처음 b초를
+ *  칸마다 transAdv.bakeFrame 으로 섞어 짧은 영상 하나로 (미리보기 CSS 와 같은 값). 이음은 joinWithTransitions 가 이어 붙인다
+ */
+async function bakeAdvTrans(prevSeg, nextSeg, tr, k, tmp, enc, W, H) {
+  const nA = Math.round(tr.a * FPS), nB = Math.round(tr.b * FPS), N = Math.max(1, nA + nB);
+  const fsz = W * H * 3;
+  const rawA = path.join(tmp, `trA${k}.raw`), rawB = path.join(tmp, `trB${k}.raw`), rawT = path.join(tmp, `trT${k}.raw`), out = path.join(tmp, `trans${k}.mp4`);
+  const vf = `fps=${FPS},scale=${W}:${H},format=rgb24`;
+  await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-sseof", String(-(tr.a + 0.5)), "-i", prevSeg, "-vf", vf, "-f", "rawvideo", rawA]);
+  await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-i", nextSeg, "-vf", vf, "-frames:v", String(Math.max(1, nB)), "-f", "rawvideo", rawB]);
+  const MA = Math.max(1, Math.floor(fs.statSync(rawA).size / fsz)), MB = Math.max(1, Math.floor(fs.statSync(rawB).size / fsz));
+  const fa = fs.openSync(rawA, "r"), fb = fs.openSync(rawB, "r"), ft = fs.openSync(rawT, "w");
+  const A = Buffer.alloc(fsz), B = Buffer.alloc(fsz), O = Buffer.alloc(fsz), work = {};
+  let ia = -1, ib = -1;
+  try {
+    for (let j = 0; j < N; j++) {
+      const wa = j < nA ? Math.max(0, MA - nA + j) : MA - 1; // 앞: 끝 a초 → 마지막 칸 멈춤
+      const wb = j < nA ? 0 : Math.min(MB - 1, j - nA); // 뒤: 첫 칸 멈춤 → 처음 b초
+      if (wa !== ia) { fs.readSync(fa, A, 0, fsz, wa * fsz); ia = wa; }
+      if (wb !== ib) { fs.readSync(fb, B, 0, fsz, wb * fsz); ib = wb; }
+      adv.bakeFrame(A, B, O, W, H, adv.advLook(tr.type, j / N, W / H), work);
+      fs.writeSync(ft, O, 0, fsz);
+    }
+  } finally {
+    fs.closeSync(fa); fs.closeSync(fb); fs.closeSync(ft);
+  }
+  const args = ["-y", "-hide_banner", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", `${W}x${H}`, "-r", String(FPS), "-i", rawT, "-vf", "format=yuv420p,setsar=1"];
+  try {
+    await ff.run(ff.ff(), [...args, ...enc.args("final"), "-an", out]);
+  } catch (e) {
+    log.warn(`[굽기] 고급 전환 ${enc.name} 실패 → 일반 인코더: ${e.message}`);
+    await ff.run(ff.ff(), [...args, ...ff.fallbackEncoder().args("final"), "-an", out]);
+  }
+  for (const f of [rawA, rawB, rawT]) { try { fs.unlinkSync(f); } catch {} }
+  return out;
 }
 async function joinWithTransitions(segs, trs, out, tmp, enc) {
   const lens = [];
   for (const s of segs) lens.push((await ff.probe(s)).duration || 0);
+  // 고급 전환 — 그 자리만 미리 칸마다 그려 둔다 (앞 조각 끝 a초·뒤 조각 처음 b초를 잘라 내고 그 사이에 넣는다)
+  const tFiles = [];
+  if (trs.some(isAdvTr)) {
+    const pr = await ff.probe(segs[0]);
+    const W = pr.width, H = pr.height;
+    for (let k = 1; k < segs.length; k++) if (isAdvTr(trs[k])) tFiles[k] = await bakeAdvTrans(segs[k - 1], segs[k], trs[k], k, tmp, enc, W, H);
+  }
   const args = ["-y", "-hide_banner", "-loglevel", "error"];
   segs.forEach((s) => args.push("-i", path.basename(s)));
+  const tIdx = [];
+  tFiles.forEach((f, k) => { if (f) { tIdx[k] = segs.length + tIdx.filter((x) => x !== undefined).length; args.push("-i", path.basename(f)); } });
   const f = [];
+  const segLen = [];
   segs.forEach((_, k) => {
-    const a = trs[k] ? trs[k].a : 0; // 이 조각 앞에 붙일 첫 장면 멈춤
-    const b = trs[k + 1] ? trs[k + 1].b : 0; // 이 조각 끝에 붙일 마지막 장면 멈춤
+    const basicIn = trs[k] && !isAdvTr(trs[k]), basicOut = trs[k + 1] && !isAdvTr(trs[k + 1]);
+    const headCut = isAdvTr(trs[k]) ? trs[k].b : 0; // 고급 전환이 가져간 뒤 조각 처음
+    const tailCut = isAdvTr(trs[k + 1]) ? trs[k + 1].a : 0; // 고급 전환이 가져간 앞 조각 끝
+    const a = basicIn ? trs[k].a : 0; // 이 조각 앞에 붙일 첫 장면 멈춤
+    const b = basicOut ? trs[k + 1].b : 0; // 이 조각 끝에 붙일 마지막 장면 멈춤
+    const cut = headCut || tailCut ? [`trim=start=${headCut.toFixed(4)}:end=${Math.max(headCut + 0.04, lens[k] - tailCut).toFixed(4)}`, "setpts=PTS-STARTPTS"] : [];
     const pad = [a > 0 ? `tpad=start_mode=clone:start_duration=${a.toFixed(3)}` : "", b > 0 ? `tpad=stop_mode=clone:stop_duration=${b.toFixed(3)}` : ""].filter(Boolean);
+    segLen[k] = Math.max(0.04, lens[k] - headCut - tailCut) + a + b;
     // 시간 단위(settb)는 맨 끝에 — fps 가 1/30 으로 바꿔 놓으면 xfade 가 "timebase 다름"으로 실패한다
-    f.push(`[${k}:v]fps=${FPS},format=yuv420p${pad.length ? "," + pad.join(",") : ""},settb=AVTB[p${k}]`);
+    f.push(`[${k}:v]fps=${FPS},format=yuv420p,setsar=1${cut.length ? "," + cut.join(",") : ""}${pad.length ? "," + pad.join(",") : ""},settb=AVTB[p${k}]`);
   });
+  tIdx.forEach((ix, k) => { if (ix !== undefined) f.push(`[${ix}:v]fps=${FPS},format=yuv420p,setsar=1,settb=AVTB[t${k}]`); });
   let cur = "p0";
-  let len = lens[0] + (trs[1] ? trs[1].b : 0);
+  let len = segLen[0];
   for (let k = 1; k < segs.length; k++) {
     const tr = trs[k];
-    const segLen = lens[k] + (tr ? tr.a : 0) + (trs[k + 1] ? trs[k + 1].b : 0);
     const nx = `x${k}`;
-    if (tr) {
+    if (isAdvTr(tr)) {
+      f.push(`[${cur}][t${k}][p${k}]concat=n=3:v=1:a=0[${nx}]`);
+      len += tr.a + tr.b + segLen[k];
+    } else if (tr) {
       const d = tr.a + tr.b;
       f.push(`[${cur}][p${k}]xfade=transition=${tr.type}:duration=${d.toFixed(3)}:offset=${Math.max(0, len - d).toFixed(3)}[${nx}]`);
-      len += segLen - d;
+      len += segLen[k] - d;
     } else {
       f.push(`[${cur}][p${k}]concat=n=2:v=1:a=0[${nx}]`);
-      len += segLen;
+      len += segLen[k];
     }
     cur = nx;
   }
@@ -891,10 +1165,11 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     const musics = tl
       .musicLayers(p, items)
       .map((l) => {
+        const rg = l.id === "bgm" ? null : tl.layerRange(p, l, items, order); // 초 단위 구간(타임라인)까지
         const cov = tl.layerItems(p, l, items, order);
         if (!cov.length || !l.file || !fs.existsSync(l.file)) return null;
-        const s = cov[0].start;
-        const e = cov[cov.length - 1].start + cov[cov.length - 1].dur;
+        const s = rg ? rg.s : cov[0].start;
+        const e = rg ? rg.e : cov[cov.length - 1].start + cov[cov.length - 1].dur;
         return { l, s, len: e - s };
       })
       .filter((x) => x && x.len > 0.05);
@@ -910,7 +1185,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
           if (l.loop !== false) a.push("-stream_loop", "-1");
           if (Number(l.offset) > 0) a.push("-ss", Number(l.offset).toFixed(3));
           a.push("-i", l.file);
-          const mv = Math.max(0, Math.min(1, Number(l.volume ?? 0.15)));
+          const mv = Math.max(0, Math.min(2, Number(l.volume ?? 0.15))); // 200% 까지 (2026-10-20 사장님)
           const fi = Math.min(len / 2, Math.max(0, Number(l.fadeIn) || 0));
           const fo = Math.min(len / 2, Math.max(0, Number(l.fadeOut) || 0));
           const ms = Math.round(s * 1000);

@@ -3,7 +3,7 @@
 //  ffmpeg 만으로는 칸마다 크기를 바꿀 수 없어서, 움직이는 동안의 그림을 여기서 그리고 앱(render.js)은 그 그림을 그대로 얹는다.
 //  화면 글자·메인자막 애니메이션은 앱이 자막 엔진으로 칸마다 그린다 (render.js animTextEvents).
 import type { Layer, Project, VideoBridge } from "./types";
-import { animAt, animOf, clipOrder, flatten, layerSpan, layersAt, type FlatItem } from "./timeline";
+import { animAt, animOf, clipOrder, cropOf, flatten, imgRect, layerAtTime, layerSpan, layersAt, type FlatItem } from "./timeline";
 import { drawTemplate, isMotionStyle, tplFonts } from "./Templates";
 
 const FPS = 30;
@@ -50,7 +50,9 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
   const out: Project = structuredClone(p);
   // 움직이는 템플릿(경로·카운트다운·슬롯머신 …)은 애니메이션이 없어도 칸마다 다시 그린다
   const motion = (l: Layer) => Boolean(l.stk && isMotionStyle(l.stk.style));
-  const layers = (out.layers || []).filter((l) => l.type === "image" && !l.off && l.asset && p.assets[l.asset]?.kind === "image" && (animOf(p, l) || motion(l)));
+  // 키프레임 (2026-10-20) — 자리·크기·돌림·진하기가 칸마다 바뀌어서 같이 그린다 (채우기 사진은 키프레임 없음)
+  const keyed = (l: Layer) => Boolean(l.kf?.length) && l.fit !== "cover" && l.fit !== "contain";
+  const layers = (out.layers || []).filter((l) => l.type === "image" && !l.off && l.asset && p.assets[l.asset]?.kind === "image" && (animOf(p, l) || motion(l) || keyed(l)));
   if (layers.some(motion)) await tplFonts();
   // 할 일 (레이어 × 클립)
   const jobs: { l: Layer; it: FlatItem; a: number; b: number; s0: number; s1: number }[] = [];
@@ -69,7 +71,7 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
   let done = 0;
   for (const j of jobs) {
     done++;
-    onProgress(`스티커·사진 움직임을 그리는 중… (${done}/${jobs.length})`, 0);
+    onProgress(`그래픽·사진 움직임을 그리는 중… (${done}/${jobs.length})`, 0);
     const l = j.l;
     const a = p.assets[l.asset!];
     try {
@@ -80,18 +82,33 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
       }
       const an = animOf(p, l) || { dur: 0.5 };
       const n = Math.max(1, Math.ceil((j.s1 - j.s0) * FPS));
-      const looks = Array.from({ length: n }, (_, k) => animAt(an, j.s0 + k / FPS, j.a, j.b));
-      const mo = motion(l);
-      if (!mo && looks.every((r) => r.op === 1 && r.sc === 1 && r.sx === 1 && r.rot === 0 && r.dx === 0 && r.dy === 0)) continue; // 이 클립에선 안 움직인다 (돌린 것은 굽기가 그대로 돌린다)
-      // 자리 — render.js overlayImage 와 같은 계산 (채우기면 화면 전체)
+      // 자리 — render.js overlayImage·미리보기 Player 와 같은 계산 (채우기면 화면 전체)
       const full = l.fit === "cover" || l.fit === "contain";
       let pw = W, ph = H, x0 = 0, y0 = 0;
       if (!full) {
-        pw = Math.max(8, Math.round((W * Math.max(0.03, Math.min(1, Number(l.w ?? 0.35)))) / 2) * 2);
+        const r0 = imgRect(l, a, W, H);
+        pw = Math.max(8, Math.round(r0.width / 2) * 2);
         ph = a.width && a.height ? Math.round((pw * a.height) / a.width / 2) * 2 : pw;
-        x0 = Math.round(Math.max(0, Math.min(W - pw, W * Number(l.x ?? 0.5) - pw / 2)));
-        y0 = Math.round(Math.max(0, Math.min(H - ph, H * Number(l.y ?? 0.5) - ph / 2)));
+        x0 = Math.round(r0.left + (r0.width - pw) / 2);
+        y0 = Math.round(r0.top + (r0.height - ph) / 2);
       }
+      const looks = Array.from({ length: n }, (_, k) => {
+        const tt = j.s0 + k / FPS;
+        const r = animAt(an, tt, j.a, j.b);
+        if (keyed(l)) {
+          // 그 시각 모습 (미리보기 layerAtTime·imgRect 와 같다) → 처음 자리에서 옮김·크기·돌림·진하기
+          const L = layerAtTime(l, tt - j.a);
+          const rr = imgRect(L, a, W, H);
+          r.dx += (rr.left + rr.width / 2 - (x0 + pw / 2)) / W;
+          r.dy += (rr.top + rr.height / 2 - (y0 + ph / 2)) / H;
+          r.sc *= rr.width / Math.max(1, pw);
+          r.rot += (Number(L.rot) || 0) - (Number(l.rot) || 0);
+          r.op *= (L.opacity ?? 1) / Math.max(0.01, l.opacity ?? 1);
+        }
+        return r;
+      });
+      const mo = motion(l);
+      if (!mo && looks.every((r) => r.op === 1 && r.sc === 1 && r.sx === 1 && r.rot === 0 && r.dx === 0 && r.dy === 0)) continue; // 이 클립에선 안 움직인다 (돌린 것은 굽기가 그대로 돌린다)
       // 움직이는 동안 차지하는 넓이 (모든 칸을 합친 상자, 화면 안으로)
       let minX = W, minY = H, maxX = 0, maxY = 0;
       for (const r of looks) {
@@ -132,7 +149,12 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
             g.rect(-W / 2, -H / 2, W, H);
             g.clip();
             g.drawImage(img, (-img.width * kk) / 2, (-img.height * kk) / 2, img.width * kk, img.height * kk);
-          } else g.drawImage(mo ? drawTemplate(l.stk!.style, l.stk!.text, l.stk!.color, Math.max(0, j.s0 + k / FPS - j.a)) : img, -pw / 2, -ph / 2, pw, ph);
+          } else {
+            const src: CanvasImageSource & { width: number; height: number } = mo ? drawTemplate(l.stk!.style, l.stk!.text, l.stk!.color, Math.max(0, j.s0 + k / FPS - j.a)) : img;
+            const cr = cropOf(l.crop); // 자르기 — 원본 가장자리 (미리보기 clip-path·굽기 crop 과 같은 값)
+            if (cr) g.drawImage(src, src.width * cr.l, src.height * cr.t, src.width * (1 - cr.l - cr.r), src.height * (1 - cr.t - cr.b), -pw / 2 + pw * cr.l, -ph / 2 + ph * cr.t, pw * (1 - cr.l - cr.r), ph * (1 - cr.t - cr.b));
+            else g.drawImage(src, -pw / 2, -ph / 2, pw, ph);
+          }
           g.restore();
         }
         batch.push(cv.toDataURL("image/png"));

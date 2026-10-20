@@ -176,6 +176,7 @@ sys.stdout = sys.stderr  # 라이브러리 출력이 대답 줄에 섞이지 않
 def reply(o):
     OUT.write(json.dumps(o, ensure_ascii=False) + "\n"); OUT.flush()
 import torch, soundfile as sf
+import numpy as np
 from qwen_tts import Qwen3TTSModel
 dev = "cuda:0" if torch.cuda.is_available() else "cpu"
 if dev == "cpu":
@@ -195,8 +196,24 @@ for raw in sys.stdin.buffer:
         if key not in prompts:
             prompts = {key: m.create_voice_clone_prompt(ref_audio=q["ref"], ref_text=q["refText"])}
         n = len(q["text"].replace(" ", ""))
-        w, sr = m.generate_voice_clone(text=q["text"], language="Korean", voice_clone_prompt=prompts[key], max_new_tokens=min(2048, int(n * 3.2) + 40))
-        sf.write(q["out"], w[0], sr)
+        # 말끝 (2026-10-20 사장님: "끝음이 살짝 죽는다") — 이 모델은 둘 중 하나꼴로 마지막 소리 한가운데서 뚝 끊는다.
+        #  끝 0.04초가 아직 말소리면 그 문장만 다시 (최대 3번), 그래도 끊기면 가장 조용히 끝난 것을 쓰고
+        #  끝 0.06초를 부드럽게 줄인 뒤 0.2초 무음을 붙인다 (뚝 끊기는 소리 없이)
+        best = None
+        for _ in range(3):
+            w, sr = m.generate_voice_clone(text=q["text"], language="Korean", voice_clone_prompt=prompts[key], max_new_tokens=min(2048, int(n * 3.2) + 40))
+            a = np.asarray(w[0], dtype=np.float32)
+            t = float(np.sqrt(np.mean(a[-max(1, int(0.04 * sr)):] ** 2))) if len(a) else 1.0
+            if best is None or t < best[0]:
+                best = (t, a, sr)
+            if t < 0.003:  # 약 -50dBFS — 말이 다 내려앉고 끝났다
+                break
+        t, a, sr = best
+        if t >= 0.003:
+            f = min(len(a), int(0.06 * sr))
+            a[len(a) - f:] *= np.linspace(1.0, 0.0, f, dtype=np.float32) ** 2
+        a = np.concatenate([a, np.zeros(int(0.2 * sr), dtype=np.float32)])
+        sf.write(q["out"], a, sr)
         reply({"id": q["id"], "ok": True})
     except Exception as e:
         reply({"id": q.get("id"), "ok": False, "error": str(e)})
@@ -261,7 +278,7 @@ function say(text, out) {
       w.pending.set(id, { res, rej });
       w.proc.stdin.write(JSON.stringify({ id, text, out: raw, ref: ME.wav, refText: me.text }) + "\n");
     });
-    await trim(raw, out, 0.25); // 말끝 여유 — 0.08 은 끝소리가 잘려 급하게 들렸다 (2026-10-18)
+    await trim(raw, out, 0.08); // 말끝 여유 — 끝음은 엔진이 다시 만들기·부드럽게 줄이기로 살린다. 0.25 는 문장 사이가 길게 끊겨 들렸다 (2026-10-20)
     fs.rmSync(raw, { force: true });
     idle = setTimeout(stopWorker, 10 * 60 * 1000);
     return out;

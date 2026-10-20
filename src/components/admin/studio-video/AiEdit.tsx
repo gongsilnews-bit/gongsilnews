@@ -138,7 +138,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
       const stk: Record<string, { item: LibItem; spec: Sticker }> = {};
       const wantStk = doSticker ? plan.clips.map((x, i) => ({ i, s: x.sticker })).filter((x) => x.s) : [];
       if (wantStk.length && b.lib.saveImage) {
-        setBusy(`스티커를 그리는 중… (${wantStk.length}개)`);
+        setBusy(`그래픽을 그리는 중… (${wantStk.length}개)`);
         await stickerGlyphs(wantStk.map((x) => x.s!.text)).catch(() => {});
         for (const x of wantStk) {
           try {
@@ -199,7 +199,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
         } catch (e) {
           what = `그대로 (못 넣음: ${errText(e)})`;
         }
-        const extra = [pl.title && `화면 글자 "${pl.title}"`, pl.emph && "자막 강조", pl.trans && "화면전환", stk[c.id] && `스티커 "${stk[c.id].spec.text}"`, doSticker && pl.sfx && `효과음 ${SFX_LIST.find((x) => x.id === pl.sfx)?.label || pl.sfx}`].filter(Boolean).join(" · ");
+        const extra = [pl.title && `텍스트 "${pl.title}"`, pl.emph && "자막 강조", pl.trans && "화면전환", stk[c.id] && `그래픽 "${stk[c.id].spec.text}"`, doSticker && pl.sfx && `효과음 ${SFX_LIST.find((x) => x.id === pl.sfx)?.label || pl.sfx}`].filter(Boolean).join(" · ");
         done.push({ n: i + 1, text: clipText(c), what: extra ? `${what} · ${extra}` : what });
       }
       // 3) 배경음악
@@ -259,7 +259,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
         softCuts(p); // 화면이 다른 장면으로 바뀌는 곳마다 0.3초 겹치기 (툭툭 바뀌지 않게)
         if (music) {
           const items = flatten(p).items;
-          if (items.length) p.layers!.push({ id: uid(), type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, ...music, volume: 0.15, fadeIn: 0, fadeOut: 2, offset: 0, loop: true } as Layer);
+          if (items.length) p.layers!.push({ id: uid(), type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, ...music, volume: 0.03, fadeIn: 0, fadeOut: 2, offset: 0, loop: true } as Layer);
         }
       });
       if (music) done.push({ n: 0, text: "", what: `배경음악 · ${music.name}` });
@@ -300,7 +300,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
           <Btn small onClick={aiOpen}>AI 설정</Btn>
         </div>
         <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 8 }}>
-          {writer}가 자막을 읽고 클립마다 화면·화면 글자·자막 강조·화면전환·배경음악을 정하고, {imager}가 필요한 그림을 그려 넣어요.
+          {writer}가 자막을 읽고 클립마다 화면·텍스트·자막 강조·화면전환·배경음악을 정하고, {imager}가 필요한 그림을 그려 넣어요.
         </div>
 
         {/* AI 에게 맡길 것 — 다 켜면 처음부터 끝까지 AI 가 꾸민다 */}
@@ -308,9 +308,9 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, onUndo, onC
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button type="button" onClick={() => setDoScreen((v) => !v)} style={chip(doScreen)}>{doScreen ? "✓ " : ""}화면 (사진·영상·AI 그림)</button>
           <button type="button" onClick={() => setDoLook((v) => !v)} style={chip(doLook)}>{doLook ? "✓ " : ""}자막 스타일·효과</button>
-          <button type="button" onClick={() => setDoSticker((v) => !v)} style={chip(doSticker)}>{doSticker ? "✓ " : ""}스티커·효과음</button>
+          <button type="button" onClick={() => setDoSticker((v) => !v)} style={chip(doSticker)}>{doSticker ? "✓ " : ""}그래픽·효과음</button>
         </div>
-        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6, lineHeight: 1.6 }}>자막 스타일은 50가지 중 영상 분위기에 맞게 하나, 나타나기·단어 효과·최대 줄 수까지. 스티커는 강조할 곳에만 (움직임·효과음은 모양에 맞게 저절로).</div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6, lineHeight: 1.6 }}>자막 스타일은 50가지 중 영상 분위기에 맞게 하나, 나타나기·단어 효과·최대 줄 수까지. 그래픽은 강조할 곳에만 (움직임·효과음은 모양에 맞게 저절로).</div>
 
         <div style={head}>내 영상·사진 <span style={{ fontSize: 12.5, color: C.sub, fontWeight: 600 }}>(있으면 먼저 써요)</span></div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

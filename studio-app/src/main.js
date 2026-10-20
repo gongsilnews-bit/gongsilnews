@@ -35,7 +35,7 @@ const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key",
-  "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
+  "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
   "studio:save-file", "studio:open-out-folder",
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
@@ -548,6 +548,7 @@ ipcMain.handle("studio:blog-image-styles", (_e, vacancyId) => blogWriter.imageSt
 // 뉴스칼럼: 소재(뉴스·주제) 정하기
 ipcMain.handle("studio:column-fetch-news", (_e, url) => columnWriter.fetchNews(url));
 ipcMain.handle("studio:column-open-news", () => columnWriter.openNews());
+ipcMain.handle("studio:column-open-url", (_e, url) => columnWriter.openUrl(url));
 ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
 ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
 ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));

@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS = {
   fill: "cover", // cover 꽉 채우기 · contain 맞추기 · blur 맞추고 흐린 배경
   subtitle: { on: true, position: "bottom", posAuto: true, length: "long", maxLines: 2, size: 100, font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bold: true },
   voice: { id: "Charon", speed: 1, volume: 1 },
-  music: { on: false, mood: "calm", file: "", name: "", volume: 0.15 },
+  music: { on: false, mood: "calm", file: "", name: "", volume: 0.03 },
   sourceVolume: 1,
 };
 
@@ -541,8 +541,30 @@ async function addAsset(p, libId, onProgress = () => {}) {
 
 /* ── AI 목소리 ── 같은 문장·목소리는 한 번만 받는다 (프로젝트 voice\) */
 /** opts.fresh — [목소리 다시 만들기]: 저장해 둔 것을 쓰지 않고 새로 만든다 (새 파일 이름이라 미리보기도 바로 바뀜, 기본 파일도 새것으로) */
+/**
+ * 받은 성우 소리의 앞뒤 무음 정리 (타입캐스트·일레븐랩스) — 일레븐랩스는 끝에 0.3~1초 무음이 붙어 와서 문장 사이가 길게 끊겼다 (2026-10-20 실측).
+ *  말소리 앞뒤 0.08초만 남기고 (내 목소리·제미나이와 같게), 끝 0.03초는 부드럽게 줄여 "틱" 소리가 없게
+ */
+async function tidyEdges(file) {
+  try {
+    const info = await ff.probe(file);
+    const dur = info.duration || 0;
+    const parts = await ff.speech(file, dur, { noise: -40, min: 0.3 });
+    if (!parts.length || dur <= 0) return;
+    const s = Math.max(0, parts[0].s - 0.08);
+    const e = Math.min(dur, parts[parts.length - 1].e + 0.08);
+    if (s < 0.02 && dur - e < 0.02) return;
+    const tmp = file.replace(/\.wav$/i, "_tidy.wav");
+    const len = e - s;
+    await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-i", file, "-ss", s.toFixed(3), "-to", e.toFixed(3), "-af", `afade=t=out:st=${Math.max(0, len - 0.03).toFixed(3)}:d=0.03`, tmp]);
+    fs.renameSync(tmp, file);
+  } catch {}
+}
+
 async function voiceFor(p, text, voiceId, opts = {}) {
-  const t = String(text || "").replace(/\s+/g, " ").trim();
+  let t = String(text || "").replace(/\s+/g, " ").trim();
+  // 감정 태그([신나게] 등)는 일레븐랩스만 — 다른 성우는 태그를 빼고 읽는다 (2026-10-20)
+  if (!/^el_/.test(String(voiceId))) t = t.replace(/\[[^\]]{1,20}\]\s*/g, "").trim();
   if (!t) throw new Error("읽을 문장이 없습니다.");
   const my = voiceId === "me" ? require("./myvoice") : null; // 내 목소리 — PC 에서 만든다 (목소리를 다시 등록하면 새로)
   const tc = /^tc_/.test(String(voiceId)) ? require("./typecast") : null; // 타입캐스트 성우 — 회원 자기 키로 이 앱이 바로 (2026-10-19)
@@ -552,8 +574,8 @@ async function voiceFor(p, text, voiceId, opts = {}) {
   const base = path.join(p.dir, "voice", `${voiceId}_${h}.wav`);
   const file = opts.fresh ? base.replace(/\.wav$/, `_${Date.now().toString(36)}.wav`) : base;
   if (my && !fs.existsSync(file)) await my.say(t, file);
-  else if (tc && !fs.existsSync(file)) await tc.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next });
-  else if (el && !fs.existsSync(file)) await el.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next });
+  else if (tc && !fs.existsSync(file)) { await tc.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next }); await tidyEdges(file); }
+  else if (el && !fs.existsSync(file)) { await el.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next }); await tidyEdges(file); }
   // 제미나이 성우 — 회원 Gemini API 키로 이 PC 에서 (공실뉴스 서버 Gemini 는 쓰지 않음, 2026-10-19 사장님)
   else if (!fs.existsSync(file)) await require("./geminitts").say(t, file, { voiceId });
   if (opts.fresh) fs.copyFileSync(file, base); // 다음에 같은 문장을 부르면 새로 만든 것이 나오게
@@ -639,7 +661,82 @@ async function transcribe(p, assetId, onProgress = () => {}) {
  * (지운 클립·긴 침묵은 안 보내니 그만큼 비용이 준다), 받아온 단어를 그 시각이 들어간 클립에 나눠 준다.
  * 돌려줌: [{ id, text, words, sents: [{ text, s, e, words }] }] — sents 는 그 클립 안의 문장 (편집 화면이 문장마다 클립을 나눈다)
  */
+/* ── AI 보이스로 만든 소리의 문장 시각 (2026-10-20 사장님) ──
+ *  AI 보이스 녹음·목소리만 저장은 문장을 하나씩 만들어 잇기 때문에 문장 경계를 정확히 안다 → 소리 파일 내용(sha1)을 열쇠로 이 PC 에 적어 두고,
+ *  [오디오로 편집하기]에서 받아쓰기 대신 그대로 쓴다 (웃음·숨소리로 시작하는 문장도 단어가 앞서 나오지 않게). 파일 이름을 바꾸거나 옮겨도 같은 내용이면 찾는다 */
+const metaDir = () => path.join(app.getPath("userData"), "voice-meta");
+const fileKey = (file) => crypto.createHash("sha1").update(fs.readFileSync(file)).digest("hex");
+function saveVoiceMeta(file, meta) {
+  try {
+    fs.mkdirSync(metaDir(), { recursive: true });
+    fs.writeFileSync(path.join(metaDir(), fileKey(file) + ".json"), JSON.stringify({ v: 1, ...meta }));
+  } catch {}
+}
+function loadVoiceMeta(file) {
+  try {
+    const f = path.join(metaDir(), fileKey(file) + ".json");
+    return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null;
+  } catch {
+    return null;
+  }
+}
+/** 문장 앞 웃음·한숨처럼 소리만 있는 부분의 길이 (초) — 앞 1.6초 안에서 "쉭쉭" 숨소리(빠르게 떨리는 소리)가 끝나는 곳. 없으면 0 */
+async function leadNonverbal(file) {
+  const raw = path.join(require("os").tmpdir(), `gsv-lead-${crypto.randomBytes(4).toString("hex")}.raw`);
+  try {
+    await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-i", file, "-t", "1.8", "-ac", "1", "-ar", "16000", "-f", "s16le", raw]);
+    const b = fs.readFileSync(raw);
+    const W = 800; // 0.05초
+    const fr = [];
+    for (let k = 0; (k + 1) * W * 2 <= b.length && k * 0.05 < 1.6; k++) {
+      let sum = 0, zc = 0, prev = 0;
+      for (let i = 0; i < W; i++) {
+        const v = b.readInt16LE((k * W + i) * 2);
+        sum += v * v;
+        if (i && (v >= 0) !== (prev >= 0)) zc++;
+        prev = v;
+      }
+      fr.push({ db: 20 * Math.log10(Math.max(1, Math.sqrt(sum / W))), zc });
+    }
+    // 처음 나오는 "쉭쉭" 덩어리(0.15초 이상 — 자음 하나는 0.1초 안쪽이라 걸리지 않는다)가 끝난 뒤, 목소리가 다시 크게 나오는 곳
+    let end = 0;
+    for (let k = 0; k < fr.length; k++) {
+      let n = 0;
+      while (k + n < fr.length && fr[k + n].zc > 120 && fr[k + n].db > 45) n++;
+      if (n >= 3) {
+        let j = k + n;
+        while (j < fr.length && !(fr[j].zc < 90 && fr[j].db > 55)) j++;
+        end = j * 0.05;
+        break;
+      }
+      k += n;
+    }
+    return end;
+  } catch {
+    return 0;
+  } finally {
+    try { fs.unlinkSync(raw); } catch {}
+  }
+}
+
 async function transcribeClips(p, targets, onProgress = () => {}) {
+  // AI 보이스로 만든 소리면 적어 둔 문장 시각 그대로 (받아쓰기 없이, 정확하게)
+  const known = [];
+  const rest = [];
+  for (const t of targets || []) {
+    const a = p.assets[t.asset];
+    const m = a && a.kind === "audio" && a.path && fs.existsSync(a.path) ? loadVoiceMeta(a.path) : null;
+    if (m && Array.isArray(m.sents) && m.sents.length) {
+      const sents = m.sents.filter((x) => x.e > t.s && x.s < t.e).map((x) => ({ text: x.text, s: Math.max(t.s, x.s), e: Math.min(t.e, x.e), words: x.words.filter((w) => w.e > t.s && w.s < t.e) }));
+      if (sents.length) { known.push({ id: t.id, text: sents.map((x) => x.text).join(" "), words: sents.flatMap((x) => x.words), sents }); continue; }
+    }
+    rest.push(t);
+  }
+  if (!rest.length) return known;
+  return [...known, ...(await transcribeWhisper(p, rest, onProgress))];
+}
+
+async function transcribeWhisper(p, targets, onProgress = () => {}) {
   const CH = 90;
   const list = (targets || []).filter((t) => p.assets[t.asset] && t.e > t.s).sort((a, b) => (a.asset === b.asset ? a.s - b.s : a.asset < b.asset ? -1 : 1));
   const wins = [];
@@ -677,7 +774,7 @@ async function transcribeClips(p, targets, onProgress = () => {}) {
     const sp = speechOf[pc.asset] || [];
     // AI 가 준 문장 시각은 1~2초씩 틀릴 때가 있다 — 문장 사이 경계는 "두 문장 사이에서 가장 길게 쉰 곳"으로 정하고,
     // 문장 = 그 경계 사이의 실제 말소리 전부 (AI 시각 근처만 보면 말 일부가 옆 문장으로 빠진다)
-    const segs = (r.segments || []).map((sg) => ({ text: sg.text, s: pc.s + sg.start, e: pc.s + sg.end }));
+    const segs = (r.segments || []).map((sg) => ({ text: sg.text, s: pc.s + sg.start, e: pc.s + sg.end, dtw: (sg.words || []).map((w) => (w.t >= 0 ? pc.s + w.t : -1)) }));
     const gaps = sp.slice(1).map((x, i) => ({ s: sp[i].e, e: x.s }));
     const cut = segs.slice(1).map((nx, i) => {
       const a = segs[i].e - 1.5, z = nx.s + 1.5;
@@ -843,6 +940,18 @@ function buildClips(assetId, segs, speech, dur) {
  * 단어 시각 맞추기 (자동 자막) — 문장 안의 실제 말소리 덩어리마다 단어를 통째로 배정한다 (쉬는 곳에 걸친 단어가 없게).
  * 글자 수 비율로 "이 단어는 몇째 덩어리"를 정하고, 덩어리 안에서 다시 글자 수만큼 나눈다
  */
+/**
+ * Whisper DTW 단어 시각으로 단어 나누기 (2026-10-20 사장님: 웃음소리로 시작하는 문장에서 자막이 앞서 나왔다)
+ *  단어 수가 같고 시각이 앞으로만 가면 쓴다. DTW 시각은 소리보다 0.1초쯤 늦게 찍혀서 조금 당긴다. 아니면 null (예전 방식으로)
+ */
+function dtwWords(text, dtw, s, e) {
+  const tokens = String(text).split(/\s+/).filter(Boolean);
+  if (!dtw || dtw.length !== tokens.length || !tokens.length || dtw.some((t) => !(t >= 0))) return null;
+  const st = dtw.map((t) => Math.max(s, Math.min(e - 0.05, t - 0.1)));
+  for (let i = 1; i < st.length; i++) if (st[i] < st[i - 1] + 0.03) return null; // 거꾸로 가거나 겹치면 믿지 않는다
+  return tokens.map((w, i) => ({ w, s: +st[i].toFixed(3), e: +(i + 1 < st.length ? st[i + 1] : e).toFixed(3) }));
+}
+
 function alignWords(text, s, e, speech) {
   const tokens = String(text).split(/\s+/).filter(Boolean);
   const runs = speech.map((r) => ({ s: Math.max(s, r.s), e: Math.min(e, r.e) })).filter((r) => r.e - r.s > 0.05);
@@ -943,4 +1052,4 @@ function exportText(p, kind, outFile) {
   return file;
 }
 
-module.exports = { create, open, save, flush, discard, backup, backups, saveWork, discardWork, convert, packageInfo, makePackage, relink, saveAs, rename, trashList, trash, restore, purge, recent, addAsset, voiceFor, voiceJoin, transcribe, transcribeClips, realign, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };
+module.exports = { tidyEdges, saveVoiceMeta, leadNonverbal, alignWords, create, open, save, flush, discard, backup, backups, saveWork, discardWork, convert, packageInfo, makePackage, relink, saveAs, rename, trashList, trash, restore, purge, recent, addAsset, voiceFor, voiceJoin, transcribe, transcribeClips, realign, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };

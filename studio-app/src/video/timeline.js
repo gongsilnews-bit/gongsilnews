@@ -5,7 +5,11 @@
 //  silence : 말이 없는 구간 (무음 구간 줄이기로 지운다) src {asset, s, e}
 //  voice   : 글로 만든 클립 — AI 목소리 voice {file, duration} (+ 화면 자료 visual {asset, s}), words (목소리 파일 시각, 1배속 기준)
 // clip.del = 지운 클립, word.del = 지운 단어, clip.cuts = 무음 줄이기로 건너뛰는 구간 [{s, e}] (원본 시각) — 그 소리·영상 구간이 잘린다
-const GAP = 0.4; // 목소리 클립 뒤 숨 쉬는 틈 (기본) — gapOf(settings) 로 [AI 목소리 설정]의 문장 사이 쉼
+const GAP = 0.2; // (2026-10-20: 0.4 → 0.2, 브루처럼) 목소리 클립 뒤 숨 쉬는 틈 (기본) — gapOf(settings) 로 [AI 목소리 설정]의 문장 사이 쉼
+/** 목소리 뒤 쉼 — 쉼표로 끝나면 짧게 (웹 timeline.ts voiceGap 과 같다, 2026-10-20) */
+const COMMA_GAP = 0.05;
+const endsWithComma = (t) => /[,，、]\s*$/.test(String(t || "").trim());
+const voiceGap = (clip, settings) => (clip.voice && clip.voice.ng ? 0 : endsWithComma((clip.voice && clip.voice.text) || clip.text) ? Math.min(COMMA_GAP, gapOf(settings)) : gapOf(settings));
 const gapOf = (settings) => {
   const g = Number(settings && settings.voice && settings.voice.gap);
   return Number.isFinite(g) && g >= 0 ? Math.min(2, g) : GAP;
@@ -50,7 +54,7 @@ const srcSpeed = (clip) => (clip.type === "voice" ? 1 : Math.max(0.1, Math.min(2
 function clipDuration(clip, settings) {
   if (clip.del) return 0;
   if (clip.type === "voice") {
-    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + gapOf(settings) + Math.max(0, Number(clip.pad) || 0);
+    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + voiceGap(clip, settings) + Math.max(0, Number(clip.pad) || 0);
     return Math.max(0.5, Number(clip.hold) || estimateSeconds(clip.text, speedOf(clip, settings)));
   }
   return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(clip);
@@ -128,7 +132,7 @@ function photoOf(p, c) {
   return a && a.kind === "image" ? a : null;
 }
 function motionOf(p, clip) {
-  if (!photoOf(p, clip)) return null;
+  if (!photoOf(p, clip) || (clip.kf && clip.kf.length)) return null; // 키프레임이 있으면 자동 움직임은 쉰다
   let m = clip.motion || ((p.settings || {}).motion === "none" ? "none" : "auto");
   if (m === "none") return null;
   if (m === "auto") {
@@ -180,13 +184,22 @@ function layerItems(p, layer, items, order = clipOrder(p)) {
 /** 클립 하나에 걸린 애셋들 */
 /** 단어 구간 레이어가 그 클립 안에서 나오는 시간 (클립 시작 기준 초). 없으면 null = 클립 전체 (웹 timeline.ts layerWindow 와 같다) */
 function layerWindow(layer, clip, settings) {
-  if (typeof layer.w0 !== "number" || layer.from !== clip.id) return null;
-  const w1 = typeof layer.w1 === "number" ? layer.w1 : layer.w0;
-  const idx = (clip.words || []).map((w, i) => (w.del ? -1 : i)).filter((i) => i >= 0);
-  const ts = wordTimes(clip, settings);
-  const pick = ts.filter((_, k) => idx[k] !== undefined && idx[k] >= layer.w0 && idx[k] <= w1);
-  if (!pick.length) return null;
-  return { s: pick[0].s, e: pick[pick.length - 1].e };
+  if (typeof layer.w0 === "number") {
+    if (layer.from !== clip.id) return null;
+    const w1 = typeof layer.w1 === "number" ? layer.w1 : layer.w0;
+    const idx = (clip.words || []).map((w, i) => (w.del ? -1 : i)).filter((i) => i >= 0);
+    const ts = wordTimes(clip, settings);
+    const pick = ts.filter((_, k) => idx[k] !== undefined && idx[k] >= layer.w0 && idx[k] <= w1);
+    if (!pick.length) return null;
+    return { s: pick[0].s, e: pick[pick.length - 1].e };
+  }
+  // 초 단위 구간 (타임라인에서 끈 것, 2026-10-20) — 시작 클립은 ts 부터, 끝 클립은 te 까지
+  const a = layer.from === clip.id ? Math.max(0, Number(layer.ts) || 0) : 0;
+  const hasE = layer.to === clip.id && typeof layer.te === "number";
+  if (!a && !hasE) return null;
+  const d = clipDuration(clip, settings);
+  const s = Math.min(a, d);
+  return { s, e: hasE ? Math.max(s, Math.min(d, Number(layer.te))) : d };
 }
 /** 화면 위에 겹치는 것의 쌓는 순서 — 뒤 → 앞. src/components/admin/studio-video/timeline.ts zLayers 와 같다 (회의 3-26) */
 function zLayers(p, layers) {
@@ -320,12 +333,145 @@ function wordState(fx, w, t) {
 function layerSpan(p, layer, items, clipId, settings, order = clipOrder(p)) {
   const cur = items.find((x) => x.clip.id === clipId);
   if (!cur) return null;
-  const w = layerWindow(layer, cur.clip, settings);
-  if (w) return { a: w.s, b: w.e };
+  if (typeof layer.w0 === "number") {
+    const w = layerWindow(layer, cur.clip, settings);
+    if (w) return { a: w.s, b: w.e };
+  }
   const cov = layerItems(p, layer, items, order);
   if (!cov.length) return null;
+  const first = cov[0];
   const last = cov[cov.length - 1];
-  return { a: cov[0].start - cur.start, b: last.start + last.dur - cur.start };
+  const a = first.start + Math.min(first.dur, Math.max(0, Number(layer.ts) || 0));
+  const b = last.start + (typeof layer.te === "number" ? Math.max(0, Math.min(last.dur, layer.te)) : last.dur);
+  return { a: a - cur.start, b: Math.max(a, b) - cur.start };
+}
+/** 레이어가 나오는 영상 전체 시각 [s, e] (웹 timeline.ts layerRange 와 같다) */
+function layerRange(p, layer, items, order = clipOrder(p)) {
+  const cov = layerItems(p, layer, items, order);
+  if (!cov.length) return null;
+  const sp = layerSpan(p, layer, items, cov[0].clip.id, p.settings, order);
+  if (!sp) return null;
+  return { s: cov[0].start + sp.a, e: cov[0].start + sp.b };
+}
+
+/* ── 키프레임 (2026-10-20) — 웹 timeline.ts 와 같은 계산 (미리보기 = 굽기) ── */
+function easeVal(e, u) {
+  const x = Math.max(0, Math.min(1, u));
+  return e === "inout" ? x * x * (3 - 2 * x) : e === "in" ? x * x : e === "out" ? x * (2 - x) : x;
+}
+const kfSort = (kf) => [...kf].sort((a, b) => a.t - b.t);
+const kfHas = (k, p) => !k.only || k.only.includes(p);
+/** 한 항목의 그 시각 값 — 웹 timeline.ts kfVal 과 같다 (항목마다 ◇) */
+function kfVal(ks, p, t, base) {
+  const pts = ks.filter((k) => kfHas(k, p));
+  if (!pts.length) return base && typeof base[p] === "number" ? base[p] : ks[0][p];
+  if (t <= pts[0].t) return pts[0][p];
+  const last = pts[pts.length - 1];
+  if (t >= last.t) return last[p];
+  let i = 0;
+  while (i < pts.length - 2 && t >= pts[i + 1].t) i++;
+  const a = pts[i], b = pts[i + 1];
+  const v = easeVal(a.e, (t - a.t) / Math.max(1e-6, b.t - a.t));
+  return a[p] + (b[p] - a[p]) * v;
+}
+function kfAt(kf, t, base) {
+  if (!kf || !kf.length) return null;
+  const ks = kfSort(kf);
+  const seg = [...ks].reverse().find((k) => k.t <= t) || ks[0];
+  return { t, x: kfVal(ks, "x", t, base), y: kfVal(ks, "y", t, base), s: kfVal(ks, "s", t, base), r: kfVal(ks, "r", t, base), o: kfVal(ks, "o", t, base), e: seg.e };
+}
+/** 키프레임 레이어의 그 시각(tau) 모습 (웹 layerAtTime 과 같다) */
+function layerAtTime(l, tau) {
+  if (l.type === "text" && !(l.kf && l.kf.length)) return (l.opacity ?? 1) < 0.999 ? { ...l, kfo: Math.max(0, l.opacity ?? 1) } : l;
+  if (!l.kf || !l.kf.length || (l.type === "image" && (l.fit === "cover" || l.fit === "contain"))) return l;
+  const k = kfAt(l.kf, tau, { x: l.x ?? 0.5, y: l.y ?? 0.5, s: 1, r: Number(l.rot) || 0, o: 1 });
+  if (l.type === "image") return { ...l, x: k.x, y: k.y, rot: k.r, w: (l.w ?? 0.35) * k.s, opacity: Math.max(0, Math.min(1, (l.opacity ?? 1) * k.o)) };
+  return { ...l, x: k.x, y: k.y, rot: k.r, size: (l.size ?? 100) * k.s, kfo: Math.max(0, Math.min(1, k.o * (l.opacity ?? 1))) };
+}
+/** 사진 올리기·스티커 자리 (px) — 웹 imgRect 와 같다 */
+function imgRect(l, a, W, H) {
+  const pw = Math.max(0.03, Math.min(4, l.w ?? 0.35)) * W;
+  const ph = a && a.width && a.height ? (pw * a.height) / a.width : pw;
+  const cx = (l.x ?? 0.5) * W, cy = (l.y ?? 0.5) * H;
+  if (l.kf && l.kf.length) return { left: cx - pw / 2, top: cy - ph / 2, width: pw, height: ph };
+  return { left: Math.max(0, Math.min(W - pw, cx - pw / 2)), top: Math.max(0, Math.min(H - ph, cy - ph / 2)), width: pw, height: ph };
+}
+/** 클립 화면 네모 (0~1) — 웹 clipBaseRect 와 같다 */
+function clipBaseRect(p, c, W, H) {
+  const id = (c.visual && c.visual.asset) || (c.type !== "voice" && c.src ? c.src.asset : undefined);
+  const a = id ? (p.assets || {})[id] : null;
+  const ar = a && a.width && a.height ? a.width / a.height : W / H;
+  if (c.box) {
+    const w = Number(c.box.w);
+    return { x: Number(c.box.x), y: Number(c.box.y), w, h: (w * W) / ar / H };
+  }
+  const fill = c.fill || (p.settings || {}).fill;
+  if (ar > W / H !== (fill === "cover")) return { x: 0.5, y: 0.5, w: 1, h: W / ar / H };
+  return { x: 0.5, y: 0.5, w: (H * ar) / W, h: 1 };
+}
+/** 클립 화면 움직임 (키프레임, 또는 돌리기·진하기만) — 없으면 null (웹 clipKeys 와 같다) */
+/** 클립 화면 점이 없는 항목의 값 (웹 clipKeyBase 와 같다) */
+/** 자르기 값 — 웹 timeline.ts cropOf 와 같다 */
+function cropOf(c) {
+  if (!c) return null;
+  const cl = (v) => Math.max(0, Math.min(0.95, Number(v) || 0));
+  let l = cl(c.l), r = cl(c.r), t = cl(c.t), b = cl(c.b);
+  if (l + r > 0.95) { const k = 0.95 / (l + r); l *= k; r *= k; }
+  if (t + b > 0.95) { const k = 0.95 / (t + b); t *= k; b *= k; }
+  return l || r || t || b ? { l, r, t, b } : null;
+}
+function clipKeyBase(p, c, W, H) {
+  const b = clipBaseRect(p, c, W, H);
+  return { t: 0, x: b.x, y: b.y, s: 1, r: Number(c.rot) || 0, o: c.opacity ?? 1 };
+}
+function clipKeys(p, c, W, H) {
+  if (c.kf && c.kf.length) return kfSort(c.kf);
+  const r = Number(c.rot) || 0;
+  const o = c.opacity ?? 1;
+  if (!r && o >= 0.999) return null;
+  const b = clipBaseRect(p, c, W, H);
+  return [{ t: 0, x: b.x, y: b.y, s: 1, r, o }];
+}
+
+/* ── 색 보정·필터 — 웹 timeline.ts 와 같은 색 행렬 (미리보기 SVG feColorMatrix = 굽기 colorchannelmixer) ── */
+const I3 = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]];
+const mmul = (A, B) => A.map((r) => [0, 1, 2, 3].map((j) => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j] + (j === 3 ? r[3] : 0)));
+const satM = (s) => [
+  [0.2126 + 0.7874 * s, 0.7152 - 0.7152 * s, 0.0722 - 0.0722 * s, 0],
+  [0.2126 - 0.2126 * s, 0.7152 + 0.2848 * s, 0.0722 - 0.0722 * s, 0],
+  [0.2126 - 0.2126 * s, 0.7152 - 0.7152 * s, 0.0722 + 0.9278 * s, 0],
+];
+const gainM = (r, g, b) => [[r, 0, 0, 0], [0, g, 0, 0], [0, 0, b, 0]];
+const conM = (c) => [[c, 0, 0, 0.5 * (1 - c)], [0, c, 0, 0.5 * (1 - c)], [0, 0, c, 0.5 * (1 - c)]];
+const liftM = (v) => [[1, 0, 0, v], [0, 1, 0, v], [0, 0, 1, v]];
+const FILTER_M = {
+  home: mmul(gainM(1.06, 1.03, 0.97), mmul(satM(1.15), mmul(conM(1.05), gainM(1.08, 1.08, 1.08)))),
+  vivid: mmul(satM(1.35), conM(1.1)),
+  bright: mmul(satM(1.08), mmul(conM(0.95), gainM(1.14, 1.14, 1.14))),
+  warm: mmul(gainM(1.12, 1.02, 0.86), satM(1.05)),
+  cool: mmul(gainM(0.9, 1, 1.12), satM(0.98)),
+  film: mmul(gainM(0.96, 1, 1.04), mmul(satM(0.82), conM(1.15))),
+  fade: mmul(liftM(0.07), mmul(satM(0.75), conM(0.82))),
+  mono: mmul(conM(1.1), satM(0)),
+  sepia: [[0.393, 0.769, 0.189, 0], [0.349, 0.686, 0.168, 0], [0.272, 0.534, 0.131, 0]],
+  night: mmul(gainM(0.92, 0.95, 1.05), mmul(conM(1.2), gainM(0.85, 0.85, 0.85))),
+};
+function adjMatrix(a) {
+  if (!a) return null;
+  let M = I3;
+  const f = a.f ? FILTER_M[a.f] : null;
+  if (f) {
+    const k = Math.max(0, Math.min(1, a.fi ?? 1));
+    M = f.map((r, i) => r.map((v, j) => I3[i][j] + (v - I3[i][j]) * k));
+  }
+  const b = Number(a.b) || 0, c = Number(a.c) || 0, s = Number(a.s) || 0, t = Number(a.t) || 0, g = Number(a.g) || 0;
+  if (b) M = mmul(gainM(1 + 0.6 * b, 1 + 0.6 * b, 1 + 0.6 * b), M);
+  if (c) M = mmul(conM(1 + 0.6 * c), M);
+  if (s) M = mmul(satM(1 + s), M);
+  if (t) M = mmul(gainM(1 + 0.2 * t, 1 + 0.03 * t, 1 - 0.2 * t), M);
+  if (g) M = mmul(gainM(1 + 0.05 * g, 1 - 0.15 * g, 1 + 0.05 * g), M);
+  if (M.every((r, i) => r.every((v, j) => Math.abs(v - I3[i][j]) < 1e-4))) return null;
+  return M.map((r) => r.map((v) => +v.toFixed(5)));
 }
 const easeOut = (x) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
 const backOut = (x) => { const k = Math.max(0, Math.min(1, x)) - 1; return 1 + 2.70158 * k * k * k + 1.70158 * k * k; };
@@ -404,6 +550,13 @@ function sfxEvents(p, items, order = clipOrder(p)) {
     const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
     ev.push({ t: cov[0].start + (sp ? Math.max(0, sp.a) : 0), name: l.sfx, vol: Math.max(0, Math.min(1, l.volume ?? 0.8)), keep: true });
   }
+  // 화면전환 효과음 (clip.trans.sfx, 2026-10-20) — 전환이 시작될 때 (앞 클립 끝 a초 앞)
+  for (let i = 1; i < items.length; i++) {
+    const tr = items[i].clip.trans;
+    if (!tr || !tr.sfx) continue;
+    const a = Math.max(0, Math.min(Number(tr.a) || 0, items[i - 1].dur * 0.45));
+    ev.push({ t: Math.max(0, items[i].start - a), name: tr.sfx, vol: 0.6, keep: true });
+  }
   const sub = (p.settings && p.settings.subtitle) || {};
   for (const it of items) {
     const sa = subAnimOf(p, it.clip);
@@ -416,4 +569,4 @@ function sfxEvents(p, items, order = clipOrder(p)) {
   return ev.filter((e, i) => e.keep || !i || e.t - ev[i - 1].t > 0.12);
 }
 
-module.exports = { textEm, capEm, sfxEvents, animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText, zLayers, effSpacing, effLeading, subWordOf, lineWords, wordState };
+module.exports = { cropOf, kfVal, kfHas, clipKeyBase, layerRange, easeVal, kfSort, kfAt, layerAtTime, imgRect, clipBaseRect, clipKeys, adjMatrix, textEm, capEm, sfxEvents, animOf, subAnimOf, layerSpan, animAt, motionOf, motionAt, subStyleOf, srcSpeed, keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, layerWindow, musicLayers, subtitleText, zLayers, effSpacing, effLeading, subWordOf, lineWords, wordState };

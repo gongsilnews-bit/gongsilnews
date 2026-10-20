@@ -6,7 +6,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { WordDetail } from "./WordDetail";
 import type { Clip, Project, Word } from "./types";
-import { DRAG_MEDIA, fmtTime } from "./types";
+import { DRAG_MEDIA, DRAG_STICKER, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
 import { findVoice } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
@@ -53,7 +53,9 @@ export type ClipActions = {
   restoreCut: (id: string, i: number | "all") => void; // 무음 줄이기 원래대로 (한 곳 / 모두)
   addCut: (id: string, g: { s: number; e: number }) => void; // 쉼 [..] 하나 줄이기
   newClipBefore: (id: string) => void; // 클립 사이 [+ 새 클립] — 이 클립 앞에 글 클립
-  openTrans: (id: string, add: boolean) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
+  openTrans: (id: string, add: boolean) => void;
+  /** 자막 아이콘 — 그 클립으로 가서 미리보기에서 메인자막 고르기 (2026-10-20 사장님) */
+  pickSub?: (id: string) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
 };
 
 type Props = {
@@ -75,6 +77,8 @@ type Props = {
   onDropMedia?: (clipId: string, where: "before" | "after" | "replace", raw: string) => void;
   /** 왼쪽 애셋 줄에 놓으면 그 클립부터 사진 올리기 (레이어) */
   onDropLayer?: (clipId: string, raw: string) => void;
+  /** 스티커·템플릿을 끌어 클립에 놓기 — 그 클립에 넣는다 (2026-10-20) */
+  onDropSticker?: (clipId: string) => void;
   /** 오른쪽 칸에 열린 화면전환 (뒤 클립 id) */
   transClip?: string;
 };
@@ -359,7 +363,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                           {tb("plus", "삽입 ▾", () => setInsOpen((v) => !v))}
                           {insOpen && (
                             <span style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 21, display: "flex", flexDirection: "column", minWidth: 190, padding: 4, borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
-                              {([["mine", "image", "내 이미지·비디오"], ["vacancy", "image", "공실 사진"], ["free", "search", "무료 이미지·비디오"], ["ai", "ai", "AI 이미지"], ["title", "font", "기본 텍스트"], ["sticker", "star", "스티커"]] as const).map(([k, icon, label]) => (
+                              {([["mine", "image", "내 이미지·비디오"], ["vacancy", "image", "공실 사진"], ["free", "search", "무료 이미지·비디오"], ["ai", "ai", "AI 이미지"], ["title", "font", "기본 텍스트"], ["sticker", "star", "그래픽"]] as const).map(([k, icon, label]) => (
                                 <span key={k}>{tb(icon, label, () => { setInsOpen(false); p.actions.insert(k); })}</span>
                               ))}
                             </span>
@@ -404,7 +408,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     const a = l.type === "image" && l.asset ? project.assets[l.asset] : null;
                     const th = a ? a.thumb || (a.kind === "image" ? a.url : "") : "";
                     return (
-                      <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); p.actions.openLayer(l.id); }} title={isSticker(l) ? "이 단어부터 나오는 스티커 — 눌러서 설정" : l.type === "image" ? "이 단어부터 나오는 사진 — 눌러서 설정" : `화면 글자 “${String(l.text || "").slice(0, 20)}” — 눌러서 설정`}
+                      <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); p.actions.openLayer(l.id); }} title={isSticker(l) ? "이 단어부터 나오는 그래픽 — 눌러서 설정" : l.type === "image" ? "이 단어부터 나오는 사진 — 눌러서 설정" : `텍스트 “${String(l.text || "").slice(0, 20)}” — 눌러서 설정`}
                         style={{ width: 30, height: 34, padding: 0, borderRadius: 4, border: `1px solid ${C.accent}`, background: C.panel2, overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.accent, fontSize: 14, fontWeight: 800, fontFamily: FONT, opacity: l.off ? 0.4 : 1 }}>
                         {l.type === "image" ? (th ? <img src={th} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <Icon name="image" size={15} />) : "T"}
                       </button>
@@ -422,7 +426,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : active ? "rgba(59,130,246,0.6)" : C.line2}`,
                       // 고른 단어(Ctrl 로 여러 개) = 파랗게 칠함 · 지금 재생 위치 = 연한 파랑
                       background: isSel ? C.accent : active ? "rgba(59,130,246,0.28)" : w.del ? "transparent" : C.panel2,
-                      color: isSel ? "#fff" : w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      color: isSel ? "#fff" : w.del ? C.dim : active ? "#fff" : busy ? "#5fb8ff" : C.text, textDecoration: w.del ? "line-through" : w.fix ? "underline dotted #facc15" : "none", textUnderlineOffset: 4, fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {/* 목소리를 만드는 동안 — 고른 단어마다 앞에 돌아가는 동그라미 (클립 전체를 바꿀 땐 목소리 칩에만) */}
                     {busy && p.selWord?.clip === c.id && isSel && <span className="gsv-spin" style={{ display: "inline-block", width: 13, height: 13, marginRight: 6, verticalAlign: -2, borderRadius: "50%", border: `2px solid ${isSel ? "#fff" : C.accent}`, borderRightColor: "transparent" }} />}
                     {w.w}
@@ -505,12 +509,20 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {/* 2줄: 화면 자료 + 자막 */}
         {(p.view === "detail" || (isSrc && subOpen > 0)) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
-            {/* 이 클립에만 있는 애셋 (글자·스티커·사진·효과음) — 2개 클립 이상이면 왼쪽 줄로 나간다 */}
+            {/* 이 클립에만 있는 애셋 (글자·그래픽·사진·효과음) — 2개 클립 이상이면 왼쪽 줄로 나간다 */}
             <SingleChips list={(p.lanes.singles || []).filter((x) => x.a === it.index)} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
             <button type="button" data-drop-replace="" onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
               onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
-              style={{ width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
+              style={{ position: "relative", width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
+              {/* 키프레임·필터 표시 — 타임라인 편집에서 넣은 것 (텍스트 편집에서도 보이게, 회의 10-19 5장 5) */}
+              {(c.kf?.length || c.adj) && (
+                <span title={[c.kf?.length ? `◆ 키프레임 ${c.kf.length}개` : "", c.adj ? "필터·색 보정" : ""].filter(Boolean).join(" · ")}
+                  style={{ position: "absolute", right: 1, bottom: 1, display: "flex", gap: 1, padding: "0 2px", borderRadius: 3, background: "rgba(0,0,0,.65)", color: "#fde047" }}>
+                  {c.kf?.length ? <Icon name="diamondFill" size={10} /> : null}
+                  {c.adj ? <span style={{ color: "#fff", display: "flex" }}><Icon name="adjust" size={10} /></span> : null}
+                </span>
+              )}
             </button>
             {peek && asset && <Peek asset={asset} rect={peek} start={c.visual ? c.visual.s : c.src?.s || 0} flipX={c.flipX} flipY={c.flipY} />}
             {/* ▶ 여기부터 듣기 / ■ 멈춤 — 흰 선 아이콘 (스페이스바도 같다) */}
@@ -523,7 +535,11 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 </button>
               );
             })()}
-            <Icon name="sub" size={18} color={C.dim} />
+            <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.pickSub?.(c.id); }} title="눌러서 미리보기에서 이 자막 고르기 (끌어 옮기기·크기·서식)"
+              style={{ width: 24, height: 24, padding: 0, border: 0, borderRadius: 4, background: "transparent", color: C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.text)} onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}>
+              <Icon name="sub" size={18} />
+            </button>
             <SubLine c={c} p={p} empty="자막 넣기" open={subOpen} />
             {busy && <span style={{ fontSize: 13, color: C.sub }}>{busy}</span>}
             {c.type === "voice" && !c.voice && !busy && clipText(c) && <span style={{ fontSize: 13, color: C.dim }}>목소리 없음</span>}
@@ -656,11 +672,17 @@ const SPIN_CSS = "@keyframes gsvSpin{to{transform:rotate(360deg)}}.gsv-spin{anim
 
 export default function ClipList(p: Props) {
   const { project } = p;
-  const [drop, setDrop] = React.useState<{ id: string; where: "before" | "after" | "replace" } | null>(null);
+  const [drop, setDrop] = React.useState<{ id: string; where: "before" | "after" | "replace" | "sticker" } | null>(null);
   const dropProps = (id: string) =>
     p.onDropMedia
       ? {
           onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+            if (e.dataTransfer.types.includes(DRAG_STICKER) && p.onDropSticker) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+              if (!drop || drop.id !== id || drop.where !== "sticker") setDrop({ id, where: "sticker" });
+              return;
+            }
             if (e.dataTransfer.types.includes(DRAG_CLIP)) {
               if (dragging.includes(id)) return;
               e.preventDefault();
@@ -684,6 +706,12 @@ export default function ClipList(p: Props) {
             if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop((d) => (d && d.id === id ? null : d));
           },
           onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+            if (e.dataTransfer.types.includes(DRAG_STICKER) && p.onDropSticker) {
+              e.preventDefault();
+              setDrop(null);
+              p.onDropSticker(id);
+              return;
+            }
             const moved = e.dataTransfer.getData(DRAG_CLIP);
             if (moved) {
               e.preventDefault();
@@ -697,7 +725,7 @@ export default function ClipList(p: Props) {
               return;
             }
             const raw = e.dataTransfer.getData(DRAG_MEDIA);
-            const where = drop && drop.id === id ? drop.where : "replace";
+            const where = drop && drop.id === id && drop.where !== "sticker" ? drop.where : "replace";
             setDrop(null);
             if (!raw) return;
             e.preventDefault();
@@ -808,7 +836,12 @@ export default function ClipList(p: Props) {
                 <div style={{ flex: 1, minWidth: 0, position: "relative" }} {...dropProps(it.clip.id)}>
                   {n > 0 && <TransSlot c={it.clip} p={p} open={p.transClip === it.clip.id} />}
                   <ClipCard project={project} it={it} n={++n} p={p} />
-                  {drop?.id === it.clip.id && (drop.where === "replace" ? (
+                  {drop?.id === it.clip.id && drop.where === "sticker" && (
+                    <div style={{ position: "absolute", inset: "6px 0", border: `2px solid ${C.accent}`, borderRadius: 8, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59,130,246,0.12)" }}>
+                      <span style={{ padding: "6px 12px", borderRadius: 5, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800 }}>여기 놓으면 이 클립에 그래픽을 넣어요</span>
+                    </div>
+                  )}
+                  {drop?.id === it.clip.id && drop.where !== "sticker" && (drop.where === "replace" ? (
                     <div style={{ position: "absolute", inset: "6px 0", border: `2px solid ${C.accent}`, borderRadius: 8, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59,130,246,0.12)" }}>
                       <span style={{ padding: "6px 12px", borderRadius: 5, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800 }}>{p.selected.length > 1 && p.selected.includes(it.clip.id) ? `여기 놓으면 고른 클립 ${p.selected.length}개 화면을 바꿔요` : "여기 놓으면 이 클립 화면을 바꿔요"}</span>
                     </div>

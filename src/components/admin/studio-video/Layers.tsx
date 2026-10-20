@@ -16,13 +16,13 @@ import { BubbleGrid, type Sticker } from "./Stickers";
 import { TemplateFields } from "./Templates";
 
 export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text", sfx: "bell" };
-export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자", sfx: "효과음" };
+export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "텍스트", sfx: "효과음" };
 /** 화면에 보이는 것 (겹치는 순서가 있는 것) — 사진·스티커·화면 글자 */
 const isVis = (l: Layer) => l.type === "image" || l.type === "text";
-export const layerTitle = (l: Layer) => (l.type === "text" ? String(l.text || "").trim() || "화면 글자" : (l.name || "").replace(/^스티커_/, "") || layerName(l));
+export const layerTitle = (l: Layer) => (l.type === "text" ? String(l.text || "").trim() || "텍스트" : (l.name || "").replace(/^스티커_/, "") || layerName(l));
 /** 스티커는 사진 레이어로 그리지만 이름·아이콘은 따로 (먼저 넣은 것은 이름 "스티커_…" 로 알아본다) */
 export const isSticker = (l: Layer) => Boolean(l.sticker) || (l.type === "image" && /^스티커_/.test(l.name || ""));
-export const layerName = (l: Layer) => (isSticker(l) ? "스티커" : LAYER_NAME[l.type]);
+export const layerName = (l: Layer) => (isSticker(l) ? "그래픽" : LAYER_NAME[l.type]);
 export const layerIcon = (l: Layer) => (isSticker(l) ? "star" : LAYER_ICON[l.type]);
 
 /* ── 클립 목록 왼쪽 줄 ── */
@@ -117,7 +117,7 @@ function StickerText({ text, ok, onText }: { text: string; ok: boolean; onText: 
   };
   return (
     <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
-      <div style={{ ...label, marginBottom: 8 }}>스티커 글자</div>
+      <div style={{ ...label, marginBottom: 8 }}>그래픽 글자</div>
       {ok ? (
         <>
           <div style={{ display: "flex", gap: 6 }}>
@@ -128,7 +128,7 @@ function StickerText({ text, ok, onText }: { text: string; ok: boolean; onText: 
           <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>모양·색·움직임은 그대로, 글자만 바뀌어요 (엔터로 바꾸기).</div>
         </>
       ) : (
-        <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.5 }}>이 스티커는 모양을 알 수 없어 글자를 고칠 수 없어요. [스티커]에서 다시 넣어 주세요.</div>
+        <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.5 }}>이 그래픽은 모양을 알 수 없어 글자를 고칠 수 없어요. [그래픽]에서 다시 넣어 주세요.</div>
       )}
     </div>
   );
@@ -427,7 +427,9 @@ export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onRe
 }
 
 /** 클립 화면 속성 — 썸네일을 누르면 오른쪽에 (채우기·반전·교체·다른 클립에도 쓰기·지우기) */
-export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose }: {
+export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, onFit, onFlip, onReplace, onStart, onRange, onRemove, onClose, extra }: {
+  /** 키프레임·돌리기·진하기·필터 칸 (2026-10-20) — 화면 미리보기 바로 아래 */
+  extra?: React.ReactNode;
   project: Project;
   trim?: { s: number; e: number } | null; // 원본 영상 클립이면 지금 쓰는 구간 → [시작·끝 자르기]
   clip: Clip;
@@ -478,6 +480,7 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, o
           </div>
         )}
       </div>
+      {extra}
       {sound && (
         <div style={row}>
           <div style={{ ...label, marginBottom: 8 }}>소리 <span style={{ color: C.sub, fontWeight: 600 }}>· {sound.label || "이 클립의 원본 소리"}</span></div>
@@ -519,7 +522,9 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, o
   );
 }
 
-export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, onBubble, curClip }: {
+export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, onBubble, curClip, kfEl }: {
+  /** 키프레임 칸 (2026-10-20) — 맨 위 */
+  kfEl?: React.ReactNode;
   /** 지금 클립 (재생·고른) — [이 클립만] */
   curClip?: string;
   /** 화면 글자 → 말풍선 스티커로 바꾸기 */
@@ -554,14 +559,15 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
     const pos = new Map(items.map((x, i) => [x.clip.id, i]));
     const other = key === "from" ? layer.to : layer.from;
     // 시작이 끝보다 뒤로 가면 서로 바꾼다
-    if (key === "from" && (pos.get(id) ?? 0) > (pos.get(other) ?? 0)) onChange({ from: other, to: id });
-    else if (key === "to" && (pos.get(id) ?? 0) < (pos.get(other) ?? 0)) onChange({ from: id, to: other });
-    else onChange({ [key]: id });
+    // 클립으로 고르면 초 단위 구간(타임라인에서 끈 것)은 풀고 클립 전체로
+    if (key === "from" && (pos.get(id) ?? 0) > (pos.get(other) ?? 0)) onChange({ from: other, to: id, ts: undefined, te: undefined });
+    else if (key === "to" && (pos.get(id) ?? 0) < (pos.get(other) ?? 0)) onChange({ from: id, to: other, ts: undefined, te: undefined });
+    else onChange({ [key]: id, ...(key === "from" ? { ts: undefined } : { te: undefined }) });
   };
 
   const orderEl = onZ && layer.type !== "music" && layer.type !== "sfx" && (
     <div style={row}>
-      <div style={{ ...label, marginBottom: 8 }}>순서 <span style={{ color: C.sub, fontWeight: 600 }}>· 겹친 스티커·사진·글자 사이</span></div>
+      <div style={{ ...label, marginBottom: 8 }}>순서 <span style={{ color: C.sub, fontWeight: 600 }}>· 겹친 그래픽·사진·글자 사이</span></div>
       <ZButtons can={zCan(project, items, layer.id)} onMove={onZ} />
       <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>클립 옆 아이콘을 좌우로 끌어도 바뀌어요. 왼쪽 줄일수록 앞이에요.</div>
     </div>
@@ -583,8 +589,8 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           <span style={{ fontSize: 13.5, color: C.sub, flexShrink: 0 }}>까지</span>
         </div>
         <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-          {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to })}>고른 클립 {selRange.n}개로 바꾸기</Btn>}
-          {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id })}>처음부터 끝까지</Btn>}
+          {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to, ts: undefined, te: undefined })}>고른 클립 {selRange.n}개로 바꾸기</Btn>}
+          {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id, ts: undefined, te: undefined })}>처음부터 끝까지</Btn>}
         </div>
       </div>
       {orderEl}
@@ -632,6 +638,8 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
     const look: TextLook = {
       font: layer.font, color: layer.color || "#FFFFFF", outline: layer.outline || autoOutline, outlineWidth: layer.outlineWidth ?? 4, bold: layer.bold,
       bg: Boolean(layer.box), bgColor: layer.boxColor, bgOpacity: layer.boxOpacity, shadow: layer.shadow, shadowColor: layer.shadowColor, glow: layer.glow, size: layer.size ?? 100, spacing: layer.spacing,
+      italic: layer.italic, underline: layer.underline, textCase: layer.textCase, align: layer.align, textAlpha: layer.textAlpha, outlineAlpha: layer.outlineAlpha, bgPad: layer.bgPad, shadowAlpha: layer.shadowAlpha, glowSize: layer.glowSize, glowAlpha: layer.glowAlpha,
+      outline2: layer.outline2, outline2Width: layer.outline2Width, gradTo: layer.gradTo, gradType: layer.gradType, gradAngle: layer.gradAngle, gradA: layer.gradA, gradB: layer.gradB,
     };
     const toLayer = (p: TextLook): Partial<Layer> => {
       const o: Partial<Layer> = {};
@@ -643,11 +651,12 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
       return o;
     };
     return (
-      <TextTabs title="화면 글자" kind="layer" onClose={onClose} look={look} anim={textAnim} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
+      <TextTabs title="텍스트" kind="layer" onClose={onClose} look={look} anim={textAnim} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
         bubble={onBubble ? <BubbleGrid text={layer.text || ""} onPick={onBubble} /> : undefined}
         onLook={(p) => onChange(toLayer(p))} onPresetLook={(lk) => onChange(toLayer(lk))}
         basicTop={
           <>
+            {kfEl}
             <div style={row}>
               <div style={{ ...label, marginBottom: 8 }}>글</div>
               {/* 쓰는 대로 바로 (멈추고 0.5초 뒤, 칸을 벗어나면 바로) — [글 바꾸기]·[지우기] 단추 없음 (2026-10-19 사장님) */}
@@ -683,7 +692,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
         footerTop={items.length > 0 && (() => {
           // 나오는 구간 — 맨 아래 고정 줄 (회의 3-30): [클립 ▼] ~ [클립 ▼] + [이 클립만][고른 클립들][처음~끝]
           const first = items[0].clip.id, last = items[items.length - 1].clip.id;
-          const set = (from: string, to: string) => onChange({ from, to, w0: undefined, w1: undefined });
+          const set = (from: string, to: string) => onChange({ from, to, w0: undefined, w1: undefined, ts: undefined, te: undefined });
           const one = curClip && items.some((x) => x.clip.id === curClip) ? curClip : "";
           const quick = (on: boolean, ok: boolean, text: string, title: string, go: () => void) => (
             <button type="button" onClick={go} disabled={!ok} title={title}
@@ -719,6 +728,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
   return (
     <Side title={layerName(layer)} onClose={onClose}
       footer={<Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={16} />이 {layerName(layer)} 지우기</Btn>}>
+      {kfEl}
       {sticker && <StickerText key={layer.id + sticker.text} {...sticker} />}
       {template && <TemplateFields key={layer.id + template.text + (template.color || "")} {...template} />}
       {rangeEl}
@@ -732,7 +742,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             </button>
             <Btn small onClick={onReplace}>음악 바꾸기</Btn>
           </div>
-          <Slider title="음악 크기" value={layer.volume ?? 0.15} min={0.03} max={0.6} step={0.01} show={`${Math.round((layer.volume ?? 0.15) * 100)}%`} onChange={(v) => onChange({ volume: v })} />
+          <Slider title="음악 크기" value={layer.volume ?? 0.15} min={0} max={2} step={0.01} show={`${Math.round((layer.volume ?? 0.15) * 100)}%`} onChange={(v) => onChange({ volume: v })} />
           <Choice title="점점 커지며 시작 (페이드인)" value={layer.fadeIn ?? 0} options={FADES} onChange={(v) => onChange({ fadeIn: v })} />
           <Choice title="점점 작아지며 끝 (페이드아웃)" value={layer.fadeOut ?? 0} options={FADES} onChange={(v) => onChange({ fadeOut: v })} />
           <div style={row}>
@@ -758,8 +768,8 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             <div style={{ width: 64, height: 40, borderRadius: 4, overflow: "hidden", background: "#000", flexShrink: 0 }}>
               {asset && <img src={asset.thumb || asset.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
             </div>
-            <button type="button" onClick={onReplace} title={isSticker(layer) ? "눌러서 스티커 바꾸기" : "눌러서 사진 바꾸기"} style={{ flex: 1, minWidth: 0, padding: 0, border: 0, background: "transparent", color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset?.name || "사진"}</button>
-            <Btn small onClick={onReplace}>{isSticker(layer) ? "스티커 바꾸기" : "사진 바꾸기"}</Btn>
+            <button type="button" onClick={onReplace} title={isSticker(layer) ? "눌러서 그래픽 바꾸기" : "눌러서 사진 바꾸기"} style={{ flex: 1, minWidth: 0, padding: 0, border: 0, background: "transparent", color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset?.name || "사진"}</button>
+            <Btn small onClick={onReplace}>{isSticker(layer) ? "그래픽 바꾸기" : "사진 바꾸기"}</Btn>
           </div>
           <div style={row}>
             <div style={{ ...label, marginBottom: 8 }}>채우기</div>
@@ -904,8 +914,8 @@ export function LayerPopup({ project, layer, items, selRange, x, y, onChange, on
             클립 {numBox(na, setNa)} ~ {numBox(nb, setNb)}
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to })}>고른 클립 {selRange.n}개로</Btn>}
-            {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id })}>처음부터 끝까지</Btn>}
+            {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to, ts: undefined, te: undefined })}>고른 클립 {selRange.n}개로</Btn>}
+            {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id, ts: undefined, te: undefined })}>처음부터 끝까지</Btn>}
           </div>
           <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>막대 끝 손잡이를 끌어도 바뀌어요.</div>
         </div>

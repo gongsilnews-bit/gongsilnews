@@ -124,9 +124,9 @@ export default function MediaMenu(p: Props) {
         : { icon: "video", label: "비디오 시작점 변경", desc: "영상의 어느 부분부터 쓸지 골라요. 고르지 않으면 처음부터 나가요", run: done(p.onStart) }] : []),
       ...(p.speedCtl ? [{ icon: "play", label: `속도 · ${+p.speedCtl.value.toFixed(2)}배`, desc: "영상을 빠르게·느리게 (소리·자막도 같이). 1배가 원래 속도", sub: true, run: go("speed") }] : []),
       ...(p.sound ? [{ icon: p.sound.muted ? "mute" : "volume", label: "볼륨 조절", desc: "이 클립의 소리를 끄거나 크게·작게 해요", sub: true, run: go("volume") }] : []),
-      ...(p.onReplace ? [{ icon: "swap", label: "교체", desc: `다른 ${p.what === "스티커" ? "스티커" : "사진·영상"}로 바꿔요. 자리·범위는 그대로예요`, run: done(p.onReplace) }] : []),
+      ...(p.onReplace ? [{ icon: "swap", label: "교체", desc: `다른 ${p.what === "그래픽" ? "그래픽으" : "사진·영상으"}로 바꿔요. 자리·범위는 그대로예요`, run: done(p.onReplace) }] : []),
       { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : `이 ${what}이(가) 몇 번 클립부터 몇 번 클립까지 나올지 정해요`, sub: true, run: go("range") },
-      ...(p.kind === "layer" && p.order ? [{ icon: "layers", label: "순서", desc: "스티커·사진·글자가 겹칠 때 어느 것을 위에 둘지 정해요", sub: true, off: !p.order.up && !p.order.down, run: go("order") }] : []),
+      ...(p.kind === "layer" && p.order ? [{ icon: "layers", label: "순서", desc: "그래픽·사진·글자가 겹칠 때 어느 것을 위에 둘지 정해요", sub: true, off: !p.order.up && !p.order.down, run: go("order") }] : []),
       { icon: "trash", label: "삭제", desc: p.kind === "clip" ? "이 클립의 화면만 지워요. 글·목소리·자막은 그대로예요" : `이 ${what}을(를) 지워요`, danger: true, off: !p.canRemove, run: done(p.onRemove) },
     ];
   } else if (page === "fit") {
@@ -161,7 +161,7 @@ export default function MediaMenu(p: Props) {
     head = "순서";
     const o = p.order || { up: false, down: false };
     items = [
-      { icon: "front", label: "맨 앞으로 가져오기", desc: "겹친 스티커·사진·글자 중 가장 위에 보이게", off: !o.up, run: done(() => p.onOrder?.("top")) },
+      { icon: "front", label: "맨 앞으로 가져오기", desc: "겹친 그래픽·사진·글자 중 가장 위에 보이게", off: !o.up, run: done(() => p.onOrder?.("top")) },
       { icon: "front", label: "앞으로 가져오기", desc: "한 칸 위로", off: !o.up, run: done(() => p.onOrder?.("up")) },
       { icon: "down", label: "뒤로 보내기", desc: "한 칸 아래로", off: !o.down, run: done(() => p.onOrder?.("down")) },
       { icon: "down", label: "맨 뒤로 보내기", desc: "겹친 것 중 가장 아래로 (클립 화면보다는 늘 위)", off: !o.down, run: done(() => p.onOrder?.("bottom")) },

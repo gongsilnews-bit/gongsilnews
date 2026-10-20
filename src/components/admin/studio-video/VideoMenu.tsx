@@ -10,7 +10,7 @@ type AiItem = { id: string; name: string; ready: boolean; ok: boolean };
 type AiBridge = { openAiConnect: () => Promise<void>; ai: { list: () => Promise<AiItem[]> } };
 const aiBridge = (): AiBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: AiBridge }).gongsilStudio ?? null) : null);
 
-export type VideoView = "home" | "myvoice";
+export type VideoView = "home" | "myvoice" | "aivoice";
 
 export default function VideoMenu({ view, onView, onMethod }: { view: VideoView; onView: (v: VideoView) => void; onMethod: (m: Method) => void }) {
   // AI 설정 상자 — 공실마케팅·SNS발행과 같다 (누르면 [내 AI 연결] 창)
@@ -46,10 +46,11 @@ export default function VideoMenu({ view, onView, onMethod }: { view: VideoView;
       )}
       <button type="button" onClick={() => onView("home")} style={item(view === "home")}><Icon name="folder" size={17} />내 프로젝트</button>
       {METHODS.filter((m) => m.id !== "record").map((m) => (
-        <button key={m.id} type="button" onClick={() => onMethod(m.id)} title={m.desc} style={item(false)}><Icon name={m.icon} size={17} />{m.title.replace(/ (만들기|편집하기)$/, "")}</button>
+        <button key={m.id} type="button" onClick={() => onMethod(m.id)} title={m.desc} style={item(false)}><Icon name={m.icon} size={17} />{m.title.replace(/하기$/, "")}</button>
       ))}
       <div style={head}>스튜디오</div>
       <button type="button" onClick={() => onMethod("record")} title="화면이나 카메라를 녹화하면 바로 편집 화면으로 가요" style={item(false)}><Icon name="record" size={17} />강의/영상녹화</button>
+      <button type="button" onClick={() => onView("aivoice")} title="글을 쓰면 AI 성우가 읽어서 MP3·WAV 로 저장해요" style={item(view === "aivoice")}><Icon name="music" size={17} />AI 보이스 녹음</button>
       <button type="button" onClick={() => onView("myvoice")} style={item(view === "myvoice")}><Icon name="mic" size={17} />AI 내 목소리 만들기</button>
     </aside>
   );

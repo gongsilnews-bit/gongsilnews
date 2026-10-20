@@ -94,7 +94,7 @@ function trimSilence(pcm, threshold = 400) {
   let end = n - 1;
   while (start < n && Math.abs(pcm.readInt16LE(start * 2)) < threshold) start++;
   while (end > start && Math.abs(pcm.readInt16LE(end * 2)) < threshold) end--;
-  const pad = 2400; // 0.1초 여유
+  const pad = 1920; // 0.08초 여유 (내 목소리와 같게, 2026-10-20)
   return pcm.subarray(Math.max(0, start - pad) * 2, Math.min(n, end + pad) * 2);
 }
 function pcmToWav(pcm, rate) {

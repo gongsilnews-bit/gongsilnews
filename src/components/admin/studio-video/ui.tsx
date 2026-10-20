@@ -105,6 +105,25 @@ const P: Record<string, React.ReactNode> = {
   thumb: <><rect x="3" y="5" width="18" height="14" rx="1.5" /><path d="M7 14h6M7 10h10" /></>,
   marker: <path d="M6 3h12v18l-6-4-6 4z" />,
   lock: <><rect x="5" y="11" width="14" height="10" rx="1.5" /><path d="M8 11V8a4 4 0 018 0v3" /></>,
+  // 타임라인·키프레임 (2026-10-20)
+  eye: <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
+  tlAlignL: <><path d="M4 3v18" /><rect x="7" y="6" width="10" height="4" rx="1" /><rect x="7" y="14" width="6" height="4" rx="1" /></>,
+  tlAlignCH: <><path d="M12 3v18" /><rect x="6" y="6" width="12" height="4" rx="1" /><rect x="8" y="14" width="8" height="4" rx="1" /></>,
+  tlAlignR: <><path d="M20 3v18" /><rect x="7" y="6" width="10" height="4" rx="1" /><rect x="11" y="14" width="6" height="4" rx="1" /></>,
+  tlAlignT: <><path d="M3 4h18" /><rect x="6" y="7" width="4" height="10" rx="1" /><rect x="14" y="7" width="4" height="6" rx="1" /></>,
+  tlAlignCV: <><path d="M3 12h18" /><rect x="6" y="6" width="4" height="12" rx="1" /><rect x="14" y="8" width="4" height="8" rx="1" /></>,
+  tlAlignB: <><path d="M3 20h18" /><rect x="6" y="7" width="4" height="10" rx="1" /><rect x="14" y="11" width="4" height="6" rx="1" /></>,
+  diamond: <path d="M12 4l8 8-8 8-8-8z" />,
+  diamondFill: <path d="M12 4l8 8-8 8-8-8z" fill="currentColor" />,
+  rotate: <><path d="M20 12a8 8 0 1 1-2.34-5.66" /><path d="M20 4v5h-5" /></>,
+  splitHere: <><path d="M12 3v18" /><rect x="3" y="7" width="6" height="10" rx="1" /><rect x="15" y="7" width="6" height="10" rx="1" /></>,
+  trimL: <><path d="M10 3v18" /><rect x="12" y="7" width="9" height="10" rx="1" /><path d="M3 9l4 3-4 3" /></>,
+  trimR: <><path d="M14 3v18" /><rect x="3" y="7" width="9" height="10" rx="1" /><path d="M21 9l-4 3 4 3" /></>,
+  timeline: <><rect x="3" y="5" width="18" height="4" rx="1" /><rect x="3" y="11" width="11" height="4" rx="1" /><rect x="8" y="17" width="13" height="3" rx="1" /></>,
+  magnet: <><path d="M6 4v8a6 6 0 0012 0V4" /><path d="M6 8h4M14 8h4M10 4v8a2 2 0 004 0V4" /></>,
+  fit: <><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></>,
+  minus: <path d="M5 12h14" />,
+  adjust: <><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></>,
 };
 
 export function Icon({ name, size = 20, color = "currentColor", stroke = 1.6 }: { name: string; size?: number; color?: string; stroke?: number }) {

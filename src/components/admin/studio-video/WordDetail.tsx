@@ -9,7 +9,7 @@ import { C, FONT, Icon } from "./ui";
 
 type Peaks = { rate: number; arr: Uint8Array };
 const cache = new Map<string, Promise<Peaks>>(); // 원본 영상 하나 = 파형 하나 (편집 화면이 켜져 있는 동안)
-function loadPeaks(project: Project, assetId: string): Promise<Peaks> {
+export function loadPeaks(project: Project, assetId: string): Promise<Peaks> {
   const b = videoBridge();
   const a = project.assets[assetId];
   const key = `${assetId}|${a?.path || ""}`;

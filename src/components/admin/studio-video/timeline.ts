@@ -1,13 +1,13 @@
 import type React from "react";
 // 클립 길이·남길 구간·단어 시각 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 완성 영상). 둘을 같이 고친다.
-import type { Clip, Layer, Project, Settings, SubtitleSettings } from "./types";
+import type { Adjust, Clip, Crop, Ease, Keyframe, KfProp, Layer, Project, Settings, SubtitleSettings } from "./types";
 import { uid } from "./types";
 
-export const GAP = 0.4; // 예전 고정값 자리 — 이제 gapOf(settings) 를 쓴다
+export const GAP = 0.2; // 기본 문장 사이 쉼 — 0.4 는 문장마다 끊겨 들렸다 (2026-10-20 사장님, 브루처럼 짧게). gapOf(settings) 를 쓴다
 /** AI 목소리 문장 사이 쉼 (초) — [AI 목소리 설정]의 문장 사이 쉼. 기본 0.4 (예전 0.12 는 급하게 들렸다, 2026-10-18 사장님) */
 export const gapOf = (settings?: { voice?: { gap?: number } }) => {
   const g = Number(settings?.voice?.gap);
-  return Number.isFinite(g) && g >= 0 ? Math.min(2, g) : 0.4;
+  return Number.isFinite(g) && g >= 0 ? Math.min(2, g) : GAP;
 };
 
 /** 남길 구간 — 지운 단어와 무음 줄이기(clip.cuts)를 뺀 원본 구간. 영상·소리·자막 단어 시각이 모두 이걸로 계산된다 */
@@ -29,6 +29,12 @@ export function keepRanges(clip: Clip): { s: number; e: number }[] {
   return ranges.filter((r) => r.e - r.s > 0.04);
 }
 
+/** AI 목소리 뒤 쉼 — 나눈 앞 조각(ng)은 없음 */
+/** 목소리 뒤 쉼 — 문장 끝(마침표·물음표·느낌표·부호 없음)은 [문장 사이 쉼], 쉼표로 끝나면 말이 이어지니 짧게 (브루처럼, 2026-10-20 사장님). timeline.js 와 같다 */
+export const COMMA_GAP = 0.05;
+export const endsWithComma = (t?: string) => /[,，、]\s*$/.test(String(t || "").trim());
+export const voiceGap = (clip: Clip, settings?: Settings) => (clip.voice?.ng ? 0 : endsWithComma(clip.voice?.text || clip.text) ? Math.min(COMMA_GAP, gapOf(settings)) : gapOf(settings));
+
 export const speedOf = (clip: Clip, settings?: Settings) => Number(clip.speed || settings?.voice?.speed || 1) || 1;
 
 /** 촬영 클립 빠르기 (영상·소리 같이, 0.1~20배). 목소리 클립은 1 */
@@ -42,7 +48,7 @@ export function estimateSeconds(text: string, speed = 1) {
 export function clipDuration(clip: Clip, settings?: Settings) {
   if (clip.del) return 0;
   if (clip.type === "voice") {
-    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + gapOf(settings) + Math.max(0, Number(clip.pad) || 0);
+    if (clip.voice && clip.voice.duration) return clip.voice.duration / speedOf(clip, settings) + voiceGap(clip, settings) + Math.max(0, Number(clip.pad) || 0);
     return Math.max(0.5, Number(clip.hold) || estimateSeconds(clip.text, speedOf(clip, settings)));
   }
   return keepRanges(clip).reduce((a, r) => a + (r.e - r.s), 0) / srcSpeed(clip);
@@ -253,7 +259,7 @@ function photoOf(p: Project, c: Clip) {
 export const isPhotoClip = (p: Project, c: Clip) => Boolean(photoOf(p, c));
 /** 이 클립 사진의 움직임 — 없으면 null. 자동은 사진 클립 차례대로 돌려 써서 옆 클립과 겹치지 않는다 */
 export function motionOf(p: Project, clip: Clip): { m: string; s: number } | null {
-  if (!photoOf(p, clip)) return null;
+  if (!photoOf(p, clip) || clip.kf?.length) return null; // 키프레임이 있으면 자동 움직임은 쉰다
   let m: string = clip.motion || (p.settings.motion === "none" ? "none" : "auto");
   if (m === "none") return null;
   if (m === "auto") {
@@ -306,13 +312,24 @@ export function layerItems(p: Project, layer: Layer, items: FlatItem[], order = 
   });
 }
 
-/** 단어 구간 레이어가 그 클립 안에서 나오는 시간 (클립 시작 기준 초). 단어 구간이 없으면 null = 클립 전체 */
+/**
+ * 레이어가 그 클립 안에서 나오는 시간 (클립 시작 기준 초). null = 클립 전체
+ *  단어 구간(w0·w1) — 그 단어를 말하는 동안 / 초 단위 구간(ts·te, 타임라인에서 끈 것) — 시작 클립은 ts 부터, 끝 클립은 te 까지
+ */
 export function layerWindow(layer: Layer, clip: Clip, settings?: Settings): { s: number; e: number } | null {
-  if (typeof layer.w0 !== "number" || layer.from !== clip.id) return null;
-  const w1 = typeof layer.w1 === "number" ? layer.w1 : layer.w0;
-  const ts = wordTimes(clip, settings).filter((w) => w.i >= layer.w0! && w.i <= w1);
-  if (!ts.length) return null;
-  return { s: ts[0].s, e: ts[ts.length - 1].e };
+  if (typeof layer.w0 === "number") {
+    if (layer.from !== clip.id) return null;
+    const w1 = typeof layer.w1 === "number" ? layer.w1 : layer.w0;
+    const ts = wordTimes(clip, settings).filter((w) => w.i >= layer.w0! && w.i <= w1);
+    if (!ts.length) return null;
+    return { s: ts[0].s, e: ts[ts.length - 1].e };
+  }
+  const a = layer.from === clip.id ? Math.max(0, Number(layer.ts) || 0) : 0;
+  const hasE = layer.to === clip.id && typeof layer.te === "number";
+  if (!a && !hasE) return null;
+  const d = clipDuration(clip, settings);
+  const s = Math.min(a, d);
+  return { s, e: hasE ? Math.max(s, Math.min(d, Number(layer.te))) : d };
 }
 
 /**
@@ -518,13 +535,239 @@ export function wordState(fx: WordFx, w: { s: number; e: number; ls?: number }, 
 export function layerSpan(p: Project, layer: Layer, items: FlatItem[], clipId: string, settings?: Settings, order = clipOrder(p)): { a: number; b: number } | null {
   const cur = items.find((x) => x.clip.id === clipId);
   if (!cur) return null;
-  const w = layerWindow(layer, cur.clip, settings);
-  if (w) return { a: w.s, b: w.e };
+  if (typeof layer.w0 === "number") {
+    const w = layerWindow(layer, cur.clip, settings);
+    if (w) return { a: w.s, b: w.e };
+  }
   const cov = layerItems(p, layer, items, order);
   if (!cov.length) return null;
+  const first = cov[0];
   const last = cov[cov.length - 1];
-  return { a: cov[0].start - cur.start, b: last.start + last.dur - cur.start };
+  // 초 단위 구간 (ts·te) — 시작 클립 ts 초 뒤부터 끝 클립 te 초까지
+  const a = first.start + Math.min(first.dur, Math.max(0, Number(layer.ts) || 0));
+  const b = last.start + (typeof layer.te === "number" ? Math.max(0, Math.min(last.dur, layer.te)) : last.dur);
+  return { a: a - cur.start, b: Math.max(a, b) - cur.start };
 }
+
+/** 레이어가 나오는 영상 전체 시각 [s, e] (초) — 타임라인 막대·키프레임 시각. 없으면 null */
+export function layerRange(p: Project, layer: Layer, items: FlatItem[], order = clipOrder(p)): { s: number; e: number } | null {
+  const cov = layerItems(p, layer, items, order);
+  if (!cov.length) return null;
+  const sp = layerSpan(p, layer, items, cov[0].clip.id, p.settings, order);
+  if (!sp) return null;
+  return { s: cov[0].start + sp.a, e: cov[0].start + sp.b };
+}
+
+/* ── 키프레임 (캡컷처럼, 2026-10-20 사장님) — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 굽기) ──
+   점과 점 사이를 고르게(일정하게) 또는 부드럽게 채운다. 첫 점 앞은 첫 점, 마지막 점 뒤는 마지막 점 모습 */
+export const EASES: { id: Ease; label: string; desc: string }[] = [
+  { id: "linear", label: "일정하게", desc: "같은 빠르기로 움직여요" },
+  { id: "inout", label: "부드럽게", desc: "천천히 출발해서 천천히 멈춰요" },
+  { id: "in", label: "천천히 시작", desc: "처음엔 느리다가 점점 빨라져요" },
+  { id: "out", label: "천천히 끝", desc: "빠르게 출발해서 천천히 멈춰요" },
+];
+export function easeVal(e: Ease | undefined, u: number) {
+  const x = Math.max(0, Math.min(1, u));
+  return e === "inout" ? x * x * (3 - 2 * x) : e === "in" ? x * x : e === "out" ? x * (2 - x) : x;
+}
+/** 시각 순서로 (같은 시각은 하나) */
+export const kfSort = (kf: Keyframe[]) => [...kf].sort((a, b) => a.t - b.t);
+/** 이 점이 이 항목을 정하는지 (only 가 없으면 모든 항목) */
+export const kfHas = (k: Keyframe, p: KfProp) => !k.only || k.only.includes(p);
+export const KF_PROPS: KfProp[] = ["x", "y", "s", "r", "o"];
+/** 한 항목의 그 시각 값 — 그 항목을 정한 점들 사이를 채운다. 정한 점이 없으면 base (없으면 첫 점 값) */
+export function kfVal(ks: Keyframe[], p: KfProp, t: number, base?: Partial<Keyframe> | null): number {
+  const pts = ks.filter((k) => kfHas(k, p));
+  if (!pts.length) return typeof base?.[p] === "number" ? (base[p] as number) : ks[0][p];
+  if (t <= pts[0].t) return pts[0][p];
+  const last = pts[pts.length - 1];
+  if (t >= last.t) return last[p];
+  let i = 0;
+  while (i < pts.length - 2 && t >= pts[i + 1].t) i++;
+  const a = pts[i], b = pts[i + 1];
+  const v = easeVal(a.e, (t - a.t) / Math.max(1e-6, b.t - a.t));
+  return a[p] + (b[p] - a[p]) * v;
+}
+/** 그 시각 모습 — 키프레임이 없으면 null. 항목마다 따로 채운다 (base = 점이 없는 항목의 값) */
+export function kfAt(kf: Keyframe[] | undefined, t: number, base?: Partial<Keyframe> | null): Keyframe | null {
+  if (!kf || !kf.length) return null;
+  const ks = kf.length > 1 && kf.some((k, i) => i && k.t < kf[i - 1].t) ? kfSort(kf) : kf;
+  const seg = [...ks].reverse().find((k) => k.t <= t) || ks[0];
+  return { t, x: kfVal(ks, "x", t, base), y: kfVal(ks, "y", t, base), s: kfVal(ks, "s", t, base), r: kfVal(ks, "r", t, base), o: kfVal(ks, "o", t, base), e: seg.e };
+}
+/** 이 항목에 점이 하나라도 있는지 */
+export const kfAny = (kf: Keyframe[] | undefined, p: KfProp) => Boolean(kf?.some((k) => kfHas(k, p)));
+/** 이 시각에 이 항목 점이 있는지 */
+export const kfHasAt = (kf: Keyframe[] | undefined, p: KfProp, t: number) => Boolean(kf?.some((k) => Math.abs(k.t - t) < 0.5 / 30 && kfHas(k, p)));
+/** 항목 ◇ — 이 시각에 이 항목 점이 있으면 빼고, 없으면 지금 값으로 찍는다 (cur = 지금 모습 전체) */
+export function kfToggleProp(kf: Keyframe[] | undefined, t: number, p: KfProp, cur: Keyframe): Keyframe[] | undefined {
+  const list = (kf || []).map((k) => ({ ...k }));
+  const i = list.findIndex((k) => Math.abs(k.t - t) < 0.5 / 30);
+  if (i >= 0) {
+    const k = list[i];
+    if (kfHas(k, p)) {
+      const only = (k.only || KF_PROPS).filter((x) => x !== p);
+      if (!only.length) list.splice(i, 1);
+      else list[i] = { ...k, only };
+    } else list[i] = { ...k, [p]: cur[p], only: [...(k.only || []), p] };
+  } else list.push({ ...cur, t: Math.max(0, +t.toFixed(3)), e: undefined, only: [p] });
+  const out = kfSort(list);
+  return out.length ? out : undefined;
+}
+/** 항목들의 점 모두 지우기 (⏱ 끄기) */
+export function kfClearProps(kf: Keyframe[] | undefined, props: KfProp[]): Keyframe[] | undefined {
+  const out: Keyframe[] = [];
+  for (const k of kf || []) {
+    const only = (k.only || KF_PROPS).filter((x) => !props.includes(x));
+    if (only.length) out.push({ ...k, only: only.length === KF_PROPS.length ? undefined : only });
+  }
+  return out.length ? kfSort(out) : undefined;
+}
+/** 항목들의 점 하나를 다른 시각으로 (효과 컨트롤 ◆ 끌기) — 다른 항목과 같이 있던 점은 그 항목만 떼어 옮긴다 */
+export function kfMoveProps(kf: Keyframe[] | undefined, props: KfProp[], from: number, to: number): Keyframe[] | undefined {
+  if (!kf?.length) return kf;
+  const i = kf.findIndex((k) => Math.abs(k.t - from) < 0.5 / 30 && props.some((p) => kfHas(k, p)));
+  if (i < 0) return kf;
+  const k = kf[i];
+  const mine = props.filter((p) => kfHas(k, p));
+  const rest = (k.only || KF_PROPS).filter((p) => !mine.includes(p));
+  const list = kf.map((x) => ({ ...x }));
+  if (rest.length) list[i] = { ...k, only: rest };
+  else list.splice(i, 1);
+  const tt = Math.max(0, +to.toFixed(3));
+  const j = list.findIndex((x) => Math.abs(x.t - tt) < 0.5 / 30);
+  if (j >= 0) list[j] = { ...list[j], ...Object.fromEntries(mine.map((p) => [p, k[p]])), only: list[j].only ? [...new Set([...list[j].only!, ...mine])] : undefined };
+  else list.push({ ...k, t: tt, only: mine.length === KF_PROPS.length ? undefined : mine });
+  return kfSort(list);
+}
+/** 자르기 값 (0~0.95, 좌우·위아래 합이 넘치지 않게) — 미리보기·굽기 같은 값 */
+export function cropOf(c?: Crop | null) {
+  if (!c) return null;
+  const cl = (v?: number) => Math.max(0, Math.min(0.95, Number(v) || 0));
+  let l = cl(c.l), r = cl(c.r), t = cl(c.t), b = cl(c.b);
+  if (l + r > 0.95) { const k = 0.95 / (l + r); l *= k; r *= k; }
+  if (t + b > 0.95) { const k = 0.95 / (t + b); t *= k; b *= k; }
+  return l || r || t || b ? { l, r, t, b } : null;
+}
+/** 값 바꾸기 (끌기·숫자) — 그 항목에 점이 있으면 이 시각 점을 고치거나 새로 찍고(바뀐 kf), 점이 없으면 null (= 고정 값을 바꾼다) */
+export function kfSetProps(kf: Keyframe[] | undefined, t: number, patch: Partial<Record<KfProp, number>>, cur: Keyframe): { kf?: Keyframe[]; rest: Partial<Record<KfProp, number>> } {
+  const rest: Partial<Record<KfProp, number>> = {};
+  let list = kf ? kf.map((k) => ({ ...k })) : undefined;
+  for (const p of Object.keys(patch) as KfProp[]) {
+    const v = patch[p]!;
+    if (!kfAny(list, p)) { rest[p] = v; continue; }
+    const i = list!.findIndex((k) => Math.abs(k.t - t) < 0.5 / 30);
+    if (i >= 0) list![i] = { ...list![i], [p]: v, ...(list![i].only && !list![i].only!.includes(p) ? { only: [...list![i].only!, p] } : {}) };
+    else list!.push({ ...cur, [p]: v, t: Math.max(0, +t.toFixed(3)), e: undefined, only: [p] });
+    list = kfSort(list!);
+  }
+  return { kf: list, rest };
+}
+/** 키프레임이 이 시각(±반 칸)에 있는지 — 있으면 그 자리 번호 */
+export const kfIndexAt = (kf: Keyframe[] | undefined, t: number) => (kf || []).findIndex((k) => Math.abs(k.t - t) < 0.5 / 30);
+/** 키프레임 넣기·고치기 — 이 시각에 있으면 바꾸고, 없으면 지금 모습으로 새로 (시각 순서) */
+export function kfUpsert(kf: Keyframe[] | undefined, t: number, patch: Partial<Keyframe>, base: Keyframe): Keyframe[] {
+  const list = kf ? [...kf] : [];
+  const i = kfIndexAt(list, t);
+  const cur = i >= 0 ? list[i] : { ...(kfAt(list, t) || base), t: Math.max(0, +t.toFixed(3)) };
+  const next: Keyframe = { ...cur, ...patch, t: cur.t };
+  if (i >= 0) list[i] = next;
+  else list.push(next);
+  return kfSort(list);
+}
+
+/** 키프레임이 있는 레이어의 그 시각(tau = 나타난 때부터 초) 모습 — 자리·크기·회전·진하기를 바꾼 사본. 글자 진하기는 kfo */
+export function layerAtTime<T extends Layer>(l: T, tau: number): T & { kfo?: number } {
+  // 글자 진하기 (타임라인 속성 칸, 2026-10-20) — 키프레임이 없어도 kfo 로
+  if (l.type === "text" && !l.kf?.length) return (l.opacity ?? 1) < 0.999 ? { ...l, kfo: Math.max(0, l.opacity ?? 1) } : l;
+  if (!l.kf?.length || (l.type === "image" && (l.fit === "cover" || l.fit === "contain"))) return l;
+  const k = kfAt(l.kf, tau, { x: l.x ?? 0.5, y: l.y ?? 0.5, s: 1, r: Number(l.rot) || 0, o: 1 })!;
+  if (l.type === "image") return { ...l, x: k.x, y: k.y, rot: k.r, w: (l.w ?? 0.35) * k.s, opacity: Math.max(0, Math.min(1, (l.opacity ?? 1) * k.o)) };
+  return { ...l, x: k.x, y: k.y, rot: k.r, size: (l.size ?? 100) * k.s, kfo: Math.max(0, Math.min(1, k.o * (l.opacity ?? 1))) };
+}
+/** 사진 올리기·스티커 자리 (화면 px) — 키프레임이 있으면 화면 밖으로도 (날아 들어오기), 없으면 예전처럼 화면 안으로. 굽기와 같은 계산 */
+export function imgRect(l: Layer, a: { width?: number; height?: number } | undefined, W: number, H: number) {
+  const pw = Math.max(0.03, Math.min(4, l.w ?? 0.35)) * W;
+  const ph = a?.width && a?.height ? (pw * a.height) / a.width : pw;
+  const cx = (l.x ?? 0.5) * W, cy = (l.y ?? 0.5) * H;
+  if (l.kf?.length) return { left: cx - pw / 2, top: cy - ph / 2, width: pw, height: ph };
+  return { left: Math.max(0, Math.min(W - pw, cx - pw / 2)), top: Math.max(0, Math.min(H - ph, cy - ph / 2)), width: pw, height: ph };
+}
+
+/** 클립 화면이 보이는 네모 (화면 0~1, 가운데 x·y, 폭 w·높이 h) — 직접 크기(box)면 그 자리, 아니면 채우기대로. 미리보기·굽기 같은 계산 */
+export function clipBaseRect(p: Project, c: Clip, W: number, H: number) {
+  const id = c.visual?.asset ?? (c.type !== "voice" ? c.src?.asset : undefined);
+  const a = id ? p.assets[id] : null;
+  const ar = a && a.width && a.height ? a.width / a.height : W / H;
+  if (c.box) {
+    const w = c.box.w;
+    return { x: c.box.x, y: c.box.y, w, h: (w * W) / ar / H };
+  }
+  const fill = c.fill || p.settings.fill;
+  if (ar > W / H !== (fill === "cover")) return { x: 0.5, y: 0.5, w: 1, h: W / ar / H };
+  return { x: 0.5, y: 0.5, w: (H * ar) / W, h: 1 };
+}
+/** 클립 화면 움직임 — 키프레임, 또는 돌리기·진하기만 바꾼 것(한 점). 없으면 null (예전처럼 채우기) */
+export function clipKeys(p: Project, c: Clip, W: number, H: number): Keyframe[] | null {
+  if (c.kf?.length) return kfSort(c.kf);
+  const r = Number(c.rot) || 0;
+  const o = c.opacity ?? 1;
+  if (!r && o >= 0.999) return null;
+  const b = clipBaseRect(p, c, W, H);
+  return [{ t: 0, x: b.x, y: b.y, s: 1, r, o }];
+}
+/** 클립 화면 키프레임의 기본 모습 (첫 점을 넣을 때) */
+export function clipKeyBase(p: Project, c: Clip, W: number, H: number): Keyframe {
+  const b = clipBaseRect(p, c, W, H);
+  return { t: 0, x: b.x, y: b.y, s: 1, r: Number(c.rot) || 0, o: c.opacity ?? 1 };
+}
+
+/* ── 색 보정·필터 (캡컷 [필터]·[조정]) — 색 행렬 하나 (3줄 × [빨강·초록·파랑·더하기]), 미리보기 SVG feColorMatrix = 굽기 colorchannelmixer ──
+   studio-app/src/video/timeline.js 와 같은 계산 */
+export type Mat = number[][]; // 3×4
+const I3: Mat = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]];
+const mul = (A: Mat, B: Mat): Mat => A.map((r) => [0, 1, 2, 3].map((j) => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j] + (j === 3 ? r[3] : 0)));
+const satM = (s: number): Mat => [
+  [0.2126 + 0.7874 * s, 0.7152 - 0.7152 * s, 0.0722 - 0.0722 * s, 0],
+  [0.2126 - 0.2126 * s, 0.7152 + 0.2848 * s, 0.0722 - 0.0722 * s, 0],
+  [0.2126 - 0.2126 * s, 0.7152 - 0.7152 * s, 0.0722 + 0.9278 * s, 0],
+];
+const gainM = (r: number, g: number, b: number): Mat => [[r, 0, 0, 0], [0, g, 0, 0], [0, 0, b, 0]];
+const conM = (c: number): Mat => [[c, 0, 0, 0.5 * (1 - c)], [0, c, 0, 0.5 * (1 - c)], [0, 0, c, 0.5 * (1 - c)]];
+const liftM = (v: number): Mat => [[1, 0, 0, v], [0, 1, 0, v], [0, 0, 1, v]];
+/** 필터 (이름 · 설명 · 색 행렬) — 부동산 영상에 맞게 */
+export const FILTERS: { id: string; label: string; desc: string; m: Mat }[] = [
+  { id: "home", label: "매물 화사하게", desc: "집 사진을 밝고 따뜻하게 (공실뉴스 추천)", m: mul(gainM(1.06, 1.03, 0.97), mul(satM(1.15), mul(conM(1.05), gainM(1.08, 1.08, 1.08)))) },
+  { id: "vivid", label: "선명하게", desc: "색을 또렷하게", m: mul(satM(1.35), conM(1.1)) },
+  { id: "bright", label: "밝게", desc: "어두운 사진을 환하게", m: mul(satM(1.08), mul(conM(0.95), gainM(1.14, 1.14, 1.14))) },
+  { id: "warm", label: "따뜻하게", desc: "노을처럼 포근한 색", m: mul(gainM(1.12, 1.02, 0.86), satM(1.05)) },
+  { id: "cool", label: "차갑게", desc: "깔끔한 파란 느낌", m: mul(gainM(0.9, 1, 1.12), satM(0.98)) },
+  { id: "film", label: "영화처럼", desc: "차분하고 깊은 색", m: mul(gainM(0.96, 1, 1.04), mul(satM(0.82), conM(1.15))) },
+  { id: "fade", label: "빛바랜", desc: "부드럽고 흐린 옛 느낌", m: mul(liftM(0.07), mul(satM(0.75), conM(0.82))) },
+  { id: "mono", label: "흑백", desc: "색을 빼고 흑백으로", m: mul(conM(1.1), satM(0)) },
+  { id: "sepia", label: "옛날 사진", desc: "누렇게 바랜 사진", m: [[0.393, 0.769, 0.189, 0], [0.349, 0.686, 0.168, 0], [0.272, 0.534, 0.131, 0]] },
+  { id: "night", label: "어둡게", desc: "밤·분위기 있게", m: mul(gainM(0.92, 0.95, 1.05), mul(conM(1.2), gainM(0.85, 0.85, 0.85))) },
+];
+/** 고친 값 → 색 행렬 (없으면 null = 그대로). 순서: 필터(세기만큼) → 밝기 → 대비 → 채도 → 색온도 → 색조 */
+export function adjMatrix(a?: Adjust | null): Mat | null {
+  if (!a) return null;
+  let M = I3;
+  const f = a.f ? FILTERS.find((x) => x.id === a.f) : null;
+  if (f) {
+    const k = Math.max(0, Math.min(1, a.fi ?? 1));
+    M = f.m.map((r, i) => r.map((v, j) => I3[i][j] + (v - I3[i][j]) * k));
+  }
+  const b = Number(a.b) || 0, c = Number(a.c) || 0, s = Number(a.s) || 0, t = Number(a.t) || 0, g = Number(a.g) || 0;
+  if (b) M = mul(gainM(1 + 0.6 * b, 1 + 0.6 * b, 1 + 0.6 * b), M);
+  if (c) M = mul(conM(1 + 0.6 * c), M);
+  if (s) M = mul(satM(1 + s), M);
+  if (t) M = mul(gainM(1 + 0.2 * t, 1 + 0.03 * t, 1 - 0.2 * t), M);
+  if (g) M = mul(gainM(1 + 0.05 * g, 1 - 0.15 * g, 1 + 0.05 * g), M);
+  if (M.every((r, i) => r.every((v, j) => Math.abs(v - I3[i][j]) < 1e-4))) return null;
+  return M.map((r) => r.map((v) => +v.toFixed(5)));
+}
+/** 미리보기 — SVG feColorMatrix 값 (4줄 × 5칸) */
+export const adjSvgValues = (M: Mat) => [...M.map((r) => [r[0], r[1], r[2], 0, r[3]]), [0, 0, 0, 1, 0]].flat().join(" ");
 const easeOut = (x: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
 const backOut = (x: number) => { const k = Math.max(0, Math.min(1, x)) - 1; return 1 + 2.70158 * k * k * k + 1.70158 * k * k; };
 export type AnimLook = { op: number; sc: number; sx: number; rot: number; dx: number; dy: number };
@@ -616,6 +859,13 @@ export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): 
     if (!cov.length) continue;
     const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
     ev.push({ t: cov[0].start + (sp ? Math.max(0, sp.a) : 0), name: l.sfx, vol: Math.max(0, Math.min(1, l.volume ?? 0.8)), keep: true });
+  }
+  // 화면전환 효과음 (clip.trans.sfx, 2026-10-20) — 전환이 시작될 때 (앞 클립 끝 a초 앞)
+  for (let i = 1; i < items.length; i++) {
+    const tr = items[i].clip.trans;
+    if (!tr || !tr.sfx) continue;
+    const a = Math.max(0, Math.min(Number(tr.a) || 0, items[i - 1].dur * 0.45));
+    ev.push({ t: Math.max(0, items[i].start - a), name: tr.sfx, vol: 0.6, keep: true });
   }
   for (const it of items) {
     const sa = subAnimOf(p, it.clip);

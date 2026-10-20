@@ -306,6 +306,7 @@ const send = (e, ch, ...a) => {
 
 function register(base) {
   baseUrl = base;
+  try { folders.ensure(); } catch {} // 공실뉴스 스튜디오\녹화영상 · AI오디오 폴더
   server.configure(base);
 
   /* ── 라이브러리 ── */
@@ -476,6 +477,101 @@ function register(base) {
 
   /* ── AI 목소리 ── */
   ipcMain.handle("video:voice", (_e, dir, text, voiceId, opts) => project.voiceFor({ dir }, text, voiceId, opts || {}));
+  // 대본을 텍스트(.txt)로 내려받기 (텍스트로 영상, 2026-10-20 사장님) — 문서\공실뉴스 스튜디오\대본 폴더에 바로 저장하고 탐색기로 보여 준다
+  //  저장 전에 [다른 이름으로 저장] 창 — 폴더(처음은 대본 폴더)와 파일 이름을 고른다 (2026-10-20 사장님). 취소하면 ""
+  ipcMain.handle("video:save-text", async (e, name, text) => {
+    const dir = path.join(require("electron").app.getPath("documents"), "공실뉴스 스튜디오", "대본");
+    fs.mkdirSync(dir, { recursive: true });
+    const base = String(name || "대본").replace(/[\\/:*?"<>|]/g, "_").trim().slice(0, 60) || "대본";
+    let def = path.join(dir, `${base}.txt`);
+    for (let n = 2; fs.existsSync(def); n++) def = path.join(dir, `${base}_${n}.txt`);
+    const r = await dialog.showSaveDialog(winOf(e), { title: "대본을 텍스트로 저장", defaultPath: def, filters: [{ name: "텍스트 (.txt)", extensions: ["txt"] }] });
+    if (r.canceled || !r.filePath) return "";
+    const file = /\.txt$/i.test(r.filePath) ? r.filePath : `${r.filePath}.txt`;
+    fs.writeFileSync(file, "\ufeff" + String(text || "").replace(/\r?\n/g, "\r\n"), "utf8"); // 메모장에서도 한글이 깨지지 않게
+    return file;
+  });
+  /**
+   * 목소리만 파일로 (2026-10-20 사장님: "텍스트로 음성을 만들면 타임라인 말고 mp3 로 저장되는 것도") —
+   *  문장마다 AI 목소리를 만들어 (임시 폴더) 순서대로 문장 사이 쉼을 두고 이어 한 파일 (mp3 / wav). 프로젝트는 만들지 않는다
+   *  opts: { kind: "mp3"|"wav", outFile, speed, gap }
+   */
+  ipcMain.handle("video:voice-save", async (e, texts, voiceId, opts = {}) => {
+    let list = (texts || []).map((t) => String(t || "").trim()).filter((t) => t && t.replace(/\[[^\]]{1,20}\]/g, "").replace(/[\s.,!?…~]/g, "")); // 태그만 있는 줄은 뺀다 (빈 글 오류)
+    // 미리 듣기 — 처음 세 문장만, 임시 파일로 (2026-10-20 사장님)
+    if (opts.preview) {
+      list = list.slice(0, 3);
+      const td = path.join(require("electron").app.getPath("userData"), "tmp");
+      fs.mkdirSync(td, { recursive: true });
+      for (const f of fs.readdirSync(td)) if (/^voice_preview_/.test(f)) { try { fs.unlinkSync(path.join(td, f)); } catch {} }
+      opts = { ...opts, kind: "mp3", outFile: path.join(td, `voice_preview_${Date.now()}.mp3`), noOverwrite: false };
+    }
+    const plain = list.map((t) => t.replace(/\[[^\]]{1,20}\]\s*/g, "").trim()); // 쉼 판단은 태그를 뺀 글로
+    if (!list.length) throw new Error("읽을 문장이 없어요.");
+    const kind = opts.kind === "wav" ? "wav" : "mp3";
+    let out = String(opts.outFile || "");
+    if (!out) throw new Error("저장할 곳을 골라 주세요.");
+    // 이미 있으면 덮어쓰지 않고 _2, _3 … (AI 보이스 녹음은 저장 창 없이 바로 저장한다)
+    if (opts.noOverwrite) {
+      const ext = path.extname(out), stem = out.slice(0, out.length - ext.length);
+      for (let n = 2; fs.existsSync(out); n++) out = `${stem}_${n}${ext}`;
+    }
+    const speed = Math.max(0.5, Math.min(2, Number(opts.speed) || 1));
+    const gap = Math.max(0, Math.min(2, Number.isFinite(Number(opts.gap)) ? Number(opts.gap) : 0.2));
+    const tmp = path.join(require("os").tmpdir(), `gsv-voice-${crypto.randomBytes(4).toString("hex")}`);
+    fs.mkdirSync(tmp, { recursive: true });
+    try {
+      const files = new Array(list.length);
+      let k = 0, done = 0;
+      const one = async () => {
+        while (k < list.length) {
+          const i = k++;
+          const r = await project.voiceFor({ dir: tmp }, list[i], voiceId, { emotion: opts.emotion || undefined, prev: list[i - 1] || "", next: list[i + 1] || "" });
+          files[i] = r.file;
+          done++;
+          send(e, "video:render-progress", `AI 목소리를 만드는 중… (${done}/${list.length})`, (done / list.length) * 0.9);
+        }
+      };
+      await Promise.all([one(), one(), one()]);
+      send(e, "video:render-progress", "한 파일로 잇는 중…", 0.95);
+      const tempo = [];
+      let s = speed;
+      while (s > 2) { tempo.push("atempo=2"); s /= 2; }
+      while (s < 0.5) { tempo.push("atempo=0.5"); s /= 0.5; }
+      if (Math.abs(s - 1) > 0.001) tempo.push(`atempo=${s.toFixed(3)}`);
+      const args = ["-y", "-hide_banner", "-loglevel", "error"];
+      files.forEach((f) => args.push("-i", f));
+      const f = files.map((_, i) => `[${i}:a]aresample=48000,aformat=channel_layouts=mono${tempo.length ? "," + tempo.join(",") : ""}${i < files.length - 1 && gap > 0 ? `,apad=pad_dur=${(/[,，、]\s*$/.test(plain[i]) ? Math.min(0.05, gap) : gap).toFixed(3)}` : ""}[a${i}]`);
+      f.push(`${files.map((_, i) => `[a${i}]`).join("")}concat=n=${files.length}:v=0:a=1[out]`);
+      fs.mkdirSync(path.dirname(out), { recursive: true });
+      await ff.run(ff.ff(), [...args, "-filter_complex", f.join(";"), "-map", "[out]", ...(kind === "mp3" ? ["-c:a", "libmp3lame", "-b:a", "192k"] : ["-c:a", "pcm_s16le"]), out]);
+      // 문장 시각을 적어 둔다 → [오디오로 편집하기]가 받아쓰기 대신 정확히 나눈다 (2026-10-20 사장님)
+      if (!opts.preview) {
+        try {
+          const NONVERBAL = /^\[(웃으며|한숨|헛기침|울먹이며|laughs|sighs|clears throat|crying)\]/;
+          const sents = [];
+          let t = 0;
+          for (let i = 0; i < files.length; i++) {
+            const d = ((await ff.probe(files[i])).duration || 0) / speed;
+            // 문장 앞 웃음·한숨은 단어 앞에서 뺀다 — 태그를 소리로 내는 건 일레븐랩스 v3 뿐
+            const v3 = /^el_/.test(String(voiceId)) && /"m":"v3"/.test(String(opts.emotion || ""));
+            const lead = v3 && NONVERBAL.test(list[i]) ? (await project.leadNonverbal(files[i])) / speed : 0;
+            const ss = t + Math.max(0.08, lead), ee = Math.max(ss + 0.1, t + d - 0.08); // 파일 앞뒤 여유 0.08초
+            const text = plain[i];
+            const words = project.alignWords(text, ss, ee, [{ s: ss, e: ee }]).map((w) => ({ w: w.w, s: +w.s.toFixed(3), e: +w.e.toFixed(3) }));
+            sents.push({ text, s: +t.toFixed(3), e: +(t + d).toFixed(3), words });
+            t += d + (i < files.length - 1 ? (/[,，、]\s*$/.test(plain[i]) ? Math.min(0.05, gap) : gap) : 0);
+          }
+          project.saveVoiceMeta(out, { voiceId, sents });
+        } catch (er) { log.warn(`[AI 보이스] 문장 시각 저장 실패: ${er.message}`); }
+      }
+      const info = await ff.probe(out).catch(() => ({ duration: 0 }));
+      media.allow(out); // 다 만든 파일을 앱 안에서 바로 들어 보게 (2026-10-20 사장님)
+      return { file: out, seconds: info.duration || 0, url: media.urlOf(out) };
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
   // 타입캐스트 — 회원 자기 키 (이 PC 에만)
   const typecast = require("./typecast");
   ipcMain.handle("video:tc-status", () => typecast.status());
@@ -488,6 +584,16 @@ function register(base) {
   ipcMain.handle("video:el-set-key", (_e, k) => eleven.setKey(k));
   ipcMain.handle("video:el-clear", () => eleven.clear());
   ipcMain.handle("video:el-voices", (_e, refresh) => eleven.voices(Boolean(refresh)));
+  // 세부 설정 들어 보기 — 이 설정으로 한 문장 (임시 파일)
+  ipcMain.handle("video:el-sample", async (_e, voiceId, emotion, text) => {
+    const dir = path.join(require("electron").app.getPath("userData"), "tmp");
+    fs.mkdirSync(dir, { recursive: true });
+    for (const f of fs.readdirSync(dir)) if (/^el_sample_/.test(f)) { try { fs.unlinkSync(path.join(dir, f)); } catch {} }
+    const f = path.join(dir, `el_sample_${Date.now()}.wav`);
+    await eleven.say(String(text || "안녕하세요. 공실뉴스 스튜디오에서 새 매물을 소개해 드립니다."), f, { voiceId, emotion });
+    media.allow(f);
+    return media.urlOf(f);
+  });
   // 단어마다 목소리가 다른 클립 — 조각을 한 파일로 (0.1.8부터)
   /* 내 목소리 성우 (PC 에서, 무료) — 켜기(내려받기)·등록(직접 녹음 / 파일)·샘플 */
   const myStatus = () => {
@@ -581,7 +687,108 @@ function register(base) {
     }
     const photos = (a.media || []).filter((m) => m.kind === "photo" && m.file && fs.existsSync(m.file)).map((m) => m.file);
     const items = await library.add(photos, { source: "vacancy" });
-    return { vacancy: a.vacancy, photos: items };
+    // 공실 분석 때 찍어 둔 화면 (공실열람 검증·지도·로드뷰) — 영상에서 문장에 맞춰 AI 가 고른다 (2026-10-20 사장님)
+    const shotFiles = (a.media || []).filter((m) => m.kind !== "photo" && m.file && fs.existsSync(m.file)).map((m) => m.file);
+    const shots = shotFiles.length ? await library.add(shotFiles, { source: "vacancy" }) : [];
+    return { vacancy: a.vacancy, photos: items, shots };
+  });
+
+  /* ── 기사·보도자료 화면 캡쳐 (2026-10-20 사장님) ──
+   *  안 보이는 창(1280×720)에 주소를 열어 제목부터 화면을 찍는다. mode "head" = 제목 부분 1장 (남의 언론사 기사),
+   *  "full" = 제목부터 아래로 몇 장 (공실뉴스 기사·보도자료). credit 이 있으면 오른쪽 아래에 "출처: ○○" 를 넣고 찍는다.
+   *  문서\공실뉴스 스튜디오\캡쳐\<제목> 에 저장하고 [내 자료]에 올린다 */
+  ipcMain.handle("video:capture-page", async (e, url, opts = {}) => {
+    const href = String(url || "").trim();
+    if (!/^https?:\/\//i.test(href)) throw new Error("캡쳐할 주소가 없습니다.");
+    const mode = opts.mode === "head" ? "head" : "full";
+    const max = mode === "head" ? 1 : Math.min(6, Math.max(1, Number(opts.max) || 4));
+    const title = String(opts.title || "").trim();
+    const safe = (title || new URL(href).hostname).replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 40) || "캡쳐";
+    const dir = path.join(library.studioRoot(), "캡쳐", safe);
+    fs.mkdirSync(dir, { recursive: true });
+    send(e, "video:progress", "기사 화면을 캡쳐하는 중…");
+    const Z = 1.5; // 1920×1080 창에 1.5배로 — 화면은 1280 너비로 그리고 캡쳐는 풀HD 로
+    const win = new BrowserWindow({ show: false, width: 1920, height: 1080, useContentSize: true, webPreferences: { partition: "column-news", sandbox: true, zoomFactor: Z } });
+    const wc = win.webContents;
+    wc.setAudioMuted(true);
+    wc.setWindowOpenHandler(() => ({ action: "deny" }));
+    win.on("close", (ev) => ev.preventDefault());
+    wc.on("will-prevent-unload", (ev) => ev.preventDefault());
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    try {
+      await Promise.race([
+        wc.loadURL(href, { userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" }).catch(() => {}),
+        wait(20000),
+      ]);
+      await wait(2500); // 늦게 그려지는 본문·안쪽 창
+      await wc.insertCSS("::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}").catch(() => {});
+      // 위에 붙는 머리·팝업 숨기기 — 내리면 새로 생기는 머리도 있어 찍을 때마다 (출처 표시는 남긴다)
+      const HIDE_FIXED = `(() => { for (const el of document.querySelectorAll("body *")) { if (el.dataset && el.dataset.gsvCredit) continue; const cs = getComputedStyle(el); if (cs.position === "fixed" || cs.position === "sticky") el.style.setProperty("display", "none", "important"); } return 1; })()`;
+      // 제목 위치를 찾는다 — head 는 제목이 든 기사 칸만 16:9 로 (옆 칸 남의 사진·광고는 빼고)
+      const at = await wc.executeJavaScript(`(() => {
+        ${HIDE_FIXED};
+        const want = ${JSON.stringify(title.slice(0, 14))};
+        let t = null;
+        if (want) for (const el of document.querySelectorAll("h1, h2, h3, h4, strong, .title, .tit, .subject, [class*=title], [class*=headline]")) {
+          if ((el.innerText || "").replace(/\\s+/g, " ").includes(want) && el.getBoundingClientRect().height > 0) { t = el; break; }
+        }
+        if (!t) t = document.querySelector("h1, h2");
+        const r = t ? t.getBoundingClientRect() : { top: 0, left: 0, width: 0 };
+        let c = t;
+        while (c && c.parentElement && c.getBoundingClientRect().width < 560) c = c.parentElement;
+        let cr = c ? c.getBoundingClientRect() : { left: 0, width: innerWidth };
+        let bodyTop = -1; // 본문 칸이 제목보다 좁으면 — 아래로 찍기는 본문 칸부터 (정책브리핑은 거기에 보도자료 원문이 그려진다)
+        // 본문 칸이 따로 있으면(제목은 넓고 본문은 좁은 곳 — 정책브리핑 등) 본문 칸 너비로 — 옆 칸(남의 기사 사진)은 빼고
+        for (const sel of [".article_body", ".view_cont", "#articleBodyContents", "#dic_area", "article", ".bbs_view", ".board_view", ".view_content", "main"]) {
+          const el = document.querySelector(sel);
+          const b = el && el.getBoundingClientRect();
+          if (b && b.width >= 480 && b.width < cr.width - 40) { cr = { left: b.left, width: b.width }; bodyTop = b.top + scrollY; break; }
+        }
+        const w = Math.min(innerWidth, Math.floor((innerHeight * 16) / 9), Math.max(560, Math.round(cr.width) + 48)); // 양옆 여백 24, 16:9 가 화면 안에
+        const x = Math.max(0, Math.min(innerWidth - w, Math.round(cr.left) - 24));
+        return { top: Math.max(0, Math.round(r.top + scrollY - 30)), body: bodyTop < 0 ? -1 : Math.max(0, Math.round(bodyTop - 20)), x, w, h: Math.round(w * 9 / 16), vh: innerHeight };
+      })()`, true).catch(() => ({ top: 0, x: 0, w: 1280, h: 720, vh: 720 }));
+      // 출처 표시 — 찍을 때마다 잘라 낼 칸의 오른쪽 아래로 옮긴다
+      const credit = String(opts.credit || "");
+      if (credit) {
+        await wc.executeJavaScript(`(() => {
+          const d = document.createElement("div");
+          d.textContent = ${JSON.stringify(credit)};
+          d.dataset.gsvCredit = "1";
+          d.id = "gsv-credit";
+          d.style.cssText = "position:fixed;transform:translate(-100%,-100%);z-index:2147483647;padding:7px 14px;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;font:700 20px/1.2 sans-serif;white-space:nowrap";
+          document.body.appendChild(d);
+          return 1;
+        })()`, true).catch(() => {});
+      }
+      const files = [];
+      let last = -1;
+      const step = Math.max(200, at.h - 40); // 아래로 몇 장 — 조금씩 겹치게
+      for (let k = 0; k < max && !win.isDestroyed(); k++) {
+        // head: 제목 칸이 첫 화면 안에 다 보이면 내리지 않는다 (내리면 붙는 머리가 생기는 곳이 있어서)
+        const want = mode === "head" ? (at.top + at.h <= at.vh ? 0 : at.top) : (at.body >= 0 ? at.body : at.top) + k * step;
+        const y = await wc.executeJavaScript(`window.scrollTo(0, ${want}); window.scrollY`, true).catch(() => -1);
+        if (y < 0 || y === last) break; // 끝까지 내려갔다
+        last = y;
+        // 잘라 낼 칸 (기사 칸 16:9) — 페이지 끝이라 덜 내려갔으면 그만큼 아래 칸
+        const ry = Math.max(0, Math.min(at.vh - at.h, want - y + (mode === "head" ? at.top - want : 0)));
+        await wait(400);
+        await wc.executeJavaScript(`(() => { ${HIDE_FIXED}; const d = document.getElementById("gsv-credit"); if (d) { d.style.left = "${at.x + at.w - 16}px"; d.style.top = "${ry + at.h - 16}px"; } return 1; })()`, true).catch(() => {});
+        await wait(500);
+        await wc.capturePage().catch(() => null); // 안 보이는 창은 첫 장이 예전 화면일 때가 있어 한 번 버린다
+        await wc.executeJavaScript(HIDE_FIXED, true).catch(() => {}); // 내린 뒤 늦게 붙는 머리 (정책브리핑)
+        await wait(300);
+        const img = await wc.capturePage({ x: Math.round(at.x * Z), y: Math.round(ry * Z), width: Math.round(at.w * Z), height: Math.round(at.h * Z) });
+        if (img.isEmpty()) continue;
+        const file = path.join(dir, `${safe}_${String(k + 1).padStart(2, "0")}.jpg`);
+        fs.writeFileSync(file, img.toJPEG(90));
+        files.push(file);
+      }
+      if (!files.length) throw new Error("화면을 캡쳐하지 못했습니다.");
+      return await library.add(files, { source: "capture" });
+    } finally {
+      if (!win.isDestroyed()) win.destroy();
+    }
   });
 
   /* ── 무료 이미지·비디오 ── 서버 검색 → 고르면 PC 프로젝트로 내려받기 (사장님: 로컬에 복사) */
@@ -626,7 +833,8 @@ function register(base) {
   ipcMain.handle("video:export-pick", async (e, p, kind) => {
     const ext = ["mp3", "wav", "srt", "txt"].includes(kind) ? kind : "mp4";
     const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"] };
-    const dir = lastExportDir && fs.existsSync(lastExportDir) ? lastExportDir : folders.exportDir(p);
+    // 목소리만 저장(텍스트로 영상)은 [AI오디오] 폴더가 기본 (2026-10-20 사장님)
+    const dir = p && p.voiceOnly ? (folders.ensure(), folders.aiAudioDir()) : lastExportDir && fs.existsSync(lastExportDir) ? lastExportDir : folders.exportDir(p);
     const base = `${String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_")}${ext === "mp4" && p && p.ratio ? `_${p.ratio.replace(":", "x")}` : ""}`;
     let def = path.join(dir, `${base}.${ext}`);
     for (let n = 2; fs.existsSync(def); n++) def = path.join(dir, `${base}_${n}.${ext}`);

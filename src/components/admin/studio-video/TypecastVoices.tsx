@@ -8,6 +8,7 @@ import type { TypecastVoice } from "./types";
 import { errText, videoBridge } from "./types";
 import { addExtraVoices } from "@/lib/studio-video/voices";
 import { Btn, C, FONT, Icon, input } from "./ui";
+import { ElevenDetail } from "./ElevenDetail";
 
 export const TC_EMOTIONS: [string, string][] = [
   ["smart", "스마트 (추천)"], ["normal", "보통"], ["happy", "기쁨"], ["sad", "슬픔"], ["angry", "화남"], ["whisper", "속삭임"], ["toneup", "톤 업"], ["tonedown", "톤 다운"],
@@ -89,7 +90,7 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
   const { Mark } = info;
   // 이 회사에 없는 말투면 그 회사 기본으로
   useEffect(() => {
-    if (!info.emotions.some(([k]) => k === emotion)) onEmotion(info.emotions[0][0]);
+    if (!info.emotions.some(([k]) => k === emotion) && !(provider === "el" && emotion.startsWith("x:"))) onEmotion(info.emotions[0][0]); // x: = 일레븐랩스 세부 설정
   }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps
   const [st, setSt] = useState<{ has: boolean; masked: string; count: number } | null>(null);
   const [list, setList] = useState<TypecastVoice[]>([]);
@@ -190,7 +191,9 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px 0", flexWrap: "wrap" }}>
         <span style={{ fontSize: 14, fontWeight: 800, marginRight: 4 }}>말투</span>
         {info.emotions.map(([k, t]) => <button key={k} type="button" onClick={() => onEmotion(k)} style={chip(emotion === k)} title={k === "smart" ? "앞뒤 문장을 보고 알아서 말투를 맞춰요" : undefined}>{t}</button>)}
+        {provider === "el" && emotion.startsWith("x:") && <span style={{ ...chip(true), display: "inline-flex", alignItems: "center" }}>세부 설정</span>}
       </div>
+      {provider === "el" && <ElevenDetail voiceId={id} emotion={emotion} onEmotion={onEmotion} />}
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px", flexWrap: "wrap" }}>
         {[["", "모두"], ["female", "여성"], ["male", "남성"]].map(([k, t]) => <button key={k} type="button" onClick={() => setG(k)} style={chip(g === k)}>{t}</button>)}
         <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="이름·쓰임새로 찾기" style={{ ...input, height: 34, width: 200, marginLeft: "auto", fontSize: 14 }} />

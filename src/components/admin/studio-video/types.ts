@@ -1,6 +1,6 @@
 // 영상 편집기 자료 모양 — 앱(studio-app/src/video/project.js)과 같다
 export type Ratio = "16:9" | "9:16" | "1:1" | "4:5" | "4:3";
-export type Method = "text" | "video" | "longform" | "record";
+export type Method = "text" | "video" | "longform" | "record" | "audio"; // audio = 오디오로 편집하기 (2026-10-20)
 export type Fill = "cover" | "contain" | "blur";
 // 사진 움직임 (브루처럼) — auto = 사진 클립 차례대로 줌인·좌→우·줌아웃·우→좌·위→아래 를 돌려 쓴다
 export type Motion = "auto" | "none" | "zoomIn" | "zoomOut" | "leftRight" | "rightLeft" | "topBottom" | "bottomTop";
@@ -15,7 +15,25 @@ export type LayerAnim = {
   wshow?: "word" | "line"; whl?: "color" | "big" | "both"; wcolor?: string /* 강조색, 기본 노랑 */; wgap?: number /* 직접 쓴 자막 — 줄(단어는 절반) 사이 초, 기본 0.6 */;
 };
 
-export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */ };
+/**
+ * 키프레임 (캡컷처럼, 2026-10-20 사장님) — 그 시각의 모습 한 장. 점과 점 사이는 저절로 채운다
+ *  t: 시각 (레이어 = 나타난 때부터 초, 클립 화면 = 클립 처음부터 초)
+ *  x·y: 가운데 자리 (화면 0~1) · s: 크기 배수 (1 = 원래 크기) · r: 회전 (도, 시계 방향 +) · o: 진하기 배수 (0~1)
+ *  e: 다음 점까지 움직이는 방식 — 일정하게(linear) · 부드럽게(inout) · 천천히 시작(in) · 천천히 끝(out)
+ */
+/** 자르기 — 원본의 왼쪽·위·오른쪽·아래를 비율(0~1)로 잘라 낸다 (프리미어 효과 컨트롤 [자르기]) */
+export type Crop = { l?: number; t?: number; r?: number; b?: number };
+export type Ease = "linear" | "inout" | "in" | "out";
+/** only — 이 점이 정하는 항목만 (캡컷처럼 항목마다 ◇, 2026-10-20). 없으면 모든 항목. 정하지 않은 항목 값은 무시한다 */
+export type KfProp = "x" | "y" | "s" | "r" | "o";
+export type Keyframe = { t: number; x: number; y: number; s: number; r: number; o: number; e?: Ease; only?: KfProp[] };
+/**
+ * 색 보정·필터 (캡컷 [필터]·[조정]) — 미리보기와 완성 영상이 같은 색 행렬 하나로 (timeline.adjMatrix)
+ *  f: 필터 이름 · fi: 필터 세기 0~1 · b: 밝기 -1~1 · c: 대비 -1~1 · s: 채도 -1~1 · t: 색온도 -1(차갑게)~1(따뜻하게) · g: 색조 -1(초록)~1(보라)
+ */
+export type Adjust = { f?: string; fi?: number; b?: number; c?: number; s?: number; t?: number; g?: number };
+
+export type Word = { w: string; s: number; e: number; del?: boolean; o?: [number, number] /* 상세 편집 전 처음 시각 (↺ 처음대로) */; v?: string /* AI 목소리 — 이 단어만 다른 목소리 (클립은 그대로, 소리 안에서 잇는다) */; fix?: boolean /* 프롬프터 대본으로 맞춤법을 고친 낱말 (밑줄) */ };
 
 export type Asset = {
   id: string;
@@ -40,9 +58,11 @@ export type Clip = {
   text: string;
   words?: Word[];
   src?: { asset: string; s: number; e: number };
-  trans?: { type: string; a: number; b: number }; // 앞 클립에서 이 클립으로 넘어가는 화면전환 — 앞 클립 끝 a초 + 이 클립 시작 b초 (transitions.ts)
+  trans?: { type: string; a: number; b: number; sfx?: string /* 전환 효과음 (public/studio-sfx 이름) */ }; // 앞 클립에서 이 클립으로 넘어가는 화면전환 — 앞 클립 끝 a초 + 이 클립 시작 b초 (transitions.ts)
   cuts?: { s: number; e: number }[]; // 무음 줄이기로 건너뛰는 구간 (원본 시각) — 원래대로 하면 지운다
-  voice?: { file: string; url?: string; duration: number; id: string; text: string } | null;
+  // o: 소리 파일 안 시작 초 (클립을 나눠도 목소리를 다시 만들지 않고 같은 파일의 이 구간만 튼다, 2026-10-20) · duration = 이 구간 길이
+  // ng: 뒤에 쉼(문장 사이 쉼)을 두지 않는다 — 나눈 앞 조각 (말이 뒤 조각으로 바로 이어진다)
+  voice?: { file: string; url?: string; duration: number; id: string; text: string; o?: number; ng?: boolean } | null;
   voiceId?: string; // 클립만 다른 목소리
   speed?: number; // 클립만 다른 빠르기 (AI 목소리 클립: 목소리 빠르기 / 촬영 클립: 영상·소리 빠르기 0.5~2)
   pad?: number; // AI 목소리 클립 끝에 더 머무는 시간 (초) — 클립 길이를 늘릴 때
@@ -53,6 +73,12 @@ export type Clip = {
   box?: { x: number; y: number; w: number }; // 화면 직접 크기 — 가운데 자리(0~1)·폭(화면 폭 비율). 있으면 채우기 대신 이 자리에
   flipX?: boolean; // 화면 좌우 반전
   flipY?: boolean; // 화면 상하 반전
+  rot?: number; // 화면 회전 (도, 시계 방향 +) — 미리보기 회전 손잡이·타임라인 [회전]
+  opacity?: number; // 화면 진하기 0~1 (검은 바탕 위, 기본 1)
+  kf?: Keyframe[]; // 화면 키프레임 — 있으면 자리·크기·회전·진하기가 시간에 따라 (사진 자동 움직임은 쉰다)
+  adj?: Adjust; // 색 보정·필터
+  crop?: Crop; // 자르기 (프리미어 효과 컨트롤) — 원본 화면의 가장자리를 잘라 낸다 (잘린 곳은 아래가 보인다)
+  subKf?: Keyframe[]; // 메인자막 키프레임 (클립 처음부터 초) — 자리·크기·회전·진하기
   motion?: Motion; // 사진 움직임 — 없으면 전체 설정(settings.motion, 기본 자동)
   motionPower?: MotionPower; // 움직임 크기 (기본 보통)
   muted?: boolean;
@@ -80,6 +106,17 @@ export type Layer = {
   // 단어 구간 (브루 [삽입]처럼) — 있으면 from 클립의 w0번째 단어부터 w1번째 단어를 말하는 동안만 나온다
   w0?: number;
   w1?: number;
+  // 초 단위 구간 (타임라인에서 끌어 옮긴 것) — ts: from 클립 처음에서 몇 초 뒤에 나타나기, te: to 클립 처음에서 몇 초에 사라지기 (없으면 끝까지)
+  //  클립에 붙어 있어서 앞 클립 글을 지우면 같이 움직인다 (회의 10-19 5장 3)
+  ts?: number;
+  te?: number;
+  kf?: Keyframe[]; // 키프레임 — 있으면 자리·크기·회전·진하기가 시간에 따라 (t = 나타난 때부터 초)
+  // 타임라인 트랙 (2026-10-20, 프리미어처럼) — 사진·스티커·글자·올린 영상 = V 트랙 번호(2부터, V1 = 메인), 음악·효과음 = A 트랙 번호(3부터, A1 = 메인 영상 소리, A2 = AI 목소리)
+  //  겹치는 순서는 layers 배열 순서 그대로 (트랙을 옮기면 배열 순서도 맞춘다 — 텍스트 편집·굽기는 바뀐 것 없이 같은 결과)
+  track?: number;
+  crop?: Crop; // 자르기 (사진·스티커·올린 영상)
+  vs?: number; // 올린 영상 — 영상 안 시작 초 (타임라인 V2 위, 화면 속 화면)
+  muted?: boolean; // 올린 영상 소리 끄기
   name?: string;
   // 음악
   file?: string;
@@ -92,7 +129,7 @@ export type Layer = {
   // 사진
   asset?: string;
   sfx?: string; // 효과음 이름 (public/studio-sfx · studio-app/src/video/sfx 의 파일 이름)
-  sticker?: boolean; // [삽입] → 스티커로 넣은 것 (사진 레이어와 같이 그리고, 이름·아이콘만 "스티커")
+  sticker?: boolean; // [삽입] → 그래픽으로 넣은 것 (사진 레이어와 같이 그리고, 이름·아이콘만 "그래픽")
   stk?: { style: string; text: string; icon?: string; color?: string }; // 스티커 모양 — 넣은 뒤 글자를 고치면 이것으로 다시 그린다
   /** 굽기 때만 (저장 안 함) — 클립마다 애니메이션 칸 그림: dir 폴더의 00000.png… , s0(클립 안 시작 초), x·y(왼쪽 위) */
   bake?: Record<string, { dir: string; s0: number; n: number; x: number; y: number }>;
@@ -133,6 +170,14 @@ export type Layer = {
   shadowAlpha?: number;
   glowSize?: number;
   glowAlpha?: number;
+  // 예능 자막 모양 (텍스트에도, 2026-10-20) — 메인자막과 같은 이름
+  outline2?: string;
+  outline2Width?: number;
+  gradTo?: string;
+  gradType?: "linear" | "radial" | "reflect";
+  gradAngle?: number;
+  gradA?: number;
+  gradB?: number;
 };
 
 export type SubtitleSettings = {
@@ -190,6 +235,10 @@ export type Project = {
   method: Method;
   ratio: Ratio;
   vacancyId?: string;
+  /** 오디오로 편집하기 — 편집 화면을 처음 열 때 받아쓰기(자동 자막)를 바로 시작한다 (한 번 하고 지운다) */
+  autoSubOnOpen?: boolean;
+  /** 녹화할 때 프롬프터 대본 — 받아쓰기 뒤 "거의 같은 낱말"만 대본 글자로 고치는 데 쓰고 지운다 (scriptFix.ts) */
+  recScript?: string;
   createdAt: string;
   updatedAt: string;
   settings: Settings;
@@ -198,6 +247,8 @@ export type Project = {
   layers?: Layer[];
   /** 1 = 겹치는 순서를 layers 배열 순서 그대로 (뒤→앞, 스티커·사진·화면 글자 함께). 없으면 예전대로 사진 먼저·글자 위 (회의 3-26) */
   layerZ?: number;
+  /** 타임라인 트랙 (2026-10-20, 프리미어처럼) — v: V 트랙 수(1 = 메인만), a: A 트랙 수(2 = 메인 소리·AI 목소리), 이름·잠금 (화면 결과와는 상관없음) */
+  tl?: { v?: number; a?: number; names?: Record<string, string>; lock?: string[] };
   dir: string;
   duration?: number;
   thumb?: string;
@@ -210,7 +261,7 @@ export type LibItem = { id: string; path?: string; name: string; kind: "video" |
 /** .gss 를 열 때 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로] 를 묻는다 */
 export type Recover = { recover: true; file: string; name: string };
 export const isRecover = (x: unknown): x is Recover => Boolean(x && (x as Recover).recover);
-export type Folders = { projectDir: string; recordDir: string; exportDir: string; defaults: { projectDir: string; recordDir: string; exportDir: string } };
+export type Folders = { projectDir: string; recordDir: string; exportDir: string; aiAudioDir?: string; defaults: { projectDir: string; recordDir: string; exportDir: string; aiAudioDir?: string } };
 export type TrashItem = { id: string; name: string; from: string; at: string; deletedAt: string; thumb: string; ratio: Ratio; duration: number };
 export type Recent = { dir: string; name: string; ratio: Ratio; method: Method; updatedAt: string; thumb: string; duration: number };
 export type StockItem = { id: string; kind: "image" | "video"; thumb: string; url: string; width: number; height: number; duration?: number; credit: string; source: string };
@@ -299,6 +350,8 @@ export type VideoBridge = {
     setKey: (k: string) => Promise<{ has: boolean; masked: string; count: number; at: number }>;
     clear: () => Promise<{ has: boolean; masked: string; count: number; at: number }>;
     voices: (refresh?: boolean) => Promise<TypecastVoice[]>;
+    /** 세부 설정 들어 보기 (2026-10-20) */
+    sample?: (voiceId: string, emotion: string, text?: string) => Promise<string>;
   };
   voice: (dir: string, text: string, voiceId: string, opts?: { fresh?: boolean; emotion?: string; prev?: string; next?: string }) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
@@ -312,7 +365,7 @@ export type VideoBridge = {
   transcribeClips?: (p: Project, targets: { id: string; asset: string; s: number; e: number }[]) => Promise<{ id: string; text: string; words: Word[]; sents?: { text: string; s: number; e: number; words: Word[] }[] }[]>;
   split?: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>; // 받아쓰기 없이 말소리 구간으로만 (무료, 앱 0.1.4부터)
   ai: {
-    script: (o: { topic?: string; style?: string; request?: string; chars?: number; vacancy?: unknown; source?: string }) => Promise<{ title?: string; scenes: { title: string; lines: { text: string; desc: string; keywords: string; kind: string }[] }[] }>;
+    script: (o: { topic?: string; style?: string; request?: string; chars?: number; vacancy?: unknown; source?: string; /** 이번 대본만 쓸 AI (계정/API 키) */ ai?: { provider: string; mode: "account" | "api" } | null }) => Promise<{ title?: string; scenes: { title: string; lines: { text: string; desc: string; keywords: string; kind: string }[] }[] }>;
     scenes: (lines: string[]) => Promise<{ desc: string; keywords: string; kind: string }[]>;
     shorts: (clips: Clip[], o: { count: number; maxSec: number; request?: string }) => Promise<{ title: string; start: number; end: number; reason: string }[]>;
     /** 대본 + 내 영상 → 문장마다 장면 (v: 자료 번호, -1 = 없음 · t: 시작 초). 앱 0.1.10부터 */
@@ -331,7 +384,9 @@ export type VideoBridge = {
     /** [씬 정리] 클립 글 → 씬 나누기 (from = 시작 클립 번호, 1부터) — 앱 0.1.10부터 */
     group?: (lines: string[]) => Promise<{ title: string; from: number }[]>;
   };
-  vacancy: (id: string) => Promise<{ vacancy: { title?: string; fields?: { label: string; value: string }[] }; photos: LibItem[] }>;
+  vacancy: (id: string) => Promise<{ vacancy: { title?: string; fields?: { label: string; value: string }[] }; photos: LibItem[]; /** 공실열람 검증·지도·로드뷰 화면 */ shots?: LibItem[] }>;
+  /** 기사·보도자료 화면 캡쳐 — head: 제목 부분 1장, full: 제목부터 몇 장 (2026-10-20) */
+  capturePage?: (url: string, opts: { mode: "head" | "full"; title?: string; credit?: string; max?: number }) => Promise<LibItem[]>;
   stock: {
     search: (q: string, type: "photo" | "video", orientation: string, page?: number) => Promise<{ success: boolean; items?: StockItem[]; error?: string; needKey?: boolean }>;
     get: (dir: string, item: StockItem) => Promise<LibItem>;
@@ -340,11 +395,17 @@ export type VideoBridge = {
   musicUse: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
   fonts: { ensure: (family: string) => Promise<{ family: string; url: string }> };
   render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number; outFile?: string }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
+  /** 이 앱이 완성 영상에 그릴 수 있는 것 — "kf"(키프레임·화면 회전·진하기·초 단위 구간), "adj"(색 보정·필터). 2026-10-20 키프레임 들어간 앱부터 */
+  features?: string[];
   /** 애니메이션 칸 그림 저장 (투명 PNG data URL 들) → 폴더 경로. 앱 0.1.10부터 */
   animFrames?: (dir: string, key: string, start: number, urls: string[]) => Promise<string>;
   renderCancel: (id: string) => Promise<void>;
   /** [내보내기] 저장할 곳 고르기 — 취소하면 null (0.1.11부터) */
   exportPick?: (p: Project, kind: "mp4" | "mp3" | "wav" | "srt" | "txt") => Promise<string | null>;
+  /** 대본을 .txt 로 저장 (저장 창) — 고른 파일 경로, 취소면 null */
+  saveText?: (name: string, text: string) => Promise<string | null>;
+  /** 목소리만 파일로 — 문장마다 AI 목소리를 만들어 쉼을 두고 이어 mp3·wav 하나 (프로젝트 없이, 2026-10-20) */
+  voiceSave?: (texts: string[], voiceId: string, opts: { kind: "mp3" | "wav"; outFile: string; speed?: number; gap?: number; emotion?: string; noOverwrite?: boolean; /** 미리 듣기 — 처음 세 문장, 임시 파일 (url 로 돌려줌) */ preview?: boolean }) => Promise<{ file: string; seconds: number; url?: string }>;
   /** 예전 앱(0.1.9 이하)은 파일 경로(string)만, 범위(opts)도 무시 */
   exportAudio: (p: Project, kind: "mp3" | "wav", o?: { scope?: string; sceneId?: string; clipIds?: string[]; outFile?: string }) => Promise<string | { file: string; seconds: number; took: number }>;
   snapshot: (p: Project, file: string, at: number) => Promise<string>;
@@ -410,6 +471,10 @@ export const rgba = (hex: string | undefined, a: number) => {
 
 /** 오른쪽 자료 칸에서 끌어 놓기 — dataTransfer 종류 이름 */
 export const DRAG_MEDIA = "application/x-gsv-media";
+/** 스티커·템플릿 칸에서 끌어 놓기 (2026-10-20 사장님) — 놓는 순간 그림을 그려 넣는다 (make 는 끌기 시작할 때 칸이 채워 둔다) */
+export const DRAG_STICKER = "application/x-gsv-sticker";
+export type StickerDrop = { item: LibItem; o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; icon?: string; color?: string } } };
+export const stickerDrag: { make: null | (() => Promise<StickerDrop>) } = { make: null };
 
 /** 내 목소리 성우 상태 (앱) */
 export type MyVoiceStatus = { engine: boolean; installing: boolean; voice: boolean; registeredAt: string; sampleUrl: string; readText: string; name?: string; text?: string; refUrl?: string };

@@ -6,10 +6,15 @@ const tl = require("./timeline");
 
 const lib = ext.lazyModule(() => ext.run(["video/video-script.js"], ["gwVideoFacts", "gwVideoScriptPrompt", "gwVideoScenePrompt", "gwShortsPrompt", "gwVideoParse"]));
 
+/** 문장 끝 부호를 확실히 (2026-10-20 사장님: 마침표가 없으면 성우가 끝을 흐린다) — 말줄임·쉼표·물결은 마침표로 */
+const endMark = (t) => (!t || /[.?!]["'」』)]*$/.test(t) ? t : t.replace(/[\s,~…·]+$/, "") + ".");
+
 /** 대본 — { topic, style, request, chars, vacancy, source } → { title, scenes:[{title, lines:[{text, desc, keywords, kind}]}], chatUrl } */
 async function script(opts, onProgress = () => {}) {
   let chatUrl = "";
+  const pick = opts.ai && opts.ai.provider ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {}; // 쓸 AI 를 골랐으면 그것으로
   const text = await ai.ask(lib.gwVideoScriptPrompt(opts), {
+    ...pick,
     onProgress,
     isComplete: (t) => {
       const j = lib.gwVideoParse(t);
@@ -20,7 +25,7 @@ async function script(opts, onProgress = () => {}) {
   const j = lib.gwVideoParse(text);
   if (!j || !Array.isArray(j.scenes)) throw new Error("AI 대본을 읽지 못했습니다. 다시 눌러 주세요.");
   j.scenes = j.scenes
-    .map((s) => ({ title: String(s.title || ""), lines: (s.lines || []).map((l) => ({ text: String(l.text || "").trim(), desc: String(l.desc || ""), keywords: String(l.keywords || ""), kind: l.kind === "image" ? "image" : "video" })).filter((l) => l.text) }))
+    .map((s) => ({ title: String(s.title || ""), lines: (s.lines || []).map((l) => ({ text: endMark(String(l.text || "").trim()), desc: String(l.desc || ""), keywords: String(l.keywords || ""), kind: l.kind === "image" ? "image" : "video" })).filter((l) => l.text) }))
     .filter((s) => s.lines.length);
   return { ...j, chatUrl };
 }

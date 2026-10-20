@@ -135,7 +135,7 @@ export function NewClipDialog({ where, ensureAsset, onAdd, onClose }: { where: s
 
           {kind === "empty" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 14.5, color: C.sub }}>글 없이 앞 클립 화면이 그만큼 나와요. 나중에 연필로 글을 쓰면 AI 목소리로 읽어요.</div>
+              <div style={{ fontSize: 14.5, color: C.sub }}>글 없이 검은 화면이 그만큼 나와요. 나중에 사진·영상을 넣거나, 연필로 글을 쓰면 AI 목소리로 읽어요.</div>
               {secs([1, 2, 3, 5])}
             </div>
           )}

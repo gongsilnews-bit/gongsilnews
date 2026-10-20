@@ -185,7 +185,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
   onPreview?: (part: "in" | "out" | "all") => void;
   sfxDefault?: "auto" | "none"; // 효과음을 안 골랐을 때 (사진·글자 자동, 자막 없음)
 }) {
-  const [tab, setTab] = useState<"in" | "out" | "loop" | "word">("in");
+  const [tab, setTab] = useState<"in" | "out" | "loop" | "sfx" | "word">("in");
   const wordsOk = what === "자막"; // 단어별은 메인자막부터 (말 시각이 있어서)
   const side: "in" | "out" = tab === "out" ? "out" : "in";
   const [all, setAll] = useState(false);
@@ -205,6 +205,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
     a.grow && `반복 · ${nameOf(a.grow)}`,
     a.wshow && (a.wshow === "line" ? "단어·줄 · 한 줄씩" : "단어·줄 · 한 단어씩"),
     a.whl && `단어·줄 · ${WHL_LIST.find((x) => x.id === a.whl)?.label}`,
+    a.sfx && `효과음 · ${a.sfx === "none" ? "없음" : a.sfx === "auto" ? "자동" : SFX_LIST.find((x) => x.id === a.sfx)?.label || a.sfx}`,
   ].filter(Boolean) as string[];
   const wcol = a.wcolor || WCOLORS[0];
   const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "12px 16px" };
@@ -225,7 +226,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
       </div>
       <div style={{ padding: "12px 16px 0" }}>
         <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
-          {([["in", "인"], ["out", "아웃"], ["loop", "반복"], ["word", "단어·줄"]] as const).filter(([k]) => k !== "word" || wordsOk).map(([k, l]) => (
+          {([["in", "인"], ["out", "아웃"], ["loop", "반복"], ["sfx", "효과음"], ["word", "단어·줄"]] as const).filter(([k]) => k !== "word" || wordsOk).map(([k, l]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
               style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: tab === k ? C.panel2 : "transparent", color: tab === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
               {l}
@@ -233,7 +234,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
           ))}
         </div>
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>
-          {tab === "in" ? "나타날 때" : tab === "out" ? "사라질 때" : tab === "word" ? "말하는 때에 맞춰 단어마다 · 줄마다 (쇼츠식)" : "나와 있는 동안 계속"}
+          {tab === "in" ? "나타날 때" : tab === "out" ? "사라질 때" : tab === "sfx" ? "나타날 때 · 사라질 때 나는 소리 (누르면 바로 들려줘요)" : tab === "word" ? "말하는 때에 맞춰 단어마다 · 줄마다 (쇼츠식)" : "나와 있는 동안 계속"}
         </div>
       </div>
       {tab === "word" && (
@@ -307,8 +308,8 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
             </div>
           </div>
         )}
-        {/* 효과음 — 나타날 때 (고르면 바로 들려준다) */}
-        <div>
+        {/* 효과음 — [효과음] 탭 (고르면 바로 들려준다) */}
+        {tab === "sfx" && <div>
           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>효과음 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 나타날 때{what === "자막" ? " (클립 첫 줄에만)" : ""}</span></div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {[{ id: "auto", label: "자동" }, { id: "none", label: "없음" }, ...SFX_LIST].map((x) => {
@@ -344,7 +345,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
               )}
             </>
           )}
-        </div>
+        </div>}
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>적용 범위 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 고른 뒤 효과를 누르세요</span></div>
           {typeof count === "number" ? (

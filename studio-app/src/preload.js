@@ -108,6 +108,7 @@ if (allowed) {
     column: {
       fetchNews: (url) => ipcRenderer.invoke("studio:column-fetch-news", url),
       openNews: () => ipcRenderer.invoke("studio:column-open-news"),
+      openUrl: (url) => ipcRenderer.invoke("studio:column-open-url", url),
       grabNews: () => ipcRenderer.invoke("studio:column-grab-news"),
       create: (source) => ipcRenderer.invoke("studio:column-create", source),
       get: (id) => ipcRenderer.invoke("studio:column-get", id),
@@ -183,6 +184,7 @@ if (allowed) {
         setKey: (k) => ipcRenderer.invoke("video:el-set-key", k),
         clear: () => ipcRenderer.invoke("video:el-clear"),
         voices: (refresh) => ipcRenderer.invoke("video:el-voices", refresh),
+        sample: (voiceId, emotion, text) => ipcRenderer.invoke("video:el-sample", voiceId, emotion, text), // 세부 설정 들어 보기 (2026-10-20)
       },
       sttWords: { add: (pairs) => ipcRenderer.invoke("video:stt-words-add", pairs) }, // 받아쓰기 낱말장 (0.1.10부터)
       myVoice: {
@@ -218,6 +220,7 @@ if (allowed) {
         imagePrompts: (lines, opts) => ipcRenderer.invoke("video:ai-image-prompts", lines, opts), // 클립별 AI 그림 영어 장면 설명 (0.1.11부터)
       },
       vacancy: (vacancyId) => ipcRenderer.invoke("video:vacancy", vacancyId),
+      capturePage: (url, opts) => ipcRenderer.invoke("video:capture-page", url, opts), // 기사·보도자료 화면 캡쳐 (2026-10-20)
       stock: {
         search: (q, type, orientation, page) => ipcRenderer.invoke("video:stock-search", q, type, orientation, page),
         get: (dir, item) => ipcRenderer.invoke("video:stock-get", dir, item),
@@ -227,7 +230,10 @@ if (allowed) {
       fonts: { ensure: (family) => ipcRenderer.invoke("video:font-ensure", family) },
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
       exportPick: (p, kind) => ipcRenderer.invoke("video:export-pick", p, kind), // 저장할 곳 고르기 (0.1.11부터)
+      saveText: (name, text) => ipcRenderer.invoke("video:save-text", name, text), // 대본 텍스트로 내려받기 (2026-10-20)
+      voiceSave: (texts, voiceId, opts) => ipcRenderer.invoke("video:voice-save", texts, voiceId, opts), // 목소리만 mp3·wav 로 (2026-10-20)
       animFrames: (dir, key, start, urls) => ipcRenderer.invoke("video:anim-frames", dir, key, start, urls), // 애니메이션 칸 그림 (0.1.10부터)
+      features: ["kf", "adj", "trx"], // trx = 고급 화면전환 (2026-10-20) · 완성 영상에 그릴 수 있는 것 — 키프레임·화면 돌리기·진하기·초 단위 구간 / 색 보정·필터 (2026-10-20 키프레임 앱부터)
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
       exportAudio: (p, kind, opts) => ipcRenderer.invoke("video:export-audio", p, kind, opts),
       snapshot: (p, file, at) => ipcRenderer.invoke("video:snapshot", p, file, at),

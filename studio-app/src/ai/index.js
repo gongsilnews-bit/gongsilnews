@@ -33,7 +33,8 @@ const API_SUB = "API 키로 바로 주고받아요. 보통 30초~1분 걸려요.
 
 /* 방법이 바뀐 뒤의 수정 요청 — 계정 대화 주소는 API 로, API 대화는 계정 창으로 이어 갈 수 없다 → 처음 자료(fallbackPrompt)로 새로 */
 function retarget(id, opts) {
-  const viaApi = require("../ai-connect").getMode(id) === "api";
+  // opts.mode — 이번 글만 계정/API 키를 골라 쓴다 (텍스트로 영상 [쓸 AI 고르기], 2026-10-20). 없으면 [내 AI 연결]의 방법
+  const viaApi = opts.mode ? opts.mode === "api" : require("../ai-connect").getMode(id) === "api";
   const apiChat = /^gsapi:\/\//.test(String(opts.chatUrl || ""));
   if (!opts.chatUrl || viaApi === apiChat) return { viaApi, opts };
   return { viaApi, opts: { ...opts, chatUrl: "" }, fallback: true };

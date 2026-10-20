@@ -6,10 +6,11 @@
 //  빛 지나가기·움직이는 글로우는 다음 단계 (회의: 효과를 따로 만들어 아무 스티커에나 씌우기)
 import React, { useEffect, useMemo, useState } from "react";
 import type { LayerAnim, LibItem, Project } from "./types";
-import { errText, videoBridge } from "./types";
+import { DRAG_STICKER, errText, stickerDrag, videoBridge } from "./types";
 import { Btn, C, FONT } from "./ui";
 import { Side } from "./Panels";
 import { loadFont } from "./Pickers";
+import { TEMPLATES, TPL_PREFIX, TemplatePanel, drawTemplate, tplFonts, type TplDef } from "./Templates";
 
 export type StickerStyle = "burst" | "tag" | "pin" | "bubble" | "stamp" | "ribbon" | "neon" | "check" | "marker" | "badge" | "arrow" | "ticket" | "cloud" | "sign" | "circle" | "block";
 export type Sticker = { text: string; style: StickerStyle; color?: string; icon?: string };
@@ -732,7 +733,7 @@ export function BubbleGrid({ text, onPick }: { text: string; onPick: (s: Sticker
   }, [t]);
   return (
     <div style={{ padding: "12px 16px" }}>
-      <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.5, marginBottom: 10 }}>누르면 이 글자가 그 모양 안에 들어간 스티커로 바뀌어요. 자리·범위·애니메이션·순서는 그대로, 글자는 스티커 칸에서 고칠 수 있어요.</div>
+      <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.5, marginBottom: 10 }}>누르면 이 글자가 그 모양 안에 들어간 그래픽으로 바뀌어요. 자리·범위·애니메이션·순서는 그대로, 글자는 그래픽 칸에서 고칠 수 있어요.</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {BUBBLE_STYLES.map((st) => (
           <button key={st} type="button" disabled={Boolean(busy)} title={STYLE_LABEL[st]}
@@ -795,9 +796,48 @@ export function warmStickers() {
   });
 }
 
-export function StickerPanel({ project, onInsert, onClose, replacing, onTemplates }: {
-  /** [가리키기·반응·움직이는 템플릿] 열기 */
+/* ── 스티커 칸 탭 (2026-10-20 사장님: "내 설정 · 부동산 · 예능 · 브이로그(감성) · 기타 — 찾기도 편하고 쓰기도 편하게") ──
+ *  탭마다 작은 분류 한 줄 → 그림 → 맨 아래 고른 것 고치기. 찾기는 모든 탭에서. 템플릿(론박 견본으로 새로 그린 것)도 스티커 */
+type TabId = "my" | "real" | "fun" | "vlog" | "etc";
+type Sub = { id: string; label: string; stk?: string; tpl?: (d: TplDef) => boolean; tplHead?: string };
+const isMoney = (d: TplDef) => d.label.startsWith("지폐");
+const isTrip = (d: TplDef) => d.cat === "움직이는" && d.label.includes("목적지");
+const catOf = (c: string) => (d: TplDef) => d.cat === c;
+const STK_SUB = (id: string): Sub => ({ id, label: CATS.find((c) => c.id === id)?.label || id, stk: id });
+const TABS: { id: TabId; label: string; subs: Sub[] }[] = [
+  { id: "my", label: "내 설정", subs: [] },
+  {
+    id: "real", label: "부동산", subs: [
+      ...["hot", "price", "place", "home", "biz", "opt", "size", "call", "state"].map(STK_SUB),
+      { ...STK_SUB("point"), tpl: catOf("가리키기"), tplHead: "화살표·가리키기 템플릿" },
+      { id: "money", label: "돈", tpl: isMoney },
+    ],
+  },
+  { id: "fun", label: "예능", subs: [{ id: "fsub", label: "예능 자막", tpl: catOf("예능 자막") }, { id: "fword", label: "예능 글자", tpl: catOf("예능 글자") }, { id: "react", label: "반응", tpl: catOf("반응") }] },
+  { id: "vlog", label: "브이로그", subs: [{ id: "vlog", label: "브이로그", tpl: catOf("브이로그") }, { id: "trip", label: "여행 경로", tpl: isTrip }] },
+  {
+    id: "etc", label: "기타", subs: [
+      { id: "bar", label: "자막바", tpl: catOf("자막바") }, { id: "title", label: "제목", tpl: catOf("제목") }, { id: "card", label: "말풍선·카드", tpl: catOf("말풍선·카드") },
+      { id: "screen", label: "검색창·화면", tpl: (d) => d.cat === "검색창·화면" && !isMoney(d) }, { id: "motion", label: "움직이는", tpl: (d) => d.cat === "움직이는" && !isTrip(d) },
+    ],
+  },
+];
+/** 내 설정 — 글·색·크기를 바꿔 저장한 스티커와 템플릿 (이 PC 에만) */
+type MySticker = { id: string; name: string } & ({ kind: "stk"; s: Sticker; size: number } | { kind: "tpl"; tid: string; text: string; color: string });
+const MY_KEY = "studio.mySticker.v1";
+function loadMy(): MySticker[] {
+  try { const v = JSON.parse(localStorage.getItem(MY_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function saveMy(list: MySticker[]) {
+  try { localStorage.setItem(MY_KEY, JSON.stringify(list.slice(0, 200))); } catch {}
+}
+const TAB_KEY = "studio.stickerTab.v1";
+
+export function StickerPanel({ project, onInsert, onClose, replacing, onTemplates, tplInsert }: {
+  /** [가리키기·반응·움직이는 템플릿] 열기 (예전) */
   onTemplates?: () => void;
+  /** 템플릿을 스티커 칸 안에서 넣기 */
+  tplInsert?: (item: LibItem, o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; color?: string } }) => void | Promise<void>;
   /** [스티커 바꾸기]로 열었을 때 — 새로 넣지 않고 그 스티커 모양만 바꾼다 */
   replacing?: boolean;
   project: Project;
@@ -806,16 +846,32 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
   onClose: () => void;
 }) {
   const b = videoBridge()!;
-  const [cat, setCat] = useState(CATS[0].id);
-  const [q, setQ] = useState(""); // 스티커 찾기 (모든 분류에서)
+  const tplOk = Boolean(tplInsert) && !replacing; // 템플릿은 새로 넣을 때만 (바꾸기는 스티커끼리)
+  const tabs = TABS.map((t) => ({ ...t, subs: t.subs.filter((x) => x.stk || tplOk) })).filter((t) => t.id === "my" || t.subs.length);
+  const [my, setMy] = useState<MySticker[]>(() => loadMy());
+  const myShown = my.filter((x) => x.kind === "stk" || tplOk);
+  const [tab, setTabRaw] = useState<TabId>(() => {
+    let t: string | null = null;
+    try { t = localStorage.getItem(TAB_KEY); } catch {}
+    if (t && tabs.some((x) => x.id === t) && (t !== "my" || myShown.length)) return t as TabId;
+    return myShown.length ? "my" : "real";
+  });
+  const setTab = (t: TabId) => { setTabRaw(t); try { localStorage.setItem(TAB_KEY, t); } catch {} };
+  const [subOf, setSubOf] = useState<Record<string, string>>({});
+  const tabDef = tabs.find((t) => t.id === tab) || tabs[1] || tabs[0];
+  const sub = tabDef.subs.find((x) => x.id === subOf[tab]) || tabDef.subs[0];
+  const [mySel, setMySel] = useState("");
+  const [q, setQ] = useState(""); // 스티커 찾기 (모든 탭에서)
   const [pick, setPick] = useState<Sticker>(CATS[0].items[0]);
   const [text, setText] = useState(CATS[0].items[0].text);
   const [size, setSize] = useState(0.45);
   const [fontsReady, setFontsReady] = useState(false); // 글꼴을 받은 뒤에 그린다 (두 번 그리지 않게)
   const [textReady, setTextReady] = useState(0); // 고친 글자의 글꼴 모양을 받았을 때 (위 큰 그림만 다시)
   const [thumbs, setThumbs] = useState<Record<string, string>>(() => Object.fromEntries(thumbCache));
+  const [tplThumbs, setTplThumbs] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
 
   // 스티커 글꼴 (검은고딕·주아) — 늦어도 1.5초 뒤엔 그리기 시작
   useEffect(() => {
@@ -831,11 +887,13 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     return () => { live = false; };
   }, [text]);
 
+  const qk = q.replace(/\s+/g, "");
+  /** 지금 보이는 스티커 (템플릿 말고) */
   const items = useMemo(() => {
-    const k = q.replace(/\s+/g, "");
-    if (!k) return CATS.find((c) => c.id === cat)!.items;
-    return CATS.flatMap((c) => c.items).filter((x) => x.text.replace(/\s+/g, "").includes(k) || STYLE_LABEL[x.style].includes(k));
-  }, [cat, q]);
+    if (qk) return CATS.flatMap((c) => c.items).filter((x) => x.text.replace(/\s+/g, "").includes(qk) || STYLE_LABEL[x.style].includes(qk));
+    if (tab === "my") return my.flatMap((x) => (x.kind === "stk" ? [x.s] : []));
+    return sub?.stk ? CATS.find((c) => c.id === sub.stk)?.items || [] : [];
+  }, [qk, tab, sub, my]);
   // 칸 그림 — 칸은 바로 열고, 그림은 몇 개씩 차례로 채운다 (화면이 멈추지 않게)
   useEffect(() => {
     if (!fontsReady) return;
@@ -854,9 +912,24 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
       setThumbs((v) => ({ ...v, ...add }));
       if (i < todo.length) setTimeout(step, 0);
     };
-    const t = setTimeout(step, 0);
-    return () => { live = false; clearTimeout(t); };
+    let t: ReturnType<typeof setTimeout> | undefined;
+    stickerGlyphs(todo.map((x) => x.text)).then(() => { if (live) t = setTimeout(step, 0); });
+    return () => { live = false; if (t) clearTimeout(t); };
   }, [items, fontsReady]);
+  // 내 설정의 템플릿 그림
+  useEffect(() => {
+    if (tab !== "my") return;
+    const todo = my.filter((x) => x.kind === "tpl" && !tplThumbs[x.id]);
+    if (!todo.length) return;
+    let live = true;
+    tplFonts().then(() => {
+      if (!live) return;
+      const add: Record<string, string> = {};
+      for (const x of todo) if (x.kind === "tpl") { try { add[x.id] = small(drawTemplate(TPL_PREFIX + x.tid, x.text, x.color), 160); } catch {} }
+      setTplThumbs((v) => ({ ...v, ...add }));
+    });
+    return () => { live = false; };
+  }, [tab, my]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cur: Sticker = { ...pick, text: text || pick.text };
   const preview = useMemo(() => {
@@ -864,12 +937,26 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     try { return small(drawSticker(cur), 280); } catch { return ""; }
   }, [cur.text, cur.style, cur.icon, cur.color, fontsReady, textReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [picked, setPicked] = useState(false); // 고른 뒤에만 고치는 칸 (목록 위)
   const choose = (s: Sticker) => {
     setPick(s);
     setText(s.text);
+    setPicked(true);
+  };
+  /** 끌어 놓기 — 끌기 시작할 때 그 스티커(고른 것이면 고친 글자로)를 기억해 두고, 놓는 곳이 그린다 */
+  const dragStart = (e: React.DragEvent, s: Sticker) => {
+    if (!b.lib.saveImage) return;
+    const sz = size;
+    e.dataTransfer.setData(DRAG_STICKER, s.text);
+    e.dataTransfer.effectAllowed = "copy";
+    stickerDrag.make = async () => {
+      const url = await stickerPng(s);
+      const item = await b.lib.saveImage!(project.dir, url, stickerFileName(s.text));
+      return { item, o: { anim: stickerAnim(s.style), w: sz, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color } } };
+    };
   };
   const insert = async (s: Sticker = cur) => {
-    if (!b.lib.saveImage) return setErr("공실뉴스 스튜디오를 껐다 켜 주세요 (스티커 기능을 새로 연결해요)");
+    if (!b.lib.saveImage) return setErr("공실뉴스 스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
     setErr("");
     setBusy(true);
     try {
@@ -882,52 +969,156 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
       setBusy(false);
     }
   };
+  const addMy = (x: MySticker) => {
+    const next = [x, ...my];
+    setMy(next);
+    saveMy(next);
+    setNote("내 설정에 저장했어요");
+    setTimeout(() => setNote(""), 1800);
+  };
+  const delMy = (id: string) => {
+    const next = my.filter((x) => x.id !== id);
+    setMy(next);
+    saveMy(next);
+    if (mySel === id) setMySel("");
+  };
+  const tplPanel = (key: string, only: (d: TplDef) => boolean) => tplInsert && (
+    <TemplatePanel key={key} bare project={project} kind="sticker" only={only} onInsert={tplInsert} onClose={() => {}}
+      onSave={(x) => addMy({ id: String(Date.now()), name: x.label, kind: "tpl", tid: x.id, text: x.text, color: x.color })} />
+  );
 
   const chip = (on: boolean): React.CSSProperties => ({ height: 30, padding: "0 11px", borderRadius: 15, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" });
   const head: React.CSSProperties = { fontSize: 13.5, fontWeight: 800, margin: "14px 0 7px" };
   const checker = "repeating-conic-gradient(#2a2f3a 0% 25%, #222630 0% 50%) 50% / 16px 16px";
+  const myPick = tab === "my" && !qk ? my.find((x) => x.id === mySel) : undefined;
+  // 아래 "고른 스티커" 칸 — 스티커 그림이 보일 때 (템플릿 칸은 자기 고치는 칸이 있다)
+  const plainEdit = picked && (qk ? items.length > 0 : tab === "my" ? myPick?.kind === "stk" : Boolean(sub?.stk));
+
+  const plainEditor = (
+    <>
+        {/* 고른 그래픽 — 글자·크기 고치고 넣기 (고르면 목록 위에, 2026-10-20 사장님) */}
+        {plainEdit && (
+          <div style={{ position: "sticky", top: 0, zIndex: 3, background: C.panel, margin: "0 -16px 14px", padding: "10px 16px 14px", borderBottom: `1px solid ${C.line}`, boxShadow: "0 8px 16px rgba(0,0,0,0.35)" }}>
+            <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, marginBottom: 8 }}>고른 그래픽<button type="button" title="닫기 — 보던 목록 그대로" onClick={() => setPicked(false)} style={{ width: 26, height: 26, marginLeft: "auto", border: 0, borderRadius: 4, background: "transparent", color: C.sub, fontSize: 18, lineHeight: "26px", padding: 0, cursor: "pointer" }}>×</button></div>
+            <div style={{ height: 130, borderRadius: 10, background: checker, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {preview && <img src={preview} alt="" draggable onDragStart={(e) => dragStart(e, cur)} title="끌어서 클립·미리보기·타임라인에 놓으면 들어가요" style={{ maxWidth: "92%", maxHeight: 116, objectFit: "contain", cursor: "grab" }} />}
+            </div>
+            <div style={head}>글자 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>— 가격·역 이름 등 바꿔 쓰세요</span></div>
+            <input value={text} onChange={(e) => setText(e.target.value)} maxLength={20} onKeyDown={(e) => { if (e.key === "Enter") insert(); }}
+              style={{ width: "100%", height: 38, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, fontFamily: FONT, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10 }}>
+              <span style={{ fontSize: 13, color: C.sub, marginRight: 2 }}>크기</span>
+              {([[0.3, "작게"], [0.45, "보통"], [0.65, "크게"]] as const).map(([v, l]) => <button key={v} type="button" onClick={() => setSize(v)} style={chip(size === v)}>{l}</button>)}
+              <span style={{ flex: 1 }} />
+              {!(tab === "my" && myPick) && <button type="button" onClick={() => addMy({ id: String(Date.now()), name: cur.text, kind: "stk", s: cur, size })} style={chip(false)}>내 설정에 저장</button>}
+            </div>
+          </div>
+        )}
+    </>
+  );
+  const grid = (list: Sticker[]) => (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {list.map((s, i) => {
+        const on = pick.text === s.text && pick.style === s.style;
+        return (
+          <button key={s.text + i} type="button" title={`${s.text} · ${STYLE_LABEL[s.style]} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`}
+            onClick={() => choose(s)} onDoubleClick={() => { choose(s); insert(s); }}
+            draggable onDragStart={(e) => { if (on) dragStart(e, cur); else { choose(s); dragStart(e, s); } }}
+            style={{ height: 92, padding: 6, borderRadius: 8, border: `2px solid ${on ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {thumbs[keyOf(s)] ? <img src={thumbs[keyOf(s)]} alt={s.text} style={{ maxWidth: "100%", maxHeight: 76, objectFit: "contain" }} /> : <span style={{ color: C.text, fontSize: 13 }}>{s.text}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
-    <Side title={replacing ? "스티커 바꾸기" : "스티커"} onClose={onClose}
-      footer={
+    <Side title={replacing ? "그래픽 바꾸기" : "그래픽"} onClose={onClose}
+      footer={plainEdit ? (
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ flex: 1, fontSize: 12.5, color: C.dim, lineHeight: 1.5 }}>반짝이·짠! 움직임·효과음까지 알아서 들어가요. 넣은 뒤 화면에서 끌어 옮기고 모서리로 크기를 바꿔요.</span>
-          <Btn primary onClick={() => insert()} disabled={busy}>{busy ? (replacing ? "바꾸는 중…" : "넣는 중…") : replacing ? "이 스티커로 바꾸기" : "화면에 넣기"}</Btn>
+          <span style={{ flex: 1, fontSize: 12.5, color: C.dim, lineHeight: 1.5 }}>그래픽을 끌어 클립·미리보기에 놓아도 들어가요. 넣은 뒤 오른쪽 속성에서 고쳐요.</span>
+          <Btn primary onClick={() => insert()} disabled={busy}>{busy ? (replacing ? "바꾸는 중…" : "넣는 중…") : replacing ? "이 그래픽으로 바꾸기" : "화면에 넣기"}</Btn>
         </div>
-      }>
+      ) : undefined}>
+      {/* 큰 탭 — 텍스트 칸과 같은 모양 */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
+        {tabs.map((t) => (
+          <button key={t.id} type="button" onClick={() => { setTab(t.id); setQ(""); setPicked(false); setMySel(""); }}
+            style={{ flex: 1, height: 42, padding: 0, border: 0, borderBottom: `2px solid ${!qk && tab === t.id ? C.accent : "transparent"}`, background: "transparent", color: !qk && tab === t.id ? C.text : C.sub, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+            {t.label}{t.id === "my" && myShown.length ? ` ${myShown.length}` : ""}
+          </button>
+        ))}
+      </div>
       <div style={{ padding: "4px 16px 20px" }}>
-        {/* 고른 스티커 — 글자·색 바꾸기 */}
-        <div style={{ marginTop: 10, height: 150, borderRadius: 10, background: checker, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}` }}>
-          {preview && <img src={preview} alt="" style={{ maxWidth: "92%", maxHeight: 136, objectFit: "contain" }} />}
-        </div>
-        <div style={head}>글자 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>— 가격·역 이름 등 바꿔 쓰세요</span></div>
-        <input value={text} onChange={(e) => setText(e.target.value)} maxLength={20} onKeyDown={(e) => { if (e.key === "Enter") insert(); }}
-          style={{ width: "100%", height: 38, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, fontFamily: FONT, boxSizing: "border-box" }} />
-        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10 }}>
-          <span style={{ fontSize: 13, color: C.sub, marginRight: 2 }}>크기</span>
-          {([[0.3, "작게"], [0.45, "보통"], [0.65, "크게"]] as const).map(([v, l]) => <button key={v} type="button" onClick={() => setSize(v)} style={chip(size === v)}>{l}</button>)}
-        </div>
+        {onTemplates && !tplInsert && !replacing && <Btn onClick={onTemplates} style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>가리키기·반응·움직이는 템플릿 (화살표 20종·경로·카운트다운 …)</Btn>}
+        <input value={q} onChange={(e) => { setQ(e.target.value); setPicked(false); }} placeholder="그래픽 찾기 (예: 역세권, 주차, 자막바)"
+          style={{ width: "100%", height: 36, marginTop: 12, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT, boxSizing: "border-box" }} />
 
-        {onTemplates && !replacing && <Btn onClick={onTemplates} style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>가리키기·반응·움직이는 템플릿 (화살표 20종·경로·카운트다운 …)</Btn>}
-        {/* 스티커 고르기 */}
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="스티커 찾기 (예: 역세권, 주차, 도장)"
-          style={{ width: "100%", height: 36, marginTop: 18, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT, boxSizing: "border-box" }} />
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "10px 0 10px", opacity: q ? 0.45 : 1 }}>
-          {CATS.map((c) => <button key={c.id} type="button" onClick={() => { setCat(c.id); setQ(""); }} style={chip(!q && cat === c.id)}>{c.label}</button>)}
-        </div>
-        {q && !items.length && <div style={{ fontSize: 13.5, color: C.dim, padding: "10px 0" }}>찾는 스티커가 없어요. 비슷한 스티커를 고르고 위 [글자]에 원하는 말을 쓰세요.</div>}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {items.map((s, i) => {
-            const on = pick.text === s.text && pick.style === s.style;
-            return (
-              <button key={s.text + i} type="button" title={`${s.text} · ${STYLE_LABEL[s.style]} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기`}
-                onClick={() => choose(s)} onDoubleClick={() => { choose(s); insert(s); }}
-                style={{ height: 92, padding: 6, borderRadius: 8, border: `2px solid ${on ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {thumbs[keyOf(s)] ? <img src={thumbs[keyOf(s)]} alt={s.text} style={{ maxWidth: "100%", maxHeight: 76, objectFit: "contain" }} /> : <span style={{ color: C.text, fontSize: 13 }}>{s.text}</span>}
-              </button>
-            );
-          })}
-        </div>
+        {/* 찾기 — 모든 탭에서 */}
+        {qk ? (
+          <>
+            {items.length > 0 && <><div style={head}>그래픽 {items.length}</div>{plainEditor}{grid(items)}</>}
+            {tplOk && TEMPLATES.some((d) => d.label.replace(/\s+/g, "").includes(qk) || d.cat.includes(qk)) && (
+              <><div style={head}>템플릿</div>{tplPanel("q:" + qk, (d) => d.label.replace(/\s+/g, "").includes(qk) || d.cat.includes(qk))}</>
+            )}
+            {!items.length && !(tplOk && TEMPLATES.some((d) => d.label.replace(/\s+/g, "").includes(qk) || d.cat.includes(qk))) && (
+              <div style={{ fontSize: 13.5, color: C.dim, padding: "12px 0" }}>찾는 그래픽이 없어요. 비슷한 그래픽을 고르고 아래 [글자]에 원하는 말을 쓰세요.</div>
+            )}
+          </>
+        ) : tab === "my" ? (
+          /* 내 설정 */
+          myShown.length ? (
+            <>
+              <div style={{ fontSize: 12.5, color: C.dim, margin: "10px 0 8px" }}>한 번 누르면 고르기, 두 번 누르면 바로 넣기 · 이 PC 에 저장돼요</div>
+              {plainEditor}
+              {myPick?.kind === "tpl" && tplInsert && (
+                <div style={{ margin: "4px 0 16px", paddingBottom: 14, borderBottom: `1px solid ${C.line}` }}>
+                  <TemplatePanel key={myPick.id} bare noGrid project={project} kind="sticker" only={(d) => d.id === myPick.tid} init={{ id: myPick.tid, text: myPick.text, color: myPick.color }} onInsert={tplInsert} onClose={() => {}} />
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {myShown.map((x) => {
+                  const th = x.kind === "stk" ? thumbs[keyOf(x.s)] : tplThumbs[x.id];
+                  return (
+                    <div key={x.id} style={{ position: "relative" }}>
+                      <button type="button" title={`${x.name} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기`}
+                        onClick={() => { setMySel(x.id); if (x.kind === "stk") { choose(x.s); setSize(x.size); } }}
+                        onDoubleClick={() => { if (x.kind === "stk") { choose(x.s); setSize(x.size); insert(x.s); } }}
+                        style={{ width: "100%", height: 92, padding: 6, borderRadius: 8, border: `2px solid ${mySel === x.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {th ? <img src={th} alt={x.name} style={{ maxWidth: "100%", maxHeight: 76, objectFit: "contain" }} /> : <span style={{ color: C.text, fontSize: 13 }}>{x.name}</span>}
+                      </button>
+                      <button type="button" title="내 설정에서 지우기" onClick={() => delMy(x.id)}
+                        style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 11, border: 0, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 13, lineHeight: "22px", padding: 0, cursor: "pointer" }}>×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7, padding: "14px 0" }}>아직 저장한 그래픽이 없어요. 그래픽이나 템플릿을 고르고 글·색·크기를 바꾼 뒤 [내 설정에 저장]을 누르면 여기에 모여요.</div>
+          )
+        ) : (
+          <>
+            {/* 작은 분류 */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "10px 0 12px" }}>
+              {tabDef.subs.map((x) => <button key={x.id} type="button" onClick={() => { setSubOf((v) => ({ ...v, [tab]: x.id })); setPicked(false); }} style={chip(sub?.id === x.id)}>{x.label}</button>)}
+            </div>
+            {sub?.stk && <>{plainEditor}{grid(items)}</>}
+            {sub?.tpl && !sub.stk && tplOk && tplPanel(sub.id, sub.tpl)}
+          </>
+        )}
+
+        {/* 가리키기 — 그래픽 아래 화살표 템플릿 */}
+        {!qk && tab !== "my" && sub?.stk && sub.tpl && tplOk && (
+          <>
+            <div style={{ fontSize: 13.5, fontWeight: 800, margin: "18px 0 8px" }}>{sub.tplHead || "템플릿"}</div>
+            {tplPanel("tpl-" + sub.id, sub.tpl)}
+          </>
+        )}
+        {note && <div style={{ marginTop: 10, fontSize: 13, color: C.accent }}>{note}</div>}
         {err && <div style={{ marginTop: 12, fontSize: 14, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
       </div>
     </Side>

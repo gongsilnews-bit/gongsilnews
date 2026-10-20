@@ -116,6 +116,20 @@ const STYLE = {
   calm: { stability: 0.75, similarity_boost: 0.75, style: 0 },
   lively: { stability: 0.3, similarity_boost: 0.75, style: 0.35 },
 };
+/**
+ * 세부 설정 (2026-10-20 사장님: "일레븐랩스 세부 설정 싹 다") — 말투 자리에 "x:" + JSON 으로 온다 (말투처럼 캐시 열쇠에 들어가서 바꾸면 새로 만든다)
+ *  { m: "v2"|"v3"|"flash", st: 안정감, si: 닮은 정도, sy: 표현 과장, sp: 빠르기 0.7~1.2, bo: 스피커 부스트 }
+ *  v3 는 감정 태그([신나게]·[속삭이며]…)를 읽고, 안정감은 0 · 0.5 · 1 세 가지만 받는다
+ */
+const MODELS = { v2: "eleven_multilingual_v2", v3: "eleven_v3", flash: "eleven_flash_v2_5" };
+const custom = (e) => {
+  if (!String(e || "").startsWith("x:")) return null;
+  try { return JSON.parse(String(e).slice(2)); } catch { return null; }
+};
+/** 감정 태그 — 한글로 쓰면 일레븐랩스 영어 태그로 (v3), 다른 모델·성우는 태그를 빼고 읽는다 */
+const TAGS = { 신나게: "excited", 속삭이며: "whispers", 웃으며: "laughs", 한숨: "sighs", "궁금한 듯": "curious", 소리치며: "shouts", 장난스럽게: "mischievously", 울먹이며: "crying", 비꼬듯: "sarcastic", 헛기침: "clears throat", 차분하게: "calm", 진지하게: "serious" };
+const tagsToEn = (t) => String(t).replace(/\[([^\]]{1,20})\]/g, (m, k) => `[${TAGS[k.trim()] || k.trim()}]`);
+const stripTags = (t) => String(t).replace(/\[[^\]]{1,20}\]\s*/g, "").trim();
 /** 문장 하나 → out (wav 24kHz — 모든 요금제에서 된다) */
 async function say(text, out, { voiceId, emotion = "normal", prev = "", next = "" } = {}) {
   const k = key();
@@ -124,13 +138,29 @@ async function say(text, out, { voiceId, emotion = "normal", prev = "", next = "
   const r = await fetch(`${API}/v1/text-to-speech/${encodeURIComponent(id)}?output_format=wav_24000`, {
     method: "POST",
     headers: { "xi-api-key": k, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: String(text),
-      model_id: MODEL,
-      voice_settings: { ...(STYLE[emotion] || STYLE.normal), use_speaker_boost: true },
-      ...(prev ? { previous_text: String(prev).slice(0, 1000) } : {}),
-      ...(next ? { next_text: String(next).slice(0, 1000) } : {}),
-    }),
+    body: JSON.stringify((() => {
+      const cu = custom(emotion);
+      const m = (cu && MODELS[cu.m]) || MODEL;
+      const v3 = m === MODELS.v3;
+      const num = (v, d) => (Number.isFinite(Number(v)) ? Math.max(0, Math.min(1, Number(v))) : d);
+      const vs = cu
+        ? {
+            stability: v3 ? [0, 0.5, 1].reduce((a, b) => (Math.abs(b - num(cu.st, 0.5)) < Math.abs(a - num(cu.st, 0.5)) ? b : a)) : num(cu.st, 0.5),
+            similarity_boost: num(cu.si, 0.75),
+            style: num(cu.sy, 0),
+            use_speaker_boost: cu.bo !== false,
+            ...(Number(cu.sp) && Math.abs(Number(cu.sp) - 1) > 0.001 ? { speed: Math.max(0.7, Math.min(1.2, Number(cu.sp))) } : {}),
+          }
+        : { ...(STYLE[emotion] || STYLE.normal), use_speaker_boost: true };
+      return {
+        text: v3 ? tagsToEn(text) : stripTags(text),
+        model_id: m,
+        voice_settings: vs,
+        // 앞뒤 문장 (말투 이어지게) — v3 는 받지 않는다
+        ...(!v3 && prev ? { previous_text: stripTags(prev).slice(0, 1000) } : {}),
+        ...(!v3 && next ? { next_text: stripTags(next).slice(0, 1000) } : {}),
+      };
+    })()),
   });
   if (!r.ok) {
     const body = await r.json().catch(() => null);
@@ -143,4 +173,4 @@ async function say(text, out, { voiceId, emotion = "normal", prev = "", next = "
   return out;
 }
 
-module.exports = { status, setKey, clear, voices, say, MODEL };
+module.exports = { status, setKey, clear, voices, say, MODEL, TAGS, stripTags };

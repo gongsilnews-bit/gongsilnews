@@ -27,8 +27,77 @@ const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
 const EXTRACT = () => `${nm.NEWS_EXTRACT_SRC}\n;gwNewsExtract(document, location.href)`; // 서버에서 받은 글로 그때 만든다
 const NEWS_HOME = "https://news.naver.com/section/101"; // 네이버 뉴스 경제
+// 뉴스 읽기가 본문을 못 찾는 화면(정부·기관 보도자료 등) — 문단 글이 가장 많이 모인 칸을 본문으로 (2026-10-20 사장님: 보도자료로 영상 대본)
+const GENERIC_SRC = `(() => {
+  const clean = (t) => String(t || "").replace(/[ \\t\\u00a0]+/g, " ").replace(/\\n\\s*\\n+/g, "\\n").trim();
+  const meta = (k) => (document.querySelector('meta[property="' + k + '"],meta[name="' + k + '"]') || {}).content || "";
+  const SKIP = /comment|reply|policy|footer|copyright|guide|rule|sns|share|related|banner/i;
+  let body = "";
+  // ① 기관 게시판에 흔한 본문 칸
+  for (const sel of [".view_cont", ".article_body", ".bbs_view .view_cont", ".bd-view .dbdata", ".board_view .view_content", ".view_content", ".bbs-view-content", ".board-view-content", ".view-cont", ".viewCont", "#viewContent", ".view_txt", ".bd_view_cont", "article"]) {
+    const el = document.querySelector(sel);
+    const t = el ? clean(el.innerText) : "";
+    if (t.length >= 200) { body = t; break; }
+  }
+  // ①-2 본문을 같은 사이트의 안쪽 창(iframe)에 그리는 곳 (정책브리핑 보도자료 등)
+  if (!body) {
+    const walk = (doc, depth) => {
+      for (const f of doc.querySelectorAll("iframe")) {
+        let d = null;
+        try { d = f.contentDocument; } catch (e) {}
+        if (!d || !d.body) continue;
+        const t = clean(d.body.innerText);
+        if (t.length >= 200 && t.length > body.length) body = t;
+        if (depth < 3) walk(d, depth + 1); // 창 안의 창 (정책브리핑 문서 보기)
+      }
+    };
+    walk(document, 0);
+  }
+  // ② 페이지에 담긴 기사 정보 (JSON-LD)
+  if (!body) {
+    for (const sc of document.querySelectorAll('script[type="application/ld+json"]')) {
+      try { const j = JSON.parse(sc.textContent); const t = clean(j.articleBody || j.description); if (t.length >= 200) { body = t; break; } } catch (e) {}
+    }
+  }
+  // ③ 문단 글이 가장 많이 모인 칸 (댓글 규칙·저작권 안내 칸은 뺀다)
+  if (!body) {
+    const score = new Map();
+    const add = (el, v) => { if (el && el !== document.body && el !== document.documentElement) score.set(el, (score.get(el) || 0) + v); };
+    for (const p of document.querySelectorAll("p, li, td, div")) {
+      if (p.closest("nav, header, footer, aside, script, style, form")) continue;
+      let bad = false;
+      for (let x = p; x && x !== document.body; x = x.parentElement) if (SKIP.test((x.className && String(x.className)) + " " + (x.id || ""))) { bad = true; break; }
+      if (bad) continue;
+      if (p.tagName === "DIV" && p.querySelector("p, div, table, ul")) continue;
+      const t = clean(p.innerText);
+      if (t.length < 25) continue;
+      const links = [...p.querySelectorAll("a")].reduce((a, x) => a + clean(x.innerText).length, 0);
+      if (links > t.length * 0.5) continue;
+      const v = Math.min(t.length, 800);
+      add(p.parentElement, v);
+      add(p.parentElement && p.parentElement.parentElement, v / 2);
+    }
+    let best = null, top = 0;
+    for (const [el, v] of score) if (v > top) { top = v; best = el; }
+    body = best ? clean(best.innerText) : "";
+  }
+  if (body.length < 200) return { ok: false, reason: "이 화면에서 본문을 찾지 못했습니다. 보도자료 한 건이 열린 화면에서 다시 눌러 주세요." };
+  const og = clean(meta("og:title"));
+  const h = document.querySelector(".view_title, .article_head h1, .subject, .tit, .title, h1, h2, h3");
+  const title = (og && !/\\|/.test(og) ? og : clean(h && h.innerText) || og || document.title).slice(0, 200);
+  const site = clean(meta("og:site_name") || document.title.split(/[|\\-–]/).pop() || location.hostname);
+  return { ok: true, news: { title, publisher: site.slice(0, 40), publishedAt: "", url: location.href, body: body.slice(0, 9000), truncated: body.length > 9000 } };
+})()`;
 
 /* ── 뉴스 가져오기 ── */
+
+// 뉴스 읽기가 요약 한 줄(소개 글)만 잡은 경우 — 다른 읽기로 찾은 본문이 더 길면 그 본문으로 (제목·언론사는 뉴스 읽기 것)
+const SHORT_BODY = 400;
+function pickBody(r, g) {
+  if (!g || !g.ok) return r;
+  if (!r || !r.ok) return g;
+  return g.news.body.length > r.news.body.length ? { ok: true, news: { ...r.news, body: g.news.body, truncated: g.news.truncated } } : r;
+}
 
 /* 주소 붙여넣기: 안 보이는 창에 열어 읽는다 (자바스크립트로 그리는 언론사 화면도 읽히게 진짜 화면으로 연다) */
 async function fetchNews(url) {
@@ -59,7 +128,11 @@ async function fetchNews(url) {
       await sleep(i === 0 ? 800 : 1500);
       if (win.isDestroyed()) break;
       r = await wc.executeJavaScript(EXTRACT(), true).catch(() => null);
-      if (r && r.ok) break;
+      if (r && r.ok && r.news.body.length >= SHORT_BODY) break;
+      if (i < 2) continue; // 뉴스 화면은 늦게 그려질 수 있어 두 번은 뉴스 읽기로만
+      const g = await wc.executeJavaScript(GENERIC_SRC, true).catch(() => null);
+      r = pickBody(r, g);
+      if (r && r.ok && r.news.body.length >= SHORT_BODY) break;
     }
     if (!r) throw new Error("뉴스 페이지를 열지 못했습니다. 주소를 확인해 주세요.");
     if (!r.ok) throw new Error(r.reason);
@@ -76,6 +149,16 @@ async function openNews() {
   return { ok: true };
 }
 
+/* 보도자료 사이트 바로가기 (동영상제작 › 뉴스 기사 › 보도자료, 2026-10-20 사장님) — 전용 크롬에 연다. 둘러보다가 [지금 보는 페이지 가져오기] */
+async function openUrl(url) {
+  const href = String(url || "").trim();
+  if (!/^https:\/\//i.test(href)) throw new Error("주소가 올바르지 않습니다.");
+  const host = new URL(href).hostname.replace(/^www\./, "");
+  const page = await chrome.openPage(host, href);
+  if (!page.url().startsWith(href)) await page.goto(href, { waitUntil: "domcontentloaded" }).catch(() => {});
+  return { ok: true };
+}
+
 const SKIP_HOSTS = /(^|\.)(chatgpt\.com|openai\.com|claude\.ai|gemini\.google\.com|blog\.naver\.com|nid\.naver\.com)$/;
 
 /* [지금 보는 뉴스 가져오기]: 전용 크롬에서 지금 보고 있는 탭(없으면 가장 최근 탭)을 읽는다 */
@@ -87,7 +170,8 @@ async function grabNews() {
   const ordered = [...pages.filter((_, i) => seen[i]), ...pages.filter((_, i) => !seen[i]).reverse()];
   let last = null;
   for (const page of ordered) {
-    const r = await page.evaluate(EXTRACT()).catch(() => null);
+    let r = await page.evaluate(EXTRACT()).catch(() => null);
+    if (!r || !r.ok || r.news.body.length < SHORT_BODY) r = pickBody(r, await page.evaluate(GENERIC_SRC).catch(() => null));
     if (r && r.ok) {
       log.info(`[뉴스칼럼] 보던 뉴스 가져옴 ${r.news.publisher} · ${r.news.title.slice(0, 40)}`);
       return r.news;
@@ -223,4 +307,4 @@ async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "n
   return draft;
 }
 
-module.exports = { isColumn, fetchNews, openNews, grabNews, create, get, list, readSource, articleOptions, writeArticle };
+module.exports = { isColumn, fetchNews, openNews, openUrl, grabNews, create, get, list, readSource, articleOptions, writeArticle };

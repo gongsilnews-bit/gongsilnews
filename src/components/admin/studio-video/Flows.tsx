@@ -438,11 +438,11 @@ export function stillDetector() {
 }
 
 /* ── 새로 만들기 창 — 만들 방법 4가지 (사장님 확정) ── */
+// 새로 만들기 = 3가지 (2026-10-20 사장님) — 롱폼→숏폼은 없앰, 녹화는 [강의/영상녹화] 메뉴에서만
 export const METHODS: { id: Method; icon: string; title: string; desc: string }[] = [
-  { id: "text", icon: "text", title: "텍스트로 영상 만들기", desc: "대본만 있으면 AI 목소리와 사진·영상으로 만들어요" },
-  { id: "video", icon: "video", title: "사진·영상으로 편집하기", desc: "찍은 영상이나 사진을 불러와 자르고, 자막·AI 목소리를 넣어요" },
-  { id: "longform", icon: "shorts", title: "롱폼으로 자동 숏폼 만들기", desc: "긴 영상에서 볼만한 구간을 골라 짧은 영상으로 만들어요" },
-  { id: "record", icon: "record", title: "영상 녹화하고 바로 편집하기", desc: "화면이나 카메라를 녹화하면 바로 편집 화면으로 가요" },
+  { id: "text", icon: "text", title: "대본 쓰고 편집하기", desc: "매물 소개·뉴스 기사·자유 주제로 대본을 먼저 쓰고, 직접 녹화하거나 AI 보이스로 만들어요" },
+  { id: "video", icon: "video", title: "촬영한 영상으로 편집하기", desc: "찍은 영상이나 사진을 불러와 자르고, 자막·AI 목소리를 넣어요" },
+  { id: "audio", icon: "mic", title: "녹음한 음성으로 편집하기", desc: "녹음 파일을 글로 받아 적고, 글자를 지우면 소리가 잘려요. 소리만 MP3로도" },
 ];
 
 export function NewDialog({ onPick, onClose }: { onPick: (m: Method) => void; onClose: () => void }) {
@@ -469,7 +469,7 @@ export function NewDialog({ onPick, onClose }: { onPick: (m: Method) => void; on
             <Btn small onClick={() => pick(lastM.id)}><Icon name={lastM.icon} size={16} />{lastM.title}</Btn>
           </div>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           {METHODS.map((m) => (
             <button key={m.id} type="button" onClick={() => pick(m.id)}
               style={{ display: "flex", alignItems: "flex-start", gap: 16, textAlign: "left", padding: "24px 22px", borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, color: C.text, cursor: "pointer", fontFamily: FONT, minHeight: 130 }}
@@ -625,12 +625,12 @@ async function importVideos(method: Method, ratio: Ratio, items: LibItem[], name
       if (a.kind === "video" && a.hasAudio) {
         // 영상 통째로 한 클립 (전체 구간) — 앞뒤는 화면 메뉴 [시작·끝 자르기], 문장 나누기는 [자동 자막 만들기]가 한다
         const whole: Clip = { id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } };
-        let clips: Clip[] = [whole];
-        // 프롬프터로 읽은 대본 → 문장마다 클립 + 자막 (받아쓰기 없이, 시각은 PC에서 말소리에 맞춤 — 무료)
-        if (script && i === 0) {
-          setWork({ title: "대본을 자막으로 맞추는 중… (PC에서)", detail: items[i].name });
-          clips = (await scriptClips(p, whole, script).catch(() => null)) || clips;
-          if (clips.length > 1 || clips[0].text) p.settings.subtitle.on = true;
+        const clips: Clip[] = [whole];
+        // 녹화 — 편집 화면을 열면 실제 말소리를 받아써서 문장마다 클립 (2026-10-20 사장님: 프롬프터 대본으로 나누면 실제 말과 어긋난다)
+        //  대본은 받아쓰기 뒤 "거의 같은 낱말"만 고치는 데 쓴다 (숫자·다른 말·즉석 멘트는 그대로)
+        if (method === "record" && i === 0) {
+          p.autoSubOnOpen = true;
+          if (script.trim()) p.recScript = script;
         }
         p.scenes.push({ id: uid(), title: items.length > 1 ? a.name : "", clips });
         shots = null;
@@ -669,6 +669,121 @@ async function scriptClips(p: Project, whole: Clip, script: string): Promise<Cli
     const s = cut[i], e = i + 1 < groups.length ? cut[i + 1] : E;
     return { ...whole, id: i === 0 ? whole.id : uid(), sub: true, text: sents[i], src: { ...whole.src!, s, e }, words: g.map((w) => ({ ...w, s: Math.max(s, w.s), e: Math.min(e, w.e) })) };
   });
+}
+
+/* ── 오디오로 편집하기 (2026-10-20 사장님: 브루의 "오디오로 시작하기") ──
+ *  녹음 파일(통화·강의·팟캐스트) → 파일마다 한 클립 → 편집 화면을 열면 바로 받아쓰기(Whisper, PC에서 무료)로 문장마다 클립
+ *  → 글자를 지우면 그 소리가 잘린다 (영상 클립과 같은 부품). 화면은 검은 화면 또는 사진 한 장, 내보내기는 소리만(MP3)이 기본 */
+export function AudioFlow({ onCancel, onDone }: { onCancel: () => void; onDone: (p: Project) => void }) {
+  const b = videoBridge()!;
+  const [step, setStep] = useState(0);
+  const [picked, setPicked] = useState<LibItem[]>([]);
+  const [photo, setPhoto] = useState<LibItem | null>(null);
+  const [ratio, setRatio] = useState<Ratio>("16:9");
+  const [sub, setSub] = useState(true);
+  const [projName, setProjName] = useState("무제");
+  const [folder, setFolder] = useState("");
+  const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
+  const [err, setErr] = useState("");
+  const addFiles = async () => {
+    setErr("");
+    try {
+      const r = await b.lib.pick({ kinds: "audio" });
+      const add = r.filter((x) => x.kind === "audio" && !picked.some((y) => y.id === x.id));
+      if (!add.length) return;
+      const next = [...picked, ...add];
+      setPicked(next);
+      if (projName === "무제") setProjName(next[0].name.replace(/\.[^.]+$/, ""));
+    } catch (e) {
+      setErr(errText(e));
+    }
+  };
+  const pickPhoto = async () => {
+    try {
+      const r = await b.lib.pick({ kinds: "media" });
+      const img = r.find((x) => x.kind === "image");
+      if (img) setPhoto(img);
+      else if (r.length) setErr("사진(그림 파일)을 골라 주세요.");
+    } catch (e) {
+      setErr(errText(e));
+    }
+  };
+  const go = async () => {
+    setErr("");
+    try {
+      setWork({ title: "프로젝트를 만드는 중…" });
+      const p = await b.project.create({ method: "audio", ratio, name: projName.trim(), folder: folder || undefined });
+      let bg: string | undefined;
+      if (photo) {
+        const a = await b.project.addAsset(photo.id);
+        p.assets[a.id] = a;
+        bg = a.id;
+      }
+      p.scenes = [];
+      for (let i = 0; i < picked.length; i++) {
+        setWork({ title: `소리 파일을 준비하는 중… (${i + 1}/${picked.length})`, detail: picked[i].name });
+        const a = await b.project.addAsset(picked[i].id);
+        p.assets[a.id] = a;
+        const c: Clip = { id: uid(), type: "source", text: "", words: [], src: { asset: a.id, s: 0, e: a.duration } };
+        if (bg) c.visual = { asset: bg, s: 0 };
+        p.scenes.push({ id: uid(), title: picked.length > 1 ? a.name : "", clips: [c] });
+      }
+      if (!p.scenes.length) p.scenes = [{ id: uid(), clips: [] }];
+      p.settings.subtitle = { ...p.settings.subtitle, on: true };
+      if (sub) p.autoSubOnOpen = true;
+      await b.project.save(p);
+      onDone(p);
+    } catch (e) {
+      setErr(errText(e));
+      setWork(null);
+    }
+  };
+  if (work) return <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac ?? null} /></Modal>;
+  const total = picked.reduce((a, x) => a + (x.duration || 0), 0);
+  const chip = (on: boolean): React.CSSProperties => ({ height: 46, padding: "0 18px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : C.card, color: C.text, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: FONT });
+  return (
+    <Modal steps={["소리 파일 고르기", "설정"]} step={step} onClose={onCancel} width={820}
+      footer={<>{step > 0 && <Btn onClick={() => setStep(0)}>이전</Btn>}{step === 0 ? <Btn primary disabled={!picked.length} onClick={() => setStep(1)}>다음 <Icon name="chevron" size={16} /></Btn> : <Btn primary onClick={go}>편집 시작 <Icon name="chevron" size={16} /></Btn>}</>}>
+      <div style={{ padding: "20px 26px" }}>
+        {step === 0 ? (
+          <>
+            <Btn primary onClick={addFiles} style={{ width: "100%", justifyContent: "center", height: 48 }}><Icon name="plus" size={18} />PC에서 소리 파일 불러오기 (mp3 · wav · m4a …)</Btn>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 14 }}>
+              {picked.map((x, i) => (
+                <div key={x.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card }}>
+                  <span style={{ width: 24, color: C.sub, fontWeight: 800 }}>{i + 1}</span>
+                  <Icon name="music" size={18} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: 700 }}>{x.name}</span>
+                  <span style={{ color: C.sub, fontSize: 13.5 }}>{x.duration ? fmtTime(x.duration, false) : ""}</span>
+                  <button type="button" title="빼기" onClick={() => setPicked(picked.filter((y) => y.id !== x.id))} style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", fontSize: 18 }}>×</button>
+                </div>
+              ))}
+              {!picked.length && <div style={{ padding: "26px 0", textAlign: "center", color: C.sub, fontSize: 14.5 }}>통화 녹음 · 강의 · 팟캐스트 · 회의 녹음 파일을 불러오세요. 여러 개면 순서대로 이어 붙여요.</div>}
+              {picked.length > 0 && <div style={{ color: C.sub, fontSize: 13.5 }}>{picked.length}개 · 모두 {fmtTime(total, false)}</div>}
+            </div>
+            <div style={{ marginTop: 14 }}><Hint>소리 파일은 PC에 그대로 두고 편집해요 (올리지 않아요). 받아쓰기도 이 PC에서 해요 (무료).</Hint></div>
+          </>
+        ) : (
+          <>
+            <SaveAsFields name={projName} setName={setProjName} folder={folder} setFolder={setFolder} />
+            <div style={{ fontSize: 18, fontWeight: 800, margin: "4px 0 12px" }}>화면은 어떻게 할까요?</div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <button type="button" onClick={() => setPhoto(null)} style={chip(!photo)}>검은 화면 (소리 위주)</button>
+              <button type="button" onClick={pickPhoto} style={chip(Boolean(photo))}>{photo ? `사진: ${photo.name}` : "사진 한 장 깔기…"}</button>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, margin: "22px 0 12px" }}>화면 비율</div>
+            <RatioPick value={ratio} onChange={setRatio} />
+            <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 20, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+              <Toggle on={sub} onChange={setSub} />
+              열자마자 받아쓰기 — 문장마다 클립으로 나누고 자막을 만들어요 (PC에서, 무료)
+            </label>
+            <div style={{ marginTop: 14 }}><Hint>편집 화면에서 글자를 지우면 그 소리가 잘려요. [무음 구간 줄이기]로 말 사이 침묵도 정리할 수 있어요. 다 고치면 [내보내기 › 소리만 (MP3)]로 저장하세요.</Hint></div>
+          </>
+        )}
+        {err && <div style={{ marginTop: 12, color: C.danger, fontSize: 14.5 }}>{err}</div>}
+      </div>
+    </Modal>
+  );
 }
 
 /* ── 사진·영상으로 편집하기 (녹화하고 바로 편집하기도 여기로) ── */

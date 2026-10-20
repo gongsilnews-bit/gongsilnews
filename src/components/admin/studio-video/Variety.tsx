@@ -39,7 +39,7 @@ export function FancyText({ look, px, text, k = 1 }: { look: TextLook; px: numbe
 }
 
 /** 예능 자막 고르기 — 분류(13가지) · 칸마다 견본 */
-export function VarietyGrid({ value, onPick }: { value: Partial<TextLook>; onPick: (look: TextLook) => void }) {
+export function VarietyGrid({ value, onPick }: { value: Partial<TextLook>; onPick: (look: TextLook, meta: { group: string; index: number }) => void }) {
   const [group, setGroup] = useState<string>(() => {
     try { return localStorage.getItem(GROUP_KEY) || VARIETY_PRESETS[1].group; } catch { return VARIETY_PRESETS[1].group; }
   });
@@ -60,7 +60,7 @@ export function VarietyGrid({ value, onPick }: { value: Partial<TextLook>; onPic
         {g.items.map((it) => {
           const on = same(it.look);
           return (
-            <button key={it.id} type="button" title={it.label} onClick={() => onPick(it.look)}
+            <button key={it.id} type="button" title={it.label} onClick={() => onPick(it.look, { group: g.group, index: g.items.indexOf(it) })}
               style={{ height: 58, borderRadius: 7, border: `2px solid ${on ? C.accent : "transparent"}`, background: "#3a3f4b", cursor: "pointer", padding: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {!noImg[it.id] ? (
                 // eslint-disable-next-line @next/next/no-img-element

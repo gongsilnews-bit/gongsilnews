@@ -9,31 +9,49 @@ import { SFX_LIST } from "./timeline";
 import { Btn, C, FONT, Icon } from "./ui";
 import { Side } from "./Panels";
 import { LookTile, SubPresetGrid, loadMyPresets, type TextLook } from "./SubPresets";
+import { VarietyGrid } from "./Variety";
+import { tplAnim } from "./templateAnims";
 
-export function TextInsertPanel({ onAdd, onClose, onTemplates }: { onAdd: (look: TextLook, anim?: LayerAnim) => void; onClose: () => void; onTemplates?: () => void }) {
+export function TextInsertPanel({ onAdd, onClose }: { onAdd: (look: TextLook, anim?: LayerAnim) => void; onClose: () => void; onTemplates?: () => void }) {
+  // 글자 칸과 같은 순서 (2026-10-20 사장님): 기본 글자 → 내 설정(모양) → 템플릿(모양 + 움직임: 꾸민 글자 · 예능 자막 · 내 템플릿)
   const [my] = useState(() => loadMyPresets());
+  const [t, setT] = useState<"deco" | "variety" | "mine">("deco");
+  const mySet = my.filter((x) => !x.anim);
+  const myTpl = my.filter((x) => x.anim);
   const head: React.CSSProperties = { fontSize: 14, fontWeight: 800, margin: "16px 0 8px" };
+  const tiles = (list: typeof my) => (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+      {list.map((pr) => (
+        <div key={pr.id}>
+          <LookTile look={pr.look} big title={`${pr.name} — 누르면 이 모양으로 넣기`} onClick={() => onAdd(pr.look, pr.anim)} />
+          <div style={{ fontSize: 12, color: C.sub, marginTop: 4, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pr.anim ? "▶ " : ""}{pr.name}</div>
+        </div>
+      ))}
+    </div>
+  );
   return (
     <Side title="텍스트" onClose={onClose}>
       <div style={{ padding: "12px 16px 20px" }}>
         <Btn primary onClick={() => onAdd({})} style={{ width: "100%", justifyContent: "center" }}><Icon name="plus" size={16} />기본 글자 넣기</Btn>
-        {onTemplates && <Btn onClick={onTemplates} style={{ width: "100%", justifyContent: "center", marginTop: 8 }}>글자 템플릿 (자막바·제목·말풍선 카드·이름표·예능 …)</Btn>}
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>고른 클립(없으면 지금 클립)에 들어가요. 단어를 고르고 넣으면 그 말 할 때만. 글은 미리보기에서 두 번 눌러 고쳐요.</div>
-        {my.length > 0 && (
+        {mySet.length > 0 && (
           <>
-            <div style={head}>내 사전설정</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-              {my.map((pr) => (
-                <div key={pr.id}>
-                  <LookTile look={pr.look} big title={`${pr.name} — 누르면 이 모양으로 넣기`} onClick={() => onAdd(pr.look, pr.anim)} />
-                  <div style={{ fontSize: 12, color: C.sub, marginTop: 4, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pr.anim ? "▶ " : ""}{pr.name}</div>
-                </div>
-              ))}
-            </div>
+            <div style={head}>내 설정 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 모양만</span></div>
+            {tiles(mySet)}
           </>
         )}
-        <div style={head}>꾸민 글자 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 누르면 그 모양으로 넣기</span></div>
-        <SubPresetGrid value={{}} onPick={(look) => onAdd(look)} />
+        <div style={head}>템플릿 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 모양 + 움직임, 누르면 바로 넣기</span></div>
+        <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3, marginBottom: 8 }}>
+          {([["deco", "꾸민 글자"], ["variety", "예능 자막"], ["mine", "내 템플릿"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setT(k)}
+              style={{ flex: 1, height: 30, border: 0, borderRadius: 5, background: t === k ? C.panel2 : "transparent", color: t === k ? C.text : C.sub, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+              {l}{k === "mine" && myTpl.length ? ` ${myTpl.length}` : ""}
+            </button>
+          ))}
+        </div>
+        {t === "deco" && <SubPresetGrid value={{}} onPick={(look, m) => onAdd(look, tplAnim(m.group, m.index))} />}
+        {t === "variety" && <div style={{ margin: "0 -16px" }}><VarietyGrid value={{}} onPick={(look, m) => onAdd(look, tplAnim(m.group, m.index))} /></div>}
+        {t === "mine" && (myTpl.length ? tiles(myTpl) : <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>아직 저장한 템플릿이 없어요. 글자를 넣고 [애니메이션]을 입힌 뒤 [템플릿 › 내 템플릿]에서 저장하세요.</div>)}
       </div>
     </Side>
   );

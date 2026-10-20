@@ -193,7 +193,7 @@ export function LookTile({ look, on, title, onClick, big }: { look: TextLook; on
   );
 }
 
-export function SubPresetGrid({ value, onPick, groups }: { value: Partial<SubtitleSettings>; onPick: (look: SubLook) => void; groups?: string[] }) {
+export function SubPresetGrid({ value, onPick, groups }: { value: Partial<SubtitleSettings>; onPick: (look: SubLook, meta: { group: string; index: number }) => void; groups?: string[] }) {
   // 사전설정에 쓰는 글꼴 미리 받기
   useEffect(() => {
     const fams = [...new Set(SUB_PRESETS.flatMap((g) => g.items.map((x) => x.look.font)))].filter((f) => STUDIO_FONTS.some((s) => s.family === f));
@@ -209,7 +209,7 @@ export function SubPresetGrid({ value, onPick, groups }: { value: Partial<Subtit
               const on = same(value, p.look);
               const l = p.look;
               return (
-                <button key={p.id} type="button" title={p.label} onClick={() => onPick(p.look)}
+                <button key={p.id} type="button" title={p.label} onClick={() => onPick(p.look, { group: g.group, index: g.items.indexOf(p) })}
                   style={{ height: 50, borderRadius: 7, border: `2px solid ${on ? C.accent : "transparent"}`, background: l.glow ? "#0d0f15" : "#2b303b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, overflow: "hidden" }}>
                   <span style={{
                     fontFamily: fontCss(l.font), fontWeight: l.bold ? 800 : 500, fontSize: 21, lineHeight: 1.15, color: l.color, paintOrder: "stroke fill",

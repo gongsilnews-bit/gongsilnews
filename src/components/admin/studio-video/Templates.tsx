@@ -7,7 +7,7 @@
 //  - 움직이는 템플릿은 칸(1/30초)마다 그린다: 미리보기 TplMotion, 굽기 AnimBake → 미리보기 = 완성 영상
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { LayerAnim, LibItem, Project } from "./types";
-import { errText, videoBridge } from "./types";
+import { DRAG_STICKER, errText, stickerDrag, videoBridge } from "./types";
 import { loadFont } from "./Pickers";
 import { Side } from "./Panels";
 import { Btn, C, FONT } from "./ui";
@@ -15,8 +15,36 @@ import { Btn, C, FONT } from "./ui";
 export const TPL_PREFIX = "tpl:";
 const SEP = "␞"; // 칸 글 사이
 export const isTplStyle = (style?: string) => String(style || "").startsWith(TPL_PREFIX);
-export const tplFieldsOf = (text: string) => (text ? String(text).split(SEP) : []);
-export const tplTextOf = (fields: string[]) => fields.join(SEP);
+const OPT = "⚙"; // 맨 끝 칸 = 글꼴·글자 크기 ("⚙글꼴|배율")
+export type TplOpts = { font?: string; k?: number };
+export const tplFieldsOf = (text: string) => (text ? String(text).split(SEP).filter((x) => !x.startsWith(OPT)) : []);
+export const tplOptsOf = (text: string): TplOpts => {
+  const o = String(text || "").split(SEP).find((x) => x.startsWith(OPT));
+  if (!o) return {};
+  const [font, k] = o.slice(OPT.length).split("|");
+  return { font: font || undefined, k: Number(k) > 0 && Number(k) !== 1 ? Number(k) : undefined };
+};
+export const tplTextOf = (fields: string[], o?: TplOpts) => fields.join(SEP) + (o && (o.font || (o.k && o.k !== 1)) ? SEP + OPT + (o.font || "") + "|" + (o.k || 1) : "");
+/** 고를 수 있는 글꼴 (템플릿이 이미 받는 것만) */
+export const TPL_FONTS: { id: string; label: string }[] = [
+  { id: "", label: "원래 글꼴" }, { id: "Black Han Sans", label: "검은고딕" }, { id: "Jua", label: "주아" }, { id: "Do Hyeon", label: "도현" },
+  { id: "Pretendard", label: "프리텐다드" }, { id: "GmarketSans", label: "G마켓 산스" }, { id: "CookieRunOTF", label: "쿠키런" }, { id: "Gowun Dodum", label: "고운돋움" },
+  { id: "Nanum Pen", label: "나눔펜" }, { id: "Yeon Sung", label: "연성" }, { id: "Cafe24 Oneprettynight", label: "고운밤" }, { id: "tvN Enjoystories", label: "tvN 즐거운이야기" }, { id: "NanumMyeongjo", label: "나눔명조" },
+];
+export const TPL_SIZES: { k: number; label: string }[] = [{ k: 0.85, label: "작게" }, { k: 1, label: "보통" }, { k: 1.15, label: "크게" }];
+/** 그리는 동안만 쓰는 글꼴·크기 바꾸기 — 모든 글은 tw·txt 를 지나므로 여기서 한 번에 */
+let FX: TplOpts | null = null;
+const fx = (font: string) => {
+  if (!FX || /Emoji/.test(font)) return font;
+  let f = font;
+  if (FX.k && FX.k !== 1) f = f.replace(/(\d+(?:\.\d+)?)px/, (_, n) => `${Math.round(Number(n) * FX!.k! * 10) / 10}px`);
+  if (FX.font) f = f.replace(/px\s+.*$/, `px "${FX.font}", "Malgun Gothic", sans-serif`);
+  return f;
+};
+function drawWith(d: TplDef, vals: string[], color: string, t: number, o?: TplOpts) {
+  FX = o && (o.font || o.k) ? o : null;
+  try { return d.draw(vals, color, t); } finally { FX = null; }
+}
 
 type Kind = "text" | "sticker" | "motion";
 type Field = { label: string; def: string; multi?: boolean };
@@ -59,7 +87,7 @@ function mk(w: number, h: number) {
   return { c, g };
 }
 const meas = mk(4, 4).g;
-const tw = (font: string, s: string) => { meas.font = font; return meas.measureText(s).width; };
+const tw = (font: string, s: string) => { meas.font = fx(font); return meas.measureText(s).width; };
 const lines = (s: string) => String(s || "").split(/\r?\n/).map((x) => x.trim()).filter((x, i, a) => x || a.length === 1);
 function rr(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const k = Math.max(0, Math.min(r, w / 2, h / 2));
@@ -73,7 +101,7 @@ function rr(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: num
 }
 function txt(g: CanvasRenderingContext2D, s: string, x: number, y: number, o: { font: string; fill: string; stroke?: string; lw?: number; align?: CanvasTextAlign; glow?: string; blur?: number; shadow?: string }) {
   g.save();
-  g.font = o.font;
+  g.font = fx(o.font);
   g.textAlign = o.align || "center";
   if (o.shadow) { g.shadowColor = o.shadow; g.shadowBlur = 0; g.shadowOffsetX = 5; g.shadowOffsetY = 6; }
   if (o.glow) { g.shadowColor = o.glow; g.shadowBlur = o.blur ?? 26; }
@@ -1138,7 +1166,7 @@ export function drawTemplate(style: string, text: string, color: string | undefi
   if (!d) return mk(4, 4).c;
   const fields = tplFieldsOf(text);
   const vals = d.fields.map((fd, i) => (fields[i] !== undefined ? fields[i] : fd.def));
-  return d.draw(vals, color || d.color, t);
+  return drawWith(d, vals, color || d.color, t, tplOptsOf(text));
 }
 
 /* ── 미리보기: 움직이는 템플릿 (칸마다 다시 그림) ── */
@@ -1173,7 +1201,18 @@ function thumbOf(d: TplDef) {
   return thumbCache.get(d.id) || "";
 }
 
-export function TemplatePanel({ project, kind, onInsert, onClose }: {
+export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, only, init, noGrid, onSave }: {
+  /** 스티커 칸 안에 넣을 때 (2026-10-20 사장님: 템플릿을 스티커 분류로) — 이 분류만, 칸 틀·분류 칩 없이 */
+  cat0?: string;
+  bare?: boolean;
+  /** 분류 대신 이 조건에 맞는 것만 (스티커 탭 · 찾기) */
+  only?: (d: TplDef) => boolean;
+  /** 처음 고른 것 (내 설정에서 열 때) */
+  init?: { id: string; text: string; color: string };
+  /** 고르기 칸 없이 고치는 칸만 */
+  noGrid?: boolean;
+  /** [내 설정에 저장] */
+  onSave?: (x: { id: string; label: string; text: string; color: string }) => void;
   project: Project;
   /** text = [텍스트]에서 연 것 (글 템플릿), sticker = [스티커]에서 연 것 (가리키기·반응·움직이는) */
   kind: "text" | "sticker";
@@ -1182,11 +1221,13 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
 }) {
   const b = videoBridge()!;
   const cats = TPL_CATS.filter((x) => x.kind === kind);
-  const [cat, setCat] = useState(cats[0].id);
-  const list = T.filter((x) => x.cat === cat);
-  const [pick, setPick] = useState<TplDef>(list[0]);
-  const [vals, setVals] = useState<string[]>(list[0].fields.map((f) => f.def));
-  const [color, setColor] = useState(list[0].color);
+  const [cat, setCat] = useState(cat0 || cats[0].id);
+  const list = only ? T.filter(only) : T.filter((x) => x.cat === cat);
+  const first = (init && T.find((x) => x.id === init.id)) || list[0] || T[0];
+  const [pick, setPick] = useState<TplDef>(first);
+  const [vals, setVals] = useState<string[]>(() => first.fields.map((f, i) => (init ? tplFieldsOf(init.text)[i] ?? f.def : f.def)));
+  const [color, setColor] = useState(init?.color || first.color);
+  const [opt, setOpt] = useState<TplOpts>(() => (init ? tplOptsOf(init.text) : {}));
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -1199,11 +1240,13 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
     const id = window.setInterval(() => setTick((performance.now() - t0) / 1000), 1000 / 20);
     return () => window.clearInterval(id);
   }, [pick]);
-  const choose = (d: TplDef) => { setPick(d); setVals(d.fields.map((f) => f.def)); setColor(d.color); };
+  const [picked, setPicked] = useState(Boolean(init || noGrid)); // 스티커 칸 안: 고른 뒤에만 고치는 칸을 위에
+  const choose = (d: TplDef) => { setPick(d); setVals(d.fields.map((f) => f.def)); setColor(d.color); setPicked(true); };
+  const [saved, setSaved] = useState(false);
   const preview = useMemo(() => {
     if (!ready) return "";
-    try { return pick.draw(vals.map((v, i) => v ?? pick.fields[i].def), color, pick.kind === "motion" ? tick % 6 : 999).toDataURL("image/png"); } catch { return ""; }
-  }, [ready, pick, vals, color, tick]);
+    try { return drawWith(pick, vals.map((v, i) => v ?? pick.fields[i].def), color, pick.kind === "motion" ? tick % 6 : 999, opt).toDataURL("image/png"); } catch { return ""; }
+  }, [ready, pick, vals, color, tick, opt]);
   const insert = async () => {
     if (!b.lib.saveImage) return setErr("공실뉴스 스튜디오를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
     setBusy(true);
@@ -1211,7 +1254,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
     try {
       await tplFonts();
       const style = TPL_PREFIX + pick.id;
-      const text = tplTextOf(vals);
+      const text = tplTextOf(vals, opt);
       const url = drawTemplate(style, text, color).toDataURL("image/png");
       const item = await b.lib.saveImage(project.dir, url, `템플릿_${pick.label}`);
       await onInsert(item, { anim: pick.anim, w: pick.w, y: pick.y, spec: { style, text, color } });
@@ -1221,9 +1264,79 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
       setBusy(false);
     }
   };
+  /** 끌어 놓기 — 끌기 시작할 때 그 템플릿(고른 것이면 고친 글·색으로)을 기억해 두고, 놓는 곳이 그린다 */
+  const dragStart = (e: React.DragEvent, d: TplDef) => {
+    if (!b.lib.saveImage) return;
+    const mine = d.id === pick.id;
+    const style = TPL_PREFIX + d.id;
+    const text = mine ? tplTextOf(vals, opt) : tplTextOf(d.fields.map((f) => f.def));
+    const col = mine ? color : d.color;
+    e.dataTransfer.setData(DRAG_STICKER, d.label);
+    e.dataTransfer.effectAllowed = "copy";
+    stickerDrag.make = async () => {
+      await tplFonts();
+      const url = drawTemplate(style, text, col).toDataURL("image/png");
+      const item = await b.lib.saveImage!(project.dir, url, `템플릿_${d.label}`);
+      return { item, o: { anim: d.anim, w: d.w, y: d.y, spec: { style, text, color: col } } };
+    };
+  };
   const chip = (on: boolean): React.CSSProperties => ({ height: 30, padding: "0 11px", borderRadius: 15, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" });
   const checker = "repeating-conic-gradient(#2a2f3a 0% 25%, #222630 0% 50%) 50% / 16px 16px";
   const input: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT, boxSizing: "border-box" };
+  const grid = (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {list.map((d) => {
+        const th = ready ? thumbOf(d) : "";
+        return (
+          <button key={d.id} type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
+            draggable onDragStart={(e) => { if (d.id !== pick.id) choose(d); dragStart(e, d); }}
+            style={{ height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {th ? <img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain" }} /> : null}
+            <span style={{ fontSize: 11.5, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{d.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+  if (bare)
+    return (
+      <div>
+        {/* 고른 템플릿 — 글·글꼴·글자 크기·색 고치고 넣기 (고르면 목록 위에) */}
+        {picked && (
+        <div style={noGrid ? undefined : { position: "sticky", top: 0, zIndex: 3, background: C.panel, margin: "0 -16px 14px", padding: "10px 16px 14px", borderBottom: `1px solid ${C.line}`, boxShadow: "0 8px 16px rgba(0,0,0,0.35)" }}>
+          <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, marginBottom: 8 }}>{pick.label}{pick.kind === "motion" && <span style={{ fontSize: 12, color: C.accent, marginLeft: 6 }}>움직여요</span>}{!noGrid && <button type="button" title="닫기 — 보던 목록 그대로" onClick={() => setPicked(false)} style={{ width: 26, height: 26, marginLeft: "auto", border: 0, borderRadius: 4, background: "transparent", color: C.sub, fontSize: 18, lineHeight: "26px", padding: 0, cursor: "pointer" }}>×</button>}</div>
+          <div style={{ height: 150, borderRadius: 10, background: checker, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {preview ? <img src={preview} alt="" draggable onDragStart={(e) => dragStart(e, pick)} title="끌어서 클립·미리보기·타임라인에 놓으면 들어가요" style={{ maxWidth: "94%", maxHeight: 136, objectFit: "contain", cursor: "grab" }} /> : <span style={{ color: C.dim, fontSize: 13 }}>글꼴을 받는 중…</span>}
+          </div>
+          <div style={{ height: 10 }} />
+          {pick.fields.map((fd, i) => (
+            <div key={fd.label + i} style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 12.5, color: C.sub, marginBottom: 4 }}>{fd.label}</div>
+              {fd.multi ? (
+                <textarea value={vals[i] ?? ""} rows={Math.min(8, Math.max(2, (vals[i] || "").split("\n").length))} onChange={(e) => setVals((v) => v.map((x, k) => (k === i ? e.target.value : x)))} style={{ ...input, resize: "vertical", lineHeight: 1.5 }} />
+              ) : (
+                <input value={vals[i] ?? ""} onChange={(e) => setVals((v) => v.map((x, k) => (k === i ? e.target.value : x)))} style={{ ...input, height: 36 }} />
+              )}
+            </div>
+          ))}
+          <TplOptRow value={opt} onChange={setOpt} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12.5, color: C.sub, width: 52 }}>색</span>
+            <input type="color" value={/^#[0-9a-f]{6}$/i.test(color) ? color : "#FFD400"} onChange={(e) => setColor(e.target.value.toUpperCase())} style={{ width: 44, height: 30, border: 0, background: "transparent", padding: 0, cursor: "pointer" }} />
+            <button type="button" onClick={() => setColor(pick.color)} style={chip(false)}>처음 색</button>
+          </div>
+          <div style={{ display: "flex", gap: 8, margin: "12px 0 4px" }}>
+            {onSave && <Btn onClick={() => { onSave({ id: pick.id, label: pick.label, text: tplTextOf(vals, opt), color }); setSaved(true); setTimeout(() => setSaved(false), 1500); }} style={{ flex: 1, justifyContent: "center" }}>{saved ? "저장했어요" : "내 설정에 저장"}</Btn>}
+            <Btn primary onClick={insert} disabled={busy || !ready} style={{ flex: 1, justifyContent: "center" }}>{busy ? "넣는 중…" : "화면에 넣기"}</Btn>
+          </div>
+          {err && <div style={{ marginTop: 12, fontSize: 14, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
+        </div>
+        )}
+        {!noGrid && grid}
+      </div>
+    );
   return (
     <Side title={kind === "text" ? "글자 템플릿" : "가리키기·반응·움직이는 템플릿"} onClose={onClose}
       footer={
@@ -1235,7 +1348,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
       <div style={{ padding: "4px 16px 20px" }}>
         <div style={{ marginTop: 10, height: 170, borderRadius: 10, background: checker, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {preview ? <img src={preview} alt="" style={{ maxWidth: "94%", maxHeight: 156, objectFit: "contain" }} /> : <span style={{ color: C.dim, fontSize: 13 }}>글꼴을 받는 중…</span>}
+          {preview ? <img src={preview} alt="" draggable onDragStart={(e) => dragStart(e, pick)} title="끌어서 클립·미리보기·타임라인에 놓으면 들어가요" style={{ maxWidth: "94%", maxHeight: 156, objectFit: "contain", cursor: "grab" }} /> : <span style={{ color: C.dim, fontSize: 13 }}>글꼴을 받는 중…</span>}
         </div>
         <div style={{ fontSize: 14, fontWeight: 800, margin: "12px 0 6px" }}>{pick.label}{pick.kind === "motion" && <span style={{ fontSize: 12, color: C.accent, marginLeft: 6 }}>움직여요</span>}</div>
         {pick.fields.map((fd, i) => (
@@ -1260,7 +1373,8 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
           {list.map((d) => {
             const th = ready ? thumbOf(d) : "";
             return (
-              <button key={d.id} type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
+              <button key={d.id} type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
+                draggable onDragStart={(e) => { if (d.id !== pick.id) choose(d); dragStart(e, d); }}
                 style={{ height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {th ? <img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain" }} /> : null}
@@ -1275,15 +1389,40 @@ export function TemplatePanel({ project, kind, onInsert, onClose }: {
   );
 }
 
+/** 글꼴·글자 크기 두 가지 (2026-10-20) */
+export function TplOptRow({ value, onChange }: { value: TplOpts; onChange: (o: TplOpts) => void }) {
+  const sel: React.CSSProperties = { flex: 1, minWidth: 0, height: 32, padding: "0 8px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 13.5, fontFamily: FONT };
+  const k = value.k || 1;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 12.5, color: C.sub, width: 52, flexShrink: 0 }}>글꼴</span>
+        <select value={value.font || ""} onChange={(e) => onChange({ ...value, font: e.target.value || undefined })} style={{ ...sel, fontFamily: value.font ? `"${value.font}", ${FONT}` : FONT }}>
+          {TPL_FONTS.map((f) => <option key={f.id} value={f.id} style={{ fontFamily: f.id ? `"${f.id}"` : undefined }}>{f.label}</option>)}
+        </select>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 12.5, color: C.sub, width: 52, flexShrink: 0 }}>글자 크기</span>
+        {TPL_SIZES.map((x) => (
+          <button key={x.k} type="button" onClick={() => onChange({ ...value, k: x.k === 1 ? undefined : x.k })}
+            style={{ flex: 1, height: 30, borderRadius: 6, border: `1px solid ${k === x.k ? C.accent : C.line2}`, background: k === x.k ? C.accentDim : "transparent", color: k === x.k ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{x.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** 오른쪽 칸 — 넣어 둔 템플릿 글 고치기 (칸마다) */
 export function TemplateFields({ style, text, color, onSave }: { style: string; text: string; color?: string; onSave: (text: string, color?: string) => Promise<void> }) {
   const d = tplOf(style);
   const init = d ? d.fields.map((fd, i) => tplFieldsOf(text)[i] ?? fd.def) : [];
+  const opt0 = tplOptsOf(text);
   const [vals, setVals] = useState<string[]>(init);
+  const [opt, setOpt] = useState<TplOpts>(opt0);
   const [col, setCol] = useState(color || d?.color || "#FFD400");
   const [busy, setBusy] = useState(false);
   if (!d) return null;
-  const changed = tplTextOf(vals) !== tplTextOf(init) || col !== (color || d.color);
+  const changed = tplTextOf(vals, opt) !== tplTextOf(init, opt0) || col !== (color || d.color);
   const input: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT, boxSizing: "border-box" };
   return (
     <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
@@ -1295,13 +1434,14 @@ export function TemplateFields({ style, text, color, onSave }: { style: string; 
             : <input value={vals[i]} onChange={(e) => setVals((v) => v.map((x, k) => (k === i ? e.target.value : x)))} style={{ ...input, height: 36 }} />}
         </div>
       ))}
+      <TplOptRow value={opt} onChange={setOpt} />
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 12.5, color: C.sub }}>색</span>
         <input type="color" value={/^#[0-9a-f]{6}$/i.test(col) ? col : "#FFD400"} onChange={(e) => setCol(e.target.value.toUpperCase())} style={{ width: 44, height: 30, border: 0, background: "transparent", padding: 0 }} />
         <span style={{ flex: 1 }} />
-        <Btn small primary disabled={!changed || busy} onClick={async () => { setBusy(true); try { await tplFonts(); await onSave(tplTextOf(vals), col); } finally { setBusy(false); } }}>{busy ? "그리는 중…" : "바꾸기"}</Btn>
+        <Btn small primary disabled={!changed || busy} onClick={async () => { setBusy(true); try { await tplFonts(); await onSave(tplTextOf(vals, opt), col); } finally { setBusy(false); } }}>{busy ? "그리는 중…" : "바꾸기"}</Btn>
       </div>
-      <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>모양·자리·움직임은 그대로, 글·색만 바뀌어요.</div>
+      <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>모양·자리·움직임은 그대로, 글·글꼴·글자 크기·색만 바뀌어요.</div>
     </div>
   );
 }

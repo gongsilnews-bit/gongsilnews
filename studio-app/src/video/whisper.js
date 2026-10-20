@@ -86,10 +86,23 @@ async function segments(file, { start = 0, len = 0, fix = true } = {}) {
     const dur = (await ff.probe(wav)).duration || len;
     const threads = Math.max(2, Math.min(8, os.cpus().length - 1));
     const t0 = Date.now();
+    // (2026-10-20 시험: -nfa -dtw large.v3.turbo 단어 시각은 문장에 따라 0.7~2초씩 늦게 찍혀 쓰지 않는다)
     await ff.run(exe(), ["-m", path.join(dir(), MODEL), "-f", wav, "-l", "ko", "-t", String(threads), "-ojf", "-of", path.join(tmp, "out"), "-np"], { cwd: dir() });
     const j = JSON.parse(fs.readFileSync(path.join(tmp, "out.json"), "utf8"));
+    /** 토큰 → 단어 (띄어쓰기로 시작하는 토큰이 새 단어) · 단어 시작 = 첫 토큰 DTW 시각 (초) */
+    const wordsOf = (s) => {
+      const out = [];
+      for (const t of s.tokens || []) {
+        const tx = String(t.text || "");
+        if (!tx || /^\[_/.test(tx) || /^<\|/.test(tx)) continue;
+        const td = Number(t.t_dtw);
+        if (/^\s/.test(tx) || !out.length) out.push({ w: tx.trim(), t: td >= 0 ? td / 100 : -1 });
+        else out[out.length - 1].w += tx;
+      }
+      return out.filter((x) => x.w.replace(/[.,?!~'"·…。？！]/g, ""));
+    };
     let segs = (j.transcription || [])
-      .map((s) => ({ start: s.offsets.from / 1000, end: Math.min(dur, s.offsets.to / 1000), text: String(s.text || "").trim() }))
+      .map((s) => ({ start: s.offsets.from / 1000, end: Math.min(dur, s.offsets.to / 1000), text: String(s.text || "").trim(), words: wordsOf(s) }))
       .filter((s) => s.text && s.end > s.start);
     // 말소리가 거의 없는 곳의 글은 버린다 (Whisper 가 무음에서 말을 지어내는 것)
     const sp = await ff.speech(wav, dur, { min: 0.2 }).catch(() => []);

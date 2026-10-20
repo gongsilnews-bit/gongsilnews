@@ -7,10 +7,11 @@ import type { LibItem, Method, Project, Recover } from "./types";
 import { errText, isRecover, videoBridge } from "./types";
 import Editor from "./Editor";
 import TextWizard from "./TextWizard";
-import { Home, LongformFlow, NewDialog, RecordFlow, VideoFlow } from "./Flows";
+import { AudioFlow, Home, LongformFlow, NewDialog, RecordFlow, VideoFlow, loadPrompter, savePrompter } from "./Flows";
 import { Btn, C, FONT, Icon, Modal } from "./ui";
 import VideoMenu, { type VideoView } from "./VideoMenu";
 import { MyVoicePane } from "./MyVoice";
+import { AiVoiceStudio } from "./AiVoiceStudio";
 
 /** 동영상제작을 쓸 수 있는 가장 낮은 스튜디오 앱 버전 (.gss 저장 방식 — 0.1.4) */
 const MIN_APP = "0.1.4";
@@ -108,7 +109,9 @@ export default function VideoStudio() {
       ) : (
         <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
           <VideoMenu view={view} onView={setView} onMethod={(m) => setFlow(m)} />
-          {view === "myvoice" ? (
+          {view === "aivoice" ? (
+            <AiVoiceStudio />
+          ) : view === "myvoice" ? (
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", color: C.text, fontFamily: FONT }}>
               <div style={{ padding: "26px 28px 0", fontSize: 22, fontWeight: 800 }}>내 목소리</div>
               <div style={{ padding: "6px 28px 0", fontSize: 14.5, color: C.sub }}>내 목소리를 등록해 두면 영상 대본을 내 목소리로 읽어요 (이 PC 에서, 무료).</div>
@@ -130,9 +133,14 @@ export default function VideoStudio() {
       )}
       {err && <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", padding: "10px 16px", background: C.card, border: `1px solid ${C.danger}`, color: C.text, borderRadius: 6, fontFamily: FONT, fontSize: 14.5, zIndex: 2000 }} onClick={() => setErr("")}>{err}</div>}
       {flow === "new" && <NewDialog onPick={(m) => setFlow(m)} onClose={() => setFlow("")} />}
-      {flow === "text" && <TextWizard onCancel={() => setFlow("")} onDone={done} />}
+      {flow === "text" && <TextWizard onCancel={() => setFlow("")} onDone={done} onRecord={(script) => {
+        // 대본을 프롬프터에 넣고 녹화로 — 녹화가 끝나면 이 대본이 자막 글이 된다
+        savePrompter({ ...loadPrompter(), on: true, text: script });
+        setFlow("record");
+      }} />}
       {flow === "video" && <VideoFlow onCancel={() => setFlow("")} onDone={done} />}
       {flow === "longform" && <LongformFlow onCancel={() => setFlow("")} onDone={done} />}
+      {flow === "audio" && <AudioFlow onCancel={() => setFlow("")} onDone={done} />}
       {flow === "record" && !recorded && <RecordFlow onCancel={() => setFlow("")} onRecorded={(item, script) => { setRecScript(script || ""); setRecorded(item); }} />}
       {flow === "record" && recorded && <VideoFlow method="record" preset={[recorded]} script={recScript} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />}
     </div>
