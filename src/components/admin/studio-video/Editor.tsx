@@ -5,13 +5,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SubFormatBar } from "./SubFormatBar";
 import type { Asset, Clip, Keyframe, KfProp, Layer, LibItem, Project, Ratio, Scene, StockItem, Word } from "./types";
-import { DRAG_MEDIA, DRAG_STICKER, RATIO_SIZE, autoSubPosition, errText, fmtTime, stickerDrag, uid, videoBridge } from "./types";
+import { DRAG_MEDIA, DRAG_STICKER, RATIO_LABEL, RATIO_SIZE, autoSubPosition, errText, fmtTime, stickerDrag, uid, videoBridge } from "./types";
 import { zLayers, gapOf, voiceGap, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes, layerRange, kfAt, kfUpsert, kfIndexAt, kfSort, kfAny, kfHasAt, kfSetProps, kfToggleProp, kfClearProps, kfMoveProps, cropOf, KF_PROPS, clipKeyBase, clipBaseRect, imgRect, clipDuration, sourceTimeAt } from "./timeline";
 import Timeline, { AudioMeter, type Pick, type TlTool, type TrackOp } from "./TimelineView";
 import { EffectControls, type EcGroup } from "./EffectControls";
 import { PropsFrame, Transform, TimeBox, Sec, SlimRow, Chip, Embed } from "./TimelineProps";
 import { AdjustBox, Bar as KfBar } from "./Keyframes";
-import MediaMenu, { QuickMenu, QuickSlider, QuickText, SoundMenu, quickChip, type MediaFit, type MediaOrder } from "./MediaMenu";
+import MediaMenu, { QuickMenu, QuickSlider, QuickText, RatioBox, SoundMenu, quickChip, type MediaFit, type MediaOrder } from "./MediaMenu";
 import { NewClipDialog, type NewClipSpec } from "./NewClip";
 import { fixByScript, scriptSentences } from "./scriptFix";
 import VideoStart from "./VideoStart";
@@ -212,6 +212,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number; lenOnly?: boolean } | null>(null); // 소리 칩 옆 작은 창 (오른쪽 시간을 누르면 길이만)
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
+  // 메인 화면 잠금 — 미리보기에서 기본은 안 잡힘. 이 클립 id 일 때만 옮기기·크기 (2026-10-21 사장님: 다른 요소를 고르다 자꾸 잡히고 사진 움직임이 풀림)
+  const [visualOpen, setVisualOpen] = useState("");
+  const [previewMenu, setPreviewMenu] = useState<{ x: number; y: number; target: string; clipId: string } | null>(null); // 미리보기 오른쪽 클릭
+  const [ratioMenu, setRatioMenu] = useState<{ x: number; y: number } | null>(null); // 위쪽 화면 비율 단추 (2026-10-21 사장님)
   const [quick, setQuick] = useState<{ kind: "sub" | "trans"; id: string; x: number; y: number } | null>(null); // 메인자막·화면전환 아이콘 메뉴 (2026-10-21)
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
   const [overlayTarget, setOverlayTarget] = useState(""); // 사진을 바꿀 애셋
@@ -911,6 +915,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setSubPick({ clipId: id, n: Date.now() });
       setPanel("subtitle");
     },
+    toggleVisualLock: (id) => { if (visualOpen === id) setVisualOpen(""); else openVisualXf(id); },
     openSubMenu: (id, x, y) => { setMedia(null); setQuick({ kind: "sub", id, x, y }); },
     openTransMenu: (id, x, y) => { setMedia(null); setQuick({ kind: "trans", id, x, y }); },
     openTrans: (id, add) => {
@@ -1299,6 +1304,29 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   /** 스티커·사진 고르는 칸에서 레이어를 고르면 — 그 칸을 밑에 살려 둔다 (속성 X 면 보던 탭·자리 그대로, 2026-10-20 사장님) */
   const [under, setUnder] = useState<{ kind: string; layer: string } | null>(null);
+  useEffect(() => { if (selLayer) setVisualOpen(""); }, [selLayer]); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    if (!visualOpen) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setVisualOpen(""); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [visualOpen]);
+  /** 메인 화면 잠금 풀기 — 그 클립으로 가서 테두리·손잡이 */
+  const openVisualXf = (id: string) => {
+    setVisualOpen(id);
+    setSelLayer("");
+    const it = flat.items.find((x) => x.clip.id === id);
+    if (it && (time < it.start || time >= it.start + it.dur)) player.current?.seek(it.start + Math.min(0.05, it.dur / 2));
+    say("메인 화면 잠금을 풀었어요 — 끌어 옮기기·모서리로 크기 · 다른 곳을 누르거나 Esc 면 다시 잠겨요");
+  };
+  /** 메인 화면을 처음 옮길 때 — 사진 움직임이 쉰다는 것을 한 줄로 */
+  const noteVisualMove = (id: string, first: boolean) => {
+    if (!first) return;
+    const c = findClip(project, id)?.clip;
+    if (c && !c.box && isPhotoClip(project, c) && (c.motion || project.settings.motion) !== "none") say("직접 옮기면 사진 움직임(줌인 등)은 쉬어요 · [채우기]로 돌리면 다시 움직여요");
+  };
+  /** 화면 비율 바꾸기 — 오른쪽 [화면 비율] 칸 · 위쪽 비율 단추가 같이 쓴다 */
+  const setRatio = (r: Ratio) => change((p) => { p.ratio = r; if (p.settings.subtitle.posAuto && typeof p.settings.subtitle.x !== "number") p.settings.subtitle.position = autoSubPosition(r); });
   const openLayer = (id: string) => {
     const lay = (project.layers || []).find((x) => x.id === id);
     // 그래픽은 무엇을 보다가 골랐든 밑에 그래픽 창 — 속성 X 면 그래픽으로 (2026-10-21 사장님)
@@ -3561,7 +3589,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             range={{ mode: subSel ? "sel" : "all", selCount: selected.length, own, style: subNow(), onMode: setSubMode,
               onReset: () => { change((p) => { for (const id of selected) { const c = findClip(p, id)?.clip; if (c) delete c.subStyle; } }); say("고른 클립 자막을 전체 서식으로 되돌렸어요"); } }} />;
         })()}
-        {kind === "ratio" && <RatioPanel ratio={project.ratio} fill={project.settings.fill} onRatio={(r: Ratio) => change((p) => { p.ratio = r; if (p.settings.subtitle.posAuto && typeof p.settings.subtitle.x !== "number") p.settings.subtitle.position = autoSubPosition(r); })} onFill={(f) => change((p) => { p.settings.fill = f; })} onClose={() => setPanel("")} />}
+        {kind === "ratio" && <RatioPanel ratio={project.ratio} fill={project.settings.fill} onRatio={setRatio} onFill={(f) => change((p) => { p.settings.fill = f; })} onClose={() => setPanel("")} />}
         {kind === "music" && (
           <MusicPanel project={project} current={(project.layers || []).find((l) => l.id === musicTarget) || null}
             rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic}
@@ -3697,7 +3725,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                 if (kind === "sub") { focusTextBasic(); setPanel("subtitle"); } // 미리보기에서 글자를 누르면 [텍스트 › 기본] — 크기 등 바로 고치게 (2026-10-21 사장님)
                 else { setVisualClip(id); setPanel("visual"); }
               }}
-              onVisualMove={(id, box, first) => change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box; }, first)}
+              onVisualMove={(id, box, first) => { noteVisualMove(id, first); change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box; }, first); }}
+              visualOpen={visualOpen} onVisualOpen={openVisualXf} onVisualLock={() => setVisualOpen("")} onPreviewMenu={setPreviewMenu}
               onSubMove={(patch, first, tau, clipId) => {
                 // 이 클립 메인자막에 키프레임이 있으면 — 점이 있는 항목은 그 시각 점으로 (줄 너비는 서식 그대로)
                 const c0 = findClip(pref.current, clipId)?.clip;
@@ -3962,6 +3991,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       <span onClick={() => b.showFile(project.file || project.dir)} title={`${project.file || project.dir}\n누르면 저장된 폴더를 열어요`} style={{ fontSize: 11.5, color: C.dim, marginRight: 8, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}>
         {project.name}{gssMode ? ".gss" : ""}{gssMode && dirty ? <span style={{ color: "#facc15", fontWeight: 700 }}> · ● 저장 안 함</span> : ""}
       </span>
+      <button type="button" title="화면 비율 — 눌러서 바로 고르기" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setRatioMenu(ratioMenu ? null : { x: r.left, y: r.bottom + 6 }); }}
+                style={{ height: 24, padding: "0 10px", border: `1px solid ${C.line2}`, borderRadius: 5, background: ratioMenu ? C.accentDim : "transparent", color: C.text, fontSize: 11.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginRight: 8, whiteSpace: "nowrap" }}>
+                <RatioBox ratio={project.ratio} size={15} />{RATIO_LABEL[project.ratio]} {project.ratio}<Icon name="down" size={12} />
+              </button>
       <div style={{ display: "flex", border: `1px solid ${C.line2}`, borderRadius: 4, overflow: "hidden", marginRight: 8 }}>
         {([["text", "텍스트 편집"], ["timeline", "타임라인 편집"]] as const).map(([v, t]) => (
           <button key={v} type="button" onClick={() => setMode(v)} style={{ height: 24, padding: "0 9px", border: 0, background: mode === v ? C.accent : "transparent", color: mode === v ? "#fff" : C.sub, fontSize: 11.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
@@ -4164,7 +4197,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               <Player ref={player} project={project} width={big ? bigW : tlPrevW} onTime={setTime} onPlaying={setPlaying} previewRate={rate}
                 selLayer={selLayer} onLayerPick={(id) => setPicks([{ kind: "layer", id }])}
                 onBoxPick={(kind, id) => setPicks([{ kind: kind === "sub" ? "sub" : "clip", id }])}
-                onVisualMove={(id, box2, first) => change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box2; }, first)}
+                onVisualMove={(id, box2, first) => { noteVisualMove(id, first); change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box2; }, first); }}
+                visualOpen={mode === "timeline" && picks.some((x) => x.kind === "clip" && x.id === cur?.clip.id) ? cur!.clip.id : visualOpen} onVisualOpen={openVisualXf} onVisualLock={() => setVisualOpen("")} onPreviewMenu={setPreviewMenu}
                 onSubMove={(patch, first, tau, clipId) => {
                   const c0 = findClip(pref.current, clipId)?.clip;
                   if (!c0?.subKf?.length) return applySub(patch, first);
@@ -4366,7 +4400,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           {/* 지금 클립 정보 */}
           {cur && (
             <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 6, padding: 12 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>클립 {cur.index + 1}</div>
+              {(() => {
+                // 잠긴 것 [모두 풀기] — 2개 이상일 때만 (배경 화면은 빼고 늘 잠금, 2026-10-21 사장님)
+                const ls = layersAt(project, cur.clip.id).filter((x) => x.lock);
+                const n = ls.length + (project.settings.subLock ? 1 : 0);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>클립 {cur.index + 1}</span>
+                    {n >= 2 && <button type="button" onClick={() => change((p) => { for (const x of p.layers || []) if (ls.some((y) => y.id === x.id)) delete x.lock; delete p.settings.subLock; })} title="이 클립의 잠긴 것을 모두 풀어요 (배경 화면은 그대로 잠금)"
+                      style={{ height: 26, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.line2}`, background: "transparent", color: "#FACC15", fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>🔓 모두 풀기 ({n})</button>}
+                  </div>
+                );
+              })()}
               {(() => {
                 const c = cur.clip;
                 const vis = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
@@ -4376,7 +4421,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, color: C.sub }}>
                     <TrackRow kind="eye" on={!off.visual} icon={vis?.kind === "image" ? "image" : "video"} name={vis ? vis.name : "화면 없음 (검은 화면)"} hint="화면 레이어 — 모든 클립"
-                      onToggle={() => setOff("visual", !off.visual)} onOpen={() => (vis ? actions.openMedia(c.id, 420, 300) : actions.openVisual(c.id))} />
+                      onToggle={() => setOff("visual", !off.visual)} onOpen={() => (vis ? actions.openMedia(c.id, 420, 300) : actions.openVisual(c.id))}
+                      lock={vis ? { locked: visualOpen !== c.id, onToggle: () => (visualOpen === c.id ? setVisualOpen("") : openVisualXf(c.id)) } : undefined} />
                     {c.type === "voice" ? (
                       <TrackRow kind="ear" on={!off.voice} icon="voice" name={c.voice ? `AI 목소리 ${(c.voice.duration || 0).toFixed(1)}초${silent ? " · 이 클립 무음" : ""}` : "목소리 없음"} danger={silent} hint="AI 목소리 레이어 — 모든 클립"
                         onToggle={() => setOff("voice", !off.voice)} onOpen={() => { setSelected([c.id]); setPanel("voice"); }} />
@@ -4385,10 +4431,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                         onToggle={() => setOff("source", !off.source)} onOpen={() => { setSelected([c.id]); setPanel("source"); }} />
                     )}
                     <TrackRow kind="eye" on={project.settings.subtitle.on} icon="sub" name="메인자막" hint="메인자막 — 모든 클립"
-                      onToggle={() => change((p) => { p.settings.subtitle.on = !p.settings.subtitle.on; })} onOpen={() => setPanel("subtitle")} />
+                      onToggle={() => change((p) => { p.settings.subtitle.on = !p.settings.subtitle.on; })} onOpen={() => setPanel("subtitle")}
+                      lock={project.settings.subLock ? { locked: true, onToggle: () => change((p) => { delete p.settings.subLock; }) } : undefined} />
                     {layersAt(project, c.id).map((l) => (
                       <TrackRow key={l.id} kind={l.type === "music" ? "ear" : "eye"} on={!l.off} icon={layerIcon(l)} name={layerTitle(l)} active={l.id === selLayer} hint="이 애셋 전체"
-                        onToggle={() => updateLayer(l.id, { off: !l.off || undefined })} onOpen={() => openLayer(l.id)} />
+                        onToggle={() => updateLayer(l.id, { off: !l.off || undefined })} onOpen={() => openLayer(l.id)}
+                        lock={l.lock ? { locked: true, onToggle: () => updateLayer(l.id, { lock: undefined }) } : undefined} />
                     ))}
                   </div>
                 );
@@ -4414,6 +4462,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             <span style={{ fontSize: 14, color: C.sub }}>클립 {flat.items.length}개 · {fmtTime(flat.total, false)}{selected.length ? ` · ${selected.length}개 고름` : ""}</span>
             <span style={{ flex: 1 }} />
             {toast && <span style={{ fontSize: 14, color: C.text, background: C.card, border: `1px solid ${C.line2}`, padding: "5px 12px", borderRadius: 5 }}>{toast}</span>}
+            <button type="button" title="화면 비율 — 눌러서 바로 고르기" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setRatioMenu(ratioMenu ? null : { x: r.left, y: r.bottom + 6 }); }}
+                style={{ height: 32, padding: "0 10px", border: `1px solid ${C.line2}`, borderRadius: 5, background: ratioMenu ? C.accentDim : "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginRight: 8, whiteSpace: "nowrap" }}>
+                <RatioBox ratio={project.ratio} size={15} />{RATIO_LABEL[project.ratio]} {project.ratio}<Icon name="down" size={12} />
+              </button>
             <div style={{ display: "flex", border: `1px solid ${C.line2}`, borderRadius: 5, overflow: "hidden" }}>
               {([["text", "텍스트 편집", "text"], ["timeline", "타임라인 편집", "timeline"]] as const).map(([v, t, ic]) => (
                 <button key={v} type="button" title={v === "timeline" ? "캡컷처럼 시간 막대에서 편집해요 — 키프레임·다듬기·나누기 (같은 프로젝트, 언제든 바꿀 수 있어요)" : "글(단어)을 보며 편집해요 (같은 프로젝트, 언제든 바꿀 수 있어요)"}
@@ -4470,7 +4522,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               if (panel === "layer" || panel === "anim") { setPanel(""); setSelLayer(""); }
             }}
             onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
-            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} selWordIs={wordIs()} playing={playing} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={media?.kind === "layer" ? media.id : panel === "layer" || panel === "anim" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} onDropSticker={(id) => void onDropSticker({ clipId: id })} transClip={panel === "trans" ? transClip : ""} />
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} selWordIs={wordIs()} playing={playing} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={media?.kind === "layer" ? media.id : panel === "layer" || panel === "anim" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} onDropSticker={(id) => void onDropSticker({ clipId: id })} transClip={panel === "trans" ? transClip : ""} visualOpen={visualOpen} />
           </div>
           </>)}
         </div>
@@ -4570,6 +4622,38 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           lenMin={isVoice ? (c.voice?.duration ? c.voice.duration / speedOf(c, project.settings) + voiceGap(c, project.settings) : 0.5) : 0.3}
           lenMax={isVoice ? undefined : c.src ? (project.assets[c.src.asset]?.duration ?? c.src.e) - c.src.s : undefined} />;
       })()}
+      {/* 미리보기 오른쪽 클릭 — 잠그기 · 잠긴 것 풀기 (클립 메뉴와 같은 모양, 2026-10-21 사장님) */}
+      {previewMenu && (() => {
+        const close = () => setPreviewMenu(null);
+        const t = previewMenu.target;
+        const l = t && !t.startsWith("__") ? (project.layers || []).find((x) => x.id === t) : null;
+        if (l) return <QuickMenu key={"pm" + l.id} title={`${layerName(l)} · ${layerTitle(l)}`} what="미리보기" x={previewMenu.x} y={previewMenu.y} onClose={close} items={[
+          { icon: "lock", label: "잠그기", desc: "미리보기에서 눌러도 안 잡혀요. 왼쪽 목록의 노란 자물쇠나 빈 곳 오른쪽 클릭으로 풀어요", run: () => { updateLayer(l.id, { lock: true }); setSelLayer(""); setPanel(""); say(`"${layerTitle(l)}"을 잠갔어요`); } },
+          { icon: "gear", label: "속성", desc: "오른쪽 칸에서 고쳐요", run: () => openLayer(l.id) },
+        ]} />;
+        if (t === "__sub") return <QuickMenu key="pmsub" title="메인자막" what="미리보기" x={previewMenu.x} y={previewMenu.y} onClose={close} items={[
+          { icon: "lock", label: "잠그기", desc: "메인자막이 미리보기에서 안 잡혀요 (모든 클립)", run: () => { change((p) => { p.settings.subLock = true; }); say("메인자막을 잠갔어요"); } },
+          { icon: "gear", label: "속성", desc: "오른쪽 메인자막 칸", run: () => actions.pickSub?.(previewMenu.clipId) },
+        ]} />;
+        if (t === "__visual") return <QuickMenu key="pmvis" title="배경 화면" what="미리보기" x={previewMenu.x} y={previewMenu.y} onClose={close} items={[
+          { icon: "lock", label: "다시 잠그기", desc: "배경 화면은 기본으로 잠겨 있어요", run: () => setVisualOpen("") },
+        ]} />;
+        // 빈 곳 — 이 화면에서 잠긴 것 풀기
+        const locked = [
+          ...layersAt(project, previewMenu.clipId).filter((x) => x.lock && x.type !== "music" && x.type !== "sfx").map((x) => ({ key: x.id, name: layerTitle(x), icon: layerIcon(x), go: () => updateLayer(x.id, { lock: undefined }) })),
+          ...(project.settings.subLock ? [{ key: "__sub", name: "메인자막", icon: "sub", go: () => change((p) => { delete p.settings.subLock; }) }] : []),
+        ];
+        const it = flat.items.find((x) => x.clip.id === previewMenu.clipId);
+        const hasBg = Boolean(it && (it.clip.visual || (it.clip.type !== "voice" && it.clip.src)));
+        return <QuickMenu key="pmempty" title={locked.length ? `잠긴 것 ${locked.length}개 — 누르면 풀려요` : "이 화면에 잠긴 것이 없어요"} what="미리보기" x={previewMenu.x} y={previewMenu.y} onClose={close} items={[
+          // 잠긴 것을 바로 — 누르면 풀림 (2026-10-21 사장님: 두 번 들어가지 않게)
+          ...locked.map((x) => ({ icon: x.icon, label: `${x.name} 풀기`, desc: "잠금을 풀어 미리보기에서 다시 잡히게 해요", run: x.go })),
+          ...(hasBg ? [{ icon: "screen", label: "배경 화면 옮기기·크기", desc: "배경 화면은 기본으로 잠겨 있어요. 누르면 이 클립만 풀려요", run: () => openVisualXf(previewMenu.clipId) }] : []),
+        ]} />;
+      })()}
+      {ratioMenu && <QuickMenu title="화면 비율 — 누르면 바로 바뀌어요" what="화면 비율" x={ratioMenu.x} y={ratioMenu.y} onClose={() => setRatioMenu(null)}
+        items={[...(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => ({ icon: "ratio", iconEl: <RatioBox ratio={r} />, label: `${RATIO_LABEL[r]} (${r})`, desc: r === "9:16" ? "세로 영상 — 쇼츠·릴스·틱톡" : r === "16:9" ? "가로 영상 — 유튜브" : r === "1:1" ? "정사각형 — 피드" : r === "4:5" ? "인스타그램 피드 세로" : "예전 TV 화면 비율", on: project.ratio === r, run: () => setRatio(r) })),
+          { icon: "gear", label: "채우기·자세히", desc: "사진·영상을 화면에 어떻게 채울지 (오른쪽 칸)", run: () => setPanel("ratio") }]} />}
       {/* 클립 아이콘 메뉴 — 메인자막 · 화면전환 (사진·글자·효과음 메뉴와 같은 생김새, 2026-10-21 사장님) */}
       {quick && (() => {
         const items = flat.items;
@@ -4665,6 +4749,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           const n = pos.get(c.id) || 1;
           const a = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
           return <MediaMenu key={"c" + c.id} title={`클립 ${n} · ${a?.name || "화면"}`} x={media.x} y={media.y} kind="clip"
+            extra={c.visual || c.src ? [{ icon: "lock", label: "미리보기에서 옮기기·크기", desc: "메인 화면은 미리보기에서 잠겨 있어요. 누르면 이 클립 화면만 잠금이 풀려 끌어 옮기고 모서리로 크기를 바꿔요 (미리보기에서 두 번 눌러도 돼요)", run: () => openVisualXf(c.id) }] : undefined}
             fit={c.fill || project.settings.fill} fits={["contain", "cover", "blur"]} flipX={c.flipX} flipY={c.flipY}
             range={{ a: n, b: n, cur: n, total }} canRemove={Boolean(c.visual)}
             onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
@@ -4923,7 +5008,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
 /* ── 내보내기 ── */
 /** 레이어 줄 — 앞 단추로 보이기(눈)·듣기(스피커) 켜고 끄기, 이름을 누르면 설정. 끄기는 설정과 따로라 다시 켜면 그대로 */
-function TrackRow({ kind, on, icon, name, hint, danger, active, onToggle, onOpen }: { kind: "eye" | "ear"; on: boolean; icon: string; name: string; hint: string; danger?: boolean; active?: boolean; onToggle: () => void; onOpen: () => void }) {
+function TrackRow({ kind, on, icon, name, hint, danger, active, onToggle, onOpen, lock }: { kind: "eye" | "ear"; on: boolean; icon: string; name: string; hint: string; danger?: boolean; active?: boolean; onToggle: () => void; onOpen: () => void; /** 메인 화면 잠금 (2026-10-21) — locked 면 🔒, 누르면 풀기·잠그기 */ lock?: { locked: boolean; onToggle: () => void } }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, opacity: on ? 1 : 0.45 }}>
       <button type="button" onClick={onToggle} title={`${on ? (kind === "eye" ? "숨기기" : "소리 끄기") : kind === "eye" ? "보이기" : "소리 켜기"} · ${hint}`}
@@ -4938,6 +5023,12 @@ function TrackRow({ kind, on, icon, name, hint, danger, active, onToggle, onOpen
         style={{ flex: 1, minWidth: 0, display: "flex", gap: 8, alignItems: "center", padding: "3px 4px", border: 0, borderRadius: 4, background: "transparent", color: danger ? C.danger : active ? C.text : C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer", textAlign: "left", textDecoration: on ? undefined : "line-through" }}>
         <Icon name={icon} size={16} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
       </button>
+      {lock && (
+        <button type="button" onClick={lock.onToggle} title={lock.locked ? "잠김 — 미리보기에서 안 잡혀요. 누르면 풀려서 끌어 옮기기·크기" : "풀림 — 미리보기에서 옮기기·크기. 누르면 다시 잠가요"}
+          style={{ width: 28, height: 26, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${lock.locked ? C.line2 : C.accent}`, borderRadius: 5, background: lock.locked ? "transparent" : C.accentDim, color: lock.locked ? "#FACC15" : "#5b9cff", cursor: "pointer", padding: 0 }}>
+          <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d={lock.locked ? "M8 11V8a4 4 0 0 1 8 0v3" : "M8 11V8a4 4 0 0 1 7.5-2"} /></svg>
+        </button>
+      )}
     </div>
   );
 }

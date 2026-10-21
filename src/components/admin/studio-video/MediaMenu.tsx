@@ -278,7 +278,7 @@ export default function MediaMenu(p: Props) {
 
 /** 클립 아이콘 메뉴 — 사진·글자·효과음 메뉴와 같은 생김새 (2026-10-21 사장님: 통일성, 깔끔하게)
  *  1차 = 항목 목록 · 2차 = 항목을 누르면 같은 상자 안에서 바로 고치기 (‹ 로 돌아감). run 만 있으면 하고 닫힌다 */
-export type QuickItem = { icon: string; label: string; desc: string; run?: () => void; page?: () => React.ReactNode; on?: boolean; danger?: boolean };
+export type QuickItem = { icon: string; iconEl?: React.ReactNode /* 아이콘 대신 그림 (화면 비율 상자 등) */; label: string; desc: string; run?: () => void; page?: () => React.ReactNode; on?: boolean; danger?: boolean };
 export function QuickMenu({ title, what, x, y, items, onClose }: { title: string; what: string; x: number; y: number; items: QuickItem[]; onClose: () => void }) {
   const [page, setPage] = React.useState(-1);
   const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
@@ -320,7 +320,7 @@ export function QuickMenu({ title, what, x, y, items, onClose }: { title: string
                 style={{ ...rowStyle, color: it.danger ? C.danger : C.text, background: it.on ? C.accentDim : "transparent" }}
                 onMouseOver={(e) => { if (!it.on) (e.currentTarget as HTMLElement).style.background = C.cardHover; }}
                 onMouseOut={(e) => { if (!it.on) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                <Icon name={it.icon} size={17} />
+                {it.iconEl ? <span style={{ width: 17, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{it.iconEl}</span> : <Icon name={it.icon} size={17} />}
                 <span style={{ flex: 1, textAlign: "left" }}>{it.label}</span>
                 {it.on && <Icon name="check" size={15} color={C.accent} />}
                 {it.page && <Icon name="chevron" size={14} color={C.sub} />}
@@ -337,6 +337,12 @@ export function QuickMenu({ title, what, x, y, items, onClose }: { title: string
       )}
     </div>
   );
+}
+/** 화면 비율 상자 — 그 비율 모양 그대로 (2026-10-21 사장님) */
+export function RatioBox({ ratio, size = 16 }: { ratio: string; size?: number }) {
+  const [w, h] = ratio.split(":").map(Number);
+  const k = size / Math.max(w || 1, h || 1);
+  return <span style={{ display: "inline-block", width: Math.round(w * k), height: Math.round(h * k), border: "1.6px solid currentColor", borderRadius: 2, boxSizing: "border-box", flexShrink: 0 }} />;
 }
 /** 2차 칸 안 — 같은 모양 칩 · 끌개 (QuickMenu 와 메뉴들이 같이 쓴다) */
 export const quickChip = (on: boolean): React.CSSProperties => chipStyle(on);

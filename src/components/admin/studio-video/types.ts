@@ -141,6 +141,7 @@ export type Layer = {
   rot?: number; // 회전 (도, 시계 방향 +) — 미리보기 회전 손잡이 (2026-10-19 사장님)
   opacity?: number; // 0~1
   off?: boolean; // 레이어 끄기 (보이기·듣기) — 설정은 그대로
+  lock?: boolean; // 잠금 — 미리보기에서 안 잡힘 (미리보기 오른쪽 클릭 [잠그기], 2026-10-21 사장님)
   anim?: LayerAnim; // 사진·화면 글자 애니메이션
   fit?: "free" | "contain" | "cover"; // free(기본) = x·y·w 자리 / contain = 비율 유지하며 채우기 / cover = 잘라서 채우기
   flipX?: boolean;
@@ -224,6 +225,8 @@ export type Settings = {
   motion?: "auto" | "none";
   /** 레이어 켜고 끄기 (프리미어의 눈·스피커) — 클립마다 맞춘 값은 그대로 두고 이것만 켜고 끈다 */
   off?: { visual?: boolean; source?: boolean; voice?: boolean };
+  /** 메인자막 잠금 — 미리보기에서 안 잡힘 (2026-10-21) */
+  subLock?: boolean;
   /** 텍스트로 만들기 [AI가 다 꾸미기] — 편집 화면이 열리면 AI 편집(자막 스타일·효과·스티커)을 저절로 시작하고 지운다 */
   aiAuto?: boolean;
 };

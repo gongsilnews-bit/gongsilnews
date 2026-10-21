@@ -58,7 +58,9 @@ export type ClipActions = {
   pickSub?: (id: string) => void;
   /** 클립 아이콘 메뉴 (2026-10-21 사장님) — 메인자막 아이콘 · 화면전환 칩을 누르면 바로 옆에 1차 메뉴 → 2차 바로 고치기 */
   openSubMenu?: (id: string, x: number, y: number) => void;
-  openTransMenu?: (id: string, x: number, y: number) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
+  openTransMenu?: (id: string, x: number, y: number) => void;
+  /** 메인 화면 잠금 풀기·잠그기 (썸네일 위 노란 자물쇠, 2026-10-21 사장님) */
+  toggleVisualLock?: (id: string) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
 };
 
 type Props = {
@@ -84,6 +86,8 @@ type Props = {
   onDropSticker?: (clipId: string) => void;
   /** 오른쪽 칸에 열린 화면전환 (뒤 클립 id) */
   transClip?: string;
+  /** 미리보기에서 잠금이 풀린 메인 화면 (클립 id) */
+  visualOpen?: string;
 };
 
 /** 썸네일 크게 보기 — 마우스를 올린 동안 썸네일 왼쪽에 크게 (영상은 소리 없이 재생). 왼쪽 자리가 모자라면 오른쪽에 */
@@ -519,6 +523,17 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
               onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
               style={{ position: "relative", width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
+              {/* 메인 화면 잠금 — 노란 자물쇠 = 잠김(미리보기에서 안 잡힘), 파란 = 풀림. 누르면 바꾸기 */}
+              {thumb && p.actions.toggleVisualLock && (() => {
+                const locked = p.visualOpen !== c.id;
+                return (
+                  <span role="button" title={locked ? "잠김 — 미리보기에서 안 잡혀요. 누르면 풀려서 끌어 옮기기·크기" : "풀림 — 미리보기에서 옮기기·크기. 누르면 다시 잠가요"}
+                    onClick={(e) => { e.stopPropagation(); setPeek(null); p.actions.toggleVisualLock!(c.id); }}
+                    style={{ position: "absolute", left: 1, top: 1, width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 3, background: "rgba(0,0,0,.65)", color: locked ? "#FACC15" : "#5b9cff", cursor: "pointer" }}>
+                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d={locked ? "M8 11V8a4 4 0 0 1 8 0v3" : "M8 11V8a4 4 0 0 1 7.5-2"} /></svg>
+                  </span>
+                );
+              })()}
               {/* 키프레임·필터 표시 — 타임라인 편집에서 넣은 것 (텍스트 편집에서도 보이게, 회의 10-19 5장 5) */}
               {(c.kf?.length || c.adj) && (
                 <span title={[c.kf?.length ? `◆ 키프레임 ${c.kf.length}개` : "", c.adj ? "필터·색 보정" : ""].filter(Boolean).join(" · ")}

@@ -39,6 +39,13 @@ type Props = {
   onBoxPick?: (kind: "visual" | "sub", clipId: string) => void;
   /** 밖에서 메인자막 고르기 (클립 목록 자막 아이콘) — n 이 바뀔 때마다, 그 클립이 보이면 */
   subPick?: { clipId: string; n: number } | null;
+  /** 메인 화면 잠금 — 이 클립 id 일 때만 미리보기에서 고르기·옮기기·크기 (기본은 잠금, 2026-10-21 사장님) */
+  visualOpen?: string;
+  /** 메인 화면을 두 번 누르면 잠금 풀기 · 빈 곳을 누르면 다시 잠그기 */
+  onVisualOpen?: (clipId: string) => void;
+  onVisualLock?: () => void;
+  /** 미리보기 오른쪽 클릭 — target: 누른 것(레이어 id · __sub · __visual), 없으면 빈 곳 (잠그기·잠긴 것 풀기) */
+  onPreviewMenu?: (m: { x: number; y: number; target: string; clipId: string }) => void;
 };
 
 /** 브라우저가 낼 수 있는 재생 빠르기 (0.0625~16배) — 20배는 미리보기에서 16배로 */
@@ -113,7 +120,7 @@ function LayerVideo({ url, time, playing, rate, volume, style }: { url: string; 
   return <video ref={ref} src={url} playsInline preload="auto" style={style} />;
 }
 
-const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText, onVisualMove, onVisualXf, onSubMove, onBoxPick, subPick }, ref) {
+const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText, onVisualMove, onVisualXf, onSubMove, onBoxPick, subPick, visualOpen = "", onVisualOpen, onVisualLock, onPreviewMenu }, ref) {
   const [editing, setEditing] = useState(""); // 고치는 중: 애셋 id 또는 "sub:클립id"
   const boxRef = useRef<HTMLDivElement>(null);
   const [W, H] = RATIO_SIZE[project.ratio] || RATIO_SIZE["16:9"];
@@ -499,13 +506,14 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
    * 가로·세로를 같은 비율로 바꾼다 (인디자인처럼). 거의 안 움직이면 고르기만
    */
   type Corner = "nw" | "ne" | "sw" | "se";
-  const startDrag = (l: Layer, mode: "move" | Corner, e: React.PointerEvent) => {
+  /** opt.rect — 잡은 그림의 화면 자리 (채우기 그림은 실제 그림 둘레) · opt.pre — 처음 움직일 때 같이 넣을 값 (채우기 → 직접 크기) */
+  const startDrag = (l: Layer, mode: "move" | Corner, e: React.PointerEvent, opt?: { rect?: { left: number; top: number; right: number; bottom: number; width: number; height: number }; pre?: Partial<Layer> }) => {
     if (!onLayerMove) return;
     e.preventDefault();
     e.stopPropagation();
     onLayerPick?.(l.id);
     const box = boxRef.current?.getBoundingClientRect();
-    const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-layer]")?.getBoundingClientRect();
+    const el = opt?.rect || (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-layer]")?.getBoundingClientRect();
     if (!box || !el) return;
     const sx = e.clientX;
     const sy = e.clientY;
@@ -539,7 +547,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const pos = { x: +ncx.toFixed(4), y: +ncy.toFixed(4) };
         patch = l.type === "image" ? { ...pos, w: +(w0 * k).toFixed(3) } : { ...pos, size: Math.round(s0 * k) };
       }
-      onLayerMove(l.id, patch, first, tauOf(l));
+      onLayerMove(l.id, first && opt?.pre ? { ...opt.pre, ...patch } : patch, first, tauOf(l));
       first = false;
     };
     const up = () => window.removeEventListener("pointermove", move);
@@ -549,10 +557,13 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   /* ── 클립 화면·자막 고르기 (화면 글자·사진 올리기와 같은 손잡이) ── */
   const [pick, setPick] = useState<"" | "visual" | "sub">("");
   useEffect(() => setPick(""), [clip?.id]);
+  // 메인 화면 잠금을 풀면 바로 테두리·손잡이 (2026-10-21)
+  useEffect(() => { if (visualOpen && clip?.id === visualOpen) setPick("visual"); }, [visualOpen, clip?.id]); // eslint-disable-line react-hooks/set-state-in-effect
   useEffect(() => { if (selLayer) setPick(""); }, [selLayer]);
   // 클립 목록 자막 아이콘으로 고르기 — 그 클립에 왔을 때 (클립이 바뀌어 풀리는 것보다 뒤에)
   useEffect(() => { if (subPick && clip?.id === subPick.clipId) setPick("sub"); }, [subPick, clip?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const startBox = (kind: "visual" | "sub", mode: "move" | Corner | "e" | "w", e: React.PointerEvent) => {
+    const slop = kind === "visual" ? 8 : 3; // 메인 화면은 살짝 밀려도 안 움직이게 (사진 움직임이 풀리던 문제)
     const can = kind === "visual" ? onVisualMove && clip : onSubMove;
     if (!can) return;
     e.preventDefault();
@@ -581,7 +592,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
     let first = true;
     const move = (ev: PointerEvent) => {
-      if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 3) return;
+      if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < slop) return;
       const dx = ev.clientX - sx;
       const dy = ev.clientY - sy;
       if (kind === "sub") {
@@ -690,7 +701,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         ))}
       </>
     ) : null;
-  const dragStyle = (l: Layer): React.CSSProperties => (onLayerMove ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" });
+  const dragStyle = (l: Layer): React.CSSProperties => (onLayerMove && !l.lock ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" });
 
   const flipOf = (o?: { flipX?: boolean; flipY?: boolean }) => (o?.flipX || o?.flipY ? `scale(${o.flipX ? -1 : 1}, ${o.flipY ? -1 : 1})` : undefined);
   // 클립 화면이 보이는 네모 — 직접 크기(box)면 그 자리, 아니면 채우기대로 (굽기 render.js 와 같은 계산)
@@ -789,7 +800,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const id = clip.id;
     let first = true;
     const move = (ev: PointerEvent) => {
-      if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 3) return;
+      if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 8) return; // 메인 화면 — 살짝 밀려도 안 움직이게
       if (mode === "move") onVisualXf(id, { x: +(k0.x + (ev.clientX - sx) / box.width).toFixed(4), y: +(k0.y + (ev.clientY - sy) / box.height).toFixed(4) }, first, tau);
       else onVisualXf(id, { s: +Math.max(0.05, Math.min(6, (k0.s * Math.hypot(ev.clientX - cx, ev.clientY - cy)) / d0)).toFixed(4) }, first, tau);
       first = false;
@@ -849,7 +860,10 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   };
   return (
     <div ref={boxRef} data-preview="" style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4, isolation: "isolate" }}
-      onPointerDown={(e) => { if (e.target === e.currentTarget) setPick(""); }}>
+      // 빈 곳(메인 화면 위 포함)을 누르면 — 고른 것 풀기 · 메인 화면 다시 잠금. 두 번 누르면 메인 화면 잠금 풀기 (2026-10-21 사장님)
+      onPointerDown={(e) => { if (!(e.target as HTMLElement).closest?.("[data-layer]")) { setPick(""); if (visualOpen) onVisualLock?.(); } }}
+      onDoubleClick={(e) => { if (clip && visual && !(e.target as HTMLElement).closest?.("[data-layer]")) onVisualOpen?.(clip.id); }}
+      onContextMenu={(e) => { if (!onPreviewMenu || !clip) return; e.preventDefault(); const t = (e.target as HTMLElement).closest?.<HTMLElement>("[data-layer]")?.dataset.layer || ""; onPreviewMenu({ x: e.clientX, y: e.clientY, target: t, clipId: clip.id }); }}>
       {/* 지금 클립 화면 — 화면전환 중이면 효과대로 움직인다 */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: mainZ, ...(trLook ? (tr!.live === "from" ? trLook.from : trLook.to) : {}) }}>
         {visual?.kind === "image" ? (
@@ -906,7 +920,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         </defs>
       </svg>
       {/* 클립 화면 고르기 — 누르면 테두리, 끌면 옮기기, 모서리로 크기 */}
-      {visual && !visual.missing && onVisualMove && clip && !xf && (
+      {visual && !visual.missing && onVisualMove && clip && !xf && (!onVisualOpen || visualOpen === clip.id) && (
         <div data-layer="__visual" data-rot="" onPointerDown={(e) => startBox("visual", "move", e)} title="끌어서 화면 옮기기 · 모서리로 크기"
           style={{ position: "absolute", ...vRect, cursor: "move", touchAction: "none", userSelect: "none" }}>
           {boxFrame("visual")}
@@ -914,7 +928,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         </div>
       )}
       {/* 키프레임·돌린 화면 — 그 시각 자리에 (옮기기·크기·돌리기를 고치면 그 시각 점이 바뀌어요) */}
-      {visual && !visual.missing && onVisualXf && clip && xf && (() => {
+      {visual && !visual.missing && onVisualXf && clip && xf && (!onVisualOpen || visualOpen === clip.id) && (() => {
         const w = xf.br.w * boxW * xf.k.s, h = xf.br.h * boxH * xf.k.s;
         return (
           <div data-layer="__visual" data-rot="" onPointerDown={(e) => startXf("move", e)} title="끌어서 화면 옮기기 · 모서리로 크기 · 파란 손잡이로 돌리기"
@@ -938,25 +952,42 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const a = project.assets[l.asset!];
         const op = Math.max(0.05, Math.min(1, l.opacity ?? 1));
         // 채우기 — 화면 전체에 (잘라서 / 비율 유지하며). 끌어 옮기기·크기 손잡이는 없다
-        if (l.fit === "cover" || l.fit === "contain")
+        if (l.fit === "cover" || l.fit === "contain") {
+          // 채우기 그림 — 실제로 보이는 자리 (비율 유지 = 그림 둘레, 잘라서 채우기 = 화면 둘레)
+          let fr = { left: 0, top: 0, width: boxW, height: boxH };
+          if (l.fit === "contain" && a?.width && a?.height) {
+            const k = Math.min(boxW / a.width, boxH / a.height);
+            const w = a.width * k, h = a.height * k;
+            fr = { left: (boxW - w) / 2, top: (boxH - h) / 2, width: w, height: h };
+          }
+          // 끌면 그 모습 그대로 [직접 크기]로 바뀌며 옮기기·크기 (2026-10-21 사장님: 채우기면 이동·크기가 안 됨) — 누르기만 하면 채우기 그대로
+          const grab = (mode: "move" | Corner, e: React.PointerEvent) => {
+            if (!onLayerMove) return;
+            const box = boxRef.current?.getBoundingClientRect();
+            if (!box) return;
+            const sx = box.width / boxW, sy = box.height / boxH;
+            const rect = { left: box.left + fr.left * sx, top: box.top + fr.top * sy, width: fr.width * sx, height: fr.height * sy, right: box.left + (fr.left + fr.width) * sx, bottom: box.top + (fr.top + fr.height) * sy };
+            const pre: Partial<Layer> = { fit: undefined, x: +((fr.left + fr.width / 2) / boxW).toFixed(4), y: +((fr.top + fr.height / 2) / boxH).toFixed(4), w: +Math.min(1, fr.width / boxW).toFixed(3) };
+            startDrag({ ...l, ...pre }, mode, e, { rect, pre });
+          };
+          const sel = l.id === selLayer && onLayerMove;
           return (
-            <div key={l.id} data-layer={l.id} onPointerDown={(e) => { if (onLayerMove) { e.stopPropagation(); onLayerPick?.(l.id); } }} title="채우기 중 — [직접 크기]로 바꾸면 끌어 옮길 수 있어요"
-              style={{ position: "absolute", inset: 0, ...(onLayerMove ? { pointerEvents: "auto" } : { pointerEvents: "none" }) }}>
+            <div key={l.id} data-layer={l.id} onPointerDown={(e) => grab("move", e)} title="끌어서 옮기기 · 모서리로 크기 (끌면 [직접 크기]로 바뀌어요)"
+              style={{ position: "absolute", inset: 0, ...(onLayerMove && !l.lock ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" }) }}>
               <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
                 {media(l, a, { width: "100%", height: "100%", display: "block", objectFit: l.fit, opacity: op, transform: flipOf(l), pointerEvents: "none" })}
               </div>
-              {/* 고른 표시 — 화면 끝 1px 선이라 안 보였다 (2026-10-21 사장님: 채우기를 쓰면 선택이 안 됨). 비율 유지는 실제 그림 둘레에, 잘라서 채우기는 화면 둘레에 */}
-              {l.id === selLayer && onLayerMove && (() => {
-                let r: React.CSSProperties = { inset: 0 };
-                if (l.fit === "contain" && a?.width && a?.height) {
-                  const k = Math.min(boxW / a.width, boxH / a.height);
-                  const w = a.width * k, h = a.height * k;
-                  r = { left: (boxW - w) / 2, top: (boxH - h) / 2, width: w, height: h };
-                }
-                return <span style={{ position: "absolute", ...r, boxSizing: "border-box", border: `2px solid ${SEL_LINE}`, boxShadow: "0 0 0 1px rgba(0,0,0,0.35)", pointerEvents: "none" }} />;
-              })()}
+              {sel && (
+                <span style={{ position: "absolute", left: fr.left, top: fr.top, width: fr.width, height: fr.height, boxSizing: "border-box", border: `2px solid ${SEL_LINE}`, boxShadow: "0 0 0 1px rgba(0,0,0,0.35)", pointerEvents: "none" }}>
+                  {(["nw", "ne", "sw", "se"] as Corner[]).map((c) => (
+                    <span key={c} onPointerDown={(e) => grab(c, e)} title="끌어서 크기 바꾸기 (끌면 [직접 크기]로 바뀌어요)"
+                      style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: 1, [c[1] === "w" ? "left" : "right"]: 1, width: 10, height: 10, background: "#fff", border: `1px solid ${SEL_LINE}`, cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none", pointerEvents: "auto" }} />
+                  ))}
+                </span>
+              )}
             </div>
           );
+        }
         // 화면 밖으로 나가지 않게 (키프레임이 있으면 화면 밖으로도) — 굽기 render.js·AnimBake 와 같은 계산 (timeline.imgRect)
         const { left, top, width: pw, height: ph } = imgRect(l, a, boxW, boxH);
         return (
@@ -1002,9 +1033,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           ? { left: (st.x as number) * boxW, top: (st.y as number) * boxH, transform: `translate(-50%, -50%)${st.rot ? ` rotate(${st.rot}deg)` : ""}` }
           : { left: (boxW - subW) / 2, ...posStyle };
         return (
-          <div data-layer="__sub" data-rot="" onPointerDown={onSubMove && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
+          <div data-layer="__sub" data-rot="" onPointerDown={onSubMove && !project.settings.subLock && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
             // 글자 크기·줄 간격을 바깥 칸에도 — 안 그러면 바깥 기본 줄 높이(작은 글자 1.5배)가 줄 간격을 막아 좁혀도 안 좁아진다 (2026-10-19)
-            style={{ position: "absolute", width: subW, textAlign: st.align || "center", fontSize: fontPx, lineHeight: effLeading(st), ...at, opacity: subK ? Math.max(0, Math.min(1, subK.o)) : undefined, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
+            style={{ position: "absolute", width: subW, textAlign: st.align || "center", fontSize: fontPx, lineHeight: effLeading(st), ...at, opacity: subK ? Math.max(0, Math.min(1, subK.o)) : undefined, pointerEvents: onSubMove && !project.settings.subLock ? "auto" : "none", cursor: onSubMove && !project.settings.subLock ? "move" : undefined, touchAction: "none" }}>
             {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); const tidy = (x: string) => x.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); if (t !== null && tidy(t) !== tidy(full)) onSubText(clip.id, t); }} />
