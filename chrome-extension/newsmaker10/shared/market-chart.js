@@ -28,7 +28,7 @@ function gwMarketChartTables(source) {
       head: ["전용면적", "매매", "최근 거래", "최고가", "전세가율"],
       widths: [0.22, 0.12, 0.32, 0.18, 0.16],
       rows: s.areas.slice(0, 4).map((a) => [
-        `${a.areaKey} (${a.pyeong}평)`,
+        `${a.pyeong}평(${a.areaKey})`,
         `${a.tradeCount}건`,
         a.latest ? [gwPrice(a.latest.price), `${a.latest.date} · ${a.latest.floor}층`] : "-",
         a.high ? gwPrice(a.high.price) : "-",

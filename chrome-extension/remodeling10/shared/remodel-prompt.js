@@ -10,6 +10,29 @@
    출력 JSON 형식은 기사 작성기와 같다 (article-json · 블로그 · youtube-json 이 그대로 읽는다).
    ══════════════════════════════════════════════════════════════ */
 
+/* 면적은 평을 먼저 — "84㎡ (25.4평)" → "25.4평(84㎡)" (2026-10-21 사장님: 한국인에게는 평이 익숙하다)
+   평이 함께 적혀 있으면 그 숫자를 쓰고, 없으면 ㎡ ÷ 3.3058 을 소수 첫째 자리까지. "3.3㎡당" 같은 단가는 그대로 둔다. */
+function gwPyeongFirst(value) {
+  let s = String(value == null ? "" : value);
+  const NUM = /\d[\d,]*(?:\.\d+)?/.source;
+  const UNIT = /(?:㎡|m²|m2|제곱미터)(?!\s*당)/.source;
+  const count = (s.match(new RegExp(`${NUM}\\s*${UNIT}`, "g")) || []).length;
+  if (!count) return s;
+  let shared = [];
+  const group = s.match(new RegExp(`\\s*\\(\\s*(?:약\\s*)?${NUM}\\s*평(?:\\s*\\/\\s*(?:약\\s*)?${NUM}\\s*평)+\\s*\\)`));
+  if (group) {
+    const nums = group[0].match(new RegExp(NUM, "g"));
+    if (nums.length === count) { shared = nums; s = s.replace(group[0], ""); }
+  }
+  const one = new RegExp(`(${NUM})\\s*${UNIT}(?:\\s*\\(\\s*(?:약\\s*)?(${NUM})\\s*평\\s*\\)|\\s*\\/\\s*(?:약\\s*)?(${NUM})\\s*평(?!\\s*\\())?`, "g");
+  let i = 0;
+  return s.replace(one, (all, m2, py1, py2) => {
+    const py = py1 || py2 || shared[i] || String(Math.round((parseFloat(m2.replace(/,/g, "")) / 3.3058) * 10) / 10);
+    i++;
+    return `${py}평(${m2}㎡)`;
+  });
+}
+
 /* 결과표 → "확인된 사실" 글 */
 function rmResultFactLines(r) {
   if (!r) return "(결과표 없음)";
@@ -20,7 +43,7 @@ function rmResultFactLines(r) {
     const key = `${k}:${t}`;
     if (!t || seen.has(key)) return;
     seen.add(key);
-    lines.push(`- ${k}: ${t}`);
+    lines.push(`- ${k}: ${gwPyeongFirst(t)}`);
   };
   if (rmIsListing(r)) {
     lines.push(r.saleKind
@@ -107,6 +130,7 @@ const RM_FACT_RULES = `[사실 원칙 — 가장 먼저 지킬 것]
   "~로 바뀐다", "공사한다"처럼 확정된 일로 쓰지 말고 "~로 바꾸면 이런 모습이 예상된다", "시뮬레이션해 보니"처럼 쓰십시오.
 - 설계 조건·예측 결과·공사비는 위 [결과표]에 있는 것만 쓰십시오. 없는 자재·공법·업체·일정을 만들지 마십시오.
 - 매물 금액·면적·층수 등 매물 조건은 [공실뉴스 매물 정보]에 있는 그대로 쓰십시오. 한 글자도 바꾸지 마십시오.
+- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 공사비는 [예상 공사비]의 범위를 그대로 쓰고, 새 금액·평당 단가·수익률·임대료 상승폭을 만들지 마십시오.
 - 공사비를 말할 때는 반드시 "대략적인 예상 공사비이며, 꼭 실질적인 확인이 필요합니다"라는 뜻을 함께 쓰십시오.
 - 건물 소재지·매물 조건은 [결과표]에 있는 범위까지만 쓰십시오. 더 상세한 주소를 추측하지 마십시오.

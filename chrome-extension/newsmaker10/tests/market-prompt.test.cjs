@@ -85,7 +85,7 @@ test("자료가 있어야 준비됨 — 거래가 0건이면 준비 안 됨", ()
 
 test("단지 시세 프롬프트 — 숫자는 표에서, 인용·전망·권유 금지, 출처·신고 기준 명시", () => {
   const prompt = p.gwBuildPrompt(complexSource, { kind: "news", length: "normal" });
-  assert.ok(prompt.includes("2026-09-29 31억 3,000만 원 (14층, 전용 76.79㎡)"));
+  assert.ok(prompt.includes("2026-09-29 31억 3,000만 원 (14층, 전용 23.2평(76.79㎡))"));
   assert.ok(prompt.includes("전세가율"));
   assert.ok(prompt.includes("[분석 관점] 신고가·회복"));
   assert.ok(prompt.includes("인용하지 마십시오"));

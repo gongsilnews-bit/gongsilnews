@@ -33,7 +33,7 @@ function gwPrice(manwon) {
   return rest ? `${eok}억 ${rest.toLocaleString("ko-KR")}만 원` : `${eok}억 원`;
 }
 
-const gwTradeLine = (t) => (t ? `${t.date} ${gwPrice(t.price)} (${t.floor}층, 전용 ${t.area}㎡)` : "기록 없음");
+const gwTradeLine = (t) => (t ? `${t.date} ${gwPrice(t.price)} (${t.floor}층, 전용 ${Math.round((Number(t.area) / 3.3058) * 10) / 10}평(${t.area}㎡))` : "기록 없음");
 
 function gwMarketReady(source) {
   if (!source) return false;
@@ -63,7 +63,7 @@ function gwComplexDataText(c) {
     `- 기간 안 매매 신고: ${s.tradeCount}건`,
   ].filter(Boolean);
   for (const a of s.areas.slice(0, 4)) {
-    lines.push(`\n[전용 ${a.areaKey} · 약 ${a.pyeong}평] 매매 ${a.tradeCount}건`);
+    lines.push(`\n[전용 약 ${a.pyeong}평(${a.areaKey})] 매매 ${a.tradeCount}건`);
     lines.push(`- 가장 최근 매매: ${gwTradeLine(a.latest)}`);
     if (a.previous) lines.push(`- 그 직전 매매: ${gwTradeLine(a.previous)}`);
     lines.push(`- 기간 최고가: ${gwTradeLine(a.high)}`);
@@ -135,6 +135,7 @@ function gwMarketRules(source) {
 【쉽게 쓰기】   ★ 부동산을 잘 모르는 독자도 읽게
 - 전세가율·3.3㎡당 가격·중앙값·전용면적·실거래가 신고 기준 같은 말은 처음 나올 때 쉬운 말로 한 번 풀어 주십시오.
   (예: "전세가율, 즉 매매가 대비 전세가 비율은", "3.3㎡(1평)당 가격의 가운데 값은")
+- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 큰 금액은 "31억 3,000만 원"처럼 읽기 쉽게 쓰고, 한 문장에 숫자를 세 개 넘게 몰아 넣지 마십시오.
 
 【구성】

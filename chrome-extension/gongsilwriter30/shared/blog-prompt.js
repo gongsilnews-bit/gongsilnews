@@ -86,6 +86,29 @@ const GW_BLOG_STYLE = {
   },
 };
 
+/* 면적은 평을 먼저 — "84㎡ (25.4평)" → "25.4평(84㎡)" (2026-10-21 사장님: 한국인에게는 평이 익숙하다)
+   평이 함께 적혀 있으면 그 숫자를 쓰고, 없으면 ㎡ ÷ 3.3058 을 소수 첫째 자리까지. "3.3㎡당" 같은 단가는 그대로 둔다. */
+function gwPyeongFirst(value) {
+  let s = String(value == null ? "" : value);
+  const NUM = /\d[\d,]*(?:\.\d+)?/.source;
+  const UNIT = /(?:㎡|m²|m2|제곱미터)(?!\s*당)/.source;
+  const count = (s.match(new RegExp(`${NUM}\\s*${UNIT}`, "g")) || []).length;
+  if (!count) return s;
+  let shared = [];
+  const group = s.match(new RegExp(`\\s*\\(\\s*(?:약\\s*)?${NUM}\\s*평(?:\\s*\\/\\s*(?:약\\s*)?${NUM}\\s*평)+\\s*\\)`));
+  if (group) {
+    const nums = group[0].match(new RegExp(NUM, "g"));
+    if (nums.length === count) { shared = nums; s = s.replace(group[0], ""); }
+  }
+  const one = new RegExp(`(${NUM})\\s*${UNIT}(?:\\s*\\(\\s*(?:약\\s*)?(${NUM})\\s*평\\s*\\)|\\s*\\/\\s*(?:약\\s*)?(${NUM})\\s*평(?!\\s*\\())?`, "g");
+  let i = 0;
+  return s.replace(one, (all, m2, py1, py2) => {
+    const py = py1 || py2 || shared[i] || String(Math.round((parseFloat(m2.replace(/,/g, "")) / 3.3058) * 10) / 10);
+    i++;
+    return `${py}평(${m2}㎡)`;
+  });
+}
+
 function gwBlogFactLines(v) {
   if (!v || typeof v !== "object") return "- 별도 매물표 없음 — 아래 참조 기사에 나온 사실만 사용할 것";
 
@@ -95,7 +118,7 @@ function gwBlogFactLines(v) {
     const val = value == null ? "" : String(value).trim();
     if (!label || !val || val === "-" || seen.has(label)) return;
     seen.add(label);
-    lines.push(`- ${label}: ${val}`);
+    lines.push(`- ${label}: ${gwPyeongFirst(val)}`);
   };
 
   push("매물", v.title);
@@ -158,6 +181,7 @@ ${gwBlogFactLines(input.vacancy)}
 - 금액·면적·층·방·주소·관리비·입주일·주차·옵션 등 매물 고유 조건은
   [확인된 매물 정보] 또는 [참조 기사]에 실제로 있는 내용만 쓸 것
 - 두 자료가 다르면 [확인된 매물 정보]를 우선할 것
+- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 없는 수치, 현장 방문, 인터뷰, 고객 반응, 시세, 수익률, 개발 호재를 만들어내지 말 것
 - 소재지가 시·군·동까지만 공개됐다면 더 상세한 주소를 추측하지 말 것
 - 장점과 함께 계약 전 직접 확인할 점도 균형 있게 안내할 것
@@ -301,7 +325,7 @@ function gwAuctionBlogFactLines(v) {
     const val = value == null ? "" : String(value).trim();
     if (!label || !val || val === "-" || seen.has(label)) return;
     seen.add(label);
-    lines.push(`- ${label}: ${val}`);
+    lines.push(`- ${label}: ${gwPyeongFirst(val)}`);
   };
 
   push("물건", v.title);
@@ -355,6 +379,7 @@ ${gwAuctionBlogFactLines(input.vacancy)}
 - 감정가·최저입찰가·유찰 횟수·입찰 일정·입찰보증금·면적·주소·관리번호(사건번호)·집행기관은
   [확인된 물건 정보] 또는 [참조 기사]에 실제로 있는 내용만 쓸 것
 - 두 자료가 다르면 [확인된 물건 정보]를 우선할 것
+- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 권리관계·임차인·체납액·현장 방문·인터뷰·낙찰 결과를 만들어내지 말 것
 - 입찰 일정이 없으면 날짜를 만들지 말 것
 - 가격 조건과 함께 입찰 전 직접 확인할 점(현장 상태·점유와 명도·권리관계)도 균형 있게 짚을 것

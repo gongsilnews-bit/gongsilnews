@@ -10,6 +10,29 @@ function gwIsAuction(v) {
   return Boolean(v && v.saleKind);
 }
 
+/* 면적은 평을 먼저 — "84㎡ (25.4평)" → "25.4평(84㎡)" (2026-10-21 사장님: 한국인에게는 평이 익숙하다)
+   평이 함께 적혀 있으면 그 숫자를 쓰고, 없으면 ㎡ ÷ 3.3058 을 소수 첫째 자리까지. "3.3㎡당" 같은 단가는 그대로 둔다. */
+function gwPyeongFirst(value) {
+  let s = String(value == null ? "" : value);
+  const NUM = /\d[\d,]*(?:\.\d+)?/.source;
+  const UNIT = /(?:㎡|m²|m2|제곱미터)(?!\s*당)/.source;
+  const count = (s.match(new RegExp(`${NUM}\\s*${UNIT}`, "g")) || []).length;
+  if (!count) return s;
+  let shared = [];
+  const group = s.match(new RegExp(`\\s*\\(\\s*(?:약\\s*)?${NUM}\\s*평(?:\\s*\\/\\s*(?:약\\s*)?${NUM}\\s*평)+\\s*\\)`));
+  if (group) {
+    const nums = group[0].match(new RegExp(NUM, "g"));
+    if (nums.length === count) { shared = nums; s = s.replace(group[0], ""); }
+  }
+  const one = new RegExp(`(${NUM})\\s*${UNIT}(?:\\s*\\(\\s*(?:약\\s*)?(${NUM})\\s*평\\s*\\)|\\s*\\/\\s*(?:약\\s*)?(${NUM})\\s*평(?!\\s*\\())?`, "g");
+  let i = 0;
+  return s.replace(one, (all, m2, py1, py2) => {
+    const py = py1 || py2 || shared[i] || String(Math.round((parseFloat(m2.replace(/,/g, "")) / 3.3058) * 10) / 10);
+    i++;
+    return `${py}평(${m2}㎡)`;
+  });
+}
+
 /* ── 매물 정보를 프롬프트에 넣을 줄로 만든다 ──
    상세 표는 매물 종류마다 항목이 다르다. 그래서 정해진 목록을 쓰지 않고
    화면에서 읽어온 것을 순서 그대로 전부 넘긴다.
@@ -22,7 +45,7 @@ function gwFactLines(v) {
     const val = value == null ? "" : String(value).trim();
     if (!label || !val || val === "-" || seen.has(label)) return;
     seen.add(label);
-    lines.push(`- ${label}: ${val}`);
+    lines.push(`- ${label}: ${gwPyeongFirst(val)}`);
   };
 
   if (gwIsAuction(v)) {
@@ -296,6 +319,7 @@ ${facts}
 【사실 구역】 위 [매물 정보]에 적힌 것
 - 면적·금액·층수·방·주소·번호·관리비 등 이 매물의 조건은
   한 글자도 바꾸거나 더하지 마십시오.
+- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 위에 없는 항목(준공연도·옵션·주차 등)을 추측해 채우지 마십시오.
   없으면 그 이야기를 아예 하지 마십시오.
 - 소재지가 시·군·동까지만 주어졌다면 기사도 거기까지만 쓰십시오.
@@ -370,6 +394,7 @@ ${facts}
 【사실 구역】 위 [물건 정보]에 적힌 것
 - 감정가·최저입찰가·감정가 대비 비율·유찰 횟수·입찰 시작/마감·개찰일시·입찰보증금·면적·주소·관리번호(사건번호)·공고번호·집행기관은
   한 글자도 바꾸거나 더하지 마십시오. 금액은 원 단위 숫자와 억·만원 표기가 일치해야 합니다.
+- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 위에 없는 항목(권리관계·임차인·선순위 채권·체납액·건물 연식 등)을 추측해 채우지 마십시오.
   없으면 그 이야기를 아예 하지 마십시오.
 - 소재지가 주어진 범위까지만 쓰십시오.
