@@ -504,11 +504,15 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     } else if (ok(visual) && visual.kind === "video") {
       // 배경 영상: 시작점부터 길이만큼 — 클립보다 짧으면 처음부터 다시 (반복, 미리보기와 같게. 2026-10-18 사장님)
       const vs = Number(clip.visual && clip.visual.s) || 0;
-      const short = visual.duration ? dur - (visual.duration - vs) : 0;
-      if (short > 0) args.push("-stream_loop", "-1");
-      args.push("-ss", vs.toFixed(3), "-t", dur.toFixed(3), "-i", assetFile(visual));
+      // 앞뒤 자르기 끝(visual.e) — 거기까지만 쓰고 끝 장면에서 멈춤 (2026-10-21)
+      const ve = Number(clip.visual && clip.visual.e) > vs ? Math.min(Number(clip.visual.e), visual.duration || Infinity) : visual.duration || 0;
+      const short = ve ? dur - (ve - vs) : 0;
+      // clip.visualHold — [AI 편집 › 화면 채우기]로 넣은 영상·잘라 쓴 영상: 짧으면 마지막 장면에서 멈춤 (2026-10-21 사장님)
+      const hold = short > 0 && (Boolean(clip.visualHold) || Number(clip.visual && clip.visual.e) > vs);
+      if (short > 0 && !hold) args.push("-stream_loop", "-1");
+      args.push("-ss", vs.toFixed(3), "-t", (hold ? Math.max(0.05, ve - vs) : dur).toFixed(3), "-i", assetFile(visual));
       visIn = n;
-      filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS,trim=duration=${dur.toFixed(3)}[vraw]`);
+      filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS${hold ? `,tpad=stop_mode=clone:stop_duration=${(short + 0.2).toFixed(3)}` : ""},trim=duration=${dur.toFixed(3)}[vraw]`);
     } else {
       args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", `color=c=black:s=${W}x${H}:r=${FPS}`);
       filters.push(`[${n++}:v]null[vraw]`);

@@ -12,11 +12,26 @@ const BARS = 320; // 소리 파형 막대 수
 
 // trim(녹화·촬영 영상 클립): 프리미어·캡컷처럼 파란 창 양쪽 끝을 끌어 앞뒤를 자른다 (end = 끝 시각). 가운데를 끌면 통째로 옮긴다
 const MIN = 0.3; // 가장 짧은 길이
-export default function VideoStart({ asset, dur, start, end, trim, onApply, onClose }: { asset: Asset; dur: number; start: number; end?: number; trim?: boolean; onApply: (s: number, e: number) => void; onClose: () => void }) {
+const chip = (on: boolean): React.CSSProperties => ({ height: 28, padding: "0 10px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.sub, fontSize: 12.5, fontWeight: 700, cursor: "pointer" });
+export default function VideoStart({ asset, dur, start, end, trim, need, chain, lead, onApply, onClose }: { asset: Asset; dur: number; start: number; end?: number; trim?: boolean; /** 채워야 할 길이(문장 길이) — 있으면 쓰는 길이와 견줘 알려 준다 (목소리 클립에 넣은 영상, 2026-10-21) */ need?: number;
+  /** 이어 붙이기 (2026-10-21 사장님) — 이 영상을 뒤 클립들에 쭉 이어서. next: 바로 뒤 클립들(길이), count: 지금 이어진 수 */
+  chain?: { self: string; next: { id: string; label: string; dur: number }[]; count: number; /** 앞쪽 빈칸 클립 — 가까운 것부터 (2026-10-21 사장님: 앞 빈칸도 함께) */ prev?: { id: string; label: string; dur: number }[] };
+  /** 앞 클립 영상이 모자라 끝이 멈추는 길이 — 켜면 이 영상을 그만큼 앞당겨 앞 클립 끝을 채운다 (컷편집처럼, 2026-10-21 사장님) */
+  lead?: { label: string; gap: number; on: boolean };
+  onApply: (s: number, e: number, chainN?: number, prevN?: number, lead?: number) => void; onClose: () => void }) {
   const D = Math.max(0.1, asset.duration || 0);
   const [s, setS] = React.useState(() => Math.max(0, Math.min(D - MIN, start || 0)));
   const [e, setE] = React.useState(() => Math.max(s + MIN, Math.min(D, end ?? (start || 0) + Math.min(dur, D))));
-  const span = trim ? e - s : Math.min(dur, D); // 파란 창 길이
+  const [n, setN] = React.useState(chain?.count || 0); // 뒤 클립 몇 개까지 이어 붙일지
+  const [m, setM] = React.useState(0); // 앞쪽 빈칸 클립 몇 개부터 함께
+  const [useLead, setUseLead] = React.useState(Boolean(lead && (lead.on || lead.gap > 0.05))); // 앞 클립 모자란 끝 채우기 (있으면 기본 켬)
+  const L0 = useLead && lead ? lead.gap : 0;
+  const before = (chain?.prev || []).slice(0, m).reverse(); // 앞 → 뒤 차례
+  const segLabels = chain ? [...(L0 ? [lead!.label] : []), ...before.map((x) => x.label), chain.self, ...chain.next.slice(0, n).map((x) => x.label)] : [];
+  const segs = (n > 0 || m > 0 || L0 > 0) && chain ? [...(L0 ? [L0] : []), ...before.map((x) => x.dur), need ?? dur, ...chain.next.slice(0, n).map((x) => x.dur)] : []; // 클립마다 길이
+  const total = segs.reduce((t, x) => t + x, 0);
+  const span = n > 0 ? Math.min(total, D) : trim ? e - s : Math.min(dur, D); // 파란 창 길이 (이어 붙이면 클립 합계)
+  const chained = n > 0 || m > 0 || L0 > 0;
   const maxS = Math.max(0, D - span);
   const clampS = (v: number) => Math.max(0, Math.min(maxS, v));
   const [playing, setPlaying] = React.useState(false);
@@ -166,7 +181,7 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
       return;
     }
     // 자르기 — 파란 창 밖 띠를 누르면 그 자리로 재생 위치만 옮긴다 (구간은 그대로)
-    if (trim && !inside) return scrub(ev0);
+    if (trim && !chained && !inside) return scrub(ev0);
     const s0 = inside ? s : clampS(((ev0.clientX - box.left) / box.width) * D - span / 2);
     if (!inside) moveTo(s0);
     const move = (ev: PointerEvent) => moveTo(clampS(s0 + dt(ev)));
@@ -199,9 +214,11 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
     <Modal title={trim ? "시작·끝 자르기" : "비디오 시작점 변경"} onClose={onClose} width={1000}
       footer={
         <>
-          <span style={{ flex: 1, fontSize: 13, color: C.dim }}>{trim ? "파란 창 양쪽 끝을 끌어 앞뒤를 잘라요. 가운데를 끌면 구간이 통째로 옮겨져요. 위 눈금을 누르면 그 장면을 봐요." : D < dur ? `영상이 클립보다 ${fmtTime(dur - D, false)} 짧아요. 남는 시간은 마지막 장면으로 채워요.` : "파란 창을 끌어 쓸 부분을 고르세요. 고르지 않으면 처음부터 나가요."}</span>
+          <span style={{ flex: 1, fontSize: 13, color: chained ? (total > D + 0.05 ? "#facc15" : C.dim) : trim && need && Math.abs(e - s - need) > 0.05 ? "#facc15" : C.dim }}>{chained ? `영상 하나를 ${n + m + 1}개 클립에 쭉 이어서 · 클립 합계 ${total.toFixed(1)}초${total > D + 0.05 ? ` — 영상이 ${(total - D).toFixed(1)}초 모자라요, 마지막은 끝 장면에서 멈춰요` : " · 파란 창을 끌어 시작점을 골라요"}` : trim && need ? `쓰는 길이 ${(e - s).toFixed(1)}초 · 문장 ${need.toFixed(1)}초 — ${e - s < need - 0.05 ? `남는 ${(need - (e - s)).toFixed(1)}초는 끝 장면에서 멈춰요` : e - s > need + 0.05 ? "문장 길이까지만 나가요" : "딱 맞아요"}` : trim ? "파란 창 양쪽 끝을 끌어 앞뒤를 잘라요. 가운데를 끌면 구간이 통째로 옮겨져요. 위 눈금을 누르면 그 장면을 봐요." : D < dur ? `영상이 클립보다 ${fmtTime(dur - D, false)} 짧아요. 남는 시간은 마지막 장면으로 채워요.` : "파란 창을 끌어 쓸 부분을 고르세요. 고르지 않으면 처음부터 나가요."}</span>
+          {/* 문장 길이에 맞추기 (2026-10-21 사장님) — 창 길이를 문장(말소리) 길이로. 영상 끝을 넘으면 시작을 당긴다 */}
+          {trim && need && !chained && Math.abs(e - s - need) > 0.05 && <Btn onClick={() => { const L = Math.min(need, D); const ns = Math.min(s, Math.max(0, D - L)); setS(ns); setE(ns + L); seekMain(ns); }}><Icon name="fit" size={16} />문장 길이에 맞추기</Btn>}
           <Btn onClick={() => { if (trim) { setS(s1); setE(e1); } else setS(0); }} disabled={!changed}><Icon name="undo" size={16} />되돌리기</Btn>
-          <Btn primary onClick={() => { onApply(+s.toFixed(2), +(trim ? e : s + span).toFixed(2)); onClose(); }}><Icon name="check" size={16} />적용</Btn>
+          <Btn primary onClick={() => { onApply(+s.toFixed(2), +(trim && !chained ? e : s + span).toFixed(2), n, m, L0); onClose(); }}><Icon name="check" size={16} />적용</Btn>
         </>
       }>
       <div style={{ padding: "16px 20px 20px" }}>
@@ -240,8 +257,17 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
           {/* 고른 구간 */}
           <div onPointerDown={(ev) => { ev.stopPropagation(); drag(ev, true); }} title={trim ? "끌어서 구간 옮기기" : "끌어서 시작점 바꾸기"}
             style={{ position: "absolute", top: 0, bottom: 0, left: pct(s), width: pct(span), border: `3px solid ${C.accent}`, borderRadius: 8, boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)", cursor: "grab", boxSizing: "border-box" }}>
-            <span style={{ position: "absolute", right: trim ? 16 : 4, top: 4, padding: "1px 6px", borderRadius: 4, background: C.accent, color: "#fff", fontSize: 11.5, fontWeight: 800 }}>{fmtTime(span, false)}</span>
-            {trim && (["left", "right"] as const).map((side) => (
+            {/* 이어 붙인 클립 경계 — 클립마다 어느 부분이 가는지 */}
+            {chained && segs.slice(0, -1).map((_, k) => {
+              const at = segs.slice(0, k + 1).reduce((t, x) => t + x, 0);
+              return at < span ? <span key={k} style={{ position: "absolute", top: 0, bottom: 0, left: `${(at / span) * 100}%`, width: 0, borderLeft: "2px dashed #fff", pointerEvents: "none" }} /> : null;
+            })}
+            {chained && segs.map((d, k) => {
+              const at = segs.slice(0, k).reduce((t, x) => t + x, 0);
+              return at < span ? <span key={"l" + k} style={{ position: "absolute", left: `calc(${(at / span) * 100}% + 4px)`, bottom: 4, padding: "0 5px", borderRadius: 3, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 11, fontWeight: 800, pointerEvents: "none", whiteSpace: "nowrap" }}>{segLabels[k]}</span> : null;
+            })}
+            <span style={{ position: "absolute", right: trim && !chained ? 16 : 4, top: 4, padding: "1px 6px", borderRadius: 4, background: C.accent, color: "#fff", fontSize: 11.5, fontWeight: 800 }}>{fmtTime(span, false)}</span>
+            {trim && !chained && (["left", "right"] as const).map((side) => (
               <div key={side} onPointerDown={(ev) => { ev.stopPropagation(); drag(ev, side); }} title={side === "left" ? "끌어서 앞 자르기" : "끌어서 뒤 자르기"} style={grip(side)}>
                 <span style={{ width: 2, height: 22, borderRadius: 1, background: "#fff" }} />
               </div>
@@ -254,6 +280,19 @@ export default function VideoStart({ asset, dur, start, end, trim, onApply, onCl
           <span style={{ position: "absolute", left: pct(s), top: 4, fontWeight: 800 }}>시작 {fmtTime(s, false)}</span>
           <span style={{ position: "absolute", left: pct(s + span), top: 4, transform: "translateX(-100%)", fontWeight: 800 }}>끝 {fmtTime(s + span, false)}</span>
         </div>
+        {chain && (chain.next.length > 0 || (chain.prev?.length ?? 0) > 0 || Boolean(lead)) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", margin: "6px 0 4px" }}>
+            <span style={{ fontSize: 13, fontWeight: 800, marginRight: 4 }}>이어 붙이기</span>
+            {/* 앞 클립 영상이 모자란 끝 — 이 영상으로 앞당겨 채우기 */}
+            {lead && <button type="button" onClick={() => setUseLead(!useLead)} title={`${lead.label} ${lead.gap.toFixed(1)}초가 멈춘 화면이에요 — 이 영상을 그만큼 먼저 시작해 채워요`} style={{ ...chip(useLead), ...(useLead ? {} : { borderColor: "#facc15", color: "#facc15" }) }}>{useLead ? "✓ " : ""}{lead.label} 모자란 {lead.gap.toFixed(1)}초 채우기</button>}
+            {lead && <span style={{ color: C.dim, margin: "0 2px" }}>│</span>}
+            {/* 앞 빈칸부터 — 먼 것이 왼쪽 */}
+            {[...(chain.prev || [])].map((x, k) => ({ x, k })).reverse().map(({ x, k }) => <button key={x.id} type="button" onClick={() => setM(m === k + 1 ? 0 : k + 1)} title={`${x.label}~${chain.self}: 앞의 빈칸 클립부터 이 영상을 이어서`} style={chip(m === k + 1)}>{x.label}부터</button>)}
+            {(chain.prev?.length ?? 0) > 0 && <span style={{ color: C.dim, margin: "0 2px" }}>│</span>}
+            <button type="button" onClick={() => { setN(0); setM(0); }} style={chip(n === 0 && m === 0)}>이 클립만</button>
+            {chain.next.map((x, k) => <button key={x.id} type="button" onClick={() => setN(k + 1)} title={`${chain.self}~${x.label} 클립에 이 영상을 쭉 이어서`} style={chip(n === k + 1)}>~{x.label}까지</button>)}
+          </div>
+        )}
         {trim && (
           <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 4 }}>
             <Btn small onClick={() => { setPlaying(false); seekMain(s); }}>시작 장면 보기</Btn>

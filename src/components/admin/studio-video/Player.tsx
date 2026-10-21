@@ -218,7 +218,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       else {
         const s = Number(c.visual?.s) || 0;
         // 클립보다 짧으면 처음부터 다시 (반복) — 마지막 장면에 멈추면 끝에서 튕겨 보였다 (2026-10-18 사장님)
-        target = vis.duration && s + loc >= vis.duration - 0.05 ? (s + loc) % Math.max(0.1, vis.duration - 0.05) : s + loc;
+        // [AI 편집 › 화면 채우기]로 넣은 영상(visualHold)은 마지막 장면에서 멈춤 (2026-10-21 사장님)
+        target = vis.duration && s + loc >= vis.duration - 0.05 ? (c.visualHold ? Math.max(0, vis.duration - 0.06) : (s + loc) % Math.max(0.1, vis.duration - 0.05)) : s + loc;
+        // 앞뒤 자르기 끝(visual.e)을 넘으면 그 장면에서 멈춤 (2026-10-21)
+        const ve = Number(c.visual?.e);
+        if (ve > s && s + loc >= ve - 0.04) target = Math.max(s, ve - 0.04);
       }
       // 클립이 바뀌어도 원본에서 바로 이어지면(지금 위치 ≈ 갈 위치) 다시 찾아가지 않는다 — 찾아가면 소리가 잠깐 끊겨 "씹힌다" (2026-10-18)
       if (Math.abs(v.currentTime - target) > (force ? 0.12 : 0.3)) {

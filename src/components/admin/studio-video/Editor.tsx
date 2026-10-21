@@ -4,9 +4,9 @@
 // 진짜 편집이 되면서 어르신도 쉽게: 모든 기능을 눈에 보이는 단추로, 되돌리기, 자동 저장
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SubFormatBar } from "./SubFormatBar";
-import type { Asset, Clip, Keyframe, KfProp, Layer, LibItem, Project, Ratio, Scene, StockItem, Word } from "./types";
+import type { Asset, Clip, Keyframe, KfProp, Layer, LibItem, Project, Ratio, Roll, Scene, StockItem, Word } from "./types";
 import { DRAG_MEDIA, DRAG_STICKER, RATIO_LABEL, RATIO_SIZE, autoSubPosition, errText, fmtTime, stickerDrag, uid, videoBridge } from "./types";
-import { zLayers, gapOf, voiceGap, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes, layerRange, kfAt, kfUpsert, kfIndexAt, kfSort, kfAny, kfHasAt, kfSetProps, kfToggleProp, kfClearProps, kfMoveProps, cropOf, KF_PROPS, clipKeyBase, clipBaseRect, imgRect, clipDuration, sourceTimeAt } from "./timeline";
+import { chainVisuals, layLeads, tailGap, layRolls, zLayers, gapOf, voiceGap, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes, layerRange, kfAt, kfUpsert, kfIndexAt, kfSort, kfAny, kfHasAt, kfSetProps, kfToggleProp, kfClearProps, kfMoveProps, cropOf, KF_PROPS, clipKeyBase, clipBaseRect, imgRect, clipDuration, sourceTimeAt } from "./timeline";
 import Timeline, { AudioMeter, type Pick, type TlTool, type TrackOp } from "./TimelineView";
 import { EffectControls, type EcGroup } from "./EffectControls";
 import { PropsFrame, Transform, TimeBox, Sec, SlimRow, Chip, Embed } from "./TimelineProps";
@@ -15,6 +15,7 @@ import MediaMenu, { QuickMenu, QuickSlider, QuickText, RatioBox, SoundMenu, quic
 import { NewClipDialog, type NewClipSpec } from "./NewClip";
 import { fixByScript, scriptSentences } from "./scriptFix";
 import VideoStart from "./VideoStart";
+import RollDialog, { newRoll } from "./RollDialog";
 import { addExtraVoices, findVoice, setMyVoiceName } from "@/lib/studio-video/voices";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
@@ -25,13 +26,14 @@ import { AiEditPanel } from "./AiEdit";
 import { bakeAnim } from "./AnimBake";
 import { focusTextBasic, resetTextTabs } from "./TextTabs";
 import { SfxInsertPanel, TextInsertPanel } from "./InsertPanels";
+import { ChannelMark, PostDialog } from "./PostDialog";
 import type { TextLook } from "./SubPresets";
 import { StickerPanel, stickerFileName, stickerPng, stickerSpecOf, warmStickers } from "./Stickers";
 import { TemplatePanel, drawTemplate, isTplStyle, tplFonts, tplOptsOf } from "./Templates";
 import type { SubLook } from "./SubPresets";
 import { AnimPanel, type AnimBodyProps } from "./Anim";
 import { TRANS_DEFAULT, TRANSITIONS, transLabel } from "./transitions";
-import { isSticker, layerIcon, layerName, LANE_W, zCan, zReorder, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
+import { isSticker, isVideoLayer, layerIcon, layerName, LANE_W, zCan, zReorder, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
 /** 타임라인 편집 왼쪽 자료 칸에 뜨는 칸 */
 const LIB_KINDS: string[] = ["library", "text", "sticker", "tplText", "tplSticker", "sfx", "music", "aiedit"];
@@ -211,6 +213,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [soundScope, setSoundScope] = useState<"one" | "sel" | "all">("one"); // 소리 칩 메뉴 적용 범위 — 처음엔 늘 [이 클립에만]
   const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number; lenOnly?: boolean } | null>(null); // 소리 칩 옆 작은 창 (오른쪽 시간을 누르면 길이만)
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
+  const [startLayer, setStartLayer] = useState(""); // 화면 위 영상의 시작점 변경 (2026-10-21 사장님)
+  const [rollEdit, setRollEdit] = useState<Roll | null>(null); // 영상 이어 깔기 창 (컷편집처럼)
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   // 메인 화면 잠금 — 미리보기에서 기본은 안 잡힘. 이 클립 id 일 때만 옮기기·크기 (2026-10-21 사장님: 다른 요소를 고르다 자꾸 잡히고 사진 움직임이 풀림)
   const [visualOpen, setVisualOpen] = useState("");
@@ -262,9 +266,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     const next = structuredClone(prev) as Project;
     fn(next);
     fixLayers(prev, next);
+    chainVisuals(next); // 화면 영상 이어 붙이기 — 클립 길이가 바뀌어도 이어지게
+    layLeads(next); // 앞 클립 모자란 끝을 이 클립 영상으로 앞당겨 채우기
+    layRolls(next); // 영상 이어 깔기 — 클립 길이가 바뀌어도 시간 순서대로 다시 깐다
     setProject(next, history);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 프로젝트를 열면 한 번 — 이어 붙이기 시작점 바로잡기 (예전에 남은 잘못된 시작점, 2026-10-21). 되돌리기 기록 없이
+  useEffect(() => {
+    const t = setTimeout(() => change(() => {}, false), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id]);
   const undo = () => {
     const prev = hist.current.past.pop();
     if (!prev) return;
@@ -1227,6 +1240,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /* ── 애셋(음악·사진·화면 글자) ── */
   const openLib = (tabName: string, overlay = false) => {
     setLibOverlay(overlay);
+    if (!overlay) setOverlayTarget(""); // 그냥 연 자료 칸의 [삽입하기]는 늘 새로 올리기 (전에 바꾸던 사진이 바뀌지 않게)
     setLibTab(tabName);
     setPanel("library");
   };
@@ -1304,7 +1318,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
   /** 스티커·사진 고르는 칸에서 레이어를 고르면 — 그 칸을 밑에 살려 둔다 (속성 X 면 보던 탭·자리 그대로, 2026-10-20 사장님) */
   const [under, setUnder] = useState<{ kind: string; layer: string } | null>(null);
-  useEffect(() => { if (selLayer) setVisualOpen(""); }, [selLayer]); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => { if (selLayer) setVisualOpen(""); }, [selLayer]);
   useEffect(() => {
     if (!visualOpen) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") setVisualOpen(""); };
@@ -2556,21 +2570,24 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const onPick = async (item: LibItem, action: LibPickAction) => {
     const a = await ensureAsset(item);
     if (action === "overlay") {
-      if (a.kind !== "image") return say("사진만 화면 위에 올릴 수 있어요");
+      // 영상도 화면 위에 (2026-10-21 사장님) — 영상 소리는 처음엔 무음 (목소리와 겹치지 않게, 속성에서 키운다)
+      if (a.kind !== "image" && a.kind !== "video") return say("사진·영상만 화면 위에 올릴 수 있어요");
       if (overlayTarget) {
-        updateLayer(overlayTarget, { asset: a.id, name: a.name });
+        updateLayer(overlayTarget, { asset: a.id, name: a.name, ...(a.kind === "video" ? { vs: 0, volume: 0 } : {}) });
         openLayer(overlayTarget);
-        say("사진을 바꿨어요");
-      } else addLayer({ type: "image", asset: a.id, name: a.name, x: 0.8, y: 0.18, w: 0.3, opacity: 1 }, false);
+        say(a.kind === "video" ? "영상으로 바꿨어요" : "사진을 바꿨어요");
+      } else addLayer({ type: "image", asset: a.id, name: a.name, x: 0.8, y: 0.18, w: 0.3, opacity: 1, ...(a.kind === "video" ? { vs: 0, volume: 0 } : {}) }, false);
       return;
     }
     if (action === "replace" && selected.length) {
       change((p) => {
-        for (const id of selected) {
+        const order = flatten(p).items.map((x) => x.clip.id).filter((x) => selected.includes(x));
+        order.forEach((id, k) => {
           const c = findClip(p, id)?.clip;
-          if (!c) continue;
+          if (!c) return;
           c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
-        }
+          if (a.kind === "video" && k > 0 && c.visual) { c.visualCont = true; c.visualHold = true; } else delete c.visualCont;
+        });
       });
       say(`화면을 바꿨어요 (클립 ${selected.length}개)${a.kind === "video" ? " · 영상 시작점은 썸네일을 눌러 고를 수 있어요" : ""}`);
       return;
@@ -2621,7 +2638,38 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     }
     return null;
   };
+  /** 클립 화면을 끌어서 다른 클립으로 (2026-10-21 사장님) — 받는 클립에 화면이 있으면 서로 바꾼다. 촬영 클립 원본 화면은 옮길 수 없어 복사 */
+  const moveVisual = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const KEYS = ["visual", "visualHold", "fillFrom", "fill", "box", "flipX", "flipY", "rot", "opacity"] as const;
+    let msg = "";
+    change((p) => {
+      const a = findClip(p, fromId)?.clip, t = findClip(p, toId)?.clip;
+      if (!a || !t) return;
+      const take = (c: Clip) => Object.fromEntries(KEYS.map((k) => [k, structuredClone(c[k])])) as Partial<Clip>;
+      const put = (c: Clip, v: Partial<Clip>) => { for (const k of KEYS) { if (v[k] === undefined || v[k] === null && k !== "visual") delete c[k]; else (c as Record<string, unknown>)[k] = v[k]; } };
+      if (!a.visual && a.src) { // 촬영 원본 화면 — 그 영상을 받는 클립 화면으로 (원본은 그대로)
+        t.visual = { asset: a.src.asset, s: a.src.s };
+        msg = "촬영 화면을 이 클립에 넣었어요";
+        return;
+      }
+      const va = take(a), vt = take(t);
+      // 이어 붙인 구간(앞 클립에 이어서)이던 화면은 옮기면 처음(0초)부터 — 다른 자리에선 그 시작점이 맞지 않는다
+      const fresh = (v: Partial<Clip>, wasCont?: boolean) => (wasCont && v.visual ? { ...v, visual: { asset: v.visual.asset, s: 0 } } : v);
+      const ca = a.visualCont, ct = t.visualCont;
+      delete a.visualCont; delete t.visualCont;
+      put(t, fresh(va, ca));
+      if (vt.visual) { put(a, fresh(vt, ct)); msg = "두 클립 화면을 서로 바꿨어요"; }
+      else { put(a, { visual: null }); msg = "화면을 옮겼어요"; }
+    });
+    setSelected([toId]);
+    if (msg) say(msg);
+  };
   const onDropMedia = async (clipId: string, where: "before" | "after" | "replace", raw: string) => {
+    try {
+      const d = JSON.parse(raw) as { fromClip?: string };
+      if (d.fromClip) return moveVisual(d.fromClip, clipId);
+    } catch {}
     const item = await dropItem(raw);
     if (!item) return;
     const a = await ensureAsset(item);
@@ -2629,10 +2677,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       // 고른 클립 중 하나에 놓으면 고른 클립 전부
       const ids = selected.length > 1 && selected.includes(clipId) ? selected : [clipId];
       change((p) => {
-        for (const id of ids) {
+        const order = flatten(p).items.map((x) => x.clip.id).filter((x) => ids.includes(x));
+        order.forEach((id, k) => {
           const c = findClip(p, id)?.clip;
-          if (c) c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
-        }
+          if (!c) return;
+          c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
+          // 영상을 여러 클립에 — 이어서 (붙어 있는 클립끼리, chainVisuals 가 시작점을 맞춘다)
+          if (a.kind === "video" && k > 0 && c.visual) { c.visualCont = true; c.visualHold = true; } else delete c.visualCont;
+        });
       });
       setSelected(ids);
       say((ids.length > 1 ? `고른 클립 ${ids.length}개 화면을 바꿨어요` : "이 클립 화면을 바꿨어요") + (a.kind === "video" ? " · 영상 시작점은 썸네일을 눌러 고를 수 있어요" : ""));
@@ -2681,7 +2733,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const onDropLayer = async (clipId: string, raw: string) => {
     const item = await dropItem(raw);
     if (!item) return;
-    if (item.kind !== "image") return say("왼쪽 줄에는 사진만 올릴 수 있어요. 영상은 클립에 놓아 주세요");
+    if (item.kind !== "image" && item.kind !== "video") return say("왼쪽 줄에는 사진·영상만 올릴 수 있어요");
     const a = await ensureAsset(item);
     const items = flatten(pref.current).items;
     const sel = selected.length > 1 && selected.includes(clipId) ? selRange() : null;
@@ -2689,7 +2741,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (!r) return;
     const id = uid();
     change((p) => {
-      p.layers = [...(p.layers || []), { id, type: "image", asset: a.id, name: a.name, x: 0.8, y: 0.18, w: 0.3, opacity: 1, from: r.from, to: r.to } as Layer];
+      p.layers = [...(p.layers || []), { id, type: "image", asset: a.id, name: a.name, x: 0.8, y: 0.18, w: 0.3, opacity: 1, from: r.from, to: r.to, ...(a.kind === "video" ? { vs: 0, volume: 0 } : {}) } as Layer];
     });
     setSelLayer(id);
     setPanel("layer");
@@ -2750,9 +2802,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     const y = box ? Math.max(0, Math.min(1, (e.clientY - box.top) / box.height)) : 0.5;
     const item = await dropItem(raw);
     if (!item) return;
-    if (item.kind !== "image") return say("화면 위에는 사진만 올릴 수 있어요. 영상은 클립 목록에 놓아 주세요");
+    if (item.kind !== "image" && item.kind !== "video") return say("화면 위에는 사진·영상만 올릴 수 있어요");
     const a = await ensureAsset(item);
-    addLayer({ type: "image", asset: a.id, name: a.name, x: +x.toFixed(4), y: +y.toFixed(4), w: 0.3, opacity: 1 }, false);
+    addLayer({ type: "image", asset: a.id, name: a.name, x: +x.toFixed(4), y: +y.toFixed(4), w: 0.3, opacity: 1, ...(a.kind === "video" ? { vs: 0, volume: 0 } : {}) }, false);
   };
 
   /* ── 다른 이름으로 저장 ── */
@@ -3387,14 +3439,15 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "plus", label: "새 클립 넣기", onClick: () => setDialog("addText"), title: "AI 목소리 글 · 빈 클립 · 사진 · 영상 · 텍스트" },
       "|",
       { icon: "font", label: "텍스트", onClick: addTextLayer, title: "고른 클립(없으면 지금 클립)에 글자를 올려요" },
-      { icon: "image", label: "사진 올리기", onClick: () => { setOverlayTarget(""); openLib("mine", true); }, title: "고른 클립(없으면 지금 클립) 화면 위에 사진을 올려요" },
+      { icon: "image", label: "사진·영상 올리기", onClick: () => { setOverlayTarget(""); openLib("mine", true); }, title: "고른 클립(없으면 지금 클립) 화면 위에 사진이나 영상을 올려요" },
       { icon: "star", label: "그래픽", onClick: () => { setStickerTarget(""); setPanel(panel === "sticker" ? "" : "sticker"); }, title: "가격대비 짱! · 역 1분! · 초품아! — 부동산 그래픽 (반짝이·움직임·효과음 자동)" },
       { icon: "music", label: "배경 음악", onClick: () => openMusic(""), title: "고른 클립(없으면 영상 전체)에 음악을 깔아요" },
       "|",
       { icon: "image", label: "내 이미지·비디오", onClick: () => { openLib("mine"); } },
       { icon: "image", label: "공실 사진", onClick: () => { openLib("vacancy"); } },
       { icon: "search", label: "무료 이미지·비디오", onClick: () => { openLib("free"); } },
-      { icon: "ai", label: "AI 이미지", onClick: () => { openLib("ai"); } },
+      { icon: "video", label: "영상 이어 깔기", title: "고른 클립 구간에 영상 여러 개를 시간 순서로 꽉 채워 깔아요 — 영상이 끝나는 순간 다음 영상 (컷편집처럼)", onClick: () => { const sr = selRange(); const its = flatten(pref.current).items; if (!its.length) return; setRollEdit(newRoll(sr?.from || its[0].clip.id, sr?.to || its[its.length - 1].clip.id)); } },
+      { icon: "ai", label: "AI 이미지·동영상", title: "AI 편집 화면 편집판 — 클립마다 사진을 그리고, 그 사진으로 동영상 (AI 사진 탭은 뺐다 2026-10-21)", onClick: () => { setPanel("aiedit"); } },
     ],
     "AI 목소리": [
       { icon: "voice", label: "AI 목소리", title: "AI 목소리 고르기·바꾸기 (성우 · 빠르기 · 볼륨)", onClick: () => { setVoiceMe(false); setPanel("voice"); } },
@@ -3530,6 +3583,19 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           tplInsert={async (item, o) => {
             // 템플릿 (반응·움직이는·글자) — 스티커 분류 안에서 (2026-10-20 사장님)
             const a = await ensureAsset(item);
+            // [그래픽 바꾸기]로 열었으면 — 그 그래픽을 이 템플릿으로 (자리·크기(높이 맞춤)·순서·범위·움직임 그대로, 2026-10-21 사장님)
+            const old = stickerTarget ? (pref.current.layers || []).find((x) => x.id === stickerTarget) : undefined;
+            if (old) {
+              const a0 = old.asset ? pref.current.assets[old.asset] : undefined;
+              const r0 = a0?.width && a0?.height ? a0.width / a0.height : 0;
+              const r1 = a.width && a.height ? a.width / a.height : 0;
+              const w = r0 && r1 ? Math.max(0.05, Math.min(1, (old.w ?? 0.35) * (r1 / r0))) : old.w;
+              updateLayer(old.id, { asset: a.id, name: item.name.replace(/_\d+(\.\w+)?$/, ""), stk: o.spec, sticker: true, w, clicks: o.clicks?.length ? o.clicks : undefined });
+              setStickerTarget("");
+              openLayer(old.id);
+              say("그래픽을 바꿨어요");
+              return;
+            }
             addLayer({ type: "image", asset: a.id, name: item.name.replace(/_\d+(\.\w+)?$/, ""), x: 0.5, y: o.y ?? 0.5, w: o.w, opacity: 1, anim: o.anim, sticker: true, stk: o.spec, ...(o.clicks?.length ? { clicks: o.clicks } : {}) }, false);
             setPanel("sticker"); // 이어서 더 넣을 수 있게
           }}
@@ -3562,7 +3628,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             setPanel(keep); // 이어서 더 넣을 수 있게
           }} />}
         {kind === "sfx" && <SfxInsertPanel dir={project.dir} onAdd={addSfx} onClose={() => setPanel("")} />}
-        {kind === "aiedit" && <AiEditPanel project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} onUndo={undo} onClose={() => setPanel("")} autoStart={aiAuto && Boolean(project.settings.aiAuto)} />}
+        {kind === "aiedit" && <AiEditPanel project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} keep={(fn) => change(fn, false)} onUndo={undo} onClose={() => setPanel("")} autoStart={aiAuto && Boolean(project.settings.aiAuto)} />}
         {kind === "library" && <LibraryPanel key={panel ? `${libTab}${libOverlay}` : "default"} project={project} canReplace={selected.length > 0} onPick={onPick} pro={mode === "timeline" ? { onPlus: plusAdd } : undefined} initialTab={panel ? libTab : "mine"} overlay={panel ? libOverlay : false}
           aiClips={{ selected, ensureAsset, apply: (fn) => change(fn) }}
           target={(() => {
@@ -4576,8 +4642,75 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         }
         const a = it?.clip.visual ? project.assets[it.clip.visual.asset] : null;
         if (!it || !a || a.kind !== "video") return null;
-        return <VideoStart key={startClip} asset={a} dur={it.dur} start={it.clip.visual?.s || 0} onClose={() => setStartClip("")}
-          onApply={(s) => { change((p) => { const c = findClip(p, startClip)?.clip; if (c?.visual) c.visual.s = s; }); say(s > 0 ? "시작점을 바꿨어요" : "처음부터 나가요"); }} />;
+        // 목소리 클립에 넣은 영상 — 앞뒤 자르기 (2026-10-21 사장님: 시작·끝을 잘라 쓸 부분만). 짧으면 끝 장면에서 멈춤
+        const v0 = it.clip.visual!;
+        // 이어 붙일 수 있는 다음 클립 — 같은 씬에서 바로 뒤로 (목소리 클립만, 최대 12개). 지금 이어진 수 = 같은 영상 + visualCont 가 이어지는 만큼
+        const k0 = flat.items.indexOf(it);
+        const nexts: { id: string; label: string; dur: number; on: boolean }[] = [];
+        for (let k = k0 + 1; k < flat.items.length && nexts.length < 12; k++) {
+          const x = flat.items[k];
+          if (x.sceneId !== it.sceneId || x.clip.type !== "voice" || x.clip.card) break;
+          nexts.push({ id: x.clip.id, label: `${k + 1}번`, dur: x.dur, on: Boolean(x.clip.visualCont && x.clip.visual?.asset === v0.asset) });
+        }
+        let had = 0;
+        while (had < nexts.length && nexts[had].on) had++;
+        // 앞쪽 빈칸 클립 — 같은 씬에서 바로 앞으로, 화면이 없는 목소리 클립만 (가까운 것부터, 최대 12개)
+        const prevs: { id: string; label: string; dur: number }[] = [];
+        for (let k = k0 - 1; k >= 0 && prevs.length < 12; k--) {
+          const x = flat.items[k];
+          if (x.sceneId !== it.sceneId || x.clip.type !== "voice" || x.clip.card || x.clip.visual) break;
+          prevs.push({ id: x.clip.id, label: `${k + 1}번`, dur: x.dur });
+        }
+        const lead0 = Number(it.clip.visualLead) || 0;
+        return <VideoStart key={startClip} trim need={it.dur} asset={a} dur={it.dur} start={Math.max(0, (v0.s || 0) - lead0)} end={v0.e ?? Math.min(a.duration || it.dur, (v0.s || 0) + it.dur)} onClose={() => setStartClip("")}
+          chain={{ self: `${k0 + 1}번`, next: nexts, count: had, prev: prevs }}
+          lead={k0 > 0 && !prevs.length ? (() => { const pv = flat.items[k0 - 1]; const g = Math.max(tailGap(project, pv), Number(it.clip.visualLead) || 0); return g > 0.05 ? { label: `${k0}번 끝`, gap: g, on: (Number(it.clip.visualLead) || 0) > 0.05 } : undefined; })() : undefined}
+          onApply={(s, e, n = 0, m = 0, lead = 0) => {
+            change((p) => {
+              const c = findClip(p, startClip)?.clip;
+              if (!c?.visual) return;
+              // 앞 클립 모자란 끝 채우기 — 창 시작(s)은 앞 클립 끝부분부터, 이 클립 자기 부분은 s + lead 부터
+              if (lead > 0.05) { c.visualLead = +lead.toFixed(3); s = +(s + lead).toFixed(3); } else delete c.visualLead;
+              // 앞 빈칸부터 — 맨 앞 클립이 시작점, 그 뒤(이 클립 포함)는 이어서
+              const front = prevs.slice(0, m).reverse();
+              if (front.length) {
+                front.forEach((x, k) => {
+                  const d = findClip(p, x.id)?.clip;
+                  if (!d) return;
+                  d.visual = { asset: v0.asset, s: k === 0 ? s : 0 };
+                  d.visualHold = true;
+                  if (k === 0) delete d.visualCont; else d.visualCont = true;
+                });
+                c.visual = { asset: c.visual.asset, s: 0 };
+                c.visualCont = true;
+              } else c.visual = n > 0 ? { asset: c.visual.asset, s } : { ...c.visual, s, e };
+              c.visualHold = true;
+              nexts.forEach((x, k) => {
+                const d = findClip(p, x.id)?.clip;
+                if (!d) return;
+                if (k < n) { d.visual = { asset: v0.asset, s: 0 }; d.visualCont = true; d.visualHold = true; }
+                else if (x.on) { d.visual = null; delete d.visualCont; delete d.visualHold; } // 이어 붙이기를 줄였으면 — 그 클립은 빈칸으로
+              });
+            });
+            say(n + m > 0 ? `영상 하나를 ${n + m + 1}개 클립에 이어 붙였어요` : `앞뒤를 잘랐어요 (${fmtTime(e - s, false)})`);
+          }} />;
+      })()}
+      {/* 영상 이어 깔기 (컷편집처럼, 2026-10-21 사장님) */}
+      {rollEdit && (
+        <RollDialog project={project} roll={rollEdit} ensureAsset={ensureAsset} onClose={() => setRollEdit(null)}
+          onSave={(r) => { change((p) => { p.rolls = [...(p.rolls || []).filter((x) => x.id !== r.id), r]; }); say(`영상 ${r.items.length}개를 이어 깔았어요`); }}
+          onRemove={(project.rolls || []).some((x) => x.id === rollEdit.id) ? () => { change((p) => { p.rolls = (p.rolls || []).filter((x) => x.id !== rollEdit.id); }); say("영상 이어 깔기를 지웠어요"); } : undefined} />
+      )}
+      {/* 화면 위 영상 — 비디오 시작점 변경 (영상 안 어디부터 쓸지 · 적용 범위 길이만큼 파란 창) */}
+      {startLayer && (() => {
+        const l = (project.layers || []).find((x) => x.id === startLayer);
+        const a = l?.asset ? project.assets[l.asset] : null;
+        if (!l || !a || a.kind !== "video") return null;
+        const ids = flat.items.map((x) => x.clip.id);
+        const i0 = ids.indexOf(l.from), i1 = ids.indexOf(l.to);
+        const span = i0 >= 0 && i1 >= i0 ? flat.items.slice(i0, i1 + 1).reduce((t, x) => t + x.dur, 0) : 3;
+        return <VideoStart key={startLayer} asset={a} dur={span} start={Number(l.vs) || 0} onClose={() => setStartLayer("")}
+          onApply={(s0) => { updateLayer(l.id, { vs: +s0.toFixed(2) }); say(`영상 시작점을 ${fmtTime(s0, false)}로 바꿨어요`); }} />;
       })()}
       {soundPop && (() => {
         const c = findClip(project, soundPop.id)?.clip;
@@ -4805,9 +4938,22 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           return <MediaMenu key={"l" + l.id} {...common} what="효과음"
             extra={[{ icon: "bell", label: "효과음 바꾸기", desc: "오른쪽 칸에서 다른 소리를 골라 들어 봐요", run: panelOpen }]}
             sliders={[{ label: "소리 크기", value: l.volume ?? 0.8, min: 0.1, max: 1, step: 0.05, show: `${Math.round((l.volume ?? 0.8) * 100)}%`, onChange: (v) => updateLayer(l.id, { volume: v }) }]} />;
+        // 영상 이어 깔기 조각 — 묶음에서 저절로 만들어지니 묶음을 고친다
+        if (l.roll) {
+          const r = (project.rolls || []).find((x) => x.id === l.roll);
+          return <QuickMenu key={"r" + l.id} title={`영상 이어 깔기 · ${l.name || ""}`} what="이어 깔기" x={media.x} y={media.y} onClose={close} items={[
+            { icon: "video", label: "이어 깔기 편집", desc: "영상 차례·자르기·구간·소리를 고쳐요", run: () => { close(); if (r) setRollEdit(structuredClone(r)); } },
+            { icon: "trash", label: "이어 깔기 지우기", desc: "이 묶음의 영상 조각을 모두 지워요 (클립 화면은 그대로)", danger: true, run: () => { close(); change((p) => { p.rolls = (p.rolls || []).filter((x) => x.id !== l.roll); }); say("영상 이어 깔기를 지웠어요"); } },
+          ]} />;
+        }
         // 사진 올리기 · 스티커
         const stk = isSticker(l);
-        return <MediaMenu key={"l" + l.id} {...common} what={stk ? "그래픽" : "사진"}
+        const vidL = isVideoLayer(l);
+        const la = l.asset ? project.assets[l.asset] : null;
+        return <MediaMenu key={"l" + l.id} {...common} what={stk ? "그래픽" : vidL ? "영상" : "사진"}
+          // 화면 위 영상 — [볼륨 조절] 맨 위 줄 (클립 화면 영상과 같은 칸, 처음엔 무음 · 2026-10-21 사장님)
+          onStart={vidL ? () => setStartLayer(l.id) : undefined}
+          sound={vidL ? { none: la?.hasAudio === false, note: "화면 위 영상의 소리예요 (AI 목소리 크기와는 따로)", muted: !((l.volume ?? 0) > 0), value: (l.volume ?? 0) > 0 ? l.volume! : 1, onMute: (v: boolean) => updateLayer(l.id, { volume: v ? 0 : (l.volume || 1) }), onVolume: (v: number) => updateLayer(l.id, { volume: v > 0 ? +v.toFixed(2) : 0 }) } : undefined}
           extra={stk ? [{ icon: "pen", label: "그래픽 글자 바꾸기", desc: "오른쪽 칸에서 그래픽 안 글자를 바꿔요 (모양·움직임은 그대로)", run: panelOpen }] : []}
           sliders={[
             { label: "크기", value: l.w ?? 0.35, min: 0.1, max: 1, step: 0.01, show: `${Math.round((l.w ?? 0.35) * 100)}%`, onChange: (v) => updateLayer(l.id, { w: v }) },
@@ -5076,6 +5222,7 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   const [state, setState] = useState<{ text: string; frac: number } | null>(null);
   const [job, setJob] = useState("");
   const [done, setDone] = useState<{ file: string; seconds: number; took: number } | null>(null);
+  const [post, setPost] = useState<"" | "youtube" | "instagram">(""); // 완성 영상 SNS 올리기 (2026-10-21)
   const [err, setErr] = useState("");
   const [W0, H0] = project.ratio === "16:9" ? [1920, 1080] : project.ratio === "9:16" ? [1080, 1920] : project.ratio === "4:5" ? [1080, 1350] : project.ratio === "4:3" ? [1440, 1080] : [1080, 1080];
   const go = async () => {
@@ -5109,12 +5256,24 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
       setState(null);
     }
   };
+  if (done && post) return <PostDialog project={project} file={done.file} seconds={done.seconds} channel={post} onClose={() => setPost("")} />;
   if (done) {
     return (
       <Modal title={kind === "mp3" ? "소리 파일이 완성됐어요" : "영상이 완성됐어요"} onClose={onClose} width={560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />{kind === "mp3" ? "소리 들어 보기" : "영상 열어 보기"}</Btn></>}>
         <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.8 }}>
           {done.seconds > 0 && <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>}
           <div style={{ color: C.sub, fontSize: 14, wordBreak: "break-all" }}>{done.file}</div>
+          {/* SNS 올리기 — 반자동: 크롬에서 파일·글을 채우고 [게시]는 직접 (2026-10-21 사장님) */}
+          {kind === "mp4" && (
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${C.line}` }}>
+              <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>내 SNS에 올리기</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Btn onClick={() => setPost("youtube")}><ChannelMark ch="youtube" />유튜브에 올리기</Btn>
+                <Btn onClick={() => setPost("instagram")}><ChannelMark ch="instagram" />인스타그램에 올리기</Btn>
+              </div>
+              <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>AI가 제목·설명을 쓰고, 크롬에서 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요.</div>
+            </div>
+          )}
         </div>
       </Modal>
     );

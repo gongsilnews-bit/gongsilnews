@@ -22,8 +22,10 @@ const isVis = (l: Layer) => l.type === "image" || l.type === "text";
 export const layerTitle = (l: Layer) => (l.type === "text" ? String(l.text || "").trim() || "텍스트" : (l.name || "").replace(/^스티커_/, "") || layerName(l));
 /** 스티커는 사진 레이어로 그리지만 이름·아이콘은 따로 (먼저 넣은 것은 이름 "스티커_…" 로 알아본다) */
 export const isSticker = (l: Layer) => Boolean(l.sticker) || (l.type === "image" && /^스티커_/.test(l.name || ""));
-export const layerName = (l: Layer) => (isSticker(l) ? "그래픽" : LAYER_NAME[l.type]);
-export const layerIcon = (l: Layer) => (isSticker(l) ? "star" : LAYER_ICON[l.type]);
+/** 화면 위 영상 (사진 올리기 레이어인데 영상 — 영상 안 시작 초 vs 가 있다) — 아이콘·이름을 영상으로 (2026-10-21 사장님: 다 사진 아이콘이라 헷갈린다) */
+export const isVideoLayer = (l: Layer) => l.type === "image" && !isSticker(l) && typeof l.vs === "number";
+export const layerName = (l: Layer) => (isSticker(l) ? "그래픽" : isVideoLayer(l) ? "영상 올리기" : LAYER_NAME[l.type]);
+export const layerIcon = (l: Layer) => (isSticker(l) ? "star" : isVideoLayer(l) ? "play" : LAYER_ICON[l.type]);
 
 /* ── 클립 목록 왼쪽 줄 ── */
 export type LaneEntry = { layer: Layer; lane: number; a: number; b: number }; // a·b = 보이는 클립 차례

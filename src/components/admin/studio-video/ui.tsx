@@ -197,7 +197,7 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
  * 공용 창. controls 면 오른쪽 위에 윈도우처럼 [— 작게][□ 크게][✕ 닫기].
  *  작게: 창을 숨기고 아래에 작은 막대만 (안의 내용은 그대로 살아 있다 — 카메라 미리보기 등). onMinimize 를 주면 그걸 대신 한다
  */
-export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote, win }: { title?: string; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode; /** 혼자 떠 있는 창 안 — 창 전체를 채우고, 위 줄 끌기·크게는 그 윈도우 창을 */ win?: { drag: (e: React.PointerEvent<HTMLDivElement>) => void; max: () => void; big: boolean } }) {
+export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote, win }: { title?: React.ReactNode; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode; /** 혼자 떠 있는 창 안 — 창 전체를 채우고, 위 줄 끌기·크게는 그 윈도우 창을 */ win?: { drag: (e: React.PointerEvent<HTMLDivElement>) => void; max: () => void; big: boolean } }) {
   const [mini, setMini] = React.useState(false);
   const [big, setBig] = React.useState(false);
   // 제목 줄을 잡고 끌면 창이 옮겨진다 (뒤 화면을 보려고 — 녹화 창 등). 제목 줄은 화면 밖으로 나가지 않게

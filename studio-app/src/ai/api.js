@@ -62,8 +62,9 @@ function errOf(id, status, body) {
 async function call(id, url, init, timeoutMs = 5 * 60 * 1000) {
   let r;
   try {
-    r = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+    r = await fetch(url, { ...init, signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), require("../ai-busy").signal()]) }); // [중지]로도 끊는다
   } catch (e) {
+    if (require("../ai-busy").isStopped()) throw require("../ai-busy").stopError();
     if (e && (e.name === "TimeoutError" || e.name === "AbortError")) throw new Error(`${NAME[id]} 답을 ${Math.round(timeoutMs / 60000)}분 안에 받지 못했어요. 다시 해 주세요.`);
     throw new Error(`${NAME[id]}에 연결하지 못했어요. 인터넷을 확인해 주세요.`);
   }

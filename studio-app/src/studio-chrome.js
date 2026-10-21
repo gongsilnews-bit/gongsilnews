@@ -21,7 +21,11 @@ const profileDir = () => {
   return path.join(app.getPath("userData"), "studio-chrome");
 };
 const portFile = () => path.join(profileDir(), "DevToolsActivePort");
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// AI [중지]를 누르면 기다리던 곳에서 멈춘다 (ai-busy, 2026-10-21) — AI 답을 기다리는 돌기가 모두 이 sleep 을 쓴다
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms)).then(() => {
+  const busy = require("./ai-busy");
+  if (busy.isStopped()) throw busy.stopError();
+});
 
 let browser = null;
 let plainProc = null; // 로그인용으로 띄운 평범한 전용 크롬

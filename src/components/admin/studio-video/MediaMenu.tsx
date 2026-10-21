@@ -279,7 +279,7 @@ export default function MediaMenu(p: Props) {
 /** 클립 아이콘 메뉴 — 사진·글자·효과음 메뉴와 같은 생김새 (2026-10-21 사장님: 통일성, 깔끔하게)
  *  1차 = 항목 목록 · 2차 = 항목을 누르면 같은 상자 안에서 바로 고치기 (‹ 로 돌아감). run 만 있으면 하고 닫힌다 */
 export type QuickItem = { icon: string; iconEl?: React.ReactNode /* 아이콘 대신 그림 (화면 비율 상자 등) */; label: string; desc: string; run?: () => void; page?: () => React.ReactNode; on?: boolean; danger?: boolean };
-export function QuickMenu({ title, what, x, y, items, onClose }: { title: string; what: string; x: number; y: number; items: QuickItem[]; onClose: () => void }) {
+export function QuickMenu({ title, what, x, y, items, onClose, z = 70 }: { title: string; what: string; x: number; y: number; items: QuickItem[]; onClose: () => void; /** 큰 창(AI 편집 등) 위에 띄울 때 */ z?: number }) {
   const [page, setPage] = React.useState(-1);
   const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
   React.useEffect(() => {
@@ -300,7 +300,7 @@ export function QuickMenu({ title, what, x, y, items, onClose }: { title: string
   const cur = page >= 0 ? items[page] : null;
   return (
     <div ref={boxRef} onClick={(e) => e.stopPropagation()} onMouseLeave={() => setHover(null)}
-      style={{ position: "fixed", left, top, zIndex: 70, width: W, padding: 6, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
+      style={{ position: "fixed", left, top, zIndex: z, width: W, padding: 6, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
       {cur ? (
         <>
           <button type="button" onClick={() => setPage(-1)} style={{ ...rowStyle, fontWeight: 800, color: C.text }}>

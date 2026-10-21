@@ -7,7 +7,7 @@
 //  4) 다 그린 것부터 클립 화면에 차례로 들어간다
 import React, { useEffect, useMemo, useState } from "react";
 import type { Asset, LibItem, Project } from "./types";
-import { errText, videoBridge } from "./types";
+import { errText, isStopped, videoBridge } from "./types";
 import { clipText, flatten } from "./timeline";
 import { IMAGE_STYLES, imagePrompt, sampleScene } from "@/lib/studio-video/imageStyles";
 import { useStudioImager, useStudioWriter } from "@/components/admin/sections/useStudioWriter";
@@ -145,6 +145,7 @@ export function AiImagesTab({ project, selected, ensureAsset, apply }: {
       }
       return true;
     } catch (e) {
+      if (isStopped(e)) { stop.current = true; setRow(r.id, { st: "" }); return false; } // [중지] — 남은 그림은 그리지 않는다
       setRow(r.id, { st: "err", err: errText(e) });
       return false;
     }

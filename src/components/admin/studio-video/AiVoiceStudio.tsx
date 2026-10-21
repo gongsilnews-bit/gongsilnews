@@ -114,7 +114,7 @@ export function AiVoiceStudio() {
       setPv("");
     }
   };
-  // 기본 이름 "261020 AI 보이스" — 같은 이름이 있으면 _2 (2026-10-20 사장님)
+  // 기본 이름 "20261021 AI 보이스" — 같은 이름이 있으면 _2 (2026-10-20 사장님)
   const autoName = () => datedName("AI 보이스");
   const save = async () => {
     if (!b?.voiceSave || !lines.length || !dir) return;

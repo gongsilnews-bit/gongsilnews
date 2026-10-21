@@ -66,7 +66,15 @@ export type Clip = {
   voiceId?: string; // 클립만 다른 목소리
   speed?: number; // 클립만 다른 빠르기 (AI 목소리 클립: 목소리 빠르기 / 촬영 클립: 영상·소리 빠르기 0.5~2)
   pad?: number; // AI 목소리 클립 끝에 더 머무는 시간 (초) — 클립 길이를 늘릴 때
-  visual?: { asset: string; s: number } | null; // 화면 자료 (글 클립 배경 · 촬영 클립 화면 바꾸기)
+  visual?: { asset: string; s: number; e?: number /* 끝 (앞뒤 자르기) — 넘으면 끝 장면에서 멈춤 */ } | null; // 화면 자료 (글 클립 배경 · 촬영 클립 화면 바꾸기)
+  visualLead?: number; // 앞 클립 영상이 모자란 끝부분(초)을 이 클립 영상으로 앞당겨 채운다 — 컷편집처럼 앞 클립 끝에서 미리 시작 (visual.s = 이 클립 자기 부분 시작, 2026-10-21 사장님)
+  visualCont?: boolean; // 앞 클립과 같은 화면 영상을 이어서 (시작점 = 앞 클립 시작 + 앞 클립 길이, 길이가 바뀌면 다시 맞춘다 · 2026-10-21 사장님)
+  visualHold?: boolean; // 화면 영상이 클립보다 짧으면 마지막 장면에서 멈춤 (없으면 처음부터 반복) — AI 편집 화면 채우기 (2026-10-21)
+  fillFrom?: "mine" | "stock" | "ai" | "reuse" | "vacancy"; // AI 편집 화면 채우기 — 어디서 온 화면인지 (화면 편집판 표시)
+  // AI 편집 화면 편집판 — 클립마다 장면 설명(영어 프롬프트, 2026-10-21 사장님: 내 화면을 넣은 클립도 다 만들어 둔다)
+  //  kind 자동·배경·인물·그래프 · style 이 클립만 다른 그림 스타일 (없으면 왼쪽) · media 사진/영상 (AI 영상은 나중에) · by 설명을 만든 스타일 · hand 회원이 직접 고침
+  aiPic?: { prompt: string; kind?: "auto" | "background" | "character" | "graph"; style?: string; media?: "image" | "video"; by?: string; hand?: boolean; stale?: boolean /* 자동·배경·인물·그래프를 바꿈 — 그릴 때 다시 쓴다 */;
+    motion?: string /* 동영상 프롬프트 — 사진을 어떻게 움직일지 (영어) */; motionId?: string /* 고른 움직임 견본 */ };
   hold?: number; // 목소리 없을 때 길이
   fitLen?: number; // 영상 위에 AI 목소리를 얹은 클립 — 이 길이(영상 구간)에 맞춘다 (목소리가 짧으면 끝에 머물기 pad)
   fill?: Fill;
@@ -76,7 +84,7 @@ export type Clip = {
   rot?: number; // 화면 회전 (도, 시계 방향 +) — 미리보기 회전 손잡이·타임라인 [회전]
   opacity?: number; // 화면 진하기 0~1 (검은 바탕 위, 기본 1)
   kf?: Keyframe[]; // 화면 키프레임 — 있으면 자리·크기·회전·진하기가 시간에 따라 (사진 자동 움직임은 쉰다)
-  card?: "end"; // AI 편집이 넣은 끝 화면 (중개사무소 정보) — 다시 AI 편집하면 이 클립을 고쳐 쓴다
+  card?: "end" | "intro" | "outro" | "pause"; // AI 편집이 넣은 칸 — 끝 화면(중개사무소 정보) · 인트로 · 아웃트로 · 중간 쉼 (2026-10-21). 다시 AI 편집하면 고쳐 쓴다
   adj?: Adjust; // 색 보정·필터
   crop?: Crop; // 자르기 (프리미어 효과 컨트롤) — 원본 화면의 가장자리를 잘라 낸다 (잘린 곳은 아래가 보인다)
   subKf?: Keyframe[]; // 메인자막 키프레임 (클립 처음부터 초) — 자리·크기·회전·진하기
@@ -99,9 +107,15 @@ export type Scene = { id: string; title?: string; clips: Clip[] };
  * 범위를 클립으로 잡아서 단어를 지우거나 클립 길이가 바뀌어도 저절로 따라간다.
  */
 export type LayerType = "music" | "image" | "text" | "sfx"; // sfx = 효과음 (그 클립·단어 시작에 한 번, 회의 3-29)
+/** 영상 이어 깔기 묶음 — items: 영상 차례 (vs·ve = 쓸 구간), end: 영상을 다 써도 모자라면 loop(처음부터 다시) / stop(거기서 끝) */
+export type Roll = { id: string; from: string; to: string; items: { asset: string; vs?: number; ve?: number }[]; end?: "loop" | "stop"; volume?: number };
 export type Layer = {
   id: string;
   type: LayerType;
+  /** 영상 이어 깔기 묶음 id (Project.rolls) — 이 레이어는 묶음에서 저절로 만들어진다 (손으로 고치면 다음에 다시 만들어져 사라짐) */
+  roll?: string;
+  /** 앞당겨 채우기 조각 — 이 클립 id 의 visualLead 로 저절로 만들어진다 */
+  lead?: string;
   from: string; // 시작 클립 id
   to: string; // 끝 클립 id
   // 단어 구간 (브루 [삽입]처럼) — 있으면 from 클립의 w0번째 단어부터 w1번째 단어를 말하는 동안만 나온다
@@ -242,8 +256,12 @@ export type Project = {
   vacancyId?: string;
   /** 영상 종류 — 대본 쓰고 편집하기에서 고른 갈래 (AI 편집 ① 처음 값, 2026-10-20) */
   kind?: "vacancy" | "news" | "topic";
+  /** AI 편집 그림 스타일 [자동] — AI 가 대본을 읽고 고른 스타일 (모든 클립 같음, 2026-10-21) */
+  aiStyle?: string;
   /** 이 영상 자료 — 대본 단계에서 모은 매물 사진·검증·지도·로드뷰·기사 캡쳐 (AI 편집 ② 에 저절로). 파일은 PC 원래 자리, 여기는 목록만 */
   materials?: LibItem[];
+  /** 영상 이어 깔기 (컷편집처럼, 2026-10-21 사장님) — from~to 클립 구간에 영상을 시간 순서로 꽉 채워 깐다. 영상이 끝나는 순간 다음 영상 (클립 경계와 상관없이) */
+  rolls?: Roll[];
   /** 오디오로 편집하기 — 편집 화면을 처음 열 때 받아쓰기(자동 자막)를 바로 시작한다 (한 번 하고 지운다) */
   autoSubOnOpen?: boolean;
   /** 녹화할 때 프롬프터 대본 — 받아쓰기 뒤 "거의 같은 낱말"만 대본 글자로 고치는 데 쓰고 지운다 (scriptFix.ts) */
@@ -266,6 +284,13 @@ export type Project = {
 /** [AI 편집] 이 고를 수 있는 목록 — AI 는 이 안에서만 고른다 */
 export type AiEditCatalog = { presets: { id: string; label: string }[]; ins: { id: string; label: string }[]; emphs: { id: string; label: string }[]; whl: { id: string; label: string }[]; stickers: { id: string; label: string }[]; sfx: { id: string; label: string }[]; examples: string[] };
 
+/** 완성 영상 SNS 올리기 (2026-10-21) — text = 링크·출처·해시태그까지 붙인 최종 글 */
+export type PostChannel = "youtube" | "instagram";
+export type PostDraft = {
+  youtube: { title: string; description: string; hashtags: string[]; text: string };
+  instagram: { caption: string; hashtags: string[]; text: string };
+  tail: { url: string; hasListing: boolean };
+};
 export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
 /** .gss 를 열 때 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로] 를 묻는다 */
 export type Recover = { recover: true; file: string; name: string };
@@ -294,6 +319,8 @@ export type VideoBridge = {
     addFolder: () => Promise<string[]>;
     removeFolder: (dir: string) => Promise<string[]>;
     musicFolder: () => Promise<string>;
+    /** AI 그림 모음 폴더 — 문서\공실뉴스 스튜디오\AI그림 (앱 0.1.11부터) */
+    aiFolder?: () => Promise<string>;
     /** 편집기에서 그린 그림(PNG data URL)을 프로젝트에 저장 — 스티커 (앱 0.1.10부터) */
     saveImage?: (dir: string, dataUrl: string, name: string) => Promise<LibItem>;
   };
@@ -388,9 +415,13 @@ export type VideoBridge = {
       pack?: string; // [자동] 스타일 팩 — AI 가 고른 것
     }>;
     /** opts.ratio — 영상 비율로 그리기 (0.1.11부터) */
-    image: (dir: string, prompt: string, opts?: { ratio?: string }) => Promise<LibItem>;
+    image: (dir: string, prompt: string, opts?: { ratio?: string; files?: string[] /* 참고 사진 (캐릭터 시트) */ }) => Promise<LibItem>;
+    /** AI 영상 — 회원 Gemini API 키 (Gemini Omni Flash). image: 첫 장면 그림 파일 (앱 0.1.12부터) */
+    video?: (dir: string, prompt: string, opts?: { ratio?: string; image?: string }) => Promise<LibItem>;
     /** 클립별 AI 그림 — 클립 글 → 영어 장면 설명 (0.1.11부터) */
     imagePrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; modify?: { current: string; request: string } }) => Promise<string[]>;
+    /** 이미지 + 동영상(움직임) 프롬프트 한 번에 (앱 0.1.12부터) */
+    clipPrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; extra?: string; styles?: { id: string; label: string; desc?: string; character?: string }[] }) => Promise<{ image: string; motion: string }[] | { style: string; clips: { image: string; motion: string }[] }>;
     /** [씬 정리] 클립 글 → 씬 나누기 (from = 시작 클립 번호, 1부터) — 앱 0.1.10부터 */
     group?: (lines: string[]) => Promise<{ title: string; from: number }[]>;
   };
@@ -449,6 +480,15 @@ export type VideoBridge = {
     onPrompterPrefs?: (fn: (o: { cps: number; size: number; opacity?: number; mine: { cps: number; size: number } | null }) => void) => () => void;
   };
   showFile: (file: string) => Promise<void>;
+  /** 완성 영상 SNS 올리기 — 반자동 (앱 0.1.11부터) · [게시]는 회원이 */
+  post?: {
+    draft: (o: { title: string; lines: string[]; vacancyId?: string; saleKind?: string; ratio: string; seconds: number }) => Promise<PostDraft>;
+    thumbs: (o: { file: string; title: string; duration: number }) => Promise<{ at: number; plain: { file: string; url: string }; title: { file: string; url: string } | null }[]>;
+    fill: (o: { channel: PostChannel; file: string; title: string; text: string; visibility?: "public" | "unlisted" | "private"; thumb?: string }) => Promise<{ ok: boolean; partial?: string; thumb?: string; vis?: string }>;
+    login: (ch: PostChannel) => Promise<boolean>;
+    finishLogin: () => Promise<void>;
+    open: (ch: PostChannel, what?: "verify") => Promise<boolean>;
+  };
   openSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 설정 화면 (옛 앱에는 없음)
   openDeviceSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 장치 설정 — 밝기·쓸 장치·입력 크기 (앱 0.1.8부터)
   openPath: (p: string) => Promise<string>;
@@ -462,9 +502,9 @@ export const videoBridge = (): VideoBridge | null => {
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
-/** 기본 파일 이름 앞 — 년월일 6자리 (261020) */
-export const ymd = (d = new Date()) => `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-/** 기본 파일 이름 — "261020 제목" (파일 이름에 못 쓰는 글자는 빼고, 제목은 30자까지) */
+/** 기본 파일 이름 앞 — 년월일 8자리 (20261021, 2026-10-21 사장님: 연도 2026 을 온전하게) */
+export const ymd = (d = new Date()) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+/** 기본 파일 이름 — "20261021 제목" (파일 이름에 못 쓰는 글자는 빼고, 제목은 30자까지) */
 export const datedName = (title?: string, d?: Date) => `${ymd(d)} ${String(title || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 30) || "무제"}`;
 export const errText = (e: unknown) => {
   const m = String(e instanceof Error ? e.message : e);
@@ -472,6 +512,8 @@ export const errText = (e: unknown) => {
   if (/No handler registered for 'video:/.test(m)) return "공실뉴스 스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
   return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 };
+/** AI 덮개에서 [중지]를 눌렀다 (앱 ai-busy "중지했어요") — 여러 장 만드는 돌기는 여기서 멈춘다 */
+export const isStopped = (e: unknown) => /중지했어요/.test(errText(e));
 export const fmtTime = (t: number, cs = true) => {
   const m = Math.floor(t / 60);
   const s = t - m * 60;

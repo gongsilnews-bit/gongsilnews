@@ -118,7 +118,9 @@ function scan() {
       walk(r.dir, files);
       for (const f of files) {
         if (/_edit\.(mp4|jpg)$/i.test(f)) continue; // 편집용 사본은 따로 보이지 않게
-        const it = put(f, { source: r.source });
+        // AI 그림 모음 폴더(문서공실뉴스 스튜디오AI그림)·AI그림_ 파일은 늘 "ai" — 훑을 때 "studio"로 바뀌지 않게 (2026-10-21)
+        const isAi = /^AI(그림|영상)_/.test(path.basename(f)) || ["AI그림", "AI영상"].some((n) => (f.toLowerCase() + path.sep).startsWith(path.join(studioRoot(), n).toLowerCase() + path.sep));
+        const it = put(f, { source: isAi ? "ai" : r.source });
         if (it) seen.add(it.id);
       }
     }

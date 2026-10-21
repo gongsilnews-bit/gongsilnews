@@ -377,6 +377,11 @@ function register(base) {
   });
   ipcMain.handle("video:lib-remove-folder", (_e, dir) => library.removeFolder(dir));
   ipcMain.handle("video:font-ensure", (_e, family) => fonts.ensure(family));
+  ipcMain.handle("video:lib-ai-folder", () => {
+    const d = path.join(library.studioRoot(), "AI그림");
+    fs.mkdirSync(d, { recursive: true });
+    return d;
+  });
   ipcMain.handle("video:lib-music-folder", () => {
     fs.mkdirSync(library.musicDir(), { recursive: true });
     return library.musicDir();
@@ -681,18 +686,45 @@ function register(base) {
   // [AI 편집] — 글 AI 의 편집 계획 (화면·화면 글자·자막 강조·화면전환·음악)
   ipcMain.handle("video:ai-edit", (e, lines, items, opts) => vai.aiEdit(lines || [], items || [], opts || {}, (t) => send(e, "video:progress", t)));
   ipcMain.handle("video:ai-group", (e, lines) => vai.groupScenes(lines || [], (t) => send(e, "video:progress", t))); // [씬 정리]
+  ipcMain.handle("video:ai-clip-prompts", (e, lines, opts) => vai.clipPrompts(lines || [], opts || {}, (t) => send(e, "video:progress", t))); // 이미지 + 동영상 프롬프트 한 번에 (0.1.12)
   ipcMain.handle("video:ai-image-prompts", (e, lines, opts) => vai.imagePrompts(lines || [], opts || {}, (t) => send(e, "video:progress", t))); // 클립별 AI 그림 — 영어 장면 설명
   ipcMain.handle("video:ai-image", async (e, dir, prompt, opts) => {
     const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t), opts || {});
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
     if (!m) throw new Error("그림을 받지 못했습니다.");
-    const file = path.join(dir || path.join(library.studioRoot(), "영상", "AI 그림"), "assets", `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    // 만든 AI 그림은 문서공실뉴스 스튜디오AI그림날짜 에 모은다 (2026-10-21 사장님: 따로 모아 볼 폴더가 없었다). 내 자료·프로젝트는 이 파일을 쓴다
+    const d = new Date();
+    const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; // 20261021
+    const file = path.join(library.studioRoot(), "AI그림", day, `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    void dir;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, Buffer.from(m[2], "base64"));
     return (await library.add([file], { source: "ai" }))[0];
   });
 
+  // AI 영상 — 회원 Gemini API 키 (Gemini Omni Flash), 클립마다 하나씩 (2026-10-21 사장님). 첫 장면 그림이 있으면 그림 → 영상
+  //  문서\공실뉴스 스튜디오\AI영상\20261021\AI영상_….mp4 에 모은다 (AI그림과 같은 방식)
+  ipcMain.handle("video:ai-video", async (e, dir, prompt, opts) => {
+    const o = opts || {};
+    const image = o.image ? (path.isAbsolute(o.image) ? o.image : path.join(dir || "", o.image)) : "";
+    const buf = await require("../ai/video-gen").make({ prompt, image, ratio: o.ratio }, (t) => send(e, "video:progress", t));
+    const d = new Date();
+    const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    const file = path.join(library.studioRoot(), "AI영상", day, `AI영상_${Date.now()}.mp4`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, buf);
+    return (await library.add([file], { source: "ai" }))[0];
+  });
+
   /* ── 공실 (사진·정보) ── 이미 분석해 둔 것이 있으면 그대로, 없으면 공실 분석(사진 내려받기) */
+  /* ── 완성 영상 SNS 올리기 (반자동, 2026-10-21) — 글 초안 · 크롬 채우기 · 로그인 ([게시]는 회원이) ── */
+  const snsUpload = () => require("../sns-upload");
+  ipcMain.handle("video:post-draft", (e, o) => snsUpload().draft(baseUrl, o || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:post-thumbs", (e, o) => snsUpload().thumbs(o || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:post-fill", (e, o) => snsUpload().fill(o || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:post-login", (_e, ch) => snsUpload().login(ch));
+  ipcMain.handle("video:post-finish-login", () => snsUpload().finishLogin());
+  ipcMain.handle("video:post-open", (_e, ch, what) => snsUpload().open(ch, what));
   ipcMain.handle("video:vacancy", async (e, vacancyId) => {
     const blogWriter = require("../blog-writer");
     let a = blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));
@@ -719,8 +751,8 @@ function register(base) {
     const max = mode === "head" ? 1 : Math.min(6, Math.max(1, Number(opts.max) || 4));
     const title = String(opts.title || "").trim();
     const now = new Date();
-    const ymd = `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-    const safe = `${ymd} ${(title || new URL(href).hostname).replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 30) || "캡쳐"}`; // "261020 제목" (2026-10-20 사장님)
+    const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const safe = `${ymd} ${(title || new URL(href).hostname).replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 30) || "캡쳐"}`; // "20261021 제목" (2026-10-21 사장님: 연도 네 자리)
     const dir = path.join(library.studioRoot(), "캡쳐", safe);
     fs.mkdirSync(dir, { recursive: true });
     send(e, "video:progress", "기사 화면을 캡쳐하는 중…");
@@ -852,7 +884,7 @@ function register(base) {
     const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"] };
     // 목소리만 저장(텍스트로 영상)은 [AI오디오] 폴더가 기본 (2026-10-20 사장님)
     const dir = p && p.voiceOnly ? (folders.ensure(), folders.aiAudioDir()) : lastExportDir && fs.existsSync(lastExportDir) ? lastExportDir : folders.exportDir(p);
-    const base = String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_"); // "261020 제목.mp4" — 프로젝트 이름 그대로 (2026-10-20 사장님)
+    const base = String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_"); // "20261021 제목.mp4" — 프로젝트 이름 그대로 (2026-10-20 사장님)
     let def = path.join(dir, `${base}.${ext}`);
     for (let n = 2; fs.existsSync(def); n++) def = path.join(dir, `${base}_${n}.${ext}`);
     const r = await dialog.showSaveDialog(winOf(e), {
@@ -911,8 +943,8 @@ function register(base) {
     fs.mkdirSync(dir, { recursive: true });
     const d = new Date();
     const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\.(mp4|webm)$/i, "").trim();
-    // 기본 이름 "261020 화면 녹화" (2026-10-20 사장님: 앞은 년월일 6자리) — 같은 이름이 있으면 _2, _3…
-    const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    // 기본 이름 "20261021 화면 녹화" (2026-10-21 사장님: 앞은 년월일 8자리, 연도 온전하게) — 같은 이름이 있으면 _2, _3…
+    const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
     const base = safe(opt.fileName) || `${ymd} ${safe(name) || "녹화"}`;
     let file = path.join(dir, `${base}.webm`);
     for (let i = 2; fs.existsSync(file) || fs.existsSync(file.replace(/\.webm$/, ".mp4")); i++) file = path.join(dir, `${base}_${i}.webm`);

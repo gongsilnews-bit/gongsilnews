@@ -128,6 +128,7 @@ if (allowed) {
         addFolder: () => ipcRenderer.invoke("video:lib-add-folder"),
         removeFolder: (dir) => ipcRenderer.invoke("video:lib-remove-folder", dir),
         musicFolder: () => ipcRenderer.invoke("video:lib-music-folder"),
+        aiFolder: () => ipcRenderer.invoke("video:lib-ai-folder"), // AI 그림 모음 폴더 (0.1.11부터)
         saveImage: (dir, dataUrl, name) => ipcRenderer.invoke("video:lib-save-image", dir, dataUrl, name), // 스티커 (0.1.10부터)
       },
       project: {
@@ -217,6 +218,8 @@ if (allowed) {
         edit: (lines, items, opts) => ipcRenderer.invoke("video:ai-edit", lines, items, opts), // [AI 편집] 편집 계획 (0.1.10부터)
         group: (lines) => ipcRenderer.invoke("video:ai-group", lines), // [씬 정리] (0.1.10부터)
         image: (dir, prompt, opts) => ipcRenderer.invoke("video:ai-image", dir, prompt, opts),
+        video: (dir, prompt, opts) => ipcRenderer.invoke("video:ai-video", dir, prompt, opts), // AI 영상 — 회원 Gemini API 키 (0.1.12부터)
+        clipPrompts: (lines, opts) => ipcRenderer.invoke("video:ai-clip-prompts", lines, opts), // 이미지 + 동영상 프롬프트 한 번에 (0.1.12부터)
         imagePrompts: (lines, opts) => ipcRenderer.invoke("video:ai-image-prompts", lines, opts), // 클립별 AI 그림 영어 장면 설명 (0.1.11부터)
       },
       vacancy: (vacancyId) => ipcRenderer.invoke("video:vacancy", vacancyId),
@@ -289,6 +292,15 @@ if (allowed) {
         },
       },
       showFile: (file) => ipcRenderer.invoke("video:show-file", file),
+      // 완성 영상 SNS 올리기 — 반자동 (0.1.11부터)
+      post: {
+        draft: (o) => ipcRenderer.invoke("video:post-draft", o),
+        thumbs: (o) => ipcRenderer.invoke("video:post-thumbs", o),
+        fill: (o) => ipcRenderer.invoke("video:post-fill", o),
+        login: (ch) => ipcRenderer.invoke("video:post-login", ch),
+        finishLogin: () => ipcRenderer.invoke("video:post-finish-login"),
+        open: (ch, what) => ipcRenderer.invoke("video:post-open", ch, what),
+      },
       openSettings: (what) => ipcRenderer.invoke("video:open-settings", what), // 윈도우 카메라·마이크 권한 화면
       openDeviceSettings: (what) => ipcRenderer.invoke("video:open-device-settings", what), // 윈도우 카메라·마이크 장치 설정 (0.1.8부터)
       openPath: (p) => ipcRenderer.invoke("video:open-path", p),

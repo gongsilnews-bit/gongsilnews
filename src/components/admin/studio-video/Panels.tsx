@@ -60,11 +60,12 @@ export function keywordsOf(text: string): string[] {
 
 export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips, pro }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** 타임라인 편집 (캡컷처럼) — 썸네일 ＋ 단추로 넣기, 넣기 단추·크게 보기 없음 */ pro?: { onPlus: (item: LibItem) => void | Promise<void> }; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
   const b = videoBridge();
-  const [tab, setTab] = useState(initialTab === "vacancy" || initialTab === "store" ? "mine" : initialTab);
+  const [tab, setTab] = useState(initialTab === "vacancy" || initialTab === "store" || initialTab === "ai" ? "mine" : initialTab);
   const [vacOn, setVacOn] = useState(initialTab === "vacancy"); // 내 자료 › [공실 사진]
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
   const [fav, setFav] = useState(false);
   const [rec, setRec] = useState(false); // [녹화] — 녹화한 영상만 (2026-10-20 사장님)
+  const [aiOnly, setAiOnly] = useState(false); // [AI 그림] — 만든 AI 그림만 (문서공실뉴스 스튜디오AI그림, 2026-10-21 사장님)
   // 고르기 — 여러 개 골라 목록에서 빼기 (PC 파일은 그대로, 다시 불러오면 다시 보인다)
   const [selMode, setSelMode] = useState(false);
   const [chk, setChk] = useState<string[]>([]);
@@ -92,7 +93,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     if (!b) return;
     setItems(null);
     try {
-      setItems(await b.lib.list({ kind, fav: fav || tab === "fav", q, source: tab === "ai" ? "ai" : rec ? "record" : "" }));
+      setItems(await b.lib.list({ kind, fav: fav || tab === "fav", q, source: tab === "ai" || aiOnly ? "ai" : rec ? "record" : "" }));
     } catch (e) {
       setMsg(errText(e));
       setItems([]);
@@ -101,7 +102,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   useEffect(() => {
     if (((tab === "mine" || tab === "fav") && !vacOn) || tab === "ai") load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, kind, fav, rec, vacOn]);
+  }, [tab, kind, fav, rec, vacOn, aiOnly]);
   useEffect(() => {
     if (!vacOn || vacs) return;
     listMyStudioVacancies().then((r) => setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address} · 사진 ${v.photoCount}장` })) : [])).catch(() => setVacs([]));
@@ -394,11 +395,13 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     <>
       <div style={{ display: "flex", gap: 6 }}>
           {overlay ? (
-            <Btn primary small onClick={() => act("overlay")} disabled={picked.kind !== "image"}><Icon name="image" size={16} />{picked.kind === "image" ? "화면 위에 올리기" : "사진만 올릴 수 있어요"}</Btn>
+            <Btn primary small onClick={() => act("overlay")} disabled={picked.kind !== "image" && picked.kind !== "video"}><Icon name="image" size={16} />{picked.kind === "image" || picked.kind === "video" ? "화면 위에 올리기" : "사진·영상만 올릴 수 있어요"}</Btn>
           ) : (
             <>
               {canReplace && <Btn primary small onClick={() => act("replace")} title="고른 클립의 화면을 이 자료로 바꿔요" style={{ flex: 1, justifyContent: "center" }}><Icon name="image" size={16} />화면 바꾸기</Btn>}
               <Btn small onClick={() => act("insert")} title={canReplace ? "고른 클립 뒤에 새 클립으로 넣어요" : "맨 끝에 새 클립으로 넣어요"} style={{ flex: 1, justifyContent: "center" }}><Icon name="plus" size={16} />{canReplace ? "뒤에 넣기" : "끝에 넣기"}</Btn>
+              {/* 화면 위에 삽입 (2026-10-21 사장님) — 사진·영상 올리기와 같다 (고른 클립, 없으면 지금 클립) */}
+              {(picked.kind === "image" || picked.kind === "video") && <Btn small onClick={() => act("overlay")} title="고른 클립 화면 위에 겹쳐 올려요 (사진·영상 올리기)" style={{ flex: 1, justifyContent: "center" }}><Icon name="layers" size={16} />삽입하기</Btn>}
             </>
           )}
       </div>
@@ -434,7 +437,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     <Side title="사진 · 영상 고르기" onClose={onClose} footer={footer}>
       {hovered}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        {[["fav", "즐겨찾기"], ["mine", "내 자료"], ["free", "오픈자료"], ["ai", "AI 사진"]].map(([k, l]) => (
+        {/* [AI 사진] 탭은 뺐다 (2026-10-21 사장님: AI 편집 화면 편집판과 겹친다) — 만든 AI 그림은 내 자료 › AI 그림 */}
+        {[["fav", "즐겨찾기"], ["mine", "내 자료"], ["free", "오픈자료"]].map(([k, l]) => (
           <button key={k} type="button" onClick={() => { setTab(k); setMsg(""); }} style={tabBtn(tab === k)}>{l}</button>
         ))}
       </div>
@@ -447,8 +451,10 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             <Btn primary onClick={fromPc} style={{ width: "100%" }}><Icon name="plus" size={18} />PC에서 불러오기</Btn>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
               {(["all", "image", "video"] as const).map((k) => <button key={k} type="button" onClick={() => setKind(k)} style={chip(kind === k)}>{k === "all" ? "전체" : k === "image" ? "사진" : "영상"}</button>)}
-              {tab === "mine" && <button type="button" onClick={() => { setVacOn(!vacOn); setRec(false); }} style={chip(vacOn)} title="내 공실의 등록 사진 · 공실열람 검증·지도·로드뷰 화면">공실 사진</button>}
-              {tab === "mine" && !vacOn && <button type="button" onClick={() => setRec(!rec)} style={chip(rec)} title="강의·화면·카메라로 녹화한 영상만 (공실뉴스 스튜디오\녹화영상)">녹화</button>}
+              {tab === "mine" && <button type="button" onClick={() => { setVacOn(!vacOn); setRec(false); setAiOnly(false); }} style={chip(vacOn)} title="내 공실의 등록 사진 · 공실열람 검증·지도·로드뷰 화면">공실 사진</button>}
+              {tab === "mine" && !vacOn && <button type="button" onClick={() => { setRec(!rec); setAiOnly(false); }} style={chip(rec)} title="강의·화면·카메라로 녹화한 영상만 (공실뉴스 스튜디오\녹화영상)">녹화</button>}
+              {tab === "mine" && !vacOn && <button type="button" onClick={() => { setAiOnly(!aiOnly); setRec(false); }} style={chip(aiOnly)} title="만든 AI 그림만 (문서\공실뉴스 스튜디오\AI그림)">AI 그림</button>}
+              {aiOnly && b?.lib.aiFolder && <button type="button" onClick={async () => { const d = await b.lib.aiFolder!(); await b.openPath(d); }} style={chip(false)} title="AI 그림 모음 폴더 열기 (날짜별)"><Icon name="folder" size={14} /> 폴더</button>}
               <span style={{ flex: 1 }} />
               <button type="button" onClick={() => { setSelMode(!selMode); setChk([]); setPicked(null); }} style={chip(selMode)} title="여러 개 골라 목록에서 빼기">{selMode ? "고르기 끝" : "고르기"}</button>
             </div>
@@ -527,6 +533,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             style={{ ...input, height: "auto", padding: 10, marginTop: 6, resize: "vertical", lineHeight: 1.5 }} />
           <Btn primary onClick={drawAi} disabled={!aiPrompt.trim() || Boolean(busy)} style={{ width: "100%", marginTop: 8 }}><Icon name="image" size={18} />{imgAi}로 그리기</Btn>
           <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>[내 AI 연결]에서 고른 이미지 AI가 그려요. 1~2분 걸려요.</div>
+          {/* 만든 AI 그림 모음 — 문서\공실뉴스 스튜디오\AI그림\날짜 (2026-10-21 사장님) */}
+          {b?.lib.aiFolder && <Btn small onClick={async () => { const d = await b.lib.aiFolder!(); await b.openPath(d); }} style={{ marginTop: 8 }}><Icon name="folder" size={14} />AI 그림 폴더 열기</Btn>}
           {items && items.length > 0 && <div style={{ margin: "8px -14px 0" }}><div style={{ ...label, padding: "8px 14px 0", fontSize: 14 }}>그린 그림</div>{grid(items, (x) => setPicked(x as LibItem))}</div>}
         </details>
       )}

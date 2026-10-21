@@ -408,7 +408,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
     }
   };
 
-  // 기본 이름 "261020 제목" — 매물 이름 / 기사 제목 / 주제, 없으면 무제 (2026-10-20 사장님)
+  // 기본 이름 "20261021 제목" — 매물 이름 / 기사 제목 / 주제, 없으면 무제 (2026-10-20 사장님)
   const vacTitle = (vacInfo?.vacancy as { title?: string } | undefined)?.title || (vacs || []).find((v) => v.id === vacId)?.label.replace(/^\[[^\]]*\]\s*/, "").split(" · ")[0] || "";
   const defaultName = datedName(src === "vacancy" ? vacTitle : src === "news" ? news?.title : topic);
   const scenes = useMemo(() => splitScript(script), [script]);

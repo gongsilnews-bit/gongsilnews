@@ -94,6 +94,40 @@ function gwShortsPrompt(transcript, { count = 3, maxSec = 60, request = "" } = {
   ].filter((x) => x !== "").join("\n");
 }
 
+/* 완성 영상 SNS 올리기 — 유튜브 제목·설명·해시태그 + 인스타그램 캡션·해시태그 (2026-10-21, docs/2026-10-21_studio_sns_upload_plan.md)
+   중개사무소 정보·공실뉴스 링크·출처 줄은 코드가 붙인다 (AI 는 쓰지 않는다) */
+function gwVideoPostPrompt({ title = "", lines = [], vacancy = null, ratio = "16:9", seconds = 0 } = {}) {
+  const facts = gwVideoFacts(vacancy);
+  const shorts = ratio === "9:16" || ratio === "1:1";
+  const script = (lines || []).map((t) => String(t || "").replace(/\s+/g, " ").trim()).filter(Boolean).join("\n").slice(0, 6000);
+  return [
+    "당신은 부동산 전문 매체 '공실뉴스'의 SNS 에디터입니다. 아래 완성된 부동산 영상을 유튜브와 인스타그램에 올릴 글을 씁니다.",
+    "",
+    title ? `[영상 제목(편집기 이름)] ${title}` : "",
+    `[영상] ${shorts ? "세로 짧은 영상 (유튜브 쇼츠 · 인스타그램 릴스)" : "가로 영상 (유튜브 일반 영상)"}${seconds ? ` · 약 ${Math.round(seconds)}초` : ""}`,
+    facts ? `[매물 정보 — 확인된 사실, 숫자·주소는 한 글자도 바꾸지 말 것, 없는 정보는 지어내지 말 것]\n${facts}` : "",
+    script ? `[영상 대본 — 성우가 읽은 그대로]\n${script}` : "",
+    "",
+    "[원칙]",
+    "- 영상과 매물 정보에 실제로 있는 내용만 씁니다. 없는 수치·시세·수익률·개발 호재·교통 시간을 만들지 않습니다.",
+    "- 권유·호객·광고 표현을 쓰지 않습니다: \"문의하세요\", \"연락 주세요\", \"DM 주세요\", \"놓치지 마세요\", \"급매\", \"지금이 기회\", \"역대급\" 등.",
+    "- 중개사무소 이름·전화번호·주소·링크·\"프로필 링크\" 안내는 쓰지 않습니다 (글 끝에 자동으로 붙습니다).",
+    "- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.",
+    "",
+    "[유튜브 — youtube]",
+    "- title: 40자 안팎 (최대 90자). 지역 + 매물 종류 + 핵심 조건이 앞에 오게. 낚시성 과장·물음표 남발 금지",
+    "- description: 300~700자. 첫 두 줄에 무엇이 어디에 어떤 조건으로 나왔는지 결론부터. 이어서 영상에서 보여 준 순서대로 핵심을 짧은 문단으로",
+    "- hashtags: 5~8개. # 없이 낱말만, 띄어쓰기 없이 (지역명·매물 종류 중심)",
+    "",
+    "[인스타그램 — instagram]",
+    "- caption: 첫 줄은 25자 안팎의 훅 (지역 + 매물 핵심, 이모지 1개). 이어서 한 줄에 정보 하나씩 3~6줄, 줄마다 알맞은 이모지 하나로 시작. 전체 500자 이내",
+    "- hashtags: 8~12개. # 없이 낱말만, 띄어쓰기 없이",
+    "",
+    "[출력] 설명 없이 아래 JSON 하나만 ```json 상자로:",
+    '{"youtube":{"title":"","description":"","hashtags":[]},"instagram":{"caption":"","hashtags":[]}}',
+  ].filter((x) => x !== "").join("\n");
+}
+
 function gwVideoParse(raw) {
   const text = String(raw || "");
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -113,4 +147,4 @@ function gwVideoParse(raw) {
   }
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = { gwVideoFacts, gwVideoScriptPrompt, gwVideoScenePrompt, gwShortsPrompt, gwVideoParse };
+if (typeof module !== "undefined" && module.exports) module.exports = { gwVideoFacts, gwVideoScriptPrompt, gwVideoScenePrompt, gwShortsPrompt, gwVideoPostPrompt, gwVideoParse };

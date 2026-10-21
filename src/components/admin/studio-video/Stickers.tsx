@@ -849,7 +849,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
   onClose: () => void;
 }) {
   const b = videoBridge()!;
-  const tplOk = Boolean(tplInsert) && !replacing; // 템플릿은 새로 넣을 때만 (바꾸기는 스티커끼리)
+  const tplOk = Boolean(tplInsert); // 바꾸기도 모든 그래픽(예능·브이로그·구독·기타 템플릿까지)에서 (2026-10-21 사장님: 부동산만 나옴)
   const tabs = TABS.map((t) => ({ ...t, subs: t.subs.filter((x) => x.stk || tplOk) })).filter((t) => t.id === "my" || t.subs.length);
   const [my, setMy] = useState<MySticker[]>(() => loadMy());
   const myShown = my.filter((x) => x.kind === "stk" || tplOk);
@@ -989,7 +989,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     if (mySel === id) setMySel("");
   };
   const tplPanel = (key: string, only: (d: TplDef) => boolean) => tplInsert && (
-    <TemplatePanel key={key} bare project={project} kind="sticker" only={only} onInsert={tplInsert} onClose={() => {}}
+    <TemplatePanel key={key} bare project={project} kind="sticker" only={only} onInsert={tplInsert} replacing={replacing} onClose={() => {}}
       onSave={(x) => addMy({ id: String(Date.now()), name: x.label, kind: "tpl", tid: x.id, text: x.text, color: x.color })} />
   );
 

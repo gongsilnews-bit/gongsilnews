@@ -1,6 +1,6 @@
 import type React from "react";
 // 클립 길이·남길 구간·단어 시각 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 완성 영상). 둘을 같이 고친다.
-import type { Adjust, Clip, Crop, Ease, Keyframe, KfProp, Layer, Project, Settings, SubtitleSettings } from "./types";
+import type { Adjust, Clip, Crop, Ease, Keyframe, KfProp, Layer, Project, Roll, Settings, SubtitleSettings } from "./types";
 import { uid } from "./types";
 
 export const GAP = 0.2; // 기본 문장 사이 쉼 — 0.4 는 문장마다 끊겨 들렸다 (2026-10-20 사장님, 브루처럼 짧게). gapOf(settings) 를 쓴다
@@ -105,6 +105,117 @@ export function clipText(clip: Clip) {
 }
 
 export type FlatItem = { clip: Clip; sceneId: string; start: number; dur: number; index: number };
+
+/* ── 영상 이어 깔기 (컷편집처럼, 2026-10-21 사장님) ──
+   묶음(Project.rolls)의 영상을 from~to 클립 구간에 시간 순서로 꽉 채워 깐다. 영상이 끝나는 순간 다음 영상 (클립 경계와 상관없이).
+   실제로는 꽉 채운 "화면 위 영상" 레이어를 조각마다 만든다 (미리보기·굽기 모두 지금 레이어 그대로) — 고칠 때마다 다시 깔아서 클립 길이가 바뀌어도 맞는다 */
+export type RollPiece = { k: number; asset: string; vs: number; t0: number; t1: number };
+export function rollPieces(p: Project, r: Roll, items: FlatItem[] = flatten(p).items): { pieces: RollPiece[]; A: number; B: number; short: number } | null {
+  const ia = items.findIndex((x) => x.clip.id === r.from);
+  const ib = items.findIndex((x) => x.clip.id === r.to);
+  if (ia < 0 || ib < ia) return null;
+  const A = items[ia].start, B = items[ib].start + items[ib].dur;
+  const list = r.items
+    .map((it, k) => ({ k, asset: it.asset, vs: Math.max(0, it.vs || 0), len: Math.max(0, (it.ve ?? (p.assets[it.asset]?.duration || 0)) - Math.max(0, it.vs || 0)) }))
+    .filter((x) => x.len > 0.1 && p.assets[x.asset]);
+  const pieces: RollPiece[] = [];
+  let t = A;
+  for (let n = 0; list.length && t < B - 0.01 && n < 300; n++) {
+    if (n >= list.length && r.end === "stop") break;
+    const it = list[n % list.length];
+    const t1 = Math.min(B, t + it.len);
+    pieces.push({ k: it.k, asset: it.asset, vs: it.vs, t0: t, t1 });
+    t = t1;
+  }
+  return { pieces, A, B, short: Math.max(0, B - t) };
+}
+/** 앞 클립 화면 영상이 모자라는 끝부분 (초) — 영상이 클립보다 짧아 끝 장면에서 멈추는 길이 (2026-10-21) */
+export function tailGap(p: Project, it: FlatItem): number {
+  const v = it.clip.visual;
+  const a = v ? p.assets[v.asset] : null;
+  if (!v || !a || a.kind !== "video") return 0;
+  const used = (v.e ?? a.duration) - (v.s || 0);
+  return Math.max(0, +(it.dur - used).toFixed(3));
+}
+/** 앞당겨 채우기 — visualLead 클립마다 앞 클립 끝 lead 초 동안 꽉 채운 영상 조각 (이 클립 영상의 바로 앞부분) */
+export function layLeads(p: Project) {
+  const all = p.layers || [];
+  const others = all.filter((l) => !l.lead);
+  const items = flatten(p).items;
+  const gen: Layer[] = [];
+  items.forEach((it, k) => {
+    const c = it.clip;
+    const lead = Number(c.visualLead) || 0;
+    const a = c.visual ? p.assets[c.visual.asset] : null;
+    const pr = items[k - 1];
+    if (lead <= 0.05 || !a || a.kind !== "video" || !pr) { if (c.visualLead && (!a || !pr)) delete c.visualLead; return; }
+    const L = Math.min(lead, pr.dur, c.visual!.s || 0);
+    if (L <= 0.05) return;
+    // 이 클립 안까지 같은 조각으로 쭉 (2026-10-21: 클립 경계에서 화면 칸이 영상을 바꿔 끼우며 멈칫했다) — 영상이 끝나는 곳까지, 그 뒤는 클립 화면(끝 장면 멈춤)
+    const avail = (c.visual!.e ?? a.duration) - (c.visual!.s || 0);
+    const te = avail < it.dur - 0.01 ? Math.max(0.05, +avail.toFixed(3)) : undefined;
+    gen.push({
+      id: "lead-" + c.id, type: "image", lead: c.id, asset: a.id, name: a.name, vs: +((c.visual!.s || 0) - L).toFixed(3), volume: c.visualVolume || 0,
+      from: pr.clip.id, to: c.id, ts: +(pr.dur - L).toFixed(3), ...(te !== undefined ? { te } : {}),
+      fit: "cover", x: 0.5, y: 0.5, w: 1, opacity: 1, track: 2, lock: true,
+    } as Layer);
+  });
+  if (gen.length || others.length !== all.length) p.layers = [...gen, ...others];
+}
+
+export function layRolls(p: Project) {
+  const all = p.layers || [];
+  const others = all.filter((l) => !l.roll);
+  const rolls = p.rolls || [];
+  if (!rolls.length) {
+    if (others.length !== all.length) p.layers = others;
+    return;
+  }
+  const items = flatten(p).items;
+  const at = (t: number, end: boolean) => items.find((x) => (end ? t > x.start + 1e-6 && t <= x.start + x.dur + 1e-6 : t >= x.start - 1e-6 && t < x.start + x.dur - 1e-6)) || items[items.length - 1];
+  const gen: Layer[] = [];
+  p.rolls = rolls.filter((r) => {
+    const res = rollPieces(p, r, items);
+    if (!res) return false; // 구간 클립이 지워졌으면 묶음도 지운다
+    res.pieces.forEach((pc, j) => {
+      const a = at(pc.t0, false), b = at(pc.t1, true);
+      const ts = pc.t0 - a.start, te = pc.t1 - b.start;
+      const id = `${r.id}-${j}`;
+      const old = all.find((l) => l.id === id);
+      gen.push({
+        id, type: "image", roll: r.id, asset: pc.asset, name: p.assets[pc.asset]?.name, vs: +pc.vs.toFixed(3), volume: r.volume ?? 0,
+        from: a.clip.id, to: b.clip.id, ...(ts > 0.005 ? { ts: +ts.toFixed(3) } : {}), ...(te < b.dur - 0.005 ? { te: +Math.max(0.05, te).toFixed(3) } : {}),
+        fit: "cover", x: 0.5, y: 0.5, w: 1, opacity: 1, track: 2, lock: true, ...(old?.off ? { off: true } : {}),
+      } as Layer);
+    });
+    return true;
+  });
+  p.layers = [...gen, ...others]; // 맨 아래 (그래픽·글자는 그 위에)
+}
+
+/** 화면 영상 이어 붙이기 — visualCont 클립은 앞 클립과 같은 영상을 앞 클립이 끝난 자리부터 (2026-10-21 사장님: 영상 하나를 여러 클립에 쭉)
+ *  앞 클립 화면이 다른 자료면 이어 붙이기가 끊긴다 (표시를 지운다) */
+export function chainVisuals(p: Project) {
+  const items = flatten(p).items;
+  for (let i = 0; i < items.length; i++) {
+    const c = items[i].clip;
+    const pr = i > 0 ? items[i - 1].clip : null;
+    if (!c.visualCont) {
+      // 이어 붙였던 시작점이 남은 채 다른 영상으로 바뀐 클립 — 처음(0초)부터 (2026-10-21: 다른 영상 8초부터 나오던 것)
+      if (c.visual && c.visual.s > 0 && pr?.visual && pr.visual.asset !== c.visual.asset && Math.abs(c.visual.s - (pr.visual.s + items[i - 1].dur)) < 0.02) c.visual = { asset: c.visual.asset, s: 0 };
+      continue;
+    }
+    if (!pr || !pr.visual || !c.visual || pr.visual.asset !== c.visual.asset) {
+      // 앞 클립 화면이 바뀌어 이어 붙이기가 끊김 — 이 클립 영상도 처음부터
+      delete c.visualCont;
+      if (c.visual) c.visual = { asset: c.visual.asset, s: 0 };
+      continue;
+    }
+    const s = +(pr.visual.s + items[i - 1].dur).toFixed(3);
+    if (c.visual.s !== s || c.visual.e !== undefined) c.visual = { asset: c.visual.asset, s };
+    c.visualHold = true;
+  }
+}
 
 export function flatten(p: Project): { items: FlatItem[]; total: number } {
   const items: FlatItem[] = [];

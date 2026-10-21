@@ -1663,7 +1663,9 @@ function thumbOf(d: TplDef) {
   return thumbCache.get(d.id) || "";
 }
 
-export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, only, init, noGrid, onSave }: {
+export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, only, init, noGrid, onSave, replacing }: {
+  /** [그래픽 바꾸기]로 열었을 때 — 단추 이름만 (2026-10-21) */
+  replacing?: boolean;
   /** 스티커 칸 안에 넣을 때 (2026-10-20 사장님: 템플릿을 스티커 분류로) — 이 분류만, 칸 틀·분류 칩 없이 */
   cat0?: string;
   bare?: boolean;
@@ -1795,7 +1797,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
           </div>
           <div style={{ display: "flex", gap: 8, margin: "12px 0 4px" }}>
             {onSave && <Btn onClick={() => { onSave({ id: pick.id, label: pick.label, text: tplTextOf(vals, opt), color }); setSaved(true); setTimeout(() => setSaved(false), 1500); }} style={{ flex: 1, justifyContent: "center" }}>{saved ? "저장했어요" : "내 그래픽에 저장"}</Btn>}
-            <Btn primary onClick={insert} disabled={busy || !ready} style={{ flex: 1, justifyContent: "center" }}>{busy ? "넣는 중…" : "화면에 넣기"}</Btn>
+            <Btn primary onClick={insert} disabled={busy || !ready} style={{ flex: 1, justifyContent: "center" }}>{busy ? (replacing ? "바꾸는 중…" : "넣는 중…") : replacing ? "이 그래픽으로 바꾸기" : "화면에 넣기"}</Btn>
           </div>
           {err && <div style={{ marginTop: 12, fontSize: 14, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
         </div>
@@ -1808,7 +1810,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
       footer={
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ flex: 1, fontSize: 12.5, color: C.dim, lineHeight: 1.5 }}>넣은 뒤 화면에서 끌어 옮기고 모서리로 크기를 바꿔요. 글은 오른쪽 칸에서 다시 고칠 수 있어요.</span>
-          <Btn primary onClick={insert} disabled={busy || !ready}>{busy ? "넣는 중…" : "화면에 넣기"}</Btn>
+          <Btn primary onClick={insert} disabled={busy || !ready}>{busy ? (replacing ? "바꾸는 중…" : "넣는 중…") : replacing ? "이 그래픽으로 바꾸기" : "화면에 넣기"}</Btn>
         </div>
       }>
       <div style={{ padding: "4px 16px 20px" }}>

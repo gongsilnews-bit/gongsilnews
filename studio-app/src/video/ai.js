@@ -72,7 +72,9 @@ async function shorts(clips, { count = 3, maxSec = 60, request = "" } = {}, onPr
 function image(prompt, onProgress, opts = {}) {
   const ratio = String(opts.ratio || "");
   const word = { "16:9": "wide 16:9 landscape", "9:16": "tall 9:16 vertical", "1:1": "square 1:1", "4:5": "vertical 4:5", "4:3": "4:3 landscape" }[ratio];
-  return ai.askImage(word ? `${prompt} Image aspect ratio: ${word}.` : prompt, { onProgress, ratio });
+  // files: 캐릭터 시트 등 참고 사진 (2026-10-21 사장님: 캐릭터 일관성) — 있는 파일만
+  const files = (opts.files || []).filter((x) => x && require("fs").existsSync(x)).slice(0, 3);
+  return ai.askImage(word ? `${prompt} Image aspect ratio: ${word}.` : prompt, { onProgress, ratio, files });
 }
 
 /* ── 클립별 AI 그림 — 대본 → 영어 장면 설명 (2026-10-19 사장님, 공실뉴스 AI 스튜디오 앱 방식) ──
@@ -134,6 +136,69 @@ async function imagePrompts(lines, opts = {}, onProgress = () => {}) {
   const text = await ai.ask(prompt, { onProgress, busyLabel: "그림 장면 설명을 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
   const out = parse(text) || [];
   return list.map((_, i) => out[i] || "");
+}
+
+/* ── 클립마다 이미지 프롬프트 + 동영상(움직임) 프롬프트를 한 번에 (2026-10-21 사장님: [프롬프트 만들기] 한 번에 다)
+   lines·opts 는 imagePrompts 와 같다 (+ opts.extra: 내 맞춤 프롬프트) → [{ image, motion }] (같은 순서)
+   opts.styles: [{ id, label, desc, character? }] — 그림 스타일 [자동]: AI 가 대본을 읽고 하나를 골라 모든 클립에 → { style, clips } (2026-10-21 사장님) */
+async function clipPrompts(lines, opts = {}, onProgress = () => {}) {
+  const list = (lines || []).map((t) => String(t || "").replace(/\s+/g, " ").trim());
+  if (!list.length) return [];
+  const kinds = list.map((_, i) => (opts.kinds && KIND_FOCUS[opts.kinds[i]] ? opts.kinds[i] : "auto"));
+  const hero = opts.character ? `\nEvery scene stars this character (describe what the character is doing in the scene): ${opts.character}` : "";
+  const pick = Array.isArray(opts.styles) && opts.styles.length ? opts.styles : null;
+  let chosen = "";
+  const parse = (t) => {
+    const txt = String(t || "");
+    try {
+      let a = null;
+      if (pick) {
+        const o = /\{[\s\S]*\}/.exec(txt);
+        const j = o ? JSON.parse(o[0]) : null;
+        if (!j || !Array.isArray(j.clips)) return null;
+        chosen = String(j.style || "");
+        a = j.clips;
+      } else {
+        const m = /\[[\s\S]*\]/.exec(txt);
+        a = m ? JSON.parse(m[0]) : null;
+      }
+      return Array.isArray(a) ? a.map((x) => ({ image: String((x && (x.image || x.prompt)) || "").trim(), motion: String((x && (x.motion || x.video)) || "").trim() })) : null;
+    } catch {
+      return null;
+    }
+  };
+  const styleLine = pick
+    ? [
+        "FIRST choose ONE art style for the WHOLE video from this list (it must fit the script, the audience and the topic; every clip uses the same style):",
+        ...pick.map((x) => `- ${x.id}: ${x.label} — ${x.desc || ""}${x.character ? ` (main character: ${x.character})` : ""}`),
+        "If the chosen style has a main character, every scene stars that character. The art style itself will be added separately — describe the scene content, composition, lighting and camera.",
+      ].join("\n")
+    : opts.style
+      ? `The final art style will be added separately (${opts.style}) — describe the scene content, composition, lighting and camera, not the art style.`
+      : "";
+  const prompt = [
+    'You are a professional storyboard artist and video director for "Gongsil News" (Korean real estate news & listings).',
+    "Below are the video clips in order (Korean narration). For EACH clip write TWO English prompts:",
+    '  "image": one highly descriptive prompt for an AI image generator (the still frame of this clip).',
+    '  "motion": one short prompt for an image-to-video AI that animates THAT still frame — camera movement (push-in, pan, drone rise, orbit, static…) and subject motion that fit the narration. Keep the scene identical to the still frame; 1-2 sentences.',
+    "Keep continuity: the same property / neighborhood / character should look consistent across clips. Vary the camera motions so the video does not feel repetitive." + hero,
+    styleLine,
+    opts.extra ? `The user also wants (apply to every clip): ${opts.extra}` : "",
+    VISUAL_RULES,
+    "",
+    "[Clips]",
+    list.map((t, i) => `${i + 1}. (${kinds[i]}: ${KIND_FOCUS[kinds[i]]}) ${t}`).join("\n"),
+    "",
+    pick
+      ? `Answer JSON only: {"style": "<style id from the list>", "clips": [exactly ${list.length} objects {"image": "...", "motion": "..."} in the same order]}`
+      : `Answer JSON only: an array of exactly ${list.length} objects {"image": "...", "motion": "..."} in the same order.`,
+  ].filter((x) => x !== "").join("\n");
+  onProgress("글 AI가 클립마다 이미지·동영상 프롬프트를 쓰는 중…");
+  const text = await ai.ask(prompt, { onProgress, busyLabel: "이미지·동영상 프롬프트를 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
+  const out = parse(text) || [];
+  const clips = list.map((_, i) => out[i] || { image: "", motion: "" });
+  if (pick) return { style: pick.some((x) => x.id === chosen) ? chosen : pick[0].id, clips };
+  return clips;
 }
 
 /* ── 대본 + 내 영상 → 문장마다 어울리는 장면 (회의 3-19) ──
@@ -394,4 +459,4 @@ async function groupScenes(lines, onProgress = () => {}) {
   return out;
 }
 
-module.exports = { imagePrompts, script, scenesFor, shorts, image, matchFootage, footageSheets, aiEdit, groupScenes, facts: (v) => lib.gwVideoFacts(v), tl };
+module.exports = { imagePrompts, clipPrompts, script, scenesFor, shorts, image, matchFootage, footageSheets, aiEdit, groupScenes, facts: (v) => lib.gwVideoFacts(v), tl };
