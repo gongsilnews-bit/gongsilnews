@@ -164,9 +164,17 @@ async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = 
   // 사진 첨부 (인테리어·리모델링 시뮬레이션 — 지금 모습 사진을 고쳐 그리게 한다). 올라가는 동안 보내기 버튼이 잠긴다
   if (files.length) {
     onProgress(`사진 ${files.length}장을 ChatGPT에 올리는 중…`);
-    const input = page.locator('input[type="file"][accept*="image"]').first();
-    const anyInput = page.locator('input[type="file"]').first();
-    await ((await input.count()) ? input : anyInput).setInputFiles(files);
+    // 여러 장 받는 칸 먼저 — "사진 찍기"(capture, 한 장만) 칸에 올리면 "Non-multiple file input" 오류 (2026-10-20 AI 편집 장면 모음)
+    const multi = page.locator('input[type="file"][multiple]:not([capture])').first();
+    if (await multi.count()) await multi.setInputFiles(files);
+    else {
+      const img = page.locator('input[type="file"][accept*="image"]:not([capture])').first();
+      const one = (await img.count()) ? img : page.locator('input[type="file"]:not([capture])').first();
+      for (const f of files) { // 한 장씩 받는 칸뿐이면 한 장씩
+        await one.setInputFiles([f]);
+        await chrome.sleep(1500);
+      }
+    }
     await chrome.sleep(2500);
     const deadline = Date.now() + 90 * 1000;
     while (Date.now() < deadline) {

@@ -121,7 +121,7 @@ if (allowed) {
         pick: (opts) => ipcRenderer.invoke("video:lib-pick", opts),
         /** 다운로드 폴더에서 since(ms) 이후 받은 소리 파일 · 그 파일들을 내 음악에 넣기 (0.1.11부터) */
         downloadsAudio: (since) => ipcRenderer.invoke("video:lib-downloads-audio", since),
-        addDownloads: (files) => ipcRenderer.invoke("video:lib-add-downloads", files),
+        addDownloads: (files, source) => ipcRenderer.invoke("video:lib-add-downloads", files, source),
         fav: (id, fav) => ipcRenderer.invoke("video:lib-fav", id, fav),
         remove: (id) => ipcRenderer.invoke("video:lib-remove", id),
         folders: () => ipcRenderer.invoke("video:lib-folders"),
@@ -227,6 +227,7 @@ if (allowed) {
       },
       musicGet: (dir, rel) => ipcRenderer.invoke("video:music-get", dir, rel),
       musicUse: (dir, libId) => ipcRenderer.invoke("video:music-use", dir, libId),
+      sfxUse: (dir, libId) => ipcRenderer.invoke("video:sfx-use", dir, libId),
       fonts: { ensure: (family) => ipcRenderer.invoke("video:font-ensure", family) },
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
       exportPick: (p, kind) => ipcRenderer.invoke("video:export-pick", p, kind), // 저장할 곳 고르기 (0.1.11부터)

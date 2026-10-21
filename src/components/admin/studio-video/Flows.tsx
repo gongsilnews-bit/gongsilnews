@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Clip, Folders, LibItem, Method, Project, Ratio, Recent, TrashItem } from "./types";
-import { RATIO_LABEL, errText, fmtTime, uid, videoBridge } from "./types";
+import { RATIO_LABEL, errText, fmtTime, uid, videoBridge, datedName, ymd } from "./types";
 import { splitScript } from "./timeline";
 import { useStudioWriter } from "@/components/admin/sections/useStudioWriter";
 import { RecordMini, openMiniWindow } from "./RecordMini";
@@ -681,7 +681,7 @@ export function AudioFlow({ onCancel, onDone }: { onCancel: () => void; onDone: 
   const [photo, setPhoto] = useState<LibItem | null>(null);
   const [ratio, setRatio] = useState<Ratio>("16:9");
   const [sub, setSub] = useState(true);
-  const [projName, setProjName] = useState("무제");
+  const [projName, setProjName] = useState(() => datedName());
   const [folder, setFolder] = useState("");
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [err, setErr] = useState("");
@@ -693,7 +693,7 @@ export function AudioFlow({ onCancel, onDone }: { onCancel: () => void; onDone: 
       if (!add.length) return;
       const next = [...picked, ...add];
       setPicked(next);
-      if (projName === "무제") setProjName(next[0].name.replace(/\.[^.]+$/, ""));
+      if (projName === datedName()) setProjName(datedName(next[0].name.replace(/\.[^.]+$/, "")));
     } catch (e) {
       setErr(errText(e));
     }
@@ -799,7 +799,7 @@ export function VideoFlow({ method = "video", preset, script = "", onCancel, onD
   const [err, setErr] = useState("");
   const [photoSec, setPhotoSec] = useState(3);
   const [vacancyId, setVacancyId] = useState("");
-  const [projName, setProjName] = useState("무제");
+  const [projName, setProjName] = useState(() => datedName());
   const [folder, setFolder] = useState("");
   const photos = method === "video";
   const hasPhoto = picked.some((x) => x.kind === "image");
@@ -1013,7 +1013,7 @@ export function LongformFlow({ onCancel, onDone }: { onCancel: () => void; onDon
   const [count, setCount] = useState(3);
   const [maxSec, setMaxSec] = useState(60);
   const [ratio, setRatio] = useState<Ratio>("9:16");
-  const [projName, setProjName] = useState("무제");
+  const [projName, setProjName] = useState(() => datedName());
   const [folder, setFolder] = useState("");
   const [request, setRequest] = useState("");
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
@@ -2316,7 +2316,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 13.5, color: C.sub, width: 52, flexShrink: 0 }}>파일 이름</span>
-                <input value={fileName} onChange={(e) => setFileName(e.target.value)} disabled={phase !== "setup"} placeholder={`비우면 자동 (${mode === "camera" ? "카메라 녹화" : "화면 녹화"}_날짜·시각)`} style={{ ...input, height: 34, fontSize: 13.5, flex: 1, minWidth: 0 }} />
+                <input value={fileName} onChange={(e) => setFileName(e.target.value)} disabled={phase !== "setup"} placeholder={`비우면 자동 (${ymd()} ${mode === "camera" ? "카메라 녹화" : "화면 녹화"})`} style={{ ...input, height: 34, fontSize: 13.5, flex: 1, minWidth: 0 }} />
                 <span style={{ fontSize: 13, color: C.dim, flexShrink: 0 }}>.mp4</span>
               </div>
               {saveDir && <button type="button" disabled={phase !== "setup"} onClick={() => setSaveDir("")} style={{ marginTop: 6, padding: 0, border: 0, background: "transparent", color: C.dim, fontSize: 12, fontFamily: FONT, cursor: "pointer", textDecoration: "underline" }}>기본 폴더로 되돌리기</button>}

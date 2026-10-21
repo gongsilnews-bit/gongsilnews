@@ -76,6 +76,7 @@ export type Clip = {
   rot?: number; // 화면 회전 (도, 시계 방향 +) — 미리보기 회전 손잡이·타임라인 [회전]
   opacity?: number; // 화면 진하기 0~1 (검은 바탕 위, 기본 1)
   kf?: Keyframe[]; // 화면 키프레임 — 있으면 자리·크기·회전·진하기가 시간에 따라 (사진 자동 움직임은 쉰다)
+  card?: "end"; // AI 편집이 넣은 끝 화면 (중개사무소 정보) — 다시 AI 편집하면 이 클립을 고쳐 쓴다
   adj?: Adjust; // 색 보정·필터
   crop?: Crop; // 자르기 (프리미어 효과 컨트롤) — 원본 화면의 가장자리를 잘라 낸다 (잘린 곳은 아래가 보인다)
   subKf?: Keyframe[]; // 메인자막 키프레임 (클립 처음부터 초) — 자리·크기·회전·진하기
@@ -129,6 +130,7 @@ export type Layer = {
   // 사진
   asset?: string;
   sfx?: string; // 효과음 이름 (public/studio-sfx · studio-app/src/video/sfx 의 파일 이름)
+  clicks?: number[]; // 누르는 소리 — 나온 때부터 이 초마다 큰 딸깍 (구독·좋아요 그래픽)
   sticker?: boolean; // [삽입] → 그래픽으로 넣은 것 (사진 레이어와 같이 그리고, 이름·아이콘만 "그래픽")
   stk?: { style: string; text: string; icon?: string; color?: string }; // 스티커 모양 — 넣은 뒤 글자를 고치면 이것으로 다시 그린다
   /** 굽기 때만 (저장 안 함) — 클립마다 애니메이션 칸 그림: dir 폴더의 00000.png… , s0(클립 안 시작 초), x·y(왼쪽 위) */
@@ -235,6 +237,10 @@ export type Project = {
   method: Method;
   ratio: Ratio;
   vacancyId?: string;
+  /** 영상 종류 — 대본 쓰고 편집하기에서 고른 갈래 (AI 편집 ① 처음 값, 2026-10-20) */
+  kind?: "vacancy" | "news" | "topic";
+  /** 이 영상 자료 — 대본 단계에서 모은 매물 사진·검증·지도·로드뷰·기사 캡쳐 (AI 편집 ② 에 저절로). 파일은 PC 원래 자리, 여기는 목록만 */
+  materials?: LibItem[];
   /** 오디오로 편집하기 — 편집 화면을 처음 열 때 받아쓰기(자동 자막)를 바로 시작한다 (한 번 하고 지운다) */
   autoSubOnOpen?: boolean;
   /** 녹화할 때 프롬프터 대본 — 받아쓰기 뒤 "거의 같은 낱말"만 대본 글자로 고치는 데 쓰고 지운다 (scriptFix.ts) */
@@ -275,10 +281,10 @@ export const RATIO_LABEL: Record<Ratio, string> = { "16:9": "유튜브", "9:16":
 export type VideoBridge = {
   lib: {
     list: (o?: { kind?: string; fav?: boolean; q?: string; source?: string }) => Promise<LibItem[]>;
-    pick: (o?: { kinds?: "media" | "audio" }) => Promise<(LibItem & { path?: string })[]>;
+    pick: (o?: { kinds?: "media" | "audio"; source?: "sfx" }) => Promise<(LibItem & { path?: string })[]>;
     /** 다운로드 폴더에서 since(ms) 이후 받은 소리 파일 · 내 음악에 넣기 — 0.1.11부터 */
     downloadsAudio?: (since: number) => Promise<{ path: string; name: string; at: number; size: number }[]>;
-    addDownloads?: (files: string[]) => Promise<LibItem[]>;
+    addDownloads?: (files: string[], source?: "sfx") => Promise<LibItem[]>;
     fav: (id: string, fav: boolean) => Promise<boolean>;
     remove: (id: string) => Promise<void>;
     folders: () => Promise<string[]>;
@@ -371,11 +377,12 @@ export type VideoBridge = {
     /** 대본 + 내 영상 → 문장마다 장면 (v: 자료 번호, -1 = 없음 · t: 시작 초). 앱 0.1.10부터 */
     footage?: (lines: string[], items: { path: string; kind: string; duration: number }[]) => Promise<{ v: number; t: number }[]>;
     /** [AI 편집] 글 AI 의 편집 계획 — 앱 0.1.10부터 */
-    edit?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts: { aiMax: number; moods: string[]; screen?: boolean; ratio?: string; catalog?: AiEditCatalog }) => Promise<{
+    edit?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts: { aiMax: number; moods: string[]; screen?: boolean; ratio?: string; catalog?: AiEditCatalog; kind?: string; request?: string; locked?: number[]; stock?: boolean; graphics?: string; sfx?: string; ai?: { provider: string; mode: string } | null; packs?: { id: string; label: string; desc: string }[] }) => Promise<{
       music: string;
       clips: { act: "keep" | "foot" | "ai" | "stock" | "same"; v?: number; t?: number; desc?: string; keywords?: string; title?: string; emph?: boolean; trans?: boolean; sticker?: { text: string; style: string }; sfx?: string }[];
       /** 영상 전체 자막 모양 (catalog 를 보냈을 때) — 0.1.11부터 */
       look?: { preset: string; in: string; out: string; emph: string; wshow: string; whl: string; wcolor: string; lines: number } | null;
+      pack?: string; // [자동] 스타일 팩 — AI 가 고른 것
     }>;
     /** opts.ratio — 영상 비율로 그리기 (0.1.11부터) */
     image: (dir: string, prompt: string, opts?: { ratio?: string }) => Promise<LibItem>;
@@ -393,6 +400,8 @@ export type VideoBridge = {
   };
   musicGet: (dir: string, rel: string) => Promise<{ file: string; url: string }>;
   musicUse: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
+  /** 내 효과음 → 프로젝트 assets/sfx 로 복사 (앱 0.1.11부터) */
+  sfxUse?: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
   fonts: { ensure: (family: string) => Promise<{ family: string; url: string }> };
   render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number; outFile?: string }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
   /** 이 앱이 완성 영상에 그릴 수 있는 것 — "kf"(키프레임·화면 회전·진하기·초 단위 구간), "adj"(색 보정·필터). 2026-10-20 키프레임 들어간 앱부터 */
@@ -405,7 +414,7 @@ export type VideoBridge = {
   /** 대본을 .txt 로 저장 (저장 창) — 고른 파일 경로, 취소면 null */
   saveText?: (name: string, text: string) => Promise<string | null>;
   /** 목소리만 파일로 — 문장마다 AI 목소리를 만들어 쉼을 두고 이어 mp3·wav 하나 (프로젝트 없이, 2026-10-20) */
-  voiceSave?: (texts: string[], voiceId: string, opts: { kind: "mp3" | "wav"; outFile: string; speed?: number; gap?: number; emotion?: string; noOverwrite?: boolean; /** 미리 듣기 — 처음 세 문장, 임시 파일 (url 로 돌려줌) */ preview?: boolean }) => Promise<{ file: string; seconds: number; url?: string }>;
+  voiceSave?: (texts: string[], voiceId: string, opts: { kind: "mp3" | "wav"; outFile: string; speed?: number; gap?: number; emotion?: string; noOverwrite?: boolean; /** 이미 만든 문장 목소리 — 다시 만들지 않고 잇기만 */ files?: string[]; /** 미리 듣기 — 처음 세 문장, 임시 파일 (url 로 돌려줌) */ preview?: boolean }) => Promise<{ file: string; seconds: number; url?: string }>;
   /** 예전 앱(0.1.9 이하)은 파일 경로(string)만, 범위(opts)도 무시 */
   exportAudio: (p: Project, kind: "mp3" | "wav", o?: { scope?: string; sceneId?: string; clipIds?: string[]; outFile?: string }) => Promise<string | { file: string; seconds: number; took: number }>;
   snapshot: (p: Project, file: string, at: number) => Promise<string>;
@@ -450,6 +459,10 @@ export const videoBridge = (): VideoBridge | null => {
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
+/** 기본 파일 이름 앞 — 년월일 6자리 (261020) */
+export const ymd = (d = new Date()) => `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+/** 기본 파일 이름 — "261020 제목" (파일 이름에 못 쓰는 글자는 빼고, 제목은 30자까지) */
+export const datedName = (title?: string, d?: Date) => `${ymd(d)} ${String(title || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 30) || "무제"}`;
 export const errText = (e: unknown) => {
   const m = String(e instanceof Error ? e.message : e);
   // 앱 본체가 영상 기능보다 먼저 켜졌거나(옛 버전) — 화면만 새것이라 통로가 없다

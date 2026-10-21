@@ -5,7 +5,7 @@
 //  기본 저장 폴더 = 문서\공실뉴스 스튜디오\AI오디오. 만드는 법은 [텍스트로 영상 › 목소리만 저장]과 같다 (b.voiceSave)
 import React, { useEffect, useMemo, useState } from "react";
 import type { Project } from "./types";
-import { errText, videoBridge } from "./types";
+import { errText, videoBridge, datedName } from "./types";
 import { splitScript, estimateSeconds, COMMA_GAP, GAP } from "./timeline";
 import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
 import { VoiceFace, VoicePanel } from "./Panels";
@@ -114,10 +114,8 @@ export function AiVoiceStudio() {
       setPv("");
     }
   };
-  const autoName = () => {
-    const d = new Date();
-    return `AI 보이스_${d.getMonth() + 1}월${d.getDate()}일 ${d.getHours()}시${String(d.getMinutes()).padStart(2, "0")}분`;
-  };
+  // 기본 이름 "261020 AI 보이스" — 같은 이름이 있으면 _2 (2026-10-20 사장님)
+  const autoName = () => datedName("AI 보이스");
   const save = async () => {
     if (!b?.voiceSave || !lines.length || !dir) return;
     const base = (name.trim() || autoName()).replace(/[\\/:*?"<>|]/g, "_");

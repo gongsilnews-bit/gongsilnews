@@ -55,7 +55,10 @@ export type ClipActions = {
   newClipBefore: (id: string) => void; // 클립 사이 [+ 새 클립] — 이 클립 앞에 글 클립
   openTrans: (id: string, add: boolean) => void;
   /** 자막 아이콘 — 그 클립으로 가서 미리보기에서 메인자막 고르기 (2026-10-20 사장님) */
-  pickSub?: (id: string) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
+  pickSub?: (id: string) => void;
+  /** 클립 아이콘 메뉴 (2026-10-21 사장님) — 메인자막 아이콘 · 화면전환 칩을 누르면 바로 옆에 1차 메뉴 → 2차 바로 고치기 */
+  openSubMenu?: (id: string, x: number, y: number) => void;
+  openTransMenu?: (id: string, x: number, y: number) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
 };
 
 type Props = {
@@ -154,17 +157,18 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
           if (draft !== text) p.actions.editSub(c.id, draft);
           setEdit(false);
         }}>
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus placeholder="화면에 나올 자막"
-          // 엔터 = 자막 바꾸기 (한글을 치는 중이어도 칸에 보이는 글 그대로), Esc = 그만두기
+        <textarea value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus placeholder="화면에 나올 자막 (엔터 = 줄바꿈)" rows={Math.max(1, draft.split("\n").length)}
+          // 엔터 = 줄바꿈 (자막에서 그 자리에서 줄이 바뀐다, 2026-10-20 사장님) · Ctrl+엔터 = 자막 바꾸기 · Esc = 그만두기
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            e.stopPropagation();
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
               e.preventDefault();
               p.actions.editSub(c.id, e.currentTarget.value);
               setEdit(false);
             }
             if (e.key === "Escape") setEdit(false);
           }}
-          style={{ flex: 1, minWidth: 200, height: 34, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15, fontFamily: FONT }} />
+          style={{ flex: 1, minWidth: 200, minHeight: 34, padding: "6px 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15, lineHeight: 1.45, fontFamily: FONT, resize: "none", boxSizing: "border-box" }} />
         <ActionBtn icon="check" label={spoken ? "자막만 바꾸기" : "자막 바꾸기"} onClick={() => { p.actions.editSub(c.id, draft); setEdit(false); }} />
         {/* 녹화 클립 — 자동 자막이 잘못 알아들었을 때: 단어 칸(편집 기준)까지 고친다 */}
         {spoken && <ActionBtn icon="pen" label="말한 내용 고치기" onClick={() => { p.actions.editSpoken(c.id, draft); setEdit(false); }} />}
@@ -176,7 +180,7 @@ function SubLine({ c, p, empty, open = 0 }: { c: Clip; p: Props; empty?: string;
   return (
     // 자막은 연필(✎)을 눌러야 고친다 — 글자를 눌러도 열리지 않게 (잘못 눌러 고치기 칸이 열리던 것)
     <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 6px", borderRadius: 4, textAlign: "left", fontFamily: FONT }}>
-      <span style={{ flex: "0 1 auto", minWidth: 0, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text || empty || " "}</span>
+      <span style={{ flex: "0 1 auto", minWidth: 0, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text ? text.replace(/\r?\n/g, " ↵ ") : empty || " "}</span>
       <button type="button" title={spoken ? "자막 고치기 · 말한 내용 고치기" : "자막만 고치기 (목소리는 그대로)"} onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
         style={{ width: 28, height: 28, padding: 0, border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
         onMouseEnter={(e) => (e.currentTarget.style.background = C.line2)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
@@ -535,7 +539,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 </button>
               );
             })()}
-            <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.pickSub?.(c.id); }} title="눌러서 미리보기에서 이 자막 고르기 (끌어 옮기기·크기·서식)"
+            <button type="button" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); if (p.actions.openSubMenu) p.actions.openSubMenu(c.id, r.right + 8, r.top - 4); else p.actions.pickSub?.(c.id); }} title="눌러서 메인자막 메뉴 — 글·크기·색·위치·애니메이션"
               style={{ width: 24, height: 24, padding: 0, border: 0, borderRadius: 4, background: "transparent", color: C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               onMouseEnter={(e) => (e.currentTarget.style.color = C.text)} onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}>
               <Icon name="sub" size={18} />
@@ -601,11 +605,11 @@ function TransSlot({ c, p, open }: { c: Clip; p: Props; open: boolean }) {
   return (
     <div onMouseEnter={enter} onMouseLeave={leave}
       style={{ position: "absolute", left: 0, right: 0, top: -10, height: 20, zIndex: menu ? 30 : 3, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, pointerEvents: "auto" }}>
-      {/* 넣은 화면전환은 늘 칩으로 */}
-      {t && (
-        <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openTrans(c.id, false); }} title="눌러서 화면전환 바꾸기"
+      {/* 넣은 화면전환은 늘 칩으로 · 오른쪽 칸에 열려 있으면 빼도 [화면전환 없음] 칩으로 (갑자기 사라지지 않게, 2026-10-21 사장님) */}
+      {(t || open) && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); if (t && p.actions.openTransMenu) p.actions.openTransMenu(c.id, r.right + 8, r.top - 4); else p.actions.openTrans(c.id, false); }} title="눌러서 화면전환 메뉴 — 바꾸기·길이·모두 똑같이·삭제"
           style={{ height: 22, padding: "0 10px", borderRadius: 11, border: `1px solid ${C.accent}`, background: open ? C.accent : C.accentDim, color: open ? "#fff" : C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
-          ↔ {transLabel(t.type)} · {(Number(t.a) + Number(t.b)).toFixed(1)}초
+          ↔ {t ? `${transLabel(t.type)} · ${(Number(t.a) + Number(t.b)).toFixed(1)}초` : "화면전환 없음"}
         </button>
       )}
       {(hover || menu) && !menu && (

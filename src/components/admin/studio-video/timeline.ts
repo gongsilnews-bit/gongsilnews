@@ -833,7 +833,7 @@ export function sfxName(kind: string | undefined, set: string | undefined, dflt:
   if (v !== "auto") return v;
   return isText ? "key-press" : SFX_AUTO[kind] || null; // 화면 글자는 엔터 "탁"
 }
-export type SfxEvent = { keep?: boolean; t: number; name: string; vol: number };
+export type SfxEvent = { keep?: boolean; t: number; name: string; vol: number; file?: string; url?: string /* 내 효과음 */ };
 /** 영상 전체 효과음 — 사진·글자는 나타날 때(켜면 사라질 때도), 메인자막은 고른 경우 클립 첫 줄에만. 0.12초 안에 겹치면 하나만 */
 export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): SfxEvent[] {
   const ev: SfxEvent[] = [];
@@ -852,13 +852,24 @@ export function sfxEvents(p: Project, items: FlatItem[], order = clipOrder(p)): 
     const n2 = l.anim.sfxOut ? sfxName(an.out, l.anim.sfx, "auto", l.type === "text") : null;
     if (n2) ev.push({ t: Math.max(a, b - Math.min(an.dur, (b - a) / 3)), name: n2, vol });
   }
+  // 누르는 소리 (구독·좋아요 그래픽 — 그래픽이 나온 때부터 l.clicks 초마다 큰 딸깍, 2026-10-20 사장님)
+  for (const l of p.layers || []) {
+    if (l.off || !Array.isArray(l.clicks) || !l.clicks.length || (l.type !== "image" && l.type !== "text")) continue;
+    const cov = layerItems(p, l, items, order);
+    if (!cov.length) continue;
+    const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
+    if (!sp) continue;
+    const a = cov[0].start + sp.a, b = cov[0].start + sp.b;
+    for (const c of l.clicks) if (a + Number(c) < b) ev.push({ t: a + Number(c), name: "click-loud", vol: 1, keep: true });
+  }
   // 효과음 레이어 — 그 클립(단어를 골라 넣었으면 그 단어) 시작에 한 번, 겹쳐도 빼지 않는다 (회의 3-29)
   for (const l of p.layers || []) {
     if (l.off || l.type !== "sfx" || !l.sfx) continue;
     const cov = layerItems(p, l, items, order);
     if (!cov.length) continue;
     const sp = layerSpan(p, l, items, cov[0].clip.id, p.settings, order);
-    ev.push({ t: cov[0].start + (sp ? Math.max(0, sp.a) : 0), name: l.sfx, vol: Math.max(0, Math.min(1, l.volume ?? 0.8)), keep: true });
+    // 내 효과음 (2026-10-21) — 프로젝트 assets/sfx 파일 (file · url)
+    ev.push({ t: cov[0].start + (sp ? Math.max(0, sp.a) : 0), name: l.sfx, vol: Math.max(0, Math.min(1, l.volume ?? 0.8)), keep: true, ...(l.file ? { file: l.file, url: l.url } : {}) });
   }
   // 화면전환 효과음 (clip.trans.sfx, 2026-10-20) — 전환이 시작될 때 (앞 클립 끝 a초 앞)
   for (let i = 1; i < items.length; i++) {

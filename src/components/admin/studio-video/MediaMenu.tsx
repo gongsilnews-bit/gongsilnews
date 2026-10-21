@@ -276,6 +276,92 @@ export default function MediaMenu(p: Props) {
   );
 }
 
+/** 클립 아이콘 메뉴 — 사진·글자·효과음 메뉴와 같은 생김새 (2026-10-21 사장님: 통일성, 깔끔하게)
+ *  1차 = 항목 목록 · 2차 = 항목을 누르면 같은 상자 안에서 바로 고치기 (‹ 로 돌아감). run 만 있으면 하고 닫힌다 */
+export type QuickItem = { icon: string; label: string; desc: string; run?: () => void; page?: () => React.ReactNode; on?: boolean; danger?: boolean };
+export function QuickMenu({ title, what, x, y, items, onClose }: { title: string; what: string; x: number; y: number; items: QuickItem[]; onClose: () => void }) {
+  const [page, setPage] = React.useState(-1);
+  const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
+  React.useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  React.useEffect(() => setHover(null), [page]);
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const down = (e: PointerEvent) => { if (boxRef.current && !boxRef.current.contains(e.target as Node)) onClose(); };
+    const t = setTimeout(() => window.addEventListener("pointerdown", down, true), 0);
+    return () => { clearTimeout(t); window.removeEventListener("pointerdown", down, true); };
+  }, [onClose]);
+  const W = 250;
+  const left = Math.max(8, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 1600) - W - 260));
+  const top = Math.max(8, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 900) - 360));
+  const cur = page >= 0 ? items[page] : null;
+  return (
+    <div ref={boxRef} onClick={(e) => e.stopPropagation()} onMouseLeave={() => setHover(null)}
+      style={{ position: "fixed", left, top, zIndex: 70, width: W, padding: 6, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
+      {cur ? (
+        <>
+          <button type="button" onClick={() => setPage(-1)} style={{ ...rowStyle, fontWeight: 800, color: C.text }}>
+            <Icon name="back" size={16} color={C.sub} />
+            {cur.label}
+          </button>
+          <div style={{ padding: "6px 10px 6px" }}>{cur.page?.()}</div>
+        </>
+      ) : (
+        <>
+          <div style={{ padding: "6px 10px 8px", fontSize: 12.5, color: C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+          {items.map((it, i) => (
+            <React.Fragment key={it.label}>
+              {it.danger && <div style={{ height: 1, background: C.line, margin: "4px 6px" }} />}
+              <button type="button" onClick={() => { if (it.page) setPage(i); else { it.run?.(); onClose(); } }}
+                onMouseEnter={(e) => setHover({ desc: it.desc, top: (e.currentTarget as HTMLElement).offsetTop })}
+                style={{ ...rowStyle, color: it.danger ? C.danger : C.text, background: it.on ? C.accentDim : "transparent" }}
+                onMouseOver={(e) => { if (!it.on) (e.currentTarget as HTMLElement).style.background = C.cardHover; }}
+                onMouseOut={(e) => { if (!it.on) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                <Icon name={it.icon} size={17} />
+                <span style={{ flex: 1, textAlign: "left" }}>{it.label}</span>
+                {it.on && <Icon name="check" size={15} color={C.accent} />}
+                {it.page && <Icon name="chevron" size={14} color={C.sub} />}
+              </button>
+            </React.Fragment>
+          ))}
+          <div style={{ padding: "6px 10px 2px", fontSize: 11.5, color: C.dim }}>{what} 메뉴 · Esc 로 닫기</div>
+        </>
+      )}
+      {hover && !cur && (
+        <div style={{ position: "absolute", left: W + 6, top: hover.top, width: 230, padding: "8px 10px", borderRadius: 6, background: "#111", border: `1px solid ${C.line2}`, color: "#eee", fontSize: 12.5, lineHeight: 1.5, pointerEvents: "none", boxShadow: "0 6px 18px rgba(0,0,0,0.4)" }}>
+          {hover.desc}
+        </div>
+      )}
+    </div>
+  );
+}
+/** 2차 칸 안 — 같은 모양 칩 · 끌개 (QuickMenu 와 메뉴들이 같이 쓴다) */
+export const quickChip = (on: boolean): React.CSSProperties => chipStyle(on);
+export function QuickSlider({ label, value, min, max, step, show, onChange }: { label: string; value: number; min: number; max: number; step: number; show: string; onChange: (v: number) => void }) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ display: "flex", fontSize: 13, fontWeight: 700, marginBottom: 4 }}><span style={{ flex: 1 }}>{label}</span><span style={{ color: C.sub }}>{show}</span></div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
+    </div>
+  );
+}
+
+/** 2차 칸 — 글 고치기 (엔터 = 저장, Shift+엔터 = 줄바꿈) */
+export function QuickText({ value, onSave }: { value: string; onSave: (t: string) => void }) {
+  const [t, setT] = React.useState(value);
+  return (
+    <>
+      <textarea value={t} autoFocus rows={3} onChange={(e) => setT(e.target.value)}
+        onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSave(t); } }}
+        style={{ ...input, width: "100%", boxSizing: "border-box", height: "auto", padding: 8, lineHeight: 1.5, resize: "vertical", fontSize: 14 }} />
+      <button type="button" onClick={() => onSave(t)} style={{ height: 32, width: "100%", marginTop: 6, borderRadius: 5, border: 0, background: C.accent, color: "#fff", fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>저장</button>
+    </>
+  );
+}
+
 /** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
 export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onRedo, onClose, len, base, pad, onLength, lenMin, lenMax, lenOnly }: {
   title: string;

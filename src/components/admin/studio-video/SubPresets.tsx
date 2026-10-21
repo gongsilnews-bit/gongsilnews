@@ -3,10 +3,11 @@
 // 메인자막 [사전 설정 스타일] — 캡컷처럼 눌러서 바로 (2026-10-18 사장님: 자막에서도 사전설정을 미리 만들어 두기)
 //  글꼴·색·테두리·상자·그림자·네온 빛을 한 번에 바꾼다. 크기·자리·줄 너비는 그대로.
 //  굽기(render.js subtitleStyle)와 미리보기(Player.tsx)가 같은 항목을 쓴다.
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import type { LayerAnim, SubtitleSettings } from "./types";
 import { fontCss, STUDIO_FONTS } from "@/lib/studio-video/fonts";
 import { C, FONT } from "./ui";
+import { tplPreviewStyles } from "./tplPreviewAnim";
 import { loadFont } from "./Pickers";
 
 export type SubLook = Pick<SubtitleSettings, "font" | "color" | "outline" | "outlineWidth" | "bg" | "bgColor" | "bgOpacity" | "bold" | "shadow" | "shadowColor" | "glow" | "outline2" | "outline2Width" | "gradTo" | "gradType" | "gradAngle" | "gradA" | "gradB">;
@@ -161,7 +162,16 @@ export const BASIC_GROUPS = ["기본", "글꼴", "상자"];
 export const EFFECT_GROUPS = ["네온·빛", "예능·유튜브", "다큐·뉴스"];
 
 /* ── 내 사전설정 — 내가 만든 글자 (모양 + 애니메이션). 이 PC 에 저장 (나중에 계정에 올려 다른 PC 에서도) ── */
-export type MyPreset = { id: string; name: string; look: TextLook; anim?: LayerAnim; at: number };
+export type MyPreset = { id: string; name: string; look: TextLook; anim?: LayerAnim; at: number; /** ☆로 담은 것 — 어느 사전설정에서 ("기본:plain" 등) */ src?: string };
+/** 칸 오른쪽 위 ☆ — 누르면 [내 자막]에 담기 (2026-10-20 사장님) */
+export type LookStar = { has: (key: string) => boolean; toggle: (key: string, look: TextLook, meta: { group: string; index: number }, label: string) => void };
+export function StarBtn({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <span role="button" title={on ? "내 자막에서 빼기" : "내 자막에 담기"} onClick={(e) => { e.stopPropagation(); onClick(); }}
+      style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: 10, background: on ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.35)", color: on ? "#FFD400" : "#FFFFFF", fontSize: 13, lineHeight: "20px", textAlign: "center", cursor: "pointer", zIndex: 2 }}>{on ? "★" : "☆"}</span>
+  );
+}
+
 const MY_KEY = "gsv-my-text-presets";
 export function loadMyPresets(): MyPreset[] {
   try {
@@ -193,7 +203,9 @@ export function LookTile({ look, on, title, onClick, big }: { look: TextLook; on
   );
 }
 
-export function SubPresetGrid({ value, onPick, groups }: { value: Partial<SubtitleSettings>; onPick: (look: SubLook, meta: { group: string; index: number }) => void; groups?: string[] }) {
+export function SubPresetGrid({ value, onPick, groups, star, animOf, sample }: { value: Partial<SubtitleSettings>; onPick: (look: SubLook, meta: { group: string; index: number }) => void; groups?: string[]; star?: LookStar; /** 템플릿 — 칸 안에서 그 움직임으로 (2026-10-21) */ animOf?: (group: string, index: number) => LayerAnim; /** 미리보기 글 — 지금 자막·글자 (없으면 가나) */ sample?: string }) {
+  const [hov, setHov] = useState(""); // 템플릿 — 마우스를 올린 칸만 움직임 미리보기 (2026-10-21 사장님)
+  const sampleText = (sample || "").replace(/\s+/g, " ").trim().slice(0, 10) || "가나";
   // 사전설정에 쓰는 글꼴 미리 받기
   useEffect(() => {
     const fams = [...new Set(SUB_PRESETS.flatMap((g) => g.items.map((x) => x.look.font)))].filter((f) => STUDIO_FONTS.some((s) => s.family === f));
@@ -209,14 +221,21 @@ export function SubPresetGrid({ value, onPick, groups }: { value: Partial<Subtit
               const on = same(value, p.look);
               const l = p.look;
               return (
-                <button key={p.id} type="button" title={p.label} onClick={() => onPick(p.look, { group: g.group, index: g.items.indexOf(p) })}
-                  style={{ height: 50, borderRadius: 7, border: `2px solid ${on ? C.accent : "transparent"}`, background: l.glow ? "#0d0f15" : "#2b303b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, overflow: "hidden" }}>
+                <span key={p.id} style={{ position: "relative", display: "block" }}>
+                <button type="button" title={p.label} onClick={() => onPick(p.look, { group: g.group, index: g.items.indexOf(p) })}
+                  onMouseEnter={() => animOf && setHov(`${g.group}:${p.id}`)} onMouseLeave={() => animOf && setHov("")}
+                  style={{ width: "100%", height: 50, borderRadius: 7, border: `2px solid ${on ? C.accent : "transparent"}`, background: l.glow ? "#0d0f15" : "#2b303b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, overflow: "hidden" }}>
+                  {(() => { const live = Boolean(animOf) && hov === `${g.group}:${p.id}`; const pa = live ? tplPreviewStyles(animOf!(g.group, g.items.indexOf(p))) : null; return (
+                  <span style={pa ? pa.outer : undefined}><span style={pa ? pa.inner : undefined}>
                   <span style={{
-                    fontFamily: fontCss(l.font), fontWeight: l.bold ? 800 : 500, fontSize: 21, lineHeight: 1.15, color: l.color, paintOrder: "stroke fill",
+                    fontFamily: fontCss(l.font), fontWeight: l.bold ? 800 : 500, fontSize: live && sampleText.length > 3 ? Math.max(11, Math.round(56 / sampleText.length)) : 21, whiteSpace: "nowrap", lineHeight: 1.15, color: l.color, paintOrder: "stroke fill",
                     background: l.bg ? `${l.bgColor}${Math.round((l.bgOpacity ?? 0.62) * 255).toString(16).padStart(2, "0")}` : undefined, padding: l.bg ? "1px 6px" : undefined, borderRadius: l.bg ? 3 : undefined,
                     ...subLookCss(l, 21, 0.45),
-                  }}>가나</span>
+                  }}>{live ? sampleText : "가나"}</span>
+                  </span></span>); })()}
                 </button>
+                {star && <StarBtn on={star.has(`${g.group}:${p.id}`)} onClick={() => star.toggle(`${g.group}:${p.id}`, p.look, { group: g.group, index: g.items.indexOf(p) }, p.label)} />}
+                </span>
               );
             })}
           </div>

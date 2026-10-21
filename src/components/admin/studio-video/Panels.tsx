@@ -1,6 +1,6 @@
 "use client";
 
-// 오른쪽 칸 — 자료 고르기(내 자료·공실 사진·무료 자료·AI 그림·자료 창고) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
+// 오른쪽 칸 — 자료 고르기(즐겨찾기·내 자료(공실 사진 포함)·오픈자료·AI 사진, 2026-10-20 사장님) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Asset, Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
 import { AiImagesTab } from "./AiImages";
@@ -28,7 +28,7 @@ export function VoiceFace({ id, name, size = 52 }: { id: string; name: string; s
 
 export function Side({ title, onClose, children, footer, titleExtra }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; /** 제목 오른쪽 작은 단추들 */ titleExtra?: React.ReactNode }) {
   return (
-    <aside style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", background: C.panel, borderLeft: `1px solid ${C.line}`, fontFamily: FONT, color: C.text, minHeight: 0 }}>
+    <aside style={{ position: "relative", width: 380, flexShrink: 0, display: "flex", flexDirection: "column", background: C.panel, borderLeft: `1px solid ${C.line}`, fontFamily: FONT, color: C.text, minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
         <span style={{ flex: titleExtra ? undefined : 1, fontSize: 17, fontWeight: 800, whiteSpace: "nowrap" }}>{title}</span>
         {titleExtra && <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "flex-end", gap: 4, marginRight: 8 }}>{titleExtra}</span>}
@@ -60,7 +60,8 @@ export function keywordsOf(text: string): string[] {
 
 export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips, pro }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** 타임라인 편집 (캡컷처럼) — 썸네일 ＋ 단추로 넣기, 넣기 단추·크게 보기 없음 */ pro?: { onPlus: (item: LibItem) => void | Promise<void> }; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
   const b = videoBridge();
-  const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useState(initialTab === "vacancy" || initialTab === "store" ? "mine" : initialTab);
+  const [vacOn, setVacOn] = useState(initialTab === "vacancy"); // 내 자료 › [공실 사진]
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
   const [fav, setFav] = useState(false);
   const [rec, setRec] = useState(false); // [녹화] — 녹화한 영상만 (2026-10-20 사장님)
@@ -91,33 +92,34 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     if (!b) return;
     setItems(null);
     try {
-      setItems(await b.lib.list({ kind, fav, q, source: tab === "vacancy" ? "vacancy" : tab === "ai" ? "ai" : rec ? "record" : "" }));
+      setItems(await b.lib.list({ kind, fav: fav || tab === "fav", q, source: tab === "ai" ? "ai" : rec ? "record" : "" }));
     } catch (e) {
       setMsg(errText(e));
       setItems([]);
     }
   };
   useEffect(() => {
-    if (tab === "mine" || tab === "ai") load();
+    if (((tab === "mine" || tab === "fav") && !vacOn) || tab === "ai") load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, kind, fav, rec]);
+  }, [tab, kind, fav, rec, vacOn]);
   useEffect(() => {
-    if (tab !== "vacancy" || vacs) return;
+    if (!vacOn || vacs) return;
     listMyStudioVacancies().then((r) => setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address} · 사진 ${v.photoCount}장` })) : [])).catch(() => setVacs([]));
-  }, [tab, vacs]);
+  }, [vacOn, vacs]);
   useEffect(() => {
-    if (tab !== "vacancy" || !vac || !b) return;
+    if (!vacOn || tab !== "mine" || !vac || !b) return;
     setBusy("공실 사진을 PC로 받는 중…");
     setItems(null);
-    b.vacancy(vac).then((r) => setItems(r.photos)).catch((e) => { setMsg(errText(e)); setItems([]); }).finally(() => setBusy(""));
+    b.vacancy(vac).then((r) => setItems([...r.photos, ...(r.shots || [])])).catch((e) => { setMsg(errText(e)); setItems([]); }).finally(() => setBusy(""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, vac]);
+  }, [tab, vac, vacOn]);
 
   const fromPc = async () => {
     if (!b) return;
     const added = await b.lib.pick();
     if (added.length) {
       setTab("mine");
+      setVacOn(false);
       await load();
       setPicked(added[0]);
     }
@@ -432,21 +434,21 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     <Side title="사진 · 영상 고르기" onClose={onClose} footer={footer}>
       {hovered}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        {[["mine", "내 자료"], ["vacancy", "공실 사진"], ["free", "무료 자료"], ["ai", "AI 그림"], ["store", "자료 창고"]].map(([k, l]) => (
+        {[["fav", "즐겨찾기"], ["mine", "내 자료"], ["free", "오픈자료"], ["ai", "AI 사진"]].map(([k, l]) => (
           <button key={k} type="button" onClick={() => { setTab(k); setMsg(""); }} style={tabBtn(tab === k)}>{l}</button>
         ))}
       </div>
       {busy && <div style={{ padding: "10px 14px", fontSize: 14, color: C.sub }}>{busy}</div>}
       {msg && <div style={{ padding: "10px 14px", fontSize: 14, color: C.danger, lineHeight: 1.5 }}>{msg}</div>}
 
-      {tab === "mine" && (
+      {(tab === "mine" || tab === "fav") && (
         <>
           <div style={{ padding: "12px 14px 0" }}>
             <Btn primary onClick={fromPc} style={{ width: "100%" }}><Icon name="plus" size={18} />PC에서 불러오기</Btn>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
               {(["all", "image", "video"] as const).map((k) => <button key={k} type="button" onClick={() => setKind(k)} style={chip(kind === k)}>{k === "all" ? "전체" : k === "image" ? "사진" : "영상"}</button>)}
-              <button type="button" onClick={() => setFav(!fav)} style={chip(fav)}>즐겨찾기</button>
-              <button type="button" onClick={() => setRec(!rec)} style={chip(rec)} title="강의·화면·카메라로 녹화한 영상만 (공실뉴스 스튜디오\녹화영상)">녹화</button>
+              {tab === "mine" && <button type="button" onClick={() => { setVacOn(!vacOn); setRec(false); }} style={chip(vacOn)} title="내 공실의 등록 사진 · 공실열람 검증·지도·로드뷰 화면">공실 사진</button>}
+              {tab === "mine" && !vacOn && <button type="button" onClick={() => setRec(!rec)} style={chip(rec)} title="강의·화면·카메라로 녹화한 영상만 (공실뉴스 스튜디오\녹화영상)">녹화</button>}
               <span style={{ flex: 1 }} />
               <button type="button" onClick={() => { setSelMode(!selMode); setChk([]); setPicked(null); }} style={chip(selMode)} title="여러 개 골라 목록에서 빼기">{selMode ? "고르기 끝" : "고르기"}</button>
             </div>
@@ -462,26 +464,23 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
                 </Btn>
               </div>
             )}
-            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-              <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} placeholder="파일 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
-              <Btn small onClick={load}><Icon name="search" size={16} /></Btn>
-            </div>
-            <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>공실뉴스 스튜디오로 만든 사진·영상과 불러온 파일이 자동으로 모여요.</div>
+            {vacOn && tab === "mine" ? (
+              <select value={vac} onChange={(e) => setVac(e.target.value)} style={{ ...input, fontSize: 14, marginTop: 10 }}>
+                <option value="">{vacs === null ? "내 공실 불러오는 중…" : `공실을 고르세요 (${vacs.length}개)`}</option>
+                {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                  <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} placeholder="파일 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
+                  <Btn small onClick={load}><Icon name="search" size={16} /></Btn>
+                </div>
+                <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>{tab === "fav" ? "★ 를 누른 사진·영상이 모여요 (내 자료·오픈자료·AI 사진)." : "공실뉴스 스튜디오로 만든 사진·영상과 불러온 파일이 자동으로 모여요."}</div>
+              </>
+            )}
           </div>
-          {items === null ? <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>불러오는 중…</div> : items.length ? grid(items, (x) => setPicked(x as LibItem)) : <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>아직 자료가 없어요. [PC에서 불러오기]를 눌러 주세요.</div>}
+          {vacOn && tab === "mine" && !vac ? null : items === null ? <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>불러오는 중…</div> : items.length ? grid(items, (x) => setPicked(x as LibItem)) : <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>{tab === "fav" ? "아직 즐겨찾기가 없어요. 사진·영상 오른쪽 위 ☆ 를 눌러 주세요." : "아직 자료가 없어요. [PC에서 불러오기]를 눌러 주세요."}</div>}
         </>
-      )}
-
-      {tab === "vacancy" && (
-        <div>
-          <div style={{ padding: "12px 14px 0" }}>
-            <select value={vac} onChange={(e) => setVac(e.target.value)} style={{ ...input, fontSize: 14 }}>
-              <option value="">{vacs === null ? "내 공실 불러오는 중…" : `공실을 고르세요 (${vacs.length}개)`}</option>
-              {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-            </select>
-          </div>
-          {vac && items && grid(items, (x) => setPicked(x as LibItem))}
-        </div>
       )}
 
       {tab === "free" && (
@@ -532,11 +531,6 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
         </details>
       )}
 
-      {tab === "store" && (
-        <div style={{ padding: 16 }}>
-          <Hint>공실뉴스 자료 창고(드론·역세권 거리 영상 등)는 준비 중이에요. 열리면 여기서 바로 고를 수 있어요.</Hint>
-        </div>
-      )}
     </Side>
   );
 }
@@ -853,7 +847,7 @@ export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onS
     </>
   );
   return (
-    <TextTabs title="메인자막" kind="sub" onClose={onClose} basicTop={top} anim={anim} posEl={posEl}
+    <TextTabs title="메인자막" kind="sub" onClose={onClose} basicTop={top} anim={anim} posEl={posEl} sample={draft}
       footerTop={range && (() => {
         // 적용 범위 — 맨 아래 고정 줄 [전체 적용][선택 클립 적용][↺] (2026-10-19 사장님)
         const b = (icon: string, on: boolean, ok: boolean, text: string, title: string, go: () => void) => (

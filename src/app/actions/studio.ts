@@ -139,3 +139,30 @@ export async function getStudioArticle(key: string) {
     },
   };
 }
+
+/**
+ * 동영상제작 › AI 편집 › 끝 화면 (2026-10-20 사장님: 매물 광고는 표시·광고 기준에 맞게 맨 끝에 상호부터)
+ * 로그인한 회원의 중개사무소 정보 — 상호 · 대표 공인중개사 · 등록번호 · 연락처 · 소재지. 없으면 빈 값 (지어내지 않음)
+ */
+export async function getStudioAgency() {
+  const cookie = await createCookieSupabase();
+  const { data: { user } } = await cookie.auth.getUser();
+  if (!user) return { success: false as const, error: "로그인이 필요합니다." };
+  const { data, error } = await adminSupabase()
+    .from("agencies")
+    .select("name, ceo_name, reg_num, phone, cell, address, address_detail")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+  if (error) return { success: false as const, error: error.message };
+  const a = (data || {}) as Record<string, string | null>;
+  return {
+    success: true as const,
+    data: {
+      name: String(a.name || "").trim(),
+      ceo: String(a.ceo_name || "").trim(),
+      regNum: String(a.reg_num || "").trim(),
+      phone: String(a.phone || a.cell || "").trim(),
+      address: [a.address, a.address_detail].filter(Boolean).join(" ").trim(),
+    },
+  };
+}

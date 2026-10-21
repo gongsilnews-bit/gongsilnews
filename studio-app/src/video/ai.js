@@ -233,6 +233,14 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
     const aiMax = opts.aiMax === 0 ? 0 : Number(opts.aiMax) || 8;
     const screen = opts.screen !== false;
     const cat = opts.catalog || null;
+    // AI 편집 창 (2026-10-20 사장님) — 영상 종류 · 회원 요청 · 이미 화면이 있는 클립 · 무료 자료 쓸지 · 그래픽·효과음 양 · 쓸 AI
+    const KIND = { vacancy: "부동산 매물 소개 영상 (방·주방·욕실·건물·동네를 보여 주는 화면이 좋아요)", news: "부동산 뉴스·보도자료 해설 영상 (차분하고 믿음직하게, 자료·도시·건물 화면)", topic: "부동산 정보·자유 주제 영상" };
+    const kindLine = KIND[opts.kind] ? `영상 종류: ${KIND[opts.kind]}` : "";
+    const request = String(opts.request || "").trim().slice(0, 500);
+    const locked = new Set((Array.isArray(opts.locked) ? opts.locked : []).map(Number)); // 1부터 — 회원이 이미 화면을 넣은 클립
+    const useStock = opts.stock !== false;
+    const many = opts.graphics === "many";
+    const sfxMany = opts.sfx === "many";
     const ids = (l) => (Array.isArray(l) ? l.map((x) => String(x.id)) : []);
     const show = (l) => l.map((x) => `${x.id}(${x.label})`).join(", ");
     const lookAsk = cat
@@ -249,15 +257,18 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       : [];
     const stkAsk = cat && (cat.stickers || []).length
       ? [
-          "5) sticker — 강조할 클립에만 스티커 (전체의 1/5 안팎, 이어지는 클립에 연달아 넣지 말기). 없으면 null.",
+          `5) sticker — 강조할 클립에만 스티커 (전체의 ${many ? "1/3" : "1/5"} 안팎, 이어지는 클립에 연달아 넣지 말기). 없으면 null.`,
           `   {"text":"짧은 글 2~8자, 말한 내용에서 (예: 역 1분!, 남향, 전세 5억, 풀옵션, 초품아)","style":"모양"} — style: ${show(cat.stickers)}`,
           `   예시: ${(cat.examples || []).slice(0, 24).join(" / ")}`,
-          `6) sfx — 스티커 없이 소리만 넣을 강조 순간이면 효과음 이름 (드물게), 아니면 "": ${show(cat.sfx || [])}`,
+          `6) sfx — 스티커 없이 소리만 넣을 강조 순간이면 효과음 이름 (${sfxMany ? "가끔" : "드물게"}), 아니면 "": ${show(cat.sfx || [])}`,
         ]
       : [];
     const list = items.map((it, i) => (it.kind === "image" ? `P${i + 1}: 사진` : `V${i + 1}: 영상 ${Math.round(Number(it.duration) || 0)}초`)).join("\n");
     const prompt = [
       "부동산 중개사가 만든 영상(강의·매물 소개)을 편집해 주세요. 아래는 클립마다 말한 내용(자막)이에요.",
+      kindLine,
+      request ? `[회원 요청 — 꼭 따르기] ${request}` : "",
+      locked.size ? `이미 화면을 넣은 클립 (화면은 반드시 "keep"): ${[...locked].sort((a, b) => a - b).join(", ")}` : "",
       useFoot ? "첨부한 그림은 제가 찍어 둔 영상·사진의 장면 모음이에요 (칸마다 왼쪽 위 'V번호 초' = 그 영상의 그 시각, 'P번호' = 사진)." : "",
       useFoot ? `\n[내 자료]\n${list}` : "",
       "",
@@ -268,18 +279,23 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       screen ? "" : '1) act — 화면은 모두 "keep" (화면은 바꾸지 않기).',
       !screen ? "" : "1) act — 화면: \"keep\"(원래 화면 그대로 — 화면을 설명하는 말 '여기를 누르면'·인사·말하는 얼굴이 중요한 곳)" +
         (useFoot ? ', "foot"(내 자료 — src 와 t(시작 초))' : "") +
-        `, "ai"(AI 그림 — desc 에 그릴 장면을 한국어로 구체적으로, 전체 ${aiMax}개까지), "stock"(무료 사진·영상 — keywords 에 한국어 검색어 2~3낱말).` +
+        (aiMax > 0 ? `, "ai"(AI 그림 — desc 에 그릴 장면을 한국어로 구체적으로, 전체 ${aiMax}개까지)` : "") +
+        (useStock ? ', "stock"(무료 사진·영상 — keywords 에 한국어 검색어 2~3낱말).' : ".") +
         " 매물·동네·건물·방·생활 이야기는 바꾸고, 내 자료에 맞는 장면이 있으면 그것을 먼저 쓰세요." +
         " 문장마다 화면을 바꾸면 정신없으니, 같은 이야기가 이어지는 2~3개 클립은 같은 화면을 이어 쓰세요 (뒤 클립을 \"same\" 으로 — 앞 클립 화면을 그대로).",
-      "2) title — 화면에 크게 띄울 핵심 글 (숫자·가격·면적·위치 등 꼭 기억할 것, 10자 안팎). 없으면 \"\". 전체의 1/4 안팎만.",
+      "2) title — 화면에 크게 띄울 핵심 글 (가격·면적처럼 꼭 기억할 숫자만, 8자 안팎). 없으면 \"\". 아주 드물게 — 전체의 1/6 안팎, 자막과 거의 같은 말이면 넣지 않기.",
       "3) emph — 자막을 강조할 중요한 문장이면 true.",
       "4) trans — 이야기 주제가 바뀌어 화면전환을 넣을 클립이면 true (첫 클립 제외, 가끔만).",
       ...stkAsk,
       `그리고 영상 전체 배경음악 분위기 music 을 하나: ${(opts.moods || []).join(", ")}.`,
+      // 스타일 팩 — [자동]이면 대본을 읽고 영상 전체 디자인 한 벌을 고른다 (2026-10-20 사장님)
+      Array.isArray(opts.packs) && opts.packs.length
+        ? `그리고 영상 전체 디자인(스타일 팩) pack 을 하나 — 대본 내용·분위기에 가장 어울리는 것: ${opts.packs.map((x) => `${x.id}(${x.label} — ${x.desc})`).join(", ")}`
+        : "",
       ...lookAsk,
       cat
-        ? 'JSON 만: {"music":"잔잔한","look":{"preset":"plain","in":"pop","out":"fade","emph":"","wshow":"","whl":"","wcolor":"#FFE000","lines":2},"clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false,"sticker":null,"sfx":""},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false,"sticker":{"text":"남향!","style":"burst"},"sfx":""}]}'
-        : 'JSON 만: {"music":"잔잔한","clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false}]}',
+        ? 'JSON 만: {"music":"잔잔한","pack":"modern","look":{"preset":"plain","in":"pop","out":"fade","emph":"","wshow":"","whl":"","wcolor":"#FFE000","lines":2},"clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false,"sticker":null,"sfx":""},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false,"sticker":{"text":"남향!","style":"burst"},"sfx":""}]}'
+        : 'JSON 만: {"music":"잔잔한","pack":"modern","clips":[{"n":1,"act":"keep","title":"","emph":false,"trans":false},{"n":2,"act":"ai","desc":"햇살 드는 넓은 거실","title":"전세 5억","emph":true,"trans":false}]}',
     ].filter((x) => x !== "").join("\n");
     const parse = (t) => {
       const m = /\{[\s\S]*\}/.exec(String(t || ""));
@@ -290,7 +306,8 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       }
     };
     onProgress("글 AI가 편집 계획을 세우는 중… (1~2분)");
-    const text = await ai.ask(prompt, { onProgress, files: made.sheets.map((x) => x.file), busyLabel: "영상 편집 계획을 세우고 있습니다", isComplete: (t) => Boolean(parse(t) && Array.isArray(parse(t).clips)) });
+    const pick = opts.ai && opts.ai.provider ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {}; // 쓸 AI 를 골랐으면 그것으로
+    const text = await ai.ask(prompt, { ...pick, onProgress, files: made.sheets.map((x) => x.file), busyLabel: "영상 편집 계획을 세우고 있습니다", isComplete: (t) => Boolean(parse(t) && Array.isArray(parse(t).clips)) });
     const j = parse(text) || { clips: [] };
     let aiLeft = aiMax;
     const clips = lines.map((_, i) => {
@@ -300,7 +317,7 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
       if (cat && l.sticker && typeof l.sticker === "object" && ids(cat.stickers).includes(String(l.sticker.style)) && String(l.sticker.text || "").trim())
         extra.sticker = { text: String(l.sticker.text).trim().slice(0, 12), style: String(l.sticker.style) };
       if (cat && !extra.sticker && ids(cat.sfx).includes(String(l.sfx || ""))) extra.sfx = String(l.sfx);
-      if (!screen) return { act: "keep", ...extra };
+      if (!screen || locked.has(i + 1)) return { act: "keep", ...extra };
       const act = String(l.act || "keep");
       if (act === "same" && i > 0) return { act: "same", ...extra };
       if (act === "foot" && useFoot) {
@@ -315,7 +332,7 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
         aiLeft--;
         return { act, desc: String(l.desc), ...extra };
       }
-      if ((act === "stock" || act === "ai") && (l.keywords || l.desc)) return { act: "stock", keywords: String(l.keywords || l.desc).slice(0, 40), ...extra };
+      if (useStock && (act === "stock" || act === "ai") && (l.keywords || l.desc)) return { act: "stock", keywords: String(l.keywords || l.desc).slice(0, 40), ...extra };
       return { act: "keep", ...extra };
     });
     // 영상 전체 자막 모양 — 목록에 없는 이름은 버린다
@@ -334,7 +351,8 @@ async function aiEdit(lines, items, opts = {}, onProgress = () => {}) {
         lines: [1, 2, 3].includes(Number(lk.lines)) ? Number(lk.lines) : 0,
       };
     }
-    return { clips, music: String(j.music || ""), look };
+    const pack = Array.isArray(opts.packs) && opts.packs.some((x) => x.id === String(j.pack || "")) ? String(j.pack) : "";
+    return { clips, music: String(j.music || ""), look, pack };
   } finally {
     if (made.dir) fs.rmSync(made.dir, { recursive: true, force: true });
   }

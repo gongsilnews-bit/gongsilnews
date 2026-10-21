@@ -1,4 +1,5 @@
-// 예능 자막 160종 (2026-10-19 사장님 — 다빈치 리졸브 예능자막 160종을 메인자막 모양으로 옮김: 글자 색·그라데이션·테두리·이중 테두리·그림자·빛·상자·글꼴)
+// 예능 자막 153종 (똑같은 모양 7개 정리 2026-10-21)
+// 원래: 예능 자막 160종 (2026-10-19 사장님 — 다빈치 리졸브 예능자막 160종을 메인자막 모양으로 옮김: 글자 색·그라데이션·테두리·이중 테두리·그림자·빛·상자·글꼴)
 //  만든 곳: scratchpad subfx/convert.py (Text+ .setting 값을 읽어 바꿈). 견본 그림: public/studio-video/variety/<id>.png
 import type { TextLook } from "@/components/admin/studio-video/SubPresets";
 
@@ -77,7 +78,6 @@ export const VARIETY_PRESETS: { group: string; items: VarietyPreset[] }[] = [
     {"id": "vx07_03", "label": "놀면뭐하니 03", "look": {"font": "KOTRA_BOLD", "bold": true, "color": "#222F6C", "bg": true, "bgColor": "#FFFF00", "bgOpacity": 0.73, "outlineWidth": 0}}, 
     {"id": "vx07_04", "label": "놀면뭐하니 04", "look": {"font": "Jalnan OTF", "bold": true, "color": "#0A0E22", "bg": true, "bgColor": "#FFFF00", "bgOpacity": 0.73, "outlineWidth": 0}}, 
     {"id": "vx07_05", "label": "놀면뭐하니 05", "look": {"font": "KOTRA_BOLD", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#212E6C", "bgOpacity": 1, "outlineWidth": 0}}, 
-    {"id": "vx07_06", "label": "놀면뭐하니 06", "look": {"font": "KOTRA_BOLD", "bold": true, "color": "#222F6C", "bg": true, "bgColor": "#FFFF00", "bgOpacity": 0.73, "outlineWidth": 0}}, 
     {"id": "vx07_07", "label": "놀면뭐하니 07", "look": {"font": "KOTRA_BOLD", "bold": true, "color": "#FFFFFF", "bg": false, "outline": "#2D3767", "outlineWidth": 5, "shadow": 0.05, "shadowColor": "#2D3767", "glow": ""}}, 
     {"id": "vx07_08", "label": "놀면뭐하니 08", "look": {"font": "GmarketSans", "bold": true, "color": "#FFFFFF", "bg": false, "outline": "#FF5465", "outlineWidth": 6, "shadow": 0.05, "shadowColor": "#FF5465", "glow": ""}}, 
     {"id": "vx07_09", "label": "놀면뭐하니 09", "look": {"font": "GmarketSans", "bold": true, "color": "#212E6C", "bg": false, "outline": "#FFFF00", "outlineWidth": 6, "shadow": 0.05, "shadowColor": "#FFFF00", "glow": ""}}, 
@@ -86,7 +86,6 @@ export const VARIETY_PRESETS: { group: string; items: VarietyPreset[] }[] = [
     {"id": "vx07_12", "label": "놀면뭐하니 12", "look": {"font": "MapoBackpacking", "bold": true, "color": "#FFF7D8", "bg": true, "bgColor": "#D15C4C", "bgOpacity": 1, "outlineWidth": 0}}]}, 
   {"group": "뭉쳐야쏜다", "items": [
     {"id": "vx08_01", "label": "뭉쳐야쏜다 01", "look": {"font": "NEXON Lv1 Gothic", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#3334A4", "bgOpacity": 1, "outlineWidth": 0}}, 
-    {"id": "vx08_02", "label": "뭉쳐야쏜다 02", "look": {"font": "NEXON Lv1 Gothic", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#3334A4", "bgOpacity": 1, "outlineWidth": 0}}, 
     {"id": "vx08_03", "label": "뭉쳐야쏜다 03", "look": {"font": "NEXON Lv1 Gothic", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#DA5A6C", "bgOpacity": 1, "outlineWidth": 0}}, 
     {"id": "vx08_04", "label": "뭉쳐야쏜다 04", "look": {"font": "BM EULJIRO TTF", "bold": true, "color": "#FFD187", "bg": false, "outline": "#3334A4", "outlineWidth": 3, "shadow": 0.05, "shadowColor": "#3334A4", "glow": ""}}, 
     {"id": "vx08_05", "label": "뭉쳐야쏜다 05", "look": {"font": "ELAND Choice", "bold": true, "color": "#3334A4", "bg": false, "outline": "#FFFFFF", "outlineWidth": 4, "shadow": 0, "glow": "#3334A4", "glowSize": 0.6}}, 
@@ -119,9 +118,6 @@ export const VARIETY_PRESETS: { group: string; items: VarietyPreset[] }[] = [
     {"id": "vx10_05", "label": "게임&오락 05", "look": {"font": "ELAND Nice", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
     {"id": "vx10_06", "label": "게임&오락 06", "look": {"font": "ELAND Nice", "bold": true, "color": "#FFFF00", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
     {"id": "vx10_07", "label": "게임&오락 07", "look": {"font": "Maplestory", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
-    {"id": "vx10_08", "label": "게임&오락 08", "look": {"font": "Maplestory", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
-    {"id": "vx10_09", "label": "게임&오락 09", "look": {"font": "Maplestory", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
-    {"id": "vx10_10", "label": "게임&오락 10", "look": {"font": "Maplestory", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
     {"id": "vx10_11", "label": "게임&오락 11", "look": {"font": "Maplestory", "bold": true, "color": "#FFD900", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}, 
     {"id": "vx10_12", "label": "게임&오락 12", "look": {"font": "Maplestory", "bold": true, "color": "#AAFFFF", "gradTo": "#4D7373", "bg": true, "bgColor": "#000000", "bgOpacity": 1, "outlineWidth": 0}}]}, 
   {"group": "펫&키즈", "items": [
@@ -165,8 +161,6 @@ export const VARIETY_PRESETS: { group: string; items: VarietyPreset[] }[] = [
     {"id": "vx13_14", "label": "네온사인 14", "look": {"font": "Gong Gothic Bold", "bold": true, "color": "#FFFFFF", "bg": false, "outline": "#0000FF", "outlineWidth": 1, "outline2": "#0000FF", "outline2Width": 3, "shadow": 0, "glow": ""}}]}, 
   {"group": "트렌드자막", "items": [
     {"id": "vx14_01", "label": "트렌드자막 01", "look": {"font": "VITRO PRIDE OTF", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 0.61, "outlineWidth": 0}}, 
-    {"id": "vx14_02", "label": "트렌드자막 02", "look": {"font": "VITRO PRIDE OTF", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 0.61, "outlineWidth": 0}}, 
-    {"id": "vx14_03", "label": "트렌드자막 03", "look": {"font": "VITRO PRIDE OTF", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#000000", "bgOpacity": 0.61, "outlineWidth": 0}}, 
     {"id": "vx14_04", "label": "트렌드자막 04", "look": {"font": "VITRO PRIDE OTF", "bold": true, "color": "#FFFFFF", "bg": true, "bgColor": "#232323", "bgOpacity": 0.85, "outlineWidth": 0}}, 
     {"id": "vx14_05", "label": "트렌드자막 05", "look": {"font": "MapoDPP", "bold": true, "color": "#FFFFFF", "bg": false, "outlineWidth": 0, "shadow": 0.05, "shadowColor": "#4A3AFF", "glow": ""}}, 
     {"id": "vx14_06", "label": "트렌드자막 06", "look": {"font": "VITRO CORE OTF", "bold": true, "color": "#FFFFFF", "bg": false, "outlineWidth": 0, "shadow": 0.05, "shadowColor": "#5B5B5B", "glow": "#2F2F2F", "glowSize": 0.6}}, 

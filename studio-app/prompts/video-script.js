@@ -1,8 +1,31 @@
 /* 공실뉴스 스튜디오 영상 편집기 — 회원 AI 지시문 (서버 묶음으로 내려간다. 앱 설치 파일에는 넣지 않음)
-   gwVideoScriptPrompt : 텍스트로 영상 만들기 — 대본 쓰기 (문단 = 장면, 문장 = 클립, 문장마다 화면 검색어)
+   gwVideoScriptPrompt : 텍스트로 영상 만들기 — 대본 쓰기 (문단 = 장면, 문장 = 클립). 대본만 — 화면은 만들 때 gwVideoScenePrompt 로 (2026-10-20 사장님: 대본 쓸 때 화면까지 정하느라 느림)
    gwVideoScenePrompt  : 이미 있는 대본에 문장마다 화면 검색어만 붙이기
    gwShortsPrompt      : 롱폼 → 숏폼 구간 고르기
    gwVideoParse        : 답 해석 */
+
+/* 면적은 평을 먼저 — "84㎡ (25.4평)" → "25.4평(84㎡)" (2026-10-21 사장님: 한국인에게는 평이 익숙하다)
+   평이 함께 적혀 있으면 그 숫자를 쓰고, 없으면 ㎡ ÷ 3.3058 을 소수 첫째 자리까지. "3.3㎡당" 같은 단가는 그대로 둔다. */
+function gwPyeongFirst(value) {
+  let s = String(value == null ? "" : value);
+  const NUM = /\d[\d,]*(?:\.\d+)?/.source;
+  const UNIT = /(?:㎡|m²|m2|제곱미터)(?!\s*당)/.source;
+  const count = (s.match(new RegExp(`${NUM}\\s*${UNIT}`, "g")) || []).length;
+  if (!count) return s;
+  let shared = [];
+  const group = s.match(new RegExp(`\\s*\\(\\s*(?:약\\s*)?${NUM}\\s*평(?:\\s*\\/\\s*(?:약\\s*)?${NUM}\\s*평)+\\s*\\)`));
+  if (group) {
+    const nums = group[0].match(new RegExp(NUM, "g"));
+    if (nums.length === count) { shared = nums; s = s.replace(group[0], ""); }
+  }
+  const one = new RegExp(`(${NUM})\\s*${UNIT}(?:\\s*\\(\\s*(?:약\\s*)?(${NUM})\\s*평\\s*\\)|\\s*\\/\\s*(?:약\\s*)?(${NUM})\\s*평(?!\\s*\\())?`, "g");
+  let i = 0;
+  return s.replace(one, (all, m2, py1, py2) => {
+    const py = py1 || py2 || shared[i] || String(Math.round((parseFloat(m2.replace(/,/g, "")) / 3.3058) * 10) / 10);
+    i++;
+    return `${py}평(${m2}㎡)`;
+  });
+}
 
 function gwVideoFacts(v) {
   if (!v) return "";
@@ -11,7 +34,7 @@ function gwVideoFacts(v) {
   for (const f of v.fields || []) {
     if (!f || !f.label || !f.value) continue;
     if (/연락처|전화|휴대폰|임대인|의뢰인|비밀|메모|호수|상세주소/.test(f.label)) continue; // 개인정보는 AI 에 보내지 않는다
-    lines.push(`- ${f.label}: ${String(f.value).slice(0, 200)}`);
+    lines.push(`- ${f.label}: ${gwPyeongFirst(String(f.value).slice(0, 200))}`);
   }
   return lines.join("\n");
 }
@@ -35,10 +58,11 @@ function gwVideoScriptPrompt({ topic = "", style = "", request = "", chars = 0, 
     "- text 하나에는 한 문장만 쓴다. 한 text 안에서 문장이 둘로 이어지면 두 줄(lines)로 나눈다.",
     "- 내용이 바뀌는 곳에서 장면을 나눈다 (장면 3~6개).",
     "- 투자 권유·과장 광고·단정 표현을 쓰지 않는다. 연락처·호수·개인 이름은 쓰지 않는다.",
-    "- 문장마다 그 문장에 맞는 화면을 정한다: desc(한국어 화면 설명), keywords(무료 영상 사이트 영어 검색어 2~4단어), kind(video 또는 image).",
+    "- 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.",
+    "- 대본 글만 쓴다. 화면 설명·검색어는 쓰지 않는다.",
     "",
     "[출력] 설명 없이 아래 JSON 하나만 ```json 상자로:",
-    '{"title":"영상 제목","scenes":[{"title":"장면 이름","lines":[{"text":"성우가 읽을 문장","desc":"화면 설명","keywords":"seoul apartment exterior","kind":"video"}]}]}',
+    '{"title":"영상 제목","scenes":[{"title":"장면 이름","lines":[{"text":"성우가 읽을 문장"}]}]}',
   ].filter((x) => x !== "").join("\n");
 }
 

@@ -1174,7 +1174,9 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
       })
       .filter((x) => x && x.len > 0.05);
     // 애니메이션 효과음 (사진·글자 나타날 때, 메인자막) — 파일은 앱 안 src/video/sfx
-    const sfxs = tl.sfxEvents(p, items, order).filter((e) => /^[a-z0-9-]+$/.test(e.name) && fs.existsSync(path.join(__dirname, "sfx", `${e.name}.mp3`)));
+    // 앱 안 효과음(src/video/sfx) + 내 효과음(프로젝트 assets/sfx, 2026-10-21)
+    const sfxFile = (e) => (e.file ? e.file : /^[a-z0-9-]+$/.test(e.name) ? path.join(__dirname, "sfx", `${e.name}.mp3`) : "");
+    const sfxs = tl.sfxEvents(p, items, order).filter((e) => { const f = sfxFile(e); return f && fs.existsSync(f); });
     const resize = scale !== 1 ? ["-vf", `scale=-2:${Math.round(H0 * scale / 2) * 2}`] : null;
     {
       onProgress(musics.length ? "배경 음악을 섞는 중…" : sfxs.length ? "효과음을 섞는 중…" : "마무리하는 중…", 0.95);
@@ -1208,7 +1210,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
           mix.push("[md]");
         }
         sfxs.forEach((e, i) => {
-          a.push("-i", path.join(__dirname, "sfx", `${e.name}.mp3`));
+          a.push("-i", sfxFile(e));
           const ms = Math.max(0, Math.round(e.t * 1000));
           fl.push(`[${musics.length + 2 + i}:a]volume=${e.vol.toFixed(2)},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""}[x${i}]`);
           mix.push(`[x${i}]`);

@@ -8,6 +8,8 @@ import { SFX_LIST, animAt, animCss, wordState, type WordFx } from "./timeline";
 import { ColorPick } from "./Pickers";
 import { Side } from "./Panels";
 import { C, FONT, Toggle } from "./ui";
+import { FancyText } from "./Variety";
+import type { TextLook } from "./SubPresets";
 
 export const IN_LIST: { id: AnimIn; label: string }[] = [
   { id: "auto", label: "자동" },
@@ -44,7 +46,7 @@ const SPEEDS = [{ v: 0.3, label: "빠르게" }, { v: 0.5, label: "보통" }, { v
 const nameOf = (id?: string) => [...IN_LIST, ...EMPH_LIST, ...GROW_LIST].find((x) => x.id === id)?.label || "";
 
 /** 효과 카드 — 마우스를 올리면 움직인다 (등장: 나타나기, 퇴장: 사라지기, 강조·확대: 계속) */
-function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string; on: boolean; kind: "in" | "out" | "emph" | "grow" | "none"; effect?: string; thumb?: string; text?: string; onClick: () => void }) {
+function Card({ label, on, kind, effect, thumb, text, look: tl, onClick }: { label: string; on: boolean; kind: "in" | "out" | "emph" | "grow" | "none"; effect?: string; thumb?: string; text?: string; look?: TextLook; onClick: () => void }) {
   const [t, setT] = useState(-1);
   const raf = useRef(0);
   const start = () => {
@@ -72,12 +74,12 @@ function Card({ label, on, kind, effect, thumb, text, onClick }: { label: string
   return (
     <button type="button" onClick={onClick} onMouseEnter={start} onMouseLeave={stop}
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: 0, border: 0, background: "transparent", color: on ? C.text : C.sub, fontFamily: FONT, cursor: "pointer" }}>
-      <span style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 6, border: `${on ? 2 : 1}px solid ${on ? C.accent : C.line2}`, background: "#fff", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 6, border: `${on ? 2 : 1}px solid ${on ? C.accent : C.line2}`, background: tl ? (tl.glow ? "#0d0f15" : "#2b303b") : "#fff", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {kind === "none" ? (
-          <span style={{ fontSize: 12.5, color: "#666", fontWeight: 700 }}>없음</span>
+          <span style={{ fontSize: 12.5, color: tl ? "#aaa" : "#666", fontWeight: 700 }}>없음</span>
         ) : (
           <span style={{ display: "inline-block", ...look }}>
-            {thumb ? <img src={thumb} alt="" style={{ height: 34, maxWidth: 60, objectFit: "contain", display: "block" }} /> : <span style={{ fontSize: 18, fontWeight: 900, color: "#111" }}>{text || "가"}</span>}
+            {thumb ? <img src={thumb} alt="" style={{ height: 34, maxWidth: 60, objectFit: "contain", display: "block" }} /> : tl ? <FancyText look={tl} px={20} text={text || "가"} k={0.45} /> : <span style={{ fontSize: 18, fontWeight: 900, color: "#111" }}>{text || "가"}</span>}
           </span>
         )}
       </span>
@@ -139,6 +141,8 @@ export type AnimBodyProps = {
   what: string; // 사진 · 글자 · 자막
   thumb?: string; // 카드 시연 그림
   text?: string; // 카드 시연 글자
+  /** 카드 시연 글자 모양 — 고른 템플릿·디자인 그대로 (2026-10-21 사장님: 흰 칸 대신) */
+  look?: TextLook;
   /** 같은 종류 수 — 있으면 [이 ○만][모든 ○] 범위 단추. 없으면 scopeNote 로 안내 (자막은 메인자막 칸 범위를 따른다) */
   count?: number;
   scopeNote?: string;
@@ -167,15 +171,17 @@ export function AnimPanel({ onClose, onBack, ...body }: AnimBodyProps & { onClos
  * 애니메이션 고르기 — 캡컷처럼 [인 / 아웃 / 반복] (회의 3-28, 2026-10-19)
  *  반복 = 나와 있는 동안 계속 (두근두근·흔들기·깜빡이기 + 천천히 커지기·작아지기)
  */
-export function AnimBody({ value, what, thumb, text, count, scopeNote, onChange, onPreview, sfxDefault = "auto" }: AnimBodyProps) {
-  return <AnimInner value={value} what={what} thumb={thumb} text={text} count={count} scopeNote={scopeNote} onChange={onChange} onPreview={onPreview} sfxDefault={sfxDefault} />;
+export function AnimBody({ value, what, thumb, text, look, onChange, onPreview, sfxDefault = "auto" }: AnimBodyProps) {
+  return <AnimInner value={value} what={what} thumb={thumb} text={text} look={look} onChange={onChange} onPreview={onPreview} sfxDefault={sfxDefault} />;
 }
 
-function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPreview, sfxDefault = "auto" }: {
+function AnimInner({ value, what, thumb, text, look, onChange, onPreview, sfxDefault = "auto" }: {
   value?: LayerAnim;
   what: string; // 사진 · 글자 · 자막
   thumb?: string; // 카드 시연 그림
   text?: string; // 카드 시연 글자
+  /** 카드 시연 글자 모양 — 고른 템플릿·디자인 그대로 (2026-10-21 사장님: 흰 칸 대신) */
+  look?: TextLook;
   /** 같은 종류 수 — 있으면 [이 ○만][모든 ○] 범위 단추. 없으면 scopeNote 로 안내 (자막은 메인자막 칸 범위를 따른다) */
   count?: number;
   scopeNote?: string;
@@ -188,7 +194,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
   const [tab, setTab] = useState<"in" | "out" | "loop" | "sfx" | "word">("in");
   const wordsOk = what === "자막"; // 단어별은 메인자막부터 (말 시각이 있어서)
   const side: "in" | "out" = tab === "out" ? "out" : "in";
-  const [all, setAll] = useState(false);
+  const all = false; // 적용 범위 단추 없앰 (2026-10-21) — 늘 고른 것 하나에만
   const a = value || {};
   const set = (fn: (a: LayerAnim) => LayerAnim, part: "in" | "out" | "all" = "all") => {
     onChange(fn, all);
@@ -281,7 +287,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
         <div style={grid}>
           <Card label="없음" kind="none" on={!(side === "in" ? a.in : a.out)} onClick={() => (side === "in" ? pickIn(undefined) : pickOut(undefined))} />
           {IN_LIST.map((x) => (
-            <Card key={x.id} label={x.label} kind={side} effect={x.id} thumb={thumb} text={text} on={(side === "in" ? a.in : a.out) === x.id}
+            <Card key={x.id} label={x.label} kind={side} effect={x.id} thumb={thumb} text={text} look={look} on={(side === "in" ? a.in : a.out) === x.id}
               onClick={() => (side === "in" ? pickIn(x.id) : pickOut(x.id))} />
           ))}
         </div>
@@ -290,12 +296,12 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
         <>
           <div style={grid}>
             <Card label="없음" kind="none" on={!a.emph} onClick={() => set((x) => ({ ...x, emph: undefined }))} />
-            {EMPH_LIST.map((x) => <Card key={x.id} label={x.label} kind="emph" effect={x.id} thumb={thumb} text={text} on={a.emph === x.id} onClick={() => set((y) => ({ ...y, emph: x.id }))} />)}
+            {EMPH_LIST.map((x) => <Card key={x.id} label={x.label} kind="emph" effect={x.id} thumb={thumb} text={text} look={look} on={a.emph === x.id} onClick={() => set((y) => ({ ...y, emph: x.id }))} />)}
           </div>
           <div style={{ padding: "0 16px", fontSize: 13.5, fontWeight: 800 }}>천천히 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 나와 있는 동안 조금씩</span></div>
           <div style={grid}>
             <Card label="없음" kind="none" on={!a.grow} onClick={() => set((x) => ({ ...x, grow: undefined }))} />
-            {GROW_LIST.map((x) => <Card key={x.id} label={x.label} kind="grow" effect={x.id} thumb={thumb} text={text} on={a.grow === x.id} onClick={() => set((y) => ({ ...y, grow: x.id }))} />)}
+            {GROW_LIST.map((x) => <Card key={x.id} label={x.label} kind="grow" effect={x.id} thumb={thumb} text={text} look={look} on={a.grow === x.id} onClick={() => set((y) => ({ ...y, grow: x.id }))} />)}
           </div>
         </>
       )}
@@ -346,17 +352,7 @@ function AnimInner({ value, what, thumb, text, count, scopeNote, onChange, onPre
             </>
           )}
         </div>}
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>적용 범위 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>· 고른 뒤 효과를 누르세요</span></div>
-          {typeof count === "number" ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button type="button" onClick={() => setAll(false)} style={{ ...tabBtn(!all), flex: 1 }}>이 {what}만</button>
-              <button type="button" onClick={() => setAll(true)} style={{ ...tabBtn(all), flex: 1 }}>모든 {what} ({count}개)</button>
-            </div>
-          ) : (
-            <div style={{ fontSize: 13.5, color: C.sub }}>{scopeNote}</div>
-          )}
-        </div>
+        {/* 적용 범위 [이 ○만][모든 ○] 없앰 — 효과는 고른 것 하나에만 (2026-10-21 사장님: 아래 나오는 구간 단추와 헛갈림) */}
         <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.6 }}>
           {what === "자막"
             ? "효과 그림에 마우스를 올리면 움직임을 미리 볼 수 있어요. 자막 한 줄이 나올 때마다 나타나고 사라져요. [자동]은 클립마다 팝·날아오기·다가오기·페이드·굴러오기를 차례로 써요."

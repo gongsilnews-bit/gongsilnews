@@ -311,13 +311,13 @@ function register(base) {
 
   /* ── 라이브러리 ── */
   ipcMain.handle("video:lib-list", (_e, opts) => library.list(opts || {}));
-  ipcMain.handle("video:lib-pick", async (e, { kinds = "media" } = {}) => {
+  ipcMain.handle("video:lib-pick", async (e, { kinds = "media", source = "" } = {}) => {
     const filters = kinds === "audio"
       ? [{ name: "소리", extensions: ["mp3", "wav", "m4a", "aac", "ogg", "flac"] }]
       : [{ name: "사진·영상", extensions: ["mp4", "mov", "m4v", "webm", "mkv", "avi", "wmv", "jpg", "jpeg", "png", "webp", "gif", "heic"] }];
     const r = await dialog.showOpenDialog(winOf(e), { title: "PC에서 불러오기", properties: ["openFile", "multiSelections"], filters });
     if (r.canceled || !r.filePaths.length) return [];
-    if (kinds === "audio") return library.add(r.filePaths, { source: "local", allowAudio: true }); // 내 음악 목록에 남긴다
+    if (kinds === "audio") return library.add(r.filePaths, { source: source === "sfx" ? "sfx" : "local", allowAudio: true }); // 내 음악(또는 내 효과음) 목록에 남긴다
     return library.add(r.filePaths, { source: "local" });
   });
   ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
@@ -341,10 +341,10 @@ function register(base) {
     }
   });
   // 다운로드 폴더의 곡을 내 음악에 넣기 — 다운로드 폴더 안 소리 파일만
-  ipcMain.handle("video:lib-add-downloads", (_e, files) => {
+  ipcMain.handle("video:lib-add-downloads", (_e, files, source) => {
     const root = path.resolve(dlDir()).toLowerCase() + path.sep;
     const ok = (files || []).map((f) => path.resolve(String(f))).filter((f) => f.toLowerCase().startsWith(root) && AUDIO_EXT.test(f) && fs.existsSync(f));
-    return ok.length ? library.add(ok, { source: "local", allowAudio: true }) : [];
+    return ok.length ? library.add(ok, { source: source === "sfx" ? "sfx" : "local", allowAudio: true }) : [];
   });
   // 애니메이션 칸 그림 (스티커·사진 올리기 움직임) — 굽기 전에 편집 화면이 그려 보낸다. start 0 이면 폴더를 비우고 새로
   ipcMain.handle("video:anim-frames", (_e, dir, key, start, urls) => {
@@ -380,6 +380,17 @@ function register(base) {
   ipcMain.handle("video:lib-music-folder", () => {
     fs.mkdirSync(library.musicDir(), { recursive: true });
     return library.musicDir();
+  });
+  /** 내 효과음 → 프로젝트 폴더 assets/sfx 로 복사 (내 음악과 같은 방식, 2026-10-21) */
+  ipcMain.handle("video:sfx-use", async (_e, dir, libId) => {
+    const it = library.get(libId);
+    if (!it || it.kind !== "audio" || !fs.existsSync(it.path)) throw new Error("효과음 파일을 찾지 못했습니다.");
+    const destDir = path.join(dir, "assets", "sfx");
+    fs.mkdirSync(destDir, { recursive: true });
+    const file = path.join(destDir, `${it.id}${path.extname(it.path)}`);
+    if (!fs.existsSync(file)) fs.copyFileSync(it.path, file);
+    media.allow(file);
+    return { file, url: media.urlOf(file), name: it.name.replace(/.[^.]+$/, "") };
   });
   /** 내 음악 → 프로젝트 폴더로 복사해서 쓴다 (원본을 옮기거나 지워도 영상은 그대로) */
   ipcMain.handle("video:music-use", async (_e, dir, libId) => {
@@ -497,7 +508,10 @@ function register(base) {
    *  opts: { kind: "mp3"|"wav", outFile, speed, gap }
    */
   ipcMain.handle("video:voice-save", async (e, texts, voiceId, opts = {}) => {
-    let list = (texts || []).map((t) => String(t || "").trim()).filter((t) => t && t.replace(/\[[^\]]{1,20}\]/g, "").replace(/[\s.,!?…~]/g, "")); // 태그만 있는 줄은 뺀다 (빈 글 오류)
+    // opts.files — 이미 만든 문장 목소리 (영상 만들기에서 AI오디오 WAV 자동 저장, 2026-10-20) → 다시 만들지 않고 잇기만
+    const pairs = (texts || []).map((t, i) => ({ t: String(t || "").trim(), f: Array.isArray(opts.files) ? opts.files[i] : "" })).filter((x) => x.t && x.t.replace(/\[[^\]]{1,20}\]/g, "").replace(/[\s.,!?…~]/g, "")); // 태그만 있는 줄은 뺀다 (빈 글 오류)
+    let list = pairs.map((x) => x.t);
+    const made = pairs.map((x) => x.f || "");
     // 미리 듣기 — 처음 세 문장만, 임시 파일로 (2026-10-20 사장님)
     if (opts.preview) {
       list = list.slice(0, 3);
@@ -526,6 +540,7 @@ function register(base) {
       const one = async () => {
         while (k < list.length) {
           const i = k++;
+          if (made[i] && fs.existsSync(made[i])) { files[i] = made[i]; done++; continue; }
           const r = await project.voiceFor({ dir: tmp }, list[i], voiceId, { emotion: opts.emotion || undefined, prev: list[i - 1] || "", next: list[i + 1] || "" });
           files[i] = r.file;
           done++;
@@ -703,7 +718,9 @@ function register(base) {
     const mode = opts.mode === "head" ? "head" : "full";
     const max = mode === "head" ? 1 : Math.min(6, Math.max(1, Number(opts.max) || 4));
     const title = String(opts.title || "").trim();
-    const safe = (title || new URL(href).hostname).replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 40) || "캡쳐";
+    const now = new Date();
+    const ymd = `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const safe = `${ymd} ${(title || new URL(href).hostname).replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 30) || "캡쳐"}`; // "261020 제목" (2026-10-20 사장님)
     const dir = path.join(library.studioRoot(), "캡쳐", safe);
     fs.mkdirSync(dir, { recursive: true });
     send(e, "video:progress", "기사 화면을 캡쳐하는 중…");
@@ -835,7 +852,7 @@ function register(base) {
     const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"] };
     // 목소리만 저장(텍스트로 영상)은 [AI오디오] 폴더가 기본 (2026-10-20 사장님)
     const dir = p && p.voiceOnly ? (folders.ensure(), folders.aiAudioDir()) : lastExportDir && fs.existsSync(lastExportDir) ? lastExportDir : folders.exportDir(p);
-    const base = `${String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_")}${ext === "mp4" && p && p.ratio ? `_${p.ratio.replace(":", "x")}` : ""}`;
+    const base = String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_"); // "261020 제목.mp4" — 프로젝트 이름 그대로 (2026-10-20 사장님)
     let def = path.join(dir, `${base}.${ext}`);
     for (let n = 2; fs.existsSync(def); n++) def = path.join(dir, `${base}_${n}.${ext}`);
     const r = await dialog.showSaveDialog(winOf(e), {
@@ -894,10 +911,11 @@ function register(base) {
     fs.mkdirSync(dir, { recursive: true });
     const d = new Date();
     const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\.(mp4|webm)$/i, "").trim();
-    const base = safe(opt.fileName) || `${safe(name) || "녹화"}_${d.getMonth() + 1}월${d.getDate()}일 ${d.getHours()}시${String(d.getMinutes()).padStart(2, "0")}분${String(d.getSeconds()).padStart(2, "0")}초`;
-    // 같은 이름이 있으면 덮어쓰지 않고 (2), (3)…
+    // 기본 이름 "261020 화면 녹화" (2026-10-20 사장님: 앞은 년월일 6자리) — 같은 이름이 있으면 _2, _3…
+    const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    const base = safe(opt.fileName) || `${ymd} ${safe(name) || "녹화"}`;
     let file = path.join(dir, `${base}.webm`);
-    for (let i = 2; fs.existsSync(file) || fs.existsSync(file.replace(/\.webm$/, ".mp4")); i++) file = path.join(dir, `${base} (${i}).webm`);
+    for (let i = 2; fs.existsSync(file) || fs.existsSync(file.replace(/\.webm$/, ".mp4")); i++) file = path.join(dir, `${base}_${i}.webm`);
     const token = crypto.randomBytes(4).toString("hex");
     recs.set(token, { file, fd: fs.openSync(file, "w") });
     return token;

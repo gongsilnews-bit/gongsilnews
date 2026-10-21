@@ -4,20 +4,22 @@
 //  ① 텍스트 (기본 · 디자인 · 내 설정 = 모양만)  ② 애니메이션 (인 · 아웃 · 반복 · 효과음)  ③ 템플릿 (꾸민 글자 · 예능 자막 · 내 템플릿 = 모양 + 움직임)
 //  (2026-10-20 사장님: 텍스트를 만들고 → 애니메이션을 입히고 → 템플릿으로. 말풍선은 스티커로)
 //  메인자막·화면 글자가 같이 쓴다. 어느 탭에서나 맨 아래 [사전 설정으로 저장]
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { LayerAnim } from "./types";
 import { DEFAULT_FONT } from "@/lib/studio-video/fonts";
 import { Btn, C, FONT, Icon, Toggle, input, label } from "./ui";
-import { ColorPick, FontPick } from "./Pickers";
+import { ColorPick, FontPick, loadFont } from "./Pickers";
 import { Side } from "./Panels";
 import { AnimBody, type AnimBodyProps } from "./Anim";
 import { effLeading, effSpacing } from "./timeline";
-import { gradCss, BASIC_GROUPS, EFFECT_GROUPS, LookTile, SubPresetGrid, loadMyPresets, saveMyPresets, type MyPreset, type SubLook, type TextLook } from "./SubPresets";
-import { VarietyGrid } from "./Variety";
+import { gradCss, BASIC_GROUPS, EFFECT_GROUPS, LookTile, SubPresetGrid, SUB_PRESETS, loadMyPresets, saveMyPresets, type MyPreset, type SubLook, type TextLook } from "./SubPresets";
+import { FancyText, VarietyGrid } from "./Variety";
+import { VARIETY_PRESETS } from "@/lib/studio-video/varietyPresets";
 import { tplAnim } from "./templateAnims";
+import { tplPreviewStyles } from "./tplPreviewAnim";
 
-type Tab = "text" | "anim" | "tpl";
-type TSub = "deco" | "variety" | "mine";
+// 2026-10-21 사장님: 1차 탭 [내 자막] 없앰 → [디자인] 맨 앞 [내 디자인], [템플릿] 맨 앞 [내 템플릿] · 템플릿은 [텍스트] 안으로
+type Tab = "text" | "anim";
 
 /** 숫자 칸 + − 단추 (캡컷 문자 간격·줄 간격처럼) */
 function Stepper({ title, value, min, max, step, onChange }: { title: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void }) {
@@ -37,14 +39,22 @@ function Stepper({ title, value, min, max, step, onChange }: { title: string; va
     </span>
   );
 }
-type Sub = "basic" | "design" | "my";
+// 2026-10-21 사장님: 기본디자인·고급디자인을 [디자인] 하나로 합치고, 1차 탭 [템플릿]을 [텍스트] 안 고급디자인 자리로 내림
+type Sub = "basic" | "design" | "tpl";
 // 마지막에 보던 탭 — 다른 글자를 골라도 그대로 (앱을 켠 동안)
-const last: { tab: Tab; sub: Sub; tsub: TSub } = { tab: "text", sub: "basic", tsub: "deco" };
-const remember = (k: "tab" | "sub" | "tsub", v: string) => { (last as Record<string, string>)[k] = v; };
+const last: { tab: Tab; sub: Sub } = { tab: "text", sub: "basic" };
+const remember = (k: "tab" | "sub", v: string) => { (last as Record<string, string>)[k] = v; };
+/** 저장 시각 — 누를 때만 부른다 */
+const stamp = () => Date.now();
 /** 새 글자를 넣을 때 — 칸을 [텍스트 › 기본]부터 */
 export const resetTextTabs = () => { remember("tab", "text"); remember("sub", "basic"); };
+/** 미리보기에서 글자를 누를 때 — 칸이 이미 열려 있어도 [텍스트 › 기본]으로 (2026-10-21 사장님) */
+const FOCUS_EVT = "studio-text-basic";
+export const focusTextBasic = () => { resetTextTabs(); window.dispatchEvent(new Event(FOCUS_EVT)); };
 
-export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, anim, bubble, onClose, footerTop, pxPer100 = 67, titleExtra, posEl, basicBottom }: {
+export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, anim, bubble, onClose, footerTop, pxPer100 = 67, titleExtra, posEl, basicBottom, sample }: {
+  /** 템플릿 칸 미리보기 글 — 지금 자막·글자 (2026-10-21) */
+  sample?: string;
   title: string;
   /** 제목 줄 오른쪽 — 메인자막 적용 범위 단추 */
   titleExtra?: React.ReactNode;
@@ -70,13 +80,25 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
   bubble?: React.ReactNode;
   onClose: () => void;
 }) {
-  const [tab, setTabS] = useState<Tab>(!anim && last.tab === "anim" ? "text" : (["text", "anim", "tpl"] as string[]).includes(last.tab) ? last.tab : "text");
-  const [sub, setSubS] = useState<Sub>((["basic", "design", "my"] as string[]).includes(last.sub) ? last.sub : "basic");
-  const [tsub, setTsubS] = useState<TSub>(!anim && last.tsub === "mine" ? "deco" : last.tsub);
-  const setTsub = (t: TSub) => { remember("tsub", t); setTsubS(t); };
+  const [tab, setTabS] = useState<Tab>(anim && last.tab === "anim" ? "anim" : "text");
+  const [sub, setSubS] = useState<Sub>((["basic", "design", "tpl"] as string[]).includes(last.sub) ? last.sub : "basic");
   const setTab = (t: Tab) => { remember("tab", t); setTabS(t); };
   const setSub = (t: Sub) => { remember("sub", t); setSubS(t); };
+  useEffect(() => {
+    const go = () => { setTabS("text"); setSubS("basic"); };
+    window.addEventListener(FOCUS_EVT, go);
+    return () => window.removeEventListener(FOCUS_EVT, go);
+  }, []);
   const [my, setMy] = useState<MyPreset[]>(() => loadMyPresets());
+  // 내 자막 칸 글꼴 미리 받기 — 담아 온 템플릿과 똑같이 보이게 (2026-10-21 사장님)
+  const [fontTick, setFontTick] = useState(0);
+  useEffect(() => {
+    if (!(tab === "text" && (sub === "design" || sub === "tpl"))) return;
+    let live = true;
+    const fams = [...new Set(my.map((x) => x.look.font).filter(Boolean) as string[])];
+    Promise.all(fams.map((f) => loadFont(f).catch(() => {}))).then(() => { if (live) setFontTick((n) => n + 1); });
+    return () => { live = false; };
+  }, [tab, sub, my]);
   const [naming, setNaming] = useState<string | null>(null);
 
   const row: React.CSSProperties = { padding: "12px 16px", borderBottom: `1px solid ${C.line}` };
@@ -111,6 +133,10 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
     );
   };
   /** 저장 — withAnim: 내 템플릿(모양 + 움직임) / 아니면 내 설정(모양만) */
+  const [savedNote, setSavedNote] = useState("");
+  const [lastName, setLastName] = useState(""); // 마지막에 고른 디자인·템플릿 이름 (2026-10-21 사장님: 저장 이름 = 마우스를 올리면 나오는 이름)
+  const presetName = (m: { group: string; index: number }, variety = false) =>
+    (variety ? VARIETY_PRESETS.find((g) => g.group === m.group)?.items[m.index]?.label : SUB_PRESETS.find((g) => g.group === m.group)?.items[m.index]?.label) || "";
   const save = (withAnim: boolean) => {
     const pick = <K extends keyof TextLook>(k: K) => look[k];
     const lk: TextLook = {};
@@ -119,12 +145,31 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
       if (v !== undefined) (lk as Record<string, unknown>)[k] = v;
     }
     const am = withAnim && anim?.value && Object.keys(anim.value).length ? anim.value : undefined;
-    const name = (naming || "").trim() || (withAnim ? `내 템플릿 ${myTpl.length + 1}` : `내 설정 ${mySet.length + 1}`);
-    const next = [{ id: `p${Date.now().toString(36)}`, name, look: lk, anim: am, at: Date.now() }, ...my];
+    const name = (naming || "").trim() || lastName || (withAnim ? `내 템플릿 ${my.filter((x) => x.anim).length + 1}` : `내 디자인 ${my.filter((x) => !x.anim).length + 1}`);
+    const t = stamp();
+    const next = [{ id: `p${t.toString(36)}`, name, look: lk, anim: am, at: t }, ...my];
     setMy(next);
     saveMyPresets(next);
     setNaming(null);
+    setSavedNote(withAnim ? "[텍스트 › 템플릿 › 내 템플릿]에 저장했어요" : "[텍스트 › 디자인 › 내 디자인]에 저장했어요");
+    setTimeout(() => setSavedNote(""), 2200);
   };
+  /** 텍스트 › 기본 맨 아래 — 다 꾸민 모양을 [디자인 › 내 디자인]에 저장 · 애니메이션 맨 아래 — 모양 + 움직임을 [템플릿 › 내 템플릿]에 (2026-10-21 사장님) */
+  const saveBoxOf = (withAnim: boolean) => (
+    <div style={{ padding: "14px 16px 18px", borderTop: `1px solid ${C.line}` }}>
+      {naming !== null ? (
+        <div style={{ display: "flex", gap: 6 }}>
+          <input value={naming} onChange={(e) => setNaming(e.target.value)} placeholder="이름 (예: 가격 강조)" maxLength={20} autoFocus
+            onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") save(withAnim); if (e.key === "Escape") setNaming(null); }} style={{ ...input, flex: 1, minWidth: 0 }} />
+          <Btn small primary onClick={() => save(withAnim)}>저장</Btn>
+          <Btn small onClick={() => setNaming(null)}>그만</Btn>
+        </div>
+      ) : (
+        <Btn primary onClick={() => setNaming(lastName)} style={{ width: "100%", justifyContent: "center" }}><Icon name="star" size={15} />{withAnim ? "내 템플릿으로 저장" : "내 디자인에 저장"}</Btn>
+      )}
+      <div style={{ fontSize: 12, color: savedNote ? C.accent : C.dim, marginTop: 6 }}>{savedNote || (withAnim ? "지금 모양과 움직임을 함께 [텍스트 › 템플릿 › 내 템플릿]에 담아요." : "지금 글꼴·크기·색·테두리 모양을 [디자인 › 내 디자인]에 담아요.")}</div>
+    </div>
+  );
   /** 템플릿 고르기 — 모양 + 어울리는 움직임 (2026-10-20 사장님) */
   const pickTpl = (lk: TextLook, m: { group: string; index: number }) => {
     onPresetLook({ font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", outline2: undefined, outline2Width: 0, gradTo: "", gradType: undefined, gradAngle: undefined, gradA: undefined, gradB: undefined, glowSize: undefined, glowAlpha: undefined, textAlpha: undefined, shadowAlpha: undefined, outlineAlpha: undefined, ...lk } as SubLook);
@@ -133,31 +178,35 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
       anim.onChange((x) => ({ ...x, in: t.in, out: t.out, emph: t.emph, grow: undefined, dur: t.dur } as LayerAnim), false);
     }
   };
+  /** ☆ — 기본디자인·고급디자인은 모양만, 기본템플릿·예능템플릿은 모양 + 어울리는 움직임으로 [내 자막]에 담기 */
+  const starOf = (withAnim: boolean) => ({
+    has: (key: string) => my.some((x) => x.src === key && Boolean(x.anim) === (withAnim && Boolean(anim))),
+    toggle: (key: string, lk: TextLook, m: { group: string; index: number }, label: string) => {
+      const wa = withAnim && Boolean(anim);
+      const hit = my.find((x) => x.src === key && Boolean(x.anim) === wa);
+      let next: MyPreset[];
+      if (hit) next = my.filter((x) => x.id !== hit.id);
+      else {
+        const t = wa ? tplAnim(m.group, m.index) : null;
+        next = [{ id: `p${Date.now().toString(36)}`, name: label, look: lk, ...(t ? { anim: { in: t.in, out: t.out, emph: t.emph, dur: t.dur } as LayerAnim } : {}), at: Date.now(), src: key }, ...my];
+      }
+      setMy(next);
+      saveMyPresets(next);
+    },
+  });
   const mySet = my.filter((x) => !x.anim);
   const myTpl = my.filter((x) => x.anim);
   /** 내 설정·내 템플릿 목록 + 저장 단추 */
   const myList = (list: MyPreset[], withAnim: boolean) => (
     <div style={{ padding: "14px 16px" }}>
-      {naming !== null ? (
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          <input value={naming} onChange={(e) => setNaming(e.target.value)} placeholder="이름 (예: 가격 강조)" maxLength={20} autoFocus
-            onKeyDown={(e) => { if (e.key === "Enter") save(withAnim); if (e.key === "Escape") setNaming(null); }} style={{ ...input, flex: 1, minWidth: 0 }} />
-          <Btn small primary onClick={() => save(withAnim)}>저장</Btn>
-          <Btn small onClick={() => setNaming(null)}>그만</Btn>
-        </div>
-      ) : (
-        <div style={{ marginBottom: 14 }}>
-          <Btn primary onClick={() => setNaming("")} disabled={withAnim && !(anim?.value && Object.keys(anim.value).length)} style={{ width: "100%", justifyContent: "center" }}>
-            <Icon name="star" size={15} />{withAnim ? "지금 글자를 템플릿으로 저장" : "지금 모양을 내 설정으로 저장"}
-          </Btn>
-          <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>{withAnim ? (anim?.value && Object.keys(anim.value).length ? "지금 모양과 움직임이 함께 담겨요." : "먼저 [애니메이션]에서 움직임을 고르세요.") : "글꼴·색·테두리 같은 모양만 담겨요 (움직임 없음)."}</div>
-        </div>
-      )}
+      {/* 내 디자인은 ☆ 로만 담는다 — [지금 모양을 내 설정으로 저장] 없앰 (2026-10-21 사장님) */}
+      {/* 내 디자인·내 템플릿 모두 위 저장 단추 없음 — ☆ · 텍스트 › 기본 [내 자막에 저장]으로 (2026-10-21 사장님) */}
+      {/* 누르면 그 모양을 넣고 [텍스트 › 기본]으로 — 따로 된 속성 창은 없앰 (2026-10-21 사장님) */}
       {list.length ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {list.map((pr) => (
-            <div key={pr.id} style={{ position: "relative" }}>
-              <LookTile look={pr.look} big title={`${pr.name} — 누르면 한 번에`} onClick={() => applyMy(pr)} />
+            <div key={`${pr.id}-${fontTick}`} style={{ position: "relative" }}>
+              <MyTile pr={pr} sample={sample} onClick={() => { applyMy(pr); setLastName(pr.name || ""); setTab("text"); setSub("basic"); }} />
               <div style={{ fontSize: 12, color: C.sub, marginTop: 4, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pr.anim ? "▶ " : ""}{pr.name}</div>
               <button type="button" title="지우기" onClick={() => removeMy(pr.id)}
                 style={{ position: "absolute", right: 3, top: 3, width: 18, height: 18, borderRadius: 9, border: 0, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, lineHeight: "18px", padding: 0, cursor: "pointer" }}>✕</button>
@@ -166,7 +215,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
         </div>
       ) : (
         <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>
-          {withAnim ? <>아직 저장한 템플릿이 없어요.<br />글자를 만들고 [애니메이션]을 입힌 뒤 위 단추를 누르세요.</> : <>아직 저장한 모양이 없어요.<br />[기본]·[디자인]에서 모양을 만든 뒤 위 단추를 누르세요.</>}
+          {withAnim ? <>아래 칸 오른쪽 위 ☆ 를 누르면 여기에 모여요.</> : <>아래 칸 오른쪽 위 ☆ 를 누르거나 [기본] 맨 아래 [내 디자인에 저장]을 누르면 여기에 모여요.</>}
         </div>
       )}
       <div style={{ fontSize: 12, color: C.dim, marginTop: 12 }}>이 PC 에 저장돼요.</div>
@@ -189,34 +238,9 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
   };
 
   const shadowOn = Number(look.shadow) > 0;
-  return (
-    <Side title={title} onClose={onClose} titleExtra={titleExtra}
-      footer={footerTop}>
-      {/* 큰 탭 */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        {([["text", "텍스트"], ["anim", "애니메이션"], ["tpl", "템플릿"]] as const).filter(([k]) => k !== "anim" || anim).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setTab(k)}
-            style={{ flex: 1, height: 42, border: 0, borderBottom: `2px solid ${tab === k ? C.accent : "transparent"}`, background: "transparent", color: tab === k ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-            {l}{k === "anim" && anim?.value && Object.keys(anim.value).length ? " •" : ""}
-          </button>
-        ))}
-      </div>
-
-      {tab === "text" && (
-        <>
-          <div style={{ padding: "12px 16px 0" }}>
-            <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
-              {([["basic", "기본"], ["design", "디자인"], ["my", "내 설정"]] as const).map(([k, l]) => (
-                <button key={k} type="button" onClick={() => setSub(k)}
-                  style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: sub === k ? C.panel2 : "transparent", color: sub === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-                  {l}{k === "my" && mySet.length ? ` ${mySet.length}` : ""}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {sub === "basic" && (
-            <>
+  /** 텍스트 › 기본 — 글꼴·크기·색·위치·투명도·패턴·테두리·상자·그림자·빛 (내 자막에서 고르면 위에 같은 칸이 뜬다) */
+  const basicEl = (
+    <>
               {basicTop}
               <div style={col}><span style={label}>글꼴</span><FontPick value={look.font} onChange={(f) => onLook({ font: f })} /></div>
               {/* 글자 크기 — % 대신 완성 영상 글자 크기 숫자로, 오른쪽에 입력 칸 (2026-10-19 사장님) */}
@@ -297,12 +321,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                   })}
                 </div>
               </div>
-              {basicBottom}
-            </>
-          )}
-
-          {sub === "design" && (
-            <>
+              {/* 디자인 칸이던 것 — 투명도·패턴·테두리·상자·그림자·빛 (2026-10-20 사장님: 기본에 다) */}
               {/* 글자 투명도 — 글자 크기 바로 아래 (0 = 진하게, 2026-10-19 사장님) */}
               <div style={col}>
                 <span style={label}>투명도</span>
@@ -320,8 +339,12 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                       <button type="button" onClick={set} disabled={!ok} title={title}
                         style={{ width: 40, height: 32, borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 15, fontFamily: "Georgia, serif", cursor: ok ? "pointer" : "default" }}>{child}</button>
                     );
+                    const basic = !look.underline && !look.italic && look.bold !== false;
                     return (
                       <>
+                        {/* 기본 — 밑줄·기울임 없이, 굵기는 처음대로 (2026-10-20 사장님: 패턴 기초로) */}
+                        <button type="button" onClick={() => onLook({ underline: undefined, italic: undefined, bold: undefined })} title="패턴 없이 기본으로 (밑줄·기울임 빼기)"
+                          style={{ height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${basic ? C.text : C.line2}`, background: basic ? C.text : "transparent", color: basic ? C.bg : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>기본</button>
                         {b(look.bold !== false && canBold, canBold, canBold ? "굵게" : "이 글꼴은 굵기가 하나예요", () => onLook({ bold: look.bold === false }), <b>B</b>)}
                         {b(Boolean(look.underline), true, "밑줄", () => onLook({ underline: !look.underline || undefined }), <u>U</u>)}
                         {b(Boolean(look.italic), true, "기울임", () => onLook({ italic: !look.italic || undefined }), <i>I</i>)}
@@ -419,37 +442,110 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 look.glow || "#22D3EE", (c) => onLook({ glow: c }),
                 Math.round((look.glowSize ?? 1) * 10), 3, 30, (v) => onLook({ glowSize: v === 10 ? undefined : v / 10 }),
                 Math.round((look.glowAlpha ?? 0) * 100), (v) => onLook({ glowAlpha: v ? v / 100 : undefined }))}
-            </>
-          )}
+              {basicBottom}
+    </>
+  );
 
-          {sub === "my" && myList(mySet, false)}
-        </>
-      )}
+  /** 디자인·템플릿 안 묶음 제목 — 칩으로 나누지 않고 내 것 · 기본 · 예능을 위에서 아래로 다 보인다 (2026-10-21 사장님) */
+  const head = (t: string, n?: number) => (
+    <div style={{ padding: "16px 16px 2px", fontSize: 14, fontWeight: 800, color: C.text, borderTop: `1px solid ${C.line}`, marginTop: 4 }}>{t}{n ? <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}> {n}</span> : null}</div>
+  );
+  return (
+    <Side title={title} onClose={onClose} titleExtra={titleExtra}
+      footer={footerTop}>
+      {/* 큰 탭 */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
+        {([["text", "텍스트"], ["anim", "애니메이션"]] as const).filter(([k]) => k !== "anim" || anim).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setTab(k)}
+            style={{ flex: 1, height: 42, border: 0, borderBottom: `2px solid ${tab === k ? C.accent : "transparent"}`, background: "transparent", color: tab === k ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+            {l}{k === "anim" && anim?.value && Object.keys(anim.value).length ? " •" : ""}
+          </button>
+        ))}
+      </div>
 
-      {tab === "anim" && anim && <AnimBody {...anim} />}
-
-      {tab === "tpl" && (
+      {tab === "text" && (
         <>
           <div style={{ padding: "12px 16px 0" }}>
             <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
-              {([["deco", "꾸민 글자"], ["variety", "예능 자막"], ["mine", "내 템플릿"]] as const).filter(([k]) => k !== "mine" || anim).map(([k, l]) => (
-                <button key={k} type="button" onClick={() => setTsub(k)}
-                  style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: tsub === k ? C.panel2 : "transparent", color: tsub === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-                  {l}{k === "mine" && myTpl.length ? ` ${myTpl.length}` : ""}
+              {([["basic", "기본"], ["design", "디자인"], ["tpl", "템플릿"]] as const).map(([k, l]) => ( // 2026-10-21 사장님: 기본디자인+고급디자인 → 디자인, 템플릿은 1차 탭에서 여기로
+                <button key={k} type="button" onClick={() => setSub(k)}
+                  style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: sub === k ? C.panel2 : "transparent", color: sub === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+                  {l}
                 </button>
               ))}
             </div>
-            {anim && tsub !== "mine" && <div style={{ fontSize: 12, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>누르면 모양과 어울리는 움직임이 함께 들어가요. 움직임은 [애니메이션]에서 바꿀 수 있어요.</div>}
           </div>
-          {tsub === "deco" && (
-            <div style={{ ...col, borderBottom: 0 }}>
-              <SubPresetGrid value={look} onPick={(lk, m) => pickTpl(lk, m)} groups={[...BASIC_GROUPS, ...EFFECT_GROUPS]} />
-            </div>
+
+          {sub === "basic" && <>{basicEl}{saveBoxOf(false)}</>}
+
+          {/* 디자인 — 꾸민 글자의 기본·글꼴·상자·네온·빛·예능·유튜브·다큐·뉴스 (모양만, 기본디자인+고급디자인 · 2026-10-21 사장님) */}
+          {sub === "design" && (
+            <>
+              {head("내 디자인", mySet.length)}
+              {myList(mySet, false)}
+              {head("기본디자인")}
+              <div style={{ ...col, borderBottom: 0, paddingTop: 0 }}>
+                <SubPresetGrid value={look} onPick={(lk, m) => { onPresetLook(lk); setLastName(presetName(m)); }} groups={[...BASIC_GROUPS, ...EFFECT_GROUPS]} star={starOf(false)} />
+              </div>
+            </>
           )}
-          {tsub === "variety" && <VarietyGrid value={look} onPick={(lk, m) => pickTpl(lk, m)} />}
-          {tsub === "mine" && anim && myList(myTpl, true)}
+        </>
+      )}
+
+      {tab === "anim" && anim && <><AnimBody {...anim} look={look} />{saveBoxOf(true)}</>}
+
+      {/* 템플릿 — [텍스트] 안 세 번째 칸 (모양 + 어울리는 움직임) */}
+      {tab === "text" && sub === "tpl" && (
+        <>
+          {anim && <div style={{ fontSize: 12, color: C.dim, padding: "12px 16px 0", lineHeight: 1.5 }}>누르면 모양과 어울리는 움직임이 함께 들어가요. 움직임은 [애니메이션]에서 바꿀 수 있어요.</div>}
+          {head("내 템플릿", myTpl.length)}
+          {myList(myTpl, true)}
+          {head("기본템플릿")}
+          <div style={{ ...col, borderBottom: 0, paddingTop: 0 }}>
+            <SubPresetGrid value={look} onPick={(lk, m) => { pickTpl(lk, m); setLastName(presetName(m)); }} groups={[...BASIC_GROUPS, ...EFFECT_GROUPS]} star={starOf(true)} animOf={tplAnim} sample={sample} /> {/* 기본템플릿 — 기본 ~ 다큐·뉴스 전부, 모양 + 어울리는 움직임 */}
+          </div>
+          {head("예능템플릿")}
+          <VarietyGrid value={look} onPick={(lk, m) => { pickTpl(lk, m); setLastName(presetName(m, true)); }} star={starOf(true)} animOf={tplAnim} sample={sample} />
         </>
       )}
     </Side>
+  );
+}
+
+/** 내 자막 칸 — 담아 온 곳과 똑같은 모양으로 (2026-10-20 사장님: 회색 칸에 글자만 나와 헛갈림)
+ *  예능템플릿에서 담은 것은 그 그림 그대로, 이중 테두리·그라데이션이 있는 모양은 꾸민 글자로, 나머지는 사전설정 칸과 같게 */
+const VARIETY_IDS = new Set(VARIETY_PRESETS.flatMap((g) => g.items.map((x) => x.id)));
+function MyTile({ pr, onClick, sample }: { pr: MyPreset; onClick: () => void; sample?: string }) {
+  const [noImg, setNoImg] = useState(false);
+  const [hov, setHov] = useState(false); // 내 템플릿 — 마우스를 올렸을 때만 지금 글로 움직임 미리보기
+  const sampleText = (sample || "").replace(/\s+/g, " ").trim().slice(0, 10) || "가나";
+  const vid = pr.src && pr.src.includes(":") ? pr.src.slice(pr.src.indexOf(":") + 1) : "";
+  const isVar = Boolean(vid && VARIETY_IDS.has(vid));
+  const fancy = Boolean(pr.look.outline2 || pr.look.gradTo || (pr.look.outline2Width && pr.look.outline2Width > 0));
+  const pa = pr.anim && hov ? tplPreviewStyles(pr.anim) : null; // 내 템플릿 — 올렸을 때 저장한 움직임으로 (2026-10-21)
+  if (!isVar && !fancy && !pr.anim) return <LookTile look={pr.look} big title={`${pr.name} — 누르면 한 번에`} onClick={onClick} />;
+  if (!isVar && !fancy) return (
+    <span style={{ display: "block", position: "relative" }}>
+      <button type="button" title={`${pr.name} — 누르면 한 번에`} onClick={onClick}
+        onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+        style={{ width: "100%", height: 64, borderRadius: 7, border: "2px solid transparent", background: pr.look.glow ? "#0d0f15" : "#2b303b", cursor: "pointer", padding: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={pa ? pa.outer : undefined}><span style={pa ? pa.inner : undefined}><FancyText look={pr.look} px={hov && sampleText.length > 3 ? Math.max(12, Math.round(70 / sampleText.length)) : 24} text={hov ? sampleText : "가나"} k={0.45} /></span></span>
+      </button>
+    </span>
+  );
+  return (
+    <button type="button" title={`${pr.name} — 누르면 한 번에`} onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ width: "100%", height: 64, borderRadius: 7, border: "2px solid transparent", background: "#3a3f4b", cursor: "pointer", padding: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span style={{ ...(pa ? pa.outer : {}), display: "flex", alignItems: "center", justifyContent: "center", maxWidth: "94%" }}><span style={{ ...(pa ? pa.inner : {}), display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {hov && pr.anim ? (
+        <FancyText look={pr.look} px={Math.max(12, Math.min(22, Math.round(110 / sampleText.length)))} text={sampleText} k={0.45} />
+      ) : isVar && !noImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`/studio-video/variety/${vid}.png?v=2`} alt={pr.name} onError={() => setNoImg(true)} style={{ maxWidth: "100%", maxHeight: 52, objectFit: "contain" }} />
+      ) : (
+        <FancyText look={pr.look} px={22} text="가나" k={0.45} />
+      )}
+      </span></span>
+    </button>
   );
 }

@@ -6,7 +6,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LibItem } from "./types";
-import { errText, fmtTime, videoBridge } from "./types";
+import { errText, fmtTime, videoBridge, ymd } from "./types";
 import { Btn, C, FONT, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
 import type { CamBox, Prompter, Rect } from "./Flows";
 import { CAM_COLORS, CAM_DEFAULT, MicMeter, PrompterPanel, SettingsBtn, SettingsNote, camPath, clampCps, clampSize, fitCamBox, loadPrompter, savePrompter, splitRects } from "./Flows";
@@ -683,7 +683,7 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
           {b.record.pickDir && <button type="button" disabled={phase !== "setup"} onClick={async () => { const d = await b.record.pickDir?.(dirShown); if (d) setSaveDir(d === defaultDir ? "" : d); }} style={small}>바꾸기</button>}
           <button type="button" onClick={() => dirShown && b.openPath(dirShown)} style={small}>폴더 열기</button>
         </div>
-        <input value={fileName} onChange={(e) => setFileName(e.target.value)} disabled={phase !== "setup"} placeholder="파일 이름 (비우면 자동: 화면 녹화_날짜·시각)" style={{ ...input, height: 36, fontSize: 13.5 }} />
+        <input value={fileName} onChange={(e) => setFileName(e.target.value)} disabled={phase !== "setup"} placeholder={`파일 이름 (비우면 자동: ${ymd()} 화면 녹화)`} style={{ ...input, height: 36, fontSize: 13.5 }} />
       </div>
     </div>
   );

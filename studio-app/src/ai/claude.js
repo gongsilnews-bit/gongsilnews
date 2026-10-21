@@ -132,9 +132,12 @@ async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = 
   // 함께 보낼 사진 (영상 장면 모음 등) — 올라가는 동안 보내기 단추가 잠긴다
   if (files.length) {
     onProgress(`사진 ${files.length}장을 Claude에 올리는 중…`);
-    const fileInput = page.locator('input[type="file"]').first();
+    // 여러 장 받는 칸 먼저, 없으면 한 장씩 (한 장만 받는 칸에 여러 장 → 오류, 2026-10-20)
+    const multi = page.locator('input[type="file"][multiple]:not([capture])').first();
+    const fileInput = (await multi.count()) ? multi : page.locator('input[type="file"]:not([capture])').first();
     if (!(await fileInput.count())) throw new Error("Claude 사진 올리기 칸을 찾지 못했습니다.");
-    await fileInput.setInputFiles(files);
+    if ((await multi.count()) || files.length < 2) await fileInput.setInputFiles(files);
+    else for (const f of files) { await fileInput.setInputFiles([f]); await chrome.sleep(1500); }
     await chrome.sleep(3000);
     const until = Date.now() + 90 * 1000;
     while (Date.now() < until) {

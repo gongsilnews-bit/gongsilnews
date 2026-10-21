@@ -49,7 +49,7 @@ function drawWith(d: TplDef, vals: string[], color: string, t: number, o?: TplOp
 type Kind = "text" | "sticker" | "motion";
 type Field = { label: string; def: string; multi?: boolean };
 type Draw = (f: string[], c: string, t: number) => HTMLCanvasElement;
-export type TplDef = { id: string; cat: string; label: string; kind: Kind; fields: Field[]; color: string; w: number; y?: number; anim: LayerAnim; dur?: number; draw: Draw };
+export type TplDef = { id: string; cat: string; label: string; kind: Kind; fields: Field[]; color: string; w: number; y?: number; anim: LayerAnim; dur?: number; draw: Draw; /** 누르는 순간 (초) — 넣으면 그때마다 큰 딸깍 */ clicks?: number[] };
 
 /* ── 글꼴 ── */
 const F = {
@@ -1032,7 +1032,12 @@ const passBy = (v: 1 | 2): Draw => (f, c, t) => {
 
 /* ════════ 목록 ════════ */
 const T: TplDef[] = [];
-const add = (cat: string, label: string, kind: Kind, fields: Field[], color: string, w: number, anim: LayerAnim, draw: Draw, o: { y?: number; dur?: number } = {}) => T.push({ id: `rb${String(T.length + 1).padStart(3, "0")}`, cat, label, kind, fields, color, w, anim, draw, ...o });
+/** 나타난 뒤에도 계속 움직이게 (2026-10-20 사장님: 지금 있는 그래픽은 다 무빙) — 분류마다 어울리는 움직임. 움직이는 템플릿은 그림 자체가 움직여서 그대로 */
+const EMPH_OF: Record<string, NonNullable<LayerAnim["emph"]>> = {
+  "자막바": "float", "제목": "pulse", "말풍선·카드": "float", "브이로그": "float", "예능 글자": "beat", "예능 자막": "pulse", "검색창·화면": "float", "가리키기": "bounce", "반응": "wiggle",
+};
+const add = (cat: string, label: string, kind: Kind, fields: Field[], color: string, w: number, anim: LayerAnim, draw: Draw, o: { y?: number; dur?: number; clicks?: number[] } = {}) =>
+  T.push({ id: `rb${String(T.length + 1).padStart(3, "0")}`, cat, label, kind, fields, color, w, anim: kind !== "motion" && !anim.emph && EMPH_OF[cat] ? { ...anim, emph: EMPH_OF[cat] } : anim, draw, ...o });
 const one = (def: string, label = "글"): Field[] => [{ label, def }];
 
 // 자막바·박스
@@ -1152,10 +1157,467 @@ add("움직이는", "빠르게 지나가는 자막", "motion", [{ label: "글", 
 add("움직이는", "빠르게 지나가는 자막 2 (띠)", "motion", [{ label: "글", def: "속보 · 강남 역세권 신규 매물 등장" }, { label: "몇 초에 한 번", def: "5" }], "#FFD400", 1, A.none, passBy(2), { y: 0.88 });
 add("움직이는", "마우스 클릭", "motion", [], "#38BDF8", 0.14, A.pop, cursorClick, { y: 0.5 });
 
+/* ════════ 11. 구독·좋아요 (2026-10-20 사장님: 프리미어 컴포저 Social Media 처럼 움직이는 것) ════════
+ *  모두 "움직이는"(motion) — t 초마다 다시 그린다. 한 번 움직이고 끝 모습에서 멈추는 것(구독 버튼)과 계속 도는 것(엄지·하트·종)
+ *  그림 크기는 t 와 상관없이 같게 (글 길이로만 정한다) */
+const cl01 = (x: number) => Math.max(0, Math.min(1, x));
+const seg = (t: number, a: number, b: number) => cl01((t - a) / (b - a));
+const eOut = (x: number) => 1 - Math.pow(1 - x, 3);
+const eBack = (x: number) => { const c1 = 1.70158, c3 = c1 + 1; return x <= 0 ? 0 : 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+/** 마우스 화살표 — 끝(x,y), 누르면 조금 작아짐 */
+function pointer(g: CanvasRenderingContext2D, x: number, y: number, s: number, alpha = 1) {
+  if (alpha <= 0) return;
+  g.save(); g.globalAlpha = alpha; g.translate(x, y); g.scale(s, s);
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 46); g.lineTo(12, 35); g.lineTo(20, 54); g.lineTo(28, 50); g.lineTo(20, 32); g.lineTo(36, 32); g.closePath();
+  g.fillStyle = "#FFFFFF"; g.fill(); g.lineWidth = 3.5; g.strokeStyle = "#111111"; g.stroke();
+  g.restore();
+}
+/** 누른 곳에 퍼지는 동그라미 (k 0→1) */
+function ripple(g: CanvasRenderingContext2D, x: number, y: number, k: number, color = "#FFFFFF") {
+  if (k <= 0 || k >= 1) return;
+  g.save(); g.globalAlpha = 1 - k; g.beginPath(); g.arc(x, y, 12 + k * 46, 0, Math.PI * 2); g.lineWidth = 5; g.strokeStyle = color; g.stroke(); g.restore();
+}
+/** 엄지 척 (가운데 cx,cy · 크기 s = 높이) */
+function thumbUp(g: CanvasRenderingContext2D, cx: number, cy: number, s: number, fill: string) {
+  g.save(); g.translate(cx - s * 0.5, cy - s * 0.5); g.scale(s / 100, s / 100); g.fillStyle = fill;
+  rr(g, 4, 42, 20, 54, 5); g.fill(); // 소매
+  g.beginPath(); g.moveTo(30, 44); g.lineTo(48, 8); g.quadraticCurveTo(60, 2, 62, 18); g.lineTo(58, 40); g.lineTo(86, 40);
+  g.quadraticCurveTo(98, 42, 94, 56); g.lineTo(86, 88); g.quadraticCurveTo(83, 96, 74, 96); g.lineTo(30, 96); g.closePath(); g.fill();
+  g.restore();
+}
+/** 종 (가운데 cx,cy · 크기 s · 흔들림 각도 ang) */
+function bellIcon(g: CanvasRenderingContext2D, cx: number, cy: number, s: number, fill: string, ang = 0) {
+  g.save(); g.translate(cx, cy - s * 0.42); g.rotate(ang); g.scale(s / 100, s / 100); g.fillStyle = fill;
+  g.beginPath(); g.arc(0, 2, 7, 0, Math.PI * 2); g.fill(); // 꼭지
+  g.beginPath(); g.moveTo(-30, 64); g.quadraticCurveTo(-30, 10, 0, 8); g.quadraticCurveTo(30, 10, 30, 64); g.lineTo(40, 76); g.lineTo(-40, 76); g.closePath(); g.fill();
+  g.beginPath(); g.arc(0, 86, 10, 0, Math.PI * 2); g.fill(); // 추
+  g.restore();
+}
+/** 하트 (가운데 cx,cy · 크기 s) */
+function heartIcon(g: CanvasRenderingContext2D, cx: number, cy: number, s: number, fill: string) {
+  g.save(); g.translate(cx, cy); g.scale(s / 100, s / 100); g.fillStyle = fill;
+  g.beginPath(); g.moveTo(0, 34); g.bezierCurveTo(-60, -6, -40, -52, 0, -22); g.bezierCurveTo(40, -52, 60, -6, 0, 34); g.closePath(); g.fill();
+  g.restore();
+}
+/** 재생 단추 모양 로고 (빨간 둥근 네모 + 흰 세모) */
+function playMark(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, bg = "#FF0000") {
+  rr(g, x, y, w, h, h * 0.28); g.fillStyle = bg; g.fill();
+  g.beginPath(); g.moveTo(x + w * 0.4, y + h * 0.28); g.lineTo(x + w * 0.4, y + h * 0.72); g.lineTo(x + w * 0.68, y + h * 0.5); g.closePath(); g.fillStyle = "#FFFFFF"; g.fill();
+}
+const fmtNum = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+/** 구독 단추 누르기 — 화살표가 와서 [구독]을 누르면 [구독중]으로 바뀌고 종이 울린다 (한 번, 끝 모습에서 멈춤) */
+const subscribeClick = (minimal: boolean): Draw => (f, c, t) => {
+  const on = f[0] || "구독", off = f[1] || "구독중";
+  const font = `800 56px ${F.pre}`;
+  const bw = Math.max(tw(font, on), tw(font, off)) + (minimal ? 120 : 150), bh = 104;
+  const W = bw + 220, H = 200;
+  const { c: cv, g } = mk(W, H);
+  const x0 = 30, y0 = (H - bh) / 2;
+  const click = 1.0;
+  const done = t >= click;
+  const press = 1 - 0.06 * Math.sin(Math.PI * seg(t, click - 0.08, click + 0.12));
+  g.save(); g.translate(x0 + bw / 2, y0 + bh / 2); g.scale(press, press); g.translate(-(x0 + bw / 2), -(y0 + bh / 2));
+  rr(g, x0, y0, bw, bh, bh / 2);
+  g.fillStyle = done ? (minimal ? "#FFFFFF" : "#E9E9E9") : minimal ? "#FFFFFF" : c; g.fill();
+  if (minimal) { g.lineWidth = 6; g.strokeStyle = done ? "#BBBBBB" : "#111111"; g.stroke(); }
+  if (!minimal && !done) playMark(g, x0 + 30, y0 + bh / 2 - 20, 54, 40, "#FFFFFF");
+  if (!minimal && !done) { g.beginPath(); g.moveTo(x0 + 51, y0 + bh / 2 - 9); g.lineTo(x0 + 51, y0 + bh / 2 + 9); g.lineTo(x0 + 66, y0 + bh / 2); g.closePath(); g.fillStyle = c; g.fill(); }
+  txt(g, done ? `✓ ${off}` : on, x0 + bw / 2 + (minimal || done ? 0 : 30), y0 + bh / 2 + 2, { font, fill: done ? "#333333" : minimal ? "#111111" : "#FFFFFF" });
+  g.restore();
+  // 종 — 누른 뒤 튀어나와 흔들림
+  const bk = eBack(seg(t, click + 0.05, click + 0.4));
+  if (bk > 0) {
+    const ring = Math.sin(t * 22) * 0.45 * Math.max(0, 1 - seg(t, click + 0.4, click + 1.6));
+    g.save(); g.translate(x0 + bw + 90, H / 2); g.scale(bk, bk);
+    g.beginPath(); g.arc(0, 0, 54, 0, Math.PI * 2); g.fillStyle = "#FFFFFF"; g.fill();
+    bellIcon(g, 0, 4, 66, "#111111", ring);
+    g.restore();
+  }
+  // 화살표 — 오른쪽 아래에서 들어와 누르고 사라짐
+  const mv = eOut(seg(t, 0.15, click - 0.05));
+  const px = lerp(W - 30, x0 + bw * 0.62, mv), py = lerp(H - 10, y0 + bh * 0.62, mv);
+  ripple(g, x0 + bw * 0.62, y0 + bh * 0.62, seg(t, click, click + 0.45), minimal ? "#111111" : "#FFFFFF");
+  pointer(g, px, py, t > click - 0.05 && t < click + 0.12 ? 1.25 : 1.4, 1 - seg(t, click + 0.9, click + 1.3));
+  return cv;
+};
+
+/** 채널 구독 카드 — 동그란 얼굴(첫 글자) · 채널명 · 작은 글 · [구독] → [구독중] */
+const channelCard: Draw = (f, c, t) => {
+  const name = f[0] || "공실뉴스", sub = f[1] || "", on = f[2] || "구독", off = f[3] || "구독중";
+  const nf = `800 50px ${F.pre}`, sf = `500 32px ${F.pre}`, bf = `800 40px ${F.pre}`;
+  const bw = Math.max(tw(bf, on), tw(bf, `✓ ${off}`)) + 70;
+  const W = 40 + 130 + 30 + Math.max(tw(nf, name), tw(sf, sub)) + 40 + bw + 40, H = 210;
+  const { c: cv, g } = mk(W + 40, H + 40);
+  g.save(); g.shadowColor = "rgba(0,0,0,0.35)"; g.shadowBlur = 20; g.shadowOffsetY = 6;
+  rr(g, 20, 14, W, H, 34); g.fillStyle = "#FFFFFF"; g.fill(); g.restore();
+  // 얼굴
+  g.beginPath(); g.arc(20 + 40 + 65, 14 + H / 2, 65, 0, Math.PI * 2); g.fillStyle = c; g.fill();
+  txt(g, Array.from(name)[0] || "공", 20 + 40 + 65, 14 + H / 2 + 3, { font: `900 64px ${F.head}`, fill: ink(c) });
+  const tx = 20 + 40 + 130 + 30;
+  txt(g, name, tx, 14 + (sub ? H / 2 - 24 : H / 2), { font: nf, fill: "#111111", align: "left" });
+  if (sub) txt(g, sub, tx, 14 + H / 2 + 30, { font: sf, fill: "#777777", align: "left" });
+  const click = 1.3, done = t >= click;
+  const bx = 20 + W - 40 - bw, by = 14 + H / 2 - 40;
+  const press = 1 - 0.07 * Math.sin(Math.PI * seg(t, click - 0.08, click + 0.12));
+  g.save(); g.translate(bx + bw / 2, by + 40); g.scale(press, press); g.translate(-(bx + bw / 2), -(by + 40));
+  rr(g, bx, by, bw, 80, 40); g.fillStyle = done ? "#ECECEC" : "#E5252A"; g.fill();
+  txt(g, done ? `✓ ${off}` : on, bx + bw / 2, by + 42, { font: bf, fill: done ? "#333333" : "#FFFFFF" });
+  g.restore();
+  const mv = eOut(seg(t, 0.4, click - 0.05));
+  ripple(g, bx + bw * 0.6, by + 52, seg(t, click, click + 0.45), "#E5252A");
+  pointer(g, lerp(W + 20, bx + bw * 0.6, mv), lerp(H + 30, by + 52, mv), 1.3, 1 - seg(t, click + 0.9, click + 1.3));
+  return cv;
+};
+
+/** 좋아요 · 구독 · 알림 — 차례로 나타나고 화살표가 하나씩 눌러 켠다 */
+const tripleCta: Draw = (f, c, t) => {
+  const labels = [f[0] || "좋아요", f[1] || "구독", f[2] || "알림 설정"];
+  const font = `800 44px ${F.pre}`;
+  const ws = labels.map((s, i) => tw(font, i === 1 ? `✓ ${s}중` : s) + (i === 1 ? 70 : 120));
+  const gap = 26, H = 200, bh = 92;
+  const W = ws.reduce((a, b) => a + b, 0) + gap * 2 + 60;
+  const { c: cv, g } = mk(W, H);
+  const clicks = [0.9, 1.6, 2.3];
+  let x = 30;
+  const xs: number[] = [];
+  labels.forEach((s, i) => {
+    xs.push(x);
+    const k = eBack(seg(t, i * 0.18, i * 0.18 + 0.4));
+    const done = t >= clicks[i];
+    const w = ws[i], y = (H - bh) / 2;
+    if (k > 0) {
+      const press = 1 - 0.07 * Math.sin(Math.PI * seg(t, clicks[i] - 0.08, clicks[i] + 0.12));
+      g.save(); g.translate(x + w / 2, y + bh / 2); g.scale(k * press, k * press); g.translate(-(x + w / 2), -(y + bh / 2));
+      const bg = i === 0 ? (done ? "#2F7CF6" : "#FFFFFF") : i === 1 ? (done ? "#ECECEC" : "#E5252A") : done ? "#FFD400" : "#FFFFFF";
+      rr(g, x, y, w, bh, bh / 2); g.fillStyle = bg; g.fill();
+      if (i !== 1) { g.lineWidth = 4; g.strokeStyle = done ? bg : "#DDDDDD"; g.stroke(); }
+      const fg = i === 0 ? (done ? "#FFFFFF" : "#111111") : i === 1 ? (done ? "#333333" : "#FFFFFF") : "#111111";
+      if (i === 0) thumbUp(g, x + 50, y + bh / 2 - 2, 46, fg);
+      if (i === 2) bellIcon(g, x + 50, y + bh / 2 + 2, 48, fg, done ? Math.sin(t * 22) * 0.45 * Math.max(0, 1 - seg(t, clicks[2], clicks[2] + 1.2)) : 0);
+      txt(g, i === 1 && done ? `✓ ${s}중` : s, x + (i === 1 ? w / 2 : 84 + (w - 84) / 2 - 10), y + bh / 2 + 2, { font, fill: fg });
+      g.restore();
+    }
+    x += w + gap;
+  });
+  // 화살표 — 하나씩 차례로
+  const at = (i: number) => ({ x: xs[i] + ws[i] * 0.55, y: (H - bh) / 2 + bh * 0.65 });
+  let px = W - 10, py = H;
+  for (let i = 0; i < 3; i++) {
+    const from = i === 0 ? { x: W - 10, y: H } : at(i - 1);
+    const to = at(i);
+    const a = i === 0 ? 0.4 : clicks[i - 1] + 0.15;
+    if (t >= a) { const m = eOut(seg(t, a, clicks[i] - 0.05)); px = lerp(from.x, to.x, m); py = lerp(from.y, to.y, m); }
+    ripple(g, to.x, to.y, seg(t, clicks[i], clicks[i] + 0.45), i === 1 ? "#E5252A" : "#2F7CF6");
+  }
+  pointer(g, px, py, 1.25, (t < 0.4 ? seg(t, 0.25, 0.4) : 1) * (1 - seg(t, clicks[2] + 0.8, clicks[2] + 1.2)));
+  return cv;
+};
+
+/** 좋아요 엄지 — 파란 동그라미 안 엄지가 통통 + 반짝 가루 (계속) */
+const likeThumb: Draw = (f, c, t) => {
+  const { c: cv, g } = mk(320, 320);
+  const k = (t % 1.6) / 1.6;
+  const pop = 1 + 0.16 * Math.sin(Math.PI * cl01(k / 0.3));
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2, r = 90 + eOut(cl01(k / 0.6)) * 55;
+    g.save(); g.globalAlpha = 1 - cl01(k / 0.6); g.beginPath(); g.arc(160 + Math.cos(a) * r, 160 + Math.sin(a) * r, 9, 0, Math.PI * 2); g.fillStyle = i % 2 ? "#FFD400" : c; g.fill(); g.restore();
+  }
+  g.save(); g.translate(160, 160); g.scale(pop, pop);
+  g.beginPath(); g.arc(0, 0, 92, 0, Math.PI * 2); g.fillStyle = c; g.fill(); g.lineWidth = 8; g.strokeStyle = "#FFFFFF"; g.stroke();
+  thumbUp(g, 0, -4, 104, "#FFFFFF");
+  g.restore();
+  if (f[0]) txt(g, f[0], 160, 296, { font: `800 34px ${F.pre}`, fill: "#FFFFFF", stroke: "#111111", lw: 8 });
+  return cv;
+};
+
+/** 하트 — 쿵쿵 뛰고 작은 하트가 위로 떠오름 (계속) */
+const heartBeat: Draw = (f, c, t) => {
+  const { c: cv, g } = mk(320, 360);
+  for (let i = 0; i < 5; i++) {
+    const k = ((t * 0.55 + i / 5) % 1);
+    g.save(); g.globalAlpha = 1 - k; heartIcon(g, 160 + Math.sin(k * 6 + i * 2) * 60, 230 - k * 210, 26 + i * 4, i % 2 ? "#FF7BA9" : "#FFFFFF"); g.restore();
+  }
+  const b = t % 1.1;
+  const s = 1 + 0.14 * Math.sin(Math.PI * cl01(b / 0.18)) + 0.08 * Math.sin(Math.PI * cl01((b - 0.22) / 0.16));
+  g.save(); g.translate(160, 220); g.scale(s, s); heartIcon(g, 0, 0, 170, c); g.restore();
+  if (f[0]) txt(g, f[0], 160, 330, { font: `800 36px ${F.pre}`, fill: "#FFFFFF", stroke: "#111111", lw: 8 });
+  return cv;
+};
+
+/** 알림 종 — 흔들리고 빨간 숫자 동그라미가 톡 (2초마다) */
+const bellBadge: Draw = (f, c, t) => {
+  const { c: cv, g } = mk(300, 300);
+  const k = t % 2;
+  const ang = Math.sin(k * 24) * 0.5 * Math.max(0, 1 - k / 1.1);
+  g.beginPath(); g.arc(150, 155, 110, 0, Math.PI * 2); g.fillStyle = c; g.fill();
+  bellIcon(g, 150, 162, 130, ink(c), ang);
+  const n = f[0] || "1";
+  const bs = eBack(seg(k, 0.1, 0.45));
+  if (bs > 0) {
+    const bw = Math.max(70, tw(`900 44px ${F.pre}`, n) + 34);
+    g.save(); g.translate(222, 70); g.scale(bs, bs);
+    rr(g, -bw / 2, -35, bw, 70, 35); g.fillStyle = "#FF2D2D"; g.fill(); g.lineWidth = 6; g.strokeStyle = "#FFFFFF"; g.stroke();
+    txt(g, n, 0, 3, { font: `900 44px ${F.pre}`, fill: "#FFFFFF" });
+    g.restore();
+  }
+  return cv;
+};
+
+/** 좋아요 수 올라가기 — 엄지 + 0 → 숫자 (한 번) */
+const likeCount: Draw = (f, c, t) => {
+  const target = Number(String(f[0] || "1,234").replace(/[^\d]/g, "")) || 0;
+  const label = f[1] || "좋아요";
+  const font = `900 64px ${F.pre}`;
+  const W = 150 + tw(font, fmtNum(target)) + 30 + tw(`700 40px ${F.pre}`, label) + 70, H = 160;
+  const { c: cv, g } = mk(W, H);
+  rr(g, 10, 20, W - 20, 120, 60); g.fillStyle = "#FFFFFF"; g.fill();
+  const pop = 1 + 0.2 * Math.sin(Math.PI * seg(t, 1.3, 1.6));
+  g.save(); g.translate(80, 80); g.scale(pop, pop); g.beginPath(); g.arc(0, 0, 48, 0, Math.PI * 2); g.fillStyle = c; g.fill(); thumbUp(g, 0, -2, 56, "#FFFFFF"); g.restore();
+  const n = target * eOut(seg(t, 0.2, 1.4));
+  txt(g, fmtNum(n), 150, 82, { font, fill: "#111111", align: "left" });
+  txt(g, label, 150 + tw(font, fmtNum(target)) + 24, 86, { font: `700 40px ${F.pre}`, fill: "#666666", align: "left" });
+  return cv;
+};
+
+/** SNS 팔로우 하단 바 — 로고 네모가 톡 나오고 오른쪽으로 글 띠가 펼쳐짐 (한 번) */
+type SnsKind = "youtube" | "insta" | "tiktok" | "blog" | "web";
+function snsLogo(g: CanvasRenderingContext2D, kind: SnsKind, x: number, y: number, s: number) {
+  if (kind === "youtube") { rr(g, x, y, s, s, s * 0.24); g.fillStyle = "#FFFFFF"; g.fill(); playMark(g, x + s * 0.14, y + s * 0.26, s * 0.72, s * 0.48); return; }
+  if (kind === "insta") {
+    const gr = g.createLinearGradient(x, y + s, x + s, y);
+    gr.addColorStop(0, "#FEDA75"); gr.addColorStop(0.35, "#FA7E1E"); gr.addColorStop(0.65, "#D62976"); gr.addColorStop(1, "#4F5BD5");
+    rr(g, x, y, s, s, s * 0.26); g.fillStyle = gr; g.fill();
+    g.lineWidth = s * 0.08; g.strokeStyle = "#FFFFFF"; rr(g, x + s * 0.2, y + s * 0.2, s * 0.6, s * 0.6, s * 0.18); g.stroke();
+    g.beginPath(); g.arc(x + s / 2, y + s / 2, s * 0.15, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.arc(x + s * 0.68, y + s * 0.32, s * 0.04, 0, Math.PI * 2); g.fillStyle = "#FFFFFF"; g.fill();
+    return;
+  }
+  if (kind === "tiktok") {
+    rr(g, x, y, s, s, s * 0.24); g.fillStyle = "#111111"; g.fill();
+    const note = (dx: number, dy: number, col: string) => {
+      g.save(); g.translate(dx, dy); g.fillStyle = col;
+      g.beginPath(); g.arc(x + s * 0.4, y + s * 0.66, s * 0.13, 0, Math.PI * 2); g.fill();
+      g.fillRect(x + s * 0.48, y + s * 0.2, s * 0.08, s * 0.47);
+      g.beginPath(); g.moveTo(x + s * 0.56, y + s * 0.2); g.quadraticCurveTo(x + s * 0.6, y + s * 0.36, x + s * 0.76, y + s * 0.38); g.lineTo(x + s * 0.76, y + s * 0.47); g.quadraticCurveTo(x + s * 0.62, y + s * 0.46, x + s * 0.56, y + s * 0.38); g.closePath(); g.fill();
+      g.restore();
+    };
+    note(-s * 0.03, -s * 0.03, "#25F4EE"); note(s * 0.03, s * 0.03, "#FE2C55"); note(0, 0, "#FFFFFF");
+    return;
+  }
+  if (kind === "blog") { rr(g, x, y, s, s, s * 0.24); g.fillStyle = "#03C75A"; g.fill(); txt(g, "blog", x + s / 2, y + s / 2 + 2, { font: `900 ${Math.round(s * 0.32)}px ${F.pre}`, fill: "#FFFFFF" }); return; }
+  // 홈페이지 — 지구
+  rr(g, x, y, s, s, s * 0.24); g.fillStyle = "#2F7CF6"; g.fill();
+  g.save(); g.strokeStyle = "#FFFFFF"; g.lineWidth = s * 0.06;
+  const cx = x + s / 2, cy = y + s / 2, r = s * 0.3;
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
+  g.beginPath(); g.ellipse(cx, cy, r * 0.45, r, 0, 0, Math.PI * 2); g.stroke();
+  g.beginPath(); g.moveTo(cx - r, cy); g.lineTo(cx + r, cy); g.stroke();
+  g.restore();
+}
+const snsBar = (kind: SnsKind): Draw => (f, c, t) => {
+  const s = f[0] || "@공실뉴스", small = f[1] || "";
+  const font = `800 50px ${F.pre}`, sf = `600 30px ${F.pre}`;
+  const L = 130, bw = Math.max(tw(font, s), tw(sf, small)) + 80;
+  const W = L + 20 + bw + 20, H = 170;
+  const { c: cv, g } = mk(W, H);
+  const lk = eBack(seg(t, 0, 0.35));
+  const open = eOut(seg(t, 0.3, 0.85));
+  // 띠
+  if (open > 0) {
+    const x = L / 2 + 20, w = (bw + L / 2) * open;
+    rr(g, x, 25, w, 120, 60); g.fillStyle = c; g.fill();
+    g.save(); rr(g, x, 25, w, 120, 60); g.clip();
+    const ta = seg(t, 0.55, 0.9);
+    g.globalAlpha = ta;
+    const fg = ink(c);
+    txt(g, s, L + 40, small ? 70 : 87, { font, fill: fg, align: "left" });
+    if (small) txt(g, small, L + 40, 112, { font: sf, fill: fg === "#111111" ? "#444444" : "#DDDDDD", align: "left" });
+    g.restore();
+  }
+  // 로고
+  if (lk > 0) {
+    g.save(); g.translate(20 + L / 2, H / 2); g.scale(lk, lk);
+    g.shadowColor = "rgba(0,0,0,0.35)"; g.shadowBlur = 14; g.shadowOffsetY = 4;
+    snsLogo(g, kind, -L / 2, -L / 2, L);
+    g.restore();
+  }
+  return cv;
+};
+
+// 구독 버튼
+add("구독 버튼", "구독 누르기 (빨강)", "motion", [{ label: "버튼 글", def: "구독" }, { label: "누른 뒤", def: "구독중" }], "#E5252A", 0.32, A.pop, subscribeClick(false), { y: 0.78, clicks: [1.0] });
+add("구독 버튼", "구독 누르기 (흰색)", "motion", [{ label: "버튼 글", def: "구독하기" }, { label: "누른 뒤", def: "구독 완료" }], "#FFFFFF", 0.32, A.pop, subscribeClick(true), { y: 0.78, clicks: [1.0] });
+add("구독 버튼", "채널 구독 카드", "motion", [{ label: "채널명", def: "공실뉴스" }, { label: "작은 글", def: "부동산 뉴스 · 매물 소개" }, { label: "버튼 글", def: "구독" }, { label: "누른 뒤", def: "구독중" }], "#2F7CF6", 0.46, A.slideL, channelCard, { y: 0.8, clicks: [1.3] });
+add("구독 버튼", "좋아요 · 구독 · 알림", "motion", [{ label: "좋아요", def: "좋아요" }, { label: "구독", def: "구독" }, { label: "알림", def: "알림 설정" }], "#E5252A", 0.56, A.pop, tripleCta, { y: 0.8, clicks: [0.9, 1.6, 2.3] });
+// 좋아요·알림
+add("좋아요·알림", "좋아요 엄지", "motion", [{ label: "아래 글", def: "" }], "#2F7CF6", 0.16, A.jelly, likeThumb, { y: 0.5 });
+add("좋아요·알림", "하트 쿵쿵", "motion", [{ label: "아래 글", def: "" }], "#FF2D55", 0.16, A.jelly, heartBeat, { y: 0.5 });
+add("좋아요·알림", "알림 종", "motion", [{ label: "숫자", def: "1" }], "#FFD400", 0.15, A.jelly, bellBadge, { y: 0.5 });
+add("좋아요·알림", "좋아요 수 올라가기", "motion", [{ label: "숫자", def: "1,234" }, { label: "글", def: "좋아요" }], "#2F7CF6", 0.34, A.pop, likeCount, { y: 0.78 });
+// SNS 팔로우
+add("SNS 팔로우", "유튜브 채널", "motion", [{ label: "채널", def: "@공실뉴스" }, { label: "작은 글", def: "구독하고 새 매물 받아 보기" }], "#FF0000", 0.4, A.none, snsBar("youtube"), { y: 0.86 });
+add("SNS 팔로우", "인스타그램", "motion", [{ label: "계정", def: "@gongsilnews" }, { label: "작은 글", def: "" }], "#FFFFFF", 0.36, A.none, snsBar("insta"), { y: 0.86 });
+add("SNS 팔로우", "틱톡", "motion", [{ label: "계정", def: "@gongsilnews" }, { label: "작은 글", def: "" }], "#111111", 0.36, A.none, snsBar("tiktok"), { y: 0.86 });
+add("SNS 팔로우", "네이버 블로그", "motion", [{ label: "블로그", def: "blog.naver.com/공실뉴스" }, { label: "작은 글", def: "" }], "#FFFFFF", 0.42, A.none, snsBar("blog"), { y: 0.86 });
+add("SNS 팔로우", "홈페이지 주소", "motion", [{ label: "주소", def: "gongsilnews.com" }, { label: "작은 글", def: "매물 더 보기" }], "#1E3A8A", 0.4, A.none, snsBar("web"), { y: 0.86 });
+
+/* ════════ 12. 부동산 표시광고 — 끝 화면 중개사무소 정보 (2026-10-20 사장님: 표시·광고 기준, 상호부터 · 움직이는 디자인 10가지) ════════
+ *  칸: 상호 · 대표 공인중개사 · 등록번호 · 소재지 · 연락처 · 매물 정보(엔터로 줄). 빈 칸은 그리지 않는다 (지어내지 않음)
+ *  한 번 나타나고 끝 모습에서 멈춘다. 그림 크기는 글 길이로만 정한다 (t 와 상관없이 같게) */
+type AdTheme = {
+  bg: string | string[]; // 바탕 (두 색이면 그라데이션)
+  fg: string; sub: string; accent: string; nameColor?: string; radius: number; border?: string;
+  fx: "rise" | "bar" | "band" | "draw" | "shine" | "split" | "type" | "icons" | "stamp" | "glow";
+};
+const AD_THEMES: { label: string; color: string; th: AdTheme }[] = [
+  { label: "네이비 클래식", color: "#C9A86A", th: { bg: "#0B1A33", fg: "#FFFFFF", sub: "#C7D2E4", accent: "#C9A86A", radius: 28, fx: "rise" } },
+  { label: "화이트 미니멀", color: "#111111", th: { bg: "#FFFFFF", fg: "#111111", sub: "#555555", accent: "#2F7CF6", radius: 24, fx: "bar" } },
+  { label: "그린 신뢰", color: "#0E9F6E", th: { bg: "#FFFFFF", fg: "#14261C", sub: "#4B5D52", accent: "#0E9F6E", nameColor: "#FFFFFF", radius: 26, fx: "band" } },
+  { label: "골드 프리미엄", color: "#D4AF37", th: { bg: "#0A0A0A", fg: "#F5E6B8", sub: "#BFA770", accent: "#D4AF37", radius: 18, border: "#D4AF37", fx: "draw" } },
+  { label: "블루 그라데이션", color: "#FFFFFF", th: { bg: ["#1E40AF", "#3B82F6"], fg: "#FFFFFF", sub: "#DCE7FF", accent: "#FFFFFF", radius: 30, fx: "shine" } },
+  { label: "명함형", color: "#E5252A", th: { bg: "#FFFFFF", fg: "#111111", sub: "#555555", accent: "#E5252A", radius: 20, fx: "split" } },
+  { label: "타자 치듯", color: "#22C55E", th: { bg: "#111827", fg: "#F9FAFB", sub: "#9CA3AF", accent: "#22C55E", radius: 22, fx: "type" } },
+  { label: "아이콘 목록", color: "#F59E0B", th: { bg: "#FFFBEB", fg: "#1F2937", sub: "#57534E", accent: "#F59E0B", radius: 28, fx: "icons" } },
+  { label: "도장 찍기", color: "#DC2626", th: { bg: "#FFFFFF", fg: "#111111", sub: "#4B5563", accent: "#DC2626", radius: 16, fx: "stamp" } },
+  { label: "다크 글래스 네온", color: "#22D3EE", th: { bg: "rgba(15,23,42,0.86)", fg: "#E2E8F0", sub: "#94A3B8", accent: "#22D3EE", radius: 32, border: "#22D3EE", fx: "glow" } },
+];
+const AD_FIELDS: Field[] = [
+  { label: "상호", def: "공실뉴스 공인중개사사무소" },
+  { label: "대표 공인중개사", def: "홍길동" },
+  { label: "등록번호", def: "11680-2026-00000" },
+  { label: "소재지", def: "서울 강남구 논현동 000-00" },
+  { label: "연락처", def: "02-000-0000" },
+  { label: "매물 정보 (엔터로 줄)", def: "논현동 빌라/연립 · 전세 5억 · 105.8㎡\n3층/총 4층 · 남향 · 즉시 입주", multi: true },
+];
+const adDraw = (theme: AdTheme): Draw => (f, c, t) => {
+  const th = { ...theme, accent: c || theme.accent };
+  const name = f[0] || "", ceo = f[1] ? `대표 공인중개사  ${f[1]}` : "", reg = f[2] ? `등록번호  ${f[2]}` : "";
+  const addr = f[3] || "", tel = f[4] || "";
+  const listing = lines(f[5] || "").filter(Boolean).slice(0, 4);
+  const NF = `900 74px ${F.pre}`, IF = `600 42px ${F.pre}`, LF = `500 36px ${F.pre}`;
+  const info = [ceo, reg, addr && `소재지  ${addr}`, tel && `☎  ${tel}`].filter(Boolean) as string[];
+  const icoW = th.fx === "icons" ? 70 : 0;
+  const innerW = Math.max(900, tw(NF, name) + (th.fx === "stamp" ? 220 : 0), ...info.map((s) => tw(IF, s) + icoW), ...listing.map((s) => tw(LF, s)));
+  const padX = 80, headH = th.fx === "band" ? 150 : 120;
+  const W = innerW + padX * 2;
+  const H = 60 + headH + info.length * 62 + (listing.length ? 40 + listing.length * 50 : 0) + 60;
+  const { c: cv, g } = mk(W + 40, H + 40);
+  const X = 20, Y = 20;
+  // 등장 — 카드 전체 (fx 마다 조금씩 다르게)
+  const cardK = eOut(seg(t, 0, 0.45));
+  g.save();
+  if (th.fx === "split") g.globalAlpha = cardK;
+  else { g.globalAlpha = cardK; g.translate(0, (1 - cardK) * 40); }
+  // 바탕
+  g.save(); g.shadowColor = "rgba(0,0,0,0.4)"; g.shadowBlur = 30; g.shadowOffsetY = 10;
+  rr(g, X, Y, W, H, th.radius);
+  if (Array.isArray(th.bg)) { const gr = g.createLinearGradient(X, Y, X + W, Y + H); gr.addColorStop(0, th.bg[0]); gr.addColorStop(1, th.bg[1]); g.fillStyle = gr; } else g.fillStyle = th.bg;
+  g.fill(); g.restore();
+  g.save(); rr(g, X, Y, W, H, th.radius); g.clip();
+  // 효과별 장식
+  if (th.fx === "band") { const k = eOut(seg(t, 0.2, 0.7)); g.fillStyle = th.accent; g.fillRect(X, Y, W * k, headH + 30); }
+  if (th.fx === "bar") { const k = eOut(seg(t, 0.25, 0.8)); g.fillStyle = th.accent; g.fillRect(X, Y, 18, H * k); }
+  if (th.fx === "rise") { const k = eOut(seg(t, 0.3, 0.9)); g.fillStyle = th.accent; g.fillRect(X + padX, Y + 60 + headH - 18, (W - padX * 2) * k, 4); }
+  if (th.fx === "split") { const k = eOut(seg(t, 0.15, 0.6)); g.fillStyle = th.accent; g.fillRect(X, Y, 26 * k + 4, H); g.fillRect(X + W - (26 * k + 4), Y, 26 * k + 4, H); }
+  if (th.fx === "shine") { const k = seg(t, 0.5, 1.4); if (k > 0 && k < 1) { const x = X - 300 + (W + 600) * k; const gr = g.createLinearGradient(x - 150, 0, x + 150, 0); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.5, "rgba(255,255,255,0.35)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(X, Y, W, H); } }
+  if (th.fx === "type") { g.fillStyle = hex(th.accent, 0.12); for (let yy = Y; yy < Y + H; yy += 8) g.fillRect(X, yy, W, 2); }
+  g.restore();
+  // 테두리 — 그려지듯 (골드·네온)
+  if (th.border) {
+    const k = th.fx === "draw" ? eOut(seg(t, 0.2, 1.1)) : 1;
+    g.save();
+    if (th.fx === "glow") { g.shadowColor = th.accent; g.shadowBlur = 26 + 10 * Math.sin(t * 3); }
+    g.lineWidth = th.fx === "draw" ? 5 : 4; g.strokeStyle = th.border;
+    const per = 2 * (W - 30 + H - 30);
+    g.setLineDash([per * k, per]);
+    rr(g, X + 15, Y + 15, W - 30, H - 30, Math.max(4, th.radius - 10)); g.stroke();
+    g.restore();
+  }
+  // 글 — 줄마다 차례로
+  let y = Y + 60 + headH / 2 - 6;
+  const reveal = (i: number) => (th.fx === "type" ? 1 : eOut(seg(t, 0.35 + i * 0.13, 0.75 + i * 0.13)));
+  const typed = (s: string, i: number) => (th.fx === "type" ? Array.from(s).slice(0, Math.floor(Array.from(s).length * seg(t, 0.3 + i * 0.35, 0.3 + i * 0.35 + 0.5))).join("") : s);
+  const line = (s: string, i: number, font: string, color: string, x: number, yy: number) => {
+    const k = reveal(i);
+    if (k <= 0) return;
+    g.save(); g.globalAlpha *= k;
+    const dx = th.fx === "split" ? (i % 2 ? 1 : -1) * (1 - k) * 80 : 0, dy = th.fx === "split" ? 0 : (1 - k) * 22;
+    txt(g, typed(s, i), x + dx, yy + dy, { font, fill: color, align: "left" });
+    g.restore();
+  };
+  // 상호 (맨 먼저 · 가장 크게)
+  const nameColor = th.fx === "band" ? th.nameColor || "#FFFFFF" : th.fx === "draw" || th.fx === "glow" ? th.accent : th.fg;
+  if (th.fx === "stamp") {
+    const k = seg(t, 0.25, 0.55);
+    const s = k <= 0 ? 0 : 1 + 1.4 * (1 - eOut(k));
+    if (s > 0) {
+      g.save(); g.translate(X + W - padX - 80, Y + 60 + headH / 2 - 4); g.rotate(-0.18); g.scale(s, s); g.globalAlpha *= Math.min(1, k * 3);
+      g.beginPath(); g.arc(0, 0, 74, 0, Math.PI * 2); g.lineWidth = 8; g.strokeStyle = th.accent; g.stroke();
+      g.beginPath(); g.arc(0, 0, 60, 0, Math.PI * 2); g.lineWidth = 3; g.stroke();
+      txt(g, "공인", 0, -16, { font: `900 34px ${F.head}`, fill: th.accent }); txt(g, "중개사", 0, 22, { font: `900 30px ${F.head}`, fill: th.accent });
+      g.restore();
+    }
+  }
+  line(name, 0, NF, nameColor, X + padX, y);
+  y += headH / 2 + 40;
+  info.forEach((s, i) => {
+    if (th.fx === "icons") {
+      const k = eBack(seg(t, 0.45 + i * 0.13, 0.75 + i * 0.13));
+      if (k > 0) { g.save(); g.translate(X + padX + 22, y); g.scale(k, k); g.beginPath(); g.arc(0, 0, 22, 0, Math.PI * 2); g.fillStyle = th.accent; g.fill(); txt(g, ["人", "No", "◎", "☎"][Math.min(3, i)], 0, 1, { font: `900 22px ${F.pre}`, fill: "#FFFFFF" }); g.restore(); }
+      line(s.replace(/^(대표 공인중개사|등록번호|소재지|☎)\s+/, (m) => m), i + 1, IF, th.fg, X + padX + icoW, y);
+    } else line(s, i + 1, IF, th.fx === "band" ? th.fg : th.sub === th.fg ? th.fg : th.fg, X + padX, y);
+    y += 62;
+  });
+  if (listing.length) {
+    const k = reveal(info.length + 1);
+    g.save(); g.globalAlpha *= k; g.fillStyle = hex(th.sub, 0.5); g.fillRect(X + padX, y - 4, (W - padX * 2) * k, 2); g.restore();
+    y += 44;
+    listing.forEach((s, i) => { line(s, info.length + 2 + i, LF, th.sub, X + padX, y); y += 50; });
+  }
+  g.restore();
+  return cv;
+};
+AD_THEMES.forEach((d) => add("부동산 표시광고", d.label, "motion", AD_FIELDS, d.color, 0.86, A.fade, adDraw(d.th), { y: 0.5 }));
+/** 부동산 표시광고 템플릿 목록 (AI 편집 끝 화면) */
+export const AD_LAW_LABELS = AD_THEMES.map((d) => d.label);
+
+/* ── 그래픽 즐겨찾기 (2026-10-20 사장님) — 그래픽·템플릿 칸 오른쪽 위 ☆. 이 PC 에 저장, [내 설정] 탭 맨 위에 모인다
+ *  key: "tpl:<템플릿 id>" · "stk:<스티커 모양|글|아이콘|색>" */
+const GFAV_KEY = "studio.graphicFav.v1";
+const GFAV_EV = "gsv-graphic-fav";
+export function loadGFav(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(GFAV_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; }
+}
+export function toggleGFav(key: string) {
+  const cur = loadGFav();
+  const next = cur.includes(key) ? cur.filter((x) => x !== key) : [key, ...cur].slice(0, 300);
+  try { localStorage.setItem(GFAV_KEY, JSON.stringify(next)); } catch {}
+  window.dispatchEvent(new Event(GFAV_EV));
+}
+export function useGFav(): string[] {
+  const [v, setV] = useState<string[]>(() => (typeof window === "undefined" ? [] : loadGFav()));
+  useEffect(() => {
+    const on = () => setV(loadGFav());
+    window.addEventListener(GFAV_EV, on);
+    return () => window.removeEventListener(GFAV_EV, on);
+  }, []);
+  return v;
+}
+/** 칸 오른쪽 위 ☆/★ */
+export function FavStar({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button type="button" title={on ? "즐겨찾기에서 빼기" : "즐겨찾기 — [내 그래픽]에 모여요"} onClick={(e) => { e.stopPropagation(); onClick(); }} onDoubleClick={(e) => e.stopPropagation()}
+      style={{ position: "absolute", top: 4, right: 4, width: 26, height: 26, borderRadius: 13, border: 0, background: on ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)", color: on ? "#FFD400" : "#FFFFFF", fontSize: 16, lineHeight: "26px", padding: 0, cursor: "pointer", zIndex: 2 }}>{on ? "★" : "☆"}</button>
+  );
+}
+
 export const TEMPLATES = T;
 export const TPL_CATS: { id: string; kind: "text" | "sticker" }[] = [
   { id: "자막바", kind: "text" }, { id: "제목", kind: "text" }, { id: "말풍선·카드", kind: "text" }, { id: "브이로그", kind: "text" }, { id: "예능 글자", kind: "text" },
   { id: "예능 자막", kind: "text" }, { id: "검색창·화면", kind: "text" }, { id: "가리키기", kind: "sticker" }, { id: "반응", kind: "sticker" }, { id: "움직이는", kind: "sticker" },
+  { id: "구독 버튼", kind: "sticker" }, { id: "좋아요·알림", kind: "sticker" }, { id: "SNS 팔로우", kind: "sticker" }, { id: "부동산 표시광고", kind: "sticker" },
 ];
 export const tplOf = (style?: string) => (isTplStyle(style) ? T.find((x) => x.id === String(style).slice(TPL_PREFIX.length)) || null : null);
 export const isMotionStyle = (style?: string) => tplOf(style)?.kind === "motion";
@@ -1216,10 +1678,11 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
   project: Project;
   /** text = [텍스트]에서 연 것 (글 템플릿), sticker = [스티커]에서 연 것 (가리키기·반응·움직이는) */
   kind: "text" | "sticker";
-  onInsert: (item: LibItem, o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; color?: string } }) => void | Promise<void>;
+  onInsert: (item: LibItem, o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; color?: string }; clicks?: number[] }) => void | Promise<void>;
   onClose: () => void;
 }) {
   const b = videoBridge()!;
+  const favs = useGFav();
   const cats = TPL_CATS.filter((x) => x.kind === kind);
   const [cat, setCat] = useState(cat0 || cats[0].id);
   const list = only ? T.filter(only) : T.filter((x) => x.cat === cat);
@@ -1257,7 +1720,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
       const text = tplTextOf(vals, opt);
       const url = drawTemplate(style, text, color).toDataURL("image/png");
       const item = await b.lib.saveImage(project.dir, url, `템플릿_${pick.label}`);
-      await onInsert(item, { anim: pick.anim, w: pick.w, y: pick.y, spec: { style, text, color } });
+      await onInsert(item, { anim: pick.anim, w: pick.w, y: pick.y, spec: { style, text, color }, clicks: pick.clicks });
     } catch (e) {
       setErr(errText(e));
     } finally {
@@ -1288,13 +1751,16 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
       {list.map((d) => {
         const th = ready ? thumbOf(d) : "";
         return (
-          <button key={d.id} type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
+          <div key={d.id} style={{ position: "relative" }}>
+          <button type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
             draggable onDragStart={(e) => { if (d.id !== pick.id) choose(d); dragStart(e, d); }}
-            style={{ height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            style={{ width: "100%", height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {th ? <img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain" }} /> : null}
             <span style={{ fontSize: 11.5, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{d.label}</span>
           </button>
+          <FavStar on={favs.includes(`tpl:${d.id}`)} onClick={() => toggleGFav(`tpl:${d.id}`)} />
+          </div>
         );
       })}
     </div>
@@ -1328,7 +1794,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
             <button type="button" onClick={() => setColor(pick.color)} style={chip(false)}>처음 색</button>
           </div>
           <div style={{ display: "flex", gap: 8, margin: "12px 0 4px" }}>
-            {onSave && <Btn onClick={() => { onSave({ id: pick.id, label: pick.label, text: tplTextOf(vals, opt), color }); setSaved(true); setTimeout(() => setSaved(false), 1500); }} style={{ flex: 1, justifyContent: "center" }}>{saved ? "저장했어요" : "내 설정에 저장"}</Btn>}
+            {onSave && <Btn onClick={() => { onSave({ id: pick.id, label: pick.label, text: tplTextOf(vals, opt), color }); setSaved(true); setTimeout(() => setSaved(false), 1500); }} style={{ flex: 1, justifyContent: "center" }}>{saved ? "저장했어요" : "내 그래픽에 저장"}</Btn>}
             <Btn primary onClick={insert} disabled={busy || !ready} style={{ flex: 1, justifyContent: "center" }}>{busy ? "넣는 중…" : "화면에 넣기"}</Btn>
           </div>
           {err && <div style={{ marginTop: 12, fontSize: 14, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
@@ -1373,13 +1839,16 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
           {list.map((d) => {
             const th = ready ? thumbOf(d) : "";
             return (
-              <button key={d.id} type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
+              <div key={d.id} style={{ position: "relative" }}>
+              <button type="button" title={`${d.label} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`} onClick={() => choose(d)} onDoubleClick={() => { choose(d); setTimeout(insert, 0); }}
                 draggable onDragStart={(e) => { if (d.id !== pick.id) choose(d); dragStart(e, d); }}
-                style={{ height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                style={{ width: "100%", height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {th ? <img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain" }} /> : null}
                 <span style={{ fontSize: 11.5, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{d.label}</span>
               </button>
+              <FavStar on={favs.includes(`tpl:${d.id}`)} onClick={() => toggleGFav(`tpl:${d.id}`)} />
+              </div>
             );
           })}
         </div>

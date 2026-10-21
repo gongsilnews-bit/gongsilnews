@@ -10,7 +10,7 @@ import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, VolumeControl, input, label } from "./ui";
 import { ColorPick, FontPick } from "./Pickers";
 import { TextTabs } from "./TextTabs";
-import type { AnimBodyProps } from "./Anim";
+import { AnimBody, type AnimBodyProps } from "./Anim";
 import type { TextLook } from "./SubPresets";
 import { BubbleGrid, type Sticker } from "./Stickers";
 import { TemplateFields } from "./Templates";
@@ -522,7 +522,9 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, o
   );
 }
 
-export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, onBubble, curClip, kfEl }: {
+export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, imgAnim, onBubble, curClip, kfEl }: {
+  /** 그래픽·사진 — 속성 창 [애니메이션] 탭 (2026-10-21 사장님: 그래픽 속성에 모션이 나와야) */
+  imgAnim?: AnimBodyProps;
   /** 키프레임 칸 (2026-10-20) — 맨 위 */
   kfEl?: React.ReactNode;
   /** 지금 클립 (재생·고른) — [이 클립만] */
@@ -547,6 +549,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
   onClose: () => void;
 }) {
   const [draft, setDraft] = React.useState(layer.text || "");
+  const [gtab, setGtab] = React.useState<"prop" | "anim">("prop");
   const textTimer = React.useRef<number | undefined>(undefined);
   React.useEffect(() => setDraft(layer.text || ""), [layer.id, layer.text]); // 화면에서 고친 글도 칸에 바로
   const clipLabel = (x: FlatItem, i: number) => {
@@ -613,11 +616,16 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           <div style={{ ...label, marginBottom: 8 }}>소리 <span style={{ color: C.sub, fontWeight: 600 }}>· 누르면 들어 보고 바뀌어요</span></div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {SFX_LIST.map((x) => (
-              <button key={x.id} type="button" onClick={() => { onChange({ sfx: x.id, name: x.label }); play(x.id, v); }}
-                style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${layer.sfx === x.id ? C.accent : C.line2}`, background: layer.sfx === x.id ? C.accentDim : "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+              <button key={x.id} type="button" onClick={() => { onChange({ sfx: x.id, name: x.label, file: undefined, url: undefined }); play(x.id, v); }}
+                style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${!layer.file && layer.sfx === x.id ? C.accent : C.line2}`, background: !layer.file && layer.sfx === x.id ? C.accentDim : "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
                 {x.label}
               </button>
             ))}
+            {/* 내 효과음 — 지금 쓰는 내 파일 (2026-10-21) */}
+            {layer.file && layer.url && (
+              <button type="button" onClick={() => { try { const au = new Audio(layer.url); au.volume = Math.min(1, v); void au.play().catch(() => {}); } catch {} }}
+                style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${C.accent}`, background: C.accentDim, color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>★ {layer.name || "내 효과음"}</button>
+            )}
           </div>
         </div>
         <Slider title="소리 크기" value={v} min={0.1} max={1} step={0.05} show={`${Math.round(v * 100)}%`} onChange={(x) => onChange({ volume: x })} />
@@ -651,7 +659,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
       return o;
     };
     return (
-      <TextTabs title="텍스트" kind="layer" onClose={onClose} look={look} anim={textAnim} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
+      <TextTabs title="텍스트" kind="layer" onClose={onClose} look={look} anim={textAnim} sample={layer.text || ""} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
         bubble={onBubble ? <BubbleGrid text={layer.text || ""} onPick={onBubble} /> : undefined}
         onLook={(p) => onChange(toLayer(p))} onPresetLook={(lk) => onChange(toLayer(lk))}
         basicTop={
@@ -728,6 +736,19 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
   return (
     <Side title={layerName(layer)} onClose={onClose}
       footer={<Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={16} />이 {layerName(layer)} 지우기</Btn>}>
+      {imgAnim && layer.type === "image" && (
+        <div style={{ padding: "12px 16px 4px" }}>
+          <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
+            {([["prop", "속성"], ["anim", `애니메이션${layer.anim && Object.keys(layer.anim).length ? " •" : ""}`]] as const).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => setGtab(k)}
+                style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: gtab === k ? C.panel2 : "transparent", color: gtab === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {imgAnim && layer.type === "image" && gtab === "anim" ? <AnimBody {...imgAnim} /> : <>
       {kfEl}
       {sticker && <StickerText key={layer.id + sticker.text} {...sticker} />}
       {template && <TemplateFields key={layer.id + template.text + (template.color || "")} {...template} />}
@@ -841,6 +862,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           )}
         </>
       )}
+      </>}
     </Side>
   );
 }

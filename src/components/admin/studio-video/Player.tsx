@@ -353,7 +353,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     if (sfxPrev.current >= 0 && time - sfxPrev.current < 0.5)
       for (const e of sfxList) if (e.t > sfxPrev.current - 0.001 && e.t <= time) {
         try {
-          const au = new Audio(`/studio-sfx/${e.name}.mp3`);
+          const au = new Audio(e.url || `/studio-sfx/${e.name}.mp3`); // 내 효과음은 그 파일
           au.volume = Math.min(1, e.vol);
           void au.play().catch(() => {});
         } catch {}
@@ -945,7 +945,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
               <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
                 {media(l, a, { width: "100%", height: "100%", display: "block", objectFit: l.fit, opacity: op, transform: flipOf(l), pointerEvents: "none" })}
               </div>
-              {l.id === selLayer && onLayerMove && <span style={{ position: "absolute", inset: 1, border: `1px solid ${SEL_LINE}`, pointerEvents: "none" }} />}
+              {/* 고른 표시 — 화면 끝 1px 선이라 안 보였다 (2026-10-21 사장님: 채우기를 쓰면 선택이 안 됨). 비율 유지는 실제 그림 둘레에, 잘라서 채우기는 화면 둘레에 */}
+              {l.id === selLayer && onLayerMove && (() => {
+                let r: React.CSSProperties = { inset: 0 };
+                if (l.fit === "contain" && a?.width && a?.height) {
+                  const k = Math.min(boxW / a.width, boxH / a.height);
+                  const w = a.width * k, h = a.height * k;
+                  r = { left: (boxW - w) / 2, top: (boxH - h) / 2, width: w, height: h };
+                }
+                return <span style={{ position: "absolute", ...r, boxSizing: "border-box", border: `2px solid ${SEL_LINE}`, boxShadow: "0 0 0 1px rgba(0,0,0,0.35)", pointerEvents: "none" }} />;
+              })()}
             </div>
           );
         // 화면 밖으로 나가지 않게 (키프레임이 있으면 화면 밖으로도) — 굽기 render.js·AnimBake 와 같은 계산 (timeline.imgRect)

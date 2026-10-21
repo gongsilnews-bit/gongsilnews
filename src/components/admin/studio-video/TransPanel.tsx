@@ -67,8 +67,9 @@ function useLoop(on: boolean) {
   return on ? p : 0.45;
 }
 
-export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, onAll, onPreview, onClose, fromThumb, toThumb }: {
-  trans: T;
+export function TransPanel({ trans: trans0, from, to, maxA, maxB, onChange, onRemove, onAll, onPreview, onClose, fromThumb, toThumb }: {
+  /** null = 화면전환 없음 (빼도 칸은 그대로, 2026-10-21 사장님) */
+  trans: T | null;
   from: number; // 앞 클립 번호
   to: number; // 뒤 클립 번호
   maxA: number; // 앞 클립 길이의 45% (그보다 길게는 안 들어간다)
@@ -82,6 +83,8 @@ export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, on
   fromThumb?: string;
   toThumb?: string;
 }) {
+  const none = !trans0;
+  const trans: T = trans0 || { type: "", a: 0.15, b: 0.15 };
   const cur = infoOf(trans.type);
   const [tab, setTabRaw] = React.useState<Tab>(() => load<Tab>(TAB_KEY, cur?.tier === "adv" ? "adv" : "basic"));
   const setTab = (t: Tab) => { setTabRaw(t); save(TAB_KEY, t); };
@@ -104,7 +107,9 @@ export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, on
   const clipped = realA < Number(trans.a) - 0.01 || realB < Number(trans.b) - 0.01;
 
   const pick = (id: string) => {
-    onChange({ type: id, ...(trans.sfx ? { sfx: sfxFor(id) } : {}) }, true);
+    // 고급 효과는 효과음까지 같이 (끌 수 있음) · 기본 효과는 [효과음 같이]를 켰을 때만
+    const adv = TRANSITIONS.find((x) => x.id === id)?.tier === "adv";
+    onChange({ type: id, ...(none ? { a: 0.15, b: 0.15 } : {}), ...(adv || trans.sfx ? { sfx: sfxFor(id) } : { sfx: undefined }) }, true);
     setOpen(true);
   };
   const toggleFav = (id: string) => { const n = fav.includes(id) ? fav.filter((x) => x !== id) : [id, ...fav]; setFav(n); save(FAV_KEY, n); };
@@ -118,7 +123,7 @@ export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, on
 
   const chip = (on: boolean): React.CSSProperties => ({ height: 28, padding: "0 11px", borderRadius: 14, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" });
   const card = (id: string, name: string, onClick: () => void, extra?: React.ReactNode, key = id) => {
-    const on = trans.type === id;
+    const on = id === "none" ? none : !none && trans.type === id;
     return (
       <div key={key} style={{ position: "relative" }} onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover((h) => (h === key ? "" : h))}>
         <button type="button" onClick={onClick}
@@ -132,24 +137,38 @@ export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, on
       </div>
     );
   };
+  /** [없음] 칸 — 누르면 전환을 빼고 칸은 그대로 */
+  const noneCard = (
+    <button key="none" type="button" onClick={() => !none && onRemove()}
+      style={{ width: "100%", padding: 5, borderRadius: 6, border: `1.5px solid ${none ? C.accent : C.line2}`, background: none ? C.accentDim : "transparent", color: none ? C.text : C.sub, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "flex", flexDirection: "column", gap: 5, textAlign: "left" }}>
+      <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 4, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 13 }}>없음</div>
+      <span>없음</span>
+    </button>
+  );
   const grid = (els: React.ReactNode[]) => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>{els}</div>;
   const list = TRANSITIONS.filter((x) => (tab === "basic" ? x.tier === "basic" : x.tier === "adv" && (!grp || x.group === grp)));
 
   return (
     <Side title={`화면전환 · 클립 ${from} → ${to}`} onClose={onClose}
-      footer={<><Btn small onClick={onPreview}><Icon name="play" size={15} />이 부분 보기</Btn><Btn small onClick={onAll}><Icon name="copy" size={15} />모든 클립 사이에 똑같이</Btn><span style={{ flex: 1 }} /><Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />빼기</Btn></>}>
+      footer={<><Btn small onClick={onPreview}><Icon name="play" size={15} />이 부분 보기</Btn><Btn small onClick={onAll}><Icon name="copy" size={15} />모든 클립 사이에 똑같이</Btn></>}>
       {/* 큰 탭 — 텍스트·그래픽 칸과 같은 모양 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
         {([["my", "내 설정"], ["basic", "기본"], ["adv", "고급"]] as const).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             style={{ flex: 1, height: 42, border: 0, borderBottom: `2px solid ${tab === k ? C.accent : "transparent"}`, background: "transparent", color: tab === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-            {l}{k === "my" && fav.length + my.length ? ` ${fav.length + my.length}` : ""}
+            {l}
           </button>
         ))}
       </div>
       <div style={{ padding: "0 16px 16px" }}>
         {/* 고른 전환 — 맨 위에 붙어서 (스크롤해도), × 로 닫으면 목록 그대로 */}
-        {open ? (
+        {none ? (
+          <div style={{ margin: "0 -16px 12px", padding: "12px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>화면전환 없음</div>
+            <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 4, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 13.5, fontWeight: 700 }}>앞 클립에서 바로 넘어가요</div>
+            <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>아래에서 전환을 고르면 바로 들어가요.</div>
+          </div>
+        ) : open ? (
           <div style={{ position: "sticky", top: 0, zIndex: 3, background: C.panel, margin: "0 -16px 12px", padding: "12px 16px 14px", borderBottom: `1px solid ${C.line}`, boxShadow: "0 8px 16px rgba(0,0,0,0.35)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 800 }}>{cur?.label || "화면전환"}</span>
@@ -168,7 +187,7 @@ export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, on
             <input type="range" min={TRANS_MIN} max={TRANS_MAX} step={0.1} value={Math.max(TRANS_MIN, total)} onPointerDown={() => (first.current = true)}
               onChange={(e) => { setTotal(Number(e.target.value)); first.current = false; }} style={{ width: "100%", accentColor: C.accent, marginTop: 6 }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-              <button type="button" onClick={() => onChange({ sfx: trans.sfx ? undefined : sfxFor(trans.type) }, true)} style={chip(Boolean(trans.sfx))}>{trans.sfx ? "✓ " : ""}효과음 같이</button>
+              <button type="button" onClick={() => { const n = trans.sfx ? undefined : sfxFor(trans.type); onChange({ sfx: n }, true); if (n) { try { const au = new Audio(`/studio-sfx/${n}.mp3`); au.volume = 0.6; void au.play().catch(() => {}); } catch {} } }} title="켜면 그 소리를 들려줘요" style={chip(Boolean(trans.sfx))}>{trans.sfx ? "✓ " : ""}효과음 같이</button>
               <button type="button" onClick={() => setMore(!more)} style={chip(more)}>앞뒤 나누기 {total.toFixed(1)}초</button>
               <span style={{ flex: 1 }} />
               <button type="button" onClick={saveMy} style={chip(false)}>내 설정에 저장</button>
@@ -216,7 +235,7 @@ export function TransPanel({ trans, from, to, maxA, maxB, onChange, onRemove, on
                 {["", ...ADV_GROUPS].map((g) => <button key={g || "all"} type="button" onClick={() => setGrp(g)} style={chip(grp === g)}>{g || "전체"}</button>)}
               </div>
             )}
-            {grid(list.map((x) => card(x.id, x.label, () => pick(x.id))))}
+            {grid([...(tab === "basic" ? [noneCard] : []), ...list.map((x) => card(x.id, x.label, () => pick(x.id)))])}
             <div style={{ marginTop: 12 }}>
               <Hint>{tab === "adv" ? "마우스를 올리면 움직여요. 고급 전환은 내보낼 때 칸마다 그려서 조금 더 걸려요." : "영상 길이·소리·자막은 그대로예요. 전환하는 동안 상대 클립은 첫 장면(마지막 장면)이 멈춘 채로 섞여요."}</Hint>
             </div>

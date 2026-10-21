@@ -10,7 +10,7 @@ import { DRAG_STICKER, errText, stickerDrag, videoBridge } from "./types";
 import { Btn, C, FONT } from "./ui";
 import { Side } from "./Panels";
 import { loadFont } from "./Pickers";
-import { TEMPLATES, TPL_PREFIX, TemplatePanel, drawTemplate, tplFonts, type TplDef } from "./Templates";
+import { TEMPLATES, TPL_PREFIX, TemplatePanel, drawTemplate, tplFonts, type TplDef, FavStar, toggleGFav, useGFav } from "./Templates";
 
 export type StickerStyle = "burst" | "tag" | "pin" | "bubble" | "stamp" | "ribbon" | "neon" | "check" | "marker" | "badge" | "arrow" | "ticket" | "cloud" | "sign" | "circle" | "block";
 export type Sticker = { text: string; style: StickerStyle; color?: string; icon?: string };
@@ -798,23 +798,26 @@ export function warmStickers() {
 
 /* ── 스티커 칸 탭 (2026-10-20 사장님: "내 설정 · 부동산 · 예능 · 브이로그(감성) · 기타 — 찾기도 편하고 쓰기도 편하게") ──
  *  탭마다 작은 분류 한 줄 → 그림 → 맨 아래 고른 것 고치기. 찾기는 모든 탭에서. 템플릿(론박 견본으로 새로 그린 것)도 스티커 */
-type TabId = "my" | "real" | "fun" | "vlog" | "etc";
+type TabId = "my" | "real" | "fun" | "vlog" | "social" | "etc";
 type Sub = { id: string; label: string; stk?: string; tpl?: (d: TplDef) => boolean; tplHead?: string };
 const isMoney = (d: TplDef) => d.label.startsWith("지폐");
 const isTrip = (d: TplDef) => d.cat === "움직이는" && d.label.includes("목적지");
 const catOf = (c: string) => (d: TplDef) => d.cat === c;
 const STK_SUB = (id: string): Sub => ({ id, label: CATS.find((c) => c.id === id)?.label || id, stk: id });
 const TABS: { id: TabId; label: string; subs: Sub[] }[] = [
-  { id: "my", label: "내 설정", subs: [] },
+  { id: "my", label: "내 그래픽", subs: [] },
   {
     id: "real", label: "부동산", subs: [
       ...["hot", "price", "place", "home", "biz", "opt", "size", "call", "state"].map(STK_SUB),
       { ...STK_SUB("point"), tpl: catOf("가리키기"), tplHead: "화살표·가리키기 템플릿" },
       { id: "money", label: "돈", tpl: isMoney },
+      { id: "adlaw", label: "부동산 표시광고", tpl: catOf("부동산 표시광고") }, // 끝 화면 중개사무소 정보 (2026-10-20)
     ],
   },
   { id: "fun", label: "예능", subs: [{ id: "fsub", label: "예능 자막", tpl: catOf("예능 자막") }, { id: "fword", label: "예능 글자", tpl: catOf("예능 글자") }, { id: "react", label: "반응", tpl: catOf("반응") }] },
   { id: "vlog", label: "브이로그", subs: [{ id: "vlog", label: "브이로그", tpl: catOf("브이로그") }, { id: "trip", label: "여행 경로", tpl: isTrip }] },
+  // 구독·좋아요 (2026-10-20 사장님: 프리미어 컴포저 Social Media 처럼 움직이는 것)
+  { id: "social", label: "구독·좋아요", subs: [{ id: "subbtn", label: "구독 버튼", tpl: catOf("구독 버튼") }, { id: "likes", label: "좋아요·알림", tpl: catOf("좋아요·알림") }, { id: "follow", label: "SNS 팔로우", tpl: catOf("SNS 팔로우") }] },
   {
     id: "etc", label: "기타", subs: [
       { id: "bar", label: "자막바", tpl: catOf("자막바") }, { id: "title", label: "제목", tpl: catOf("제목") }, { id: "card", label: "말풍선·카드", tpl: catOf("말풍선·카드") },
@@ -837,7 +840,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
   /** [가리키기·반응·움직이는 템플릿] 열기 (예전) */
   onTemplates?: () => void;
   /** 템플릿을 스티커 칸 안에서 넣기 */
-  tplInsert?: (item: LibItem, o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; color?: string } }) => void | Promise<void>;
+  tplInsert?: (item: LibItem, o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; color?: string }; clicks?: number[] }) => void | Promise<void>;
   /** [스티커 바꾸기]로 열었을 때 — 새로 넣지 않고 그 스티커 모양만 바꾼다 */
   replacing?: boolean;
   project: Project;
@@ -861,6 +864,9 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
   const tabDef = tabs.find((t) => t.id === tab) || tabs[1] || tabs[0];
   const sub = tabDef.subs.find((x) => x.id === subOf[tab]) || tabDef.subs[0];
   const [mySel, setMySel] = useState("");
+  const favs = useGFav(); // 즐겨찾기 (☆) — [내 설정] 맨 위에
+  const favStk = useMemo(() => CATS.flatMap((c) => c.items).filter((x, i, a) => favs.includes(`stk:${keyOf(x)}`) && a.findIndex((y) => keyOf(y) === keyOf(x)) === i), [favs]);
+  const favTplOn = favs.some((k) => k.startsWith("tpl:"));
   const [q, setQ] = useState(""); // 스티커 찾기 (모든 탭에서)
   const [pick, setPick] = useState<Sticker>(CATS[0].items[0]);
   const [text, setText] = useState(CATS[0].items[0].text);
@@ -891,9 +897,9 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
   /** 지금 보이는 스티커 (템플릿 말고) */
   const items = useMemo(() => {
     if (qk) return CATS.flatMap((c) => c.items).filter((x) => x.text.replace(/\s+/g, "").includes(qk) || STYLE_LABEL[x.style].includes(qk));
-    if (tab === "my") return my.flatMap((x) => (x.kind === "stk" ? [x.s] : []));
+    if (tab === "my") return [...favStk, ...my.flatMap((x) => (x.kind === "stk" ? [x.s] : []))];
     return sub?.stk ? CATS.find((c) => c.id === sub.stk)?.items || [] : [];
-  }, [qk, tab, sub, my]);
+  }, [qk, tab, sub, my, favStk]);
   // 칸 그림 — 칸은 바로 열고, 그림은 몇 개씩 차례로 채운다 (화면이 멈추지 않게)
   useEffect(() => {
     if (!fontsReady) return;
@@ -973,7 +979,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     const next = [x, ...my];
     setMy(next);
     saveMy(next);
-    setNote("내 설정에 저장했어요");
+    setNote("내 그래픽에 저장했어요");
     setTimeout(() => setNote(""), 1800);
   };
   const delMy = (id: string) => {
@@ -1011,7 +1017,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
               <span style={{ fontSize: 13, color: C.sub, marginRight: 2 }}>크기</span>
               {([[0.3, "작게"], [0.45, "보통"], [0.65, "크게"]] as const).map(([v, l]) => <button key={v} type="button" onClick={() => setSize(v)} style={chip(size === v)}>{l}</button>)}
               <span style={{ flex: 1 }} />
-              {!(tab === "my" && myPick) && <button type="button" onClick={() => addMy({ id: String(Date.now()), name: cur.text, kind: "stk", s: cur, size })} style={chip(false)}>내 설정에 저장</button>}
+              {!(tab === "my" && myPick) && <button type="button" onClick={() => addMy({ id: String(Date.now()), name: cur.text, kind: "stk", s: cur, size })} style={chip(false)}>내 그래픽에 저장</button>}
             </div>
           </div>
         )}
@@ -1022,13 +1028,16 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
       {list.map((s, i) => {
         const on = pick.text === s.text && pick.style === s.style;
         return (
-          <button key={s.text + i} type="button" title={`${s.text} · ${STYLE_LABEL[s.style]} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`}
+          <div key={s.text + i} style={{ position: "relative" }}>
+          <button type="button" title={`${s.text} · ${STYLE_LABEL[s.style]} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`}
             onClick={() => choose(s)} onDoubleClick={() => { choose(s); insert(s); }}
             draggable onDragStart={(e) => { if (on) dragStart(e, cur); else { choose(s); dragStart(e, s); } }}
-            style={{ height: 92, padding: 6, borderRadius: 8, border: `2px solid ${on ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            style={{ width: "100%", height: 92, padding: 6, borderRadius: 8, border: `2px solid ${on ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {thumbs[keyOf(s)] ? <img src={thumbs[keyOf(s)]} alt={s.text} style={{ maxWidth: "100%", maxHeight: 76, objectFit: "contain" }} /> : <span style={{ color: C.text, fontSize: 13 }}>{s.text}</span>}
           </button>
+          <FavStar on={favs.includes(`stk:${keyOf(s)}`)} onClick={() => toggleGFav(`stk:${keyOf(s)}`)} />
+          </div>
         );
       })}
     </div>
@@ -1068,8 +1077,17 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
             )}
           </>
         ) : tab === "my" ? (
-          /* 내 설정 */
-          myShown.length ? (
+          /* 내 설정 — 맨 위 ★ 즐겨찾기, 아래 내가 저장한 것 */
+          <>
+          {(favStk.length > 0 || (favTplOn && tplOk)) && (
+            <>
+              <div style={head}>★ 즐겨찾기</div>
+              {favStk.length > 0 && <>{grid(favStk)}</>}
+              {favTplOn && tplOk && <div style={{ marginTop: favStk.length ? 8 : 0 }}>{tplPanel("fav", (d) => favs.includes(`tpl:${d.id}`))}</div>}
+              <div style={{ ...head, marginTop: 18 }}>내가 저장한 것</div>
+            </>
+          )}
+          {myShown.length ? (
             <>
               <div style={{ fontSize: 12.5, color: C.dim, margin: "10px 0 8px" }}>한 번 누르면 고르기, 두 번 누르면 바로 넣기 · 이 PC 에 저장돼요</div>
               {plainEditor}
@@ -1090,7 +1108,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {th ? <img src={th} alt={x.name} style={{ maxWidth: "100%", maxHeight: 76, objectFit: "contain" }} /> : <span style={{ color: C.text, fontSize: 13 }}>{x.name}</span>}
                       </button>
-                      <button type="button" title="내 설정에서 지우기" onClick={() => delMy(x.id)}
+                      <button type="button" title="내 그래픽에서 지우기" onClick={() => delMy(x.id)}
                         style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 11, border: 0, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 13, lineHeight: "22px", padding: 0, cursor: "pointer" }}>×</button>
                     </div>
                   );
@@ -1098,8 +1116,9 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
               </div>
             </>
           ) : (
-            <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7, padding: "14px 0" }}>아직 저장한 그래픽이 없어요. 그래픽이나 템플릿을 고르고 글·색·크기를 바꾼 뒤 [내 설정에 저장]을 누르면 여기에 모여요.</div>
-          )
+            <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7, padding: "14px 0" }}>아직 저장한 그래픽이 없어요. 그래픽 칸 오른쪽 위 ☆를 누르면 즐겨찾기로, 글·색·크기를 바꾼 뒤 [내 그래픽에 저장]을 누르면 여기에 모여요.</div>
+          )}
+          </>
         ) : (
           <>
             {/* 작은 분류 */}

@@ -212,9 +212,12 @@ async function openToolMenu(page) {
 async function attachPhotos(page, files, onProgress) {
   onProgress(`사진 ${files.length}장을 Gemini에 올리는 중…`);
   if (!(await openToolMenu(page))) throw new Error("Gemini 사진 올리기 단추를 찾지 못했습니다.");
-  const input = page.locator('input[type="file"][accept*="image"]').first();
+  // 여러 장 받는 칸 먼저, 없으면 한 장씩 (한 장만 받는 칸에 여러 장 → 오류, 2026-10-20)
+  const multi = page.locator('input[type="file"][multiple]:not([capture])').first();
+  const input = (await multi.count()) ? multi : page.locator('input[type="file"][accept*="image"]:not([capture])').first();
   if (!(await input.count())) throw new Error("Gemini 사진 올리기 칸을 찾지 못했습니다.");
-  await input.setInputFiles(files);
+  if ((await multi.count()) || files.length < 2) await input.setInputFiles(files);
+  else for (const f of files) { await input.setInputFiles([f]); await new Promise((r) => setTimeout(r, 1500)); }
   await page.keyboard.press("Escape").catch(() => {});
   // 올라가는 동안 보내기 단추가 잠긴다 — 사진 미리보기가 생기고 잠깐 더 기다린다
   await chrome.sleep(4000);
