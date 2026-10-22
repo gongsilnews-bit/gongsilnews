@@ -55,6 +55,26 @@ function findVideo(o, depth = 0) {
   return null;
 }
 
+/** 답 안의 사용량 — usage / usageMetadata (이름이 조금 달라도) */
+function findUsage(o, depth = 0) {
+  if (!o || typeof o !== "object" || depth > 8) return { found: false, inTok: 0, outTok: 0 };
+  for (const k of ["usage", "usageMetadata", "usage_metadata"]) {
+    const u = o[k];
+    if (u && typeof u === "object") {
+      const inTok = Number(u.input_tokens ?? u.total_input_tokens ?? u.promptTokenCount ?? u.prompt_tokens) || 0;
+      const outTok = Number(u.output_tokens ?? u.total_output_tokens ?? u.candidatesTokenCount ?? u.completion_tokens) || 0;
+      if (inTok || outTok) return { found: true, inTok, outTok };
+    }
+  }
+  for (const v of Array.isArray(o) ? o : Object.values(o)) {
+    if (v && typeof v === "object") {
+      const r = findUsage(v, depth + 1);
+      if (r.found) return r;
+    }
+  }
+  return { found: false, inTok: 0, outTok: 0 };
+}
+
 /** uri 로 받기 — files/{id} 면 ACTIVE 될 때까지 기다렸다가 :download */
 async function download(uri, key, onProgress) {
   const m = /\/files\/([^/:?]+)/.exec(uri);
@@ -101,7 +121,11 @@ function make({ prompt, image = "", ratio = "16:9" }, onProgress = () => {}) {
     "Gemini가 영상을 만들고 있습니다",
     async () => {
       onProgress(`Gemini가 영상을 만드는 중… (보통 1~3분) · ${PRICE_NOTE}`);
+      await require("./usage").guard("gemini"); // 이번 달 API 한도 (켠 회원만)
       const res = await json(`${GOOGLE}/interactions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, key);
+      // 사용 내역 — 답 안의 사용량(토큰)으로 예상 금액 (못 찾으면 금액은 비움)
+      const u = findUsage(res);
+      require("./usage").record({ provider: "gemini", feature: "AI 동영상", model: MODEL, inTok: u.inTok, outTok: u.outTok, note: u.found ? "" : "사용량 정보 없음" });
       let v = findVideo(res);
       // 큰 영상은 uri 로만 올 때가 있다 — 같은 대화를 다시 읽으면 영상이 들어 있다 (Google 문서)
       if ((!v || (!v.data && !v.uri)) && res && res.id) v = findVideo(await json(`${GOOGLE}/interactions/${res.id}`, { method: "GET" }, key, 2 * 60 * 1000));

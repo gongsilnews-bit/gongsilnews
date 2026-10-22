@@ -282,6 +282,17 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 <ColorPick value={look.color || "#FFFFFF"} onChange={(c) => onLook({ color: c })} />
               </div>
               {posEl}
+              {/* 머리 딱지 — 자막 위 왼쪽 작은 글 (NEWS·속보 …), 자막과 같이 움직인다 (2026-10-22 사장님) */}
+              {(kind === "sub" || kind === "photo") && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                  <span style={{ ...label, margin: 0, flexShrink: 0 }}>머리 딱지</span>
+                  <Toggle on={Boolean(look.tag)} onChange={(v) => onLook({ tag: v ? "NEWS" : "", ...(v && !look.tagColor ? { tagColor: "#1D4ED8" } : {}) })} />
+                  {look.tag ? <>
+                    <input value={look.tag} onChange={(e) => onLook({ tag: e.target.value.slice(0, 12) || " " })} onKeyDown={(e) => e.stopPropagation()} placeholder="NEWS" style={{ ...input, flex: 1, minWidth: 0, height: 32, fontSize: 13 }} />
+                    <input type="color" value={(look.tagColor || "#1D4ED8").toLowerCase()} onChange={(e) => onLook({ tagColor: e.target.value.toUpperCase() })} title="딱지 색" style={{ width: 32, height: 30, padding: 0, border: `1px solid ${C.line2}`, background: "transparent", cursor: "pointer" }} />
+                  </> : <span style={{ fontSize: 12, color: C.dim }}>NEWS · 속보 · 단독처럼 자막 위에 붙는 글</span>}
+                </div>
+              )}
               {/* 문자 간격 · 줄 간격 — [자동]이 기본(이름 오른쪽), 끌개·숫자를 움직이면 직접 값 (2026-10-19 사장님) */}
               {(() => {
                 // [자동]이 켜져 있으면 닫힘. 누르면 자동이 꺼지고(지금 값 그대로) 아래에 끌개·숫자 칸이 펼쳐진다. 다시 누르면 자동으로
@@ -358,7 +369,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 Math.round(Number(look.outlineWidth ?? (kind === "sub" ? 3 : 4))) || 3, 1, 12, (v) => onLook({ outlineWidth: v }),
                 Math.round((look.outlineAlpha ?? 0) * 100), (v) => onLook({ outlineAlpha: v ? v / 100 : undefined }))}
               {/* 예능 자막 — 이중 테두리 · 그라데이션 (메인자막, 2026-10-19 사장님) */}
-              {kind !== "photo" && (() => {
+              {(() => {
                 const o2 = Number(look.outline2Width || 0) > 0;
                 const ok2 = !look.bg;
                 const tw = Math.round(Number(look.outline2Width || 4)) || 4;
@@ -447,6 +458,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
   );
 
   /** 디자인·템플릿 안 묶음 제목 — 칩으로 나누지 않고 내 것 · 기본 · 예능을 위에서 아래로 다 보인다 (2026-10-21 사장님) */
+  const [basicGroup, setBasicGroup] = useState(() => { try { const g = localStorage.getItem("gsv-basic-tpl-group"); return g && [...BASIC_GROUPS, ...EFFECT_GROUPS].includes(g) ? g : BASIC_GROUPS[0]; } catch { return BASIC_GROUPS[0]; } });
   const head = (t: string, n?: number) => (
     <div style={{ padding: "16px 16px 2px", fontSize: 14, fontWeight: 800, color: C.text, borderTop: `1px solid ${C.line}`, marginTop: 4 }}>{t}{n ? <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}> {n}</span> : null}</div>
   );
@@ -502,7 +514,16 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
           {myList(myTpl, true)}
           {head("기본템플릿")}
           <div style={{ ...col, borderBottom: 0, paddingTop: 0 }}>
-            <SubPresetGrid value={look} onPick={(lk, m) => { pickTpl(lk, m); setLastName(presetName(m)); }} groups={[...BASIC_GROUPS, ...EFFECT_GROUPS]} star={starOf(true)} animOf={tplAnim} sample={sample} /> {/* 기본템플릿 — 기본 ~ 다큐·뉴스 전부, 모양 + 어울리는 움직임 */}
+            {/* 기본템플릿 — 예능템플릿처럼 묶음 탭으로 (2026-10-22 사장님) */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, margin: "2px 0 10px" }}>
+              {[...BASIC_GROUPS, ...EFFECT_GROUPS].map((gn) => (
+                <button key={gn} type="button" onClick={() => { setBasicGroup(gn); try { localStorage.setItem("gsv-basic-tpl-group", gn); } catch {} }}
+                  style={{ height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${gn === basicGroup ? C.accent : C.line2}`, background: gn === basicGroup ? C.accentDim : "transparent", color: gn === basicGroup ? C.text : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+                  {gn} {SUB_PRESETS.find((g) => g.group === gn)?.items.length || 0}
+                </button>
+              ))}
+            </div>
+            <SubPresetGrid value={look} onPick={(lk, m) => { pickTpl(lk, m); setLastName(presetName(m)); }} groups={[basicGroup]} star={starOf(true)} animOf={tplAnim} sample={sample} />
           </div>
           {head("예능템플릿")}
           <VarietyGrid value={look} onPick={(lk, m) => { pickTpl(lk, m); setLastName(presetName(m, true)); }} star={starOf(true)} animOf={tplAnim} sample={sample} />

@@ -105,7 +105,11 @@ async function listModels(id, k) {
   }
   const b = await call(id, `${GOOGLE}/models?pageSize=1000`, { headers: head(id, k) }, 30000);
   const gen = (b.models || []).filter((x) => (x.supportedGenerationMethods || []).includes("generateContent")).map((x) => String(x.name).replace(/^models\//, ""));
-  const model = best(gen, /^gemini-(\d+(?:\.\d+)?)-pro$/) || best(gen, /^gemini-(\d+(?:\.\d+)?)-pro-preview(?:-[\d-]+)?$/) || best(gen, /^gemini-(\d+(?:\.\d+)?)-flash$/) || "gemini-2.5-flash";
+  // 정식판·미리보기판 중 버전이 높은 것 (2026-10-21: 2.5-pro 가 목록엔 있는데 새 사용자에겐 404 — 3.1-pro-preview 를 쓰라고 했다)
+  const verOf = (x) => (String(x).match(/^gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0";
+  const proS = best(gen, /^gemini-(\d+(?:\.\d+)?)-pro$/), proP = best(gen, /^gemini-(\d+(?:\.\d+)?)-pro-preview(?:-[\d-]+)?$/);
+  const pro = proS && proP ? (newer(verOf(proP), verOf(proS)) ? proP : proS) : proS || proP;
+  const model = pro || best(gen, /^gemini-(\d+(?:\.\d+)?)-flash$/) || "gemini-2.5-flash";
   const imageModel = best(gen, /^gemini-(\d+(?:\.\d+)?)-(?:pro|flash)-image(?:-preview)?$/) || "gemini-2.5-flash-image";
   // 성우(말소리) 모델 — 제미나이 성우 (video/geminitts.js)
   const ttsRe = (k) => new RegExp(`^gemini-(\\d+(?:\\.\\d+)?)-${k}(?:-preview)?-tts(?:-preview)?(?:-[\\d-]+)?$`);
@@ -185,6 +189,11 @@ function imageOf(file) {
 }
 
 /* ── 글쓰기 ── */
+// API 사용 내역 (ai/usage.js, 2026-10-21 사장님) — 마지막 답의 사용량. ask·askImage 가 기능 이름과 함께 기록한다
+let lastUse = null;
+const useOf = (model, inTok, outTok) => { lastUse = { model: String(model || ""), inTok: Number(inTok) || 0, outTok: Number(outTok) || 0 }; };
+const usage = () => require("./usage");
+
 async function chat(id, messages, imgs) {
   const k = keyOf(id);
   const { model } = await models(id);
@@ -201,6 +210,7 @@ async function chat(id, messages, imgs) {
         })),
       }),
     });
+    useOf(model, b.usage && b.usage.prompt_tokens, b.usage && b.usage.completion_tokens);
     return String((b.choices && b.choices[0] && b.choices[0].message && b.choices[0].message.content) || "");
   }
   if (id === "claude") {
@@ -216,18 +226,42 @@ async function chat(id, messages, imgs) {
         })),
       }),
     });
+    useOf(model, b.usage && b.usage.input_tokens, b.usage && b.usage.output_tokens);
     return (b.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
   }
-  const b = await call(id, `${GOOGLE}/models/${model}:generateContent`, {
-    method: "POST",
-    headers: head(id, k),
-    body: JSON.stringify({
-      contents: messages.map((m, i) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.text }, ...(i === last ? imgs.map((x) => ({ inline_data: { mime_type: x.mime, data: x.b64 } })) : [])],
-      })),
-    }),
-  });
+  const gcall = (mdl) =>
+    call(id, `${GOOGLE}/models/${mdl}:generateContent`, {
+      method: "POST",
+      headers: head(id, k),
+      body: JSON.stringify({
+        contents: messages.map((m, i) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.text }, ...(i === last ? imgs.map((x) => ({ inline_data: { mime_type: x.mime, data: x.b64 } })) : [])],
+        })),
+      }),
+    });
+  // 모델이 닫혔으면(404 · "no longer available") — Google 이 알려 준 모델(없으면 목록에서 새로)로 바꿔 한 번 더, 키 설정에도 저장 (2026-10-21)
+  let b;
+  try {
+    b = await gcall(model);
+  } catch (e) {
+    const msg = String((e && e.message) || "");
+    if (!/\(404\)|no longer available|not found/i.test(msg)) throw e;
+    let next = (msg.match(/models\/(gemini-[a-z0-9.-]+)/i) || [])[1] || "";
+    if (next === model) next = "";
+    if (!next) {
+      const m = await listModels(id, k).catch(() => null);
+      next = m && m.model !== model ? m.model : "";
+    }
+    if (!next) throw e;
+    log.warn(`[AI 키] Gemini 모델 ${model} 이 닫혀 ${next} 로 바꿔요`);
+    const all = read();
+    all[id] = { ...(all[id] || {}), model: next, at: Date.now() };
+    write(all);
+    b = await gcall(next);
+  }
+  const um = b.usageMetadata || {};
+  useOf(b.modelVersion || read()[id]?.model || model, um.promptTokenCount, (um.candidatesTokenCount || 0) + (um.thoughtsTokenCount || 0));
   const c = b.candidates && b.candidates[0];
   const text = ((c && c.content && c.content.parts) || []).filter((p) => p.text && !p.thought).map((p) => p.text).join("");
   if (!text && c && c.finishReason && c.finishReason !== "STOP") throw new Error(`Gemini가 답을 멈췄어요 (${c.finishReason}). 내용을 조금 바꿔 다시 해 주세요.`);
@@ -238,7 +272,14 @@ async function chat(id, messages, imgs) {
  * 계정 방식 ask 와 같은 모양 — 답 글을 돌려준다.
  * chatUrl(gsapi://…) 이 있으면 그 대화에 이어 보낸다. 대화를 못 찾으면 fallbackPrompt 로 새로.
  */
-async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [] } = {}) {
+async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [], feature = "" } = {}) {
+  await usage().guard(id); // 이번 달 한도를 넘었으면 묻기 (켠 회원만)
+  const chatRec = async (msgs, im) => {
+    lastUse = null;
+    const t = await chat(id, msgs, im);
+    if (lastUse) usage().record({ provider: id, feature: feature || "글쓰기", ...lastUse });
+    return t;
+  };
   const prev = chatUrl ? loadChat(chatUrl) : null;
   let messages;
   if (prev && prev.id === id && Array.isArray(prev.messages)) messages = [...prev.messages, { role: "user", text: prompt }];
@@ -249,11 +290,11 @@ async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true,
   const imgs = files.filter((f) => f && fs.existsSync(f)).map(imageOf);
   onProgress(`${NAME[id]} API로 ${prev ? "고치는" : "쓰는"} 중… (보통 30초~1분)`);
   const t0 = Date.now();
-  let text = await chat(id, messages, imgs);
+  let text = await chatRec(messages, imgs);
   // 덜 끝난 답이면 한 번 더 (드물게 JSON 이 잘리는 경우)
   if (!isComplete(text)) {
     log.warn(`[AI 키] ${NAME[id]} 답이 덜 끝남 — 한 번 더`);
-    text = await chat(id, messages, imgs);
+    text = await chatRec(messages, imgs);
     if (!isComplete(text)) throw new Error(`${NAME[id]} 답이 중간에 끊겼어요. 다시 해 주세요.`);
   }
   log.info(`[AI 키] ${NAME[id]} 글 받음 ${Math.round((Date.now() - t0) / 1000)}초 (${text.length}자)`);
@@ -265,7 +306,9 @@ async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true,
 }
 
 /* ── 그림 ── */
-async function askImage(id, prompt, { onProgress = () => {}, files = [], ratio = "" } = {}) {
+async function askImage(id, prompt, { onProgress = () => {}, files = [], ratio = "", feature = "" } = {}) {
+  await usage().guard(id);
+  lastUse = null;
   if (id === "claude") throw new Error("Claude 는 그림을 그리지 못해요. [AI 설정]에서 그림 AI 를 ChatGPT 나 Gemini 로 골라 주세요.");
   const k = keyOf(id);
   const { imageModel } = await models(id);
@@ -287,6 +330,7 @@ async function askImage(id, prompt, { onProgress = () => {}, files = [], ratio =
       const size = /^(9:16|4:5|3:4|2:3)$/.test(ratio) ? "1024x1536" : /^(16:9|4:3|3:2|21:9)$/.test(ratio) ? "1536x1024" : ratio === "1:1" ? "1024x1024" : "auto";
       b = await call(id, `${OPENAI}/images/generations`, { method: "POST", headers: head(id, k), body: JSON.stringify({ model: imageModel, prompt, n: 1, size }) });
     }
+    useOf(imageModel, b.usage && b.usage.input_tokens, b.usage && b.usage.output_tokens);
     const d = b.data && b.data[0];
     if (d && d.b64_json) out = `data:image/png;base64,${d.b64_json}`;
     else if (d && d.url) {
@@ -302,6 +346,8 @@ async function askImage(id, prompt, { onProgress = () => {}, files = [], ratio =
         generationConfig: { responseModalities: ["TEXT", "IMAGE"], ...(/^(1:1|2:3|3:2|3:4|4:3|4:5|5:4|9:16|16:9|21:9)$/.test(ratio) ? { imageConfig: { aspectRatio: ratio } } : {}) },
       }),
     });
+    const gm = b.usageMetadata || {};
+    useOf(imageModel, gm.promptTokenCount, (gm.candidatesTokenCount || 0) + (gm.thoughtsTokenCount || 0));
     const parts = (b.candidates && b.candidates[0] && b.candidates[0].content && b.candidates[0].content.parts) || [];
     const img = parts.find((p) => p.inlineData || p.inline_data);
     if (img) {
@@ -314,6 +360,7 @@ async function askImage(id, prompt, { onProgress = () => {}, files = [], ratio =
   }
   if (!out) throw new Error(`${NAME[id]} 그림을 받지 못했어요.`);
   log.info(`[AI 키] ${NAME[id]} 그림 받음 ${Math.round((Date.now() - t0) / 1000)}초`);
+  usage().record({ provider: id, feature: feature || "이미지", ...(lastUse || { model: imageModel }), images: 1 });
   return out;
 }
 

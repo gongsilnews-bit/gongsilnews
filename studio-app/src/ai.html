@@ -41,11 +41,28 @@
   .pill.on { background:#1a3a6b; color:#fff; border-color:#1a3a6b; }
   .pill:disabled { background:#f1f4f7; color:#a3adba; border-color:#e8ecf0; }
   .note { margin-top:16px; padding:12px 14px; border-radius:10px; background:#fff8eb; border:1px solid #fde4b0; font-size:12px; line-height:1.7; color:#7a4b00; word-break:keep-all; }
+  /* API 사용 내역 탭 (2026-10-21) */
+  .tabs { display:flex; gap:6px; margin:0 0 14px; }
+  .tabs button { background:#fff; color:#4b5a6b; border:1px solid #c7d2e3; }
+  .tabs button.on { background:#1a3a6b; color:#fff; border-color:#1a3a6b; }
+  .card { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+  .big { font-size:26px; font-weight:800; }
+  .muted { font-size:12px; color:#6b7684; line-height:1.6; word-break:keep-all; }
+  .bar { height:8px; border-radius:4px; background:#e8ecf0; overflow:hidden; margin:4px 0 8px; }
+  .bar i { display:block; height:100%; background:#3b82f6; }
+  .kv { display:flex; justify-content:space-between; font-size:13px; font-weight:700; }
+  table.u { width:100%; border-collapse:collapse; font-size:11.5px; }
+  table.u th { text-align:left; color:#6b7684; font-weight:700; padding:4px 4px; border-bottom:1px solid #e8ecf0; }
+  table.u td { padding:5px 4px; border-bottom:1px solid #f1f4f7; vertical-align:top; word-break:break-all; }
+  .links { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .links button { font-size:12px; padding:7px 10px; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <h1>AI 설정</h1>
+    <div class="tabs"><button id="tabC" class="on" type="button">AI 연결</button><button id="tabU" type="button">API 사용 내역</button></div>
+    <div id="pageC">
     <p class="lead">기사·블로그·SNS·유튜브·영상을 쓸 AI를 고르세요. AI마다 쓰는 방법을 하나 고릅니다.<br>
     <b>내 계정으로</b> — 구독 중인 AI에 <b>스튜디오 전용 크롬</b>에서 로그인해 두면, 그 창으로 씁니다. (평소 크롬과 따로, 처음 한 번 로그인)<br>
     <b>API 키로</b> — 내 API 키를 넣으면 창 없이 바로 주고받아 빠르고 안정적이에요. 쓴 만큼 AI 회사에 직접 결제되고, <b>키는 이 PC에만 잠가서 저장</b>돼요 (공실뉴스로 보내지 않음).</p>
@@ -56,8 +73,67 @@
       <b>내 계정으로</b>: AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다. Gemini는 업무용 구글 계정 말고 별도 계정을 권합니다.<br>
       <b>API 키로</b>: 각 AI 사이트 결제 화면에서 <b>월 사용 한도</b>를 꼭 걸어 두세요. 키는 남에게 보여 주지 말고, 새 나갔으면 그 사이트에서 지우고 새로 만드세요.
     </div>
+    </div>
+    <div id="pageU" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="grow"><div class="muted">이 PC에서 API 키(유료)로 쓴 것 · 예상 금액</div><div class="big" id="uTotal">—</div><div class="muted" id="uPrev"></div></div>
+          <select id="uMonth" class="keyin" style="flex:0 0 120px"></select>
+        </div>
+      </div>
+      <div class="card"><div class="kv" style="margin-bottom:6px"><span>AI별</span></div><div id="uProv"></div></div>
+      <div class="card"><div class="kv" style="margin-bottom:6px"><span>기능별</span></div><div id="uFeat"></div></div>
+      <div class="card">
+        <div class="kv" style="margin-bottom:6px"><span>최근 쓴 것</span><button class="ghost" id="uCsv" type="button" style="font-size:12px;padding:6px 10px">CSV로 받기</button></div>
+        <div style="max-height:220px;overflow:auto"><table class="u"><thead><tr><th>때</th><th>AI</th><th>기능</th><th>사용량</th><th>예상</th></tr></thead><tbody id="uRows"></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="kv"><span>이번 달 한도 알림</span></div>
+        <div class="muted" style="margin:4px 0 8px">예상 금액이 이만큼 넘으면 다음 유료 작업 전에 한 번 물어요. 0이면 꺼짐 (기본).</div>
+        <div style="display:flex;gap:6px;align-items:center"><span style="font-weight:800">$</span><input id="uLimit" class="keyin" type="number" min="0" step="1" style="flex:0 0 110px"><button id="uLimitSave" type="button">저장</button><span class="muted" id="uLimitMsg"></span></div>
+      </div>
+      <div class="note" id="uNote"></div>
+      <div class="links">
+        <button class="ghost" type="button" data-url="https://aistudio.google.com/">Google AI Studio (Gemini 결제) ↗</button>
+        <button class="ghost" type="button" data-url="https://platform.openai.com/usage">OpenAI 사용량 ↗</button>
+        <button class="ghost" type="button" data-url="https://console.anthropic.com/">Claude 콘솔 ↗</button>
+      </div>
+    </div>
   </div>
 <script>
+  /* ── API 사용 내역 (2026-10-21 사장님) ── */
+  const $ = (id) => document.getElementById(id);
+  const usd = (v) => (v === null || v === undefined ? "—" : "$" + (v < 0.01 && v > 0 ? v.toFixed(4) : v.toFixed(2)));
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  let uMonth = "";
+  async function loadUsage() {
+    if (!studio.ai.usage) { $("uTotal").textContent = "앱을 다시 켜 주세요"; return; }
+    const s = await studio.ai.usage(uMonth || undefined);
+    uMonth = s.month;
+    $("uMonth").innerHTML = s.months.map((m) => '<option value="' + m + '"' + (m === s.month ? " selected" : "") + ">" + m + "</option>").join("");
+    $("uTotal").textContent = usd(s.total);
+    $("uPrev").textContent = s.count + "건" + (s.unknown ? " · 금액을 모르는 것 " + s.unknown + "건 (빠짐)" : "") + " · 지난달 " + usd(s.prev);
+    const max = Math.max(0.0001, ...s.byProvider.map((x) => x.usd));
+    $("uProv").innerHTML = s.byProvider.length ? s.byProvider.map((x) => '<div class="kv"><span>' + esc(x.name) + ' API</span><span>' + usd(x.usd) + ' · ' + x.n + '건</span></div><div class="bar"><i style="width:' + Math.round((x.usd / max) * 100) + '%"></i></div>').join("") : '<div class="muted">이 달에는 API로 쓴 것이 없어요.</div>';
+    $("uFeat").innerHTML = s.byFeature.length ? s.byFeature.map((x) => '<div class="kv" style="font-weight:600;padding:2px 0"><span>' + esc(x.name) + '</span><span>' + usd(x.usd) + ' · ' + x.n + '건</span></div>').join("") : '<div class="muted">—</div>';
+    const names = { chatgpt: "ChatGPT", gemini: "Gemini", claude: "Claude" };
+    $("uRows").innerHTML = s.rows.map((x) => {
+      const d = new Date(x.at);
+      const when = (d.getMonth() + 1) + "-" + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      const qty = (x.inTok || x.outTok ? ((x.inTok + x.outTok) / 1000).toFixed(1) + "천 토큰" : "") + (x.images ? " · 그림 " + x.images : "") + (x.seconds ? " · " + x.seconds + "초" : "") + (x.note ? " · " + x.note : "");
+      return "<tr><td>" + when + "</td><td>" + esc(names[x.provider] || x.provider) + "</td><td>" + esc(x.feature) + '<div class="muted">' + esc(x.model) + "</div></td><td>" + esc(qty || "—") + "</td><td>" + usd(x.usd) + "</td></tr>";
+    }).join("") || '<tr><td colspan="5" class="muted">기록이 없어요.</td></tr>';
+    $("uLimit").value = s.limit || 0;
+    $("uNote").innerHTML = "<b>예상 금액이에요.</b> AI 답에 들어 있는 사용량(토큰)에 각 회사 공식 가격표(" + s.priceDate + " 기준, 표준 요금)를 곱했어요. 가격표에 없는 모델·사용량을 못 받은 것은 금액을 비워 둬요. <b>정확한 청구액은 아래 각 회사 결제 화면</b>에서 확인하세요. 기록은 이 PC에만 있어요 (공실뉴스로 보내지 않음). 내 계정(무료) 웹 창으로 쓴 것은 기록하지 않아요.";
+  }
+  const showTab = (u) => { $("pageC").style.display = u ? "none" : ""; $("pageU").style.display = u ? "" : "none"; $("tabC").classList.toggle("on", !u); $("tabU").classList.toggle("on", u); if (u) loadUsage(); };
+  $("tabC").onclick = () => showTab(false);
+  $("tabU").onclick = () => showTab(true);
+  $("uMonth").onchange = (e) => { uMonth = e.target.value; loadUsage(); };
+  $("uCsv").onclick = async () => { const p = await studio.ai.usageCsv(uMonth); if (p) $("uLimitMsg").textContent = "저장했어요"; };
+  $("uLimitSave").onclick = async () => { const v = await studio.ai.usageLimit(Number($("uLimit").value) || 0); $("uLimitMsg").textContent = v ? "$" + v + " 넘으면 물어봐요" : "한도 알림 꺼짐"; };
+  document.querySelectorAll("[data-url]").forEach((b) => (b.onclick = () => studio.openInBrowser(b.getAttribute("data-url"))));
+
   const studio = window.gongsilStudio;
   const msg = document.getElementById("msg");
   const say = (t, err) => { msg.textContent = t || ""; msg.className = "msg" + (err ? " err" : ""); };

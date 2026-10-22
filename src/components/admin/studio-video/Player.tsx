@@ -755,9 +755,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const cr = cropOf(l.crop);
     return cr && l.fit !== "cover" && l.fit !== "contain" ? `inset(${cr.t * 100}% ${cr.r * 100}% ${cr.b * 100}% ${cr.l * 100}%)` : undefined;
   };
-  const mediaStyle: React.CSSProperties = vbox
+  // [빈칸으로 두기] — 화면만 검게 (소리는 그대로, 2026-10-21 사장님)
+  const blankHide: React.CSSProperties = clip?.blank ? { visibility: "hidden" } : {};
+  const mediaStyle0: React.CSSProperties = vbox
     ? { position: "absolute", ...vRect, objectFit: "fill", transform: joinT(xf?.css, flipOf(clip || undefined)), opacity: xf?.op, filter: adjF(clip) || undefined, clipPath: cropClip(clip) }
     : { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain", transform: joinT(xf?.css, flipOf(clip || undefined)), opacity: xf?.op, filter: adjF(clip) || undefined, clipPath: cropClip(clip) };
+  const mediaStyle: React.CSSProperties = { ...mediaStyle0, ...blankHide };
   const blurT = `scale(${clip?.flipX ? -1.15 : 1.15}, ${clip?.flipY ? -1.15 : 1.15})`;
   const blurF = `${adjF(clip)} blur(18px) brightness(0.8)`.trim();
   const vUrl = visual?.url || "";
@@ -873,11 +876,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         {visual?.kind === "image" ? (
           // 사진 움직임 — 채운 화면 통째로 (굽기 render.js zoompan 과 같은 계산)
           <div style={{ position: "absolute", inset: 0, transform: motionCss(clip ? motionOf(project, clip) : null, item ? (t - item.start) / Math.max(0.01, item.dur) : 0), transformOrigin: "50% 50%" }}>
-            {fill === "blur" && !vbox && <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: blurF, transform: blurT }} />}
+            {fill === "blur" && !vbox && <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: blurF, transform: blurT, ...blankHide }} />}
             <img ref={imgRef} src={vUrl} alt="" style={mediaStyle} onLoad={releaseHold} />
           </div>
         ) : visual && fill === "blur" && !vbox && (
-          <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: blurF, transform: blurT }} />
+          <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: blurF, transform: blurT, ...blankHide }} />
         )}
         <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
           onLoadedData={() => sync(tRef.current, true)} onSeeked={() => hold && releaseHold()} onPlaying={() => hold && releaseHold()} />
@@ -1086,12 +1089,19 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
               </span>
             );
             // 예능 자막이면 아래 한 벌(바깥 테두리·그림자·빛) 위에 글자 한 벌을 겹친다
-            return fancy ? (
+            const res = fancy ? (
               <>
                 {unders.map((u, i) => <div key={i} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: "100%", pointerEvents: "none" }}>{body(u)}</div>)}
                 <span style={{ position: "relative" }}>{body(null)}</span>
               </>
             ) : body(null);
+            // 머리 딱지 (NEWS 등) — 자막 상자 위 왼쪽에 붙어 같이 움직인다 (굽기 render.js 와 같은 모양, 2026-10-22)
+            return st.tag ? (
+              <span style={{ display: "inline-block", position: "relative", maxWidth: "100%" }}>
+                <span style={{ position: "absolute", left: 0, bottom: "100%", marginBottom: fontPx * (st.bg ? 0.28 * (st.bgPad ?? 1) : 0.08), background: st.tagColor || "#1D4ED8", color: "#FFFFFF", fontWeight: 900, fontSize: fontPx * 0.55, lineHeight: 1.45, padding: `0 ${fontPx * 0.3}px`, fontFamily: "Pretendard, 'Malgun Gothic', sans-serif", whiteSpace: "nowrap", pointerEvents: "none" }}>{st.tag}</span>
+                {res}
+              </span>
+            ) : res;
             })())}
           </div>
         );

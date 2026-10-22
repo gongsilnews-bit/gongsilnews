@@ -13,7 +13,8 @@ const bridge = () => root()?.ai;
 const KEY = "gsv:aiPick";
 
 export const aiChoiceName = (c: AiChoice, list: { id: string; name: string }[], fallback: string) =>
-  c ? `${list.find((x) => x.id === c.provider)?.name || c.provider}${c.mode === "api" ? " API" : ""}` : fallback;
+  // 2026-10-21 사장님: 내 계정(무료) / API(유료)를 늘 확실하게
+  c ? `${list.find((x) => x.id === c.provider)?.name || c.provider} ${c.mode === "api" ? "API(유료)" : "내 계정(무료)"}` : fallback;
 
 export function useAiPick(): [AiChoice, (c: AiChoice) => void, Item[]] {
   const [list, setList] = useState<Item[]>([]);
@@ -72,7 +73,7 @@ export function AiPick({ value, onChange, list, noTitle }: { value: AiChoice; on
   const ORDER = ["chatgpt", "gemini", "claude"];
   const row = (mode: "account" | "api", title: string, desc: string) => (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-      <span style={{ width: 44, flexShrink: 0, fontSize: 12.5, fontWeight: 800, color: C.sub }} title={desc}>{title}</span>
+      <span style={{ width: 92, flexShrink: 0, fontSize: 12.5, fontWeight: 800, color: C.sub, whiteSpace: "nowrap" }} title={desc}>{title}</span>
       {opts.filter((o) => o.c.mode === mode).sort((x, y) => ORDER.indexOf(x.c.provider) - ORDER.indexOf(y.c.provider)).map((o) => {
         const on = same(cur, o.c);
         return (
@@ -89,11 +90,11 @@ export function AiPick({ value, onChange, list, noTitle }: { value: AiChoice; on
     <div>
       {!noTitle && <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>쓸 AI</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {row("account", "계정", "연결한 웹 창에서 써요 (요금제 안)")}
-        {row("api", "API", "넣어 둔 API 키로 바로 (쓴 만큼 요금)")}
+        {row("account", "내 계정 (무료)", "연결한 웹 창에서 써요 — 가입한 요금제 안이라 따로 돈이 안 들어요")}
+        {row("api", "API (유료)", "넣어 둔 API 키로 바로 — 쓴 만큼 요금이 나가요")}
       </div>
       <div style={{ fontSize: 12, color: C.dim, marginTop: 6, lineHeight: 1.5 }}>
-        <span style={{ color: "#22c55e" }}>●</span> 쓸 수 있음 · <span style={{ color: C.accent }}>■</span> 고른 것 · 회색은 눌러서 연결 · 계정 = 연결한 웹 창 (요금제 안) · API = 넣어 둔 키 (쓴 만큼 요금)
+        <span style={{ color: "#22c55e" }}>●</span> 쓸 수 있음 · <span style={{ color: C.accent }}>■</span> 고른 것 · 회색은 눌러서 연결 · 내 계정(무료) = 연결한 웹 창, 따로 돈 안 듦 · API(유료) = 넣어 둔 키, 쓴 만큼 요금
       </div>
     </div>
   );

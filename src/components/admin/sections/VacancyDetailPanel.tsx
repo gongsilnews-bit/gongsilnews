@@ -717,9 +717,6 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/marketing/report?vacancy_id=${vacancyId}`, '_blank')} title="AI 물건보고서">
                 AI물건보고서
               </button>
-              <button className="gdv-btn-toolbar" onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${vacancyId}`, '_blank')} title="유리창홍보지 (AI 온라인 전단지)">
-                유리창홍보지
-              </button>
               <button className="gdv-btn-toolbar" onClick={copyShareLink}>🔗 주소복사</button>
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/gongsil?id=${vacancyId}`)}>💻 미리보기</button>
               <button className={`gdv-btn-toolbar ${isAdOn ? 'gdv-blue' : ''}`} onClick={toggleStatus}>

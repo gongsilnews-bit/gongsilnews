@@ -22,6 +22,7 @@ import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
 import { TransPanel } from "./TransPanel";
+import { ThumbPanel } from "./ThumbPanel";
 import { AiEditPanel } from "./AiEdit";
 import { bakeAnim } from "./AnimBake";
 import { focusTextBasic, resetTextTabs } from "./TextTabs";
@@ -36,9 +37,9 @@ import { TRANS_DEFAULT, TRANSITIONS, transLabel } from "./transitions";
 import { isSticker, isVideoLayer, layerIcon, layerName, LANE_W, zCan, zReorder, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
 /** 타임라인 편집 왼쪽 자료 칸에 뜨는 칸 */
-const LIB_KINDS: string[] = ["library", "text", "sticker", "tplText", "tplSticker", "sfx", "music", "aiedit"];
+const LIB_KINDS: string[] = ["library", "text", "sticker", "tplText", "tplSticker", "sfx", "music", "aiedit", "aimake"];
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim" | "subanim" | "aiedit" | "sticker" | "text" | "sfx" | "tplText" | "tplSticker";
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim" | "subanim" | "aiedit" | "aimake" | "sticker" | "text" | "sfx" | "tplText" | "tplSticker" | "thumb";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | { node: React.ReactNode } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -3447,7 +3448,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "image", label: "공실 사진", onClick: () => { openLib("vacancy"); } },
       { icon: "search", label: "무료 이미지·비디오", onClick: () => { openLib("free"); } },
       { icon: "video", label: "영상 이어 깔기", title: "고른 클립 구간에 영상 여러 개를 시간 순서로 꽉 채워 깔아요 — 영상이 끝나는 순간 다음 영상 (컷편집처럼)", onClick: () => { const sr = selRange(); const its = flatten(pref.current).items; if (!its.length) return; setRollEdit(newRoll(sr?.from || its[0].clip.id, sr?.to || its[its.length - 1].clip.id)); } },
-      { icon: "ai", label: "AI 이미지·동영상", title: "AI 편집 화면 편집판 — 클립마다 사진을 그리고, 그 사진으로 동영상 (AI 사진 탭은 뺐다 2026-10-21)", onClick: () => { setPanel("aiedit"); } },
+      { icon: "ai", label: "AI 이미지·영상 제작", title: "클립마다 이미지 스타일·캐릭터로 프롬프트·이미지·동영상을 만들어요 (Flow TXT · 한 번에 올리기)", onClick: () => { setPanel("aimake"); } },
     ],
     "AI 목소리": [
       { icon: "voice", label: "AI 목소리", title: "AI 목소리 고르기·바꾸기 (성우 · 빠르기 · 볼륨)", onClick: () => { setVoiceMe(false); setPanel("voice"); } },
@@ -3627,9 +3628,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             addLayer({ type: "image", asset: a.id, name: item.name.replace(/_\d+(\.\w+)?$/, ""), x: 0.5, y: o.y ?? 0.5, w: o.w, opacity: 1, anim: o.anim, sticker: true, stk: o.spec, ...(o.clicks?.length ? { clicks: o.clicks } : {}) }, false);
             setPanel(keep); // 이어서 더 넣을 수 있게
           }} />}
+        {kind === "thumb" && <ThumbPanel project={project} onClose={() => setPanel("")} say={say} />}
         {kind === "sfx" && <SfxInsertPanel dir={project.dir} onAdd={addSfx} onClose={() => setPanel("")} />}
-        {kind === "aiedit" && <AiEditPanel project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} keep={(fn) => change(fn, false)} onUndo={undo} onClose={() => setPanel("")} autoStart={aiAuto && Boolean(project.settings.aiAuto)} />}
-        {kind === "library" && <LibraryPanel key={panel ? `${libTab}${libOverlay}` : "default"} project={project} canReplace={selected.length > 0} onPick={onPick} pro={mode === "timeline" ? { onPlus: plusAdd } : undefined} initialTab={panel ? libTab : "mine"} overlay={panel ? libOverlay : false}
+        {kind === "aiedit" && <AiEditPanel mode="auto" onSwitch={(to) => setPanel(to === "make" ? "aimake" : "aiedit")} project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} keep={(fn) => change(fn, false)} onUndo={undo} onClose={() => setPanel("")} autoStart={aiAuto && Boolean(project.settings.aiAuto)} />}
+        {kind === "aimake" && <AiEditPanel mode="make" onSwitch={(to) => setPanel(to === "make" ? "aimake" : "aiedit")} project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} keep={(fn) => change(fn, false)} onUndo={undo} onClose={() => setPanel("")} />}
+        {kind === "library" && <LibraryPanel key={panel ? `${libTab}${libOverlay}` : "default"} onAiMake={() => setPanel("aimake")} project={project} canReplace={selected.length > 0} onPick={onPick} pro={mode === "timeline" ? { onPlus: plusAdd } : undefined} initialTab={panel ? libTab : "mine"} overlay={panel ? libOverlay : false}
           aiClips={{ selected, ensureAsset, apply: (fn) => change(fn) }}
           target={(() => {
             // 무료 자료 [교체할 이미지]·찾기 낱말 — 마지막으로 고른 클립
@@ -4230,7 +4233,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       {right}
     </div>
   );
-  const TL_LEFT: [string, string][] = [["library", "프로젝트"], ["text", "텍스트"], ["sticker", "그래픽"], ["sfx", "효과음"], ["music", "음악"], ["aiedit", "AI 편집"]]; // 템플릿은 스티커 분류 안에 (2026-10-20)
+  const TL_LEFT: [string, string][] = [["library", "프로젝트"], ["text", "텍스트"], ["sticker", "그래픽"], ["sfx", "효과음"], ["music", "음악"], ["aiedit", "AI 자동 편집"]]; // 템플릿은 스티커 분류 안에 (2026-10-20)
   const tlRightOverride = ["anim", "subanim", "voice", "source", "ratio"].includes(panel) ? panel : "";
   const TOOLS: [TlTool, string, string][] = [["v", "선택 도구 (V)", "M5 3l13 8-6 1.5L9 19z"], ["a", "앞으로 트랙 선택 도구 (A) — 누른 곳부터 뒤에 있는 것 모두", "M4 5v14M8 12h12M15 7l5 5-5 5"], ["c", "자르기 도구 (C) — 누른 자리에서 나누기", "M6 6l12 12M6 18L18 6M4 4l4 4M16 16l4 4"], ["h", "손 도구 (H) — 타임라인 끌어 보기", "M8 12V6a1.5 1.5 0 013 0v5V4.5a1.5 1.5 0 013 0V11V6a1.5 1.5 0 013 0v8c0 4-2.5 6-6 6s-5-2-7-5l-2-3a1.5 1.5 0 012.5-1.5L8 14"], ["t", "문자 도구 (T) — 누른 트랙·시각에 글자 넣기", "M5 6V4h14v2M12 4v16M9 20h6"]];
   const tlLayout = (
@@ -4421,8 +4424,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
           {(() => {
             const selL = panel === "layer" ? (project.layers || []).find((x) => x.id === selLayer) : undefined;
-            const el: { icon: string; label: string; on: boolean; off?: boolean; title: string; go: () => void }[] = [
-              { icon: "ai", label: "AI편집", on: panel === "aiedit", title: "AI가 클립마다 화면·텍스트·자막 강조·화면전환·배경음악을 자동으로 넣어요", go: () => setPanel(panel === "aiedit" ? "" : "aiedit") },
+            const el: { icon: string; label: string; on: boolean; off?: boolean; title: string; go: () => void; txt?: string }[] = [
+              { icon: "ai", label: "AI 자동 편집", on: panel === "aiedit", title: "내 사진·영상과 무료 자료로 화면을 채우고 음악·전환·그래픽·자막까지 — 완성 초안 한 번에", go: () => setPanel(panel === "aiedit" ? "" : "aiedit") },
+              // [AI] — AI 이미지·영상 제작 창 바로 열기 (이미지 편집의 [AI] 처럼, 2026-10-22 사장님)
+              { icon: "ai", txt: "AI", label: "AI 이미지·영상 제작", on: panel === "aimake", title: "클립마다 AI 이미지·동영상 만들기", go: () => setPanel(panel === "aimake" ? "" : "aimake") },
               { icon: "image", label: "사진·영상", on: side === "library", title: "사진·영상 고르기", go: () => { if (side === "library") { setPanel(""); setLibOpen(false); } else { setPanel(""); setLibOpen(true); } } },
               { icon: "sub", label: "메인자막", on: panel === "subtitle" || panel === "subanim", title: "메인자막 — 모양·애니메이션·사전설정", go: () => setPanel(panel === "subtitle" ? "" : "subtitle") },
               { icon: "font", label: "텍스트", on: panel === "text" || selL?.type === "text", title: "텍스트 넣기 — 넣은 뒤 글꼴·크기·색·편집효과를 바로 고쳐요", go: () => addTextLayer() }, // 기본 글자를 넣고 메인자막과 같은 칸 [텍스트 › 기본]부터 (2026-10-19 사장님)
@@ -4437,6 +4442,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                 actions.openTrans(next.clip.id, true); // 없으면 기본(디졸브)을 넣고 칸을 연다 — 칸 아래 [빼기]로 지울 수 있다
               } },
               { icon: "bell", label: "효과음", on: panel === "sfx" || selL?.type === "sfx", title: "효과음 — 클립(단어) 시작에 한 번", go: () => setPanel(panel === "sfx" ? "" : "sfx") },
+              { icon: "image", txt: "썸", label: "썸네일", on: panel === "thumb", title: "썸네일 만들기 — 유튜브 썸네일 틀에 내 영상 첫 화면·제목으로", go: () => setPanel(panel === "thumb" ? "" : "thumb") },
               { icon: "music", label: "배경음악", on: panel === "music" || selL?.type === "music", title: "배경 음악", go: () => (panel === "music" ? setPanel("") : openMusic("")) },
               { icon: "palette", label: "테마", on: false, off: true, title: "테마 — 영상 전체 분위기 한 번에 (준비 중)", go: () => {} },
             ];
@@ -4449,7 +4455,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                   setElTip({ text: x.off ? `${x.label} (준비 중)` : x.label, x: r.left + r.width / 2, y: r.bottom + 6 });
                 }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = x.on ? C.accentDim : "transparent"; setElTip(null); }}>
-                <Icon name={x.icon} size={21} />
+                {x.txt ? <span style={{ fontSize: 14, fontWeight: 900, letterSpacing: -0.5 }}>{x.txt}</span> : <Icon name={x.icon} size={21} />}
               </button>
             ));
           })()}

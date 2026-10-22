@@ -8,13 +8,12 @@ import { listMyStudioVacancies } from "@/app/actions/studio";
  *
  * 뉴스·SNS발행처럼 왼쪽에 2차 카테고리, 오른쪽에 작업 화면.
  *  - AI 매물보고서   : /marketing/report?vacancy_id=…      (공실등록 목록의 [AI물건보고서]와 같은 도구)
- *  - AI 유리창홍보지 : /marketing/ai-detail?vacancy_id=…   (공실등록 목록의 [유리창홍보지]와 같은 도구)
+ *  - (AI 유리창홍보지는 2026-10-22 사장님 요청으로 이 메뉴에서 뺐다 — 이미지 편집 · 공실등록 목록 [유리창홍보지]로)
  * 공실을 고르면 그 도구를 이 화면 안에 띄운다. [새 창으로 열기]로 넓게 볼 수도 있다.
  */
 
 const CATEGORIES = [
   { id: "report", label: "AI 매물보고서", path: "/marketing/report", lead: "공실 하나로 매물 소개 보고서를 AI가 만듭니다. 손님에게 보내거나 인쇄해 쓰세요." },
-  { id: "flyer", label: "AI 유리창홍보지", path: "/marketing/ai-detail", lead: "공실 하나로 사무실 유리창·온라인에 붙일 홍보지(전단지)를 AI가 만듭니다." },
 ];
 const CATEGORY_KEY = "studio_marketing_category";
 const VACANCY_KEY = "studio_marketing_vacancy";

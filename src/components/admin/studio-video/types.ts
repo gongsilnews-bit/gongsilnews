@@ -67,6 +67,7 @@ export type Clip = {
   speed?: number; // 클립만 다른 빠르기 (AI 목소리 클립: 목소리 빠르기 / 촬영 클립: 영상·소리 빠르기 0.5~2)
   pad?: number; // AI 목소리 클립 끝에 더 머무는 시간 (초) — 클립 길이를 늘릴 때
   visual?: { asset: string; s: number; e?: number /* 끝 (앞뒤 자르기) — 넘으면 끝 장면에서 멈춤 */ } | null; // 화면 자료 (글 클립 배경 · 촬영 클립 화면 바꾸기)
+  blank?: boolean; // 빈칸으로 두기 — AI 채우기·자동 편집이 화면을 넣지 않는다. 촬영 클립이면 화면만 검게(opacity 0, 소리는 그대로) · 2026-10-21 사장님
   visualLead?: number; // 앞 클립 영상이 모자란 끝부분(초)을 이 클립 영상으로 앞당겨 채운다 — 컷편집처럼 앞 클립 끝에서 미리 시작 (visual.s = 이 클립 자기 부분 시작, 2026-10-21 사장님)
   visualCont?: boolean; // 앞 클립과 같은 화면 영상을 이어서 (시작점 = 앞 클립 시작 + 앞 클립 길이, 길이가 바뀌면 다시 맞춘다 · 2026-10-21 사장님)
   visualHold?: boolean; // 화면 영상이 클립보다 짧으면 마지막 장면에서 멈춤 (없으면 처음부터 반복) — AI 편집 화면 채우기 (2026-10-21)
@@ -226,6 +227,8 @@ export type SubtitleSettings = {
   gradAngle?: number; // 선형·반사형 각도 (CSS 와 같게 180 = 위→아래, 기본 180)
   gradA?: number; // 시작 투명도 0~1 (0 = 진하게)
   gradB?: number; // 끝 투명도 0~1
+  tag?: string; // 머리 딱지 — 자막 위 왼쪽에 붙는 작은 글 (NEWS·속보 등, "" = 없음, 2026-10-22)
+  tagColor?: string; // 머리 딱지 바탕 색
   anim?: LayerAnim; // 메인자막 애니메이션 — 자막 한 줄(조각)마다 나타나고 사라질 때
 };
 
@@ -243,6 +246,8 @@ export type Settings = {
   subLock?: boolean;
   /** 텍스트로 만들기 [AI가 다 꾸미기] — 편집 화면이 열리면 AI 편집(자막 스타일·효과·스티커)을 저절로 시작하고 지운다 */
   aiAuto?: boolean;
+  /** 대본 쓰고 편집 [편집 요청 사항] — 편집 화면 AI 자동 편집이 이 요청으로 한 번 (영상 꾸미기에서 고른 것은 지킨다, 2026-10-22) */
+  aiAutoReq?: { request: string; keepTrans: boolean };
 };
 
 export type Project = {
@@ -291,7 +296,8 @@ export type PostDraft = {
   instagram: { caption: string; hashtags: string[]; text: string };
   tail: { url: string; hasListing: boolean };
 };
-export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
+export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; /** 내 폴더 (이름표) */ tags?: string[]; addedAt?: number; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
+export type LibTag = { id: string; name: string; count: number };
 /** .gss 를 열 때 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로] 를 묻는다 */
 export type Recover = { recover: true; file: string; name: string };
 export const isRecover = (x: unknown): x is Recover => Boolean(x && (x as Recover).recover);
@@ -314,6 +320,12 @@ export type VideoBridge = {
     downloadsAudio?: (since: number) => Promise<{ path: string; name: string; at: number; size: number }[]>;
     addDownloads?: (files: string[], source?: "sfx") => Promise<LibItem[]>;
     fav: (id: string, fav: boolean) => Promise<boolean>;
+    /** 내 폴더 (이름표 — 원본 파일은 그대로, 2026-10-22) */
+    tags?: () => Promise<LibTag[]>;
+    tagAdd?: (name: string) => Promise<LibTag[]>;
+    tagRename?: (id: string, name: string) => Promise<LibTag[]>;
+    tagRemove?: (id: string) => Promise<LibTag[]>;
+    tagSet?: (ids: string[], tag: string, on: boolean) => Promise<LibTag[]>;
     remove: (id: string) => Promise<void>;
     folders: () => Promise<string[]>;
     addFolder: () => Promise<string[]>;
@@ -415,13 +427,13 @@ export type VideoBridge = {
       pack?: string; // [자동] 스타일 팩 — AI 가 고른 것
     }>;
     /** opts.ratio — 영상 비율로 그리기 (0.1.11부터) */
-    image: (dir: string, prompt: string, opts?: { ratio?: string; files?: string[] /* 참고 사진 (캐릭터 시트) */ }) => Promise<LibItem>;
+    image: (dir: string, prompt: string, opts?: { ratio?: string; files?: string[] /* 참고 사진 (캐릭터 시트) */; ai?: unknown /* 쓸 AI */ }) => Promise<LibItem>;
     /** AI 영상 — 회원 Gemini API 키 (Gemini Omni Flash). image: 첫 장면 그림 파일 (앱 0.1.12부터) */
     video?: (dir: string, prompt: string, opts?: { ratio?: string; image?: string }) => Promise<LibItem>;
     /** 클립별 AI 그림 — 클립 글 → 영어 장면 설명 (0.1.11부터) */
-    imagePrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; modify?: { current: string; request: string } }) => Promise<string[]>;
+    imagePrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; modify?: { current: string; request: string }; ai?: unknown }) => Promise<string[]>;
     /** 이미지 + 동영상(움직임) 프롬프트 한 번에 (앱 0.1.12부터) */
-    clipPrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; extra?: string; styles?: { id: string; label: string; desc?: string; character?: string }[] }) => Promise<{ image: string; motion: string }[] | { style: string; clips: { image: string; motion: string }[] }>;
+    clipPrompts?: (lines: string[], opts: { kinds?: string[]; style?: string; character?: string; extra?: string; ai?: unknown; styles?: { id: string; label: string; desc?: string; character?: string }[] }) => Promise<{ image: string; motion: string }[] | { style: string; clips: { image: string; motion: string }[] }>;
     /** [씬 정리] 클립 글 → 씬 나누기 (from = 시작 클립 번호, 1부터) — 앱 0.1.10부터 */
     group?: (lines: string[]) => Promise<{ title: string; from: number }[]>;
   };
@@ -510,6 +522,8 @@ export const errText = (e: unknown) => {
   const m = String(e instanceof Error ? e.message : e);
   // 앱 본체가 영상 기능보다 먼저 켜졌거나(옛 버전) — 화면만 새것이라 통로가 없다
   if (/No handler registered for 'video:/.test(m)) return "공실뉴스 스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
+  // 스튜디오 크롬(AI 웹 창)이 닫혔을 때 — 사람이 보기 어려운 영어 대신 (2026-10-21)
+  if (/Target page, context or browser has been closed|Target closed|browser has been closed|Browser closed/i.test(m)) return "AI 크롬 창이 닫혀 있었어요 — 다시 눌러 주세요. 계속 이러면 [AI 설정]에서 AI를 다시 연결해 주세요.";
   return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 };
 /** AI 덮개에서 [중지]를 눌렀다 (앱 ai-busy "중지했어요") — 여러 장 만드는 돌기는 여기서 멈춘다 */

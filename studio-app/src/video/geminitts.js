@@ -14,6 +14,7 @@ const has = () => api.status("gemini").has;
 async function say(text, out, { voiceId } = {}) {
   const key = api.keyOf("gemini");
   if (!key) throw new Error(NEED_KEY);
+  await require("../ai/usage").guard("gemini"); // 이번 달 API 한도 (켠 회원만)
   const { ttsModel } = await api.models("gemini");
   const models = [...new Set([ttsModel, "gemini-2.5-flash-preview-tts"].filter(Boolean))];
   let last = "";
@@ -44,6 +45,9 @@ async function say(text, out, { voiceId } = {}) {
         fs.mkdirSync(path.dirname(out), { recursive: true });
         fs.writeFileSync(out, pcmToWav(pcm, rate));
         log.info(`[제미나이 성우] ${voiceId} ${model} ${(pcm.length / 2 / rate).toFixed(1)}초`);
+        // 사용 내역 (2026-10-21) — 답 안의 사용량으로 예상 금액
+        const um = json.usageMetadata || {};
+        require("../ai/usage").record({ provider: "gemini", feature: "제미나이 성우", model, inTok: um.promptTokenCount, outTok: um.candidatesTokenCount, seconds: +(pcm.length / 2 / rate).toFixed(1) });
         return out;
       }
       const msg = String((json && json.error && json.error.message) || res.status);

@@ -28,6 +28,7 @@ function load() {
   }
   db.items = db.items || {};
   db.folders = db.folders || [];
+  db.tags = db.tags || []; // 내 폴더 — 스튜디오 안에서만 쓰는 이름표 (원본 파일은 그대로, 2026-10-22 사장님)
   db.hidden = db.hidden || []; // 목록에서 뺀 것 — 자동 폴더 훑기에서 다시 넣지 않는다
   return db;
 }
@@ -181,6 +182,7 @@ const forWeb = (it) => (media.allow(it.path), it.edit && media.allow(it.edit), i
   kind: it.kind,
   source: it.source,
   fav: it.fav,
+  tags: it.tags || [],
   credit: it.credit,
   addedAt: it.addedAt,
   duration: it.meta ? it.meta.duration : 0,
@@ -192,7 +194,7 @@ const forWeb = (it) => (media.allow(it.path), it.edit && media.allow(it.edit), i
 });
 
 /** 목록 — kind: all(사진·영상)|image|video|audio(내 음악), fav, q(이름), source */
-async function list({ kind = "all", fav = false, q = "", source = "", limit = 300 } = {}) {
+async function list({ kind = "all", fav = false, q = "", source = "", tag = "", limit = 300 } = {}) {
   const d = load();
   if (!d.scannedAt || Date.now() - d.scannedAt > 60 * 1000) {
     d.scannedAt = Date.now();
@@ -206,7 +208,7 @@ async function list({ kind = "all", fav = false, q = "", source = "", limit = 30
   const isRec = (it) => it.source === "record" || (it.path && recDirs.some((r) => it.path.toLowerCase().startsWith(r)));
   // 내 효과음(source sfx)은 내 음악에 섞지 않는다 (2026-10-21 사장님)
   const srcOk = (it) => (!source ? !(kind === "audio" && it.source === "sfx") : source === "record" ? isRec(it) : it.source === source);
-  let items = Object.values(d.items).filter((it) => (source === "sticker" || !sticker(it)) && (kind === "all" ? it.kind !== "audio" : it.kind === kind) && (!fav || it.fav) && srcOk(it) && (!q || it.name.toLowerCase().includes(q.toLowerCase())));
+  let items = Object.values(d.items).filter((it) => (source === "sticker" || !sticker(it)) && (kind === "all" ? it.kind !== "audio" : it.kind === kind) && (!fav || it.fav) && srcOk(it) && (!q || it.name.toLowerCase().includes(q.toLowerCase())) && (!tag || (it.tags || []).includes(tag)));
   // 음악은 즐겨찾기 먼저, 그다음 최근에 넣은 것
   if (kind === "audio") items.sort((a, b) => Number(b.fav) - Number(a.fav) || (b.addedAt || 0) - (a.addedAt || 0));
   else items.sort((a, b) => b.mtime - a.mtime);
@@ -248,6 +250,41 @@ async function prepare(id, onProgress) {
   return it.edit || it.path;
 }
 
+/* ── 내 폴더 (이름표) — 폴더를 지워도 파일은 지우지 않는다 ── */
+const tagList = () => load().tags.map((t) => ({ ...t, count: Object.values(load().items).filter((it) => (it.tags || []).includes(t.id)).length }));
+function tagAdd(name) {
+  const d = load();
+  const nm = String(name || "").trim().slice(0, 30) || "새 폴더";
+  const t = { id: crypto.randomBytes(5).toString("hex"), name: nm, at: Date.now() };
+  d.tags.push(t);
+  save();
+  return tagList();
+}
+function tagRename(id, name) {
+  const t = load().tags.find((x) => x.id === id);
+  if (t && String(name || "").trim()) { t.name = String(name).trim().slice(0, 30); save(); }
+  return tagList();
+}
+function tagRemove(id) {
+  const d = load();
+  d.tags = d.tags.filter((x) => x.id !== id);
+  for (const it of Object.values(d.items)) if (it.tags) it.tags = it.tags.filter((x) => x !== id);
+  save();
+  return tagList();
+}
+/** 자료들을 폴더에 넣기(on) · 빼기 */
+function tagSet(ids, tag, on) {
+  const d = load();
+  for (const id of ids || []) {
+    const it = d.items[id];
+    if (!it) continue;
+    const s2 = new Set(it.tags || []);
+    if (on) s2.add(tag); else s2.delete(tag);
+    it.tags = [...s2];
+  }
+  save();
+  return tagList();
+}
 function setFav(id, fav) {
   const it = get(id);
   if (it) {
@@ -277,4 +314,4 @@ function removeFolder(dir) {
   return d.folders;
 }
 
-module.exports = { list, add, get, prepare, setFav, remove, scan, addFolder, removeFolder, folders, ensureMeta, forWeb, cacheDir, studioRoot, musicDir };
+module.exports = { list, add, get, prepare, setFav, tagList, tagAdd, tagRename, tagRemove, tagSet, remove, scan, addFolder, removeFolder, folders, ensureMeta, forWeb, cacheDir, studioRoot, musicDir };

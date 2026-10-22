@@ -321,6 +321,12 @@ function register(base) {
     return library.add(r.filePaths, { source: "local" });
   });
   ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
+  // 내 폴더 (이름표) — 2026-10-22
+  ipcMain.handle("video:lib-tags", () => library.tagList());
+  ipcMain.handle("video:lib-tag-add", (_e, name) => library.tagAdd(name));
+  ipcMain.handle("video:lib-tag-rename", (_e, id, name) => library.tagRename(id, name));
+  ipcMain.handle("video:lib-tag-remove", (_e, id) => library.tagRemove(id));
+  ipcMain.handle("video:lib-tag-set", (_e, ids, tag, on) => library.tagSet(ids, tag, on));
   // 무료 음악 사이트(픽사베이·유튜브 오디오 보관함)에서 받은 곡 — 다운로드 폴더에서 since 이후 받은 소리 파일 (2026-10-19 사장님)
   const AUDIO_EXT = /\.(mp3|wav|m4a|aac|ogg|flac)$/i;
   const dlDir = () => require("electron").app.getPath("downloads");

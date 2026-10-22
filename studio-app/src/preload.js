@@ -123,6 +123,12 @@ if (allowed) {
         downloadsAudio: (since) => ipcRenderer.invoke("video:lib-downloads-audio", since),
         addDownloads: (files, source) => ipcRenderer.invoke("video:lib-add-downloads", files, source),
         fav: (id, fav) => ipcRenderer.invoke("video:lib-fav", id, fav),
+        // 내 폴더 (이름표 — 원본 파일은 그대로)
+        tags: () => ipcRenderer.invoke("video:lib-tags"),
+        tagAdd: (name) => ipcRenderer.invoke("video:lib-tag-add", name),
+        tagRename: (id, name) => ipcRenderer.invoke("video:lib-tag-rename", id, name),
+        tagRemove: (id) => ipcRenderer.invoke("video:lib-tag-remove", id),
+        tagSet: (ids, tag, on) => ipcRenderer.invoke("video:lib-tag-set", ids, tag, on),
         remove: (id) => ipcRenderer.invoke("video:lib-remove", id),
         folders: () => ipcRenderer.invoke("video:lib-folders"),
         addFolder: () => ipcRenderer.invoke("video:lib-add-folder"),
@@ -330,6 +336,23 @@ if (allowed) {
       recentThumb: (file, thumb) => ipcRenderer.invoke("photo:recent-thumb", file, thumb),
       reveal: (file) => ipcRenderer.invoke("photo:reveal", file),
       setDirty: (n) => ipcRenderer.invoke("photo:set-dirty", n),
+      autosaveWrite: (o) => ipcRenderer.invoke("photo:autosave-write", o),
+      autosaveList: () => ipcRenderer.invoke("photo:autosave-list"),
+      autosaveRead: (id) => ipcRenderer.invoke("photo:autosave-read", id),
+      autosaveClear: (id) => ipcRenderer.invoke("photo:autosave-clear", id),
+      tplList: () => ipcRenderer.invoke("photo:tpl-list"),
+      tplWrite: (o) => ipcRenderer.invoke("photo:tpl-write", o),
+      tplRead: (file) => ipcRenderer.invoke("photo:tpl-read", file),
+      tplRemove: (file) => ipcRenderer.invoke("photo:tpl-remove", file),
+      readFile: (file) => ipcRenderer.invoke("photo:read-file", file),
+      aiDesign: (o) => ipcRenderer.invoke("photo:ai-design", o),
+      /** 인쇄 — 프린터 목록 · 용지 한 장 그림(PNG bytes, 용지 mm)을 프린터로 (dialog = 윈도우 인쇄 창) */
+      /** AI 요청바 — 보낼 그림을 임시 파일로 → { path } */
+      tempWrite: (o) => ipcRenderer.invoke("photo:temp-write", o),
+      /** AI 요청바 — 글자 레이어 글을 요청대로 고치기 → { text } */
+      aiText: (o) => ipcRenderer.invoke("photo:ai-text", o),
+      printers: () => ipcRenderer.invoke("photo:printers"),
+      print: (o) => ipcRenderer.invoke("photo:print", o),
     },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),
@@ -350,6 +373,10 @@ if (allowed) {
       setKey: (id, key) => ipcRenderer.invoke("studio:ai-set-key", id, key),
       testKey: (id) => ipcRenderer.invoke("studio:ai-test-key", id),
       clearKey: (id) => ipcRenderer.invoke("studio:ai-clear-key", id),
+      /** API 사용 내역 — 달 요약 · 한도(USD, 0 = 끔) · CSV 저장 (0.1.12부터) */
+      usage: (month) => ipcRenderer.invoke("studio:ai-usage", month),
+      usageLimit: (v) => ipcRenderer.invoke("studio:ai-usage-limit", v),
+      usageCsv: (month) => ipcRenderer.invoke("studio:ai-usage-csv", month),
       onWriterChanged: (fn) => {
         const h = () => fn();
         ipcRenderer.on("studio:ai-writer-changed", h);

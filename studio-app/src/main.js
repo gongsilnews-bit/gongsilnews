@@ -34,7 +34,7 @@ ext.configure(BASE_URL);
 const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
-  "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key",
+  "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
   "studio:save-file", "studio:open-out-folder",
 ]);
@@ -508,12 +508,12 @@ ipcMain.handle("studio:ai-set-imager", (_e, id) => {
 ipcMain.handle("studio:ai-imager", () => {
   const ai = require("./ai");
   const id = ai.currentImager();
-  return { id, name: ai.nameOf(id) };
+  return { id, name: `${ai.nameOf(id)} ${aiConnect.getMode(id) === "api" ? "API(유료)" : "내 계정(무료)"}` }; // 2026-10-21 사장님: 무료·유료를 확실하게
 });
 ipcMain.handle("studio:ai-writer", () => {
   const ai = require("./ai");
   const id = ai.current();
-  return { id, name: ai.nameOf(id) };
+  return { id, name: `${ai.nameOf(id)} ${aiConnect.getMode(id) === "api" ? "API(유료)" : "내 계정(무료)"}` };
 });
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 // [내 계정으로 | API 키로] · API 키 등록·확인·지우기 — 키는 이 PC 에만 (ai/api.js)
@@ -524,6 +524,17 @@ const aiChanged = () => {
 ipcMain.handle("studio:ai-set-mode", (_e, id, mode) => (aiConnect.setMode(id, mode), aiChanged()));
 ipcMain.handle("studio:ai-set-key", async (_e, id, key) => (await require("./ai/api").setKey(id, key), aiChanged()));
 ipcMain.handle("studio:ai-test-key", async (_e, id) => (await require("./ai/api").test(id), aiConnect.list()));
+// API 사용 내역 (2026-10-21 사장님) — 이 PC 기록 · 한도 알림 · CSV
+ipcMain.handle("studio:ai-usage", (_e, month) => require("./ai/usage").summary(month));
+ipcMain.handle("studio:ai-usage-limit", (_e, v) => require("./ai/usage").setLimit(v));
+ipcMain.handle("studio:ai-usage-csv", async (e, month) => {
+  const u = require("./ai/usage");
+  const m = month || new Date().toISOString().slice(0, 7);
+  const r = await dialog.showSaveDialog(BrowserWindow.fromWebContents(e.sender), { title: "API 사용 내역 저장", defaultPath: path.join(app.getPath("documents"), `API 사용 내역 ${m}.csv`), filters: [{ name: "CSV", extensions: ["csv"] }] });
+  if (r.canceled || !r.filePath) return "";
+  require("fs").writeFileSync(r.filePath, u.csv(m));
+  return r.filePath;
+});
 ipcMain.handle("studio:ai-clear-key", (_e, id) => (require("./ai/api").clear(id), aiChanged()));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 // [창 열기] — 스튜디오 전용 크롬을 그 AI 사이트로 그냥 열어 본다 (연결 확인 없이, 닫을 때까지 기다리지 않음)

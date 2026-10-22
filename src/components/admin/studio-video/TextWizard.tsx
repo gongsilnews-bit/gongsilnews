@@ -8,12 +8,15 @@ import { RATIO_LABEL, datedName, errText, uid, videoBridge } from "./types";
 import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
 import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
-import { findStudioVacancyByNo, getStudioArticle, listMyStudioVacancies, listStudioArticles } from "@/app/actions/studio";
+import { findStudioVacancyByNo, getStudioAgency, getStudioArticle, listMyStudioVacancies, listStudioArticles } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
 import { MusicPanel, VoiceFace, VoicePanel } from "./Panels";
 import { AiPick, aiChoiceName, effectiveAi, useAiPick } from "./AiPick";
 import { EL_TAGS, ElevenDetail, elSetOf } from "./ElevenDetail";
+import { WizardDeco, newsSubOf, twoTitleCanvas, logoPillCanvas, newsBarCanvas, loadDeco, subLookOf, TITLE_STYLES, CHANNEL_STYLES, endDefOf, endFieldsOf, type Agency, type Deco } from "./WizardDeco";
+import { TPL_PREFIX, drawTemplate, tplFonts, tplTextOf } from "./Templates";
+import { TRANSITIONS } from "./transitions";
 
 export type VideoStyle = { id: string; name: string; desc: string; icon: string; prompt: string; voice: string; speed: number; music: string; ratio?: Ratio; subtitle?: "long" | "short"; chars: number };
 
@@ -127,6 +130,60 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   const [subPos, setSubPos] = useState<"bottom" | "middle-low" | "middle" | "middle-high" | "top">("bottom");
   // 자막 한 화면 최대 줄 수 — 가로 2줄, 세로(쇼츠) 1줄이 처음 값 (2026-10-19 사장님: 길게·짧게 대신 구체적으로)
   const [subLines, setSubLines] = useState<1 | 2 | 3>(2);
+  // 영상 꾸미기 1~6 (자막 스타일 · 제목 · 채널명 · 화면전환 · 썸네일 · 엔딩) — 이 PC 에 기억 (2026-10-22 사장님 회의)
+  const [deco, setDeco] = useState<Deco>(loadDeco);
+  // 편집 요청 사항 · 저장해 둔 요청 (이 PC)
+  const [editReq, setEditReq] = useState("");
+  const [savedReqs, setSavedReqs] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem("gsv-edit-reqs") || "[]"); } catch { return []; } });
+  const keepReqs = (l: string[]) => { setSavedReqs(l); try { localStorage.setItem("gsv-edit-reqs", JSON.stringify(l)); } catch {} };
+  const [agency, setAgency] = useState<Agency | null>(null);
+  const [aiTitleBusy, setAiTitleBusy] = useState(false);
+  useEffect(() => { getStudioAgency().then((r) => { if (r.success && r.data.name) setAgency(r.data as Agency); }).catch(() => {}); }, []);
+  // 영상 꾸미기로 넘어오면 — 대본으로 제목을 저절로 (비어 있을 때 한 번, 2026-10-22 사장님). AI 가 안 되면 첫 문장을 줄여서
+  const autoTitled = useRef("");
+  useEffect(() => {
+    if (step !== 2 || !script.trim() || deco.titleText.trim() || autoTitled.current === script) return;
+    autoTitled.current = script;
+    const two = Boolean(TITLE_STYLES.find((x) => x.id === deco.title)?.two);
+    const first = (script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim()).find(Boolean) || "").replace(/[.!?。]+$/, "");
+    const short = first.length > 24 ? first.slice(0, 24).replace(/\s+\S*$/, "") : first; // 말줄임 없이 낱말 끝에서
+    setAiTitleBusy(true);
+    void aiTitle(two).catch(() => "").then((t) => {
+      setDeco((d) => {
+        if (d.titleText.trim()) return d; // 그사이 직접 썼으면 그대로
+        if (t && two) { const [a2, b2] = t.split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean); return { ...d, titleText: (a2 || short).slice(0, 20), title2: (b2 || "").slice(0, 24) }; }
+        return { ...d, titleText: (t || short).slice(0, 30) };
+      });
+    }).finally(() => setAiTitleBusy(false));
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 2단 제목 스타일을 고르면 — 2단(아래 줄)이 비어 있을 때 대본으로 저절로 (2026-10-22 사장님). AI 가 안 되면 대본 문장에서
+  const isTwo = Boolean(TITLE_STYLES.find((x) => x.id === deco.title)?.two);
+  const auto2 = useRef("");
+  useEffect(() => {
+    if (step !== 2 || !isTwo || !script.trim() || (deco.title2 || "").trim() || auto2.current === `${deco.title}|${script}`) return;
+    if (TITLE_STYLES.find((x) => x.id === deco.title)?.subnews) { auto2.current = `${deco.title}|${script}`; if (!deco.titleText.trim()) setDeco((d) => ({ ...d, titleText: "자막뉴스" })); return; } // 출처는 지어내지 않는다
+    auto2.current = `${deco.title}|${script}`;
+    const lines = script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim().replace(/[.!?。]+$/, "")).filter(Boolean);
+    const cut = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+    setAiTitleBusy(true);
+    void aiTitle(true).catch(() => "").then((t) => {
+      const [a2, b2] = (t || "").split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean);
+      setDeco((d) => {
+        if ((d.title2 || "").trim()) return d; // 그사이 직접 썼으면 그대로
+        const l1 = d.titleText.trim() || a2 || cut(lines[0] || "", 14);
+        const l2 = b2 || (a2 && d.titleText.trim() ? a2 : "") || cut(lines[1] || lines[0] || "", 20);
+        return { ...d, titleText: l1.slice(0, 20), title2: l2.slice(0, 24) };
+      });
+    }).finally(() => setAiTitleBusy(false));
+  }, [step, deco.title]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** 대본으로 영상 제목 — 회원 AI (이미지 편집 [AI 문구 바꾸기] 통로) */
+  const aiTitle = async (two = false): Promise<string> => {
+    const pb = (window as unknown as { gongsilStudio?: { photo?: { aiText?: (o: { text: string; request: string }) => Promise<{ text: string }> } } }).gongsilStudio?.photo;
+    if (!pb?.aiText || !script.trim()) return "";
+    const r = await pb.aiText({ text: script.slice(0, 1500), request: two ? "이 대본으로 영상 왼쪽 위 2단 제목을 써 줘. 1단은 짧은 머리말(8자 안팎), 2단은 큰 제목(12자 안팎). 두 줄을 줄바꿈으로 나눠서만. 숫자·가격은 쓰지 말 것" : "이 대본으로 영상 화면 왼쪽 위에 들어갈 제목을 한국어 14자 안팎 한 줄로만. 숫자·가격은 쓰지 말 것" });
+    if (two) return r.text.trim();
+    return r.text.replace(/\s+/g, " ").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 24);
+  };
   const [voiceOn, setVoiceOn] = useState(true);
   const motionOn = true; // 사진 자동 움직임 — 늘 켬, 편집 화면에서 클립마다 바꾼다 (2026-10-20 사장님: 꾸미기에서 뺌)
   const aiDeco = false; // AI가 다 꾸미기 — 편집 화면 [AI 편집]에서 (2026-10-20 사장님)
@@ -207,16 +264,18 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   const [track, setTrack] = useState<{ kind: "lib" | "mine"; id: string; label: string } | null>(null);
   const [musicPick, setMusicPick] = useState(false);
 
-  const usePhotos = true;
-  const useStock = true;
-  const useAi = false;
-  const visualLater = true; // 화면 자료는 편집 화면에서 (2026-10-20 사장님: 클립 화면은 빈칸으로)
+  // 화면 자료 — 영상·사진 첨부 · 무료 비디오 · 자동 음소거 · 채우기 · AI 이미지 (브루처럼, 2026-10-22 사장님). 아무것도 안 고르면 화면은 편집 화면에서
+  const [usePhotos, setUsePhotos] = useState(false);
+  const [useStock, setUseStock] = useState(false);
+  const [useAi, setUseAi] = useState(false);
+  const [autoMute, setAutoMute] = useState(true);
   // 내 영상에서 고르기 — 찍어 둔 영상·사진을 AI 가 문장에 맞춰 고른다 (회의 3-19). 첨부하면 [내 자료]에도 자동으로 담긴다
-  const footOn = false;
   const [foot, setFoot] = useState<LibItem[]>([]);
+  const footOn = foot.length > 0;
+  const visualLater = !footOn && !useStock && !useAi && !(src === "vacancy" && usePhotos);
   const [footPick, setFootPick] = useState<LibItem[] | null>(null); // [내 자료에서 고르기] 창 — 목록
   const [footSel, setFootSel] = useState<string[]>([]); // 화면은 나중에 — 목소리(·자막·음악)만 먼저 만들고 편집 화면에서 클립마다 넣기 (2026-10-18 사장님)
-  const fill: Fill = "cover";
+  const [fill, setFillS] = useState<Fill>("cover"); // 채우기 켬 = 화면을 꽉 (잘라서) · 끔 = 다 보이게
   const [confirm, setConfirm] = useState(false);
   const [gen, setGen] = useState<{ title: string; detail?: string; frac?: number } | null>(null);
 
@@ -438,10 +497,13 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       p.kind = src;
       p.materials = src === "vacancy" ? [...(vacInfo?.photos || []), ...(vacInfo?.shots || [])] : src === "news" ? caps : [];
       p.settings.fill = fill;
-      p.settings.subtitle = { ...p.settings.subtitle, on: subOn, position: subPos, length: subLines === 1 ? "short" : "long", maxLines: subLines };
+      const nsub = newsSubOf(deco.sub); // 뉴스 자막 바 — 왼쪽 정렬
+      p.settings.subtitle = { ...p.settings.subtitle, ...(subLookOf(deco.sub) || {}), ...(nsub ? { align: "left" as const, bgPad: 1.3 } : {}), on: subOn, position: subPos, length: subLines === 1 ? "short" : "long", maxLines: subLines };
       p.settings.voice = { id: voiceId, speed, volume: voiceVol, ...(emotion ? { emotion } : {}) } as Project["settings"]["voice"];
       p.settings.motion = motionOn ? "auto" : "none";
       if (aiDeco) p.settings.aiAuto = true;
+      // 편집 요청 사항 — 있으면 편집 화면에서 AI 자동 편집이 이 요청으로 한 번 (2026-10-22 사장님)
+      if (editReq.trim()) { p.settings.aiAuto = true; p.settings.aiAutoReq = { request: editReq.trim().slice(0, 600), keepTrans: deco.trans.length > 0 }; }
       // 클립
       // 씬 — AI 가 지은 이름을 붙이고, 클립 하나짜리 씬이 이어지면 묶는다 (회의 3-22)
       p.scenes = mergeSingleScenes(scenes.map((ls) => ({ id: uid(), title: sceneTitles.current[ls[0]] || undefined, clips: ls.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] }) as Clip) })));
@@ -577,6 +639,107 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           if (dir) await b.voiceSave(clips.map((c) => c.text), voiceId, { kind: "wav", outFile: `${dir}\\${nm}.wav`, speed, emotion, noOverwrite: true, files: clips.map((c) => c.voice?.file || "") });
         } catch {}
       }
+      // 자동 음소거 — 화면으로 넣은 영상(무료 비디오 · 첨부 영상)의 원래 소리는 끈다 (AI 목소리가 잘 들리게)
+      // 자동 음소거 = 화면으로 넣은 영상(첨부·무료 비디오)의 원래 소리만 끈다 — AI 보이스는 그대로 (2026-10-22 사장님)
+      //  (clip.muted 는 AI 목소리까지 끄므로 쓰지 않는다 · 화면 영상 소리는 visualVolume: 0 = 끔, 1 = 원래대로)
+      for (const c of p.scenes.flatMap((x) => x.clips)) { const a = c.visual?.asset ? p.assets[c.visual.asset] : null; if (a && a.kind === "video") c.visualVolume = autoMute ? 0 : 1; }
+      // 뉴스 자막 바의 NEWS 딱지는 메인자막 [머리 딱지]로 — 자막과 같이 움직인다 (따로 그림 레이어를 만들지 않음, 2026-10-22)
+      // 꾸미기 2~6 — 제목 · 채널명 · 화면전환 · 엔딩 · 썸네일 틀 (2026-10-22 사장님 회의)
+      try {
+        const its = p.scenes.flatMap((s) => s.clips);
+        const first = its[0]?.id, last = its[its.length - 1]?.id;
+        const tall = p.ratio === "9:16" || p.ratio === "4:5";
+        p.layers = p.layers || [];
+        // 화면 전체 PNG — 넣었으면 그 칸은 이 그림만 (2026-10-22 사장님)
+        for (const [ov, nm] of [[deco.titleOv, "제목 PNG"], [deco.chOv, "채널명 PNG"]] as const) {
+          if (ov && first && last && b.lib.saveImage) {
+            const aid = await addAsset(await b.lib.saveImage(p.dir, ov, nm.replace(" ", "_")));
+            p.layers.push({ id: uid(), type: "image", name: nm, from: first, to: last, asset: aid, x: 0.5, y: 0.5, w: 1, opacity: 1 } as Layer);
+          }
+        }
+        const tS = deco.titleOv ? undefined : TITLE_STYLES.find((x) => x.id === deco.title);
+        let tText = deco.titleText.trim();
+        if (tS && !tS.two && !tText) { setGen({ title: "AI 가 제목을 쓰는 중…", frac: 0.99 }); tText = await aiTitle().catch(() => ""); }
+        if (tS?.newsBar && tText && first && last && b.lib.saveImage) {
+          // 뉴스 자막 바 — 아래쪽 (왼쪽 네모 = 제목 로고, 없으면 NEWS)
+          const lg = deco.titleLogo ? await new Promise<HTMLImageElement | null>((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = deco.titleLogo!; }) : null;
+          await document.fonts.load("900 40px Pretendard").catch(() => []);
+          const cv = newsBarCanvas(tS.newsBar, tText.slice(0, 34), { logo: lg, label: "" }); // 위에 NEWS 딱지는 늘, 왼쪽 네모는 제목 로고가 있을 때만
+          const BW = tall ? 1080 : 1920, BH = tall ? 1920 : 1080;
+          const w = Math.min(0.92, cv.width / BW), hh = (cv.height / BH) * (w / (cv.width / BW));
+          const aid = await addAsset(await b.lib.saveImage(p.dir, cv.toDataURL("image/png"), "제목_뉴스바"));
+          p.layers.push({ id: uid(), type: "image", name: "제목", from: first, to: last, asset: aid, x: 0.04 + w / 2, y: 0.9 - hh / 2, w, opacity: 1 } as Layer);
+        } else if (tS?.logoPill && tText && first && last && b.lib.saveImage) {
+          // 로고 + 한 줄 — 그림 한 장 (왼쪽 위)
+          const logo = deco.titleLogo ? await new Promise<HTMLImageElement | null>((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = deco.titleLogo!; }) : null; // 제목 로고 (채널 로고와 따로)
+          await document.fonts.load("800 40px Pretendard").catch(() => []);
+          const cv = logoPillCanvas(tS.look, tText.slice(0, 42), logo, tS.hl);
+          const BW = tall ? 1080 : 1920, BH = tall ? 1920 : 1080;
+          const w = Math.min(0.94, cv.width / BW), hh = (cv.height / BH) * (w / (cv.width / BW));
+          const aid = await addAsset(await b.lib.saveImage(p.dir, cv.toDataURL("image/png"), "제목_로고"));
+          p.layers.push({ id: uid(), type: "image", name: "제목", from: first, to: last, asset: aid, x: 0.02 + w / 2, y: 0.03 + hh / 2, w, opacity: 1 } as Layer);
+        } else if (tS?.two && first && last && b.lib.saveImage) {
+          // 2단 제목 — 그림 한 장으로 (두 줄 왼쪽 끝을 맞추려고). 둘 다 비어 있으면 AI 가 두 줄로
+          let l1 = deco.titleText.trim(), l2 = (deco.title2 || "").trim();
+          if (tS.subnews) { l1 = l1 || "자막뉴스"; }
+          else if (!l1 && !l2) {
+            const two = await aiTitle(true).catch(() => "");
+            const [a2, b2] = two.split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean);
+            l1 = a2 || ""; l2 = b2 || "";
+          }
+          if (l1 || l2) {
+            await document.fonts.load("900 40px Pretendard").catch(() => []);
+            let cv = twoTitleCanvas(tS.two, l1.slice(0, 20), l2.slice(0, tS.news ? 40 : 24), 1, Boolean(tS.news));
+            if (tS.logoTwo && deco.titleLogo) {
+              // 로고 + 2단 — 왼쪽에 제목 로고 (두 줄 높이에 맞춰)
+              const lg = await new Promise<HTMLImageElement | null>((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = deco.titleLogo!; });
+              if (lg) {
+                const lh = cv.height, lw = Math.round((lg.naturalWidth / lg.naturalHeight) * lh), gap = 14;
+                const c2 = document.createElement("canvas");
+                c2.width = lw + gap + cv.width; c2.height = cv.height;
+                const g2 = c2.getContext("2d")!;
+                g2.drawImage(lg, 0, 0, lw, lh);
+                g2.drawImage(cv, lw + gap, 0);
+                cv = c2;
+              }
+            }
+            const BW = tall ? 1080 : 1920, BH = tall ? 1920 : 1080;
+            const w = Math.min(0.9, cv.width / BW), hh = (cv.height / BH) * (w / (cv.width / BW));
+            const aid = await addAsset(await b.lib.saveImage(p.dir, cv.toDataURL("image/png"), "제목_2단"));
+            p.layers.push({ id: uid(), type: "image", name: "제목", from: first, to: last, asset: aid, x: 0.04 + w / 2, y: 0.05 + hh / 2, w, opacity: 1 } as Layer);
+          }
+        } else if (tS && tText && first && last) p.layers.push({ id: uid(), type: "text", name: "제목", from: first, to: last, text: tText.slice(0, 30), pos: "top", align: tall ? "center" : "left", size: tall ? 80 : 55, bold: true, font: "Pretendard", ...tS.look } as Layer);
+        const cS = deco.chOv ? undefined : CHANNEL_STYLES.find((x) => x.id === deco.channel);
+        const cText = (deco.channelText.trim() || agency?.name || "").slice(0, 24);
+        // 채널명 — 오른쪽 위 (로고가 있으면 그 왼쪽에 글)
+        let logoAid = "";
+        if (cS && deco.logo && b.lib.saveImage && first && last) {
+          try { logoAid = await addAsset(await b.lib.saveImage(p.dir, deco.logo, "채널로고")); } catch {}
+        }
+        if (cS && cText && first && last) p.layers.push({ id: uid(), type: "text", name: "채널명", from: first, to: last, text: cText, ...(tall ? { x: 0.5, y: 0.16 } : logoAid ? { x: 0.8, y: 0.07 } : { pos: "top", align: "right" }), size: 42, bold: true, font: "Pretendard", ...cS.look } as Layer);
+        if (logoAid && first && last) p.layers.push({ id: uid(), type: "image", name: "채널 로고", from: first, to: last, asset: logoAid, x: tall ? 0.88 : 0.94, y: tall ? 0.06 : 0.07, w: tall ? 0.14 : 0.08, opacity: 1 } as Layer);
+        if (deco.trans.length) {
+          // 고른 순서대로 (5개까지), 다 쓰면 마지막 것을 반복
+          its.forEach((c, i) => {
+            if (i === 0) return;
+            const ty = deco.trans[Math.min(i - 1, deco.trans.length - 1)]; // 고른 순서대로, 그 뒤로는 마지막 것을 반복
+            const ts = deco.transSfx || "auto"; // 전환 소리 — 자동 · 없음 · 고른 효과음
+            const sx = ts === "none" ? undefined : ts === "auto" ? TRANSITIONS.find((x) => x.id === ty)?.sfx : ts;
+            c.trans = { type: ty, a: 0.3, b: 0.3, ...(sx ? { sfx: sx } : {}) };
+          });
+        }
+        const eD = deco.end !== "none" ? endDefOf(deco.end) : null;
+        if (eD && agency && b.lib.saveImage && p.scenes.length) {
+          await tplFonts();
+          const style = TPL_PREFIX + eD.id, text = tplTextOf(endFieldsOf(agency));
+          const item = await b.lib.saveImage(p.dir, drawTemplate(style, text, eD.color).toDataURL("image/png"), `템플릿_${eD.label}`);
+          const aid = await addAsset(item);
+          const card = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: null, hold: 5, sub: false, card: "end" } as unknown as Clip;
+          p.scenes[p.scenes.length - 1].clips.push(card);
+          p.layers.push({ id: uid(), type: "image", name: "엔딩", from: card.id, to: card.id, asset: aid, x: 0.5, y: 0.5, w: tall ? 0.94 : 0.86, opacity: 1, anim: eD.anim, sticker: true, stk: { style, text, color: eD.color } } as Layer);
+        }
+        if (deco.thumb !== "none") (p.settings as unknown as Record<string, unknown>).thumb = { layout: deco.thumb, title: tText };
+      } catch {}
       await b.project.save(p);
       setGen({ title: "편집 화면을 여는 중…", frac: 1 });
       onDone(p);
@@ -934,6 +1097,11 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             <div style={{ ...row, flexWrap: "wrap" }}>
               <span style={{ flex: 1 }}>{head("배경 음악", true)}</span>
               <Toggle on={musicOn} onChange={setMusicOn} />
+              {/* 자동 음소거 — 소리 설정이라 배경 음악과 함께 (2026-10-22 사장님) */}
+              <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px" }} title="화면에 넣은 영상의 원래 소리를 꺼요 (AI 목소리가 잘 들리게)">
+                <span style={{ flex: 1, fontSize: 13.5 }}>자동 음소거 <span style={{ fontSize: 12, color: C.dim }}>· 첨부한 영상의 원래 소리만 끄기 (AI 보이스·배경음악은 그대로)</span></span>
+                <Toggle on={autoMute} onChange={setAutoMute} />
+              </div>
               {musicOn && <div style={{ width: "100%", display: "flex", gap: 6, flexWrap: "wrap" }}>{MUSIC_MOODS.map((m) => <button key={m} type="button" onClick={() => { setMood(m); if (track?.kind === "lib") setTrack(null); }} style={chip(mood === m && track?.kind !== "mine")}>{m}</button>)}</div>}
               {musicOn && (
                 <div style={{ width: "100%", marginTop: 8 }}>
@@ -954,6 +1122,57 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                   )}
                 </div>
               )}
+            </div>
+            <div style={{ paddingTop: 18 }}>
+              {head("화면 자료")}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                <Btn small onClick={async () => { try { const got = await b.lib.pick({ kinds: "media" }); if (got.length) setFoot((v) => [...v, ...got.filter((g) => !v.some((x) => x.id === g.id))]); } catch (e) { setErr(errText(e)); } }}><Icon name="plus" size={14} />영상·사진 첨부 (PC)</Btn>
+                <Btn small onClick={async () => { try { const l = await b.lib.list({}); setFootSel(foot.map((x) => x.id)); setFootPick(l); } catch (e) { setErr(errText(e)); } }}><Icon name="folder" size={14} />내 자료에서</Btn>
+              </div>
+              {foot.length > 0 && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                  {foot.map((x) => (
+                    <div key={x.id} style={{ position: "relative", width: 64, height: 40, borderRadius: 4, overflow: "hidden", background: "#000" }}>
+                      {x.thumb && <img src={x.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                      <button type="button" onClick={() => setFoot((v) => v.filter((y) => y.id !== x.id))} title="빼기" style={{ position: "absolute", right: 1, top: 1, width: 16, height: 16, borderRadius: 8, border: 0, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 10, cursor: "pointer", padding: 0 }}>✕</button>
+                    </div>
+                  ))}
+                  <span style={{ alignSelf: "center", fontSize: 12.5, color: C.dim }}>{foot.length}개 — AI가 문장마다 맞는 장면을 골라요</span>
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 18px" }}>
+                {([
+                  ...(src === "vacancy" ? [["공실 사진", usePhotos, setUsePhotos, "등록한 공실 사진부터"] as const] : []),
+                  ["무료 비디오", useStock, setUseStock, "문장에 맞는 무료 영상·사진"] as const,
+                ] as const).map(([name, on, set, tip]) => (
+                  <div key={name} title={tip} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ flex: 1, fontSize: 13.5 }}>{name}</span>
+                    <Toggle on={on} onChange={set as (v: boolean) => void} />
+                  </div>
+                ))}
+              </div>
+              {/* 채우기 — 브루처럼 세 가지 그림 단추: 원본 비율 · 꽉 채우기 · 흐린 배경 (2026-10-22 사장님) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                <span style={{ flex: 1, fontSize: 13.5 }}>채우기</span>
+                <div style={{ display: "flex", gap: 2, padding: 3, borderRadius: 8, background: C.bg }}>
+                  {([["contain", "원본 비율 — 사진이 다 보이게 (남는 곳은 검게)"], ["cover", "꽉 채우기 — 화면 가득 (가장자리는 잘림)"], ["blur", "흐린 배경 — 사진은 다 보이고 남는 곳은 흐리게"]] as const).map(([k, tip]) => {
+                    const on = fill === k;
+                    return (
+                      <button key={k} type="button" title={tip} onClick={() => setFillS(k)}
+                        style={{ width: 40, height: 32, borderRadius: 6, border: on ? `1px solid ${C.line2}` : "1px solid transparent", background: on ? "#111" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                        <svg width="26" height="20" viewBox="0 0 26 20">
+                          {k === "blur" && <rect x="1" y="1" width="24" height="18" rx="2" fill="#6b7280" opacity="0.55" />}
+                          {k !== "cover" && <rect x="1" y="1" width="24" height="18" rx="2" fill="none" stroke="#9ca3af" strokeWidth="1.2" />}
+                          {k === "cover"
+                            ? <><rect x="1" y="1" width="24" height="18" rx="2" fill="#d1d5db" /><circle cx="13" cy="10" r="5.5" fill="#fff" /><path d="M10.6 11.2q2.4 2 4.8 0" stroke="#374151" strokeWidth="1" fill="none" /><circle cx="11.2" cy="9" r=".8" fill="#374151" /><circle cx="14.8" cy="9" r=".8" fill="#374151" /></>
+                            : <><rect x="8" y="5" width="10" height="10" rx="1" fill="#d1d5db" /><circle cx="13" cy="10" r="3" fill="#fff" /><path d="M11.8 10.8q1.2 1 2.4 0" stroke="#374151" strokeWidth=".8" fill="none" /></>}
+                        </svg>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: C.dim, marginTop: 8 }}>{visualLater ? "아무것도 안 켜면 화면은 비워 두고 편집 화면에서 넣어요" : "켠 것으로 클립마다 화면을 채워요 — 편집 화면에서 언제든 바꿀 수 있어요"}</div>
             </div>
             <div style={{ paddingTop: 18 }}>
               {head("파일 이름")}
@@ -999,33 +1218,53 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             </div>
             {/* 쓸 AI — 오른쪽 [다시 쓰기]에 쓴다. 지난번 고른 것이 그대로 골라져 있다 (2026-10-20 사장님) */}
             <div style={{ paddingTop: 18 }}>
-              {head(<>쓸 AI <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 대본 다시 쓰기에 써요</span></>)}
+              {/* AI 이미지 — 켜면 채우지 못한 클립을 AI 그림으로, 그릴 AI 고르기 (2026-10-22 사장님) */}
+              {/* AI 이미지 — 처음엔 꺼 둠, 켜면 시간 경고 (2026-10-22 사장님) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ flexShrink: 0 }}>{head("AI 이미지", true)}</span>
+                <span style={{ flex: 1, fontSize: 12.5, color: C.dim }}>추후 편집 화면에서 추가할 수 있어요</span>
+                <Toggle on={useAi} onChange={setUseAi} />
+              </div>
+              <div style={{ fontSize: 12.5, color: C.dim, margin: "6px 0 0" }}>채우지 못한 클립을 AI 그림으로 채워요 ({imager}, 8장까지)</div>
+              {useAi && <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 6, background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.5)", color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>⚠ 선택하면 제작 시간이 오래 걸릴 수 있어요 (5~10분)</div>}
+            </div>
+            {/* 편집 요청 사항 — AI 가 꾸미기 위에 반영 (2026-10-22 사장님) */}
+            <div style={{ paddingTop: 18 }}>
+              {head(<>편집 요청 사항 <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 선택 — 쓰면 AI가 편집 화면에서 반영해요</span></>)}
+              <textarea value={editReq} onChange={(e) => setEditReq(e.target.value)} onKeyDown={(e) => e.stopPropagation()} rows={3}
+                placeholder={"예) 자막뉴스처럼, 왼쪽 위에 출처 표시\n중요한 숫자는 노랑으로 강조\n3번째 문장에 쿵 효과음"}
+                style={{ ...input, width: "100%", height: "auto", padding: "8px 10px", fontSize: 13.5, lineHeight: 1.5, resize: "vertical", fontFamily: FONT }} />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6, alignItems: "center" }}>
+                <button type="button" disabled={!editReq.trim() || savedReqs.includes(editReq.trim())} onClick={() => keepReqs([editReq.trim(), ...savedReqs].slice(0, 12))} style={{ ...chip(false), height: 28, padding: "0 10px", fontSize: 12.5 }}>☆ 요청 저장</button>
+                {savedReqs.map((r) => (
+                  <span key={r} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <button type="button" title={r} onClick={() => setEditReq(editReq.trim() ? `${editReq.trim()}\n${r}` : r)} style={{ ...chip(false), height: 28, padding: "0 9px", fontSize: 12.5, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>+ {r.split("\n")[0]}</button>
+                    <button type="button" title="저장한 요청 지우기" onClick={() => keepReqs(savedReqs.filter((x) => x !== r))} style={{ border: 0, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                  </span>
+                ))}
+              </div>
+              {editReq.trim() && <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>출처·숫자는 대본·기사에 있는 것만 써요 (지어내지 않아요). 고른 자막·제목·채널명·엔딩은 그대로 둬요.</div>}
+            </div>
+            {/* 쓸 AI — 늘 보이게 (대본 다시 쓰기 · 제목 · AI 이미지에 써요) */}
+            <div style={{ paddingTop: 18 }}>
+              {head(<>쓸 AI <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 제목 쓰기 · AI 이미지에 써요</span></>)}
               <AiPick value={aiSel} onChange={setAiSel} list={aiList} noTitle />
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 26px", gap: 12 }}>
-            {/* 대본 — 여기서 보고 고치고, 수정 요청으로 다시 쓰기 (2026-10-20 사장님) */}
-            <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", flex: 1, minHeight: 300 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ ...label, margin: 0 }}>대본</span>
-                <span style={{ fontSize: 12.5, color: C.dim }}>문장마다 클립 하나 · 빈 줄로 씬 나누기</span>
-              </div>
-              {isV3 && (
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, marginBottom: 6 }}>
-                  <span style={{ fontSize: 12.5, color: C.sub, marginRight: 2 }}>감정 태그 (일레븐랩스 v3) — 누르면 글 쓰는 자리에</span>
-                  {EL_TAGS.map((t) => <button key={t} type="button" onClick={() => putTag(t)} style={{ ...chip(false), height: 28, padding: "0 9px", fontSize: 12.5 }}>[{t}]</button>)}
-                </div>
-              )}
-              <textarea ref={scriptRef} value={script} onChange={(e) => setScript(e.target.value)}
-                style={{ flex: 1, minHeight: 220, padding: 14, borderRadius: 6, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 15.5, lineHeight: 1.8, fontFamily: FONT, resize: "vertical", outline: "none" }} />
-              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 8 }}>
-                <input value={revReq} onChange={(e) => setRevReq(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && revReq.trim() && !writing) { void write(revReq.trim()); setRevReq(""); } }}
-                  placeholder="대본 다시 쓰기 — 수정 요청 (예: 30초로 짧게, 첫 문장을 궁금하게)" disabled={Boolean(writing)} style={{ ...input, flex: 1, height: 40, fontSize: 14 }} />
-                <Btn primary onClick={() => { void write(revReq.trim()); setRevReq(""); }} disabled={!revReq.trim() || Boolean(writing)}><Icon name="pen" size={15} />다시 쓰기</Btn>
-                {history.length > 0 && <Btn onClick={undoScript} disabled={Boolean(writing)} title="바로 앞 대본으로"><Icon name="undo" size={15} />되돌리기</Btn>}
-              </div>
-              {writing && <div style={{ fontSize: 13.5, color: C.sub, marginTop: 6 }}>{writing}</div>}
-            </div>
+            {/* 예시 화면 (왼쪽) + 1~6 항목 (오른쪽) + 아래 샘플 (2026-10-22 사장님 회의) */}
+            <WizardDeco ratio={ratio} bgs={[...foot.map((x) => x.thumb), ...(src === "vacancy" && usePhotos ? (vacInfo?.photos || []).map((x) => x.thumb) : [])].filter(Boolean) as string[]} subOn={subOn} setSubOn={setSubOn} subPos={subPos} subLines={subLines} deco={deco} setDeco={setDeco} agency={agency}
+              firstLine={(script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim()).find(Boolean) || "자막은 이 위치에 표시됩니다").slice(0, subLines === 1 ? 22 : subLines === 2 ? 44 : 66)}
+              aiTitleBusy={aiTitleBusy} onAiTitle={() => {
+                const two = Boolean(TITLE_STYLES.find((x) => x.id === deco.title)?.two);
+                setAiTitleBusy(true);
+                void aiTitle(two).then((t) => {
+                  if (!t) return;
+                  if (!two) return setDeco({ ...deco, titleText: t });
+                  const [a2, b2] = t.split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean);
+                  setDeco({ ...deco, titleText: (a2 || "").slice(0, 20), title2: (b2 || "").slice(0, 24) });
+                }).finally(() => setAiTitleBusy(false));
+              }} />
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", fontSize: 14, color: C.sub }}>
               <span>{ratio} {RATIO_LABEL[ratio]}</span>
               {voiceOn && <span>{findVoice(voiceId)?.name}</span>}

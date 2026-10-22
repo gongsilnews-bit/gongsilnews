@@ -45,8 +45,10 @@ function ask(prompt, opts = {}) {
   const r = retarget(id, opts);
   const p = r.fallback ? r.opts.fallbackPrompt || prompt : prompt;
   if (r.fallback && !r.opts.fallbackPrompt) throw new Error("AI 쓰는 방법(계정/API 키)이 바뀌어 처음 대화에 이어 쓸 수 없어요. [다시 쓰기]를 해 주세요.");
-  const label = `${AIS[id].name}가 ${opts.busyLabel || "글을 작성하고 있습니다"}`;
-  if (r.viaApi) return busy.during(label, () => require("./api").ask(id, p, r.opts), API_SUB);
+  const label = `${AIS[id].name} ${r.viaApi ? "API(유료)" : "내 계정(무료)"}가 ${opts.busyLabel || "글을 작성하고 있습니다"}`; // 2026-10-21: 무료·유료를 확실하게
+  // 사용 내역 기능 이름 — "그림 장면 설명을 쓰고 있습니다" → "그림 장면 설명"
+  const feature = String(opts.feature || opts.busyLabel || "글").replace(/\s*(을|를)?\s*(쓰고|작성하고|만들고|그리고) 있습니다$/, "") || "글";
+  if (r.viaApi) return busy.during(label, () => require("./api").ask(id, p, { ...r.opts, feature }), API_SUB);
   return busy.during(label, () => AIS[id].mod().ask(p, r.opts));
 }
 
@@ -59,9 +61,10 @@ function currentImager() {
 
 function askImage(prompt, opts = {}) {
   const id = opts.provider || currentImager();
-  if (require("../ai-connect").getMode(id) === "api") {
+  // opts.mode — 이번 그림만 계정/API 키 (쓸 AI 고르기, 2026-10-21). 없으면 [내 AI 연결]의 방법
+  if (opts.mode ? opts.mode === "api" : require("../ai-connect").getMode(id) === "api") {
     // API 키 그림 — 대화에 이어 그리기(chatUrl)는 없고, 첨부 사진(files)으로 고쳐 그린다
-    return busy.during(`${AIS[id].name}가 그림을 그리고 있습니다`, () => require("./api").askImage(id, prompt, opts), API_SUB);
+    return busy.during(`${AIS[id].name} API(유료)가 그림을 그리고 있습니다`, () => require("./api").askImage(id, prompt, { ...opts, feature: opts.feature || "이미지" }), API_SUB);
   }
   const mod = AIS[id].mod();
   if (!mod.askImage) throw new Error(`${AIS[id].name} 그림 그리기는 준비 중입니다. [내 AI 연결]에서 기본 이미지 생성 AI 를 ChatGPT 로 골라 주세요.`);

@@ -99,7 +99,15 @@ function rr(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: num
   g.arcTo(x, y, x + w, y, k);
   g.closePath();
 }
+/** 이미지 편집에서 템플릿을 레이어로 나눌 때만 — 글 그리기를 기록하고, 고른 칸 글만 그린다 (영상 편집기에는 영향 없음) */
+type TxtCall = { s: string; fi: number; font: string; fill: string; stroke?: string; lw?: number; align: CanvasTextAlign; glow?: string; shadow?: string };
+let SPLIT: { fieldOf: (s: string) => number; show: Set<number>; calls: TxtCall[] } | null = null;
 function txt(g: CanvasRenderingContext2D, s: string, x: number, y: number, o: { font: string; fill: string; stroke?: string; lw?: number; align?: CanvasTextAlign; glow?: string; blur?: number; shadow?: string }) {
+  if (SPLIT) {
+    const fi = SPLIT.fieldOf(s);
+    SPLIT.calls.push({ s, fi, font: fx(o.font), fill: typeof o.fill === "string" ? o.fill : "#FFFFFF", stroke: o.stroke, lw: o.lw, align: o.align || "center", glow: o.glow, shadow: o.shadow });
+    if (fi >= 0 && !SPLIT.show.has(fi)) return;
+  }
   g.save();
   g.font = fx(o.font);
   g.textAlign = o.align || "center";
@@ -1629,6 +1637,61 @@ export function drawTemplate(style: string, text: string, color: string | undefi
   const fields = tplFieldsOf(text);
   const vals = d.fields.map((fd, i) => (fields[i] !== undefined ? fields[i] : fd.def));
   return drawWith(d, vals, color || d.color, t, tplOptsOf(text));
+}
+
+/** 템플릿을 레이어로 나누기 (이미지 편집) — 글 없는 판·장식 그림 + 칸마다 글 자리·모양 */
+export type TplText = { field: number; text: string; box: { x: number; y: number; w: number; h: number }; family: string; px: number; weight: number; italic: boolean;
+  fill: string; stroke?: string; lw?: number; glow?: string; shadow?: string; align: "left" | "center" | "right" };
+export function tplSplit(id: string, fields?: string[], color?: string): { def: TplDef; vals: string[]; full: HTMLCanvasElement; decor: HTMLCanvasElement; texts: TplText[] } | null {
+  const d = T.find((x) => x.id === id);
+  if (!d) return null;
+  const vals = d.fields.map((fd, i) => (fields?.[i] !== undefined ? fields[i] : fd.def));
+  const col = color || d.color;
+  const fieldOf = (s: string) => {
+    const t = String(s || "").trim();
+    if (!t) return -1;
+    return vals.findIndex((v) => lines(v).some((L) => L && (L === t || t.includes(L) || L.includes(t))));
+  };
+  const run = (show: number[]) => {
+    SPLIT = { fieldOf, show: new Set(show), calls: [] };
+    try { return { c: d.draw(vals, col, 999), calls: SPLIT.calls }; } finally { SPLIT = null; }
+  };
+  const all = run(vals.map((_, i) => i));
+  const decor = run([]).c;
+  const W = all.c.width, H = all.c.height;
+  const dd = decor.getContext("2d", { willReadFrequently: true })!.getImageData(0, 0, W, H).data;
+  const texts: TplText[] = [];
+  for (let i = 0; i < vals.length; i++) {
+    const call = all.calls.find((c) => c.fi === i);
+    if (!call || decor.width !== W || decor.height !== H) continue;
+    const one = run([i]).c;
+    if (one.width !== W || one.height !== H) continue;
+    // 그 칸 글만 넣었을 때 달라진 곳 = 글 자리
+    const od = one.getContext("2d", { willReadFrequently: true })!.getImageData(0, 0, W, H).data;
+    let x0 = W, y0 = H, x1 = -1, y1 = -1;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const k = (y * W + x) * 4;
+      if (Math.abs(od[k] - dd[k]) + Math.abs(od[k + 1] - dd[k + 1]) + Math.abs(od[k + 2] - dd[k + 2]) + Math.abs(od[k + 3] - dd[k + 3]) > 40) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < 0) continue;
+    const m = /^(italic\s+)?(?:(\d{3}|bold|normal)\s+)?([\d.]+)px\s+(.+)$/.exec(call.font.trim());
+    const px = m ? Number(m[3]) : 40;
+    const family = m ? m[4].split(",")[0].replace(/["']/g, "").trim() : "Pretendard";
+    const weight = m?.[2] === "bold" ? 700 : m?.[2] && /^\d+$/.test(m[2]) ? Number(m[2]) : 400;
+    texts.push({
+      field: i, text: vals[i], box: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }, family, px, weight, italic: Boolean(m?.[1]),
+      fill: call.fill, stroke: call.stroke, lw: call.lw, glow: call.glow, shadow: call.shadow,
+      align: call.align === "left" || call.align === "start" ? "left" : call.align === "right" || call.align === "end" ? "right" : "center",
+    });
+  }
+  return { def: d, vals, full: all.c, decor, texts };
+}
+/** 칸 글이 그려진 너비 (글꼴 크기 맞추기용) */
+export function tplTextWidth(t: TplText) {
+  const f = `${t.italic ? "italic " : ""}${t.weight} ${t.px}px "${t.family}", "Malgun Gothic", sans-serif`;
+  return Math.max(1, ...lines(t.text).map((L) => tw(f, L)));
 }
 
 /* ── 미리보기: 움직이는 템플릿 (칸마다 다시 그림) ── */

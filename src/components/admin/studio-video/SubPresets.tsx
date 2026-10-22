@@ -10,14 +10,14 @@ import { C, FONT } from "./ui";
 import { tplPreviewStyles } from "./tplPreviewAnim";
 import { loadFont } from "./Pickers";
 
-export type SubLook = Pick<SubtitleSettings, "font" | "color" | "outline" | "outlineWidth" | "bg" | "bgColor" | "bgOpacity" | "bold" | "shadow" | "shadowColor" | "glow" | "outline2" | "outline2Width" | "gradTo" | "gradType" | "gradAngle" | "gradA" | "gradB">;
+export type SubLook = Pick<SubtitleSettings, "font" | "color" | "outline" | "outlineWidth" | "bg" | "bgColor" | "bgOpacity" | "bold" | "shadow" | "shadowColor" | "glow" | "outline2" | "outline2Width" | "gradTo" | "gradType" | "gradAngle" | "gradA" | "gradB" | "tag" | "tagColor">;
 /** 글자 모양 (메인자막·화면 글자 같이 쓰는 이름) — 사전설정에 크기·자간·행간까지 */
-export type TextLook = Partial<SubLook> & { size?: number; spacing?: number; leading?: number; italic?: boolean; underline?: boolean; textCase?: "upper" | "lower" | "title"; align?: "left" | "center" | "right"; bgPad?: number; shadowAlpha?: number; glowSize?: number; glowAlpha?: number; outlineAlpha?: number; textAlpha?: number };
+export type TextLook = Partial<SubLook> & { size?: number; spacing?: number; leading?: number; italic?: boolean; underline?: boolean; textCase?: "upper" | "lower" | "title"; align?: "left" | "center" | "right"; bgPad?: number; shadowAlpha?: number; glowSize?: number; glowAlpha?: number; outlineAlpha?: number; textAlpha?: number; /** 가로·세로 비율 (1 = 100%, 이미지 편집에서 Shift+끌기로 늘인 글자) */ hScale?: number; vScale?: number; /** 단락 글자 칸 (이미지 편집 — 문자 도구로 끌어 만든 칸, 칸 너비에서 줄바꿈) */ boxW?: number; boxH?: number; /** 텍스트 뒤틀기 (이미지 편집 — 포토샵과 같은 15가지, 값은 %) */ warp?: { style: string; vertical?: boolean; bend?: number; h?: number; v?: number } };
 type Preset = { id: string; label: string; look: SubLook };
 
 const P = (id: string, label: string, o: Partial<SubLook>): Preset => ({
   id, label,
-  look: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", outline2Width: 0, gradTo: "", gradType: undefined, gradAngle: undefined, gradA: undefined, gradB: undefined, ...o },
+  look: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bgColor: "#000000", bgOpacity: 0.62, bold: true, shadow: 0, shadowColor: "#000000", glow: "", outline2Width: 0, gradTo: "", gradType: undefined, gradAngle: undefined, gradA: undefined, gradB: undefined, tag: "", ...o },
 });
 
 export const SUB_PRESETS: { group: string; items: Preset[] }[] = [
@@ -90,6 +90,11 @@ export const SUB_PRESETS: { group: string; items: Preset[] }[] = [
   },
   {
     group: "예능·유튜브", items: [
+      // 토크·교양 방송 하단 자막 — 굵은 흰 글씨 + 진한 회색 두꺼운 테 (2026-10-22 사장님 화면)
+      P("talk-white", "방송 흰·진회색 테", { font: "GmarketSans", color: "#FFFFFF", outline: "#2E2E2E", outlineWidth: 8, shadow: 0.04, shadowColor: "#000000" }),
+      P("talk-beige", "방송 베이지·갈색 테", { font: "GmarketSans", color: "#F1DFC0", outline: "#3B2E22", outlineWidth: 8, shadow: 0.04, shadowColor: "#000000" }),
+      P("talk-black", "방송 흰·검정 테", { font: "GmarketSans", color: "#FFFFFF", outline: "#000000", outlineWidth: 8, shadow: 0.05, shadowColor: "#000000" }),
+      P("talk-yellow", "방송 노랑·진회색 테", { font: "GmarketSans", color: "#FFE680", outline: "#2E2E2E", outlineWidth: 8, shadow: 0.04, shadowColor: "#000000" }),
       P("variety-yellow", "예능 노랑", { font: "Do Hyeon", color: "#FFE14D", outline: "#5B2E00", outlineWidth: 7, shadow: 0.06, shadowColor: "#000000" }),
       P("variety-white", "예능 흰·분홍", { font: "Do Hyeon", color: "#FFFFFF", outline: "#FF3EA5", outlineWidth: 7, shadow: 0.06, shadowColor: "#7A0040" }),
       P("variety-sky", "예능 흰·파랑", { font: "Do Hyeon", color: "#FFFFFF", outline: "#1F5FD6", outlineWidth: 7, shadow: 0.06, shadowColor: "#0B1F44" }),
@@ -112,6 +117,38 @@ export const SUB_PRESETS: { group: string; items: Preset[] }[] = [
       P("news-white", "뉴스 흰 상자", { font: "GmarketSans", color: "#0B1F44", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.96 }),
       P("news-red", "속보 빨강", { font: "GmarketSans", color: "#FFFFFF", bg: true, bgColor: "#C8102E", bgOpacity: 1 }),
       P("calm", "차분한 반투명", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#111827", bgOpacity: 0.55 }),
+    ],
+  },  // 영상 꾸미기에서 만든 것 — 편집기·이미지 편집에도 (2026-10-22 사장님)
+  {
+    group: "제목·채널명", items: [
+      P("tb-navy", "남색 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#1A3A6B", bgOpacity: 1 }),
+      P("tb-red", "빨강 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#E11D48", bgOpacity: 1 }),
+      P("tb-blue", "파랑 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#2563EB", bgOpacity: 1 }),
+      P("tb-sky", "하늘 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#0EA5E9", bgOpacity: 1 }),
+      P("tb-green", "초록 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#0E9F6E", bgOpacity: 1 }),
+      P("tb-orange", "주황 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#F97316", bgOpacity: 1 }),
+      P("tb-yellow", "노랑 상자", { font: "Pretendard", color: "#111111", bg: true, bgColor: "#FFD400", bgOpacity: 1 }),
+      P("tb-pink", "분홍 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#EC4899", bgOpacity: 1 }),
+      P("tb-purple", "보라 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#7C3AED", bgOpacity: 1 }),
+      P("tb-black", "검정 상자", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#111111", bgOpacity: 1 }),
+      P("tw-navy", "흰 상자·남색", { font: "Pretendard", color: "#1A3A6B", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-red", "흰 상자·빨강", { font: "Pretendard", color: "#E11D48", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-blue", "흰 상자·파랑", { font: "Pretendard", color: "#2563EB", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-sky", "흰 상자·하늘", { font: "Pretendard", color: "#0EA5E9", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-green", "흰 상자·초록", { font: "Pretendard", color: "#0E9F6E", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-orange", "흰 상자·주황", { font: "Pretendard", color: "#F97316", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-pink", "흰 상자·분홍", { font: "Pretendard", color: "#EC4899", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tw-purple", "흰 상자·보라", { font: "Pretendard", color: "#7C3AED", bg: true, bgColor: "#FFFFFF", bgOpacity: 0.95 }),
+      P("tband-black", "검정 반투명 띠", { font: "Pretendard", color: "#FFFFFF", bg: true, bgColor: "#000000", bgOpacity: 0.6 }),
+    ],
+  },
+  {
+    group: "뉴스 자막 바", items: [
+      P("nbs-blue", "뉴스 바 · 파랑", { font: "Pretendard", color: "#0B1F4D", outlineWidth: 0, bg: true, bgColor: "#FFFFFF", bgOpacity: 1, bold: true , tag: "NEWS", tagColor: "#1D4ED8"}),
+      P("nbs-red", "뉴스 바 · 빨강", { font: "Pretendard", color: "#111111", outlineWidth: 0, bg: true, bgColor: "#FFFFFF", bgOpacity: 1, bold: true , tag: "NEWS", tagColor: "#C62828"}),
+      P("nbs-navy", "뉴스 바 · 남색", { font: "Pretendard", color: "#0B1F4D", outlineWidth: 0, bg: true, bgColor: "#FFFFFF", bgOpacity: 1, bold: true , tag: "NEWS", tagColor: "#0B1F4D"}),
+      P("nbs-green", "뉴스 바 · 초록", { font: "Pretendard", color: "#111111", outlineWidth: 0, bg: true, bgColor: "#FFFFFF", bgOpacity: 1, bold: true , tag: "NEWS", tagColor: "#0F766E"}),
+      P("nbs-black", "뉴스 바 · 검정", { font: "Pretendard", color: "#111111", outlineWidth: 0, bg: true, bgColor: "#FFFFFF", bgOpacity: 1, bold: true , tag: "NEWS", tagColor: "#111111"}),
     ],
   },
 ];
@@ -159,7 +196,7 @@ export function subLookCss(s: Partial<SubtitleSettings>, px: number, k: number):
 
 /** 글자 칸 [텍스트 › 기본] 에 보이는 묶음 / [텍스트 › 편집효과] 에 보이는 묶음 (회의 3-28) */
 export const BASIC_GROUPS = ["기본", "글꼴", "상자"];
-export const EFFECT_GROUPS = ["네온·빛", "예능·유튜브", "다큐·뉴스"];
+export const EFFECT_GROUPS = ["네온·빛", "예능·유튜브", "다큐·뉴스", "제목·채널명", "뉴스 자막 바"];
 
 /* ── 내 사전설정 — 내가 만든 글자 (모양 + 애니메이션). 이 PC 에 저장 (나중에 계정에 올려 다른 PC 에서도) ── */
 export type MyPreset = { id: string; name: string; look: TextLook; anim?: LayerAnim; at: number; /** ☆로 담은 것 — 어느 사전설정에서 ("기본:plain" 등) */ src?: string };

@@ -74,7 +74,9 @@ function image(prompt, onProgress, opts = {}) {
   const word = { "16:9": "wide 16:9 landscape", "9:16": "tall 9:16 vertical", "1:1": "square 1:1", "4:5": "vertical 4:5", "4:3": "4:3 landscape" }[ratio];
   // files: 캐릭터 시트 등 참고 사진 (2026-10-21 사장님: 캐릭터 일관성) — 있는 파일만
   const files = (opts.files || []).filter((x) => x && require("fs").existsSync(x)).slice(0, 3);
-  return ai.askImage(word ? `${prompt} Image aspect ratio: ${word}.` : prompt, { onProgress, ratio, files });
+  // 쓸 AI — 그림을 그릴 수 있는 AI(ChatGPT·Gemini)를 골랐으면 그것으로, Claude 면 기본 이미지 생성 AI (2026-10-21 사장님: Gemini 골랐는데 ChatGPT 가 그렸다)
+  const pick = opts.ai && opts.ai.provider && opts.ai.provider !== "claude" ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {};
+  return ai.askImage(word ? `${prompt} Image aspect ratio: ${word}.` : prompt, { ...pick, onProgress, ratio, files });
 }
 
 /* ── 클립별 AI 그림 — 대본 → 영어 장면 설명 (2026-10-19 사장님, 공실뉴스 AI 스튜디오 앱 방식) ──
@@ -133,7 +135,8 @@ async function imagePrompts(lines, opts = {}, onProgress = () => {}) {
     ].filter((x) => x !== "").join("\n");
   }
   onProgress("글 AI가 클립마다 장면 설명을 쓰는 중…");
-  const text = await ai.ask(prompt, { onProgress, busyLabel: "그림 장면 설명을 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
+  const pick = opts.ai && opts.ai.provider ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {}; // 쓸 AI 를 골랐으면 그것으로 (2026-10-21: 프롬프트·그림에도)
+  const text = await ai.ask(prompt, { ...pick, onProgress, busyLabel: "그림 장면 설명을 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
   const out = parse(text) || [];
   return list.map((_, i) => out[i] || "");
 }
@@ -194,7 +197,8 @@ async function clipPrompts(lines, opts = {}, onProgress = () => {}) {
       : `Answer JSON only: an array of exactly ${list.length} objects {"image": "...", "motion": "..."} in the same order.`,
   ].filter((x) => x !== "").join("\n");
   onProgress("글 AI가 클립마다 이미지·동영상 프롬프트를 쓰는 중…");
-  const text = await ai.ask(prompt, { onProgress, busyLabel: "이미지·동영상 프롬프트를 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
+  const aiPick = opts.ai && opts.ai.provider ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {}; // 쓸 AI 를 골랐으면 그것으로 (2026-10-21: 프롬프트·그림에도)
+  const text = await ai.ask(prompt, { ...aiPick, onProgress, busyLabel: "이미지·동영상 프롬프트를 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
   const out = parse(text) || [];
   const clips = list.map((_, i) => out[i] || { image: "", motion: "" });
   if (pick) return { style: pick.some((x) => x.id === chosen) ? chosen : pick[0].id, clips };

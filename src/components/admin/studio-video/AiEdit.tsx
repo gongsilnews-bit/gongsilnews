@@ -17,7 +17,7 @@ import { TRANSITIONS, type TransType } from "./transitions";
 import { AD_LAW_LABELS, TEMPLATES, TPL_PREFIX, drawTemplate, tplFonts, tplTextOf } from "./Templates";
 import { STYLE_PACKS, defaultPack, packOf, type StylePack } from "./stylePacks";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
-import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
+import { IMAGE_STYLES, imagePrompt, type ImageStyle } from "@/lib/studio-video/imageStyles";
 import { useStudioImager, useStudioWriter } from "@/components/admin/sections/useStudioWriter";
 import { findStudioVacancyByNo, getStudioAgency, listMyStudioVacancies } from "@/app/actions/studio";
 import { AiPick, aiChoiceName, effectiveAi, useAiPick } from "./AiPick";
@@ -65,7 +65,7 @@ export function softCuts(p: Project, pickType?: (i: number) => TransType) {
 type Prefs = {
   order: "ai" | "seq"; stock: boolean; aiOn: boolean; aiMax: number; aiStyle: string;
   sub: string; emph: boolean; appear: boolean; graphics: Amount; sfx: Amount; trans: TransMode;
-  titleOn: boolean; channelOn: boolean; channel: string; subscribe: boolean; subAt: "mid" | "start" | "end"; endCard: boolean; request: string;
+  titleOn: boolean; channelOn: boolean; channel: string; subscribe: boolean; subAt: "mid" | "start" | "end"; endCard: boolean; request: string; /** 자막 모양은 그대로 두기 (대본 쓰고 편집에서 고른 것) */ keepLook?: boolean;
   pack: string; // 스타일 팩 — "auto" = AI 가 대본을 읽고 고름 (2026-10-20 사장님)
   keyText: boolean; // 핵심 글자 (가격·면적을 화면 가운데 크게) — 처음엔 끔 (2026-10-20 사장님: 촌스럽다)
   endDesign: string; // 끝 화면 디자인 — [그래픽 › 부동산 › 부동산 표시광고] 10가지 중 하나
@@ -76,6 +76,7 @@ type Prefs = {
   over: "empty" | "all"; // 채울 클립 — 빈 클립만 / 모두 다시 (AI가 채운 화면·촬영 화면도, 내가 직접 넣은 화면은 그대로)
   intro: LibItem | null; outro: LibItem | null; // 기본 인트로·아웃트로 (내 자료)
   introAuto: boolean; outroAuto: boolean; // AI 편집 때마다 자동으로 붙이기
+  music?: boolean; // 자동 편집 — 배경음악 (없으면 넣기)
   // 내 맞춤 프롬프트 (2026-10-21 사장님) — 모든 AI 그림에 붙는 말 · 이름 붙여 저장해 둔 것
   myPrompt: string; myPrompts: { id: string; label: string; text: string }[];
   charSheet: LibItem[]; // 캐릭터 시트 (2026-10-21 사장님: 캐릭터 일관성) — 모든 그림에 참고 사진으로 함께 보낸다, 3장까지
@@ -125,7 +126,11 @@ type PicKind = NonNullable<NonNullable<Clip["aiPic"]>["kind"]>;
 const PIC_KINDS: [PicKind, string][] = [["auto", "자동"], ["background", "배경"], ["character", "인물"], ["graph", "그래프"]];
 const LISTING_LABEL = /소재지|거래|금액|가격|보증금|월세|면적|층|사용승인|준공|방향|방\s*수|방\/|욕실|입주|주차|관리비|종류|용도/;
 
-export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUndo, onClose, autoStart }: {
+export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUndo, onClose, autoStart, mode = "auto", onSwitch }: {
+  /** 두 페이지 오가기 — 자동 편집 ② [AI 이미지·영상 만들기 →] · 제작 [← AI 자동 편집으로] (2026-10-21 사장님) */
+  onSwitch?: (to: "auto" | "make") => void;
+  /** auto = AI 자동 영상 편집 · 초안 (내 사진·영상 + 무료 자료 + 꾸미기 한 번에) / make = AI 이미지·영상 제작 (프롬프트·이미지·동영상) — 2026-10-21 사장님 */
+  mode?: "auto" | "make";
   project: Project;
   selected: string[];
   ensureAsset: (item: LibItem) => Promise<Asset>;
@@ -142,6 +147,9 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   const imager = useStudioImager();
   const [pfRaw, setPf] = useState<Prefs>(loadPrefs);
   const pf: Prefs = { ...DEF, ...pfRaw }; // 새로 생긴 칸(캐릭터 시트 등)은 옛 설정에 없다 — 늘 기본값으로 채운다
+  // 내 이미지 스타일 — 내 맞춤 프롬프트를 [이미지 스타일에 추가]로 저장한 것 (2026-10-21 사장님). 고르면 모든 클립이 그 스타일
+  const myStyles: ImageStyle[] = pf.myPrompts.map((m) => ({ id: "my:" + m.id, label: m.label, desc: `내 이미지 스타일 — ${m.text}`, prompt: `Art style: ${m.text}.`, bg: "linear-gradient(135deg,#334155,#0f172a)" }));
+  const allStyles: ImageStyle[] = [...IMAGE_STYLES, ...myStyles];
   const set = <K extends keyof Prefs>(k: K, v: Prefs[K]) => setPf((x) => {
     const n = { ...x, [k]: v };
     try { localStorage.setItem(PREF_KEY, JSON.stringify(n)); } catch {}
@@ -175,8 +183,8 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   // 클립 — 오른쪽 목록 · 빈 클립
   const flat = useMemo(() => flatten(project).items.filter((x) => x.clip.type !== "silence" && !x.clip.card), [project]); // 인트로·아웃트로·쉼·끝 화면 칸은 빼고
   // 화면 — 넣은 화면, 없으면 촬영 원본이 "영상"일 때만 (AI 보이스·녹음처럼 소리만 있는 원본은 화면이 아니다, 2026-10-21: 빈칸 0개로 잘못 셌다)
-  const screenOf = (c: Clip) => c.visual?.asset || (c.type !== "voice" && c.src && project.assets[c.src.asset]?.kind === "video" ? c.src.asset : "") || "";
-  const emptyN = flat.filter((x) => !screenOf(x.clip)).length;
+  const screenOf = (c: Clip) => (c.blank ? "" : c.visual?.asset || (c.type !== "voice" && c.src && project.assets[c.src.asset]?.kind === "video" ? c.src.asset : "")) || ""; // [빈칸으로 두기]면 화면 없음
+  const emptyN = flat.filter((x) => !screenOf(x.clip) && !x.clip.blank).length; // [빈칸으로 두기]는 빼고
   const pickable = flat.filter((x) => clipText(x.clip).trim()).map((x) => x.clip.id); // 고를 수 있는 클립 (글이 있는)
   const allSel = pickable.length > 0 && pickable.every((id) => selEmpty.includes(id));
   const thumbOf = (c: Clip) => {
@@ -192,7 +200,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   const orientOf = () => (project.ratio === "9:16" || project.ratio === "4:5" ? "portrait" : project.ratio === "1:1" ? "square" : "landscape");
   /** AI 그림 스타일 — 고른 것, [스타일 팩에 맞춤]이면 팩의 것 */
   // [자동] — [프롬프트 만들기] 때 AI 가 대본을 읽고 고른 스타일 하나 (project.aiStyle) 를 모든 클립에 (2026-10-21 사장님)
-  const styleOf = (packImg?: string) => (pf.aiStyle !== "auto" && IMAGE_STYLES.find((x) => x.id === pf.aiStyle)) || (pf.aiStyle === "auto" && IMAGE_STYLES.find((x) => x.id === project.aiStyle)) || IMAGE_STYLES.find((x) => x.id === packImg) || IMAGE_STYLES.find((x) => x.id === "realistic")!;
+  const styleOf = (packImg?: string) => (pf.aiStyle !== "auto" && allStyles.find((x) => x.id === pf.aiStyle)) || (pf.aiStyle === "auto" && allStyles.find((x) => x.id === project.aiStyle)) || allStyles.find((x) => x.id === packImg) || allStyles.find((x) => x.id === "realistic")!;
   // 캐릭터 시트를 첨부할 수 있는 앱인지 — 0.1.12(동영상과 같이 나옴)부터. 옛 앱은 사진을 버려서 "첨부한 시트" 말만 가면 AI 가 그림을 거절한다 (2026-10-21)
   const charApp = Boolean(b.ai.video);
   const charOn = pf.charSheet.length > 0 && charApp;
@@ -205,7 +213,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   // 2026-10-21 사장님: 그림 스타일은 왼쪽 하나로 모든 클립에 똑같이 — 클립마다 다른 스타일은 쓰지 않는다 (옛 프로젝트의 클립 스타일도 무시)
   const picStyle = (_c: Clip) => styleOf(undefined);
   /** 건드리지 않는 클립 — [빈 클립만]: 화면이 있는 클립 / [모두 다시]: 내가 직접 넣은 화면만 (2026-10-21 사장님: 화면이 다 있으면 아무 반응이 없었다) */
-  const keepOf = (c: Clip) => (pf.over === "all" ? Boolean(c.visual && !c.fillFrom) : Boolean(screenOf(c)));
+  const keepOf = (c: Clip) => Boolean(c.blank) || (pf.over === "all" ? Boolean(c.visual && !c.fillFrom) : Boolean(screenOf(c)));
   type FillVis = { asset: string; s: number; hold?: boolean; from: NonNullable<Clip["fillFrom"]> };
   type PlanClip = { act: string; v?: number; t?: number; desc?: string; keywords?: string };
   /** opts — 이번에 쓸 재료 (① 내 사진·영상 / ② 빈 곳: 무료 → AI 그림 → 내 사진 다시) · skip — 건드리지 않을 클립 */
@@ -242,7 +250,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       if (aiNo >= aiMax || !desc.trim()) return null;
       aiNo++;
       setBusy(`${imager}가 그림을 그리는 중… (${aiNo}/${aiMax}) — 한 장에 30초~1분`);
-      const it = await b.ai.image(project.dir, `${imagePrompt(c?.aiPic?.prompt || desc, c ? picStyle(c) : sty)}${mine()} ${orient === "portrait" ? "Vertical 9:16 composition." : orient === "square" ? "Square composition." : "Horizontal 16:9 composition."}`, { ratio: project.ratio, ...refs() });
+      const it = await b.ai.image(project.dir, `${imagePrompt(c?.aiPic?.prompt || desc, c ? picStyle(c) : sty)}${mine()} ${orient === "portrait" ? "Vertical 9:16 composition." : orient === "square" ? "Square composition." : "Horizontal 16:9 composition."}`, { ratio: project.ratio, ...refs(), ai: aiUse });
       return put(it, "ai");
     };
     for (let i = 0; i < targets.length; i++) {
@@ -361,6 +369,33 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
     }
   };
 
+  /** 자동 편집 — 빈 클립 화면 채우기 한 번 (AI 가 내 사진·영상을 문장에 맞춰 배치, 빈 곳은 무료·AI 이미지). 넣은 화면 수 */
+  const fillAuto = async (targets: typeof flat) => {
+    const ok = mats.filter((f) => f.path);
+    const todo = targets.filter((x) => !keepOf(x.clip));
+    if (!todo.length) return 0;
+    const o: FillOpts = { mine: ok.length > 0, stock: pf.stock, ai: pf.aiOn, reuse: ok.length > 0, aiMax: pf.aiMax };
+    let plan: { clips: PlanClip[] } = { clips: [] };
+    if (!(o.mine && pf.order === "seq")) {
+      const locked = targets.map((x, i) => (keepOf(x.clip) ? i + 1 : 0)).filter(Boolean);
+      setBusy(`${aiName}가 클립마다 화면을 정하는 중… (1분 안팎)`);
+      const cat = aiEditCatalog();
+      cat.presets = []; cat.stickers = []; cat.sfx = [];
+      plan = await b.ai.edit!(targets.map((x) => clipText(x.clip)), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })),
+        { aiMax: o.ai ? pf.aiMax : 0, moods: [...MUSIC_MOODS], screen: true, ratio: project.ratio, catalog: cat, kind, request: pf.request, locked, stock: o.stock, graphics: "none", sfx: "none", ai: aiUse });
+    }
+    const { vis } = await fillCore(targets, plan, styleOf(undefined), o, keepOf);
+    if (!Object.keys(vis).length) return 0;
+    steps.current++;
+    apply((p) => {
+      p.materials = mats;
+      const find = (id: string) => p.scenes.flatMap((s) => s.clips).find((x) => x.id === id);
+      for (const x of targets) { const c = find(x.clip.id); const v = vis[x.clip.id]; if (c && v) { c.visual = { asset: v.asset, s: v.s }; c.fillFrom = v.from; if (v.hold) c.visualHold = true; else delete c.visualHold; } }
+    });
+    return Object.keys(vis).length;
+  };
+  const steps = React.useRef(0); // 자동 편집이 넣은 되돌리기 칸 수 — [한 번에 되돌리기]는 이만큼 되돌린다
+
   /* ── ② 자료 넣기 ── */
   const addMats = (items: LibItem[]) => setMats((v) => [...v, ...items.filter((x) => (x.kind === "image" || x.kind === "video") && !v.some((y) => y.id === x.id))].slice(0, 30));
   const [picker, setPicker] = useState<LibItem[] | null>(null);
@@ -478,13 +513,26 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   };
 
   const started = React.useRef(false);
+  const [go, setGo] = useState(false);
   useEffect(() => {
     if (autoStart && !started.current) {
       started.current = true;
-      void start();
+      const r = project.settings.aiAutoReq;
+      if (r) {
+        // 대본 쓰고 편집의 [편집 요청 사항] — 이번 한 번만 (저장하지 않음). 꾸미기에서 고른 제목·채널명·엔딩·음악·자막 모양은 그대로
+        setPf((x) => ({ ...x, request: r.request, titleOn: false, channelOn: false, endCard: false, subscribe: false, music: false, keepLook: true, ...(r.keepTrans ? { trans: "none" as const } : {}) }));
+        setGo(true);
+      } else void start();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
+  useEffect(() => {
+    if (!go) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGo(false);
+    void start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [go]);
 
   /* ── AI 편집 시작 ── */
   const start = async () => {
@@ -496,8 +544,10 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       const all = flat;
       const targets = (onlySel && selected.length ? all.filter((x) => selected.includes(x.clip.id)) : all).filter((x) => clipText(x.clip).trim());
       if (!targets.length) throw new Error("편집할 클립이 없어요 (자막·글이 있는 클립이 필요해요). 먼저 [자동 자막 만들기]를 해 주세요.");
-      // 빈 곳부터 — AI 그림으로 (오른쪽에서 고른 빈칸, 안 골랐으면 빈칸 모두). 그다음 꾸미기 (2026-10-21 사장님)
-      if (emptyN > 0 || selEmpty.length) await drawEmpty();
+      steps.current = 0;
+      // 자동 편집 — 내 사진·영상 + 무료(+AI 이미지)로 빈 곳부터 채우고, 이어서 꾸미기 (2026-10-21 사장님: 완성 초안 한 번에)
+      const filled = mode === "auto" ? await fillAuto(targets) : 0;
+      if (mode !== "auto" && (emptyN > 0 || selEmpty.length)) await drawEmpty();
       const locked = targets.map((_, i) => i + 1); // 화면은 바꾸지 않는다 (①·② 에서)
       // 1) 글 AI — 꾸미기 계획
       setBusy(`${aiName}가 편집 계획을 세우는 중… (1~2분)`);
@@ -511,8 +561,9 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
         { aiMax: 0, moods: [...MUSIC_MOODS], screen: false, ratio: project.ratio, catalog: cat, kind, request: pf.request, locked, stock: false, graphics: chosen?.graphics || "some", sfx: chosen?.sfx || "some", ai: aiUse,
           ...(chosen ? {} : { packs: STYLE_PACKS.map((x) => ({ id: x.id, label: x.label, desc: x.desc })) }) });
       const P: StylePack = chosen || packOf(plan.pack || "") || defaultPack(kind, project.ratio);
-      const doStk = P.graphics !== "none";
-      const SX = P.sfx;
+      const doStk = P.graphics !== "none" && pf.graphics !== "none";
+      const SX = pf.sfx === "none" ? "none" : P.sfx;
+      const doTrans = pf.trans !== "none";
       // 스티커(그래픽) 그림 — 편집기에서 그려 프로젝트에 저장
       const stk: Record<string, { item: LibItem; spec: Sticker }> = {};
       const wantStk = doStk ? plan.clips.map((x, i) => ({ i, s: x.sticker })).filter((x) => x.s) : [];
@@ -542,7 +593,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       const cards = await autoCards();
       // 3) 배경음악 — 없을 때만
       let music: { file: string; url: string; name: string } | null = null;
-      if (!(project.layers || []).some((l) => l.type === "music")) {
+      if (pf.music !== false && !(project.layers || []).some((l) => l.type === "music")) {
         const track = MUSIC_LIBRARY.find((t) => t.mood === P.music) || MUSIC_LIBRARY.find((t) => t.mood === plan.music) || MUSIC_LIBRARY.find((t) => t.mood === "잔잔한");
         if (track) {
           setBusy(`배경음악을 넣는 중… (${track.mood})`);
@@ -606,8 +657,10 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
         } catch {}
       }
       // 4) 한 번에 넣기 (되돌리기 한 번)
+      steps.current++;
       apply((p) => {
         delete p.settings.aiAuto;
+        delete p.settings.aiAutoReq;
         p.kind = kind;
         p.materials = mats;
         const find = (id: string): Clip | undefined => p.scenes.flatMap((s) => s.clips).find((x) => x.id === id);
@@ -617,7 +670,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
           const pl = plan.clips[i];
           if (!c || !pl) return;
           putVis(c, vis[c.id]);
-          if (pl.trans) { const ty = transType(i); const sx = transSfx(ty); c.trans = { type: ty, a: 0.3, b: 0.3, ...(sx ? { sfx: sx } : {}) }; }
+          if (doTrans && pl.trans) { const ty = transType(i); const sx = transSfx(ty); c.trans = { type: ty, a: 0.3, b: 0.3, ...(sx ? { sfx: sx } : {}) }; }
           const kg = keyG[c.id];
           if (kg) {
             const tallK = p.ratio === "9:16" || p.ratio === "4:5";
@@ -637,7 +690,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
         {
           const sub = p.settings.subtitle;
           const lk = plan.look;
-          const pre = SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === P.sub);
+          const pre = pf.keepLook ? null : SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === P.sub);
           const anim: LayerAnim = { ...(sub.anim || {}), in: P.subIn as LayerAnim["in"], out: "fade", emph: undefined };
           // 쇼츠(세로) — 한 단어씩 + 말하는 단어 색+커지기 로 고정 (2026-10-20 사장님). 쇼츠 팩도 같다
           const shortsV = P.word || p.ratio === "9:16" || p.ratio === "4:5";
@@ -646,7 +699,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
           p.settings.subtitle = { ...sub, ...(pre ? { ...(PLAIN_LOOK as Partial<typeof sub>), ...pre.look } : {}), anim };
         }
         cards(p); // 기본 인트로·아웃트로
-        softCuts(p, transType); // 화면이 바뀌는 곳마다 팩의 전환
+        if (doTrans) softCuts(p, transType); // 화면이 바뀌는 곳마다 팩의 전환
         for (const it of flatten(p).items) { const tr = it.clip.trans; if (tr && !tr.sfx) { const sx = transSfx(tr.type); if (sx) tr.sfx = sx; } }
         const items = flatten(p).items.filter((x) => !x.clip.card);
         const first = items[0]?.clip.id, last = items[items.length - 1]?.clip.id;
@@ -684,9 +737,10 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       if (music) done.push({ n: 0, text: "", what: `배경음악 · ${music.name}` });
       if (endTxt) done.push({ n: 0, text: "", what: `끝 화면 · 부동산 표시광고 "${(pf.endDesign ? endDef?.label : P.end) || ""}" · ${agency?.name || "중개사무소 정보"} (5초)` });
       done.unshift({ n: 0, text: "", what: `스타일 팩 · ${P.label} (AI가 골랐어요) — ${P.desc}` });
+      if (filled) done.unshift({ n: 0, text: "", what: `화면 채우기 · 빈 클립 ${filled}개 (내 사진·영상${pf.stock ? " · 무료" : ""}${pf.aiOn ? " · AI 이미지" : ""})` });
       setRows(done);
     } catch (e) {
-      if (autoStart) apply((p) => { delete p.settings.aiAuto; });
+      if (autoStart) apply((p) => { delete p.settings.aiAuto; delete p.settings.aiAutoReq; });
       setErr(errText(e));
     } finally {
       off();
@@ -711,11 +765,24 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       c.fillFrom = from;
       if (a.kind === "video") c.visualHold = true;
       else delete c.visualHold;
+      if (c.blank) { delete c.blank; if (c.opacity === 0) delete c.opacity; }
     });
   };
   const clearScreen = (id: string) => apply((p) => {
     const c = p.scenes.flatMap((s) => s.clips).find((x) => x.id === id);
     if (!c) return;
+    c.visual = null;
+    delete c.fillFrom;
+    delete c.visualHold;
+    // 촬영 클립(원본 영상) — 화면을 뗄 수 없으니 검은 화면으로 (소리는 그대로) · 빈칸으로 둔다
+    if (c.type !== "voice" && c.src) c.blank = true;
+  });
+  /** 빈칸으로 두기 / 풀기 — AI 채우기가 건너뛴다 (2026-10-21 사장님) */
+  const toggleBlank = (id: string) => apply((p) => {
+    const c = p.scenes.flatMap((s) => s.clips).find((x) => x.id === id);
+    if (!c) return;
+    if (c.blank) { delete c.blank; if (c.opacity === 0) delete c.opacity; return; }
+    c.blank = true;
     c.visual = null;
     delete c.fillFrom;
     delete c.visualHold;
@@ -838,7 +905,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
     // [자동] — 아직 안 골랐거나 전체를 다시 만들 때: AI 가 스타일 하나를 고르며 프롬프트를 쓴다 (고쳐 달라는 말은 빼고)
     if (pf.aiStyle === "auto" && !modify && b.ai.clipPrompts && cs.length && (!pref.current.aiStyle || cs.length >= pickable.length)) {
       const r = await b.ai.clipPrompts(cs.map((c) => clipText(c)), {
-        kinds: cs.map((c) => c.aiPic?.kind || "auto"), extra: pf.myPrompt.trim(),
+        kinds: cs.map((c) => c.aiPic?.kind || "auto"), extra: pf.myPrompt.trim(), ai: aiUse,
         styles: IMAGE_STYLES.map((x) => ({ id: x.id, label: x.label, desc: x.desc, character: x.character })),
       });
       const res = Array.isArray(r) ? { style: "", clips: r } : r;
@@ -857,17 +924,17 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       });
       setDraft((d) => { const n = { ...d }; for (const c of cs) delete n[c.id]; return n; });
       setMotionDraft((d) => { const n = { ...d }; for (const c of cs) delete n[c.id]; return n; });
-      setNote(`AI가 이 영상에 맞는 그림 스타일로 [${IMAGE_STYLES.find((x) => x.id === sid)?.label}]을 골랐어요 — 모든 클립에 같아요`);
+      setNote(`AI가 이 영상에 맞는 이미지 스타일로 [${allStyles.find((x) => x.id === sid)?.label}]을 골랐어요 — 모든 클립에 같아요`);
       return made;
     }
     const groups = new Map<string, Clip[]>();
     for (const c of cs) { const k = picStyle(c).id; groups.set(k, [...(groups.get(k) || []), c]); }
     for (const [sid, list] of groups) {
-      const sty = IMAGE_STYLES.find((x) => x.id === sid)!;
+      const sty = allStyles.find((x) => x.id === sid)!;
       // 이미지 + 동영상 프롬프트 한 번에 (앱 0.1.12부터) — 고쳐 달라는 말(modify)은 이미지 프롬프트만
-      const both0 = !modify && mode !== "image" && b.ai.clipPrompts ? await b.ai.clipPrompts(list.map((c) => clipText(c)), { kinds: list.map((c) => c.aiPic?.kind || "auto"), style: sty.label, character: sty.character, extra: pf.myPrompt.trim() }) : null;
+      const both0 = !modify && mode !== "image" && b.ai.clipPrompts ? await b.ai.clipPrompts(list.map((c) => clipText(c)), { kinds: list.map((c) => c.aiPic?.kind || "auto"), style: sty.label, character: sty.character, extra: pf.myPrompt.trim(), ai: aiUse }) : null;
       const both = both0 ? (Array.isArray(both0) ? both0 : both0.clips) : null;
-      const out = both ? both.map((x) => x.image) : await b.ai.imagePrompts(list.map((c) => clipText(c)), { kinds: list.map((c) => c.aiPic?.kind || "auto"), style: sty.label, character: sty.character, modify });
+      const out = both ? both.map((x) => x.image) : await b.ai.imagePrompts(list.map((c) => clipText(c)), { kinds: list.map((c) => c.aiPic?.kind || "auto"), style: sty.label, character: sty.character, modify, ai: aiUse });
       save((p) => {
         for (const [i, c0] of list.entries()) {
           const c = p.scenes.flatMap((s) => s.clips).find((x) => x.id === c0.id);
@@ -897,14 +964,14 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   };
   /** 그리기 전에 장면 설명을 다시 써야 하는지 — 설명이 없거나, 자동·배경·인물·그래프를 바꿨거나, 스타일을 주인공이 다른 것(공실이 등)으로 바꿨을 때
    *  (2026-10-21 사장님: 고를 때마다 바로 만들지 말고 그릴 때 한 번에) — 직접 고친 설명은 스타일이 바뀌어도 그대로 */
-  const charOf = (id?: string) => IMAGE_STYLES.find((x) => x.id === id)?.character || "";
+  const charOf = (id?: string) => allStyles.find((x) => x.id === id)?.character || "";
   const needsWrite = (c: Clip) => !c.aiPic?.prompt || Boolean(c.aiPic.stale) || (!c.aiPic.hand && charOf(c.aiPic.by) !== (picStyle(c).character || ""));
 
   /** 그림 한 장 — 이 클립 장면 설명 + 스타일 (없으면 대본 글) */
   const drawPic = async (c: Clip, made?: string) => {
     const orient = orientOf();
     const desc = (made || draft[c.id] || c.aiPic?.prompt) || clipText(c) || "부동산 매물 소개 장면";
-    return b.ai.image(project.dir, `${imagePrompt(desc, picStyle(c))}${mine()} ${orient === "portrait" ? "Vertical 9:16 composition." : orient === "square" ? "Square composition." : "Horizontal 16:9 composition."}`, { ratio: project.ratio, ...refs() });
+    return b.ai.image(project.dir, `${imagePrompt(desc, picStyle(c))}${mine()} ${orient === "portrait" ? "Vertical 9:16 composition." : orient === "square" ? "Square composition." : "Horizontal 16:9 composition."}`, { ratio: project.ratio, ...refs(), ai: aiUse });
   };
   const aiOne = async (id: string) => {
     const c = flatten(pref.current).items.find((x) => x.clip.id === id)?.clip;
@@ -965,7 +1032,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   /** 빈칸 모두 그리기 — 고른 빈칸(안 골랐으면 빈칸 모두), 설명이 없으면 먼저 쓰고. 한 번에 넣어 되돌리기 한 칸 */
   const drawEmpty = async () => {
     // 고른 클립이 있으면 그것만 (화면이 있어도 AI 그림으로 바꾼다), 없으면 빈칸 모두
-    const pick = (c: Clip) => !c.card && clipText(c).trim() && (selEmpty.length ? selEmpty.includes(c.id) : !screenOf(c));
+    const pick = (c: Clip) => !c.card && !c.blank && clipText(c).trim() && (selEmpty.length ? selEmpty.includes(c.id) : !screenOf(c));
     const need = flatten(pref.current).items.map((x) => x.clip).filter((c) => pick(c) && needsWrite(c)).map((c) => c.id);
     const made = need.length ? (setBusy(`${writer}가 장면 설명을 쓰는 중…`), await writePics(need)) : {};
     const todo = flatten(pref.current).items.map((x) => x.clip).filter(pick);
@@ -1056,7 +1123,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
     // 머리말 — Flow 쓰는 법 (2026-10-21 사장님: 캐릭터 시트는 Flow 재료로 직접 올린다)
     const sty0 = styleOf(undefined);
     const header = [
-      `# 공실뉴스 스튜디오 — ${project.name || "무제"} · ${what === "image" ? "이미지" : "동영상"} 프롬프트 · 그림 스타일: ${sty0.label} · ${lines.length}개 clip`,
+      `# 공실뉴스 스튜디오 — ${project.name || "무제"} · ${what === "image" ? "이미지" : "동영상"} 프롬프트 · 이미지 스타일: ${sty0.label} · ${lines.length}개 clip`,
       "# [clip N] 아래 프롬프트를 하나씩 Flow에 붙여 넣으세요. 만든 파일 이름을 clip 1, clip 2 … 로 바꾸면 [한 번에 올리기]에서 바로 맞춰져요.",
       pf.charSheet.length ? "# 캐릭터 시트 사진은 Flow의 재료(참고 이미지)로 직접 올려 주세요 — 모든 clip에 같은 인물이 나와요." : "",
       what === "video" ? "# 첫 장면 이미지가 있는 clip은 그 이미지를 첫 프레임으로 올리면 더 똑같이 나와요. 없어도 글만으로 만들 수 있어요." : "",
@@ -1226,6 +1293,9 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
           <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: text ? "normal" : "italic" }}>{text || (picBusy ? "쓰는 중…" : "아직 없어요")}</span>
           {redo && <span style={{ flexShrink: 0, color: "#facc15" }}>바뀜 · 그릴 때 다시 써요</span>}
           <span style={{ flexShrink: 0, color: C.dim }}>{sty.label}{pic?.media === "video" ? " · 동영상" : ""}</span>
+          {/* 이 클립만 프롬프트 만들기 (2026-10-21 사장님: 꼭 다 만들어야 해서 불편) — 펼치지 않아도 바로 */}
+          <span role="button" title="이 클립만 이미지·동영상 프롬프트를 AI가 써요" onClick={(e) => { e.stopPropagation(); if (!picBusy && !busy) void runPics([c.id], `${clipName(flat.findIndex((y) => y.clip.id === c.id))} 프롬프트를 쓰는 중…`); }}
+            style={{ flexShrink: 0, height: 20, padding: "0 8px", borderRadius: 10, border: `1px solid ${C.accent}`, color: C.accent, fontSize: 11.5, fontWeight: 700, lineHeight: "18px", opacity: picBusy || busy ? 0.4 : 1 }}>{text ? "↻ 이 클립만 다시" : "✎ 이 클립만 만들기"}</span>
         </button>
         {on && (
           <div style={{ padding: 8, margin: "2px 0 6px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card }}>
@@ -1259,7 +1329,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   const openTop = (what: "kind" | "ratio") => (e: React.MouseEvent<HTMLButtonElement>) => { const r = e.currentTarget.getBoundingClientRect(); setTopMenu({ what, x: r.left, y: r.bottom + 4 }); };
   const titleBar = (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-      AI 편집
+      {mode === "make" ? "AI 이미지·영상 제작" : "AI 자동 영상 편집 · 초안"}
       <button type="button" title="영상 종류 바꾸기" onClick={openTop("kind")} onPointerDown={(e) => e.stopPropagation()} style={topChip}>
         <Icon name={KIND_ICON[kind]} size={14} />{KIND_LABEL[kind]}<Icon name="down" size={12} />
       </button>
@@ -1271,13 +1341,21 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
 
   const footer = rows ? (
     <>
-      <Btn onClick={() => { onUndo(); setRows(null); }}><Icon name="undo" size={15} />한 번에 되돌리기</Btn>
+      <Btn onClick={() => { for (let k = 0; k < Math.max(1, steps.current); k++) onUndo(); steps.current = 0; setRows(null); }}><Icon name="undo" size={15} />한 번에 되돌리기</Btn>
       <Btn primary onClick={onClose} style={{ height: 46, padding: "0 26px", fontSize: 16 }}><Icon name="check" size={17} />확인</Btn>
     </>
   ) : (
     <>
+      {mode === "auto" ? (
+        <>
+          <Btn onClick={onClose}>닫기</Btn>
+          <Btn primary disabled={Boolean(busy)} onClick={() => void start()} style={{ height: 46, padding: "0 26px", fontSize: 16 }}><Icon name="ai" size={18} />{busy ? "편집하는 중…" : "AI 자동 편집 시작"}</Btn>
+        </>
+      ) : (
+        <>
       {/* 한 번에 올리기 · Flow — 아래 줄 맨 왼쪽 (2026-10-21 사장님) */}
       <div style={{ display: "flex", gap: 8, marginRight: "auto" }}>
+        {onSwitch && <Btn onClick={() => onSwitch("auto")} title="만든 이미지·동영상은 그대로 두고, 남은 빈 곳 채우기·꾸미기로"><Icon name="back" size={15} />AI 자동 편집으로</Btn>}
         <Btn disabled={Boolean(busy)} onClick={() => void bulkPick()} title="Flow 등에서 만든 사진·동영상 여러 개 — 파일 이름 번호(clip 1)로 클립에 맞춰 넣어요"><Icon name="open" size={15} />한 번에 올리기</Btn>
         <Btn onClick={() => window.open("https://labs.google/flow", "_blank")} title="Google Flow 열기 (브라우저)">Flow 열기 ↗</Btn>
       </div>
@@ -1285,6 +1363,8 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       {/* 아래 오른쪽 — 선택한 클립 이미지 만들기 · 동영상 만들기 (2026-10-21 사장님) */}
       <Btn primary disabled={Boolean(busy) || Boolean(picBusy) || (!emptyN && !selEmpty.length)} onClick={() => void drawAll()} style={{ height: 46, padding: "0 20px", fontSize: 15 }}><Icon name="image" size={17} />{selEmpty.length ? `선택한 클립 이미지 만들기 (${selEmpty.length})` : `빈칸 이미지 만들기 (${emptyN})`}</Btn>
       <Btn primary disabled={Boolean(busy) || Boolean(picBusy)} onClick={() => { if (gemKey === false) { setBatchAsk(false); setNoKeyFor("__all"); return; } setNoKeyFor(""); setBatchAsk(!batchAsk); }} style={{ height: 46, padding: "0 20px", fontSize: 15 }}><Icon name="video" size={17} />{selEmpty.length ? "선택한 클립" : "전체"} 동영상 만들기 ({videoTargets().length})</Btn>
+        </>
+      )}
     </>
   );
 
@@ -1296,6 +1376,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
         <div style={{ width: 560, flexShrink: 0, padding: "6px 26px 20px", borderRight: `1px solid ${C.line}`, overflowY: "auto" }}>
           {/* [영상 종류·화면 비율] 칸은 뺐다 (2026-10-21 사장님) — 종류는 프로젝트 값(매물이면 매물 소개), 비율은 위쪽 화면 비율 단추 */}
           {/* [내 사진·영상 채우기] 칸은 뺐다 (2026-10-21 사장님) — 내 사진·영상은 오른쪽 화면 편집판에서 클립마다 직접 넣는다 */}
+          {mode === "make" && (<>
           {/* ③ 빈 곳 채우기 — AI 요청 2번 */}
           <div style={sec}>
             {head(<>AI 영상·이미지 생성 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· 스타일·캐릭터를 정하고 아래 [프롬프트 만들기]</span></>)}
@@ -1303,58 +1384,47 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
             <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8 }}>① 스타일·캐릭터 시트 정하기 → ② [프롬프트 만들기] (이미지·동영상 프롬프트 한 번에) → ③ 오른쪽 위 줄에서 이미지·동영상 만들기, TXT 내보내기(Flow), 한 번에 올리기. 클립을 고르면 고른 것만, 안 고르면 전체.</div>
             {(
               <div style={{ marginTop: 4 }}>
-                {/* 내 맞춤 프롬프트 (2026-10-21 사장님) — 모든 그림에 붙는 말, 이름 붙여 저장 */}
-                <div style={{ fontSize: 13, color: C.sub, margin: "0 0 6px" }}>내 맞춤 프롬프트 <span style={{ color: C.dim }}>· 모든 그림에 함께 붙어요 (선택)</span></div>
-                {pf.myPrompts.length > 0 && (
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
-                    {pf.myPrompts.map((m) => (
-                      <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
-                        <button type="button" title={m.text} onClick={() => set("myPrompt", pf.myPrompt.trim() === m.text ? "" : m.text)}
-                          style={{ ...chip(pf.myPrompt.trim() === m.text), height: 26, padding: "0 9px", fontSize: 12.5 }}>★ {m.label}</button>
-                        <button type="button" title="저장한 것 지우기" onClick={() => set("myPrompts", pf.myPrompts.filter((x) => x.id !== m.id))}
-                          style={{ ...mini, marginLeft: 2, background: "transparent", color: C.dim }}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <textarea value={pf.myPrompt} onChange={(e) => set("myPrompt", e.target.value)} onKeyDown={(e) => e.stopPropagation()} rows={2}
-                  placeholder="예: 인물은 늘 30대 한국인 여성 중개사, 밝고 따뜻한 톤, 서울 도심 배경"
-                  style={{ ...input, height: "auto", width: "100%", boxSizing: "border-box", padding: 10, lineHeight: 1.5, resize: "vertical", fontSize: 13 }} />
-                <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
-                  {myName !== null ? (
-                    <>
-                      <input autoFocus value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="이름 (예: 우리 사무실 톤)"
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.key === "Escape") setMyName(null);
-                          if (e.key === "Enter" && myName.trim()) { set("myPrompts", [...pf.myPrompts, { id: "mp" + Date.now(), label: myName.trim().slice(0, 16), text: pf.myPrompt.trim() }]); setMyName(null); }
-                        }}
-                        style={{ ...input, height: 28, fontSize: 12.5, width: 190 }} />
-                      <Btn small disabled={!myName.trim()} onClick={() => { set("myPrompts", [...pf.myPrompts, { id: "mp" + Date.now(), label: myName.trim().slice(0, 16), text: pf.myPrompt.trim() }]); setMyName(null); }}>저장</Btn>
-                      <Btn small onClick={() => setMyName(null)}>취소</Btn>
-                    </>
-                  ) : (
-                    <>
-                      <Btn small disabled={!pf.myPrompt.trim() || pf.myPrompts.some((x) => x.text === pf.myPrompt.trim())} onClick={() => setMyName("")}>★ 저장</Btn>
-                      {pf.myPrompt.trim() && <Btn small onClick={() => set("myPrompt", "")}>비우기</Btn>}
-                    </>
-                  )}
-                </div>
-                <div style={{ height: 14 }} />
                 {/* 그림 스타일 — [AI 사진] 칸과 같은 스타일 (2026-10-21 사장님) */}
-                <div style={{ fontSize: 13, color: C.sub, marginBottom: 6 }}>그림 스타일</div>
+                <div style={{ fontSize: 13, color: C.sub, marginBottom: 6 }}>이미지 스타일</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
-                  {[{ id: "auto", label: pf.aiStyle === "auto" && project.aiStyle ? `자동 · ${IMAGE_STYLES.find((x) => x.id === project.aiStyle)?.label || ""}` : "자동 (AI가 맞춤)", thumb: "" }, ...IMAGE_STYLES.map((x) => ({ id: x.id, label: x.label, thumb: x.thumb || "" }))].slice(0, open.styles ? 999 : 9).map((x) => {
+                  {[{ id: "auto", label: pf.aiStyle === "auto" && project.aiStyle ? `자동 · ${allStyles.find((x) => x.id === project.aiStyle)?.label || ""}` : "자동 (AI가 맞춤)", thumb: "", title: "AI가 대본을 읽고 하나를 골라 모든 클립에" }, ...myStyles.map((x) => ({ id: x.id, label: "★ " + x.label, thumb: "", title: x.desc })), ...IMAGE_STYLES.map((x) => ({ id: x.id, label: x.label, thumb: x.thumb || "", title: x.desc }))].slice(0, open.styles ? 999 : 9 + myStyles.length).map((x) => {
                     const on = pf.aiStyle === x.id;
+                    const mine = x.id.startsWith("my:");
                     return (
-                      <button key={x.id} type="button" onClick={() => set("aiStyle", x.id)} title={x.label}
+                      <button key={x.id} type="button" onClick={() => set("aiStyle", x.id)} title={x.title}
                         style={{ position: "relative", height: 46, padding: 0, borderRadius: 6, overflow: "hidden", border: `2px solid ${on ? C.accent : C.line2}`, background: x.thumb ? `#000 url(${x.thumb}) center/cover` : C.card, cursor: "pointer", fontFamily: FONT }}>
-                        <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: x.thumb ? "rgba(0,0,0,0.35)" : "transparent", color: "#fff", fontSize: 12.5, fontWeight: 800, textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>{on ? "✓ " : ""}{x.label}</span>
+                        <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: x.thumb ? "rgba(0,0,0,0.35)" : mine ? "linear-gradient(135deg,#334155,#0f172a)" : "transparent", color: "#fff", fontSize: 12.5, fontWeight: 800, textShadow: "0 1px 3px rgba(0,0,0,.8)", padding: "0 16px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{on ? "✓ " : ""}{x.label}</span>
+                        {mine && <span role="button" title="내 이미지 스타일 지우기" onClick={(ev) => { ev.stopPropagation(); const id = x.id.slice(3); set("myPrompts", pf.myPrompts.filter((m) => m.id !== id)); if (pf.aiStyle === x.id) set("aiStyle", "auto"); }} style={{ position: "absolute", right: 2, top: 2, width: 16, height: 16, borderRadius: 8, background: "rgba(0,0,0,.6)", color: "#fff", fontSize: 11, lineHeight: "16px" }}>×</span>}
                       </button>
                     );
                   })}
                 </div>
                 <button type="button" onClick={() => setOpen((o) => ({ ...o, styles: !o.styles }))} style={{ ...chip(false), height: 28, padding: "0 10px", fontSize: 12.5, marginTop: 6 }}>{open.styles ? "▲ 접기" : `▼ 모두 보기 (${IMAGE_STYLES.length}가지)`}</button>
+                {/* 내 맞춤 프롬프트 — 이미지 스타일 아래 (2026-10-21 사장님). 쓰면 모든 그림에 붙고, [이미지 스타일에 추가]하면 ★ 카드로 남아 골라 쓴다 */}
+                <div style={{ fontSize: 13, color: C.sub, margin: "14px 0 6px" }}>내 맞춤 프롬프트 <span style={{ color: C.dim }}>· 모든 그림에 함께 붙어요 · 저장하면 ★ 이미지 스타일로 (선택)</span></div>
+                <textarea value={pf.myPrompt} onChange={(e) => set("myPrompt", e.target.value)} onKeyDown={(e) => e.stopPropagation()} rows={2}
+                  placeholder="예: 따뜻한 수채화 느낌, 파스텔 색, 부드러운 오후 햇살 · 인물은 늘 30대 한국인 여성 중개사"
+                  style={{ ...input, height: "auto", width: "100%", boxSizing: "border-box", padding: 10, lineHeight: 1.5, resize: "vertical", fontSize: 13 }} />
+                <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+                  {myName !== null ? (
+                    <>
+                      <input autoFocus value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="스타일 이름 (예: 우리 사무실 톤)"
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Escape") setMyName(null);
+                          if (e.key === "Enter" && myName.trim()) { const id = "mp" + Date.now(); set("myPrompts", [...pf.myPrompts, { id, label: myName.trim().slice(0, 14), text: pf.myPrompt.trim() }]); set("aiStyle", "my:" + id); set("myPrompt", ""); setMyName(null); }
+                        }}
+                        style={{ ...input, height: 28, fontSize: 12.5, width: 200 }} />
+                      <Btn small disabled={!myName.trim()} onClick={() => { const id = "mp" + Date.now(); set("myPrompts", [...pf.myPrompts, { id, label: myName.trim().slice(0, 14), text: pf.myPrompt.trim() }]); set("aiStyle", "my:" + id); set("myPrompt", ""); setMyName(null); }}>추가</Btn>
+                      <Btn small onClick={() => setMyName(null)}>취소</Btn>
+                    </>
+                  ) : (
+                    <>
+                      <Btn small disabled={!pf.myPrompt.trim()} onClick={() => setMyName("")} title="이 프롬프트를 이미지 스타일 칸에 ★ 카드로 남겨요 (고르면 모든 클립이 그 스타일)">★ 이미지 스타일에 추가</Btn>
+                      {pf.myPrompt.trim() && <Btn small onClick={() => set("myPrompt", "")}>비우기</Btn>}
+                    </>
+                  )}
+                </div>
                 <div style={{ height: 14 }} />
                 {/* 캐릭터 시트 (2026-10-21 사장님) — 같은 인물이 모든 그림에 나오게, 참고 사진으로 함께 보낸다 */}
                 <div style={{ fontSize: 13, color: C.sub, margin: "0 0 6px" }}>캐릭터 시트 <span style={{ color: C.dim }}>· 넣으면 모든 그림에 같은 인물이 나와요 (선택 · 3장까지)</span></div>
@@ -1381,9 +1451,92 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
             {note && noteAt === "rest" && <div style={{ fontSize: 13, color: C.accent, marginTop: 8, lineHeight: 1.5 }}>{note}</div>}
           </div>
 
+          </>)}
+          {/* ── AI 자동 영상 편집 · 초안 (2026-10-21 사장님) — 내 사진·영상 + 무료 자료(+AI 이미지) + 음악·전환·그래픽·효과음·자막까지 한 번에 ── */}
+          {mode === "auto" && (
+            <>
+              <div style={sec}>
+                {head(<>내 사진·영상 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· AI가 문장에 맞춰 넣어요 ({mats.length}/30)</span></>)}
+                {mats.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 5, marginBottom: 8 }}>
+                    {mats.map((f, i) => (
+                      <div key={f.id} title={f.name} style={{ position: "relative", aspectRatio: "16 / 10", borderRadius: 4, overflow: "hidden", background: "#000", border: `1px solid ${C.line2}` }}>
+                        {(f.thumb || f.kind === "image") && <img src={f.thumb || f.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                        {f.kind === "video" && <span style={{ position: "absolute", left: 3, bottom: 2, fontSize: 10, color: "#fff", textShadow: "0 1px 2px #000" }}>▶</span>}
+                        <button type="button" title="빼기" onClick={() => setMats((v) => v.filter((x) => x.id !== f.id))} style={{ ...mini, position: "absolute", right: 2, top: 2 }}>×</button>
+                        {i > 0 && <button type="button" title="앞으로" onClick={() => moveMat(i, -1)} style={{ ...mini, position: "absolute", left: 2, top: 2 }}>‹</button>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <Btn small onClick={async () => addMats(await b.lib.pick().catch(() => []))}><Icon name="plus" size={14} />PC에서</Btn>
+                  <Btn small onClick={async () => { setPickFor(null); setPickSel([]); setPicker(await b.lib.list({ kind: "all" }).catch(() => [])); }}><Icon name="folder" size={14} />내 자료에서</Btn>
+                  <Btn small onClick={openVac}><Icon name="image" size={14} />공실 불러오기</Btn>
+                  {mats.length > 0 && <Btn small onClick={() => setMats([])}>모두 빼기</Btn>}
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 8 }}>
+                  <span style={{ fontSize: 12.5, color: C.sub }}>넣는 방식</span>
+                  <button type="button" onClick={() => set("order", "ai")} style={{ ...chip(pf.order !== "seq"), height: 28, padding: "0 10px", fontSize: 12.5 }}>AI가 문장에 맞춰</button>
+                  <button type="button" onClick={() => set("order", "seq")} style={{ ...chip(pf.order === "seq"), height: 28, padding: "0 10px", fontSize: 12.5 }}>넣은 순서대로</button>
+                </div>
+              </div>
+
+              <div style={sec}>
+                {head(<>빈 곳 채우기 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· 내 화면이 모자란 클립</span></>)}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => set("stock", !pf.stock)} style={chip(pf.stock)}>{pf.stock ? "✓ " : ""}무료 영상·사진</button>
+                  <button type="button" onClick={() => set("aiOn", !pf.aiOn)} title="느리고 요금이 들 수 있어요 — 초안은 무료 자료로 빠르게" style={chip(pf.aiOn)}>{pf.aiOn ? "✓ " : ""}AI 이미지</button>
+                </div>
+                {pf.aiOn && (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+                    <span style={{ fontSize: 12.5, color: C.sub }}>이미지 스타일</span>
+                    <select value={pf.aiStyle} onChange={(e) => set("aiStyle", e.target.value)} style={{ ...input, height: 30, fontSize: 12.5 }}>
+                      <option value="auto">자동 (AI가 맞춤)</option>
+                      {allStyles.map((x) => <option key={x.id} value={x.id}>{x.id.startsWith("my:") ? "★ " : ""}{x.label}</option>)}
+                    </select>
+                    <span style={{ fontSize: 12.5, color: C.sub, marginLeft: 6 }}>최대</span>
+                    {[2, 4, 8, 12].map((n) => <button key={n} type="button" onClick={() => set("aiMax", n)} style={{ ...chip(pf.aiMax === n), height: 28, padding: "0 9px", fontSize: 12.5 }}>{n}장</button>)}
+                  </div>
+                )}
+                {onSwitch && (
+                  <Btn small onClick={() => onSwitch("make")} title="이미지 스타일·캐릭터 시트로 필요한 클립만 AI 이미지·동영상을 자세히 만들어요. 만든 화면은 자동 편집이 그대로 둬요" style={{ marginTop: 8 }}><Icon name="ai" size={14} />AI 이미지·영상 만들기 →</Btn>
+                )}
+                <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>순서: 내 사진·영상 → {pf.stock ? "무료 영상·사진 → " : ""}{pf.aiOn ? "AI 이미지 → " : ""}그래도 빈 곳은 내 사진 다시 · 이미 넣어 둔 화면은 그대로</div>
+              </div>
+
+              <div style={sec}>
+                {head(<>꾸미기 <span style={{ fontSize: 13, color: C.sub, fontWeight: 600 }}>· 모양은 AI가 대본에 맞춰 골라요</span></>)}
+                {([
+                  ["음악", [["넣기", pf.music !== false, () => set("music", true)], ["빼기", pf.music === false, () => set("music", false)]]],
+                  ["화면 전환", [["자동", pf.trans !== "none", () => set("trans", "auto")], ["없음", pf.trans === "none", () => set("trans", "none")]]],
+                  ["그래픽·스티커", [["조금", pf.graphics === "some", () => set("graphics", "some")], ["많이", pf.graphics === "many", () => set("graphics", "many")], ["없음", pf.graphics === "none", () => set("graphics", "none")]]],
+                  ["효과음", [["넣기", pf.sfx !== "none", () => set("sfx", "some")], ["없음", pf.sfx === "none", () => set("sfx", "none")]]],
+                  ["정보 바 (가격·면적)", [["넣기", pf.keyText, () => set("keyText", true)], ["빼기", !pf.keyText, () => set("keyText", false)]]],
+                  ["구독·좋아요", [["넣기", pf.subscribe, () => set("subscribe", true)], ["빼기", !pf.subscribe, () => set("subscribe", false)]]],
+                  ["표시·광고 끝 화면", [["넣기", pf.endCard, () => set("endCard", true)], ["빼기", !pf.endCard, () => set("endCard", false)]]],
+                ] as [string, [string, boolean, () => void][]][]).map(([lb, opts]) => (
+                  <div key={lb} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+                    <span style={{ width: 130, fontSize: 13, color: C.sub }}>{lb}</span>
+                    {opts.map(([t, on, go]) => <button key={t} type="button" onClick={go} style={{ ...chip(on), height: 28, padding: "0 10px", fontSize: 12.5 }}>{t}</button>)}
+                  </div>
+                ))}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+                  <span style={{ width: 130, fontSize: 13, color: C.sub }}>제목</span>
+                  <button type="button" onClick={() => set("titleOn", !pf.titleOn)} style={{ ...chip(pf.titleOn), height: 28, padding: "0 10px", fontSize: 12.5 }}>{pf.titleOn ? "넣기" : "빼기"}</button>
+                  {pf.titleOn && <input value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="영상 제목" style={{ ...input, height: 28, fontSize: 12.5, flex: 1 }} />}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+                  <span style={{ width: 130, fontSize: 13, color: C.sub }}>채널명</span>
+                  <button type="button" onClick={() => set("channelOn", !pf.channelOn)} style={{ ...chip(pf.channelOn), height: 28, padding: "0 10px", fontSize: 12.5 }}>{pf.channelOn ? "넣기" : "빼기"}</button>
+                  {pf.channelOn && <input value={pf.channel || agency?.name || ""} onChange={(e) => set("channel", e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="채널 이름" style={{ ...input, height: 28, fontSize: 12.5, flex: 1 }} />}
+                </div>
+              </div>
+            </>
+          )}
           {/* [인트로·아웃트로·표시광고] 칸은 오른쪽 화면 편집판으로 옮겼다 (2026-10-21 사장님) */}
+          {mode === "auto" && (<>
           {/* 꾸미기 — 다음 단계 (2026-10-21: 화면 채우기에 집중, 꾸미기는 그다음) */}
-          <div style={{ marginTop: 18, fontSize: 12.5, fontWeight: 800, color: C.dim, letterSpacing: 0.3 }}>꾸미기 — 자막·정보 바·음악·그래픽 · 설정은 저장돼요 · 마지막에 [AI 편집 시작] (AI 요청 3)</div>
 
           {/* 스타일 팩 고르기는 뺐다 (2026-10-21 사장님) — [AI 편집 시작] 때 AI 가 대본을 읽고 어울리는 디자인을 고른다 */}
           {/* ⑧ AI에게 요청 */}
@@ -1396,10 +1549,12 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
             </div>
           </div>
 
+          </>)}
           {/* ⑨ 쓸 AI */}
           <div style={{ ...sec, borderBottom: 0 }}>
             {head("쓸 AI")}
             <AiPick value={aiSel} onChange={setAiSel} list={aiList} noTitle />
+            {mode === "make" && (<>
             {/* 프롬프트 만들기 · 받기 · 올리기 — ③ 쓸 AI 아래 (2026-10-21 사장님). 클립을 고르면 고른 것만, 안 고르면 전체 */}
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 16 }}>
         {/* 이미지·동영상 프롬프트 한 번에 (2026-10-21 사장님: 단추 하나로) — AI 한 번 부르기로 둘 다 */}
@@ -1407,6 +1562,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
         {scopeHasImg && <Btn disabled={Boolean(busy)} onClick={() => saveTxt("image")} title="[clip 1] … 모양 TXT — Flow에 붙여 넣기"><Icon name="export" size={15} />이미지 프롬프트 받기</Btn>}
         {scopeHasMotion && <Btn disabled={Boolean(busy)} onClick={() => saveTxt("video")} title="[clip 1] … 모양 TXT — Flow에 붙여 넣기"><Icon name="export" size={15} />동영상 프롬프트 받기</Btn>}
             </div>
+            </>)}
           </div>
 
           {/* [더 바꾸기] 칸은 뺐다 (2026-10-21 사장님: 필요 없음) — 제목·채널명·구독·끝 화면·정보 바는 저장된 기본값대로 */}
@@ -1452,8 +1608,8 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
                 const th = thumbOf(c);
                 const has = Boolean(screenOf(c));
                 const n = flat.findIndex((y) => y.clip.id === c.id);
-                const badge = c.card ? CARD_LABEL[c.card] : !has ? "빈칸" : c.fillFrom ? FROM_LABEL[c.fillFrom] : c.type !== "voice" && c.src && !c.visual ? "촬영 화면" : "넣어 둔 화면";
-                const badgeColor = c.card ? "#a78bfa" : !has ? C.accent : c.fillFrom === "ai" ? "#f472b6" : c.fillFrom === "stock" ? "#34d399" : C.sub;
+                const badge = c.card ? CARD_LABEL[c.card] : c.blank ? "빈칸 두기" : !has ? "빈칸" : c.fillFrom ? FROM_LABEL[c.fillFrom] : c.type !== "voice" && c.src && !c.visual ? "촬영 화면" : "넣어 둔 화면";
+                const badgeColor = c.card ? "#a78bfa" : c.blank ? C.dim : !has ? C.accent : c.fillFrom === "ai" ? "#f472b6" : c.fillFrom === "stock" ? "#34d399" : C.sub;
                 return (
                   <React.Fragment key={c.id}>
                     <div draggable title="끌어서 옮기기"
@@ -1475,7 +1631,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
                       <span style={{ fontSize: 11.5, fontWeight: 800, color: badgeColor, border: `1px solid ${badgeColor}`, borderRadius: 4, padding: "1px 6px", flexShrink: 0, whiteSpace: "nowrap" }}>{badge}</span>
                       <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.card ? C.sub : C.text }}>{c.card ? `${CARD_LABEL[c.card]} · ${(c.hold || 0).toFixed(1)}초` : clipText(c) || <span style={{ color: C.dim }}>(글 없음)</span>}</span>
                       {<button type="button" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ id: c.id, x: r.left - 200, y: r.bottom + 4 }); }} style={{ ...chip(false), height: 30, padding: "0 10px", fontSize: 12.5, flexShrink: 0 }}>{has ? "바꾸기" : "넣기"} ▾</button>}
-                      {!c.card && c.visual && <button type="button" title="화면 빼기 — 빈칸으로 (글·목소리는 그대로)" onClick={() => clearScreen(c.id)} style={iconBtn}><Icon name="trash" size={15} /></button>}
+                      {!c.card && has && <button type="button" title={c.visual ? "화면 빼기 — 빈칸으로 (글·목소리는 그대로)" : "촬영 화면 가리기 — 검은 화면으로 (소리는 그대로) · 빈칸으로 둬요"} onClick={() => clearScreen(c.id)} style={iconBtn}><Icon name="trash" size={15} /></button>}
                       {c.card && <button type="button" title="이 칸 빼기" onClick={() => removeCard(c.id)} style={iconBtn}><Icon name="trash" size={15} /></button>}
                     </div>
                     {!c.card && clipText(c).trim() && picRow(c)}
@@ -1551,7 +1707,8 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
           { icon: "search", label: "무료에서 찾기", desc: "무료 영상·사진을 검색해서", run: () => { const q = clipText(c).replace(/\s+/g, " ").slice(0, 24); setStockFor({ id: c.id, q, items: null }); void (async () => { const orient = orientOf(); const [v, i] = await Promise.all([pf.stockKind === "photo" ? Promise.resolve({ items: [] as StockItem[] }) : b.stock.search(q, "video", orient).catch(() => ({ items: [] as StockItem[] })), pf.stockKind === "video" ? Promise.resolve({ items: [] as StockItem[] }) : b.stock.search(q, "photo", orient).catch(() => ({ items: [] as StockItem[] }))]); setStockFor((s) => (s && s.id === c.id ? { ...s, items: [...(v.items || []).slice(0, 12), ...(i.items || []).slice(0, 12)] } : s)); })(); } },
           ...(c.visual && project.assets[c.visual.asset]?.kind === "video" ? [{ icon: "cut", label: "앞뒤 자르기", desc: "이 영상에서 쓸 부분만 — 시작·끝을 잘라요 (문장보다 짧으면 끝 장면에서 멈춤)", run: () => setTrimFor(c.id) }] : []),
           { icon: "ai", label: "AI 그림 1장", desc: `이 문장으로 그려요 (${styleOf(undefined).label}) — 30초~1분`, run: () => void aiOne(c.id) },
-          ...(c.visual ? [{ icon: "trash", label: "화면 빼기", desc: "빈칸으로 (글·목소리는 그대로)", danger: true, run: () => clearScreen(c.id) }] : []),
+          { icon: "close", label: c.blank ? "빈칸 두기 풀기" : "빈칸으로 두기", desc: c.blank ? "다시 채울 수 있게 (촬영 화면이면 다시 보여요)" : "화면 없이 둬요 — AI 채우기·자동 편집이 넣지 않아요 (촬영 화면이면 검게, 소리는 그대로)", run: () => toggleBlank(c.id) },
+          ...(c.visual || (c.src && !c.blank) ? [{ icon: "trash", label: c.visual ? "화면 빼기" : "촬영 화면 가리기", desc: c.visual ? "빈칸으로 (글·목소리는 그대로)" : "검은 화면으로 (소리는 그대로)", danger: true, run: () => clearScreen(c.id) }] : []),
         ]} />;
       })()}
       {/* 앞뒤 자르기 — 편집 화면과 같은 창 */}
@@ -1612,6 +1769,22 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
                   <span style={{ fontSize: 11.5, color: p.item.kind === "video" ? "#f472b6" : C.sub }}>{p.item.kind === "video" ? "동영상" : "사진"}</span>
                   <span style={{ flex: "0 0 38%", minWidth: 0, fontSize: 12, color: C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{flat[p.n] ? clipText(flat[p.n].clip) : ""}</span>
                 </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
+      {/* 공실 불러오기 — 내 공실 사진을 내 사진·영상에 (자동 편집) */}
+      {vacOpen && (
+        <Modal title="공실 불러오기" onClose={() => setVacOpen(false)} width={640}>
+          <div style={{ padding: 16 }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+              <input value={vacNo} onChange={(e) => setVacNo(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter" && vacNo.trim()) void findVac(); }} placeholder="공실 광고 번호로 찾기" style={{ ...input, height: 34, flex: 1, fontSize: 13.5 }} />
+              <Btn small disabled={!vacNo.trim()} onClick={() => void findVac()}><Icon name="search" size={14} />찾기</Btn>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: "50vh", overflowY: "auto" }}>
+              {vacs === null ? <div style={{ color: C.sub, fontSize: 13.5 }}>불러오는 중…</div> : !vacs.length ? <div style={{ color: C.sub, fontSize: 13.5 }}>등록한 공실이 없어요.</div> : vacs.map((v) => (
+                <button key={v.id} type="button" onClick={() => void loadVac(v.id)} style={{ textAlign: "left", padding: "8px 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}>{v.label}</button>
               ))}
             </div>
           </div>

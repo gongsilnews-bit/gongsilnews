@@ -543,6 +543,11 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
       aIn = "aspd";
     }
   }
+  // [빈칸으로 두기] — 화면만 검게, 소리는 그대로 (AI 편집 화면 편집판, 2026-10-21 사장님)
+  if (clip.blank) {
+    filters.push(`[${vIn}]drawbox=x=0:y=0:w=iw:h=ih:color=black:t=fill[vblank]`);
+    vIn = "vblank";
+  }
   const cflip = flipChain(clip);
   if (cflip) filters.push(`[${vIn}]${cflip}[vflip]`);
   let srcLbl = cflip ? "vflip" : vIn;
@@ -897,6 +902,28 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
         extra: sub.tag ? sub.tag.replace(/^\{|\}$/g, "") : "" });
     };
     const events = fancySub(sa || wfx || Number(sst.rot) || (clip.subKf && clip.subKf.length) ? lines.flatMap((l, li) => subAnim(l, li)) : lines.flatMap(subEvents), sst, sub.size, W, H);
+    // 머리 딱지 (NEWS 등) — 자막 상자 위 왼쪽에 (미리보기 Player.tsx 와 같은 자리, 2026-10-22)
+    if (sst.tag) {
+      const ts = Math.max(10, Math.round(sub.size * 0.55));
+      const tpad = Math.round(ts * 0.25);
+      const tcol = assColor(sst.tagColor || "#1D4ED8");
+      styles.push(`Style: TG,Pretendard,${ts},&H00FFFFFF,&H00FFFFFF,${tcol},${tcol},-1,0,0,0,100,100,0,0,3,${tpad},0,1,0,0,0,1`);
+      const lh = sub.size * (lead || 1.25);
+      const pad = sst.bg ? Math.round(sub.size * 0.25 * Math.max(0.3, Math.min(2.5, Number(sst.bgPad ?? 1)))) : 0;
+      const pos = sst.position || "bottom";
+      const free = typeof sst.x === "number" && typeof sst.y === "number";
+      const wOf = (t) => [...t].reduce((a2, ch) => a2 + (ch === " " ? 0.3 : /[ᄀ-￿]/.test(ch) ? 0.95 : 0.58), 0) * sub.size;
+      for (const l of lines) {
+        const parts = String(l.text).split(/\r?\n/);
+        const n = parts.length, bh = n * lh;
+        const cy = free ? sst.y * H : pos === "top" ? H * 0.08 + bh / 2 : pos === "middle-high" ? H * 0.24 + bh / 2 : pos === "middle" ? H / 2 : H - (pos === "middle-low" ? H * 0.24 : H * 0.07) - bh / 2;
+        const top = cy - bh / 2 - pad;
+        const bw = Math.min(sub.halfW * 2, Math.max(...parts.map(wOf)));
+        const cx = free ? sst.x * W : W / 2;
+        const left = (sst.align === "left" ? cx - sub.halfW : sst.align === "right" ? cx + sub.halfW - bw : cx - bw / 2) - pad;
+        events.push(`Dialogue: 2,${assTime(l.s)},${assTime(l.e)},TG,,0,0,0,,{\\an1\\pos(${Math.round(left + tpad)},${Math.round(top - tpad - 2)})}${assEsc(String(sst.tag))}`);
+      }
+    }
     const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";
     fs.writeFileSync(path.join(tmp, `s${idx}.ass`), ass, "utf8");
     filters.push(`[${vOut}]subtitles=s${idx}.ass:fontsdir=fonts[vsub]`);

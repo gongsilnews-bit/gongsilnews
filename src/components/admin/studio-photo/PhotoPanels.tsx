@@ -1,6 +1,6 @@
 "use client";
 
-// 이미지 편집 — 오른쪽 칸: 글자(영상 편집기 글자 칸 그대로, 애니메이션 빼고) · 사진/도형 속성 · 효과(포토샵 레이어 스타일 빠른판) · 문서 · 스티커
+// 이미지 편집 — 오른쪽 칸: 글자(영상 편집기 글자 칸 그대로, 애니메이션 빼고) · 사진/도형 속성 · 효과(포토샵 레이어 스타일 빠른판) · 문서 · 그래픽
 import React, { useEffect, useState } from "react";
 import type { BlendMode, LayerEffectsInfo } from "ag-psd";
 import { Btn, C, FONT, Icon, Toggle, input, label } from "@/components/admin/studio-video/ui";
@@ -9,6 +9,7 @@ import { Side } from "@/components/admin/studio-video/Panels";
 import { TextTabs } from "@/components/admin/studio-video/TextTabs";
 import { CATS, stickerThumb, type Sticker } from "@/components/admin/studio-video/Stickers";
 import type { SubLook, TextLook } from "@/components/admin/studio-video/SubPresets";
+import { pictoCanvas, PICTOS, type PictoStyle } from "./pictos";
 import { FX_DEFAULT, applyResize, boundsOf, flipLayer, hasAdjust, hexToRgb, isText, lookOf, offsetLayer, rgbToHex, shapeCanvas, type Box, type Doc, type PLayer } from "./model";
 
 export type Mutate = (fn: () => void, key?: string) => void;
@@ -198,11 +199,21 @@ export function TextPanel({ doc, l, mutate, onClose, apply }: { doc: Doc; l: PLa
         </div>
       }
       basicBottom={<><CommonProps doc={doc} l={l} mutate={mutate} /></>}
-      bubble={<div style={{ padding: 16, fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>말풍선 모양은 위 [스티커] 단추에서 골라 넣어 주세요.</div>}
+      bubble={<div style={{ padding: 16, fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>말풍선 모양은 왼쪽 [그래픽] 단추에서 골라 넣어 주세요.</div>}
     />
   );
 }
 
+/** 픽토그램을 지금 크기·색·모양으로 다시 그리기 */
+function repaintPicto(l: PLayer) {
+  const w = l.canvas?.width || 64, h = l.canvas?.height || 64;
+  const pc = pictoCanvas(l._picto!.id, Math.max(w, h), l._picto!.color, l._picto!.style);
+  if (w === h) return pc;
+  const o = document.createElement("canvas");
+  o.width = w; o.height = h;
+  o.getContext("2d")!.drawImage(pc, 0, 0, w, h);
+  return o;
+}
 /** 사진 · 도형 · 그룹 */
 export function LayerPanel({ doc, l, mutate, onClose, fxFirst }: { doc: Doc; l: PLayer; mutate: Mutate; onClose: () => void; fxFirst?: boolean }) {
   const [tab, setTab] = useState<"basic" | "fx">(fxFirst ? "fx" : "basic");
@@ -210,7 +221,7 @@ export function LayerPanel({ doc, l, mutate, onClose, fxFirst }: { doc: Doc; l: 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (fxFirst) setTab("fx");
   }, [fxFirst, l._k]);
-  const title = l.children ? "그룹" : l._shape ? "도형" : l.adjustment ? "조정 레이어" : l.placedLayer ? "스마트 오브젝트" : "픽셀 레이어";
+  const title = l.children ? "그룹" : l._picto ? "픽토그램" : l._shape ? "도형" : l.adjustment ? "조정 레이어" : l.placedLayer ? "스마트 오브젝트" : "픽셀 레이어";
   const s = l._shape;
   return (
     <Side title={title} onClose={onClose}>
@@ -228,11 +239,24 @@ export function LayerPanel({ doc, l, mutate, onClose, fxFirst }: { doc: Doc; l: 
         <>
           {l.adjustment && <div style={{ ...row, fontSize: 13, color: C.sub, lineHeight: 1.6 }}>포토샵의 조정 레이어예요. 여기서는 미리보기에 안 보이지만, 저장하면 그대로 남아 포토샵에서는 똑같이 보여요.</div>}
           {l.placedLayer && <div style={{ ...row, fontSize: 13, color: C.sub, lineHeight: 1.6 }}>포토샵 스마트 오브젝트예요. 옮기기는 그대로, 크기를 바꾸거나 뒤집으면 그림으로 바뀌어요.</div>}
+          {l._picto && (
+            <div style={col}>
+              <span style={label}>픽토그램 색</span>
+              <ColorPick value={l._picto.color} onChange={(c) => mutate(() => { const pp = { ...l._picto!, color: c }; l._picto = pp; l.canvas = repaintPicto(l); })} />
+              <div style={{ display: "flex", gap: 6 }}>
+                {([["line", "선만"], ["circle", "원 안에"]] as const).map(([v, t]) => (
+                  <button key={v} type="button" onClick={() => mutate(() => { l._picto = { ...l._picto!, style: v }; l.canvas = repaintPicto(l); })}
+                    style={{ flex: 1, height: 32, borderRadius: 5, border: `1px solid ${l._picto!.style === v ? C.text : C.line2}`, background: l._picto!.style === v ? C.text : "transparent", color: l._picto!.style === v ? C.bg : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+                ))}
+              </div>
+            </div>
+          )}
           {s && (
             <div style={col}>
               <span style={label}>도형 색</span>
               <ColorPick value={s.color} onChange={(c) => mutate(() => { l._shape = { ...s, color: c }; l.canvas = shapeCanvas(l._shape); })} />
-              <Bar name="둥글게" v={s.radius} min={0} max={Math.round(Math.min(s.w, s.h) / 2)} unit="px" set={(v) => mutate(() => { l._shape = { ...s, radius: v }; l.canvas = shapeCanvas(l._shape); }, `rad:${l._k}`)} />
+              {(!s.kind || s.kind === "rect") && <Bar name="둥글게" v={s.radius} min={0} max={Math.round(Math.min(s.w, s.h) / 2)} unit="px" set={(v) => mutate(() => { l._shape = { ...s, radius: v }; l.canvas = shapeCanvas(l._shape); }, `rad:${l._k}`)} />}
+              {s.kind === "line" && <Bar name="두께" v={s.lw || 6} min={1} max={100} unit="px" set={(v) => mutate(() => { l._shape = { ...s, lw: v }; l.canvas = shapeCanvas(l._shape); }, `lw:${l._k}`)} />}
             </div>
           )}
           <CommonProps doc={doc} l={l} mutate={mutate} />
@@ -282,7 +306,7 @@ export function DocPanel({ doc, onResize, gridSize, onGridSize }: { doc: Doc; on
   );
 }
 
-/** 스티커 고르기 (영상 편집기와 같은 스티커) */
+/** 그래픽 고르기 (영상 편집기와 같은 그래픽) */
 export function StickerSide({ onPick, onClose }: { onPick: (s: Sticker) => Promise<void>; onClose: () => void }) {
   const [cat, setCat] = useState(CATS[0].id);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
@@ -300,7 +324,7 @@ export function StickerSide({ onPick, onClose }: { onPick: (s: Sticker) => Promi
     return () => { live = false; };
   }, [cat]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <Side title="스티커" onClose={onClose}>
+    <Side title="그래픽" onClose={onClose}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px", borderBottom: `1px solid ${C.line}` }}>
         {CATS.map((c) => (
           <button key={c.id} type="button" onClick={() => setCat(c.id)}
@@ -318,6 +342,38 @@ export function StickerSide({ onPick, onClose }: { onPick: (s: Sticker) => Promi
             </button>
           );
         })}
+      </div>
+    </Side>
+  );
+}
+
+/** [픽토그램] 칸 — 심플한 선 아이콘. 누르면 전경색으로 넣는다 (넣은 뒤 오른쪽 칸에서 색·모양을 바꾼다) */
+export function PictoSide({ color, onPick, onClose }: { color: string; onPick: (id: string, style: PictoStyle) => void; onClose: () => void }) {
+  const [style, setStyle] = useState<PictoStyle>("line");
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const o: Record<string, string> = {};
+    for (const p of PICTOS) o[p.id] = pictoCanvas(p.id, 96, style === "line" ? "#E5E7EB" : color, style).toDataURL();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUrls(o);
+  }, [style, color]);
+  return (
+    <Side title="픽토그램" onClose={onClose}>
+      <div style={{ display: "flex", gap: 6, padding: "12px 16px", borderBottom: `1px solid ${C.line}` }}>
+        {([["line", "선만"], ["circle", "원 안에"]] as const).map(([v, t]) => (
+          <button key={v} type="button" onClick={() => setStyle(v)}
+            style={{ flex: 1, height: 32, borderRadius: 16, border: `1px solid ${style === v ? C.text : C.line2}`, background: style === v ? C.text : "transparent", color: style === v ? C.bg : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+        ))}
+      </div>
+      <div style={{ padding: "8px 16px 0", fontSize: 12.5, color: C.dim }}>누르면 전경색으로 들어가요 · 크기를 키워도 또렷해요</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, padding: "10px 16px 16px" }}>
+        {PICTOS.map((p) => (
+          <button key={p.id} type="button" title={p.name} onClick={() => onPick(p.id, style)}
+            style={{ padding: "8px 2px 6px", borderRadius: 8, border: `1px solid ${C.line}`, background: C.card, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, fontFamily: FONT }}>
+            {urls[p.id] && <img src={urls[p.id]} alt="" style={{ width: 34, height: 34 }} />}
+            <span style={{ fontSize: 11, color: C.sub, whiteSpace: "nowrap" }}>{p.name}</span>
+          </button>
+        ))}
       </div>
     </Side>
   );

@@ -566,18 +566,20 @@ async function voiceFor(p, text, voiceId, opts = {}) {
   // 감정 태그([신나게] 등)는 일레븐랩스만 — 다른 성우는 태그를 빼고 읽는다 (2026-10-20)
   if (!/^el_/.test(String(voiceId))) t = t.replace(/\[[^\]]{1,20}\]\s*/g, "").trim();
   if (!t) throw new Error("읽을 문장이 없습니다.");
+  // 성우가 읽을 글 — 숫자·단위를 한글로 (8745 → 팔천칠백사십오 · 136㎡ → 백삼십육 제곱미터). 자막(text·words)은 원래 글 그대로 (2026-10-22 사장님)
+  const say = require("./speak-ko").toSpoken(t);
   const my = voiceId === "me" ? require("./myvoice") : null; // 내 목소리 — PC 에서 만든다 (목소리를 다시 등록하면 새로)
   const tc = /^tc_/.test(String(voiceId)) ? require("./typecast") : null; // 타입캐스트 성우 — 회원 자기 키로 이 앱이 바로 (2026-10-19)
   const el = /^el_/.test(String(voiceId)) ? require("./elevenlabs") : null; // 일레븐랩스 성우 — 회원 자기 키
   const emo = tc ? String(opts.emotion || "smart") : el ? String(opts.emotion || "normal") : "";
-  const h = crypto.createHash("sha1").update(`${voiceId}\n${my ? my.stamp() + "\n" : ""}${emo ? emo + "\n" : ""}${t}`).digest("hex").slice(0, 16);
+  const h = crypto.createHash("sha1").update(`${voiceId}\n${my ? my.stamp() + "\n" : ""}${emo ? emo + "\n" : ""}${say}`).digest("hex").slice(0, 16);
   const base = path.join(p.dir, "voice", `${voiceId}_${h}.wav`);
   const file = opts.fresh ? base.replace(/\.wav$/, `_${Date.now().toString(36)}.wav`) : base;
-  if (my && !fs.existsSync(file)) await my.say(t, file);
-  else if (tc && !fs.existsSync(file)) { await tc.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next }); await tidyEdges(file); }
-  else if (el && !fs.existsSync(file)) { await el.say(t, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next }); await tidyEdges(file); }
+  if (my && !fs.existsSync(file)) await my.say(say, file);
+  else if (tc && !fs.existsSync(file)) { await tc.say(say, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next }); await tidyEdges(file); }
+  else if (el && !fs.existsSync(file)) { await el.say(say, file, { voiceId, emotion: emo, prev: opts.prev, next: opts.next }); await tidyEdges(file); }
   // 제미나이 성우 — 회원 Gemini API 키로 이 PC 에서 (공실뉴스 서버 Gemini 는 쓰지 않음, 2026-10-19 사장님)
-  else if (!fs.existsSync(file)) await require("./geminitts").say(t, file, { voiceId });
+  else if (!fs.existsSync(file)) await require("./geminitts").say(say, file, { voiceId });
   if (opts.fresh) fs.copyFileSync(file, base); // 다음에 같은 문장을 부르면 새로 만든 것이 나오게
   media.allow(file);
   const info = await ff.probe(file);
