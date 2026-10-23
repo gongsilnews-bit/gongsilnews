@@ -36,7 +36,12 @@ export type Doc = {
   pristine: boolean; // 연 뒤 아무것도 안 고침 → 포토샵이 저장한 합성 그림을 그대로 보여 준다 (가장 정확)
   /** 이 문서를 만든 재료 — 가져온 공실·기사, 배경 AI 프롬프트 ("배경만 다시 만들기"에 씀) */
   meta?: { src?: { kind: "vacancy" | "article"; id: string; no?: string; title?: string }; ai?: { prompt: string; style?: string; ratio?: string } };
+  /** 여러 쪽 문서 (2026-10-23, docs/2026-10-23_photo_pages_ppt_plan.md) — psd·pristine 은 늘 지금 쪽(page)의 것.
+   *  한 장짜리 문서는 없다. PSD 로는 포토샵 대지(아트보드)로 나란히 저장한다 */
+  pages?: Page[];
+  page?: number;
 };
+export type Page = { key: string; psd: Psd; pristine: boolean };
 
 let seq = 0;
 export const uid = () => `l${Date.now().toString(36)}${(seq++).toString(36)}`;
@@ -751,6 +756,68 @@ export function hitAll(d: Doc, x: number, y: number): PLayer[] {
   return out;
 }
 
+/* ── 여러 쪽 ── 지금 쪽만 doc.psd 로 꺼내 두고, 나머지 쪽은 doc.pages 에 (편집 코드는 한 장짜리와 같게 doc.psd 만 본다) */
+export const pageCount = (d: Doc) => d.pages?.length || 1;
+export const pageIndex = (d: Doc) => (d.pages ? d.page || 0 : 0);
+/** 지금 쪽 고친 것을 쪽 목록에 적어 둔다 (쪽을 바꾸거나 저장하기 전에) */
+export function syncPage(d: Doc) {
+  if (!d.pages) return;
+  const p = d.pages[d.page || 0];
+  if (p) { p.psd = d.psd; p.pristine = d.pristine; }
+}
+function ensurePages(d: Doc): Page[] {
+  if (!d.pages) { d.pages = [{ key: uid(), psd: d.psd, pristine: d.pristine }]; d.page = 0; }
+  syncPage(d);
+  return d.pages;
+}
+export function gotoPage(d: Doc, i: number) {
+  syncPage(d);
+  const p = d.pages?.[i];
+  if (!p) return;
+  d.page = i;
+  d.psd = p.psd;
+  d.pristine = p.pristine;
+}
+/** 지금 쪽 뒤에 새 쪽 — dup 이면 지금 쪽 복제, 아니면 같은 크기 흰 쪽. 새 쪽 번호를 돌려준다 */
+export function addPage(d: Doc, dup = false): number {
+  const pages = ensurePages(d);
+  const cur = d.psd;
+  let psd: Psd;
+  if (dup) {
+    const children = cloneTree(kids(cur));
+    walk(children, (l) => { l._k = uid(); });
+    psd = { ...cur, children, canvas: undefined };
+  } else {
+    psd = newDoc({ name: "", width: cur.width, height: cur.height, bg: "white", ppi: cur.imageResources?.resolutionInfo?.horizontalResolution }).psd;
+  }
+  const at = (d.page || 0) + 1;
+  pages.splice(at, 0, { key: uid(), psd, pristine: false });
+  gotoPage(d, at);
+  return at;
+}
+export function removePage(d: Doc, i: number) {
+  const pages = ensurePages(d);
+  if (pages.length <= 1) return;
+  pages.splice(i, 1);
+  const next = Math.min(i, pages.length - 1);
+  d.page = next;
+  d.psd = pages[next].psd;
+  d.pristine = pages[next].pristine;
+}
+export function movePage(d: Doc, from: number, to: number) {
+  const pages = ensurePages(d);
+  if (from === to || to < 0 || to >= pages.length) return;
+  const [p] = pages.splice(from, 1);
+  pages.splice(to, 0, p);
+  d.page = pages.findIndex((x) => x.psd === d.psd);
+}
+/** 쪽 하나의 합성 그림 (쪽 목록 작은 그림) */
+export function pageComposite(d: Doc, i: number) {
+  syncPage(d);
+  const p = d.pages?.[i];
+  return p ? composite({ ...d, psd: p.psd, pristine: p.pristine, pages: undefined }) : composite(d);
+}
+
 /* ── 새 문서 · 열기 · 저장 ── */
 export function newDoc(o: { name: string; width: number; height: number; bg: "white" | "transparent" | string; ppi?: number }): Doc {
   const children: PLayer[] = [];
@@ -790,7 +857,59 @@ export function openPsdBytes(name: string, bytes: Uint8Array, path?: string): Do
   // 색 모드 — 우리가 저장한 CMYK 문서, 또는 포토샵 CMYK 파일 (그림은 RGB 로 바뀌어 열린다)
   const mode = memo[-1]?.mode || ((psd as { colorMode?: number }).colorMode === 4 ? "cmyk" : "rgb");
   const layerMemo = Object.keys(memo).filter((k) => k !== "-1").length;
-  return { id: uid(), name: name.replace(/\.(psd|psb)$/i, ""), path, fromFile: true, psd, mode, dirty: false, pristine: Boolean(psd.canvas) && !layerMemo, meta: memo[-1]?.meta };
+  const d: Doc = { id: uid(), name: name.replace(/\.(psd|psb)$/i, ""), path, fromFile: true, psd, mode, dirty: false, pristine: Boolean(psd.canvas) && !layerMemo, meta: memo[-1]?.meta };
+  splitArtboards(d);
+  return d;
+}
+
+/* ── 포토샵 대지(아트보드) ↔ 여러 쪽 ── 대지 하나 = 쪽 하나. 저장할 때는 쪽을 가로로 나란히 (사이 100px) */
+const BOARD_GAP = 100;
+function splitArtboards(d: Doc) {
+  const top = kids(d.psd);
+  const boards = top.filter((l) => l.artboard?.rect && l.children);
+  if (!boards.length) return;
+  const rectOf = (l: PLayer) => l.artboard!.rect;
+  boards.sort((a, b) => rectOf(a).top - rectOf(b).top || rectOf(a).left - rectOf(b).left); // 위→아래, 왼쪽→오른쪽
+  const res = d.psd.imageResources?.resolutionInfo;
+  const pages: Page[] = boards.map((g) => {
+    const r = rectOf(g);
+    const children = kids(g);
+    for (const l of children) offsetLayer(l, -r.left, -r.top);
+    return { key: uid(), pristine: false, psd: { width: Math.round(r.right - r.left), height: Math.round(r.bottom - r.top), children, imageResources: res ? { resolutionInfo: res } : undefined } };
+  });
+  // 대지 밖 레이어는 첫 쪽에 (자리 그대로 첫 대지 기준)
+  const loose = top.filter((l) => !boards.includes(l));
+  if (loose.length) {
+    const r = rectOf(boards[0]);
+    for (const l of loose) offsetLayer(l, -r.left, -r.top);
+    pages[0].psd.children = [...loose, ...kids(pages[0].psd)];
+  }
+  d.pristine = false;
+  if (pages.length > 1) { d.pages = pages; d.page = 0; }
+  d.psd = { ...pages[0].psd, imageResources: { ...(d.psd.imageResources || {}), ...(pages[0].psd.imageResources || {}) } };
+  if (d.pages) d.pages[0].psd = d.psd;
+}
+
+/** 여러 쪽 → 대지가 나란한 PSD 한 장 (포토샵에서 쪽마다 대지로 보인다) */
+function savePagesBytes(d: Doc): Uint8Array {
+  syncPage(d);
+  const pages = d.pages!;
+  let x = 0;
+  const groups: PLayer[] = pages.map((p, i) => {
+    const W = p.psd.width, H = p.psd.height;
+    const children = cloneTree(kids(p.psd));
+    walk(children, (l) => { delete l.id; }); // 쪽을 복제하면 번호가 겹친다 — 저장할 때 새로
+    for (const l of children) offsetLayer(l, x, 0);
+    const g: PLayer = { _k: uid(), name: `${i + 1}쪽`, opened: true, children, left: x, top: 0, right: x + W, bottom: H, artboard: { rect: { top: 0, left: x, bottom: H, right: x + W }, backgroundType: 1 } };
+    x += W + BOARD_GAP;
+    return g;
+  });
+  const first = pages[0].psd;
+  const all: Doc = {
+    ...d, pages: undefined, page: undefined, pristine: false,
+    psd: { ...first, width: x - BOARD_GAP, height: Math.max(...pages.map((p) => p.psd.height)), children: groups, canvas: undefined, artboards: { count: pages.length } } as Psd,
+  };
+  return savePsdOne(all);
 }
 /** PNG·JPG → 문서 (그림 한 장짜리) */
 export async function openImageBytes(name: string, bytes: Uint8Array, path?: string): Promise<Doc> {
@@ -836,6 +955,9 @@ const blendingRanges = { compositeGrayBlendSource: fullRange, compositeGraphBlen
 
 /** 문서 → PSD 바이트 (포토샵에서 열림: 글자는 글자로, 효과는 레이어 스타일로) */
 export function savePsdBytes(d: Doc): Uint8Array {
+  return d.pages && d.pages.length > 1 ? savePagesBytes(d) : savePsdOne(d);
+}
+function savePsdOne(d: Doc): Uint8Array {
   let maxId = 0;
   walk(kids(d.psd), (l) => { if (typeof l.id === "number") maxId = Math.max(maxId, l.id); });
   const memo: Memo = {};
@@ -921,7 +1043,7 @@ export async function webBytes(d: Doc, fmt: WebFmt, quality = 0.8, scale = 1): P
 /** 레이어가 하나뿐인 사진 문서인가 — 그러면 원래 형식(JPG·PNG·WebP)으로 저장 (포토샵처럼) */
 export function flatExt(d: Doc): "jpg" | "png" | "webp" | null {
   const m = /\.(jpe?g|png|webp)$/i.exec(d.path || "");
-  if (!m) return null;
+  if (!m || pageCount(d) > 1) return null; // 여러 쪽은 늘 PSD (그림 한 장으로 저장하면 다른 쪽이 사라진다)
   const top = kids(d.psd);
   if (top.length !== 1) return null;
   const l = top[0];

@@ -50,7 +50,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
 
-/* ── 공실뉴스 스튜디오 텍스트 메뉴 ──
+/* ── 공실스튜디오 텍스트 메뉴 ──
    업무 메뉴 6개만 위에 두고 나머지는 [더보기]에 접는다.
    2026-10-15 앱에서 먼저 써 보고 웹에도 켰다. 예전 아이콘 메뉴로 돌리려면 STUDIO_MENU_ON_WEB 을 false 로. */
 const STUDIO_MENU_ON_WEB = true;
@@ -61,18 +61,21 @@ const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "marketing", label: "공실마케팅", icon: <IconSend /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
-  { key: "photo", label: "이미지 편집", icon: <IconImage /> },
+  { key: "photo", label: "이미지제작", icon: <IconImage /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
 ];
 const STUDIO_MORE_KEYS = ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"];
 const STUDIO_MORE_MENU = REALTY_MENU.filter((m) => STUDIO_MORE_KEYS.includes(m.key));
 const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
-const STUDIO_BADGES = { sns: "NEW", video: "NEW", photo: "NEW" };
+// 메뉴 오른쪽 파일 표시 — 그 메뉴가 만드는 파일 (.gsn·.gsm·.gss·.psd, 글자 + 동그라미 픽토그램 — StudioSidebar FileBadge) — 2026-10-23 사장님: NEW 대신
+// 앱에서만 잠시 숨기는 메뉴 — 공실마케팅은 미완성이라 앱 배포에서 뺀다 (2026-10-23 사장님). 다시 보이려면 [] 로 (코드·작업은 그대로)
+const HIDDEN_IN_APP: string[] = ["marketing"];
+const STUDIO_BADGES = { sns: "file:gsn", marketing: "file:gsm", video: "file:gss", photo: "file:psd" };
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
 const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing");
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
+import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 export default function RealtyAdminPage() {
   return (
@@ -164,6 +167,12 @@ function RealtyAdminContent() {
     setMenuDraft(null);
   };
   const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
+  const shown = (k: string) => !(studioApp.isApp && HIDDEN_IN_APP.includes(k));
+  // 앱에서 숨긴 메뉴로 들어오면 (주소·기억된 메뉴) 대시보드로
+  useEffect(() => {
+    if (studioApp.isApp && HIDDEN_IN_APP.includes(activeMenu)) { setActiveMenu("dashboard"); router.replace("?menu=dashboard", { scroll: false }); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioApp.isApp, activeMenu]);
 
   // 공실뉴스기자(유료회원/최고관리자) 자격 판별
   const isReporterEligible =
@@ -325,8 +334,8 @@ function RealtyAdminContent() {
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
       {useStudioMenu ? (
         <StudioSidebar
-          main={menuLayout.main.map(menuItem)}
-          more={menuLayout.more.map(menuItem)}
+          main={menuLayout.main.filter(shown).map(menuItem)}
+          more={menuLayout.more.filter(shown).map(menuItem)}
           onEditMenu={() => { setMenuError(""); setMenuDraft(menuLayout); }}
           settings={STUDIO_SETTINGS_MENU}
           activeMenu={activeMenu}
@@ -398,6 +407,8 @@ function RealtyAdminContent() {
                   ? { bg: "#f59e0b", fg: "#fff" }
                   : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
                     ? { bg: STUDY_ADMIN_BUTTON_GREEN, fg: "#fff" }
+                    : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
+                    ? { bg: NEWS_ADMIN_BUTTON_ORANGE, fg: "#fff" }
                     : userRole === 'BIZ'
                       ? { bg: "#7c3aed", fg: "#fff" }
                       : userRole === 'REALTOR'
@@ -466,7 +477,7 @@ function RealtyAdminContent() {
           {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
-          {activeMenu === "marketing" && <StudioMarketingSection theme={theme} />}
+          {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} />}
           {activeMenu === "video" && studioApp.isApp && <VideoStudio />}
           {activeMenu === "photo" && <PhotoStudio menu={null} />}
           {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (

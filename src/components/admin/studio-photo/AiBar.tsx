@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { C, FONT } from "@/components/admin/studio-video/ui";
 import { STUDIO_FONTS } from "@/lib/studio-video/fonts";
+import { usePcFonts } from "@/lib/pcFonts";
 
 export type AiAct = "fill" | "edit" | "gen" | "removeBg" | "text";
 export const AI_ACT_NAME: Record<AiAct, string> = { fill: "생성형 채우기", edit: "프롬프트로 편집", gen: "이미지 생성", removeBg: "배경 제거", text: "AI 문구 바꾸기" };
@@ -38,6 +39,7 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
   onAddImage: () => void; onClose: () => void;
   onSelInvert: () => void; onSelClear: () => void;
 }) {
+  const pcFonts = usePcFonts();
   // null = 단추 줄, 값 = 입력창 — 상황(선택 영역·고른 레이어)이 바뀌면 단추 줄로
   const ctx = `${hasSel}|${imgLayer || ""}|${textLayer?.name || ""}|${shapeColor === null ? "" : "s"}`;
   const [st, setSt] = useState<{ act: AiAct | null; ctx: string }>({ act: null, ctx });
@@ -101,8 +103,9 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
             </span>
             <select value={textLayer.font} onChange={(e) => onTextSet?.({ font: e.target.value })} title="글꼴"
               style={{ height: 30, maxWidth: 130, borderRadius: 6, border: "1px solid #4a4d55", background: "#2a2c31", color: "#f1f1f1", fontSize: 12.5, fontFamily: FONT, padding: "0 4px" }}>
-              {!STUDIO_FONTS.some((f) => f.family === textLayer.font) && <option value={textLayer.font}>{textLayer.font}</option>}
-              {STUDIO_FONTS.map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}
+              {!STUDIO_FONTS.some((f) => f.family === textLayer.font) && !(pcFonts || []).some((f) => f.family === textLayer.font) && <option value={textLayer.font}>{textLayer.font}</option>}
+              <optgroup label="공실뉴스 글꼴">{STUDIO_FONTS.map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
+              {pcFonts && pcFonts.length > 0 && <optgroup label="내 PC 글꼴">{pcFonts.filter((f) => !STUDIO_FONTS.some((x) => x.family === f.family)).map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>}
             </select>
             <input type="number" min={4} max={2000} value={textLayer.px} title="글자 크기 (px)" onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => { const n = Math.round(Number(e.target.value)); if (n >= 4) onTextSet?.({ px: n }); }}

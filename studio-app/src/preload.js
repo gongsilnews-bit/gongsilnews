@@ -66,7 +66,7 @@ if (allowed) {
     },
     marketing: {
       fill: (opts) => ipcRenderer.invoke("studio:marketing-fill", opts),
-      /** 그림·PDF 를 문서\공실뉴스 스튜디오\<매물>\<sub>\ 에 저장하고 탐색기로 보여 준다 */
+      /** 그림·PDF 를 문서\공실스튜디오\01 뉴스SNS발행·02 공실마케팅 … (out-folder.js) 에 저장하고 탐색기로 보여 준다 */
       saveFile: (opts) => ipcRenderer.invoke("studio:save-file", opts),
       openFolder: () => ipcRenderer.invoke("studio:open-out-folder"),
       onProgress: (fn) => {
@@ -74,6 +74,14 @@ if (allowed) {
         ipcRenderer.on("studio:marketing-progress", h);
         return () => ipcRenderer.removeListener("studio:marketing-progress", h);
       },
+    },
+    // 공실 없이 만드는 AI 매물보고서 — PC 저장 (2026-10-23, 멤버십 전용). 진행 글은 marketing.onProgress 로
+    report: {
+      create: (opts) => ipcRenderer.invoke("studio:report-create", opts),
+      get: (id) => ipcRenderer.invoke("studio:report-get", id),
+      list: () => ipcRenderer.invoke("studio:report-list"),
+      save: (opts) => ipcRenderer.invoke("studio:report-save", opts),
+      remove: (id) => ipcRenderer.invoke("studio:report-remove", id),
     },
     sim: {
       options: (kind) => ipcRenderer.invoke("studio:sim-options", kind),
@@ -86,6 +94,16 @@ if (allowed) {
       update: (opts) => ipcRenderer.invoke("studio:sim-update", opts),
       run: (id) => ipcRenderer.invoke("studio:sim-run", id),
       exportResult: (opts) => ipcRenderer.invoke("studio:sim-export", opts),
+      // 공실마케팅 예측 보고서 (2026-10-22)
+      reportMedia: (id) => ipcRenderer.invoke("studio:sim-report-media", id),
+      saveReport: (opts) => ipcRenderer.invoke("studio:sim-report-save", opts),
+      reportText: (id) => ipcRenderer.invoke("studio:sim-report-text", id),
+      projCreate: (kind) => ipcRenderer.invoke("studio:sim-proj-create", kind),
+      projGet: (id) => ipcRenderer.invoke("studio:sim-proj-get", id),
+      projList: (kind) => ipcRenderer.invoke("studio:sim-proj-list", kind),
+      projSave: (opts) => ipcRenderer.invoke("studio:sim-proj-save", opts),
+      projAddSpace: (opts) => ipcRenderer.invoke("studio:sim-proj-add-space", opts),
+      projText: (id) => ipcRenderer.invoke("studio:sim-proj-text", id),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:sim-progress", h);
@@ -316,7 +334,7 @@ if (allowed) {
         return () => ipcRenderer.removeListener("video:progress", h);
       },
       onRender: (fn) => {
-        const h = (_e, text, frac) => fn(text, frac);
+        const h = (_e, text, frac, x) => fn(text, frac, undefined, x);
         const j = (_e, id) => fn("", 0, id);
         ipcRenderer.on("video:render-progress", h);
         ipcRenderer.on("video:render-job", j);
@@ -327,6 +345,46 @@ if (allowed) {
       },
     },
     /* 이미지 편집 (포토랩) — PSD 는 편집 화면이 읽고 쓴다. 여기는 파일만 */
+    /** 내 PC 글꼴 (윈도우에 설치된 글꼴 이름 목록 — 문서·이미지·영상 편집 글꼴 고르기) */
+    fonts: {
+      pcList: (refresh) => ipcRenderer.invoke("fonts:pc-list", refresh),
+    },
+    /** 문서편집 (워드·한글) — .docx·.hwpx 는 편집 화면이 읽고 쓴다. 여기는 파일 · PDF · 인쇄 · .hwp 변환(Java) · AI */
+    doc: {
+      open: () => ipcRenderer.invoke("doc:open"),
+      read: (file) => ipcRenderer.invoke("doc:read", file),
+      pickImages: () => ipcRenderer.invoke("doc:pick-images"),
+      save: (opts) => ipcRenderer.invoke("doc:save", opts),
+      recent: () => ipcRenderer.invoke("doc:recent"),
+      recentRemove: (file) => ipcRenderer.invoke("doc:recent-remove", file),
+      recentPin: (file, pinned) => ipcRenderer.invoke("doc:recent-pin", file, pinned),
+      reveal: (file) => ipcRenderer.invoke("doc:reveal", file),
+      openExternal: (file) => ipcRenderer.invoke("doc:open-external", file),
+      info: (file) => ipcRenderer.invoke("doc:info", file),
+      setDirty: (n) => ipcRenderer.invoke("doc:set-dirty", n),
+      autosaveWrite: (o) => ipcRenderer.invoke("doc:autosave-write", o),
+      autosaveList: () => ipcRenderer.invoke("doc:autosave-list"),
+      autosaveRead: (id) => ipcRenderer.invoke("doc:autosave-read", id),
+      autosaveClear: (id) => ipcRenderer.invoke("doc:autosave-clear", id),
+      pdf: (o) => ipcRenderer.invoke("doc:pdf", o),
+      printers: () => ipcRenderer.invoke("doc:printers"),
+      print: (o) => ipcRenderer.invoke("doc:print", o),
+      libAdd: (o) => ipcRenderer.invoke("doc:lib-add", o),
+      ai: (o) => ipcRenderer.invoke("doc:ai", o),
+      onAiProgress: (fn) => {
+        const h = (_e, t) => fn(t);
+        ipcRenderer.on("doc:ai-progress", h);
+        return () => ipcRenderer.removeListener("doc:ai-progress", h);
+      },
+      javaStatus: () => ipcRenderer.invoke("doc:java-status"),
+      javaInstall: () => ipcRenderer.invoke("doc:java-install"),
+      javaRemove: () => ipcRenderer.invoke("doc:java-remove"),
+      onJavaProgress: (fn) => {
+        const h = (_e, t, f) => fn(t, f);
+        ipcRenderer.on("doc:java-progress", h);
+        return () => ipcRenderer.removeListener("doc:java-progress", h);
+      },
+    },
     photo: {
       open: (opts) => ipcRenderer.invoke("photo:open", opts),
       read: (file) => ipcRenderer.invoke("photo:read", file),

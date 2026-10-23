@@ -313,6 +313,6 @@ const GwAi = (() => {
     });
   }
 
-  /* 공실뉴스 스튜디오 앱도 이 코드를 그대로 쓴다 (페이지 안 전용 공간에서) — 답 수 세기도 내보낸다 */
+  /* 공실스튜디오 앱도 이 코드를 그대로 쓴다 (페이지 안 전용 공간에서) — 답 수 세기도 내보낸다 */
   return { listen, fill, submit, read, getImage, countAnswers, readLast, isBusy, turnState };
 })();

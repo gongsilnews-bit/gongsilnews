@@ -3,7 +3,7 @@
 import React from "react";
 
 /**
- * 공실뉴스 스튜디오 새 메뉴(SNS뉴스발행·동영상제작)의 자리 화면
+ * 공실스튜디오 새 메뉴(SNS뉴스발행·동영상제작)의 자리 화면
  * 기능이 들어가기 전까지 무엇이 될지 안내한다.
  * SNS뉴스발행은 앱 전용이라, 웹에서 열면 앱으로 안내한다.
  */
@@ -53,7 +53,7 @@ export default function StudioComingSoon({ theme, kind, isApp, onGoGongsil }: Pr
 
         {appOnly ? (
           <div style={{ padding: "16px 18px", borderRadius: 10, background: "#eff6ff", border: "1px solid #bfdbfe", fontSize: 14, lineHeight: 1.7, color: "#1e3a8a", wordBreak: "keep-all" }}>
-            <b>공실뉴스 스튜디오(PC 앱)</b>에서 이용하는 기능입니다. 앱이 소장님 PC에서 블로그·SNS 창을 직접 채워 드립니다.
+            <b>공실스튜디오(PC 앱)</b>에서 이용하는 기능입니다. 앱이 소장님 PC에서 블로그·SNS 창을 직접 채워 드립니다.
             <div style={{ marginTop: 6, fontSize: 13, color: "#3b5bdb" }}>앱 다운로드는 곧 열립니다.</div>
           </div>
         ) : (

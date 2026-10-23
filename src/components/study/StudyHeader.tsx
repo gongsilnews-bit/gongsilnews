@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
-import { getEffectiveMemberRole, getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
+import { getEffectiveMemberRole, getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 // 공실스터디는 녹색 (2026-10-12 회의: 주황 통일을 시험해 보고 녹색으로 확정)
 const POINT = "#059669";
@@ -455,7 +455,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
                 <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
               </button>
               {member ? (
-                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isStudyAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isStudyAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                   {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
                 </button>
               ) : (

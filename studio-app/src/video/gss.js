@@ -1,4 +1,4 @@
-// 영상 편집기 — .gss 파일 (공실뉴스 스튜디오 프로젝트 파일 하나)
+// 영상 편집기 — .gss 파일 (공실스튜디오 프로젝트 파일 하나)
 //  .gss = zip 한 덩어리: project.json + 프로젝트 안에서 만든 파일(AI 목소리·AI 그림·무료 자료·음악 등)
 //  촬영·녹화 원본은 넣지 않고 PC 위치만 기억한다 (크니까). 다른 PC로 옮길 때는 [프로젝트 패키지] — 원본을 "미디어" 폴더에 모은다.
 //  편집은 보이지 않는 작업 폴더(userData\gss-work\…)에 풀어서 하고, 저장할 때 .gss 로 다시 묶는다.
@@ -85,7 +85,7 @@ function zipRead(file) {
   const b = fs.readFileSync(file);
   let e = -1;
   for (let i = b.length - 22; i >= Math.max(0, b.length - 65557); i--) if (b.readUInt32LE(i) === 0x06054b50) { e = i; break; }
-  if (e < 0) throw new Error("공실뉴스 스튜디오 파일(.gss)이 아니거나 깨졌어요.");
+  if (e < 0) throw new Error("공실스튜디오 영상 파일(.gss)이 아니거나 깨졌어요.");
   const n = b.readUInt16LE(e + 10);
   let p = b.readUInt32LE(e + 16);
   const out = [];

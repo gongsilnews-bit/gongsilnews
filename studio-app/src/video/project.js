@@ -1,7 +1,7 @@
 // 영상 편집기 — 프로젝트 (PC에 저장, 자동 저장·복구)
-//  저장: <이름>.gss 파일 하나 (gss.js) — [저장 폴더]의 프로젝트 폴더(기본 문서\공실뉴스 스튜디오\영상)에. 공실과 연결된 영상은 그 매물 폴더\영상\
+//  저장: <이름>.gss 파일 하나 (gss.js) — [저장 폴더]의 프로젝트 폴더(기본 문서\공실스튜디오\05 동영상제작\프로젝트)에. 공실과 연결된 영상은 그 매물 폴더\영상\
 //    p.file = .gss 위치, p.dir = 보이지 않는 작업 폴더 (편집 중 파일들). 예전 폴더 방식(p.file 없음)도 그대로 열린다 → [.gss 파일로 바꾸기]
-//  예전 폴더 방식 자리: 문서\공실뉴스 스튜디오\영상\<이름_날짜>\
+//  예전 폴더 방식 자리: 문서\공실스튜디오\영상\<이름_날짜>\
 //    project.json  autosave\  voice\  assets\(받은 자료)  audio\(받아쓰기용 소리)  output\(완성 영상)
 //  최근 프로젝트 목록: userData\video-projects.json
 const { app } = require("electron");
@@ -53,7 +53,8 @@ function create({ method = "video", ratio = "16:9", name = "", vacancyId = "", f
   if (!RATIOS[ratio]) ratio = "16:9";
   // 이름을 안 정하면 "무제" (포토샵·프리미어처럼, 2026-10-19 사장님) — 같은 이름이 있으면 무제_2
   const nm = safeName(name) || "무제";
-  let base = require("./folders").projectDir(); // 처음 화면 [저장 폴더]에서 고른 곳 (기본: 문서\공실뉴스 스튜디오\영상)
+  const fo = require("./folders");
+  let base = fo.byDate(fo.projectDir()); // 처음 화면 [저장 폴더]에서 고른 곳 (기본: 문서\공실스튜디오\05 동영상제작\프로젝트\오늘날짜)
   // 만들 때 [위치]에서 직접 고른 폴더가 있으면 그곳에
   if (folder) {
     try {
@@ -61,11 +62,7 @@ function create({ method = "video", ratio = "16:9", name = "", vacancyId = "", f
       base = folder;
       vacancyId = vacancyId || "";
     } catch {}
-  } else if (vacancyId) {
-    try {
-      base = require("../out-folder").folderFor(vacancyId, "영상");
-    } catch {}
-  }
+  } // 공실로 만든 영상도 05 동영상제작\프로젝트\오늘날짜 (2026-10-23 사장님 — 뉴스SNS발행 폴더에 섞지 않음)
   // <이름>.gss 파일 하나 — 같은 이름이 있으면 _2
   let file = path.join(base, `${nm}${gss.EXT}`);
   for (let n = 2; fs.existsSync(file); n++) file = path.join(base, `${nm}_${n}${gss.EXT}`);
@@ -283,9 +280,9 @@ function rename(dir, name) {
   return nm;
 }
 
-/* ── 휴지통 (처음 화면) — 프로젝트 폴더를 통째로 문서\공실뉴스 스튜디오\휴지통 으로 옮겨 둔다 (바로 지우지 않음).
+/* ── 휴지통 (처음 화면) — 프로젝트 폴더를 통째로 문서\공실스튜디오\05 동영상제작\휴지통 으로 옮겨 둔다 (바로 지우지 않음).
    되살리면 원래 자리로 그대로 옮겨서 안의 파일 위치가 다시 맞는다. 녹화 원본처럼 폴더 밖 파일은 건드리지 않는다 ── */
-const trashDir = () => path.join(library.studioRoot(), "휴지통");
+const trashDir = () => require("../studio-root").dir("vid", "휴지통");
 const trashFile = () => path.join(trashDir(), "휴지통.json");
 function readTrash() {
   try {

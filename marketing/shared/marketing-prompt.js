@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    공실마케팅 AI 채우기 — AI 매물보고서 · AI 유리창홍보지 (2026-10-15)
 
-   공실뉴스 스튜디오 앱이 회원이 구독한 ChatGPT 로 쓴다 (API 비용 없음).
+   공실스튜디오 앱이 회원이 구독한 ChatGPT 로 쓴다 (API 비용 없음).
    도구가 지금 칸 글(틀 문구)을 보내면, 이 매물의 확인된 정보로 같은 칸을 충실하게 다시 쓴다.
    - 숫자(금액·면적·층·관리비)는 매물 정보 그대로. 칸 글에 숫자를 새로 만들지 않는다
    - 매물 정보에 없는 시세·수익률·개발 호재·역 이름·시설을 지어내지 않는다
@@ -219,6 +219,83 @@ function gwParseMarketing(text, fields) {
   return { ok: true, fields: out };
 }
 
+/* ══════════════════════════════════════════════════════════════
+   공실 없이 만드는 매물보고서 (2026-10-23) — 회원이 붙여넣은 매물 글 → 공실 정보와 같은 모양
+   (docs/2026-10-23_report_without_vacancy_plan.md). 글에 있는 것만 — 없는 값은 빈칸.
+   개인정보(집주인·의뢰인 이름·연락처)는 뽑지 않는다.
+   ══════════════════════════════════════════════════════════════ */
+const GW_EX_SUB = ["아파트", "오피스텔", "도시형생활주택", "빌라/연립", "단독/다가구", "전원주택", "상가주택", "원룸", "투룸", "상가", "사무실", "건물/빌딩", "공장/창고", "지식산업센터", "토지"];
+const GW_EX_TRADE = ["매매", "전세", "월세", "단기임대"];
+const GW_EX_KEYS = {
+  building_name: "건물·단지 이름 (예: 무지개빌라, 래미안퍼스티지)",
+  sido: "시도 (예: 서울특별시)", sigungu: "시군구 (예: 강남구)", dong: "동·읍·면 (예: 논현동)", detail_addr: "번지나 도로명 번호 (예: 논현로115길 31)",
+  sub_category: `매물 종류 — 다음 중 하나: ${GW_EX_SUB.join(", ")}`,
+  trade_type: `거래 구분 — 다음 중 하나: ${GW_EX_TRADE.join(", ")}`,
+  deposit_man: "매매가 또는 보증금 (만원 단위 숫자. 5억 → 50000, 3천 → 3000)",
+  monthly_rent_man: "월세 (만원 단위 숫자)", maintenance_fee_man: "관리비 (만원 단위 숫자)",
+  exclusive_m2: "전용면적 ㎡ 숫자 (평만 있으면 ×3.3058)", supply_m2: "공급면적 ㎡ 숫자",
+  current_floor: "해당 층 (숫자, 지하는 B1처럼. '저층' 같은 글이면 그대로)", total_floor: "전체 층 (숫자)",
+  room_count: "방 수 (숫자)", bathroom_count: "욕실 수 (숫자)", direction: "방향 (예: 남향)", parking: "주차 (예: 가능, 1대)",
+  move_in_date: "입주 가능일 (예: 즉시 입주, 2026-11-15)", options: "옵션 목록 (문자열 배열)",
+  approval_year: "사용승인 연도 (숫자)", total_units: "총 세대수 (숫자)", constructor_name: "건설사",
+  description: "매물 설명 — 글에 있는 장점·조건을 손님용 문장 2~5줄로 (사실만, 연락처·이름 빼고)",
+};
+
+function gwBuildExtractPrompt(text) {
+  return `당신은 부동산 중개사무소의 매물 정리 담당입니다.
+아래 [매물 글]은 중개사가 문자·메모·다른 사이트에서 붙여넣은 매물 설명입니다.
+이 글에 적힌 사실만 골라 [칸] 모양의 JSON 으로 정리해 주십시오.
+
+[매물 글]
+${String(text || "").slice(0, 6000)}
+
+[칸 — 키: 뜻]
+${Object.entries(GW_EX_KEYS).map(([k, d]) => `- ${k}: ${d}`).join("\n")}
+
+[원칙 — 가장 먼저 지킬 것]
+- 글에 없는 값은 지어내거나 짐작하지 말고 빈 문자열 "" 로 두십시오. (예: 방향이 없으면 "")
+- 금액은 반드시 만원 단위 숫자로 바꾸십시오. 계산이 애매하면 "" 로 두십시오.
+- 사람 이름·전화번호·이메일·집주인/의뢰인 정보는 어느 칸에도 넣지 마십시오.
+- sub_category·trade_type 은 정해진 목록 중 하나만, 알 수 없으면 "".
+
+[출력 형식]
+설명 없이 JSON 하나만 \`\`\`json 코드블록으로 출력하십시오. 키는 [칸]의 키를 모두 쓰십시오.`;
+}
+
+/* AI 답변 → 공실 정보(api/vacancy/detail 의 data)와 같은 키. 금액은 원 단위로 */
+function gwParseExtract(text) {
+  const raw = String(text || "");
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end <= start) return { ok: false, reason: "AI 답변에서 JSON 을 찾지 못했습니다." };
+  let obj = null;
+  const body = raw.slice(start, end + 1);
+  for (const fix of [(s) => s, (s) => s.replace(/[“”]/g, '"').replace(/,\s*([}\]])/g, "$1")]) {
+    try { obj = JSON.parse(fix(body)); break; } catch (_) { /* 다음 */ }
+  }
+  if (!obj || typeof obj !== "object") return { ok: false, reason: "AI 답변의 JSON 을 읽지 못했습니다." };
+  const str = (v) => (v == null ? "" : String(v).trim());
+  const num = (v) => {
+    const n = parseFloat(String(v == null ? "" : v).replace(/[^\d.]/g, ""));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const won = (v) => (num(v) ? Math.round(num(v) * 10000) : null);
+  const v = {};
+  for (const k of ["building_name", "sido", "sigungu", "dong", "detail_addr", "direction", "parking", "move_in_date", "constructor_name", "description", "current_floor", "total_floor"]) {
+    if (str(obj[k])) v[k] = str(obj[k]);
+  }
+  if (GW_EX_SUB.includes(str(obj.sub_category))) v.sub_category = str(obj.sub_category);
+  if (GW_EX_TRADE.includes(str(obj.trade_type))) v.trade_type = str(obj.trade_type);
+  if (won(obj.deposit_man)) v.deposit = won(obj.deposit_man);
+  if (won(obj.monthly_rent_man)) v.monthly_rent = won(obj.monthly_rent_man);
+  if (won(obj.maintenance_fee_man)) v.maintenance_fee = won(obj.maintenance_fee_man);
+  for (const k of ["exclusive_m2", "supply_m2", "room_count", "bathroom_count", "approval_year", "total_units"]) if (num(obj[k])) v[k] = num(obj[k]);
+  const opts = Array.isArray(obj.options) ? obj.options.map(str).filter(Boolean) : str(obj.options) ? str(obj.options).split(/[,·]/).map(str).filter(Boolean) : [];
+  if (opts.length) v.options = opts;
+  if (!Object.keys(v).length) return { ok: false, reason: "글에서 매물 정보를 찾지 못했습니다." };
+  return { ok: true, vacancy: v };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { GW_MK_KIND, GW_MK_GUIDE, gwMkFacts, gwBuildMarketingPrompt, gwParseMarketing };
+  module.exports = { GW_MK_KIND, GW_MK_GUIDE, gwMkFacts, gwBuildMarketingPrompt, gwParseMarketing, gwBuildExtractPrompt, gwParseExtract };
 }

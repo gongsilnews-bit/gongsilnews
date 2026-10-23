@@ -1,3 +1,4 @@
+import { findPcFont } from "@/lib/pcFonts";
 // 영상 편집기 글꼴 목록 — 앱 studio-app/src/video/fonts.js 와 같은 차례·이름 (family = 글꼴 파일 안의 이름)
 // 사장님: Pretendard·나눔고딕·지마켓산스·배민체를 맨 앞에. 모두 무료·상업 이용 가능.
 export const STUDIO_FONTS: { family: string; label: string }[] = [
@@ -64,7 +65,9 @@ export const STUDIO_FONTS: { family: string; label: string }[] = [
   { family: "YANGJIN", label: "양진체" },
 ];
 export const DEFAULT_FONT = "Malgun Gothic";
-export const fontLabel = (family?: string) => STUDIO_FONTS.find((f) => f.family === family)?.label || "맑은 고딕";
+/** 글꼴 이름표 — 공실뉴스 글꼴 → 내 PC 글꼴(한글 이름) → 글꼴 이름 그대로 */
+export const fontLabel = (family?: string) => STUDIO_FONTS.find((f) => f.family === family)?.label || (family && family !== DEFAULT_FONT ? findPcFont(family)?.label || family : "맑은 고딕");
+export const isStudioFont = (family?: string) => !family || family === DEFAULT_FONT || STUDIO_FONTS.some((f) => f.family === family);
 /** 맑은 고딕만 굵은 글꼴이 따로 있어 굵게(700), 나머지는 받은 파일 굵기 그대로 (render.js assBold 와 같음) */
 export const fontWeight = (family?: string, bold = true) => (!family || family === DEFAULT_FONT || !STUDIO_FONTS.some((f) => f.family === family) ? (bold ? 700 : 400) : 400);
 export const fontCss = (family?: string) => `'${family || DEFAULT_FONT}', 'Malgun Gothic', sans-serif`;

@@ -1,7 +1,7 @@
 // 영상 편집기 — 내 자료 라이브러리 (사장님: PC에 있는 영상·사진이 자동으로 들어와 있어야 한다)
-//  - 자동: 문서\공실뉴스 스튜디오(만든 결과물) · 앱이 받은 공실 사진·AI 그림(userData\media) · 회원이 정한 폴더
+//  - 자동: 문서\공실스튜디오(만든 결과물) · 앱이 받은 공실 사진·AI 그림(userData\media) · 회원이 정한 폴더
 //  - 직접: [PC에서 불러오기]로 고른 파일
-//  - 음악(내 음악): 문서\공실뉴스 스튜디오\음악 폴더에 넣은 것 + [PC에서 음악 불러오기]로 고른 것
+//  - 음악(내 음악): 문서\공실스튜디오\09 받은자료\BGM 폴더에 넣은 것 + [PC에서 음악 불러오기]로 고른 것
 //  원본은 옮기지 않고 위치만 기억한다. 썸네일·편집용 사본은 앱이 만든다 (userData\video-cache).
 //  다른 곳(자료 창고·무료 사이트·AI 그림)에서 받은 파일은 PC로 복사해 둔 뒤 여기 올린다 (source 표시).
 const { app } = require("electron");
@@ -14,8 +14,9 @@ const media = require("./media");
 
 const indexFile = () => path.join(app.getPath("userData"), "video-library.json");
 const cacheDir = () => path.join(app.getPath("userData"), "video-cache");
-const studioRoot = () => path.join(app.getPath("documents"), "공실뉴스 스튜디오");
-const musicDir = () => path.join(studioRoot(), "음악");
+const studioRoot = () => require("../studio-root").root();
+const oldRoot = () => require("../studio-root").oldRoot(); // 예전 이름 폴더 (있으면 같이 훑는다)
+const musicDir = () => require("../studio-root").dir("asset", "BGM"); // 내 음악 = 09 받은자료\BGM
 const idOf = (file) => crypto.createHash("sha1").update(path.resolve(file).toLowerCase()).digest("hex").slice(0, 16);
 
 let db = null;
@@ -94,6 +95,7 @@ function scan() {
     const d = load();
     const roots = [
       { dir: studioRoot(), source: "studio" },
+      ...(fs.existsSync(oldRoot()) ? [{ dir: oldRoot(), source: "studio" }] : []),
       // 처음 화면 [저장 폴더]에서 다른 곳을 골랐으면 그 폴더도 (스튜디오 폴더 안이면 이미 훑음)
       ...(() => {
         const f = require("./folders").get();
@@ -103,12 +105,10 @@ function scan() {
       ...d.folders.map((f) => ({ dir: f, source: "local" })),
     ];
     const seen = new Set();
-    // 내 음악 폴더 (없으면 만들어 둔다 — 여기에 넣으면 저절로 목록에)
-    try {
-      fs.mkdirSync(musicDir(), { recursive: true });
-    } catch {}
+    // 내 음악 폴더 — 회원이 만들어 넣으면 저절로 목록에 (미리 만들지 않는다, 2026-10-23 사장님)
     const songs = [];
     walk(musicDir(), songs, 0, true);
+    if (fs.existsSync(path.join(oldRoot(), "음악"))) walk(path.join(oldRoot(), "음악"), songs, 0, true); // 예전 이름 폴더의 음악
     for (const f of songs) {
       const it = put(f, { source: "music", allowAudio: true });
       if (it) seen.add(it.id);
@@ -119,8 +119,8 @@ function scan() {
       walk(r.dir, files);
       for (const f of files) {
         if (/_edit\.(mp4|jpg)$/i.test(f)) continue; // 편집용 사본은 따로 보이지 않게
-        // AI 그림 모음 폴더(문서공실뉴스 스튜디오AI그림)·AI그림_ 파일은 늘 "ai" — 훑을 때 "studio"로 바뀌지 않게 (2026-10-21)
-        const isAi = /^AI(그림|영상)_/.test(path.basename(f)) || ["AI그림", "AI영상"].some((n) => (f.toLowerCase() + path.sep).startsWith(path.join(studioRoot(), n).toLowerCase() + path.sep));
+        // AI 그림 모음 폴더(문서공실스튜디오AI그림)·AI그림_ 파일은 늘 "ai" — 훑을 때 "studio"로 바뀌지 않게 (2026-10-21)
+        const isAi = /^AI(그림|영상)_/.test(path.basename(f)) || [path.join(oldRoot(), "AI그림"), path.join(oldRoot(), "AI영상"), require("../studio-root").dir("ai")].some((d) => (f.toLowerCase() + path.sep).startsWith(d.toLowerCase() + path.sep));
         const it = put(f, { source: isAi ? "ai" : r.source });
         if (it) seen.add(it.id);
       }
@@ -204,7 +204,7 @@ async function list({ kind = "all", fav = false, q = "", source = "", tag = "", 
   const sticker = (it) => it.source === "sticker" || /^스티커_/.test(it.name || "");
   // [녹화] — 앱에서 녹화한 것 + 녹화 폴더(지금 · 예전 영상\녹화)에 있는 것 (2026-10-20)
   const fo = require("./folders");
-  const recDirs = [fo.recordDir(), fo.OLD_RECORD()].map((x) => x.toLowerCase() + path.sep);
+  const recDirs = [fo.recordDir(), ...fo.OLD_RECORD()].map((x) => x.toLowerCase() + path.sep);
   const isRec = (it) => it.source === "record" || (it.path && recDirs.some((r) => it.path.toLowerCase().startsWith(r)));
   // 내 효과음(source sfx)은 내 음악에 섞지 않는다 (2026-10-21 사장님)
   const srcOk = (it) => (!source ? !(kind === "audio" && it.source === "sfx") : source === "record" ? isRec(it) : it.source === source);

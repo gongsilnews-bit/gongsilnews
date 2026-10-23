@@ -160,6 +160,9 @@ const YT = {
   desc: ["#description-textarea #textbox", "ytcp-social-suggestions-textbox#description-textarea #textbox", "#textbox[aria-label*='설명']", "#textbox[aria-label*='description' i]"],
   notKids: ["tp-yt-paper-radio-button[name='VIDEO_MADE_FOR_KIDS_NOT_MFK']", "#radioLabel:has-text('아동용이 아님')", "#radioLabel:has-text('not made for kids')"],
   next: ["#next-button", "ytcp-button#next-button"],
+  // 영상 넣는 곳 — 업로드 창 안의 파일 칸부터 (2026-10-22)
+  picker: ["ytcp-uploads-file-picker input[type='file']", "ytcp-uploads-dialog input[type='file'][name='Filedata']", "ytcp-uploads-dialog input[type='file']", "input[type='file'][name='Filedata']"],
+  selectBtn: "#select-files-button, ytcp-button#select-files-button, ytcp-uploads-file-picker ytcp-button",
   // 썸네일 — 그림 넣는 곳 · 오류 글 · 영상 주소(자리가 생겼는지)
   thumbInput: "ytcp-thumbnail-uploader input#file-loader, input#file-loader",
   thumbError: "ytcp-video-thumbnail-editor .error, ytcp-thumbnail-editor .error, ytcp-video-thumbnail-editor #error-message",
@@ -178,16 +181,34 @@ async function fillYoutube(o, onProgress) {
   if (/youtube\.com\/create_channel|channel_switcher/i.test(page.url())) throw new Error("유튜브 채널이 아직 없어요. 크롬 창에서 채널을 먼저 만든 뒤 다시 채워 주세요.");
 
   onProgress("영상 파일을 첨부하는 중…");
-  const input = page.locator("input[type='file']").first();
-  try {
-    await input.waitFor({ state: "attached", timeout: 20000 });
-    await input.setInputFiles(o.file);
-  } catch {
-    throw new Error("유튜브 올리기 화면에서 파일 넣는 곳을 찾지 못했어요. 크롬 창에서 [파일 선택]으로 영상을 직접 넣어 주세요.");
-  }
+  // 업로드 칸을 정확히 — 페이지 첫 파일 칸이 업로드 칸이 아닐 때가 있다 (2026-10-22: 엉뚱한 칸에 들어가 영상이 안 올라감)
+  const attach = async () => {
+    await page.locator(YT.picker.join(", ")).first().waitFor({ state: "attached", timeout: 20000 }).catch(() => {});
+    for (const sel of YT.picker) {
+      const inp = page.locator(sel).first();
+      if (!(await inp.count().catch(() => 0))) continue;
+      try { await inp.setInputFiles(o.file); return true; } catch {}
+    }
+    // 그래도 안 되면 [파일 선택] 단추를 눌러 파일 창으로
+    try {
+      const [fc] = await Promise.all([page.waitForEvent("filechooser", { timeout: 15000 }), page.locator(YT.selectBtn).first().click({ timeout: 10000 })]);
+      await fc.setFiles(o.file);
+      return true;
+    } catch { return false; }
+  };
+  if (!(await attach())) throw new Error("유튜브 올리기 화면에서 파일 넣는 곳을 찾지 못했어요. 크롬 창에서 [파일 선택]으로 영상을 직접 넣어 주세요.");
 
   onProgress("제목·설명을 채우는 중… (영상이 올라가는 동안)");
-  const title = await firstVisible(page, YT.title, 60000);
+  let title = await firstVisible(page, YT.title, 30000);
+  if (!title && (await page.locator(YT.selectBtn).first().isVisible().catch(() => false))) {
+    // 아직 "파일 선택" 화면 — 파일이 안 들어갔다. [파일 선택]으로 한 번 더
+    log.warn("[유튜브] 파일이 안 들어가 다시 넣음");
+    try {
+      const [fc] = await Promise.all([page.waitForEvent("filechooser", { timeout: 15000 }), page.locator(YT.selectBtn).first().click({ timeout: 10000 })]);
+      await fc.setFiles(o.file);
+    } catch {}
+    title = await firstVisible(page, YT.title, 60000);
+  } else if (!title) title = await firstVisible(page, YT.title, 30000);
   if (!title) return { ok: true, partial: "제목 칸을 찾지 못했어요. 크롬 창에서 제목·설명을 직접 넣어 주세요 (글은 [글 복사]로)." };
   await typeInto(page, title, o.title);
   const desc = await firstVisible(page, YT.desc, 5000);

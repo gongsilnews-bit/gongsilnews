@@ -66,3 +66,8 @@ chrome-extension/*.zip
 # 공실 릴스 로컬 시험 결과
 scripts/reels/out/
 videos/
+
+# 2026-10-23 — 공개 저장소에 올리지 않음: 예능 자막 글꼴(유료 정책 미정), 시험용 PSD 코드, 정체 모를 출력 폴더
+public/studio-fonts/
+studio-app/psd-poc/
+studio-app/10월*/

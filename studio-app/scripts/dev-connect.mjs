@@ -46,6 +46,9 @@ if (process.argv.includes("--print")) {
   const electron = join(root, "node_modules", "electron", "dist", "electron.exe");
   const childEnv = { ...process.env, STUDIO_BASE_URL: process.env.STUDIO_BASE_URL || "http://localhost:3000" };
   delete childEnv.ELECTRON_RUN_AS_NODE;
-  spawn(electron, [root, `gongsilstudio://connect?code=${code}`], { env: childEnv, detached: true, stdio: "ignore" }).unref();
+  // --debug-port=9222: 개발 시험용 — 자동 조작(Playwright connectOverCDP)으로 앱 화면을 눌러 볼 수 있게
+  const dbg = process.argv.find((a) => a.startsWith("--debug-port="));
+  const flags = dbg ? [`--remote-debugging-port=${dbg.split("=")[1]}`] : [];
+  spawn(electron, [...flags, root, `gongsilstudio://connect?code=${code}`], { env: childEnv, detached: true, stdio: "ignore" }).unref();
   console.log(`개발판 앱을 ${childEnv.STUDIO_BASE_URL} 에 ${email} 로 띄웠습니다.`);
 }

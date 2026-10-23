@@ -846,12 +846,12 @@ function App() {
   };
 
 
-  /* ── 공실뉴스 스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
+  /* ── 공실스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
      앱 화면 안의 틀(iframe)로 열리므로 바깥 창의 window.gongsilStudio.marketing 을 쓴다. 웹에서는 없다. */
   type StudioMarketing = {
     fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown> }) => Promise<Record<string, any>>;
     onProgress?: (fn: (t: string) => void) => () => void;
-    /** 그림·PDF 를 문서\공실뉴스 스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
+    /** 그림·PDF 를 문서\공실스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
     saveFile?: (opts: { id: string; sub: string; fileName: string; dataUrl: string; hint?: { title?: string; no?: string } }) => Promise<{ file: string; folder: string }>;
   };
   const studioMarketing: StudioMarketing | null = (() => {
@@ -861,7 +861,7 @@ function App() {
       return null;
     }
   })();
-  /* 앱 안이면 저장 창 없이 문서\공실뉴스 스튜디오\<매물 이름_공실번호>\홍보지\ 에 바로 저장 (2026-10-15 사장님 회의).
+  /* 앱 안이면 저장 창 없이 문서\공실스튜디오\<매물 이름_공실번호>\홍보지\ 에 바로 저장 (2026-10-15 사장님 회의).
      웹에서는 false — 예전처럼 브라우저 다운로드. */
   const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
     const id = new URLSearchParams(window.location.search).get("vacancy_id");

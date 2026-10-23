@@ -14,7 +14,7 @@ import NavHighlightBubble, { useNavHighlightBubbles, NavCategoryHighlightMarker,
 import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
-import { getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
+import { getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
@@ -41,6 +41,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [agencyStatus, setAgencyStatus] = useState<string>('');
   // 공실스터디부동산 회원은 관리자 버튼을 공실스터디 녹색으로
   const studyGreen = isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus);
+  const newsOrange = isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus);
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -266,7 +267,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <NotificationBell color="#ffffff" />
               <div style={{
-                background: userRole === 'ADMIN' ? '#111827' : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : '#ef4444',
+                background: userRole === 'ADMIN' ? '#111827' : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : '#ef4444',
                 color: '#fff',
                 padding: '4px 10px',
                 borderRadius: '4px',
@@ -488,13 +489,13 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     else router.push('/user_admin');
                   }}
                     style={{
-                      background: userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
+                      background: userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
                       padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
                       boxShadow: userRole === 'ADMIN' ? "0 2px 4px rgba(17, 24, 39, 0.2)" : studyGreen ? "0 2px 4px rgba(5, 150, 105, 0.2)" : "0 2px 4px rgba(239, 68, 68, 0.2)",
                       transition: "background 0.2s", whiteSpace: "nowrap", flexShrink: 0
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : studyGreen ? "#047857" : "#dc2626"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : "#ef4444"}>
+                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444"}>
                     {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
                   </button>
                 ) : (

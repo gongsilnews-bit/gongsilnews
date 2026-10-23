@@ -974,7 +974,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const c0 = findClip(pref.current, id)?.clip;
       if (!c0?.src || c0.type !== "source") return;
       if (!t) return say("말한 내용을 적어 주세요");
-      if (!b.realign) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (말한 내용 고치기 기능을 새로 연결해요)");
+      if (!b.realign) return say("공실스튜디오를 껐다 켜 주세요 (말한 내용 고치기 기능을 새로 연결해요)");
       setWork({ title: "단어 시각을 말소리에 맞추는 중… (PC에서)" });
       try {
         const before = (c0.words || []).map((w) => w.w);
@@ -1051,7 +1051,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
   /* ── 자동 자막 — 녹화·촬영 영상 클립의 말소리를 글로 (지금 클립은 그대로, 글만 채움). 소리만 서버로, AI 비용 있음 ── */
   const autoSub = async (ids: string[]) => {
-    if (!b.transcribeClips) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (자동 자막 기능을 새로 연결해요)");
+    if (!b.transcribeClips) return say("공실스튜디오를 껐다 켜 주세요 (자동 자막 기능을 새로 연결해요)");
     const targets = ids
       .map((id) => findClip(pref.current, id)?.clip)
       .filter((c): c is Clip => Boolean(c && c.type === "source" && c.src))
@@ -1130,7 +1130,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
   /* ── 자막 시각 맞추기 — 글은 그대로, 단어 시각만 실제 말소리에 다시 맞춘다 (PC에서, 무료). 지운 단어는 그대로 ── */
   const realignSubs = async () => {
-    if (!b.realign) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (자막 시각 맞추기 기능을 새로 연결해요)");
+    if (!b.realign) return say("공실스튜디오를 껐다 켜 주세요 (자막 시각 맞추기 기능을 새로 연결해요)");
     const items = flatten(pref.current).items
       .filter((x) => x.clip.type === "source" && x.clip.src && x.clip.words?.length)
       .map((x) => ({ id: x.clip.id, asset: x.clip.src!.asset, s: x.clip.src!.s, e: x.clip.src!.e, text: x.clip.words!.map((w) => w.w).join(" ") }));
@@ -1179,7 +1179,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     const assets = [...new Set(flatten(pref.current).items.filter((x) => x.clip.type === "source" && x.clip.src).map((x) => x.clip.src!.asset))];
     const hasOld = flatten(pref.current).items.some((x) => x.clip.type === "silence");
     if (!assets.length && !hasOld) return say("무음을 줄일 영상 클립이 없어요 (녹화·촬영 영상 클립만 돼요)");
-    if (!b.speech) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (무음 줄이기 기능을 새로 연결해요)");
+    if (!b.speech) return say("공실스튜디오를 껐다 켜 주세요 (무음 줄이기 기능을 새로 연결해요)");
     setWork({ title: "말소리 구간을 찾는 중… (PC에서)" });
     const off = b.onProgress((t, f) => setWork({ title: t, frac: typeof f === "number" ? f : null }));
     try {
@@ -2446,7 +2446,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const stickerText = async (id: string, text: string) => {
     const l = (pref.current.layers || []).find((x) => x.id === id);
     const spec = l && stickerSpecOf(l);
-    if (!l || !spec || !b.lib.saveImage) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
+    if (!l || !spec || !b.lib.saveImage) return say("공실스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
     try {
       const s = { ...spec, text };
       const item = await b.lib.saveImage(pref.current.dir, await stickerPng(s), stickerFileName(text));
@@ -2464,7 +2464,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 템플릿 글·색 고치기 — 같은 모양으로 다시 그려 그림만 바꾼다 (자리·움직임·범위 그대로, 높이를 맞춰 너비를 다시 잡는다) */
   const templateText = async (id: string, text: string, color?: string) => {
     const l = (pref.current.layers || []).find((x) => x.id === id);
-    if (!l?.stk || !isTplStyle(l.stk.style) || !b.lib.saveImage) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
+    if (!l?.stk || !isTplStyle(l.stk.style) || !b.lib.saveImage) return say("공실스튜디오를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
     try {
       await tplFonts();
       const item = await b.lib.saveImage(pref.current.dir, drawTemplate(l.stk.style, text, color).toDataURL("image/png"), l.name || "템플릿");
@@ -2485,7 +2485,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 화면 글자 → 그 글자가 든 말풍선 스티커로 (회의 3-28 ④) — 자리·범위·애니메이션·겹치는 순서 그대로 */
   const textToBubble = async (id: string, st: { text: string; style: string; icon?: string; color?: string }) => {
     const l = (pref.current.layers || []).find((x) => x.id === id);
-    if (!l || !b.lib.saveImage) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
+    if (!l || !b.lib.saveImage) return say("공실스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
     try {
       const spec = { text: st.text, style: st.style as Parameters<typeof stickerPng>[0]["style"], icon: st.icon, color: st.color };
       const item = await b.lib.saveImage(pref.current.dir, await stickerPng(spec), stickerFileName(st.text));
@@ -2881,7 +2881,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     });
   };
   const openPackage = async () => {
-    if (!b.project.packageInfo) return say("공실뉴스 스튜디오를 껐다 켜 주세요 (프로젝트 패키지 기능을 새로 연결해요)");
+    if (!b.project.packageInfo) return say("공실스튜디오를 껐다 켜 주세요 (프로젝트 패키지 기능을 새로 연결해요)");
     try {
       setPkg(await b.project.packageInfo(pref.current));
     } catch (e) {
@@ -3051,7 +3051,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (!selWord) return;
     const f = findClip(pref.current, selWord.clip);
     if (!f || f.clip.type !== "voice" || !f.clip.words?.length) return say("AI 목소리 클립의 단어를 골라 주세요");
-    if (!b.voiceJoin) return say("공실뉴스 스튜디오를 새 버전으로 다시 켜 주세요 (단어 목소리 잇기)");
+    if (!b.voiceJoin) return say("공실스튜디오를 새 버전으로 다시 켜 주세요 (단어 목소리 잇기)");
     const is = wordIs();
     const id = f.clip.id;
     change((p) => {
@@ -5227,8 +5227,12 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   const [kind, setKind] = useState<"mp4" | "mp3">(project.method === "audio" ? "mp3" : "mp4"); // 영상 / 소리만(MP3) — 오디오로 편집하기는 소리만이 기본
   const [state, setState] = useState<{ text: string; frac: number } | null>(null);
   const [job, setJob] = useState("");
-  const [done, setDone] = useState<{ file: string; seconds: number; took: number } | null>(null);
+  const [done, setDone] = useState<{ file: string; seconds: number; took: number; url?: string } | null>(null);
   const [post, setPost] = useState<"" | "youtube" | "instagram">(""); // 완성 영상 SNS 올리기 (2026-10-21)
+  // 만드는 중 — 다 만든 클립을 바로 틀어 보여 준다 (2026-10-22 사장님: 실시간으로 영상 보여 주기)
+  const [made, setMade] = useState<{ url: string; i: number; n: number }[]>([]);
+  const [watch, setWatch] = useState(-1); // 크게 보는 클립 (-1 = 늘 방금 만든 것)
+  const [t0, setT0] = useState(0);
   const [err, setErr] = useState("");
   const [W0, H0] = project.ratio === "16:9" ? [1920, 1080] : project.ratio === "9:16" ? [1080, 1920] : project.ratio === "4:5" ? [1080, 1350] : project.ratio === "4:3" ? [1440, 1080] : [1080, 1080];
   const go = async () => {
@@ -5241,9 +5245,15 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
       outFile = f;
     }
     setState({ text: "준비하는 중…", frac: 0 });
-    const off = b.onRender((text, frac, id) => {
+    setMade([]);
+    setWatch(-1);
+    setT0(Date.now());
+    const off = b.onRender((text, frac, id, x) => {
       if (id) setJob(id);
-      else setState({ text, frac });
+      else {
+        setState({ text, frac });
+        if (x?.clip) { const c = { url: x.clip, i: x.i ?? 0, n: x.n ?? 0 }; setMade((m) => [...m, c]); }
+      }
     });
     try {
       const o = { scope, sceneId: sceneOf, clipIds: selected, outFile };
@@ -5265,8 +5275,13 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   if (done && post) return <PostDialog project={project} file={done.file} seconds={done.seconds} channel={post} onClose={() => setPost("")} />;
   if (done) {
     return (
-      <Modal title={kind === "mp3" ? "소리 파일이 완성됐어요" : "영상이 완성됐어요"} onClose={onClose} width={560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />{kind === "mp3" ? "소리 들어 보기" : "영상 열어 보기"}</Btn></>}>
+      <Modal title={kind === "mp3" ? "소리 파일이 완성됐어요" : "영상이 완성됐어요"} onClose={onClose} width={kind === "mp4" && done.url ? 760 : 560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />{kind === "mp3" ? "소리 들어 보기" : "영상 열어 보기"}</Btn></>}>
         <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.8 }}>
+          {/* 완성본 바로 재생 (2026-10-22 사장님) */}
+          {kind === "mp4" && done.url && (
+            <video key={done.url} src={done.url} controls autoPlay playsInline
+              style={{ width: "100%", maxHeight: 420, background: "#000", borderRadius: 8, display: "block", marginBottom: 12, aspectRatio: project.ratio.replace(":", " / ") }} />
+          )}
           {done.seconds > 0 && <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>}
           <div style={{ color: C.sub, fontSize: 14, wordBreak: "break-all" }}>{done.file}</div>
           {/* SNS 올리기 — 반자동: 크롬에서 파일·글을 채우고 [게시]는 직접 (2026-10-21 사장님) */}
@@ -5285,9 +5300,36 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
     );
   }
   if (state) {
+    const big = watch >= 0 ? made[watch] : made[made.length - 1];
+    const el = t0 ? (Date.now() - t0) / 1000 : 0;
+    // 남은 시간 — 클립 만드는 단계(90% 까지)만. 잇기·전환·음악 섞기는 진행률이 멈춰 있어 맞지 않는다
+    const left = state.frac > 0.05 && state.frac < 0.9 ? Math.max(1, Math.round((el / state.frac) * 0.9 - el) + 5) : 0;
     return (
-      <Modal title="영상 내보내기" width={560} footer={<Btn onClick={() => job && b.renderCancel(job)}>멈추기</Btn>}>
-        <Working title={state.text} frac={state.frac} detail="PC에서 만들고 있어요. 이 창을 닫지 마세요." />
+      <Modal title="영상 내보내기" width={kind === "mp4" ? 760 : 560} footer={<Btn onClick={() => job && b.renderCancel(job)}>멈추기</Btn>}>
+        {kind === "mp4" && (
+          <div style={{ padding: "16px 20px 0" }}>
+            {/* 방금 만든 클립을 틀어 보여 준다 — 자막·그래픽이 들어간 실제 영상 */}
+            <div style={{ position: "relative", width: "100%", aspectRatio: project.ratio.replace(":", " / "), maxHeight: 400, margin: "0 auto", background: "#000", borderRadius: 8, overflow: "hidden" }}>
+              {big ? (
+                <video key={big.url} src={big.url} autoPlay muted loop playsInline style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+              ) : (
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 14 }}>첫 클립을 만드는 중…</div>
+              )}
+              {big && <span style={{ position: "absolute", left: 10, top: 10, padding: "3px 9px", borderRadius: 4, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 12.5, fontWeight: 700 }}>클립 {big.i + 1} / {big.n}{watch < 0 ? " · 방금 완성" : ""}</span>}
+            </div>
+            {made.length > 0 && (
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "10px 0 2px" }}>
+                {made.map((m, k) => (
+                  <button key={m.url} type="button" onClick={() => setWatch(watch === k ? -1 : k)} title={`클립 ${m.i + 1}`}
+                    style={{ flex: "0 0 auto", width: 96, padding: 0, borderRadius: 4, overflow: "hidden", border: `2px solid ${(watch < 0 ? k === made.length - 1 : watch === k) ? C.accent : "transparent"}`, background: "#000", cursor: "pointer", aspectRatio: project.ratio.replace(":", " / "), maxHeight: 96 }}>
+                    <video src={`${m.url}#t=0.3`} muted preload="metadata" playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <Working title={state.text} frac={state.frac} detail={left > 0 ? `남은 시간 약 ${left >= 60 ? `${Math.floor(left / 60)}분 ` : ""}${left % 60}초 · 이 창을 닫지 마세요.` : "PC에서 만들고 있어요. 이 창을 닫지 마세요."} />
       </Modal>
     );
   }
@@ -5311,7 +5353,7 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
           return miss.length ? (
             <div style={{ padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, background: "rgba(239,68,68,0.1)", fontSize: 14, lineHeight: 1.6 }}>
               <b style={{ color: C.danger }}>이 앱은 {miss.join("·")}을(를) 영상에 넣지 못해요.</b><br />
-              <span style={{ color: C.sub }}>공실뉴스 스튜디오를 최신 버전으로 업데이트한 뒤 내보내 주세요. (지금 내보내면 그 부분은 움직이지 않아요)</span>
+              <span style={{ color: C.sub }}>공실스튜디오를 최신 버전으로 업데이트한 뒤 내보내 주세요. (지금 내보내면 그 부분은 움직이지 않아요)</span>
             </div>
           ) : null;
         })()}

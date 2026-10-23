@@ -4,7 +4,7 @@ import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
 
 /**
- * 공실뉴스 스튜디오 텍스트 메뉴 (중개사 관리자 /realty_admin)
+ * 공실스튜디오 텍스트 메뉴 (중개사 관리자 /realty_admin)
  *
  * 좁은 아이콘 막대 대신, 작은 아이콘 옆에 글씨를 둔 넓은 메뉴.
  * 자주 쓰는 업무 메뉴만 위에 두고 나머지는 [더보기]에 접는다.
@@ -13,13 +13,13 @@ import { MenuItem } from "@/components/admin/sections/types";
  * - [메뉴 편집]으로 업무·더보기와 순서를 회원이 바꾼다 (realtyMenu.tsx).
  */
 
-/** 공실뉴스 스튜디오 앱 안에서 열렸는지. 앱 창의 브라우저 정보에 gongsil-studio/버전 이 들어 있다. */
+/** 공실스튜디오 앱 안에서 열렸는지. 앱 창의 브라우저 정보에 gongsil-studio/버전 이 들어 있다. */
 const noSubscribe = () => () => {};
 export function useStudioApp(): { isApp: boolean; version: string | null } {
   // 서버에서 그릴 때는 빈 값 → 브라우저에서만 판정 (화면 어긋남 방지)
   const ua = useSyncExternalStore(noSubscribe, () => navigator.userAgent, () => "");
-  // 설치판은 앱 이름이 한글(공실뉴스 스튜디오)로 들어가므로 Electron 표시로도 판정한다
-  const m = ua.match(/(?:gongsil-studio|GongsilStudio|공실뉴스 스튜디오)\/([\d.]+)/i);
+  // 설치판은 앱 이름이 한글(공실스튜디오)로 들어가므로 Electron 표시로도 판정한다
+  const m = ua.match(/(?:gongsil-studio|GongsilStudio|공실스튜디오)\/([\d.]+)/i);
   const isApp = !!m || /Electron\//.test(ua);
   const version = m ? m[1] : ua.match(/\/([\d.]+) Chrome\//)?.[1] ?? null;
   return { isApp, version };
@@ -45,6 +45,27 @@ type Props = {
 };
 
 const COLLAPSE_KEY = "realty_menu_collapsed";
+
+/* 메뉴 오른쪽 파일 표시 — 그 메뉴가 만드는 파일 (2026-10-23 사장님). 파일 아이콘(build/*.ico)과 같은 색·픽토그램을 글자+동그라미로 */
+// color = 동그라미(파일 아이콘과 같은 색) · text = 남색 메뉴 바탕에서 잘 보이게 한 단계 밝은 글자색
+const FILE_BADGE: Record<string, { text: string; color: string; ink: string; glyph: React.ReactNode }> = {
+  gsm: { text: "GSM", color: "#1F9D6B", ink: "#4ADE9B", glyph: <><path d="M7 4h7l4 4v12H7z" /><path d="M10 16v-2M13 16v-4M16 16v-6" /></> }, // 그래프 보고서
+  gsn: { text: "GSN", color: "#2F6FED", ink: "#7DB0FF", glyph: <><rect x="5" y="6" width="14" height="12" rx="1.5" /><path d="M8 10h8M8 13h8M8 16h5" /></> }, // 신문
+  gss: { text: "GSS", color: "#F5A623", ink: "#FBC04A", glyph: <><path d="M5 10h14v9H5z" /><path d="M5 10l13-4 1 3" /><path d="M9 9l-1-3M13 8l-1-3" /></> }, // 필름 딱따기
+  psd: { text: "PSD", color: "#7C4DFF", ink: "#B39BFF", glyph: <><path d="M12 5l7 3.5-7 3.5-7-3.5z" /><path d="M5 12l7 3.5 7-3.5" /><path d="M5 15.5l7 3.5 7-3.5" /></> }, // 레이어
+};
+function FileBadge({ kind }: { kind: string }) {
+  const b = FILE_BADGE[kind];
+  if (!b) return null;
+  return (
+    <span title={`.${kind} 파일`} style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+      <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.3, color: b.ink, lineHeight: 1 }}>{b.text}</span>
+      <span style={{ width: 18, height: 18, borderRadius: "50%", background: b.color, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>{b.glyph}</svg>
+      </span>
+    </span>
+  );
+}
 
 export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false, hidden = false, onHide }: Props) {
   const [savedCollapsed, setCollapsed] = useState(false);
@@ -106,7 +127,10 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
             </span>
           )}
           {!collapsed && <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}</span>}
-          {badges[m.key] &&
+          {badges[m.key] && badges[m.key].startsWith("file:") ? (
+            // 파일 표시 (GSN·GSM·GSS·PSD — 글자 + 동그라미 픽토그램). 접힌 메뉴에서는 숨긴다
+            !collapsed && <FileBadge kind={badges[m.key].slice(5)} />
+          ) : badges[m.key] &&
             (collapsed ? (
               <span style={{ position: "absolute", top: 7, right: 12, width: 7, height: 7, borderRadius: "50%", background: "#fbbf24" }} />
             ) : (
@@ -198,11 +222,11 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 0 3px rgba(52,211,153,0.25)" }} />
                   이 PC 연결됨
                 </div>
-                <div style={{ marginTop: 3, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>공실뉴스 스튜디오 v{appVersion}</div>
+                <div style={{ marginTop: 3, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>공실스튜디오 v{appVersion}</div>
               </>
             ) : (
               <>
-                <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>공실뉴스 스튜디오</div>
+                <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>공실스튜디오</div>
                 <div style={{ marginTop: 3, color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 1.5 }}>PC 앱에서 SNS 자동 발행 · 영상 제작</div>
               </>
             )}

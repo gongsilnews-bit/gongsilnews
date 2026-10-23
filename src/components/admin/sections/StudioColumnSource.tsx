@@ -104,7 +104,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
   });
   const openNaverNews = () => run("", async () => {
     await bridge()?.column.openNews();
-    setHint("오른쪽 \"공실뉴스 스튜디오\" 크롬 창에서 기사 한 건을 연 뒤 [지금 보는 뉴스 가져오기]를 눌러 주세요.");
+    setHint("오른쪽 \"공실스튜디오\" 크롬 창에서 기사 한 건을 연 뒤 [지금 보는 뉴스 가져오기]를 눌러 주세요.");
   });
   const grab = () => run("보고 있는 뉴스를 읽는 중…", async () => {
     const b = bridge();

@@ -3,7 +3,8 @@
 // 글꼴 고르기 · 색 고르기 (자주 쓰는 색 저장) — 화면 글자·자막 칸에서 같이 쓴다
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_FONT, STUDIO_FONTS, fontCss, fontLabel } from "@/lib/studio-video/fonts";
+import { DEFAULT_FONT, STUDIO_FONTS, fontCss, fontLabel, isStudioFont } from "@/lib/studio-video/fonts";
+import { usePcFonts, loadPcFonts, pcFontMissing, PC_FONT_NOTE } from "@/lib/pcFonts";
 import { videoBridge, errText } from "./types";
 import { C, FONT } from "./ui";
 
@@ -11,6 +12,7 @@ import { C, FONT } from "./ui";
 const loaded = new Map<string, Promise<void>>();
 export function loadFont(family?: string): Promise<void> {
   if (!family || family === DEFAULT_FONT) return Promise.resolve();
+  if (!isStudioFont(family)) return Promise.resolve(); // 내 PC 글꼴 — 이미 설치되어 있어 이름만으로 그려진다
   if (loaded.has(family)) return loaded.get(family)!;
   const b = videoBridge();
   if (!b) return Promise.resolve();
@@ -76,6 +78,9 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
   const [recent, setRecent] = useState<string[]>(() => readList(FONT_RECENT));
   const [fav, setFav] = useState<string[]>(() => readList(FONT_FAV));
   const [busy, setBusy] = useState("");
+  const pcFonts = usePcFonts();
+  const [pcMore, setPcMore] = useState(60); // 내 PC 글꼴은 수백 개라 조금씩 그린다
+  const [pcBusy, setPcBusy] = useState(false);
   const [err, setErr] = useState("");
   const box = useRef<HTMLDivElement>(null);
   const at = useAnchor(open, box);
@@ -109,7 +114,7 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
     setFav(f);
     writeList(FONT_FAV, f);
   };
-  const byFamily = (fam: string) => STUDIO_FONTS.find((f) => f.family === fam);
+  const byFamily = (fam: string) => STUDIO_FONTS.find((f) => f.family === fam) || (pcFonts || []).find((f) => f.family === fam);
   const k = q.trim().toLowerCase();
   const match = (f: { family: string; label: string }) => !k || f.label.toLowerCase().includes(k) || f.family.toLowerCase().includes(k);
   const row = (f: { family: string; label: string }, key: string) => {
@@ -130,13 +135,16 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
   };
   const head = (t: string) => <div style={{ fontSize: 12, color: C.dim, fontWeight: 700, padding: "8px 10px 4px", borderBottom: `1px solid ${C.line}`, marginBottom: 2 }}>{t}</div>;
   const recentF = recent.map(byFamily).filter((f): f is { family: string; label: string } => Boolean(f) && match(f!));
-  const favF = STUDIO_FONTS.filter((f) => fav.includes(f.family) && match(f));
+  const pcAll = (pcFonts || []).filter((f) => !STUDIO_FONTS.some((x) => x.family === f.family));
+  const favF = [...STUDIO_FONTS, ...pcAll].filter((f) => fav.includes(f.family) && match(f));
   const allF = STUDIO_FONTS.filter(match);
+  const pcF = pcAll.filter((f) => !k || f.label.toLowerCase().includes(k) || f.family.toLowerCase().includes(k) || (f.ko || "").toLowerCase().includes(k));
+  const missing = !isStudioFont(cur) && pcFontMissing(cur);
   return (
     <div ref={box} style={{ position: "relative" }}>
       <button type="button" onClick={() => setOpen(!open)}
         style={{ width: "100%", height: 40, padding: "0 12px", display: "flex", alignItems: "center", gap: 8, borderRadius: 6, border: `1px solid ${open ? C.accent : C.line2}`, background: C.card, color: C.text, cursor: "pointer" }}>
-        <span style={{ flex: 1, textAlign: "left", fontSize: 16, fontFamily: fontCss(cur), fontWeight: cur === DEFAULT_FONT ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fontLabel(cur)}</span>
+        <span title={missing ? "이 PC 에 없는 글꼴이라 맑은 고딕으로 보여요" : undefined} style={{ flex: 1, textAlign: "left", fontSize: 16, fontFamily: fontCss(cur), fontWeight: cur === DEFAULT_FONT ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: missing ? C.danger : undefined }}>{missing ? "⚠ " : ""}{fontLabel(cur)}</span>
         <span style={{ color: C.sub, fontSize: 12 }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && createPortal(
@@ -166,9 +174,27 @@ export function FontPick({ value, onChange }: { value?: string; onChange: (famil
           {only === "fav" && !favF.length && <div style={{ fontSize: 13, color: C.sub, padding: 10 }}>☆ 를 누르면 즐겨찾기에 담겨요.</div>}
           {only === "all" && (
             <>
-              {head("전체 글꼴")}
+              {head("공실뉴스 글꼴")}
               {allF.map((f) => row(f, "a" + f.family))}
               {!allF.length && <div style={{ fontSize: 13, color: C.sub, padding: 10 }}>찾는 글꼴이 없어요.</div>}
+              {pcFonts && pcFonts.length > 0 && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", fontSize: 12, color: C.dim, fontWeight: 700, padding: "12px 10px 4px", borderBottom: `1px solid ${C.line}`, marginBottom: 2 }}>
+                    <span style={{ flex: 1 }}>내 PC 글꼴 ({pcF.length})</span>
+                    <button type="button" disabled={pcBusy} onClick={async () => { setPcBusy(true); await loadPcFonts(true); setPcBusy(false); }} title="새로 설치한 글꼴 다시 읽기"
+                      style={{ border: 0, background: "transparent", color: C.sub, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>{pcBusy ? "읽는 중…" : "↻ 새로 고침"}</button>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: C.dim, padding: "2px 10px 6px", lineHeight: 1.5 }}>{PC_FONT_NOTE}</div>
+                  {pcF.slice(0, pcMore).map((f) => row(f, "p" + f.family))}
+                  {pcF.length > pcMore && (
+                    <button type="button" onClick={() => setPcMore(pcMore + 120)}
+                      style={{ width: "100%", height: 32, marginTop: 4, borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+                      더 보기 ({pcF.length - pcMore}개 더)
+                    </button>
+                  )}
+                  {!pcF.length && <div style={{ fontSize: 13, color: C.sub, padding: 10 }}>찾는 PC 글꼴이 없어요.</div>}
+                </>
+              )}
             </>
           )}
         </div>

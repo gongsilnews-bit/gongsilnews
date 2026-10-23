@@ -896,7 +896,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           <br />0은 해당 등록 기능을 사용하지 않는다는 뜻입니다.
         </div>
 
-        {/* 공실뉴스 스튜디오 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
+        {/* 공실스튜디오 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, flexWrap: "wrap" }}>
           <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>스튜디오 블로그·SNS(월):</span>
           <select value={formData.studio_blog_limit} disabled={!isAdmin}

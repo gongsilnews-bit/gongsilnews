@@ -307,7 +307,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           {naverLogin === "open" && (
             <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <span style={{ fontSize: 14, color: "#065f46", flex: 1, minWidth: 240, lineHeight: 1.6 }}>
-                오른쪽에 새로 뜬 &quot;공실뉴스 스튜디오&quot; 크롬 창에서 네이버에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)
+                오른쪽에 새로 뜬 &quot;공실스튜디오&quot; 크롬 창에서 네이버에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)
               </span>
               <button onClick={() => bridge()?.ai.finishLogin()}
                 style={{ padding: "10px 16px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>

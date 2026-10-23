@@ -15,7 +15,7 @@ export function loadPeaks(project: Project, assetId: string): Promise<Peaks> {
   const key = `${assetId}|${a?.path || ""}`;
   let p = cache.get(key);
   if (!p) {
-    if (!b?.peaks) return Promise.reject(new Error("공실뉴스 스튜디오를 새 버전으로 다시 켜 주세요 (파형 기능)"));
+    if (!b?.peaks) return Promise.reject(new Error("공실스튜디오를 새 버전으로 다시 켜 주세요 (파형 기능)"));
     p = b.peaks(project, assetId).then((r) => {
       const bin = atob(r.data);
       const arr = new Uint8Array(bin.length);

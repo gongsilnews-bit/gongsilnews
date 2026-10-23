@@ -105,17 +105,21 @@ export default function MenuPage() {
   const isStudyMember = (role?: string, planType?: string) =>
     getPlanLabel({ role: role?.trim().toUpperCase() === 'REALTOR' ? 'REALTOR' : role, plan_type: planType }) === '공실스터디부동산';
 
+  // 공실뉴스부동산(유료) — 주황 배지 (2026-10-23)
+  const isNewsMember = (role?: string, planType?: string) =>
+    getPlanLabel({ role: role?.trim().toUpperCase() === 'REALTOR' ? 'REALTOR' : role, plan_type: planType }) === '공실뉴스부동산';
+
   const getRoleLabel = (role?: string, agencyStatus?: string, planType?: string) => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실스터디부동산' : '부동산회원';
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실스터디부동산' : isNewsMember(role, planType) ? '공실뉴스부동산' : '부동산회원';
     return '일반회원';
   };
 
   const getRoleBadgeStyle = (role?: string, agencyStatus?: string, planType?: string): React.CSSProperties => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? { background: '#ffffff', color: '#047857' } : { background: '#2563eb', color: '#fff' };
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? { background: '#ffffff', color: '#047857' } : isNewsMember(role, planType) ? { background: '#ea580c', color: '#fff' } : { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 

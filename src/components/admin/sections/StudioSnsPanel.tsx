@@ -6,7 +6,7 @@ import StudioReviseBar from "./StudioReviseBar";
 import { useStudioWriter } from "./useStudioWriter";
 
 /**
- * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실뉴스 스튜디오)
+ * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실스튜디오)
  *
  * - [ChatGPT로 SNS 글 쓰기] 한 번에 세 채널 글을 함께 쓴다 (크롬 확장 sns.js 와 같은 프롬프트, 이용 횟수 SNS 1회).
  * - 채널마다 그 채널에 올라갈 모양으로 보여 주고 고친다: 사진 순서·빼기·다시 넣기, 글(스레드는 글마다), 해시태그.

@@ -331,7 +331,7 @@ export type VideoBridge = {
     addFolder: () => Promise<string[]>;
     removeFolder: (dir: string) => Promise<string[]>;
     musicFolder: () => Promise<string>;
-    /** AI 그림 모음 폴더 — 문서\공실뉴스 스튜디오\AI그림 (앱 0.1.11부터) */
+    /** AI 그림 모음 폴더 — 문서\공실스튜디오\08 AI생성물\AI이미지 (2026-10-23 번호 폴더) */
     aiFolder?: () => Promise<string>;
     /** 편집기에서 그린 그림(PNG data URL)을 프로젝트에 저장 — 스티커 (앱 0.1.10부터) */
     saveImage?: (dir: string, dataUrl: string, name: string) => Promise<LibItem>;
@@ -449,7 +449,7 @@ export type VideoBridge = {
   /** 내 효과음 → 프로젝트 assets/sfx 로 복사 (앱 0.1.11부터) */
   sfxUse?: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
   fonts: { ensure: (family: string) => Promise<{ family: string; url: string }> };
-  render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number; outFile?: string }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
+  render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number; outFile?: string }) => Promise<{ file: string; seconds: number; took: number; encoder: string; url?: string }>;
   /** 이 앱이 완성 영상에 그릴 수 있는 것 — "kf"(키프레임·화면 회전·진하기·초 단위 구간), "adj"(색 보정·필터). 2026-10-20 키프레임 들어간 앱부터 */
   features?: string[];
   /** 애니메이션 칸 그림 저장 (투명 PNG data URL 들) → 폴더 경로. 앱 0.1.10부터 */
@@ -505,7 +505,8 @@ export type VideoBridge = {
   openDeviceSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 장치 설정 — 밝기·쓸 장치·입력 크기 (앱 0.1.8부터)
   openPath: (p: string) => Promise<string>;
   onProgress: (fn: (text: string, frac?: number) => void) => () => void;
-  onRender: (fn: (text: string, frac: number, jobId?: string) => void) => () => void;
+  /** x — 방금 만든 클립 영상 (진행 창에서 바로 틀기, 2026-10-22) */
+  onRender: (fn: (text: string, frac: number, jobId?: string, x?: { clip?: string; i?: number; n?: number; dur?: number }) => void) => () => void;
 };
 
 export const videoBridge = (): VideoBridge | null => {
@@ -521,7 +522,7 @@ export const datedName = (title?: string, d?: Date) => `${ymd(d)} ${String(title
 export const errText = (e: unknown) => {
   const m = String(e instanceof Error ? e.message : e);
   // 앱 본체가 영상 기능보다 먼저 켜졌거나(옛 버전) — 화면만 새것이라 통로가 없다
-  if (/No handler registered for 'video:/.test(m)) return "공실뉴스 스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
+  if (/No handler registered for 'video:/.test(m)) return "공실스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
   // 스튜디오 크롬(AI 웹 창)이 닫혔을 때 — 사람이 보기 어려운 영어 대신 (2026-10-21)
   if (/Target page, context or browser has been closed|Target closed|browser has been closed|Browser closed/i.test(m)) return "AI 크롬 창이 닫혀 있었어요 — 다시 눌러 주세요. 계속 이러면 [AI 설정]에서 AI를 다시 연결해 주세요.";
   return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");

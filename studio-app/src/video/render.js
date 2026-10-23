@@ -1164,6 +1164,8 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
       segs.push(seg.video);
       auds.push(seg.audio);
       done += items[i].dur;
+      // 방금 만든 클립 — 진행 창에서 바로 틀어 보게 (2026-10-22 사장님: 내보낼 때 실시간으로 보여 주기)
+      try { require("./media").allow(seg.video); onProgress(`클립 ${i + 1} / ${items.length} 완성`, (done / total) * 0.9, { clip: require("./media").urlOf(seg.video), i, n: items.length, dur: items[i].dur }); } catch {}
     }
     onProgress("클립을 잇는 중…", 0.92);
     const joined = path.join(tmp, "joined.mp4");

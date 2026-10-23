@@ -147,7 +147,7 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
   };
 
   if (!tc) {
-    return <div style={{ padding: 24, fontSize: 15, color: C.sub, lineHeight: 1.7 }}>{info.name} 성우는 공실뉴스 스튜디오 앱을 새 버전으로 업데이트하면 쓸 수 있어요.</div>;
+    return <div style={{ padding: 24, fontSize: 15, color: C.sub, lineHeight: 1.7 }}>{info.name} 성우는 공실스튜디오 앱을 새 버전으로 업데이트하면 쓸 수 있어요.</div>;
   }
   const chip = (on: boolean): React.CSSProperties => ({ height: 34, padding: "0 14px", borderRadius: 17, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
 

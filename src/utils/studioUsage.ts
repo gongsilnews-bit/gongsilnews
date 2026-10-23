@@ -3,7 +3,7 @@ import { trialMonth, type ExtensionMember } from "@/utils/extensionMember";
 import { isAdminRole } from "@/utils/permissionCheck";
 
 /**
- * 공실뉴스 스튜디오 이용 횟수 (2026-10-15 회의 결정)
+ * 공실스튜디오 이용 횟수 (2026-10-15 회의 결정)
  *
  * 블로그(SNS뉴스발행) 한 달 기본 횟수 — 등급별:
  *   일반회원 0 · 무료부동산 3 · 공실스터디부동산·비즈니스회원 무제한 · 최고관리자 무제한

@@ -7,7 +7,7 @@ import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
 
 /**
- * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
+ * SNS뉴스발행 (공실스튜디오 앱 전용)
  *
  * 1단계 공실 분석·캡처: 공실을 고르면 앱이 안 보이는 창에서 공실열람을 열어
  * 매물 정보를 읽고, 등록 사진 전부 + 화면 3장(공실열람 검증·지도·로드뷰)을 모은다.
@@ -78,6 +78,24 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
   const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
+  // .gsn 에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsn=<id> 로 연다.
+  // 각 화면이 "이 기기에 기억한 마지막 작업"을 불러오는 길을 그대로 쓴다 — 효과(useEffect)보다 먼저, 처음 그릴 때 기억을 바꿔 둔다
+  useState(() => {
+    if (typeof window === "undefined") return "";
+    const u = new URL(window.location.href);
+    const id = u.searchParams.get("gsn") || "";
+    if (!/^[\w-]+$/.test(id)) return "";
+    const cat = /^col-/.test(id) ? "column" : /^int-/.test(id) ? "interior" : /^rem-/.test(id) ? "remodel" : "gongsil";
+    try {
+      localStorage.setItem(CATEGORY_KEY, cat);
+      if (cat === "column") localStorage.setItem("studio_last_column", id);
+      else if (cat !== "gongsil") localStorage.setItem(`studio_last_sim_${cat}`, id);
+      else localStorage.setItem(LAST_KEY, JSON.stringify({ vacancyId: id, picked: null }));
+    } catch {}
+    u.searchParams.delete("gsn");
+    window.history.replaceState(window.history.state, "", u.toString());
+    return id;
+  });
   const setCategory = (id: string) => {
     setCategoryState(id);
     try {
@@ -165,8 +183,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     if (!saved?.vacancyId) return;
     b.vacancy.load(saved.vacancyId).then(async (r) => {
       if (!r) return;
-      setPicked(saved!.picked);
-      await applyResult(r, saved!.picked);
+      // .gsn 에서 연 작업은 고른 공실 정보가 없다 — 불러온 공실 정보로 채운다 (2026-10-23)
+      const no = Number((r.vacancy.fields || []).find((f) => f.label === "공실광고번호")?.value) || 0;
+      const picked: VacancyRow = saved!.picked || { id: r.vacancyId, vacancy_no: no, building_name: r.vacancy.title || "" };
+      setPicked(picked);
+      await applyResult(r, picked);
       if (saved!.tab) setTab(saved!.tab);
     }).catch(() => {});
   }, []);
@@ -232,10 +253,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             const on = category === c.id;
             return (
               <button key={c.id} onClick={() => setCategory(c.id)}
-                style={{ textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
+                style={{ display: "flex", alignItems: "center", gap: 6, textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
                   fontWeight: on ? 700 : 500, color: on ? "#1a3a6b" : theme.textSecondary, background: on ? "rgba(26,58,107,0.08)" : "transparent",
                   boxShadow: on ? "inset 3px 0 0 #1a3a6b" : "none" }}>
-                {c.label}
+                <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}</span>
+                {/* 유료 회원 전용 표시 — 주황 = 공실뉴스부동산 색 (2026-10-23 사장님) */}
+                {(c.id === "interior" || c.id === "remodel") && (
+                  <span title="공실뉴스부동산(유료 회원) 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
+                )}
               </button>
             );
           })}

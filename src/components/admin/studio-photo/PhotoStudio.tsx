@@ -1,6 +1,6 @@
 "use client";
 
-// 공실뉴스 스튜디오 [이미지 편집] (포토랩) — PSD 를 열고 고치고 PSD 로 저장 (포토샵과 주고받기). 회의: docs/2026-10-19_photolab_meeting.md
+// 공실스튜디오 [이미지 편집] (포토랩) — PSD 를 열고 고치고 PSD 로 저장 (포토샵과 주고받기). 회의: docs/2026-10-19_photolab_meeting.md
 //  - 모든 일은 이 PC 안에서 (서버 없음) — 열기·그리기·저장이 바로바로
 //  - 화면: 처음 화면(새 파일·열기·최근 파일) → 문서 탭 · 그림판 · 오른쪽 속성 칸 · 레이어 목록
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +12,7 @@ import {
   copyCanvas, guidesOf, mk, niceGrid, paintable, preparePaint, setGuides, type PsdGuide,
   openImageBytes, openPsdBytes, parentList, rasterize, resizeCanvas, savePsdBytes, shapeLayer, textLayer, thumbOf, uid, type Box, type Doc, type PLayer,
   cropDoc, canvasRect, canvasSizeDoc, imageSizeDoc, rotateDoc, flipDoc, trimBox, revealBox, guidesOf as guidesOfDoc, setGuides as setGuidesDoc, shapeLayerAt, rotateLayer, pictoLayer, flipLayer, webBytes, flatExt, penShapeLayer, walk, makeMask, fullMask, applyMask, grayOf, forgetMask, trimLayer, type WebFmt,
+  pageCount, pageIndex, gotoPage, addPage, removePage, movePage,
 } from "./model";
 import { cmykPdf, cmykTiff } from "./cmyk";
 import { PAINT_TOOLS, SEL_TOOLS, Stage, type PaintOpts, type Tool, type View } from "./Stage";
@@ -31,9 +32,11 @@ import { ColorPicker } from "./ColorPicker";
 import { DesignSide, type MyTpl } from "./DesignSide";
 import { DesignDialog, ratioOf, type DesignResult } from "./DesignDialog";
 import { SampleGrid } from "./SampleGrid";
-import { SLOT_NAME, SLOT_PICK, buildLayout, contentFor, coverCanvas, layoutFonts, loadSampleBg, placeholderBg, placeholderContent, refill, tplGroup, type Cat, type CatSize, type Layout, type Slot } from "./layouts";
+import { PageStrip } from "./PageStrip";
+import { CAT_SIZES, SLOT_NAME, SLOT_PICK, buildLayout, contentFor, coverCanvas, layoutFonts, loadSampleBg, placeholderBg, placeholderContent, refill, tplGroup, type Cat, type CatSize, type Layout, type Slot } from "./layouts";
 import { getStudioAgency } from "@/app/actions/studio";
 import { videoBridge } from "@/components/admin/studio-video/types";
+import { AiSettingsBox } from "@/components/admin/studio-video/VideoMenu";
 import { DocPanel, LayerPanel, PictoSide, StickerSide, TextPanel } from "./PhotoPanels";
 
 /* ── 앱 통로 (없으면 브라우저: 파일 고르기·내려받기) ── */
@@ -49,7 +52,7 @@ type PhotoBridge = {
   autosaveRead?: (id: string) => Promise<{ bytes?: Uint8Array; error?: string }>;
   autosaveClear?: (id: string) => Promise<boolean>;
   tplList?: () => Promise<{ file: string; name: string; thumb: string; w: number; h: number; at: number }[]>;
-  tplWrite?: (o: { name: string; bytes: Uint8Array; thumb: string; w: number; h: number }) => Promise<{ file?: string; error?: string }>;
+  tplWrite?: (o: { name: string; bytes: Uint8Array; thumb: string; w: number; h: number; ask?: boolean }) => Promise<{ file?: string; error?: string; canceled?: boolean }>;
   tplRead?: (file: string) => Promise<FileRes>;
   tplRemove?: (file: string) => Promise<boolean>;
   readFile?: (file: string) => Promise<FileRes>;
@@ -128,7 +131,22 @@ const histOf = (id: string) => {
   if (!h) store.hist.set(id, (h = { undo: [], redo: [], key: "", at: 0 }));
   return h;
 };
-const snapOf = (d: Doc): Snap => ({ children: cloneTree(kids(d.psd)), w: d.psd.width, h: d.psd.height, guides: cloneTree(guidesOf(d)) });
+/* 여러 쪽 — 되돌리기 기록은 쪽마다 따로 (쪽을 바꾸면 그 쪽 기록으로 갈아 끼운다). 열쇠 = 문서 id:쪽 열쇠 */
+const pageHist = new Map<string, { undo: Snap[]; redo: Snap[] }>();
+/** 쪽 바꾸기·더하기·지우기·옮기기 — 지금 쪽 기록을 맡겨 두고, 바뀐 쪽 기록을 꺼낸다 */
+const withPageHist = (d: Doc, fn: () => void) => {
+  const h = histOf(d.id);
+  const before = d.psd;
+  fn();
+  const old = d.pages?.find((p) => p.psd === before);
+  if (old) pageHist.set(`${d.id}:${old.key}`, { undo: h.undo, redo: h.redo });
+  const cur = d.pages?.[pageIndex(d)];
+  const got = cur ? pageHist.get(`${d.id}:${cur.key}`) : null;
+  h.undo = got?.undo || [];
+  h.redo = got?.redo || [];
+  h.key = "";
+};
+const snapOf = (d: Doc): Snap =>({ children: cloneTree(kids(d.psd)), w: d.psd.width, h: d.psd.height, guides: cloneTree(guidesOf(d)) });
 const walkNames = (list: PLayer[], fn: (n: string) => void) => { for (const l of list) { fn(l.name || ""); if (l.children) walkNames(kids(l), fn); } };
 const gridSizes = new Map<string, number>(); // 문서마다 격자 간격
 /* 보기 설정 (눈금자 · 격자 · 안내선) — 이 PC 에 기억 */
@@ -191,7 +209,7 @@ const readRecentSizes = (): Preset[] => {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
 };
 
-function NewDocDialog({ onCreate, onClose, init, onSample }: { onCreate: (o: { name: string; width: number; height: number; bg: string; ppi: number; guides?: PsdGuide[]; mode: "rgb" | "cmyk" }) => void; onClose: () => void; init?: NewInit | null; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void }) {
+function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineRemove }: { onCreate: (o: { name: string; width: number; height: number; bg: string; ppi: number; guides?: PsdGuide[]; mode: "rgb" | "cmyk" }) => void; onClose: () => void; init?: NewInit | null; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; mine?: MyTpl[] | null; onMine?: (t: MyTpl, ai: boolean) => void; onMineRemove?: (t: MyTpl) => void }) {
   const recent = readRecentSizes();
   const p0 = init?.preset;
   const [tab, setTab] = useState(init?.tab || "basic"); // 처음엔 [기본] (2026-10-22 사장님)
@@ -255,7 +273,8 @@ function NewDocDialog({ onCreate, onClose, init, onSample }: { onCreate: (o: { n
           </div>
           {onSample && ["youtube", "blog", "sns", "realty", "basic"].includes(tab) && (
             <div style={{ padding: "0 16px 16px" }}>
-              <SampleGrid key={tab} cat={tab as Cat} compact size={pickedSize} onSample={(l, size, ai, cat) => { onClose(); onSample(l, size, ai, cat); }} />
+              <SampleGrid key={tab} cat={tab as Cat} compact size={pickedSize} onSample={(l, size, ai, cat) => { onClose(); onSample(l, size, ai, cat); }}
+                mine={mine} onMine={onMine ? (t, ai) => { onClose(); onMine(t, ai); } : undefined} onMineRemove={onMineRemove} />
             </div>
           )}
           </div>
@@ -306,7 +325,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample }: { onCreate: (o: { n
 }
 
 /* ── 처음 화면 ── */
-function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onAi }: { onNew: () => void; onOpen: () => void; onRecent: (r: Recent) => void; busy: boolean; onPreset: (i: NewInit) => void; top?: React.ReactNode; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; onAi?: () => void }) {
+function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onAi, mine, onMine, onMineRemove }: { onNew: () => void; onOpen: () => void; onRecent: (r: Recent) => void; busy: boolean; onPreset: (i: NewInit) => void; top?: React.ReactNode; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; onAi?: () => void; mine?: MyTpl[] | null; onMine?: (t: MyTpl, ai: boolean) => void; onMineRemove?: (t: MyTpl) => void }) {
   const b = bridge();
   const [cat, setCat] = useState("");
   const [recent, setRecent] = useState<Recent[] | null>(null);
@@ -327,7 +346,8 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
     <div style={{ flex: 1, minWidth: 0, display: "flex" }}>
     {/* 왼쪽 — 만들 것 고르기 (부동산에 필요한 것) */}
     <aside style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2, padding: "22px 12px", background: C.panel, borderRight: `1px solid ${C.line}`, fontFamily: FONT }}>
-      <h2 style={{ margin: "0 6px 12px", fontSize: 19, fontWeight: 800, color: C.text }}>이미지 편집</h2>
+      <h2 style={{ margin: "0 6px 12px", fontSize: 19, fontWeight: 800, color: C.text }}>이미지제작</h2>
+      <AiSettingsBox />
       {catBtn("", "최근 파일", "folder")}
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.dim, margin: "14px 12px 4px" }}>만들기</div>
       {PRESETS.map((p) => catBtn(p.id, p.label, p.icon))}
@@ -357,12 +377,12 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
             인쇄물은 인쇄소에 PNG·JPG(고화질)로 보내요. 화면 색(RGB)으로 만들어져서 인쇄 색이 조금 다를 수 있어요. X배너·현수막은 크게 보는 물건이라 해상도를 낮췄어요 (150·100ppi).
           </div>
         )}
-        {onSample && ["youtube", "blog", "sns", "realty", "basic"].includes(group.id) && <SampleGrid key={group.id} cat={group.id as Cat} onSample={onSample} onAi={onAi} />}
+        {onSample && ["youtube", "blog", "sns", "realty", "basic"].includes(group.id) && <SampleGrid key={group.id} cat={group.id as Cat} onSample={onSample} onAi={onAi} mine={mine} onMine={onMine} onMineRemove={onMineRemove} />}
       </div>
     ) : (
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "26px 28px", color: C.text, fontFamily: FONT }}>
       {top}
-      <div style={{ fontSize: 22, fontWeight: 800 }}>이미지 편집</div>
+      <div style={{ fontSize: 22, fontWeight: 800 }}>이미지제작</div>
       <div style={{ fontSize: 14.5, color: C.sub, marginTop: 6 }}>포토샵 파일(PSD)을 그대로 열고, 고치고, PSD 로 저장해요. 디자이너와 파일을 주고받을 수 있어요.</div>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
         <Btn primary onClick={onNew}><Icon name="plus" size={17} />새 파일</Btn>
@@ -389,7 +409,7 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
         ))}
       </div>
       {onSample && (
-        <SampleGrid cat="youtube" oneRow title="AI 템플릿" onSample={onSample} onAi={onAi}
+        <SampleGrid cat="youtube" oneRow title="AI 템플릿" onSample={onSample} onAi={onAi} mine={mine} onMine={onMine} onMineRemove={onMineRemove}
           picks={[{ id: "yt_split", cat: "youtube" }, { id: "band", cat: "youtube" }, { id: "blog_clean", cat: "blog" }, { id: "card", cat: "sns" }, { id: "sns_cover", cat: "sns" }, { id: "flyer_a", cat: "realty" }, { id: "window", cat: "realty" }, { id: "yt_price", cat: "youtube" }]} />
       )}
     </div>
@@ -405,7 +425,10 @@ const BLEND_NAMES: [NonNullable<PLayer["blendMode"]>, string][] = [
 ];
 
 /* ── 이미지 편집 ── */
-export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
+/** 다른 편집기 안에서 잠깐 여는 이미지 편집 (영상 › SNS 올리기 › 썸네일 고치기, 2026-10-22) — 문서 하나를 열고 [이 썸네일 쓰기]·Ctrl+S 로 돌려준다 */
+export type PhotoEmbed = { doc: Doc; title: string; useLabel?: string; onUse: (png: Uint8Array, psd: Uint8Array) => void | Promise<void>; onCancel: () => void };
+
+export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; embed?: PhotoEmbed }) {
   const b = bridge();
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick((t) => t + 1), []);
@@ -417,7 +440,6 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
   const [side, setSide] = useState<"" | "sticker" | "fx" | "tpl" | "picto">("");
   const [designOpen, setDesignOpen] = useState(false); // AI 자동 디자인 창
   const [myTpls, setMyTpls] = useState<MyTpl[] | null>(null);
-  const [mineName, setMineName] = useState<string | null>(null); // 내 템플릿 이름 묻기
   const [newOpen, setNewOpen] = useState(false);
   const [newInit, setNewInit] = useState<NewInit | null>(null); // 처음 화면에서 고른 종류 (새 문서 창의 탭·크기)
   const [closing, setClosing] = useState<Doc | null>(null);
@@ -585,6 +607,27 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
     bump();
     syncDirty();
   };
+
+  /* 여러 쪽 (2026-10-23) — 쪽 바꾸기·더하기·복제·지우기·옮기기. 선택은 풀고, 되돌리기 기록은 쪽마다 */
+  const pageOp = (fn: (d: Doc) => void, dirty = true) => {
+    if (!doc || editing) return;
+    const w0 = doc.psd.width, h0 = doc.psd.height;
+    withPageHist(doc, () => fn(doc));
+    setSel(null);
+    setExtra([]);
+    sels.delete(doc.id);
+    if (dirty) { doc.dirty = true; syncDirty(); }
+    if (doc.psd.width !== w0 || doc.psd.height !== h0) fitDoc(doc.id);
+    else bump();
+  };
+  const goPage = (i: number) => { if (doc && i !== pageIndex(doc) && i >= 0 && i < pageCount(doc)) pageOp((d) => gotoPage(d, i), false); };
+  const newPage = (dup: boolean) => pageOp((d) => { addPage(d, dup); });
+  const delPage = (i: number) => {
+    if (!doc || pageCount(doc) <= 1) return;
+    if (!window.confirm(`${i + 1}쪽을 지울까요? 지운 쪽은 되돌릴 수 없어요.`)) return;
+    pageOp((d) => removePage(d, i));
+  };
+  const shiftPage = (i: number, dir: -1 | 1) => { if (doc && i + dir >= 0 && i + dir < pageCount(doc)) pageOp((d) => movePage(d, i, i + dir)); };
 
   /* 글꼴 — 아직 안 받은 글꼴이면 받은 뒤 한 번 더 그린다 */
   const applyText = useCallback((l: PLayer, look: PLayer["_look"] & object) => {
@@ -1334,7 +1377,7 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
   const loadMine = () => { if (b?.tplList) b.tplList().then(setMyTpls).catch(() => setMyTpls([])); else setMyTpls([]); };
   const [designInit, setDesignInit] = useState<{ cat: Cat; size: CatSize; layout?: string } | null>(null);
   const openDesign = () => { loadMine(); setDesignInit(null); setDesignOpen(true); };
-  /** 처음 화면 샘플 — [그대로 열기] 는 칸 이름 글 · 사진 자리로 레이어 문서를 바로, [AI로 채우기] 는 AI 자동 디자인 창을 이 틀로 */
+  /** 처음 화면 샘플 — [템플릿 열기] 는 칸 이름 글 · 사진 자리로 레이어 문서를 바로, [AI로 채우기] 는 AI 자동 디자인 창을 이 틀로 */
   const openSample = async (l: Layout, size: CatSize, ai: boolean, cat: Cat) => {
     if (ai) { loadMine(); setDesignInit({ cat, size, layout: l.id }); setDesignOpen(true); return; }
     setBusy("샘플을 여는 중…");
@@ -1416,11 +1459,12 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
   };
   const saveMine = async (name: string) => {
     if (!doc || !b?.tplWrite) return say("스튜디오 앱에서만 돼요");
-    setMineName(null);
     if (!hasSlots(doc)) say("칸이 정해진 레이어가 없어요 — 다른 공실을 넣을 땐 글이 바뀌지 않아요 (레이어 칸 위 [칸] 에서 정하세요)");
-    const r = await b.tplWrite({ name: name || doc.name, bytes: savePsdBytes(doc), thumb: thumbOf(composite(doc)), w: doc.psd.width, h: doc.psd.height });
+    // 저장 창에서 위치·이름을 고른다 — 처음엔 공실스튜디오\04 이미지제작\내템플릿, 다음부터는 지난번에 고른 폴더 (고른 곳에 저장해도 내 템플릿 목록에 뜬다)
+    const r = await b.tplWrite({ name: name || doc.name, bytes: savePsdBytes(doc), thumb: thumbOf(composite(doc)), w: doc.psd.width, h: doc.psd.height, ask: true });
+    if (r.canceled) return;
     if (r.error) return say(`저장하지 못했어요: ${r.error}`);
-    say(`내 템플릿으로 저장했어요 — ${name || doc.name}`);
+    say("내 템플릿에 넣었어요 — 처음 화면 템플릿 목록 맨 앞에 있어요");
     loadMine();
   };
   const openMine = async (t: MyTpl) => {
@@ -1433,6 +1477,16 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
     addDoc(d);
   };
   const removeMine = async (t: MyTpl) => { await b?.tplRemove?.(t.file); loadMine(); };
+  const useMine = (t: MyTpl, ai: boolean) => {
+    if (!ai) return void openMine(t);
+    // 이 디자인과 비율이 맞는 종류·크기로 창을 연다 (없으면 유튜브 썸네일)
+    const fit = (Object.keys(CAT_SIZES) as Cat[]).flatMap((c) => CAT_SIZES[c].map((sz) => ({ c, sz }))).find(({ sz }) => t.w && t.h && Math.abs(t.w / t.h - sz.w / sz.h) < 0.05);
+    loadMine();
+    setDesignInit({ cat: fit?.c || "youtube", size: fit?.sz || CAT_SIZES.youtube[0], layout: `@mine:${t.file}` });
+    setDesignOpen(true);
+  };
+  // 처음 화면에 내 템플릿을 보여 주려면 목록을 먼저 읽어 둔다
+  useEffect(() => { loadMine(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   /** 배경만 다시 만들기 — 저장해 둔 AI 프롬프트로 다시 그려 [배경 사진] 칸만 바꾼다 */
   const regenBg = async () => {
     const vb = videoBridge();
@@ -1463,6 +1517,15 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
     setEditing(null);
     bump();
   };
+  // 다른 편집기에서 열면 받은 문서를 바로 연다
+  const embedOpened = useRef(false);
+  useEffect(() => {
+    if (!embed || embedOpened.current) return;
+    embedOpened.current = true;
+    if (store.docs.some((d) => d.id === embed.doc.id)) activate(embed.doc.id);
+    else addDoc(embed.doc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const openFiles = async (files: { name: string; bytes: Uint8Array; path?: string }[]) => {
     for (const f of files) {
       const already = f.path && store.docs.find((d) => d.path === f.path);
@@ -1500,7 +1563,18 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
     if (f.error || !f.bytes) return say(f.error || "열지 못했어요");
     await openFiles([{ name: f.name, bytes: f.bytes, path: f.path }]);
   };
-  const create = (o: { name: string; width: number; height: number; bg: string; ppi: number; guides?: PsdGuide[]; mode: "rgb" | "cmyk" }) => {
+  // 탐색기에서 PSD 를 두 번 눌러 연 경우 (2026-10-23 — 포토샵이 없는 PC). 앱이 주소 ?open=<파일 위치> 로 이 화면을 연다
+  useEffect(() => {
+    if (embed) return;
+    const u = new URL(window.location.href);
+    const file = u.searchParams.get("open") || "";
+    if (!/\.(psd|psb)$/i.test(file)) return;
+    u.searchParams.delete("open");
+    window.history.replaceState(window.history.state, "", u.toString());
+    void openRecent({ path: file, name: file.split(/[\\/]/).pop() || file, at: Date.now(), thumb: "" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const create = (o:{ name: string; width: number; height: number; bg: string; ppi: number; guides?: PsdGuide[]; mode: "rgb" | "cmyk" }) => {
     setNewOpen(false);
     setNewInit(null);
     const d = newDoc({ name: o.name, width: o.width, height: o.height, bg: o.bg, ppi: o.ppi });
@@ -1526,7 +1600,33 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
   const closeDoc = (d: Doc) => (d.dirty ? setClosing(d) : reallyClose(d));
 
   /* 저장 */
+  /** [이 썸네일 쓰기] — 지금 그림(PNG)과 레이어(PSD)를 돌려주고 닫는다 */
+  const applyEmbed = async () => {
+    if (!embed) return;
+    const d = store.docs.find((x) => x.id === embed.doc.id);
+    if (!d) return embed.onCancel();
+    setBusy("썸네일을 저장하는 중…");
+    try {
+      const c = composite(d);
+      const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+      if (!blob) throw new Error("그림을 만들지 못했어요");
+      await embed.onUse(new Uint8Array(await blob.arrayBuffer()), savePsdBytes(d));
+      d.dirty = false;
+      reallyClose(d);
+    } catch (e) {
+      say(`저장하지 못했어요: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy("");
+    }
+  };
+  const cancelEmbed = () => {
+    if (!embed) return;
+    const d = store.docs.find((x) => x.id === embed.doc.id);
+    if (d) { d.dirty = false; reallyClose(d); }
+    embed.onCancel();
+  };
   const save = async (d: Doc, ask = false): Promise<boolean> => {
+    if (embed && d.id === embed.doc.id && !ask) { await applyEmbed(); return true; } // Ctrl+S = 이 썸네일 쓰기
     setBusy("저장하는 중…");
     await new Promise((r) => setTimeout(r, 30));
     const flat = !ask && b ? flatExt(d) : null;
@@ -1830,6 +1930,7 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
       if (ctrl && !sh && !alt && c === "KeyP") return go(openPrint); // 인쇄 (포토샵처럼)
       if (ctrl && c === "KeyS") return go(() => void save(doc, sh));
       if (ctrl && c === "KeyZ") return go(() => (sh ? redo() : undo()));
+      if (!ctrl && !alt && (c === "PageUp" || c === "PageDown") && pageCount(doc) > 1) return go(() => goPage(pageIndex(doc) + (c === "PageUp" ? -1 : 1))); // 여러 쪽
       if (ctrl && c === "KeyY") return go(() => { if (doc.mode === "cmyk") setVis({ proof: vis.proof === false }); }); // 교정 색상
       if (ctrl && c === "KeyW") return go(() => closeDoc(doc));
       if (ctrl && c === "KeyT") return go(() => { setTool("move"); if (!sel) say("크기를 바꿀 레이어를 골라 주세요"); }); // 자유 변형 — 모서리 손잡이
@@ -1937,7 +2038,7 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
       onDrop={(e) => { e.preventDefault(); void onDropFiles([...e.dataTransfer.files]); }}>
       {menu}
       <PhotoHome onNew={() => setNewOpen(true)} onOpen={() => void openPick()} onRecent={(r) => void openRecent(r)} busy={Boolean(busy)} onPreset={(i) => { setNewInit(i); setNewOpen(true); }}
-        onSample={(l, size, ai, cat) => void openSample(l, size, ai, cat)} onAi={openDesign}
+        onSample={(l, size, ai, cat) => void openSample(l, size, ai, cat)} onAi={openDesign} mine={myTpls} onMine={useMine} onMineRemove={(t) => void removeMine(t)}
           top={<>
         {autoList.length > 0 && (
           <div style={{ margin: "0 0 14px", padding: "12px 14px", borderRadius: 8, border: "1px solid #b45309", background: "rgba(180,83,9,0.15)", color: C.text, fontFamily: FONT }}>
@@ -2123,6 +2224,8 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
             });
           }}
           onDropFiles={(f) => void onDropFiles(f)} />
+        {/* 여러 쪽 — 지금 문서의 쪽 목록 (2026-10-23) */}
+        {on && <PageStrip doc={d} tick={tick} onGo={goPage} onAdd={newPage} onDel={delPage} onMove={shiftPage} />}
         {/* 다른 문서 — 누르면 그 문서로 (포토샵처럼 창을 앞으로) */}
         {/* 다른 문서 — 이동 도구가 아니면 첫 클릭은 그 문서로 바꾸기만 (붓질이 엉뚱한 문서에 가지 않게) */}
         {!on && tool !== "move" && <div style={{ position: "absolute", inset: 0, zIndex: 20, cursor: "default" }} onPointerDown={(e) => { e.preventDefault(); activate(d.id); }} />}
@@ -2219,7 +2322,7 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
       { t: "인쇄…", key: "Ctrl+P", go: openPrint, off: !doc },
       "-",
       { t: "AI 자동 디자인 (공실·기사 가져오기)…", go: openDesign },
-      { t: "내 템플릿으로 저장…", go: () => doc && setMineName(doc.name), off: !doc },
+      { t: "내 템플릿으로 저장…", go: () => doc && void saveMine(doc.name), off: !doc },
       "-",
       { t: "사진 가져오기 (PC에서)…", go: () => void addImages(), off: !doc },
       { t: "내보내기 › PNG…", go: () => void exportAs("png"), off: !doc },
@@ -2286,6 +2389,17 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
       { t: "복제…", go: dupDoc, off: !doc },
       "-",
       { t: "배경만 다시 만들기 (AI)", go: () => void regenBg(), off: !doc?.meta?.ai?.prompt },
+    ] },
+    { id: "page", label: "쪽", items: [
+      { t: "새 쪽 (흰 쪽)", go: () => newPage(false), off: !doc },
+      { t: "쪽 복제", go: () => newPage(true), off: !doc },
+      { t: "쪽 지우기…", go: () => doc && delPage(pageIndex(doc)), off: !doc || pageCount(doc) <= 1 },
+      "-",
+      { t: "앞 쪽", key: "PageUp", go: () => doc && goPage(pageIndex(doc) - 1), off: !doc || pageIndex(doc) <= 0 },
+      { t: "다음 쪽", key: "PageDown", go: () => doc && goPage(pageIndex(doc) + 1), off: !doc || pageIndex(doc) >= pageCount(doc) - 1 },
+      "-",
+      { t: "이 쪽을 앞으로", go: () => doc && shiftPage(pageIndex(doc), -1), off: !doc || pageIndex(doc) <= 0 },
+      { t: "이 쪽을 뒤로", go: () => doc && shiftPage(pageIndex(doc), 1), off: !doc || pageIndex(doc) >= pageCount(doc) - 1 },
     ] },
     { id: "layer", label: "레이어", items: [
       { t: "새 레이어", key: "Shift+Ctrl+N", go: () => newLayer(), off: !doc },
@@ -2873,6 +2987,15 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: C.bg, fontFamily: FONT, color: C.text }}
       onPointerDown={() => { if (menuOpen) setMenuOpen(""); }}>
+      {embed && (
+        <div style={{ height: 46, flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 16px", background: "#1d4ed8", color: "#fff", fontFamily: FONT }}>
+          <span style={{ fontSize: 15, fontWeight: 800 }}>✏ {embed.title}</span>
+          <span style={{ fontSize: 13, opacity: 0.9 }}>글자·사진·색을 고치고 [{embed.useLabel || "이 썸네일 쓰기"}] (Ctrl+S) — 영상 폴더에 PNG·PSD 로 저장돼요</span>
+          <span style={{ flex: 1 }} />
+          <button type="button" onClick={cancelEmbed} disabled={Boolean(busy)} style={{ height: 32, padding: "0 14px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.6)", background: "transparent", color: "#fff", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>취소</button>
+          <button type="button" onClick={() => void applyEmbed()} disabled={Boolean(busy)} style={{ height: 32, padding: "0 16px", borderRadius: 6, border: 0, background: "#fff", color: "#1d4ed8", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: FONT }}>✓ {embed.useLabel || "이 썸네일 쓰기"}</button>
+        </div>
+      )}
       {!doc ? home : (
         <>
           <div onPointerDown={(e) => e.stopPropagation()}>{menuBar}</div>
@@ -2966,7 +3089,7 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
               )}
               <div style={{ flex: "1 1 55%", minHeight: 0, display: "flex", overflow: "hidden" }}>
                 {side === "picto" ? <PictoSide color={paint.fg} onPick={(id, st) => doc && insert(pictoLayer(doc, id, paint.fg, st))} onClose={() => setSide("")} />
-                  : side === "tpl" ? <DesignSide onPick={insertTpl} onClose={() => setSide("")} mine={myTpls} onMine={(t) => void openMine(t)} onMineRemove={(t) => void removeMine(t)} onSaveMine={() => setMineName(doc.name)} />
+                  : side === "tpl" ? <DesignSide onPick={insertTpl} onClose={() => setSide("")} mine={myTpls} onMine={(t) => void openMine(t)} onMineRemove={(t) => void removeMine(t)} onSaveMine={() => void saveMine(doc.name)} />
                   : side === "sticker" ? <StickerSide onPick={addSticker} onClose={() => setSide("")} />
                   : selL && isText(selL) && !selL.children ? <TextPanel key={selL._k} doc={doc} l={selL} mutate={mutate} apply={applyText} onClose={() => setSel(null)} />
                   : selL ? <LayerPanel key={selL._k} doc={doc} l={selL} mutate={mutate} fxFirst={side === "fx"} onClose={() => setSel(null)} />
@@ -3099,17 +3222,6 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
         </Modal>
       )}
       {designOpen && <DesignDialog init={designInit} canRefill={Boolean(doc && hasSlots(doc))} mine={myTpls || []} onDone={(r) => void onDesignDone(r)} onClose={() => setDesignOpen(false)} />}
-      {mineName !== null && (
-        <Modal title="내 템플릿으로 저장" onClose={() => setMineName(null)} width={420}
-          footer={<><Btn onClick={() => setMineName(null)}>취소</Btn><Btn primary onClick={() => void saveMine(mineName)}>저장</Btn></>}>
-          <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10, fontSize: 14 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 10 }}>이름
-              <input autoFocus value={mineName} onChange={(e) => setMineName(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") void saveMine(mineName); }} style={{ ...input, flex: 1 }} />
-            </label>
-            <div style={{ fontSize: 12.5, color: C.dim }}>문서\공실뉴스 이미지\내 템플릿 에 PSD 로 저장돼요.</div>
-          </div>
-        </Modal>
-      )}
       {fltDlg && FILTERS[fltDlg.id] && <FilterDialog key={fltDlg.id + fltDlg.k} filter={FILTERS[fltDlg.id]} init={lastFilter.current?.id === fltDlg.id ? lastFilter.current.v : null} onPreview={fltPreview} onOk={fltOk} onCancel={fltCancel} />}
       {imgDlg === "size" && doc && <ImageSizeDialog w0={doc.psd.width} h0={doc.psd.height} ppi0={ppi || 72} onClose={() => setImgDlg("")}
         onOk={(w, h, p) => { setImgDlg(""); if (w === doc.psd.width && h === doc.psd.height && p === (ppi || 72)) return; mutate(() => imageSizeDoc(doc, w, h, p)); sels.delete(doc.id); fitDoc(doc.id); }} />}
@@ -3164,7 +3276,7 @@ export default function PhotoStudio({ menu }: { menu: React.ReactNode }) {
           </div>
         </Modal>
       )}
-      {newOpen && <NewDocDialog init={newInit} onCreate={create} onClose={() => { setNewOpen(false); setNewInit(null); }} onSample={(l, size, ai, cat) => void openSample(l, size, ai, cat)} />}
+      {newOpen && <NewDocDialog init={newInit} onCreate={create} onClose={() => { setNewOpen(false); setNewInit(null); }} onSample={(l, size, ai, cat) => void openSample(l, size, ai, cat)} mine={myTpls} onMine={useMine} onMineRemove={(t) => void removeMine(t)} />}
       {closing && (
         <Modal title="저장하지 않은 내용이 있어요" onClose={() => setClosing(null)} width={500}
           footer={<><Btn onClick={() => setClosing(null)}>취소</Btn><Btn onClick={() => reallyClose(closing)}>저장 안 함</Btn><Btn primary onClick={async () => { if (await save(closing)) reallyClose(closing); }}>저장</Btn></>}>

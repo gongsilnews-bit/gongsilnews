@@ -17,6 +17,7 @@ import { EL_TAGS, ElevenDetail, elSetOf } from "./ElevenDetail";
 import { WizardDeco, newsSubOf, twoTitleCanvas, logoPillCanvas, newsBarCanvas, loadDeco, subLookOf, TITLE_STYLES, CHANNEL_STYLES, endDefOf, endFieldsOf, type Agency, type Deco } from "./WizardDeco";
 import { TPL_PREFIX, drawTemplate, tplFonts, tplTextOf } from "./Templates";
 import { TRANSITIONS } from "./transitions";
+import { lastVoice, saveLastVoice } from "./voiceMemory";
 
 export type VideoStyle = { id: string; name: string; desc: string; icon: string; prompt: string; voice: string; speed: number; music: string; ratio?: Ratio; subtitle?: "long" | "short"; chars: number };
 
@@ -187,12 +188,12 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   const [voiceOn, setVoiceOn] = useState(true);
   const motionOn = true; // 사진 자동 움직임 — 늘 켬, 편집 화면에서 클립마다 바꾼다 (2026-10-20 사장님: 꾸미기에서 뺌)
   const aiDeco = false; // AI가 다 꾸미기 — 편집 화면 [AI 편집]에서 (2026-10-20 사장님)
-  const [voiceId, setVoiceId] = useState("Charon");
+  const [voiceId, setVoiceId] = useState(() => lastVoice()?.id || "Charon");
   const [emotion, setEmotion] = useState<string | undefined>(undefined); // 타입캐스트 말투 · 일레븐랩스 세부 설정 (x:…)
   const [voicePick, setVoicePick] = useState(false); // 목소리 고르기 창 (편집 화면과 같은 얼굴 카드 창)
   const [speed, setSpeed] = useState(1);
   const [voiceVol, setVoiceVol] = useState(1); // 목소리 크기 (2026-10-20 사장님)
-  // 녹음 파일(WAV) 저장 폴더 — 문서\공실뉴스 스튜디오\AI오디오 (바꿨으면 그곳)
+  // 녹음 파일(WAV) 저장 폴더 — 문서\공실스튜디오\08 AI생성물\AI보이스 (바꿨으면 그곳)
   const [audioDir, setAudioDir] = useState("");
   const [audioName, setAudioName] = useState<string | null>(null); // null = 프로젝트명 따라가기
   const [projDefDir, setProjDefDir] = useState(""); // 프로젝트 기본 저장 폴더
@@ -282,8 +283,11 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   const pickStyle = (s: VideoStyle | null) => {
     setStyle(s);
     if (s) {
-      setVoiceId(s.voice);
-      setSpeed(s.speed);
+      // 회원이 전에 고른 목소리가 있으면 그것을 (영상 종류의 기본 목소리로 덮어쓰지 않게)
+      const lv = lastVoice();
+      setVoiceId(lv?.id || s.voice);
+      setSpeed(lv?.speed || s.speed);
+      if (lv?.emotion) setEmotion(lv.emotion);
       setMood(s.music);
       setChars(s.chars);
       if (s.ratio) setRatio(s.ratio);
@@ -371,7 +375,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         n = r.data;
       } else {
         const c = columnBridge();
-        if (!c) throw new Error("네이버 뉴스 가져오기는 공실뉴스 스튜디오 앱에서 돼요.");
+        if (!c) throw new Error("네이버 뉴스 가져오기는 공실스튜디오 앱에서 돼요.");
         n = how === "grab" ? await c.grabNews() : await c.fetchNews(key);
         // 기관 이름이 주소(fsc.go.kr)로만 왔거나 제목이 "상세화면 - 보도자료 - …" 같은 메뉴 줄이면 다듬는다
         const nm = siteName(n.url);
@@ -629,10 +633,10 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       } else {
         clips.forEach((c) => (c.hold = estimateSeconds(c.text, speed)));
       }
-      // AI 목소리 전체를 WAV 로 — 문서\공실뉴스 스튜디오\AI오디오 (2026-10-20 사장님). 만든 목소리를 잇기만 (다시 만들지 않음)
+      // AI 목소리 전체를 WAV 로 — 문서\공실스튜디오\08 AI생성물\AI보이스 (2026-10-20 사장님). 만든 목소리를 잇기만 (다시 만들지 않음)
       if (voiceOn && b.voiceSave && clips.some((c) => c.voice)) {
         try {
-          setGen({ title: "목소리를 WAV 로 저장하는 중… (AI오디오)", frac: 0.99 });
+          setGen({ title: "목소리를 WAV 로 저장하는 중… (AI보이스)", frac: 0.99 });
           const f = audioDir ? null : await b.project.folders?.().catch(() => null);
           const dir = audioDir || f?.aiAudioDir || f?.defaults.aiAudioDir;
           const nm = String((audioName ?? "").trim() || p.name || (projName ?? defaultName) || "AI 목소리").replace(/\.wav$/i, "").replace(/[\\/:*?"<>|]/g, "_").trim() || "AI 목소리";
@@ -997,7 +1001,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             {writing && script.trim() && <div style={{ fontSize: 13.5, color: C.sub, marginTop: 6 }}>{writing}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 14, marginTop: 8, fontSize: 14, color: C.sub }}>
               {b.saveText && script.trim() && (
-                <Btn small onClick={async () => { try { const f = await b.saveText!((projName ?? defaultName).trim() || "대본", script); setTextSaved(f || ""); if (f) setErr(""); } catch (e) { setErr(errText(e)); } }} style={{ marginRight: "auto" }} title="저장할 폴더와 파일 이름을 고르고 .txt 로 저장 (처음은 문서 › 공실뉴스 스튜디오 › 대본)">
+                <Btn small onClick={async () => { try { const f = await b.saveText!((projName ?? defaultName).trim() || "대본", script); setTextSaved(f || ""); if (f) setErr(""); } catch (e) { setErr(errText(e)); } }} style={{ marginRight: "auto" }} title="저장할 폴더와 파일 이름을 고르고 .txt 로 저장 (처음은 문서 › 공실스튜디오 › 대본)">
                   <Icon name="file" size={15} />텍스트로 내려받기
                 </Btn>
               )}
@@ -1073,7 +1077,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                     );
                   })()}
                   {voicePick && <VoicePanel initial={{ id: voiceId, speed, emotion }} pickLabel="이 목소리로" targetCount={0}
-                    onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); setVoicePick(false); }} onClose={() => setVoicePick(false)} />}
+                    onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); saveLastVoice({ id: o.id, speed: o.speed, emotion: o.emotion }); setVoicePick(false); }} onClose={() => setVoicePick(false)} />}
                   {/* 일레븐랩스 — 고급 설정 (모델·안정성·유사도·스타일·속도·스피커 부스트) 다 펼쳐서 (2026-10-20 사장님) */}
                   {voiceId.startsWith("el_") && <ElevenDetail voiceId={voiceId} emotion={emotion || "normal"} onEmotion={setEmotion} openFirst />}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

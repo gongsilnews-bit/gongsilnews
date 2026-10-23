@@ -6,7 +6,7 @@ import StudioWorking from "./StudioWorking";
 import { useStudioImager } from "./useStudioWriter";
 
 /**
- * 블로그 미리보기 편집기 (공실뉴스 스튜디오 SNS뉴스발행 3단계)
+ * 블로그 미리보기 편집기 (공실스튜디오 SNS뉴스발행 3단계)
  *
  * 크롬 확장의 블로그 탭처럼, 네이버에 들어갈 순서 그대로 보여 주고 그 자리에서 고친다.
  *  - 대표 사진 → (0번 자리 사진) → 문단1 → (1번 자리 사진) → 문단2 … 순서. 네이버 채우기도 이 순서를 따른다.

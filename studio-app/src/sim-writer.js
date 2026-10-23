@@ -126,8 +126,14 @@ function forWeb(d) {
           constraints: r.constraints,
           disclaimer: r.disclaimer,
           cost: r.cost,
+          // 공실마케팅 예측 보고서용 (2026-10-22)
+          priceText: r.priceText || "",
+          saleKind: r.saleKind || null,
+          vacancyFacts: r.vacancyFacts || [],
+          aspectRatio: r.aspectRatio || "",
         }
       : null,
+    report: d.report || null, // 보고서 편집 내용 (색·테마·쪽·글)
     label: r ? `${r.title}${r.roomName ? ` · ${r.roomName}` : ""}` : (d.vacancy && d.vacancy.title) || `${KINDS[d.kind].label} 시뮬레이션`,
   };
 }
@@ -315,6 +321,152 @@ function buildResult(d, L, picked) {
   };
 }
 
+/* ── 공실마케팅 › 인테리어·리모델링 예측 시뮬레이션 보고서 (2026-10-22, docs/2026-10-22_sim_report_plan.md) ── */
+
+/** 보고서에 넣을 큰 그림 — 지금 모습·예측(1600px)과 현재 상태 사진들(1200px) */
+function reportMedia(id) {
+  const d = read(id);
+  const r = d.result;
+  if (!r) throw new Error("먼저 예측을 만들어 주세요.");
+  const big = (file, w) => (file && fs.existsSync(file) ? thumbOf(file, w) : null);
+  return {
+    before: big(r.beforeFile, 1600),
+    after: r.versions.map((v) => ({ index: v.index, diffKo: v.diffKo, image: big(v.file, 1600) })),
+    photos: d.photos.filter((p) => fs.existsSync(p.file)).slice(0, 12).map((p) => ({ id: p.id, src: big(p.file, 1200) })),
+  };
+}
+
+/** 보고서 편집 내용 저장 (sim.json 의 report) */
+function saveReport({ id, report }) {
+  const d = read(id);
+  if (!report || typeof report !== "object") throw new Error("저장할 보고서가 없습니다.");
+  d.report = { ...report, savedAt: new Date().toISOString() };
+  write(d);
+  return { savedAt: d.report.savedAt };
+}
+
+/** [AI로 채우기] — 보고서 설명 글 칸 (요약·검토 목적·콘셉트·견적 해설·맺음말). 숫자는 자료 그대로 */
+async function reportText({ id }, onProgress = () => {}) {
+  const d = read(id);
+  const r = d.result;
+  if (!r) throw new Error("먼저 예측을 만들어 주세요.");
+  const L = lib(d.kind);
+  const P = ext.run(["marketing/sim-report-prompt.js"]);
+  const data = {
+    title: r.title, location: r.location, roomName: r.roomName || "", priceText: r.priceText || "",
+    vacancyFacts: (r.vacancyFacts || []).slice(0, 14), design: r.design,
+    designSpec: Object.entries(r.designSpec || {}).map(([k, v]) => ({ label: L.RM_SPEC_LABELS[k] || k, value: String(v || "") })).filter((x) => x.value),
+    cost: r.cost,
+  };
+  const text = await chatgpt.ask(P.gwBuildSimReportPrompt(d.kind, data), {
+    onProgress,
+    busyLabel: "보고서 글을 작성하고 있습니다",
+    feature: "예측 보고서",
+    isComplete: (t) => P.gwParseSimReport(t).ok,
+  });
+  const parsed = P.gwParseSimReport(text);
+  if (!parsed.ok) throw new Error(parsed.reason);
+  log.info(`[시뮬레이션 보고서] ${id} 글 ${Object.keys(parsed.fields).length}칸`);
+  return parsed.fields;
+}
+
+/* ── 보고서 묶음 (2026-10-22 사장님: 거실·안방·주방·욕실… 공간마다 사진을 넣고 하나씩 예측, 공실과 연결하지 않음) ──
+   묶음 = media/srp-<번호>/project.json { id, kind, createdAt, site{title,address,memo}, common{}, spaces[{key,name,simId}], report{} }
+   공간 하나 = 시뮬레이션 하나(int-·rem-) — 사진·조건·공사비 기준·예측은 위 함수를 그대로 쓴다 */
+const isProj = (id) => /^srp-[a-f0-9]+$/.test(String(id || ""));
+const projFile = (id) => path.join(mediaDir(id), "project.json");
+function projRead(id) {
+  const d = isProj(id) ? readJson(projFile(id)) : null;
+  if (!d) throw new Error("보고서를 찾지 못했습니다. 새로 만들어 주세요.");
+  return d;
+}
+function projView(d) {
+  return { ...d, spaces: (d.spaces || []).map((sp) => ({ ...sp, sim: get(sp.simId) })) };
+}
+function projCreate(kind) {
+  if (!KINDS[kind]) throw new Error("알 수 없는 보고서입니다.");
+  const d = { id: `srp-${Date.now().toString(16)}${crypto.randomBytes(3).toString("hex")}`, kind, createdAt: new Date().toISOString(), site: { title: "", address: "", memo: "" }, common: {}, spaces: [], report: null };
+  fs.mkdirSync(mediaDir(d.id), { recursive: true });
+  fs.writeFileSync(projFile(d.id), JSON.stringify(d, null, 2));
+  return projView(d);
+}
+function projGet(id) {
+  try {
+    return projView(projRead(id));
+  } catch {
+    return null;
+  }
+}
+function projList(kind, limit = 12) {
+  const root = path.join(app.getPath("userData"), "media");
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root)
+    .filter(isProj)
+    .map((id) => {
+      try {
+        const d = readJson(projFile(id));
+        if (!d || d.kind !== kind) return null;
+        return { id, createdAt: d.createdAt, title: (d.site && d.site.title) || "제목 없는 보고서", spaces: (d.spaces || []).map((x) => x.name).join("·") };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .slice(0, limit);
+}
+/** 현장·공통 조건·공간 목록·보고서 편집 저장 (보낸 것만 바꾼다) */
+function projSave({ id, site, common, spaces, report }) {
+  const d = projRead(id);
+  if (site && typeof site === "object") d.site = { ...d.site, ...site };
+  if (common && typeof common === "object") d.common = { ...common };
+  if (Array.isArray(spaces)) d.spaces = spaces.filter((x) => x && isSim(x.simId)).map((x) => ({ key: String(x.key || newId()), name: String(x.name || "").slice(0, 30), simId: x.simId }));
+  if (report && typeof report === "object") d.report = { ...report, savedAt: new Date().toISOString() };
+  fs.writeFileSync(projFile(id), JSON.stringify(d, null, 2));
+  return projView(d);
+}
+/** 공간 하나 더 — 새 시뮬레이션을 만들고 공통 조건·공간 유형·처음 면적을 넣는다 */
+function projAddSpace({ id, name, roomType }) {
+  const d = projRead(id);
+  const s = create(d.kind);
+  const L = lib(d.kind);
+  const design = { ...(d.common || {}), ...(roomType ? { roomType } : {}) };
+  const costBase = roomType && L.rmDefaultCostBase ? L.rmDefaultCostBase(roomType) : undefined;
+  update({ id: s.id, design, ...(costBase ? { costBase } : {}) });
+  d.spaces = [...(d.spaces || []), { key: newId(), name: String(name || "").slice(0, 30), simId: s.id }];
+  fs.writeFileSync(projFile(id), JSON.stringify(d, null, 2));
+  return projView(d);
+}
+/** [AI로 채우기] — 공간 여러 개 보고서의 설명 글 (요약·콘셉트·견적 해설·맺음말). 숫자는 자료 그대로 */
+async function projText({ id }, onProgress = () => {}) {
+  const d = projRead(id);
+  const L = lib(d.kind);
+  const P = ext.run(["marketing/sim-report-prompt.js"]);
+  const spaces = (d.spaces || [])
+    .map((sp) => {
+      const sd = readJson(simFile(sp.simId));
+      const r = sd && sd.result;
+      if (!r) return null;
+      return {
+        name: sp.name || r.roomName || "", design: r.design, cost: r.cost,
+        designSpec: Object.entries(r.designSpec || {}).map(([k, v]) => ({ label: L.RM_SPEC_LABELS[k] || k, value: String(v || "").slice(0, 160) })).filter((x) => x.value),
+      };
+    })
+    .filter(Boolean);
+  if (!spaces.length) throw new Error("먼저 예측을 만들어 주세요.");
+  const text = await chatgpt.ask(P.gwBuildSimReportPrompt(d.kind, { title: d.site.title, location: d.site.address, memo: d.site.memo, spaces }), {
+    onProgress,
+    busyLabel: "보고서 글을 작성하고 있습니다",
+    feature: "예측 보고서",
+    isComplete: (t) => P.gwParseSimReport(t).ok,
+  });
+  const parsed = P.gwParseSimReport(text);
+  if (!parsed.ok) throw new Error(parsed.reason);
+  log.info(`[예측 보고서] ${id} 글 ${Object.keys(parsed.fields).length}칸`);
+  return parsed.fields;
+}
+
 /* ── 다른 모듈이 쓰는 것 ── */
 
 /** 기사·블로그·SNS·대본의 원자료 (결과표). 없으면 오류 */
@@ -345,7 +497,7 @@ function resultMedia(id) {
 const creditOf = (id) => KINDS[kindOf(id)].credit;
 
 /* ── 결과표 이미지 · 예측 이미지 저장 (확장 [📋 결과표 이미지 저장] [🖼 예측 이미지 저장]과 같다) ──
-   문서\공실뉴스 스튜디오\<인테리어|리모델링>_<물건>_<번호>\ 에 저장하고 폴더를 연다 */
+   문서\공실스튜디오\02 공실마케팅\<AI인테리어|AI리모델링>\날짜\<작업 이름>\ 에 저장하고 폴더를 연다 */
 // 결과표 그림 코드는 조건표(이름·라벨)와 공사비 표기(rmWon)를 같이 쓴다
 const SHEET = {
   interior: ["interior/interior-spec.js", "interior/interior-cost.js", "interior/interior-sheet.js"],
@@ -412,4 +564,4 @@ async function exportResult({ id, what }) {
   return { folder, count: files.length };
 }
 
-module.exports = { isSim, kindOf, lib, options, estimate, create, get, list, useVacancy, addPhotos, update, run, resultOf, resultMedia, creditOf, exportResult };
+module.exports = { isSim, kindOf, lib, options, estimate, create, get, list, useVacancy, addPhotos, update, run, resultOf, resultMedia, creditOf, exportResult, reportMedia, saveReport, reportText, projCreate, projGet, projList, projSave, projAddSpace, projText };

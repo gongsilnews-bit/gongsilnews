@@ -74,7 +74,7 @@ export function DesignSide({ onPick, onClose, mine, onMine, onMineRemove, onSave
                     </div>
                     <div style={{ padding: "6px 8px", fontSize: 12.5, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</div>
                   </button>
-                  <button type="button" title="지우기" onClick={() => onMineRemove(t)}
+                  <button type="button" title="내 템플릿에서 삭제 (목록에서만 빠지고 파일은 남아요)" onClick={() => onMineRemove(t)}
                     style={{ position: "absolute", right: 4, top: 4, width: 20, height: 20, borderRadius: 10, border: 0, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, cursor: "pointer", padding: 0 }}>✕</button>
                 </div>
               ))}

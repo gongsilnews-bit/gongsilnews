@@ -30,6 +30,21 @@ export const LAYOUTS: FlyerLayout[] = [
 /* QR·공유 링크는 늘 실제 사이트 주소로 — 개발 PC(localhost)나 앱에서 만들어도 손님 휴대폰에서 열려야 한다 (2026-10-15) */
 const SITE_ORIGIN = "https://www.gongsilnews.com";
 
+/* 공실 없이 만든 보고서 (2026-10-23, docs/2026-10-23_report_without_vacancy_plan.md) — ?local=rpt-… 로 열린다.
+   스튜디오 앱이 PC에 저장한다 (공유 링크 없음, 공실스터디 멤버십 전용). 앱 화면 안 틀(iframe)이라 바깥 창의 gongsilStudio.report 를 쓴다 */
+const getLocalId = (): string => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('local') || '' : '');
+type StudioReport = {
+  get: (id: string) => Promise<{ id: string; title: string; createdAt: string; updatedAt: string; vacancy: any; photos: string[]; state: any }>;
+  save: (opts: { id: string; state: any; title?: string }) => Promise<{ updatedAt: string }>;
+};
+const studioReportBridge = (): StudioReport | null => {
+  try {
+    return ((window.parent as any)?.gongsilStudio?.report || (window as any).gongsilStudio?.report || null) as StudioReport | null;
+  } catch {
+    return null;
+  }
+};
+
 const INITIAL_INFO: PropertyInfo = {
   // Page 0: Cover
   coverTitle: "INVESTMENT MEMORANDUM",
@@ -322,7 +337,10 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
 
   const loadedInfo = loaded?.info || {};
   let coverQRLink = loadedInfo.coverQRLink;
-  if (!coverQRLink || coverQRLink === "https://gongsilnews.com" || /localhost|127\.0\.0\.1/.test(coverQRLink)) {
+  if (getLocalId()) {
+    // 공실 없는 보고서는 공유 페이지가 없다 — 회원이 넣은 주소만 (없으면 QR 없음)
+    coverQRLink = coverQRLink && coverQRLink !== "https://gongsilnews.com" ? coverQRLink : "";
+  } else if (!coverQRLink || coverQRLink === "https://gongsilnews.com" || /localhost|127\.0\.0\.1/.test(coverQRLink)) {
     coverQRLink = shareUrl;
   }
 
@@ -685,6 +703,321 @@ function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [handleUndo, handleRedo]);
 
+  /* 공실 정보(v) → 보고서 처음 상태. 공실 없는 보고서는 붙여넣은 글을 AI가 정리한 같은 모양의 v (2026-10-23) */
+  const applyVacancy = (v: any, json: any, shareUrl: string) => {
+    // 포맷팅 헬퍼들
+    const formatAmount = (amt: number) => {
+      if (!amt) return '';
+      const m = Math.round(amt / 10000); // 원 → 만원
+      if (m === 0) return '';
+      const e = Math.floor(m / 10000); // 만원 → 억
+      const r = m % 10000;
+      let result = '';
+      if (e > 0) result += `${e}억`;
+      if (r > 0) {
+        const c = Math.floor(r / 1000);
+        const rem = r % 1000;
+        let rest = '';
+        if (c > 0) rest += `${c}천`;
+        if (rem > 0) rest += `${rem}`;
+        if (rest) {
+          result += (result && !result.endsWith(' ') ? ' ' : '') + rest;
+          if (e === 0 && c === 0 && rem > 0) result += '만';
+        }
+      }
+      return result || '';
+    };
+
+    const priceText = !v.trade_type ? (formatAmount(v.deposit) || '')
+      : v.trade_type === '매매' ? `매매 ${formatAmount(v.deposit)}`
+      : v.trade_type === '전세' ? `전세 ${formatAmount(v.deposit)}`
+      : `${v.trade_type} ${formatAmount(v.deposit)}/${Math.round((v.monthly_rent || 0) / 10000)}만`;
+
+    const supArea = v.supply_m2 ? parseFloat(v.supply_m2) : 0;
+    const excArea = v.exclusive_m2 ? parseFloat(v.exclusive_m2) : 0;
+    const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
+    let areaDisplay = '-';
+    if (supArea && excArea) areaDisplay = `공급 ${fmtM2(supArea)} / 전용 ${fmtM2(excArea)}`;
+    else if (supArea) areaDisplay = `공급 ${fmtM2(supArea)}`;
+    else if (excArea) areaDisplay = `전용 ${fmtM2(excArea)}`;
+
+    // 중개사/명함 데이터 매핑 (로그인한 중개사회원 본인 우선 연동, 없으면 매물 등록자)
+    const currentMember = json.currentMember;
+    const currentAgency = Array.isArray(currentMember?.agencies) ? currentMember.agencies[0] : currentMember?.agencies;
+    const owner = v.members || {};
+    const ownerAgency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
+
+    // 로그인한 회원이 중개사이면 본인 중개소 정보를 최우선 사용
+    const agency = currentAgency?.name ? currentAgency : ownerAgency;
+    const activeMember = (currentAgency?.name ? currentMember : (owner.name ? owner : currentMember)) || {};
+
+    const agentName = agency?.name || activeMember?.company_name || activeMember?.name || "";
+    const agentRepresentative = activeMember?.name || agency?.ceo_name || v.client_name || "";
+    const agencyRepresentative = agency?.ceo_name || activeMember?.name || "";
+    const agentPhone = agency?.phone || activeMember?.phone || activeMember?.tel_num || v.client_phone || "";
+    const agentMobile = activeMember?.cellphone || activeMember?.phone || activeMember?.cell_num || agency?.cell || v.client_phone || "";
+    const agentRegistrationNumber = agency?.reg_num || activeMember?.company_reg_no || "";
+
+    const additionalInfo: string[] = [];
+    if (agentRegistrationNumber) {
+      additionalInfo.push(`등록번호: ${agentRegistrationNumber}`);
+    }
+    const fullAddress = [agency?.address || activeMember?.address, agency?.address_detail || activeMember?.address_detail].filter(Boolean).join(" ");
+    if (fullAddress) {
+      additionalInfo.push(`소재지: ${fullAddress}`);
+    }
+
+    // 아파트 브랜드 자동 감지해서 컬러 테마 설정
+    let autoTheme = COLORS[0]; // 기본 Teal
+    const buildingLower = (v.building_name || "").toLowerCase();
+    if (buildingLower.includes("롯데") || buildingLower.includes("캐슬")) autoTheme = COLORS[1]; // Gold
+    else if (buildingLower.includes("푸르지오")) autoTheme = COLORS[2]; // Green
+    else if (buildingLower.includes("힐스") || buildingLower.includes("현대")) autoTheme = COLORS[3]; // Burgundy
+    else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
+
+    // 매물 사진들 매핑
+    const newImages: Record<string, any> = {};
+    const photos = json.photos || [];
+    if (photos.length > 0) {
+      const imageSlots = [
+        'mainImage', 
+        'subImage1', 'subImage2', 
+        'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
+      ];
+      photos.forEach((ph: any, i: number) => {
+        if (i < imageSlots.length) {
+          newImages[imageSlots[i]] = ph.url;
+        }
+      });
+    }
+
+    // 복합 단지 테이블 조립
+    const newSections = INITIAL_INFO.sections.map(sec => {
+      if (sec.type !== 'table') return sec;
+      
+      const newItems = sec.items.map(item => {
+        if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
+        if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${floorText(v.current_floor)}/${floorText(v.total_floor)}` };
+        if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
+        if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
+        if (item.title === '주소') return { ...item, text: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") };
+        if (item.title === '면적' && areaDisplay !== '-') return { ...item, text: areaDisplay };
+        return item;
+      });
+
+      return { ...sec, items: newItems };
+    });
+
+    const getEnglishTradeType = (tradeType: string) => {
+      switch (tradeType) {
+        case '매매': return 'FOR SALE';
+        case '전세': return 'FOR LEASE';
+        case '월세': return 'FOR RENT';
+        case '경매': return 'FOR AUCTION';
+        default: return 'FOR SALE';
+      }
+    };
+
+    const dongBunji = [v.dong, v.detail_addr].filter(Boolean).join(" ");
+    const locationName = [dongBunji, v.building_name].filter(Boolean).join(" ");
+    const autoAddress = locationName ? `${locationName}\n${priceText}` : priceText;
+
+    const mappedInfo: PropertyInfo = {
+      ...INITIAL_INFO,
+      coverQRLink: shareUrl,
+      promotionText: priceText,
+      propertyNumber: (v.property_no || v.id || v.vacancy_id) ? `No. ${v.property_no || v.id || v.vacancy_id}` : "",
+      address: autoAddress || "공실 매물 정보",
+      // 등록 안 된 값은 지어내지 않는다 (남향·즉시 입주·관리비 없음 같은 추측 금지 — 2026-10-15)
+      subTitle: [v.sub_category || v.property_type, v.direction, areaDisplay !== "-" ? areaDisplay : ""].filter(Boolean).join(" | "),
+      transactionType: v.trade_type || "월세",
+      propertyCategory: detectPropertyCategory(v.sub_category, v.property_type),
+      subCategory: v.sub_category || "",
+      priceMain: formatAmount(v.deposit) || "",
+      priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
+      managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "-",
+      area: areaDisplay,
+      floor: `${floorText(v.current_floor) || "-"} / 총 ${floorText(v.total_floor) || "-"}`,
+      direction: v.direction || "-",
+      roomCount: `${v.room_count || "-"}개 / ${v.bathroom_count || "-"}개`,
+      parking: v.parking || "-",
+      moveInDate: v.move_in_date || "-",
+      options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
+      
+      agentName,
+      agentRepresentative,
+      agencyRepresentative,
+      agentPhone,
+      agentMobile,
+      agentRegistrationNumber,
+      agentAddress: fullAddress || "",
+      agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
+      consultationUrl: "",
+      agentAdditionalInfo: additionalInfo,
+
+      pageBadges: {
+        ...INITIAL_INFO.pageBadges,
+        page1: `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`,
+        page6: buildPage6Content(
+          v,
+          detectPropertyCategory(v.sub_category, v.property_type),
+          v.trade_type || '매매'
+        ).page6Badge
+      },
+
+      overviewTable: buildOverviewTable(
+        v,
+        detectPropertyCategory(v.sub_category, v.property_type),
+        (v.trade_type || '매매') === '매매'
+      ),
+      ...(() => {
+        const summary = buildInvestmentSummary(
+          v,
+          detectPropertyCategory(v.sub_category, v.property_type),
+          v.trade_type || '매매'
+        );
+        return {
+          investmentTitle: summary.sectionTitle,
+          investmentSubtitle: summary.sectionSubtitle,
+          investmentSummary: {
+            box1Title: summary.box1Title, box1Text: summary.box1Text,
+            box2Title: summary.box2Title, box2Text: summary.box2Text,
+            box3Title: summary.box3Title, box3Text: summary.box3Text,
+          },
+        };
+      })(),
+      ...(() => {
+        const page2 = buildPage2Content(
+          v,
+          detectPropertyCategory(v.sub_category, v.property_type),
+          v.trade_type || '매매'
+        );
+        return {
+          highlights: page2.highlights,
+          chartBars: page2.chartBars,
+          valuationText: page2.valuationText,
+          page2Title: page2.page2Title,
+          page2Subtitle: page2.page2Subtitle,
+          page2HighlightBoxTitle: page2.page2HighlightHeader,
+        };
+      })(),
+      ...(() => {
+        const page5 = buildPage5Content(
+          v,
+          detectPropertyCategory(v.sub_category, v.property_type)
+        );
+        return {
+          areaTargetName: page5.areaTargetName,
+          areaTargetDesc: page5.areaTargetDesc,
+          areaBox1Title: page5.areaBox1Title,
+          areaBox1Text: page5.areaBox1Text,
+          areaBox2Title: page5.areaBox2Title,
+          areaBox2Text: page5.areaBox2Text,
+          areaBox3Title: page5.areaBox3Title,
+          areaBox3Text: page5.areaBox3Text,
+          page4TargetTitle: page5.page4TargetTitle,
+        };
+      })(),
+      ...(() => {
+        const page6 = buildPage6Content(
+          v,
+          detectPropertyCategory(v.sub_category, v.property_type),
+          v.trade_type || '매매'
+        );
+        return {
+          page6Title: page6.page6Title,
+          page6Subtitle: page6.page6Subtitle,
+          page6FooterQuote: page6.page6FooterQuote,
+          roadmap: page6.roadmap,
+        };
+      })(),
+      noticeTitle: "PREMIUM LISTING DETAIL",
+      noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
+      sections: newSections
+    };
+
+    // AI 문구 자동 생성 (제미나이 호출 제거 및 규칙 기반 매핑 적용 - 로딩 0초)
+    // setIsGenerating(true);
+    // const aiCopy = await generateFlyerCopy(mappedInfo);
+    const aiCopy = {
+        promotionText: mappedInfo.promotionText,
+        summary: mappedInfo.subTitle, // 서브타이틀을 요약문구로 활용
+        gridInfo: {
+            title: "주요 특징",
+            intro: "HIGHLIGHTS",
+            // 실제 등록 값으로만 (없으면 빈칸 — "탁 트인 개방감" 같은 지어낸 장점 금지)
+            features: [
+              v.direction ? `${v.direction}` : "",
+              v.parking ? `주차 ${v.parking}` : "",
+              v.move_in_date ? `입주 ${v.move_in_date}` : "",
+              (Array.isArray(v.options) ? v.options.slice(0, 3).join(" · ") : String(v.options || "").split(",").slice(0, 3).join(" · ")) || "",
+            ]
+        },
+        listInfo: {
+            title: "공간 상세",
+            intro: "DETAILS",
+            description: "",
+            items: [
+                { title: "", description: "" },
+                { title: "", description: "" }
+            ]
+        }
+    };
+    
+    const finalSections = [...mappedInfo.sections];
+    
+    // Grid Section
+    const gridIndex = finalSections.findIndex(s => s.type === 'grid');
+    if (gridIndex !== -1 && aiCopy.gridInfo) {
+      const sec = { ...finalSections[gridIndex] };
+      sec.title = aiCopy.gridInfo.title || sec.title;
+      sec.intro = aiCopy.gridInfo.intro || sec.intro;
+      sec.items = sec.items.map((it, idx) => ({
+        ...it,
+        text: aiCopy.gridInfo?.features[idx] || it.text
+      }));
+      finalSections[gridIndex] = sec;
+    }
+
+    // List Section
+    const listIndex = finalSections.findIndex(s => s.type === 'list');
+    if (listIndex !== -1 && aiCopy.listInfo) {
+      const sec = { ...finalSections[listIndex] };
+      sec.title = aiCopy.listInfo.title || sec.title;
+      sec.intro = aiCopy.listInfo.intro || sec.intro;
+      sec.description = aiCopy.listInfo.description || sec.description;
+      sec.items = sec.items.map((it, idx) => ({
+        ...it,
+        title: aiCopy.listInfo?.items[idx]?.title || it.title,
+        text: aiCopy.listInfo?.items[idx]?.description || it.text
+      }));
+      finalSections[listIndex] = sec;
+    }
+
+    setState(prev => ({
+      ...prev,
+      ...newImages,
+      colorTheme: autoTheme,
+      // 실제 매물로 만들 수 있는 칸은 실제로, 없는 자료는 비운다 (예시 값이 남지 않게)
+      info: scrubSampleInfo({
+        ...mappedInfo,
+        leaseTable: buildLeaseTable(v),
+        leaseNotice: LEASE_NOTICE,
+        leaseRightTitle: buildLeaseRight(v).title,
+        leaseRightText: buildLeaseRight(v).text,
+        floorStatus: [],
+        floorStatusNotice: "",
+        showChart: false,
+        photoCaptions: { main: "", sub1: "", sub2: "", feat1: "", feat2: "" },
+        sections: finalSections
+      }, v),
+      generated: aiCopy
+    }));
+    
+    setIsGenerating(false);
+    setIsInitialized(true);
+  };
+
   const loadVacancyDataDirectly = async (vacancyId: string) => {
     const shareUrl = typeof window !== 'undefined' ? `${SITE_ORIGIN}/report/${vacancyId}.html` : "https://gongsilnews.com";
     setLoadingData(true);
@@ -767,316 +1100,7 @@ function App() {
           }
         }
         
-        // 포맷팅 헬퍼들
-        const formatAmount = (amt: number) => {
-          if (!amt) return '';
-          const m = Math.round(amt / 10000); // 원 → 만원
-          if (m === 0) return '';
-          const e = Math.floor(m / 10000); // 만원 → 억
-          const r = m % 10000;
-          let result = '';
-          if (e > 0) result += `${e}억`;
-          if (r > 0) {
-            const c = Math.floor(r / 1000);
-            const rem = r % 1000;
-            let rest = '';
-            if (c > 0) rest += `${c}천`;
-            if (rem > 0) rest += `${rem}`;
-            if (rest) {
-              result += (result && !result.endsWith(' ') ? ' ' : '') + rest;
-              if (e === 0 && c === 0 && rem > 0) result += '만';
-            }
-          }
-          return result || '';
-        };
-
-        const priceText = v.trade_type === '매매' ? `매매 ${formatAmount(v.deposit)}`
-          : v.trade_type === '전세' ? `전세 ${formatAmount(v.deposit)}`
-          : `${v.trade_type} ${formatAmount(v.deposit)}/${Math.round((v.monthly_rent || 0) / 10000)}만`;
-
-        const supArea = v.supply_m2 ? parseFloat(v.supply_m2) : 0;
-        const excArea = v.exclusive_m2 ? parseFloat(v.exclusive_m2) : 0;
-        const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
-        let areaDisplay = '-';
-        if (supArea && excArea) areaDisplay = `공급 ${fmtM2(supArea)} / 전용 ${fmtM2(excArea)}`;
-        else if (supArea) areaDisplay = `공급 ${fmtM2(supArea)}`;
-        else if (excArea) areaDisplay = `전용 ${fmtM2(excArea)}`;
-
-        // 중개사/명함 데이터 매핑 (로그인한 중개사회원 본인 우선 연동, 없으면 매물 등록자)
-        const currentMember = json.currentMember;
-        const currentAgency = Array.isArray(currentMember?.agencies) ? currentMember.agencies[0] : currentMember?.agencies;
-        const owner = v.members || {};
-        const ownerAgency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
-
-        // 로그인한 회원이 중개사이면 본인 중개소 정보를 최우선 사용
-        const agency = currentAgency?.name ? currentAgency : ownerAgency;
-        const activeMember = (currentAgency?.name ? currentMember : (owner.name ? owner : currentMember)) || {};
-
-        const agentName = agency?.name || activeMember?.company_name || activeMember?.name || "";
-        const agentRepresentative = activeMember?.name || agency?.ceo_name || v.client_name || "";
-        const agencyRepresentative = agency?.ceo_name || activeMember?.name || "";
-        const agentPhone = agency?.phone || activeMember?.phone || activeMember?.tel_num || v.client_phone || "";
-        const agentMobile = activeMember?.cellphone || activeMember?.phone || activeMember?.cell_num || agency?.cell || v.client_phone || "";
-        const agentRegistrationNumber = agency?.reg_num || activeMember?.company_reg_no || "";
-
-        const additionalInfo: string[] = [];
-        if (agentRegistrationNumber) {
-          additionalInfo.push(`등록번호: ${agentRegistrationNumber}`);
-        }
-        const fullAddress = [agency?.address || activeMember?.address, agency?.address_detail || activeMember?.address_detail].filter(Boolean).join(" ");
-        if (fullAddress) {
-          additionalInfo.push(`소재지: ${fullAddress}`);
-        }
-
-        // 아파트 브랜드 자동 감지해서 컬러 테마 설정
-        let autoTheme = COLORS[0]; // 기본 Teal
-        const buildingLower = (v.building_name || "").toLowerCase();
-        if (buildingLower.includes("롯데") || buildingLower.includes("캐슬")) autoTheme = COLORS[1]; // Gold
-        else if (buildingLower.includes("푸르지오")) autoTheme = COLORS[2]; // Green
-        else if (buildingLower.includes("힐스") || buildingLower.includes("현대")) autoTheme = COLORS[3]; // Burgundy
-        else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
-
-        // 매물 사진들 매핑
-        const newImages: Record<string, any> = {};
-        const photos = json.photos || [];
-        if (photos.length > 0) {
-          const imageSlots = [
-            'mainImage', 
-            'subImage1', 'subImage2', 
-            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-          ];
-          photos.forEach((ph: any, i: number) => {
-            if (i < imageSlots.length) {
-              newImages[imageSlots[i]] = ph.url;
-            }
-          });
-        }
-
-        // 복합 단지 테이블 조립
-        const newSections = INITIAL_INFO.sections.map(sec => {
-          if (sec.type !== 'table') return sec;
-          
-          const newItems = sec.items.map(item => {
-            if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
-            if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${floorText(v.current_floor)}/${floorText(v.total_floor)}` };
-            if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
-            if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
-            if (item.title === '주소') return { ...item, text: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") };
-            if (item.title === '면적' && areaDisplay !== '-') return { ...item, text: areaDisplay };
-            return item;
-          });
-
-          return { ...sec, items: newItems };
-        });
-
-        const getEnglishTradeType = (tradeType: string) => {
-          switch (tradeType) {
-            case '매매': return 'FOR SALE';
-            case '전세': return 'FOR LEASE';
-            case '월세': return 'FOR RENT';
-            case '경매': return 'FOR AUCTION';
-            default: return 'FOR SALE';
-          }
-        };
-
-        const dongBunji = [v.dong, v.detail_addr].filter(Boolean).join(" ");
-        const locationName = [dongBunji, v.building_name].filter(Boolean).join(" ");
-        const autoAddress = locationName ? `${locationName}\n${priceText}` : priceText;
-
-        const mappedInfo: PropertyInfo = {
-          ...INITIAL_INFO,
-          coverQRLink: shareUrl,
-          promotionText: priceText,
-          propertyNumber: `No. ${v.property_no || v.id || v.vacancy_id || "0000"}`,
-          address: autoAddress || "공실 매물 정보",
-          // 등록 안 된 값은 지어내지 않는다 (남향·즉시 입주·관리비 없음 같은 추측 금지 — 2026-10-15)
-          subTitle: [v.sub_category || v.property_type, v.direction, areaDisplay !== "-" ? areaDisplay : ""].filter(Boolean).join(" | "),
-          transactionType: v.trade_type || "월세",
-          propertyCategory: detectPropertyCategory(v.sub_category, v.property_type),
-          subCategory: v.sub_category || "",
-          priceMain: formatAmount(v.deposit) || "",
-          priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
-          managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "-",
-          area: areaDisplay,
-          floor: `${floorText(v.current_floor) || "-"} / 총 ${floorText(v.total_floor) || "-"}`,
-          direction: v.direction || "-",
-          roomCount: `${v.room_count || "-"}개 / ${v.bathroom_count || "-"}개`,
-          parking: v.parking || "-",
-          moveInDate: v.move_in_date || "-",
-          options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
-          
-          agentName,
-          agentRepresentative,
-          agencyRepresentative,
-          agentPhone,
-          agentMobile,
-          agentRegistrationNumber,
-          agentAddress: fullAddress || "",
-          agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
-          consultationUrl: "",
-          agentAdditionalInfo: additionalInfo,
-
-          pageBadges: {
-            ...INITIAL_INFO.pageBadges,
-            page1: `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`,
-            page6: buildPage6Content(
-              v,
-              detectPropertyCategory(v.sub_category, v.property_type),
-              v.trade_type || '매매'
-            ).page6Badge
-          },
-
-          overviewTable: buildOverviewTable(
-            v,
-            detectPropertyCategory(v.sub_category, v.property_type),
-            (v.trade_type || '매매') === '매매'
-          ),
-          ...(() => {
-            const summary = buildInvestmentSummary(
-              v,
-              detectPropertyCategory(v.sub_category, v.property_type),
-              v.trade_type || '매매'
-            );
-            return {
-              investmentTitle: summary.sectionTitle,
-              investmentSubtitle: summary.sectionSubtitle,
-              investmentSummary: {
-                box1Title: summary.box1Title, box1Text: summary.box1Text,
-                box2Title: summary.box2Title, box2Text: summary.box2Text,
-                box3Title: summary.box3Title, box3Text: summary.box3Text,
-              },
-            };
-          })(),
-          ...(() => {
-            const page2 = buildPage2Content(
-              v,
-              detectPropertyCategory(v.sub_category, v.property_type),
-              v.trade_type || '매매'
-            );
-            return {
-              highlights: page2.highlights,
-              chartBars: page2.chartBars,
-              valuationText: page2.valuationText,
-              page2Title: page2.page2Title,
-              page2Subtitle: page2.page2Subtitle,
-              page2HighlightBoxTitle: page2.page2HighlightHeader,
-            };
-          })(),
-          ...(() => {
-            const page5 = buildPage5Content(
-              v,
-              detectPropertyCategory(v.sub_category, v.property_type)
-            );
-            return {
-              areaTargetName: page5.areaTargetName,
-              areaTargetDesc: page5.areaTargetDesc,
-              areaBox1Title: page5.areaBox1Title,
-              areaBox1Text: page5.areaBox1Text,
-              areaBox2Title: page5.areaBox2Title,
-              areaBox2Text: page5.areaBox2Text,
-              areaBox3Title: page5.areaBox3Title,
-              areaBox3Text: page5.areaBox3Text,
-              page4TargetTitle: page5.page4TargetTitle,
-            };
-          })(),
-          ...(() => {
-            const page6 = buildPage6Content(
-              v,
-              detectPropertyCategory(v.sub_category, v.property_type),
-              v.trade_type || '매매'
-            );
-            return {
-              page6Title: page6.page6Title,
-              page6Subtitle: page6.page6Subtitle,
-              page6FooterQuote: page6.page6FooterQuote,
-              roadmap: page6.roadmap,
-            };
-          })(),
-          noticeTitle: "PREMIUM LISTING DETAIL",
-          noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
-          sections: newSections
-        };
-
-        // AI 문구 자동 생성 (제미나이 호출 제거 및 규칙 기반 매핑 적용 - 로딩 0초)
-        // setIsGenerating(true);
-        // const aiCopy = await generateFlyerCopy(mappedInfo);
-        const aiCopy = {
-            promotionText: mappedInfo.promotionText,
-            summary: mappedInfo.subTitle, // 서브타이틀을 요약문구로 활용
-            gridInfo: {
-                title: "주요 특징",
-                intro: "HIGHLIGHTS",
-                // 실제 등록 값으로만 (없으면 빈칸 — "탁 트인 개방감" 같은 지어낸 장점 금지)
-                features: [
-                  v.direction ? `${v.direction}` : "",
-                  v.parking ? `주차 ${v.parking}` : "",
-                  v.move_in_date ? `입주 ${v.move_in_date}` : "",
-                  (Array.isArray(v.options) ? v.options.slice(0, 3).join(" · ") : String(v.options || "").split(",").slice(0, 3).join(" · ")) || "",
-                ]
-            },
-            listInfo: {
-                title: "공간 상세",
-                intro: "DETAILS",
-                description: "",
-                items: [
-                    { title: "", description: "" },
-                    { title: "", description: "" }
-                ]
-            }
-        };
-        
-        const finalSections = [...mappedInfo.sections];
-        
-        // Grid Section
-        const gridIndex = finalSections.findIndex(s => s.type === 'grid');
-        if (gridIndex !== -1 && aiCopy.gridInfo) {
-          const sec = { ...finalSections[gridIndex] };
-          sec.title = aiCopy.gridInfo.title || sec.title;
-          sec.intro = aiCopy.gridInfo.intro || sec.intro;
-          sec.items = sec.items.map((it, idx) => ({
-            ...it,
-            text: aiCopy.gridInfo?.features[idx] || it.text
-          }));
-          finalSections[gridIndex] = sec;
-        }
-
-        // List Section
-        const listIndex = finalSections.findIndex(s => s.type === 'list');
-        if (listIndex !== -1 && aiCopy.listInfo) {
-          const sec = { ...finalSections[listIndex] };
-          sec.title = aiCopy.listInfo.title || sec.title;
-          sec.intro = aiCopy.listInfo.intro || sec.intro;
-          sec.description = aiCopy.listInfo.description || sec.description;
-          sec.items = sec.items.map((it, idx) => ({
-            ...it,
-            title: aiCopy.listInfo?.items[idx]?.title || it.title,
-            text: aiCopy.listInfo?.items[idx]?.description || it.text
-          }));
-          finalSections[listIndex] = sec;
-        }
-
-        setState(prev => ({
-          ...prev,
-          ...newImages,
-          colorTheme: autoTheme,
-          // 실제 매물로 만들 수 있는 칸은 실제로, 없는 자료는 비운다 (예시 값이 남지 않게)
-          info: scrubSampleInfo({
-            ...mappedInfo,
-            leaseTable: buildLeaseTable(v),
-            leaseNotice: LEASE_NOTICE,
-            leaseRightTitle: buildLeaseRight(v).title,
-            leaseRightText: buildLeaseRight(v).text,
-            floorStatus: [],
-            floorStatusNotice: "",
-            showChart: false,
-            photoCaptions: { main: "", sub1: "", sub2: "", feat1: "", feat2: "" },
-            sections: finalSections
-          }, v),
-          generated: aiCopy
-        }));
-        
-        setIsGenerating(false);
-        setIsInitialized(true);
+        applyVacancy(v, json, shareUrl);
       }
     } catch (err) {
       console.error("공실 데이터 연동 오류:", err);
@@ -1085,11 +1109,80 @@ function App() {
     }
   };
 
+  /* 공실 없이 만든 보고서 열기 — 저장본 → (저장 안 한 고침이 있으면 물어보고) → 처음이면 정리한 매물 정보로 틀 채우기 */
+  const loadLocalReport = async (localId: string) => {
+    const bridge = studioReportBridge();
+    if (!bridge) {
+      alert("공실 없이 만든 매물보고서는 공실스튜디오 앱에서 열 수 있어요.");
+      setIsInitialized(true);
+      return;
+    }
+    setLoadingData(true);
+    try {
+      const d = await bridge.get(localId);
+      vacancyMetaRef.current = { title: d.title };
+      let draft: any = null;
+      try {
+        const raw = localStorage.getItem(`easyflyer_saved_${localId}`);
+        if (raw) draft = JSON.parse(raw);
+      } catch {}
+      if (draft && JSON.stringify(draft) !== JSON.stringify(d.state)
+        && window.confirm("저장하지 않은 고친 내용이 있어요. 이어서 고칠까요?\n[취소]를 누르면 마지막으로 저장한 보고서를 엽니다.")) {
+        setState(mergeStateWithDefaults(draft));
+        hasUnsavedChangesRef.current = true;
+        setIsLoadedFromStorage(true);
+        setIsInitialized(true);
+        return;
+      }
+      try { localStorage.removeItem(`easyflyer_saved_${localId}`); } catch {}
+      if (d.state) {
+        setState(mergeStateWithDefaults(d.state));
+        setIsLoadedFromStorage(true);
+        setIsInitialized(true);
+        return;
+      }
+      // 처음 — 붙여넣은 글을 정리한 정보·넣은 사진으로. 중개사 정보는 로그인한 회원 것
+      const me = await fetch('/api/vacancy/detail').then((r) => r.json()).catch(() => ({}));
+      applyVacancy(d.vacancy || {}, { currentMember: me?.currentMember, photos: (d.photos || []).map((url) => ({ url })) }, "");
+    } catch (e: any) {
+      alert("보고서를 열지 못했습니다: " + String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+      setIsInitialized(true);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  /* 공실 없이 만든 보고서 저장 — PC (앱). Ctrl+S 는 예전 화면 값을 쥐고 있을 수 있어 늘 최신 상태(stateRef)로 */
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const saveLocalReport = async (showDone: boolean) => {
+    const localId = getLocalId();
+    const bridge = studioReportBridge();
+    if (!localId || !bridge) return false;
+    setIsSavingCloud(true);
+    try {
+      await bridge.save({ id: localId, state: stateRef.current });
+      try { localStorage.removeItem(`easyflyer_saved_${localId}`); } catch {}
+      hasUnsavedChangesRef.current = false;
+      setIsLoadedFromStorage(true);
+      if (showDone) alert("PC에 저장했습니다. 공실마케팅 › AI 매물보고서에서 다시 열 수 있어요.");
+      return true;
+    } catch (e: any) {
+      alert("저장하지 못했습니다: " + String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+      return false;
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
+    const localId = getLocalId();
 
-    if (vacancyId) {
+    if (localId) {
+      loadLocalReport(localId);
+    } else if (vacancyId) {
       loadVacancyDataDirectly(vacancyId);
     } else {
       // 매물 ID 없이 열었을 때도 로그인한 중개사 본인 정보를 자동으로 채움
@@ -1157,6 +1250,7 @@ function App() {
   }, [showSharePopover]);
 
   const handleSaveToStorageQuietly = async () => {
+    if (getLocalId()) { await saveLocalReport(false); return; }
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) return;
@@ -1249,9 +1343,10 @@ function App() {
     }
     hasUnsavedChangesRef.current = true;
     const params = new URLSearchParams(window.location.search);
-    const vacancyId = params.get("vacancy_id");
+    const vacancyId = params.get("vacancy_id") || getLocalId();
     if (vacancyId) {
-      localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+      // 공실 없는 보고서는 사진이 그림 데이터라 클 수 있다 — 브라우저 저장 칸이 넘치면 임시본만 못 남긴다
+      try { localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state)); } catch (e) { console.warn("임시 저장 실패:", e); }
     }
   }, [state, loadingData, isGenerating, isInitialized]);
 
@@ -1269,6 +1364,7 @@ function App() {
   }, []);
 
   const handleSaveToStorage = async () => {
+    if (getLocalId()) { await saveLocalReport(true); return; }
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) {
@@ -1357,12 +1453,12 @@ function App() {
     }
   };
 
-  /* ── 공실뉴스 스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
+  /* ── 공실스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
      앱 화면 안의 틀(iframe)로 열리므로 바깥 창의 window.gongsilStudio.marketing 을 쓴다. 웹에서는 없다. */
   type StudioMarketing = {
-    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown> }) => Promise<Record<string, any>>;
+    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown>; facts?: Record<string, unknown> }) => Promise<Record<string, any>>;
     onProgress?: (fn: (t: string) => void) => () => void;
-    /** 그림·PDF 를 문서\공실뉴스 스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
+    /** 그림·PDF 를 문서\공실스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
     saveFile?: (opts: { id: string; sub: string; fileName: string; dataUrl: string; hint?: { title?: string; no?: string } }) => Promise<{ file: string; folder: string }>;
   };
   const studioMarketing: StudioMarketing | null = (() => {
@@ -1372,10 +1468,10 @@ function App() {
       return null;
     }
   })();
-  /* 앱 안이면 저장 창 없이 문서\공실뉴스 스튜디오\<매물 이름_공실번호>\매물보고서\ 에 바로 저장 (2026-10-15 사장님 회의).
+  /* 앱 안이면 저장 창 없이 문서\공실스튜디오\<매물 이름_공실번호>\매물보고서\ 에 바로 저장 (2026-10-15 사장님 회의).
      웹에서는 false — 예전처럼 브라우저 다운로드. */
   const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
-    const id = new URLSearchParams(window.location.search).get("vacancy_id");
+    const id = new URLSearchParams(window.location.search).get("vacancy_id") || getLocalId();
     if (!id || !studioMarketing?.saveFile) return false;
     try {
       await studioMarketing.saveFile({ id, sub: '매물보고서', fileName, dataUrl, hint: vacancyMetaRef.current });
@@ -1387,12 +1483,18 @@ function App() {
   };
   const [aiProgress, setAiProgress] = useState("");
   const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void) => {
-    const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id");
+    const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id") || getLocalId();
     if (!vacancyId || !studioMarketing) return;
     setAiProgress("AI에 요청하는 중…");
     const off = studioMarketing.onProgress?.((t) => setAiProgress(t));
+    // 공실 없는 보고서: 회원이 화면에서 넣은 값이 곧 매물 정보다
+    const i: any = state.info;
+    const facts = getLocalId() ? {
+      "주소·이름": i.address, "가격": i.promotionText, "거래 구분": i.transactionType, "매물 종류": i.subCategory, "면적": i.area, "층": i.floor,
+      "방향": i.direction, "방·욕실": i.roomCount, "주차": i.parking, "입주": i.moveInDate, "관리비": i.managementFee, "옵션": i.options, "중개사 설명": i.noticeContent,
+    } : undefined;
     try {
-      const out = await studioMarketing.fill({ kind, vacancyId, fields });
+      const out = await studioMarketing.fill({ kind, vacancyId, fields, facts });
       apply(out);
       setAiProgress("✓ AI가 채웠습니다. 확인하고 [저장하기]를 눌러 주세요.");
       setTimeout(() => setAiProgress(""), 2500);
@@ -1500,7 +1602,14 @@ function App() {
 
     try {
       const compressedBlob = await compressToWebP(file, 0.82);
-      const publicUrl = await uploadImageToServer(compressedBlob, vacancyId);
+      const publicUrl = getLocalId()
+        ? await new Promise<string>((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(String(fr.result));
+            fr.onerror = () => reject(new Error("사진을 읽지 못했습니다."));
+            fr.readAsDataURL(compressedBlob);
+          })
+        : await uploadImageToServer(compressedBlob, vacancyId);
 
       pushToHistoryInstant(state);
       setState(prev => ({
@@ -1729,6 +1838,10 @@ ${clone.outerHTML}
   const handleSaveAndExit = async () => {
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
+    if (getLocalId()) {
+      if (await saveLocalReport(false)) setShowExitConfirmModal(false);
+      return;
+    }
 
     setIsSavingCloud(true);
     try {
@@ -2454,8 +2567,8 @@ ${clone.outerHTML}
           </button>
 
 
-          {/* Share Button (Relative Container for Popover) */}
-          <div ref={sharePopoverRef} className="relative shrink-0">
+          {/* Share Button (Relative Container for Popover) — 공실 없는 보고서는 공유 링크가 없다 (PDF·이미지로 보낸다) */}
+          {!getLocalId() && <div ref={sharePopoverRef} className="relative shrink-0">
             <button 
               onClick={() => setShowSharePopover(!showSharePopover)}
               className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm whitespace-nowrap"
@@ -2465,7 +2578,7 @@ ${clone.outerHTML}
               </svg>
               <span>공유하기</span>
             </button>
-          </div>
+          </div>}
         </div>
       </div>
       <style>{`

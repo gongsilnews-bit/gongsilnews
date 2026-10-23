@@ -1,6 +1,6 @@
 "use client";
 
-// 공실뉴스 스튜디오 [동영상제작] — 브루식 영상 편집기 (원본은 회원 PC, 편집·미리보기·굽기도 PC)
+// 공실스튜디오 [동영상제작] — 브루식 영상 편집기 (원본은 회원 PC, 편집·미리보기·굽기도 PC)
 // 계획서: docs/2026-10-15_studio_video_editor_plan.md
 import React, { useEffect, useState } from "react";
 import type { LibItem, Method, Project, Recover } from "./types";
@@ -48,7 +48,7 @@ export default function VideoStudio() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, color: C.text, fontFamily: FONT }}>
         <div style={{ maxWidth: 520, padding: 32, textAlign: "center", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8 }}>
           <Icon name="video" size={36} />
-          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>동영상제작은 공실뉴스 스튜디오(PC 앱)에서 이용해요</div>
+          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>동영상제작은 공실스튜디오(PC 앱)에서 이용해요</div>
           <div style={{ fontSize: 15, color: C.sub, marginTop: 10, lineHeight: 1.7 }}>찍은 영상을 PC에 그대로 두고 편집하기 때문에 앱이 필요해요. 앱에서 [동영상제작] 메뉴를 열어 주세요.</div>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default function VideoStudio() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, color: C.text, fontFamily: FONT }}>
         <div style={{ maxWidth: 520, padding: 32, textAlign: "center", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8 }}>
           <Icon name="video" size={36} />
-          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>공실뉴스 스튜디오 업데이트가 필요해요</div>
+          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>공실스튜디오 업데이트가 필요해요</div>
           <div style={{ fontSize: 15, color: C.sub, marginTop: 10, lineHeight: 1.7 }}>
             동영상제작이 새로워졌어요 (지금 앱 v{appVer} → v{MIN_APP} 이상).<br />
             {studio?.checkUpdate ? "[지금 업데이트]를 누르면 새 버전을 받아 다시 켜요." : "앱을 껐다 켜면 켤 때 자동으로 새 버전을 받아요."}

@@ -2,7 +2,7 @@
 
 // AI 보이스 녹음 (2026-10-20 사장님: "강의/영상녹화 아래에 — 말 그대로 텍스트로 녹화하는 거야")
 //  글을 쓰거나 붙여 넣고 → 목소리 고르기 → 문장마다 AI 목소리를 만들어 쉼을 두고 이어 MP3·WAV 한 파일 (영상·프로젝트 없이)
-//  기본 저장 폴더 = 문서\공실뉴스 스튜디오\AI오디오. 만드는 법은 [텍스트로 영상 › 목소리만 저장]과 같다 (b.voiceSave)
+//  기본 저장 폴더 = 문서\공실스튜디오\08 AI생성물\AI보이스. 만드는 법은 [텍스트로 영상 › 목소리만 저장]과 같다 (b.voiceSave)
 import React, { useEffect, useMemo, useState } from "react";
 import type { Project } from "./types";
 import { errText, videoBridge, datedName } from "./types";
@@ -11,16 +11,18 @@ import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
 import { VoiceFace, VoicePanel } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input } from "./ui";
 import { EL_TAGS, ElevenDetail, elSetOf } from "./ElevenDetail";
+import { lastVoice, saveLastVoice } from "./voiceMemory";
 
 export function AiVoiceStudio() {
   const b = videoBridge();
   const [text, setText] = useState("");
   const [name, setName] = useState("");
-  const [voiceId, setVoiceId] = useState("Charon");
-  const [speed, setSpeed] = useState(1);
+  // 마지막에 고른 목소리로 시작 (처음 쓰면 정훈)
+  const [voiceId, setVoiceId] = useState(() => lastVoice()?.id || "Charon");
+  const [speed, setSpeed] = useState(() => lastVoice()?.speed || 1);
   const [gap, setGap] = useState(GAP);
   const [pick, setPick] = useState(false);
-  const [emotion, setEmotion] = useState<string | undefined>(undefined);
+  const [emotion, setEmotion] = useState<string | undefined>(() => lastVoice()?.emotion);
   const taRef = React.useRef<HTMLTextAreaElement | null>(null);
   const isV3 = voiceId.startsWith("el_") && elSetOf(emotion).m === "v3" && Boolean(emotion?.startsWith("x:"));
   /** 감정 태그를 글 쓰는 자리에 넣기 */
@@ -102,7 +104,7 @@ export function AiVoiceStudio() {
     setPv("busy");
     try {
       const r = await b.voiceSave(lines, voiceId, { kind: "mp3", outFile: "", speed, gap, emotion, preview: true });
-      if (!r.url) throw new Error("공실뉴스 스튜디오를 껐다 켜 주세요 (미리 듣기를 새로 연결해요)");
+      if (!r.url) throw new Error("공실스튜디오를 껐다 켜 주세요 (미리 듣기를 새로 연결해요)");
       pvAudio.current?.pause();
       const a = new Audio(r.url);
       pvAudio.current = a;
@@ -178,7 +180,7 @@ export function AiVoiceStudio() {
           </Modal>
         )}
         {work && <Modal title=""><Working title={work.title} detail="문장마다 AI 목소리를 만들어 한 파일로 이어요" frac={work.frac ?? null} /></Modal>}
-        {!ok && <div style={{ marginTop: 14, color: C.danger, fontSize: 14.5 }}>공실뉴스 스튜디오를 새 버전으로 업데이트하면 쓸 수 있어요.</div>}
+        {!ok && <div style={{ marginTop: 14, color: C.danger, fontSize: 14.5 }}>공실스튜디오를 새 버전으로 업데이트하면 쓸 수 있어요.</div>}
 
         {/* 목소리 */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 22, padding: 12, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card }}>
@@ -195,7 +197,7 @@ export function AiVoiceStudio() {
         </div>
         {/* 일레븐랩스 성우면 세부 설정을 이 화면에서 바로 (2026-10-20 사장님) */}
         {voiceId.startsWith("el_") && <div style={{ margin: "0 -16px" }}><ElevenDetail voiceId={voiceId} emotion={emotion || "normal"} onEmotion={setEmotion} openFirst /></div>}
-        {pick && <VoicePanel initial={{ id: voiceId, speed, emotion }} pickLabel="이 목소리로" targetCount={0} onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); setPick(false); }} onClose={() => setPick(false)} />}
+        {pick && <VoicePanel initial={{ id: voiceId, speed, emotion }} pickLabel="이 목소리로" targetCount={0} onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); saveLastVoice({ id: o.id, speed: o.speed, emotion: o.emotion }); setPick(false); }} onClose={() => setPick(false)} />}
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 18, marginTop: 14 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 700 }}>

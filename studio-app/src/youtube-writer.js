@@ -189,12 +189,12 @@ function save({ vacancyId: id, title, narration }) {
 
 const safeName = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
 
-/* [텍스트로 저장]: 문서\공실뉴스 스튜디오\<공실·칼럼>\유튜브\ 에 대본을 저장하고 폴더를 연다 (SNS 폴더와 같은 자리) */
+/* [텍스트로 저장]: 문서\공실스튜디오\01 뉴스SNS발행\유튜브\날짜\<작업 이름>\ 에 대본을 저장하고 폴더를 연다 (SNS 폴더와 같은 자리) */
 function exportText(id) {
   const d = readJson(ytFile(id));
   if (!d) throw new Error("먼저 대본을 써 주세요.");
   const web = forWeb(id, d);
-  // 저장 자리: 문서\공실뉴스 스튜디오\<매물·칼럼·시뮬레이션>\유튜브 (out-folder.js)
+  // 저장 자리: 문서\공실스튜디오\01 뉴스SNS발행\유튜브\날짜\<매물·칼럼·시뮬레이션> (out-folder.js)
   const folder = require("./out-folder").folderFor(id, "유튜브");
   const min = Math.floor(web.seconds / 60);
   const text = [

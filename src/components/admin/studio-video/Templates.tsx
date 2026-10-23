@@ -1776,7 +1776,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
     try { return drawWith(pick, vals.map((v, i) => v ?? pick.fields[i].def), color, pick.kind === "motion" ? tick % 6 : 999, opt).toDataURL("image/png"); } catch { return ""; }
   }, [ready, pick, vals, color, tick, opt]);
   const insert = async () => {
-    if (!b.lib.saveImage) return setErr("공실뉴스 스튜디오를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
+    if (!b.lib.saveImage) return setErr("공실스튜디오를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
     setBusy(true);
     setErr("");
     try {

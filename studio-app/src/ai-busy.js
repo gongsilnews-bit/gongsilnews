@@ -18,6 +18,95 @@ const cancels = new Set(); // 기다리는 during 들 — 중지하면 바로 �
 let poll = null;
 const STOP_MSG = "중지했어요";
 
+/* 기다리는 동안 광고 (2026-10-22 · docs/2026-10-22_studio_wait_ads_plan.md)
+ *  덮개가 4초 넘게 떠 있으면 최고관리자가 고른 유튜브 영상을 덮개 안에 틀어 준다 (소리 끈 채).
+ *  광고는 사이트의 /api/studio/ad 에서 받는다 — 없거나 최고관리자 계정이면 지금처럼 로딩만.
+ *  AI 가 다 쓰면 영상도 바로 끊고 덮개를 닫는다 (2026-10-22 사장님). 숫자(노출·시청 초·클릭)만 남김.
+ *  이 함수는 앱이 아니라 스튜디오 화면 안에서 돈다 (문자열로 넣음) */
+function adLib() {
+  if (window.__gsAd) return;
+  const A = { ad: null, shownAt: 0, last: 0, timer: 0, place: "ai", muted: true };
+  const post = (kind, seconds) => {
+    if (!A.ad) return;
+    try {
+      fetch("/api/studio/ad", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: A.ad.id, place: A.place, kind, seconds }), keepalive: true }).catch(() => {});
+    } catch {}
+  };
+  const box = () => document.getElementById("__gsAiBusy");
+  const btn = (text, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "gb";
+    b.textContent = text;
+    b.__gsFn = fn;
+    return b;
+  };
+  function show(ad) {
+    const el = box();
+    const c = el && el.querySelector(".c");
+    if (!c || c.querySelector(".ad")) return;
+    A.ad = ad;
+    A.shownAt = Date.now();
+    A.last = ad.id;
+    A.muted = true;
+    const wrap = document.createElement("div");
+    wrap.className = "ad";
+    const v = document.createElement("div");
+    v.className = "v";
+    const f = document.createElement("iframe");
+    const yid = encodeURIComponent(ad.youtube_id);
+    f.src = "https://www.youtube-nocookie.com/embed/" + yid + "?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=" + yid + "&enablejsapi=1&origin=" + encodeURIComponent(location.origin);
+    f.allow = "autoplay; encrypted-media";
+    v.appendChild(f);
+    wrap.appendChild(v);
+    const bar = document.createElement("div");
+    bar.className = "b";
+    const lab = document.createElement("span");
+    lab.className = "l";
+    lab.textContent = ad.label;
+    bar.appendChild(lab);
+    const mute = btn("🔇 소리 켜기", () => {
+      A.muted = !A.muted;
+      if (f.contentWindow) f.contentWindow.postMessage(JSON.stringify({ event: "command", func: A.muted ? "mute" : "unMute", args: [] }), "*");
+      mute.textContent = A.muted ? "🔇 소리 켜기" : "🔊 소리 끄기";
+    });
+    bar.appendChild(mute);
+    if (ad.link_url) bar.appendChild(btn("자세히 보기 ↗", () => { post("click"); window.open(ad.link_url, "_blank"); }));
+    wrap.appendChild(bar);
+    c.appendChild(wrap);
+    post("view");
+  }
+  window.__gsAd = {
+    start(place) {
+      A.place = place || "ai";
+      if (A.ad || A.timer) return;
+      A.timer = setTimeout(() => {
+        A.timer = 0;
+        if (!box() || box().classList.contains("done")) return;
+        fetch("/api/studio/ad?place=" + A.place + "&last=" + (A.last || ""), { cache: "no-store" })
+          .then((r) => r.json())
+          .then((j) => { if (j && j.ad && box() && !box().classList.contains("done")) show(j.ad); })
+          .catch(() => {});
+      }, 4000);
+    },
+    has() { const el = box(); return Boolean(A.ad && el && el.querySelector(".ad")); },
+    close() {
+      clearTimeout(A.timer);
+      A.timer = 0;
+      if (A.ad) post("watch", (Date.now() - A.shownAt) / 1000);
+      A.ad = null;
+      const el = box();
+      if (el) el.remove();
+    },
+    click(target) {
+      const b = target && target.closest ? target.closest(".gb") : null;
+      if (b && b.__gsFn) { b.__gsFn(); return true; }
+      return false;
+    },
+  };
+}
+const AD_JS = `(${adLib})();`;
+
 const overlay = (text, startedAt, sub) => `(() => {
   const id = "__gsAiBusy";
   let el = document.getElementById(id);
@@ -37,25 +126,42 @@ const overlay = (text, startedAt, sub) => `(() => {
       #__gsAiBusy .x{margin-top:14px;height:24px;padding:0 10px;border-radius:5px;border:1px solid #374151;background:transparent;color:#6b7280;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
       #__gsAiBusy .x:hover{color:#fff;background:#dc2626;border-color:#dc2626}
       #__gsAiBusy .k{font-size:12px;color:#6b7280;margin-top:12px}
-    </style><div class="c"><div class="d"><i></i><i></i><i></i></div><div class="t"></div>
+      #__gsAiBusy .ad{width:600px;max-width:72vw;margin:18px auto 0}
+      #__gsAiBusy .ad .v{aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden}
+      #__gsAiBusy .ad iframe{width:100%;height:100%;border:0;display:block}
+      #__gsAiBusy .ad .b{display:flex;align-items:center;gap:8px;margin-top:8px}
+      #__gsAiBusy .ad .l{flex:1;text-align:left;font-size:12.5px;color:#9ca3af}
+      #__gsAiBusy .gb{height:28px;padding:0 12px;border-radius:6px;border:1px solid #374151;background:#1f2b38;color:#e5e7eb;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
+      #__gsAiBusy .gb:hover{background:#2b3a4b}
+      #__gsAiBusy .ok{display:none;margin:14px auto 0;height:40px;padding:0 26px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer}
+      #__gsAiBusy.done{cursor:default}
+      #__gsAiBusy.done .d,#__gsAiBusy.done .s,#__gsAiBusy.done .e,#__gsAiBusy.done .k{display:none}
+      #__gsAiBusy.done .ok{display:block}
+    </style><div class="c"><div class="d"><i></i><i></i><i></i></div><div class="t"></div><button type="button" class="ok">결과 보기</button>
       <div class="s">보통 1~2분 걸려요. 오른쪽 크롬 창에서 AI가 쓰는 모습을 볼 수 있어요.<br>끝나면 저절로 가져와요 — 크롬 창은 그대로 두세요.</div><div class="e">0:00</div>
       <div class="k">급할 때는 Esc 키로 멈춰요</div></div>\`;
     // 덮개 아래로 누르기·키 입력이 가지 않게 — [중지]만 (앱이 window.__gsAiStopReq 를 읽어 간다)
     for (const ev of ["click", "mousedown", "pointerdown", "keydown", "wheel", "contextmenu"]) el.addEventListener(ev, (e) => {
       const x = e.target && e.target.closest ? e.target.closest(".x") : null;
       if (ev === "click" && x) { window.__gsAiStopReq = true; x.textContent = "멈추는 중…"; }
+      // 광고 단추 (소리 켜기·자세히 보기) · 다 된 뒤 [결과 보기]
+      if (ev === "click" && e.target && e.target.closest && e.target.closest(".ok")) { if (window.__gsAd) window.__gsAd.close(); else el.remove(); }
+      else if (ev === "click" && window.__gsAd) window.__gsAd.click(e.target);
       e.stopPropagation(); e.preventDefault();
     }, true);
     if (!window.__gsAiEsc) {
       window.__gsAiEsc = true;
       window.addEventListener("keydown", (e) => {
-        if (e.key !== "Escape" || !document.getElementById(id)) return;
-        window.__gsAiStopReq = true;
+        const cur = document.getElementById(id);
+        if (e.key !== "Escape" || !cur) return;
+        if (cur.classList.contains("done")) { if (window.__gsAd) window.__gsAd.close(); else cur.remove(); } // 다 된 뒤 광고 창은 Esc 로 닫기
+        else window.__gsAiStopReq = true;
         e.stopPropagation(); e.preventDefault();
       }, true);
     }
     document.documentElement.appendChild(el);
   }
+  el.classList.remove("done"); // 다시 일하면 "다 됐어요" 를 되돌림 (광고는 이어서)
   el.querySelector(".t").textContent = ${JSON.stringify(text)};
   if (!el.__gsSub) el.__gsSub = el.querySelector(".s").innerHTML; // 처음 문구 (크롬 창 안내)
   el.querySelector(".s").innerHTML = ${JSON.stringify(sub || "")} || el.__gsSub;
@@ -65,12 +171,18 @@ const overlay = (text, startedAt, sub) => `(() => {
   tick();
   window.__gsAiBusyT = setInterval(tick, 500);
 })()`;
-const remove = `(() => { clearInterval(window.__gsAiBusyT); window.__gsAiStopReq = false; const el = document.getElementById("__gsAiBusy"); if (el) el.remove(); })()`;
+// AI 가 다 쓰면 광고 영상도 바로 끊는다 (2026-10-22 사장님) — 본 초만 남기고 덮개를 닫음
+const remove = () => `(() => {
+  clearInterval(window.__gsAiBusyT); window.__gsAiStopReq = false;
+  const el = document.getElementById("__gsAiBusy");
+  if (!el) return;
+  if (window.__gsAd) window.__gsAd.close(); else el.remove();
+})()`;
 
 function paint() {
   const w = getWin();
   if (!w || w.isDestroyed()) return;
-  w.webContents.executeJavaScript(depth > 0 ? overlay(label, since, subText) : remove).catch(() => {});
+  w.webContents.executeJavaScript(depth > 0 ? `${AD_JS}${overlay(label, since, subText)};window.__gsAd && window.__gsAd.start("ai");` : remove()).catch(() => {});
   // [중지]를 눌렀는지 0.3초마다 본다
   if (depth > 0 && !poll) {
     poll = setInterval(() => {

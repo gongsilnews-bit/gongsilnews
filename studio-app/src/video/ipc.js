@@ -306,7 +306,7 @@ const send = (e, ch, ...a) => {
 
 function register(base) {
   baseUrl = base;
-  try { folders.ensure(); } catch {} // 공실뉴스 스튜디오\녹화영상 · AI오디오 폴더
+  try { folders.ensure(); } catch {} // 07 녹화파일\녹화영상 · 08 AI생성물\AI보이스 폴더
   server.configure(base);
 
   /* ── 라이브러리 ── */
@@ -355,7 +355,7 @@ function register(base) {
   // 애니메이션 칸 그림 (스티커·사진 올리기 움직임) — 굽기 전에 편집 화면이 그려 보낸다. start 0 이면 폴더를 비우고 새로
   ipcMain.handle("video:anim-frames", (_e, dir, key, start, urls) => {
     const safe = String(key || "a").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80) || "a";
-    const out = path.join(dir || library.studioRoot(), "anim", safe);
+    const out = path.join(dir || require("../studio-root").dir("vid"), "anim", safe);
     if (!start) fs.rmSync(out, { recursive: true, force: true });
     fs.mkdirSync(out, { recursive: true });
     (urls || []).forEach((u, i) => {
@@ -369,7 +369,7 @@ function register(base) {
     const m = /^data:image\/(png|jpeg|webp);base64,(.+)$/s.exec(String(dataUrl || ""));
     if (!m) throw new Error("그림을 저장하지 못했습니다.");
     const safe = String(name || "그림").replace(/[\/:*?"<>|\s]+/g, "").slice(0, 40) || "그림";
-    const file = path.join(dir || path.join(library.studioRoot(), "영상", "스티커"), "assets", `${safe}_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    const file = path.join(dir || folders.received("무료사진"), "assets", `${safe}_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, Buffer.from(m[2], "base64"));
     return (await library.add([file], { source: "sticker" }))[0];
@@ -384,7 +384,7 @@ function register(base) {
   ipcMain.handle("video:lib-remove-folder", (_e, dir) => library.removeFolder(dir));
   ipcMain.handle("video:font-ensure", (_e, family) => fonts.ensure(family));
   ipcMain.handle("video:lib-ai-folder", () => {
-    const d = path.join(library.studioRoot(), "AI그림");
+    const d = require("../studio-root").dir("ai", "AI이미지");
     fs.mkdirSync(d, { recursive: true });
     return d;
   });
@@ -420,7 +420,7 @@ function register(base) {
   ipcMain.handle("video:project-create", (_e, opts) => project.withUrls(project.create(opts || {})));
   ipcMain.handle("video:project-open", (_e, dir, choice) => project.open(dir, choice));
   ipcMain.handle("video:project-open-pick", async (e) => {
-    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: folders.projectDir(), properties: ["openFile"], filters: [{ name: "공실뉴스 스튜디오 파일", extensions: ["gss"] }, { name: "예전 폴더 방식 프로젝트 (project.json)", extensions: ["json"] }] });
+    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: folders.projectDir(), properties: ["openFile"], filters: [{ name: "공실스튜디오 영상 파일", extensions: ["gss"] }, { name: "예전 폴더 방식 프로젝트 (project.json)", extensions: ["json"] }] });
     if (r.canceled || !r.filePaths[0]) return null;
     const f = r.filePaths[0];
     return project.open(f.toLowerCase().endsWith(".gss") ? f : path.dirname(f));
@@ -447,7 +447,7 @@ function register(base) {
   ipcMain.handle("video:project-convert", (_e, p) => project.convert(p));
   ipcMain.handle("video:package-info", (_e, p) => project.packageInfo(p));
   ipcMain.handle("video:package-make", async (e, p) => {
-    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 패키지를 만들 곳 (이 안에 '이름_패키지' 폴더가 생겨요)", defaultPath: p.file ? path.dirname(p.file) : folders.projectDir(), properties: ["openDirectory", "createDirectory"] });
+    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 패키지를 만들 곳 (이 안에 '이름_패키지' 폴더가 생겨요)", defaultPath: folders.packageDir(p), properties: ["openDirectory", "createDirectory"] }); // 기본은 그 .gss 가 있는 날짜 폴더 — 패키지 안이면 그 바깥 (2026-10-23)
     if (r.canceled || !r.filePaths[0]) return null;
     const out = await project.makePackage(p, r.filePaths[0], (t, f) => send(e, "video:progress", t, f));
     shell.showItemInFolder(out.file);
@@ -499,10 +499,10 @@ function register(base) {
 
   /* ── AI 목소리 ── */
   ipcMain.handle("video:voice", (_e, dir, text, voiceId, opts) => project.voiceFor({ dir }, text, voiceId, opts || {}));
-  // 대본을 텍스트(.txt)로 내려받기 (텍스트로 영상, 2026-10-20 사장님) — 문서\공실뉴스 스튜디오\대본 폴더에 바로 저장하고 탐색기로 보여 준다
+  // 대본을 텍스트(.txt)로 내려받기 (텍스트로 영상, 2026-10-20 사장님) — 문서\공실스튜디오\05 동영상제작\대본 폴더에 바로 저장하고 탐색기로 보여 준다
   //  저장 전에 [다른 이름으로 저장] 창 — 폴더(처음은 대본 폴더)와 파일 이름을 고른다 (2026-10-20 사장님). 취소하면 ""
   ipcMain.handle("video:save-text", async (e, name, text) => {
-    const dir = path.join(require("electron").app.getPath("documents"), "공실뉴스 스튜디오", "대본");
+    const dir = require("../studio-root").dir("vid", "대본");
     fs.mkdirSync(dir, { recursive: true });
     const base = String(name || "대본").replace(/[\\/:*?"<>|]/g, "_").trim().slice(0, 60) || "대본";
     let def = path.join(dir, `${base}.txt`);
@@ -519,7 +519,7 @@ function register(base) {
    *  opts: { kind: "mp3"|"wav", outFile, speed, gap }
    */
   ipcMain.handle("video:voice-save", async (e, texts, voiceId, opts = {}) => {
-    // opts.files — 이미 만든 문장 목소리 (영상 만들기에서 AI오디오 WAV 자동 저장, 2026-10-20) → 다시 만들지 않고 잇기만
+    // opts.files — 이미 만든 문장 목소리 (영상 만들기에서 AI보이스 WAV 자동 저장, 2026-10-20) → 다시 만들지 않고 잇기만
     const pairs = (texts || []).map((t, i) => ({ t: String(t || "").trim(), f: Array.isArray(opts.files) ? opts.files[i] : "" })).filter((x) => x.t && x.t.replace(/\[[^\]]{1,20}\]/g, "").replace(/[\s.,!?…~]/g, "")); // 태그만 있는 줄은 뺀다 (빈 글 오류)
     let list = pairs.map((x) => x.t);
     const made = pairs.map((x) => x.f || "");
@@ -536,6 +536,8 @@ function register(base) {
     const kind = opts.kind === "wav" ? "wav" : "mp3";
     let out = String(opts.outFile || "");
     if (!out) throw new Error("저장할 곳을 골라 주세요.");
+    // 기본 AI보이스 폴더면 오늘 날짜 폴더 안으로 (2026-10-23)
+    if (!opts.preview) out = path.join(folders.byDate(path.dirname(out)), path.basename(out));
     // 이미 있으면 덮어쓰지 않고 _2, _3 … (AI 보이스 녹음은 저장 창 없이 바로 저장한다)
     if (opts.noOverwrite) {
       const ext = path.extname(out), stem = out.slice(0, out.length - ext.length);
@@ -616,7 +618,7 @@ function register(base) {
     fs.mkdirSync(dir, { recursive: true });
     for (const f of fs.readdirSync(dir)) if (/^el_sample_/.test(f)) { try { fs.unlinkSync(path.join(dir, f)); } catch {} }
     const f = path.join(dir, `el_sample_${Date.now()}.wav`);
-    await eleven.say(String(text || "안녕하세요. 공실뉴스 스튜디오에서 새 매물을 소개해 드립니다."), f, { voiceId, emotion });
+    await eleven.say(String(text || "안녕하세요. 공실스튜디오에서 새 매물을 소개해 드립니다."), f, { voiceId, emotion });
     media.allow(f);
     return media.urlOf(f);
   });
@@ -698,10 +700,10 @@ function register(base) {
     const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t), opts || {});
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
     if (!m) throw new Error("그림을 받지 못했습니다.");
-    // 만든 AI 그림은 문서공실뉴스 스튜디오AI그림날짜 에 모은다 (2026-10-21 사장님: 따로 모아 볼 폴더가 없었다). 내 자료·프로젝트는 이 파일을 쓴다
+    // 만든 AI 그림은 문서공실스튜디오AI그림날짜 에 모은다 (2026-10-21 사장님: 따로 모아 볼 폴더가 없었다). 내 자료·프로젝트는 이 파일을 쓴다
     const d = new Date();
     const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; // 20261021
-    const file = path.join(library.studioRoot(), "AI그림", day, `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    const file = path.join(require("../studio-root").dir("ai", "AI이미지"), day, `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
     void dir;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, Buffer.from(m[2], "base64"));
@@ -709,14 +711,14 @@ function register(base) {
   });
 
   // AI 영상 — 회원 Gemini API 키 (Gemini Omni Flash), 클립마다 하나씩 (2026-10-21 사장님). 첫 장면 그림이 있으면 그림 → 영상
-  //  문서\공실뉴스 스튜디오\AI영상\20261021\AI영상_….mp4 에 모은다 (AI그림과 같은 방식)
+  //  문서\공실스튜디오\08 AI생성물\AI영상\20261021\AI영상_….mp4 에 모은다 (AI그림과 같은 방식)
   ipcMain.handle("video:ai-video", async (e, dir, prompt, opts) => {
     const o = opts || {};
     const image = o.image ? (path.isAbsolute(o.image) ? o.image : path.join(dir || "", o.image)) : "";
     const buf = await require("../ai/video-gen").make({ prompt, image, ratio: o.ratio }, (t) => send(e, "video:progress", t));
     const d = new Date();
     const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-    const file = path.join(library.studioRoot(), "AI영상", day, `AI영상_${Date.now()}.mp4`);
+    const file = path.join(require("../studio-root").dir("ai", "AI영상"), day, `AI영상_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, buf);
     return (await library.add([file], { source: "ai" }))[0];
@@ -749,7 +751,7 @@ function register(base) {
   /* ── 기사·보도자료 화면 캡쳐 (2026-10-20 사장님) ──
    *  안 보이는 창(1280×720)에 주소를 열어 제목부터 화면을 찍는다. mode "head" = 제목 부분 1장 (남의 언론사 기사),
    *  "full" = 제목부터 아래로 몇 장 (공실뉴스 기사·보도자료). credit 이 있으면 오른쪽 아래에 "출처: ○○" 를 넣고 찍는다.
-   *  문서\공실뉴스 스튜디오\캡쳐\<제목> 에 저장하고 [내 자료]에 올린다 */
+   *  문서\공실스튜디오\07 녹화파일\캡쳐\<제목> 에 저장하고 [내 자료]에 올린다 */
   ipcMain.handle("video:capture-page", async (e, url, opts = {}) => {
     const href = String(url || "").trim();
     if (!/^https?:\/\//i.test(href)) throw new Error("캡쳐할 주소가 없습니다.");
@@ -759,7 +761,7 @@ function register(base) {
     const now = new Date();
     const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
     const safe = `${ymd} ${(title || new URL(href).hostname).replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 30) || "캡쳐"}`; // "20261021 제목" (2026-10-21 사장님: 연도 네 자리)
-    const dir = path.join(library.studioRoot(), "캡쳐", safe);
+    const dir = require("../studio-root").dir("rec", "캡쳐", safe);
     fs.mkdirSync(dir, { recursive: true });
     send(e, "video:progress", "기사 화면을 캡쳐하는 중…");
     const Z = 1.5; // 1920×1080 창에 1.5배로 — 화면은 1280 너비로 그리고 캡쳐는 풀HD 로
@@ -852,7 +854,7 @@ function register(base) {
   );
   ipcMain.handle("video:stock-get", async (e, dir, item) => {
     const ext = item.kind === "video" ? "mp4" : (/\.(png|webp)(\?|$)/i.exec(item.url) || [0, "jpg"])[1];
-    const file = path.join(dir || path.join(library.studioRoot(), "영상", "받은 자료"), "assets", `${String(item.id).replace(/[^\w-]/g, "")}.${ext}`);
+    const file = path.join(dir || folders.received(item.kind === "video" ? "무료영상" : "무료사진"), `${String(item.id).replace(/[^\w-]/g, "")}.${ext}`);
     if (!fs.existsSync(file)) {
       send(e, "video:progress", "무료 자료를 PC로 받는 중…");
       // 같은 자료를 받는 중이면 (⬇·★·고르기를 연달아 누름) 그 받기를 함께 기다린다
@@ -865,7 +867,7 @@ function register(base) {
   /* ── 배경 음악 ── 공실뉴스 무료 음악(CC0)을 PC 프로젝트로 받아 둔다 */
   ipcMain.handle("video:music-get", async (_e, dir, rel) => {
     if (!/^bgm\/[\w\/-]+\.mp3$/.test(String(rel))) throw new Error("음악을 찾지 못했습니다.");
-    const file = path.join(dir || path.join(library.studioRoot(), "영상", "음악"), "assets", "music", path.basename(rel));
+    const file = path.join(dir || folders.received("BGM"), path.basename(rel));
     if (!fs.existsSync(file)) await server.download(`${baseUrl}/reels-assets/${rel}`, file);
     media.allow(file);
     return { file, url: media.urlOf(file) };
@@ -877,7 +879,9 @@ function register(base) {
     jobs.set(id, false);
     send(e, "video:render-job", id);
     try {
-      const r = await render.render(p, opts || {}, (t, f) => send(e, "video:render-progress", t, f), () => jobs.get(id));
+      const r = await render.render(p, opts || {}, (t, f, x) => send(e, "video:render-progress", t, f, x), () => jobs.get(id));
+      // 완성 창에서 바로 재생하게 주소도 같이
+      try { media.allow(r.file); r.url = media.urlOf(r.file); } catch {}
       return r;
     } finally {
       jobs.delete(id);
@@ -888,8 +892,8 @@ function register(base) {
   ipcMain.handle("video:export-pick", async (e, p, kind) => {
     const ext = ["mp3", "wav", "srt", "txt"].includes(kind) ? kind : "mp4";
     const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"] };
-    // 목소리만 저장(텍스트로 영상)은 [AI오디오] 폴더가 기본 (2026-10-20 사장님)
-    const dir = p && p.voiceOnly ? (folders.ensure(), folders.aiAudioDir()) : lastExportDir && fs.existsSync(lastExportDir) ? lastExportDir : folders.exportDir(p);
+    // 목소리만 저장(텍스트로 영상)은 [AI보이스] 폴더(안에서 날짜별)가 기본 (2026-10-20 · 10-23 사장님)
+    const dir = p && p.voiceOnly ? (folders.ensure(), folders.byDate(folders.aiAudioDir())) : lastExportDir && fs.existsSync(lastExportDir) && !folders.inFinished(lastExportDir) ? lastExportDir : folders.exportDir(); // 완성영상이면 늘 오늘 날짜 폴더 (2026-10-23)
     const base = String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_"); // "20261021 제목.mp4" — 프로젝트 이름 그대로 (2026-10-20 사장님)
     let def = path.join(dir, `${base}.${ext}`);
     for (let n = 2; fs.existsSync(def); n++) def = path.join(dir, `${base}_${n}.${ext}`);
@@ -937,15 +941,15 @@ function register(base) {
     chosenSource = id;
     return true;
   });
-  // 저장할 곳 — 기본은 문서\공실뉴스 스튜디오\영상\녹화, 회원이 다른 폴더를 고를 수 있다
-  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실뉴스 스튜디오\영상\녹화)
+  // 저장할 곳 — 기본은 문서\공실스튜디오\07 녹화파일\녹화영상\날짜, 회원이 다른 폴더를 고를 수 있다
+  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실스튜디오\07 녹화파일\녹화영상\날짜)
   ipcMain.handle("video:record-default-dir", () => recDir());
   ipcMain.handle("video:record-pick-dir", async (e, cur) => {
     const r = await dialog.showOpenDialog(winOf(e), { title: "녹화 파일을 저장할 폴더", defaultPath: cur || recDir(), properties: ["openDirectory", "createDirectory"] });
     return r.canceled || !r.filePaths.length ? "" : r.filePaths[0];
   });
   ipcMain.handle("video:record-start", (_e, name, opt = {}) => {
-    const dir = opt.dir && path.isAbsolute(String(opt.dir)) ? String(opt.dir) : recDir();
+    const dir = folders.byDate(opt.dir && path.isAbsolute(String(opt.dir)) ? String(opt.dir) : recDir()); // 기본 녹화영상 폴더면 날짜별 (2026-10-23)
     fs.mkdirSync(dir, { recursive: true });
     const d = new Date();
     const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\.(mp4|webm)$/i, "").trim();

@@ -27,6 +27,7 @@ import { getUnreadCountsByType, markAllNotificationsRead } from "@/app/actions/n
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 const SttWordsSection = lazy(() => import("@/components/admin/sections/SttWordsSection"));
+const StudioAdsSection = lazy(() => import("@/components/admin/sections/StudioAdsSection"));
 
 /* ── 최고관리자 메뉴 ── */
 const ADMIN_MENU: MenuItem[] = [
@@ -43,6 +44,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },
+  { key: "studio_ads", label: "스튜디오 광고", icon: <IconAd /> },
   { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "stats", label: "통계", icon: <IconStats /> },
@@ -317,6 +319,7 @@ function AdminContent() {
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
           {activeMenu === "ad" && <BannerSection theme={theme} />}
+          {activeMenu === "studio_ads" && <StudioAdsSection theme={theme} />}
           {activeMenu === "point" && <PointSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} />}
           {activeMenu === "inquiry" && <InquirySection theme={theme} />}
           {activeMenu === "inquiry_board" && <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" />}

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 /**
- * 공실뉴스 스튜디오 앱 창 안에서 열리는 연결 마무리 화면
+ * 공실스튜디오 앱 창 안에서 열리는 연결 마무리 화면
  * 앱이 gongsilstudio://connect?code=… 를 받으면 이 화면을 연다.
  * 연결 신호를 1회용 토큰으로 바꿔 로그인하고 관리자 화면으로 보낸다.
  */

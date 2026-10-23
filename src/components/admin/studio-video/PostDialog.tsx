@@ -4,11 +4,16 @@
 //  [내보내기] 완료 → [유튜브에 올리기] [인스타그램에 올리기] → 이 창
 //  AI 가 제목·설명(캡션)·해시태그 초안 → 회원이 고침 → [크롬에서 채우기] (파일 첨부·글 채우기) → 회원이 [게시]
 //  중개사무소 정보·공실뉴스 링크·출처 줄은 앱이 붙인다 (글 끝)
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import type { PhotoEmbed } from "@/components/admin/studio-photo/PhotoStudio";
 import type { PostChannel, PostDraft, Project } from "./types";
 import { errText, videoBridge } from "./types";
 import { clipText } from "./timeline";
 import { Btn, C, FONT, Icon, Modal, Working, input, label } from "./ui";
+import { loadImg, thumbDoc, thumbFonts, thumbLayouts, thumbPng, thumbPreview } from "./thumbRender";
+
+const PhotoStudio = lazy(() => import("@/components/admin/studio-photo/PhotoStudio"));
 
 /** 채널 픽토그램 — 유튜브(빨간 재생 단추) · 인스타그램(카메라) (2026-10-21 사장님) */
 export function ChannelMark({ ch, size = 18 }: { ch: PostChannel; size?: number }) {
@@ -53,6 +58,17 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
   const [useTitle, setUseTitle] = useState(true);
   const [thumbI, setThumbI] = useState(0); // -1 = 내가 고른 그림
   const [mine, setMine] = useState<{ file: string; url: string } | null>(null); // 썸네일 직접 올리기 (2026-10-21 사장님)
+  // 썸네일 디자인 — 영상 꾸미기에서 고른 틀로 시작, 다른 틀도 고르기 (2026-10-22 사장님)
+  const layouts = React.useMemo(() => thumbLayouts(), []);
+  const savedThumb = (project.settings as unknown as { thumb?: { layout: string; title: string } }).thumb;
+  const [layoutId, setLayoutId] = useState(() => (savedThumb?.layout && layouts.some((l) => l.id === savedThumb.layout) ? savedThumb.layout : layouts[0]?.id || ""));
+  const [thumbText, setThumbText] = useState(savedThumb?.title || "");
+  const [bgs, setBgs] = useState<(HTMLCanvasElement | null)[]>([]);
+  const [pvBg, setPvBg] = useState<string[]>([]); // 고른 틀 × 장면들
+  const [pvLay, setPvLay] = useState<Record<string, string>>({}); // 고른 장면 × 틀 전부
+  // 썸네일 고치기 — 이미지 편집기를 꽉 차게 띄운다 (레이어째 고치고 [이 썸네일 쓰기])
+  const [editor, setEditor] = useState<PhotoEmbed | null>(null);
+  const [minePsd, setMinePsd] = useState("");
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const [login, setLogin] = useState<"" | "need" | "open">("");
@@ -110,8 +126,47 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     if (draft && ch === "youtube" && !shorts && !thumbs && !busy) void makeThumbs(ytTitle);
   }, [draft, ch]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 장면 그림 받아 두기 → 미리보기 그리기
+  useEffect(() => {
+    if (!thumbs) return;
+    let live = true;
+    Promise.all(thumbs.map((t) => loadImg(t.plain.url))).then((c) => { if (live) setBgs(c); });
+    return () => { live = false; };
+  }, [thumbs]);
+  const tTitle = thumbText || ytTitle;
+  useEffect(() => {
+    if (!bgs.length || !useTitle) return;
+    let live = true;
+    const tm = setTimeout(async () => {
+      await thumbFonts(layouts);
+      const l = layouts.find((x) => x.id === layoutId);
+      if (l && live) setPvBg(bgs.map((bg) => (bg ? thumbPreview(l, bg, tTitle, "", 360) : "")));
+      const bg = bgs[Math.max(0, thumbI)] || bgs[0];
+      if (!bg) return;
+      const o: Record<string, string> = {};
+      for (const x of layouts) {
+        if (!live) return;
+        await new Promise((r) => setTimeout(r, 0));
+        try { o[x.id] = thumbPreview(x, bg, tTitle, "", 220); } catch {}
+        if (live) setPvLay({ ...o });
+      }
+    }, 200);
+    return () => { live = false; clearTimeout(tm); };
+  }, [bgs, layoutId, tTitle, thumbI, useTitle, layouts]);
+
   const text = ch === "youtube" ? ytText : igText;
-  const thumbFile = shorts ? undefined : thumbI === -1 && mine ? mine.file : thumbs && thumbs[thumbI] ? (useTitle && thumbs[thumbI].title ? thumbs[thumbI].title!.file : thumbs[thumbI].plain.file) : undefined;
+  const plainFile = thumbs && thumbs[thumbI] ? thumbs[thumbI].plain.file : undefined;
+  /** 올릴 썸네일 파일 — 내 그림 · 장면만 · 고른 틀로 그린 1280×720 PNG(임시 파일) */
+  const thumbFileFor = async (): Promise<string | undefined> => {
+    if (shorts) return undefined;
+    if (thumbI === -1 && mine) return mine.file;
+    if (!useTitle) return plainFile;
+    const l = layouts.find((x) => x.id === layoutId), bg = bgs[thumbI];
+    const tw = (window as unknown as { gongsilStudio?: { photo?: { tempWrite?: (o: { bytes: Uint8Array; ext?: string }) => Promise<{ path?: string }> } } }).gongsilStudio?.photo?.tempWrite;
+    if (!l || !bg || !tw) return plainFile;
+    const r = await tw({ bytes: await thumbPng(l, bg, tTitle), ext: "png" });
+    return r.path || plainFile;
+  };
   const fill = async () => {
     if (!post) return;
     setErr("");
@@ -119,7 +174,8 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     setBusy("크롬을 여는 중…");
     const off = listen();
     try {
-      const r = await post.fill({ channel: ch, file, title: ytTitle, text, visibility: ch === "youtube" ? vis : undefined, thumb: ch === "youtube" ? thumbFile : undefined });
+      const thumbFile = ch === "youtube" ? await thumbFileFor() : undefined;
+      const r = await post.fill({ channel: ch, file, title: ytTitle, text, visibility: ch === "youtube" ? vis : undefined, thumb: thumbFile });
       setDone({ ch, partial: r.partial, thumb: r.thumb, vis: r.vis });
       try {
         const log = JSON.parse(localStorage.getItem("gsv:postLog") || "[]");
@@ -132,6 +188,47 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     } finally {
       off();
       setBusy("");
+    }
+  };
+  type PhotoB = { read?: (f: string) => Promise<{ bytes?: Uint8Array; error?: string }>; save?: (o: { file?: string; name: string; ext: "psd"; bytes: Uint8Array }) => Promise<{ path?: string; error?: string }> };
+  const photoB = (): PhotoB | null => (window as unknown as { gongsilStudio?: { photo?: PhotoB } }).gongsilStudio?.photo ?? null;
+  const openEditor = async () => {
+    setErr("");
+    try {
+      const title = tTitle;
+      let doc;
+      if (thumbI === -1 && minePsd && photoB()?.read) {
+        // 전에 고친 썸네일 — PSD 레이어 그대로 다시
+        const r = await photoB()!.read!(minePsd);
+        if (!r.bytes) throw new Error(r.error || "썸네일 PSD 를 열지 못했어요");
+        const { openPsdBytes } = await import("@/components/admin/studio-photo/model");
+        doc = openPsdBytes("썸네일.psd", r.bytes, minePsd);
+      } else {
+        const l = layouts.find((x) => x.id === layoutId), bg = bgs[Math.max(0, thumbI)] || bgs[0];
+        if (!l || !bg) throw new Error("장면을 아직 못 뽑았어요. 잠시 뒤 다시 눌러 주세요.");
+        doc = await thumbDoc(l, bg, title);
+      }
+      setEditor({
+        doc, title: "썸네일 고치기",
+        onUse: async (png, psd) => {
+          if (!b?.lib.saveImage) throw new Error("스튜디오 앱에서만 저장돼요");
+          const dataUrl = `data:image/png;base64,${btoa(Array.from(png, (c) => String.fromCharCode(c)).join(""))}`;
+          const nm = `썸네일_${(title || "영상").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 24)}`;
+          const item = await b.lib.saveImage(`${project.dir}\\썸네일`, dataUrl, nm);
+          if (!item?.path) throw new Error("썸네일을 저장하지 못했어요");
+          const psdPath = item.path.replace(/\.png$/i, ".psd");
+          await photoB()?.save?.({ file: psdPath, name: nm, ext: "psd", bytes: psd });
+          setMine({ file: item.path, url: item.url });
+          setMinePsd(psdPath);
+          setThumbI(-1);
+          setEditor(null);
+          setNote("고친 썸네일을 골랐어요 (영상 폴더 › 썸네일에 PNG·PSD)");
+          setTimeout(() => setNote(""), 3000);
+        },
+        onCancel: () => setEditor(null),
+      });
+    } catch (e) {
+      setErr(errText(e));
     }
   };
   /** PC에서 썸네일 그림 고르기 — JPG·PNG */
@@ -161,9 +258,20 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
   if (!post) {
     return (
       <Modal title="SNS에 올리기" onClose={onClose} width={560}>
-        <div style={{ padding: 22, fontSize: 15, lineHeight: 1.7 }}>이 기능은 공실뉴스 스튜디오 앱 0.1.11부터 쓸 수 있어요. 앱을 새로 받아 주세요.</div>
+        <div style={{ padding: 22, fontSize: 15, lineHeight: 1.7 }}>이 기능은 공실스튜디오 앱 0.1.11부터 쓸 수 있어요. 앱을 새로 받아 주세요.</div>
       </Modal>
     );
+  }
+  // 썸네일 고치기 중 — 이미지 편집기만 보이게 (SNS 창이 위를 가리던 것, 2026-10-22)
+  if (editor) {
+    return typeof document !== "undefined" ? createPortal(
+      <div style={{ position: "fixed", inset: 0, zIndex: 85, display: "flex", flexDirection: "column", background: C.bg }} onKeyDown={(e) => e.stopPropagation()}>
+        <Suspense fallback={<div style={{ padding: 40, color: C.sub, fontFamily: FONT }}>이미지 편집을 여는 중…</div>}>
+          <PhotoStudio menu={null} embed={editor} />
+        </Suspense>
+      </div>,
+      document.body,
+    ) : null;
   }
   const chip = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   return (
@@ -214,31 +322,54 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
                 <div style={{ ...label, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ flex: 1 }}>썸네일</span>
                   <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.sub, fontWeight: 600, cursor: "pointer" }}>
-                    <input type="checkbox" checked={useTitle} onChange={(e) => setUseTitle(e.target.checked)} style={{ accentColor: C.accent }} />제목 넣기
+                    <input type="checkbox" checked={useTitle} onChange={(e) => setUseTitle(e.target.checked)} style={{ accentColor: C.accent }} />디자인 넣기
                   </label>
-                  <Btn small onClick={() => makeThumbs(ytTitle)}>제목으로 다시 만들기</Btn>
+                  <Btn small onClick={() => makeThumbs(ytTitle)}>장면 다시 뽑기</Btn>
+                  <Btn small primary onClick={() => void openEditor()} disabled={!bgs.length && !(thumbI === -1 && minePsd)}><Icon name="pen" size={14} />썸네일 고치기</Btn>
                   <Btn small primary onClick={pickMine}><Icon name="image" size={14} />PC에서 직접 고르기</Btn>
                 </div>
+                {useTitle && (
+                  <input value={thumbText} onChange={(e) => setThumbText(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder={`썸네일 글 (비우면 영상 제목) — 낱말 반으로 나눠 큰 두 줄`}
+                    style={{ ...input, height: 34, fontSize: 13.5, marginBottom: 8 }} />
+                )}
                 {thumbs || mine ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                    {mine && (
-                      <button type="button" onClick={() => setThumbI(-1)} title={mine.file} style={{ position: "relative", padding: 0, border: `2px solid ${thumbI === -1 ? C.accent : "transparent"}`, borderRadius: 6, overflow: "hidden", background: "#000", cursor: "pointer", aspectRatio: "16 / 9" }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={mine.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                        <span style={{ position: "absolute", left: 4, top: 4, padding: "1px 6px", borderRadius: 3, background: "rgba(0,0,0,.7)", color: "#fff", fontSize: 11.5, fontWeight: 700 }}>내 그림</span>
-                      </button>
-                    )}
-                    {(thumbs || []).map((t, i) => {
-                      const src = useTitle && t.title ? t.title.url : t.plain.url;
-                      return (
-                        <button key={i} type="button" onClick={() => setThumbI(i)} style={{ padding: 0, border: `2px solid ${thumbI === i ? C.accent : "transparent"}`, borderRadius: 6, overflow: "hidden", background: "#000", cursor: "pointer", aspectRatio: "16 / 9" }}>
+                  <>
+                    <div style={{ fontSize: 12.5, color: C.sub, fontWeight: 700, margin: "2px 0 6px" }}>배경 장면</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                      {mine && (
+                        <button type="button" onClick={() => setThumbI(-1)} title={mine.file} style={{ position: "relative", padding: 0, border: `2px solid ${thumbI === -1 ? C.accent : "transparent"}`, borderRadius: 6, overflow: "hidden", background: "#000", cursor: "pointer", aspectRatio: "16 / 9" }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          <img src={mine.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          <span style={{ position: "absolute", left: 4, top: 4, padding: "1px 6px", borderRadius: 3, background: "rgba(0,0,0,.7)", color: "#fff", fontSize: 11.5, fontWeight: 700 }}>내 그림</span>
                         </button>
-                      );
-                    })}
-                  </div>
-                ) : <div style={{ fontSize: 13, color: C.dim }}>썸네일을 만들지 못했어요. [제목으로 다시 만들기]를 눌러 주세요.</div>}
+                      )}
+                      {(thumbs || []).map((t, i) => {
+                        const src = useTitle && pvBg[i] ? pvBg[i] : t.plain.url;
+                        return (
+                          <button key={i} type="button" onClick={() => setThumbI(i)} style={{ padding: 0, border: `2px solid ${thumbI === i ? C.accent : "transparent"}`, borderRadius: 6, overflow: "hidden", background: "#000", cursor: "pointer", aspectRatio: "16 / 9" }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {useTitle && thumbI !== -1 && (
+                      <>
+                        <div style={{ fontSize: 12.5, color: C.sub, fontWeight: 700, margin: "12px 0 6px" }}>썸네일 디자인{savedThumb?.layout === layoutId && <span style={{ color: C.dim, fontWeight: 600 }}> · 영상 꾸미기에서 고른 것</span>}</div>
+                        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
+                          {layouts.map((l) => (
+                            <button key={l.id} type="button" onClick={() => setLayoutId(l.id)} title={l.name.replace(/^유튜브 — /, "")}
+                              style={{ flex: "0 0 150px", padding: 3, borderRadius: 6, border: `2px solid ${layoutId === l.id ? C.accent : "transparent"}`, background: C.card, cursor: "pointer", color: C.text, fontFamily: FONT, display: "flex", flexDirection: "column", gap: 3 }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              {pvLay[l.id] ? <img src={pvLay[l.id]} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 4, display: "block" }} /> : <div style={{ width: "100%", aspectRatio: "16 / 9", background: C.bg, borderRadius: 4 }} />}
+                              <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textAlign: "left" }}>{l.name.replace(/^유튜브 — /, "")}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : <div style={{ fontSize: 13, color: C.dim }}>장면을 뽑지 못했어요. [장면 다시 뽑기]를 눌러 주세요.</div>}
                 <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6, lineHeight: 1.6 }}>
                   고른 그림을 크롬에서 썸네일로 넣어요. 직접 만든 그림은 [PC에서 직접 고르기]로 — 유튜브 권장 1280×720 (16:9), 2MB 이하 JPG·PNG. 직접 만든 썸네일은 <b>휴대폰 인증을 한 유튜브 채널</b>만 올릴 수 있어요.
                 </div>
@@ -260,7 +391,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
         )}
         {login === "open" && (
           <div style={{ padding: "12px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: C.accentDim, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <span style={{ flex: 1, minWidth: 240, fontSize: 14, lineHeight: 1.6 }}>새로 뜬 &quot;공실뉴스 스튜디오&quot; 크롬 창에서 {name}에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아니에요)</span>
+            <span style={{ flex: 1, minWidth: 240, fontSize: 14, lineHeight: 1.6 }}>새로 뜬 &quot;공실스튜디오&quot; 크롬 창에서 {name}에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아니에요)</span>
             <Btn primary onClick={() => { void post.finishLogin(); setLogin(""); setErr(""); }}>로그인 다 했어요</Btn>
           </div>
         )}

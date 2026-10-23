@@ -8,7 +8,7 @@ let dirty = 0; // 저장 안 한 문서 수 — 앱을 닫을 때 묻는다
 const winOf = (e) => BrowserWindow.fromWebContents(e.sender);
 const recentFile = () => path.join(app.getPath("userData"), "photo-recent.json");
 const defaultDir = () => {
-  const d = path.join(app.getPath("documents"), "공실뉴스 이미지");
+  const d = require("../studio-root").dir("img"); // 문서\공실스튜디오\04 이미지제작
   try { fs.mkdirSync(d, { recursive: true }); } catch {}
   return d;
 };
@@ -49,15 +49,32 @@ const autoDir = () => {
   return d;
 };
 const safeId = (id) => String(id || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 60);
-/* 내 템플릿 — 문서\공실뉴스 이미지\내 템플릿\*.psd (+ 같은 이름 .json 메모) */
+/* 내 템플릿 — 문서\공실스튜디오\04 이미지제작\내템플릿\*.psd (+ 같은 이름 .json 메모). 예전 문서\공실뉴스 이미지\내 템플릿 도 같이 보인다 */
 const tplDir = () => {
-  const d = path.join(defaultDir(), "내 템플릿");
+  const d = path.join(defaultDir(), "내템플릿");
   try { fs.mkdirSync(d, { recursive: true }); } catch {}
   return d;
 };
+const oldTplDir = () => path.join(require("../studio-root").oldImage(), "내 템플릿");
+/* 다른 곳에 저장한 내 템플릿 목록 · 지난번에 고른 폴더 */
+const tplIndexFile = () => path.join(app.getPath("userData"), "photo-templates.json");
+const tplIndex = () => {
+  try {
+    const v = JSON.parse(fs.readFileSync(tplIndexFile(), "utf8"));
+    return {
+      files: Array.isArray(v.files) ? v.files.filter((f) => typeof f === "string" && path.isAbsolute(f)) : [],
+      lastDir: typeof v.lastDir === "string" ? v.lastDir : "",
+      hidden: Array.isArray(v.hidden) ? v.hidden.filter((f) => typeof f === "string") : [], // 목록에서 뺀 것 (소문자 경로)
+    };
+  } catch {
+    return { files: [], lastDir: "", hidden: [] };
+  }
+};
+const writeTplIndex = (v) => { try { fs.writeFileSync(tplIndexFile(), JSON.stringify(v)); } catch {} };
 const toBuf = (bytes) => Buffer.from(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []));
 
 function register() {
+  try { defaultDir(); } catch {} // 켤 때 이미지편집 폴더를 만들어 둔다 (잠깐 쓴 "이미지" 폴더는 이름만 바꿈)
   // 열기 — 고른 파일들의 바이트
   ipcMain.handle("photo:open", async (e, { images = false } = {}) => {
     const r = await dialog.showOpenDialog(winOf(e), {
@@ -95,9 +112,13 @@ function register() {
       const base = String(name || "제목 없음").replace(/[\\/:*?"<>|]/g, "_");
       const FILTERS = { gif: { name: "GIF", extensions: ["gif"] }, webp: { name: "WebP", extensions: ["webp"] }, psd: { name: "포토샵 (PSD)", extensions: ["psd"] }, jpg: { name: "JPG", extensions: ["jpg", "jpeg"] }, png: { name: "PNG", extensions: ["png"] }, pdf: { name: "인쇄용 PDF (CMYK)", extensions: ["pdf"] }, tif: { name: "인쇄용 TIFF (CMYK)", extensions: ["tif", "tiff"] } };
       const filters = [FILTERS[ext] || FILTERS.png];
+      // 예전 폴더(공실뉴스 이미지·공실뉴스 스튜디오)에 있던 파일이면 새 저장 폴더 공실스튜디오\04 이미지제작 에서 연다 (2026-10-23 저장 폴더 하나로)
+      const sr = require("../studio-root");
+      const inOld = (d) => [sr.oldImage(), sr.oldRoot()].some((o) => (d.toLowerCase() + path.sep).startsWith(o.toLowerCase() + path.sep));
+      const startDir = file && !inOld(path.dirname(file)) ? path.dirname(file) : defaultDir();
       const r = await dialog.showSaveDialog(winOf(e), {
         title: ext === "psd" ? "다른 이름으로 저장" : "내보내기",
-        defaultPath: path.join(file ? path.dirname(file) : defaultDir(), `${base}.${ext}`),
+        defaultPath: path.join(startDir, `${base}.${ext}`),
         filters,
       });
       if (r.canceled || !r.filePath) return { canceled: true };
@@ -108,6 +129,7 @@ function register() {
       fs.writeFileSync(tmp, toBuf(bytes));
       fs.renameSync(tmp, target); // 쓰다 멈춰도 원본이 깨지지 않게
       if (ext === "psd") addRecent(target, thumb);
+      else shell.showItemInFolder(target); // 웹용 저장·내보내기(PNG·JPG·PDF…) — 저장한 폴더를 열어 파일을 보여 준다 (2026-10-23 사장님)
       return { path: target, name: path.basename(target) };
     } catch (err) {
       return { error: String((err && err.message) || err) };
@@ -165,11 +187,17 @@ function register() {
     for (const ext of [".psd", ".json"]) { try { fs.unlinkSync(path.join(autoDir(), k + ext)); } catch {} }
     return true;
   });
-  // 내 템플릿
+  // 내 템플릿 — 기본 폴더(내 템플릿\) + 회원이 저장 창에서 고른 곳에 저장한 것 (photo-templates.json 에 기억, 2026-10-23 사장님)
   ipcMain.handle("photo:tpl-list", () => {
     try {
-      return fs.readdirSync(tplDir()).filter((f) => f.toLowerCase().endsWith(".psd")).map((f) => {
-        const file = path.join(tplDir(), f);
+      const dirs = [tplDir(), oldTplDir()].filter((d, i) => i === 0 || fs.existsSync(d));
+      const seen = new Set(tplIndex().hidden); // 삭제(목록에서 뺀) 것은 건너뛴다
+      const files = [
+        ...dirs.flatMap((dir) => fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith(".psd")).map((f) => path.join(dir, f))),
+        ...tplIndex().files.filter((f) => fs.existsSync(f)),
+      ].filter((f) => { const k = f.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+      return files.map((file) => {
+        const f = path.basename(file);
         let meta = {};
         try { meta = JSON.parse(fs.readFileSync(file.replace(/\.psd$/i, ".json"), "utf8")); } catch {}
         return { file, name: f.replace(/\.psd$/i, ""), thumb: meta.thumb || "", w: meta.w || 0, h: meta.h || 0, at: fs.statSync(file).mtimeMs };
@@ -178,12 +206,24 @@ function register() {
       return [];
     }
   });
-  ipcMain.handle("photo:tpl-write", (_e, { name, bytes, thumb, w, h } = {}) => {
+  // ask = 저장 창에서 위치·이름을 고른다 (처음엔 내 템플릿 폴더, 다음부터는 지난번에 고른 폴더에서 열린다)
+  ipcMain.handle("photo:tpl-write", async (e, { name, bytes, thumb, w, h, ask } = {}) => {
     try {
       const base = String(name || "내 템플릿").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
-      const file = path.join(tplDir(), `${base}.psd`);
+      const idx = tplIndex();
+      let file = path.join(tplDir(), `${base}.psd`);
+      if (ask) {
+        const start = idx.lastDir && fs.existsSync(idx.lastDir) ? idx.lastDir : tplDir();
+        const r = await dialog.showSaveDialog(winOf(e), { title: "내 템플릿으로 저장", defaultPath: path.join(start, `${base}.psd`), filters: [{ name: "포토샵 (PSD)", extensions: ["psd"] }] });
+        if (r.canceled || !r.filePath) return { canceled: true };
+        file = r.filePath;
+      }
       fs.writeFileSync(file, toBuf(bytes));
       fs.writeFileSync(file.replace(/\.psd$/i, ".json"), JSON.stringify({ thumb: thumb || "", w, h }));
+      idx.files = [file, ...idx.files.filter((f) => f.toLowerCase() !== file.toLowerCase())];
+      idx.hidden = idx.hidden.filter((f) => f !== file.toLowerCase()); // 예전에 뺐던 것을 다시 저장하면 다시 보인다
+      idx.lastDir = path.dirname(file);
+      writeTplIndex(idx);
       return { file };
     } catch (err) {
       return { error: String((err && err.message) || err) };
@@ -192,9 +232,14 @@ function register() {
   ipcMain.handle("photo:tpl-read", (_e, file) => {
     try { return readOne(file); } catch (err) { return { error: String((err && err.message) || err) }; }
   });
+  // 삭제 — 내 템플릿 목록에서만 뺀다. PSD 파일은 어디에 있든 지우지 않는다 (2026-10-23 사장님: 완전히 없어지는 것이 아니라)
   ipcMain.handle("photo:tpl-remove", (_e, file) => {
-    if (!file || path.dirname(file) !== tplDir()) return false;
-    for (const f of [file, file.replace(/\.psd$/i, ".json")]) { try { fs.unlinkSync(f); } catch {} }
+    if (!file) return false;
+    const k = String(file).toLowerCase();
+    const idx = tplIndex();
+    idx.files = idx.files.filter((f) => f.toLowerCase() !== k);
+    if (!idx.hidden.includes(k)) idx.hidden.push(k); // 내 템플릿 폴더 안 파일도 목록에 다시 안 뜨게
+    writeTplIndex(idx);
     return true;
   });
   // 아무 그림 파일 읽기 (공실 사진 · AI 그림을 레이어로) — 최근 파일에는 안 남긴다

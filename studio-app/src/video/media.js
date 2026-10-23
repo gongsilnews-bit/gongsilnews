@@ -52,7 +52,8 @@ function handle() {
   });
   // 앱이 만든 것은 늘 열 수 있다
   allowRoot(app.getPath("userData"));
-  allowRoot(path.join(app.getPath("documents"), "공실뉴스 스튜디오"));
+  allowRoot(require("../studio-root").root());
+  allowRoot(require("../studio-root").oldRoot()); // 예전 이름 폴더의 자료도 그대로 쓴다
 }
 
 module.exports = { registerScheme, handle, allow, allowRoot, urlOf, fileOf, isAllowed, SCHEME };

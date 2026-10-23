@@ -18,17 +18,20 @@ import { useStudioImager } from "./useStudioWriter";
 type Opt = { id: string; name: string };
 type CostField = { key: string; label: string; unit?: string; step?: number; options?: { id: number; name: string }[] };
 type Options = { kind: string; label: string; rooms: Opt[] | null; groups: { key: string; label: string; single?: boolean; options: Opt[] }[]; ratios: Opt[]; costFields: CostField[] };
-type Cost = { rangeText: string; basisText: string; items: { label: string; basis: string; min: number; max: number }[]; notice: string; excludes: string };
-type Result = {
+export type Cost = { rangeText: string; basisText: string; areaText?: string; min?: number; max?: number; items: { label: string; basis: string; min: number; max: number }[]; notice: string; excludes: string };
+export type Result = {
   title: string; location: string; dateText: string; roomName: string; before: string | null;
+  priceText?: string; saleKind?: string | null; vacancyFacts?: { label: string; value: string }[]; aspectRatio?: string;
   versions: { index: number; diffKo: string; image: string | null }[];
   design: Record<string, string[]>; designSpec: { label: string; value: string }[]; constraints: string; disclaimer: string; cost: Cost;
 };
-type Sim = {
+export type Sim = {
   id: string; kind: string; createdAt: string; vacancyId: string | null; vacancyTitle: string;
   photos: { id: string; src: string; on: boolean; thumb: string | null }[];
   design: Record<string, string | string[] | number>; costBase: Record<string, number>; cost: Cost; result: Result | null; label: string;
+  report?: Record<string, unknown> | null;
 };
+export type { Options as SimOptions };
 type Recent = { id: string; createdAt: string; done: boolean; label: string };
 type Bridge = {
   sim: {

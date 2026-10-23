@@ -31,7 +31,7 @@ const GROUPS = {
   // 공실마케팅 AI 채우기 (AI 매물보고서 · AI 유리창홍보지) — 확장이 아니라 저장소 marketing/shared
   marketing: {
     dir: join(root, "..", "marketing", "shared"),
-    files: ["marketing-prompt.js"],
+    files: ["marketing-prompt.js", "sim-report-prompt.js"],
   },
   // 영상 편집기 — 대본·숏폼 구간 지시문 (studio-app/prompts, 설치 파일에는 넣지 않음)
   video: {
@@ -60,7 +60,7 @@ const version = createHash("sha256").update(JSON.stringify(files)).digest("hex")
 writeFileSync(
   out,
   `// 자동 생성 파일 — 고치지 마세요. 원본: chrome-extension/*/shared, 만들기: node studio-app/scripts/sync-ext.mjs
-// 공실뉴스 스튜디오 앱이 로그인 뒤 /api/studio/prompts 로 받아 메모리에만 두는 확장 파일 묶음 (서버 전용)
+// 공실스튜디오 앱이 로그인 뒤 /api/studio/prompts 로 받아 메모리에만 두는 확장 파일 묶음 (서버 전용)
 export const STUDIO_EXT_VERSION = ${JSON.stringify(version)};
 export const STUDIO_EXT_FILES: Record<string, string> = ${JSON.stringify(files, null, 1)};
 `

@@ -1,4 +1,4 @@
-// 공실뉴스 스튜디오 - Electron 메인 프로세스
+// 공실스튜디오 - Electron 메인 프로세스
 // 앱 창은 공실뉴스 중개사 관리자 화면(/realty_admin)을 그대로 불러온다.
 // 로그인은 "클릭 한 번 연결": 크롬의 /studio/connect → gongsilstudio://connect?code=… → 앱 창의 /studio/callback
 const { app, BrowserWindow, Menu, dialog, ipcMain, nativeImage, screen, session, shell } = require("electron");
@@ -21,6 +21,7 @@ const marketingWriter = require("./marketing-writer");
 const videoMedia = require("./video/media");
 const videoIpc = require("./video/ipc");
 const photoIpc = require("./photo/ipc");
+const docIpc = require("./doc/ipc");
 const aiBusy = require("./ai-busy");
 videoMedia.registerScheme();
 
@@ -37,6 +38,7 @@ const NO_EXT = new Set([
   "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
   "studio:save-file", "studio:open-out-folder",
+  "studio:report-get", "studio:report-list", "studio:report-save", "studio:report-remove",
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (channel, fn) =>
@@ -49,12 +51,15 @@ const PROTOCOL = "gongsilstudio";
 // 앱 창 안에서 띄워도 되는 팝업 (주소 검색 등). 그 외 다른 사이트는 평소 브라우저로 연다.
 const IN_APP_POPUP_HOSTS = [/(^|\.)daum\.net$/, /(^|\.)daumcdn\.net$/, /(^|\.)kakao\.com$/];
 
+// 앱 이름을 "공실스튜디오"로 바꿨어도(2026-10-23) 회원 PC 저장 공간(로그인·AI 키·설정·공실 없는 보고서)은 예전 이름 폴더 그대로 —
+// 이름을 따라 새 폴더로 가면 전부 사라진 것처럼 보인다 (docs/2026-10-23_naming_plan.md 4-2)
+if (app.isPackaged) app.setPath("userData", path.join(app.getPath("appData"), "공실뉴스 스튜디오"));
 // 개발 실행은 설치판과 저장 공간(로그인·전용 크롬)과 "한 번만 실행"이 겹치지 않게 이름을 달리 한다
 if (!app.isPackaged) {
   // STUDIO_INSTANCE 를 주면 개발판을 하나 더 따로 띄울 수 있다 (자동 시험용)
-  const devName = `공실뉴스 스튜디오 (개발${process.env.STUDIO_INSTANCE ? ` ${process.env.STUDIO_INSTANCE}` : ""})`;
-  app.setName(devName);
-  app.setPath("userData", path.join(app.getPath("appData"), devName));
+  const inst = process.env.STUDIO_INSTANCE ? ` ${process.env.STUDIO_INSTANCE}` : "";
+  app.setName(`공실스튜디오 (개발${inst})`);
+  app.setPath("userData", path.join(app.getPath("appData"), `공실뉴스 스튜디오 (개발${inst})`)); // 저장 공간은 예전 이름 그대로
 }
 
 log.initialize();
@@ -74,6 +79,10 @@ if (!app.requestSingleInstanceLock()) {
     if (url) handleDeepLink(url);
     const gssFile = findGss(argv);
     if (gssFile) openGss(gssFile);
+    const gsnFile = findGsn(argv);
+    if (gsnFile) openGsn(gsnFile);
+    const psdFile = findPsd(argv);
+    if (psdFile) openPsd(psdFile);
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -90,6 +99,35 @@ if (app.isPackaged) {
 /** 탐색기에서 두 번 누른 .gss 파일 (실행 인자) */
 function findGss(argv) {
   return (argv || []).find((a) => typeof a === "string" && /\.gss$/i.test(a) && fs.existsSync(a)) || null;
+}
+/** 탐색기에서 두 번 누른 작업 파일 — .gsn(뉴스·SNS발행) · .gsm(공실마케팅) (2026-10-23) */
+function findGsn(argv) {
+  return (argv || []).find((a) => typeof a === "string" && /\.gs[nm]$/i.test(a) && fs.existsSync(a)) || null;
+}
+/** 탐색기에서 두 번 누른 PSD (포토샵이 없는 PC — 설치할 때 PSD 기본 프로그램이 없으면 공실스튜디오로 연결, build/installer.nsh) */
+function findPsd(argv) {
+  return (argv || []).find((a) => typeof a === "string" && /\.(psd|psb)$/i.test(a) && fs.existsSync(a)) || null;
+}
+/** PSD 열기 — 이미지제작으로 가서 그 파일을 연다 (화면이 ?open=<위치> 를 보고 연다) */
+async function openPsd(file) {
+  log.info(`[PSD] 탐색기에서 엶 ${file}`);
+  if (!mainWindow || !(await isLoggedIn())) return;
+  mainWindow.loadURL(`${BASE_URL}/realty_admin?menu=photo&open=${encodeURIComponent(file)}`);
+}
+/** 작업 파일 열기 — 풀고 그 메뉴에서 그 작업을 연다 (화면이 ?gsn=<id> · ?gsm=<id> 를 보고 고른다) */
+async function openGsn(file) {
+  try {
+    const r = await require("./gsn").open(file, mainWindow);
+    if (!r || !mainWindow) return;
+    if (!(await isLoggedIn())) return;
+    if (r.type === "gsm") {
+      const cat = r.kind === "report" ? "report" : `${r.simKind}_sim`;
+      mainWindow.loadURL(`${BASE_URL}/realty_admin?menu=marketing&gsm=${encodeURIComponent(r.id)}&cat=${cat}`);
+    } else mainWindow.loadURL(`${BASE_URL}/realty_admin?menu=sns&gsn=${encodeURIComponent(r.id)}`);
+  } catch (e) {
+    log.warn(`[.gsn] 열지 못함 ${file}: ${e.message}`);
+    dialog.showMessageBox(mainWindow || undefined, { type: "warning", title: "공실스튜디오", message: "작업 파일을 열지 못했어요.", detail: e.message });
+  }
 }
 /** .gss 열기 — 영상 편집기(동영상제작)로 가서 그 파일을 연다 */
 async function openGss(file) {
@@ -160,7 +198,7 @@ async function createWindow() {
     show: false,
     minWidth: 1024,
     minHeight: 640,
-    title: `공실뉴스 스튜디오 v${app.getVersion()}`,
+    title: `공실스튜디오 v${app.getVersion()}`,
     icon: path.join(__dirname, "..", "build", "icon.png"),
     autoHideMenuBar: false, // 메뉴 막대는 아래에서 숨긴다 (Alt 로도 안 나오게 false)
     backgroundColor: "#f6f8fa",
@@ -239,12 +277,21 @@ async function createWindow() {
     // 이미지 편집에 저장 안 한 파일 — 닫을지 묻는다
     if (photoIpc.dirtyCount() > 0) {
       const r = dialog.showMessageBoxSync(mainWindow, {
-        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실뉴스 스튜디오",
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실스튜디오",
         message: `이미지 편집에 저장하지 않은 파일이 ${photoIpc.dirtyCount()}개 있어요.`,
         detail: "[취소]를 누르고 이미지 편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
       });
       if (r === 1) return e.preventDefault();
       photoIpc.clearDirty();
+    }
+    if (docIpc.dirtyCount() > 0) {
+      const r = dialog.showMessageBoxSync(mainWindow, {
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실스튜디오",
+        message: "문서편집에 저장하지 않은 문서가 있어요.",
+        detail: "[취소]를 누르고 문서편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
+      });
+      if (r === 1) return e.preventDefault();
+      docIpc.clearDirty();
     }
     if (!videoIpc.wantsAsk()) return;
     e.preventDefault();
@@ -262,7 +309,7 @@ async function createWindow() {
       buttons: ["저장하고 나가기", "저장 안 함", "취소"],
       defaultId: 0,
       cancelId: 2,
-      title: "공실뉴스 스튜디오",
+      title: "공실스튜디오",
       message: "동영상제작에 저장하지 않은 내용이 있어요.",
       detail: "[저장 안 함]을 누르면 마지막으로 저장한 상태로 돌아가요.",
     });
@@ -321,7 +368,7 @@ function buildMenu() {
       submenu: [
         { label: "새로고침", accelerator: "F5", role: "reload" },
         { label: "관리자 화면으로", accelerator: "Alt+Home", click: () => mainWindow && mainWindow.loadURL(`${BASE_URL}/realty_admin`) },
-        { label: "내 저장 폴더 열기 (문서\\공실뉴스 스튜디오)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
+        { label: "내 저장 폴더 열기 (문서\\공실스튜디오)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
         { type: "separator" },
         { label: "확대", role: "zoomIn" },
         { label: "축소", role: "zoomOut" },
@@ -351,12 +398,12 @@ function buildMenu() {
       submenu: [
         { label: "업데이트 확인", click: () => checkForUpdates(true) },
         {
-          label: "공실뉴스 스튜디오 정보",
+          label: "공실스튜디오 정보",
           click: () =>
             dialog.showMessageBox(mainWindow, {
               type: "info",
-              title: "공실뉴스 스튜디오",
-              message: `공실뉴스 스튜디오 v${app.getVersion()}`,
+              title: "공실스튜디오",
+              message: `공실스튜디오 v${app.getVersion()}`,
               detail: `연결 주소: ${BASE_URL}\nFFmpeg: ${ffmpegPath() ? "설치됨" : "없음"}\n로그: ${log.transports.file.getFile().path}`,
             }),
         },
@@ -405,9 +452,9 @@ async function startupUpdate() {
   if (!result || !result.isUpdateAvailable) return false;
   const ver = (result.updateInfo && result.updateInfo.version) || "";
   log.info(`[업데이트] 켤 때 새 버전 v${ver} — 받아서 설치`);
-  const win = new BrowserWindow({ width: 440, height: 160, frame: false, resizable: false, alwaysOnTop: true, backgroundColor: "#16202b", title: "공실뉴스 스튜디오 업데이트", icon: path.join(__dirname, "..", "build", "icon.png"), webPreferences: { sandbox: true } });
+  const win = new BrowserWindow({ width: 440, height: 160, frame: false, resizable: false, alwaysOnTop: true, backgroundColor: "#16202b", title: "공실스튜디오 업데이트", icon: path.join(__dirname, "..", "build", "icon.png"), webPreferences: { sandbox: true } });
   const html = `<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 28px;box-sizing:border-box;background:#16202b;color:#fff;font-family:'Malgun Gothic',sans-serif">
-<div style="font-size:17px;font-weight:800">공실뉴스 스튜디오 새 버전${ver ? ` v${ver}` : ""}</div>
+<div style="font-size:17px;font-weight:800">공실스튜디오 새 버전${ver ? ` v${ver}` : ""}</div>
 <div id="t" style="font-size:14px;color:#b6c2cf;margin-top:8px">새 버전을 받는 중… 0%</div>
 <div style="height:6px;border-radius:3px;background:#2b3644;margin-top:12px;overflow:hidden"><div id="b" style="height:100%;width:0;background:#3b82f6"></div></div></body>`;
   win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
@@ -530,7 +577,7 @@ ipcMain.handle("studio:ai-usage-limit", (_e, v) => require("./ai/usage").setLimi
 ipcMain.handle("studio:ai-usage-csv", async (e, month) => {
   const u = require("./ai/usage");
   const m = month || new Date().toISOString().slice(0, 7);
-  const r = await dialog.showSaveDialog(BrowserWindow.fromWebContents(e.sender), { title: "API 사용 내역 저장", defaultPath: path.join(app.getPath("documents"), `API 사용 내역 ${m}.csv`), filters: [{ name: "CSV", extensions: ["csv"] }] });
+  const r = await dialog.showSaveDialog(BrowserWindow.fromWebContents(e.sender), { title: "API 사용 내역 저장", defaultPath: path.join(require("./studio-root").root(), `API 사용 내역 ${m}.csv`), filters: [{ name: "CSV", extensions: ["csv"] }] });
   if (r.canceled || !r.filePath) return "";
   require("fs").writeFileSync(r.filePath, u.csv(m));
   return r.filePath;
@@ -575,11 +622,29 @@ ipcMain.handle("studio:sim-add-photos", (_e, opts) => simWriter.addPhotos(opts))
 ipcMain.handle("studio:sim-update", (_e, opts) => simWriter.update(opts));
 ipcMain.handle("studio:sim-export", (_e, opts) => simWriter.exportResult(opts));
 ipcMain.handle("studio:sim-run", (e, id) => simWriter.run({ id, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
+// 공실마케팅 › 인테리어·리모델링 예측 시뮬레이션 보고서 (2026-10-22)
+ipcMain.handle("studio:sim-report-media", (_e, id) => simWriter.reportMedia(id));
+ipcMain.handle("studio:sim-report-save", (_e, opts) => simWriter.saveReport(opts));
+ipcMain.handle("studio:sim-report-text", (e, id) => simWriter.reportText({ id }, (text) => e.sender.send("studio:sim-progress", text)));
+// 보고서 묶음 — 공간(거실·안방·주방·욕실…)마다 시뮬레이션 하나
+ipcMain.handle("studio:sim-proj-create", (_e, kind) => simWriter.projCreate(kind));
+ipcMain.handle("studio:sim-proj-get", (_e, id) => simWriter.projGet(id));
+ipcMain.handle("studio:sim-proj-list", (_e, kind) => simWriter.projList(kind));
+ipcMain.handle("studio:sim-proj-save", (_e, opts) => simWriter.projSave(opts));
+ipcMain.handle("studio:sim-proj-add-space", (_e, opts) => simWriter.projAddSpace(opts));
+ipcMain.handle("studio:sim-proj-text", (e, id) => simWriter.projText({ id }, (text) => e.sender.send("studio:sim-progress", text)));
 // 공실마케팅 AI 채우기 (매물보고서·유리창홍보지 — 도구가 앱 화면 안에서 부른다)
-// 홍보지·매물보고서 [이미지 내보내기] — 저장 창 없이 문서\공실뉴스 스튜디오\<매물>\<홍보지|매물보고서>\ 에 (out-folder.js)
+// 홍보지·매물보고서 [이미지 내보내기] — 저장 창 없이 문서\공실스튜디오\02 공실마케팅\<AI홍보지|AI매물보고서>\날짜\ 에 (out-folder.js)
 ipcMain.handle("studio:save-file", (_e, opts) => require("./out-folder").saveFile(opts));
 ipcMain.handle("studio:open-out-folder", () => require("./out-folder").openRoot());
 ipcMain.handle("studio:marketing-fill", (e, opts) => marketingWriter.fill({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:marketing-progress", text)));
+// 공실 없이 만드는 AI 매물보고서 — PC 저장 (2026-10-23, report-local.js)
+const reportLocal = require("./report-local");
+ipcMain.handle("studio:report-create", (e, opts) => reportLocal.create({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:marketing-progress", text)));
+ipcMain.handle("studio:report-get", (_e, id) => reportLocal.get(id));
+ipcMain.handle("studio:report-list", () => reportLocal.list());
+ipcMain.handle("studio:report-save", (_e, opts) => reportLocal.save(opts));
+ipcMain.handle("studio:report-remove", (_e, id) => reportLocal.remove(id));
 // 유튜브 대본
 ipcMain.handle("studio:youtube-options", (_e, id) => youtubeWriter.options(id));
 ipcMain.handle("studio:youtube-get", (_e, id) => youtubeWriter.get(id));
@@ -637,9 +702,13 @@ app.on("web-contents-created", (_e, wc) => {
 });
 
 app.whenReady().then(async () => {
+  try { require("./studio-root").ensureAll(); } catch {}
+  try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();
   videoIpc.register(BASE_URL);
   photoIpc.register();
+  docIpc.register();
+  require("./fonts-pc").register();
   videoIpc.setupCapture();
   const url = findDeepLink(process.argv);
   if (url) pendingDeepLink = url;
@@ -649,6 +718,10 @@ app.whenReady().then(async () => {
   await createWindow();
   const gssFile = findGss(process.argv);
   if (gssFile) openGss(gssFile);
+  const gsnFile = findGsn(process.argv);
+  if (gsnFile) openGsn(gsnFile);
+  const psdFile = findPsd(process.argv);
+  if (psdFile) openPsd(psdFile);
   log.info(`[시작] v${app.getVersion()} ${BASE_URL} ffmpeg=${ffmpegPath() || "없음"}`);
   prefetchMyVoice();
   // 받아쓰기 공용 낱말장 받아 두기 (목록만, 비용 0원)

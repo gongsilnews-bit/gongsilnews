@@ -20,7 +20,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "marketing", label: "공실마케팅", icon: <IconMegaphone /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
-  { key: "photo", label: "이미지 편집", icon: <IconImage /> },
+  { key: "photo", label: "이미지제작", icon: <IconImage /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "article_ad", label: "광고관리", icon: <IconAd /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },

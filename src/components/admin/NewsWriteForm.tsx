@@ -161,7 +161,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     }
   };
 
-  /* ── 공실뉴스 스튜디오에서 보낸 기사 초안 받기 (?studioDraft=<공실ID>) ──
+  /* ── 공실스튜디오에서 보낸 기사 초안 받기 (?studioDraft=<공실ID>) ──
      뉴스·SNS발행의 [기사쓰기 화면으로 보내기]. 앱(window.gongsilStudio)이 초안과 사진(data URL)을 넘겨주면
      평소 사진 올리기와 같은 길(WebP 압축 → blob 미리보기 → 저장할 때 업로드)로 넣고, 본문에 자리대로 끼운다.
      본문·사진 모양은 크롬 확장 content-admin.js buildBodyHtml 과 같다. [기사 등록]은 회원이 누른다. */

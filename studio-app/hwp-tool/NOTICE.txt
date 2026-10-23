@@ -1,0 +1,12 @@
+공실스튜디오 — 한글(.hwp) 변환기 (gongsil-hwp.jar)
+
+이 변환기에는 아래 공개 라이브러리가 들어 있습니다. 모두 Apache License 2.0 입니다.
+  - hwplib   (kr.dogfoot:hwplib)   https://github.com/neolord0/hwplib
+  - hwpxlib  (kr.dogfoot:hwpxlib)  https://github.com/neolord0/hwpxlib
+  - hwp2hwpx                       https://github.com/neolord0/hwp2hwpx
+  Copyright neolord0. Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+"본 제품은 한글과컴퓨터의 HWP 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다."
+
+실행에 쓰는 Java 는 Eclipse Temurin (Eclipse Adoptium) — GPLv2 + Classpath Exception.
+앱이 필요할 때 사용자 데이터 폴더에만 내려받으며, PC 에 설치하지 않습니다.

@@ -160,6 +160,11 @@ function woffToSfnt(buf, family) {
 const pending = new Map();
 /** 글꼴 파일들 (없으면 받는다) — [파일 경로] */
 async function files(family) {
+  // 내 PC 글꼴 (공실뉴스 글꼴이 아닌 것) — 윈도우에 설치된 파일 그대로
+  if (family && !find(family)) {
+    const pc = require("../fonts-pc").filesOf(family);
+    if (pc.length) return pc;
+  }
   const f = find(family) || find(DEFAULT_FAMILY);
   if (f.system) return f.system.map((x) => path.join(process.env.WINDIR || "C:\\Windows", "Fonts", x)).filter((p) => fs.existsSync(p));
   const dest = path.join(dir(), f.file);
@@ -185,6 +190,7 @@ async function files(family) {
 /** 미리보기용 — { family, url } (맑은 고딕은 PC 글꼴이라 url 없음) */
 async function ensure(family) {
   const f = find(family);
+  if (!f && require("../fonts-pc").filesOf(family).length) return { family, url: "" }; // 내 PC 글꼴 — 설치되어 있어 이름만으로 그려진다
   if (!f) throw new Error("모르는 글꼴입니다.");
   if (f.system) return { family: f.family, url: "" };
   const [file] = await files(f.family);

@@ -59,7 +59,7 @@ export function AiImagesTab({ project, selected, ensureAsset, apply }: {
   const [sampleOn, setSampleOn] = useState(false);
   const [samples, setSamples] = useState<Record<string, string>>({});
   const makeSamples = async () => {
-    if (!b.lib.saveImage) return setErr("공실뉴스 스튜디오를 껐다 켜 주세요");
+    if (!b.lib.saveImage) return setErr("공실스튜디오를 껐다 켜 주세요");
     setErr("");
     stop.current = false;
     const dir = `${project.dir}\\스타일견본`;
@@ -97,7 +97,7 @@ export function AiImagesTab({ project, selected, ensureAsset, apply }: {
 
   /** 글 AI — 장면 설명 (rs: 이 줄들만) */
   const writePrompts = async (rs: Row[], modify?: { current: string; request: string }) => {
-    if (!b.ai.imagePrompts) throw new Error("공실뉴스 스튜디오를 껐다 켜 주세요 (클립별 AI 그림 기능을 새로 연결해요)");
+    if (!b.ai.imagePrompts) throw new Error("공실스튜디오를 껐다 켜 주세요 (클립별 AI 그림 기능을 새로 연결해요)");
     const out = await b.ai.imagePrompts(rs.map((r) => r.text), { kinds: rs.map((r) => r.kind), style: sty.label, character: sty.character, modify });
     rs.forEach((r, i) => out[i] && setRow(r.id, { prompt: out[i] }));
     return rs.map((r, i) => ({ ...r, prompt: out[i] || r.prompt }));

@@ -16,7 +16,7 @@ const log = require("electron-log/main");
 // 개발판(npm start)은 설치판이 로그인해 둔 전용 크롬을 같이 쓴다 (AI에 다시 로그인하지 않게)
 const profileDir = () => {
   if (process.env.STUDIO_CHROME_DIR) return process.env.STUDIO_CHROME_DIR;
-  const installed = path.join(app.getPath("appData"), "공실뉴스 스튜디오", "studio-chrome");
+  const installed = path.join(app.getPath("appData"), "공실뉴스 스튜디오", "studio-chrome"); // 저장 공간 폴더 이름은 예전 그대로 (main.js userData)
   if (!app.isPackaged && fs.existsSync(installed)) return installed;
   return path.join(app.getPath("userData"), "studio-chrome");
 };
@@ -47,12 +47,12 @@ function findBrowser() {
   return null;
 }
 
-/** 처음 만들 때 프로필 이름을 "공실뉴스 스튜디오"로 해 둔다 (창 위쪽 프로필 표시) */
+/** 처음 만들 때 프로필 이름을 "공실스튜디오"로 해 둔다 (창 위쪽 프로필 표시) */
 function seedProfile() {
   const pref = path.join(profileDir(), "Default", "Preferences");
   if (!fs.existsSync(pref)) {
     fs.mkdirSync(path.dirname(pref), { recursive: true });
-    fs.writeFileSync(pref, JSON.stringify({ profile: { name: "공실뉴스 스튜디오" }, browser: { has_seen_welcome_page: true } }));
+    fs.writeFileSync(pref, JSON.stringify({ profile: { name: "공실스튜디오" }, browser: { has_seen_welcome_page: true } }));
   }
   // 창을 닫으면 크롬이 완전히 끝나게 한다 (뒤에서 계속 실행하면 다음 작업이 그 크롬에 막힌다)
   const localState = path.join(profileDir(), "Local State");
@@ -292,7 +292,7 @@ async function openPage(host, url) {
    보낸 뒤: 창 위에 "작업 중 — 닫지 마세요" 띠 + 창을 작업 표시줄로 내린다 (가려진 창도 절전하지 않게 켜 둠 — spawnChrome)
    닫혔으면: 기억한 대화 주소로 다시 열어 이어서 기다린다 · 끝나면 띠를 지운다 */
 const BANNER = `(() => { if (document.getElementById("gw-busy-banner")) return; const d = document.createElement("div"); d.id = "gw-busy-banner";
-  d.textContent = "공실뉴스 스튜디오가 이 창으로 작업 중이에요 — 끝날 때까지 닫지 마세요 (닫아도 다시 열어 이어서 받아요)";
+  d.textContent = "공실스튜디오가 이 창으로 작업 중이에요 — 끝날 때까지 닫지 마세요 (닫아도 다시 열어 이어서 받아요)";
   Object.assign(d.style, { position: "fixed", top: "0", left: "0", right: "0", zIndex: "2147483647", background: "#1a3a6b", color: "#fff", font: "600 13px sans-serif", padding: "6px 12px", textAlign: "center", pointerEvents: "none" });
   (document.body || document.documentElement).appendChild(d); })()`;
 async function backstage(page) {

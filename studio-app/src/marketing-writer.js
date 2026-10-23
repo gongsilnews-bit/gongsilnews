@@ -7,22 +7,37 @@ const { session } = require("electron");
 const log = require("electron-log/main");
 const ext = require("./ext");
 const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
+const reportLocal = require("./report-local");
 
 const lib = () => ext.run(["marketing/marketing-prompt.js"]);
 const KINDS = new Set(["flyer", "report"]);
 
-async function fill({ baseUrl, kind, vacancyId, fields }, onProgress = () => {}) {
+async function fill({ baseUrl, kind, vacancyId, fields, facts }, onProgress = () => {}) {
   if (!KINDS.has(kind)) throw new Error("알 수 없는 도구입니다.");
   if (!vacancyId || typeof vacancyId !== "string") throw new Error("공실을 먼저 골라 주세요.");
   if (!fields || typeof fields !== "object" || !Object.keys(fields).length) throw new Error("채울 칸이 없습니다.");
   const L = lib();
 
-  onProgress("공실 정보를 읽는 중…");
-  const res = await session.defaultSession.fetch(`${baseUrl}/api/vacancy/detail?id=${encodeURIComponent(vacancyId)}`);
-  const json = await res.json().catch(() => ({}));
-  if (!json || !json.success || !json.data) throw new Error((json && json.error) || "공실 정보를 받지 못했습니다.");
+  let vacancy;
+  if (reportLocal.isLocalReport(vacancyId)) {
+    // 공실 없이 만든 매물보고서 (2026-10-23) — 붙여넣은 글을 정리한 정보 + 지금 화면 칸. 멤버십 전용
+    await reportLocal.assertPaid(baseUrl);
+    // facts = 회원이 보고서 화면에서 고친 가격·면적·층 같은 값 (직접 입력한 보고서는 이것뿐)
+    const extra = {};
+    for (const [k, val] of Object.entries(facts && typeof facts === "object" ? facts : {})) {
+      const t = String(val == null ? "" : val).trim();
+      if (t && t !== "-" && typeof val !== "object") extra[String(k).slice(0, 30)] = t.slice(0, 600);
+    }
+    vacancy = { ...(reportLocal.get(vacancyId).vacancy || {}), metadata: extra };
+  } else {
+    onProgress("공실 정보를 읽는 중…");
+    const res = await session.defaultSession.fetch(`${baseUrl}/api/vacancy/detail?id=${encodeURIComponent(vacancyId)}`);
+    const json = await res.json().catch(() => ({}));
+    if (!json || !json.success || !json.data) throw new Error((json && json.error) || "공실 정보를 받지 못했습니다.");
+    vacancy = json.data;
+  }
 
-  const prompt = L.gwBuildMarketingPrompt(kind, json.data, fields);
+  const prompt = L.gwBuildMarketingPrompt(kind, vacancy, fields);
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => L.gwParseMarketing(t, fields).ok });
   onProgress("받은 글을 칸에 맞추는 중…");
   const parsed = L.gwParseMarketing(text, fields);

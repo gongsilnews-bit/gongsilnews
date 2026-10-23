@@ -775,7 +775,7 @@ export function placeholderBg(w: number, h: number, text = "사진 자리") {
   g.fillText(text, w / 2, h * 0.3);
   return c;
 }
-/** 샘플 배경 사진 — 템플릿 미리보기 · [그대로 열기] 에 쓰는 보기용 사진 (회원이 [사진 바꾸기] 로 자기 사진을 넣으면 그것으로). 한 번 읽어 둔다 */
+/** 샘플 배경 사진 — 템플릿 미리보기 · [템플릿 열기] 에 쓰는 보기용 사진 (회원이 [사진 바꾸기] 로 자기 사진을 넣으면 그것으로). 한 번 읽어 둔다 */
 export const SAMPLE_BG_URL = "/studio-samples/living.webp";
 const sampleBgs: Record<string, Promise<HTMLCanvasElement | null> | null> = {};
 /** which: "living" = 거실 (기본) · "building" = 한강 건물 (썸네일 예시, 2026-10-22 사장님) */
@@ -796,7 +796,7 @@ export function loadSampleBg(which: "living" | "building" = "living"): Promise<H
   }
   return sampleBgP;
 }
-/** 칸 이름 그대로의 내용 — 샘플을 [그대로 열기] 할 때 (고칠 자리 표시, 지어낸 값 아님) */
+/** 칸 이름 그대로의 내용 — 샘플을 [템플릿 열기] 할 때 (고칠 자리 표시, 지어낸 값 아님) */
 export const placeholderContent = (agency?: { name?: string; ceo?: string; phone?: string; address?: string; regNum?: string }): Content => ({
   title: "제목을 입력하세요", sub: "부제를 입력하세요", badge: "딱지", price: "가격", area: "면적", address: "주소",
   agency: agency?.name ? [agency.name, agency.phone].filter(Boolean).join(" · ") : "중개사무소", label: "공실뉴스", source: "출처",
