@@ -143,7 +143,21 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgRef = useRef<HTMLVideoElement>(null);
   const otherRef = useRef<HTMLVideoElement>(null); // 화면전환 상대 클립의 멈춘 장면
-  const voiceRef = useRef<HTMLAudioElement>(null);
+  const voiceRef = useRef<HTMLAudioElement>(null); // 원본 소리(화면만 바꾼 촬영 클립·소리 파일 클립) 전용
+  // AI 목소리 — 주소마다 소리 요소를 따로 두고 지금·다음 클립 것을 미리 읽어 둔다 (경계에서 바로 나오게, 2026-10-23)
+  const voicePool = useRef(new Map<string, HTMLAudioElement>());
+  const voiceEl = (url: string) => {
+    const pool = voicePool.current;
+    let a = pool.get(url);
+    if (a) { pool.delete(url); pool.set(url, a); return a; } // 최근에 쓴 것을 뒤로
+    a = new Audio();
+    a.preload = "auto";
+    a.src = url;
+    pool.set(url, a);
+    while (pool.size > 10) { const [k, old] = pool.entries().next().value as [string, HTMLAudioElement]; old.pause(); old.removeAttribute("src"); old.load(); pool.delete(k); }
+    return a;
+  };
+  const pauseVoices = (keep?: HTMLAudioElement) => { for (const a of voicePool.current.values()) if (a !== keep && !a.paused) a.pause(); };
   // 클립 경계 검은 화면 막기 (2026-10-18) — 화면 파일이 바뀌는 순간 앞 장면을 그림으로 떠서 덮어 두고, 새 화면이 뜨면 걷는다
   const imgRef = useRef<HTMLImageElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
@@ -251,9 +265,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       }
     }
     // 화면만 바꾼 촬영 클립: 원본 소리를 따로
-    const a = voiceRef.current;
-    if (a) {
-      if (c.type === "voice" && c.voice?.url && !c.muted && !project.settings.off?.voice) {
+    if (c.type === "voice" && c.voice?.url && !c.muted && !project.settings.off?.voice) {
+      voiceRef.current?.pause();
+      const a = voiceEl(c.voice.url);
+      pauseVoices(a);
+      {
         const sp = speedOf(c, project.settings);
         const target = loc * sp;
         a.playbackRate = rateOk(sp * previewRate);
@@ -266,7 +282,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         if (playRef.current && target < (c.voice.duration || 0)) {
           if (a.paused) a.play().catch(() => {});
         } else a.pause();
-      } else if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted && !project.settings.off?.source) {
+      }
+      // 다음 두 클립 목소리를 미리 읽어 둔다
+      const i = flat.items.indexOf(it);
+      for (const nx of [flat.items[i + 1], flat.items[i + 2]]) if (nx?.clip.type === "voice" && nx.clip.voice?.url) voiceEl(nx.clip.voice.url);
+      return;
+    }
+    pauseVoices();
+    const a = voiceRef.current;
+    if (a) {
+      if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted && !project.settings.off?.source) {
         a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
         a.playbackRate = rateOk(previewRate * srcSpeed(c));
         const target = sourceTimeAt(c, loc);
@@ -286,7 +311,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const a = voiceRef.current;
     if (!a || !clip) return;
     // 원본 소리를 따로 — 화면만 바꾼 촬영 클립, 화면이 없는 소리 파일 클립(오디오로 편집하기)
-    const want = clip.type === "voice" ? clip.voice?.url || "" : clip.src && (!visual || visual.id !== clip.src.asset) ? project.assets[clip.src.asset]?.url || "" : "";
+    const want = clip.type === "voice" ? "" : clip.src && (!visual || visual.id !== clip.src.asset) ? project.assets[clip.src.asset]?.url || "" : "";
     if (a.getAttribute("src") !== want) {
       if (want) a.setAttribute("src", want);
       else a.removeAttribute("src");
@@ -416,6 +441,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     videoRef.current?.pause();
     bgRef.current?.pause();
     voiceRef.current?.pause();
+    pauseVoices();
     Object.values(musicEls.current).forEach((a) => a?.pause());
   };
   const seek = (time: number) => {
@@ -893,11 +919,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const nx = i >= 0 ? flat.items[i + 1] : undefined;
         if (!nx) return null;
         const nv = visualOf(nx.clip);
-        const voiceUrl = nx.clip.type === "voice" ? nx.clip.voice?.url : "";
         return (
           <div style={{ display: "none" }} aria-hidden>
             {nv && nv.id !== visual?.id && (nv.kind === "video" ? <video src={nv.url} preload="auto" muted /> : <img src={nv.url} alt="" />)}
-            {voiceUrl && <audio src={voiceUrl} preload="auto" />}
           </div>
         );
       })()}

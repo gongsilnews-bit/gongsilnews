@@ -4,7 +4,10 @@
 // 60세 어르신도 쉽게: 글자 크게, 단추는 아이콘 + 한글 이름
 import React from "react";
 
-export const C = {
+/* 화면 색 — 어두운(기본)·밝은 두 벌 (2026-10-23 사장님: 이미지제작·동영상제작에 밝은 화면도).
+   C 는 CSS 변수(--st-…)라서 이미지제작·동영상제작이 열려 있는 동안 useStudioTheme 이 고른 벌을 :root 에 넣는다.
+   변수가 없으면(다른 화면) 어두운 색 그대로. 캔버스에 그릴 색에는 쓰지 않는다 (var() 는 캔버스에서 안 됨) */
+const DARK = {
   bg: "#18191c",
   panel: "#202125",
   panel2: "#26272c",
@@ -19,7 +22,131 @@ export const C = {
   accentDim: "rgba(59,130,246,0.16)",
   danger: "#f06a6a",
   ok: "#4ade80",
+  // 이미지 편집판(포토샵식) 막대·메뉴·눈금자 — 2026-10-23 밝은 화면
+  psBar: "#2b2b2b",
+  psBarLine: "#1f1f1f",
+  psMenu: "#323232",
+  psMenuText: "#e6e6e6",
+  psMenuSep: "#454545",
+  psHover: "#3a3a3a",
+  psOpen: "#3e3e3e",
+  psSel: "#3d3d3d",
+  psToolOn: "#505050",
+  psIcon: "#cfcfcf",
+  psStage: "#121316",
+  psCtrl: "#2a2c31",
+  psCtrlLine: "#4a4d55",
+  psCtrlText: "#f1f1f1",
+  psCtrlIn: "#141518",
+  psCtrlHover: "#3a3d45",
+  psCtrlSel: "#3b4252",
+  psCtrlSep: "#3d4048",
+  psEdge: "#4a4a4a",
+  psEdgeOn: "#5a5a5a",
+  psRulerTick: "#8a8a8a",
+  psRulerText: "#bdbdbd",
+  psMute: "#999",
+  psMute2: "#aaa",
+  psOff: "#777",
+  psDdd: "#ddd",
+  psHi: "#1473e6",
 };
+const LIGHT: typeof DARK = {
+  bg: "#eef0f3",
+  panel: "#ffffff",
+  panel2: "#f6f7f9",
+  card: "#f1f3f6",
+  cardHover: "#e7eaee",
+  line: "#e1e4e9",
+  line2: "#cfd4db",
+  text: "#14171c",
+  sub: "#4b5260",
+  dim: "#8b919c",
+  accent: "#2563eb",
+  accentDim: "rgba(37,99,235,0.12)",
+  danger: "#dc2626",
+  ok: "#16a34a",
+  psBar: "#f3f4f6",
+  psBarLine: "#d9dde3",
+  psMenu: "#ffffff",
+  psMenuText: "#1f2937",
+  psMenuSep: "#e5e7eb",
+  psHover: "#e6e9ee",
+  psOpen: "#e2e6ec",
+  psSel: "#dbe4f3",
+  psToolOn: "#d3d9e2",
+  psIcon: "#374151",
+  psStage: "#d5d8dd",
+  psCtrl: "#ffffff",
+  psCtrlLine: "#cfd4db",
+  psCtrlText: "#14171c",
+  psCtrlIn: "#ffffff",
+  psCtrlHover: "#e6e9ee",
+  psCtrlSel: "#dbe4f3",
+  psCtrlSep: "#e5e7eb",
+  psEdge: "#cfd4db",
+  psEdgeOn: "#9aa3b0",
+  psRulerTick: "#9aa3b0",
+  psRulerText: "#4b5260",
+  psMute: "#6b7280",
+  psMute2: "#6b7280",
+  psOff: "#a3a9b3",
+  psDdd: "#1f2937",
+  psHi: "#d6e4fb",
+};
+export const C = Object.fromEntries(Object.entries(DARK).map(([k, v]) => [k, `var(--st-${k}, ${v})`])) as typeof DARK;
+
+export type StudioTheme = "dark" | "light";
+const THEME_KEY = "gs-studio-theme";
+const THEME_EVENT = "gs-studio-theme-change";
+const readTheme = (): StudioTheme => {
+  try { return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark"; } catch { return "dark"; }
+};
+/** 이미지제작·동영상제작 맨 바깥에서 한 번 — 고른 색 벌을 화면 전체(:root)에 넣고, 떠나면 뺀다 (창·떠 있는 창까지 같은 색) */
+export function useStudioTheme(apply = true): [StudioTheme, (t: StudioTheme) => void] {
+  const [theme, setThemeS] = React.useState<StudioTheme>("dark");
+  React.useEffect(() => {
+    const load = () => setThemeS(readTheme());
+    load();
+    window.addEventListener(THEME_EVENT, load);
+    return () => window.removeEventListener(THEME_EVENT, load);
+  }, []);
+  React.useEffect(() => {
+    if (!apply) return; // 다른 화면 안에 잠깐 열린 편집기(영상 › 썸네일 고치기)는 바깥 화면이 넣은 색을 그대로 쓴다
+    const root = document.documentElement;
+    const P = theme === "light" ? LIGHT : DARK;
+    for (const [k, v] of Object.entries(P)) root.style.setProperty(`--st-${k}`, v);
+    root.style.setProperty("color-scheme", theme);
+    return () => {
+      for (const k of Object.keys(P)) root.style.removeProperty(`--st-${k}`);
+      root.style.removeProperty("color-scheme");
+    };
+  }, [theme, apply]);
+  const setTheme = (t: StudioTheme) => {
+    try { localStorage.setItem(THEME_KEY, t); } catch {}
+    window.dispatchEvent(new Event(THEME_EVENT));
+  };
+  return [theme, setTheme];
+}
+/** ☀ 밝은 화면 / 🌙 어두운 화면 — 왼쪽 칸 아래쪽에 */
+/** light = 늘 흰 바탕인 칸(이미지제작 왼쪽)에 놓을 때 */
+export function ThemeToggle({ light = false }: { light?: boolean } = {}) {
+  const [theme, setTheme] = React.useState<StudioTheme>("dark");
+  React.useEffect(() => {
+    const load = () => setTheme(readTheme());
+    load();
+    window.addEventListener(THEME_EVENT, load);
+    return () => window.removeEventListener(THEME_EVENT, load);
+  }, []);
+  const next: StudioTheme = theme === "light" ? "dark" : "light";
+  return (
+    <button type="button" onClick={() => { try { localStorage.setItem(THEME_KEY, next); } catch {} window.dispatchEvent(new Event(THEME_EVENT)); }}
+      title={next === "light" ? "밝은 화면으로" : "어두운 화면으로"}
+      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 34, borderRadius: 8, border: `1px solid ${light ? "#d1d5db" : C.line2}`, background: "transparent", color: light ? "#475569" : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+      {next === "light" ? "☀ 밝은 화면" : "🌙 어두운 화면"}
+    </button>
+  );
+}
 
 export const FONT = "'Pretendard', 'Malgun Gothic', system-ui, sans-serif";
 
@@ -192,6 +319,9 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
   );
 }
 
+/** 이 안의 Modal 은 뜨는 창 대신 그 자리를 채우는 페이지로 (동영상제작 만들기 화면, 2026-10-23). 페이지 안에서 다시 여는 창은 평소처럼 뜬다 */
+export const ModalPage = React.createContext(false);
+
 /** 가운데 뜨는 창 (뒤는 어둡게) */
 /**
  * 공용 창. controls 면 오른쪽 위에 윈도우처럼 [— 작게][□ 크게][✕ 닫기].
@@ -240,6 +370,42 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
     setPos({ x: 0, y: 0 });
   };
   const isBig = win ? win.big : big;
+  const page = React.useContext(ModalPage);
+  if (page && !win) {
+    return (
+      <div data-gsv-modal="" style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", background: C.panel, color: C.text, fontFamily: FONT }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: `1px solid ${C.line}`, minHeight: 56 }}>
+          <div style={{ width: 150, flexShrink: 0 }}>
+            {onClose && (
+              <button type="button" onClick={onClose} title="내 프로젝트로" style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px 0 8px", border: `1px solid ${C.line2}`, borderRadius: 6, background: "transparent", color: C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+                <span style={{ fontSize: 16 }}>‹</span>내 프로젝트
+              </button>
+            )}
+          </div>
+          {steps ? (
+            <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
+              {steps.map((s, i) => (
+                <React.Fragment key={s}>
+                  {i > 0 && <span style={{ width: 40, borderTop: `1px dashed ${C.line2}` }} />}
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: i === step ? C.text : C.dim }}>
+                    <span style={{ width: 22, height: 22, borderRadius: 4, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: i === step ? C.text : C.line2, color: i === step ? C.bg : C.sub }}>{i + 1}</span>
+                    {s}
+                  </span>
+                </React.Fragment>
+              ))}
+            </div>
+          ) : (
+            <div style={{ flex: 1, textAlign: "center", fontSize: 18, fontWeight: 800 }}>{title}</div>
+          )}
+          <div style={{ width: 150, flexShrink: 0 }} />
+        </div>
+        <ModalPage.Provider value={false}>
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>{children}</div>
+          {footer && <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "14px 20px", borderTop: `1px solid ${C.line}` }}>{footer}</div>}
+        </ModalPage.Provider>
+      </div>
+    );
+  }
   return (
     // 창(묻는 창 등)은 늘 맨 앞 — 단어 단추 막대(3000)·메뉴보다 위
     <div style={{ position: "fixed", inset: 0, zIndex: 5000, background: win ? C.bg : mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>

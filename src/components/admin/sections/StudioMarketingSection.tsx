@@ -59,7 +59,7 @@ async function shrinkPhoto(file: File): Promise<string> {
   bmp.close();
   return cv.toDataURL("image/webp", 0.82);
 }
-type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
 export default function StudioMarketingSection({ theme }: { theme: Theme }) {
   // .gsm(공실마케팅 작업 파일)에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsm=<id>&cat=<report|interior_sim|remodel_sim> 로 연다.
@@ -174,7 +174,7 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
         {ai && (
           <button onClick={() => aiBridge()?.openAiConnect()} title="내 AI 연결"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
-              background: connectedAi.length ? "#ecfdf5" : theme.cardBg, border: `1px solid ${connectedAi.length ? "#6ee7b7" : theme.border}`, color: connectedAi.length ? "#047857" : theme.textPrimary }}>
+              background: connectedAi.length ? (theme.darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5") : theme.cardBg, border: `1px solid ${connectedAi.length ? (theme.darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7") : theme.border}`, color: connectedAi.length ? (theme.darkMode ? "#6ee7b7" : "#047857") : theme.textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
             {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
           </button>
@@ -185,8 +185,8 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
             return (
               <button key={c.id} onClick={() => setCategory(c.id)}
                 style={{ textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
-                  fontWeight: on ? 700 : 500, color: on ? "#1a3a6b" : theme.textSecondary, background: on ? "rgba(26,58,107,0.08)" : "transparent",
-                  boxShadow: on ? "inset 3px 0 0 #1a3a6b" : "none" }}>
+                  fontWeight: on ? 700 : 500, color: on ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary, background: on ? (theme.darkMode ? "rgba(255,255,255,0.10)" : "rgba(26,58,107,0.08)") : "transparent",
+                  boxShadow: on ? `inset 3px 0 0 ${(theme.darkMode ? "#ffffff" : "#1a3a6b")}` : "none" }}>
                 {c.label}
               </button>
             );

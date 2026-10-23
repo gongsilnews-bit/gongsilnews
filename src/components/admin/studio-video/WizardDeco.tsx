@@ -184,7 +184,14 @@ export function twoTitleCanvas(color: string, l1: string, l2: string, scale = 1,
   }
   return c;
 }
-export type Deco = { sub: string; title: string; titleText: string; /** 2단 제목 (아래 줄) */ title2?: string; channel: string; channelText: string; /** 채널 로고 — 오른쪽 위 채널명 옆 (JPG·PNG, 작게 줄인 data URL) */ logo?: string; /** 제목 로고 — 왼쪽 위 "로고 + 한 줄" 제목 앞 (채널 로고와 따로) */ titleLogo?: string; /** 화면전환 — 여러 개 고르면 클립마다 차례로 (빈 목록 = 없음) */ trans: TransType[]; thumb: string; end: string; /** 화면 전체 PNG (1920×1080, 투명 배경) — 있으면 이것만 쓴다: 제목 칸 · 채널명 칸 (2026-10-22 사장님) */ titleOv?: string; chOv?: string; /** 화면전환 소리 — auto = 전환마다 어울리는 소리 · none = 없음 · 그 밖 = 효과음 이름 (2026-10-22 사장님) */ transSfx?: string };
+export type Deco = { sub: string; title: string; titleText: string; /** 2단 제목 (아래 줄) */ title2?: string; channel: string; channelText: string; /** 채널 로고 — 오른쪽 위 채널명 옆 (JPG·PNG, 작게 줄인 data URL) */ logo?: string; /** 제목 로고 — 왼쪽 위 "로고 + 한 줄" 제목 앞 (채널 로고와 따로) */ titleLogo?: string; /** 화면전환 — 여러 개 고르면 클립마다 차례로 (빈 목록 = 없음) */ trans: TransType[]; thumb: string; end: string; /** 화면 전체 PNG (1920×1080, 투명 배경) — 있으면 이것만 쓴다: 제목 칸 · 채널명 칸 (2026-10-22 사장님) */ titleOv?: string; chOv?: string; /** 화면전환 소리 — auto = 전환마다 어울리는 소리 · none = 없음 · 그 밖 = 효과음 이름 (2026-10-22 사장님) */ transSfx?: string; /** 전환 넣는 곳 — auto 클립마다 · none 없음 · scene 씬 바뀌는 곳만 · scene_auto 씬은 고른 전환 + 씬 안은 짧은 디졸브 (2026-10-23) */ transMode?: TransMode };
+export type TransMode = "auto" | "none" | "scene" | "scene_auto";
+export const TRANS_MODES: { id: TransMode; label: string; desc: string }[] = [
+  { id: "auto", label: "자동", desc: "클립이 바뀔 때마다 고른 전환" },
+  { id: "none", label: "없음", desc: "전환 없이 바로" },
+  { id: "scene", label: "씬 전환만", desc: "씬이 바뀌는 곳에만 고른 전환" },
+  { id: "scene_auto", label: "씬 전환+자동", desc: "씬이 바뀌는 곳은 고른 전환, 씬 안은 짧은 디졸브" },
+];
 const KEY = "gsv-wizard-deco";
 /** 썸네일 두 줄 — 말줄임(…)을 빼고 낱말 가운데에서 나눈다 (한 줄이 12자 안팎이 되게) */
 export function thumbLines(text: string): [string, string] {
@@ -232,6 +239,7 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
   deco: Deco; setDeco: (d: Deco) => void; agency: Agency | null; onAiTitle: () => void; aiTitleBusy: boolean;
 }) {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("sub");
+  const [pop, setPop] = useState(false); // 항목 샘플 팝업
   const [tick, setTick] = useState(0);
   const [logoErr, setLogoErr] = useState("");
   const [transMsg, setTransMsg] = useState("");
@@ -451,6 +459,8 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
     if (id === "sub") return !subOn ? "자막 없음" : `${SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === deco.sub)?.label || newsSubOf(deco.sub)?.label || "기본"}`;
     if (id === "title") return deco.titleOv ? "PNG 이미지" : tStyle?.label || "없음";
     if (id === "channel") return deco.chOv ? "PNG 이미지" : cStyle ? (chText || deco.logo ? `${cStyle.label}${deco.logo ? " · 로고" : ""}` : "중개사무소 정보 없음") : "없음";
+    if (id === "trans" && deco.transMode === "none") return "없음";
+    if (id === "trans" && deco.transMode && deco.transMode !== "auto" && deco.trans.length) return `${TRANS_MODES.find((m) => m.id === deco.transMode)?.label} · ${deco.trans.length}개`;
     if (id === "trans") return !deco.trans.length ? "없음" : deco.trans.length === 1 ? TRANSITIONS.find((x) => x.id === deco.trans[0])?.label || "" : `${deco.trans.length}개 · 끝은 ${TRANSITIONS.find((x) => x.id === deco.trans[deco.trans.length - 1])?.label || ""} 반복`;
     if (id === "thumb") return LAYOUTS.find((x) => x.id === deco.thumb)?.name.replace(/^유튜브 — /, "") || "없음";
     return deco.end === "none" ? "없음" : deco.end;
@@ -462,24 +472,40 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
   return (
     <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 14 }}>
       {/* 위 — 예시 화면 · 1~6 항목은 스크롤해도 늘 보이게 (2026-10-22 사장님) */}
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", position: "sticky", top: -18, zIndex: 5, background: C.panel, padding: "18px 0 12px", margin: "-18px 0 0", boxShadow: `0 8px 12px -10px rgba(0,0,0,0.6)` }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center", padding: "6px 0 12px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{bgs.length ? "내 화면으로 미리보기" : "예시 화면"}</span>
           {preview}
         </div>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, paddingTop: 22 }}>
+        <div style={{ width: BW, maxWidth: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
           {TABS.map((t) => (
-            <button key={t.id} type="button" onClick={() => setTab(t.id)}
+            <button key={t.id} type="button" onClick={() => { setTab(t.id); setPop(true); }} title="눌러서 고르기"
               style={{ display: "flex", alignItems: "center", gap: 10, height: 36, padding: "0 10px", borderRadius: 7, border: `1px solid ${tab === t.id ? C.accent : C.line}`, background: tab === t.id ? "rgba(59,130,246,0.14)" : "transparent", color: C.text, cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
               <span style={{ width: 20, height: 20, borderRadius: 10, background: tab === t.id ? C.accent : C.line2, color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{t.n}</span>
               <span style={{ fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>{t.name}</span>
               <span style={{ flex: 1, minWidth: 0, textAlign: "right", fontSize: 12.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cur(t.id)}</span>
+              <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: C.accent }}>바꾸기 ›</span>
             </button>
           ))}
         </div>
       </div>
-      {/* 아래 — 고른 항목의 샘플 */}
-      <div>
+      {/* 고른 항목의 샘플 — 팝업 (2026-10-23 사장님: 아래로 쌓이면 복잡) */}
+      {pop && (
+      <div style={{ position: "fixed", inset: 0, zIndex: 6000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }} onMouseDown={(e) => { if (e.target === e.currentTarget) setPop(false); }}>
+      <div style={{ width: "min(1180px, 94vw)", maxHeight: "92vh", display: "flex", flexDirection: "column", background: C.panel, color: C.text, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px", borderBottom: `1px solid ${C.line}` }}>
+          <span style={{ width: 24, height: 24, borderRadius: 12, background: C.accent, color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{TABS.find((t) => t.id === tab)?.n}</span>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>{TABS.find((t) => t.id === tab)?.name}</span>
+          <span style={{ fontSize: 13, color: C.sub }}>지금: {cur(tab)}</span>
+          <span style={{ flex: 1 }} />
+          <button type="button" onClick={() => setPop(false)} style={{ height: 34, padding: "0 18px", borderRadius: 6, border: 0, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>완료</button>
+        </div>
+        <div style={{ display: "flex", gap: 18, padding: "16px 20px", minHeight: 0, flex: 1, overflow: "hidden" }}>
+          <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>미리보기</span>
+            {preview}
+          </div>
+      <div style={{ flex: 1, minWidth: 0, overflowY: "auto", paddingRight: 4 }}>
         {tab === "sub" && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 8 }}>뉴스 자막 바 <span style={{ fontWeight: 500, color: C.dim }}>· 문장마다 흰 띠 · 위에 NEWS (자막 위치 하단)</span></div>
@@ -528,6 +554,16 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
           </>
         )}
         {/* 화면전환 1~5 칸 — 칸을 누르고 아래에서 고르면 그 칸에, 빈 칸이 없으면 마지막 칸에 (2026-10-22 사장님) */}
+        {tab === "trans" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: C.sub, marginRight: 4 }}>넣는 곳</span>
+            {TRANS_MODES.map((m) => {
+              const on = (deco.transMode || "auto") === m.id;
+              return <button key={m.id} type="button" title={m.desc} onClick={() => set({ transMode: m.id })} style={{ height: 32, padding: "0 12px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? "rgba(59,130,246,0.14)" : "transparent", color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{m.label}</button>;
+            })}
+            <span style={{ fontSize: 12, color: C.dim }}>{TRANS_MODES.find((m) => m.id === (deco.transMode || "auto"))?.desc}</span>
+          </div>
+        )}
         {tab === "trans" && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
@@ -623,6 +659,10 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
           )
         )}
       </div>
+        </div>
+      </div>
+      </div>
+      )}
     </div>
   );
 }

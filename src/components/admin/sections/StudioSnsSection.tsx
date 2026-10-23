@@ -64,7 +64,7 @@ const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰" };
 
-type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
 export default function StudioSnsSection({ theme, memberId }: { theme: Theme; memberId: string }) {
   const [ai, setAi] = useState<AiItem[]>([]);
@@ -244,7 +244,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {/* 연결되면 초록, 아니면 회색 — 누르면 [내 AI 연결] 창 */}
           <button onClick={() => bridge()?.openAiConnect()} title="내 AI 연결"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
-              background: connectedAi.length ? "#ecfdf5" : theme.cardBg, border: `1px solid ${connectedAi.length ? "#6ee7b7" : theme.border}`, color: connectedAi.length ? "#047857" : theme.textPrimary }}>
+              background: connectedAi.length ? (theme.darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5") : theme.cardBg, border: `1px solid ${connectedAi.length ? (theme.darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7") : theme.border}`, color: connectedAi.length ? (theme.darkMode ? "#6ee7b7" : "#047857") : theme.textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
             {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
           </button>
@@ -254,8 +254,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             return (
               <button key={c.id} onClick={() => setCategory(c.id)}
                 style={{ display: "flex", alignItems: "center", gap: 6, textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
-                  fontWeight: on ? 700 : 500, color: on ? "#1a3a6b" : theme.textSecondary, background: on ? "rgba(26,58,107,0.08)" : "transparent",
-                  boxShadow: on ? "inset 3px 0 0 #1a3a6b" : "none" }}>
+                  fontWeight: on ? 700 : 500, color: on ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary, background: on ? (theme.darkMode ? "rgba(255,255,255,0.10)" : "rgba(26,58,107,0.08)") : "transparent",
+                  boxShadow: on ? `inset 3px 0 0 ${(theme.darkMode ? "#ffffff" : "#1a3a6b")}` : "none" }}>
                 <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}</span>
                 {/* 유료 회원 전용 표시 — 주황 = 공실뉴스부동산 색 (2026-10-23 사장님) */}
                 {(c.id === "interior" || c.id === "remodel") && (
@@ -396,7 +396,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다.</div>
             </>
           )}
-          {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
+          {progress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{progress}</div>}
           {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
 
           {result && (

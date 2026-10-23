@@ -3,7 +3,7 @@
 // 이미지 편집 — 가운데 그림판. 도구 고르기 없이: 누르면 고르기 · 끌면 옮기기 · 모서리 손잡이로 크기 · 두 번 누르면 글 고치기 · 휠로 확대
 // 빠르게: 옮기는 동안은 [아래 그림 · 이 레이어 · 위 그림] 셋만 붙여 그린다 (다른 레이어를 다시 합치지 않음)
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { C, FONT } from "@/components/admin/studio-video/ui";
+import { C, FONT, useStudioTheme } from "@/components/admin/studio-video/ui";
 import { proofCanvas } from "./cmyk";
 import { boundsOf, composite, copyCanvas, textGeom, renderText, hitAll, offsetLayer, forgetMask, grayOf, dabLine, drawList, findLayer, forgetImage, hitTest, textHit, isText, kids, layerImage, lookOf, mk, paintGradient, pickColor, type Box, type Doc, type PLayer, type PsdGuide } from "./model";
 import { alphaOf, bucketFill, clearInside, clipTo, extract, inpaint, keepInside, type PenPt, type SelMode, type SelShape } from "./selection";
@@ -309,6 +309,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
   }, [doc, tick, drag, W, H, editing, proof, view?.z]);
 
   /* 눈금자 · 격자 · 안내선 그리기 */
+  const [theme] = useStudioTheme(false); // 밝은/어두운 화면이 바뀌면 눈금자를 다시 그린다
   const rx = useRef<HTMLCanvasElement>(null), ry = useRef<HTMLCanvasElement>(null), ov = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!view || !size.w) return;
@@ -323,10 +324,11 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
       c.height = (horiz ? RW : len) * dpr;
       const g = c.getContext("2d")!;
       g.scale(dpr, dpr);
-      g.fillStyle = "#2b2b2b";
+      const cv = (k: string, d: string) => getComputedStyle(document.documentElement).getPropertyValue(`--st-${k}`).trim() || d;
+      g.fillStyle = cv("psBar", "#2b2b2b");
       g.fillRect(0, 0, horiz ? len : RW, horiz ? RW : len);
-      g.strokeStyle = "#8a8a8a";
-      g.fillStyle = "#bdbdbd";
+      g.strokeStyle = cv("psRulerTick", "#8a8a8a");
+      g.fillStyle = cv("psRulerText", "#bdbdbd");
       g.font = "10px 'Malgun Gothic', sans-serif";
       g.lineWidth = 1;
       const o = horiz ? view.x : view.y;
@@ -351,7 +353,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
         }
       }
       g.stroke();
-      g.strokeStyle = "#1f1f1f";
+      g.strokeStyle = cv("psBarLine", "#1f1f1f");
       g.beginPath();
       if (horiz) { g.moveTo(0, RW - 0.5); g.lineTo(len, RW - 0.5); } else { g.moveTo(RW - 0.5, 0); g.lineTo(RW - 0.5, len); }
       g.stroke();
@@ -393,7 +395,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
       if (gd) one(gd.dir, gd.pos);
       g.stroke();
     }
-  }, [view, size, rulers, grid, guidesOn, guideList, gd, W, H]);
+  }, [view, size, rulers, grid, guidesOn, guideList, gd, W, H, theme]);
 
   /* 선택 영역 윤곽 (개미 행렬) — 화면 픽셀마다 안·밖이 바뀌는 곳에 흑백 점선 */
   useEffect(() => {
@@ -1245,7 +1247,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
         const p = toDoc(e.clientX, e.clientY);
         onLayerMenu?.(e.clientX, e.clientY, hitAll(doc, p.x, p.y).map((l) => l._k!));
       }}
-      style={{ flex: 1, minWidth: 0, position: "relative", overflow: "hidden", background: "#121316", cursor: drag?.mode === "rot" || (hoverRot && !drag) ? ROT_CURSOR : drag?.mode === "pan" ? "grabbing" : space || tool === "hand" ? "grab" : tool === "zoom" ? "zoom-in" : tool === "text" ? "text"
+      style={{ flex: 1, minWidth: 0, position: "relative", overflow: "hidden", background: C.psStage, cursor: drag?.mode === "rot" || (hoverRot && !drag) ? ROT_CURSOR : drag?.mode === "pan" ? "grabbing" : space || tool === "hand" ? "grab" : tool === "zoom" ? "zoom-in" : tool === "text" ? "text"
         : tool === "bucket" ? BUCKET_CURSOR
         : PEN_TOOLS.includes(tool) ? penCursor(tool === "freePen" ? "free" : tool === "curvePen" ? "curve" : tool === "convAnchor" ? "conv" : "pen", penSfx)
         : tool === "brush" || tool === "eraser" || tool === "stamp" || tool === "heal" ? "crosshair" : tool !== "move" ? "crosshair" : hoverG === "horizontal" ? "row-resize" : hoverG === "vertical" ? "col-resize" : MOVE_CURSOR, touchAction: "none", userSelect: "none" }}>
@@ -1417,7 +1419,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
                 style={{ position: "absolute", left: 0, top: 0, width: size.w, height: RW, cursor: "row-resize", zIndex: 5 }} />
               <canvas ref={ry} onPointerDown={(e) => startGuide(-1, "vertical", e)} title="끌어오면 세로 안내선"
                 style={{ position: "absolute", left: 0, top: 0, width: RW, height: size.h, cursor: "col-resize", zIndex: 5 }} />
-              <div style={{ position: "absolute", left: 0, top: 0, width: RW, height: RW, background: "#2b2b2b", borderRight: "1px solid #1f1f1f", borderBottom: "1px solid #1f1f1f", zIndex: 6 }} />
+              <div style={{ position: "absolute", left: 0, top: 0, width: RW, height: RW, background: C.psBar, borderRight: `1px solid ${C.psBarLine}`, borderBottom: `1px solid ${C.psBarLine}`, zIndex: 6 }} />
             </>
           )}
         </>

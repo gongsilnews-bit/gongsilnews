@@ -8,7 +8,7 @@ import { errText, isRecover, videoBridge } from "./types";
 import Editor from "./Editor";
 import TextWizard from "./TextWizard";
 import { AudioFlow, Home, LongformFlow, NewDialog, RecordFlow, VideoFlow, loadPrompter, savePrompter } from "./Flows";
-import { Btn, C, FONT, Icon, Modal } from "./ui";
+import { Btn, C, FONT, Icon, Modal, ModalPage, useStudioTheme } from "./ui";
 import VideoMenu, { type VideoView } from "./VideoMenu";
 import { MyVoicePane } from "./MyVoice";
 import { AiVoiceStudio } from "./AiVoiceStudio";
@@ -17,13 +17,15 @@ import { AiVoiceStudio } from "./AiVoiceStudio";
 const MIN_APP = "0.1.4";
 
 export default function VideoStudio() {
+  useStudioTheme(); // 밝은/어두운 화면 (2026-10-23)
   const b = videoBridge();
   const [project, setProject] = useState<Project | null>(null);
   const [flow, setFlow] = useState<"" | "new" | Method>("");
   const [recorded, setRecorded] = useState<LibItem | null>(null);
   const [recScript, setRecScript] = useState(""); // 녹화할 때 프롬프터로 읽은 대본 → 자막
   const [err, setErr] = useState("");
-  const [view, setView] = useState<VideoView>("home"); // 왼쪽 메뉴 칸 (편집 화면 밖에서만)
+  const [view, setView] = useState<VideoView>("home");
+  const [menuPeek, setMenuPeek] = useState(false); // 대본 쓰고 편집 페이지에서 둘째 메뉴 펴기 (기본은 숨김, 2026-10-23 사장님) // 왼쪽 메뉴 칸 (편집 화면 밖에서만)
   // .gss 를 열었는데 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로 열기]
   const [recover, setRecover] = useState<Recover | null>(null);
   const take = (r: Project | Recover | null) => {
@@ -94,6 +96,10 @@ export default function VideoStudio() {
       setErr(errText(e));
     }
   };
+  // 만들기 화면이 열려 있는데 다른 메뉴를 누르면 — 물어보고 닫는다
+  // 페이지로 여는 것은 [대본 쓰고 편집]만 — 촬영한 영상·녹음한 음성·녹화는 지금처럼 뜨는 창 (2026-10-23 사장님)
+  const pageFlow = flow === "text";
+  const leaveFlow = () => (!pageFlow || window.confirm("만들던 내용이 있어요. 나갈까요?\n(나가면 지금 쓴 대본·고른 것은 사라져요)") ? (setFlow(""), setRecorded(null), true) : false);
   const done = async (p: Project) => {
     setFlow("");
     setRecorded(null);
@@ -102,14 +108,39 @@ export default function VideoStudio() {
     b.project.open(p.dir).then((r) => take(r as Project)).catch(() => setProject(p));
   };
 
+  // 만들기 화면 (편집 화면이 열려 있지 않으면 오른쪽 영역에 페이지로, 편집 중에 [새로 만들기]로 열면 뜨는 창으로)
+  const flowEl = flow === "text" ? (
+    <TextWizard onCancel={() => setFlow("")} onDone={done} onRecord={(script) => {
+      // 대본을 프롬프터에 넣고 녹화로 — 녹화가 끝나면 이 대본이 자막 글이 된다
+      savePrompter({ ...loadPrompter(), on: true, text: script });
+      setFlow("record");
+    }} />
+  ) : flow === "video" ? <VideoFlow onCancel={() => setFlow("")} onDone={done} />
+    : flow === "longform" ? <LongformFlow onCancel={() => setFlow("")} onDone={done} />
+    : flow === "audio" ? <AudioFlow onCancel={() => setFlow("")} onDone={done} />
+    : flow === "record" && recorded ? <VideoFlow method="record" preset={[recorded]} script={recScript} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />
+    : null;
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg }}>
       {project ? (
         <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={() => setFlow("new")} onOpen={openPick} onSwitch={setProject} />
       ) : (
         <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-          <VideoMenu view={view} onView={setView} onMethod={(m) => setFlow(m)} />
-          {view === "aivoice" ? (
+          {pageFlow && !menuPeek ? (
+            <button type="button" onClick={() => setMenuPeek(true)} title="메뉴 펴기"
+              style={{ width: 18, flexShrink: 0, border: 0, borderRight: `1px solid ${C.line}`, background: C.panel, color: C.sub, cursor: "pointer", fontSize: 14, fontWeight: 800, padding: 0 }}>›</button>
+          ) : (
+            <div style={{ display: "flex", flexShrink: 0, position: "relative" }}>
+              <VideoMenu view={view} onView={(v) => { if (leaveFlow()) { setView(v); setMenuPeek(false); } }} onMethod={(m) => { if (m === flow) return; if (leaveFlow()) { setFlow(m); setMenuPeek(false); } }} />
+              {pageFlow && <button type="button" onClick={() => setMenuPeek(false)} title="메뉴 숨기기" style={{ position: "absolute", right: 6, top: 18, width: 26, height: 26, border: `1px solid ${C.line2}`, borderRadius: 6, background: C.panel, color: C.sub, cursor: "pointer", fontSize: 14, fontWeight: 800 }}>‹</button>}
+            </div>
+          )}
+          {pageFlow ? (
+            <ModalPage.Provider value={true}>
+              <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex" }}>{flowEl}</div>
+            </ModalPage.Provider>
+          ) : view === "aivoice" ? (
             <AiVoiceStudio />
           ) : view === "myvoice" ? (
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", color: C.text, fontFamily: FONT }}>
@@ -133,16 +164,8 @@ export default function VideoStudio() {
       )}
       {err && <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", padding: "10px 16px", background: C.card, border: `1px solid ${C.danger}`, color: C.text, borderRadius: 6, fontFamily: FONT, fontSize: 14.5, zIndex: 2000 }} onClick={() => setErr("")}>{err}</div>}
       {flow === "new" && <NewDialog onPick={(m) => setFlow(m)} onClose={() => setFlow("")} />}
-      {flow === "text" && <TextWizard onCancel={() => setFlow("")} onDone={done} onRecord={(script) => {
-        // 대본을 프롬프터에 넣고 녹화로 — 녹화가 끝나면 이 대본이 자막 글이 된다
-        savePrompter({ ...loadPrompter(), on: true, text: script });
-        setFlow("record");
-      }} />}
-      {flow === "video" && <VideoFlow onCancel={() => setFlow("")} onDone={done} />}
-      {flow === "longform" && <LongformFlow onCancel={() => setFlow("")} onDone={done} />}
-      {flow === "audio" && <AudioFlow onCancel={() => setFlow("")} onDone={done} />}
+      {flowEl && (project || !pageFlow) && <ModalPage.Provider value={false}>{flowEl}</ModalPage.Provider>}
       {flow === "record" && !recorded && <RecordFlow onCancel={() => setFlow("")} onRecorded={(item, script) => { setRecScript(script || ""); setRecorded(item); }} />}
-      {flow === "record" && recorded && <VideoFlow method="record" preset={[recorded]} script={recScript} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />}
     </div>
   );
 }

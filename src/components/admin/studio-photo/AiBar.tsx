@@ -61,7 +61,7 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
   const run = () => { if (!act || busy) return; onRun(act, text.trim()); };
   const pill = (icon: string, label: string, go: () => void, primary = false, off = false) => (
     <button type="button" onClick={go} disabled={off}
-      style={{ display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 11px", borderRadius: 6, border: `1px solid ${primary ? "transparent" : "#4a4d55"}`, background: primary ? C.accent : "#2a2c31", color: off ? C.dim : "#f1f1f1", fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: off ? "default" : "pointer", whiteSpace: "nowrap" }}>
+      style={{ display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 11px", borderRadius: 6, border: `1px solid ${primary ? "transparent" : C.psCtrlLine}`, background: primary ? C.accent : C.psCtrl, color: off ? C.dim : C.psCtrlText, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: off ? "default" : "pointer", whiteSpace: "nowrap" }}>
       {svg(icon)}{label}
     </button>
   );
@@ -72,8 +72,8 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
     : "";
   return (
     <div onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}
-      style={{ position: "absolute", left: "50%", bottom: 22, transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)`, zIndex: 600, display: "flex", alignItems: "center", gap: 6, padding: "6px 8px 6px 4px", borderRadius: 10, background: "#1f2125", border: "1px solid #3d4048", boxShadow: "0 10px 30px rgba(0,0,0,0.55)", fontFamily: FONT, color: C.text, maxWidth: "calc(100% - 40px)" }}>
-      <span onPointerDown={drag} title="끌어서 옮기기" style={{ width: 14, alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: "#777", fontSize: 14, letterSpacing: -2 }}>⋮</span>
+      style={{ position: "absolute", left: "50%", bottom: 22, transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)`, zIndex: 600, display: "flex", alignItems: "center", gap: 6, padding: "6px 8px 6px 4px", borderRadius: 10, background: C.panel, border: `1px solid ${C.psCtrlSep}`, boxShadow: "0 10px 30px rgba(0,0,0,0.55)", fontFamily: FONT, color: C.text, maxWidth: "calc(100% - 40px)" }}>
+      <span onPointerDown={drag} title="끌어서 옮기기" style={{ width: 14, alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: C.psOff, fontSize: 14, letterSpacing: -2 }}>⋮</span>
       {busy ? (
         <div style={{ display: "flex", alignItems: "center", gap: 10, height: 30, padding: "0 6px", fontSize: 13, color: "#cfd3da", minWidth: 320 }}>
           <span style={{ width: 14, height: 14, borderRadius: 7, border: "2px solid #60a5fa", borderTopColor: "transparent", animation: "gspSpin 0.8s linear infinite" }} />
@@ -86,7 +86,7 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
           <span style={{ fontSize: 12.5, color: "#93c5fd", fontWeight: 700, whiteSpace: "nowrap" }}>{AI_ACT_NAME[act]}</span>
           <input ref={inp} value={text} onChange={(e) => setText(e.target.value)} placeholder={ph}
             onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter" && !e.nativeEvent.isComposing) run(); if (e.key === "Escape") setAct(null); }}
-            style={{ width: 440, maxWidth: "50vw", height: 32, padding: "0 10px", borderRadius: 6, border: "1px solid #4a4d55", background: "#141518", color: C.text, fontSize: 13.5, fontFamily: FONT, outline: "none" }} />
+            style={{ width: 440, maxWidth: "50vw", height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrlIn, color: C.text, fontSize: 13.5, fontFamily: FONT, outline: "none" }} />
           {pill(ICON.gen, act === "text" ? "바꾸기" : "생성", run, true, act !== "fill" && act !== "text" && !text.trim())}
         </>
       ) : (
@@ -102,20 +102,20 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
               {pill(ICON.text, "AI 문구 바꾸기", () => setAct("text"), true, textLayer.aiOff)}
             </span>
             <select value={textLayer.font} onChange={(e) => onTextSet?.({ font: e.target.value })} title="글꼴"
-              style={{ height: 30, maxWidth: 130, borderRadius: 6, border: "1px solid #4a4d55", background: "#2a2c31", color: "#f1f1f1", fontSize: 12.5, fontFamily: FONT, padding: "0 4px" }}>
+              style={{ height: 30, maxWidth: 130, borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrl, color: C.psCtrlText, fontSize: 12.5, fontFamily: FONT, padding: "0 4px" }}>
               {!STUDIO_FONTS.some((f) => f.family === textLayer.font) && !(pcFonts || []).some((f) => f.family === textLayer.font) && <option value={textLayer.font}>{textLayer.font}</option>}
               <optgroup label="공실뉴스 글꼴">{STUDIO_FONTS.map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
               {pcFonts && pcFonts.length > 0 && <optgroup label="내 PC 글꼴">{pcFonts.filter((f) => !STUDIO_FONTS.some((x) => x.family === f.family)).map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>}
             </select>
             <input type="number" min={4} max={2000} value={textLayer.px} title="글자 크기 (px)" onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => { const n = Math.round(Number(e.target.value)); if (n >= 4) onTextSet?.({ px: n }); }}
-              style={{ width: 58, height: 30, borderRadius: 6, border: "1px solid #4a4d55", background: "#2a2c31", color: "#f1f1f1", fontSize: 12.5, padding: "0 6px" }} />
+              style={{ width: 58, height: 30, borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrl, color: C.psCtrlText, fontSize: 12.5, padding: "0 6px" }} />
             <input type="color" value={textLayer.color.toLowerCase()} title="글자 색" onChange={(e) => onTextSet?.({ color: e.target.value.toUpperCase() })}
-              style={{ width: 30, height: 30, padding: 2, borderRadius: 6, border: "1px solid #4a4d55", background: "#2a2c31", cursor: "pointer" }} />
-            <span style={{ display: "flex", border: "1px solid #4a4d55", borderRadius: 6, overflow: "hidden" }}>
+              style={{ width: 30, height: 30, padding: 2, borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrl, cursor: "pointer" }} />
+            <span style={{ display: "flex", border: `1px solid ${C.psCtrlLine}`, borderRadius: 6, overflow: "hidden" }}>
               {(["left", "center", "right"] as const).map((a) => (
                 <button key={a} type="button" title={{ left: "왼쪽 정렬", center: "가운데 정렬", right: "오른쪽 정렬" }[a]} onClick={() => onTextSet?.({ align: a })}
-                  style={{ width: 30, height: 28, border: 0, background: textLayer.align === a ? "#3b4252" : "#2a2c31", color: "#f1f1f1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  style={{ width: 30, height: 28, border: 0, background: textLayer.align === a ? C.psCtrlSel : C.psCtrl, color: C.psCtrlText, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {svg({ left: "M4 6h16M4 10h10M4 14h16M4 18h10", center: "M4 6h16M7 10h10M4 14h16M7 18h10", right: "M4 6h16M10 10h10M4 14h16M10 18h10" }[a], 14)}
                 </button>
               ))}
@@ -123,7 +123,7 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
             {pill("M6 4h10M11 4v9M4 18q8-6 16 0", "텍스트 뒤틀기", () => onWarp?.())}
           </>}
           {!hasSel && !textLayer && shapeColor !== null && <>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 6, border: "1px solid #4a4d55", background: "#2a2c31", fontSize: 13, color: "#f1f1f1", cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrl, fontSize: 13, color: C.psCtrlText, cursor: "pointer" }}>
               <input type="color" value={shapeColor.toLowerCase()} onChange={(e) => onShapeColor?.(e.target.value.toUpperCase())} style={{ width: 22, height: 22, padding: 0, border: 0, background: "transparent", cursor: "pointer" }} />
               색 바꾸기
             </label>
@@ -142,13 +142,13 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
       <div style={{ position: "relative" }}>
         <button type="button" title="더 보기" onClick={() => setMore(!more)} style={{ width: 28, height: 30, border: 0, borderRadius: 6, background: "transparent", color: C.sub, cursor: "pointer", fontSize: 16 }}>⋯</button>
         {more && (
-          <div style={{ position: "absolute", right: 0, bottom: 36, width: 230, padding: "4px 0", background: "#2a2c31", border: "1px solid #3d4048", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+          <div style={{ position: "absolute", right: 0, bottom: 36, width: 230, padding: "4px 0", background: C.psCtrl, border: `1px solid ${C.psCtrlSep}`, borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
             {([...(textLayer && !textLayer.aiOff ? [["text", "AI 문구 바꾸기"]] : []), ["gen", "이미지 생성 (새 레이어)"], ["edit", "프롬프트로 편집"], ...(hasSel ? [["fill", "생성형 채우기"]] : []), ...(imgLayer ? [["removeBg", "배경 제거"]] : [])] as [AiAct, string][]).map(([a, t]) => (
               <button key={a} type="button" onClick={() => { setMore(false); if (a === "removeBg") onRun(a, ""); else setAct(a); }}
                 style={{ display: "block", width: "100%", padding: "7px 14px", border: 0, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, textAlign: "left", cursor: "pointer" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#3a3d45"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>{t}</button>
+                onMouseEnter={(e) => { e.currentTarget.style.background = C.psCtrlHover; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>{t}</button>
             ))}
-            <div style={{ height: 1, background: "#3d4048", margin: "4px 0" }} />
+            <div style={{ height: 1, background: C.psCtrlSep, margin: "4px 0" }} />
             <button type="button" onClick={() => { setMore(false); setPos({ x: 0, y: 0 }); }}
               style={{ display: "block", width: "100%", padding: "7px 14px", border: 0, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, textAlign: "left", cursor: "pointer" }}>바 위치 처음대로</button>
             <button type="button" onClick={() => { setMore(false); onClose(); }}

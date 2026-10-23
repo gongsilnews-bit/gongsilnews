@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
+import { useStudioTheme } from "@/components/admin/studio-video/ui";
 
 /**
  * 공실스튜디오 텍스트 메뉴 (중개사 관리자 /realty_admin)
@@ -69,6 +70,25 @@ function FileBadge({ kind }: { kind: string }) {
 
 export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false, hidden = false, onHide }: Props) {
   const [savedCollapsed, setCollapsed] = useState(false);
+  // 화면 모드(밝은/어두운) — 앱 전체 하나 (이미지제작·동영상제작·관리 화면 같이, 2026-10-23 사장님)
+  const [theme, setTheme] = useStudioTheme(false);
+  const [hasAi, setHasAi] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHasAi(Boolean((window as unknown as { gongsilStudio?: { openAiConnect?: () => void } }).gongsilStudio?.openAiConnect));
+  }, []);
+  // 공실스튜디오 저장 위치 (문서\공실스튜디오 · D 드라이브 · 외장하드) — 앱에서만
+  type StorageInfo = { root: string; isDefault: boolean; offline: boolean; chosen: string; freeGB: number; oneDrive: boolean };
+  type StorageBridge = { get: () => Promise<StorageInfo>; choose: () => Promise<unknown>; open: () => Promise<unknown> };
+  const storageBridge = () => (typeof window !== "undefined" ? (window as unknown as { gongsilStudio?: { storage?: StorageBridge } }).gongsilStudio?.storage : undefined);
+  const [storage, setStorage] = useState<StorageInfo | null>(null);
+  useEffect(() => {
+    const load = () => { storageBridge()?.get().then(setStorage).catch(() => {}); };
+    load();
+    window.addEventListener("focus", load);
+    return () => window.removeEventListener("focus", load);
+  }, []);
+  const openAi = () => (window as unknown as { gongsilStudio?: { openAiConnect?: () => void } }).gongsilStudio?.openAiConnect?.();
   // 자동으로 접힌 동안 [»]를 누르면 그때만 펼친다 (다른 메뉴로 가면 원래 설정으로)
   const [peek, setPeek] = useState(false);
   useEffect(() => {
@@ -127,7 +147,10 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
             </span>
           )}
           {!collapsed && <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}</span>}
-          {badges[m.key] && badges[m.key].startsWith("file:") ? (
+          {badges[m.key] && badges[m.key].startsWith("dev:") ? (
+            // [개발중] — 최고관리자에게만 보이는 미완성 메뉴 (2026-10-23 사장님)
+            !collapsed && <span style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#64748b", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.3 }}>{badges[m.key].slice(4)}</span>
+          ) : badges[m.key] && badges[m.key].startsWith("file:") ? (
             // 파일 표시 (GSN·GSM·GSS·PSD — 글자 + 동그라미 픽토그램). 접힌 메뉴에서는 숨긴다
             !collapsed && <FileBadge kind={badges[m.key].slice(5)} />
           ) : badges[m.key] &&
@@ -212,6 +235,19 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
         )}
       </nav>
 
+      {/* 정보설정 구분선 위 — [화면 모드] [AI 설정] (2026-10-23 사장님) */}
+      <div style={{ display: "flex", flexDirection: collapsed ? "column" : "row", gap: 6, padding: collapsed ? "0 8px 10px" : "0 10px 10px", flexShrink: 0 }}>
+        <button onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="studio-nav-btn" title={theme === "light" ? "어두운 화면으로" : "밝은 화면으로"}
+          style={{ ...plainBtn, flex: 1, height: 34, borderRadius: 8, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, border: "1px solid rgba(255,255,255,0.2)", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 14 }}>{theme === "light" ? "🌙" : "☀"}</span>{!collapsed && (theme === "light" ? "어두운 화면" : "밝은 화면")}
+        </button>
+        {hasAi && (
+          <button onClick={openAi} className="studio-nav-btn" title="AI 설정 (내 AI 연결)"
+            style={{ ...plainBtn, flex: 1, height: 34, borderRadius: 8, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, border: "1px solid rgba(255,255,255,0.2)", whiteSpace: "nowrap" }}>
+            {collapsed ? <span style={{ fontSize: 11, fontWeight: 900 }}>AI</span> : "AI 설정"}
+          </button>
+        )}
+      </div>
       <div style={{ padding: collapsed ? "10px 8px 14px" : "10px 10px 14px", borderTop: "1px solid rgba(255,255,255,0.15)", flexShrink: 0 }}>
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>{item(settings)}</ul>
         {!collapsed && (
@@ -223,6 +259,20 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
                   이 PC 연결됨
                 </div>
                 <div style={{ marginTop: 3, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>공실스튜디오 v{appVersion}</div>
+                {storage && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.10)" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                      <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700 }}>저장 위치</span>
+                      <button onClick={() => { void storageBridge()?.choose().then(() => storageBridge()?.get().then(setStorage)); }} title="공실스튜디오 폴더를 D 드라이브·외장하드 등으로 옮겨요"
+                        style={{ ...plainBtn, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.25)" }}>바꾸기</button>
+                    </div>
+                    <button onClick={() => { void storageBridge()?.open(); }} title={`${storage.root} — 눌러서 폴더 열기`}
+                      style={{ ...plainBtn, display: "block", width: "100%", marginTop: 3, padding: 0, textAlign: "left", fontSize: 11, color: storage.offline ? "#fbbf24" : "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", direction: "rtl" }}>
+                      <bdi>{storage.root}</bdi>
+                    </button>
+                    {storage.offline && <div style={{ marginTop: 3, fontSize: 10.5, color: "#fbbf24", lineHeight: 1.4 }}>외장하드가 없어 이번만 문서 폴더에 저장해요</div>}
+                  </div>
+                )}
               </>
             ) : (
               <>

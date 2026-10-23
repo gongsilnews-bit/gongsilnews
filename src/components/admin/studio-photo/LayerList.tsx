@@ -98,7 +98,7 @@ export function LayerList({ doc, tick, sel, selSet = [], onSel, onPick, onToggle
               onContextMenu={(e) => { e.preventDefault(); if (!selSet.includes(k)) onSel(k); setMenu({ k, x: e.clientX, y: e.clientY }); }}
               style={{
                 display: "flex", alignItems: "center", gap: 6, height: 44, padding: `0 8px 0 ${6 + depth * 16}px`, cursor: "pointer",
-                background: on ? "#3a3d45" : "transparent", borderLeft: `3px solid ${on ? "#fff" : "transparent"}`,
+                background: on ? C.psCtrlHover : "transparent", borderLeft: `3px solid ${on ? "#fff" : "transparent"}`,
                 borderTop: over?.k === k && over.above ? "2px solid #3b82f6" : "2px solid transparent",
                 borderBottom: over?.k === k && !over.above ? "2px solid #3b82f6" : "2px solid transparent",
                 opacity: dragK === k ? 0.4 : 1,

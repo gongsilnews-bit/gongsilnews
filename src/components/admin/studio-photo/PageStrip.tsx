@@ -48,7 +48,7 @@ export function PageStrip({ doc, tick, onGo, onAdd, onDel, onMove }: Props) {
 
   const addBtn = (
     <button type="button" onClick={() => onAdd(false)} title="새 쪽 더하기 (쪽 메뉴에서 복제도 할 수 있어요)"
-      style={{ height: 30, padding: "0 12px", borderRadius: 8, border: `1px dashed ${C.line2}`, background: "rgba(32,33,37,0.92)", color: C.sub, fontFamily: FONT, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+      style={{ height: 30, padding: "0 12px", borderRadius: 8, border: `1px dashed ${C.line2}`, background: C.panel, color: C.sub, fontFamily: FONT, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
       + 쪽
     </button>
   );
@@ -61,7 +61,7 @@ export function PageStrip({ doc, tick, onGo, onAdd, onDel, onMove }: Props) {
     </button>
   );
   return (
-    <div style={{ position: "absolute", left: "50%", bottom: 10, transform: "translateX(-50%)", zIndex: 5, maxWidth: "calc(100% - 40px)", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, background: "rgba(24,25,28,0.92)", border: `1px solid ${C.line}`, boxShadow: "0 6px 20px rgba(0,0,0,0.35)", fontFamily: FONT }}>
+    <div style={{ position: "absolute", left: "50%", bottom: 10, transform: "translateX(-50%)", zIndex: 5, maxWidth: "calc(100% - 40px)", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, background: C.panel, border: `1px solid ${C.line}`, boxShadow: "0 6px 20px rgba(0,0,0,0.35)", fontFamily: FONT }}>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }}>
         {Array.from({ length: n }, (_, i) => {
           const on = i === cur;

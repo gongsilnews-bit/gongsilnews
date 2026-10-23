@@ -32,6 +32,10 @@ export const STYLES: VideoStyle[] = [
 
 type Hint = { desc?: string; keywords?: string; kind?: string };
 type Vac = { id: string; label: string };
+/** 뉴스 영상 에피소드 — 주제(직접 적기: 시세·정치·오락·스포츠 무엇이든) · 매물 소개(내 공실) · 공실뉴스 기사 · 뉴스 주소. ref = 공실 id / 기사 id / 주소 */
+/** 씬별 배경 음악 — 분위기 · 곡 직접 · 없음 */
+type SceneBgm = { kind: "none" } | { kind: "mood"; mood: string } | { kind: "track"; track: { kind: "lib" | "mine"; id: string; label: string } };
+type Ep = { kind: "topic" | "vacancy" | "article" | "url"; text: string; ref: string; media?: LibItem[]; chars?: number; capRef?: string };
 
 /* 공실로 쓰기 — 용도 (2026-10-20 사장님): 고르면 글자 수·화면 비율·대본 구성이 그 용도에 맞게. 1단계 스타일보다 우선 */
 type Purpose = "shorts" | "listing" | "area" | "etc";
@@ -102,7 +106,22 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   const [style, setStyle] = useState<VideoStyle | null>(null);
   // ② 대본
   // 대본 갈래 (2026-10-20 사장님) — 매물 소개 / 뉴스 기사 / 자유 주제 (대본이 있으면 오른쪽 칸에 바로 붙여 넣어도 된다)
-  const [src, setSrc] = useState<"vacancy" | "news" | "topic">("vacancy");
+  const [src, setSrc] = useState<"vacancy" | "news" | "topic" | "episodes">("vacancy");
+  // 뉴스 영상 (2026-10-23 사장님) — 서론 · 에피소드 1·2·3 (+ 더) · 맺음말. 에피소드마다 주제만 적으면 AI 가 짧은 단락으로 쓴다
+  const [newsName, setNewsName] = useState<string | null>(null); // null = 사무소 이름으로 저절로 (빌드온공인중개사 → 빌드온뉴스)
+  const [episodes, setEpisodes] = useState<Ep[]>([{ kind: "topic", text: "", ref: "" }, { kind: "topic", text: "", ref: "" }, { kind: "topic", text: "", ref: "" }]);
+  const setEp = (i: number, patch: Partial<Ep>) => setEpisodes((l) => l.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+  const epReady = (e: Ep) => (e.kind === "topic" ? Boolean(e.text.trim()) : e.kind === "url" ? /^https?:\/\//i.test(e.ref.trim()) : Boolean(e.ref));
+  const [introReq, setIntroReq] = useState("");
+  const [tagline, setTagline] = useState<string | null>(null); // null = 저절로 — 오늘 날짜로 "2026년 10월 넷째주 뉴스" (회원이 고친다)
+  const [outroReq, setOutroReq] = useState("");
+  const [charMode, setCharMode] = useState<"total" | "each">("total"); // 글자 수 — 전체 / 에피소드별
+  const epUsed = useRef<Ep[]>([]);
+  const [paraMedia, setParaMedia] = useState<LibItem[][]>([]);
+  const [paraReq, setParaReq] = useState<string[]>([]); // 문단별 화면 요청 (예: 무료 영상 중 드론 영상) // 문단(씬)별 사진·영상 — 대본 칸 아래에서 넣는다 // 대본을 쓸 때의 에피소드 (씬 "에피소드 N" ↔ 사진)
+  // 대본 일부 다시 쓰기 — 문단을 골라 오른쪽 클릭 (2026-10-23 사장님)
+  const [selMenu, setSelMenu] = useState<{ x: number; y: number; a: number; b: number } | null>(null);
+  const [selReq, setSelReq] = useState("");
   const [topic, setTopic] = useState("");
   const [request, setRequest] = useState("");
   const [useChars, setUseChars] = useState(true);
@@ -140,6 +159,8 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   const [agency, setAgency] = useState<Agency | null>(null);
   const [aiTitleBusy, setAiTitleBusy] = useState(false);
   useEffect(() => { getStudioAgency().then((r) => { if (r.success && r.data.name) setAgency(r.data as Agency); }).catch(() => {}); }, []);
+  const newsNameNow = newsName ?? newsNameOf(agency?.name);
+  const taglineNow = tagline ?? weekTagline();
   // 영상 꾸미기로 넘어오면 — 대본으로 제목을 저절로 (비어 있을 때 한 번, 2026-10-22 사장님). AI 가 안 되면 첫 문장을 줄여서
   const autoTitled = useRef("");
   useEffect(() => {
@@ -264,6 +285,9 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   // 곡 직접 고르기 (2026-10-20 사장님) — null = 분위기 첫 곡 자동 / lib = 공실뉴스 음악 / mine = 내 음악(PC)
   const [track, setTrack] = useState<{ kind: "lib" | "mine"; id: string; label: string } | null>(null);
   const [musicPick, setMusicPick] = useState(false);
+  const [musicMode, setMusicMode] = useState<"all" | "scene">("all");
+  const [sceneMusic, setSceneMusic] = useState<(SceneBgm | undefined)[]>([]); // undefined = 앞 씬과 같게 (씬 1 은 위 전체 설정)
+  const [pickFor, setPickFor] = useState(-1); // 곡 직접 고르기 — -1 = 전체, 0~ = 그 씬
 
   // 화면 자료 — 영상·사진 첨부 · 무료 비디오 · 자동 음소거 · 채우기 · AI 이미지 (브루처럼, 2026-10-22 사장님). 아무것도 안 고르면 화면은 편집 화면에서
   const [usePhotos, setUsePhotos] = useState(false);
@@ -273,7 +297,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   // 내 영상에서 고르기 — 찍어 둔 영상·사진을 AI 가 문장에 맞춰 고른다 (회의 3-19). 첨부하면 [내 자료]에도 자동으로 담긴다
   const [foot, setFoot] = useState<LibItem[]>([]);
   const footOn = foot.length > 0;
-  const visualLater = !footOn && !useStock && !useAi && !(src === "vacancy" && usePhotos);
+  const visualLater = !footOn && !useStock && !useAi && !(src === "vacancy" && usePhotos) && !paraMedia.some((m) => m?.length) && !paraReq.some((r) => r?.trim());
   const [footPick, setFootPick] = useState<LibItem[] | null>(null); // [내 자료에서 고르기] 창 — 목록
   const [footSel, setFootSel] = useState<string[]>([]); // 화면은 나중에 — 목소리(·자막·음악)만 먼저 만들고 편집 화면에서 클립마다 넣기 (2026-10-18 사장님)
   const [fill, setFillS] = useState<Fill>("cover"); // 채우기 켬 = 화면을 꽉 (잘라서) · 끔 = 다 보이게
@@ -436,8 +460,33 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
     setWriting("");
   };
 
+  /** 고른 부분만 다시 쓰기 — 나머지 대본은 그대로 (2026-10-23 사장님) */
+  const rewriteSel = async (a: number, z: number, req: string) => {
+    const part = script.slice(a, z);
+    if (!part.trim() || !req.trim()) return;
+    setErr("");
+    setWriting(`${aiName}가 고른 부분을 고치는 중…`);
+    const off = b.onProgress((t) => setWriting(t));
+    try {
+      const r = await b.ai.script({ topic: "대본 일부 고쳐 쓰기", style: "", request: `[수정 요청] ${req.trim()}\n위 [참고 글]은 대본의 한 부분이에요. 이 부분만 요청대로 다시 써 주세요. 빈 줄로 나뉜 문단 수는 되도록 그대로, 앞뒤 대본과 이어지게. 없는 사실(숫자·날짜·이름)은 지어내지 마세요.`, chars: 0, source: part, ai: aiUse });
+      const text = r.scenes.map((sc) => sc.lines.map((l) => { hints.current[l.text] = { desc: l.desc, keywords: l.keywords, kind: l.kind }; return l.text; }).join("\n")).join("\n\n");
+      if (!text.trim()) throw new Error("AI 답이 비었어요. 다시 해 주세요.");
+      pushHistory();
+      const lead = part.match(/^\s*/)?.[0] || "", tail = part.match(/\s*$/)?.[0] || "";
+      setScript(script.slice(0, a) + lead + text + tail + script.slice(z));
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      off();
+      setWriting("");
+    }
+  };
   const write = async (revise?: string, fromYt?: boolean) => {
     setErr("");
+    // 누르는 순간 덮개 — 준비가 길어도(캡쳐 등) 무엇을 하는지 보이게. [중지]·Esc 를 누르면 여기서 멈춘다
+    const busy = busyBridge();
+    const step = async (t: string) => { setWriting(t); const r = await busy?.text(t).catch(() => null); if (r?.stopped) throw new Error("중지했어요"); };
+    await busy?.hold(revise ? `${aiName}에게 고칠 내용을 보내는 중…` : src === "episodes" ? "공실뉴스 대본을 준비하는 중…" : `${aiName}에게 보낼 자료를 준비하는 중…`).catch(() => null);
     setWriting(revise ? `${aiName}가 요청대로 고치는 중… (1~2분)` : `${aiName}가 대본을 쓰는 중… (1~2분)`);
     const off = b.onProgress((t) => setWriting(t));
     try {
@@ -452,8 +501,62 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           : request;
       // 공실로 쓰기는 고른 용도가 스타일보다 우선 (기타는 스타일·요청 그대로)
       const st = pp && pp.prompt ? `${pp.name} — ${pp.prompt}` : style ? `${style.name} — ${style.prompt}` : "";
-      const source = revise ? script : fromNews ? `${news.title}\n\n${news.body}` : fromYt && yt ? yt.narration.join("\n\n") : undefined;
-      const r = await b.ai.script({ topic: src === "news" && news ? news.title : topic, style: st, request: rq, chars: useChars ? chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse });
+      // 에피소드 자료 — 매물은 등록된 공실 정보, 기사는 공실뉴스 기사 본문 (적힌 것만 쓰게)
+      const epList = !revise && src === "episodes" ? episodes.filter(epReady) : [];
+      const epMat: string[] = [];
+      const eps: string[] = [];
+      for (const [i, e] of epList.entries()) {
+        const extra = e.text.trim();
+        if (e.kind === "vacancy") {
+          await step(`에피소드 ${i + 1} · 매물 정보와 사진을 받는 중…`);
+          const v = await b.vacancy(e.ref);
+          if (!e.media?.length && v.photos?.length) { const ph = v.photos; setEpisodes((l) => l.map((x) => (x === e ? { ...x, media: ph } : x))); e.media = ph; }
+          const label = (vacs || []).find((x) => x.id === e.ref)?.label || "매물";
+          eps.push(`매물 소개 — ${label}${extra ? ` (덧붙일 말: ${extra})` : ""}`);
+          epMat.push(`[에피소드 ${i + 1} 매물 자료]\n${JSON.stringify(v.vacancy).slice(0, 3000)}`);
+        } else if (e.kind === "article") {
+          await step(`에피소드 ${i + 1} · 공실뉴스 기사를 읽는 중…`);
+          const r = await getStudioArticle(e.ref);
+          if (!r.success) throw new Error(r.error);
+          if (b.capturePage && r.data.url && e.capRef !== e.ref) {
+            await step(`에피소드 ${i + 1} · 기사 화면을 캡쳐하는 중…`);
+            const caps2 = await b.capturePage(r.data.url, { mode: "full", title: r.data.title, credit: "" }).catch(() => [] as LibItem[]);
+            e.media = [...(e.media || []), ...caps2]; e.capRef = e.ref; const m2 = e.media;
+            setEpisodes((l) => l.map((x) => (x.ref === e.ref && x.kind === "article" ? { ...x, media: m2, capRef: e.ref } : x)));
+          }
+          eps.push(`공실뉴스 기사 요약 — 「${r.data.title}」${extra ? ` (덧붙일 말: ${extra})` : ""}`);
+          epMat.push(`[에피소드 ${i + 1} 기사 자료] ${r.data.title}\n${String(r.data.body || "").slice(0, 3000)}`);
+        } else if (e.kind === "url") {
+          await step(`에피소드 ${i + 1} · 뉴스 기사를 읽는 중…`);
+          const c = columnBridge();
+          if (!c) throw new Error("뉴스 주소 가져오기는 공실스튜디오 앱에서 돼요.");
+          const n = await c.fetchNews(e.ref.trim());
+          const pub = n.publisher || siteName(n.url) || "원문 기사";
+          if (b.capturePage && n.url && e.capRef !== e.ref) {
+            await step(`에피소드 ${i + 1} · 뉴스 화면을 캡쳐하는 중…`);
+            const caps2 = await b.capturePage(n.url, { mode: "head", title: n.title, credit: `출처: ${pub}` }).catch(() => [] as LibItem[]);
+            e.media = [...(e.media || []), ...caps2]; e.capRef = e.ref; const m2 = e.media;
+            setEpisodes((l) => l.map((x) => (x.ref === e.ref && x.kind === "url" ? { ...x, media: m2, capRef: e.ref } : x)));
+          }
+          eps.push(`뉴스 요약 — 「${n.title}」 (출처: ${pub}, 마지막에 출처를 밝혀요)${extra ? ` (덧붙일 말: ${extra})` : ""}`);
+          epMat.push(`[에피소드 ${i + 1} 뉴스 자료] ${n.title} · ${pub}\n${String(n.body || "").slice(0, 3000)}`);
+        } else eps.push(extra);
+      }
+      if (epList.length) { await step(`${aiName}가 대본을 쓰는 중… (1~2분)`); epUsed.current = epList; }
+      const epChars = src === "episodes" && charMode === "each" ? epList.reduce((n, e) => n + (e.chars || 200), 0) + 250 : 0;
+      const source = revise ? script : epMat.length ? epMat.join("\n\n") : fromNews ? `${news.title}\n\n${news.body}` : fromYt && yt ? yt.narration.join("\n\n") : undefined;
+      const epReq = !revise && src === "episodes"
+        ? [
+          `「${newsNameNow}」 소식을 전하는 짧은 뉴스 영상 대본이에요. 아래 순서대로 씬을 나눠 주세요 (씬 하나 = 단락 하나).`,
+          `1) 인사말 — 씬 이름 "인사말". 2~3문장. 인사 뒤 "${taglineNow}입니다." 로 이 뉴스를 소개하고 들어가요 (이 소개 문장은 그대로).${introReq.trim() ? ` (인사말 요청: ${introReq.trim()})` : ""}`,
+          ...eps.map((e, i) => `${i + 2}) 에피소드 ${i + 1} — 씬 이름 "에피소드 ${i + 1} · (짧은 소제목)". ${charMode === "each" && useChars ? `약 ${epList[i]?.chars || 200}자` : "4~6문장"}의 짧은 단락. 주제: ${e}`),
+          `${eps.length + 2}) 맺음말 — 씬 이름 "맺음말". 2~3문장. 위 에피소드를 한 줄씩 묶어 돌아보고 마무리 인사.${outroReq.trim() ? ` (맺음말 요청: ${outroReq.trim()})` : ""}`,
+          epMat.length ? "매물·기사·뉴스 에피소드는 위 [참고 글]의 그 에피소드 자료에 있는 사실만 써요. 기사 문장을 그대로 옮기지 말고 새로 쓰고, 매물 가격·면적은 자료 값 그대로." : "",
+          "주제에 적힌 사실(숫자·날짜·장소·이름)만 쓰고, 적히지 않은 숫자·날짜·이름은 지어내지 마세요. 뉴스를 전하듯 또박또박, 한 문장은 짧게.",
+          request.trim() ? `추가 요청: ${request.trim()}` : "",
+        ].filter(Boolean).join("\n")
+        : "";
+      const r = await b.ai.script({ topic: src === "news" && news ? news.title : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : st, request: epReq || rq, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse });
       pushHistory();
       hints.current = {};
       sceneTitles.current = {};
@@ -463,17 +566,19 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         return l.text;
       }).join("\n")).join("\n\n");
       setScript(text);
+      if (epUsed.current.length && src === "episodes" && !revise) setParaMedia([[], ...epUsed.current.map((e) => e.media || [])]);
     } catch (e) {
       setErr(errText(e));
     } finally {
       off();
       setWriting("");
+      void busy?.release().catch(() => null);
     }
   };
 
   // 기본 이름 "20261021 제목" — 매물 이름 / 기사 제목 / 주제, 없으면 무제 (2026-10-20 사장님)
   const vacTitle = (vacInfo?.vacancy as { title?: string } | undefined)?.title || (vacs || []).find((v) => v.id === vacId)?.label.replace(/^\[[^\]]*\]\s*/, "").split(" · ")[0] || "";
-  const defaultName = datedName(src === "vacancy" ? vacTitle : src === "news" ? news?.title : topic);
+  const defaultName = datedName(src === "vacancy" ? vacTitle : src === "news" ? news?.title : src === "episodes" ? newsNameNow : topic);
   const scenes = useMemo(() => splitScript(script), [script]);
   const lineCount = scenes.reduce((a, s) => a + s.length, 0);
   const seconds = useMemo(() => scenes.flat().reduce((a, t) => a + estimateSeconds(t, speed) + 0.12, 0), [scenes, speed]);
@@ -498,7 +603,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       const p = await b.project.create({ method: "text", ratio, vacancyId: src === "vacancy" ? vacId : "", name: (projName ?? defaultName).trim(), folder: folder || undefined });
       made = p;
       // 영상 종류 · 이 영상 자료 — 편집 화면 [AI 편집]이 처음부터 알고 쓴다 (2026-10-20 사장님)
-      p.kind = src;
+      p.kind = src === "episodes" ? "topic" : src;
       p.materials = src === "vacancy" ? [...(vacInfo?.photos || []), ...(vacInfo?.shots || [])] : src === "news" ? caps : [];
       p.settings.fill = fill;
       const nsub = newsSubOf(deco.sub); // 뉴스 자막 바 — 왼쪽 정렬
@@ -510,10 +615,40 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       if (editReq.trim()) { p.settings.aiAuto = true; p.settings.aiAutoReq = { request: editReq.trim().slice(0, 600), keepTrans: deco.trans.length > 0 }; }
       // 클립
       // 씬 — AI 가 지은 이름을 붙이고, 클립 하나짜리 씬이 이어지면 묶는다 (회의 3-22)
-      p.scenes = mergeSingleScenes(scenes.map((ls) => ({ id: uid(), title: sceneTitles.current[ls[0]] || undefined, clips: ls.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] }) as Clip) })));
+      const paraOf = new Map<string, number>(); // 클립 → 문단 번호 (씬을 묶기 전)
+      p.scenes = mergeSingleScenes(scenes.map((ls, si) => ({ id: uid(), title: sceneTitles.current[ls[0]] || undefined, clips: ls.map((t) => { const c = { id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual: null, hint: hints.current[t] } as Clip; paraOf.set(c.id, si); return c; }) })));
       const clips = p.scenes.flatMap((s) => s.clips);
-      // 음악
-      if (musicOn) {
+      // 음악 — 씬별로 (같은 음악이 이어지는 씬끼리 레이어 하나)
+      if (musicOn && musicMode === "scene") {
+        try {
+          const base: SceneBgm = track ? { kind: "track", track } : { kind: "mood", mood };
+          const res: SceneBgm[] = [];
+          scenes.forEach((_, k) => { res[k] = sceneMusic[k] || (k ? res[k - 1] : base); });
+          const keyOf = (m: SceneBgm) => (m.kind === "none" ? "" : m.kind === "mood" ? `mood:${m.mood}` : `${m.track.kind}:${m.track.id}`);
+          const files: Record<string, { file: string; url: string; name: string }> = {};
+          for (const m of res) {
+            const key = keyOf(m);
+            if (!key || files[key]) continue;
+            if (m.kind === "track" && m.track.kind === "mine") { const r = await b.musicUse(p.dir, m.track.id); files[key] = { file: r.file, url: r.url, name: r.name || m.track.label }; }
+            else {
+              const t = (m.kind === "track" && MUSIC_LIBRARY.find((x) => x.id === m.track.id)) || MUSIC_LIBRARY.find((x) => x.mood === (m.kind === "mood" ? m.mood : mood)) || MUSIC_LIBRARY[0];
+              const r = await b.musicGet(p.dir, `bgm/lib/${t.id.slice(4)}.mp3`);
+              files[key] = { file: r.file, url: r.url, name: t.label };
+            }
+          }
+          p.layers = p.layers || [];
+          let run: { key: string; from: string; to: string } | null = null;
+          const flush = () => { if (run && run.key && files[run.key]) { const f = files[run.key]; p.layers!.push({ id: uid(), type: "music", name: f.name, from: run.from, to: run.to, file: f.file, url: f.url, volume: 0.03, fadeIn: 0.6, fadeOut: 1.2, offset: 0, loop: true, track: 3 } as Layer); } run = null; };
+          for (const c of p.scenes.flatMap((x) => x.clips)) {
+            const k = paraOf.get(c.id) ?? 0;
+            const key = keyOf(res[k] || base);
+            if (run && run.key === key) run.to = c.id;
+            else { flush(); run = { key, from: c.id, to: c.id }; }
+          }
+          flush();
+          p.settings.music = { ...(p.settings.music || {}), on: false } as Project["settings"]["music"];
+        } catch {}
+      } else if (musicOn) {
         try {
           if (track?.kind === "mine") {
             const r = await b.musicUse(p.dir, track.id);
@@ -527,6 +662,20 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       }
       // 화면 자료
       const used = new Set<string>();
+      // 문단(씬)마다 넣은 사진·영상을 그 문단 클립에 차례로 (2026-10-23 사장님) — 나머지는 아래에서 AI·무료 자료로
+      if (paraMedia.some((m) => m?.length)) {
+        const idsOf: Record<number, string[]> = {};
+        const nth: Record<number, number> = {};
+        for (const c of p.scenes.flatMap((x) => x.clips)) {
+          const k = paraOf.get(c.id);
+          if (k === undefined) continue;
+          const media = (paraMedia[k] || []).filter((m) => m.kind === "image" || m.kind === "video");
+          if (!media.length) continue;
+          if (!idsOf[k]) { idsOf[k] = []; for (const m of media) idsOf[k].push(await b.project.addAsset(m.id).then((a) => { p.assets[a.id] = a; return a.id; })); }
+          const j = nth[k] = (nth[k] ?? -1) + 1;
+          c.visual = { asset: idsOf[k][j % idsOf[k].length], s: 0 };
+        }
+      }
       const addAsset = async (item: LibItem) => {
         const a = await b.project.addAsset(item.id);
         p.assets[a.id] = a;
@@ -558,6 +707,21 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         }
       }
       // 화면 검색어가 없는 문장은 회원 AI 에게 한 번에 묻는다
+      // 문단별 화면 요청 — 그 씬 클립은 요청을 붙여 검색어를 새로 (무료 영상·사진에서 찾기)
+      const reqOf = new Map<string, { req: string; kind: "video" | "photo" | "ai" }>();
+      for (const c of clips) {
+        const r = (paraReq[paraOf.get(c.id) ?? -1] || "").trim();
+        if (!r || c.visual) continue;
+        reqOf.set(c.id, { req: r, kind: /AI\s*(그림|이미지|사진)/i.test(r) ? "ai" : /사진|이미지/.test(r) && !/영상|동영상|비디오/.test(r) ? "photo" : "video" });
+      }
+      if (reqOf.size && !halt()) {
+        setGen({ title: `${writer}가 씬별 화면 요청에 맞는 화면을 고르는 중…`, frac: 0.11 });
+        try {
+          const rc = clips.filter((c) => reqOf.has(c.id));
+          const hs = await b.ai.scenes(rc.map((c) => `[화면 요청: ${reqOf.get(c.id)!.req}] ${c.text}`));
+          rc.forEach((c, i) => { const k = reqOf.get(c.id)!.kind; c.hint = { ...(hs[i] || {}), kind: k === "photo" ? "image" : "video" }; });
+        } catch {}
+      }
       const needHint = clips.filter((c) => !c.hint?.keywords && !c.visual);
       if (!visualLater && (useStock || useAi) && needHint.length && (!photos.length || photos.length < clips.length) && !halt()) {
         setGen({ title: `${writer}가 문장마다 어울리는 화면을 고르는 중…`, frac: 0.12 });
@@ -577,11 +741,20 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           continue;
         }
         setGen({ title: `화면 자료를 고르는 중… (${i + 1}/${clips.length})`, frac: 0.15 + (i / clips.length) * 0.45 });
-        if (photos.length && (i < photos.length || (!stockOk && !aiLeft))) {
+        const rq = reqOf.get(c.id);
+        if (rq?.kind === "ai") { // 요청: AI 그림
+          setGen({ title: `${imager}가 그림을 그리는 중… (${i + 1}/${clips.length})`, detail: "한 장에 30초~1분 걸려요", frac: 0.15 + (i / clips.length) * 0.45 });
+          try {
+            const it = await b.ai.image(p.dir, `${rq.req} — ${c.hint?.desc || c.text} — 부동산 영상에 쓸 실사, 글자·사람 얼굴 없이, ${ratio === "9:16" ? "세로" : "가로"} 화면`);
+            c.visual = { asset: await addAsset(it), s: 0 };
+            continue;
+          } catch {}
+        }
+        if (!rq && photos.length && (i < photos.length || (!stockOk && !aiLeft))) {
           c.visual = { asset: photos[i % photos.length], s: 0 };
           continue;
         }
-        if (stockOk && c.hint?.keywords) {
+        if ((stockOk || (rq && rq.kind !== "ai")) && c.hint?.keywords) {
           try {
             const orient = ratio === "9:16" || ratio === "4:5" ? "portrait" : ratio === "1:1" ? "square" : "landscape";
             const r = await b.stock.search(c.hint.keywords, c.hint.kind === "image" ? "photo" : "video", orient);
@@ -722,11 +895,19 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         }
         if (cS && cText && first && last) p.layers.push({ id: uid(), type: "text", name: "채널명", from: first, to: last, text: cText, ...(tall ? { x: 0.5, y: 0.16 } : logoAid ? { x: 0.8, y: 0.07 } : { pos: "top", align: "right" }), size: 42, bold: true, font: "Pretendard", ...cS.look } as Layer);
         if (logoAid && first && last) p.layers.push({ id: uid(), type: "image", name: "채널 로고", from: first, to: last, asset: logoAid, x: tall ? 0.88 : 0.94, y: tall ? 0.06 : 0.07, w: tall ? 0.14 : 0.08, opacity: 1 } as Layer);
-        if (deco.trans.length) {
-          // 고른 순서대로 (5개까지), 다 쓰면 마지막 것을 반복
+        const tMode = deco.transMode || "auto";
+        if (deco.trans.length && tMode !== "none") {
+          // 고른 순서대로 (5개까지), 다 쓰면 마지막 것을 반복. 넣는 곳 — 자동(클립마다) · 씬 전환만 · 씬 전환+자동(씬 안은 짧은 디졸브)
+          const sceneHead = new Set(p.scenes.map((x) => x.clips[0]?.id).filter(Boolean));
+          let n = 0;
           its.forEach((c, i) => {
             if (i === 0) return;
-            const ty = deco.trans[Math.min(i - 1, deco.trans.length - 1)]; // 고른 순서대로, 그 뒤로는 마지막 것을 반복
+            const head = sceneHead.has(c.id);
+            if (tMode !== "auto" && !head) {
+              if (tMode === "scene_auto") c.trans = { type: "fade", a: 0.15, b: 0.15 };
+              return;
+            }
+            const ty = deco.trans[Math.min(n++, deco.trans.length - 1)]; // 고른 순서대로, 그 뒤로는 마지막 것을 반복
             const ts = deco.transSfx || "auto"; // 전환 소리 — 자동 · 없음 · 고른 효과음
             const sx = ts === "none" ? undefined : ts === "auto" ? TRANSITIONS.find((x) => x.id === ty)?.sfx : ts;
             c.trans = { type: ty, a: 0.3, b: 0.3, ...(sx ? { sfx: sx } : {}) };
@@ -782,7 +963,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
 
   const chip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: `1px solid ${C.line}` };
-  const steps = ["대본 작성", "영상 꾸미기"];
+  const steps = ["대본 작성", "초안 꾸미기"];
   let no = 0; // 대본 작성 칸 번호 — 그리는 차례대로
   const head = (text: React.ReactNode, inline?: boolean) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: inline ? 0 : 8 }}>
@@ -841,10 +1022,12 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             {/* 순서대로 번호 (2026-10-20 사장님) — 갈래마다 칸이 달라 번호는 그리는 차례로 매긴다 */}
             <div>
             {head("무엇으로 쓸까요")}
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button type="button" onClick={() => { setSrc("vacancy"); loadVacs(); setPurpose(purpose); }} style={chip(src === "vacancy")}>매물 소개</button>
               <button type="button" onClick={() => { setSrc("news"); setNewsPurpose(newsPurpose); if (!arts) void loadArts(""); }} style={chip(src === "news")}>뉴스 기사</button>
               <button type="button" onClick={() => setSrc("topic")} style={chip(src === "topic")}>자유 주제</button>
+              {/* [공실뉴스] — 인사말 · 에피소드 1·2 (+ 추가) · 맺음말로 쓰는 정기 뉴스 (2026-10-23 사장님) */}
+              <button type="button" onClick={() => { setSrc("episodes"); loadVacs(); if (!arts) void loadArts(""); }} style={chip(src === "episodes")} title="인사말 · 에피소드 · 맺음말 — 주제를 적거나 매물·기사를 고르면 짧은 단락으로 써요">공실뉴스</button>
             </div>
             </div>
             {src === "vacancy" && (
@@ -957,6 +1140,86 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             )}
             {(
               <>
+                {src === "episodes" && (
+                  <div>
+                    {head("뉴스 이름")}
+                    <input value={newsNameNow} onChange={(e) => setNewsName(e.target.value)} placeholder="예: 빌드온 뉴스" style={input} />
+                    <div style={{ fontSize: 12.5, color: C.dim, marginTop: 5 }}>사무소 이름으로 저절로 넣었어요. 마음대로 고쳐도 돼요.</div>
+                    <div style={{ height: 14 }} />
+                    {head("소개 한 줄")}
+                    <input value={taglineNow} onChange={(e) => setTagline(e.target.value)} placeholder="예: 2026년 10월 첫째주 뉴스" style={input} />
+                    <div style={{ fontSize: 12.5, color: C.dim, marginTop: 5 }}>인사말에서 「{taglineNow || "…"}입니다」로 소개해요.</div>
+                    <div style={{ height: 14 }} />
+                    {head(<>인사말 <span style={{ color: C.dim, fontWeight: 600 }}>(선택)</span></>)}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+                      {greetings().map((g) => (
+                        <button key={g.name} type="button" title={g.text} onClick={() => setIntroReq(introReq === g.text ? "" : g.text)}
+                          style={{ ...chip(introReq === g.text), height: 28, padding: "0 10px", fontSize: 12.5 }}>{g.name}</button>
+                      ))}
+                    </div>
+                    <input value={introReq} onChange={(e) => setIntroReq(e.target.value)} placeholder="위에서 고르거나 직접 적기 (예: 가을 인사로 시작)" style={input} />
+                    <div style={{ height: 14 }} />
+                    {head("에피소드 — 주제를 적거나 매물·기사를 고르면 짧은 단락으로 써요")}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {episodes.map((e, i) => (
+                        <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "8px 0", borderTop: i ? `1px solid ${C.line}` : "none" }}>
+                          <span style={{ flexShrink: 0, width: 26, height: 26, marginTop: 4, borderRadius: 13, background: C.accent, color: "#fff", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
+                          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              {([["topic", "주제"], ["vacancy", "매물 소개"], ["article", "공실뉴스 기사"], ["url", "뉴스 주소"]] as const).map(([k, n]) => (
+                                <button key={k} type="button" onClick={() => setEp(i, { kind: k, ref: "" })} style={{ ...chip(e.kind === k), height: 28, padding: "0 10px", fontSize: 12.5 }}>{n}</button>
+                              ))}
+                            </div>
+                            {e.kind === "vacancy" && (
+                              <select value={e.ref} onFocus={loadVacs} onChange={(ev) => setEp(i, { ref: ev.target.value })} style={{ ...input, fontSize: 13.5, height: 36 }}>
+                                <option value="">{vacs === null ? "내 공실 불러오는 중…" : `공실을 고르세요 (${vacs.length}개)`}</option>
+                                {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+                              </select>
+                            )}
+                            {e.kind === "article" && (
+                              <select value={e.ref} onFocus={() => { if (!arts) void loadArts(""); }} onChange={(ev) => setEp(i, { ref: ev.target.value })} style={{ ...input, fontSize: 13.5, height: 36 }}>
+                                <option value="">{arts === null ? "기사 목록 불러오는 중…" : `공실뉴스 기사를 고르세요 (${arts.length}개)`}</option>
+                                {(arts || []).map((a) => <option key={a.id} value={a.id}>{a.title} · {a.date}</option>)}
+                              </select>
+                            )}
+                            {e.kind === "url" && (
+                              <input value={e.ref} onChange={(ev) => setEp(i, { ref: ev.target.value })} placeholder="뉴스 기사 주소 붙여넣기 (정치·경제·연예·스포츠 무엇이든)" style={{ ...input, fontSize: 13.5, height: 36 }} />
+                            )}
+                            <textarea value={e.text} rows={e.kind === "topic" ? 2 : 1} onChange={(ev) => setEp(i, { text: ev.target.value })}
+                              placeholder={e.kind === "topic" ? (["예: 논현동 이번 달 아파트 시세 — 매매·전세 흐름", "예: 이번 주 프로야구 한국시리즈 결과", "예: 11월 첫째 주 토요일 사무소 상담회"][i] || "무엇이든 — 시세·정치·연예·스포츠·동네 소식") : "덧붙일 말 (선택) — 예: 신혼부부에게 추천"}
+                              style={{ ...input, height: "auto", padding: 8, lineHeight: 1.45, resize: "vertical", fontSize: 14 }} />
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <Btn small onClick={async () => { try { const got = await b.lib.pick({ kinds: "media" }); if (got.length) setEp(i, { media: [...(e.media || []), ...got.filter((g) => !(e.media || []).some((x) => x.id === g.id))] }); } catch (er) { setErr(errText(er)); } }}
+                                title="이 에피소드 화면에 쓸 사진·영상 (PC)"><Icon name="image" size={14} />사진·영상 넣기</Btn>
+                              {charMode === "each" && useChars && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: C.sub }}>
+                                  <input type="number" min={50} max={2000} step={50} value={e.chars || 200} onChange={(ev) => setEp(i, { chars: Number(ev.target.value) || 200 })} style={{ ...input, width: 72, height: 30, fontSize: 13, textAlign: "right" }} />자
+                                </span>
+                              )}
+                            </div>
+                            {(e.media || []).length > 0 && (
+                              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                {(e.media || []).map((x) => (
+                                  <div key={x.id} style={{ position: "relative", width: 60, height: 38, borderRadius: 4, overflow: "hidden", background: "#000" }}>
+                                    {x.thumb && <img src={x.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                                    <button type="button" onClick={() => setEp(i, { media: (e.media || []).filter((y) => y.id !== x.id) })} title="빼기" style={{ position: "absolute", right: 1, top: 1, width: 15, height: 15, borderRadius: 8, border: 0, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 9, cursor: "pointer", padding: 0 }}>✕</button>
+                                  </div>
+                                ))}
+                                <span style={{ alignSelf: "center", fontSize: 12, color: C.dim }}>{(e.media || []).length}개 — 이 에피소드 화면에 차례로</span>
+                              </div>
+                            )}
+                          </div>
+                          <button type="button" title="이 에피소드 빼기" disabled={episodes.length <= 1} onClick={() => setEpisodes((l) => l.filter((_, k) => k !== i))}
+                            style={{ flexShrink: 0, width: 30, height: 30, marginTop: 2, border: 0, borderRadius: 6, background: "transparent", color: C.dim, cursor: episodes.length <= 1 ? "default" : "pointer", opacity: episodes.length <= 1 ? 0.4 : 1 }}><Icon name="close" size={14} /></button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 8 }}><Btn small onClick={() => setEpisodes((l) => [...l, { kind: "topic", text: "", ref: "" }])} disabled={episodes.length >= 8}><Icon name="plus" size={14} />에피소드 추가</Btn></div>
+                    <div style={{ height: 14 }} />
+                    {head(<>맺음말 <span style={{ color: C.dim, fontWeight: 600 }}>(선택)</span></>)}
+                    <input value={outroReq} onChange={(e) => setOutroReq(e.target.value)} placeholder="예: 문의는 언제든 사무소로" style={input} />
+                  </div>
+                )}
                 {src === "topic" && (
                   <div>
                     {head("주제")}
@@ -969,13 +1232,20 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ flex: 1 }}>{head("글자 수 정하기", true)}</span>
+                  {src === "episodes" && (["total", "each"] as const).map((k) => (
+                    <button key={k} type="button" onClick={() => setCharMode(k)} disabled={!useChars} style={{ ...chip(charMode === k), height: 30, padding: "0 10px", fontSize: 12.5 }}>{k === "total" ? "전체" : "에피소드별"}</button>
+                  ))}
                   <Toggle on={useChars} onChange={setUseChars} />
+                  {src === "episodes" && charMode === "each" ? (
+                    <span style={{ fontSize: 13, color: C.sub, whiteSpace: "nowrap" }}>합 {episodes.filter(epReady).reduce((n, e) => n + (e.chars || 200), 0) + 250}자</span>
+                  ) : (<>
                   <input type="number" min={100} max={5000} step={50} value={chars} onChange={(e) => setChars(Number(e.target.value))} disabled={!useChars} style={{ ...input, width: 96, textAlign: "right" }} />
                   <span style={{ fontSize: 14, color: C.sub }}>자</span>
+                  </>)}
                 </div>
                 <div>{head("쓸 AI")}<AiPick value={aiSel} onChange={setAiSel} list={aiList} noTitle /></div>
                 <div>{head("대본 쓰기")}
-                <Btn primary onClick={() => void write()} disabled={Boolean(writing) || (src === "topic" && !topic.trim()) || (src === "vacancy" && !vacInfo) || (src === "news" && !news)} style={{ height: 52, fontSize: 16.5, width: "100%" }}>
+                <Btn primary onClick={() => void write()} disabled={Boolean(writing) || (src === "topic" && !topic.trim()) || (src === "episodes" && (!episodes.some(epReady) || !newsNameNow.trim())) || (src === "vacancy" && !vacInfo) || (src === "news" && !news)} style={{ height: 52, fontSize: 16.5, width: "100%" }}>
                   <Icon name="pen" size={18} />{aiName}로 대본 쓰기
                 </Btn>
                 </div>
@@ -987,8 +1257,33 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           </div>
           <div style={{ flex: 1, padding: "22px 26px", display: "flex", flexDirection: "column" }}>
             {head("대본 확인·고치기 — 다 되면 아래에서 만드는 방식을 고르세요")}
-            <textarea value={script} onChange={(e) => setScript(e.target.value)} placeholder="직접 대본을 쓰거나, 왼쪽에서 AI로 쓰기를 눌러 보세요."
+            <textarea value={script} onChange={(e) => setScript(e.target.value)}
+              onContextMenu={(e) => {
+                const t = e.currentTarget;
+                if (t.selectionEnd - t.selectionStart < 2 || writing) return; // 고른 글이 없으면 평소 메뉴
+                e.preventDefault();
+                setSelReq("");
+                setSelMenu({ x: e.clientX, y: e.clientY, a: t.selectionStart, b: t.selectionEnd });
+              }} placeholder="직접 대본을 쓰거나, 왼쪽에서 AI로 쓰기를 눌러 보세요."
               style={{ flex: 1, minHeight: 400, padding: 16, borderRadius: 6, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 17, lineHeight: 1.85, fontFamily: FONT, resize: "none", outline: "none" }} />
+            {selMenu && (
+              <div style={{ position: "fixed", inset: 0, zIndex: 3000 }} onMouseDown={() => setSelMenu(null)}>
+                <div onMouseDown={(e) => e.stopPropagation()} style={{ position: "fixed", left: Math.min(selMenu.x, window.innerWidth - 340), top: Math.min(selMenu.y, window.innerHeight - 170), width: 320, padding: 12, borderRadius: 8, background: C.panel2, border: `1px solid ${C.line2}`, boxShadow: "0 10px 30px rgba(0,0,0,0.4)", fontFamily: FONT }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text, marginBottom: 6 }}>✎ 고른 부분만 다시 쓰기 <span style={{ fontWeight: 600, color: C.dim }}>({selMenu.b - selMenu.a}자)</span></div>
+                  <input autoFocus value={selReq} onChange={(e) => setSelReq(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && selReq.trim()) { const m = selMenu; setSelMenu(null); void rewriteSel(m.a, m.b, selReq); } if (e.key === "Escape") setSelMenu(null); }}
+                    placeholder="어떻게 고칠까요? (예: 더 짧게, 친근하게, 숫자는 빼고)" style={{ ...input, height: 38, fontSize: 13.5, width: "100%" }} />
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 7 }}>
+                    {["더 짧게", "더 쉽게", "친근하게", "뉴스처럼 또박또박", "다르게 다시"].map((q) => (
+                      <button key={q} type="button" onClick={() => { const m = selMenu; setSelMenu(null); void rewriteSel(m.a, m.b, q); }} style={{ ...chip(false), height: 26, padding: "0 9px", fontSize: 12 }}>{q}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 9 }}>
+                    <Btn small onClick={() => { void navigator.clipboard.writeText(script.slice(selMenu.a, selMenu.b)).catch(() => {}); setSelMenu(null); }}>복사</Btn>
+                    <Btn small primary disabled={!selReq.trim()} onClick={() => { const m = selMenu; setSelMenu(null); void rewriteSel(m.a, m.b, selReq); }}><Icon name="pen" size={14} />다시 쓰기</Btn>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* 수정 요청 — 대본이 있으면 */}
             {script.trim() && (
               <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10 }}>
@@ -1016,7 +1311,8 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
 
       {step === 2 && (
         <div style={{ display: "flex", minHeight: 520 }}>
-          <div style={{ width: 480, flexShrink: 0, padding: "8px 26px 18px", borderRight: `1px solid ${C.line}` }}>
+          <div style={{ flex: 1, minWidth: 380, padding: "8px 26px 18px", borderRight: `1px solid ${C.line}` }}>
+            <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 2, color: C.accent, padding: "14px 0 2px" }}>VIDEO</div>
             {/* 영상 꾸미기 (2026-10-20 사장님) — 번호 순서, 화면 자료·AI 다 꾸미기·채우기는 편집 화면에서. 저장 칸은 맨 아래 */}
             <div style={{ ...row, flexWrap: "wrap" }}>
               <div style={{ width: "100%" }}>{head("화면 비율")}</div>
@@ -1052,81 +1348,6 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                 </div>
               )}
             </div>
-            <div style={{ ...row, flexWrap: "wrap" }}>
-              <span style={{ flex: 1 }}>{head("AI 목소리", true)}</span>
-              <Toggle on={voiceOn} onChange={setVoiceOn} />
-              {voiceOn && (
-                <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-                  {/* 목록 대신 — 고른 성우 얼굴 카드, 누르면 얼굴 카드 창 */}
-                  {(() => {
-                    const v = findVoice(voiceId);
-                    return (
-                      <button type="button" onClick={() => setVoicePick(true)} title="눌러서 목소리 바꾸기"
-                        style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}>
-                        {v && <VoiceFace id={v.id} name={v.name} size={56} />}
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{v?.name || "목소리"}</span>
-                          {v && <span style={{ display: "block", fontSize: 14, color: C.sub, marginTop: 3 }}>{v.kind}{"age" in v && "mood" in v ? ` · ${v.age} · ${v.mood}` : ""}</span>}
-                        </span>
-                        <span role="button" tabIndex={0} title="성우 견본 듣기 (무료)" onClick={(e) => { e.stopPropagation(); void playSample(); }}
-                          style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, border: `1px solid ${C.line2}`, background: smp === "play" ? C.accent : "transparent", color: smp === "play" ? "#fff" : C.text, display: "inline-flex", alignItems: "center", justifyContent: "center", opacity: smp === "busy" ? 0.5 : 1 }}>
-                          <Icon name={smp === "play" ? "pause" : "play"} size={15} />
-                        </span>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }}>바꾸기<Icon name="chevron" size={14} /></span>
-                      </button>
-                    );
-                  })()}
-                  {voicePick && <VoicePanel initial={{ id: voiceId, speed, emotion }} pickLabel="이 목소리로" targetCount={0}
-                    onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); saveLastVoice({ id: o.id, speed: o.speed, emotion: o.emotion }); setVoicePick(false); }} onClose={() => setVoicePick(false)} />}
-                  {/* 일레븐랩스 — 고급 설정 (모델·안정성·유사도·스타일·속도·스피커 부스트) 다 펼쳐서 (2026-10-20 사장님) */}
-                  {voiceId.startsWith("el_") && <ElevenDetail voiceId={voiceId} emotion={emotion || "normal"} onEmotion={setEmotion} openFirst />}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 14, color: C.sub, width: 50 }}>속도</span>
-                    <input type="range" min={0.7} max={1.6} step={0.05} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ flex: 1, accentColor: C.accent }} />
-                    <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{speed.toFixed(2)}배</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 14, color: C.sub, width: 50 }}>볼륨</span>
-                    <input type="range" min={0} max={1} step={0.05} value={voiceVol} onChange={(e) => setVoiceVol(Number(e.target.value))} style={{ flex: 1, accentColor: C.accent }} />
-                    <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{Math.round(voiceVol * 100)}%</span>
-                  </div>
-                  <Btn small onClick={() => void previewScript()} disabled={!lineCount || pv === "busy" || !b.voiceSave} style={{ alignSelf: "flex-start" }}
-                    title="지금 성우·속도·세부 설정으로 대본 처음 세 문장을 들어 봐요 (저장하지 않음)">
-                    <Icon name={pv === "play" ? "pause" : "play"} size={15} />{pv === "busy" ? "만드는 중…" : pv === "play" ? "멈추기" : `내 대본으로 미리 듣기${lineCount > 3 ? " (처음 3문장)" : ""}${/^(el|tc)_/.test(voiceId) ? " · 크레딧 사용" : ""}`}
-                  </Btn>
-                  {err && <div style={{ fontSize: 13, color: C.danger }}>{err}</div>}
-                </div>
-              )}
-            </div>
-            <div style={{ ...row, flexWrap: "wrap" }}>
-              <span style={{ flex: 1 }}>{head("배경 음악", true)}</span>
-              <Toggle on={musicOn} onChange={setMusicOn} />
-              {/* 자동 음소거 — 소리 설정이라 배경 음악과 함께 (2026-10-22 사장님) */}
-              <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px" }} title="화면에 넣은 영상의 원래 소리를 꺼요 (AI 목소리가 잘 들리게)">
-                <span style={{ flex: 1, fontSize: 13.5 }}>자동 음소거 <span style={{ fontSize: 12, color: C.dim }}>· 첨부한 영상의 원래 소리만 끄기 (AI 보이스·배경음악은 그대로)</span></span>
-                <Toggle on={autoMute} onChange={setAutoMute} />
-              </div>
-              {musicOn && <div style={{ width: "100%", display: "flex", gap: 6, flexWrap: "wrap" }}>{MUSIC_MOODS.map((m) => <button key={m} type="button" onClick={() => { setMood(m); if (track?.kind === "lib") setTrack(null); }} style={chip(mood === m && track?.kind !== "mine")}>{m}</button>)}</div>}
-              {musicOn && (
-                <div style={{ width: "100%", marginTop: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      ♪ {track ? track.label : `${(MUSIC_LIBRARY.find((x) => x.mood === mood) || MUSIC_LIBRARY[0]).label} (분위기 첫 곡)`}
-                    </span>
-                    <button type="button" onClick={() => setMusicPick(true)} style={chip(false)}>곡 직접 고르기</button>
-                  </div>
-                  {musicPick && (
-                    // 편집 화면과 같은 [배경 음악] 칸 — 공실뉴스 음악 · 내 음악 · 무료 음악 사이트 (고르기만, 담는 건 [완료] 때)
-                    <div onClick={() => setMusicPick(false)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.55)", display: "flex", justifyContent: "flex-end" }}>
-                      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", height: "100%" }}>
-                        <MusicPanel project={{ dir: "" } as Project} current={track ? ({ name: track.label } as Layer) : null} rangeText="" onPick={() => {}} onClose={() => setMusicPick(false)}
-                          choose={(c) => { setTrack({ kind: c.kind, id: c.id, label: c.name }); setMusicPick(false); }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
             <div style={{ paddingTop: 18 }}>
               {head("화면 자료")}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
@@ -1144,6 +1365,33 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                   <span style={{ alignSelf: "center", fontSize: 12.5, color: C.dim }}>{foot.length}개 — AI가 문장마다 맞는 장면을 골라요</span>
                 </div>
               )}
+            {/* 문단(씬)별 화면 — 사진·영상을 넣으면 그 문단 클립에 차례로 (2026-10-23 사장님) */}
+            {scenes.length > 0 && (
+              <div style={{ marginBottom: 10, border: `1px solid ${C.line}`, borderRadius: 6, maxHeight: 320, overflowY: "auto" }}>
+                <div style={{ padding: "7px 10px", fontSize: 13, fontWeight: 800, color: C.sub, borderBottom: `1px solid ${C.line}`, position: "sticky", top: 0, background: C.panel, zIndex: 1 }}>
+                  문단별 화면 <span style={{ fontWeight: 500, color: C.dim }}>· 사진·영상을 넣거나 요청을 적으면 그 씬에 맞춰 넣어요 (둘 다 없으면 AI·무료 자료로)</span>
+                </div>
+                {scenes.map((ls, k) => (
+                  <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderTop: k ? `1px solid ${C.line}` : "none" }}>
+                    <span style={{ flexShrink: 0, width: 46, fontSize: 12.5, fontWeight: 800, color: C.sub }}>씬 {k + 1}</span>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={ls.join(" ")}>{ls[0]}</span>
+                      <input value={paraReq[k] || ""} onChange={(e) => { const v = e.target.value; setParaReq((l) => { const n = [...l]; n[k] = v; return n; }); }} onKeyDown={(e) => e.stopPropagation()}
+                        placeholder="화면 요청 (예: 무료 영상 중 드론 영상 · AI 그림으로 야경)" style={{ ...input, height: 28, fontSize: 12.5, padding: "0 8px" }} />
+                    </div>
+                    {(paraMedia[k] || []).map((x) => (
+                      <div key={x.id} style={{ position: "relative", width: 48, height: 30, borderRadius: 3, overflow: "hidden", background: "#000", flexShrink: 0 }}>
+                        {x.thumb && <img src={x.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                        <button type="button" title="빼기" onClick={() => setParaMedia((l) => { const n = [...l]; n[k] = (n[k] || []).filter((y) => y.id !== x.id); return n; })}
+                          style={{ position: "absolute", right: 0, top: 0, width: 14, height: 14, borderRadius: 7, border: 0, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 8, cursor: "pointer", padding: 0 }}>✕</button>
+                      </div>
+                    ))}
+                    <Btn small onClick={async () => { try { const got = await b.lib.pick({ kinds: "media" }); if (got.length) setParaMedia((l) => { const n = [...l]; n[k] = [...(n[k] || []), ...got.filter((g) => !(n[k] || []).some((y) => y.id === g.id))]; return n; }); } catch (e) { setErr(errText(e)); } }}
+                      title="이 문단 화면에 쓸 사진·영상 (PC)"><Icon name="image" size={13} />사진·영상</Btn>
+                  </div>
+                ))}
+              </div>
+            )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 18px" }}>
                 {([
                   ...(src === "vacancy" ? [["공실 사진", usePhotos, setUsePhotos, "등록한 공실 사진부터"] as const] : []),
@@ -1255,7 +1503,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
               <AiPick value={aiSel} onChange={setAiSel} list={aiList} noTitle />
             </div>
           </div>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 26px", gap: 12 }}>
+          <div style={{ width: 640, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 22px", gap: 12 }}>
             {/* 예시 화면 (왼쪽) + 1~6 항목 (오른쪽) + 아래 샘플 (2026-10-22 사장님 회의) */}
             <WizardDeco ratio={ratio} bgs={[...foot.map((x) => x.thumb), ...(src === "vacancy" && usePhotos ? (vacInfo?.photos || []).map((x) => x.thumb) : [])].filter(Boolean) as string[]} subOn={subOn} setSubOn={setSubOn} subPos={subPos} subLines={subLines} deco={deco} setDeco={setDeco} agency={agency}
               firstLine={(script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim()).find(Boolean) || "자막은 이 위치에 표시됩니다").slice(0, subLines === 1 ? 22 : subLines === 2 ? 44 : 66)}
@@ -1276,6 +1524,122 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
               <span>클립 {lineCount}개 · 약 {Math.round(seconds)}초</span>
             </div>
             {err && <div style={{ fontSize: 14, color: C.danger }}>{err}</div>}
+          </div>
+          {/* 오른쪽 — 음향: 대본 보기 · AI 목소리 · 배경 음악 (2026-10-23 사장님) */}
+          <div style={{ flex: 1, minWidth: 360, padding: "8px 26px 18px", borderLeft: `1px solid ${C.line}` }}>
+            <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 2, color: C.accent, padding: "14px 0 2px" }}>SOUND</div>
+            <div style={{ paddingTop: 10 }}>
+              {head(<>대본 <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 고치려면 [이전]</span></>)}
+              <div style={{ maxHeight: 280, overflowY: "auto", padding: "8px 12px", border: `1px solid ${C.line}`, borderRadius: 6, background: C.bg, fontSize: 13.5, lineHeight: 1.7 }}>
+                {scenes.map((ls, k) => (
+                  <div key={k} style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: C.dim }}>씬 {k + 1}</div>
+                    <div>{ls.join(" ")}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ ...row, flexWrap: "wrap" }}>
+              <span style={{ flex: 1 }}>{head("AI 목소리", true)}</span>
+              <Toggle on={voiceOn} onChange={setVoiceOn} />
+              {voiceOn && (
+                <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {/* 목록 대신 — 고른 성우 얼굴 카드, 누르면 얼굴 카드 창 */}
+                  {(() => {
+                    const v = findVoice(voiceId);
+                    return (
+                      <button type="button" onClick={() => setVoicePick(true)} title="눌러서 목소리 바꾸기"
+                        style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}>
+                        {v && <VoiceFace id={v.id} name={v.name} size={56} />}
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{v?.name || "목소리"}</span>
+                          {v && <span style={{ display: "block", fontSize: 14, color: C.sub, marginTop: 3 }}>{v.kind}{"age" in v && "mood" in v ? ` · ${v.age} · ${v.mood}` : ""}</span>}
+                        </span>
+                        <span role="button" tabIndex={0} title="성우 견본 듣기 (무료)" onClick={(e) => { e.stopPropagation(); void playSample(); }}
+                          style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, border: `1px solid ${C.line2}`, background: smp === "play" ? C.accent : "transparent", color: smp === "play" ? "#fff" : C.text, display: "inline-flex", alignItems: "center", justifyContent: "center", opacity: smp === "busy" ? 0.5 : 1 }}>
+                          <Icon name={smp === "play" ? "pause" : "play"} size={15} />
+                        </span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: C.sub, display: "inline-flex", alignItems: "center", gap: 4 }}>바꾸기<Icon name="chevron" size={14} /></span>
+                      </button>
+                    );
+                  })()}
+                  {voicePick && <VoicePanel initial={{ id: voiceId, speed, emotion }} pickLabel="이 목소리로" targetCount={0}
+                    onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); saveLastVoice({ id: o.id, speed: o.speed, emotion: o.emotion }); setVoicePick(false); }} onClose={() => setVoicePick(false)} />}
+                  {/* 일레븐랩스 — 고급 설정 (모델·안정성·유사도·스타일·속도·스피커 부스트) 다 펼쳐서 (2026-10-20 사장님) */}
+                  {voiceId.startsWith("el_") && <ElevenDetail voiceId={voiceId} emotion={emotion || "normal"} onEmotion={setEmotion} openFirst />}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 14, color: C.sub, width: 50 }}>속도</span>
+                    <input type="range" min={0.7} max={1.6} step={0.05} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ flex: 1, accentColor: C.accent }} />
+                    <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{speed.toFixed(2)}배</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 14, color: C.sub, width: 50 }}>볼륨</span>
+                    <input type="range" min={0} max={1} step={0.05} value={voiceVol} onChange={(e) => setVoiceVol(Number(e.target.value))} style={{ flex: 1, accentColor: C.accent }} />
+                    <span style={{ fontSize: 14, width: 44, textAlign: "right" }}>{Math.round(voiceVol * 100)}%</span>
+                  </div>
+                  <Btn small onClick={() => void previewScript()} disabled={!lineCount || pv === "busy" || !b.voiceSave} style={{ alignSelf: "flex-start" }}
+                    title="지금 성우·속도·세부 설정으로 대본 처음 세 문장을 들어 봐요 (저장하지 않음)">
+                    <Icon name={pv === "play" ? "pause" : "play"} size={15} />{pv === "busy" ? "만드는 중…" : pv === "play" ? "멈추기" : `내 대본으로 미리 듣기${lineCount > 3 ? " (처음 3문장)" : ""}${/^(el|tc)_/.test(voiceId) ? " · 크레딧 사용" : ""}`}
+                  </Btn>
+                  {err && <div style={{ fontSize: 13, color: C.danger }}>{err}</div>}
+                </div>
+              )}
+            </div>
+            <div style={{ ...row, flexWrap: "wrap" }}>
+              <span style={{ flex: 1 }}>{head("배경 음악", true)}</span>
+              <Toggle on={musicOn} onChange={setMusicOn} />
+              {/* 자동 음소거 — 소리 설정이라 배경 음악과 함께 (2026-10-22 사장님) */}
+              <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px" }} title="화면에 넣은 영상의 원래 소리를 꺼요 (AI 목소리가 잘 들리게)">
+                <span style={{ flex: 1, fontSize: 13.5 }}>자동 음소거 <span style={{ fontSize: 12, color: C.dim }}>· 첨부한 영상의 원래 소리만 끄기 (AI 보이스·배경음악은 그대로)</span></span>
+                <Toggle on={autoMute} onChange={setAutoMute} />
+              </div>
+              {musicOn && <div style={{ width: "100%", display: "flex", gap: 6, flexWrap: "wrap" }}>{MUSIC_MOODS.map((m) => <button key={m} type="button" onClick={() => { setMood(m); if (track?.kind === "lib") setTrack(null); }} style={chip(mood === m && track?.kind !== "mine")}>{m}</button>)}</div>}
+              {musicOn && (
+                <div style={{ width: "100%", marginTop: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      ♪ {track ? track.label : `${(MUSIC_LIBRARY.find((x) => x.mood === mood) || MUSIC_LIBRARY[0]).label} (분위기 첫 곡)`}
+                    </span>
+                    <button type="button" onClick={() => { setPickFor(-1); setMusicPick(true); }} style={chip(false)}>곡 직접 고르기</button>
+                  </div>
+                  {/* 전체 한 곡 / 씬별로 (2026-10-23 사장님) */}
+                  <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                    {(["all", "scene"] as const).map((k) => <button key={k} type="button" onClick={() => setMusicMode(k)} style={{ ...chip(musicMode === k), height: 30, padding: "0 12px", fontSize: 13 }}>{k === "all" ? "전체 한 곡" : "씬별로"}</button>)}
+                  </div>
+                  {musicMode === "scene" && (
+                    <div style={{ marginTop: 8, border: `1px solid ${C.line}`, borderRadius: 6, maxHeight: 280, overflowY: "auto" }}>
+                      {scenes.map((ls, k) => {
+                        const m = sceneMusic[k];
+                        const val = !m ? "same" : m.kind === "none" ? "none" : m.kind === "mood" ? `mood:${m.mood}` : "track";
+                        return (
+                          <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px", borderTop: k ? `1px solid ${C.line}` : "none" }}>
+                            <span style={{ flexShrink: 0, width: 38, fontSize: 12, fontWeight: 800, color: C.sub }}>씬 {k + 1}</span>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={ls.join(" ")}>{ls[0]}</span>
+                            <select value={val} onChange={(e) => { const v = e.target.value; setSceneMusic((l) => { const n = [...l]; n[k] = v === "same" ? undefined : v === "none" ? { kind: "none" } : v.startsWith("mood:") ? { kind: "mood", mood: v.slice(5) } : n[k]; return n; }); }}
+                              style={{ ...input, width: 150, height: 30, fontSize: 12.5, padding: "0 6px" }}>
+                              <option value="same">{k ? "앞 씬과 같게" : "위 전체 설정"}</option>
+                              {MUSIC_MOODS.map((md) => <option key={md} value={`mood:${md}`}>{md}</option>)}
+                              {m?.kind === "track" && <option value="track">♪ {m.track.label}</option>}
+                              <option value="none">음악 없음</option>
+                            </select>
+                            <button type="button" title="이 씬 곡 직접 고르기" onClick={() => { setPickFor(k); setMusicPick(true); }} style={{ ...chip(m?.kind === "track"), height: 30, padding: "0 8px", fontSize: 12 }}>곡</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {musicPick && (
+                    // 편집 화면과 같은 [배경 음악] 칸 — 공실뉴스 음악 · 내 음악 · 무료 음악 사이트 (고르기만, 담는 건 [완료] 때)
+                    <div onClick={() => setMusicPick(false)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.55)", display: "flex", justifyContent: "flex-end" }}>
+                      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", height: "100%" }}>
+                        <MusicPanel project={{ dir: "" } as Project} current={track ? ({ name: track.label } as Layer) : null} rangeText="" onPick={() => {}} onClose={() => setMusicPick(false)}
+                          choose={(c) => { const t = { kind: c.kind, id: c.id, label: c.name }; if (pickFor >= 0) setSceneMusic((l) => { const n = [...l]; n[pickFor] = { kind: "track", track: t }; return n; }); else setTrack(t); setMusicPick(false); }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1328,4 +1692,56 @@ function CapStrip({ items, busy, label: what = "화면 캡쳐" }: { items: LibIt
       )}
     </div>
   );
+}
+
+/** 사무소 이름 → 뉴스 이름 (2026-10-23 사장님 예: 빌드온공인중개사 → 빌드온뉴스 · 단지공인 → 단지공인뉴스 · 무지개부동산 → 무지개공인뉴스). 없으면 공실뉴스. 기본값일 뿐 회원이 고친다 */
+function newsNameOf(name?: string | null): string {
+  let n = String(name || "").replace(/\s+/g, "").replace(/\(.*?\)/g, "");
+  if (!n) return "공실뉴스";
+  n = n.replace(/(공인중개사사무소|공인중개사무소|공인중개사|부동산중개사무소|중개사무소|부동산중개)$/, "");
+  n = n.replace(/부동산$/, "공인");
+  return n ? n + " 뉴스" : "공실뉴스"; // 부동산명 뉴스 (예: 착한임대 뉴스 · 빌드온 뉴스), 공실뉴스는 붙여서
+}
+
+/** 소개 한 줄 기본값 — 오늘이 그 달 몇째 주인지 (1~7일 첫째주, 8~14일 둘째주 …) */
+function weekTagline(d = new Date()): string {
+  const nth = ["첫째", "둘째", "셋째", "넷째", "다섯째"][Math.min(4, Math.floor((d.getDate() - 1) / 7))];
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${nth}주 뉴스`;
+}
+
+/** 인사말 고르기 — 오늘 날짜에 맞춰 (계절·이달·명절·연말연초 등). 고르면 인사말 요청 칸에 그대로 들어간다 */
+function greetings(d = new Date()): { name: string; text: string }[] {
+  const m = d.getMonth() + 1;
+  const season = m >= 3 && m <= 5 ? "봄" : m >= 6 && m <= 8 ? "여름" : m >= 9 && m <= 11 ? "가을" : "겨울";
+  const look: Record<string, string> = {
+    봄: "따뜻한 햇살과 꽃소식, 새 출발과 이사철",
+    여름: "무더위와 장마, 시원한 휴가철",
+    가을: "높고 푸른 하늘과 선선한 바람, 결실의 계절",
+    겨울: "찬 바람과 첫눈, 따뜻한 집의 소중함",
+  };
+  const monthTalk: Record<number, string> = {
+    1: "새해 첫 달, 새로운 계획과 다짐", 2: "설 명절 뒤 봄을 기다리는 마음", 3: "새 학기와 봄 이사철의 시작",
+    4: "꽃이 활짝 핀 봄날", 5: "가정의 달, 가족과 함께하는 집", 6: "여름의 문턱, 상반기를 마무리하며",
+    7: "본격적인 무더위와 휴가철", 8: "늦여름, 가을 이사철을 준비하며", 9: "추석 명절과 가을의 시작",
+    10: "깊어가는 가을, 단풍과 결실", 11: "늦가을, 한 해를 정리하기 시작할 때", 12: "한 해를 마무리하는 연말",
+  };
+  const list = [
+    { name: `${season} 인사`, text: `${season} 인사로 시작 — ${look[season]}` },
+    { name: `${m}월 인사`, text: `${m}월 인사로 시작 — ${monthTalk[m]}` },
+    { name: "날씨 인사", text: "요즘 날씨 이야기로 가볍게 시작하고, 건강 챙기시라는 안부" },
+  ];
+  if (m === 12 || m === 1) list.push({ name: m === 12 ? "연말 인사" : "새해 인사", text: m === 12 ? "한 해 동안 고마웠다는 연말 인사" : "새해 복 많이 받으시라는 새해 인사" });
+  if (m === 1 || m === 2) list.push({ name: "설 인사", text: "설 명절 인사 — 가족과 넉넉한 명절 되시라는 안부" });
+  if (m === 9 || m === 10) list.push({ name: "추석 인사", text: "추석 명절 인사 — 풍성하고 넉넉한 한가위 되시라는 안부" });
+  list.push(
+    { name: "감사 인사", text: "늘 찾아 주시는 분들께 고맙다는 인사로 시작" },
+    { name: "응원 인사", text: "집을 찾는 분, 집을 내놓은 분 모두를 응원하는 따뜻한 인사" },
+    { name: "시장 한마디", text: "요즘 부동산 시장 분위기를 한 문장으로 짚으며 시작 (숫자는 쓰지 않기)" },
+  );
+  return list;
+}
+
+/** 앱 덮개 (누르는 순간부터) — 웹에서는 없음 */
+function busyBridge() {
+  return (window as unknown as { gongsilStudio?: { busy?: { hold: (t: string, sub?: string) => Promise<{ stopped: boolean }>; text: (t: string, sub?: string) => Promise<{ stopped: boolean }>; release: () => Promise<void> } } }).gongsilStudio?.busy;
 }

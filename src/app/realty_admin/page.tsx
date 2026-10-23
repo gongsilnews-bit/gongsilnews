@@ -106,6 +106,13 @@ function RealtyAdminContent() {
   }, [menuParam]);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  // 스튜디오 메뉴의 [밝은/어두운 화면] 단추가 고른 값을 관리 화면도 따른다 (한 번 고른 적이 있을 때만 — 처음엔 지금처럼 밝게)
+  useEffect(() => {
+    const load = () => { try { const v = localStorage.getItem("gs-studio-theme"); if (v) setDarkMode(v === "dark"); } catch {} };
+    load();
+    window.addEventListener("gs-studio-theme-change", load);
+    return () => window.removeEventListener("gs-studio-theme-change", load);
+  }, []);
   // 영상 편집에서 왼쪽 메뉴 줄 숨기기 — 편집 화면 맨 위 [»]가 'studio:rail' 신호로 다시 보이게 한다 (이 기기에 기억)
   const [railHidden, setRailHidden] = useState(false);
   const [videoEditing, setVideoEditing] = useState(false); // 편집 화면이 열려 있을 때만 숨긴다 (처음 화면에는 메뉴가 늘 보이게)
@@ -167,12 +174,15 @@ function RealtyAdminContent() {
     setMenuDraft(null);
   };
   const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
-  const shown = (k: string) => !(studioApp.isApp && HIDDEN_IN_APP.includes(k));
+  // 최고관리자는 앱에서도 숨긴 메뉴까지 모두 본다 — 숨긴 메뉴에는 [개발중] 표시 (2026-10-23 사장님)
+  const isSuperAdmin = isAdminRole(userRole);
+  const shown = (k: string) => !(studioApp.isApp && HIDDEN_IN_APP.includes(k) && !isSuperAdmin);
+  const badges = studioApp.isApp && isSuperAdmin ? { ...STUDIO_BADGES, ...Object.fromEntries(HIDDEN_IN_APP.map((k) => [k, "dev:개발중"])) } : STUDIO_BADGES;
   // 앱에서 숨긴 메뉴로 들어오면 (주소·기억된 메뉴) 대시보드로
   useEffect(() => {
-    if (studioApp.isApp && HIDDEN_IN_APP.includes(activeMenu)) { setActiveMenu("dashboard"); router.replace("?menu=dashboard", { scroll: false }); }
+    if (studioApp.isApp && !isAdminRole(userRole) && userRole && HIDDEN_IN_APP.includes(activeMenu)) { setActiveMenu("dashboard"); router.replace("?menu=dashboard", { scroll: false }); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studioApp.isApp, activeMenu]);
+  }, [studioApp.isApp, activeMenu, userRole]);
 
   // 공실뉴스기자(유료회원/최고관리자) 자격 판별
   const isReporterEligible =
@@ -242,8 +252,9 @@ function RealtyAdminContent() {
         return;
       }
 
-      // 🔐 최고관리자는 /admin으로 리다이렉트
-      if (isAdminRole(member.role)) {
+      // 🔐 최고관리자는 /admin으로 리다이렉트 — 단 공실스튜디오 앱 안에서는 그대로 두고 모든 메뉴를 쓴다 (2026-10-23 사장님)
+      const inStudioApp = /gongsil-studio|GongsilStudio|공실스튜디오|Electron\//i.test(navigator.userAgent);
+      if (isAdminRole(member.role) && !inStudioApp) {
         window.location.href = "/admin";
         return;
       }
@@ -268,8 +279,8 @@ function RealtyAdminContent() {
         if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED' && member.role === 'REALTOR') setShowDocWarning(true);
       } else {
-        // 등록증 심사가 완료되지 않은 회원은 서류 검토중 상태로 기본 노출
-        setAgencyStatus("PENDING");
+        // 등록증 심사가 완료되지 않은 회원은 서류 검토중 상태로 기본 노출 (최고관리자는 서류가 없으니 검토중을 띄우지 않는다 — 앱에서도 쓴다)
+        setAgencyStatus(isAdminRole(member.role) ? "APPROVED" : "PENDING");
         setUserRole(getEffectiveMemberRole(member.role, null));
       }
 
@@ -316,7 +327,8 @@ function RealtyAdminContent() {
   const [saving] = useState(false);
 
   const theme = computeTheme(darkMode);
-  const sidebarBg = darkMode ? "#1e2a42" : "#1a3a6b";
+  // 메뉴 바·위쪽 바 색 — 최고관리자는 검정 (사이트 관리자 화면 /admin 과 같게, 2026-10-23 사장님), 회원은 파랑
+  const sidebarBg = isSuperAdmin ? "#111827" : darkMode ? "#1e2a42" : "#1a3a6b";
 
   // 🔐 인증 확인 전까지 빈 화면 (깜빡임 방지)
   if (!authChecked) {
@@ -344,7 +356,7 @@ function RealtyAdminContent() {
           background={sidebarBg}
           isApp={studioApp.isApp}
           appVersion={studioApp.version}
-          badges={STUDIO_BADGES}
+          badges={badges}
           autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
           // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
           hidden={((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing && railHidden}
@@ -433,7 +445,7 @@ function RealtyAdminContent() {
           {memberId && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
             <NotificationBell color={useStudioMenu ? "#ffffff" : darkMode ? "#e1e4e8" : "#333"} />
-            <button onClick={() => setDarkMode(!darkMode)} style={{ background: useStudioMenu ? "rgba(255,255,255,0.08)" : darkMode ? "#2c2d31" : "none", border: `1px solid ${useStudioMenu ? "rgba(255,255,255,0.25)" : darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
+            {!useStudioMenu && <button onClick={() => setDarkMode(!darkMode)} style={{ background: useStudioMenu ? "rgba(255,255,255,0.08)" : darkMode ? "#2c2d31" : "none", border: `1px solid ${useStudioMenu ? "rgba(255,255,255,0.25)" : darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>}
             <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut({ scope: "local" }); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: useStudioMenu ? "1px solid rgba(255,255,255,0.25)" : "none", borderRadius: 6, background: useStudioMenu ? "rgba(255,255,255,0.12)" : darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
           </div>
         </header>

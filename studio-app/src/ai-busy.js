@@ -289,4 +289,32 @@ async function during(text, fn, sub = "") {
   }
 }
 
-module.exports = { setWindow, attach, during, stop, isStopped, stopError, signal, STOP_MSG };
+/* 누르는 순간부터 덮개 (2026-10-23 사장님) — AI 에 묻기 전 준비(사진 받기·기사 읽기·화면 캡쳐)도 덮개에 단계로 보여 준다.
+   화면이 hold → text(단계마다) → release 로 부른다. 그사이 AI 가 during 으로 덮어도 숫자로 겹쳐 세어 마지막에 닫힌다 */
+let holding = false;
+let holdGen = -1;
+const PREP_SUB = "준비하는 중이에요 — 사진·기사·화면 캡쳐를 모은 뒤 AI 가 쓰기 시작해요.";
+function hold(text, sub = "") {
+  if (stopped && !running.size) { stopped = false; ctl = new AbortController(); }
+  if (!holding) { holding = true; holdGen = gen; depth++; if (depth === 1) since = Date.now(); }
+  label = String(text || "준비하는 중…");
+  subText = sub || PREP_SUB;
+  paint();
+  return { stopped: false };
+}
+/** 단계 글 바꾸기 — 그사이 [중지]·Esc 를 눌렀으면 stopped */
+function holdText(text, sub = "") {
+  if (!holding) return { stopped: false };
+  if (gen !== holdGen) { holding = false; return { stopped: true }; }
+  label = String(text || label);
+  subText = sub || PREP_SUB;
+  paint();
+  return { stopped: false };
+}
+function release() {
+  if (!holding) return;
+  holding = false;
+  if (gen === holdGen) { depth = Math.max(0, depth - 1); paint(); }
+}
+
+module.exports = { setWindow, attach, during, stop, isStopped, stopError, signal, STOP_MSG, hold, holdText, release };

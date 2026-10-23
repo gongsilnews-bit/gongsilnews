@@ -18,7 +18,8 @@ const path = require("path");
 const { app } = require("electron");
 
 const docs = () => app.getPath("documents");
-const root = () => path.join(docs(), "공실스튜디오");
+// 기본은 문서\공실스튜디오 — 회원이 [저장 위치]에서 D 드라이브·외장하드로 옮길 수 있다 (storage-place.js)
+const root = () => require("./storage-place").root();
 
 /** 번호 붙은 큰 폴더 이름 — 이름을 바꿀 때는 여기만 */
 const F = {

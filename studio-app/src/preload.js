@@ -12,6 +12,18 @@ if (allowed) {
     checkUpdate: () => ipcRenderer.invoke("studio:check-update"), // 새 버전 받기 → 준비되면 [지금 다시 시작]
     openAiConnect: () => ipcRenderer.invoke("studio:open-ai-window"),
     openInBrowser: (url) => ipcRenderer.invoke("studio:open-external", url),
+    // 누르는 순간부터 덮개 — 준비 단계(캡쳐 등)를 덮개에 보여 주기
+    busy: {
+      hold: (text, sub) => ipcRenderer.invoke("studio:busy-hold", text, sub),
+      text: (text, sub) => ipcRenderer.invoke("studio:busy-text", text, sub),
+      release: () => ipcRenderer.invoke("studio:busy-release"),
+    },
+    // 공실스튜디오 저장 위치 — 보기 · 바꾸기(옮기고 다시 켜기) · 폴더 열기
+    storage: {
+      get: () => ipcRenderer.invoke("studio:storage-get"),
+      choose: () => ipcRenderer.invoke("studio:storage-choose"),
+      open: () => ipcRenderer.invoke("studio:storage-open"),
+    },
     vacancy: {
       analyze: (vacancyId) => ipcRenderer.invoke("studio:vacancy-analyze", vacancyId),
       load: (vacancyId) => ipcRenderer.invoke("studio:vacancy-load", vacancyId),

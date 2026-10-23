@@ -37,7 +37,7 @@ const NO_EXT = new Set([
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
-  "studio:save-file", "studio:open-out-folder",
+  "studio:save-file", "studio:open-out-folder", "studio:storage-get", "studio:storage-choose", "studio:storage-open", "studio:busy-hold", "studio:busy-text", "studio:busy-release",
   "studio:report-get", "studio:report-list", "studio:report-save", "studio:report-remove",
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
@@ -343,13 +343,17 @@ function openAiWindow() {
     aiWindow.focus();
     return;
   }
+  // 크게 (2026-10-23 사장님) — 화면 높이에 맞춰, 늘리고 줄일 수 있게
+  const wa = screen.getDisplayMatching(mainWindow ? mainWindow.getBounds() : { x: 0, y: 0, width: 1, height: 1 }).workArea;
   aiWindow = new BrowserWindow({
-    width: 560,
-    height: 860,
+    width: Math.min(820, wa.width - 40),
+    height: Math.min(1040, wa.height - 30),
+    minWidth: 560,
+    minHeight: 600,
     parent: mainWindow || undefined,
     title: "AI 설정",
     autoHideMenuBar: true,
-    resizable: false,
+    resizable: true,
     minimizable: false,
     backgroundColor: "#f6f8fa",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
@@ -677,6 +681,12 @@ ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
   };
 });
 ipcMain.handle("studio:ai-connect", (e, id) => aiConnect.connect(id, (text) => e.sender.send("studio:ai-progress", text)));
+ipcMain.handle("studio:busy-hold", (_e, text, sub) => aiBusy.hold(text, sub));
+ipcMain.handle("studio:busy-text", (_e, text, sub) => aiBusy.holdText(text, sub));
+ipcMain.handle("studio:busy-release", () => aiBusy.release());
+ipcMain.handle("studio:storage-get", () => require("./storage-place").info());
+ipcMain.handle("studio:storage-choose", (e) => require("./storage-place").choose(BrowserWindow.fromWebContents(e.sender)));
+ipcMain.handle("studio:storage-open", () => require("./storage-place").openFolder());
 ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_URL, ffmpeg: Boolean(ffmpegPath()) }));
 
 // 웹 화면이 "스튜디오 앱"임을 알아보도록 브라우저 정보 끝에 영어 이름을 붙인다
@@ -702,6 +712,8 @@ app.on("web-contents-created", (_e, wc) => {
 });
 
 app.whenReady().then(async () => {
+  // 저장 위치 — 외장하드가 빠졌는지 · 처음 켤 때 OneDrive/자리 부족이면 옮기기 권하기 (storage-place.js)
+  try { await require("./storage-place").startup(); } catch (e) { log.warn(`[저장 위치] ${e.message}`); }
   try { require("./studio-root").ensureAll(); } catch {}
   try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();

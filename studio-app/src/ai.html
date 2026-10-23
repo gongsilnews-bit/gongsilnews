@@ -69,6 +69,9 @@
     <div class="writer" id="writer"></div>
     <div id="list"></div>
     <div class="msg" id="msg"></div>
+    <!-- AI 보이스 (성우) — 회원 자기 API 키, 이 PC 에만 (2026-10-23 사장님: AI 설정에서도) -->
+    <div class="writer" style="margin-top:18px"><div class="t">AI 보이스 (성우) <span>· 동영상제작 AI 목소리 · AI 보이스 녹음에 써요. 내 API 키를 넣으면 그 회사 성우를 고를 수 있어요</span></div></div>
+    <div id="voices"></div>
     <div class="note">
       <b>내 계정으로</b>: AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다. Gemini는 업무용 구글 계정 말고 별도 계정을 권합니다.<br>
       <b>API 키로</b>: 각 AI 사이트 결제 화면에서 <b>월 사용 한도</b>를 꼭 걸어 두세요. 키는 남에게 보여 주지 말고, 새 나갔으면 그 사이트에서 지우고 새로 만드세요.
@@ -332,6 +335,41 @@
     for (const it of items.filter((x) => x.ready && x.mode !== "api" && !x.accountOk && !x.checkedAt)) await run(it.id, it.name, "check");
     if (!busy) say("");
   })();
+  /* ── AI 보이스 — 타입캐스트 · 일레븐랩스 API 키 ── */
+  const VOICE = [
+    { id: "typecast", name: "타입캐스트", url: "https://typecast.ai/", tip: "타입캐스트 사이트 › 개발자(API) › API 키 만들기" },
+    { id: "eleven", name: "일레븐랩스", url: "https://elevenlabs.io/app/settings/api-keys", tip: "일레븐랩스 사이트 › 설정 › API 키 만들기 (Text to Speech · Voices 읽기 권한)" },
+  ];
+  async function renderVoices() {
+    const box = document.getElementById("voices");
+    const v = studio.video || {};
+    box.innerHTML = "";
+    for (const p of VOICE) {
+      const api = v[p.id];
+      if (!api) continue;
+      const st = await api.status().catch(() => ({ has: false }));
+      const row = document.createElement("div");
+      row.className = "row" + (st.has ? " on" : "");
+      row.innerHTML = '<div class="top"><span class="dot' + (st.has ? " on" : "") + '"></span><div class="grow"><div class="name">' + p.name + '</div><div class="sub' + (st.has ? " on" : "") + '">' + (st.has ? "● API 키 연결됨 · " + esc(st.masked || "") + " · 성우 " + (st.count || 0) + "명" : "API 키 없음") + '</div></div></div>'
+        + '<div class="acts"><input class="keyin" type="password" placeholder="' + (st.has ? "새 키로 바꾸려면 붙여 넣기" : p.name + " API 키 붙여 넣기") + '"><button type="button" data-a="set">' + (st.has ? "바꾸기" : "연결") + '</button>' + (st.has ? '<button type="button" class="ghost" data-a="clear">끊기</button>' : "") + '</div>'
+        + '<div class="help">키 받는 곳: ' + p.tip + ' · <a data-a="site">사이트 열기 ↗</a><br>키는 이 PC에만 잠가서 저장돼요 (공실뉴스로 보내지 않음). 쓴 만큼 그 회사에 직접 결제돼요.</div>';
+      const input = row.querySelector("input");
+      const say = (t, err) => { const m = document.getElementById("msg"); m.textContent = t; m.classList.toggle("err", Boolean(err)); };
+      row.querySelector('[data-a="site"]').onclick = () => studio.openInBrowser(p.url);
+      row.querySelector('[data-a="set"]').onclick = async (e) => {
+        const k = input.value.trim();
+        if (!k) { input.focus(); return; }
+        e.target.disabled = true; say(p.name + " 키를 확인하는 중…");
+        try { const r = await api.setKey(k); say(p.name + " 연결됐어요 · 성우 " + (r.count || 0) + "명"); renderVoices(); }
+        catch (err) { say(p.name + ": " + String(err && err.message || err).replace(/^Error invoking remote method [^:]+: (Error: )?/, ""), true); e.target.disabled = false; }
+      };
+      const c = row.querySelector('[data-a="clear"]');
+      if (c) c.onclick = async () => { if (!confirm(p.name + " API 키를 이 PC에서 지울까요?")) return; await api.clear(); say(p.name + " 키를 지웠어요"); renderVoices(); };
+      box.appendChild(row);
+    }
+  }
+  renderVoices();
+  window.addEventListener("focus", renderVoices);
 </script>
 </body>
 </html>

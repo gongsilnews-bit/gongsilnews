@@ -4,7 +4,7 @@
 //  - 모든 일은 이 PC 안에서 (서버 없음) — 열기·그리기·저장이 바로바로
 //  - 화면: 처음 화면(새 파일·열기·최근 파일) → 문서 탭 · 그림판 · 오른쪽 속성 칸 · 레이어 목록
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Btn, C, FONT, Icon, Modal, input } from "@/components/admin/studio-video/ui";
+import { Btn, C, FONT, Icon, Modal, input, useStudioTheme } from "@/components/admin/studio-video/ui";
 import { loadFont } from "@/components/admin/studio-video/Pickers";
 import { stickerFileName, stickerPng, type Sticker } from "@/components/admin/studio-video/Stickers";
 import {
@@ -326,6 +326,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineR
 
 /* ── 처음 화면 ── */
 function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onAi, mine, onMine, onMineRemove }: { onNew: () => void; onOpen: () => void; onRecent: (r: Recent) => void; busy: boolean; onPreset: (i: NewInit) => void; top?: React.ReactNode; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; onAi?: () => void; mine?: MyTpl[] | null; onMine?: (t: MyTpl, ai: boolean) => void; onMineRemove?: (t: MyTpl) => void }) {
+  const [theme] = useStudioTheme(false);
   const b = bridge();
   const [cat, setCat] = useState("");
   const [recent, setRecent] = useState<Recent[] | null>(null);
@@ -345,9 +346,10 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex" }}>
     {/* 왼쪽 — 만들 것 고르기 (부동산에 필요한 것) */}
+    {/* 왼쪽 둘째 칸 — 밝은 화면이면 흰색, 어두운 화면이면 어둡게 (2026-10-23 사장님) */}
     <aside style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2, padding: "22px 12px", background: C.panel, borderRight: `1px solid ${C.line}`, fontFamily: FONT }}>
       <h2 style={{ margin: "0 6px 12px", fontSize: 19, fontWeight: 800, color: C.text }}>이미지제작</h2>
-      <AiSettingsBox />
+      <AiSettingsBox light={theme === "light"} />
       {catBtn("", "최근 파일", "folder")}
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.dim, margin: "14px 12px 4px" }}>만들기</div>
       {PRESETS.map((p) => catBtn(p.id, p.label, p.icon))}
@@ -429,6 +431,7 @@ const BLEND_NAMES: [NonNullable<PLayer["blendMode"]>, string][] = [
 export type PhotoEmbed = { doc: Doc; title: string; useLabel?: string; onUse: (png: Uint8Array, psd: Uint8Array) => void | Promise<void>; onCancel: () => void };
 
 export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; embed?: PhotoEmbed }) {
+  useStudioTheme(!embed); // 밝은/어두운 화면 (2026-10-23)
   const b = bridge();
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick((t) => t + 1), []);
@@ -2511,19 +2514,19 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   ];
   /** 메뉴 한 줄 — sub 가 있으면 ▸ 하위 메뉴 (마우스를 올리면 오른쪽에, 포토샵처럼) */
   const menuRow = (it: MI, i: number, key: string): React.ReactNode => {
-    if (it === "-") return <div key={i} style={{ height: 1, background: "#454545", margin: "4px 0" }} />;
+    if (it === "-") return <div key={i} style={{ height: 1, background: C.psMenuSep, margin: "4px 0" }} />;
     const open = Boolean(it.sub) && subOpen === key && !it.off;
     return (
       <div key={i} style={{ position: "relative" }} onMouseEnter={() => setSubOpen(it.sub ? key : key.split("-").slice(0, -1).join("-"))}>
         <button type="button" disabled={it.off} onClick={() => { if (it.sub) { setSubOpen(open ? "" : key); return; } setMenuOpen(""); setSubOpen(""); it.go?.(); }}
-          style={{ display: "flex", width: "100%", alignItems: "center", gap: 16, padding: "6px 16px 6px 22px", border: 0, background: open ? "#1473e6" : "transparent", color: it.off ? "#777" : "#e6e6e6", fontSize: 13.5, fontFamily: FONT, textAlign: "left", cursor: it.off ? "default" : "pointer", whiteSpace: "nowrap" }}
-          onMouseEnter={(e) => { if (!it.off) e.currentTarget.style.background = "#1473e6"; }} onMouseLeave={(e) => { if (!open) e.currentTarget.style.background = "transparent"; }}>
-          <span style={{ width: 12, marginLeft: -14, color: "#fff" }}>{it.on ? "✓" : ""}</span><span style={{ flex: 1 }}>{it.t}</span>
+          style={{ display: "flex", width: "100%", alignItems: "center", gap: 16, padding: "6px 16px 6px 22px", border: 0, background: open ? C.psHi : "transparent", color: it.off ? C.psOff : C.psMenuText, fontSize: 13.5, fontFamily: FONT, textAlign: "left", cursor: it.off ? "default" : "pointer", whiteSpace: "nowrap" }}
+          onMouseEnter={(e) => { if (!it.off) e.currentTarget.style.background = C.psHi; }} onMouseLeave={(e) => { if (!open) e.currentTarget.style.background = "transparent"; }}>
+          <span style={{ width: 12, marginLeft: -14, color: C.psMenuText }}>{it.on ? "✓" : ""}</span><span style={{ flex: 1 }}>{it.t}</span>
           {it.key && <span style={{ color: it.off ? "#666" : "#aaa", fontSize: 12.5 }}>{it.key}</span>}
           {it.sub && <span style={{ color: it.off ? "#666" : "#ccc", fontSize: 10 }}>▶</span>}
         </button>
         {open && (
-          <div style={{ position: "absolute", left: "100%", top: -4, minWidth: 220, padding: "4px 0", background: "#323232", border: "1px solid #1f1f1f", borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+          <div style={{ position: "absolute", left: "100%", top: -4, minWidth: 220, padding: "4px 0", background: C.psMenu, border: `1px solid ${C.psBarLine}`, borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
             {it.sub!.map((x, j) => menuRow(x, j, `${key}-${j}`))}
           </div>
         )}
@@ -2531,17 +2534,17 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     );
   };
   const menuBar = (
-    <div style={{ display: "flex", alignItems: "center", height: 30, padding: "0 6px", background: "#2b2b2b", borderBottom: "1px solid #1f1f1f", flexShrink: 0, position: "relative", zIndex: 60 }}>
+    <div style={{ display: "flex", alignItems: "center", height: 30, padding: "0 6px", background: C.psBar, borderBottom: `1px solid ${C.psBarLine}`, flexShrink: 0, position: "relative", zIndex: 60 }}>
       {railHidden && hasDoc && (
         <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("studio:rail", { detail: false }))} title="왼쪽 메뉴 보이기"
-          style={{ width: 26, height: 24, marginRight: 4, border: "1px solid #4a4a4a", borderRadius: 4, background: "transparent", color: "#ddd", fontSize: 15, fontWeight: 800, cursor: "pointer", lineHeight: 1 }}>»</button>
+          style={{ width: 26, height: 24, marginRight: 4, border: `1px solid ${C.psEdge}`, borderRadius: 4, background: "transparent", color: C.psDdd, fontSize: 15, fontWeight: 800, cursor: "pointer", lineHeight: 1 }}>»</button>
       )}
       {menus.map((m) => (
         <div key={m.id} style={{ position: "relative" }}>
           <button type="button" onClick={() => { setMenuOpen(menuOpen === m.id ? "" : m.id); setSubOpen(""); }} onMouseEnter={() => { if (menuOpen) { setMenuOpen(m.id); setSubOpen(""); } }}
-            style={{ height: 26, padding: "0 10px", border: 0, borderRadius: 4, background: menuOpen === m.id ? "#3e3e3e" : "transparent", color: "#ddd", fontSize: 13.5, fontFamily: FONT, cursor: "pointer" }}>{m.label}</button>
+            style={{ height: 26, padding: "0 10px", border: 0, borderRadius: 4, background: menuOpen === m.id ? C.psOpen : "transparent", color: C.psDdd, fontSize: 13.5, fontFamily: FONT, cursor: "pointer" }}>{m.label}</button>
           {menuOpen === m.id && (
-            <div style={{ position: "absolute", left: 0, top: 28, minWidth: 250, padding: "4px 0", background: "#323232", border: "1px solid #1f1f1f", borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+            <div style={{ position: "absolute", left: 0, top: 28, minWidth: 250, padding: "4px 0", background: C.psMenu, border: `1px solid ${C.psBarLine}`, borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
               {m.items.map((it, i) => menuRow(it, i, `${m.id}-${i}`))}
             </div>
           )}
@@ -2553,7 +2556,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   /* 옵션줄 — 집 · 지금 도구 · 맞춤 · 되돌리기 … 오른쪽에 저장 · 내보내기 */
   const iconBtn = (icon: React.ReactNode, tip: string, go: () => void, disabled = false, on = false) => (
     <button type="button" title={tip} onClick={go} disabled={disabled}
-      style={{ width: 32, height: 30, borderRadius: 4, border: 0, background: on ? "#4a4a4a" : "transparent", color: disabled ? C.dim : C.text, cursor: disabled ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      style={{ width: 32, height: 30, borderRadius: 4, border: 0, background: on ? C.psEdge : "transparent", color: disabled ? C.dim : C.text, cursor: disabled ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {typeof icon === "string" ? <Icon name={icon} size={18} /> : icon}
     </button>
   );
@@ -2835,22 +2838,22 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
             // 누른 채로 단추 밖으로 끌면 바로 목록을 연다
             if (flyT.current && e.buttons & 1 && many) { clearTimeout(flyT.current); flyT.current = null; flyHold.current = true; const r = e.currentTarget.getBoundingClientRect(); setFlyAt({ x: r.right + 4, y: r.top }); setFly(g.key); }
           }}
-          style={{ position: "relative", width: 36, height: 32, borderRadius: 4, border: 0, background: on ? "#505050" : "transparent", color: on ? "#fff" : "#cfcfcf", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-          onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = "#3a3a3a"; }} onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+          style={{ position: "relative", width: 36, height: 32, borderRadius: 4, border: 0, background: on ? C.psToolOn : "transparent", color: on ? "#fff" : "#cfcfcf", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = C.psHover; }} onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = "transparent"; }}>
           {TOOL_ICON[cur]}
           {many && <span style={{ position: "absolute", right: 2, bottom: 2, width: 0, height: 0, borderLeft: "4px solid transparent", borderBottom: "4px solid currentColor", opacity: 0.8 }} />}
         </button>
         {fly === g.key && (
           <div onPointerDown={(e) => e.stopPropagation()}
-            style={{ position: "fixed", left: flyAt.x, top: flyAt.y, zIndex: 3000, minWidth: 210, padding: "4px 0", background: "#323232", border: "1px solid #1f1f1f", borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+            style={{ position: "fixed", left: flyAt.x, top: flyAt.y, zIndex: 3000, minWidth: 210, padding: "4px 0", background: C.psMenu, border: `1px solid ${C.psBarLine}`, borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
             {g.tools.map((x) => (
               <button key={x.t} type="button" data-fly-tool={x.t} onClick={() => { setTool(x.t); setFly(""); }}
-                style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "5px 12px 5px 8px", border: 0, background: "transparent", color: "#e6e6e6", fontSize: 13, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#1473e6"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "5px 12px 5px 8px", border: 0, background: "transparent", color: C.psMenuText, fontSize: 13, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = C.psHi; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                 <span style={{ width: 6, fontSize: 10 }}>{x.t === cur ? "■" : ""}</span>
                 <span style={{ width: 20, display: "flex", justifyContent: "center" }}>{TOOL_ICON[x.t]}</span>
                 <span style={{ flex: 1 }}>{x.name}</span>
-                <span style={{ color: "#aaa", fontSize: 12 }}>{g.key}</span>
+                <span style={{ color: C.psMute2, fontSize: 12 }}>{g.key}</span>
               </button>
             ))}
           </div>
@@ -2860,8 +2863,8 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   };
   const extraBtn = (icon: React.ReactNode, tip: string, go: () => void) => (
     <button key={tip} type="button" title={tip} onClick={go}
-      style={{ width: 36, height: 32, borderRadius: 4, border: 0, background: "transparent", color: "#cfcfcf", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "#3a3a3a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+      style={{ width: 36, height: 32, borderRadius: 4, border: 0, background: "transparent", color: C.psIcon, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = C.psHover; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
       {typeof icon === "string" ? <Icon name={icon} size={19} /> : icon}
     </button>
   );
@@ -2882,7 +2885,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
       {/* [AI] — AI 요청바 켜고 끄기 (포토샵 상황별 작업 표시줄 · 프롬프트 입력창, 2026-10-22 사장님) */}
       <button type="button" title="AI 요청바 — 생성형 채우기 · 프롬프트로 편집 · 이미지 생성 · 배경 제거" onClick={() => setAiBar(!aiBar)}
         style={{ width: 36, height: 32, borderRadius: 4, border: 0, background: aiBar ? "#1473e6" : "transparent", color: aiBar ? "#fff" : "#cfcfcf", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-        onMouseEnter={(e) => { if (!aiBar) e.currentTarget.style.background = "#3a3a3a"; }} onMouseLeave={(e) => { if (!aiBar) e.currentTarget.style.background = "transparent"; }}>
+        onMouseEnter={(e) => { if (!aiBar) e.currentTarget.style.background = C.psHover; }} onMouseLeave={(e) => { if (!aiBar) e.currentTarget.style.background = "transparent"; }}>
         <span style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: -0.5 }}>AI</span>
       </button>
       {/* 전경색 · 배경색 — AI 바로 아래, 포토샵처럼 두 칸이 겹쳐 보이게 (2026-10-22 사장님) */}
@@ -2890,15 +2893,15 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
       <div style={{ position: "relative", width: 40, height: 46, flexShrink: 0, marginBottom: 6 }}>
         <button type="button" title="기본 색 — 검정·흰색 (D)" onClick={() => setPaint({ fg: "#000000", bg: "#FFFFFF" })}
           style={{ position: "absolute", left: 1, top: 0, width: 12, height: 12, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}>
-          <span style={{ position: "absolute", left: 4, top: 4, width: 7, height: 7, background: "#fff", border: "1px solid #aaa" }} />
-          <span style={{ position: "absolute", left: 0, top: 0, width: 7, height: 7, background: "#000", border: "1px solid #aaa" }} />
+          <span style={{ position: "absolute", left: 4, top: 4, width: 7, height: 7, background: "#fff", border: `1px solid ${C.psMute2}` }} />
+          <span style={{ position: "absolute", left: 0, top: 0, width: 7, height: 7, background: "#000", border: `1px solid ${C.psMute2}` }} />
         </button>
         <button type="button" title="전경색 ↔ 배경색 (X)" onClick={() => setPaint({ fg: paint.bg, bg: paint.fg })}
-          style={{ position: "absolute", right: 0, top: 0, width: 14, height: 14, padding: 0, border: 0, background: "transparent", color: "#ddd", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          style={{ position: "absolute", right: 0, top: 0, width: 14, height: 14, padding: 0, border: 0, background: "transparent", color: C.psDdd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3"><path d="M2 4.5Q2 2 4.5 2H9M7.5 0.5 9 2 7.5 3.5M10 7.5Q10 10 7.5 10H3M4.5 8.5 3 10l1.5 1.5" /></svg>
         </button>
         <button type="button" title="배경색 — 누르면 색 고르기" onClick={() => setColorEdit(colorEdit === "bg" ? "" : "bg")}
-          style={{ position: "absolute", left: 15, top: 20, width: 24, height: 24, border: "1px solid #999", background: paint.bg, cursor: "pointer", padding: 0, boxShadow: "0 0 0 1px #000" }} />
+          style={{ position: "absolute", left: 15, top: 20, width: 24, height: 24, border: `1px solid ${C.psMute}`, background: paint.bg, cursor: "pointer", padding: 0, boxShadow: "0 0 0 1px #000" }} />
         <button type="button" title="전경색 (브러시·페인트 통·그레이디언트 색) — 누르면 색 고르기" onClick={() => setColorEdit(colorEdit === "fg" ? "" : "fg")}
           style={{ position: "absolute", left: 2, top: 9, width: 24, height: 24, border: "1px solid #eee", background: paint.fg, cursor: "pointer", padding: 0, boxShadow: "0 0 0 1px #000" }} />
         <input ref={fgIn} type="color" value={paint.fg.toLowerCase()} onChange={(e) => setPaint({ fg: e.target.value.toUpperCase() })} style={{ position: "absolute", width: 0, height: 0, opacity: 0, pointerEvents: "none" }} />
@@ -2950,7 +2953,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
                 const cur = selL.protected || {};
                 selL.protected = k2 === "all" ? { transparency: !on, composite: !on, position: !on } : { ...cur, [k2]: !on };
               })}
-              style={{ width: 26, height: 24, borderRadius: 4, border: `1px solid ${on ? C.text : "transparent"}`, background: on ? "#4a4a4a" : "transparent", color: selL ? C.text : C.dim, cursor: selL ? "pointer" : "default", fontSize: 13, padding: 0 }}>{ic}</button>
+              style={{ width: 26, height: 24, borderRadius: 4, border: `1px solid ${on ? C.text : "transparent"}`, background: on ? C.psEdge : "transparent", color: selL ? C.text : C.dim, cursor: selL ? "pointer" : "default", fontSize: 13, padding: 0 }}>{ic}</button>
           );
         })}
         <span style={{ flex: 1 }} />
@@ -3023,7 +3026,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
               </div>
               <div ref={area} style={{ flex: 1, minHeight: 0, display: "flex", position: "relative", overflow: "hidden" }}>
                 {dockD ? docBox(dockD) : (
-                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#121316", color: C.dim, fontSize: 13 }}>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: C.psStage, color: C.dim, fontSize: 13 }}>
                     떠 있는 창의 제목줄을 위 탭 줄에 놓으면 다시 탭으로 붙어요
                   </div>
                 )}
@@ -3051,10 +3054,10 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
                   if (!d) return null;
                   const on = d.id === doc.id;
                   return (
-                    <div key={id} style={{ position: "absolute", left: r.x, top: r.y, width: r.w, height: r.h, zIndex: 100 + r.z, display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${on ? "#5a5a5a" : "#3a3a3a"}`, boxShadow: "0 10px 30px rgba(0,0,0,0.55)" }}>
+                    <div key={id} style={{ position: "absolute", left: r.x, top: r.y, width: r.w, height: r.h, zIndex: 100 + r.z, display: "flex", flexDirection: "column", background: C.panel, border: `1px solid ${on ? C.psEdgeOn : C.psHover}`, boxShadow: "0 10px 30px rgba(0,0,0,0.55)" }}>
                       <div onPointerDown={(e) => { if (e.button !== 0) return; e.preventDefault(); activate(id); dragWin(id, "move", e); }} onDoubleClick={() => dockDoc(id)}
                         title="끌어서 옮기기 · 위 탭 줄에 놓거나 두 번 누르면 탭으로"
-                        style={{ display: "flex", alignItems: "center", gap: 8, height: 28, padding: "0 4px 0 10px", background: on ? "#3a3a3a" : "#2b2b2b", color: on ? C.text : C.sub, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "move", flexShrink: 0, userSelect: "none" }}>
+                        style={{ display: "flex", alignItems: "center", gap: 8, height: 28, padding: "0 4px 0 10px", background: on ? C.psHover : C.psBar, color: on ? C.text : C.sub, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "move", flexShrink: 0, userSelect: "none" }}>
                         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{docLabel(d)}</span>
                         <button type="button" title="탭으로 붙이기" onPointerDown={(e) => e.stopPropagation()} onClick={() => dockDoc(id)}
                           style={{ width: 22, height: 22, border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer", padding: 0, fontSize: 13 }}>▭</button>
@@ -3180,21 +3183,21 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
       {layerMenu && doc && (
         <div onPointerDown={() => setLayerMenu(null)} onContextMenu={(e) => { e.preventDefault(); setLayerMenu(null); }} style={{ position: "fixed", inset: 0, zIndex: 3500 }}>
           <div onPointerDown={(e) => e.stopPropagation()}
-            style={{ position: "fixed", left: Math.min(layerMenu.x, window.innerWidth - 260), top: Math.min(layerMenu.y, window.innerHeight - 40 - layerMenu.keys.length * 30), minWidth: 220, maxWidth: 320, padding: "4px 0", background: "#323232", border: "1px solid #1f1f1f", borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", fontFamily: FONT }}>
-            <div style={{ padding: "4px 12px 6px", fontSize: 11.5, color: "#999" }}>이 자리의 레이어</div>
+            style={{ position: "fixed", left: Math.min(layerMenu.x, window.innerWidth - 260), top: Math.min(layerMenu.y, window.innerHeight - 40 - layerMenu.keys.length * 30), minWidth: 220, maxWidth: 320, padding: "4px 0", background: C.psMenu, border: `1px solid ${C.psBarLine}`, borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", fontFamily: FONT }}>
+            <div style={{ padding: "4px 12px 6px", fontSize: 11.5, color: C.psMute }}>이 자리의 레이어</div>
             {layerMenu.keys.length ? layerMenu.keys.map((k) => {
               const l = findLayer(kids(doc.psd), k);
               if (!l) return null;
               return (
                 <button key={k} type="button" onClick={() => { setSel(k); setLayerMenu(null); }}
-                  style={{ display: "flex", width: "100%", alignItems: "center", gap: 8, padding: "6px 14px", border: 0, background: k === sel ? "#3d3d3d" : "transparent", color: "#e6e6e6", fontSize: 13, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#1473e6"; }} onMouseLeave={(e) => { e.currentTarget.style.background = k === sel ? "#3d3d3d" : "transparent"; }}>
-                  <span style={{ width: 14, color: "#aaa", fontSize: 11 }}>{isText(l) ? "T" : l._shape ? "◆" : "▣"}</span>
+                  style={{ display: "flex", width: "100%", alignItems: "center", gap: 8, padding: "6px 14px", border: 0, background: k === sel ? C.psSel : "transparent", color: C.psMenuText, fontSize: 13, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = C.psHi; }} onMouseLeave={(e) => { e.currentTarget.style.background = k === sel ? C.psSel : "transparent"; }}>
+                  <span style={{ width: 14, color: C.psMute2, fontSize: 11 }}>{isText(l) ? "T" : l._shape ? "◆" : "▣"}</span>
                   <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name || "레이어"}</span>
                   {l.protected?.position && <span style={{ fontSize: 11 }}>🔒</span>}
                 </button>
               );
-            }) : <div style={{ padding: "6px 14px", fontSize: 13, color: "#aaa" }}>그림이 있는 레이어가 없어요</div>}
+            }) : <div style={{ padding: "6px 14px", fontSize: 13, color: C.psMute2 }}>그림이 있는 레이어가 없어요</div>}
           </div>
         </div>
       )}

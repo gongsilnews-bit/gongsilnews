@@ -39,7 +39,7 @@ type Bridge = {
 const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
-type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
 export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onUsed }: {
   theme: Theme;
@@ -199,8 +199,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) })), { id: "youtube", label: "유튜브 대본", done: hasYoutube }].map((t) => (
           <button key={t.id} onClick={() => onTab(t.id)}
             style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
-              fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? "#1a3a6b" : theme.textSecondary,
-              borderBottom: `3px solid ${tab === t.id ? "#1a3a6b" : "transparent"}`, marginBottom: -1 }}>
+              fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary,
+              borderBottom: `3px solid ${tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : "transparent"}`, marginBottom: -1 }}>
             {t.label}
             {t.done && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, color: "#16a34a" }}>✓</span>}
           </button>
@@ -237,7 +237,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 {(blogOpts?.styles || []).map((s) => (
                   <button key={s.id} onClick={() => setStyle(s.id)} title={`예: ${s.titleExample}`}
                     style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", background: style === s.id ? "rgba(26,58,107,0.08)" : "transparent",
-                      border: `1px solid ${style === s.id ? "#1a3a6b" : theme.border}`, color: theme.textPrimary }}>
+                      border: `1px solid ${style === s.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.border}`, color: theme.textPrimary }}>
                     <div style={{ fontSize: 14, fontWeight: 800 }}>{s.label}</div>
                     <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{s.fit}</div>
                   </button>
@@ -260,7 +260,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>스튜디오 전용 크롬에서 {aiName}가 열려 직접 씁니다. 1~2분 걸립니다.</div>
             </>
           )}
-          {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{blogProgress}</div>}
+          {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{blogProgress}</div>}
           {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
 
           {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.version || blog.title}`} theme={theme} initial={blog} />}
@@ -278,7 +278,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 {designs.map((d) => (
                   <button key={d.id} onClick={() => setDesign(d.id)}
                     style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", background: design === d.id ? "rgba(26,58,107,0.08)" : "transparent",
-                      border: `1px solid ${design === d.id ? "#1a3a6b" : theme.border}`, color: theme.textPrimary }}>
+                      border: `1px solid ${design === d.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.border}`, color: theme.textPrimary }}>
                     <div style={{ fontSize: 14, fontWeight: 800 }}>{d.label}</div>
                     <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2, lineHeight: 1.5 }}>{d.hint}</div>
                   </button>
@@ -296,7 +296,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               </div>
             </>
           )}
-          {naverProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{naverProgress}</div>}
+          {naverProgress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{naverProgress}</div>}
           {naverError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{naverError}</div>}
           {naverLogin === "need" && (
             <button onClick={loginNaver}
