@@ -732,7 +732,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
           if (endG) p.layers!.push({ id: uid(), type: "image", name: "AI 끝 화면", from: cid, to: cid, asset: endG.asset, x: 0.5, y: 0.5, w: tall ? 0.94 : 0.86, opacity: 1, anim: endG.anim, sticker: true, stk: { style: endG.style, text: endG.text, color: endG.color } } as Layer);
           else p.layers!.push({ id: uid(), type: "text", name: "AI 끝 화면", from: cid, to: cid, text: endTxt, pos: "middle", size: tall ? 52 : 46, color: "#FFFFFF", bold: true, box: true, boxColor: "#0B1A33", boxOpacity: 0.92 } as Layer);
         }
-        if (music && first && last) p.layers!.push({ id: uid(), type: "music", from: first, to: last, ...music, volume: 0.03, fadeIn: 0, fadeOut: 2, offset: 0, loop: true } as Layer);
+        if (music && first && last) p.layers!.push({ id: uid(), type: "music", from: first, to: last, ...music, volume: 0.05, fadeIn: 0, fadeOut: 2, offset: 0, loop: true } as Layer);
       });
       if (music) done.push({ n: 0, text: "", what: `배경음악 · ${music.name}` });
       if (endTxt) done.push({ n: 0, text: "", what: `끝 화면 · 부동산 표시광고 "${(pf.endDesign ? endDef?.label : P.end) || ""}" · ${agency?.name || "중개사무소 정보"} (5초)` });

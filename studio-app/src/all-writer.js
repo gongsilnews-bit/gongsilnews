@@ -28,15 +28,18 @@ function outer(text) {
 }
 
 async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsOpt = {}, youtube = {} }, onProgress = () => {}) {
-  if (blogWriter.isSim(vacancyId)) throw new Error("한 번에 쓰기는 공실뉴스·뉴스칼럼만 돼요. 인테리어·리모델링은 탭마다 써 주세요.");
+  const sim = blogWriter.isSim(vacancyId); // 인테리어·리모델링 — 결과표(시뮬레이션)로 (2026-10-23 사장님)
+  const S = sim ? require("./sim-writer") : null;
+  const L = sim ? S.lib(vacancyId) : null;
+  const simRes = sim ? S.resultOf(vacancyId) : null; // { result, vacancy }
   const col = blogWriter.isColumn(vacancyId); // 뉴스칼럼 — 뉴스메이커 프롬프트, 소재(원문)로 (2026-10-23 사장님)
   const source = col ? require("./column-writer").readSource(vacancyId) : null;
-  const analysis = col ? null : blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));
-  if (!col && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
-  const v = col ? null : analysis.vacancy;
+  const analysis = col || sim ? null : blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));
+  if (!col && !sim && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  const v = sim ? simRes.vacancy : col ? null : analysis.vacancy;
   const want = { article: article.on !== false, blog: blog.on !== false, sns: snsOpt.on !== false, youtube: youtube.on === true };
   if (!want.article && !want.blog && !want.sns && !want.youtube) throw new Error("쓸 글을 하나 이상 골라 주세요.");
-  if (col && !want.article && !blogWriter.referenceArticle(vacancyId)) throw new Error("뉴스칼럼은 기사를 바탕으로 블로그·SNS·대본을 써요. [공실뉴스 기사]도 ☑ 해 주세요.");
+  if ((col || sim) && !want.article && !blogWriter.referenceArticle(vacancyId)) throw new Error(`${sim ? "인테리어·리모델링" : "뉴스칼럼"}은 기사를 바탕으로 블로그·SNS·대본을 써요. [공실뉴스 기사]도 ☑ 해 주세요.`);
 
   // 이용 횟수 — 따로 쓸 때와 같게
   onProgress("이용 횟수를 확인하는 중…");
@@ -50,15 +53,20 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
     : blogWriter.referenceArticle(vacancyId) || { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 [확인된 매물 정보]만 사용해 작성하십시오." };
   const parts = [];
   // 뉴스칼럼 — 기사 종류·블로그 문체가 공실과 달라 없는 값이면 처음 것으로
-  const artKind = col ? (nm.GW_KIND[article.kind] ? article.kind : Object.keys(nm.GW_KIND)[0]) : article.kind || "news";
+  const artKind = sim ? (L.RM_KIND[article.kind] ? article.kind : "news") : col ? (nm.GW_KIND[article.kind] ? article.kind : Object.keys(nm.GW_KIND)[0]) : article.kind || "news";
   const artLen = col ? (nm.GW_LENGTH[article.length] ? article.length : "normal") : article.length || "normal";
-  const blogSt = col ? (nm.GW_BLOG_STYLE[blog.style] ? blog.style : "info") : blog.style || "listing";
-  if (want.article) parts.push(["article", col ? "공실뉴스 기사 (뉴스칼럼)" : "공실뉴스 기사", col ? nm.gwBuildPrompt(source, { kind: artKind, length: artLen }) : extPrompt.gwBuildPrompt(v, { kind: artKind, length: artLen })]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", col ? nm.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blog.length || "normal" }) : blogPrompt.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blog.length || "normal" })]);
-  if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", (col ? nm.gwBuildSnsPrompt({ article: REF, source }) : sns.gwBuildSnsPrompt({ vacancy: v, article: require("./sns-writer").NO_REF }) /* 공실 SNS 는 분석한 공실 정보만으로 */) + require("./sns-writer").toneLine(snsOpt.tone)]);
+  const blogSt = sim ? (L.gwBlogStyles(null)[blog.style] ? blog.style : "listing") : col ? (nm.GW_BLOG_STYLE[blog.style] ? blog.style : "info") : blog.style || "listing";
+  const SIM_REF = sim ? { ...REF, body: REF.body.replace("[확인된 매물 정보]", "결과표(시뮬레이션)") } : REF;
+  if (want.article) parts.push(["article", sim ? "공실뉴스 기사 (인테리어·리모델링)" : col ? "공실뉴스 기사 (뉴스칼럼)" : "공실뉴스 기사",
+    sim ? L.gwBuildRemodelArticlePrompt(simRes.result, { kind: artKind, length: artLen }) : col ? nm.gwBuildPrompt(source, { kind: artKind, length: artLen }) : extPrompt.gwBuildPrompt(v, { kind: artKind, length: artLen })]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글",
+    sim ? L.gwBuildBlogPrompt({ vacancy: v, article: SIM_REF, remodel: simRes.result }, { style: blogSt, length: blog.length || "normal" })
+      : col ? nm.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blog.length || "normal" }) : blogPrompt.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blog.length || "normal" })]);
+  if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)",
+    (sim ? L.gwBuildSnsPrompt({ vacancy: v, article: SIM_REF }) : col ? nm.gwBuildSnsPrompt({ article: REF, source }) : sns.gwBuildSnsPrompt({ vacancy: v, article: require("./sns-writer").NO_REF }) /* 공실 SNS 는 분석한 공실 정보만으로 */) + require("./sns-writer").toneLine(snsOpt.tone)]);
   const ytW = require("./youtube-writer");
   const ytSet = want.youtube ? ytW.allSettings(vacancyId, youtube) : null;
-  if (want.youtube) parts.push(["youtube", "유튜브 대본", ytW.allPrompt(vacancyId, ytSet, REF)]);
+  if (want.youtube) parts.push(["youtube", "유튜브 대본", ytW.allPrompt(vacancyId, ytSet, SIM_REF)]);
   const keys = parts.map((p) => p[0]);
   const prompt = [
     `여러 글을 한 번에 씁니다. 아래 [작업 ${parts.map((_, i) => i + 1).join("·")}]을 모두 하십시오.`,
@@ -76,18 +84,29 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
   if (!o) throw new Error("AI 답을 읽지 못했어요. 다시 해 주세요.");
   const out = {};
   const miss = [];
-  const AJ = col ? nm.GWArticleJson : articleJson;
+  const AJ = sim ? L.GWArticleJson : col ? nm.GWArticleJson : articleJson;
   if (want.article) {
     const pa = AJ.parse(fence(o.article));
     if (pa.ok) out.article = blogWriter.saveWritten(vacancyId, "article", pa, { style: artKind, length: artLen, chatUrl: "", ...(col ? nm.gwNormalizeSection(pa.article.section1, pa.article.section2) : {}) });
     else miss.push("기사");
+  }
+  // 뉴스칼럼 기사 — AI 대표 이미지를 블로그·SNS 저장보다 먼저 (블로그·SNS 사진은 기사 사진을 가져다 쓴다 — 2026-10-23 블로그에 사진이 빠졌다)
+  if (col && out.article && article.autoCover === true) { // 켠 때만 (처음 값 끔 — 기사 화면 캡처 첫 장이 대표, 2026-10-23 사장님)
+    onProgress("기사에 맞는 AI 대표 이미지를 만드는 중…");
+    out.article = await require("./column-writer").addCover(baseUrl, vacancyId, out.article, onProgress);
   }
   if (want.blog) {
     const pb = AJ.parse(fence(o.blog));
     if (pb.ok) out.blog = blogWriter.saveWritten(vacancyId, "blog", pb, { style: blogSt, length: blog.length || "normal", chatUrl: "" });
     else miss.push("블로그");
   }
-  if (want.sns && col) {
+  if (want.sns && sim) {
+    const ps = L.gwSnsParse(fence(o.sns));
+    if (ps.ok) {
+      onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
+      out.sns = await require("./sns-writer").saveSimPosts(baseUrl, vacancyId, ps.posts);
+    } else miss.push("SNS");
+  } else if (want.sns && col) {
     const ps = nm.gwSnsParse(fence(o.sns));
     if (ps.ok) out.sns = require("./sns-writer").saveAll(vacancyId, { posts: ps.posts, column: true });
     else miss.push("SNS");
@@ -102,11 +121,6 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
   }
   if (want.youtube) {
     try { out.youtube = await ytW.saveAll(baseUrl, vacancyId, fence(o.youtube), ytSet); } catch { miss.push("유튜브 대본"); }
-  }
-  // 뉴스칼럼 기사 — 다 쓰면 AI 대표 이미지 (켠 때만, 따로 쓸 때와 같다)
-  if (col && out.article && article.autoCover !== false) {
-    onProgress("기사에 맞는 AI 대표 이미지를 만드는 중…");
-    out.article = await require("./column-writer").addCover(baseUrl, vacancyId, out.article, onProgress);
   }
   log.info(`[한 번에 쓰기] ${vacancyId} ${keys.join(",")}${miss.length ? " · 못 읽음 " + miss.join(",") : ""}`);
   return { ...out, miss };

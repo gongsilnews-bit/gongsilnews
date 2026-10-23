@@ -726,7 +726,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           }
           p.layers = p.layers || [];
           let run: { key: string; from: string; to: string } | null = null;
-          const flush = () => { if (run && run.key && files[run.key]) { const f = files[run.key]; p.layers!.push({ id: uid(), type: "music", name: f.name, from: run.from, to: run.to, file: f.file, url: f.url, volume: 0.03, fadeIn: 0.6, fadeOut: 1.2, offset: 0, loop: true, track: 3 } as Layer); } run = null; };
+          const flush = () => { if (run && run.key && files[run.key]) { const f = files[run.key]; p.layers!.push({ id: uid(), type: "music", name: f.name, from: run.from, to: run.to, file: f.file, url: f.url, volume: 0.05, fadeIn: 0.6, fadeOut: 1.2, offset: 0, loop: true, track: 3 } as Layer); } run = null; };
           for (const c of p.scenes.flatMap((x) => x.clips)) {
             const k = paraOf.get(c.id) ?? 0;
             const key = keyOf(res[k] || base);
@@ -740,11 +740,11 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         try {
           if (track?.kind === "mine") {
             const r = await b.musicUse(p.dir, track.id);
-            p.settings.music = { on: true, file: r.file, url: r.url, name: r.name || track.label, mood, volume: 0.03 };
+            p.settings.music = { on: true, file: r.file, url: r.url, name: r.name || track.label, mood, volume: 0.05 };
           } else {
             const t = (track && MUSIC_LIBRARY.find((x) => x.id === track.id)) || MUSIC_LIBRARY.find((x) => x.mood === mood) || MUSIC_LIBRARY[0];
             const r = await b.musicGet(p.dir, `bgm/lib/${t.id.slice(4)}.mp3`);
-            p.settings.music = { on: true, file: r.file, url: r.url, name: t.label, mood, volume: 0.03 };
+            p.settings.music = { on: true, file: r.file, url: r.url, name: t.label, mood, volume: 0.05 };
           }
         } catch {}
       }
@@ -1025,25 +1025,18 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         // 편집 화면과 같은 애니메이션 (인·아웃·반복·효과음·단어별) — 고른 것이 있으면 그대로 (2026-10-23)
         {
           const af = deco.animFull || {};
-          if (af.sub && Object.keys(af.sub).length) p.settings.subtitle = { ...p.settings.subtitle, anim: { ...af.sub } };
-          for (const l of p.layers || []) {
-            const nm = String(l.name || "");
-            const v = nm === "제목" ? af.title : nm === "채널명" || nm === "채널 로고" ? af.ch : undefined;
-            if (v && Object.keys(v).length) l.anim = { ...v, ...(nm === "채널 로고" ? { sfx: "none" } : {}) };
-          }
+          // 자막 애니메이션은 쓰지 않는다 (2026-10-23 사장님 — 자막 스타일에서 애니메이션 없앰). 예전에 골라 둔 것도 무시
+          void af; // 제목·채널명 애니메이션도 쓰지 않는다 (2026-10-23 사장님)
         }
         // 고른 애니메이션 (2026-10-23 사장님) — 자막은 줄마다, 제목·채널명은 처음 나타날 때
         {
           const an = deco.anim || {};
           const sf = an.sfx || {};
-          if (an.sub || an.subWord || sf.sub) p.settings.subtitle = { ...p.settings.subtitle, anim: { ...(p.settings.subtitle.anim || {}), ...(an.sub ? { in: an.sub } : {}), ...(an.subWord ? { wshow: "word" as const, whl: "color" as const } : {}), ...(sf.sub ? { sfx: sf.sub } : {}) } };
+          void an; void sf;
+          // 제목(왼쪽 위)·채널명(오른쪽 위)은 애니메이션 없이 그대로 떠 있다 (2026-10-23 사장님) — 예전에 골라 둔 것·스타일에 딸린 것도 뺀다
           for (const l of p.layers || []) {
             const nm = String(l.name || "");
-            const pick = nm === "제목" ? an.title : nm === "채널명" || nm === "채널 로고" ? an.ch : undefined;
-            if (pick) l.anim = { ...(l.anim || {}), in: pick };
-            const snd = nm === "제목" ? sf.title : nm === "채널명" ? sf.ch : undefined; // 채널 로고는 채널명과 함께 나와서 소리는 한 번만
-            if (snd !== undefined && snd !== "") l.anim = { ...(l.anim || {}), ...(l.anim?.in ? {} : { in: "fade" as const }), sfx: snd };
-            else if (snd === "" && l.anim) l.anim = { ...l.anim, sfx: "none" };
+            if (nm === "제목" || nm === "채널명" || nm === "채널 로고") delete (l as { anim?: unknown }).anim;
           }
         }
         const tMode = deco.transMode || "auto";

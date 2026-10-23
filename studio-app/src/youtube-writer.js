@@ -98,7 +98,7 @@ function description(id, d) {
   const summary = (article.subtitles && article.subtitles.length ? article.subtitles : (article.paragraphs || []).slice(0, 1)).join("\n");
   const lines = [summary];
   if (isColumn(id)) {
-    lines.push(`▶ 공실뉴스에서 더 보기\n${HOME}`, nm.gwSnsCredit(require("./column-writer").readSource(id)));
+    lines.push(nm.gwSnsCredit(require("./column-writer").readSource(id))); // 공실뉴스 링크 안내 없이 출처만 (2026-10-23 사장님)
   } else if (isSim(id)) {
     // 예측 이미지를 실제 모습으로 오해하지 않게 (SNS 와 같은 안내)
     const L = simW().lib(id);
@@ -106,7 +106,7 @@ function description(id, d) {
   } else {
     lines.push(`▶ 매물 자세히 보기 (공실뉴스 공실열람)\n${d.detailUrl || HOME}`, "공실뉴스");
   }
-  const tags = (article.keywords || []).map((k) => `#${String(k).replace(/^#+/, "").replace(/\s+/g, "")}`).filter((t) => t.length > 1).slice(0, 10);
+  const tags = (article.keywords || []).map((k) => `#${String(k).replace(/^#+/, "").replace(/\s+/g, "")}`).filter((t) => t.length > 1 && !(isColumn(id) && /공실뉴스/.test(t))).slice(0, 10); // 뉴스칼럼엔 공실뉴스 태그 없이
   return { text: lines.filter(Boolean).join("\n\n"), tags };
 }
 
@@ -218,14 +218,22 @@ function allSettings(id, pick = {}) {
 }
 function allPrompt(id, settings, article) {
   if (isColumn(id)) return yt.column.gwBuildYtScriptPrompt({ article, source: require("./column-writer").readSource(id) }, settings);
+  const number = yt.column.GW_YT_NUMBER[settings.number] || yt.column.GW_YT_NUMBER.hangul;
+  if (isSim(id)) { // 인테리어·리모델링 — 결과표 + 기사 (따로 쓸 때 scriptPrompt 와 같다)
+    const { result, vacancy } = simW().resultOf(id);
+    return `${simW().lib(id).gwBuildYtScriptPrompt({ vacancy, article, remodel: result }, settings)}\n\n[숫자 표기]\n- ${number.prompt}`;
+  }
   const analysis = readAnalysis(id);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
-  const number = yt.column.GW_YT_NUMBER[settings.number] || yt.column.GW_YT_NUMBER.hangul;
   return `${yt.gongsil.gwBuildYtScriptPrompt({ vacancy: analysis.vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}`;
 }
 async function saveAll(baseUrl, id, text, settings) {
   const analysis = readAnalysis(id) || { vacancy: {} };
-  const detailUrl = isColumn(id) ? "" : await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").then((l) => l.detailUrl).catch(() => "");
+  let detailUrl = "";
+  if (isSim(id)) {
+    const { result } = simW().resultOf(id);
+    if (result.vacancyId) detailUrl = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "").then((l) => l.detailUrl).catch(() => "");
+  } else if (!isColumn(id)) detailUrl = await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").then((l) => l.detailUrl).catch(() => "");
   const d = { ...parse(id, text), settings, detailUrl, chatUrl: "", writtenAt: new Date().toISOString() };
   fs.mkdirSync(mediaDir(id), { recursive: true });
   fs.writeFileSync(ytFile(id), JSON.stringify(d, null, 2));

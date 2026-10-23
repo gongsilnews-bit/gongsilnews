@@ -61,7 +61,10 @@ async function shrinkPhoto(file: File): Promise<string> {
 }
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
-export default function StudioMarketingSection({ theme }: { theme: Theme }) {
+/** 아직 작업중인 칸 — 회원에게는 "작업중" 표시만, 누를 수 없다 (최고관리자는 들어가서 작업) — 2026-10-23 사장님 */
+const WIP = new Set(["doc", "interior_sim", "remodel_sim"]);
+
+export default function StudioMarketingSection({ theme, dev = false }: { theme: Theme; dev?: boolean }) {
   // .gsm(공실마케팅 작업 파일)에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsm=<id>&cat=<report|interior_sim|remodel_sim> 로 연다.
   // 아래 "이 기기 기억"을 먼저 바꿔 두면 각 화면이 그 작업을 고른 채 시작한다 (처음 그릴 때 한 번)
   useState(() => {
@@ -90,7 +93,7 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
   };
   const [category, setCategoryState] = useState(() => {
     const c = remembered(CATEGORY_KEY);
-    return CATEGORIES.some((x) => x.id === c) ? c : "report";
+    return CATEGORIES.some((x) => x.id === c) && (dev || !WIP.has(c)) ? c : "report";
   });
   const [mine, setMine] = useState<MyVacancy[] | null>(null);
   const [vacancyId, setVacancyIdState] = useState(() => remembered(VACANCY_KEY));
@@ -182,12 +185,15 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
           {CATEGORIES.map((c) => {
             const on = category === c.id;
+            const wip = WIP.has(c.id);
+            const locked = wip && !dev;
             return (
-              <button key={c.id} onClick={() => setCategory(c.id)}
+              <button key={c.id} onClick={() => !locked && setCategory(c.id)} disabled={locked} title={locked ? "작업중이에요. 곧 열려요." : undefined}
                 style={{ textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
                   fontWeight: on ? 700 : 500, color: on ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary, background: on ? (theme.darkMode ? "rgba(255,255,255,0.10)" : "rgba(26,58,107,0.08)") : "transparent",
-                  boxShadow: on ? `inset 3px 0 0 ${(theme.darkMode ? "#ffffff" : "#1a3a6b")}` : "none" }}>
+                  boxShadow: on ? `inset 3px 0 0 ${(theme.darkMode ? "#ffffff" : "#1a3a6b")}` : "none", ...(locked ? { cursor: "default", opacity: 0.55 } : {}) }}>
                 {c.label}
+                {wip && <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: "#f59e0b", color: "#fff", verticalAlign: "middle" }}>작업중</span>}
               </button>
             );
           })}

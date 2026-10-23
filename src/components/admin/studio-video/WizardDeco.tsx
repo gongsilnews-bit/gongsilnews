@@ -636,31 +636,32 @@ export function WizardDeco({ fill = "cover", bgs = [], ratio, firstLine, subOn, 
             {preview}
           </div>
       <div style={{ flex: 1, minWidth: 0, overflowY: "auto", paddingRight: 4 }}>
-        {(tab === "sub" || tab === "title" || tab === "channel") && (
+        {/* 자막·제목·채널명 모두 애니메이션 탭 없음 (2026-10-23 사장님) — 스타일만 */}
+        {false && (tab === "title" || tab === "channel") && (
           <div style={{ display: "flex", gap: 4, marginBottom: 12, borderBottom: `1px solid ${C.line}` }}>
-            {([["style", tab === "sub" ? "자막 스타일" : tab === "title" ? "제목 스타일" : "채널명 스타일"], ["anim", "애니메이션"]] as const).map(([id, nm]) => (
+            {([["style", tab === "title" ? "제목 스타일" : "채널명 스타일"], ["anim", "애니메이션"]] as const).map(([id, nm]) => (
               <button key={id} type="button" onClick={() => setSub2(id)} style={{ height: 36, padding: "0 16px", border: 0, borderBottom: `3px solid ${sub2 === id ? C.accent : "transparent"}`, background: "transparent", color: sub2 === id ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer", marginBottom: -1 }}>{nm}</button>
             ))}
           </div>
         )}
-        {(tab === "sub" || tab === "title" || tab === "channel") && sub2 === "anim" && (() => {
-          const k = tab === "sub" ? "sub" : tab === "title" ? "title" : "ch";
+        {false && (tab === "title" || tab === "channel") && sub2 === "anim" && (() => {
+          const k = tab === "title" ? "title" : "ch";
           return (
             <div style={{ marginBottom: 14, border: `1px solid ${C.line}`, borderRadius: 8, overflow: "hidden" }}>
-              <AnimBody what={k === "sub" ? "자막" : "글자"} text={k === "sub" ? "자막" : k === "title" ? (deco.titleText || "제목").slice(0, 4) : "채널"} sfxDefault={k === "sub" ? "none" : "auto"}
+              <AnimBody what="글자" text={k === "title" ? (deco.titleText || "제목").slice(0, 4) : "채널"} sfxDefault="auto"
                 value={deco.animFull?.[k]}
                 onChange={(fn) => { const n = fn({ ...(deco.animFull?.[k] || {}) }); const clean = Object.fromEntries(Object.entries(n).filter(([, v]) => v !== undefined)) as LayerAnim; set({ animFull: { ...(deco.animFull || {}), [k]: clean } }); }}
                 onPreview={(part) => play(k, part)} />
             </div>
           );
         })()}
-        {tab === "sub" && sub2 === "style" && (
+        {tab === "sub" && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 8 }}>뉴스 자막 바 <span style={{ fontWeight: 500, color: C.dim }}>· 문장마다 흰 띠 · 위에 NEWS (자막 위치 하단)</span></div>
             {grid(SW, [none(!subOn, () => setSubOn?.(false)), ...NEWS_SUBS.map((x) => card(x.id, subOn && deco.sub === x.id, x.label, frame(SW, SH, { sub: x.look, news: x.tag, text: "자막 미리보기", forceSub: true }), () => { setSubOn?.(true); set({ sub: deco.sub === x.id && subOn ? "" : x.id }); }))])}
           </div>
         )}
-        {tab === "sub" && sub2 === "style" && SUB_PRESETS.filter((g) => ["기본", "글꼴", "상자", "예능·유튜브", "다큐·뉴스", "네온·빛"].includes(g.group)).map((g) => (
+        {tab === "sub" && SUB_PRESETS.filter((g) => ["기본", "글꼴", "상자", "예능·유튜브", "다큐·뉴스", "네온·빛"].includes(g.group)).map((g) => (
           <div key={g.group} style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 8 }}>{g.group}</div>
             {grid(SW, [
@@ -669,7 +670,7 @@ export function WizardDeco({ fill = "cover", bgs = [], ratio, firstLine, subOn, 
             ])}
           </div>
         ))}
-        {tab === "title" && sub2 === "style" && (
+        {tab === "title" && (
           <>
             <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
               <input value={deco.titleText} onChange={(e) => set({ titleText: e.target.value })} onKeyDown={(e) => e.stopPropagation()} placeholder={tStyle?.subnews ? "1단 (예: 자막뉴스)" : tStyle?.two ? "1단 제목 (위 · 색 바탕 흰 글씨)" : tStyle?.hl || tStyle?.newsBar ? "제목 — 강조할 곳은 [ ]로 감싸요 (예: 광란의 개 [보리를 대하는 법]) · 없으면 뒷부분" : "제목 — 비워 두면 만들 때 AI가 대본을 읽고 써요"} style={{ ...input, flex: 1, height: 36 }} />
@@ -685,7 +686,7 @@ export function WizardDeco({ fill = "cover", bgs = [], ratio, firstLine, subOn, 
             ))}
           </>
         )}
-        {tab === "channel" && sub2 === "style" && (
+        {tab === "channel" && (
           <>
             <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center" }}>
               <input value={deco.channelText} onChange={(e) => set({ channelText: e.target.value })} onKeyDown={(e) => e.stopPropagation()} placeholder={agency?.name ? `비워 두면 "${agency.name}"` : "채널명 (중개사무소 정보가 없어요)"} style={{ ...input, flex: 1, height: 36 }} />

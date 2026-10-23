@@ -69,7 +69,7 @@ const STUDIO_MORE_MENU = REALTY_MENU.filter((m) => STUDIO_MORE_KEYS.includes(m.k
 const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
 // 메뉴 오른쪽 파일 표시 — 그 메뉴가 만드는 파일 (.gsn·.gsm·.gss·.psd, 글자 + 동그라미 픽토그램 — StudioSidebar FileBadge) — 2026-10-23 사장님: NEW 대신
 // 앱에서만 잠시 숨기는 메뉴 — 공실마케팅은 미완성이라 앱 배포에서 뺀다 (2026-10-23 사장님). 다시 보이려면 [] 로 (코드·작업은 그대로)
-const HIDDEN_IN_APP: string[] = ["marketing"];
+const HIDDEN_IN_APP: string[] = []; // 공실마케팅 공개 (2026-10-23 사장님 — AI 매물보고서만, 나머지는 메뉴 안에서 "작업중")
 const STUDIO_BADGES = { sns: "file:gsn", marketing: "file:gsm", video: "file:gss", photo: "file:psd" };
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
 const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing");
@@ -490,7 +490,7 @@ function RealtyAdminContent() {
           {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
-          {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} />}
+          {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
           {activeMenu === "video" && studioApp.isApp && <VideoStudio />}
           {activeMenu === "photo" && <PhotoStudio menu={null} />}
           {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (

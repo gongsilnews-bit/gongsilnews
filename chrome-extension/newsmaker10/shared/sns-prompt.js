@@ -44,18 +44,19 @@ function gwSnsSourceRule(source) {
 
 function gwBuildSnsPrompt(source) {
   const input = source || {};
-  return `당신은 생활·경제 정보를 정확하게 전하는 공실뉴스의 SNS 에디터입니다.
-아래 공실뉴스 기사로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
+  return `당신은 생활·경제 정보를 정확하게 전하는 SNS 에디터입니다.
+아래 기사로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
 세 글은 같은 내용을 전하지만 플랫폼마다 모양이 다릅니다. 같은 문장을 돌려 쓰지 마십시오.
 
-[참조 기사 — 공실뉴스]
+[참조 기사]
 ${gwBlogArticleText(input.article)}
 
 [소재 정보]
 ${gwBlogSourceLines(input.source)}
 
 [원칙 — 세 플랫폼 공통, 가장 먼저 지킬 것]
-- 공실뉴스 기사를 소개하는 글입니다. 광고·호객 표현 금지: "꼭 보세요", "추천합니다", "놓치지 마세요", "지금이 기회", "역대급" 등
+- "공실뉴스"라는 이름은 제목·본문·해시태그·키워드 어디에도 쓰지 말 것
+- 기사 내용을 소개하는 글입니다. 광고·호객 표현 금지: "꼭 보세요", "추천합니다", "놓치지 마세요", "지금이 기회", "역대급" 등
 ${gwSnsSourceRule(input.source)}
 - 링크·출처·"프로필 링크" 안내는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
 - 어려운 용어는 쉬운 말로 한 번 풀어 줄 것
@@ -164,38 +165,37 @@ function gwSnsParse(raw) {
 }
 
 /* ── 글 끝에 붙는 것: 출처 줄 · 링크 · 해시태그 ── */
-function gwSnsCredit(source) {
-  const s = source || {};
-  if (s.mode === "news" && s.news) return `출처: ${s.news.publisher || "원문 언론사"} 보도 내용 재구성 · 공실뉴스`;
-  if (gwSnsIsMarket(s)) return "자료: 국토교통부 실거래가 (신고 기준) · 공실뉴스 정리";
-  return "공실뉴스";
+// 출처·공실뉴스 줄은 붙이지 않는다 (2026-10-23 사장님 — 뉴스칼럼 블로그·SNS·유튜브에 공실뉴스는 전혀 안 나오게)
+function gwSnsCredit() {
+  return "";
 }
 
 /* ctx = { url, credit } — url 은 발행한 기사 주소 또는 공실뉴스 홈 */
 function gwSnsCompose(channel, post, ctx) {
   const c = ctx || {};
   const url = c.url || GW_SNS_HOME;
-  const credit = c.credit || "공실뉴스";
+  const credit = ""; // 출처·공실뉴스 줄은 붙이지 않는다 (2026-10-23 사장님 — 뉴스칼럼에 공실뉴스는 전혀 안 나오게)
   const linkLine = url === GW_SNS_HOME ? `▶ 공실뉴스에서 더 보기\n${url}` : `▶ 공실뉴스 기사 전문 보기\n${url}`;
-  const tagLine = (tags) => (tags || []).map((tag) => `#${tag}`).join(" ");
+  const tagLine = (tags) => (tags || []).filter((tag) => !/공실뉴스/.test(String(tag))).map((tag) => `#${tag}`).join(" ");
 
   if (channel === "threads") {
     const posts = (post?.posts || []).map((text) => String(text || "").trim()).filter(Boolean);
     if (!posts.length) return { posts: [], text: "" };
     if (post.topic) posts[0] = `${posts[0]}\n\n#${post.topic}`;
-    const tail = `${linkLine}\n\n${credit}`;
+    const tail = credit; // 비어 있으면 붙이지 않는다 // 공실뉴스 링크 안내는 붙이지 않는다 — 기사가 공실뉴스에 없을 수 있어 거짓 안내가 된다 (2026-10-23 사장님)
     const last = posts.length - 1;
-    if (posts[last].length + tail.length + 2 <= GW_SNS_CHANNELS.threads.maxChars) posts[last] = `${posts[last]}\n\n${tail}`;
-    else posts.push(tail);
+    if (tail) {
+      if (posts[last].length + tail.length + 2 <= GW_SNS_CHANNELS.threads.maxChars) posts[last] = `${posts[last]}\n\n${tail}`;
+      else posts.push(tail);
+    }
     return { posts, text: posts.join("\n\n―――\n\n") };
   }
 
   const body = String(post?.body || "").trim();
   if (!body) return { posts: [], text: "" };
   const parts = [body];
-  /* 인스타 캡션의 링크는 눌리지 않는다 — 프로필 링크 안내를 먼저, 주소는 복사해 갈 수 있게 글자로 함께 */
-  parts.push(channel === "instagram" ? `자세한 내용은 프로필 링크 → 공실뉴스\n${url}` : linkLine);
-  parts.push(credit);
+  /* 공실뉴스 링크·"자세한 내용은 프로필 링크" 안내는 붙이지 않는다 (2026-10-23 사장님 — 위험). 출처만 */
+  if (credit) parts.push(credit);
   const tags = tagLine(post.hashtags);
   if (tags) parts.push(tags);
   const text = parts.join("\n\n");

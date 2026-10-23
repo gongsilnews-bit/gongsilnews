@@ -89,7 +89,7 @@
     basic: { label: "기본형", hint: "요약 인용구 · 큰 소제목. 어떤 주제에나 무난합니다." },
     magazine: { label: "매거진형", hint: "가운데 정렬 · 번호 소제목 · 핵심 문장 강조. 생활·라이프 글에 어울립니다." },
     qna: { label: "Q&A형", hint: "소제목을 질문으로, 본문을 답변으로. 질문형 검색에 유리합니다." },
-    news: { label: "뉴스기사형", hint: "큰 리드문 · 기사체 · 공실뉴스 서명. 언론사 느낌을 살립니다." },
+    news: { label: "뉴스기사형", hint: "큰 리드문 · 기사체. 언론사 느낌을 살립니다." },
   };
   function designHint(design) {
     return DESIGNS[design]?.hint || "";
@@ -118,7 +118,7 @@
   /* 글 끝 "참고 자료" — 뉴스를 소재로 썼으면 원문 언론사·제목·링크를 밝힌다. 주제로 썼으면 붙이지 않는다. */
   function sourceBlockLines(source) {
     if (source && (source.mode === "complex" || source.mode === "local")) {
-      return { lines: ["국토교통부 실거래가 공개시스템 (신고 기준 · 공실뉴스 정리)"], url: "https://rt.molit.go.kr/" };
+      return { lines: ["국토교통부 실거래가 공개시스템 (신고 기준)"], url: "https://rt.molit.go.kr/" };
     }
     const news = source && source.mode === "news" ? source.news : null;
     if (!news || !news.title) return null;
@@ -267,7 +267,7 @@
       html(BLANK, { tight: true });
       html(linkHtml(source.url, "▶ 원문 기사 보기"));
     }
-    html(paragraphHtml("공실뉴스 · gongsilnews.com", { size: 13, color: MUTED }));
+    // 공실뉴스 주소 서명은 붙이지 않는다 (2026-10-23 사장님 — 위험)
     flush();
     return blocks;
   }
@@ -277,7 +277,7 @@
     const seen = new Set();
     return (Array.isArray(keywords) ? keywords : [])
       .map((keyword) => String(keyword || "").replace(/^#+/, "").replace(/\s+/g, "").trim())
-      .filter((keyword) => keyword && !seen.has(keyword) && seen.add(keyword))
+      .filter((keyword) => keyword && !/공실뉴스/.test(keyword) && !seen.has(keyword) && seen.add(keyword)) // 공실뉴스 태그 빼기 (2026-10-23)
       .slice(0, 30);
   }
 

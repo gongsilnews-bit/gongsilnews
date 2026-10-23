@@ -111,6 +111,11 @@ function seedMedia(vacancyId, doc) {
   if (isSim(vacancyId) && (doc === "article" || !readJson(docFile(vacancyId, "article")))) return sim().resultMedia(vacancyId);
   const analysis = readAnalysis(vacancyId);
   if (analysis) return freshMedia(analysis);
+  // 뉴스칼럼 기사 — 가져올 때 찍은 원문 기사 화면 (출처 설명 붙음, 2026-10-23). AI 대표 이미지는 다 쓴 뒤 앞에 붙는다
+  if (doc === "article" && isColumn(vacancyId)) {
+    const src = readJson(path.join(mediaDir(vacancyId), "source.json"));
+    return ((src && src.captures) || []).filter((c) => c && fs.existsSync(c.file)).map((c, i) => ({ id: newId(), kind: "capture", file: c.file, caption: c.caption, isCover: i === 0 })); // 첫 장이 대표
+  }
   if (doc === "article") return [];
   const a = readJson(docFile(vacancyId, "article"));
   return ((a && a.media) || []).map((m) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: Boolean(m.isCover) }));

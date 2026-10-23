@@ -460,10 +460,16 @@
     for (let i = 1; i < list.length; i++) {
       const add = byText(SEL.threads.add, dialog() || document) || byContains(SEL.threads.add, dialog() || document);
       if (!add) return warn(`이어 쓰기 ${i}번부터는 [스레드에 추가]를 눌러 상자의 [글 넣기]로 넣어 주세요.`);
+      // [스레드에 추가]를 누르면 새 칸이 생긴다 — 칸 수가 늘 때까지 기다렸다가 맨 마지막 칸에
+      const before = textbox(dialog()).length;
       click(add);
-      await sleep(900);
-      const boxes = textbox(dialog());
-      if (!(await insertText(boxes[boxes.length - 1], list[i]))) return warn(`이어 쓰기 ${i}번을 못 넣었어요. 상자의 [복사]로 붙여 넣어 주세요.`);
+      const boxes = (await waitFor(() => { const b = textbox(dialog()); return b.length > before ? b : null; }, 6000)) || textbox(dialog());
+      await sleep(400);
+      const ok = await insertText(boxes[boxes.length - 1], list[i]);
+      // 들어갔는지는 창 전체 글에서 확인한다 (칸이 바뀌어 엉뚱한 칸을 보고 실패로 판단하던 것 — 2026-10-23)
+      const head = norm(list[i]).slice(0, 12);
+      if (!ok && !(await waitFor(() => norm(document.body.innerText).includes(head), 2500))) return warn(`이어 쓰기 ${i}번을 못 넣었어요. 상자의 [복사]로 붙여 넣어 주세요.`);
+      await sleep(300);
     }
     return finish("다 채웠어요. 글·사진을 확인하고 [게시]를 직접 눌러 주세요.");
   }

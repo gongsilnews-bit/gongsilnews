@@ -26,7 +26,7 @@ const nm = require("./ext-newsmaker");
 const simW = () => require("./sim-writer");
 
 const CHANNELS = ["instagram", "threads", "facebook"]; // 화면 탭 순서 (회의 결정: 인스타 → 스레드 → 페이스북)
-const FIT_KINDS = new Set(["proof", "map", "roadview"]); // 화면 캡처는 자르지 않고 흰 여백으로 맞춘다
+const FIT_KINDS = new Set(["proof", "map", "roadview", "capture"]); // 화면 캡처는 자르지 않고 흰 여백으로 맞춘다
 const { mediaDir, readJson } = blogWriter;
 const snsFile = (vacancyId) => path.join(mediaDir(vacancyId), "sns.json");
 const newId = () => crypto.randomBytes(6).toString("hex");
@@ -187,13 +187,28 @@ async function write({ baseUrl, vacancyId, tone = "" }, onProgress = () => {}) {
   return forWeb(data);
 }
 
+/* 한 번에 쓰기 (all-writer) — 인테리어·리모델링 SNS 저장 (출처·글 끝은 따로 쓸 때 writeSim 과 같게) */
+async function saveSimPosts(baseUrl, vacancyId, posts) {
+  const S = simW();
+  const L = S.lib(vacancyId);
+  const { result, vacancy } = S.resultOf(vacancyId);
+  let listing = null;
+  if (result.vacancyId) listing = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "").catch(() => null);
+  const { pool, media } = pickMedia(vacancyId);
+  const ctx = { noun: L.gwSnsNoun(vacancy), url: listing ? listing.detailUrl : "https://www.gongsilnews.com", listing, noVacancy: !result.vacancyId, credit: S.creditOf(vacancyId) };
+  const data = { vacancyId, kind: "sim", ctx, posts, pool, media, chatUrl: "", writtenAt: new Date().toISOString() };
+  fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
+  log.info(`[SNS] 시뮬레이션 ${vacancyId} (한 번에)`);
+  return forWeb(data);
+}
+
 /* 채널마다 사진 고르기 — 다시 쓸 때는 고른 사진을 그대로 둔다 (실제 사진 먼저, AI·예측 이미지는 뒤) */
 function pickMedia(vacancyId) {
   const prev = readJson(snsFile(vacancyId));
   const pool = photoPool(vacancyId);
   const media = {};
   for (const ch of CHANNELS) {
-    if (prev && prev.media && Array.isArray(prev.media[ch]) && prev.media[ch].every((id) => pool.some((m) => m.id === id))) {
+    if (prev && prev.media && Array.isArray(prev.media[ch]) && prev.media[ch].length && prev.media[ch].every((id) => pool.some((m) => m.id === id))) {
       media[ch] = prev.media[ch];
     } else {
       const picked = sns.gwSnsPickMedia(ch, pool.map((m) => ({ ...m, url: m.file })));
@@ -232,6 +247,7 @@ async function writeSim({ baseUrl, vacancyId, tone = "" }, onProgress) {
     credit: S.creditOf(vacancyId), // 매물과 연결되지 않았을 때
   };
   const data = { vacancyId, kind: "sim", ctx, posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() };
+  if (tone && typeof tone === "object") data.tone = tone;
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
   log.info(`[SNS] 시뮬레이션 ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
   return forWeb(data);
@@ -342,4 +358,4 @@ function saveAll(vacancyId, { noun, listing, posts, column = false }) {
   return forWeb(data);
 }
 
-module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, useQuota, saveAll, toneLine, NO_REF };
+module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, saveSimPosts, useQuota, saveAll, toneLine, NO_REF };

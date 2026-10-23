@@ -9,7 +9,7 @@
 //  - 지금 보는 뉴스: 스튜디오 전용 크롬에서 보고 있는 뉴스 탭을 같은 방법으로 읽는다
 //  - 주제 직접입력: 주제·서론·본론·결론·참고 메모
 // 원문 기사 사진은 쓰지 않는다 (저작권). 대신 기사를 쓰면 AI 대표 이미지를 자동으로 만든다 (끌 수 있음).
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, nativeImage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -107,7 +107,7 @@ async function fetchNews(url) {
     show: false,
     width: 1200,
     height: 900,
-    webPreferences: { partition: "column-news", javascript: true, images: false, sandbox: true },
+    webPreferences: { partition: "column-news", javascript: true, images: true, sandbox: true }, // 기사 화면 캡처에 사진이 보이게
   });
   const wc = win.webContents;
   wc.setAudioMuted(true);
@@ -136,8 +136,10 @@ async function fetchNews(url) {
     }
     if (!r) throw new Error("뉴스 페이지를 열지 못했습니다. 주소를 확인해 주세요.");
     if (!r.ok) throw new Error(r.reason);
-    log.info(`[뉴스칼럼] 뉴스 가져옴 ${r.news.publisher} · ${r.news.title.slice(0, 40)}`);
-    return r.news;
+    const shots = await captureWin(wc).catch((e) => { log.warn(`[뉴스칼럼] 기사 화면 캡처 못함 ${e.message}`); return []; });
+    lastShots = { url: r.news.url || href, shots };
+    log.info(`[뉴스칼럼] 뉴스 가져옴 ${r.news.publisher} · ${r.news.title.slice(0, 40)} · 화면 ${shots.length}장`);
+    return withThumbs(r.news, shots);
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
@@ -161,6 +163,61 @@ async function openUrl(url) {
 
 const SKIP_HOSTS = /(^|\.)(chatgpt\.com|openai\.com|claude\.ai|gemini\.google\.com|blog\.naver\.com|nid\.naver\.com)$/;
 
+/* 기사 화면 캡처 3장 — 제목 부분 · 본문 1/3 · 본문 2/3 (짧은 기사는 겹치는 자리를 빼서 1~2장)
+   [이 소재로 쓰기](create) 때 칼럼 폴더에 저장하고, 기사·블로그·SNS 사진으로 쓴다. 사진마다 출처(언론사·주소)를 붙인다 */
+let lastShots = { url: "", shots: [] };
+/** 화면에 보여 줄 작은 사진 (저장은 create 때 원본으로) */
+const withThumbs = (news, shots) => ({ ...news, shots: shots.map((b) => nativeImage.createFromBuffer(b).resize({ width: 220 }).toDataURL()) });
+/** 기사 자리 계산 — 제목 · 본문 1/3 · 본문 2/3 (겹치면 빼기) */
+const SHOT_POS = `(() => {
+  const body = document.querySelector("#dic_area, #newsct_article, #articleBodyContents, [itemprop='articleBody'], article");
+  const head = document.querySelector("#title_area, .media_end_head_headline, .media_end_head, h1, h2") || body || document.body;
+  const y0 = Math.max(0, head.getBoundingClientRect().top + scrollY - 60);
+  const r = body ? body.getBoundingClientRect() : null;
+  const top = r ? r.top + scrollY : y0;
+  const h = r ? r.height : document.body.scrollHeight - y0;
+  return { ys: [y0, top + h * 0.33, top + h * 0.66], back: scrollY, vh: innerHeight, max: Math.max(0, document.documentElement.scrollHeight - innerHeight) };
+})()`;
+/** 늘 3장 (2026-10-23 사장님) — 기사가 짧아 자리가 겹치면 화면을 조금씩(0.55화면) 내려가며 채운다 */
+const pickYs = (pos) => {
+  const clamp = (y) => Math.max(0, Math.min(Math.round(y), pos.max ?? Infinity));
+  const ys = [];
+  const add = (y) => { y = clamp(y); if (!ys.some((v) => Math.abs(v - y) < pos.vh * 0.3)) ys.push(y); };
+  pos.ys.forEach(add);
+  for (let k = 1; ys.length < 3 && k <= 6; k++) add(pos.ys[0] + k * pos.vh * 0.55);
+  return ys.sort((a, b) => a - b).slice(0, 3);
+};
+/** 안 보이는 창(주소로 가져오기)에서 캡처 */
+async function captureWin(wc) {
+  const pos = await wc.executeJavaScript(SHOT_POS, true);
+  const out = [];
+  for (const y of pickYs(pos)) {
+    await wc.executeJavaScript(`window.scrollTo(0, ${y})`, true);
+    await sleep(700);
+    const img = await wc.capturePage();
+    if (!img.isEmpty()) out.push(img.toJPEG(85));
+  }
+  return out;
+}
+async function captureNews(page) {
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    const pos = await page.evaluate(SHOT_POS);
+    const ys = pickYs(pos);
+    const out = [];
+    for (const y of ys) {
+      await page.evaluate((v) => window.scrollTo(0, v), y);
+      await sleep(600);
+      const { data } = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 85 });
+      out.push(Buffer.from(data, "base64"));
+    }
+    await page.evaluate((v) => window.scrollTo(0, v), pos.back).catch(() => {});
+    return out;
+  } finally {
+    await cdp.detach().catch(() => {});
+  }
+}
+
 /* [지금 보는 뉴스 가져오기]: 전용 크롬에서 지금 보고 있는 탭(없으면 가장 최근 탭)을 읽는다 */
 async function grabNews() {
   const pages = (await chrome.openPages()).filter((p) => /^https?:/.test(p.url()) && !SKIP_HOSTS.test(chrome.hostOf(p)));
@@ -173,8 +230,10 @@ async function grabNews() {
     let r = await page.evaluate(EXTRACT()).catch(() => null);
     if (!r || !r.ok || r.news.body.length < SHORT_BODY) r = pickBody(r, await page.evaluate(GENERIC_SRC).catch(() => null));
     if (r && r.ok) {
-      log.info(`[뉴스칼럼] 보던 뉴스 가져옴 ${r.news.publisher} · ${r.news.title.slice(0, 40)}`);
-      return r.news;
+      const shots = await captureNews(page).catch((e) => { log.warn(`[뉴스칼럼] 기사 화면 캡처 못함 ${e.message}`); return []; });
+      lastShots = { url: r.news.url || page.url(), shots };
+      log.info(`[뉴스칼럼] 보던 뉴스 가져옴 ${r.news.publisher} · ${r.news.title.slice(0, 40)} · 화면 ${shots.length}장`);
+      return withThumbs(r.news, shots);
     }
     last = r;
   }
@@ -228,6 +287,16 @@ function create(source) {
   const id = `col-${Date.now().toString(16)}${crypto.randomBytes(3).toString("hex")}`;
   const data = { id, source: s, createdAt: new Date().toISOString() };
   fs.mkdirSync(mediaDir(id), { recursive: true });
+  // 가져올 때 찍은 기사 화면 — 같은 기사면 저장하고 출처를 붙인다 (기사·블로그·SNS 사진으로)
+  if (s.mode === "news" && lastShots.shots.length && lastShots.url && s.news.url && lastShots.url.split("?")[0] === s.news.url.split("?")[0]) {
+    const credit = `출처: ${s.news.publisher || "원문 기사"}${s.news.url ? ` (${s.news.url})` : ""}`;
+    data.captures = lastShots.shots.map((buf, i) => {
+      const file = path.join(mediaDir(id), `capture-${i + 1}.jpg`);
+      fs.writeFileSync(file, buf);
+      return { file, caption: `원문 기사 화면 ${i + 1} · ${credit}` };
+    });
+    lastShots = { url: "", shots: [] };
+  }
   fs.writeFileSync(sourceFile(id), JSON.stringify(data, null, 2));
   log.info(`[뉴스칼럼] 새 칼럼 ${id} (${s.mode})`);
   return forWeb(data);
@@ -271,13 +340,13 @@ function articleOptions() {
   return {
     kinds: Object.entries(nm.GW_KIND).map(([id, k]) => ({ id, label: k.label, brief: k.brief })),
     lengths: Object.entries(nm.GW_LENGTH).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
-    autoCover: true,
+    autoCover: false,
   };
 }
 
 /* 기사 쓰기 — 섹션은 AI 가 공실뉴스 1·2차 섹션에서 고른다. 기사 한도는 기사 등록할 때 센다.
    autoCover: 다 쓰면 AI 대표 이미지를 만든다 (AI 이미지 하루 한도 안에서). 실패해도 기사는 남는다. */
-async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "normal", autoCover = true }, onProgress = () => {}) {
+async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "normal", autoCover = false }, onProgress = () => {}) {
   const blogWriter = require("./blog-writer");
   const source = readSource(id);
   const prompt = nm.gwBuildPrompt(source, { kind, length });
@@ -295,7 +364,7 @@ async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "n
 async function addCover(baseUrl, id, draft, onProgress = () => {}) {
   const blogWriter = require("./blog-writer");
   const source = readSource(id);
-  const hasCover = (draft.media || []).some((m) => m.isCover);
+  const hasCover = (draft.media || []).some((m) => m.isCover && m.kind === "ai"); // 기사 화면 캡처가 대표여도 AI 대표 그림은 켠 사람에게 만든다
   if (!hasCover) {
     try {
       onProgress("기사에 맞는 AI 대표 이미지를 만드는 중… (1~2분)");

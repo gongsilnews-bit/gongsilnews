@@ -34,7 +34,7 @@ type Bridge = {
 };
 const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
 
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지", capture: "기사 화면" };
 const isHeading = (p: string) => p.startsWith("■");
 const stripHeading = (p: string) => p.replace(/^■\s*/, "");
 

@@ -2559,7 +2559,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       updateLayer(musicTarget, m);
       openLayer(musicTarget);
       say("음악을 바꿨어요");
-    } else addLayer({ type: "music", ...m, volume: 0.03, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }, true);
+    } else addLayer({ type: "music", ...m, volume: 0.5, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }, true); // 편집에서 직접 넣는 음악은 50 (BGM 자동으로 깔 때만 5 — 2026-10-23 사장님)
   };
 
   /* ── 자료 넣기 ── */

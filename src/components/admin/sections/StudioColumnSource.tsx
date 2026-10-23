@@ -16,7 +16,7 @@ import StudioChannelTabs from "./StudioChannelTabs";
  * 기사는 원문 문장을 옮기지 않고 "○○ 보도에 따르면"·"(참고: ○○ 보도)"로 출처를 밝힌다 (뉴스메이커 프롬프트 그대로).
  */
 
-type News = { title: string; publisher: string; publishedAt: string; url: string; body: string; truncated?: boolean };
+type News = { title: string; publisher: string; publishedAt: string; url: string; body: string; truncated?: boolean; shots?: string[] };
 type Topic = { subject: string; intro: string; points: string[]; outro: string; memo: string };
 type Source = { mode: "news" | "topic"; angle?: string; news?: News; topic?: Topic };
 type Column = { id: string; source: Source; label: string; createdAt: string; articleTitle?: string };
@@ -191,6 +191,14 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
                   <div style={{ fontSize: 12.5, color: theme.textSecondary, lineHeight: 1.6 }}>
                     AI는 이 원문의 <b>사실만</b> 뽑아 새 문장으로 씁니다. 원문 사진은 쓰지 않고, 기사에 출처를 밝힙니다.
                   </div>
+                  {/* 가져올 때 찍은 기사 화면 — 기사·블로그·SNS 사진으로 들어가고 사진마다 출처가 붙는다 (2026-10-23) */}
+                  {Boolean(news.shots?.length) && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: theme.textSecondary }}>기사 화면 {news.shots!.length}장</span>
+                      {news.shots!.map((u, i) => <img key={i} src={u} alt="" style={{ width: 90, height: 64, objectFit: "cover", objectPosition: "top", borderRadius: 6, border: `1px solid ${theme.border}` }} />)}
+                      <span style={{ fontSize: 12, color: theme.textSecondary }}>기사·블로그·SNS 사진으로 들어가요 (사진마다 출처 표시)</span>
+                    </div>
+                  )}
                   <div style={{ display: "grid", gridTemplateColumns: "160px 1fr 140px", gap: 8, marginTop: 10 }}>
                     <input value={news.publisher} onChange={(e) => setNews({ ...news, publisher: e.target.value })} placeholder="언론사" style={input} />
                     <input value={news.title} onChange={(e) => setNews({ ...news, title: e.target.value })} placeholder="원문 제목" style={input} />

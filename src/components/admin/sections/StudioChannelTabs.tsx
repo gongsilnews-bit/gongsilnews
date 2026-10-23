@@ -41,7 +41,7 @@ type Bridge = {
 /** 한 번에 쓰기 — 탭마다 "함께 쓰기" 체크 · 기사 스타일·분량 · SNS 문체 (이 PC 에 기억). 블로그 문체·분량은 블로그 탭 값 */
 type AllOpts = { article: { on: boolean; kind: string; length: string; autoCover?: boolean }; blog: { on: boolean; style: string; length: string }; sns: { on: boolean; tone?: string; tones?: Record<string, string> }; youtube: { on: boolean; videoType?: string; duration?: string; tone?: string; number?: string } };
 // 공실뉴스·뉴스칼럼은 기사 종류·블로그 문체가 달라 따로 기억한다
-const allKey = (kind: string) => (kind === "column" ? "gs-allwrite:column" : "gs-allwrite");
+const allKey = (kind: string) => (kind === "column" ? "gs-allwrite:column" : kind === "sim" ? "gs-allwrite:sim" : "gs-allwrite");
 const loadAll = (kind: string): AllOpts => {
   const ALL_KEY = allKey(kind);
   const d: AllOpts = { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
@@ -81,7 +81,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [blogError, setBlogError] = useState("");
   const [blog, setBlog] = useState<BlogDraft | null>(null);
   // 한 번에 쓰기 (공실뉴스 매물만 — 칼럼·인테리어는 탭마다 쓰기)
-  const oneShot = kind === "gongsil" || kind === "column"; // 뉴스칼럼도 (2026-10-23 사장님)
+  const oneShot = true; // 공실뉴스·뉴스칼럼·인테리어·리모델링 모두 (2026-10-23 사장님)
   const [all, setAll] = useState<AllOpts>(() => loadAll(kind));
   useEffect(() => setAll(loadAll(kind)), [kind]);
   const [allBusy, setAllBusy] = useState("");
@@ -325,7 +325,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       {tab === "article" && (
         <StudioArticlePanel theme={theme} vacancyId={workId} article={article} onArticle={setArticle} column={column}
           oneShot={oneShot} pick={all.article} onPick={(k, l) => keepAll({ ...all, article: { ...all.article, kind: k, length: l } })}
-          autoCover={all.article.autoCover !== false} onAutoCover={(v) => keepAll({ ...all, article: { ...all.article, autoCover: v } })}
+          autoCover={all.article.autoCover === true} onAutoCover={(v) => keepAll({ ...all, article: { ...all.article, autoCover: v } })}
           onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} />
       )}
 

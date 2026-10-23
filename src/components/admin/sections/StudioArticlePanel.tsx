@@ -47,7 +47,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
-  const [ownCover, setOwnCover] = useState(true); // 뉴스칼럼: 다 쓰면 AI 대표 이미지
+  const [ownCover, setOwnCover] = useState(false); // 뉴스칼럼: 다 쓰면 AI 대표 이미지 — 처음 값 끔 (기사 화면 캡처 첫 장이 대표, 2026-10-23 사장님)
   const autoCover = autoCoverP ?? ownCover;
   const setAutoCover = (v: boolean) => (onAutoCover ? onAutoCover(v) : setOwnCover(v));
 

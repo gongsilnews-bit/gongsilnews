@@ -35,7 +35,7 @@ type Bridge = {
 const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지", capture: "기사 화면" };
 const RATIO: Record<string, string> = { instagram: "4 / 5", facebook: "1 / 1", threads: "auto" };
 
 /** SNS 문체 — 세 채널 같이 (2026-10-23 사장님 회의). 앱 sns-writer.js TONES 와 같은 id */

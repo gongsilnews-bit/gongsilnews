@@ -9,7 +9,9 @@
   .box { position: fixed; left: 18px; bottom: 18px; width: 340px; max-height: 76vh; overflow: auto; z-index: 2147483647;
     background: #fff; color: #111827; border: 1px solid #d1d5db; border-radius: 14px; box-shadow: 0 18px 48px rgba(0,0,0,.28);
     font: 13px/1.55 "Malgun Gothic","Apple SD Gothic Neo",sans-serif; }
-  .hd { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #1a3a6b; color: #fff; border-radius: 14px 14px 0 0; position: sticky; top: 0; }
+  .hd { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #1a3a6b; color: #fff; border-radius: 14px 14px 0 0; position: sticky; top: 0; cursor: move; user-select: none; }
+  .box.mini .bd { display: none; }
+  .box.mini .hd { border-radius: 14px; }
   .hd b { flex: 1; font-size: 13.5px; }
   .x { background: transparent; border: 0; color: #fff; font-size: 18px; cursor: pointer; line-height: 1; }
   .bd { padding: 12px 14px 14px; }
@@ -31,13 +33,36 @@
     const host = document.createElement("div");
     host.id = "gs-studio-helper";
     const root = host.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${CSS}</style><div class="box"><div class="hd"><b></b><button class="x" title="닫기">×</button></div><div class="bd">
+    root.innerHTML = `<style>${CSS}</style><div class="box"><div class="hd" title="끌어서 옮기기"><b></b><button class="x mn" title="접기·펴기">–</button><button class="x cl" title="닫기">×</button></div><div class="bd">
       <div class="st"></div><div class="texts"></div>
       <div class="lab"><span class="pl"></span><button class="b ap">사진 넣기</button></div><div class="ph"></div>
       <div class="row"><button class="b re">처음부터 다시 채우기</button></div>
       <div class="note">[공유하기]·[게시]는 도우미가 누르지 않아요. 확인하고 직접 눌러 주세요.</div></div></div>`;
-    root.querySelector(".hd b").textContent = `공실스튜디오 도우미 · ${opts.label}`;
-    root.querySelector(".x").onclick = () => host.remove();
+    root.querySelector(".hd b").textContent = `공실스튜디오 도우미 · ${opts.label} · v${chrome.runtime.getManifest().version}`; // 판 번호 — ↻로 새 판이 들어갔는지 보이게
+    root.querySelector(".cl").onclick = () => host.remove();
+    // 끌어서 옮기기 · 접기 — 자리는 이 사이트에 기억 (2026-10-23 사장님)
+    const box = root.querySelector(".box");
+    const POS = "gs-helper-pos";
+    const place = (x, y) => {
+      const w = box.offsetWidth || 340, h = box.offsetHeight || 60;
+      x = Math.min(Math.max(0, x), innerWidth - Math.min(w, 120));
+      y = Math.min(Math.max(0, y), innerHeight - 44);
+      Object.assign(box.style, { left: x + "px", top: y + "px", bottom: "auto", right: "auto" });
+    };
+    try { const s = JSON.parse(localStorage.getItem(POS) || "null"); if (s) requestAnimationFrame(() => place(s.x, s.y)); if (s && s.mini) box.classList.add("mini"); } catch (_) {}
+    const keep = () => { try { const r = box.getBoundingClientRect(); localStorage.setItem(POS, JSON.stringify({ x: r.left, y: r.top, mini: box.classList.contains("mini") })); } catch (_) {} };
+    root.querySelector(".mn").onclick = (e) => { e.stopPropagation(); box.classList.toggle("mini"); e.target.textContent = box.classList.contains("mini") ? "+" : "–"; keep(); };
+    if (box.classList.contains("mini")) root.querySelector(".mn").textContent = "+";
+    root.querySelector(".hd").addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      const r = box.getBoundingClientRect();
+      const dx = e.clientX - r.left, dy = e.clientY - r.top;
+      const move = (ev) => place(ev.clientX - dx, ev.clientY - dy);
+      const up = () => { removeEventListener("pointermove", move, true); removeEventListener("pointerup", up, true); keep(); };
+      addEventListener("pointermove", move, true);
+      addEventListener("pointerup", up, true);
+      e.preventDefault();
+    });
     const texts = root.querySelector(".texts");
     opts.texts.forEach((t, i) => {
       const wrap = document.createElement("div");
