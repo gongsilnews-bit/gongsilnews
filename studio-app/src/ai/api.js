@@ -109,7 +109,10 @@ async function listModels(id, k) {
   const verOf = (x) => (String(x).match(/^gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0";
   const proS = best(gen, /^gemini-(\d+(?:\.\d+)?)-pro$/), proP = best(gen, /^gemini-(\d+(?:\.\d+)?)-pro-preview(?:-[\d-]+)?$/);
   const pro = proS && proP ? (newer(verOf(proP), verOf(proS)) ? proP : proS) : proS || proP;
-  const model = pro || best(gen, /^gemini-(\d+(?:\.\d+)?)-flash$/) || "gemini-2.5-flash";
+  // 글쓰기는 Flash (2026-10-23 사장님: Pro 는 생각이 길어 2분 넘게 걸림) — 정식판·미리보기판 중 새것, 없으면 Pro
+  const flS = best(gen, /^gemini-(\d+(?:\.\d+)?)-flash$/), flP = best(gen, /^gemini-(\d+(?:\.\d+)?)-flash-preview(?:-[\d-]+)?$/);
+  const flash = flS && flP ? (newer(verOf(flP), verOf(flS)) ? flP : flS) : flS || flP;
+  const model = flash || pro || "gemini-2.5-flash";
   const imageModel = best(gen, /^gemini-(\d+(?:\.\d+)?)-(?:pro|flash)-image(?:-preview)?$/) || "gemini-2.5-flash-image";
   // 성우(말소리) 모델 — 제미나이 성우 (video/geminitts.js)
   const ttsRe = (k) => new RegExp(`^gemini-(\\d+(?:\\.\\d+)?)-${k}(?:-preview)?-tts(?:-preview)?(?:-[\\d-]+)?$`);
@@ -121,7 +124,7 @@ async function models(id) {
   if (!k) throw new Error(`${NAME[id]} API 키가 없어요. [AI 설정]에서 키를 넣어 주세요.`);
   const all = read();
   const o = all[id] || {};
-  if (o.model && (id !== "gemini" || o.ttsModel) && Date.now() - (o.at || 0) < 24 * 3600e3) return o;
+  if (o.model && (id !== "gemini" || (o.ttsModel && !/-pro/.test(o.model))) && Date.now() - (o.at || 0) < 24 * 3600e3) return o; // 예전에 Pro 로 기억했으면 다시 고른다
   try {
     const m = await listModels(id, k);
     all[id] = { ...o, ...m, at: Date.now() };
@@ -219,7 +222,7 @@ async function chat(id, messages, imgs) {
       headers: head(id, k),
       body: JSON.stringify({
         model,
-        max_tokens: 16000,
+        max_tokens: 32000, // 한 번에 쓰기(기사·블로그·SNS·대본)도 잘리지 않게
         messages: messages.map((m, i) => ({
           role: m.role,
           content: i === last && imgs.length ? [...imgs.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.b64 } })), { type: "text", text: m.text }] : m.text,
@@ -272,7 +275,7 @@ async function chat(id, messages, imgs) {
  * 계정 방식 ask 와 같은 모양 — 답 글을 돌려준다.
  * chatUrl(gsapi://…) 이 있으면 그 대화에 이어 보낸다. 대화를 못 찾으면 fallbackPrompt 로 새로.
  */
-async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [], feature = "" } = {}) {
+async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "", files = [], feature = "", wait = "" } = {}) {
   await usage().guard(id); // 이번 달 한도를 넘었으면 묻기 (켠 회원만)
   const chatRec = async (msgs, im) => {
     lastUse = null;
@@ -288,7 +291,7 @@ async function ask(id, prompt, { onProgress = () => {}, isComplete = () => true,
     messages = [{ role: "user", text: chatUrl ? fallbackPrompt : prompt }];
   }
   const imgs = files.filter((f) => f && fs.existsSync(f)).map(imageOf);
-  onProgress(`${NAME[id]} API로 ${prev ? "고치는" : "쓰는"} 중… (보통 30초~1분)`);
+  onProgress(`${NAME[id]} API로 ${prev ? "고치는" : "쓰는"} 중… (보통 ${wait || "30초~1분"})`);
   const t0 = Date.now();
   let text = await chatRec(messages, imgs);
   // 덜 끝난 답이면 한 번 더 (드물게 JSON 이 잘리는 경우)

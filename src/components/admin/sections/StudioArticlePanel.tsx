@@ -29,21 +29,38 @@ const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).re
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
 
-export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false }: {
+export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false, oneShot = false, pick, onPick, autoCover: autoCoverP, onAutoCover }: {
   theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void; column?: boolean;
+  /** 한 번에 쓰기 — 이 탭은 스타일만 고르고, 쓴 뒤에만 [이 글만 다시 쓰기] */
+  oneShot?: boolean; pick?: { kind: string; length: string }; onPick?: (kind: string, length: string) => void;
+  /** 뉴스칼럼 AI 대표 이미지 — 한 번에 쓰기에도 쓰이게 위에서 기억 */
+  autoCover?: boolean; onAutoCover?: (v: boolean) => void;
 }) {
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [opts, setOpts] = useState<{ kinds: Option[]; lengths: Option[] } | null>(null);
-  const [kind, setKind] = useState(article?.style || "news");
-  const [length, setLength] = useState(article?.length || "normal");
+  const [ownKind, setOwnKind] = useState(article?.style || "news");
+  const [ownLength, setOwnLength] = useState(article?.length || "normal");
+  const kind = pick ? pick.kind : ownKind;
+  const length = pick ? pick.length : ownLength;
+  const setKind = (k: string) => (onPick ? onPick(k, length) : setOwnKind(k));
+  const setLength = (l: string) => (onPick ? onPick(kind, l) : setOwnLength(l));
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
-  const [autoCover, setAutoCover] = useState(true); // 뉴스칼럼: 다 쓰면 AI 대표 이미지
+  const [ownCover, setOwnCover] = useState(true); // 뉴스칼럼: 다 쓰면 AI 대표 이미지
+  const autoCover = autoCoverP ?? ownCover;
+  const setAutoCover = (v: boolean) => (onAutoCover ? onAutoCover(v) : setOwnCover(v));
 
   useEffect(() => {
     bridge()?.article.options(vacancyId).then(setOpts).catch(() => {});
   }, [vacancyId]);
+  // 기억한 스타일·분량이 이 글(공실/칼럼)에 없으면 처음 것으로
+  useEffect(() => {
+    if (!opts || !onPick || !pick) return;
+    const k = opts.kinds.some((x) => x.id === pick.kind) ? pick.kind : opts.kinds[0]?.id;
+    const l = opts.lengths.some((x) => x.id === pick.length) ? pick.length : opts.lengths.find((x) => x.id === "normal")?.id || opts.lengths[0]?.id;
+    if (k && l && (k !== pick.kind || l !== pick.length)) onPick(k, l);
+  }, [opts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const write = async () => {
     const b = bridge();
@@ -73,7 +90,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
   return (
     <div>
       <div style={card}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 12 }}>공실뉴스 기사 쓰기</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 12 }}>{oneShot ? "공실뉴스 기사 스타일" : "공실뉴스 기사 쓰기"}</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>기사 스타일</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8, marginBottom: 14 }}>
           {(opts?.kinds || []).map((k) => (
@@ -92,10 +109,17 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
               {l.label} · {l.chars}
             </button>
           ))}
-          <button onClick={write} disabled={writing}
-            style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-            {writing ? `${aiName}가 쓰는 중…` : article ? "다시 쓰기" : `${aiName}로 기사 쓰기`}
-          </button>
+          {oneShot ? (article || writing) && (
+            <button onClick={write} disabled={writing}
+              style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+              {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기"}
+            </button>
+          ) : (
+            <button onClick={write} disabled={writing}
+              style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+              {writing ? `${aiName}가 쓰는 중…` : article ? "다시 쓰기" : `${aiName}로 기사 쓰기`}
+            </button>
+          )}
         </div>
         {column && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13.5, color: theme.textPrimary, cursor: "pointer" }}>
@@ -104,7 +128,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
           </label>
         )}
         <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
-          {column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. " : ""}기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. 기사 한도는 기사 등록할 때 셉니다.
+          {oneShot ? "스타일·분량을 고르고 위 [한 번에 쓰기]를 누르세요. " : ""}{column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. 기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. " : ""}기사 한도는 기사 등록할 때 셉니다.
         </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}

@@ -246,7 +246,7 @@ export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entrie
 }
 
 /* ── 오른쪽 설정 칸 ── */
-const chip = (on: boolean): React.CSSProperties => ({ height: 34, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
+const chip = (on: boolean): React.CSSProperties => ({ height: 34, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
 const row: React.CSSProperties = { padding: "14px 16px", borderBottom: `1px solid ${C.line}` };
 
 function Slider({ title, value, min, max, step, show, onChange }: { title: string; value: number; min: number; max: number; step: number; show: string; onChange: (v: number) => void }) {
@@ -691,7 +691,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
                 const on = typeof layer.x !== "number" && (layer.pos || "top") === k;
                 return (
                   <button key={k} type="button" onClick={() => onChange({ pos: k, x: undefined, y: undefined })}
-                    style={{ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{l}</button>
+                    style={{ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{l}</button>
                 );
               })}
               {typeof layer.x === "number" && <span style={{ height: 32, padding: "0 12px", display: "inline-flex", alignItems: "center", borderRadius: 5, background: C.text, color: C.bg, fontSize: 13.5, fontWeight: 700 }}>옮긴 자리</span>}

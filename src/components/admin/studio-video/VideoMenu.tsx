@@ -39,12 +39,14 @@ export function AiSettingsBox({ light = false }: { light?: boolean } = {}) {
 }
 
 export default function VideoMenu({ view, onView, onMethod }: { view: VideoView; onView: (v: VideoView) => void; onMethod: (m: Method) => void }) {
+  const [theme] = useStudioTheme(false);
   // 일반 메뉴 — 색 상자·왼쪽 막대 없이, 고른 것은 글자만 밝고 굵게 (2026-10-18 사장님)
   const item = (on: boolean): React.CSSProperties => ({
     display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "10px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: FONT, fontSize: 14.5,
     fontWeight: on ? 800 : 600, color: on ? C.text : C.sub, background: "transparent",
+    // 밝은 화면 — 관리 화면 둘째 메뉴처럼 연한 남색 바탕 · 남색 글씨 · 왼쪽 막대 (어두운 화면은 글자만, 2026-10-18)
+    ...(on && theme === "light" ? { color: C.accent, background: C.accentDim, boxShadow: `inset 3px 0 0 ${C.accent}` } : {}),
   });
-  const [theme] = useStudioTheme(false);
   const head: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: C.dim, margin: "14px 12px 4px" };
   return (
     <aside style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, padding: "22px 12px", background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto", fontFamily: FONT, color: C.text }}>

@@ -303,7 +303,7 @@ export type Recover = { recover: true; file: string; name: string };
 export const isRecover = (x: unknown): x is Recover => Boolean(x && (x as Recover).recover);
 export type Folders = { projectDir: string; recordDir: string; exportDir: string; aiAudioDir?: string; defaults: { projectDir: string; recordDir: string; exportDir: string; aiAudioDir?: string } };
 export type TrashItem = { id: string; name: string; from: string; at: string; deletedAt: string; thumb: string; ratio: Ratio; duration: number };
-export type Recent = { dir: string; name: string; ratio: Ratio; method: Method; updatedAt: string; thumb: string; duration: number };
+export type Recent = { dir: string; name: string; ratio: Ratio; method: Method; updatedAt: string; thumb: string; duration: number; /** 대본 쓰고 편집 작성 중 — 단계 (1 대본 작성 · 2 초안 꾸미기), 0 = 평소 프로젝트 */ draft?: number };
 export type StockItem = { id: string; kind: "image" | "video"; thumb: string; url: string; width: number; height: number; duration?: number; credit: string; source: string };
 
 /** 위치 자동 — 세로(9:16·4:5)는 쇼츠·릴스 아래쪽 글·단추에 안 가리게 중하단, 나머지는 하단 */
@@ -414,10 +414,10 @@ export type VideoBridge = {
   split?: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>; // 받아쓰기 없이 말소리 구간으로만 (무료, 앱 0.1.4부터)
   ai: {
     script: (o: { topic?: string; style?: string; request?: string; chars?: number; vacancy?: unknown; source?: string; /** 이번 대본만 쓸 AI (계정/API 키) */ ai?: { provider: string; mode: "account" | "api" } | null }) => Promise<{ title?: string; scenes: { title: string; lines: { text: string; desc: string; keywords: string; kind: string }[] }[] }>;
-    scenes: (lines: string[]) => Promise<{ desc: string; keywords: string; kind: string }[]>;
+    scenes: (lines: string[], opts?: { ai?: unknown }) => Promise<{ desc: string; keywords: string; kind: string }[]>;
     shorts: (clips: Clip[], o: { count: number; maxSec: number; request?: string }) => Promise<{ title: string; start: number; end: number; reason: string }[]>;
     /** 대본 + 내 영상 → 문장마다 장면 (v: 자료 번호, -1 = 없음 · t: 시작 초). 앱 0.1.10부터 */
-    footage?: (lines: string[], items: { path: string; kind: string; duration: number }[]) => Promise<{ v: number; t: number }[]>;
+    footage?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts?: { ai?: unknown }) => Promise<{ v: number; t: number }[]>;
     /** [AI 편집] 글 AI 의 편집 계획 — 앱 0.1.10부터 */
     edit?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts: { aiMax: number; moods: string[]; screen?: boolean; ratio?: string; catalog?: AiEditCatalog; kind?: string; request?: string; locked?: number[]; stock?: boolean; graphics?: string; sfx?: string; ai?: { provider: string; mode: string } | null; packs?: { id: string; label: string; desc: string }[] }) => Promise<{
       music: string;

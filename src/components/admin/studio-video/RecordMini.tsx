@@ -174,7 +174,7 @@ export function RecordMini(p: MiniProps) {
         <div style={{ display: "flex", gap: 6 }}>
           {MODES.map((m) => (
             <button key={m.id} type="button" onClick={() => p.setMode(m.id)}
-              style={{ flex: 1, height: 42, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 6, border: `1px solid ${p.mode === m.id ? C.text : C.line2}`, background: p.mode === m.id ? C.text : "transparent", color: p.mode === m.id ? C.bg : C.text, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ flex: 1, height: 42, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 6, border: `1px solid ${p.mode === m.id ? C.sel : C.line2}`, background: p.mode === m.id ? C.sel : "transparent", color: p.mode === m.id ? C.selText : C.text, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
               <Icon name={m.icon} size={16} />{m.name}
             </button>
           ))}

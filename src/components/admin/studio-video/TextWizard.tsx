@@ -2,7 +2,7 @@
 
 // 텍스트로 영상 만들기 — 브루와 같은 3단계: ① 스타일 고르기 ② 대본 작성 ③ 영상 꾸미기 → 확인 → 자동 만들기
 // 대본은 회원 AI(기본 글쓰기 AI), 길이는 글자 수 (사장님 결정). 화면 자료: 공실 사진 → 무료 자료 → AI 그림
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState , useCallback } from "react";
 import type { LibItem, Project, Ratio, Fill, Clip, Layer } from "./types";
 import { RATIO_LABEL, datedName, errText, uid, videoBridge } from "./types";
 import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
@@ -98,7 +98,8 @@ const siteName = (url: string) => {
 };
 const columnBridge = () => (window as unknown as { gongsilStudio?: { column?: ColumnBridge } }).gongsilStudio?.column;
 
-export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void }) {
+export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }: { onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void; /** 작성 중 초안(.gss)을 열었으면 — 그 단계에서 이어서 */ resume?: Project;
+  /** 뉴스·SNS발행 › 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 그 대본으로 시작 (2026-10-23 사장님) */ seed?: { vacancyId: string; script: string } }) {
   const b = videoBridge()!;
   const writer = useStudioWriter();
   const imager = useStudioImager();
@@ -200,9 +201,9 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   }, [step, deco.title]); // eslint-disable-line react-hooks/exhaustive-deps
   /** 대본으로 영상 제목 — 회원 AI (이미지 편집 [AI 문구 바꾸기] 통로) */
   const aiTitle = async (two = false): Promise<string> => {
-    const pb = (window as unknown as { gongsilStudio?: { photo?: { aiText?: (o: { text: string; request: string }) => Promise<{ text: string }> } } }).gongsilStudio?.photo;
+    const pb = (window as unknown as { gongsilStudio?: { photo?: { aiText?: (o: { text: string; request: string; ai?: unknown }) => Promise<{ text: string }> } } }).gongsilStudio?.photo;
     if (!pb?.aiText || !script.trim()) return "";
-    const r = await pb.aiText({ text: script.slice(0, 1500), request: two ? "이 대본으로 영상 왼쪽 위 2단 제목을 써 줘. 1단은 짧은 머리말(8자 안팎), 2단은 큰 제목(12자 안팎). 두 줄을 줄바꿈으로 나눠서만. 숫자·가격은 쓰지 말 것" : "이 대본으로 영상 화면 왼쪽 위에 들어갈 제목을 한국어 14자 안팎 한 줄로만. 숫자·가격은 쓰지 말 것" });
+    const r = await pb.aiText({ ai: aiUse, text: script.slice(0, 1500), request: two ? "이 대본으로 영상 왼쪽 위 2단 제목을 써 줘. 1단은 짧은 머리말(8자 안팎), 2단은 큰 제목(12자 안팎). 두 줄을 줄바꿈으로 나눠서만. 숫자·가격은 쓰지 말 것" : "이 대본으로 영상 화면 왼쪽 위에 들어갈 제목을 한국어 14자 안팎 한 줄로만. 숫자·가격은 쓰지 말 것" });
     if (two) return r.text.trim();
     return r.text.replace(/\s+/g, " ").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 24);
   };
@@ -358,6 +359,13 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       return h.slice(0, -1);
     });
   };
+  // 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 대본 칸에 그 대본 (오른쪽 칸에서 바로 고쳐 쓴다)
+  useEffect(() => {
+    if (!seed?.vacancyId) return;
+    setSrc("vacancy");
+    if (seed.script.trim()) setScript(seed.script);
+    void chooseVac(seed.vacancyId);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 처음 열 때 내 공실 목록
   useEffect(() => {
     listMyStudioVacancies().then((r) => setVacs((cur) => cur ?? (r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address} · 사진 ${v.photoCount}장` })) : []))).catch(() => setVacs((cur) => cur ?? []));
@@ -579,6 +587,65 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
   // 기본 이름 "20261021 제목" — 매물 이름 / 기사 제목 / 주제, 없으면 무제 (2026-10-20 사장님)
   const vacTitle = (vacInfo?.vacancy as { title?: string } | undefined)?.title || (vacs || []).find((v) => v.id === vacId)?.label.replace(/^\[[^\]]*\]\s*/, "").split(" · ")[0] || "";
   const defaultName = datedName(src === "vacancy" ? vacTitle : src === "news" ? news?.title : src === "episodes" ? newsNameNow : topic);
+
+  /* ── 작성 중 초안 (.gss) — 쓰기 시작하면 만들고 4초마다 바뀐 게 있으면 저장 (2026-10-23 사장님: 자꾸 꺼져서 다시 함) ── */
+  const draftRef = useRef<Project | null>(resume || null);
+  const draftHold = useRef(false); // 만드는 중엔 저장 안 함
+  const lastSaved = useRef("");
+  const savingDraft = useRef(false);
+  // 이어서 연 초안 — 되살린 내용이 화면에 들어가기 전에는 저장하지 않는다 (2026-10-23: 열자마자 빈 화면이 먼저 저장돼 대본이 지워졌다)
+  const hydrated = useRef(!(resume as unknown as { draft?: unknown } | undefined)?.draft);
+  // 저장할 것 — [값, 되살리기]
+  const keep: Record<string, [unknown, (v: never) => void]> = {
+    step: [step, setStep], style: [style, setStyle], src: [src, setSrc], newsName: [newsName, setNewsName], episodes: [episodes, setEpisodes], introReq: [introReq, setIntroReq],
+    tagline: [tagline, setTagline], outroReq: [outroReq, setOutroReq], charMode: [charMode, setCharMode], paraMedia: [paraMedia, setParaMedia], paraReq: [paraReq, setParaReq],
+    topic: [topic, setTopic], request: [request, setRequest], useChars: [useChars, setUseChars], chars: [chars, setChars], script: [script, setScript], vacId: [vacId, setVacId],
+    vacInfo: [vacInfo, setVacInfo], caps: [caps, setCaps], ratio: [ratio, setRatio], projName: [projName, setProjName], subOn: [subOn, setSubOn], subPos: [subPos, setSubPos],
+    subLines: [subLines, setSubLines], deco: [deco, setDeco], editReq: [editReq, setEditReq], voiceOn: [voiceOn, setVoiceOn], voiceId: [voiceId, setVoiceId], emotion: [emotion, setEmotion],
+    speed: [speed, setSpeed], voiceVol: [voiceVol, setVoiceVol], musicOn: [musicOn, setMusicOn], mood: [mood, setMood], track: [track, setTrack], musicMode: [musicMode, setMusicMode],
+    sceneMusic: [sceneMusic, setSceneMusic], usePhotos: [usePhotos, setUsePhotos], useStock: [useStock, setUseStock], useAi: [useAi, setUseAi], autoMute: [autoMute, setAutoMute],
+    foot: [foot, setFoot], fill: [fill, setFillS], purpose: [purpose, setPurposeRaw], newsFrom: [newsFrom, setNewsFrom], news: [news, setNews], newsPurpose: [newsPurpose, setNewsPurposeRaw], yt: [yt, setYt],
+  };
+  const snapRef = useRef("");
+  snapRef.current = JSON.stringify({ v: 1, ...Object.fromEntries(Object.entries(keep).map(([k, [v]]) => [k, v])), hints: hints.current, sceneTitles: sceneTitles.current, epUsed: epUsed.current });
+  // 이어서 열었으면 되살리기 (처음 한 번)
+  useEffect(() => {
+    const d = (resume as unknown as { draft?: Record<string, unknown> } | undefined)?.draft;
+    if (!d) return;
+    for (const [k, [, set]] of Object.entries(keep)) if (k in d && d[k] !== undefined) (set as (v: unknown) => void)(d[k]);
+    if (d.hints) hints.current = d.hints as typeof hints.current;
+    if (d.sceneTitles) sceneTitles.current = d.sceneTitles as typeof sceneTitles.current;
+    if (d.epUsed) epUsed.current = d.epUsed as Ep[];
+    lastSaved.current = JSON.stringify(d);
+    const t = setTimeout(() => { hydrated.current = true; }, 800);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const nameRef = useRef(defaultName);
+  nameRef.current = (projName ?? defaultName).trim() || defaultName;
+  const ratioRef = useRef(ratio);
+  ratioRef.current = ratio;
+  const saveDraft = useCallback(async () => {
+    if (savingDraft.current || draftHold.current || !hydrated.current) return;
+    const snap = snapRef.current;
+    if (snap === lastSaved.current) return;
+    const d = JSON.parse(snap) as { script?: string };
+    const prevScript = String(((draftRef.current as unknown as { draft?: { script?: string } } | null)?.draft || {}).script || "");
+    if (prevScript.trim() && !String(d.script || "").trim() && !lastSaved.current) return;
+    if (!draftRef.current && !String(d.script || "").trim()) return; // 글이 생기기 전엔 만들지 않는다
+    savingDraft.current = true;
+    try {
+      if (!draftRef.current) draftRef.current = await b.project.create({ method: "text", ratio: ratioRef.current, name: nameRef.current });
+      const p = draftRef.current;
+      (p as unknown as { draft: unknown }).draft = JSON.parse(snap);
+      p.ratio = ratioRef.current;
+      if (b.project.flush) await b.project.flush(p); else await b.project.save(p);
+      lastSaved.current = snap;
+    } catch {} finally { savingDraft.current = false; }
+  }, [b]);
+  useEffect(() => {
+    const t = setInterval(() => void saveDraft(), 4000);
+    return () => { clearInterval(t); void saveDraft(); }; // 나갈 때 마지막으로 한 번
+  }, [saveDraft]);
   const scenes = useMemo(() => splitScript(script), [script]);
   const lineCount = scenes.reduce((a, s) => a + s.length, 0);
   const seconds = useMemo(() => scenes.flat().reduce((a, t) => a + estimateSeconds(t, speed) + 0.12, 0), [scenes, speed]);
@@ -600,8 +667,29 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
     const off = b.onProgress((t, f) => setGen((g) => ({ title: g?.title || "만드는 중…", detail: t, frac: typeof f === "number" ? f : g?.frac })));
     try {
       setGen({ title: "프로젝트를 만드는 중…", frac: 0.02 });
-      const p = await b.project.create({ method: "text", ratio, vacancyId: src === "vacancy" ? vacId : "", name: (projName ?? defaultName).trim(), folder: folder || undefined });
-      made = p;
+      // 작성 중 초안(.gss)이 있으면 그 파일을 그대로 쓴다 (파일이 두 개 생기지 않게). 이름을 바꿨으면 먼저 이름부터
+      let p: Project;
+      const want = (projName ?? defaultName).trim();
+      const dp = draftRef.current;
+      if (dp) {
+        draftHold.current = true;
+        p = dp;
+        if (want && p.name !== want && p.file && b.project.rename) {
+          try {
+            await b.project.flush?.(p);
+            await b.project.rename(p.file, want);
+            const nf = p.file.replace(/[^\\/]+\.gss$/i, `${want}.gss`);
+            const r = await b.project.open(nf, "work");
+            if (r && "scenes" in r) p = r as Project;
+          } catch {}
+        }
+        p.ratio = ratio;
+        p.method = "text";
+        delete (p as unknown as { draft?: unknown }).draft;
+      } else {
+        p = await b.project.create({ method: "text", ratio, vacancyId: src === "vacancy" ? vacId : "", name: want, folder: folder || undefined });
+        made = p;
+      }
       // 영상 종류 · 이 영상 자료 — 편집 화면 [AI 편집]이 처음부터 알고 쓴다 (2026-10-20 사장님)
       p.kind = src === "episodes" ? "topic" : src;
       p.materials = src === "vacancy" ? [...(vacInfo?.photos || []), ...(vacInfo?.shots || [])] : src === "news" ? caps : [];
@@ -694,7 +782,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         setGen({ title: `${writer}가 내 영상에서 문장마다 장면을 고르는 중…`, detail: "장면 모음을 만들어 AI 에 보내요 (원본 영상은 보내지 않아요)", frac: 0.1 });
         try {
           const ok = footAll.filter((f) => f.path && (f.kind === "video" || f.kind === "image"));
-          const r = await b.ai.footage(clips.map((c) => c.text), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })));
+          const r = await b.ai.footage(clips.map((c) => c.text), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })), { ai: aiUse });
           for (let i = 0; i < clips.length; i++) {
             const m = r[i];
             if (!m || m.v < 0 || !ok[m.v]) continue;
@@ -718,7 +806,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         setGen({ title: `${writer}가 씬별 화면 요청에 맞는 화면을 고르는 중…`, frac: 0.11 });
         try {
           const rc = clips.filter((c) => reqOf.has(c.id));
-          const hs = await b.ai.scenes(rc.map((c) => `[화면 요청: ${reqOf.get(c.id)!.req}] ${c.text}`));
+          const hs = await b.ai.scenes(rc.map((c) => `[화면 요청: ${reqOf.get(c.id)!.req}] ${c.text}`), { ai: aiUse });
           rc.forEach((c, i) => { const k = reqOf.get(c.id)!.kind; c.hint = { ...(hs[i] || {}), kind: k === "photo" ? "image" : "video" }; });
         } catch {}
       }
@@ -726,7 +814,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       if (!visualLater && (useStock || useAi) && needHint.length && (!photos.length || photos.length < clips.length) && !halt()) {
         setGen({ title: `${writer}가 문장마다 어울리는 화면을 고르는 중…`, frac: 0.12 });
         try {
-          const hs = await b.ai.scenes(needHint.map((c) => c.text));
+          const hs = await b.ai.scenes(needHint.map((c) => c.text), { ai: aiUse });
           needHint.forEach((c, i) => (c.hint = hs[i]));
         } catch {}
       }
@@ -745,7 +833,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         if (rq?.kind === "ai") { // 요청: AI 그림
           setGen({ title: `${imager}가 그림을 그리는 중… (${i + 1}/${clips.length})`, detail: "한 장에 30초~1분 걸려요", frac: 0.15 + (i / clips.length) * 0.45 });
           try {
-            const it = await b.ai.image(p.dir, `${rq.req} — ${c.hint?.desc || c.text} — 부동산 영상에 쓸 실사, 글자·사람 얼굴 없이, ${ratio === "9:16" ? "세로" : "가로"} 화면`);
+            const it = await b.ai.image(p.dir, `${rq.req} — ${c.hint?.desc || c.text} — 부동산 영상에 쓸 실사, 글자·사람 얼굴 없이, ${ratio === "9:16" ? "세로" : "가로"} 화면`, { ai: aiUse, ratio });
             c.visual = { asset: await addAsset(it), s: 0 };
             continue;
           } catch {}
@@ -775,7 +863,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           aiLeft--;
           setGen({ title: `${imager}가 그림을 그리는 중… (${i + 1}/${clips.length})`, detail: "한 장에 30초~1분 걸려요", frac: 0.15 + (i / clips.length) * 0.45 });
           try {
-            const it = await b.ai.image(p.dir, `${c.hint?.desc || c.text} — 부동산 영상에 쓸 실사 사진, 글자·사람 얼굴 없이, ${ratio === "9:16" ? "세로" : "가로"} 화면`);
+            const it = await b.ai.image(p.dir, `${c.hint?.desc || c.text} — 부동산 영상에 쓸 실사 사진, 글자·사람 얼굴 없이, ${ratio === "9:16" ? "세로" : "가로"} 화면`, { ai: aiUse, ratio });
             c.visual = { asset: await addAsset(it), s: 0 };
             continue;
           } catch {}
@@ -801,7 +889,18 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             setGen({ title: `AI 목소리를 만드는 중… (${done}/${clips.length})`, frac: 0.6 + (done / clips.length) * 0.38 });
           }
         };
-        await Promise.all([one(), one(), one()]);
+        await Promise.all([one(), one()]); // 둘씩 (셋이면 성우 API 분당 한도에 자주 걸렸다, 2026-10-23)
+        // 못 만든 문장은 한 번 더 — 하나씩 천천히
+        const miss = clips.filter((c) => !c.voice && c.text.trim());
+        for (const [j, c] of miss.entries()) {
+          if (halt()) break;
+          setGen({ title: `목소리를 다시 만드는 중… (${j + 1}/${miss.length})`, detail: "요청이 몰려 못 만든 문장을 하나씩 다시 만들어요", frac: 0.97 });
+          try {
+            const r = await b.voice(p.dir, c.text, voiceId, emotion ? { emotion } : undefined);
+            c.voice = { file: r.file, url: r.url, duration: r.duration, id: r.id, text: r.text };
+            c.words = r.words;
+          } catch {}
+        }
         clips.forEach((c) => { if (!c.voice) c.hold = estimateSeconds(c.text, speed); }); // 멈춰서 못 만든 문장 — 글 길이만큼 (나중에 [목소리 다시 만들기])
       } else {
         clips.forEach((c) => (c.hold = estimateSeconds(c.text, speed)));
@@ -895,6 +994,58 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
         }
         if (cS && cText && first && last) p.layers.push({ id: uid(), type: "text", name: "채널명", from: first, to: last, text: cText, ...(tall ? { x: 0.5, y: 0.16 } : logoAid ? { x: 0.8, y: 0.07 } : { pos: "top", align: "right" }), size: 42, bold: true, font: "Pretendard", ...cS.look } as Layer);
         if (logoAid && first && last) p.layers.push({ id: uid(), type: "image", name: "채널 로고", from: first, to: last, asset: logoAid, x: tall ? 0.88 : 0.94, y: tall ? 0.06 : 0.07, w: tall ? 0.14 : 0.08, opacity: 1 } as Layer);
+        // 미리보기에서 끌어 옮긴 자리 (2026-10-23 사장님) — 제목·채널명 레이어, 자막
+        {
+          const dr = (deco.dragR || {})[ratio] || {}; // 화면 비율마다 따로
+          const mv = (names: string[], d?: { dx: number; dy: number; cx: number; cy: number }) => {
+            if (!d || (Math.abs(d.dx) < 0.002 && Math.abs(d.dy) < 0.002)) return;
+            for (const l of p.layers || []) {
+              if (!names.includes(String(l.name || "")) || (l.fit === "cover" || l.fit === "contain")) continue;
+              if (typeof l.x === "number" && typeof l.y === "number") { l.x = +(l.x + d.dx).toFixed(4); l.y = +(l.y + d.dy).toFixed(4); }
+              else { l.x = +(d.cx + d.dx).toFixed(4); l.y = +(d.cy + d.dy).toFixed(4); }
+            }
+          };
+          mv(["제목"], dr.title);
+          mv(["채널명", "채널 로고"], dr.ch);
+          const ds = dr.sub;
+          if (ds && (Math.abs(ds.dx) >= 0.002 || Math.abs(ds.dy) >= 0.002)) p.settings.subtitle = { ...p.settings.subtitle, x: +(ds.cx + ds.dx).toFixed(4), y: +(ds.cy + ds.dy).toFixed(4) } as typeof p.settings.subtitle;
+        }
+        // 고른 크기 (2026-10-23 사장님) — 자막 size %, 글자 레이어 size, 그림 레이어 폭
+        {
+          const sz = (deco.sizeR || {})[ratio] || {};
+          if (sz.sub && sz.sub !== 100) p.settings.subtitle = { ...p.settings.subtitle, size: Math.round((p.settings.subtitle.size || 100) * sz.sub / 100) };
+          for (const l of p.layers || []) {
+            const nm = String(l.name || "");
+            const k = nm === "제목" ? sz.title : nm === "채널명" || nm === "채널 로고" ? sz.ch : undefined;
+            if (!k || k === 100 || l.fit === "cover" || l.fit === "contain") continue;
+            if (l.type === "text") l.size = Math.round((l.size || 100) * k / 100);
+            else if (typeof l.w === "number") l.w = +Math.min(1, l.w * k / 100).toFixed(4);
+          }
+        }
+        // 편집 화면과 같은 애니메이션 (인·아웃·반복·효과음·단어별) — 고른 것이 있으면 그대로 (2026-10-23)
+        {
+          const af = deco.animFull || {};
+          if (af.sub && Object.keys(af.sub).length) p.settings.subtitle = { ...p.settings.subtitle, anim: { ...af.sub } };
+          for (const l of p.layers || []) {
+            const nm = String(l.name || "");
+            const v = nm === "제목" ? af.title : nm === "채널명" || nm === "채널 로고" ? af.ch : undefined;
+            if (v && Object.keys(v).length) l.anim = { ...v, ...(nm === "채널 로고" ? { sfx: "none" } : {}) };
+          }
+        }
+        // 고른 애니메이션 (2026-10-23 사장님) — 자막은 줄마다, 제목·채널명은 처음 나타날 때
+        {
+          const an = deco.anim || {};
+          const sf = an.sfx || {};
+          if (an.sub || an.subWord || sf.sub) p.settings.subtitle = { ...p.settings.subtitle, anim: { ...(p.settings.subtitle.anim || {}), ...(an.sub ? { in: an.sub } : {}), ...(an.subWord ? { wshow: "word" as const, whl: "color" as const } : {}), ...(sf.sub ? { sfx: sf.sub } : {}) } };
+          for (const l of p.layers || []) {
+            const nm = String(l.name || "");
+            const pick = nm === "제목" ? an.title : nm === "채널명" || nm === "채널 로고" ? an.ch : undefined;
+            if (pick) l.anim = { ...(l.anim || {}), in: pick };
+            const snd = nm === "제목" ? sf.title : nm === "채널명" ? sf.ch : undefined; // 채널 로고는 채널명과 함께 나와서 소리는 한 번만
+            if (snd !== undefined && snd !== "") l.anim = { ...(l.anim || {}), ...(l.anim?.in ? {} : { in: "fade" as const }), sfx: snd };
+            else if (snd === "" && l.anim) l.anim = { ...l.anim, sfx: "none" };
+          }
+        }
         const tMode = deco.transMode || "auto";
         if (deco.trans.length && tMode !== "none") {
           // 고른 순서대로 (5개까지), 다 쓰면 마지막 것을 반복. 넣는 곳 — 자동(클립마다) · 씬 전환만 · 씬 전환+자동(씬 안은 짧은 디졸브)
@@ -932,9 +1083,12 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
       if (e instanceof Error && e.message === STOP) {
         // 만들지 않고 닫기 — 만들던 프로젝트는 휴지통으로 (되돌릴 수 있게)
         if (made && b.project.trash) await b.project.trash(made.dir).catch(() => "");
+        draftHold.current = false; // 초안은 그대로 — 다음 저절로 저장 때 다시 담긴다
         setErr("만들기를 멈췄어요. 대본은 그대로 있어요.");
       } else setErr(errText(e));
       setGen(null);
+      draftHold.current = false;
+      lastSaved.current = "";
     } finally {
       off();
       stopRef.current = "";
@@ -961,7 +1115,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
     );
   }
 
-  const chip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
+  const chip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: `1px solid ${C.line}` };
   const steps = ["대본 작성", "초안 꾸미기"];
   let no = 0; // 대본 작성 칸 번호 — 그리는 차례대로
@@ -1243,6 +1397,16 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                   <span style={{ fontSize: 14, color: C.sub }}>자</span>
                   </>)}
                 </div>
+                {/* 길이로 고르기 — 짧게·중간·길게 (2026-10-23 사장님). 성우가 1초에 약 5자(띄어쓰기 빼고) 읽는 것으로 글자 수를 정한다 */}
+                {useChars && !(src === "episodes" && charMode === "each") && (
+                  <div style={{ display: "flex", gap: 6, marginTop: -8 }}>
+                    {LENGTHS.map((x) => {
+                      const on = chars === x.chars;
+                      return <button key={x.id} type="button" onClick={() => setChars(x.chars)} style={{ ...chip(on), flex: 1, height: 44, padding: "0 6px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}><span>{x.name}</span><span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.8 }}>{x.time} · {x.chars}자</span></button>;
+                    })}
+                  </div>
+                )}
+                {useChars && <div style={{ fontSize: 12.5, color: C.dim, marginTop: -4 }}>지금 {chars}자 ≈ 영상 약 {chars >= 300 ? `${Math.floor(chars / 300)}분 ${Math.round((chars % 300) / 5) ? Math.round((chars % 300) / 5) + "초" : ""}` : `${Math.round(chars / 5)}초`} (띄어쓰기 빼고 1초에 약 5자)</div>}
                 <div>{head("쓸 AI")}<AiPick value={aiSel} onChange={setAiSel} list={aiList} noTitle /></div>
                 <div>{head("대본 쓰기")}
                 <Btn primary onClick={() => void write()} disabled={Boolean(writing) || (src === "topic" && !topic.trim()) || (src === "episodes" && (!episodes.some(epReady) || !newsNameNow.trim())) || (src === "vacancy" && !vacInfo) || (src === "news" && !news)} style={{ height: 52, fontSize: 16.5, width: "100%" }}>
@@ -1258,6 +1422,23 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           <div style={{ flex: 1, padding: "22px 26px", display: "flex", flexDirection: "column" }}>
             {head("대본 확인·고치기 — 다 되면 아래에서 만드는 방식을 고르세요")}
             <textarea value={script} onChange={(e) => setScript(e.target.value)}
+              onPaste={(e) => {
+                // ChatGPT·Gemini 창의 대본 답(JSON — {"scenes":[{"title","lines":[{"text"}]}]})을 그대로 붙여 넣으면 대본으로 바꾼다
+                const raw = e.clipboardData.getData("text");
+                const sc = scriptFromJson(raw);
+                if (!sc) return;
+                e.preventDefault();
+                pushHistory();
+                // 고른 곳(커서 자리)에만 넣는다 — 나머지 대본은 그대로 (2026-10-23 사장님: 일부만 바꾸려다 전부 지워짐)
+                const ta = e.currentTarget, sa = ta.selectionStart, sz = ta.selectionEnd;
+                const text = sc.map((x) => x.lines.map((l, li) => { if (li === 0 && x.title) sceneTitles.current[l.text] = x.title; hints.current[l.text] = { desc: l.desc, keywords: l.keywords, kind: l.kind }; return l.text; }).join("\n")).join("\n\n");
+                const before = script.slice(0, sa), after = script.slice(sz);
+                // 앞뒤 대본과 빈 줄(씬 나눔) 하나씩 띄우기
+                const gapA = before.trim() ? (/\n\s*\n\s*$/.test(before) ? "" : before.endsWith("\n") ? "\n" : "\n\n") : "";
+                const gapZ = after.trim() ? (/^\s*\n\s*\n/.test(after) ? "" : "\n\n") : "";
+                setScript(before + gapA + text + gapZ + (after.trim() ? (gapZ ? after.replace(/^[ \t]*\n?/, "") : after) : ""));
+                setErr("");
+              }}
               onContextMenu={(e) => {
                 const t = e.currentTarget;
                 if (t.selectionEnd - t.selectionStart < 2 || writing) return; // 고른 글이 없으면 평소 메뉴
@@ -1265,7 +1446,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
                 setSelReq("");
                 setSelMenu({ x: e.clientX, y: e.clientY, a: t.selectionStart, b: t.selectionEnd });
               }} placeholder="직접 대본을 쓰거나, 왼쪽에서 AI로 쓰기를 눌러 보세요."
-              style={{ flex: 1, minHeight: 400, padding: 16, borderRadius: 6, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 17, lineHeight: 1.85, fontFamily: FONT, resize: "none", outline: "none" }} />
+              style={{ flex: 1, minHeight: 400, padding: 16, borderRadius: 6, border: `1px solid ${C.line2}`, background: C.field, color: C.text, fontSize: 17, lineHeight: 1.85, fontFamily: FONT, resize: "none", outline: "none" }} />
             {selMenu && (
               <div style={{ position: "fixed", inset: 0, zIndex: 3000 }} onMouseDown={() => setSelMenu(null)}>
                 <div onMouseDown={(e) => e.stopPropagation()} style={{ position: "fixed", left: Math.min(selMenu.x, window.innerWidth - 340), top: Math.min(selMenu.y, window.innerHeight - 170), width: 320, padding: 12, borderRadius: 8, background: C.panel2, border: `1px solid ${C.line2}`, boxShadow: "0 10px 30px rgba(0,0,0,0.4)", fontFamily: FONT }}>
@@ -1505,7 +1686,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
           </div>
           <div style={{ width: 640, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 22px", gap: 12 }}>
             {/* 예시 화면 (왼쪽) + 1~6 항목 (오른쪽) + 아래 샘플 (2026-10-22 사장님 회의) */}
-            <WizardDeco ratio={ratio} bgs={[...foot.map((x) => x.thumb), ...(src === "vacancy" && usePhotos ? (vacInfo?.photos || []).map((x) => x.thumb) : [])].filter(Boolean) as string[]} subOn={subOn} setSubOn={setSubOn} subPos={subPos} subLines={subLines} deco={deco} setDeco={setDeco} agency={agency}
+            <WizardDeco fill={fill} ratio={ratio} bgs={[...foot.map((x) => x.thumb), ...(src === "vacancy" && usePhotos ? (vacInfo?.photos || []).map((x) => x.thumb) : [])].filter(Boolean) as string[]} subOn={subOn} setSubOn={setSubOn} subPos={subPos} subLines={subLines} deco={deco} setDeco={setDeco} agency={agency}
               firstLine={(script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim()).find(Boolean) || "자막은 이 위치에 표시됩니다").slice(0, subLines === 1 ? 22 : subLines === 2 ? 44 : 66)}
               aiTitleBusy={aiTitleBusy} onAiTitle={() => {
                 const two = Boolean(TITLE_STYLES.find((x) => x.id === deco.title)?.two);
@@ -1530,7 +1711,7 @@ export default function TextWizard({ onCancel, onDone, onRecord }: { onCancel: (
             <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 2, color: C.accent, padding: "14px 0 2px" }}>SOUND</div>
             <div style={{ paddingTop: 10 }}>
               {head(<>대본 <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 고치려면 [이전]</span></>)}
-              <div style={{ maxHeight: 280, overflowY: "auto", padding: "8px 12px", border: `1px solid ${C.line}`, borderRadius: 6, background: C.bg, fontSize: 13.5, lineHeight: 1.7 }}>
+              <div style={{ maxHeight: 280, overflowY: "auto", padding: "8px 12px", border: `1px solid ${C.line}`, borderRadius: 6, background: C.field, fontSize: 13.5, lineHeight: 1.7 }}>
                 {scenes.map((ls, k) => (
                   <div key={k} style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 11.5, fontWeight: 800, color: C.dim }}>씬 {k + 1}</div>
@@ -1745,3 +1926,23 @@ function greetings(d = new Date()): { name: string; text: string }[] {
 function busyBridge() {
   return (window as unknown as { gongsilStudio?: { busy?: { hold: (t: string, sub?: string) => Promise<{ stopped: boolean }>; text: (t: string, sub?: string) => Promise<{ stopped: boolean }>; release: () => Promise<void> } } }).gongsilStudio?.busy;
 }
+
+/** AI 대본 답(JSON) → 씬 목록. ```json 울타리·앞뒤 설명 글이 있어도 가운데 { } 만 읽는다. 형식이 아니면 null */
+function scriptFromJson(raw: string): { title: string; lines: { text: string; desc?: string; keywords?: string; kind?: string }[] }[] | null {
+  const t = String(raw || "");
+  if (!/"scenes"\s*:/.test(t)) return null;
+  const a = t.indexOf("{"), z = t.lastIndexOf("}");
+  if (a < 0 || z <= a) return null;
+  try {
+    const j = JSON.parse(t.slice(a, z + 1)) as { scenes?: { title?: string; lines?: { text?: string; desc?: string; keywords?: string; kind?: string }[] }[] };
+    const sc = (j.scenes || []).map((x) => ({ title: String(x.title || ""), lines: (x.lines || []).map((l) => ({ text: String(l.text || "").trim(), desc: l.desc, keywords: l.keywords, kind: l.kind })).filter((l) => l.text) })).filter((x) => x.lines.length);
+    return sc.length ? sc : null;
+  } catch { return null; }
+}
+
+/** 영상 길이로 글자 수 고르기 — 1초에 약 5자 (띄어쓰기 빼고, timeline.estimateSeconds 와 같은 셈) */
+const LENGTHS = [
+  { id: "short", name: "짧게", time: "약 1분", chars: 300 },
+  { id: "mid", name: "중간", time: "약 3~5분", chars: 1200 },
+  { id: "long", name: "길게", time: "약 7분", chars: 2100 },
+];

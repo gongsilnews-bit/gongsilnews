@@ -65,10 +65,11 @@ function dated(dir) {
   fs.mkdirSync(out, { recursive: true });
   return out;
 }
-/** 기본 녹화·AI보이스·프로젝트·완성영상 폴더면 오늘 날짜 폴더, 아니면 그대로 */
+/** 기본 녹화·완성영상 폴더면 오늘 날짜 폴더, 아니면 그대로 */
 function byDate(dir) {
   const def = defaults();
-  return dir && [def.recordDir, def.aiAudioDir, def.projectDir, finishedRoot()].some((d) => same(dir, d)) ? dated(dir) : dir;
+  // 프로젝트는 날짜 폴더 없이 바로 (파일 이름 앞에 20261023 이 있으니까 — 2026-10-23 사장님)
+  return dir && [def.recordDir, finishedRoot()].some((d) => same(dir, d)) ? dated(dir) : dir; // AI보이스도 날짜 폴더 없이 (2026-10-23 사장님)
 }
 /** 완성영상 폴더 안(어느 날짜든)인가 — 내보내기 창은 늘 오늘 날짜 폴더에서 연다 */
 const inFinished = (dir) => (path.resolve(String(dir || "")).toLowerCase() + path.sep).startsWith(finishedRoot().toLowerCase() + path.sep);

@@ -209,4 +209,28 @@ function exportText(id) {
   return { folder, file };
 }
 
-module.exports = { options, get, write, revise, save, exportText };
+/* 한 번에 쓰기 (all-writer) — 설정 맞추기 · 프롬프트 · 받은 JSON 저장. 공실뉴스(매물)만 */
+function allSettings(id, pick = {}) {
+  const o = options(id);
+  const ok = (list, v) => (v && list.some((x) => x.id === v) ? v : "");
+  const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number) };
+  return { ...o.defaults, ...Object.fromEntries(Object.entries(want).filter(([, v]) => v)) };
+}
+function allPrompt(id, settings, article) {
+  if (isColumn(id)) return yt.column.gwBuildYtScriptPrompt({ article, source: require("./column-writer").readSource(id) }, settings);
+  const analysis = readAnalysis(id);
+  if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  const number = yt.column.GW_YT_NUMBER[settings.number] || yt.column.GW_YT_NUMBER.hangul;
+  return `${yt.gongsil.gwBuildYtScriptPrompt({ vacancy: analysis.vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}`;
+}
+async function saveAll(baseUrl, id, text, settings) {
+  const analysis = readAnalysis(id) || { vacancy: {} };
+  const detailUrl = isColumn(id) ? "" : await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").then((l) => l.detailUrl).catch(() => "");
+  const d = { ...parse(id, text), settings, detailUrl, chatUrl: "", writtenAt: new Date().toISOString() };
+  fs.mkdirSync(mediaDir(id), { recursive: true });
+  fs.writeFileSync(ytFile(id), JSON.stringify(d, null, 2));
+  log.info(`[유튜브] ${id} ${settings.duration} 원고 ${d.narration.length}문단 (한 번에)`);
+  return forWeb(id, d);
+}
+
+module.exports = { options, get, write, revise, save, exportText, allSettings, allPrompt, saveAll };

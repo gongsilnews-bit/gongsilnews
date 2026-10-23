@@ -71,7 +71,22 @@ function FileBadge({ kind }: { kind: string }) {
 export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false, hidden = false, onHide }: Props) {
   const [savedCollapsed, setCollapsed] = useState(false);
   // 화면 모드(밝은/어두운) — 앱 전체 하나 (이미지제작·동영상제작·관리 화면 같이, 2026-10-23 사장님)
-  const [theme, setTheme] = useStudioTheme(false);
+  const [studioTheme, setStudioTheme] = useStudioTheme(false); // 동영상제작·이미지제작 하나로
+  // 관리 화면(그 밖 메뉴) 모드 — 기본 밝게, 따로 기억
+  const [adminTheme, setAdminThemeS] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    const load = () => { try { setAdminThemeS(localStorage.getItem(`gs-admin-theme:${activeMenu}`) === "dark" ? "dark" : "light"); } catch {} };
+    load();
+    window.addEventListener("gs-admin-theme-change", load);
+    return () => window.removeEventListener("gs-admin-theme-change", load);
+  }, [activeMenu]);
+  const studioArea = activeMenu === "video" || activeMenu === "photo";
+  const theme = studioArea ? studioTheme : adminTheme;
+  const setTheme = (t: "light" | "dark") => {
+    if (studioArea) return setStudioTheme(t);
+    try { localStorage.setItem(`gs-admin-theme:${activeMenu}`, t); } catch {} // 메뉴마다 따로
+    window.dispatchEvent(new Event("gs-admin-theme-change"));
+  };
   const [hasAi, setHasAi] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

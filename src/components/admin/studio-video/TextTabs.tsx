@@ -275,7 +275,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 <div style={{ display: "flex", gap: 6 }}>
                   {([["upper", "TT", "모두 대문자"], ["lower", "tt", "모두 소문자"], ["title", "Tt", "낱말 첫 글자만 대문자"]] as const).map(([v, t, ti]) => (
                     <button key={v} type="button" onClick={() => onLook({ textCase: look.textCase === v ? undefined : v })} title={`${ti} (영어만 · 다시 누르면 그대로)`}
-                      style={{ width: 40, height: 32, borderRadius: 5, border: `1px solid ${look.textCase === v ? C.text : C.line2}`, background: look.textCase === v ? C.text : "transparent", color: look.textCase === v ? C.bg : C.text, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+                      style={{ width: 40, height: 32, borderRadius: 5, border: `1px solid ${look.textCase === v ? C.sel : C.line2}`, background: look.textCase === v ? C.sel : "transparent", color: look.textCase === v ? C.selText : C.text, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
                   ))}
                 </div>
                 <span style={label}>색상</span>
@@ -301,7 +301,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <span style={{ ...label, flex: 1 }}>{title}</span>
                       <button type="button" onClick={() => (auto ? set(v) : toAuto())} title={auto ? "자동 — 글꼴·모양에 맞춰 저절로 (누르면 직접 조절)" : `눌러서 자동으로 (글꼴·모양에 맞춘 ${title})`}
-                        style={{ height: 28, padding: "0 12px", borderRadius: 5, border: `1px solid ${auto ? C.text : C.line2}`, background: auto ? C.text : "transparent", color: auto ? C.bg : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>자동</button>
+                        style={{ height: 28, padding: "0 12px", borderRadius: 5, border: `1px solid ${auto ? C.sel : C.line2}`, background: auto ? C.sel : "transparent", color: auto ? C.selText : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>자동</button>
                     </div>
                     {!auto && (
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -325,7 +325,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                     const on = (look.align || "center") === v;
                     return (
                       <button key={v} type="button" onClick={() => onLook({ align: v === "center" ? undefined : v })} title={`${ti} 정렬`}
-                        style={{ width: 40, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.text, cursor: "pointer" }}>
+                        style={{ width: 40, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.text, cursor: "pointer" }}>
                         <Icon name={ic} size={17} />
                       </button>
                     );
@@ -348,14 +348,14 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                     const canBold = !look.font || look.font === DEFAULT_FONT;
                     const b = (on: boolean, ok: boolean, title: string, set: () => void, child: React.ReactNode) => (
                       <button type="button" onClick={set} disabled={!ok} title={title}
-                        style={{ width: 40, height: 32, borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 15, fontFamily: "Georgia, serif", cursor: ok ? "pointer" : "default" }}>{child}</button>
+                        style={{ width: 40, height: 32, borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.bg : ok ? C.text : C.dim, opacity: ok ? 1 : 0.45, fontSize: 15, fontFamily: "Georgia, serif", cursor: ok ? "pointer" : "default" }}>{child}</button>
                     );
                     const basic = !look.underline && !look.italic && look.bold !== false;
                     return (
                       <>
                         {/* 기본 — 밑줄·기울임 없이, 굵기는 처음대로 (2026-10-20 사장님: 패턴 기초로) */}
                         <button type="button" onClick={() => onLook({ underline: undefined, italic: undefined, bold: undefined })} title="패턴 없이 기본으로 (밑줄·기울임 빼기)"
-                          style={{ height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${basic ? C.text : C.line2}`, background: basic ? C.text : "transparent", color: basic ? C.bg : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>기본</button>
+                          style={{ height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${basic ? C.sel : C.line2}`, background: basic ? C.sel : "transparent", color: basic ? C.selText : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>기본</button>
                         {b(look.bold !== false && canBold, canBold, canBold ? "굵게" : "이 글꼴은 굵기가 하나예요", () => onLook({ bold: look.bold === false }), <b>B</b>)}
                         {b(Boolean(look.underline), true, "밑줄", () => onLook({ underline: !look.underline || undefined }), <u>U</u>)}
                         {b(Boolean(look.italic), true, "기울임", () => onLook({ italic: !look.italic || undefined }), <i>I</i>)}
@@ -414,7 +414,7 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                             <div style={{ display: "flex", gap: 6 }}>
                               {([["linear", "선형"], ["radial", "방사형"], ["reflect", "반사형"]] as const).map(([v, t]) => (
                                 <button key={v} type="button" onClick={() => onLook({ gradType: v === "linear" ? undefined : v })}
-                                  style={{ flex: 1, height: 32, borderRadius: 5, border: `1px solid ${gt === v ? C.text : C.line2}`, background: gt === v ? C.text : "transparent", color: gt === v ? C.bg : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+                                  style={{ flex: 1, height: 32, borderRadius: 5, border: `1px solid ${gt === v ? C.sel : C.line2}`, background: gt === v ? C.sel : "transparent", color: gt === v ? C.selText : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
                               ))}
                             </div>
                             {gt !== "radial" && bar("각도", ang, 0, 360, (v) => onLook({ gradAngle: v === 180 ? undefined : v }), "°")}

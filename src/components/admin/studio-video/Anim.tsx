@@ -232,7 +232,7 @@ function AnimInner({ value, what, thumb, text, look, onChange, onPreview, sfxDef
       </div>
       <div style={{ padding: "12px 16px 0" }}>
         <div style={{ display: "flex", borderRadius: 7, background: C.card, padding: 3 }}>
-          {([["in", "인"], ["out", "아웃"], ["loop", "반복"], ["sfx", "효과음"], ["word", "단어·줄"]] as const).filter(([k]) => k !== "word" || wordsOk).map(([k, l]) => (
+          {([["in", "인"], ["out", "아웃"], ["loop", "반복"], ["word", "단어·줄"], ["sfx", "효과음"]] as const).filter(([k]) => k !== "word" || wordsOk).map(([k, l]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
               style={{ flex: 1, height: 32, border: 0, borderRadius: 5, background: tab === k ? C.panel2 : "transparent", color: tab === k ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
               {l}

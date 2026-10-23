@@ -108,11 +108,12 @@ function RealtyAdminContent() {
   const [darkMode, setDarkMode] = useState(false);
   // 스튜디오 메뉴의 [밝은/어두운 화면] 단추가 고른 값을 관리 화면도 따른다 (한 번 고른 적이 있을 때만 — 처음엔 지금처럼 밝게)
   useEffect(() => {
-    const load = () => { try { const v = localStorage.getItem("gs-studio-theme"); if (v) setDarkMode(v === "dark"); } catch {} };
+    // 메뉴마다 따로 기억 (기본 밝게, 2026-10-23 사장님) — 동영상제작·이미지제작은 각자 gs-studio-theme · gs-photo-theme (기본 어둡게)
+    const load = () => { try { setDarkMode(localStorage.getItem(`gs-admin-theme:${activeMenu}`) === "dark"); } catch {} };
     load();
-    window.addEventListener("gs-studio-theme-change", load);
-    return () => window.removeEventListener("gs-studio-theme-change", load);
-  }, []);
+    window.addEventListener("gs-admin-theme-change", load);
+    return () => window.removeEventListener("gs-admin-theme-change", load);
+  }, [activeMenu]);
   // 영상 편집에서 왼쪽 메뉴 줄 숨기기 — 편집 화면 맨 위 [»]가 'studio:rail' 신호로 다시 보이게 한다 (이 기기에 기억)
   const [railHidden, setRailHidden] = useState(false);
   const [videoEditing, setVideoEditing] = useState(false); // 편집 화면이 열려 있을 때만 숨긴다 (처음 화면에는 메뉴가 늘 보이게)

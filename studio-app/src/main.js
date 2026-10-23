@@ -35,9 +35,10 @@ ext.configure(BASE_URL);
 const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
-  "studio:ai-set-mode", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
+  "studio:ai-set-mode", "studio:ai-get-order", "studio:ai-set-order", "studio:ai-get-method", "studio:ai-set-method", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
   "studio:save-file", "studio:open-out-folder", "studio:storage-get", "studio:storage-choose", "studio:storage-open", "studio:busy-hold", "studio:busy-text", "studio:busy-release",
+  "studio:work-save", "studio:work-status", "studio:work-show", "studio:work-open",
   "studio:report-get", "studio:report-list", "studio:report-save", "studio:report-remove",
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
@@ -129,6 +130,21 @@ async function openGsn(file) {
     dialog.showMessageBox(mainWindow || undefined, { type: "warning", title: "공실스튜디오", message: "작업 파일을 열지 못했어요.", detail: e.message });
   }
 }
+// 뉴스·SNS발행 [저장하기] · [불러오기] · 저장 상태 (2026-10-23 사장님)
+ipcMain.handle("studio:work-save", (_e, id) => require("./gsn").saveNow(id));
+ipcMain.handle("studio:work-status", (_e, id) => require("./gsn").status(id));
+ipcMain.handle("studio:work-show", (_e, file) => { if (file && fs.existsSync(file)) shell.showItemInFolder(file); });
+ipcMain.handle("studio:work-open", async () => {
+  const r = await dialog.showOpenDialog(mainWindow || undefined, {
+    title: "작업 파일 불러오기",
+    defaultPath: require("./studio-root").dir("sns", "프로젝트"),
+    filters: [{ name: "공실스튜디오 작업 파일", extensions: ["gsn", "gsm"] }],
+    properties: ["openFile"],
+  });
+  if (r.canceled || !r.filePaths[0]) return false;
+  await openGsn(r.filePaths[0]);
+  return true;
+});
 /** .gss 열기 — 영상 편집기(동영상제작)로 가서 그 파일을 연다 */
 async function openGss(file) {
   log.info(`[.gss] 탐색기에서 엶 ${file}`);
@@ -346,9 +362,9 @@ function openAiWindow() {
   // 크게 (2026-10-23 사장님) — 화면 높이에 맞춰, 늘리고 줄일 수 있게
   const wa = screen.getDisplayMatching(mainWindow ? mainWindow.getBounds() : { x: 0, y: 0, width: 1, height: 1 }).workArea;
   aiWindow = new BrowserWindow({
-    width: Math.min(820, wa.width - 40),
-    height: Math.min(1040, wa.height - 30),
-    minWidth: 560,
+    width: Math.min(1180, wa.width - 40), // 왼쪽 메뉴 + 넓은 오른쪽 (브루 설정창처럼, 2026-10-23)
+    height: Math.min(900, wa.height - 30),
+    minWidth: 760,
     minHeight: 600,
     parent: mainWindow || undefined,
     title: "AI 설정",
@@ -573,6 +589,10 @@ const aiChanged = () => {
   return aiConnect.list();
 };
 ipcMain.handle("studio:ai-set-mode", (_e, id, mode) => (aiConnect.setMode(id, mode), aiChanged()));
+ipcMain.handle("studio:ai-get-order", () => aiConnect.getOrder());
+ipcMain.handle("studio:ai-get-method", () => aiConnect.getMethod());
+ipcMain.handle("studio:ai-set-method", (_e, m) => (aiConnect.setMethod(m), aiChanged()));
+ipcMain.handle("studio:ai-set-order", (_e, o) => (aiConnect.setOrder(o), aiChanged()));
 ipcMain.handle("studio:ai-set-key", async (_e, id, key) => (await require("./ai/api").setKey(id, key), aiChanged()));
 ipcMain.handle("studio:ai-test-key", async (_e, id) => (await require("./ai/api").test(id), aiConnect.list()));
 // API 사용 내역 (2026-10-21 사장님) — 이 PC 기록 · 한도 알림 · CSV
@@ -594,11 +614,13 @@ ipcMain.handle("studio:blog-styles", (_e, vacancyId) => blogWriter.styles(vacanc
 ipcMain.handle("studio:naver-designs", () => naverWrite.designs());
 ipcMain.handle("studio:sns-channels", () => snsWriter.channelInfo());
 ipcMain.handle("studio:sns-get", (_e, vacancyId) => snsWriter.get(vacancyId));
+ipcMain.handle("studio:all-write", (e, opts) => require("./all-writer").writeAll({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text))); // 한 번에 모두 쓰기 (2026-10-23)
 ipcMain.handle("studio:sns-write", (e, opts) => snsWriter.write({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sns-progress", text)));
 ipcMain.handle("studio:sns-save", (_e, opts) => snsWriter.save(opts));
 ipcMain.handle("studio:sns-revise", (e, opts) => snsWriter.revise(opts, (text) => e.sender.send("studio:sns-progress", text)));
 ipcMain.handle("studio:blog-revise", (e, opts) => blogWriter.revise(opts, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:sns-export", (_e, opts) => snsWriter.exportChannel(opts));
+ipcMain.handle("studio:sns-helper-fill", (e, opts) => snsWriter.fillByHelper(opts, (text) => e.sender.send("studio:sns-progress", text))); // 평소 크롬 + 도우미 확장 (2026-10-23)
 ipcMain.handle("studio:naver-open-blog", () => naverWrite.openMyBlog());
 ipcMain.handle("studio:blog-get", (_e, vacancyId, doc) => blogWriter.get(vacancyId, doc));
 ipcMain.handle("studio:article-options", (_e, vacancyId) => blogWriter.articleOptions(vacancyId));
@@ -715,6 +737,7 @@ app.whenReady().then(async () => {
   // 저장 위치 — 외장하드가 빠졌는지 · 처음 켤 때 OneDrive/자리 부족이면 옮기기 권하기 (storage-place.js)
   try { await require("./storage-place").startup(); } catch (e) { log.warn(`[저장 위치] ${e.message}`); }
   try { require("./studio-root").ensureAll(); } catch {}
+  try { require("./helper-server").start(); } catch (e) { log.warn(`[도우미] 창구 못 염: ${e.message}`); } // 공실스튜디오 도우미(크롬 확장)와 PC 안에서만 (2026-10-23)
   try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();
   videoIpc.register(BASE_URL);

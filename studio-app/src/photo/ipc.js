@@ -299,7 +299,8 @@ function register() {
       const m = /\{[\s\S]*\}/.exec(String(t || ""));
       try { const j = m ? JSON.parse(m[0]) : null; return j && typeof j.text === "string" ? j : null; } catch { return null; }
     };
-    const out = await ai.ask(prompt, { onProgress: (t) => { try { e.sender.send("video:progress", t); } catch {} }, busyLabel: "글자를 고치고 있습니다", isComplete: (t) => Boolean(parse(t)) });
+    const pick = o.ai && o.ai.provider ? { provider: o.ai.provider, mode: o.ai.mode === "api" ? "api" : "account" } : {}; // 고른 AI 로 (2026-10-23)
+    const out = await ai.ask(prompt, { ...pick, onProgress: (t) => { try { e.sender.send("video:progress", t); } catch {} }, busyLabel: "글자를 고치고 있습니다", isComplete: (t) => Boolean(parse(t)) });
     const j = parse(out);
     if (!j || !j.text.trim()) throw new Error("AI 답을 읽지 못했어요. 한 번 더 눌러 주세요.");
     return { text: j.text.trim().slice(0, 600) };

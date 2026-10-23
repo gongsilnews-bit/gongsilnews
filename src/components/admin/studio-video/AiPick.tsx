@@ -6,7 +6,9 @@ import React, { useEffect, useState } from "react";
 import { C, FONT } from "./ui";
 
 export type AiChoice = { provider: string; mode: "account" | "api" } | null;
-type Item = { id: string; name: string; ready?: boolean; canWrite?: boolean; accountOk?: boolean; keyHas?: boolean; isWriter?: boolean; mode?: string };
+type Item = { id: string; name: string; ready?: boolean; canWrite?: boolean; accountOk?: boolean; keyHas?: boolean; isWriter?: boolean; mode?: string; method?: string };
+/** 내 계정을 쓸 수 있나 — 로그인 확인됐거나, 수동(평소 브라우저에서 복사해 오기)이면 연결 없이도 (2026-10-23) */
+const accountUsable = (x: Item) => Boolean(x.accountOk || x.method === "manual");
 type Root = { openAiConnect?: () => void; ai?: { list?: () => Promise<Item[]>; onWriterChanged?: (fn: () => void) => () => void } };
 const root = () => (typeof window === "undefined" ? undefined : (window as unknown as { gongsilStudio?: Root }).gongsilStudio);
 const bridge = () => root()?.ai;
@@ -41,7 +43,7 @@ export function useAiPick(): [AiChoice, (c: AiChoice) => void, Item[]] {
 export const effectiveAi = (value: AiChoice, list: Item[]): AiChoice => {
   if (!value) return null;
   const x = list.find((i) => i.id === value.provider);
-  return x && (value.mode === "api" ? x.keyHas : x.accountOk) ? value : null;
+  return x && (value.mode === "api" ? x.keyHas : accountUsable(x)) ? value : null;
 };
 
 /**
@@ -53,7 +55,7 @@ export function AiPick({ value, onChange, list, noTitle }: { value: AiChoice; on
   const opts: { c: { provider: string; mode: "account" | "api" }; label: string; ok: boolean }[] = [];
   for (const x of list) {
     if (!x.canWrite || x.ready === false) continue;
-    opts.push({ c: { provider: x.id, mode: "account" }, label: `${x.name} 계정`, ok: Boolean(x.accountOk) });
+    opts.push({ c: { provider: x.id, mode: "account" }, label: `${x.name} 계정`, ok: accountUsable(x) });
     opts.push({ c: { provider: x.id, mode: "api" }, label: `${x.name} API`, ok: Boolean(x.keyHas) });
   }
   const same = (a: AiChoice, b: AiChoice): boolean => Boolean(a && b && a.provider === b.provider && a.mode === b.mode);

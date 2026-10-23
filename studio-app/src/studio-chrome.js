@@ -296,17 +296,10 @@ const BANNER = `(() => { if (document.getElementById("gw-busy-banner")) return; 
   Object.assign(d.style, { position: "fixed", top: "0", left: "0", right: "0", zIndex: "2147483647", background: "#1a3a6b", color: "#fff", font: "600 13px sans-serif", padding: "6px 12px", textAlign: "center", pointerEvents: "none" });
   (document.body || document.documentElement).appendChild(d); })()`;
 async function backstage(page) {
-  try {
-    await page.evaluate(BANNER);
-  } catch {}
-  try {
-    const cdp = await page.context().newCDPSession(page);
-    const { windowId } = await cdp.send("Browser.getWindowForTarget");
-    await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "minimized" } });
-    await cdp.detach();
-  } catch (e) {
-    log.warn("[전용 크롬] 창 내리기 실패", e.message);
-  }
+  // 작업 중 띠는 넣지 않는다 (2026-10-23 사장님) — 창에 공실스튜디오 흔적을 남기지 않게. BANNER 는 남겨 둠(지우기용)
+  // 창을 작업 표시줄로 내리지 않는다 (2026-10-23 사장님: 전용 크롬 Gemini 가 느림) — 내려 둔 창은 크롬이 화면 그리기를 멈춰,
+  //  Gemini 가 답을 다 만든 뒤에야 한꺼번에 보였다 (답 시작 80~160초, 시작 뒤 5초 만에 끝). 오른쪽 창은 그대로 두고 깨워 둔다
+  await keepAwake(page);
 }
 /** 작업이 끝나면 띠를 지운다 (모든 탭) */
 async function idle() {

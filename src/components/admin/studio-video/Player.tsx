@@ -140,7 +140,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         .filter(Boolean) as { l: Layer; s: number; e: number }[],
     [project, flat, order]
   );
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null) as React.MutableRefObject<HTMLVideoElement | null>; // 지금 보이는 영상 창 (아래 두 창 중 하나)
+  // 영상 창 두 개 — 지금 클립 · 다음 클립 영상을 미리 열어 둔다 (경계에서 파일을 갈아 끼우면 검은 1프레임이 생겼다)
+  const vA = useRef<HTMLVideoElement>(null), vB = useRef<HTMLVideoElement>(null);
+  const slots = useRef<[string, string]>(["", ""]);
+  const front = useRef(0);
+  const elOf = (url?: string) => (url ? [vA.current, vB.current].find((e) => e && e.getAttribute("src") === url) || null : null);
   const bgRef = useRef<HTMLVideoElement>(null);
   const otherRef = useRef<HTMLVideoElement>(null); // 화면전환 상대 클립의 멈춘 장면
   const voiceRef = useRef<HTMLAudioElement>(null); // 원본 소리(화면만 바꾼 촬영 클립·소리 파일 클립) 전용
@@ -223,8 +228,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     if (!it) return;
     const c = it.clip;
     const loc = Math.max(0, time - it.start);
-    const v = videoRef.current;
     const vis = visualOf(c);
+    const v = (vis?.kind === "video" ? elOf(vis.url) : null) || videoRef.current;
+    for (const o of [vA.current, vB.current]) if (o && o !== v && !o.paused) { o.pause(); o.muted = true; } // 뒤에 숨은 창은 멈추고 소리 끄기
     const sameSource = c.type !== "voice" && vis && c.src && vis.id === c.src.asset;
     if (v && vis && vis.kind === "video") {
       let target: number;
@@ -402,7 +408,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       const prev = flat.items.find((x) => x.clip.id === curClip.current);
       const a = prev ? visualOf(prev.clip) : null;
       const bVis = visualOf(it.clip);
-      if (a && bVis && a.id !== bVis.id) grabFrame(a.kind === "video" ? videoRef.current : imgRef.current);
+      const ready = bVis?.kind === "video" && (elOf(bVis.url)?.readyState || 0) >= 2;
+      if (a && bVis && a.id !== bVis.id && !ready) grabFrame(a.kind === "video" ? videoRef.current : imgRef.current);
     }
     if (it) curClip.current = it.clip.id;
     sync(time, Boolean(changed));
@@ -439,6 +446,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     setPlaying(false);
     onPlaying?.(false);
     videoRef.current?.pause();
+    vA.current?.pause();
+    vB.current?.pause();
     bgRef.current?.pause();
     voiceRef.current?.pause();
     pauseVoices();
@@ -790,6 +799,24 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const blurT = `scale(${clip?.flipX ? -1.15 : 1.15}, ${clip?.flipY ? -1.15 : 1.15})`;
   const blurF = `${adjF(clip)} blur(18px) brightness(0.8)`.trim();
   const vUrl = visual?.url || "";
+  // 지금 영상 · 다음 클립 영상을 두 창에 나눠 둔다
+  const nextStart = useRef(0);
+  {
+    const wantV = visual?.kind === "video" ? vUrl : "";
+    const i0 = item ? flat.items.indexOf(item) : -1;
+    const nxIt = i0 >= 0 ? flat.items[i0 + 1] : undefined;
+    const nxVis = nxIt ? visualOf(nxIt.clip) : null;
+    const nextV = nxVis?.kind === "video" && nxVis.url !== wantV ? nxVis.url : "";
+    if (wantV && slots.current[front.current] !== wantV) {
+      if (slots.current[1 - front.current] === wantV) front.current = 1 - front.current; // 미리 열어 둔 창으로 바꾸기
+      else slots.current[front.current] = wantV;
+    }
+    if (nextV && slots.current[1 - front.current] !== nextV) {
+      slots.current[1 - front.current] = nextV;
+      nextStart.current = Number(nxIt?.clip.visual?.s) || 0;
+    }
+  }
+  React.useLayoutEffect(() => { videoRef.current = (front.current ? vB : vA).current; });
 
   // 화면전환 — 지금 클립 화면(main)과 상대 클립의 멈춘 장면(other)을 효과대로 섞는다 (굽기 render.js 와 같은 규칙)
   const tr = transAt(flat.items, t);
@@ -852,7 +879,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: `translate(-50%, -50%)${l.rot ? ` rotate(${l.rot}deg)` : ""}` }
       : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
     return (
-      <div key={l.id} style={{ position: "absolute", textAlign: l.align || "center", ...ps, pointerEvents: "none" }}>
+      <div key={l.id} style={{ position: "absolute", zIndex: 4, textAlign: l.align || "center", ...ps, pointerEvents: "none" }}>
         {(() => {
           const look: React.CSSProperties = {
             position: "relative", display: "inline-block",
@@ -908,8 +935,15 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         ) : visual && fill === "blur" && !vbox && (
           <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: blurF, transform: blurT, ...blankHide }} />
         )}
-        <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
-          onLoadedData={() => sync(tRef.current, true)} onSeeked={() => hold && releaseHold()} onPlaying={() => hold && releaseHold()} />
+        {[0, 1].map((k) => {
+          const on = front.current === k && visual?.kind === "video";
+          return (
+            <video key={k} ref={k ? vB : vA} src={slots.current[k] || undefined} playsInline preload="auto" muted={!on || undefined}
+              style={{ ...mediaStyle, display: slots.current[k] ? "block" : "none", opacity: on ? (mediaStyle.opacity ?? 1) : 0, pointerEvents: on ? undefined : "none" }}
+              onLoadedData={(e) => { if (on) sync(tRef.current, true); else { const s0 = nextStart.current; try { e.currentTarget.currentTime = s0; } catch {} } }}
+              onSeeked={() => on && hold && releaseHold()} onPlaying={() => on && hold && releaseHold()} />
+          );
+        })}
         {/* 앞 장면 붙잡기 — 새 화면 파일이 뜰 때까지 (검은 화면 대신) */}
         <canvas ref={holdRef} style={{ ...(hold || {}), display: hold ? "block" : "none", pointerEvents: "none" }} />
       </div>
@@ -1004,7 +1038,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           const sel = l.id === selLayer && onLayerMove;
           return (
             <div key={l.id} data-layer={l.id} onPointerDown={(e) => grab("move", e)} title="끌어서 옮기기 · 모서리로 크기 (끌면 [직접 크기]로 바뀌어요)"
-              style={{ position: "absolute", inset: 0, ...(onLayerMove && !l.lock ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" }) }}>
+              style={{ position: "absolute", zIndex: 4, inset: 0, ...(onLayerMove && !l.lock ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" }) }}>
               <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
                 {media(l, a, { width: "100%", height: "100%", display: "block", objectFit: l.fit, opacity: op, transform: flipOf(l), pointerEvents: "none" })}
               </div>
@@ -1023,7 +1057,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const { left, top, width: pw, height: ph } = imgRect(l, a, boxW, boxH);
         return (
           <div key={l.id} data-layer={l.id} data-rot="" onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
-            style={{ position: "absolute", left, top, width: pw, height: ph, ...dragStyle(l), transform: l.rot ? `rotate(${l.rot}deg)` : undefined }}>
+            style={{ position: "absolute", zIndex: 4, left, top, width: pw, height: ph, ...dragStyle(l), transform: l.rot ? `rotate(${l.rot}deg)` : undefined }}>
             <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
               {l.stk && isMotionStyle(l.stk.style) ? (() => {
                 // 움직이는 템플릿 — 나타난 뒤 지난 시간으로 칸마다 그린다 (굽기 AnimBake 와 같은 그림)
@@ -1066,7 +1100,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         return (
           <div data-layer="__sub" data-rot="" onPointerDown={onSubMove && !project.settings.subLock && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
             // 글자 크기·줄 간격을 바깥 칸에도 — 안 그러면 바깥 기본 줄 높이(작은 글자 1.5배)가 줄 간격을 막아 좁혀도 안 좁아진다 (2026-10-19)
-            style={{ position: "absolute", width: subW, textAlign: st.align || "center", fontSize: fontPx, lineHeight: effLeading(st), ...at, opacity: subK ? Math.max(0, Math.min(1, subK.o)) : undefined, pointerEvents: onSubMove && !project.settings.subLock ? "auto" : "none", cursor: onSubMove && !project.settings.subLock ? "move" : undefined, touchAction: "none" }}>
+            style={{ position: "absolute", zIndex: 4, width: subW, textAlign: st.align || "center", fontSize: fontPx, lineHeight: effLeading(st), ...at, opacity: subK ? Math.max(0, Math.min(1, subK.o)) : undefined, pointerEvents: onSubMove && !project.settings.subLock ? "auto" : "none", cursor: onSubMove && !project.settings.subLock ? "move" : undefined, touchAction: "none" }}>
             {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); const tidy = (x: string) => x.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); if (t !== null && tidy(t) !== tidy(full)) onSubText(clip.id, t); }} />

@@ -309,7 +309,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
   }, [doc, tick, drag, W, H, editing, proof, view?.z]);
 
   /* 눈금자 · 격자 · 안내선 그리기 */
-  const [theme] = useStudioTheme(false); // 밝은/어두운 화면이 바뀌면 눈금자를 다시 그린다
+  const [theme] = useStudioTheme(false, "photo"); // 밝은/어두운 화면이 바뀌면 눈금자를 다시 그린다
   const rx = useRef<HTMLCanvasElement>(null), ry = useRef<HTMLCanvasElement>(null), ov = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!view || !size.w) return;

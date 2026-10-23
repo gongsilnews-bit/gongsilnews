@@ -72,7 +72,7 @@ export function CommonProps({ doc, l, mutate }: { doc: Doc; l: PLayer; mutate: M
             <span style={{ ...label, flex: 1 }}>변형</span>
             {!isText(l) && (
               <button type="button" onClick={() => setLockRatio(!lockRatio)} title="가로세로 비율 묶기"
-                style={{ height: 26, padding: "0 10px", borderRadius: 5, border: `1px solid ${lockRatio ? C.text : C.line2}`, background: lockRatio ? C.text : "transparent", color: lockRatio ? C.bg : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>비율 묶기</button>
+                style={{ height: 26, padding: "0 10px", borderRadius: 5, border: `1px solid ${lockRatio ? C.sel : C.line2}`, background: lockRatio ? C.sel : "transparent", color: lockRatio ? C.selText : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>비율 묶기</button>
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -246,7 +246,7 @@ export function LayerPanel({ doc, l, mutate, onClose, fxFirst }: { doc: Doc; l: 
               <div style={{ display: "flex", gap: 6 }}>
                 {([["line", "선만"], ["circle", "원 안에"]] as const).map(([v, t]) => (
                   <button key={v} type="button" onClick={() => mutate(() => { l._picto = { ...l._picto!, style: v }; l.canvas = repaintPicto(l); })}
-                    style={{ flex: 1, height: 32, borderRadius: 5, border: `1px solid ${l._picto!.style === v ? C.text : C.line2}`, background: l._picto!.style === v ? C.text : "transparent", color: l._picto!.style === v ? C.bg : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+                    style={{ flex: 1, height: 32, borderRadius: 5, border: `1px solid ${l._picto!.style === v ? C.sel : C.line2}`, background: l._picto!.style === v ? C.sel : "transparent", color: l._picto!.style === v ? C.selText : C.text, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
                 ))}
               </div>
             </div>
@@ -328,7 +328,7 @@ export function StickerSide({ onPick, onClose }: { onPick: (s: Sticker) => Promi
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px", borderBottom: `1px solid ${C.line}` }}>
         {CATS.map((c) => (
           <button key={c.id} type="button" onClick={() => setCat(c.id)}
-            style={{ height: 30, padding: "0 10px", borderRadius: 15, border: `1px solid ${cat === c.id ? C.text : C.line2}`, background: cat === c.id ? C.text : "transparent", color: cat === c.id ? C.bg : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{c.label}</button>
+            style={{ height: 30, padding: "0 10px", borderRadius: 15, border: `1px solid ${cat === c.id ? C.sel : C.line2}`, background: cat === c.id ? C.sel : "transparent", color: cat === c.id ? C.selText : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{c.label}</button>
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "12px 16px" }}>
@@ -362,7 +362,7 @@ export function PictoSide({ color, onPick, onClose }: { color: string; onPick: (
       <div style={{ display: "flex", gap: 6, padding: "12px 16px", borderBottom: `1px solid ${C.line}` }}>
         {([["line", "선만"], ["circle", "원 안에"]] as const).map(([v, t]) => (
           <button key={v} type="button" onClick={() => setStyle(v)}
-            style={{ flex: 1, height: 32, borderRadius: 16, border: `1px solid ${style === v ? C.text : C.line2}`, background: style === v ? C.text : "transparent", color: style === v ? C.bg : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
+            style={{ flex: 1, height: 32, borderRadius: 16, border: `1px solid ${style === v ? C.sel : C.line2}`, background: style === v ? C.sel : "transparent", color: style === v ? C.selText : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
         ))}
       </div>
       <div style={{ padding: "8px 16px 0", fontSize: 12.5, color: C.dim }}>누르면 전경색으로 들어가요 · 크기를 키워도 또렷해요</div>

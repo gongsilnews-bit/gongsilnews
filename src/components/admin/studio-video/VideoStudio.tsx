@@ -28,9 +28,20 @@ export default function VideoStudio() {
   const [menuPeek, setMenuPeek] = useState(false); // 대본 쓰고 편집 페이지에서 둘째 메뉴 펴기 (기본은 숨김, 2026-10-23 사장님) // 왼쪽 메뉴 칸 (편집 화면 밖에서만)
   // .gss 를 열었는데 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로 열기]
   const [recover, setRecover] = useState<Recover | null>(null);
+  const [resume, setResume] = useState<Project | null>(null); // 작성 중 초안(.gss) — 대본 쓰고 편집 그 단계로
+  // 뉴스·SNS발행 › 유튜브 대본의 [이 대본으로 동영상 만들기] — 공실·대본을 받아 대본 작성으로 (2026-10-23 사장님)
+  const [seed, setSeed] = useState<{ vacancyId: string; script: string; title?: string } | null>(null);
+  useEffect(() => {
+    try {
+      const v = JSON.parse(sessionStorage.getItem("gs-video-seed") || "null");
+      sessionStorage.removeItem("gs-video-seed");
+      if (v && v.vacancyId && Date.now() - (v.at || 0) < 10 * 60 * 1000) { setSeed(v); setResume(null); setFlow("text"); }
+    } catch {}
+  }, []);
   const take = (r: Project | Recover | null) => {
     if (!r) return;
     if (isRecover(r)) setRecover(r);
+    else if ((r as unknown as { draft?: unknown }).draft) { setResume(r); setFlow("text"); }
     else setProject(r);
   };
   // 탐색기에서 .gss 파일을 두 번 눌러 앱을 열었으면 — 그 파일을 바로 연다 (앱이 켜져 있을 때 눌러도)
@@ -99,7 +110,7 @@ export default function VideoStudio() {
   // 만들기 화면이 열려 있는데 다른 메뉴를 누르면 — 물어보고 닫는다
   // 페이지로 여는 것은 [대본 쓰고 편집]만 — 촬영한 영상·녹음한 음성·녹화는 지금처럼 뜨는 창 (2026-10-23 사장님)
   const pageFlow = flow === "text";
-  const leaveFlow = () => (!pageFlow || window.confirm("만들던 내용이 있어요. 나갈까요?\n(나가면 지금 쓴 대본·고른 것은 사라져요)") ? (setFlow(""), setRecorded(null), true) : false);
+  const leaveFlow = () => { setFlow(""); setRecorded(null); setResume(null); return true; }; // 쓴 대본은 작성 중 초안(.gss)에 저절로 저장돼요 (2026-10-23)
   const done = async (p: Project) => {
     setFlow("");
     setRecorded(null);
@@ -110,7 +121,7 @@ export default function VideoStudio() {
 
   // 만들기 화면 (편집 화면이 열려 있지 않으면 오른쪽 영역에 페이지로, 편집 중에 [새로 만들기]로 열면 뜨는 창으로)
   const flowEl = flow === "text" ? (
-    <TextWizard onCancel={() => setFlow("")} onDone={done} onRecord={(script) => {
+    <TextWizard key={resume?.file || resume?.dir || (seed ? `seed-${seed.vacancyId}` : "new")} resume={resume || undefined} seed={seed || undefined} onCancel={() => { setFlow(""); setResume(null); setSeed(null); }} onDone={(p) => { setResume(null); setSeed(null); void done(p); }} onRecord={(script) => {
       // 대본을 프롬프터에 넣고 녹화로 — 녹화가 끝나면 이 대본이 자막 글이 된다
       savePrompter({ ...loadPrompter(), on: true, text: script });
       setFlow("record");

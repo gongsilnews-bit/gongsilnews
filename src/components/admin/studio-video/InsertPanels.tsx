@@ -127,7 +127,7 @@ export function SfxInsertPanel({ dir, onAdd, onClose }: { dir: string; onAdd: (i
     } catch (e) { setMsg(errText(e)); }
     setBusy("");
   };
-  const tabBtn = (on: boolean): React.CSSProperties => ({ flex: 1, height: 38, border: 0, borderBottom: `2px solid ${on ? C.text : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
+  const tabBtn = (on: boolean): React.CSSProperties => ({ flex: 1, height: 38, border: 0, borderBottom: `2px solid ${on ? C.sel : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
   const row = (key: string, url: string, name: string, onPut: () => void, putBusy = false) => (
     <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 7, background: C.card, border: `1px solid ${C.line}` }}>
       <button type="button" onClick={() => playUrl(url)} title="들어 보기"

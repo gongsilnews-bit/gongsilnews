@@ -161,7 +161,7 @@ export function SubFormatBar({ sub, ratio, pxPer100, onPatch, onMore, onAnim, on
           {([["left", "alignL"], ["center", "alignC"], ["right", "alignR"]] as const).map(([a, ic]) => {
             const on = (sub.align || "center") === a;
             return <button key={a} type="button" onClick={() => onPatch({ align: a === "center" ? undefined : a }, true)} title={{ left: "왼쪽 정렬", center: "가운데 정렬", right: "오른쪽 정렬" }[a]}
-              style={{ ...btnS, flex: 1, justifyContent: "center", borderColor: on ? C.text : C.line2, background: on ? C.text : C.card, color: on ? C.bg : C.text }}><Icon name={ic} size={16} /></button>;
+              style={{ ...btnS, flex: 1, justifyContent: "center", borderColor: on ? C.text : C.line2, background: on ? C.text : C.card, color: on ? C.selText : C.text }}><Icon name={ic} size={16} /></button>;
           })}
         </div>
       </Drop>
@@ -174,7 +174,7 @@ export function SubFormatBar({ sub, ratio, pxPer100, onPatch, onMore, onAnim, on
           {POS.map(([v, t]) => {
             const on = sub.posAuto === false && sub.x === undefined && sub.position === v;
             return <button key={v} type="button" onClick={() => onPatch({ position: v, posAuto: false, x: undefined, y: undefined }, true)}
-              style={{ ...btnS, justifyContent: "center", borderColor: on ? C.text : C.line2, background: on ? C.text : C.card, color: on ? C.bg : C.text }}>{t}</button>;
+              style={{ ...btnS, justifyContent: "center", borderColor: on ? C.text : C.line2, background: on ? C.text : C.card, color: on ? C.selText : C.text }}>{t}</button>;
           })}
         </div>
         <div style={{ fontSize: 12, color: C.dim }}>미리보기에서 자막을 끌어 옮길 수도 있어요.</div>
@@ -187,7 +187,7 @@ export function SubFormatBar({ sub, ratio, pxPer100, onPatch, onMore, onAnim, on
           {([1, 2, 3] as const).map((n) => {
             const on = (sub.maxLines || (sub.length === "short" ? 1 : 0)) === n;
             return <button key={n} type="button" onClick={() => onPatch({ maxLines: n, length: n === 1 ? "short" : "long" }, true)}
-              style={{ ...btnS, justifyContent: "center", borderColor: on ? C.text : C.line2, background: on ? C.text : C.card, color: on ? C.bg : C.text }}>{n}줄</button>;
+              style={{ ...btnS, justifyContent: "center", borderColor: on ? C.text : C.line2, background: on ? C.text : C.card, color: on ? C.selText : C.text }}>{n}줄</button>;
           })}
         </div>
       </Drop>

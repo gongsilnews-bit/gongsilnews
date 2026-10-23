@@ -145,7 +145,9 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
       onProgress(revise ? "Gemini가 고치는 중… (1~2분)" : "Gemini가 글을 쓰는 중… (1~2분)");
       // 앱이 1초마다 짧게 확인한다 (ChatGPT 와 같은 방식). 끝 판단은 확장과 같다:
       // 새 답이 있고, 중지 단추가 없고, 글자가 SETTLE_MS(3초) 동안 그대로이고, 형식(isComplete)이 맞으면 끝
-      const deadline = Date.now() + 5 * 60 * 1000;
+      // 답 시작은 5분까지 기다리고, 시작한 뒤에는 넉넉히 (전체 7분 — 10분은 길다, 2026-10-23 사장님) — 2026-10-23 사장님
+      const askT0 = Date.now();
+      const deadline = askT0 + 7 * 60 * 1000;
       let last = "";
       let since = 0;
       let firstSeen = 0;
@@ -167,7 +169,11 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
           log.warn(`[Gemini] 화면 확인 실패 ${sec()}: ${e.message}`);
           continue;
         }
-        if (!st || st.count <= before || !st.text) continue; // 아직 새 답이 없다
+        if (!st || st.count <= before || !st.text) {
+          // 5분이 지나도 답을 시작하지 않으면 (2026-10-23 사장님) 막힌 것으로 본다 — 쓰는 순서에 따라 API 로 넘어간다 (2026-10-23 사장님: 너무 오래 걸림)
+          if (!firstSeen && Date.now() - askT0 > 5 * 60 * 1000) throw new Error("Gemini가 5분 동안 답을 시작하지 않았어요 (Gemini 사이트가 느리거나 막혔어요).");
+          continue; // 아직 새 답이 없다
+        }
         if (!firstSeen) {
           firstSeen = Date.now();
           log.info(`[Gemini] 답 시작 ${sec()}`);
@@ -191,7 +197,7 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
           throw new Error(`Gemini가 요청한 형식으로 답하지 않았습니다. [다시 쓰기]를 눌러 주세요. (Gemini: ${st.text.slice(0, 60)})`);
         }
       }
-      throw new Error("Gemini 답변을 5분 안에 받지 못했습니다. Gemini 창을 확인해 주세요.");
+      throw new Error("Gemini 답변을 7분 안에 받지 못했습니다. Gemini 창을 확인해 주세요. (답이 나왔으면 복사해서 대본 칸에 붙여 넣으면 돼요)");
     } finally {
       await w.close();
     }

@@ -10,6 +10,7 @@ const lib = ext.lazyModule(() => ext.run(["video/video-script.js"], ["gwVideoFac
 const endMark = (t) => (!t || /[.?!]["'」』)]*$/.test(t) ? t : t.replace(/[\s,~…·]+$/, "") + ".");
 
 /** 대본 — { topic, style, request, chars, vacancy, source } → { title, scenes:[{title, lines:[{text, desc, keywords, kind}]}], chatUrl } */
+const pickOf = (o) => (o && o.ai && o.ai.provider ? { provider: o.ai.provider, mode: o.ai.mode === "api" ? "api" : "account" } : {}); // 대본 쓰기에서 고른 AI 를 꾸미기 단계에도 (2026-10-23 사장님: Gemini 골랐는데 ChatGPT)
 async function script(opts, onProgress = () => {}) {
   let chatUrl = "";
   const pick = opts.ai && opts.ai.provider ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {}; // 쓸 AI 를 골랐으면 그것으로
@@ -31,9 +32,10 @@ async function script(opts, onProgress = () => {}) {
 }
 
 /** 이미 있는 문장들에 화면 검색어 붙이기 → [{desc, keywords, kind}] */
-async function scenesFor(lines, onProgress = () => {}) {
+async function scenesFor(lines, onProgress = () => {}, opts = {}) {
   if (!lines.length) return [];
   const text = await ai.ask(lib.gwVideoScenePrompt(lines), {
+    ...pickOf(opts),
     onProgress,
     isComplete: (t) => {
       const j = lib.gwVideoParse(t);
@@ -244,7 +246,7 @@ async function footageSheets(items, onProgress = () => {}) {
 }
 
 /** 대본 문장들 + 내 영상·사진 → [{ v: 자료 번호(0부터) | -1, t: 시작 초 }] */
-async function matchFootage(lines, items, onProgress = () => {}) {
+async function matchFootage(lines, items, onProgress = () => {}, opts = {}) {
   if (!lines.length || !items.length) return [];
   const { sheets, dir } = await footageSheets(items, onProgress);
   try {
@@ -272,7 +274,7 @@ async function matchFootage(lines, items, onProgress = () => {}) {
       }
     };
     onProgress("AI가 문장마다 어울리는 장면을 고르는 중… (1~2분)");
-    const text = await ai.ask(prompt, { onProgress, files: sheets.map((x) => x.file), busyLabel: "장면을 고르고 있습니다", isComplete: (t) => Boolean(parse(t) && Array.isArray(parse(t).lines)) });
+    const text = await ai.ask(prompt, { ...pickOf(opts), onProgress, files: sheets.map((x) => x.file), busyLabel: "장면을 고르고 있습니다", isComplete: (t) => Boolean(parse(t) && Array.isArray(parse(t).lines)) });
     const j = parse(text) || { lines: [] };
     return lines.map((_, i) => {
       const l = (j.lines || []).find((x) => Number(x.n) === i + 1) || {};

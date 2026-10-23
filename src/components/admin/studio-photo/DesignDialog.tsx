@@ -280,7 +280,7 @@ export function DesignDialog({ init, canRefill, mine, onDone, onClose }: {
 
   const seg = (on: boolean, text: string, go: () => void, off = false) => (
     <button type="button" onClick={go} disabled={off}
-      style={{ height: 34, padding: "0 14px", borderRadius: 6, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : off ? C.dim : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: off ? "default" : "pointer" }}>{text}</button>
+      style={{ height: 34, padding: "0 14px", borderRadius: 6, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.bg : off ? C.dim : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: off ? "default" : "pointer" }}>{text}</button>
   );
   const h = (t: string, sub?: string) => <div style={{ fontWeight: 800, fontSize: 15, margin: "2px 0 10px" }}>{t}{sub && <span style={{ fontWeight: 500, fontSize: 12.5, color: C.dim, marginLeft: 8 }}>{sub}</span>}</div>;
   const row = (on: boolean): React.CSSProperties => ({ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${on ? C.accent : C.line}`, background: on ? "rgba(59,130,246,0.14)" : "transparent", color: C.text, cursor: "pointer", textAlign: "left", fontFamily: FONT, fontSize: 13.5 });

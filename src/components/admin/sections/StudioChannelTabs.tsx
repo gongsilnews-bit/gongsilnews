@@ -23,12 +23,14 @@ type Bridge = {
   ai: { connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
   naver: {
     designs: () => Promise<{ id: string; label: string; hint: string }[]>;
-    fill: (opts: { vacancyId: string; design: string }) => Promise<{ ok: boolean; imagesInserted: number; imagesTotal: number; design: string; tags: string[] }>;
+    fill: (opts: { vacancyId: string; design: string; via?: string }) => Promise<NaverDone>;
     openMyBlog: () => Promise<unknown>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
-  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null> };
+  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null>; writeAll?: (o: Omit<AllOpts, "sns"> & { sns: { on: boolean; tone: Record<string, string> }; vacancyId: string }) => Promise<{ article?: BlogDraft; blog?: BlogDraft; sns?: SnsData; youtube?: unknown; miss?: string[] }> };
+  article?: { options: (vacancyId: string) => Promise<{ kinds: { id: string; label: string }[]; lengths: { id: string; label: string }[] }> };
   youtube: { get: (vacancyId: string) => Promise<unknown> };
+  work?: { save: (id: string) => Promise<WorkSaved>; status: (id: string) => Promise<WorkSaved>; show: (file: string) => Promise<void>; open: () => Promise<boolean> };
   blog: {
     styles: (vacancyId?: string) => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<BlogDraft>;
@@ -36,8 +38,23 @@ type Bridge = {
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
+/** 한 번에 쓰기 — 탭마다 "함께 쓰기" 체크 · 기사 스타일·분량 · SNS 문체 (이 PC 에 기억). 블로그 문체·분량은 블로그 탭 값 */
+type AllOpts = { article: { on: boolean; kind: string; length: string; autoCover?: boolean }; blog: { on: boolean; style: string; length: string }; sns: { on: boolean; tone?: string; tones?: Record<string, string> }; youtube: { on: boolean; videoType?: string; duration?: string; tone?: string; number?: string } };
+// 공실뉴스·뉴스칼럼은 기사 종류·블로그 문체가 달라 따로 기억한다
+const allKey = (kind: string) => (kind === "column" ? "gs-allwrite:column" : "gs-allwrite");
+const loadAll = (kind: string): AllOpts => {
+  const ALL_KEY = allKey(kind);
+  const d: AllOpts = { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
+  try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); return v ? { article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } } : d; } catch { return d; }
+};
 const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+
+/** 작업 파일(.gsn) 저장 상태 — file 이 비면 아직 파일이 없다 */
+type WorkSaved = { file: string; savedAt: string };
+const hhmm = (iso: string) => (iso ? new Date(iso).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
+/** 네이버 채우기 결과 — via: helper(평소 크롬 + 도우미) · manual(복사·사진 폴더) · chrome(전용 크롬) */
+type NaverDone = { ok: boolean; imagesInserted: number; imagesTotal: number; design: string; tags: string[]; via?: string; folder?: string; photos?: number; copy?: { title: string; html: string; text: string; tags: string } };
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
@@ -63,13 +80,76 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [blogProgress, setBlogProgress] = useState("");
   const [blogError, setBlogError] = useState("");
   const [blog, setBlog] = useState<BlogDraft | null>(null);
+  // 한 번에 쓰기 (공실뉴스 매물만 — 칼럼·인테리어는 탭마다 쓰기)
+  const oneShot = kind === "gongsil" || kind === "column"; // 뉴스칼럼도 (2026-10-23 사장님)
+  const [all, setAll] = useState<AllOpts>(() => loadAll(kind));
+  useEffect(() => setAll(loadAll(kind)), [kind]);
+  const [allBusy, setAllBusy] = useState("");
+  const [allMsg, setAllMsg] = useState("");
+  const [ytVer, setYtVer] = useState(0);
+  // 작업 파일 — [저장하기] · [불러오기] (저절로 저장도 그대로, 2026-10-23 사장님)
+  const [saved, setSaved] = useState<WorkSaved | null>(null);
+  const [saveMsg, setSaveMsg] = useState("");
+  useEffect(() => {
+    const w = bridge()?.work;
+    if (!w) return;
+    const load = () => w.status(workId).then(setSaved).catch(() => {});
+    load();
+    const t = setInterval(load, 8000); // 저절로 저장된 시각도 따라가게
+    return () => clearInterval(t);
+  }, [workId]);
+  const saveNow = async () => {
+    const w = bridge()?.work;
+    if (!w) return;
+    setSaveMsg("");
+    const r = await w.save(workId).catch(() => null);
+    if (r && r.file) { setSaved(r); setSaveMsg("저장했어요"); setTimeout(() => setSaveMsg(""), 2500); }
+    else setSaveMsg("아직 저장할 내용이 없어요. 분석·캡처나 글쓰기를 먼저 해 주세요.");
+  }; // 한 번에 쓰기로 대본을 새로 받으면 유튜브 탭을 다시 그린다
+  // SNS 문체 — 채널마다 (전에 세 채널 같이 고른 값이 있으면 그것으로 시작)
+  const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => [ch, all.sns.tones?.[ch] || all.sns.tone || "polite"]));
+  const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
+  const runAll = async () => {
+    const b = bridge();
+    if (!b?.sns.writeAll) return setAllMsg("앱을 새 버전으로 다시 켜 주세요.");
+    if (!all.article.on && !all.blog.on && !all.sns.on && !all.youtube.on) return setAllMsg("탭 이름 옆 ☑ 로 쓸 글을 하나 이상 골라 주세요.");
+    setAllBusy("AI에게 보내는 중…");
+    setAllMsg("");
+    const off = b.blog.onProgress(setAllBusy);
+    try {
+      const st = blogOpts?.styles.some((x) => x.id === style) ? style : blogOpts?.styles[0]?.id || "";
+      const r = await b.sns.writeAll({ vacancyId: workId, ...all, sns: { on: all.sns.on, tone: snsTones }, blog: { on: all.blog.on, style: st, length } });
+      if (r.article) setArticle({ ...r.article, doc: "article" });
+      if (r.blog) { setBlog(r.blog); setNaverDone(null); setDesign(designFor(st)); }
+      if (r.sns) setSnsData(r.sns);
+      if (r.youtube) { setHasYoutube(true); setYtVer((n) => n + 1); }
+      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭에서 따로 다시 써 주세요.` : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 그 탭의 [이 글만 다시 쓰기].");
+    } catch (e) {
+      setAllMsg(cleanErr(e));
+    } finally {
+      off();
+      setAllBusy("");
+      onUsed();
+    }
+  };
   const [designs, setDesigns] = useState<{ id: string; label: string; hint: string }[]>([]);
   const [design, setDesign] = useState("");
   const [filling, setFilling] = useState(false);
   const [naverProgress, setNaverProgress] = useState("");
   const [naverError, setNaverError] = useState("");
   const [naverLogin, setNaverLogin] = useState<"" | "need" | "open">("");
-  const [naverDone, setNaverDone] = useState<{ imagesInserted: number; imagesTotal: number; tags: string[] } | null>(null);
+  const [naverDone, setNaverDone] = useState<NaverDone | null>(null);
+  const [naverNoHelper, setNaverNoHelper] = useState(false); // 도우미 확장이 대답하지 않았다 → 복사·폴더 / 전용 크롬 고르기
+  const [copied, setCopied] = useState("");
+  /** 디자인 그대로 복사 (html) — 네이버 글쓰기에 Ctrl+V */
+  const copyRich = async (what: string, html: string, text: string) => {
+    try {
+      if (html && typeof ClipboardItem !== "undefined") await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
+      else await navigator.clipboard.writeText(text);
+      setCopied(what);
+      setTimeout(() => setCopied(""), 1600);
+    } catch { setNaverError("복사하지 못했어요."); }
+  };
 
   // 문체마다 어울리는 디자인 (확장과 같은 짝 — 문체 목록에 함께 온다)
   const designFor = useCallback((id: string, opts = blogOpts) => opts?.styles.find((x) => x.id === id)?.design || "basic", [blogOpts]);
@@ -139,19 +219,22 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     }
   };
 
-  const fillNaver = async () => {
+  /* via — helper(처음 값: 평소 크롬 + 공실스튜디오 도우미) · manual(복사·사진 폴더) · ""(전용 크롬, 예전 방식) — 2026-10-23 사장님 */
+  const fillNaver = async (via = "helper") => {
     const b = bridge();
     if (!b || !blog) return;
     setFilling(true);
     setNaverError("");
     setNaverDone(null);
+    setNaverNoHelper(false);
     const off = b.naver.onProgress(setNaverProgress);
     try {
-      setNaverDone(await b.naver.fill({ vacancyId: workId, design: design || "basic" }));
+      setNaverDone(await b.naver.fill({ vacancyId: workId, design: design || "basic", via }));
     } catch (e) {
       const msg = cleanErr(e);
       if (msg.startsWith("NAVER_LOGIN:")) setNaverLogin("need");
-      setNaverError(msg.replace(/^NAVER_LOGIN:\s*/, ""));
+      if (msg.startsWith("HELPER_NONE:")) setNaverNoHelper(true);
+      setNaverError(msg.replace(/^(NAVER_LOGIN|HELPER_NONE):\s*/, ""));
     } finally {
       off();
       setNaverProgress("");
@@ -190,38 +273,74 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     </div>
   );
   // 칼럼은 기사가 있어야 블로그·SNS 를 쓴다 (뉴스메이커와 같다: 기사 → 블로그·SNS)
-  const needArticle = kind !== "gongsil" && !article; // 칼럼·시뮬레이션은 기사를 먼저
+  const needArticle = !oneShot && !article; // 시뮬레이션은 기사를 먼저 (뉴스칼럼은 한 번에 쓰기로 기사와 함께 쓴다)
   const firstStep = column ? 2 : 3;
 
   return (
     <>
-      <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-        {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) })), { id: "youtube", label: "유튜브 대본", done: hasYoutube }].map((t) => (
-          <button key={t.id} onClick={() => onTab(t.id)}
-            style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
-              fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary,
-              borderBottom: `3px solid ${tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : "transparent"}`, marginBottom: -1 }}>
-            {t.label}
-            {t.done && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, color: "#16a34a" }}>✓</span>}
+      {/* 작업 파일 — [저장하기] · [불러오기] */}
+      {bridge()?.work && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 8, fontSize: 12.5, color: theme.textSecondary }}>
+          {saveMsg ? <span style={{ color: /없어요/.test(saveMsg) ? "#c2410c" : "#16a34a", fontWeight: 700 }}>{saveMsg}</span>
+            : saved?.file ? <span title={saved.file}>✓ 저장됨 · {hhmm(saved.savedAt)}</span> : <span>아직 저장 안 됨</span>}
+          {saved?.file && <button type="button" onClick={() => void bridge()?.work?.show(saved.file)} title={saved.file}
+            style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>파일 위치</button>}
+          <button type="button" onClick={() => void saveNow()} title=".gsn 작업 파일로 지금 저장 (바뀌면 저절로도 저장돼요)"
+            style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>저장하기</button>
+          <button type="button" onClick={() => void bridge()?.work?.open()} title="저장해 둔 .gsn 작업 파일 열기"
+            style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>불러오기</button>
+        </div>
+      )}
+      {/* 채널 탭 — 탭에서는 스타일만 고르고, 오른쪽 끝 [한 번에 쓰기]로 ☑ 한 글을 함께 쓴다 (2026-10-23 사장님) */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: allBusy || allMsg ? 8 : 16 }}>
+        <div style={{ display: "flex", gap: 4, flex: 1, minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
+          {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article), part: "article" as const }, { id: "blog", label: "네이버 블로그", done: Boolean(blog), part: "blog" as const }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post), part: "sns" as const })), { id: "youtube", label: "유튜브 대본", done: hasYoutube, part: "youtube" as const }].map((t) => (
+            <div key={t.id} role="button" tabIndex={0} onClick={() => onTab(t.id)} onKeyDown={(e) => e.key === "Enter" && onTab(t.id)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap", userSelect: "none",
+                fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary,
+                borderBottom: `3px solid ${tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : "transparent"}`, marginBottom: -1 }}>
+              {oneShot && t.part && (
+                <input type="checkbox" checked={all[t.part].on} disabled={Boolean(allBusy)} title={t.part === "sns" ? "함께 쓰기 (인스타그램·스레드·페이스북은 같이)" : "함께 쓰기"}
+                  onClick={(e) => e.stopPropagation()} onChange={(e) => keepAll({ ...all, [t.part!]: { ...all[t.part!], on: e.target.checked } })}
+                  style={{ margin: 0, width: 15, height: 15, cursor: "pointer", accentColor: "#16a34a" }} />
+              )}
+              {t.label}
+              {t.done && <span style={{ fontSize: 11, fontWeight: 800, color: "#16a34a" }}>✓</span>}
+            </div>
+          ))}
+        </div>
+        {oneShot && (
+          <button type="button" onClick={() => void runAll()} disabled={Boolean(allBusy)} title="☑ 한 탭의 글을 각 탭에서 고른 스타일로 한 번에 씁니다"
+            style={{ flexShrink: 0, marginBottom: 6, padding: "9px 18px", borderRadius: 8, border: 0, background: allBusy ? "#94a3b8" : "#16a34a", color: "#fff", fontSize: 14, fontWeight: 800, cursor: allBusy ? "default" : "pointer", whiteSpace: "nowrap" }}>
+            {allBusy ? "쓰는 중…" : "한 번에 쓰기"}
           </button>
-        ))}
+        )}
       </div>
+      {oneShot && (allBusy || allMsg) && (
+        <div style={{ marginBottom: 14, fontSize: 13.5, fontWeight: 700, textAlign: "right", color: allBusy ? (theme.darkMode ? "#93c5fd" : "#1a3a6b") : /못했|모자|다시 켜|오류|없|골라/.test(allMsg) ? "#dc2626" : "#16a34a" }}>
+          {allBusy ? `${aiName} · ${allBusy}` : allMsg}
+        </div>
+      )}
 
       {tab === "article" && (
         <StudioArticlePanel theme={theme} vacancyId={workId} article={article} onArticle={setArticle} column={column}
+          oneShot={oneShot} pick={all.article} onPick={(k, l) => keepAll({ ...all, article: { ...all.article, kind: k, length: l } })}
+          autoCover={all.article.autoCover !== false} onAutoCover={(v) => keepAll({ ...all, article: { ...all.article, autoCover: v } })}
           onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} />
       )}
 
       {tab === "youtube" && (needArticle
         ? <div style={{ ...card, fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. 대본은 그 기사를 바탕으로 씁니다.</div>
-        : <StudioYoutubePanel theme={theme} vacancyId={workId} onUsed={onUsed} onScript={setHasYoutube} />)}
+        : <StudioYoutubePanel key={ytVer} theme={theme} vacancyId={workId} onUsed={onUsed} onScript={setHasYoutube}
+            oneShot={oneShot} remembered={all.youtube} onPick={(p) => keepAll({ ...all, youtube: { ...all.youtube, ...p } })} />)}
 
       {channels.some((c) => c.id === tab) && needArticle && (
         <div style={{ ...card, fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. SNS 글은 그 기사를 바탕으로 씁니다.</div>
       )}
       {tab !== "blog" && !needArticle && channels.find((c) => c.id === tab) && (
         <StudioSnsPanel theme={theme} channel={tab} info={channels.find((c) => c.id === tab)!} vacancyId={workId}
-          data={snsData} onData={setSnsData} onUsed={onUsed} />
+          data={snsData} onData={setSnsData} onUsed={onUsed}
+          oneShot={oneShot} tones={snsTones} onTone={(t) => keepAll({ ...all, sns: { ...all.sns, tones: { ...snsTones, [tab]: t } } })} />
       )}
 
       {tab === "blog" && (<>
@@ -252,12 +371,19 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                     {l.label} · {l.chars}
                   </button>
                 ))}
-                <button onClick={writeBlog} disabled={writing}
-                  style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-                  {writing ? `${aiName}가 쓰는 중…` : blog ? "다시 쓰기" : `${aiName}로 블로그 글 쓰기`}
-                </button>
+                {oneShot ? (blog || writing) && (
+                  <button onClick={writeBlog} disabled={writing || Boolean(allBusy)}
+                    style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+                    {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기"}
+                  </button>
+                ) : (
+                  <button onClick={writeBlog} disabled={writing}
+                    style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+                    {writing ? `${aiName}가 쓰는 중…` : blog ? "다시 쓰기" : `${aiName}로 블로그 글 쓰기`}
+                  </button>
+                )}
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>스튜디오 전용 크롬에서 {aiName}가 열려 직접 씁니다. 1~2분 걸립니다.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{oneShot ? "문체·글자 수를 고르고 위 [한 번에 쓰기]를 누르세요. 탭 이름 옆 ☑ 한 글만 함께 씁니다." : `${aiName}가 씁니다. 1~2분 걸립니다.`}</div>
             </>
           )}
           {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{blogProgress}</div>}
@@ -286,10 +412,10 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
-                  스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
+                  평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실스튜디오 도우미</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
                 </div>
                 <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
-                <button onClick={fillNaver} disabled={filling}
+                <button onClick={() => void fillNaver("helper")} disabled={filling}
                   style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
                   {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}
                 </button>
@@ -298,6 +424,15 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           )}
           {naverProgress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{naverProgress}</div>}
           {naverError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{naverError}</div>}
+          {naverNoHelper && (
+            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button onClick={() => void fillNaver("manual")} disabled={filling}
+                style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>복사·사진 폴더로 직접 붙여 넣기</button>
+              <button onClick={() => void fillNaver("")} disabled={filling} title="예전 방식 — 앱이 따로 띄운 크롬에서 채워요 (네이버 로그인을 그 창에서 한 번 해야 해요)"
+                style={{ padding: "10px 16px", background: "transparent", color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>전용 크롬으로 채우기</button>
+              <span style={{ fontSize: 12.5, color: theme.textSecondary }}>도우미 설치: 크롬 › 확장 프로그램 › &quot;공실스튜디오 도우미&quot;</span>
+            </div>
+          )}
           {naverLogin === "need" && (
             <button onClick={loginNaver}
               style={{ marginTop: 10, padding: "10px 16px", background: "#03c75a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
@@ -315,11 +450,31 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               </button>
             </div>
           )}
-          {naverDone && (
+          {naverDone?.via === "manual" && naverDone.copy && (
+            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 10, background: theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc", border: `1px solid ${theme.border}`, fontSize: 14, color: theme.textPrimary, lineHeight: 1.7 }}>
+              평소 크롬에 네이버 글쓰기를 열고, 사진 {naverDone.photos || 0}장을 글 순서대로 번호 붙여 폴더에 저장했어요.
+              <ol style={{ margin: "8px 0", paddingLeft: 20 }}>
+                <li>[제목 복사] → 네이버 제목 칸에 붙여 넣기</li>
+                <li>[본문 복사] → 본문 칸에 붙여 넣기 (디자인 그대로, 사진 자리는 <b>[사진 1]</b>처럼 표시)</li>
+                <li>폴더의 사진을 [사진 N] 자리에 끌어다 놓고 그 표시는 지우기</li>
+                <li>[발행]을 누를 때 태그 칸에 [태그 복사]</li>
+              </ol>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {([["title", "제목 복사", "", naverDone.copy.title], ["body", "본문 복사", naverDone.copy.html, naverDone.copy.text], ["tags", "태그 복사", "", naverDone.copy.tags]] as const).map(([k, label, html, text]) => (
+                  <button key={k} onClick={() => void copyRich(k, html, text)}
+                    style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: copied === k ? "#16a34a" : theme.cardBg, color: copied === k ? "#fff" : theme.textPrimary, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>
+                    {copied === k ? "복사됨 ✓" : label}
+                  </button>
+                ))}
+              </div>
+              {naverDone.folder && <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary, wordBreak: "break-all" }}>사진 폴더: {naverDone.folder}</div>}
+            </div>
+          )}
+          {naverDone && naverDone.via !== "manual" && (
             <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", fontSize: 14, color: "#065f46", lineHeight: 1.7 }}>
-              네이버 글쓰기에 채웠습니다. 사진 {naverDone.imagesInserted}/{naverDone.imagesTotal}장.
+              {naverDone.via === "helper" ? "평소 크롬의 네이버 글쓰기에 도우미가 채웠어요." : "네이버 글쓰기에 채웠습니다."} 사진 {naverDone.imagesInserted}/{naverDone.imagesTotal}장.
               {naverDone.imagesInserted < naverDone.imagesTotal ? " 빠진 사진은 네이버 화면에서 직접 올려 주세요." : ""}
-              <br />오른쪽 크롬 창에서 내용을 확인하고 <b>[발행]</b>을 눌러 주세요. 태그 {naverDone.tags.length}개는 발행 창에 자동으로 들어갑니다.
+              <br />{naverDone.via === "helper" ? "크롬 창에서" : "오른쪽 크롬 창에서"} 내용을 확인하고 <b>[발행]</b>을 눌러 주세요. 태그 {naverDone.tags.length}개는 발행 창에 자동으로 들어갑니다.
             </div>
           )}
         </div>

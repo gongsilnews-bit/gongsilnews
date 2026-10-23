@@ -51,7 +51,7 @@ export function DesignSide({ onPick, onClose, mine, onMine, onMineRemove, onSave
   }, [cat, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   const chip = (id: string) => (
     <button key={id} type="button" onClick={() => setCat(id)}
-      style={{ height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${cat === id ? C.text : C.line2}`, background: cat === id ? C.text : "transparent", color: cat === id ? C.bg : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{id}</button>
+      style={{ height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${cat === id ? C.sel : C.line2}`, background: cat === id ? C.sel : "transparent", color: cat === id ? C.selText : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{id}</button>
   );
   return (
     <Side title="디자인 템플릿" onClose={onClose}>

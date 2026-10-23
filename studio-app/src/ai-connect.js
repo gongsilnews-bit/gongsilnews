@@ -103,8 +103,42 @@ function saveStatus(id, value) {
 
 /* AI 마다 쓰는 방법 — "account"(내 계정으로, 처음 값) | "api"(내 API 키로). 한 AI 에 한 가지만 (2026-10-18 회의) */
 const API_IDS = ["chatgpt", "claude", "gemini"];
+/* 쓰는 순서 (2026-10-23 사장님) — free: 내 계정(무료) 먼저, 막히면 API · paid: API 먼저, 막히면 내 계정 · freeOnly: 내 계정만 (API 는 안 씀)
+   AI 마다 계정·키를 둘 다 연결해 둘 수 있다. getMode = 지금 먼저 쓸 방법 */
+function getOrder() {
+  const o = readSettings().order;
+  return o === "free" || o === "freeOnly" ? o : "paid"; // 처음 값 = API 먼저 (없으면 내 계정) — 2026-10-23 사장님
+}
+/* 내 계정 쓰는 방법 — manual(수동: 질문 복사 → 내 브라우저 → 답 복사, 처음 값) · auto(자동: 전용 크롬 조종, 계정이 막힐 수 있음) */
+const getMethod = () => (readSettings().method === "auto" ? "auto" : "manual");
+function setMethod(m) {
+  writeSettings({ method: m === "auto" ? "auto" : "manual" });
+  log.info(`[AI 연결] 내 계정 방법: ${m === "auto" ? "자동" : "수동"}`);
+  return list();
+}
+function setOrder(o) {
+  const order = o === "paid" || o === "freeOnly" ? o : "free";
+  writeSettings({ order });
+  log.info(`[AI 연결] 쓰는 순서: ${order === "paid" ? "유료 먼저" : order === "freeOnly" ? "무료만" : "무료 먼저"}`);
+  return list();
+}
+const canAccount = (id) => Boolean((loadStatus()[id] || {}).ok);
+const canApi = (id) => API_IDS.includes(id) && require("./ai/api").status(id).has;
 function getMode(id) {
-  return API_IDS.includes(id) && (readSettings().modes || {})[id] === "api" ? "api" : "account";
+  if (!API_IDS.includes(id)) return "account";
+  const o = getOrder();
+  if (o === "freeOnly") return "account";
+  if (o === "paid") return canApi(id) ? "api" : "account";
+  return canAccount(id) || getMethod() === "manual" ? "account" : canApi(id) ? "api" : "account";
+}
+/** 무료 → 유료로 넘어갈 때 묻지 않기 (확인 창의 [다음부터 묻지 않고…]) */
+const getPaidNoAsk = () => Boolean(readSettings().paidNoAsk);
+const setPaidNoAsk = (v) => writeSettings({ paidNoAsk: Boolean(v) });
+/** 막혔을 때 넘어갈 방법 — 없으면 "" (무료만이면 API 로 넘어가지 않는다) */
+function fallbackMode(id, used) {
+  if (!API_IDS.includes(id) || getOrder() === "freeOnly") return "";
+  if (used === "account") return canApi(id) ? "api" : "";
+  return canAccount(id) || getMethod() === "manual" ? "account" : "";
 }
 function setMode(id, mode) {
   if (!API_IDS.includes(id)) throw new Error("알 수 없는 AI입니다.");
@@ -125,7 +159,7 @@ function list() {
       const st = saved[id] || { ok: false };
       const mode = getMode(id);
       const key = API_IDS.includes(id) ? api.status(id) : { has: false, masked: "" };
-      return { id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), imageReady: Boolean(p.image && p.ready && p.imageReady !== false), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...st, accountOk: Boolean(st.ok), mode, keyHas: key.has, keyMasked: key.masked, keyModel: key.model || "", ok: mode === "api" ? key.has : Boolean(st.ok) };
+      return { id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), imageReady: Boolean(p.image && p.ready && p.imageReady !== false), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...st, accountOk: Boolean(st.ok), mode, keyHas: key.has, keyMasked: key.masked, keyModel: key.model || "", ok: Boolean(st.ok) || getMethod() === "manual" || (getOrder() !== "freeOnly" && key.has), method: getMethod() };
     });
 }
 
@@ -213,4 +247,4 @@ function markConnected(id) {
   saveStatus(id, { ...prev, ok: true });
 }
 
-module.exports = { PROVIDERS, list, check, connect, open, markConnected, getWriter, setWriter, getImager, setImager, getMode, setMode, finishLogin: () => chrome.closePlain() };
+module.exports = { PROVIDERS, list, check, connect, open, markConnected, getWriter, setWriter, getImager, setImager, getMode, setMode, getOrder, setOrder, getMethod, setMethod, fallbackMode, getPaidNoAsk, setPaidNoAsk, finishLogin: () => chrome.closePlain() };

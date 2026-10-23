@@ -22,6 +22,9 @@ const DARK = {
   accentDim: "rgba(59,130,246,0.16)",
   danger: "#f06a6a",
   ok: "#4ade80",
+  field: "#18191c", // 입력칸 바탕
+  sel: "#eceef1",
+  selText: "#18191c",
   // 이미지 편집판(포토샵식) 막대·메뉴·눈금자 — 2026-10-23 밝은 화면
   psBar: "#2b2b2b",
   psBarLine: "#1f1f1f",
@@ -52,20 +55,25 @@ const DARK = {
   psHi: "#1473e6",
 };
 const LIGHT: typeof DARK = {
-  bg: "#eef0f3",
+  // 흰색·회색 나누기 (2026-10-23 사장님) — 작업 바탕은 회색, 칸·상자(card)는 흰색, 고른 것은 cardHover(연회색)
+  // 관리 화면(뉴스·SNS발행)과 같은 색 (2026-10-23 사장님: 일관성) — 바탕 연회색 · 칸 흰색 · 강조 공실뉴스 남색
+  bg: "#f4f5f7",
   panel: "#ffffff",
-  panel2: "#f6f7f9",
-  card: "#f1f3f6",
-  cardHover: "#e7eaee",
-  line: "#e1e4e9",
-  line2: "#cfd4db",
-  text: "#14171c",
-  sub: "#4b5260",
-  dim: "#8b919c",
-  accent: "#2563eb",
-  accentDim: "rgba(37,99,235,0.12)",
+  panel2: "#f9fafb",
+  card: "#ffffff",
+  cardHover: "#f3f4f6",
+  line: "#e1e4e8",
+  line2: "#d1d5db",
+  text: "#111827",
+  sub: "#6b7280",
+  dim: "#9ca3af",
+  accent: "#1a3a6b",
+  accentDim: "rgba(26,58,107,0.08)",
   danger: "#dc2626",
   ok: "#16a34a",
+  field: "#ffffff",
+  sel: "#1a3a6b",
+  selText: "#ffffff",
   psBar: "#f3f4f6",
   psBarLine: "#d9dde3",
   psMenu: "#ffffff",
@@ -76,7 +84,7 @@ const LIGHT: typeof DARK = {
   psSel: "#dbe4f3",
   psToolOn: "#d3d9e2",
   psIcon: "#374151",
-  psStage: "#d5d8dd",
+  psStage: "#2b2e34", // 그림판 둘레 — 밝은 화면에서도 어둡게 (그림 색을 바르게 보려고)
   psCtrl: "#ffffff",
   psCtrlLine: "#cfd4db",
   psCtrlText: "#14171c",
@@ -99,18 +107,21 @@ export const C = Object.fromEntries(Object.entries(DARK).map(([k, v]) => [k, `va
 export type StudioTheme = "dark" | "light";
 const THEME_KEY = "gs-studio-theme";
 const THEME_EVENT = "gs-studio-theme-change";
-const readTheme = (): StudioTheme => {
-  try { return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark"; } catch { return "dark"; }
+/** 동영상제작·이미지제작은 하나로 묶어서 (2026-10-23 사장님) — 처음엔 어두운 화면. area 는 나중에 나눌 때를 위해 남겨 둠 */
+export type StudioArea = "video" | "photo";
+const keyOf = (_area: StudioArea) => THEME_KEY;
+const readTheme = (area: StudioArea = "video"): StudioTheme => {
+  try { return localStorage.getItem(keyOf(area)) === "light" ? "light" : "dark"; } catch { return "dark"; }
 };
 /** 이미지제작·동영상제작 맨 바깥에서 한 번 — 고른 색 벌을 화면 전체(:root)에 넣고, 떠나면 뺀다 (창·떠 있는 창까지 같은 색) */
-export function useStudioTheme(apply = true): [StudioTheme, (t: StudioTheme) => void] {
+export function useStudioTheme(apply = true, area: StudioArea = "video"): [StudioTheme, (t: StudioTheme) => void] {
   const [theme, setThemeS] = React.useState<StudioTheme>("dark");
   React.useEffect(() => {
-    const load = () => setThemeS(readTheme());
+    const load = () => setThemeS(readTheme(area));
     load();
     window.addEventListener(THEME_EVENT, load);
     return () => window.removeEventListener(THEME_EVENT, load);
-  }, []);
+  }, [area]);
   React.useEffect(() => {
     if (!apply) return; // 다른 화면 안에 잠깐 열린 편집기(영상 › 썸네일 고치기)는 바깥 화면이 넣은 색을 그대로 쓴다
     const root = document.documentElement;
@@ -123,7 +134,7 @@ export function useStudioTheme(apply = true): [StudioTheme, (t: StudioTheme) => 
     };
   }, [theme, apply]);
   const setTheme = (t: StudioTheme) => {
-    try { localStorage.setItem(THEME_KEY, t); } catch {}
+    try { localStorage.setItem(keyOf(area), t); } catch {}
     window.dispatchEvent(new Event(THEME_EVENT));
   };
   return [theme, setTheme];
@@ -400,7 +411,7 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
           <div style={{ width: 150, flexShrink: 0 }} />
         </div>
         <ModalPage.Provider value={false}>
-          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>{children}</div>
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: C.bg }}>{children}</div>
           {footer && <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "14px 20px", borderTop: `1px solid ${C.line}` }}>{footer}</div>}
         </ModalPage.Provider>
       </div>
@@ -456,7 +467,55 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
 }
 
 /** 일하는 동안 — 점 세 개 + 지금 하는 일 + 걸린 시간 + 진행 막대 */
-export function Working({ title, detail, frac }: { title: string; detail?: string; frac?: number | null }) {
+/** 기다리는 동안 광고 (자리: export = 영상 만들기·내보내기) — 같은 광고가 이어지지 않게 바로 전 광고는 뺀다 */
+type WaitAdItem = { id: number; youtube_id: string; label?: string; link_url?: string };
+export function WaitAd({ place = "export" }: { place?: string }) {
+  const [ad, setAd] = React.useState<WaitAdItem | null>(null);
+  const [muted, setMuted] = React.useState(true);
+  const frame = React.useRef<HTMLIFrameElement>(null);
+  const post = (id: number, kind: "view" | "watch" | "click", seconds = 0) => {
+    try { void fetch("/api/studio/ad", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, place, kind, seconds }), keepalive: true }).catch(() => {}); } catch {}
+  };
+  React.useEffect(() => {
+    let shownAt = 0, cur: WaitAdItem | null = null, alive = true;
+    const t = setTimeout(() => {
+      let last = "";
+      try { last = sessionStorage.getItem("gs-wait-ad-last") || ""; } catch {}
+      fetch(`/api/studio/ad?place=${place}&last=${last}`, { cache: "no-store" }).then((r) => r.json()).then((j: { ad?: WaitAdItem | null }) => {
+        if (!alive || !j.ad?.youtube_id) return;
+        cur = j.ad; shownAt = Date.now();
+        try { sessionStorage.setItem("gs-wait-ad-last", String(j.ad.id)); } catch {}
+        setAd(j.ad);
+        post(j.ad.id, "view");
+      }).catch(() => {});
+    }, 4000);
+    return () => { alive = false; clearTimeout(t); if (cur) post(cur.id, "watch", (Date.now() - shownAt) / 1000); };
+  }, [place]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!ad) return null;
+  const yid = encodeURIComponent(ad.youtube_id);
+  const open = () => { if (ad.link_url) { post(ad.id, "click"); window.open(ad.link_url, "_blank"); } };
+  const toggle = () => {
+    const m = !muted;
+    setMuted(m);
+    frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: m ? "mute" : "unMute", args: [] }), "*");
+  };
+  return (
+    <div style={{ width: 600, maxWidth: "80%", margin: "22px auto 0" }}>
+      <div style={{ position: "relative", aspectRatio: "16 / 9", background: "#000", borderRadius: 8, overflow: "hidden" }}>
+        <iframe ref={frame} title="광고" allow="autoplay; encrypted-media" style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+          src={`https://www.youtube-nocookie.com/embed/${yid}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=${yid}&enablejsapi=1&origin=${encodeURIComponent(typeof location !== "undefined" ? location.origin : "")}`} />
+        {ad.link_url && <div onClick={open} title="광고주 사이트 열기 (새 창)" style={{ position: "absolute", inset: 0, cursor: "pointer" }} />}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+        <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, color: C.dim }}>{ad.label || "AD"}</span>
+        <button type="button" onClick={toggle} style={{ height: 28, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{muted ? "🔇 소리 켜기" : "🔊 소리 끄기"}</button>
+        {ad.link_url && <button type="button" onClick={open} style={{ height: 28, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>광고주 사이트 열기 ↗</button>}
+      </div>
+    </div>
+  );
+}
+
+export function Working({ title, detail, frac, ad = true }: { title: string; detail?: string; frac?: number | null; /** 기다림 광고 (4초 넘게 걸리면) */ ad?: boolean }) {
   const [sec, setSec] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setSec((x) => x + 1), 1000);
@@ -479,6 +538,7 @@ export function Working({ title, detail, frac }: { title: string; detail?: strin
       )}
       {detail && <div style={{ marginTop: 12, fontSize: 15, color: C.sub }}>{detail}</div>}
       <div style={{ marginTop: 8, fontSize: 14, color: C.dim }}>잠시만 기다려 주세요 · {Math.floor(sec / 60) ? `${Math.floor(sec / 60)}분 ` : ""}{sec % 60}초</div>
+      {ad && <WaitAd place="export" />}
     </div>
   );
 }
@@ -494,4 +554,4 @@ export function Hint({ children }: { children: React.ReactNode }) {
 }
 
 export const label: React.CSSProperties = { fontSize: 15, fontWeight: 800, color: C.text };
-export const input: React.CSSProperties = { width: "100%", boxSizing: "border-box", height: 42, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 15, fontFamily: FONT, outline: "none" };
+export const input: React.CSSProperties = { width: "100%", boxSizing: "border-box", height: 42, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.field, color: C.text, fontSize: 15, fontFamily: FONT, outline: "none" };

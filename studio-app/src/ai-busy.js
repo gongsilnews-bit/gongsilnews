@@ -58,6 +58,16 @@ function adLib() {
     f.src = "https://www.youtube-nocookie.com/embed/" + yid + "?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=" + yid + "&enablejsapi=1&origin=" + encodeURIComponent(location.origin);
     f.allow = "autoplay; encrypted-media";
     v.appendChild(f);
+    // 광고주 링크 — 영상을 눌러도 새 창(평소 브라우저)으로 연다 (2026-10-23 사장님)
+    if (ad.link_url) {
+      v.style.position = "relative";
+      const go = document.createElement("div");
+      go.className = "go";
+      go.title = "광고주 사이트 열기 (새 창)";
+      go.style.cssText = "position:absolute;inset:0;cursor:pointer;background:transparent";
+      go.__gsFn = () => { post("click"); window.open(ad.link_url, "_blank"); };
+      v.appendChild(go);
+    }
     wrap.appendChild(v);
     const bar = document.createElement("div");
     bar.className = "b";
@@ -71,7 +81,7 @@ function adLib() {
       mute.textContent = A.muted ? "🔇 소리 켜기" : "🔊 소리 끄기";
     });
     bar.appendChild(mute);
-    if (ad.link_url) bar.appendChild(btn("자세히 보기 ↗", () => { post("click"); window.open(ad.link_url, "_blank"); }));
+    if (ad.link_url) bar.appendChild(btn("광고주 사이트 열기 ↗", () => { post("click"); window.open(ad.link_url, "_blank"); }));
     wrap.appendChild(bar);
     c.appendChild(wrap);
     post("view");
@@ -99,7 +109,7 @@ function adLib() {
       if (el) el.remove();
     },
     click(target) {
-      const b = target && target.closest ? target.closest(".gb") : null;
+      const b = target && target.closest ? target.closest(".gb, .go") : null;
       if (b && b.__gsFn) { b.__gsFn(); return true; }
       return false;
     },
@@ -144,6 +154,9 @@ const overlay = (text, startedAt, sub) => `(() => {
     for (const ev of ["click", "mousedown", "pointerdown", "keydown", "wheel", "contextmenu"]) el.addEventListener(ev, (e) => {
       const x = e.target && e.target.closest ? e.target.closest(".x") : null;
       if (ev === "click" && x) { window.__gsAiStopReq = true; x.textContent = "멈추는 중…"; }
+      // 수동(복사해서 쓰기) 단추 — 앱이 window.__gsManualAct 를 읽어 간다
+      const gm = e.target && e.target.closest ? e.target.closest("[data-gsm]") : null;
+      if (ev === "click" && gm) { window.__gsManualAct = gm.getAttribute("data-gsm"); e.stopPropagation(); e.preventDefault(); return; }
       // 광고 단추 (소리 켜기·자세히 보기) · 다 된 뒤 [결과 보기]
       if (ev === "click" && e.target && e.target.closest && e.target.closest(".ok")) { if (window.__gsAd) window.__gsAd.close(); else el.remove(); }
       else if (ev === "click" && window.__gsAd) window.__gsAd.click(e.target);
@@ -317,4 +330,16 @@ function release() {
   if (gen === holdGen) { depth = Math.max(0, depth - 1); paint(); }
 }
 
-module.exports = { setWindow, attach, during, stop, isStopped, stopError, signal, STOP_MSG, hold, holdText, release };
+/** 수동 — 덮개 아래 글(단추 포함)을 바꾼다 */
+function setSub(html) {
+  subText = String(html || "");
+  if (depth > 0) paint();
+}
+/** 수동 — 눌린 단추 하나 꺼내기 ("copy" · "paste" · "") */
+async function takeAct() {
+  const w = getWin();
+  if (!w || w.isDestroyed()) return "";
+  return w.webContents.executeJavaScript("(() => { const v = window.__gsManualAct || ''; window.__gsManualAct = ''; return v; })()").catch(() => "");
+}
+
+module.exports = { setWindow, attach, during, stop, isStopped, stopError, signal, STOP_MSG, hold, holdText, release, setSub, takeAct };

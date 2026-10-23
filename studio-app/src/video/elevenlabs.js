@@ -77,6 +77,12 @@ async function fetchVoices(k) {
   return out.sort((a, b) => Number(b.korean) - Number(a.korean));
 }
 
+/** 성우 목록 권한이 없을 때 쓰는 일레븐랩스 기본(공개) 성우 — 다국어 모델이라 한국어도 읽는다 */
+const DEFAULT_VOICES = [
+  ["21m00Tcm4TlvDq8ikWAM", "Rachel", "female"], ["EXAVITQu4vr4xnSDxMaL", "Sarah", "female"], ["MF3mGyEYCl7XYWbV9V6O", "Elli", "female"], ["AZnzlk1XvdvUeBnXmlld", "Domi", "female"],
+  ["pNInz6obpgDQGcFmaJgB", "Adam", "male"], ["ErXwobaYiN019PkySvjV", "Antoni", "male"], ["TxGEqnHWrfWFTfGW9XjX", "Josh", "male"], ["VR6AewLTigWG4xSOukaG", "Arnold", "male"], ["yoZ06aMxZJJ28mfd3POQ", "Sam", "male"],
+].map(([id, name, gender]) => ({ id: PRE + id, name, gender, age: "", useCases: ["기본 성우"], preview: "", emotions: [], type: "premade", korean: false }));
+
 function status() {
   const k = key();
   const o = read();
@@ -85,7 +91,15 @@ function status() {
 async function setKey(k) {
   const kk = String(k || "").trim();
   if (!kk) throw new Error("키를 넣어 주세요.");
-  const voices = await fetchVoices(kk);
+  // 성우 목록 읽기 권한이 없는 키도 연결 — 일레븐랩스 기본 성우로 (말하기만 되면 쓸 수 있다, 2026-10-23 사장님: 안 박혀)
+  let voices;
+  try {
+    voices = await fetchVoices(kk);
+  } catch (e) {
+    if (!/권한이 모자라요/.test(String(e && e.message))) throw e;
+    voices = DEFAULT_VOICES;
+    log.warn("[일레븐랩스] 성우 목록 권한이 없는 키 — 기본 성우로 연결");
+  }
   const enc = safeStorage.isEncryptionAvailable();
   write({ key: enc ? safeStorage.encryptString(kk).toString("base64") : kk, enc, voices, at: Date.now() });
   log.info(`[일레븐랩스] 키 연결 · 성우 ${voices.length}명`);

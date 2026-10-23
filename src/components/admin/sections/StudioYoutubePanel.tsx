@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import StudioReviseBar from "./StudioReviseBar";
 import { useStudioWriter } from "./useStudioWriter";
 
@@ -47,10 +48,17 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 const secondsOf = (text: string) => Math.round(text.replace(/\s/g, "").length / 5.5);
 const clock = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`);
 
-export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript }: { theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void }) {
+export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick }: {
+  theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void;
+  /** 한 번에 쓰기 — 이 탭은 형식·길이·말투·숫자만 고르고(이 PC 에 기억), 쓴 뒤에만 [이 글만 다시 쓰기] */
+  oneShot?: boolean; remembered?: Record<string, unknown>; onPick?: (p: Record<string, string>) => void;
+}) {
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
+  const router = useRouter();
   const [opts, setOpts] = useState<Options | null>(null);
-  const [pick, setPick] = useState<Record<string, string>>({});
+  const [pick, setPickRaw] = useState<Record<string, string>>({});
+  // 고른 값은 한 번에 쓰기에도 쓰이게 위로 알린다
+  const setPick = (f: (p: Record<string, string>) => Record<string, string>) => { const n = f(pick); setPickRaw(n); onPick?.(n); };
   const [script, setScript] = useState<Script | null>(null);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -72,11 +80,15 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
     if (!b) return;
     b.youtube.options(vacancyId).then((o) => {
       setOpts(o);
-      setPick(o.defaults);
+      // 처음 값 ← 이 PC 에 기억한 값 (이 공실에 없는 영상 형식은 빼고)
+      const mem: Record<string, string> = {};
+      const lists: Record<string, Option[]> = { videoType: o.videoTypes, duration: o.durations, tone: o.tones, number: o.numbers };
+      for (const k of Object.keys(lists)) { const v = remembered?.[k]; if (typeof v === "string" && lists[k].some((x) => x.id === v)) mem[k] = v; }
+      setPickRaw((p) => ({ ...o.defaults, ...mem, ...p }));
     }).catch(() => {});
     b.youtube.get(vacancyId).then((s) => {
       show(s);
-      if (s?.settings) setPick((p) => ({ ...p, ...s.settings }));
+      if (s?.settings && !oneShot) setPickRaw((p) => ({ ...p, ...s.settings }));
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vacancyId]);
@@ -133,6 +145,12 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
       setError("복사하지 못했습니다.");
     }
   };
+  /** [이 대본으로 동영상 만들기] — 고친 대본을 저장하고 동영상제작 › 대본 작성으로 (공실·대본을 넘긴다) */
+  const toVideo = async () => {
+    await persist({ title, narration: paragraphs() });
+    try { sessionStorage.setItem("gs-video-seed", JSON.stringify({ vacancyId, title, script: paragraphs().join("\n\n"), at: Date.now() })); } catch {}
+    router.push("/realty_admin?menu=video");
+  };
   const exportText = async () => {
     const b = bridge();
     if (!b) return;
@@ -188,19 +206,26 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
   return (
     <div>
       <div style={card}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 14 }}>유튜브 대본 쓰기</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 14 }}>{oneShot ? "유튜브 대본 스타일" : "유튜브 대본 쓰기"}</div>
         {row("영상 형식", "videoType", opts?.videoTypes)}
         {row("길이", "duration", opts?.durations)}
         {row("말투", "tone", opts?.tones)}
         {row("숫자", "number", opts?.numbers)}
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
           <div style={{ flex: 1, minWidth: 260, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
-            기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
+            {oneShot ? "고르고 위 [한 번에 쓰기]를 누르세요 (탭 이름 옆 ☑). " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
           </div>
-          <button onClick={write} disabled={writing}
-            style={{ padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-            {writing ? `${aiName}가 쓰는 중…` : script ? "다시 쓰기" : `${aiName}로 대본 쓰기`}
-          </button>
+          {oneShot ? (script || writing) && (
+            <button onClick={write} disabled={writing}
+              style={{ padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+              {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기"}
+            </button>
+          ) : (
+            <button onClick={write} disabled={writing}
+              style={{ padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+              {writing ? `${aiName}가 쓰는 중…` : script ? "다시 쓰기" : `${aiName}로 대본 쓰기`}
+            </button>
+          )}
         </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
@@ -255,9 +280,11 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
             <button onClick={() => copy(paragraphs().join("\n\n"), "원고를 복사했습니다.", "narration")} style={btn(true)}>원고 복사</button>
             <button onClick={() => copy(descText, "설명란을 복사했습니다.", "desc")} style={btn()}>설명란 복사</button>
             <button onClick={exportText} style={btn()}>텍스트로 저장</button>
+            <button onClick={() => void toVideo()} title="동영상제작 › 대본 작성으로 — 이 공실이 골라지고 대본이 칸에 들어가요"
+              style={{ ...btn(), marginLeft: "auto", border: 0, background: "#16a34a", color: "#fff" }}>▶ 이 대본으로 동영상 만들기</button>
           </div>
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
-          <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>동영상제작 메뉴가 열리면 이 원고로 바로 영상을 만들 수 있게 이어 붙입니다.</div>
+          <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>[이 대본으로 동영상 만들기]를 누르면 동영상제작 › 대본 작성 화면에 이 공실과 원고가 들어가요. 거기서 고쳐 쓰고 초안 꾸미기로 넘어가면 돼요.</div>
         </div>
       )}
     </div>

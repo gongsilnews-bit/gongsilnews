@@ -24,10 +24,11 @@ export type ChannelInfo = { id: string; label: string; homeUrl: string; ratioTex
 type Bridge = {
   openInBrowser?: (url: string) => Promise<void>;
   sns: {
-    write: (opts: { vacancyId: string }) => Promise<SnsData>;
+    write: (opts: { vacancyId: string; tone?: Record<string, string> }) => Promise<SnsData>;
     save: (opts: { vacancyId: string; channel: string; post?: Post; mediaIds?: string[] }) => Promise<SnsChannelData>;
     revise: (opts: { vacancyId: string; channel: string; request: string }) => Promise<SnsChannelData>;
     exportChannel: (opts: { vacancyId: string; channel: string }) => Promise<{ folder: string; saved: number; total: number }>;
+    fillByHelper?: (opts: { vacancyId: string; channel: string }) => Promise<{ ok: boolean; partial?: boolean; note?: string; error?: string }>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -37,11 +38,25 @@ const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).re
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지" };
 const RATIO: Record<string, string> = { instagram: "4 / 5", facebook: "1 / 1", threads: "auto" };
 
-type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
+/** SNS 문체 — 세 채널 같이 (2026-10-23 사장님 회의). 앱 sns-writer.js TONES 와 같은 id */
+export const SNS_TONES = [
+  { id: "polite", label: "공손체", brief: "존댓말로 차분하게 안내" },
+  { id: "casual", label: "반말체", brief: "친구에게 말하듯 편하게" },
+  { id: "hook", label: "후킹체", brief: "첫 줄에서 궁금하게, 짧게 끊어서" },
+  { id: "expert", label: "전문가체", brief: "입지·가격·활용도를 분석하듯" },
+  { id: "story", label: "스토리체", brief: "현장을 다녀온 듯 이야기로" },
+  { id: "short", label: "요약체", brief: "핵심만 3~5줄" },
+];
 
-export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed }: {
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
+
+export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone }: {
   theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
+  /** 한 번에 쓰기 — 이 탭은 문체만 고르고, 쓴 뒤에만 [이 글만 다시 쓰기] */
+  /** 채널마다 문체 { instagram, threads, facebook } — 이 탭에서는 이 채널 것만 고른다 */
+  oneShot?: boolean; tones?: Record<string, string>; onTone?: (t: string) => void;
 }) {
+  const tone = tones[channel] || "polite";
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
@@ -98,7 +113,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
     setNote("");
     const off = b.sns.onProgress(setProgress);
     try {
-      onData(await b.sns.write({ vacancyId }));
+      onData(await b.sns.write({ vacancyId, tone: tones }));
     } catch (e) {
       setError(cleanErr(e));
     } finally {
@@ -147,6 +162,27 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       setError(cleanErr(e));
     }
   };
+  /* [도우미로 채우기] — 평소 크롬 + 공실스튜디오 도우미 확장 (2026-10-23 사장님) */
+  const [helping, setHelping] = useState(false);
+  const [helpMsg, setHelpMsg] = useState("");
+  const fillHelper = async () => {
+    const b = bridge();
+    if (!b?.sns.fillByHelper) return;
+    await b.sns.save({ vacancyId, channel, post: currentPost() }).catch(() => {}); // 고친 글 먼저
+    setHelping(true);
+    setHelpMsg("");
+    setError("");
+    const off = b.sns.onProgress(setHelpMsg);
+    try {
+      const r = await b.sns.fillByHelper({ vacancyId, channel });
+      setHelpMsg(r.note || (r.ok ? `크롬 창의 ${info.label}에 넣었어요. 도우미 상자를 보고 확인한 뒤 [공유하기]·[게시]를 직접 눌러 주세요.` : r.error || "도우미가 다 채우지 못했어요. 크롬 창의 도우미 상자 단추로 이어서 해 주세요."));
+    } catch (e) {
+      setHelpMsg(cleanErr(e).replace(/^HELPER_NONE:s*/, ""));
+    } finally {
+      off();
+      setHelping(false);
+    }
+  };
   const openChannel = () => {
     const b = bridge();
     if (b?.openInBrowser) b.openInBrowser(info.homeUrl);
@@ -191,14 +227,31 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{info.label} 글 쓰기</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{oneShot ? `${info.label} 문체` : `${info.label} 글 쓰기`}</div>
             <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4, lineHeight: 1.6 }}>
-              인스타그램·스레드·페이스북 글을 {aiName}가 한 번에 씁니다 (SNS 1회). 블로그를 먼저 썼다면 그 글을 바탕으로 씁니다.
+              인스타그램·스레드·페이스북 글을 {vacancyId.startsWith("col-") ? "뉴스칼럼 기사·원문을 바탕으로" : "처음 분석·캡처한 공실 정보로"} 함께 씁니다 (SNS 1회). 문체는 채널마다 따로 골라요 (이 탭은 {info.label}).
             </div>
           </div>
-          <button onClick={write} disabled={writing} style={{ ...btn(true), background: writing ? "#94a3b8" : "#16a34a", cursor: writing ? "default" : "pointer" }}>
-            {writing ? `${aiName}가 쓰는 중…` : data ? "세 채널 다시 쓰기" : `${aiName}로 SNS 글 쓰기`}
-          </button>
+          {oneShot ? (data || writing) && (
+            <button onClick={write} disabled={writing}
+              style={{ padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+              {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기 (세 채널)"}
+            </button>
+          ) : (
+            <button onClick={write} disabled={writing} style={{ ...btn(true), background: writing ? "#94a3b8" : "#16a34a", cursor: writing ? "default" : "pointer" }}>
+              {writing ? `${aiName}가 쓰는 중…` : data ? "세 채널 다시 쓰기" : `${aiName}로 SNS 글 쓰기`}
+            </button>
+          )}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginTop: 14 }}>
+          {SNS_TONES.map((t) => (
+            <button key={t.id} type="button" onClick={() => onTone?.(t.id)} disabled={!onTone}
+              style={{ textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: onTone ? "pointer" : "default", color: theme.textPrimary,
+                border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>
+              <div style={{ fontSize: 14, fontWeight: 800 }}>{t.label}{tone === t.id ? " ✓" : ""}</div>
+              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{t.brief}</div>
+            </button>
+          ))}
         </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
@@ -300,13 +353,19 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             examples={channel === "threads" ? "첫 글을 더 짧게, 질문을 바꿔 줘" : channel === "instagram" ? "이모지를 줄이고 훅을 더 강하게" : "첫 문단을 더 짧게, 해시태그를 3개로"} />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
-            <button onClick={copy} style={btn(true)}>글 복사</button>
+            <button onClick={copy} style={btn()}>글 복사</button>
             <button onClick={exportFolder} style={btn()}>사진·글 폴더로 저장</button>
             <ChannelButton channel={channel} label={`${info.label} 열기`} onClick={openChannel} />
+            {/* [채널 열기] 바로 옆 · 블로그 [네이버 블로그에 채우기]와 같은 남색 (2026-10-23 사장님) */}
+            {bridge()?.sns.fillByHelper && (
+              <button onClick={() => void fillHelper()} disabled={helping} title="평소 크롬에 이 채널을 열고 공실스튜디오 도우미(크롬 확장)가 사진·글을 넣어요"
+                style={{ ...btn(true), background: helping ? "#94a3b8" : "#1a3a6b" }}>{helping ? "도우미가 채우는 중…" : `도우미로 ${info.label}에 채우기`}</button>
+            )}
           </div>
+          {helpMsg && <div style={{ marginTop: 10, fontSize: 13, color: /못|없|응답/.test(helpMsg) ? "#c2410c" : (theme.darkMode ? "#93c5fd" : "#1a3a6b"), fontWeight: 600, lineHeight: 1.6 }}>{helpMsg}</div>}
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
           <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>
-            {info.label}에서 새 게시물을 만들고, 저장한 폴더의 사진을 순서대로 올린 뒤 복사한 글을 붙여 넣으세요. 자동 채우기는 다음 업데이트에서 붙습니다.
+            [도우미로 채우기]는 평소 크롬에 {info.label}을(를) 열고 사진·글을 넣어요 ([공유하기]·[게시]는 직접). 도우미가 없으면 [글 복사]·[사진·글 폴더로 저장]으로 직접 올리세요.
           </div>
         </div>
       )}

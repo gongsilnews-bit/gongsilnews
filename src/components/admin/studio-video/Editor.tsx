@@ -490,8 +490,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         });
       }
     };
-    await Promise.all([one(), one(), one()]);
+    await Promise.all([one(), one()]); // 둘씩 (셋이면 성우 API 분당 한도에 자주 걸렸다, 2026-10-23)
   }, [b, change]);
+  // 목소리 없는 클립 — 프로젝트를 열면 저절로 다시 만든다 (2026-10-23 사장님: 목소리 없음이 너무 자주). 글이 있고 끄지 않은 클립만, 열 때 한 번
+  const autoVoiced = useRef("");
+  useEffect(() => {
+    const key = project.file || project.dir;
+    if (!key || autoVoiced.current === key) return;
+    autoVoiced.current = key;
+    const ids = flatten(pref.current).items.filter((x) => x.clip.type === "voice" && !x.clip.voice && !x.clip.muted && clipText(x.clip).trim()).map((x) => x.clip.id);
+    if (ids.length) void revoice(ids);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.file, project.dir]);
 
   // 처음 열었을 때 목소리 없는 글 클립이 있으면 만든다
   useEffect(() => {
@@ -4041,7 +4051,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       {TL_MENUS.map((m) => (
         <div key={m.id} style={{ position: "relative" }} onPointerDown={(e) => e.stopPropagation()}>
           <button type="button" onClick={() => setTlMenu(tlMenu === m.id ? "" : m.id)} onMouseEnter={() => tlMenu && setTlMenu(m.id)}
-            style={{ height: 26, padding: "0 9px", border: 0, borderRadius: 4, background: tlMenu === m.id ? C.card : "transparent", color: C.text, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: "pointer" }}>{m.label}</button>
+            style={{ height: 26, padding: "0 9px", border: 0, borderRadius: 4, background: tlMenu === m.id ? C.cardHover : "transparent", color: C.text, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: "pointer" }}>{m.label}</button>
           {tlMenu === m.id && (
             <div style={{ position: "absolute", left: 0, top: 28, zIndex: 90, minWidth: 210, padding: 4, borderRadius: 5, background: C.card, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
               {m.items.map((x, i) => x === "|" ? <div key={i} style={{ height: 1, background: C.line, margin: "4px 2px" }} /> : (
@@ -4225,7 +4235,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     <div style={{ display: "flex", alignItems: "center", height: 26, padding: "0 4px", borderBottom: `1px solid ${C.line}`, background: C.panel, flexShrink: 0, overflowX: "auto", overflowY: "hidden" }}>
       {tabs.map(([k2, t]) => (
         <button key={k2} type="button" onClick={() => onTab?.(k2)}
-          style={{ height: 26, padding: "0 9px", border: 0, borderBottom: `2px solid ${active === k2 ? C.text : "transparent"}`, background: "transparent", color: active === k2 ? C.text : C.sub, fontSize: 11.5, fontWeight: active === k2 ? 700 : 500, fontFamily: FONT, cursor: onTab ? "pointer" : "default", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5 }}>
+          style={{ height: 26, padding: "0 9px", border: 0, borderBottom: `2px solid ${active === k2 ? C.sel : "transparent"}`, background: "transparent", color: active === k2 ? C.text : C.sub, fontSize: 11.5, fontWeight: active === k2 ? 700 : 500, fontFamily: FONT, cursor: onTab ? "pointer" : "default", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5 }}>
           {t}{active === k2 && <span style={{ color: C.dim, fontSize: 11 }}>≡</span>}
         </button>
       ))}
@@ -4376,7 +4386,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         <span style={{ width: 1, height: 20, background: C.line, margin: "0 6px" }} />
         {TABS.map((t) => (
           <button key={t} type="button" onClick={() => setTab(t)}
-            style={{ height: 44, padding: "0 12px", border: 0, borderBottom: `2px solid ${tab === t ? C.text : "transparent"}`, background: "transparent", color: tab === t ? C.text : C.sub, fontSize: 15, fontWeight: tab === t ? 800 : 600, fontFamily: FONT, cursor: "pointer" }}>
+            style={{ height: 44, padding: "0 12px", border: 0, borderBottom: `2px solid ${tab === t ? C.sel : "transparent"}`, background: "transparent", color: tab === t ? C.text : C.sub, fontSize: 15, fontWeight: tab === t ? 800 : 600, fontFamily: FONT, cursor: "pointer" }}>
             {t}
           </button>
         ))}
@@ -5329,7 +5339,7 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
             )}
           </div>
         )}
-        <Working title={state.text} frac={state.frac} detail={left > 0 ? `남은 시간 약 ${left >= 60 ? `${Math.floor(left / 60)}분 ` : ""}${left % 60}초 · 이 창을 닫지 마세요.` : "PC에서 만들고 있어요. 이 창을 닫지 마세요."} />
+        <Working ad={false} title={state.text} frac={state.frac} detail={left > 0 ? `남은 시간 약 ${left >= 60 ? `${Math.floor(left / 60)}분 ` : ""}${left % 60}초 · 이 창을 닫지 마세요.` : "PC에서 만들고 있어요. 이 창을 닫지 마세요."} />
       </Modal>
     );
   }
@@ -5427,7 +5437,7 @@ function FormatsDialog({ project, onClose }: { project: Project; onClose: () => 
         {row("file", "텍스트 (.txt)", "대본 글만", () => run(async () => { const f = await pick("txt"); return f === null ? null : b.project.exportText(project, "txt", f); }, "텍스트 파일을 저장했어요"))}
         {row("music", "소리 (.mp3)", "목소리·음악 소리만", () => run(async () => { const f = await pick("mp3"); if (f === null) return null; const r = await b.exportAudio(project, "mp3", { outFile: f }); return b.showFile(typeof r === "string" ? r : r.file); }, "소리 파일을 저장했어요"))}
         {row("music", "소리 (.wav)", "편집용 고음질 소리", () => run(async () => { const f = await pick("wav"); if (f === null) return null; const r = await b.exportAudio(project, "wav", { outFile: f }); return b.showFile(typeof r === "string" ? r : r.file); }, "소리 파일을 저장했어요"))}
-        {busy && <Working title="만드는 중…" />}
+        {busy && <Working title="만드는 중…" ad={false} />}
         {msg && <div style={{ fontSize: 14.5, color: C.sub, marginTop: 6 }}>{msg}</div>}
       </div>
     </Modal>

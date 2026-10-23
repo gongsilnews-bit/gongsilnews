@@ -37,14 +37,25 @@ if (allowed) {
       channels: () => ipcRenderer.invoke("studio:sns-channels"),
       get: (vacancyId) => ipcRenderer.invoke("studio:sns-get", vacancyId),
       write: (opts) => ipcRenderer.invoke("studio:sns-write", opts),
+      // 한 번에 모두 쓰기 — 기사·블로그·SNS 를 AI 한 번에 (진행 글은 blog.onProgress)
+      writeAll: (opts) => ipcRenderer.invoke("studio:all-write", opts),
       save: (opts) => ipcRenderer.invoke("studio:sns-save", opts),
       revise: (opts) => ipcRenderer.invoke("studio:sns-revise", opts),
       exportChannel: (opts) => ipcRenderer.invoke("studio:sns-export", opts),
+      // 평소 크롬 + 공실스튜디오 도우미 확장으로 그 채널에 사진·글 넣기 (2026-10-23)
+      fillByHelper: (opts) => ipcRenderer.invoke("studio:sns-helper-fill", opts),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:sns-progress", h);
         return () => ipcRenderer.removeListener("studio:sns-progress", h);
       },
+    },
+    // 작업 파일(.gsn·.gsm) — [저장하기] · [불러오기] · 저장 상태 · 폴더 열기 (2026-10-23)
+    work: {
+      save: (id) => ipcRenderer.invoke("studio:work-save", id),
+      status: (id) => ipcRenderer.invoke("studio:work-status", id),
+      show: (file) => ipcRenderer.invoke("studio:work-show", file),
+      open: () => ipcRenderer.invoke("studio:work-open"),
     },
     naver: {
       designs: () => ipcRenderer.invoke("studio:naver-designs"),
@@ -248,9 +259,9 @@ if (allowed) {
       transcribeClips: (p, targets) => ipcRenderer.invoke("video:transcribe-clips", p, targets), // 자동 자막 — 지금 클립에 글만 채우기
       ai: {
         script: (opts) => ipcRenderer.invoke("video:ai-script", opts),
-        scenes: (lines) => ipcRenderer.invoke("video:ai-scenes", lines),
+        scenes: (lines, opts) => ipcRenderer.invoke("video:ai-scenes", lines, opts),
         shorts: (clips, opts) => ipcRenderer.invoke("video:ai-shorts", clips, opts),
-        footage: (lines, items) => ipcRenderer.invoke("video:ai-footage", lines, items), // 대본 + 내 영상 → 문장마다 장면 (0.1.10부터)
+        footage: (lines, items, opts) => ipcRenderer.invoke("video:ai-footage", lines, items, opts), // 대본 + 내 영상 → 문장마다 장면 (0.1.10부터)
         edit: (lines, items, opts) => ipcRenderer.invoke("video:ai-edit", lines, items, opts), // [AI 편집] 편집 계획 (0.1.10부터)
         group: (lines) => ipcRenderer.invoke("video:ai-group", lines), // [씬 정리] (0.1.10부터)
         image: (dir, prompt, opts) => ipcRenderer.invoke("video:ai-image", dir, prompt, opts),
@@ -426,6 +437,12 @@ if (allowed) {
     },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),
+      // 쓰는 순서 — free(무료 먼저) · paid(유료 먼저) · freeOnly(무료만)
+      getOrder: () => ipcRenderer.invoke("studio:ai-get-order"),
+      setOrder: (o) => ipcRenderer.invoke("studio:ai-set-order", o),
+      // 내 계정 쓰는 방법 — manual(수동, 처음 값) · auto(자동)
+      getMethod: () => ipcRenderer.invoke("studio:ai-get-method"),
+      setMethod: (m) => ipcRenderer.invoke("studio:ai-set-method", m),
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
       check: (id) => ipcRenderer.invoke("studio:ai-check", id),
       finishLogin: () => ipcRenderer.invoke("studio:ai-finish-login"),

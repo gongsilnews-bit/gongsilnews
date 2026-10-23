@@ -19,7 +19,9 @@ async function say(text, out, { voiceId } = {}) {
   const models = [...new Set([ttsModel, "gemini-2.5-flash-preview-tts"].filter(Boolean))];
   let last = "";
   for (const model of models) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // 분당 요청 한도(429)에 걸리면 Google 이 알려 준 만큼 기다렸다가 다시 (2026-10-23 사장님: 목소리 없음이 너무 자주)
+    const TRIES = 6;
+    for (let attempt = 0; attempt < TRIES; attempt++) {
       let res, json;
       try {
         res = await fetch(`${API}/${model}:generateContent`, {
@@ -34,7 +36,7 @@ async function say(text, out, { voiceId } = {}) {
         json = await res.json().catch(() => ({}));
       } catch (e) {
         last = e && e.name === "TimeoutError" ? "응답 시간 초과" : "연결 실패";
-        if (attempt < 2) await new Promise((r) => setTimeout(r, attempt ? 5000 : 2000));
+        if (attempt < TRIES - 1) await new Promise((r) => setTimeout(r, attempt ? 5000 : 2000));
         continue;
       }
       if (res.ok) {
@@ -54,11 +56,20 @@ async function say(text, out, { voiceId } = {}) {
       if (res.status === 400 && /api key/i.test(msg)) throw new Error("Gemini API 키가 맞지 않아요. [AI 설정]에서 키를 확인해 주세요.");
       if (res.status === 401 || res.status === 403) throw new Error("Gemini API 키가 맞지 않거나 권한이 없어요. [AI 설정]에서 키를 확인해 주세요.");
       last = `${model}: ${msg.slice(0, 120)}`;
-      if (res.status === 429 && /quota|billing|exceeded/i.test(msg) && attempt === 2) throw new Error("Gemini 사용 한도를 넘었어요. Google AI Studio 에서 요금제·한도를 확인해 주세요.");
+      log.warn(`[제미나이 성우] 실패 ${res.status} (${attempt + 1}/${TRIES}) ${msg.slice(0, 160)}`);
+      // 하루 한도·결제 문제(PerDay·billing)는 기다려도 안 풀린다
+      if (res.status === 429 && /per ?day|billing|credit/i.test(msg)) throw new Error("Gemini 성우 하루 사용 한도를 넘었어요. 내일 다시 하거나 Google AI Studio 에서 요금제를 확인해 주세요.");
       if (res.status !== 429 && res.status !== 503 && res.status !== 500) break; // 혼잡이 아니면 다음 모델로
-      if (attempt < 2) await new Promise((r) => setTimeout(r, attempt ? 5000 : 2000));
+      if (attempt < TRIES - 1) {
+        // Google 이 알려 준 기다릴 시간 (RetryInfo retryDelay "34s") — 없으면 5·10·20초…
+        const det = (json && json.error && json.error.details) || [];
+        const rd = Number((String((det.find((d) => d && d.retryDelay) || {}).retryDelay || "").match(/[\d.]+/) || [])[0]);
+        const ms = Math.min(65000, rd > 0 ? rd * 1000 + 1000 : 5000 * 2 ** attempt);
+        await new Promise((r) => setTimeout(r, ms));
+      }
     }
   }
+  log.warn(`[제미나이 성우] 포기: ${last}`);
   throw new Error(`제미나이 성우를 만들지 못했어요 (${last}). 잠시 뒤 다시 해 주세요.`);
 }
 

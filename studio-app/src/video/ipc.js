@@ -687,10 +687,10 @@ function register(base) {
 
   /* ── 회원 AI ── */
   ipcMain.handle("video:ai-script", (e, opts) => vai.script(opts || {}, (t) => send(e, "video:progress", t)));
-  ipcMain.handle("video:ai-scenes", (e, lines) => vai.scenesFor(lines || [], (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-scenes", (e, lines, opts) => vai.scenesFor(lines || [], (t) => send(e, "video:progress", t), opts || {}));
   ipcMain.handle("video:ai-shorts", (e, clips, opts) => vai.shorts(clips || [], opts || {}, (t) => send(e, "video:progress", t)));
   // 대본 + 내 영상 → 문장마다 장면 (items: 내 자료 [{ path, kind, duration }])
-  ipcMain.handle("video:ai-footage", (e, lines, items) => vai.matchFootage(lines || [], items || [], (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-footage", (e, lines, items, opts) => vai.matchFootage(lines || [], items || [], (t) => send(e, "video:progress", t), opts || {}));
   // [AI 편집] — 글 AI 의 편집 계획 (화면·화면 글자·자막 강조·화면전환·음악)
   ipcMain.handle("video:ai-edit", (e, lines, items, opts) => vai.aiEdit(lines || [], items || [], opts || {}, (t) => send(e, "video:progress", t)));
   ipcMain.handle("video:ai-group", (e, lines) => vai.groupScenes(lines || [], (t) => send(e, "video:progress", t))); // [씬 정리]

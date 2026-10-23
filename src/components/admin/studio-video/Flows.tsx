@@ -276,7 +276,7 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
                 <div style={{ display: "flex", border: `1px solid ${C.line2}`, borderRadius: 5, overflow: "hidden" }}>
                   {(["grid", "list"] as const).map((v) => (
                     <button key={v} type="button" onClick={() => setViewMode(v)} title={v === "grid" ? "크게 보기" : "목록으로 보기"}
-                      style={{ height: 30, padding: "0 10px", border: 0, background: view === v ? C.card : "transparent", color: view === v ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{v === "grid" ? "▦ 크게" : "☰ 목록"}</button>
+                      style={{ height: 30, padding: "0 10px", border: 0, background: view === v ? C.cardHover : "transparent", color: view === v ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{v === "grid" ? "▦ 크게" : "☰ 목록"}</button>
                   ))}
                 </div>
                 {b.project.trashList && <button type="button" onClick={openTrash} style={tbtn(false)}><Icon name="trash" size={15} />휴지통</button>}
@@ -326,7 +326,7 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
                   </div>
                   <div style={{ padding: "10px 12px" }}>
                     {nameRow(r)}
-                    <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{r.ratio} · {fmtTime(r.duration || 0, false)} · {new Date(r.updatedAt).toLocaleDateString("ko-KR")}</div>
+                    <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{r.draft ? <span style={{ marginRight: 6, padding: "1px 6px", borderRadius: 4, background: C.sel, color: C.selText, fontSize: 11.5, fontWeight: 800 }}>작성 중 · {r.draft === 2 ? "초안 꾸미기" : "대본 작성"}</span> : null}{r.ratio} · {fmtTime(r.duration || 0, false)} · {new Date(r.updatedAt).toLocaleDateString("ko-KR")}</div>
                   </div>
                 </div>
               ))}
@@ -339,7 +339,7 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
                   {check(sel.includes(r.dir), () => toggle(sel, setSel, r.dir), true)}
                   <div style={{ width: 96, height: 54, flexShrink: 0, borderRadius: 4, overflow: "hidden", background: "#000" }}>{r.thumb && <img src={r.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>{nameRow(r)}</div>
-                  <span style={{ fontSize: 13, color: C.sub, flexShrink: 0, width: 210, textAlign: "right" }}>{r.ratio} · {fmtTime(r.duration || 0, false)} · {new Date(r.updatedAt).toLocaleDateString("ko-KR")}</span>
+                  <span style={{ fontSize: 13, color: C.sub, flexShrink: 0, width: 210, textAlign: "right" }}>{r.draft ? <span style={{ marginRight: 6, padding: "1px 6px", borderRadius: 4, background: C.sel, color: C.selText, fontSize: 11.5, fontWeight: 800 }}>작성 중 · {r.draft === 2 ? "초안 꾸미기" : "대본 작성"}</span> : null}{r.ratio} · {fmtTime(r.duration || 0, false)} · {new Date(r.updatedAt).toLocaleDateString("ko-KR")}</span>
                 </div>
               ))}
             </div>
@@ -2146,7 +2146,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   );
   if (phase === "saving") return <Modal title=""><Working title="녹화 파일을 저장하는 중…" detail={dirShown ? `${dirShown} 폴더에 저장하고 바로 편집 화면으로 가요` : "PC에 저장하고 바로 편집 화면으로 가요"} /></Modal>;
   const split = mode === "both" ? splitRects(camBox) : null; // 반반 배치면 화면·카메라 칸
-  const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: "0 16px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 });
+  const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: "0 16px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 });
   const dialog = (
     <Modal title="영상 녹화하기" onClose={phase === "rec" ? undefined : () => { stopAll(); onCancel(); }} width={980} controls
       win={bigWin ? { drag: winDrag, max: () => void b.record.console?.("max").then((v) => setBigMax(Boolean(v))), big: bigMax } : undefined}

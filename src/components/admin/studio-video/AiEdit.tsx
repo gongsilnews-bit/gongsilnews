@@ -1060,7 +1060,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   };
 
   /* ── 화면 ── */
-  const chip = (on: boolean): React.CSSProperties => ({ height: 34, padding: "0 13px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
+  const chip = (on: boolean): React.CSSProperties => ({ height: 34, padding: "0 13px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   let no = 0;
   const head = (text: React.ReactNode, right?: React.ReactNode) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>

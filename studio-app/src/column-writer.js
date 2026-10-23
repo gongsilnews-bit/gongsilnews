@@ -287,10 +287,16 @@ async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "n
   const parsed = nm.GWArticleJson.parse(text);
   if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
   const section = nm.gwNormalizeSection(parsed.article.section1, parsed.article.section2);
-  let draft = blogWriter.saveWritten(id, "article", parsed, { style: kind, length, chatUrl, ...section });
+  const draft = blogWriter.saveWritten(id, "article", parsed, { style: kind, length, chatUrl, ...section });
+  return autoCover ? addCover(baseUrl, id, draft, onProgress) : draft;
+}
 
+/* 다 쓴 기사에 AI 대표 이미지 (없을 때만) — 실패하면 coverError 를 붙여 돌려준다 */
+async function addCover(baseUrl, id, draft, onProgress = () => {}) {
+  const blogWriter = require("./blog-writer");
+  const source = readSource(id);
   const hasCover = (draft.media || []).some((m) => m.isCover);
-  if (autoCover && !hasCover) {
+  if (!hasCover) {
     try {
       onProgress("기사에 맞는 AI 대표 이미지를 만드는 중… (1~2분)");
       await blogWriter.useQuota(baseUrl, "ai_image");
@@ -307,4 +313,4 @@ async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "n
   return draft;
 }
 
-module.exports = { isColumn, fetchNews, openNews, openUrl, grabNews, create, get, list, readSource, articleOptions, writeArticle };
+module.exports = { isColumn, fetchNews, openNews, openUrl, grabNews, create, get, list, readSource, articleOptions, writeArticle, addCover };

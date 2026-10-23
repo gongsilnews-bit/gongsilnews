@@ -127,6 +127,8 @@ export function AllBox({ ids, selected, onChange, title, label }: { ids: string[
 }
 
 const voiceName = (id?: string) => findVoice(id)?.name || "AI 목소리";
+/** 클립 목소리 단추에 쓸 짧은 이름 — "Yohan Koo - Confident authority…" 처럼 긴 이름은 앞부분만 (2026-10-23 사장님) */
+const shortVoice = (id?: string) => { const n = voiceName(id).split(/s+[-–—|·(]s*/)[0].trim(); return n.length > 10 ? n.slice(0, 10) + "…" : n; };
 
 function ActionBtn({ icon, label, onClick, danger }: { icon: string; label: string; onClick: () => void; danger?: boolean }) {
   return (
@@ -307,10 +309,10 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* 1줄: 목소리 + 단어 단추 */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px" }}>
-          <button type="button" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openSound(c.id, r.left, r.bottom + 6); }} title="눌러서 볼륨·빠르기·목소리 바꾸기"
+          <button type="button" onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); p.actions.openSound(c.id, r.left, r.bottom + 6); }} title={`${c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) + " · " : ""}눌러서 볼륨·빠르기·목소리 바꾸기`}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${silent ? C.danger : C.line2}`, background: silent ? "rgba(239,68,68,0.12)" : "transparent", color: silent ? C.danger : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", flexShrink: 0 }}>
             {busy && c.type === "voice" ? <span className="gsv-spin" title="목소리 만드는 중" style={{ display: "inline-block", width: 14, height: 14, borderRadius: "50%", border: `2px solid ${C.accent}`, borderRightColor: "transparent" }} /> : <Icon name={silent ? "mute" : c.type === "voice" ? "voice" : "mic"} size={16} />}
-            {silent ? (c.type === "voice" ? `${voiceName(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? voiceName(c.voiceId || project.settings.voice.id) : "원본 소리"}
+            {silent ? (c.type === "voice" ? `${shortVoice(c.voiceId || project.settings.voice.id)} 무음` : "원본 소리 무음") : c.type === "voice" ? shortVoice(c.voiceId || project.settings.voice.id) : "원본 소리"}
           </button>
           {editing ? (
             // 한 줄로 — 글 칸 + [고치기 끝][그만두기] (아래 자막 고치기와 같은 모양)

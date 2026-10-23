@@ -43,7 +43,7 @@ function readRecent() {
 function remember(p) {
   const key = p.file || p.dir; // .gss 프로젝트는 파일 위치, 예전 폴더 방식은 폴더
   const list = readRecent().filter((r) => r.dir.toLowerCase() !== key.toLowerCase() && r.dir.toLowerCase() !== String(p.dir || "").toLowerCase());
-  list.unshift({ dir: key, name: p.name, ratio: p.ratio, method: p.method, updatedAt: p.updatedAt, thumb: p.thumb || "", duration: p.duration || 0 });
+  list.unshift({ dir: key, name: p.name, ratio: p.ratio, method: p.method, updatedAt: p.updatedAt, thumb: p.thumb || "", duration: p.duration || 0, draft: p.draft ? Number(p.draft.step) || 1 : 0 }); // draft = 대본 쓰고 편집 작성 중 단계 (2026-10-23)
   fs.mkdirSync(path.dirname(recentFile()), { recursive: true });
   fs.writeFileSync(recentFile(), JSON.stringify(list.slice(0, 100), null, 1));
 }

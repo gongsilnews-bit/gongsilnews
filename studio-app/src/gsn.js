@@ -23,7 +23,7 @@ const indexFile = () => path.join(userData(), "gsn-index.json");
 const readIndex = () => {
   try {
     const v = JSON.parse(fs.readFileSync(indexFile(), "utf8"));
-    return { since: Number(v.since) || 0, files: v.files && typeof v.files === "object" ? v.files : {} };
+    return { since: Number(v.since) || 0, files: v.files && typeof v.files === "object" ? v.files : {}, menuFolders: v.menuFolders || 0 };
   } catch {
     return { since: 0, files: {} };
   }
@@ -103,15 +103,70 @@ function partsOf(type, id) {
   return out;
 }
 
+/** .gsn 은 메뉴 이름 폴더에 (공실뉴스 · 뉴스칼럼 · 인테리어뉴스 · 리모델링뉴스), .gsm 은 지금처럼 날짜 폴더 */
+function menuFolder(id) {
+  const k = kindOf(id);
+  if (k === "column") return "뉴스칼럼";
+  if (k === "sim") return String(id).startsWith("int-") ? "인테리어뉴스" : "리모델링뉴스";
+  return "공실뉴스";
+}
+const outDirOf = (type, id) => (type === "gsn"
+  ? require("./studio-root").dir(TYPES.gsn.folder, "프로젝트", menuFolder(id))
+  : require("./studio-root").dir(TYPES[type].folder, "프로젝트", ymd()));
+
+/** 예전 날짜 폴더(프로젝트\20261023\…)에 있던 .gsn 을 메뉴 폴더로 옮긴다 — 한 번만, 빈 날짜 폴더는 지운다 */
+function moveOldGsn() {
+  const idx = readIndex();
+  if (idx.menuFolders) return;
+  const projRoot = require("./studio-root").dir(TYPES.gsn.folder, "프로젝트");
+  let moved = 0;
+  for (const [id, file] of Object.entries(idx.files)) {
+    if (!file || !file.toLowerCase().endsWith(".gsn") || !fs.existsSync(file)) continue;
+    if (!/^\d{8}$/.test(path.basename(path.dirname(file))) || path.dirname(path.dirname(file)) !== projRoot) continue; // 날짜 폴더에 있는 것만
+    const outDir = outDirOf("gsn", id);
+    fs.mkdirSync(outDir, { recursive: true });
+    let dest = path.join(outDir, path.basename(file));
+    for (let n = 2; fs.existsSync(dest); n++) dest = path.join(outDir, path.basename(file, ".gsn") + `_${n}.gsn`);
+    try { fs.renameSync(file, dest); idx.files[id] = dest; moved++; } catch (e) { log.warn(`[.gsn] 옮기지 못함 ${file}: ${e.message}`); }
+  }
+  // 색인에 없는 것(설치판 앱이 만든 것 등)도 — 파일 안의 작업 번호로 메뉴를 알아낸다
+  try {
+    for (const d of fs.readdirSync(projRoot)) {
+      const p = path.join(projRoot, d);
+      if (!/^\d{8}$/.test(d) || !fs.statSync(p).isDirectory()) continue;
+      for (const name of fs.readdirSync(p)) {
+        if (!name.toLowerCase().endsWith(".gsn")) continue;
+        const file = path.join(p, name);
+        try {
+          const meta = require("./video/gss").zipRead(file).find((e) => e.name === TYPES.gsn.meta);
+          const id = String(JSON.parse(meta.data.toString("utf8")).id || "");
+          if (!/^[\w-]+$/.test(id)) continue;
+          const outDir = outDirOf("gsn", id);
+          fs.mkdirSync(outDir, { recursive: true });
+          let dest = path.join(outDir, name);
+          for (let n = 2; fs.existsSync(dest); n++) dest = path.join(outDir, path.basename(name, ".gsn") + `_${n}.gsn`);
+          fs.renameSync(file, dest);
+          moved++;
+        } catch (e) { log.warn(`[.gsn] 옮기지 못함 ${file}: ${e.message}`); }
+      }
+      if (fs.readdirSync(p).length === 0) fs.rmdirSync(p);
+    }
+  } catch {}
+  idx.menuFolders = 1;
+  writeIndex(idx);
+  if (moved) log.info(`[.gsn] 메뉴 폴더로 옮김 ${moved}개`);
+}
+
 /** 작업 하나를 작업 파일로 쓴다 (돌려줌: 파일 위치 · 안 쓰면 "") */
-function write(type, id) {
+function write(type, id, force = false) {
   const T = TYPES[type];
   const idx = readIndex();
-  if (!T || !idx.since || !eligible(id, idx)) return "";
+  // force — [저장하기]: 기능을 켜기 전에 만든 작업도 저장한다 (준비만 돼 있으면)
+  if (!T || (force ? !ready(id) : !idx.since || !eligible(id, idx))) return "";
   let file = idx.files[id];
   if (!file || !fs.existsSync(file)) {
     const day = ymd();
-    const outDir = require("./studio-root").dir(T.folder, "프로젝트", day);
+    const outDir = outDirOf(type, id);
     fs.mkdirSync(outDir, { recursive: true });
     const base = `${day} ${nameOf(id)}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
     file = path.join(outDir, `${base}${T.ext}`);
@@ -152,6 +207,9 @@ function flushAll() {
 function start() {
   const idx = readIndex();
   if (!idx.since) { idx.since = Date.now(); writeIndex(idx); }
+  try { moveOldGsn(); } catch (e) { log.warn(`[.gsn] 메뉴 폴더로 옮기기 실패: ${e.message}`); }
+  // 네 메뉴 폴더를 미리 (처음 열어도 모양이 보이게)
+  for (const m of ["공실뉴스", "뉴스칼럼", "인테리어뉴스", "리모델링뉴스"]) { try { fs.mkdirSync(require("./studio-root").dir(TYPES.gsn.folder, "프로젝트", m), { recursive: true }); } catch {} }
   for (const d of [mediaRoot(), reportsRoot()]) fs.mkdirSync(d, { recursive: true });
   try {
     fs.watch(mediaRoot(), { recursive: true }, (_ev, rel) => schedule(workOf(String(rel || "").split(/[\\/]/)[0])));
@@ -236,4 +294,22 @@ function result(type, id) {
   return out;
 }
 
-module.exports = { EXT, TYPES, start, write, flushAll, kindOf, isGsn, isWorkFile, open };
+/** [저장하기] — 지금 바로 작업 파일로. 돌려줌 { file, savedAt } (준비 안 된 작업이면 file "") */
+function saveNow(id) {
+  const w = workOf(String(id || ""));
+  if (!w) return { file: "", savedAt: "" };
+  clearTimeout(timers.get(`${w.type}:${w.id}`));
+  timers.delete(`${w.type}:${w.id}`);
+  const file = write(w.type, w.id, true);
+  if (file) log.info(`[${TYPES[w.type].ext}] ${w.id} → ${file} (저장하기)`);
+  return { file, savedAt: file ? new Date().toISOString() : "" };
+}
+/** 이 작업의 작업 파일과 마지막 저장 시각 (없으면 빈칸) */
+function status(id) {
+  const w = workOf(String(id || ""));
+  const file = w ? readIndex().files[w.id] : "";
+  if (!file || !fs.existsSync(file)) return { file: "", savedAt: "" };
+  return { file, savedAt: fs.statSync(file).mtime.toISOString() };
+}
+
+module.exports = { EXT, TYPES, start, write, flushAll, kindOf, isGsn, isWorkFile, open, saveNow, status };

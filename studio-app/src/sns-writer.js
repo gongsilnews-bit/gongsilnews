@@ -92,7 +92,29 @@ async function useQuota(baseUrl, vacancyId) {
 }
 
 /* SNS 프롬프트 — [참조 기사]: 공실뉴스 기사를 썼으면 그 기사, 없으면 블로그, 둘 다 없으면 "없음" */
-function snsPrompt(vacancyId) {
+/* SNS 문체 (2026-10-23 사장님 회의) — 세 채널에 같이 쓴다. 문체만 바꾸고 사실은 그대로 */
+const TONES = {
+  polite: "공손체 — 존댓말(~습니다·~해요)로 차분하고 믿음직하게 안내하십시오.",
+  casual: "반말체 — 친구에게 말하듯 편한 반말(~했어·~야·~지)로 쓰십시오. 무례하거나 비꼬는 말은 쓰지 마십시오.",
+  hook: "후킹체 — 첫 줄에서 궁금증을 일으키는 한 문장(숫자·질문·반전)으로 시작하고, 문장은 짧게 끊어 끝까지 읽게 쓰십시오. 과장·낚시성 거짓은 쓰지 마십시오.",
+  expert: "전문가체 — 부동산 전문가가 짚어 주듯 입지·교통·가격·활용도를 근거와 함께 분석하는 말투로 쓰십시오. 수익률·시세는 [확인된 매물 정보]에 있는 숫자만 쓰십시오.",
+  story: "스토리체 — 현장을 다녀온 사람이 들려주듯 장면과 이야기로 풀어 쓰십시오. 없는 일화나 사람을 지어내지 마십시오.",
+  short: "요약체 — 핵심만 3~5줄로 아주 짧게, 줄마다 한 가지 정보만 쓰십시오.",
+};
+/* tone — 문자열(세 채널 같이) 또는 { instagram, threads, facebook } (채널마다 따로, 2026-10-23 사장님). 모두 공손체면 덧붙이지 않는다 */
+const CH_NAME = { instagram: "인스타그램", threads: "스레드", facebook: "페이스북" };
+function toneLine(tone) {
+  const per = tone && typeof tone === "object" ? tone : { instagram: tone, threads: tone, facebook: tone };
+  const pick = Object.fromEntries(CHANNELS.map((ch) => [ch, TONES[per[ch]] ? per[ch] : "polite"]));
+  if (CHANNELS.every((ch) => pick[ch] === "polite")) return "";
+  return `\n\n[문체 지정 — 위 지시보다 우선 · 채널마다 따로]\n${CHANNELS.map((ch) => `- ${CH_NAME[ch]} 글: ${TONES[pick[ch]]}`).join("\n")}\n문체만 바꾸고, 사실은 [확인된 매물 정보]·참조 기사에 있는 것만 쓰십시오. 출력 JSON 형식은 그대로 지키십시오.`;
+}
+
+function snsPrompt(vacancyId, tone = "") {
+  return snsPromptBase(vacancyId) + toneLine(tone);
+}
+const NO_REF = { title: "(참조 기사 없음)", subtitles: [], body: "참조 기사 없이, 아래 [확인된 매물 정보](처음 분석·캡처한 공실 정보)만 사용해 작성하십시오." };
+function snsPromptBase(vacancyId) {
   const blog = readJson(blogWriter.blogFile(vacancyId));
   const article =
     blogWriter.referenceArticle(vacancyId) ||
@@ -101,9 +123,10 @@ function snsPrompt(vacancyId) {
       : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." });
   if (blogWriter.isColumn(vacancyId)) return nm.gwBuildSnsPrompt({ article, source: require("./column-writer").readSource(vacancyId) });
   if (blogWriter.isSim(vacancyId)) return simW().lib(vacancyId).gwBuildSnsPrompt({ vacancy: simW().resultOf(vacancyId).vacancy, article });
+  // 공실뉴스(매물) SNS 는 처음 분석·캡처한 공실 정보만으로 쓴다 — 블로그·기사를 바탕으로 하지 않는다 (2026-10-23 사장님)
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
-  return sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
+  return sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article: NO_REF });
 }
 
 /* [수정 요청]: 한 채널 글만 같은 대화에 이어 보내 고친다 (확장과 같다). 사진은 그대로 */
@@ -130,8 +153,8 @@ async function revise({ vacancyId, channel, request }, onProgress = () => {}) {
   return forWeb(data).channels[channel];
 }
 
-async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
-  if (blogWriter.isSim(vacancyId)) return writeSim({ baseUrl, vacancyId }, onProgress);
+async function write({ baseUrl, vacancyId, tone = "" }, onProgress = () => {}) {
+  if (blogWriter.isSim(vacancyId)) return writeSim({ baseUrl, vacancyId, tone }, onProgress);
   const column = blogWriter.isColumn(vacancyId);
   const analysis = column ? null : readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!column && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
@@ -147,7 +170,7 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
     listing = await fetchListing(baseUrl, vacancyId, saleKind);
   }
 
-  const prompt = snsPrompt(vacancyId);
+  const prompt = snsPrompt(vacancyId, tone);
   let chatUrl = "";
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
 
@@ -181,7 +204,7 @@ function pickMedia(vacancyId) {
 }
 
 /* 인테리어·리모델링 SNS — 결과표로 쓴 기사가 있어야 한다. 매물과 연결된 시뮬레이션만 매물 출처(표시·광고)를 붙인다 */
-async function writeSim({ baseUrl, vacancyId }, onProgress) {
+async function writeSim({ baseUrl, vacancyId, tone = "" }, onProgress) {
   const S = simW();
   const L = S.lib(vacancyId);
   const { result, vacancy } = S.resultOf(vacancyId);
@@ -196,7 +219,7 @@ async function writeSim({ baseUrl, vacancyId }, onProgress) {
     if (problems.length) throw new Error(`${result.saleKind ? "물건" : "부동산 표시·광고 필수"} 정보가 없어 멈췄습니다: ${problems.join(", ")}. 공실의 등록자 정보를 확인해 주세요.`);
   }
   let chatUrl = "";
-  const text = await chatgpt.ask(snsPrompt(vacancyId), { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
+  const text = await chatgpt.ask(snsPrompt(vacancyId, tone), { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
   onProgress("받은 글을 정리하는 중…");
   const parsed = L.gwSnsParse(text);
   if (!parsed.ok) throw new Error(parsed.reason || "SNS 글을 읽지 못했습니다.");
@@ -250,6 +273,13 @@ const safeName = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/
 
 /* [사진·글 저장]: 문서\공실스튜디오\01 뉴스SNS발행\<채널>\날짜\<작업 이름>\ 에 글(txt)과 채널 비율 사진을 만들고 폴더를 연다 */
 async function exportChannel({ vacancyId, channel }) {
+  const r = await channelFiles({ vacancyId, channel });
+  shell.openPath(r.folder);
+  return { folder: r.folder, saved: r.files.length, total: r.total };
+}
+
+/* 채널 비율로 자른 사진·글을 폴더에 만든다 — [사진·글 저장]·도우미 채우기 공용 */
+async function channelFiles({ vacancyId, channel }) {
   const data = readJson(snsFile(vacancyId));
   if (!data) throw new Error("먼저 SNS 글을 써 주세요.");
   const c = sns.GW_SNS_CHANNELS[channel];
@@ -267,13 +297,49 @@ async function exportChannel({ vacancyId, channel }) {
   const byId = new Map(data.pool.map((m) => [m.id, m]));
   const list = (data.media[channel] || []).map((id) => byId.get(id)).filter(Boolean).slice(0, c.maxMedia);
   let saved = 0;
+  const files = [];
   for (let i = 0; i < list.length; i++) {
     const no = String(i + 1).padStart(2, "0");
-    const ok = await cropTo(list[i].file, path.join(folder, `${no}${i === 0 ? "_대표" : ""}${list[i].kind === "ai" ? "_AI" : ""}.jpg`), channel, list[i].kind);
-    if (ok) saved++;
+    const dest = path.join(folder, `${no}${i === 0 ? "_대표" : ""}${list[i].kind === "ai" ? "_AI" : ""}.jpg`);
+    const ok = await cropTo(list[i].file, dest, channel, list[i].kind);
+    if (ok) { saved++; files.push(dest); }
   }
-  shell.openPath(folder);
-  return { folder, saved, total: list.length };
+  return { folder, files, total: list.length, text: web.composed.text, posts: web.composed.posts || [] };
 }
 
-module.exports = { channelInfo, get, write, revise, save, exportChannel };
+/* [도우미로 채우기] — 평소 크롬에 그 채널을 열고, 공실스튜디오 도우미 확장이 사진·글을 넣는다 ([공유하기]·[게시]는 회원이)
+   30초 안에 도우미가 안 받아 가면 HELPER_NONE (화면이 [글 복사]·[사진·글 저장]을 안내) */
+const HOME = { instagram: "https://www.instagram.com/", threads: "https://www.threads.com/", facebook: "https://www.facebook.com/" };
+async function fillByHelper({ vacancyId, channel }, onProgress = () => {}) {
+  if (!HOME[channel]) throw new Error("알 수 없는 채널입니다.");
+  const c = sns.GW_SNS_CHANNELS[channel];
+  onProgress("사진을 채널 비율로 맞추는 중…");
+  const r = await channelFiles({ vacancyId, channel });
+  const photos = r.files.map((f) => `data:image/jpeg;base64,${fs.readFileSync(f).toString("base64")}`);
+  const helper = require("./helper-server");
+  const id = helper.addJob(channel, { channel, label: c.label, text: r.text, posts: r.posts, photos });
+  void shell.openExternal(HOME[channel]);
+  onProgress(`평소 크롬에 ${c.label}을(를) 열었어요. 공실스튜디오 도우미가 채우기를 기다리는 중…`);
+  if (!(await helper.wait(id, "taken", 45000))) {
+    helper.cancel(id);
+    throw new Error(`HELPER_NONE: 공실스튜디오 도우미(크롬 확장)가 응답하지 않았어요. [글 복사]·[사진·글 저장]으로 직접 올리거나, 도우미를 설치해 주세요.`);
+  }
+  onProgress(`도우미가 ${c.label}에 사진 ${photos.length}장과 글을 넣는 중… (크롬 창을 닫지 마세요)`);
+  const done = await helper.wait(id, "done", 180000);
+  if (!done) return { ok: true, partial: true, note: `크롬 창의 도우미 상자를 확인해 주세요. 확인하고 [공유하기]·[게시]는 직접 눌러 주세요.` };
+  log.info(`[도우미] ${channel} ${vacancyId} ${JSON.stringify(done).slice(0, 200)}`);
+  return { ...done, folder: r.folder };
+}
+
+/** 한 번에 모두 쓰기(all-writer.js)가 받은 SNS 글을 따로 쓴 것과 같은 자리에 저장 */
+function saveAll(vacancyId, { noun, listing, posts, column = false }) {
+  const { pool, media } = pickMedia(vacancyId);
+  const data = column
+    ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(require("./column-writer").readSource(vacancyId)), posts, pool, media, chatUrl: "", writtenAt: new Date().toISOString() }
+    : { vacancyId, noun, listing, posts, pool, media, chatUrl: "", writtenAt: new Date().toISOString() };
+  fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
+  log.info(`[SNS] ${vacancyId} ${Object.keys(posts).join(",")} (한 번에)`);
+  return forWeb(data);
+}
+
+module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, useQuota, saveAll, toneLine, NO_REF };

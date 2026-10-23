@@ -8,7 +8,7 @@ import { deleteStudioAd, listStudioAds, lookupYoutube, saveAdvertiser, saveStudi
 
 const PLACES: { id: string; name: string }[] = [
   { id: "ai", name: "AI 덮개 (글·대본 쓰기)" },
-  { id: "export", name: "영상 내보내기" },
+  { id: "export", name: "영상 만들기·내보내기 진행 화면" },
   { id: "survey", name: "AI 전수조사" },
 ];
 const STATUS: Record<AdStatus, { name: string; color: string }> = {
@@ -112,7 +112,7 @@ export default function StudioAdsSection({ theme }: { theme: AdminTheme }) {
                 {advs.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_house ? " (자체)" : ""}</option>)}
               </select>
             </label>
-            <label style={lab}>[자세히 보기] 누르면 열 주소 (없으면 단추 없음)
+            <label style={lab}>광고주 링크 — 회원이 영상이나 [광고주 사이트 열기 ↗]를 누르면 새 창으로 열려요 (비우면 단추 없음)
               <input style={input} value={edit.link_url || ""} placeholder="https://…" onChange={(e) => setEdit({ ...edit, link_url: e.target.value })} />
             </label>
             <div style={lab}>보여 줄 자리
@@ -149,7 +149,7 @@ export default function StudioAdsSection({ theme }: { theme: AdminTheme }) {
               ) : <div style={{ color: "#94a3b8", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>주소를 넣으면 여기 나와요</div>}
             </div>
             <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 6 }}>
-              AD{edit.link_url ? " · [자세히 보기 ↗]" : ""}
+              AD{edit.link_url ? " · [광고주 사이트 열기 ↗]" : ""}
             </div>
           </div>
         </div>

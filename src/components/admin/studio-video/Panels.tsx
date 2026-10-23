@@ -42,8 +42,8 @@ export function Side({ title, onClose, children, footer, titleExtra }: { title: 
   );
 }
 
-const tabBtn = (on: boolean): React.CSSProperties => ({ flex: 1, height: 38, border: 0, borderBottom: `2px solid ${on ? C.text : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
-const chip = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
+const tabBtn = (on: boolean): React.CSSProperties => ({ flex: 1, height: 38, border: 0, borderBottom: `2px solid ${on ? C.sel : "transparent"}`, background: "transparent", color: on ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" });
+const chip = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
 
 /* ── 자료 고르기 ── */
 export type LibPickAction = "replace" | "insert" | "overlay";
@@ -982,7 +982,7 @@ export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onS
               <button type="button"
                 onClick={() => (auto ? onChange({ posAuto: false }) : onChange({ posAuto: true, position: autoSubPosition(ratio), x: undefined, y: undefined }))}
                 title={auto ? "자동 — 영상 비율에 맞춰 (누르면 직접 고르기)" : "눌러서 자동으로 (세로 영상 = 중하단, 가로·정사각 = 하단)"}
-                style={{ height: 28, padding: "0 12px", borderRadius: 5, border: `1px solid ${auto ? C.text : C.line2}`, background: auto ? C.text : "transparent", color: auto ? C.bg : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>자동</button>
+                style={{ height: 28, padding: "0 12px", borderRadius: 5, border: `1px solid ${auto ? C.sel : C.line2}`, background: auto ? C.sel : "transparent", color: auto ? C.selText : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>자동</button>
             </div>
             {!auto && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

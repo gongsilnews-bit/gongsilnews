@@ -3,14 +3,15 @@
 // 영상 꾸미기 (대본 쓰고 편집 2단계) — 왼쪽 예시 화면 + 오른쪽 1~6 항목, 아래 샘플 (2026-10-22 사장님 회의)
 //  1 자막 스타일 · 2 왼쪽 위 제목 · 3 오른쪽 위 채널명 (로고 그림도) · 4 화면전환 · 5 썸네일 · 6 엔딩
 //  고른 것은 이 PC 에 기억해 다음 영상에도. 채널명은 내 중개사무소 이름이 기본 (지어내지 않음)
-import React, { useEffect, useMemo, useState } from "react";
-import type { Ratio, SubtitleSettings } from "./types";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import type { AnimIn, LayerAnim, Ratio, SubtitleSettings } from "./types";
+import { AnimBody } from "./Anim";
 import { C, FONT, input } from "./ui";
 import { SUB_PRESETS, gradCss, subLookCss, type SubLook } from "./SubPresets";
 import { fontCss } from "@/lib/studio-video/fonts";
 import { loadFont } from "./Pickers";
 import { TRANSITIONS, transStyle, type TransType } from "./transitions";
-import { SFX_LIST } from "./timeline";
+import { SFX_LIST, animAt, animCss } from "./timeline";
 import { TransFx } from "./TransFx";
 import { AD_LAW_LABELS, TEMPLATES, TPL_PREFIX, drawTemplate, tplFonts, tplTextOf } from "./Templates";
 import { CAT_SIZES, LAYOUTS, layoutFonts, loadSampleBg, previewOf, type Layout } from "@/components/admin/studio-photo/layouts";
@@ -184,7 +185,8 @@ export function twoTitleCanvas(color: string, l1: string, l2: string, scale = 1,
   }
   return c;
 }
-export type Deco = { sub: string; title: string; titleText: string; /** 2단 제목 (아래 줄) */ title2?: string; channel: string; channelText: string; /** 채널 로고 — 오른쪽 위 채널명 옆 (JPG·PNG, 작게 줄인 data URL) */ logo?: string; /** 제목 로고 — 왼쪽 위 "로고 + 한 줄" 제목 앞 (채널 로고와 따로) */ titleLogo?: string; /** 화면전환 — 여러 개 고르면 클립마다 차례로 (빈 목록 = 없음) */ trans: TransType[]; thumb: string; end: string; /** 화면 전체 PNG (1920×1080, 투명 배경) — 있으면 이것만 쓴다: 제목 칸 · 채널명 칸 (2026-10-22 사장님) */ titleOv?: string; chOv?: string; /** 화면전환 소리 — auto = 전환마다 어울리는 소리 · none = 없음 · 그 밖 = 효과음 이름 (2026-10-22 사장님) */ transSfx?: string; /** 전환 넣는 곳 — auto 클립마다 · none 없음 · scene 씬 바뀌는 곳만 · scene_auto 씬은 고른 전환 + 씬 안은 짧은 디졸브 (2026-10-23) */ transMode?: TransMode };
+export type Deco = { sub: string; title: string; titleText: string; /** 2단 제목 (아래 줄) */ title2?: string; channel: string; channelText: string; /** 채널 로고 — 오른쪽 위 채널명 옆 (JPG·PNG, 작게 줄인 data URL) */ logo?: string; /** 제목 로고 — 왼쪽 위 "로고 + 한 줄" 제목 앞 (채널 로고와 따로) */ titleLogo?: string; /** 화면전환 — 여러 개 고르면 클립마다 차례로 (빈 목록 = 없음) */ trans: TransType[]; thumb: string; end: string; /** 화면 전체 PNG (1920×1080, 투명 배경) — 있으면 이것만 쓴다: 제목 칸 · 채널명 칸 (2026-10-22 사장님) */ titleOv?: string; chOv?: string; /** 화면전환 소리 — auto = 전환마다 어울리는 소리 · none = 없음 · 그 밖 = 효과음 이름 (2026-10-22 사장님) */ transSfx?: string; /** 미리보기에서 끌어 옮긴 자리 — 제목·채널명·자막 (2026-10-23) */ drag?: Partial<Record<"title" | "ch" | "sub", DragOff>>; /** 크기 (%) — 제목·채널명·자막, 100 = 기본. 화면 비율마다 따로 */ size?: { title?: number; ch?: number; sub?: number }; sizeR?: Record<string, { title?: number; ch?: number; sub?: number }>; dragR?: Record<string, Partial<Record<"title" | "ch" | "sub", DragOff>>>; /** 애니메이션 — 편집 화면과 같은 값 (인·아웃·반복·효과음·단어별) */ animFull?: { sub?: LayerAnim; title?: LayerAnim; ch?: LayerAnim }; /** (예전) 나타나기 애니메이션 — 자막(줄마다)·제목·채널명. "" = 없음 · word = 자막 단어별(쇼츠식) */ anim?: { sub?: AnimIn | ""; subWord?: boolean; title?: AnimIn | ""; ch?: AnimIn | ""; /** 나타날 때 효과음 — "" 없음 · auto 효과에 맞게 · 그 밖 = 소리 이름 */ sfx?: { sub?: string; title?: string; ch?: string } }; /** 전환 넣는 곳 — auto 클립마다 · none 없음 · scene 씬 바뀌는 곳만 · scene_auto 씬은 고른 전환 + 씬 안은 짧은 디졸브 (2026-10-23) */ transMode?: TransMode };
+export type DragOff = { dx: number; dy: number; cx: number; cy: number };
 export type TransMode = "auto" | "none" | "scene" | "scene_auto";
 export const TRANS_MODES: { id: TransMode; label: string; desc: string }[] = [
   { id: "auto", label: "자동", desc: "클립이 바뀔 때마다 고른 전환" },
@@ -233,13 +235,56 @@ const TABS: { id: keyof Pick<Deco, "sub" | "title" | "channel" | "trans" | "thum
   { id: "trans", n: 4, name: "화면전환" }, { id: "thumb", n: 5, name: "썸네일" }, { id: "end", n: 6, name: "엔딩" },
 ];
 
-export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos, subLines, deco, setDeco, agency, onAiTitle, aiTitleBusy }: {
+export function WizardDeco({ fill = "cover", bgs = [], ratio, firstLine, subOn, setSubOn, subPos, subLines, deco, setDeco, agency, onAiTitle, aiTitleBusy }: {
+  /** 채우기 — 원본 비율(contain) · 꽉 채우기(cover) · 흐린 배경(blur) */ fill?: "cover" | "contain" | "blur";
   /** 고른 화면(첨부·공실 사진)의 그림 주소 — 있으면 예시 화면 대신 */ bgs?: string[];
   ratio: Ratio; firstLine: string; subOn: boolean; /** 자막 켜고 끄기 (샘플 [자막 없음]) */ setSubOn?: (v: boolean) => void; subPos: SubtitleSettings["position"]; subLines: number;
   deco: Deco; setDeco: (d: Deco) => void; agency: Agency | null; onAiTitle: () => void; aiTitleBusy: boolean;
 }) {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("sub");
   const [pop, setPop] = useState(false); // 항목 샘플 팝업
+  const [zoom, setZoom] = useState(false);
+  const [sub2, setSub2] = useState<"style" | "anim" | "sfx">("style"); // 팝업 안 탭
+  const [picked, setPicked] = useState<"" | "title" | "ch" | "sub">(""); // 바깥 미리보기에서 고른 묶음 (크기 바꾸기)
+  // 애니메이션 미리 보기 — 고르면 그 묶음이 한 번 움직인다
+  const [demo, setDemo] = useState<{ k: "title" | "ch" | "sub"; at: number; part: "in" | "out" | "all" } | null>(null);
+  const [, setNowT] = useState(0);
+  useEffect(() => {
+    if (!demo) return;
+    let raf = 0;
+    const step = () => { setNowT(performance.now()); if (performance.now() - demo.at < (demo.part === "all" ? 3300 : 1500)) raf = requestAnimationFrame(step); else setDemo(null); };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [demo]);
+  // 고른 묶음 둘레 (미리보기마다 — 작은 미리보기 · 크게 보기) — 모서리 손잡이 자리
+  const [hb, setHb] = useState<Record<string, { l: number; t: number; w: number; h: number }>>({});
+  useLayoutEffect(() => {
+    const out: Record<string, { l: number; t: number; w: number; h: number }> = {};
+    if (picked) document.querySelectorAll<HTMLElement>("[data-gsframe]").forEach((fr) => {
+      const g = fr.querySelector<HTMLElement>(`[data-grp="${picked}"]`);
+      if (!g) return;
+      const rs = [...g.children].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 0);
+      if (!rs.length) return;
+      const b = fr.getBoundingClientRect();
+      const l = Math.min(...rs.map((r) => r.left)), t = Math.min(...rs.map((r) => r.top));
+      out[fr.dataset.gsframe!] = { l: l - b.left, t: t - b.top, w: Math.max(...rs.map((r) => r.right)) - l, h: Math.max(...rs.map((r) => r.bottom)) - t };
+    });
+    if (JSON.stringify(out) !== JSON.stringify(hb)) setHb(out);
+  });
+  const startResize = (e: React.PointerEvent, key: string) => {
+    if (!picked) return;
+    e.preventDefault(); e.stopPropagation();
+    const r = hb[key];
+    if (!r) return;
+    const k = picked, s0 = sizeOf(k), sx = e.clientX, sy = e.clientY, diag = Math.max(20, r.w + r.h);
+    const move = (ev: PointerEvent) => setSize(k, s0 * (1 + (ev.clientX - sx + ev.clientY - sy) / diag));
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const play = (k: "title" | "ch" | "sub", part: "in" | "out" | "all" = "in") => setDemo({ k, part, at: performance.now() + 150 }); // all = 반복·단어·줄 — 3초 동안
+  const sizeOf = (k: "title" | "ch" | "sub") => szR[k] || 100;
+  const setSize = (k: "title" | "ch" | "sub", v: number) => set({ sizeR: { ...(deco.sizeR || {}), [ratio]: { ...szR, [k]: Math.max(50, Math.min(200, Math.round(v / 5) * 5)) } } }); // 미리보기 크게 (돋보기) — 크게 보며 자막·제목 자리 옮기기
   const [tick, setTick] = useState(0);
   const [logoErr, setLogoErr] = useState("");
   const [transMsg, setTransMsg] = useState("");
@@ -248,6 +293,10 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
   const [transDrag, setTransDrag] = useState(-1); // 끌고 있는 칸 // 화면전환 — 바꿀 칸 (1~5, -1 = 빈 칸부터)
   const [ovErr, setOvErr] = useState("");
   const set = (p: Partial<Deco>) => { const n = { ...deco, ...p }; setDeco(n); saveDeco(n); };
+  // 끌어 놓은 자리·크기 — 화면 비율마다 따로 (2026-10-23 사장님)
+  const dg = (deco.dragR || {})[ratio] || {};
+  const setDg = (v: Partial<Record<"title" | "ch" | "sub", DragOff>>) => set({ dragR: { ...(deco.dragR || {}), [ratio]: v } });
+  const szR = (deco.sizeR || {})[ratio] || {};
   const [rw, rh] = ratio.split(":").map(Number);
   // 썸네일 · 엔딩 샘플 그림
   const ytSize = CAT_SIZES.youtube[0];
@@ -312,13 +361,57 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
     ...(s.outlineWidth ? { WebkitTextStroke: `${Math.max(1, s.outlineWidth * fs / 40)}px ${s.outline}`, paintOrder: "stroke fill" } : {}),
   });
   /** 예시 화면 한 장 — 자막 · 제목 · 채널명 */
-  const frame = (W: number, H: number, o: { forceSub?: boolean; ov?: (string | undefined)[]; news?: string; sub?: SubLook | null; title?: TextStyle | null; ch?: TextStyle | null; text?: string; bg?: string }) => {
+  /** 끌어 옮기기 — 묶음(제목·채널명·자막) 하나를 통째로 */
+  const startDrag = (k: "title" | "ch" | "sub", e: React.PointerEvent<HTMLDivElement>) => {
+    const wrap = e.currentTarget, box = wrap.parentElement?.getBoundingClientRect();
+    if (!box || e.button !== 0) return;
+    e.preventDefault();
+    const rs = [...wrap.children].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 0);
+    if (!rs.length) return;
+    const l = Math.min(...rs.map((r) => r.left)), t = Math.min(...rs.map((r) => r.top)), r0 = Math.max(...rs.map((r) => r.right)), b0 = Math.max(...rs.map((r) => r.bottom));
+    const cur = dg[k] || { dx: 0, dy: 0, cx: 0, cy: 0 };
+    const cx = ((l + r0) / 2 - box.left) / box.width - cur.dx, cy = ((t + b0) / 2 - box.top) / box.height - cur.dy; // 옮기기 전 가운데
+    const sx = e.clientX, sy = e.clientY;
+    const move = (ev: PointerEvent) => {
+      const dx = +(cur.dx + (ev.clientX - sx) / box.width).toFixed(4), dy = +(cur.dy + (ev.clientY - sy) / box.height).toFixed(4);
+      setDg({ ...dg, [k]: { dx, dy, cx: +cx.toFixed(4), cy: +cy.toFixed(4) } });
+    };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const demoLook = (k: "title" | "ch" | "sub", W: number, H: number) => {
+    if (!demo || demo.k !== k) return null;
+    const af = deco.animFull?.[k] || {};
+    const id = String(af.in || (deco.anim || {})[k] || (demo.part === "in" ? "fade" : ""));
+    const dur = Number(af.dur) || 0.5;
+    const t = Math.max(0, (performance.now() - demo.at) / 1000);
+    // 인: 나타나기 · 아웃: 머물다 사라지기 · 반복(강조·확대): 3초 동안 (나타난 뒤 계속)
+    const an = demo.part === "out" ? { out: String(af.out || "fade"), dur } : demo.part === "all" ? { in: id || undefined, emph: af.emph, grow: af.grow, dur } : { in: id, dur };
+    return animCss(animAt(an, t, 0, demo.part === "out" ? 1.3 : demo.part === "all" ? 6 : 3), W, H) || null;
+  };
+  const demoWords = (text: string, on: boolean): React.ReactNode => {
+    const af = deco.animFull?.sub;
+    if (!on || !demo || demo.k !== "sub" || demo.part !== "all" || af?.wshow !== "word") return text;
+    const ws = String(text).split(/s+/).filter(Boolean);
+    const t = Math.max(0, (performance.now() - demo.at) / 1000);
+    const n = Math.min(ws.length, Math.floor(t / Math.max(0.25, 3 / Math.max(1, ws.length))) + 1);
+    return ws.slice(0, n).map((w, i) => <span key={i} style={i === n - 1 && af.whl !== undefined ? { color: af.wcolor || "#FFE14D" } : undefined}>{w}{i < n - 1 ? " " : ""}</span>);
+  };
+  const demoT = (k: "title" | "ch" | "sub", W: number, H: number) => { const c = demoLook(k, W, H); return c && typeof c.transform === "string" ? " " + c.transform : ""; };
+  const demoO = (k: "title" | "ch" | "sub") => { const c = demoLook(k, 100, 100); return c && c.opacity !== undefined ? Number(c.opacity) : undefined; };
+  const frame = (W: number, H: number, o: { drag?: boolean; forceSub?: boolean; ov?: (string | undefined)[]; news?: string; sub?: SubLook | null; title?: TextStyle | null; ch?: TextStyle | null; text?: string; bg?: string }) => {
     const l = { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bgOpacity: 0.62, ...(o.sub || {}) } as SubLook & { bgOpacity: number };
     const fs = Math.max(8, Math.round(Math.min(W, H) * (ratio === "9:16" ? 0.075 : 0.065)));
     const pos = subPos === "top" ? { top: H * 0.2 } : subPos === "middle-high" ? { top: H * 0.3 } : subPos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : subPos === "middle-low" ? { bottom: H * 0.26 } : { bottom: H * 0.08 };
     const tfs = Math.max(7, Math.round(Math.min(W, H) * 0.055));
     return (
-      <div style={{ position: "relative", width: W, height: H, borderRadius: 6, overflow: "hidden", background: `#000 url("${o.bg || bgA}") center / cover no-repeat`, flexShrink: 0 }}>
+      <div data-gsframe={o.drag ? String(W) : undefined} onPointerDown={o.drag ? (e) => { if (!(e.target as HTMLElement).closest("[data-grp] > *, [data-gshandle]")) setPicked(""); } : undefined}
+        style={{ position: "relative", width: W, height: H, borderRadius: 6, overflow: "hidden", background: `#000 url("${o.bg || bgA}") center / ${fill === "cover" ? "cover" : "contain"} no-repeat`, flexShrink: 0 }}>
+        {fill === "blur" && <><div style={{ position: "absolute", inset: -12, background: `url("${o.bg || bgA}") center / cover`, filter: "blur(10px) brightness(0.8)" }} /><div style={{ position: "absolute", inset: 0, background: `url("${o.bg || bgA}") center / contain no-repeat` }} /></>}
+        {o.drag && <style>{".gsdrag > * { pointer-events: auto; cursor: move; } .gsdrag:hover > * { outline: 1px dashed rgba(255,255,255,0.85); outline-offset: 2px; } .gspick > * { outline: 2px solid #3b82f6; outline-offset: 2px; }"}</style>}
+        <div data-grp="title" className={o.drag ? "gsdrag" + (picked === "title" ? " gspick" : "") : undefined} onPointerDown={o.drag ? (e) => { setPicked("title"); startDrag("title", e); } : undefined} onWheel={o.drag ? (e) => { setPicked("title"); setSize("title", sizeOf("title") + (e.deltaY < 0 ? 5 : -5)); } : undefined} title={o.drag ? "끌어서 옮기기 · 휠로 크기" : undefined}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", transform: `${o.drag && dg.title ? `translate(${dg.title.dx * W}px, ${dg.title.dy * H}px) ` : ""}scale(${(szR.title || 100) / 100})${demoT("title", W, H)}`, opacity: demoO("title"), transformOrigin: "3% 5%" }}>
         {o.title && !o.title.two && !o.title.logoPill && !o.title.newsBar && <div style={{ position: "absolute", left: W * 0.03, top: H * 0.04, ...textCss(o.title.look, tfs) }}>{titleText}</div>}
         {o.title?.logoPill && (
           <div style={{ position: "absolute", left: W * 0.02, top: H * 0.03, display: "flex", alignItems: "center", gap: tfs * 0.25, maxWidth: "80%" }}>
@@ -353,12 +446,18 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
             <span style={{ fontFamily: fontCss("Pretendard"), fontWeight: 900, fontSize: tfs * 1.15, lineHeight: 1.15, color: o.title.two, WebkitTextStroke: `${Math.max(1, tfs * 0.1)}px #FFFFFF`, paintOrder: "stroke fill", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{deco.title2 || "2단 제목"}</span>
           </div>
         )}
+        </div>
+        <div data-grp="ch" className={o.drag ? "gsdrag" + (picked === "ch" ? " gspick" : "") : undefined} onPointerDown={o.drag ? (e) => { setPicked("ch"); startDrag("ch", e); } : undefined} onWheel={o.drag ? (e) => { setPicked("ch"); setSize("ch", sizeOf("ch") + (e.deltaY < 0 ? 5 : -5)); } : undefined} title={o.drag ? "끌어서 옮기기 · 휠로 크기" : undefined}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", transform: `${o.drag && dg.ch ? `translate(${dg.ch.dx * W}px, ${dg.ch.dy * H}px) ` : ""}scale(${(szR.ch || 100) / 100})${demoT("ch", W, H)}`, opacity: demoO("ch"), transformOrigin: "97% 5%" }}>
         {o.ch && (chText || deco.logo) && (
           <div style={{ position: "absolute", right: W * 0.03, top: H * 0.04, display: "flex", alignItems: "center", gap: tfs * 0.3, maxWidth: "48%" }}>
             {chText && <span style={{ ...textCss(o.ch.look, tfs * 0.8), maxWidth: "100%" }}>{chText}</span>}
             {deco.logo && <img src={deco.logo} alt="" style={{ height: tfs * 1.5, maxWidth: tfs * 4, objectFit: "contain", borderRadius: 3 }} />}
           </div>
         )}
+        </div>
+        <div data-grp="sub" className={o.drag ? "gsdrag" + (picked === "sub" ? " gspick" : "") : undefined} onPointerDown={o.drag ? (e) => { setPicked("sub"); startDrag("sub", e); } : undefined} onWheel={o.drag ? (e) => { setPicked("sub"); setSize("sub", sizeOf("sub") + (e.deltaY < 0 ? 5 : -5)); } : undefined} title={o.drag ? "끌어서 옮기기 · 휠로 크기" : undefined}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", transform: `${o.drag && dg.sub ? `translate(${dg.sub.dx * W}px, ${dg.sub.dy * H}px) ` : ""}scale(${(szR.sub || 100) / 100})${demoT("sub", W, H)}`, opacity: demoO("sub"), transformOrigin: (subPos === "top" ? "50% 22%" : subPos === "middle-high" ? "50% 32%" : subPos === "middle" ? "50% 50%" : subPos === "middle-low" ? "50% 70%" : "50% 88%") }}>
         {(subOn || o.forceSub) && (
           <div style={{ position: "absolute", left: "6%", right: "6%", display: "flex", flexDirection: "column", alignItems: o.news ? "flex-start" : "center", ...pos }}>
             {o.news && <span style={{ background: o.news, color: "#fff", fontWeight: 900, fontSize: fs * 0.5, padding: `0 ${fs * 0.3}px`, lineHeight: 1.5, fontFamily: fontCss("Pretendard") }}>NEWS</span>}
@@ -366,9 +465,14 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
               color: l.gradTo ? "transparent" : l.color, ...(l.gradTo ? { backgroundImage: gradCss({ ...l, gradTo: l.gradTo }), WebkitBackgroundClip: "text", backgroundClip: "text" } : {}),
               ...(l.bg ? { background: `${l.bgColor || "#000000"}${Math.round((l.bgOpacity ?? 0.62) * 255).toString(16).padStart(2, "0")}`, padding: "1px 6px", borderRadius: 3 } : {}),
               ...subLookCss(l, fs, fs / 40),
-              display: "-webkit-box", WebkitLineClamp: subLines, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>{o.text ?? firstLine}</span>
+              display: "-webkit-box", WebkitLineClamp: subLines, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>{demoWords(o.text ?? firstLine, Boolean(o.drag))}</span>
           </div>
         )}
+        </div>
+        {o.drag && picked && hb[String(W)] && (() => {
+          const r = hb[String(W)];
+          return <div data-gshandle="" onPointerDown={(e) => startResize(e, String(W))} title="끌어서 크기 바꾸기" style={{ position: "absolute", left: r.l + r.w - 5, top: r.t + r.h - 5, width: 12, height: 12, borderRadius: 2, background: "#fff", border: "2px solid #3b82f6", cursor: "nwse-resize", zIndex: 6, boxSizing: "border-box" }} />;
+        })()}
         {(o.ov || []).filter(Boolean).map((u, i) => <img key={i} src={u} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill", pointerEvents: "none" }} />)}
       </div>
     );
@@ -468,18 +572,28 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
   const preview = tab === "trans" ? transFrame(BW, BH, transShow && (deco.trans.includes(transShow as TransType) || transShow === "none") ? transShow : deco.trans.length ? deco.trans[deco.trans.length - 1] : "none")
     : tab === "thumb" ? (deco.thumb !== "none" && thumbs[deco.thumb] ? <img src={thumbs[deco.thumb]} alt="" style={{ width: BW, height: Math.round(BW * 9 / 16), objectFit: "cover", borderRadius: 6 }} /> : frame(BW, BH, {}))
     : tab === "end" ? (deco.end !== "none" && ends[deco.end] ? <div style={{ width: BW, height: BH, borderRadius: 6, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}><img src={ends[deco.end]} alt="" style={{ maxWidth: "92%", maxHeight: "92%" }} /></div> : frame(BW, BH, { text: "엔딩 없음" }))
-    : frame(BW, BH, { sub: subLook, news: newsSubOf(deco.sub)?.tag, title: deco.titleOv ? null : tStyle, ch: deco.chOv ? null : cStyle, ov: [deco.titleOv, deco.chOv] });
+    : frame(BW, BH, { drag: true, sub: subLook, news: newsSubOf(deco.sub)?.tag, title: deco.titleOv ? null : tStyle, ch: deco.chOv ? null : cStyle, ov: [deco.titleOv, deco.chOv] });
   return (
     <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 14 }}>
       {/* 위 — 예시 화면 · 1~6 항목은 스크롤해도 늘 보이게 (2026-10-22 사장님) */}
       <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center", padding: "6px 0 12px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 13, color: C.sub, fontWeight: 700 }}>{bgs.length ? "내 화면으로 미리보기" : "예시 화면"}</span>
-          {preview}
+          <div style={{ position: "relative" }}>
+            {preview}
+            {tab !== "trans" && tab !== "thumb" && tab !== "end" && (
+              <button type="button" onClick={() => setZoom(true)} title="크게 보기 — 크게 보며 자막·제목 자리를 옮겨요"
+                style={{ position: "absolute", right: 8, bottom: 8, width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(17,24,39,0.72)", backdropFilter: "blur(4px)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21M10.5 7.8v5.4M7.8 10.5h5.4" /></svg>
+              </button>
+            )}
+          </div>
+          
+          {tab !== "trans" && tab !== "thumb" && tab !== "end" && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", textAlign: "center", gap: 8, fontSize: 12, color: C.dim, maxWidth: 460 }}>제목·채널명·자막은 끌어서 옮기고, 누르면 생기는 모서리 □를 끌어 크기를 바꿔요{Object.keys(dg).length > 0 && <button type="button" onClick={() => setDg({})} style={{ height: 24, padding: "0 8px", borderRadius: 5, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12, fontFamily: FONT, cursor: "pointer" }}>자리 처음으로</button>}</div>}
         </div>
         <div style={{ width: BW, maxWidth: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
           {TABS.map((t) => (
-            <button key={t.id} type="button" onClick={() => { setTab(t.id); setPop(true); }} title="눌러서 고르기"
+            <button key={t.id} type="button" onClick={() => { setTab(t.id); setSub2("style"); setPop(true); }} title="눌러서 고르기"
               style={{ display: "flex", alignItems: "center", gap: 10, height: 36, padding: "0 10px", borderRadius: 7, border: `1px solid ${tab === t.id ? C.accent : C.line}`, background: tab === t.id ? "rgba(59,130,246,0.14)" : "transparent", color: C.text, cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
               <span style={{ width: 20, height: 20, borderRadius: 10, background: tab === t.id ? C.accent : C.line2, color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{t.n}</span>
               <span style={{ fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>{t.name}</span>
@@ -489,10 +603,26 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
           ))}
         </div>
       </div>
+      {zoom && (() => {
+        // 화면에 맞는 가장 큰 크기 (가로·세로 비율 그대로)
+        const k = Math.min((window.innerWidth * 0.86) / rw, (window.innerHeight * 0.78) / rh);
+        const ZW = Math.round(rw * k), ZH = Math.round(rh * k);
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 6500, background: "rgba(0,0,0,0.7)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, fontFamily: FONT }} onMouseDown={(e) => { if (e.target === e.currentTarget) setZoom(false); }}>
+            {frame(ZW, ZH, { drag: true, sub: subLook, news: newsSubOf(deco.sub)?.tag, title: deco.titleOv ? null : tStyle, ch: deco.chOv ? null : cStyle, ov: [deco.titleOv, deco.chOv] })}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#fff", fontSize: 14 }}>
+              <span>끌어서 옮기기 · 눌러 고른 뒤 모서리 □를 끌어 크기</span>
+              
+              {Object.keys(dg).length > 0 && <button type="button" onClick={() => setDg({})} style={{ height: 32, padding: "0 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: 13, fontFamily: FONT, cursor: "pointer" }}>자리 처음으로</button>}
+              <button type="button" onClick={() => setZoom(false)} style={{ height: 32, padding: "0 18px", borderRadius: 6, border: 0, background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>완료</button>
+            </div>
+          </div>
+        );
+      })()}
       {/* 고른 항목의 샘플 — 팝업 (2026-10-23 사장님: 아래로 쌓이면 복잡) */}
       {pop && (
       <div style={{ position: "fixed", inset: 0, zIndex: 6000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }} onMouseDown={(e) => { if (e.target === e.currentTarget) setPop(false); }}>
-      <div style={{ width: "min(1180px, 94vw)", maxHeight: "92vh", display: "flex", flexDirection: "column", background: C.panel, color: C.text, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+      <div style={{ width: "min(1180px, 94vw)", height: "88vh", display: "flex", flexDirection: "column", background: C.panel, color: C.text, border: `1px solid ${C.line}`, borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px", borderBottom: `1px solid ${C.line}` }}>
           <span style={{ width: 24, height: 24, borderRadius: 12, background: C.accent, color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{TABS.find((t) => t.id === tab)?.n}</span>
           <span style={{ fontSize: 18, fontWeight: 800 }}>{TABS.find((t) => t.id === tab)?.name}</span>
@@ -506,13 +636,31 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
             {preview}
           </div>
       <div style={{ flex: 1, minWidth: 0, overflowY: "auto", paddingRight: 4 }}>
-        {tab === "sub" && (
+        {(tab === "sub" || tab === "title" || tab === "channel") && (
+          <div style={{ display: "flex", gap: 4, marginBottom: 12, borderBottom: `1px solid ${C.line}` }}>
+            {([["style", tab === "sub" ? "자막 스타일" : tab === "title" ? "제목 스타일" : "채널명 스타일"], ["anim", "애니메이션"]] as const).map(([id, nm]) => (
+              <button key={id} type="button" onClick={() => setSub2(id)} style={{ height: 36, padding: "0 16px", border: 0, borderBottom: `3px solid ${sub2 === id ? C.accent : "transparent"}`, background: "transparent", color: sub2 === id ? C.text : C.sub, fontSize: 14, fontWeight: 800, fontFamily: FONT, cursor: "pointer", marginBottom: -1 }}>{nm}</button>
+            ))}
+          </div>
+        )}
+        {(tab === "sub" || tab === "title" || tab === "channel") && sub2 === "anim" && (() => {
+          const k = tab === "sub" ? "sub" : tab === "title" ? "title" : "ch";
+          return (
+            <div style={{ marginBottom: 14, border: `1px solid ${C.line}`, borderRadius: 8, overflow: "hidden" }}>
+              <AnimBody what={k === "sub" ? "자막" : "글자"} text={k === "sub" ? "자막" : k === "title" ? (deco.titleText || "제목").slice(0, 4) : "채널"} sfxDefault={k === "sub" ? "none" : "auto"}
+                value={deco.animFull?.[k]}
+                onChange={(fn) => { const n = fn({ ...(deco.animFull?.[k] || {}) }); const clean = Object.fromEntries(Object.entries(n).filter(([, v]) => v !== undefined)) as LayerAnim; set({ animFull: { ...(deco.animFull || {}), [k]: clean } }); }}
+                onPreview={(part) => play(k, part)} />
+            </div>
+          );
+        })()}
+        {tab === "sub" && sub2 === "style" && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 8 }}>뉴스 자막 바 <span style={{ fontWeight: 500, color: C.dim }}>· 문장마다 흰 띠 · 위에 NEWS (자막 위치 하단)</span></div>
             {grid(SW, [none(!subOn, () => setSubOn?.(false)), ...NEWS_SUBS.map((x) => card(x.id, subOn && deco.sub === x.id, x.label, frame(SW, SH, { sub: x.look, news: x.tag, text: "자막 미리보기", forceSub: true }), () => { setSubOn?.(true); set({ sub: deco.sub === x.id && subOn ? "" : x.id }); }))])}
           </div>
         )}
-        {tab === "sub" && SUB_PRESETS.filter((g) => ["기본", "글꼴", "상자", "예능·유튜브", "다큐·뉴스", "네온·빛"].includes(g.group)).map((g) => (
+        {tab === "sub" && sub2 === "style" && SUB_PRESETS.filter((g) => ["기본", "글꼴", "상자", "예능·유튜브", "다큐·뉴스", "네온·빛"].includes(g.group)).map((g) => (
           <div key={g.group} style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: C.sub, fontWeight: 700, marginBottom: 8 }}>{g.group}</div>
             {grid(SW, [
@@ -521,7 +669,7 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
             ])}
           </div>
         ))}
-        {tab === "title" && (
+        {tab === "title" && sub2 === "style" && (
           <>
             <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
               <input value={deco.titleText} onChange={(e) => set({ titleText: e.target.value })} onKeyDown={(e) => e.stopPropagation()} placeholder={tStyle?.subnews ? "1단 (예: 자막뉴스)" : tStyle?.two ? "1단 제목 (위 · 색 바탕 흰 글씨)" : tStyle?.hl || tStyle?.newsBar ? "제목 — 강조할 곳은 [ ]로 감싸요 (예: 광란의 개 [보리를 대하는 법]) · 없으면 뒷부분" : "제목 — 비워 두면 만들 때 AI가 대본을 읽고 써요"} style={{ ...input, flex: 1, height: 36 }} />
@@ -537,7 +685,7 @@ export function WizardDeco({ bgs = [], ratio, firstLine, subOn, setSubOn, subPos
             ))}
           </>
         )}
-        {tab === "channel" && (
+        {tab === "channel" && sub2 === "style" && (
           <>
             <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center" }}>
               <input value={deco.channelText} onChange={(e) => set({ channelText: e.target.value })} onKeyDown={(e) => e.stopPropagation()} placeholder={agency?.name ? `비워 두면 "${agency.name}"` : "채널명 (중개사무소 정보가 없어요)"} style={{ ...input, flex: 1, height: 36 }} />

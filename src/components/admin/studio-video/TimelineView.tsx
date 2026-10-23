@@ -257,7 +257,8 @@ export default function TimelineView(p: Props) {
   const isVid = (l: Layer) => Boolean(l.asset && project.assets[l.asset]?.kind === "video");
   /** V 트랙 — 정해 둔 트랙(track) 그대로, 없으면 겹치는 순서대로 쌓는다 (뒤 → 앞, 시간이 겹치면 위 트랙) */
   const vPlace = useMemo(() => {
-    const vis = zLayers(project, project.layers || []).filter((l) => ranges.has(l.id));
+    // 앞당겨 채우기 조각(lead)은 V2 가 아니라 V1 안에 — 다음 클립 영상이 앞 클립 끝으로 이어 들어간 모습 (2026-10-23 사장님)
+    const vis = zLayers(project, project.layers || []).filter((l) => ranges.has(l.id) && !l.lead);
     const placed: { l: Layer; track: number }[] = [];
     for (const l of vis) {
       let track = typeof l.track === "number" && l.track >= 2 ? l.track : 2;
@@ -746,6 +747,23 @@ export default function TimelineView(p: Props) {
                     </button>
                   )}
                 </React.Fragment>
+              );
+            })}
+            {/* V1 — 다음 클립 영상을 앞 클립 끝으로 이어 깐 부분 (화면 경계가 그만큼 앞으로) */}
+            {(project.layers || []).filter((l) => l.lead && ranges.has(l.id)).map((l) => {
+              const r = rowOf("V1");
+              const rg = ranges.get(l.id)!;
+              const owner = items.find((x) => x.clip.id === l.lead);
+              if (!owner || rg.s >= owner.start - 0.01) return null;
+              const a = l.asset ? project.assets[l.asset] : null;
+              const thumb = a?.thumb || "";
+              const s0 = rg.s, e0 = owner.start; // 앞 클립 끝 ~ 이 클립 시작
+              return (
+                <div key={l.id} title={`${items.indexOf(owner) + 1}번 영상을 ${(e0 - s0).toFixed(1)}초 먼저 시작 — 앞 클립 끝을 채워요 (V1 안에서 이어 깔기)`}
+                  style={{ position: "absolute", left: X(s0), top: r.y + 2, width: Math.max(2, X(e0) - X(s0)), height: r.h - 4, boxSizing: "border-box", borderRadius: "3px 0 0 3px", overflow: "hidden", pointerEvents: "none",
+                    border: `1px dashed ${COL.main}`, borderRight: 0, background: thumb ? `#123 url("${thumb}") repeat-x left center / auto 100%` : "#1d3a40", opacity: 0.9, zIndex: 1 }}>
+                  <span style={{ position: "absolute", left: 3, top: 1, fontSize: 9.5, fontWeight: 800, color: "#fff", textShadow: "0 1px 2px #000" }}>↦{items.indexOf(owner) + 1}</span>
+                </div>
               );
             })}
             {moving && (() => {

@@ -262,7 +262,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineR
               return (
                 <button key={i} type="button" onClick={() => pick(p)} onDoubleClick={() => { pick(p); setTimeout(make, 0); }}
                   title={p.note || undefined}
-                  style={{ padding: "8px 6px", borderRadius: 8, border: `2px solid ${on ? C.text : C.line}`, background: on ? C.card : "transparent", color: C.text, cursor: "pointer", fontFamily: FONT, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  style={{ padding: "8px 6px", borderRadius: 8, border: `2px solid ${on ? C.sel : C.line}`, background: on ? C.cardHover : "transparent", color: C.text, cursor: "pointer", fontFamily: FONT, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <span style={{ height: 44, display: "flex", alignItems: "center" }}><span style={{ width: Math.max(4, p.w * k), height: Math.max(4, p.h * k), border: `1.5px solid ${C.sub}`, borderRadius: 2 }} /></span>
                   <span style={{ fontSize: 12.5, fontWeight: 800, textAlign: "center", lineHeight: 1.25 }}>{p.name}</span>
                   <span style={{ fontSize: 11, color: C.sub }}>{p.w} × {p.h}{p.ppi ? ` · ${p.ppi}ppi` : ""}</span>
@@ -291,7 +291,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineR
             <span style={{ width: 48 }}>방향</span>
             {[false, true].map((pt) => (
               <button key={String(pt)} type="button" title={pt ? "세로" : "가로"} onClick={() => { if (pt !== portrait) { setW(h); setH(w); } }}
-                style={{ width: 40, height: 34, borderRadius: 5, border: `1px solid ${portrait === pt ? C.text : C.line2}`, background: portrait === pt ? C.text : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 40, height: 34, borderRadius: 5, border: `1px solid ${portrait === pt ? C.sel : C.line2}`, background: portrait === pt ? C.sel : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span style={{ width: pt ? 12 : 20, height: pt ? 20 : 12, border: `2px solid ${portrait === pt ? C.bg : C.sub}`, borderRadius: 2 }} />
               </button>
             ))}
@@ -301,7 +301,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineR
             <div style={{ display: "flex", gap: 6 }}>
               {([["rgb", "RGB", "화면용 (SNS·유튜브·블로그)"], ["cmyk", "CMYK", "인쇄용 (명함·전단·배너)"]] as const).map(([v2, t, d2]) => (
                 <button key={v2} type="button" onClick={() => setMode(v2)} title={d2}
-                  style={{ flex: 1, height: 44, borderRadius: 5, border: `2px solid ${mode === v2 ? C.text : C.line2}`, background: "transparent", color: C.text, fontFamily: FONT, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                  style={{ flex: 1, height: 44, borderRadius: 5, border: `2px solid ${mode === v2 ? C.sel : C.line2}`, background: "transparent", color: C.text, fontFamily: FONT, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                   <b style={{ fontSize: 13.5 }}>{t}</b><span style={{ fontSize: 11, color: C.dim }}>{v2 === "rgb" ? "화면용" : "인쇄용"}</span>
                 </button>
               ))}
@@ -312,7 +312,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineR
             <div style={{ display: "flex", gap: 6 }}>
               {([["white", "흰색", "#fff"], ["#000000", "검정", "#000"], ["transparent", "투명", "repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 8px 8px"]] as const).map(([v, t, bgc]) => (
                 <button key={v} type="button" onClick={() => setBg(v)}
-                  style={{ flex: 1, height: 36, borderRadius: 5, border: `2px solid ${bg === v ? C.text : C.line2}`, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  style={{ flex: 1, height: 36, borderRadius: 5, border: `2px solid ${bg === v ? C.sel : C.line2}`, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <span style={{ width: 14, height: 14, borderRadius: 3, background: bgc, border: `1px solid ${C.line2}` }} />{t}
                 </button>
               ))}
@@ -326,7 +326,7 @@ function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineR
 
 /* ── 처음 화면 ── */
 function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onAi, mine, onMine, onMineRemove }: { onNew: () => void; onOpen: () => void; onRecent: (r: Recent) => void; busy: boolean; onPreset: (i: NewInit) => void; top?: React.ReactNode; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; onAi?: () => void; mine?: MyTpl[] | null; onMine?: (t: MyTpl, ai: boolean) => void; onMineRemove?: (t: MyTpl) => void }) {
-  const [theme] = useStudioTheme(false);
+  const [theme] = useStudioTheme(false, "photo");
   const b = bridge();
   const [cat, setCat] = useState("");
   const [recent, setRecent] = useState<Recent[] | null>(null);
@@ -338,7 +338,7 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
   const catBtn = (id: string, label: string, icon: string) => (
     <button key={id} type="button" onClick={() => setCat(id)}
       style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "10px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: FONT, fontSize: 14.5,
-        fontWeight: cat === id ? 800 : 600, color: cat === id ? C.text : C.sub, background: cat === id ? C.card : "transparent" }}>
+        fontWeight: cat === id ? 800 : 600, color: cat === id ? (theme === "light" ? C.accent : C.text) : C.sub, background: cat === id ? (theme === "light" ? C.accentDim : C.cardHover) : "transparent", boxShadow: cat === id && theme === "light" ? `inset 3px 0 0 ${C.accent}` : "none" }}>
       <Icon name={icon} size={17} />{label}
     </button>
   );
@@ -431,7 +431,7 @@ const BLEND_NAMES: [NonNullable<PLayer["blendMode"]>, string][] = [
 export type PhotoEmbed = { doc: Doc; title: string; useLabel?: string; onUse: (png: Uint8Array, psd: Uint8Array) => void | Promise<void>; onCancel: () => void };
 
 export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; embed?: PhotoEmbed }) {
-  useStudioTheme(!embed); // 밝은/어두운 화면 (2026-10-23)
+  useStudioTheme(!embed, "photo"); // 밝은/어두운 화면 — 이미지제작 따로 기억 (2026-10-23)
   const b = bridge();
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick((t) => t + 1), []);
@@ -2595,7 +2595,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     </label>
   );
   const seg = (on: boolean, text: string, go: () => void) => (
-    <button type="button" onClick={go} style={{ height: 26, padding: "0 10px", borderRadius: 4, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", marginLeft: 4 }}>{text}</button>
+    <button type="button" onClick={go} style={{ height: 26, padding: "0 10px", borderRadius: 4, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", marginLeft: 4 }}>{text}</button>
   );
   const optionBar = doc && (
     <div style={{ display: "flex", alignItems: "center", gap: 2, height: 42, padding: "0 8px", background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
@@ -2953,7 +2953,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
                 const cur = selL.protected || {};
                 selL.protected = k2 === "all" ? { transparency: !on, composite: !on, position: !on } : { ...cur, [k2]: !on };
               })}
-              style={{ width: 26, height: 24, borderRadius: 4, border: `1px solid ${on ? C.text : "transparent"}`, background: on ? C.psEdge : "transparent", color: selL ? C.text : C.dim, cursor: selL ? "pointer" : "default", fontSize: 13, padding: 0 }}>{ic}</button>
+              style={{ width: 26, height: 24, borderRadius: 4, border: `1px solid ${on ? C.sel : "transparent"}`, background: on ? C.psEdge : "transparent", color: selL ? C.text : C.dim, cursor: selL ? "pointer" : "default", fontSize: 13, padding: 0 }}>{ic}</button>
           );
         })}
         <span style={{ flex: 1 }} />
@@ -3255,7 +3255,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
               <div style={{ display: "flex", gap: 6 }}>
                 {[0, 2, 3].map((mm) => (
                   <button key={mm} type="button" onClick={() => setBleedMm(mm)}
-                    style={{ flex: 1, height: 34, borderRadius: 5, border: `2px solid ${bleedMm === mm ? C.text : C.line2}`, background: "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{mm ? `사방 ${mm}mm` : "없음"}</button>
+                    style={{ flex: 1, height: 34, borderRadius: 5, border: `2px solid ${bleedMm === mm ? C.sel : C.line2}`, background: "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{mm ? `사방 ${mm}mm` : "없음"}</button>
                 ))}
               </div>
               <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>자를 때 하얀 줄이 생기지 않게 가장자리를 늘려 붙여요. 명함·전단은 보통 2mm (인쇄소 안내를 따르세요).</div>
