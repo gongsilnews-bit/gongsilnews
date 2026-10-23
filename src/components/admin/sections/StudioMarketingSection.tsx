@@ -61,7 +61,7 @@ async function shrinkPhoto(file: File): Promise<string> {
 }
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
-/** 아직 작업중인 칸 — 회원에게는 "작업중" 표시만, 누를 수 없다 (최고관리자는 들어가서 작업) — 2026-10-23 사장님 */
+/** 아직 작업중인 칸 — 회원에게는 아예 안 보이고, 최고관리자에게만 "작업중" 표시로 보인다 (2026-10-23 사장님) */
 const WIP = new Set(["doc", "interior_sim", "remodel_sim"]);
 
 export default function StudioMarketingSection({ theme, dev = false }: { theme: Theme; dev?: boolean }) {
@@ -183,7 +183,7 @@ export default function StudioMarketingSection({ theme, dev = false }: { theme: 
           </button>
         )}
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
-          {CATEGORIES.map((c) => {
+          {CATEGORIES.filter((c) => dev || !WIP.has(c.id)).map((c) => { // 작업중 칸은 최고관리자에게만 보인다 (2026-10-23 사장님)
             const on = category === c.id;
             const wip = WIP.has(c.id);
             const locked = wip && !dev;
