@@ -3,6 +3,8 @@ import { PropertyInfo, FlyerColor, FlyerLayout } from '../types';
 import { detectPropertyCategory, getOverviewTemplate } from '../propertyTemplates';
 import { MAX_PHOTO_PAGES, photoPageCount, photoPageKeys } from './canvas/photoPages';
 import { DEFAULT_ORDER, pageOrder, pageNumberLabel } from './canvas/pageOrder';
+import SimPanel from './SimPanel';
+import { SimKind } from './canvas/PageSim';
 import { SwatchIcon, RectangleGroupIcon, PhotoIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
@@ -29,6 +31,10 @@ interface FlyerFormProps {
     /** [지적도·건축물대장 가져오기] (2026-10-24) · 진행 글 */
     onFetchLand?: () => void;
     landBusy?: string;
+    /** 12·13쪽 AI시뮬레이션 (App 이 돌린다) */
+    simBusy?: string;
+    onSimRun?: (kind: SimKind, simId: string) => void;
+    onSimUse?: (kind: SimKind, simId: string) => void;
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
@@ -36,7 +42,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect,
     uploadedImages, isUploadingImage,
     activeTab, setActiveTab,
-    onOpenTableEditor, onBackTab, onSave, onInsertCaptures, capturesBusy, onFetchLand, landBusy
+    onOpenTableEditor, onBackTab, onSave, onInsertCaptures, capturesBusy, onFetchLand, landBusy, simBusy, onSimRun, onSimUse
 }) => {
     const [isDesignLayoutOpen, setIsDesignLayoutOpen] = useState(true);
     // 쪽 차례 바꾸기 (2026-10-24 사장님) — 끌어서 놓기 · ◀ ▶ · [처음 순서로]. 표지는 맨 앞 고정
@@ -1420,7 +1426,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           )}
 
           {/* 8. 지적도 · 9. 건축물대장 — 한 번에 가져온다 (공부에 있는 실제 값만) */}
-          {([8, 9, 10, 11].includes(activeTab as number) || (activeTab === 'all' && (info.visiblePages || []).some((p) => p >= 8))) && (() => {
+          {([8, 9, 10, 11].includes(activeTab as number) || (activeTab === 'all' && (info.visiblePages || []).some((p) => [8, 9, 10, 11].includes(p)))) && (() => {
               const land = (info as any).landInfo;
               const trade = (info as any).tradeInfo;
               const edits = Object.keys((info as any).publicEdits || {}).length;
@@ -1461,6 +1467,15 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   </div>
               );
           })()}
+
+          {/* 12. 인테리어 전후 · 13. 리모델링 전후 — 여기서 바로 AI시뮬레이션 */}
+          {onSimRun && onSimUse && ([['interior', 12], ['remodel', 13]] as [SimKind, number][]).filter(([, id]) => activeTab === id || (activeTab === 'all' && (info.visiblePages || []).includes(id))).map(([kind, id]) => (
+              <SimPanel key={kind} kind={kind} title={L(id)} busy={simBusy || ''}
+                  vacancyId={new URLSearchParams(window.location.search).get('vacancy_id') || ''}
+                  usedSimId={(info as any).simInfo?.[kind]?.simId}
+                  areaHint={(info as any).landInfo?.unit?.exclusive ?? null}
+                  onRun={onSimRun} onUse={onSimUse} />
+          ))}
 
           {(activeTab === 7 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(7))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>

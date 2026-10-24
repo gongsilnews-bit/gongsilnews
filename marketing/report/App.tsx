@@ -6,6 +6,8 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { MAX_PHOTO_PAGES, photoPageCount, photoPageKeys } from './components/canvas/photoPages';
 import { pageOrder, pageNumberLabel } from './components/canvas/pageOrder';
+import { SimKind, SimData, SIM_PAGE, SIM_LABEL } from './components/canvas/PageSim';
+import { simBridge, cleanErr } from './components/SimPanel';
 // Removed geminiService imports to prevent client-side API usage
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content, type OverviewField } from './propertyTemplates';
@@ -1767,6 +1769,56 @@ function App() {
     }).catch(() => {}).finally(() => setTypeBusy(false));
   };
   const fetchLand = () => { void fetchPublic(); };
+
+  /* 12·13쪽 인테리어·리모델링 전후 — 보고서 안에서 바로 AI시뮬레이션 (2026-10-24 사장님)
+     앱의 시뮬레이션(gongsilStudio.sim)으로 돌리고, 지금 모습·예측 그림은 보고서 사진처럼 서버에 올려 info.simInfo[kind] 에 */
+  const [simBusy, setSimBusy] = useState("");
+  const storeSimImage = async (dataUrl: string, name: string): Promise<string> => {
+    const blob = await (await fetch(dataUrl)).blob();
+    const small = await compressToWebP(new File([blob], name, { type: blob.type || "image/jpeg" }), 0.85);
+    if (getLocalId()) return await new Promise<string>((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result)); fr.onerror = () => reject(new Error("그림을 읽지 못했어요.")); fr.readAsDataURL(small); });
+    return await uploadImageToServer(small, new URLSearchParams(window.location.search).get("vacancy_id") || "unknown");
+  };
+  const putSim = async (kind: SimKind, simId: string) => {
+    const b = simBridge();
+    if (!b) throw new Error("앱에서만 쓸 수 있어요.");
+    const [s, media] = await Promise.all([b.get(simId), b.reportMedia(simId)]);
+    const r: any = s?.result;
+    if (!r) throw new Error("이 시뮬레이션에는 아직 결과가 없어요.");
+    setSimBusy(`${SIM_LABEL[kind]} 전후 사진을 넣는 중…`);
+    const before = media.before ? await storeSimImage(media.before, "before.jpg") : null;
+    const first = media.after.find((a) => a.image);
+    const after = first ? [{ ...first, image: await storeSimImage(first.image as string, "after.jpg") }] : [];
+    const data: SimData = { simId, kind, before, after, roomName: r.roomName || "", dateText: r.dateText || "", design: r.design || {}, cost: r.cost || null, disclaimer: r.disclaimer || "", fetchedAt: new Date().toISOString() };
+    const p = SIM_PAGE[kind];
+    pushToHistoryInstant(stateRef.current);
+    setState((prev) => {
+      const info: any = { ...prev.info };
+      delete info[`p${p}Cost`]; delete info[`p${p}CostBasis`]; // 새 결과에는 새 공사비
+      const vis: number[] = info.visiblePages || [];
+      return { ...prev, info: { ...info, simInfo: { ...(info.simInfo || {}), [kind]: data }, visiblePages: vis.includes(p) ? vis : [...vis, p] } };
+    });
+  };
+  const applySim = async (kind: SimKind, simId: string) => {
+    setSimBusy(`${SIM_LABEL[kind]} 결과를 넣는 중…`);
+    try { await putSim(kind, simId); } catch (e) { alert("넣지 못했어요: " + cleanErr(e)); } finally { setSimBusy(""); }
+  };
+  const runSim = async (kind: SimKind, simId: string) => {
+    const b = simBridge();
+    if (!b) return;
+    setSimBusy(`${SIM_LABEL[kind]} AI시뮬레이션 준비 중…`);
+    const off = b.onProgress((t) => setSimBusy(`${SIM_LABEL[kind]} AI시뮬레이션 · ${t}`));
+    try {
+      await b.run(simId);
+      off();
+      await putSim(kind, simId);
+    } catch (e) {
+      alert("AI시뮬레이션을 하지 못했어요: " + cleanErr(e));
+    } finally {
+      off();
+      setSimBusy("");
+    }
+  };
   /** 받아 둔 자료가 없거나 30일이 지났는가 */
   const publicStale = (info: any) => !info?.tradeInfo?.fetchedAt || Date.now() - new Date(info.tradeInfo.fetchedAt).getTime() > PUBLIC_MAX_AGE;
   // 보고서를 처음 열 때 — 아직 받지 않았으면 뒤에서 저절로 (편집은 계속 할 수 있다)
@@ -2596,6 +2648,9 @@ ${clone.outerHTML}
               capturesBusy={capturesBusy}
               onFetchLand={() => void fetchLand()}
               landBusy={landBusy}
+              simBusy={simBusy}
+              onSimRun={(k: SimKind, id: string) => void runSim(k, id)}
+              onSimUse={(k: SimKind, id: string) => void applySim(k, id)}
             />
         </div>
         <div className={`report-preview-panel print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
@@ -2887,10 +2942,10 @@ ${clone.outerHTML}
       />
 
       {/* 지적도·대장·층별·실거래가를 뒤에서 받는 중 — 편집은 계속 된다 (2026-10-24) */}
-      {(landBusy || typeBusy) && !aiProgress && (
+      {(landBusy || typeBusy || simBusy) && !aiProgress && (
         <div className="print:hidden fixed top-3 left-1/2 -translate-x-1/2 z-[150] flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-lg text-[13px] font-bold text-gray-800">
           <span className="w-3.5 h-3.5 rounded-full border-2 border-[#1a3a6b] border-t-transparent animate-spin" />
-          {landBusy || "단지 타입 구성을 세는 중… (큰 단지는 1~2분)"}
+          {landBusy || simBusy || "단지 타입 구성을 세는 중… (큰 단지는 1~2분)"}
         </div>
       )}
       {/* AI 채우는 중 (스튜디오 앱) */}

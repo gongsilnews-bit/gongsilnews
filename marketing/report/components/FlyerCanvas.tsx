@@ -11,6 +11,7 @@ import { Page8Cadastral, Page9Building, Page10Floors, Page11Trades } from './can
 import Page5AreaAnalysis from './canvas/Page5AreaAnalysis';
 import Page6Roadmap from './canvas/Page6Roadmap';
 import Page7Ending from './canvas/Page7Ending';
+import PageSim from './canvas/PageSim';
 import { ReportContext } from './shared/ReportContext';
 
 interface FlyerCanvasProps {
@@ -222,6 +223,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 layoutTheme={layoutTheme} colorTheme={colorTheme} onUpdateInfo={onUpdateInfo} />
         )}
   </>);
+  // 12. 인테리어 전후 · 13. 리모델링 전후 (AI시뮬레이션, 2026-10-24)
+  ([['interior', 12], ['remodel', 13]] as const).forEach(([kind, id]) => {
+    blocks[id] = getPageStatus(id).shouldRender ? (
+      <PageSim kind={kind} info={info} pageString={getPageStatus(id).pageString} isHidden={getPageStatus(id).isHidden}
+          layoutTheme={layoutTheme} colorTheme={colorTheme} onUpdateInfo={onUpdateInfo} />
+    ) : null;
+  });
   blocks[7] = (<>
         {/* PAGE 7: ENDING (CONTACT) */}
         {getPageStatus(7).shouldRender && (
