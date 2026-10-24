@@ -236,6 +236,50 @@ function MobileVacancyWrite() {
   const [ownerRelation, setOwnerRelation] = useState("본인");
   const [coords, setCoords] = useState<{lat:number;lng:number}|null>(null);
 
+  /* 아파트·오피스텔 단지정보 자동 채우기 (2026-10-24 사장님 — PC 공실등록과 같다)
+     주소·동·호를 넣으면 뒤에서 조용히 받아 빈 칸만 채움 · 단지정보는 metadata.complex_info · 못 찾은 값은 비워 둠 */
+  const [totalUnits, setTotalUnits] = useState("");
+  const [complexInfo, setComplexInfo] = useState<Record<string, any> | null>(null);
+  const [complexOpen, setComplexOpen] = useState(false);
+  const [complexNote, setComplexNote] = useState("");
+  const complexSeq = React.useRef(0);
+  useEffect(() => {
+    if (propertyType !== "아파트·오피스텔" || !coords) return;
+    const seq = ++complexSeq.current;
+    const t = setTimeout(async () => {
+      try {
+        const q = `lat=${coords.lat}&lng=${coords.lng}&name=${encodeURIComponent(buildingName)}&dong=${encodeURIComponent(aptDong)}&ho=${encodeURIComponent(hosu)}`;
+        const r = await fetch(`/api/vacancy/complex?${q}`).then((x) => x.json());
+        if (seq !== complexSeq.current || !r?.ok) return;
+        const f: Record<string, string> = r.fill || {};
+        const filled: string[] = [];
+        const fillIf = (cur: string, set: (v: string) => void, v: string | undefined, label: string) => { if (v && !String(cur || "").trim()) { set(v); filled.push(label); } };
+        fillIf(buildingName, setBuildingName, f.buildingName, "단지명");
+        fillIf(totalUnits, setTotalUnits, f.totalUnits, "세대수");
+        fillIf(approvalYear, setApprovalYear, f.approvalYear, "준공연도");
+        fillIf(totalFloor, setTotalFloor, f.totalFloor, "전체층");
+        fillIf(currentFloor, setCurrentFloor, f.currentFloor, "해당층");
+        if (f.exclusiveM2 && !exclusiveM2) { setExclusiveM2(f.exclusiveM2); setExclusivePy((Number(f.exclusiveM2) * 0.3025).toFixed(1)); filled.push("전용면적"); }
+        if (f.supplyM2 && !supplyM2) { setSupplyM2(f.supplyM2); setSupplyPy((Number(f.supplyM2) * 0.3025).toFixed(1)); filled.push("공급면적"); }
+        if (r.complexInfo) {
+          setComplexInfo((prev) => {
+            const edited: string[] = prev?.edited || [];
+            const keep = Object.fromEntries(edited.map((k) => [k, prev?.[k]]));
+            return { ...r.complexInfo, ...keep, edited };
+          });
+        }
+        const nm = f.buildingName || r.complexInfo?.name || "";
+        setComplexNote(filled.length || r.complexInfo ? `${nm ? `${nm} · ` : ""}${filled.length ? `${filled.join("·")}을(를) 채웠어요` : "단지 정보를 받았어요"}. 다르면 고쳐 주세요.` : "");
+      } catch { /* 조용히 넘어간다 */ }
+    }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyType, coords?.lat, coords?.lng, aptDong, hosu]);
+  const setCx = (k: string, v: any) => setComplexInfo((prev) => ({ ...(prev || {}), [k]: v, edited: Array.from(new Set([...(prev?.edited || []), k])) }));
+  // 단지 정보 상자의 총 세대수·준공연도는 아래 건물 칸과 같은 값을 함께 쓴다
+  const cxVal = (k: string) => (k === "@units" ? totalUnits : k === "@year" ? approvalYear : complexInfo?.[k] ?? "");
+  const cxSet = (k: string, v: string) => (k === "@units" ? setTotalUnits(v.replace(/[^0-9]/g, "")) : k === "@year" ? setApprovalYear(v.replace(/[^0-9]/g, "").slice(0, 4)) : setCx(k, v));
+
   // 옵션/테마/주변환경
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
@@ -448,6 +492,8 @@ function MobileVacancyWrite() {
         if (d.bath_count) setBathCount(String(d.bath_count));
         if (d.direction) setDirection(d.direction);
         if (d.metadata?.approval_year) setApprovalYear(String(d.metadata.approval_year));
+        if (d.metadata?.total_units) setTotalUnits(String(d.metadata.total_units));
+        if (d.metadata?.complex_info) setComplexInfo(d.metadata.complex_info);
         if (d.sido) {
           setSido(d.sido);
           setAddressSearchCompleted(true);
@@ -918,6 +964,8 @@ function MobileVacancyWrite() {
           is_illegal: isIllegal,
           building_structure: buildingStructure,
           approval_year: approvalYear ? parseInt(approvalYear) : undefined,
+          total_units: propertyType === "아파트·오피스텔" && totalUnits ? parseInt(totalUnits) || undefined : undefined,
+          complex_info: propertyType === "아파트·오피스텔" ? (complexInfo || undefined) : undefined,
           jisan_usage: jisanUsage || undefined,
           ceiling_height: ceilingHeight || undefined,
           power_capacity: powerCapacity || undefined,
@@ -1461,6 +1509,30 @@ function MobileVacancyWrite() {
             </div>
           )}
 
+          {propertyType === "아파트·오피스텔" && complexNote && (
+            <div style={{ marginTop: -4, marginBottom: 10, fontSize: 11.5, color: "#6b7280" }}>ⓘ {complexNote}</div>
+          )}
+
+          {propertyType === "아파트·오피스텔" && (
+            <div style={{ marginTop: -2, marginBottom: 12 }}>
+              <button type="button" onClick={() => setComplexOpen(!complexOpen)} style={{ border: 0, background: "none", padding: 0, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#6b7280" }}>
+                {complexOpen ? "▾" : "▸"} 단지 정보 <span style={{ fontWeight: 500 }}>{complexInfo?.checked ? "· ✓ 확인함 (눌러서 다시 보기)" : "(자동으로 채움 · 눌러서 확인·수정)"}</span>
+              </button>
+              {complexOpen && (
+                <div style={{ marginTop: 10, background: "#f9fafb", padding: 12, borderRadius: 10, border: "1px solid #e5e7eb" }}>
+                  {([["@units", "총 세대수", ""], ["@year", "준공연도", ""], ["builder", "시공사", "예: GS건설"], ["heating", "난방 방식", "예: 지역난방"], ["dongs", "동 수", "예: 8"], ["topFloor", "최고층", "예: 29"], ["hall", "복도 유형", "예: 계단식"], ["parking", "총 주차대수", "예: 506"], ["subway", "가까운 역", "예: 7호선 반포역"], ["subwayTime", "역까지", "예: 5분이내"], ["sizeMix", "평형 구성", ""], ["school", "학교", "예: 원촌초, 원촌중"]] as [string, string, string][]).map((c) => (
+                    <div key={c[0]} style={{ marginBottom: 10 }}>
+                      <label style={labelStyle}>{c[1]}</label>
+                      <input type="text" placeholder="자료 없음 · 직접 입력" value={cxVal(c[0])} onChange={(e) => cxSet(c[0], e.target.value)} style={inputStyle} />
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 11.5, color: "#6b7280", marginBottom: 10 }}>건축물대장·공동주택관리정보 기준이라 실제와 다를 수 있어요. 비워 둔 칸은 공실열람에 나오지 않아요.</div>
+                  <button type="button" onClick={() => { setComplexOpen(false); setCx("checked", true); }} style={{ width: "100%", padding: "11px 0", borderRadius: 10, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>확인</button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 주소 공개 설정 */}
           {isRealtor && (
             <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
@@ -1927,15 +1999,23 @@ function MobileVacancyWrite() {
           )}
 
           {(propertyType === "빌라·주택" || propertyType === "아파트·오피스텔") && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>준공연도</label>
-              <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                <option value="">선택</option>
-                {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
-                  <option key={y} value={y}>{y}년</option>
-                ))}
-                <option value="1979">1980년 이전</option>
-              </select>
+            <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>준공연도</label>
+                <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option value="">선택</option>
+                  {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
+                    <option key={y} value={y}>{y}년</option>
+                  ))}
+                  <option value="1979">1980년 이전</option>
+                </select>
+              </div>
+              {propertyType === "아파트·오피스텔" && (
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>총 세대수</label>
+                  <input type="text" inputMode="numeric" placeholder="예: 438" value={totalUnits} onChange={(e) => setTotalUnits(e.target.value.replace(/[^0-9]/g, ""))} style={inputStyle} />
+                </div>
+              )}
             </div>
           )}
 

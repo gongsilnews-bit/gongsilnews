@@ -1,5 +1,6 @@
 "use client";
 
+import { complexRows } from "@/utils/complexRows";
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatAmount } from "./page";
@@ -1226,6 +1227,8 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     label: "준공연도",
                     value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
                   });
+                  // 4-2. 아파트·오피스텔 단지정보 — 공실등록 때 받아 둔 것 (값 있는 줄만, 2026-10-24)
+                  if (["아파트", "오피스텔"].some((t) => propType.includes(t) || subCategory.includes(t))) fields.push(...complexRows(meta));
 
                   // 5. 건물구조 (상업용 - 토지/지산 제외)
                   if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {

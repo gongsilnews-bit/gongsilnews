@@ -37,6 +37,20 @@ interface PageProps {
 const ymd = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; };
 const day8 = (s: string) => (/^\d{8}$/.test(s) ? `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}` : s);
 const m2 = (v: number | null) => (v ? `${v.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}㎡ (${(v / 3.3058).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}평)` : '');
+/** 타입 구성 — 소수점만 다른 전용면적(84.01·84.07·84.21㎡)은 "84㎡형" 하나로 묶는다 (사람들이 부르는 84타입, 2026-10-24 사장님) */
+export type TypeGroup = { key: string; label: string; exMin: number; exMax: number; supMin: number | null; supMax: number | null; count: number };
+export const typeGroups = (types: { exclusive: number; supply: number | null; count: number }[] = []): TypeGroup[] => {
+  const g = new Map<string, TypeGroup>();
+  for (const t of types) {
+    const key = String(Math.round(t.exclusive));
+    const x = g.get(key) || { key, label: `${key}㎡형`, exMin: t.exclusive, exMax: t.exclusive, supMin: null, supMax: null, count: 0 };
+    x.exMin = Math.min(x.exMin, t.exclusive); x.exMax = Math.max(x.exMax, t.exclusive); x.count += t.count;
+    if (t.supply) { x.supMin = x.supMin === null ? t.supply : Math.min(x.supMin, t.supply); x.supMax = x.supMax === null ? t.supply : Math.max(x.supMax, t.supply); }
+    g.set(key, x);
+  }
+  return [...g.values()].sort((a, b) => a.exMin - b.exMin);
+};
+const range = (a: number | null, b: number | null) => (a === null || b === null ? '' : Math.abs(a - b) < 0.05 ? `${a}` : `${a}~${b}`);
 const tint = (hex: string, a: string) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${a}` : hex);
 
 /* 받은 값 고치기 · 줄 숨기기 (2026-10-24 사장님) — 원래 받은 값은 그대로 두고 info.publicEdits[칸] · info.publicHidden[줄] 에 따로 적는다.
@@ -314,13 +328,17 @@ export const Page9Building: React.FC<PageProps> = ({ info, pageString, isHidden,
         ['합계(계약)면적', u.exclusive && u.common ? m2(Math.round((u.exclusive + u.common) * 100) / 100) : ''],
         ['구조', u.structure],
       ] as [string, string][]).filter(([k, v]) => v && !ed.hidden(`p9.u.${k}`)) : [];
+      // 타입 구성이 있으면 표 줄을 조금 좁혀 한 쪽에 들어가게
+      const groups = typeGroups((info as any).typeInfo?.types).filter((g) => !ed.hidden(`p9.t.${g.key}`));
+      const tight = groups.length > 0 || ed.added('p9t').length > 0;
+      const py = tight ? 'py-1.5' : 'py-2';
       const table = (pre: string, list: [string, string][], addKey: string) => (
         <div className="relative group/table rounded-2xl border border-gray-200 self-start w-full">
           <AddRow onClick={() => ed.addRow(addKey, 2)} />
           {list.map(([k, v]) => (
             <div key={k} className="group/row relative flex border-b border-gray-100 last:border-0 text-[13px]">
-              <div className="w-[118px] shrink-0 px-3 py-2 font-bold" style={{ background: tint(primary, '12'), color: primary }}>{k}<Hide ed={ed} k={`${pre}.${k}`} /></div>
-              <div className="flex-1 px-3 py-2 text-gray-900 break-all"><E ed={ed} k={`${pre}.${k}`} v={v} /></div>
+              <div className={`w-[118px] shrink-0 px-3 ${py} font-bold`} style={{ background: tint(primary, '12'), color: primary }}>{k}<Hide ed={ed} k={`${pre}.${k}`} /></div>
+              <div className={`flex-1 px-3 ${py} text-gray-900 break-all`}><E ed={ed} k={`${pre}.${k}`} v={v} /></div>
             </div>
           ))}
           {ed.added(addKey).map((r, i) => (
@@ -349,23 +367,57 @@ export const Page9Building: React.FC<PageProps> = ({ info, pageString, isHidden,
                   {ed.added('p9u').length > 0 && <div className="mt-2">{table('p9.u', [], 'p9u')}</div>}
                 </div>
               )}
+              {dongs.length > 1 && !ed.hidden('p9.dongs') && (
+                <div className="group/row relative mt-2">
+                  <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>동별 요약 <span className="font-normal text-gray-400">(같은 지번 {dongs.length}개 동)</span><Hide ed={ed} k="p9.dongs" /></div>
+                  <div className="flex flex-wrap gap-2">
+                    {dongs.map((d, i) => {
+                      const on = mineDong && d.dong.replace(/동$/, '') === mineDong;
+                      return (
+                        <span key={i} className="text-[12px] px-2.5 py-1 rounded-lg border" style={on ? { borderColor: primary, background: tint(primary, '14'), color: primary, fontWeight: 800 } : { borderColor: '#e5e7eb', background: '#f9fafb', color: '#374151' }}>
+                          {d.dong}{d.grndFlr ? ` · ${d.grndFlr}층` : ''}{d.households ? ` · ${d.households}세대` : ''}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          {dongs.length > 1 && !ed.hidden('p9.dongs') && (
-            <div className="group/row relative">
-              <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>동별 요약 <span className="font-normal text-gray-400">(같은 지번 {dongs.length}개 동)</span><Hide ed={ed} k="p9.dongs" /></div>
-              <div className="flex flex-wrap gap-2">
-                {dongs.map((d, i) => {
-                  const on = mineDong && d.dong.replace(/동$/, '') === mineDong;
-                  return (
-                    <span key={i} className="text-[12px] px-2.5 py-1 rounded-lg border" style={on ? { borderColor: primary, background: tint(primary, '14'), color: primary, fontWeight: 800 } : { borderColor: '#e5e7eb', background: '#f9fafb', color: '#374151' }}>
-                      {d.dong}{d.grndFlr ? ` · ${d.grndFlr}층` : ''}{d.households ? ` · ${d.households}세대` : ''}
-                    </span>
-                  );
-                })}
+          {/* 타입 구성 — 같은 지번 전유부를 모두 세어 (보고서에서만, 뒤에서 따로 받음) */}
+          {(groups.length > 0 || ed.added('p9t').length > 0) && (() => {
+            const mine = u?.exclusive ? String(Math.round(u.exclusive)) : '';
+            const box = 'group/row relative rounded-xl border px-3 py-2 min-w-[104px] text-center';
+            return (
+              <div className="relative group/table">
+                <AddRow onClick={() => ed.addRow('p9t', 3)} />
+                <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>타입 구성 <span className="font-normal text-gray-400">(전용면적별 · 같은 지번 {((info as any).typeInfo?.counted || 0).toLocaleString('ko-KR')}세대)</span></div>
+                <div className="flex flex-wrap gap-2">
+                  {groups.map((g) => {
+                    const on = mine === g.key;
+                    const sup = range(g.supMin, g.supMax);
+                    return (
+                      <div key={g.key} className={box} style={on ? { borderColor: primary, background: tint(primary, '14') } : { borderColor: '#e5e7eb', background: '#f9fafb' }}>
+                        <Hide ed={ed} k={`p9.t.${g.key}`} />
+                        {on && <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 rounded text-[10px] font-bold text-white whitespace-nowrap" style={{ background: primary }}>이 매물</div>}
+                        <div className="text-[13px] font-extrabold" style={{ color: on ? primary : '#111827' }}><E ed={ed} k={`p9.t.${g.key}.a`} v={g.label} /></div>
+                        <div className="text-[11px] text-gray-500"><E ed={ed} k={`p9.t.${g.key}.b`} v={sup ? `공급 ${sup}㎡` : `전용 ${range(g.exMin, g.exMax)}㎡`} /></div>
+                        <div className="text-[12.5px] font-bold" style={{ color: primary }}><E ed={ed} k={`p9.t.${g.key}.c`} v={`${g.count.toLocaleString('ko-KR')}세대`} /></div>
+                      </div>
+                    );
+                  })}
+                  {ed.added('p9t').map((r, i) => (
+                    <div key={`a${i}`} className={box} style={{ borderColor: '#e5e7eb', background: '#f9fafb' }}>
+                      <DelBtn onClick={() => ed.delRow('p9t', i)} />
+                      <div className="text-[13px] font-extrabold text-gray-900"><AE ed={ed} t="p9t" r={i} c={0} v={r[0]} ph="타입" /></div>
+                      <div className="text-[11px] text-gray-500"><AE ed={ed} t="p9t" r={i} c={1} v={r[1]} ph="공급면적" /></div>
+                      <div className="text-[12.5px] font-bold" style={{ color: primary }}><AE ed={ed} t="p9t" r={i} c={2} v={r[2]} ph="세대수" /></div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
             자료: 국토교통부 건축물대장 총괄표제부·표제부·전유부 ({ymd(land.fetchedAt)} 조회). 공부상 내용으로, 계약 전에는 건축물대장 원본을 꼭 확인하세요.{edited(ed, 'p9')}
           </p>

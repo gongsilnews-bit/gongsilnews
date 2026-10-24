@@ -798,7 +798,7 @@ function App() {
       if (sec.type !== 'table') return sec;
       
       const newItems = sec.items.map(item => {
-        if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
+        if (item.title === '세대수' && (v.total_units || v.metadata?.total_units)) return { ...item, text: `${v.total_units || v.metadata?.total_units}세대` }; // 공실등록 단지정보 (metadata.total_units, 2026-10-24)
         if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${floorText(v.current_floor)}/${floorText(v.total_floor)}` };
         if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
         if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
@@ -1511,7 +1511,13 @@ function App() {
     // 아파트·오피스텔 — 단지 전체 · 이 매물 호실
     const cx = land?.complex, ux = land?.unit;
     if (cx) L.push(`- 단지(건물) 전체: ${[cx.name, cx.dongs && `${cx.dongs}개 동`, cx.households && `${cx.households}세대`, cx.totArea && `연면적 ${m2(cx.totArea)}`, cx.parking && `주차 ${cx.parking}대`, cx.useAprDay && `사용승인 ${d8(cx.useAprDay)}`].filter(Boolean).join(" · ")}`);
-    if (ux) L.push(`- 이 매물 호실: ${[ux.dong, ux.ho && `${ux.ho}호`, ux.floor, ux.purpose, ux.exclusive && `전용 ${m2(ux.exclusive)}`, ux.common && `공용 ${m2(ux.common)}`].filter(Boolean).join(" · ")}`);
+    const ty = info.typeInfo?.types || [];
+    if (ty.length) {
+      const main = [...ty].sort((a: any, b: any) => b.count - a.count)[0];
+      const mine = ux?.exclusive ? ty.find((x: any) => Math.abs(x.exclusive - ux.exclusive) < 0.01) : null;
+      L.push(`- 타입 구성(건축물대장 전유부, 같은 지번 ${info.typeInfo.counted}세대): ${ty.map((x: any) => `전용 ${x.exclusive}㎡${x.supply ? `(공급 ${x.supply}㎡)` : ""} ${x.count}세대`).join(", ")} · 가장 많은 타입 전용 ${main.exclusive}㎡${mine ? ` · 이 매물은 전용 ${mine.exclusive}㎡ 타입(${mine.count}세대)` : ""}`);
+    }
+    if (ux) L.push(`- 이 매물 호실:${[ux.dong, ux.ho && `${ux.ho}호`, ux.floor, ux.purpose, ux.exclusive && `전용 ${m2(ux.exclusive)}`, ux.common && `공용 ${m2(ux.common)}`].filter(Boolean).join(" · ")}`);
     if (t?.floors?.length) L.push(`- 층별 용도: ${t.floors.slice(0, 12).map((f: any) => `${f.floor} ${f.purpose}${f.area ? ` ${f.area}㎡` : ""}`).join("; ")}`);
     if (t?.permits?.length) L.push(`- 건축 인허가: ${t.permits.slice(0, 5).map((p: any) => `${d8(p.permitDay)} ${p.kind}`).join("; ")}`);
     if (t) {
@@ -1689,6 +1695,7 @@ function App() {
      - 받는 동안 회원이 고친 칸을 덮지 않게, 끝나면 그때 화면(prev)에 받은 것만 얹는다
      돌려줌: 받은 뒤의 info (못 받았으면 null) */
   const [landBusy, setLandBusy] = useState("");
+  const [typeBusy, setTypeBusy] = useState(false);
   const publicRun = useRef<Promise<any> | null>(null);
   const PUBLIC_MAX_AGE = 30 * 864e5;
   const fetchPublic = (opts: { silent?: boolean } = {}): Promise<any> => {
@@ -1736,6 +1743,8 @@ function App() {
         } : {};
         const patch = { landInfo: land, tradeInfo: t || info0.tradeInfo, visiblePages: vis, publicPreset: true, ...chart };
         setState((prev) => ({ ...prev, info: { ...prev.info, ...patch } as any }));
+        // 아파트·오피스텔 9쪽 타입 구성 — 큰 단지는 1~2분이라 기다리지 않고 뒤에서 따로 (다 세면 그 표만 채운다)
+        if (land.multiUnit && (!opts.silent || !info0.typeInfo)) fetchTypes(q);
         const next = { ...info0, ...patch };
         if (!t) say("지적도·건축물대장은 넣었어요. 층별 현황·실거래가는 받지 못했어요. 잠시 뒤 [지적도·대장·층별·실거래 새로 채우기]를 눌러 주세요.");
         return next;
@@ -1750,6 +1759,13 @@ function App() {
     publicRun.current = run;
     return run;
   };
+  /* 9쪽 타입 구성 (아파트·오피스텔) — 같은 지번 전유부를 모두 세어서. 큰 단지는 1~2분이라 따로 뒤에서 */
+  const fetchTypes = (q: string) => {
+    setTypeBusy(true);
+    fetch(`/api/report/types?${q}`).then((r) => r.json()).then((ty) => {
+      if (ty?.ok) setState((prev) => ({ ...prev, info: { ...prev.info, typeInfo: { types: ty.types, counted: ty.counted, fetchedAt: ty.fetchedAt } } as any }));
+    }).catch(() => {}).finally(() => setTypeBusy(false));
+  };
   const fetchLand = () => { void fetchPublic(); };
   /** 받아 둔 자료가 없거나 30일이 지났는가 */
   const publicStale = (info: any) => !info?.tradeInfo?.fetchedAt || Date.now() - new Date(info.tradeInfo.fetchedAt).getTime() > PUBLIC_MAX_AGE;
@@ -1761,6 +1777,11 @@ function App() {
     autoPublicDone.current = true;
     const info: any = state.info;
     if (!info.landInfo || !info.tradeInfo) void fetchPublic({ silent: true });
+    else if (info.landInfo.multiUnit && !info.typeInfo) {
+      // 타입 구성이 생기기 전에 만든 아파트 보고서 — 그것만 받는다
+      const id = new URLSearchParams(window.location.search).get("vacancy_id") || "";
+      fetch(`/api/vacancy/detail?id=${id}`).then((r) => r.json()).then((d) => { const v = d?.data; if (v?.lat && v?.lng) fetchTypes(`lat=${v.lat}&lng=${v.lng}`); }).catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized]);
 
@@ -2866,10 +2887,10 @@ ${clone.outerHTML}
       />
 
       {/* 지적도·대장·층별·실거래가를 뒤에서 받는 중 — 편집은 계속 된다 (2026-10-24) */}
-      {landBusy && !aiProgress && (
+      {(landBusy || typeBusy) && !aiProgress && (
         <div className="print:hidden fixed top-3 left-1/2 -translate-x-1/2 z-[150] flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-lg text-[13px] font-bold text-gray-800">
           <span className="w-3.5 h-3.5 rounded-full border-2 border-[#1a3a6b] border-t-transparent animate-spin" />
-          {landBusy}
+          {landBusy || "단지 타입 구성을 세는 중… (큰 단지는 1~2분)"}
         </div>
       )}
       {/* AI 채우는 중 (스튜디오 앱) */}

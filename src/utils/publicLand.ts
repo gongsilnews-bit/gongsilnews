@@ -265,3 +265,199 @@ export const median = (xs: number[]) => {
   const m = Math.floor(a.length / 2);
   return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
 };
+
+/* ── 아파트 단지정보 (K-apt 공동주택관리정보, 2026-10-24) ──
+ *  단지 목록(AptListService4) → 지번·이름으로 이 단지 번호(kaptCode) → 기본정보·상세정보(AptBasisInfoServiceV5)
+ *  의무관리 단지(대략 150세대 이상)만 있다. 못 찾으면 null — 지어내지 않는다 */
+export type KaptInfo = {
+  kaptCode: string; name: string; builder: string; heating: string; hall: string; manage: string; saleType: string;
+  households: number | null; dongs: number | null; topFloor: number | null; baseFloor: number | null; useAprDay: string;
+  sizes: { le60: number | null; le85: number | null; le135: number | null; gt135: number | null };
+  parking: number | null; parkingGround: number | null; elevators: number | null; cctv: number | null; evChargers: number | null;
+  subway: string; subwayTime: string; busTime: string; school: string; convenience: string; welfare: string;
+};
+const kget = async (path: string) => {
+  const key = process.env.DATA_GO_KR_API_KEY;
+  // 초당 요청 한도에 막히면 잠깐 쉬고 다시
+  for (let tryNo = 0; tryNo < 3; tryNo++) {
+    const txt = await fetch(`https://apis.data.go.kr/1613000/${path}${path.includes("?") ? "&" : "?"}serviceKey=${key}`).then((r) => r.text()).catch(() => "");
+    if (/LIMITED_NUMBER|HTTP_ERROR/.test(txt) || !txt) { await new Promise((r) => setTimeout(r, 400 * (tryNo + 1))); continue; }
+    try { return JSON.parse(txt)?.response?.body; } catch { return undefined; }
+  }
+  return undefined;
+};
+const kaptBasisCache = new Map<string, { at: number; item: Record<string, unknown> | null }>(); // 단지 기본정보는 거의 안 바뀐다 — 하루 기억
+async function kaptBasis(code: string) {
+  const hit = kaptBasisCache.get(code);
+  if (hit && Date.now() - hit.at < 864e5) return hit.item;
+  // 초당 요청 한도 — 막히면 잠깐 쉬고 다시 (실패는 기억하지 않는다)
+  for (let tryNo = 0; tryNo < 3; tryNo++) {
+    const key = process.env.DATA_GO_KR_API_KEY;
+    const txt = await fetch(`https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusBassInfoV5?kaptCode=${code}&serviceKey=${key}`).then((r) => r.text()).catch(() => "");
+    if (/LIMITED_NUMBER|HTTP_ERROR/.test(txt) || !txt) { await new Promise((r) => setTimeout(r, 400 * (tryNo + 1))); continue; }
+    let item: Record<string, unknown> | null = null;
+    try { item = JSON.parse(txt)?.response?.body?.item || null; } catch { return null; }
+    kaptBasisCache.set(code, { at: Date.now(), item });
+    return item;
+  }
+  return null;
+}
+export async function kaptFor(p: Parcel, nameHint = ""): Promise<KaptInfo | null> {
+  const body = await kget(`AptListService4/getLegaldongAptList4?bjdCode=${p.bcode}&numOfRows=500&pageNo=1`);
+  const list = (body?.items || []) as { kaptCode: string; kaptName: string }[];
+  if (!list.length) return null;
+  // 맞추기 (2026-10-24: "ACROHILLS논현"↔"아크로힐스논현", 지번 276-1↔276 처럼 다르게 적힌 단지)
+  //  도로명 주소 같음 3 · 지번 같음 3 · 본번만 같음 1 · 이름 같음 2 → 2점 이상 중 가장 높은 단지
+  const bun = String(Number(p.bun)), ji = Number(p.ji) ? String(Number(p.ji)) : "";
+  const norm = (x: string) => x.replace(/\s|아파트|\(.*?\)/g, "").toLowerCase();
+  const hint = norm(nameHint);
+  const road = (p.roadAddr.match(/([가-힣0-9]+(?:로|길)\s*\d+(?:-\d+)?)\s*$/) || [])[1]?.replace(/\s/g, "") || "";
+  // 이름이 비슷한 단지를 먼저, 나머지는 뒤에 (큰 동은 단지가 100개 넘는다 — 반포동)
+  const loose = (x: string) => norm(x).replace(/[^가-힣a-z0-9]/g, "");
+  const near = (x: string) => !!hint && (loose(x).includes(loose(hint).slice(0, 2)) || loose(hint).includes(loose(x).slice(0, 2)));
+  const cands = [...list.filter((c) => near(c.kaptName)), ...list.filter((c) => !near(c.kaptName))].slice(0, 80);
+  // 한 번에 하나씩 (초당 한도) — 확실한 단지(5점 이상: 도로명+지번 또는 도로명+이름)를 찾으면 바로 멈춘다
+  const basis: (Record<string, unknown> | null)[] = [];
+  let best = -1, bestScore = 1;
+  for (let i = 0; i < cands.length; i++) {
+    const cached = kaptBasisCache.has(cands[i].kaptCode);
+    const b = await kaptBasis(cands[i].kaptCode).catch(() => null);
+    basis.push(b);
+    if (!cached) await new Promise((r) => setTimeout(r, 120));
+    if (!b) continue;
+    const addr = s(b.kaptAddr), doro = s(b.doroJuso).replace(/\s/g, ""), nm = norm(s(b.kaptName));
+    const m = addr.match(new RegExp(`${p.dong}\\s*(\\d+)(?:-(\\d+))?`));
+    let score = 0;
+    if (road && doro.endsWith(road)) score += 3;
+    if (m && m[1] === bun && (m[2] || "") === ji) score += 3;
+    else if (m && m[1] === bun) score += 1;
+    if (hint && nm && (nm.includes(hint) || hint.includes(nm))) score += 2;
+    if (score > bestScore) { bestScore = score; best = i; }
+    if (bestScore >= 5) break;
+  }
+  if (best < 0) return null;
+  {
+    const c = cands[best], b = basis[best] as Record<string, unknown>;
+    const d = (await kget(`AptBasisInfoServiceV5/getAphusDtlInfoV5?kaptCode=${c.kaptCode}`))?.item || {};
+    const num = (v: unknown) => (v === null || v === undefined || String(v).trim() === "" ? null : Number(v));
+    return {
+      kaptCode: c.kaptCode, name: s(b.kaptName), builder: s(b.kaptBcompany), heating: s(b.codeHeatNm), hall: s(b.codeHallNm), manage: s(b.codeMgrNm), saleType: s(b.codeSaleNm),
+      households: num(b.kaptdaCnt), dongs: num(b.kaptDongCnt), topFloor: num(b.kaptTopFloor), baseFloor: num(b.kaptBaseFloor), useAprDay: s(b.kaptUsedate),
+      sizes: { le60: num(b.kaptMparea60), le85: num(b.kaptMparea85), le135: num(b.kaptMparea135), gt135: num(b.kaptMparea136) },
+      parking: num(d.kaptdPcntu) !== null || num(d.kaptdPcnt) !== null ? (num(d.kaptdPcntu) || 0) + (num(d.kaptdPcnt) || 0) : null,
+      parkingGround: num(d.kaptdPcnt), elevators: num(d.kaptdEcnt ?? b.kaptdEcntp), cctv: num(d.kaptdCccnt),
+      evChargers: num(d.groundElChargerCnt) !== null || num(d.undergroundElChargerCnt) !== null ? (num(d.groundElChargerCnt) || 0) + (num(d.undergroundElChargerCnt) || 0) : null,
+      subway: [s(d.subwayLine), s(d.subwayStation)].filter(Boolean).join(" "), subwayTime: s(d.kaptdWtimesub), busTime: s(d.kaptdWtimebus),
+      school: s(d.educationFacility), convenience: s(d.convenientFacility), welfare: s(d.welfareFacility),
+    };
+  }
+  return null;
+}
+
+/** 단지 전체(총괄표제부) — 동이 여러 지번에 걸친 단지도 여기 합계가 있다 */
+export async function recapAt(p: Parcel) {
+  const it = (await hub("BldRgstHubService", "getBrRecapTitleInfo", p, 5).catch(() => []))[0];
+  if (!it) return null;
+  return { name: s(it.bldNm), households: n(it.hhldCnt), units: n(it.hoCnt), dongs: n(it.mainBldCnt), totArea: n(it.totArea), parking: n(it.totPkngCnt), useAprDay: s(it.useAprDay), purpose: s(it.mainPurpsCdNm) };
+}
+
+/** 이 호실 — 전유·공용 면적 (호 이름 적는 방식이 건물마다 달라 마지막 숫자 묶음으로 맞춘다. 같은 번호가 여러 동이면 null) */
+export async function unitAt(p: Parcel, dongIn: string, hoIn: string) {
+  const dongNo = dongIn.replace(/[^0-9A-Za-z가-힣]/g, "").replace(/동$/, "");
+  const last = (h: string) => (h.match(/\d+/g) || []).pop() || "";
+  const hoNo = last(hoIn);
+  if (!hoNo) return null;
+  const same = (x: Record<string, unknown>) => {
+    const hn = s(x.hoNm);
+    if (last(hn) !== hoNo) return false;
+    if (!dongNo) return true;
+    const inHo = (hn.match(/^([0-9A-Za-z가-힣]+)동/) || [])[1] || "";
+    return s(x.dongNm).replace(/동$/, "") === dongNo || inHo === dongNo;
+  };
+  const tries: (() => Promise<Record<string, unknown>[]>)[] = [
+    ...(dongNo ? [`${dongNo}동`, dongNo] : []).map((d) => async () => {
+      const key = process.env.DATA_GO_KR_API_KEY;
+      const url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${key}&sigunguCd=${p.sigungu}&bjdongCd=${p.bjdong}&platGbCd=${p.mountain ? 1 : 0}&bun=${p.bun}&ji=${p.ji}&dongNm=${encodeURIComponent(d)}&hoNm=${hoNo}&numOfRows=100&pageNo=1&_type=json`;
+      return itemsOf(await fetch(url).then((r) => r.json()));
+    }),
+    async () => {
+      const key = process.env.DATA_GO_KR_API_KEY;
+      const all: Record<string, unknown>[] = [];
+      for (let page = 1; page <= 3; page++) {
+        const url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${key}&sigunguCd=${p.sigungu}&bjdongCd=${p.bjdong}&platGbCd=${p.mountain ? 1 : 0}&bun=${p.bun}&ji=${p.ji}&numOfRows=1000&pageNo=${page}&_type=json`;
+        const rows = itemsOf(await fetch(url).then((r) => r.json()));
+        all.push(...rows);
+        if (rows.length < 1000) break;
+      }
+      return all;
+    },
+  ];
+  for (const run of tries) {
+    const mine = (await run().catch(() => [])).filter(same);
+    if (!mine.length || new Set(mine.map((x) => `${s(x.dongNm)}|${s(x.hoNm)}`)).size > 1) continue;
+    const ex = mine.filter((x) => s(x.exposPubuseGbCdNm) === "전유"), pub = mine.filter((x) => s(x.exposPubuseGbCdNm) === "공용");
+    const sum = (xs: Record<string, unknown>[]) => Math.round(xs.reduce((t, x) => t + (Number(x.area) || 0), 0) * 100) / 100;
+    // 주거공용(계단·복도)만 공급면적에 — 기타공용(주차장·관리동 등)은 뺀다
+    const resPub = pub.filter((x) => !/주차|기계|전기|관리|경비|커뮤니티|지하/.test(`${s(x.mainPurpsCdNm)} ${s(x.etcPurps)}`) && !/^지하/.test(s(x.flrNoNm)));
+    return {
+      dong: s(mine[0].dongNm), ho: s(mine[0].hoNm), floor: s(ex[0]?.flrNoNm || mine[0].flrNoNm), floorNo: n(ex[0]?.flrNo ?? mine[0].flrNo),
+      purpose: s(ex[0]?.mainPurpsCdNm), structure: s(ex[0]?.strctCdNm),
+      exclusive: ex.length ? sum(ex) : null, common: pub.length ? sum(pub) : null, supply: ex.length ? Math.round((sum(ex) + sum(resPub)) * 100) / 100 : null,
+    };
+  }
+  return null;
+}
+
+/** 타입 구성 (매물보고서 9쪽, 2026-10-24 사장님) — 같은 지번 전유부를 모두 받아 주거 호실을 전용면적별로 센다
+ *  한 번에 100줄까지만 줘서 큰 단지는 1~2분 걸린다 → 보고서에서만 · 뒤에서 따로 받는다.
+ *  중간에 끊기면 틀린 숫자를 내지 않고 null. 상가·사무실 호실은 용도로 거른다. */
+export type UnitType = { exclusive: number; supply: number | null; count: number };
+export async function typesAt(p: Parcel): Promise<{ types: UnitType[]; counted: number } | null> {
+  const key = process.env.DATA_GO_KR_API_KEY;
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const rows: Record<string, unknown>[] = [];
+  let total = Infinity;
+  for (let page = 1; (page - 1) * 100 < total; page++) {
+    if (page > 400) return null; // 4만 줄 넘는 곳은 세지 않는다
+    const url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${key}&sigunguCd=${p.sigungu}&bjdongCd=${p.bjdong}&platGbCd=${p.mountain ? 1 : 0}&bun=${p.bun}&ji=${p.ji}&numOfRows=100&pageNo=${page}&_type=json`;
+    let body: { totalCount?: unknown; items?: { item?: unknown } } | undefined;
+    for (let tryNo = 0; tryNo < 4 && !body; tryNo++) {
+      const txt = await fetch(url).then((r) => r.text()).catch(() => "");
+      if (/LIMITED_NUMBER|HTTP_ERROR/.test(txt) || !txt) { await wait(500 * (tryNo + 1)); continue; }
+      try { body = JSON.parse(txt)?.response?.body; } catch { /* 아래에서 null */ }
+      if (!body) return null;
+    }
+    if (!body) return null;
+    total = Number(body.totalCount) || 0;
+    const it = body.items?.item;
+    rows.push(...((Array.isArray(it) ? it : it ? [it] : []) as Record<string, unknown>[]));
+    await wait(120);
+  }
+  // 호실마다 전유 합 · 주거공용 합 (공급면적 = 전유 + 계단·복도 같은 주거공용, unitAt 과 같은 기준)
+  const units = new Map<string, { ex: number; pub: number; home: boolean }>();
+  for (const x of rows) {
+    const k = `${s(x.dongNm)}|${s(x.hoNm)}`;
+    const u = units.get(k) || { ex: 0, pub: 0, home: false };
+    const use = `${s(x.mainPurpsCdNm)} ${s(x.etcPurps)}`;
+    if (s(x.exposPubuseGbCdNm) === "전유") {
+      u.ex += Number(x.area) || 0;
+      if (/공동주택|아파트|오피스텔|주택/.test(use) && !/근린|판매|상가/.test(use)) u.home = true;
+    } else if (!/주차|기계|전기|관리|경비|커뮤니티|지하/.test(use) && !/^지하/.test(s(x.flrNoNm))) u.pub += Number(x.area) || 0;
+    units.set(k, u);
+  }
+  const groups = new Map<string, { exclusive: number; supplies: Map<string, number>; count: number }>();
+  for (const u of units.values()) {
+    if (!u.home || u.ex < 10) continue;
+    const ex = Math.round(u.ex * 100) / 100, k = ex.toFixed(2);
+    const g = groups.get(k) || { exclusive: ex, supplies: new Map(), count: 0 };
+    g.count++;
+    if (u.pub > 0) { const sk = (Math.round((u.ex + u.pub) * 100) / 100).toFixed(2); g.supplies.set(sk, (g.supplies.get(sk) || 0) + 1); }
+    groups.set(k, g);
+  }
+  if (!groups.size) return null;
+  const types = [...groups.values()].map((g) => {
+    const top = [...g.supplies.entries()].sort((a, b) => b[1] - a[1])[0];
+    return { exclusive: g.exclusive, supply: top ? Number(top[0]) : null, count: g.count };
+  }).sort((a, b) => a.exclusive - b.exclusive);
+  return { types, counted: types.reduce((t, x) => t + x.count, 0) };
+}

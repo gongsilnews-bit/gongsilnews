@@ -370,6 +370,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.current_floor) setCurrentFloor(editData.current_floor);
     if (editData.total_floor) setTotalFloor(editData.total_floor);
     if (editData.metadata?.approval_year) setApprovalYear(String(editData.metadata.approval_year));
+    if (editData.metadata?.total_units) setTotalUnits(String(editData.metadata.total_units));
+    if (editData.metadata?.complex_info) setComplexInfo(editData.metadata.complex_info);
     if (editData.deposit) setDeposit(String(editData.deposit / 10000));
     if (editData.monthly_rent) setMonthly(String(editData.monthly_rent / 10000));
     if (editData.maintenance_fee) setMaintenance(String(editData.maintenance_fee / 10000));
@@ -490,6 +492,52 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 좌표
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  /* 아파트·오피스텔 단지정보 자동 채우기 (2026-10-24 사장님)
+     - 주소·동·호를 넣으면 뒤에서 조용히 받아 "빈 칸만" 채운다 (중개사가 쓴 값은 그대로)
+     - 시공사·난방·역·학교 같은 단지정보는 metadata.complex_info 에 저장 → 공실열람 상세·매물보고서가 쓴다
+     - 못 찾은 값은 비워 둔다 (지어내지 않음). 접힌 [단지 정보] 줄에서 고칠 수 있고, 고친 칸은 다시 받아도 그대로 */
+  const [totalUnits, setTotalUnits] = useState("");
+  const [complexInfo, setComplexInfo] = useState<Record<string, any> | null>(null);
+  const [complexOpen, setComplexOpen] = useState(false);
+  const [complexNote, setComplexNote] = useState("");
+  const complexSeq = React.useRef(0);
+  useEffect(() => {
+    if (propertyType !== "아파트·오피스텔" || !coords) return;
+    const seq = ++complexSeq.current;
+    const t = setTimeout(async () => {
+      try {
+        const q = `lat=${coords.lat}&lng=${coords.lng}&name=${encodeURIComponent(buildingName)}&dong=${encodeURIComponent(aptDong)}&ho=${encodeURIComponent(hosu)}`;
+        const r = await fetch(`/api/vacancy/complex?${q}`).then((x) => x.json());
+        if (seq !== complexSeq.current || !r?.ok) return;
+        const f: Record<string, string> = r.fill || {};
+        const filled: string[] = [];
+        const fillIf = (cur: string, set: (v: string) => void, v: string | undefined, label: string) => { if (v && !String(cur || "").trim()) { set(v); filled.push(label); } };
+        fillIf(buildingName, setBuildingName, f.buildingName, "단지명");
+        fillIf(totalUnits, setTotalUnits, f.totalUnits, "세대수");
+        fillIf(approvalYear, setApprovalYear, f.approvalYear, "준공연도");
+        fillIf(totalFloor, setTotalFloor, f.totalFloor, "전체층");
+        fillIf(currentFloor, setCurrentFloor, f.currentFloor, "해당층");
+        if (f.exclusiveM2 && !exclusiveM2) { setExclusiveM2(f.exclusiveM2); setExclusivePy((Number(f.exclusiveM2) * 0.3025).toFixed(1)); filled.push("전용면적"); }
+        if (f.supplyM2 && !supplyM2) { setSupplyM2(f.supplyM2); setSupplyPy((Number(f.supplyM2) * 0.3025).toFixed(1)); filled.push("공급면적"); }
+        if (r.complexInfo) {
+          setComplexInfo((prev) => {
+            const edited: string[] = prev?.edited || [];
+            const keep = Object.fromEntries(edited.map((k) => [k, prev?.[k]]));
+            return { ...r.complexInfo, ...keep, edited };
+          });
+        }
+        const nm = f.buildingName || r.complexInfo?.name || "";
+        setComplexNote(filled.length || r.complexInfo ? `${nm ? `${nm} · ` : ""}건축물대장·단지정보로 ${filled.length ? `${filled.join("·")}을(를) 채웠어요` : "단지 정보를 받았어요"}. 다르면 고쳐 주세요.` : "");
+      } catch { /* 조용히 넘어간다 */ }
+    }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyType, coords?.lat, coords?.lng, aptDong, hosu]);
+  const setCx = (k: string, v: any) => setComplexInfo((prev) => ({ ...(prev || {}), [k]: v, edited: Array.from(new Set([...(prev?.edited || []), k])) }));
+  // 단지 정보 상자의 총 세대수·준공연도는 아래 건물 칸과 같은 값을 함께 쓴다
+  const cxVal = (k: string) => (k === "@units" ? totalUnits : k === "@year" ? approvalYear : complexInfo?.[k] ?? "");
+  const cxSet = (k: string, v: string) => (k === "@units" ? setTotalUnits(v.replace(/[^0-9]/g, "")) : k === "@year" ? setApprovalYear(v.replace(/[^0-9]/g, "").slice(0, 4)) : setCx(k, v));
   const [geocoding, setGeocoding] = useState(false);
 
   // 좌측 도구 - 면적 계산기
@@ -1436,6 +1484,47 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               )}
             </div>
 
+            {propertyType === "아파트·오피스텔" && complexNote && (
+              <div style={{ marginTop: -8, marginBottom: 16, fontSize: 12.5, color: textSecondary }}>ⓘ {complexNote}</div>
+            )}
+
+            {/* 단지 정보 — 처음엔 접혀 있다. 자동으로 받은 값을 확인·수정 (비우면 공실열람에 안 나옴) */}
+            {propertyType === "아파트·오피스텔" && (
+              <div style={{ marginTop: -4, marginBottom: 16 }}>
+                <button type="button" onClick={() => setComplexOpen(!complexOpen)} style={{ border: 0, background: "none", padding: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: textSecondary }}>
+                  {complexOpen ? "▾" : "▸"} 단지 정보 <span style={{ fontWeight: 500 }}>{complexInfo?.checked ? "· ✓ 확인함 (눌러서 다시 보기)" : "(자동으로 채움 · 눌러서 확인·수정)"}</span>
+                </button>
+                {complexOpen && (
+                  // 주변 인프라 칸과 같은 회색 상자 (2026-10-24 사장님)
+                  <div style={{ marginTop: 12, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
+                    {([
+                      [["@units", "총 세대수", ""], ["@year", "준공연도", ""]],
+                      [["builder", "시공사", "예: GS건설"], ["heating", "난방 방식", "예: 지역난방"]],
+                      [["dongs", "동 수", "예: 8"], ["topFloor", "최고층", "예: 29"]],
+                      [["hall", "복도 유형", "예: 계단식"], ["parking", "총 주차대수", "예: 506"]],
+                      [["subway", "가까운 역", "예: 7호선 반포역"], ["subwayTime", "역까지", "예: 5분이내"]],
+                      [["sizeMix", "평형 구성", ""]], // 한 줄이 길어 칸 전체
+                      [["school", "학교", "예: 원촌초등학교, 원촌중학교"], null],
+                    ] as ([string, string, string] | null)[][]).map((row, i) => (
+                      <div key={i} style={{ display: "flex", gap: 24, marginBottom: 12 }}>
+                        {row.map((c, j) => c ? (
+                          <div key={j} style={{ flex: 1 }}>
+                            <label style={labelStyle}>{c[1]}</label>
+                            <input type="text" placeholder="자료 없음 · 직접 입력" value={cxVal(c[0])} onChange={(e) => cxSet(c[0], e.target.value)} style={inputStyle} />
+                          </div>
+                        ) : <div key={j} style={{ flex: 1 }} />)}
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ flex: 1, fontSize: 12, color: textSecondary }}>건축물대장·공동주택관리정보 기준이라 실제와 다를 수 있어요. 비워 둔 칸은 공실열람에 나오지 않아요.</div>
+                      {/* [확인] — 다 봤으면 접는다 (2026-10-24 사장님) */}
+                      <button type="button" onClick={() => { setComplexOpen(false); setCx("checked", true); }} style={{ flexShrink: 0, padding: "8px 18px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>확인</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 노출 범위 설정 */}
             {userRole !== "user" && (
               <div style={{ background: darkMode ? "#1a1b1e" : "#f9fafb", padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
@@ -2066,6 +2155,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       </>
                     )}
                   </div>
+                  {propertyType === "아파트·오피스텔" && (
+                    <div style={{ flex: 1 }}>
+                      <label style={labelStyle}>총 세대수</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <input type="text" inputMode="numeric" placeholder="예: 438" value={totalUnits} onChange={(e) => setTotalUnits(e.target.value.replace(/[^0-9]/g, ""))} style={inputStyle} />
+                        <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>세대</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -2936,6 +3034,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       loan_amount: loanAmount ? parseFloat(loanAmount) : null,
                       loan_rate: loanRate ? parseFloat(loanRate) : null,
                       approval_year: approvalYear ? parseInt(approvalYear) : null,
+                      total_units: propertyType === "아파트·오피스텔" && totalUnits ? parseInt(totalUnits) || null : undefined,
+                      complex_info: propertyType === "아파트·오피스텔" ? (complexInfo || undefined) : undefined,
                       jisan_usage: jisanUsage || undefined,
                       ceiling_height: ceilingHeight || undefined,
                       power_capacity: powerCapacity || undefined,
