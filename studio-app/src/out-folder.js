@@ -48,7 +48,9 @@ function baseName(id, hint) {
   if (isColumn(id)) {
     const blog = require("./blog-writer");
     const article = readJson(blog.docFile(id, "article"));
-    return `뉴스칼럼_${safeName((article && article.title) || hint.title) || "칼럼"}`;
+    // 기사 쓰기 전이면 소재(원문 뉴스 제목·주제)로
+    const src = (readJson(path.join(app.getPath("userData"), "media", String(id).replace(/[^\w-]/g, ""), "source.json")) || {}).source || {};
+    return `뉴스칼럼_${safeName((article && article.title) || hint.title || (src.news && src.news.title) || (src.topic && src.topic.subject)) || "칼럼"}`;
   }
   return vacancyName(id, hint);
 }
@@ -72,7 +74,10 @@ function simName(id) {
   const label = sim.kindOf(id) === "interior" ? "인테리어" : "리모델링";
   const map = readJson(mapFile()) || {};
   if (!map[id]) {
-    const { result, vacancy, createdAt } = sim.resultOf(id);
+    // 결과표 전(사진만 올린 때)에도 이름을 짓는다 — 작업 파일 저장 (2026-10-24)
+    let got;
+    try { got = sim.resultOf(id); } catch { got = readJson(path.join(app.getPath("userData"), "media", String(id).replace(/[^\w-]/g, ""), "sim.json")) || {}; }
+    const { result, vacancy, createdAt } = got;
     const when = stamp(createdAt || (result && result.createdAt));
     const vacId = vacancy && vacancy.vacancyId;
     map[id] = vacId ? `${label}_${remember(vacId)}_${when}` : `${label}_${safeName(result && result.title) || "직접 올린 사진"}_${when}`;

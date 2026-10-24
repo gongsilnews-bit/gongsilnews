@@ -49,7 +49,8 @@ const KakaoMap = ({ address, lat, lng, onCoordsChange }: KakaoMapProps) => {
   }, []);
 
   React.useEffect(() => {
-    if (!loaded || !containerRef.current || !address) return;
+    // 주소가 없어도(기본주소만 공개 등) 좌표가 있으면 그린다 (2026-10-24)
+    if (!loaded || !containerRef.current || (!address && !(lat && lng))) return;
 
     try {
       const container = containerRef.current;
@@ -113,7 +114,7 @@ const KakaoMap = ({ address, lat, lng, onCoordsChange }: KakaoMapProps) => {
       };
 
       // Clean up search query for label text
-      let cleanAddress = address.split('\n')[0];
+      let cleanAddress = (address || '').split('\n')[0];
       const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g, /\s+([지상하B]*\d+[층호]).*$/g];
       cleanPatterns.forEach(pat => {
         cleanAddress = cleanAddress.replace(pat, "").trim();

@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { EditableText, EditableBlock, ReportPage } from '../shared';
+import { ROADMAP_ICONS, RoadmapIcon, roadmapIconKey } from './roadmapIcons';
 
 interface Page6RoadmapProps {
   info: PropertyInfo;
@@ -19,6 +20,10 @@ const Page6Roadmap: React.FC<Page6RoadmapProps> = ({
   colorTheme,
   onUpdateInfo,
 }) => {
+  // 아이콘 고르는 칸 (누른 칸 번호, 없으면 -1)
+  const [pickIdx, setPickIdx] = React.useState(-1);
+  // 아이콘 색 — 테마색을 직접 (html2canvas 가 SVG 를 따로 그려 currentColor·CSS 변수가 검게 찍히는 것 막기)
+  const tint = /^#[0-9a-f]{6}$/i.test(colorTheme.primary || '') ? colorTheme.primary : '#1a3a6b';
   const handleTextChange = (key: string, value: string) => {
     if (onUpdateInfo) {
       onUpdateInfo({ ...info, [key]: value });
@@ -64,18 +69,33 @@ const Page6Roadmap: React.FC<Page6RoadmapProps> = ({
                     }`}>
                         {list.map((item: any, idx: number) => (
                             <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-shadow h-full">
-                                <div className={`w-16 h-16 shrink-0 ${item.bg} rounded-xl border ${item.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
-                                    <EditableText 
-                                        value={item.icon} 
-                                        onChange={(val) => {
-                                            if (onUpdateInfo) {
-                                                const newList = [...list];
-                                                newList[idx] = { ...newList[idx], icon: val };
-                                                onUpdateInfo({ ...info, roadmapList: newList });
-                                            }
-                                        }}
-                                        className="text-3xl text-center bg-transparent min-w-[36px]"
-                                    />
+                                <div className="relative shrink-0">
+                                    <button type="button" title="아이콘 바꾸기" onClick={() => setPickIdx(pickIdx === idx ? -1 : idx)}
+                                        className="w-16 h-16 rounded-2xl flex items-center justify-center transition-transform hover:scale-105"
+                                        style={{ background: `${tint}14`, border: `1px solid ${tint}33`, color: tint }}>
+                                        <svg width={30} height={30} viewBox="0 0 24 24" fill="none" stroke={tint} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            {ROADMAP_ICONS[roadmapIconKey(item.icon, idx, item.title)].svg}
+                                        </svg>
+                                    </button>
+                                    {pickIdx === idx && (
+                                        <div className="print:hidden absolute left-0 top-[72px] z-50 w-[300px] p-3 bg-white border border-gray-200 rounded-xl shadow-xl grid grid-cols-6 gap-1.5" data-html2canvas-ignore="true">
+                                            {Object.entries(ROADMAP_ICONS).map(([key, ic]) => (
+                                                <button key={key} type="button" title={ic.label}
+                                                    onClick={() => {
+                                                        setPickIdx(-1);
+                                                        if (onUpdateInfo) {
+                                                            const newList = [...list];
+                                                            newList[idx] = { ...newList[idx], icon: key };
+                                                            onUpdateInfo({ ...info, roadmapList: newList });
+                                                        }
+                                                    }}
+                                                    className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100"
+                                                    style={{ color: tint, outline: roadmapIconKey(item.icon, idx, item.title) === key ? `2px solid ${tint}` : 'none' }}>
+                                                    <RoadmapIcon name={key} size={22} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-lg font-extrabold text-gray-900 mb-2">

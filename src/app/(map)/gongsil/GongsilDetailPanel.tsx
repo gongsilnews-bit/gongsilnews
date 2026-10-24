@@ -78,6 +78,45 @@ interface GongsilDetailPanelProps {
   accentColor?: string;
 }
 
+/** 번호 옆 작은 복사 아이콘 (연한 회색) — 누르면 매물번호·경매번호를 복사하고 잠깐 "복사됨" */
+function CopyNoButton({ value, label }: { value: unknown; label: string }) {
+  const [done, setDone] = React.useState(false);
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    setDone(true);
+    setTimeout(() => setDone(false), 1200);
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={`${label} 복사`}
+      aria-label={`${label} 복사`}
+      style={{ background: "none", border: "none", padding: 0, marginLeft: -4, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 3, color: done ? "#16a34a" : "#bbb", fontSize: 11 }}
+    >
+      {done ? (
+        <>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          복사됨
+        </>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+      )}
+    </button>
+  );
+}
+
 export default function GongsilDetailPanel({
   showDetail,
   activeProperty,
@@ -352,10 +391,14 @@ export default function GongsilDetailPanel({
                 </span>
               )}
               {prop.trade_type === "경매" ? (
-                <span style={{ fontSize: 13, color: "#888" }}>{(prop as any).metadata?.cltrMngNo || ""}</span>
+                <>
+                  <span style={{ fontSize: 13, color: "#888" }}>{(prop as any).metadata?.cltrMngNo || ""}</span>
+                  <CopyNoButton value={(prop as any).metadata?.cltrMngNo} label="경매번호" />
+                </>
               ) : (
                 <>
                   <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                  <CopyNoButton value={prop.vacancy_no} label="매물번호" />
                   <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                 </>
               )}

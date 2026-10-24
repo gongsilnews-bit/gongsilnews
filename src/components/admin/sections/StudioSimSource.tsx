@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
-import StudioChannelTabs from "./StudioChannelTabs";
+import StudioChannelTabs, { WorkFileBar } from "./StudioChannelTabs";
+import { LoadingCover } from "./StudioLoading";
 import { useStudioImager } from "./useStudioWriter";
 
 /**
@@ -74,7 +75,7 @@ function SimProgress({ text, what }: { text: string; what: string }) {
       <style>{`@keyframes gwSimDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-7px); opacity: 1 } }`}</style>
       <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 6, height: 20, marginBottom: 10 }}>
         {[0, 1, 2].map((i) => (
-          <span key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: "#2563eb", animation: `gwSimDot 1.1s ease-in-out ${i * 0.16}s infinite` }} />
+          <span key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: "#1a3a6b", animation: `gwSimDot 1.1s ease-in-out ${i * 0.16}s infinite` }} />
         ))}
       </div>
       <div style={{ fontSize: 15.5, fontWeight: 800, color: "#1a3a6b" }}>{head}</div>
@@ -120,6 +121,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   const [opts, setOpts] = useState<Options | null>(null);
   const [sim, setSim] = useState<Sim | null>(null);
   const [open, setOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(false); // [뉴스목록] (공실뉴스와 같다, 2026-10-24 사장님)
   const [recent, setRecent] = useState<Recent[]>([]);
   const [mine, setMine] = useState<MyVacancy[] | null>(null);
   const [pickVacancy, setPickVacancy] = useState("");
@@ -135,6 +137,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
 
   const choose = (s: Sim | null) => {
     setSim(s);
+    setListOpen(false);
     setFresh(false);
     setOpen(!s?.result);
     try {
@@ -238,9 +241,9 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
       setSaveNote(cleanErr(e));
     }
   };
-  const toArticle = () => {
+  // 결과표 아래 [접기] — 한 줄 요약으로 접고 위로 (기사는 아래 [한 번에 쓰기]로, 2026-10-24 사장님)
+  const fold = () => {
     setFresh(false);
-    onTab("article");
     setOpen(false);
     setTimeout(() => window.scrollTo?.({ top: 0 }), 0);
   };
@@ -292,8 +295,39 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   const r = sim?.result || null;
   const picked = sim ? sim.photos.filter((p) => p.on).length : 0;
 
-  return (
+  /* [뉴스목록] — 이 PC의 시뮬레이션(인테리어·리모델링뉴스) 목록. [+ 새로 작성] = 새 시뮬레이션 */
+  const listCard = (
+    <div style={card}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <h3 style={{ margin: 0, flex: 1, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{name}뉴스 목록</h3>
+        <button onClick={newSim} disabled={Boolean(busy)} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#16a34a", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ 새로 작성</button>
+        <button onClick={() => setListOpen(false)} style={plainBtn}>취소</button>
+      </div>
+      {recent.length === 0 ? (
+        <div style={{ fontSize: 13.5, color: theme.textSecondary, padding: "8px 0" }}>아직 만든 {name}뉴스가 없어요. [+ 새로 작성]으로 시작해 주세요.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", maxHeight: 520, overflowY: "auto" }}>
+          {[...recent].sort((x, y) => Number(y.id === sim?.id) - Number(x.id === sim?.id)).map((c, i) => {
+            const cur = c.id === sim?.id;
+            return (
+              <button key={c.id} onClick={() => (cur ? setListOpen(false) : bridge()?.sim.get(c.id).then((s) => s && choose(s)))}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", border: 0, borderTop: i ? `1px solid ${theme.border}` : 0, background: cur ? "rgba(26,58,107,0.08)" : theme.cardBg, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: c.done ? "#dcfce7" : "#fef3c7", color: c.done ? "#16a34a" : "#b45309", flexShrink: 0 }}>{c.done ? "완료" : "만드는 중"}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.label}</span>
+                {cur && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#1a3a6b", color: "#fff" }}>지금 작업</span>}
+                <span style={{ fontSize: 12.5, color: theme.textSecondary, flexShrink: 0 }}>{c.createdAt.slice(0, 10)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  return listOpen ? listCard : (
     <>
+      {/* 작업 파일 줄 — 결과 전(사진만 올린 때)에도 저장할 수 있게. 결과가 나오면 채널 탭 위에 같은 줄 */}
+      {sim && !r && <WorkFileBar theme={theme} workId={sim.id} />}
       {/* 접힌 요약 (결과표가 있으면) */}
       {sim && r && !open && (
         <div style={{ ...card, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
@@ -308,14 +342,20 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
             <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{r.title}{r.roomName ? ` · ${r.roomName}` : ""}</div>
             <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>{full} 시뮬레이션 · 예상 공사비 {r.cost.rangeText} · {r.dateText}</div>
           </div>
-          <button onClick={() => setOpen(true)} style={plainBtn}>결과표·조건 보기</button>
-          <button onClick={newSim} style={plainBtn}>새 시뮬레이션</button>
+          <button onClick={() => setOpen(true)} style={plainBtn}>AI시뮬레이션</button>
+          <button onClick={() => { setListOpen(true); bridge()?.sim.list(kind).then(setRecent).catch(() => {}); }} style={plainBtn}>뉴스목록</button>
         </div>
       )}
 
       {(!sim || open) && (
-        <div style={card}>
-          {step(1, "사진 고르기", sim && r ? <button onClick={() => setOpen(false)} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>접기</button> : null)}
+        <div style={{ ...card, position: "relative" }}>
+          {/* 사진 가져오기·넣기·준비 중 — 흰 막 + 곤색 점 (시뮬레이션은 아래 진행 표시) (2026-10-24 사장님) */}
+          {busy && busy !== "시뮬레이션 중…" && <LoadingCover theme={theme} title={busy.replace(/…$/, "")} detail={progress} />}
+          {step(1, "사진 고르기", <>
+            {/* 요약 줄 [AI시뮬레이션][뉴스목록] 과 같은 자리 — 누른 자리에서 바로 [접기] (2026-10-24 사장님) */}
+            {sim && r && <button onClick={() => setOpen(false)} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5, marginRight: 6 }}>접기</button>}
+            {recent.length > 0 && <button onClick={() => setListOpen(true)} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>뉴스목록</button>}
+          </>)}
           <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 10, lineHeight: 1.6 }}>
             {kind === "interior" ? "고칠 방의 실내 사진" : <b>바깥에서 찍은 건물 외관 사진</b>}을 1장 골라 주세요.{kind === "remodel" && " (실내 사진은 안 돼요)"} 다른 사진을 누르면 바뀝니다. 공실 사진이면 기사에 매물 정보가 함께 들어갑니다.
           </div>
@@ -436,19 +476,6 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
           {busy === "시뮬레이션 중…" && <SimProgress text={progress} what={kind === "interior" ? "인테리어" : "건물 외관"} />}
           {error && errorAt === "run" && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
 
-          {recent.length > 0 && (
-            <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>최근 {full} 시뮬레이션 (이 PC)</div>
-              {recent.map((c) => (
-                <button key={c.id} onClick={() => bridge()?.sim.get(c.id).then((s) => s && choose(s))}
-                  style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "8px 10px", border: 0, borderRadius: 8, background: sim?.id === c.id ? "rgba(26,58,107,0.08)" : "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: c.done ? "#16a34a" : "#b45309", flexShrink: 0 }}>{c.done ? "완료" : "만드는 중"}</span>
-                  <span style={{ flex: 1, fontSize: 13.5, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.label}</span>
-                  <span style={{ fontSize: 12, color: theme.textSecondary, flexShrink: 0 }}>{c.createdAt.slice(0, 10)}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -457,7 +484,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
         <div ref={resultRef} style={{ ...card, ...(fresh ? { boxShadow: "0 0 0 2px #16a34a" } : {}) }}>
           {fresh && (
             <div style={{ marginBottom: 14, padding: "10px 14px", borderRadius: 10, background: "#f0fdf4", color: "#166534", fontSize: 14, fontWeight: 700 }}>
-              ✓ {full} 시뮬레이션이 완성됐어요! 결과를 확인하고, 아래 버튼으로 결과표를 저장하거나 기사를 써 보세요.
+              ✓ {full} 시뮬레이션이 완성됐어요! 결과를 확인하고 결과표·예측 이미지를 저장해 보세요. 기사·블로그·SNS는 아래 [한 번에 쓰기]로 써요.
             </div>
           )}
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
@@ -507,10 +534,10 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
               <div style={{ fontSize: 14.5, fontWeight: 800 }}>🖼 예측 이미지 저장 ({r.versions.length}장)</div>
               <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>지금 모습 사진과 함께 저장</div>
             </button>
-            <button onClick={toArticle}
-              style={{ textAlign: "left", padding: "12px 16px", border: 0, borderRadius: 10, background: "#16a34a", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
-              <div style={{ fontSize: 14.5, fontWeight: 800 }}>이 결과로 기사 쓰기 →</div>
-              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>공실뉴스 기사 탭으로 갑니다</div>
+            <button onClick={fold}
+              style={{ textAlign: "left", padding: "12px 16px", borderRadius: 10, border: "1px solid #1a3a6b", background: "#1a3a6b", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 800 }}>접기 ▲</div>
+              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>한 줄로 접어요 · 기사는 아래 [한 번에 쓰기]로</div>
             </button>
           </div>
           {saveNote && <div style={{ marginTop: 10, fontSize: 13, color: /못|실패|없/.test(saveNote) ? "#c53030" : "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{saveNote}</div>}

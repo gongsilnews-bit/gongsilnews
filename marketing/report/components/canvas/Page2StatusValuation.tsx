@@ -61,7 +61,7 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                                 { label: "인근 시세", value: "", isHighlight: false },
                                 { label: "현재 금액", value: "", isHighlight: true }
                             ];
-                            const upd = (newBars: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, chartBars: newBars }); };
+                            const upd = (newBars: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, chartBars: newBars, chartEdited: true }); }; // 고친 그래프는 다시 받아도 덮지 않는다
                             return (
                                 <div className="relative group/chart flex flex-col h-full justify-center">
                                     <div className="absolute -top-3 right-0 opacity-0 group-hover/chart:opacity-100 transition-all duration-200 z-30 flex gap-2 print:hidden">

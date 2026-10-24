@@ -58,7 +58,8 @@ function workOf(id) {
 /** 작업의 주 자리 (폴더 또는 파일) */
 const mainPath = (id) => (isRpt(id) ? path.join(reportsRoot(), `${id}.json`) : path.join(mediaRoot(), id));
 // 이름을 정할 만큼 준비됐는지
-const KEY_FILE = { vacancy: "analysis.json", column: "article.json", sim: "sim.json", simreport: "project.json" };
+// 칼럼은 소재(원문 뉴스·주제)만 정해도 저장된다 — 기사 쓰기 전에도 (2026-10-24 사장님)
+const KEY_FILE = { vacancy: "analysis.json", column: "source.json", sim: "sim.json", simreport: "project.json" };
 function ready(id) {
   const p = mainPath(id);
   return isRpt(id) ? fs.existsSync(p) : fs.existsSync(path.join(p, KEY_FILE[kindOf(id)]));
@@ -157,6 +158,16 @@ function moveOldGsn() {
   if (moved) log.info(`[.gsn] 메뉴 폴더로 옮김 ${moved}개`);
 }
 
+/** 처음 저장할 기본 자리 — "20261023 작업이름.gsn" (같은 이름이 있으면 _2) */
+function defaultFile(type, id) {
+  const T = TYPES[type];
+  const outDir = outDirOf(type, id);
+  const base = `${ymd()} ${nameOf(id)}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
+  let file = path.join(outDir, `${base}${T.ext}`);
+  for (let n = 2; fs.existsSync(file); n++) file = path.join(outDir, `${base}_${n}${T.ext}`);
+  return file;
+}
+
 /** 작업 하나를 작업 파일로 쓴다 (돌려줌: 파일 위치 · 안 쓰면 "") */
 function write(type, id, force = false) {
   const T = TYPES[type];
@@ -165,12 +176,8 @@ function write(type, id, force = false) {
   if (!T || (force ? !ready(id) : !idx.since || !eligible(id, idx))) return "";
   let file = idx.files[id];
   if (!file || !fs.existsSync(file)) {
-    const day = ymd();
-    const outDir = outDirOf(type, id);
-    fs.mkdirSync(outDir, { recursive: true });
-    const base = `${day} ${nameOf(id)}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
-    file = path.join(outDir, `${base}${T.ext}`);
-    for (let n = 2; fs.existsSync(file); n++) file = path.join(outDir, `${base}_${n}${T.ext}`);
+    file = defaultFile(type, id);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
   }
   const entries = [{ name: T.meta, data: Buffer.from(JSON.stringify({ app: "공실스튜디오", type: T.label, version: VERSION, id, kind: kindOf(id), savedAt: new Date().toISOString() }, null, 1), "utf8") }];
   for (const p of partsOf(type, id)) entries.push({ name: p.rel, data: fs.readFileSync(p.abs) });
@@ -304,6 +311,29 @@ function saveNow(id) {
   if (file) log.info(`[${TYPES[w.type].ext}] ${w.id} → ${file} (저장하기)`);
   return { file, savedAt: file ? new Date().toISOString() : "" };
 }
+/** [다른 이름으로 저장] — 윈도우 저장 창에서 자리·이름을 고른다. 앞으로 저절로 저장도 그 파일로 (예전 파일은 그대로 둔다).
+ *  돌려줌 { file, savedAt, canceled? } (준비 안 된 작업이면 file "") */
+async function saveAs(id, win) {
+  const w = workOf(String(id || ""));
+  if (!w || !ready(w.id)) return { file: "", savedAt: "" };
+  const T = TYPES[w.type];
+  const cur = readIndex().files[w.id];
+  const r = await require("electron").dialog.showSaveDialog(win || undefined, {
+    title: "다른 이름으로 저장",
+    defaultPath: cur && fs.existsSync(path.dirname(cur)) ? cur : defaultFile(w.type, w.id),
+    filters: [{ name: `공실스튜디오 ${T.label} 파일`, extensions: [T.ext.slice(1)] }],
+  });
+  if (r.canceled || !r.filePath) return { file: "", savedAt: "", canceled: true };
+  const file = r.filePath.toLowerCase().endsWith(T.ext) ? r.filePath : `${r.filePath}${T.ext}`;
+  clearTimeout(timers.get(`${w.type}:${w.id}`));
+  timers.delete(`${w.type}:${w.id}`);
+  const idx = readIndex();
+  idx.files[w.id] = file;
+  writeIndex(idx);
+  write(w.type, w.id, true);
+  log.info(`[${T.ext}] ${w.id} → ${file} (다른 이름으로 저장)`);
+  return { file, savedAt: new Date().toISOString() };
+}
 /** 이 작업의 작업 파일과 마지막 저장 시각 (없으면 빈칸) */
 function status(id) {
   const w = workOf(String(id || ""));
@@ -312,4 +342,4 @@ function status(id) {
   return { file, savedAt: fs.statSync(file).mtime.toISOString() };
 }
 
-module.exports = { EXT, TYPES, start, write, flushAll, kindOf, isGsn, isWorkFile, open, saveNow, status };
+module.exports = { EXT, TYPES, start, write, flushAll, kindOf, isGsn, isWorkFile, open, saveNow, saveAs, status };

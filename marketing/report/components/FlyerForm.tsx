@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../types';
 import { detectPropertyCategory, getOverviewTemplate } from '../propertyTemplates';
+import { MAX_PHOTO_PAGES, photoPageCount, photoPageKeys } from './canvas/photoPages';
+import { DEFAULT_ORDER, pageOrder, pageNumberLabel } from './canvas/pageOrder';
 import { SwatchIcon, RectangleGroupIcon, PhotoIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
@@ -21,6 +23,12 @@ interface FlyerFormProps {
   onOpenTableEditor: () => void;
   onBackTab?: () => void;
     onSave?: () => void;
+    /** [공실뉴스 캡처 사진 넣기] — 앱에서만 (없으면 단추를 숨긴다) · 진행 글 */
+    onInsertCaptures?: () => void;
+    capturesBusy?: string;
+    /** [지적도·건축물대장 가져오기] (2026-10-24) · 진행 글 */
+    onFetchLand?: () => void;
+    landBusy?: string;
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
@@ -28,9 +36,28 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect,
     uploadedImages, isUploadingImage,
     activeTab, setActiveTab,
-    onOpenTableEditor, onBackTab, onSave
+    onOpenTableEditor, onBackTab, onSave, onInsertCaptures, capturesBusy, onFetchLand, landBusy
 }) => {
     const [isDesignLayoutOpen, setIsDesignLayoutOpen] = useState(true);
+    // 쪽 차례 바꾸기 (2026-10-24 사장님) — 끌어서 놓기 · ◀ ▶ · [처음 순서로]. 표지는 맨 앞 고정
+    const [dragId, setDragId] = useState<number | null>(null);
+    const order = pageOrder(info as any);
+    const setOrder = (o: number[]) => setInfo({ ...info, pageOrder: o } as any);
+    const moveTo = (id: number, beforeId: number) => {
+        if (id === 0 || id === beforeId) return;
+        const rest = order.filter((p) => p !== id);
+        const at = beforeId === 0 ? 1 : rest.indexOf(beforeId);
+        rest.splice(Math.max(1, at), 0, id);
+        setOrder(rest);
+    };
+    const step = (id: number, d: -1 | 1) => {
+        const i = order.indexOf(id), j = i + d;
+        if (id === 0 || j < 1 || j >= order.length) return;
+        const o = [...order];
+        [o[i], o[j]] = [o[j], o[i]];
+        setOrder(o);
+    };
+    const L = (id: number) => pageNumberLabel(id, info as any);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setInfo({ ...info, [name]: value });
@@ -307,24 +334,22 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <hr className="border-gray-100 mb-6 shrink-0" />
 
       {/* Combined Tabs & Page Visibility Toggles */}
+      {order.join() !== DEFAULT_ORDER.join() && (
+          <div className="flex justify-end -mb-1.5 mt-[-6px]">
+              <button type="button" onClick={() => setOrder(DEFAULT_ORDER)} className="text-[11px] font-bold text-gray-500 hover:text-blue-600 underline">처음 순서로</button>
+          </div>
+      )}
       <div className="grid grid-cols-3 gap-2.5 bg-gray-100/80 p-3 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
               { id: 'all' as const, label: '전체' },
-              { id: 0, label: '0. 표지' },
-              { id: 1, label: '1. 개요' },
-              { id: 2, label: '2. 매물설명 & 시세' },
-              { id: 3, label: '3. 임대현황' },
-              { id: 4, label: '4. 사진' },
-              { id: 5, label: '5. 입지' },
-              { id: 6, label: '6. 로드맵' },
-              { id: 7, label: '7. 연락처' },
+              ...order.map((id) => ({ id, label: L(id) })),
           ].map(tab => {
               let visiblePages = [...(info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
               
               let isVisible = false;
               let isAllSelected = false;
               if (tab.id === 'all') {
-                  isAllSelected = [0, 1, 2, 3, 4, 5, 6, 7].every(p => visiblePages.includes(p));
+                  isAllSelected = order.every(p => visiblePages.includes(p));
                   isVisible = isAllSelected;
               } else {
                   isVisible = visiblePages.includes(tab.id as number);
@@ -333,9 +358,22 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               return (
                   <div
                       key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                      className={`relative flex flex-col justify-center items-center h-[75px] px-2 text-xs sm:text-[13px] font-bold rounded-lg transition-all cursor-pointer ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
+                      onClick={() => setActiveTab(tab.id)}
+                      draggable={typeof tab.id === 'number' && tab.id !== 0}
+                      onDragStart={(e) => { if (typeof tab.id === 'number') { setDragId(tab.id); e.dataTransfer.effectAllowed = 'move'; } }}
+                      onDragOver={(e) => { if (dragId !== null && typeof tab.id === 'number') e.preventDefault(); }}
+                      onDrop={(e) => { e.preventDefault(); if (dragId !== null && typeof tab.id === 'number') moveTo(dragId, tab.id); setDragId(null); }}
+                      onDragEnd={() => setDragId(null)}
+                      title={typeof tab.id === 'number' && tab.id !== 0 ? '끌어서 순서를 바꿀 수 있어요' : undefined}
+                      className={`group/tile relative flex flex-col justify-center items-center h-[75px] px-2 text-xs sm:text-[13px] font-bold rounded-lg transition-all cursor-pointer ${dragId === tab.id ? 'opacity-40' : ''} ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
                   >
+                      {/* ◀ ▶ — 끌기가 불편할 때 (표지·전체는 없음) */}
+                      {typeof tab.id === 'number' && tab.id !== 0 && (
+                          <div className="absolute bottom-1 inset-x-1 justify-between hidden group-hover/tile:flex" onClick={(e) => e.stopPropagation()}>
+                              <button type="button" onClick={() => step(tab.id as number, -1)} disabled={order.indexOf(tab.id) <= 1} title="앞으로" className="w-5 h-5 rounded bg-gray-100 hover:bg-blue-100 text-[10px] text-gray-600 disabled:opacity-30">◀</button>
+                              <button type="button" onClick={() => step(tab.id as number, 1)} disabled={order.indexOf(tab.id) >= order.length - 1} title="뒤로" className="w-5 h-5 rounded bg-gray-100 hover:bg-blue-100 text-[10px] text-gray-600 disabled:opacity-30">▶</button>
+                          </div>
+                      )}
                       {/* Checkbox wrapper */}
                       <div 
                           className="absolute top-1.5 right-1.5"
@@ -348,7 +386,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               title={tab.id === 'all' ? "전체 출력 선택/해제" : "출력(포함) 여부"}
                               onChange={(e) => {
                                   if (tab.id === 'all') {
-                                      setInfo({ ...info, visiblePages: e.target.checked ? [0, 1, 2, 3, 4, 5, 6, 7] : [] });
+                                      setInfo({ ...info, visiblePages: e.target.checked ? [...order] : [] });
                                   } else {
                                       let newVisible = [...visiblePages];
                                       if (e.target.checked) {
@@ -377,7 +415,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">0. 표지</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(0)}</h2>
                       </div>
                       <div>
                           <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">표지 기본 정보</h4>
@@ -424,7 +462,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(0)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 0. 표지 수정하기
+                              📝 {L(0)} 수정하기
                           </button>
                       </div>
                   )}
@@ -453,7 +491,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">1. 개요</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(1)}</h2>
                       </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
@@ -709,7 +747,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(1)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 1. 개요 수정하기
+                              📝 {L(1)} 수정하기
                           </button>
                       </div>
                   )}
@@ -738,7 +776,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(2)}</h2>
                       </div>
 
 
@@ -938,7 +976,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(2)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 2. 매물설명 & 시세 수정하기
+                              📝 {L(2)} 수정하기
                           </button>
                       </div>
                   )}
@@ -967,7 +1005,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">3. 임대현황</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(3)}</h2>
                       </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
@@ -1012,7 +1050,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(3)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 3. 임대현황 수정하기
+                              📝 {L(3)} 수정하기
                           </button>
                       </div>
                   )}
@@ -1041,7 +1079,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">4. 사진</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(4)}</h2>
                       </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
@@ -1050,12 +1088,46 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <div><label className="text-xs text-gray-500">페이지 부제목 (기본: Property Photo)</label><input name="page4Subtitle" value={info.page4Subtitle || "Property Photo"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                       </div>
                   </div>
+                  {/* 사진 쪽 1 — 예전 칸 그대로 */}
+                  {photoPageCount(info) > 1 && <h4 className="font-bold text-gray-800 mb-2 text-sm">사진 쪽 1</h4>}
                   {renderImageUpload('mainImage', '메인 사진 (정면 외관)')}
                   <div className="grid grid-cols-2 gap-4">
                       {renderImageUpload('subImage1', '서브 사진 1')}
                       {renderImageUpload('subImage2', '서브 사진 2')}
                       {renderImageUpload('featureImage1', '서브 사진 3')}
                       {renderImageUpload('featureImage2', '서브 사진 4')}
+                  </div>
+                  {/* 사진 쪽 2~5 — 쪽마다 1~5장, 장수에 맞춰 배치는 자동 (2026-10-24 사장님) */}
+                  {Array.from({ length: photoPageCount(info) - 1 }, (_, i) => i + 2).map((n) => (
+                      <div key={n} className="mt-4 pt-4 border-t border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-bold text-gray-800 text-sm">사진 쪽 {n} <span className="text-xs font-normal text-gray-400">· 1~5장 (장수에 맞춰 배치)</span></h4>
+                              {n === photoPageCount(info) && (
+                                  <button type="button" onClick={() => {
+                                      photoPageKeys(n).forEach((k) => uploadedImages[k] && onDeleteImage && onDeleteImage(k));
+                                      setInfo({ ...info, photoPageCount: n - 1 } as any);
+                                  }} className="text-red-500 hover:text-red-700 font-bold text-[11px] border-none bg-transparent cursor-pointer">이 쪽 빼기</button>
+                              )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                              {photoPageKeys(n).map((k, i) => <React.Fragment key={k}>{renderImageUpload(k, `사진 ${i + 1}`)}</React.Fragment>)}
+                          </div>
+                      </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                      {photoPageCount(info) < MAX_PHOTO_PAGES && (
+                          <button type="button" onClick={() => setInfo({ ...info, photoPageCount: photoPageCount(info) + 1 } as any)}
+                              className="flex-1 min-w-[140px] py-2.5 px-3 rounded-lg border-2 border-dashed border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50">
+                              + 사진 쪽 추가 ({photoPageCount(info)}/{MAX_PHOTO_PAGES})
+                          </button>
+                      )}
+                      {onInsertCaptures && (
+                          <button type="button" onClick={onInsertCaptures} disabled={Boolean(capturesBusy)}
+                              title="공실뉴스에서 분석·캡처한 공실열람 검증·지도·로드뷰 사진을 빈 칸에 넣어요"
+                              className="flex-1 min-w-[140px] py-2.5 px-3 rounded-lg text-white font-bold text-sm disabled:opacity-60" style={{ background: '#1a3a6b' }}>
+                              {capturesBusy || '공실뉴스 캡처 사진 넣기'}
+                          </button>
+                      )}
                   </div>
                   </div>
 
@@ -1066,7 +1138,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(4)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 4. 사진 수정하기
+                              📝 {L(4)} 수정하기
                           </button>
                       </div>
                   )}
@@ -1095,7 +1167,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">5. 입지</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(5)}</h2>
                       </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
@@ -1175,7 +1247,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(5)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 5. 입지 수정하기
+                              📝 {L(5)} 수정하기
                           </button>
                       </div>
                   )}
@@ -1204,7 +1276,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">6. 로드맵</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(6)}</h2>
                       </div>
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (시나리오)</h4>
                   {(() => {
@@ -1322,7 +1394,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(6)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 6. 로드맵 수정하기
+                              📝 {L(6)} 수정하기
                           </button>
                       </div>
                   )}
@@ -1347,11 +1419,54 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
+          {/* 8. 지적도 · 9. 건축물대장 — 한 번에 가져온다 (공부에 있는 실제 값만) */}
+          {([8, 9, 10, 11].includes(activeTab as number) || (activeTab === 'all' && (info.visiblePages || []).some((p) => p >= 8))) && (() => {
+              const land = (info as any).landInfo;
+              const trade = (info as any).tradeInfo;
+              const edits = Object.keys((info as any).publicEdits || {}).length;
+              const hidden = Object.values((info as any).publicHidden || {}).filter(Boolean).length;
+              const b = land?.buildings?.[0];
+              const target = land?.parcels?.find((p: any) => p.pnu === land.pnu);
+              const row = (ok: boolean, page: string, text: string, warn = '') => (
+                  <div className="flex gap-2"><span className={ok ? 'text-green-600' : 'text-amber-500'}>{ok ? '✓' : '·'}</span><b className="shrink-0 w-[92px]">{page}</b><span className={ok ? 'text-gray-700' : 'text-amber-600'}>{ok ? text : warn || '없음'}</span></div>
+              );
+              return (
+                  <div className="animate-fadeIn space-y-4 mb-8">
+                      <div className="pb-2 border-b-[3px] border-black">
+                          <h2 className="text-lg font-black text-black tracking-tight">지적도 · 건축물대장 · 층별 현황 · 실거래 이력</h2>
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed"><b>2쪽 주변시세 그래프</b>와 로드맵 뒤 <b>8~11쪽</b>을 이 매물에 맞게 채워요. 보고서를 처음 열 때 저절로 채우고, 30일이 지나면 [AI로 채우기] 때 새로 채워요. 채운 내용은 쪽에서 눌러 고칠 수 있어요.</p>
+                      {onFetchLand && (
+                          <button type="button" onClick={onFetchLand} disabled={Boolean(landBusy)}
+                              className="w-full py-3 rounded-lg text-white font-bold text-sm disabled:opacity-60" style={{ background: '#1a3a6b' }}>
+                              {landBusy || (land ? '지적도·대장·층별·실거래 새로 채우기' : '지적도·대장·층별·실거래 채우기')}
+                          </button>
+                      )}
+                      {land && (
+                          <div className="text-xs leading-relaxed rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-1">
+                              {trade && row(!!trade.chart?.points?.length, '2쪽 주변시세', `${trade.chart.scope} ${trade.kindLabel} ${trade.rentChart ? '전세' : '매매'} · ${trade.chart.points?.length}구간`, '거래가 적어 그래프 없음')}
+                              {row(!!land.parcels?.length, '8쪽 지적도', `필지 ${land.parcels?.length}개${target ? ` · ${target.jibun}` : ''}`, land.cadastralError)}
+                              {row(!!b, '9쪽 건축물대장', b ? [b.purpose, b.totArea && `연면적 ${b.totArea}㎡`, b.useAprDay && `${String(b.useAprDay).slice(0, 4)} 사용승인`].filter(Boolean).join(' · ') : '', land.buildingError)}
+                              {trade && row(!!trade.floors?.length, '10쪽 층별 현황', `${trade.floors?.length}개 층${trade.permits?.length ? ` · 인허가 ${trade.permits.length}건` : ''}`)}
+                              {trade && row(!!(trade.history?.length || trade.examples?.length), '11쪽 실거래', `이 건물 ${trade.history?.length || 0}건 · 비슷한 거래 ${trade.examples?.length || 0}건`)}
+                              {trade?.errors?.length > 0 && <div className="text-amber-600 pt-1">일부 내용을 채우지 못했어요. 잠시 뒤 [새로 채우기]를 눌러 주세요.</div>}
+                          </div>
+                      )}
+                      {(edits > 0 || hidden > 0) && (
+                          <div className="flex flex-wrap gap-2 text-xs">
+                              {edits > 0 && <button type="button" onClick={() => window.confirm(`고친 칸 ${edits}개를 받은 값으로 되돌릴까요?`) && setInfo({ ...info, publicEdits: {} } as any)} className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white font-bold text-gray-700">고친 칸 {edits}개 되돌리기</button>}
+                              {hidden > 0 && <button type="button" onClick={() => setInfo({ ...info, publicHidden: {} } as any)} className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white font-bold text-gray-700">숨긴 줄 {hidden}개 되살리기</button>}
+                          </div>
+                      )}
+                  </div>
+              );
+          })()}
+
           {(activeTab === 7 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(7))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6 animate-fadeIn">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">7. 연락처</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">{L(7)}</h2>
                       </div>
                       <div>
                           <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">담당자 및 부동산 정보</h4>
@@ -1422,7 +1537,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(7)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 7. 연락처 수정하기
+                              📝 {L(7)} 수정하기
                           </button>
                       </div>
                   )}

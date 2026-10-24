@@ -27,6 +27,8 @@ if (allowed) {
     vacancy: {
       analyze: (vacancyId) => ipcRenderer.invoke("studio:vacancy-analyze", vacancyId),
       load: (vacancyId) => ipcRenderer.invoke("studio:vacancy-load", vacancyId),
+      list: () => ipcRenderer.invoke("studio:vacancy-list"), // [공실 바꾸기] 목록
+      captures: (vacancyId) => ipcRenderer.invoke("studio:vacancy-captures", vacancyId), // AI 매물보고서 [공실뉴스 캡처 사진 넣기]
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:vacancy-progress", h);
@@ -53,6 +55,7 @@ if (allowed) {
     // 작업 파일(.gsn·.gsm) — [저장하기] · [불러오기] · 저장 상태 · 폴더 열기 (2026-10-23)
     work: {
       save: (id) => ipcRenderer.invoke("studio:work-save", id),
+      saveAs: (id) => ipcRenderer.invoke("studio:work-save-as", id),
       status: (id) => ipcRenderer.invoke("studio:work-status", id),
       show: (file) => ipcRenderer.invoke("studio:work-show", file),
       open: () => ipcRenderer.invoke("studio:work-open"),
@@ -153,6 +156,7 @@ if (allowed) {
       grabNews: () => ipcRenderer.invoke("studio:column-grab-news"),
       create: (source) => ipcRenderer.invoke("studio:column-create", source),
       get: (id) => ipcRenderer.invoke("studio:column-get", id),
+      refetch: (id) => ipcRenderer.invoke("studio:column-refetch", id), // [다시 가져오기]
       list: () => ipcRenderer.invoke("studio:column-list"),
     },
     /* 영상 편집기 (동영상제작) — PC 파일은 studio-media:// 주소로 바로 재생 */

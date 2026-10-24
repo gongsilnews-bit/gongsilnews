@@ -7,10 +7,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { C, FONT } from "@/components/admin/studio-video/ui";
 import { STUDIO_FONTS } from "@/lib/studio-video/fonts";
 import { usePcFonts } from "@/lib/pcFonts";
+import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 
 export type AiAct = "fill" | "edit" | "gen" | "removeBg" | "text";
 export const AI_ACT_NAME: Record<AiAct, string> = { fill: "생성형 채우기", edit: "프롬프트로 편집", gen: "이미지 생성", removeBg: "배경 제거", text: "AI 문구 바꾸기" };
 /** 고른 글자 레이어 — aiOff = 숫자·정보 칸 (가격·중개사무소 등, AI 가 바꾸지 않음) */
+/** 이미지 생성 — 그림 스타일(영상 편집기와 같은 16가지 id) · 참고 이미지 (2026-10-24 사장님) */
+export type AiGenOpts = { style: string; ref: HTMLCanvasElement | null };
+const GEN_STYLE_KEY = "gsp:genStyle";
 export type BarText = { name: string; font: string; px: number; color: string; align: "left" | "center" | "right"; aiOff: boolean };
 export type BarTextSet = Partial<{ font: string; px: number; color: string; align: "left" | "center" | "right" }>;
 
@@ -35,7 +39,7 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
   onTextSet?: (p: BarTextSet) => void; onWarp?: () => void; onShapeColor?: (c: string) => void;
   /** 진행 글 (있으면 입력 막기) */
   busy: string;
-  onRun: (act: AiAct, prompt: string) => void;
+  onRun: (act: AiAct, prompt: string, gen?: AiGenOpts) => void;
   onAddImage: () => void; onClose: () => void;
   onSelInvert: () => void; onSelClear: () => void;
 }) {
@@ -48,6 +52,26 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
   const [text, setText] = useState("");
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [more, setMore] = useState(false);
+  // 이미지 생성 — 그림 스타일 · 참고 이미지
+  const [genStyle, setGenStyleState] = useState(() => { try { return localStorage.getItem(GEN_STYLE_KEY) || "realistic"; } catch { return "realistic"; } });
+  const setGenStyle = (id: string) => { setGenStyleState(id); try { localStorage.setItem(GEN_STYLE_KEY, id); } catch {} };
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [refImg, setRefImg] = useState<{ url: string; canvas: HTMLCanvasElement } | null>(null);
+  const refInp = useRef<HTMLInputElement>(null);
+  const pickRef = (f: File | undefined) => {
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 1536 / Math.max(im.width, im.height)); // 너무 크면 줄여 보낸다
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext("2d")!.drawImage(im, 0, 0, c.width, c.height);
+      setRefImg({ url, canvas: c });
+    };
+    im.src = url;
+  };
+  const curStyle = IMAGE_STYLES.find((x) => x.id === genStyle) || IMAGE_STYLES[0];
   const inp = useRef<HTMLInputElement>(null);
   useEffect(() => { if (act) inp.current?.focus(); }, [act]);
   const drag = (e: React.PointerEvent) => {
@@ -58,10 +82,11 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
     window.addEventListener("pointermove", mv);
     window.addEventListener("pointerup", up);
   };
-  const run = () => { if (!act || busy) return; onRun(act, text.trim()); };
+  const run = () => { if (!act || busy) return; onRun(act, text.trim(), act === "gen" ? { style: genStyle, ref: refImg?.canvas || null } : undefined); };
   const pill = (icon: string, label: string, go: () => void, primary = false, off = false) => (
     <button type="button" onClick={go} disabled={off}
-      style={{ display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 11px", borderRadius: 6, border: `1px solid ${primary ? "transparent" : C.psCtrlLine}`, background: primary ? C.accent : C.psCtrl, color: off ? C.dim : C.psCtrlText, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: off ? "default" : "pointer", whiteSpace: "nowrap" }}>
+      // 파란 단추 글자는 늘 흰색 — 못 누를 때는 단추를 흐리게 (2026-10-24 사장님: [생성] 글씨가 안 보임)
+      style={{ display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 11px", borderRadius: 6, border: `1px solid ${primary ? "transparent" : C.psCtrlLine}`, background: primary ? C.accent : C.psCtrl, color: primary ? "#ffffff" : off ? C.dim : C.psCtrlText, opacity: primary && off ? 0.55 : 1, fontSize: 13, fontWeight: primary ? 700 : 600, fontFamily: FONT, cursor: off ? "default" : "pointer", whiteSpace: "nowrap" }}>
       {svg(icon)}{label}
     </button>
   );
@@ -84,9 +109,44 @@ export function AiBar({ hasSel, imgLayer, textLayer = null, shapeColor = null, o
         <>
           <button type="button" title="뒤로" onClick={() => setAct(null)} style={{ width: 26, height: 30, border: 0, background: "transparent", color: C.sub, cursor: "pointer", fontSize: 15 }}>‹</button>
           <span style={{ fontSize: 12.5, color: "#93c5fd", fontWeight: 700, whiteSpace: "nowrap" }}>{AI_ACT_NAME[act]}</span>
+          {act === "gen" && <>
+            {/* 그림 스타일 — 누르면 위로 카드 16개 */}
+            <div style={{ position: "relative" }}>
+              <button type="button" onClick={() => setStyleOpen(!styleOpen)} title={curStyle.desc}
+                style={{ height: 30, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrl, color: C.psCtrlText, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {curStyle.label} ▾
+              </button>
+              {styleOpen && (
+                <div style={{ position: "absolute", left: 0, bottom: 38, width: 420, padding: 8, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, background: C.panel, border: `1px solid ${C.psCtrlSep}`, borderRadius: 10, boxShadow: "0 10px 30px rgba(0,0,0,0.55)" }}>
+                  {IMAGE_STYLES.map((s) => {
+                    const on = s.id === genStyle;
+                    return (
+                      <button key={s.id} type="button" title={s.desc} onClick={() => { setGenStyle(s.id); setStyleOpen(false); inp.current?.focus(); }}
+                        style={{ position: "relative", height: 48, borderRadius: 7, border: 0, outline: on ? `3px solid ${C.accent}` : "none", outlineOffset: -3, background: s.thumb ? `center / cover no-repeat url("${s.thumb}"), ${s.bg}` : s.bg, cursor: "pointer", overflow: "hidden", padding: 0 }}>
+                        <span style={{ position: "absolute", inset: 0, background: on ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.45)" }} />
+                        <span style={{ position: "relative", color: "#fff", fontSize: 12.5, fontWeight: 800, fontFamily: FONT, textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{on ? "✓ " : ""}{s.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {/* 참고 이미지 — 하나 붙이면 그 그림을 보고 비슷하게 */}
+            <input ref={refInp} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { pickRef(e.target.files?.[0]); e.target.value = ""; }} />
+            {refImg ? (
+              <span style={{ position: "relative", width: 30, height: 30, flexShrink: 0 }} title="참고 이미지">
+                <img src={refImg.url} alt="" style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 6, border: `1px solid ${C.psCtrlLine}` }} />
+                <button type="button" title="참고 이미지 빼기" onClick={() => setRefImg(null)}
+                  style={{ position: "absolute", top: -6, right: -6, width: 16, height: 16, borderRadius: 8, border: 0, background: "#111", color: "#fff", fontSize: 10, lineHeight: "16px", padding: 0, cursor: "pointer" }}>✕</button>
+              </span>
+            ) : (
+              <button type="button" title="참고 이미지 붙이기 (선택)" onClick={() => refInp.current?.click()}
+                style={{ height: 30, padding: "0 10px", borderRadius: 6, border: `1px dashed ${C.psCtrlLine}`, background: "transparent", color: C.psCtrlText, fontSize: 12.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>+ 참고 이미지</button>
+            )}
+          </>}
           <input ref={inp} value={text} onChange={(e) => setText(e.target.value)} placeholder={ph}
             onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter" && !e.nativeEvent.isComposing) run(); if (e.key === "Escape") setAct(null); }}
-            style={{ width: 440, maxWidth: "50vw", height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrlIn, color: C.text, fontSize: 13.5, fontFamily: FONT, outline: "none" }} />
+            style={{ width: act === "gen" ? 340 : 440, maxWidth: "50vw", height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.psCtrlLine}`, background: C.psCtrlIn, color: C.text, fontSize: 13.5, fontFamily: FONT, outline: "none" }} />
           {pill(ICON.gen, act === "text" ? "바꾸기" : "생성", run, true, act !== "fill" && act !== "text" && !text.trim())}
         </>
       ) : (

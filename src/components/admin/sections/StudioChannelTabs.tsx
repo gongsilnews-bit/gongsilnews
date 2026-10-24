@@ -30,7 +30,7 @@ type Bridge = {
   sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null>; writeAll?: (o: Omit<AllOpts, "sns"> & { sns: { on: boolean; tone: Record<string, string> }; vacancyId: string }) => Promise<{ article?: BlogDraft; blog?: BlogDraft; sns?: SnsData; youtube?: unknown; miss?: string[] }> };
   article?: { options: (vacancyId: string) => Promise<{ kinds: { id: string; label: string }[]; lengths: { id: string; label: string }[] }> };
   youtube: { get: (vacancyId: string) => Promise<unknown> };
-  work?: { save: (id: string) => Promise<WorkSaved>; status: (id: string) => Promise<WorkSaved>; show: (file: string) => Promise<void>; open: () => Promise<boolean> };
+  work?: { save: (id: string) => Promise<WorkSaved>; saveAs?: (id: string) => Promise<WorkSaved & { canceled?: boolean }>; status: (id: string) => Promise<WorkSaved>; show: (file: string) => Promise<void>; open: () => Promise<boolean> };
   blog: {
     styles: (vacancyId?: string) => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<BlogDraft>;
@@ -87,25 +87,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [allBusy, setAllBusy] = useState("");
   const [allMsg, setAllMsg] = useState("");
   const [ytVer, setYtVer] = useState(0);
-  // 작업 파일 — [저장하기] · [불러오기] (저절로 저장도 그대로, 2026-10-23 사장님)
-  const [saved, setSaved] = useState<WorkSaved | null>(null);
-  const [saveMsg, setSaveMsg] = useState("");
-  useEffect(() => {
-    const w = bridge()?.work;
-    if (!w) return;
-    const load = () => w.status(workId).then(setSaved).catch(() => {});
-    load();
-    const t = setInterval(load, 8000); // 저절로 저장된 시각도 따라가게
-    return () => clearInterval(t);
-  }, [workId]);
-  const saveNow = async () => {
-    const w = bridge()?.work;
-    if (!w) return;
-    setSaveMsg("");
-    const r = await w.save(workId).catch(() => null);
-    if (r && r.file) { setSaved(r); setSaveMsg("저장했어요"); setTimeout(() => setSaveMsg(""), 2500); }
-    else setSaveMsg("아직 저장할 내용이 없어요. 분석·캡처나 글쓰기를 먼저 해 주세요.");
-  }; // 한 번에 쓰기로 대본을 새로 받으면 유튜브 탭을 다시 그린다
+  // 한 번에 쓰기로 대본을 새로 받으면 유튜브 탭을 다시 그린다
   // SNS 문체 — 채널마다 (전에 세 채널 같이 고른 값이 있으면 그것으로 시작)
   const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => [ch, all.sns.tones?.[ch] || all.sns.tone || "polite"]));
   const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
@@ -123,7 +105,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       if (r.blog) { setBlog(r.blog); setNaverDone(null); setDesign(designFor(st)); }
       if (r.sns) setSnsData(r.sns);
       if (r.youtube) { setHasYoutube(true); setYtVer((n) => n + 1); }
-      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭에서 따로 다시 써 주세요.` : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 그 탭의 [이 글만 다시 쓰기].");
+      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭 ☑만 남기고 [한 번에 쓰기]를 다시 눌러 주세요.` : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 탭 이름 옆 ☑를 그것만 남기고 [한 번에 쓰기].");
     } catch (e) {
       setAllMsg(cleanErr(e));
     } finally {
@@ -278,19 +260,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
 
   return (
     <>
-      {/* 작업 파일 — [저장하기] · [불러오기] */}
-      {bridge()?.work && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 8, fontSize: 12.5, color: theme.textSecondary }}>
-          {saveMsg ? <span style={{ color: /없어요/.test(saveMsg) ? "#c2410c" : "#16a34a", fontWeight: 700 }}>{saveMsg}</span>
-            : saved?.file ? <span title={saved.file}>✓ 저장됨 · {hhmm(saved.savedAt)}</span> : <span>아직 저장 안 됨</span>}
-          {saved?.file && <button type="button" onClick={() => void bridge()?.work?.show(saved.file)} title={saved.file}
-            style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>파일 위치</button>}
-          <button type="button" onClick={() => void saveNow()} title=".gsn 작업 파일로 지금 저장 (바뀌면 저절로도 저장돼요)"
-            style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>저장하기</button>
-          <button type="button" onClick={() => void bridge()?.work?.open()} title="저장해 둔 .gsn 작업 파일 열기"
-            style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>불러오기</button>
-        </div>
-      )}
+      {/* 작업 파일 — [저장하기] · [다른 이름으로 저장] · [불러오기] */}
+      <WorkFileBar theme={theme} workId={workId} />
       {/* 채널 탭 — 탭에서는 스타일만 고르고, 오른쪽 끝 [한 번에 쓰기]로 ☑ 한 글을 함께 쓴다 (2026-10-23 사장님) */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: allBusy || allMsg ? 8 : 16 }}>
         <div style={{ display: "flex", gap: 4, flex: 1, minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
@@ -371,12 +342,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                     {l.label} · {l.chars}
                   </button>
                 ))}
-                {oneShot ? (blog || writing) && (
-                  <button onClick={writeBlog} disabled={writing || Boolean(allBusy)}
-                    style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-                    {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기"}
-                  </button>
-                ) : (
+                {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
                   <button onClick={writeBlog} disabled={writing}
                     style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
                     {writing ? `${aiName}가 쓰는 중…` : blog ? "다시 쓰기" : `${aiName}로 블로그 글 쓰기`}
@@ -480,5 +446,53 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         </div>
       </>)}
     </>
+  );
+}
+
+/** 작업 파일(.gsn) 줄 — [저장하기] · [다른 이름으로 저장] · [불러오기]. 채널 탭 위, 그리고 인테리어·리모델링은 결과 전에도 (2026-10-24 사장님) */
+export function WorkFileBar({ theme, workId }: { theme: Theme; workId: string }) {
+  // 작업 파일 — [저장하기] · [불러오기] (저절로 저장도 그대로, 2026-10-23 사장님)
+  const [saved, setSaved] = useState<WorkSaved | null>(null);
+  const [saveMsg, setSaveMsg] = useState("");
+  useEffect(() => {
+    const w = bridge()?.work;
+    if (!w) return;
+    const load = () => w.status(workId).then(setSaved).catch(() => {});
+    load();
+    const t = setInterval(load, 8000); // 저절로 저장된 시각도 따라가게
+    return () => clearInterval(t);
+  }, [workId]);
+  const saveNow = async () => {
+    const w = bridge()?.work;
+    if (!w) return;
+    setSaveMsg("");
+    const r = await w.save(workId).catch(() => null);
+    if (r && r.file) { setSaved(r); setSaveMsg("저장했어요"); setTimeout(() => setSaveMsg(""), 2500); }
+    else setSaveMsg("아직 저장할 내용이 없어요. 분석·캡처나 글쓰기를 먼저 해 주세요.");
+  };
+  // 다른 이름으로 저장 — 윈도우 저장 창에서 자리·이름을 고르면 앞으로 그 파일에 저장 (2026-10-24 사장님)
+  const saveAs = async () => {
+    const w = bridge()?.work;
+    if (!w?.saveAs) return;
+    setSaveMsg("");
+    const r = await w.saveAs(workId).catch(() => null);
+    if (r?.canceled) return;
+    if (r && r.file) { setSaved(r); setSaveMsg("저장했어요"); setTimeout(() => setSaveMsg(""), 2500); }
+    else setSaveMsg("아직 저장할 내용이 없어요. 분석·캡처나 글쓰기를 먼저 해 주세요.");
+  };
+  if (!bridge()?.work) return null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 8, fontSize: 12.5, color: theme.textSecondary }}>
+      {saveMsg ? <span style={{ color: /없어요/.test(saveMsg) ? "#c2410c" : "#16a34a", fontWeight: 700 }}>{saveMsg}</span>
+        : saved?.file ? <span title={saved.file}>✓ 저장됨 · {hhmm(saved.savedAt)}</span> : <span>아직 저장 안 됨</span>}
+      {saved?.file && <button type="button" onClick={() => void bridge()?.work?.show(saved.file)} title={saved.file}
+        style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>파일 위치</button>}
+      <button type="button" onClick={() => void saveNow()} title=".gsn 작업 파일로 지금 저장 (바뀌면 저절로도 저장돼요)"
+        style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>저장하기</button>
+      {bridge()?.work?.saveAs && <button type="button" onClick={() => void saveAs()} title="저장할 자리와 파일 이름을 골라 저장 (앞으로 그 파일에 저장돼요)"
+        style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>다른 이름으로 저장</button>}
+      <button type="button" onClick={() => void bridge()?.work?.open()} title="저장해 둔 .gsn 작업 파일 열기"
+        style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>불러오기</button>
+    </div>
   );
 }

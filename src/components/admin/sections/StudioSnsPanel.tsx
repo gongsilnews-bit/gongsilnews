@@ -52,7 +52,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 
 export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone }: {
   theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
-  /** 한 번에 쓰기 — 이 탭은 문체만 고르고, 쓴 뒤에만 [이 글만 다시 쓰기] */
+  /** 한 번에 쓰기 — 이 탭은 문체만 고르고, 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   /** 채널마다 문체 { instagram, threads, facebook } — 이 탭에서는 이 채널 것만 고른다 */
   oneShot?: boolean; tones?: Record<string, string>; onTone?: (t: string) => void;
 }) {
@@ -232,12 +232,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
               인스타그램·스레드·페이스북 글을 {vacancyId.startsWith("col-") ? "뉴스칼럼 기사·원문을 바탕으로" : "처음 분석·캡처한 공실 정보로"} 함께 씁니다 (SNS 1회). 문체는 채널마다 따로 골라요 (이 탭은 {info.label}).
             </div>
           </div>
-          {oneShot ? (data || writing) && (
-            <button onClick={write} disabled={writing}
-              style={{ padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-              {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기 (세 채널)"}
-            </button>
-          ) : (
+          {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
             <button onClick={write} disabled={writing} style={{ ...btn(true), background: writing ? "#94a3b8" : "#16a34a", cursor: writing ? "default" : "pointer" }}>
               {writing ? `${aiName}가 쓰는 중…` : data ? "세 채널 다시 쓰기" : `${aiName}로 SNS 글 쓰기`}
             </button>

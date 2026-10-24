@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
 import StudioWorking from "./StudioWorking";
 import { useStudioImager } from "./useStudioWriter";
+import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 
 /**
  * 블로그 미리보기 편집기 (공실스튜디오 SNS뉴스발행 3단계)
@@ -28,7 +29,7 @@ type Bridge = {
     revise: (opts: { vacancyId: string; doc: string; request: string }) => Promise<BlogDraft>;
     addPhoto: (opts: { vacancyId: string; doc: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     imageStyles: (vacancyId?: string) => Promise<{ id: string; label: string }[]>;
-    makeImage: (opts: { vacancyId: string; doc: string; style: string; request: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
+    makeImage: (opts: { vacancyId: string; doc: string; style: string; request: string; slot?: number; replaceId?: string; styleLabel?: string; stylePrompt?: string }) => Promise<BlogMedia>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -71,6 +72,17 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const [aiBusy, setAiBusy] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
   const [aiErr, setAiErr] = useState("");
+  // AI 이미지는 공실스터디 멤버십 전용 (2026-10-24 사장님) — null 은 아직 모름(막지 않음, 서버가 한 번 더 막는다)
+  const [paid, setPaid] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/studio/usage", { cache: "no-store" }).then((r) => r.json()).then((d) => setPaid(d.success ? d.simAllowed === true : null)).catch(() => {});
+  }, []);
+  const openStudy = () => {
+    const url = `${window.location.origin}/study`;
+    const studio = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<void> } }).gongsilStudio;
+    if (studio?.openInBrowser) void studio.openInBrowser(url);
+    else window.open(url, "_blank", "noopener");
+  };
 
   useEffect(() => {
     // 칼럼이면 뉴스메이커 화풍(AI 추천 포함)
@@ -87,7 +99,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     setAiErr("");
     const off = b.blog.onProgress(setAiMsg);
     try {
-      const item = await b.blog.makeImage({ vacancyId: initial.vacancyId, doc, style: aiStyle, request: aiRequest, ...target });
+      // "vs:…" = 영상 편집기 그림 스타일 16가지 — 이름·조건을 함께 보내 그 화풍으로 (기사용 스타일은 첫 것을 바탕으로)
+      const vs = aiStyle.startsWith("vs:") ? IMAGE_STYLES.find((x) => x.id === aiStyle.slice(3)) : undefined;
+      const item = await b.blog.makeImage({ vacancyId: initial.vacancyId, doc, style: vs ? imageStyles[0]?.id || "news" : aiStyle, request: aiRequest, ...(vs ? { styleLabel: vs.label, stylePrompt: vs.prompt } : {}), ...target });
       setMedia((list) => (target.replaceId ? list.map((m) => (m.id === item.id ? { ...m, ...item } : m)) : [...list, item]));
       setAiSlot(null);
       setAiReplace(null);
@@ -256,20 +270,34 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const PENCIL = "M4 20h4L19 9l-4-4L4 16zM14 6l4 4";
   const SPARK = "M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z";
 
-  const aiPanel = (target: { slot?: number; replaceId?: string }, heading: string, onClose: () => void) => (
+  const aiPanel = (target: { slot?: number; replaceId?: string }, heading: string, onClose: () => void) => paid === false ? (
+    <div style={{ padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: theme.textPrimary }}><b>AI 이미지</b>는 공실스터디 멤버십 전용 기능이에요.</span>
+      <button onClick={openStudy} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>공실스터디 멤버십 보기 →</button>
+      <button onClick={onClose} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
+    </div>
+  ) : (
     <div style={{ padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)` }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary }}>{heading}</span>
         <button onClick={onClose} disabled={aiBusy} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-        {imageStyles.map((st) => (
-          <button key={st.id} onClick={() => setAiStyle(st.id)}
-            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
-              border: `1px solid ${aiStyle === st.id ? "#1a3a6b" : theme.border}`, background: aiStyle === st.id ? "#1a3a6b" : "transparent", color: aiStyle === st.id ? "#fff" : theme.textPrimary }}>
-            {st.label}
-          </button>
-        ))}
+      {/* 그림 스타일 — 기사용(보도 실사·건물 전경…)과 영상 편집기 스타일을 한 묶음 카드로 (2026-10-24 사장님) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))", gap: 6, marginBottom: 10 }}>
+        {[
+          // 기사용 견본 그림 — public/studio-styles/<id>.jpg (Flow 로 같은 장면, 2026-10-24). 없는 id 는 남색 바탕
+          ...imageStyles.map((st) => ({ key: st.id, label: st.label, desc: "기사용 스타일", bg: "linear-gradient(135deg,#1a3a6b,#3b6fb6)", thumb: ["news", "building", "area", "animation", "infographic"].includes(st.id) ? `/studio-styles/${st.id}.jpg` : "" })),
+          ...IMAGE_STYLES.map((st) => ({ key: `vs:${st.id}`, label: st.label, desc: st.desc, bg: st.bg, thumb: st.thumb || "" })),
+        ].map((c) => {
+          const on = aiStyle === c.key;
+          return (
+            <button key={c.key} type="button" onClick={() => setAiStyle(c.key)} title={c.desc}
+              style={{ position: "relative", height: 50, borderRadius: 8, border: 0, outline: on ? "3px solid #f97316" : "none", outlineOffset: -3, background: c.thumb ? `center / cover no-repeat url("${c.thumb}"), ${c.bg}` : c.bg, cursor: "pointer", overflow: "hidden", padding: 0 }}>
+              <span style={{ position: "absolute", inset: 0, background: on ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.45)" }} />
+              <span style={{ position: "relative", color: "#fff", fontSize: 12.5, fontWeight: 800, textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{on ? "✓ " : ""}{c.label}</span>
+            </button>
+          );
+        })}
       </div>
       <input value={aiRequest} onChange={(e) => setAiRequest(e.target.value)} placeholder="그리고 싶은 장면 (비워 두면 글에서 알아서 고릅니다) 예: 해 질 녘 건물 정면"
         style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
@@ -306,7 +334,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진으로 바꾸기
             </button>
             <button onClick={() => { setEditId(null); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
-              <Ico d={SPARK} /> AI 이미지로 바꾸기
+              <Ico d={SPARK} /> AI 이미지로 바꾸기 <span title="공실뉴스부동산(유료 회원) 전용" style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.4 }}>Membership</span>
             </button>
             <button className="sbe-menu-x" onClick={() => setEditId(null)} title="닫기">✕</button>
           </div>
@@ -328,7 +356,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
             </button>
             <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
-              <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지
+              <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지 <span title="공실뉴스부동산(유료 회원) 전용" style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.4 }}>Membership</span>{/* 유료 전용 표시 — 왼쪽 메뉴와 같은 주황 (2026-10-24 사장님) */}
             </button>
             <button className="sbe-menu-x" onClick={() => setOpenSlot(null)} title="닫기">✕</button>
           </div>

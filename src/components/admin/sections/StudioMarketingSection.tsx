@@ -17,6 +17,7 @@ const SimReportSection = lazy(() => import("@/components/admin/studio-sim/SimRep
  * 공실을 고르면 그 도구를 이 화면 안에 띄운다. [새 창으로 열기]로 넓게 볼 수도 있다.
  * AI 매물보고서는 공실 없이도 만든다 (2026-10-23, docs/2026-10-23_report_without_vacancy_plan.md) —
  *   [+ 공실 없이 새로 만들기] → 매물 글 붙여넣기·사진 → 앱이 PC에 저장(rpt-…). 앱 안 · 공실스터디 멤버십 전용. 공유 링크 없음
+ *   → 2026-10-24 사장님: 버튼은 [+ 공실등록](공실등록 화면으로)으로 바꿈. 이미 만든 PC 보고서는 목록에서 그대로 열린다
  */
 
 const CATEGORIES = [
@@ -146,11 +147,12 @@ export default function StudioMarketingSection({ theme, dev = false }: { theme: 
   };
 
   // vacancyId 칸은 공실 id 또는 공실 없이 만든 보고서 id(rpt-…) — 공실 없는 것은 AI 매물보고서에서만
-  const localPick = cat.id === "report" && isLocal(vacancyId) && locals.some((r) => r.id === vacancyId);
+  const localPick = false; // 공실 없이 만든 보고서는 이제 열지 않는다 (아래 canLocal)
   const known = localPick || mine?.some((v) => v.id === vacancyId);
   // 만들어 둔 도구 파일(public/marketing/…/index.html)을 바로 연다 — 개발 PC에서 도구 개발 서버를 안 켜도 열리게
   const url = !known ? "" : localPick ? `${cat.path}/index.html?local=${encodeURIComponent(vacancyId)}` : `${cat.path}/index.html?vacancy_id=${encodeURIComponent(vacancyId)}`;
-  const canLocal = cat.id === "report" && Boolean(reportBridge());
+  // 공실 없이 만든 보고서는 목록에서 뺀다 (2026-10-24 사장님 — 매물보고서는 등록한 공실로만). PC 파일은 지우지 않는다
+  const canLocal = false;
   const removeLocal = async () => {
     const r = locals.find((x) => x.id === vacancyId);
     if (!r || !window.confirm(`"${r.title}" 보고서를 지울까요? PC에서 지워지고 되살릴 수 없어요.\n(내보낸 PDF·이미지 파일은 그대로 남아요)`)) return;
@@ -246,12 +248,11 @@ export default function StudioMarketingSection({ theme, dev = false }: { theme: 
               )}
             </select>
           )}
-          {canLocal && (
-            <button onClick={() => setNewOpen(true)} title="공실을 등록하지 않고 매물 글·사진으로 보고서를 만들어 PC에 저장해요 (공실스터디 멤버십 전용)"
-              style={{ padding: "10px 14px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
-              + 공실 없이 새로 만들기
-            </button>
-          )}
+          {/* 새 매물은 공실등록으로 (2026-10-24 사장님 — [+ 공실 없이 새로 만들기] 대신). 등록하면 위 목록에 나온다 */}
+          <button onClick={() => { window.location.href = `${window.location.pathname}?menu=gongsil&action=write`; }} title="공실등록 화면으로 가요. 등록한 공실은 이 목록에 나와요"
+            style={{ padding: "10px 14px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+            + 공실등록
+          </button>
           {localPick ? (
             <button onClick={removeLocal} title="이 보고서를 PC에서 지워요"
               style={{ padding: "10px 14px", background: theme.cardBg, color: "#dc2626", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
@@ -275,7 +276,7 @@ export default function StudioMarketingSection({ theme, dev = false }: { theme: 
         ) : (
           <div style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "48px 24px", textAlign: "center", fontSize: 14, color: theme.textSecondary }}>
             위에서 공실을 고르면 {cat.label} 화면이 여기에 열립니다.
-            {canLocal && <div style={{ marginTop: 8 }}>공실을 등록하지 않았다면 <b>[+ 공실 없이 새로 만들기]</b>로 매물 글·사진만으로 만들 수 있어요.</div>}
+            <div style={{ marginTop: 8 }}>새 매물이면 <b>[+ 공실등록]</b>으로 먼저 등록해 주세요.</div>
           </div>
         )}
       </div>

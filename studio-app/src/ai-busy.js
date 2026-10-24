@@ -1,4 +1,5 @@
 // AI 가 글·그림을 쓰는 동안 스튜디오 창 전체를 덮는다 — "AI가 기사를 작성하고 있습니다… 잠시만 기다려 주세요 (0:42)"
+// 기다리는 동안 공실뉴스 재생 로고가 숨 쉬듯 움직이고 주황 고리가 돈다 · 글 끝 점(...)은 하나씩 늘어난다 (2026-10-24 사장님)
 // 그동안 다른 메뉴를 누르거나 화면을 옮기지 못하게 (사장님 2026-10-16). 웹 화면 버전과 상관없이 앱이 직접 그린다.
 // 기사·블로그·SNS·유튜브·칼럼·공실마케팅·영상 대본이 모두 ai/index.js 의 ask·askImage 를 거치므로 거기서 감싼다.
 // [중지] 단추·Esc (2026-10-21 사장님: AI 돌릴 때 멈출 수가 없다) — 누르면 바로 덮개를 닫고 "중지했어요" 오류로 끝낸다.
@@ -126,11 +127,15 @@ const overlay = (text, startedAt, sub) => `(() => {
     el.innerHTML = \`<style>
       #__gsAiBusy{position:fixed;inset:0;z-index:2147483647;background:rgba(10,14,20,.62);display:flex;align-items:center;justify-content:center;font-family:'Pretendard Variable','Malgun Gothic',sans-serif;cursor:wait}
       #__gsAiBusy .c{background:#16202b;color:#fff;border-radius:14px;padding:30px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45);min-width:380px;cursor:default}
-      #__gsAiBusy .d{display:flex;gap:10px;justify-content:center;margin-bottom:18px}
-      #__gsAiBusy .d i{width:14px;height:14px;border-radius:7px;background:#3b82f6;animation:gsb 1.2s infinite ease-in-out}
-      #__gsAiBusy .d i:nth-child(2){animation-delay:.15s}#__gsAiBusy .d i:nth-child(3){animation-delay:.3s}
-      @keyframes gsb{0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1}}
+      #__gsAiBusy .d{position:relative;width:88px;height:88px;margin:0 auto 18px}
+      #__gsAiBusy .d .r{position:absolute;inset:0;border-radius:50%;border:4px solid rgba(245,166,35,.18);border-top-color:#f5a623;animation:gsr 1s linear infinite}
+      #__gsAiBusy .d img{position:absolute;inset:10px;width:68px;height:68px;border-radius:50%;background:#fff;animation:gsp 1.6s ease-in-out infinite}
+      @keyframes gsr{to{transform:rotate(360deg)}}
+      @keyframes gsp{0%,100%{transform:scale(.93)}50%{transform:scale(1.04)}}
       #__gsAiBusy .t{font-size:19px;font-weight:800}
+      #__gsAiBusy .t .p i{font-style:normal;opacity:0;animation:gsd 1.5s infinite}
+      #__gsAiBusy .t .p i:nth-child(2){animation-delay:.25s}#__gsAiBusy .t .p i:nth-child(3){animation-delay:.5s}
+      @keyframes gsd{0%,15%{opacity:0}35%,100%{opacity:1}}
       #__gsAiBusy .s{font-size:14.5px;color:#b6c2cf;margin-top:8px;line-height:1.6}
       #__gsAiBusy .e{font-size:24px;font-weight:800;margin-top:14px;font-variant-numeric:tabular-nums;color:#93c5fd}
       #__gsAiBusy .x{margin-top:14px;height:24px;padding:0 10px;border-radius:5px;border:1px solid #374151;background:transparent;color:#6b7280;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
@@ -145,9 +150,9 @@ const overlay = (text, startedAt, sub) => `(() => {
       #__gsAiBusy .gb:hover{background:#2b3a4b}
       #__gsAiBusy .ok{display:none;margin:14px auto 0;height:40px;padding:0 26px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer}
       #__gsAiBusy.done{cursor:default}
-      #__gsAiBusy.done .d,#__gsAiBusy.done .s,#__gsAiBusy.done .e,#__gsAiBusy.done .k{display:none}
+      #__gsAiBusy.done .d,#__gsAiBusy.done .t .p,#__gsAiBusy.done .s,#__gsAiBusy.done .e,#__gsAiBusy.done .k{display:none}
       #__gsAiBusy.done .ok{display:block}
-    </style><div class="c"><div class="d"><i></i><i></i><i></i></div><div class="t"></div><button type="button" class="ok">결과 보기</button>
+    </style><div class="c"><div class="d"><span class="r"></span><img src="/studio-cam-logo.png" alt=""></div><div class="t"><span class="w"></span><span class="p"><i>.</i><i>.</i><i>.</i></span></div><button type="button" class="ok">결과 보기</button>
       <div class="s">보통 1~2분 걸려요. 오른쪽 크롬 창에서 AI가 쓰는 모습을 볼 수 있어요.<br>끝나면 저절로 가져와요 — 크롬 창은 그대로 두세요.</div><div class="e">0:00</div>
       <div class="k">급할 때는 Esc 키로 멈춰요</div></div>\`;
     // 덮개 아래로 누르기·키 입력이 가지 않게 — [중지]만 (앱이 window.__gsAiStopReq 를 읽어 간다)
@@ -175,7 +180,7 @@ const overlay = (text, startedAt, sub) => `(() => {
     document.documentElement.appendChild(el);
   }
   el.classList.remove("done"); // 다시 일하면 "다 됐어요" 를 되돌림 (광고는 이어서)
-  el.querySelector(".t").textContent = ${JSON.stringify(text)};
+  el.querySelector(".t .w").textContent = ${JSON.stringify(String(text || "").replace(/[….\s]+$/, ""))}; // 끝 점은 움직이는 점(.p)으로
   if (!el.__gsSub) el.__gsSub = el.querySelector(".s").innerHTML; // 처음 문구 (크롬 창 안내)
   el.querySelector(".s").innerHTML = ${JSON.stringify(sub || "")} || el.__gsSub;
   const t0 = ${startedAt};

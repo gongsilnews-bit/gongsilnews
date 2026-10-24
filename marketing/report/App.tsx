@@ -4,6 +4,8 @@ import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
+import { MAX_PHOTO_PAGES, photoPageCount, photoPageKeys } from './components/canvas/photoPages';
+import { pageOrder, pageNumberLabel } from './components/canvas/pageOrder';
 // Removed geminiService imports to prevent client-side API usage
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content, type OverviewField } from './propertyTemplates';
@@ -501,7 +503,7 @@ function App() {
   }, [isSidebarOpen]);
 
   const mobilePreviewPageCount = activeTab === 'all'
-    ? (state.info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).length
+    ? (state.info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).length + ((state.info.visiblePages || [4]).includes(4) ? photoPageCount(state.info) - 1 : 0)
     : 1;
   const mobileReportScale = viewportWidth > 0 ? Math.min(1, Math.max(0.1, (viewportWidth - 24) / 1122)) : 1;
   const mobilePreviewHeight = mobilePreviewPageCount * 826 * mobileReportScale;
@@ -828,6 +830,8 @@ function App() {
       promotionText: priceText,
       propertyNumber: (v.property_no || v.id || v.vacancy_id) ? `No. ${v.property_no || v.id || v.vacancy_id}` : "",
       address: autoAddress || "공실 매물 정보",
+      // 5쪽 지도 — 공실 좌표로 바로 (주소 글로 다시 찾지 않아도 되게, 2026-10-24)
+      ...(v.lat && v.lng ? { page5Lat: Number(v.lat), page5Lng: Number(v.lng) } : {}),
       // 등록 안 된 값은 지어내지 않는다 (남향·즉시 입주·관리비 없음 같은 추측 금지 — 2026-10-15)
       subTitle: [v.sub_category || v.property_type, v.direction, areaDisplay !== "-" ? areaDisplay : ""].filter(Boolean).join(" | "),
       transactionType: v.trade_type || "월세",
@@ -1062,6 +1066,8 @@ function App() {
           if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
             merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
           }
+          // 지도 좌표가 비었으면 공실 좌표로 (주소를 공개하지 않은 공실도 5쪽 지도가 나오게, 2026-10-24)
+          if (!merged.info.page5Lat && v.lat && v.lng) merged.info = { ...merged.info, page5Lat: Number(v.lat), page5Lng: Number(v.lng) };
           setState(merged);
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
@@ -1090,6 +1096,7 @@ function App() {
             if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
               merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
             }
+            if (!merged.info.page5Lat && v.lat && v.lng) merged.info = { ...merged.info, page5Lat: Number(v.lat), page5Lng: Number(v.lng) };
             setState(merged);
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
@@ -1456,7 +1463,7 @@ function App() {
   /* ── 공실스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
      앱 화면 안의 틀(iframe)로 열리므로 바깥 창의 window.gongsilStudio.marketing 을 쓴다. 웹에서는 없다. */
   type StudioMarketing = {
-    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown>; facts?: Record<string, unknown> }) => Promise<Record<string, any>>;
+    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown>; facts?: Record<string, unknown>; publicFacts?: string }) => Promise<Record<string, any>>;
     onProgress?: (fn: (t: string) => void) => () => void;
     /** 그림·PDF 를 문서\공실스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
     saveFile?: (opts: { id: string; sub: string; fileName: string; dataUrl: string; hint?: { title?: string; no?: string } }) => Promise<{ file: string; folder: string }>;
@@ -1482,19 +1489,59 @@ function App() {
     }
   };
   const [aiProgress, setAiProgress] = useState("");
-  const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void) => {
+  /* [지적도·대장·층별·실거래 가져오기]로 받아 둔 사실을 AI 에게 줄 짧은 글로 (2026-10-24 사장님: AI 가 실제 자료를 근거로 쓰게) */
+  const publicFactsText = (info: any): string => {
+    const land = info.landInfo, t = info.tradeInfo;
+    if (!land && !t) return "";
+    const L: string[] = [];
+    const m2 = (v: any) => (v ? `${Number(v).toLocaleString('ko-KR')}㎡(${(Number(v) / 3.3058).toFixed(1)}평)` : "");
+    const d8 = (s: string) => (/^\d{8}$/.test(s || "") ? `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}` : s || "");
+    const man = (v: any) => (v == null ? "" : Number(v) >= 10000 ? `${(Number(v) / 10000).toLocaleString('ko-KR', { maximumFractionDigits: 2 })}억 원` : `${Number(v).toLocaleString('ko-KR')}만 원`);
+    if (land?.jibunAddr) L.push(`- 소재지(지번): ${land.jibunAddr}${land.roadAddr ? ` / 도로명: ${land.roadAddr}` : ""}`);
+    const target = land?.parcels?.find((p: any) => p.pnu === land.pnu);
+    if (target?.jibun) L.push(`- 지목: ${String(target.jibun).replace(/^[\d-]+\s*/, "")}`);
+    const z = t?.permits?.[0]?.zoning; if (z) L.push(`- 용도지역: ${z}`);
+    const b = land?.buildings?.[0];
+    if (b) {
+      L.push(`- 건축물대장: ${[b.kind, b.purpose, b.etcPurpose && `(${b.etcPurpose})`, b.structure].filter(Boolean).join(" · ")}`);
+      L.push(`- 면적: 대지 ${m2(b.platArea)} · 건축 ${m2(b.archArea)} · 연면적 ${m2(b.totArea)}${b.bcRat ? ` · 건폐율 ${b.bcRat}%` : ""}${b.vlRat ? ` · 용적률 ${b.vlRat}%` : ""}`);
+      L.push(`- 규모: ${[b.grndFlr && `지상 ${b.grndFlr}층`, b.ugrndFlr && `지하 ${b.ugrndFlr}층`, b.height && `높이 ${b.height}m`, b.households && `${b.households}세대`, b.families && `${b.families}가구`, b.elevators && `승강기 ${b.elevators}대`, b.parking && `주차 ${b.parking}대`].filter(Boolean).join(" · ")}`);
+      if (b.useAprDay) L.push(`- 사용승인일: ${d8(b.useAprDay)}`);
+    }
+    // 아파트·오피스텔 — 단지 전체 · 이 매물 호실
+    const cx = land?.complex, ux = land?.unit;
+    if (cx) L.push(`- 단지(건물) 전체: ${[cx.name, cx.dongs && `${cx.dongs}개 동`, cx.households && `${cx.households}세대`, cx.totArea && `연면적 ${m2(cx.totArea)}`, cx.parking && `주차 ${cx.parking}대`, cx.useAprDay && `사용승인 ${d8(cx.useAprDay)}`].filter(Boolean).join(" · ")}`);
+    if (ux) L.push(`- 이 매물 호실: ${[ux.dong, ux.ho && `${ux.ho}호`, ux.floor, ux.purpose, ux.exclusive && `전용 ${m2(ux.exclusive)}`, ux.common && `공용 ${m2(ux.common)}`].filter(Boolean).join(" · ")}`);
+    if (t?.floors?.length) L.push(`- 층별 용도: ${t.floors.slice(0, 12).map((f: any) => `${f.floor} ${f.purpose}${f.area ? ` ${f.area}㎡` : ""}`).join("; ")}`);
+    if (t?.permits?.length) L.push(`- 건축 인허가: ${t.permits.slice(0, 5).map((p: any) => `${d8(p.permitDay)} ${p.kind}`).join("; ")}`);
+    if (t) {
+      const hist = (t.history || []).filter((h: any) => !h.cancelled).slice(-5);
+      L.push(hist.length
+        ? `- 이 건물 매매 실거래(${t.kindLabel}): ${hist.map((h: any) => `${h.date} ${man(h.amount)}${h.perPyeong ? ` (${t.chart?.basis} 평당 ${man(h.perPyeong)})` : ""}`).join("; ")}`
+        : `- 이 건물 매매 실거래: 최근 ${t.rentChart ? 5 : 10}년 신고 없음`);
+      const pts = t.chart?.points || [];
+      if (pts.length) L.push(`- 주변시세(${t.chart.scope} ${t.kindLabel} ${t.rentChart ? "전세" : "매매"}, ${t.chart.basis} 평당 ${t.rentChart ? "보증금" : "가격"} 중앙값, 반기별): ${pts.map((p: any) => `${p.label} ${p.value.toLocaleString('ko-KR')}만 원(${p.count}건)`).join(", ")}`);
+      const ex = (t.examples || []).slice(0, 3);
+      if (ex.length) L.push(`- ${t.parcel?.dong || ""} 최근 비슷한 거래: ${ex.map((h: any) => `${h.date} ${t.rentChart ? (h.monthly ? `보증금 ${man(h.deposit)}/월 ${h.monthly}만 원` : `전세 ${man(h.deposit)}`) : man(h.amount)}`).join("; ")}`);
+    }
+    // 중개사가 8·9쪽 표에서 고친 값 — 받은 값보다 먼저
+    const fix = Object.entries(info.publicEdits || {}).filter(([k, v]) => /^p[89]\./.test(k) && !/others$/.test(k) && String(v).trim()).map(([k, v]) => `${k.slice(3)}: ${String(v).slice(0, 80)}`);
+    if (fix.length) L.push(`- 중개사가 고친 값(위 값보다 이것을 따를 것): ${fix.slice(0, 15).join("; ")}`);
+    return L.join("\n");
+  };
+  const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void, infoOverride?: any) => {
     const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id") || getLocalId();
     if (!vacancyId || !studioMarketing) return;
     setAiProgress("AI에 요청하는 중…");
     const off = studioMarketing.onProgress?.((t) => setAiProgress(t));
     // 공실 없는 보고서: 회원이 화면에서 넣은 값이 곧 매물 정보다
-    const i: any = state.info;
+    const i: any = infoOverride || state.info;
     const facts = getLocalId() ? {
       "주소·이름": i.address, "가격": i.promotionText, "거래 구분": i.transactionType, "매물 종류": i.subCategory, "면적": i.area, "층": i.floor,
       "방향": i.direction, "방·욕실": i.roomCount, "주차": i.parking, "입주": i.moveInDate, "관리비": i.managementFee, "옵션": i.options, "중개사 설명": i.noticeContent,
     } : undefined;
     try {
-      const out = await studioMarketing.fill({ kind, vacancyId, fields, facts });
+      const out = await studioMarketing.fill({ kind, vacancyId, fields, facts, publicFacts: kind === "report" ? publicFactsText(i) : undefined });
       apply(out);
       setAiProgress("✓ AI가 채웠습니다. 확인하고 [저장하기]를 눌러 주세요.");
       setTimeout(() => setAiProgress(""), 2500);
@@ -1512,8 +1559,14 @@ function App() {
     "areaTargetName", "areaTargetDesc", "areaBox1Title", "areaBox1Text", "areaBox2Title", "areaBox2Text", "areaBox3Title", "areaBox3Text",
     "page4TargetTitle", "page6FooterQuote", "noticeContent", "chartAdviseText", "leaseRightTitle", "leaseRightText",
   ];
-  const handleAiFill = () => {
-    const info: any = state.info;
+  const handleAiFill = async () => {
+    let info: any = state.info;
+    // 지적도·대장·층별·실거래가 없거나 30일이 지났으면 먼저 받는다 (받는 중이면 기다린다) — AI 가 그 자료를 근거로 쓰게 (2026-10-24)
+    if (studioMarketing && new URLSearchParams(window.location.search).get("vacancy_id") && (publicStale(info) || publicRun.current)) {
+      setAiProgress("지적도·건축물대장·층별 현황·실거래가를 채우는 중…");
+      const got = await fetchPublic({ silent: true });
+      if (got) info = got;
+    }
     const fields: Record<string, unknown> = {};
     for (const k of REPORT_TEXT_KEYS) {
       const v = info[k];
@@ -1539,7 +1592,7 @@ function App() {
           },
         };
       });
-    });
+    }, info);
   };
 
   const handleResetAndRegenerate = async () => {
@@ -1578,6 +1631,138 @@ function App() {
       await loadVacancyDataDirectly(vacancyId);
     }
   };
+
+  /* [공실뉴스 캡처 사진 넣기] — 앱이 공실뉴스 분석·캡처 때 찍어 둔 공실열람 검증·지도·로드뷰를 사진 쪽 빈 칸에 넣는다.
+     칸이 모자라면 사진 쪽을 늘린다 (최대 5쪽, 2026-10-24 사장님). 앱 안 틀(iframe)이라 바깥 창의 gongsilStudio.vacancy 를 쓴다 */
+  const captureBridge = (): { captures: (id: string) => Promise<{ kind: string; label: string; dataUrl: string }[]> } | null => {
+    try {
+      const v = (window.parent as any)?.gongsilStudio?.vacancy || (window as any).gongsilStudio?.vacancy;
+      return v && typeof v.captures === 'function' ? v : null;
+    } catch {
+      return null;
+    }
+  };
+  const [capturesBusy, setCapturesBusy] = useState("");
+  const insertCaptures = async () => {
+    const b = captureBridge();
+    const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id") || "";
+    if (!b || !vacancyId) return;
+    setCapturesBusy("캡처 사진을 가져오는 중…");
+    try {
+      const caps = await b.captures(vacancyId);
+      if (!caps.length) {
+        alert("이 공실을 공실뉴스에서 [분석·캡처]한 사진이 없어요.\n뉴스·SNS발행 → 공실뉴스에서 이 공실을 먼저 분석·캡처해 주세요.");
+        return;
+      }
+      // 빈 칸 찾기 (1쪽부터) — 모자라면 쪽을 늘린다
+      const empty: { key: string; captionKey: string; page: number }[] = [];
+      for (let page = 1; page <= MAX_PHOTO_PAGES && empty.length < caps.length; page++) {
+        photoPageKeys(page).forEach((key, i) => {
+          if (!state[key] && empty.length < caps.length) empty.push({ key, captionKey: page === 1 ? ['main', 'sub1', 'sub2', 'feat1', 'feat2'][i] : `p${page}_${i + 1}`, page });
+        });
+      }
+      if (!empty.length) {
+        alert(`사진 칸이 가득 찼어요 (사진 쪽 ${MAX_PHOTO_PAGES}쪽). 사진을 몇 장 지운 뒤 다시 눌러 주세요.`);
+        return;
+      }
+      const pages = Math.max(photoPageCount(state.info), ...empty.map((e) => e.page));
+      const captions = { ...(state.info.photoCaptions || {}) };
+      empty.forEach((e, i) => { captions[e.captionKey] = caps[i].label; });
+      handleInfoChange({ ...state.info, photoPageCount: pages, photoCaptions: captions } as any);
+      for (let i = 0; i < empty.length; i++) {
+        setCapturesBusy(`캡처 사진 넣는 중… (${i + 1}/${empty.length})`);
+        const blob = await (await fetch(caps[i].dataUrl)).blob();
+        await handleImageUpload(empty[i].key, new File([blob], `${caps[i].kind}.jpg`, { type: blob.type || "image/jpeg" }));
+      }
+      if (empty.length < caps.length) alert(`사진 칸이 모자라 ${empty.length}장만 넣었어요.`);
+    } catch (e: any) {
+      alert("캡처 사진을 넣지 못했어요: " + (e?.message || e));
+    } finally {
+      setCapturesBusy("");
+    }
+  };
+
+  /* [지적도·대장·층별·실거래 가져오기] (2026-10-24 사장님)
+     공실 좌표로 서버(/api/report/land · /api/report/trades)에서 받아 info.landInfo · info.tradeInfo 에 넣는다.
+     - 보고서를 처음 열 때(아직 없으면) 뒤에서 저절로 · [AI로 채우기] 때 없거나 30일 지났으면 다시 · 버튼으로 직접
+     - 매물 종류별 쪽 구성은 처음 한 번만 (이미 저장된 보고서를 저절로 받을 때는 받은 쪽만 켠다)
+     - 받는 동안 회원이 고친 칸을 덮지 않게, 끝나면 그때 화면(prev)에 받은 것만 얹는다
+     돌려줌: 받은 뒤의 info (못 받았으면 null) */
+  const [landBusy, setLandBusy] = useState("");
+  const publicRun = useRef<Promise<any> | null>(null);
+  const PUBLIC_MAX_AGE = 30 * 864e5;
+  const fetchPublic = (opts: { silent?: boolean } = {}): Promise<any> => {
+    if (publicRun.current) return publicRun.current; // 이미 받는 중이면 그것을 기다린다
+    const say = (m: string) => { if (!opts.silent) alert(m); };
+    const run = (async () => {
+      const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id") || "";
+      if (!vacancyId) { say("등록한 공실로 만든 보고서에서만 가져올 수 있어요."); return null; }
+      setLandBusy("지적도·건축물대장을 채우는 중…");
+      try {
+        const d = await fetch(`/api/vacancy/detail?id=${vacancyId}`).then((r) => r.json());
+        const v = d?.data || {};
+        if (!v.lat || !v.lng) { say("이 공실의 위치(좌표)가 없어요. 공실등록에서 주소를 다시 저장해 주세요."); return null; }
+        const q = `lat=${v.lat}&lng=${v.lng}`;
+        const land = await fetch(`/api/report/land?${q}&type=${encodeURIComponent(v.property_type || "")}&sub=${encodeURIComponent(v.sub_category || "")}&dong=${encodeURIComponent(v.apt_dong || "")}&ho=${encodeURIComponent(v.hosu || "")}`).then((r) => r.json());
+        if (!land.ok) { say(land.error || "가져오지 못했어요."); return null; }
+        setLandBusy("층별 현황·실거래가를 채우는 중… (처음엔 1분쯤)");
+        const trade = await fetch(`/api/report/trades?${q}&type=${encodeURIComponent(v.property_type || "")}&sub=${encodeURIComponent(v.sub_category || "")}&trade=${encodeURIComponent(v.trade_type || "")}`)
+          .then((r) => r.json()).catch(() => null);
+        const t = trade?.ok ? trade : null;
+        const has: Record<number, boolean> = {
+          8: !!land.parcels?.length, 9: !!land.buildings?.length, 10: !!t?.floors?.length, 11: !!(t?.history?.length || t?.examples?.length),
+        };
+        pushToHistoryInstant(stateRef.current);
+        const info0: any = stateRef.current.info; // 받는 동안 회원이 고친 것까지 들어 있는 최신 화면 값
+        let vis = [...(info0.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
+        // 매물 종류별 쪽 구성 (사장님 표) — 처음 한 번만. 이미 저장된 보고서를 저절로 받을 때는 회원이 고른 쪽을 그대로 둔다
+        if (!info0.publicPreset && t && !(opts.silent && isLoadedFromStorage)) {
+          const k = t.kind;
+          const base = k === 'Apt' || k === 'Offi' ? [0, 1, 2, 4, 5, 6, 9, 11, 7]
+            : k === 'Land' ? [0, 1, 2, 4, 5, 6, 8, 11, 7]
+            : k === 'SH' || k === 'RH' ? [0, 1, 2, ...(String(v.sub_category || '').includes('다가구') ? [3] : []), 4, 5, 6, 8, 9, 10, 11, 7]
+            : [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 7];
+          vis = base.filter((p) => p < 8 || has[p]);
+        } else {
+          [8, 9, 10, 11].forEach((p) => { if (has[p] && !vis.includes(p) && !info0.publicPreset) vis.push(p); });
+        }
+        // 2쪽 주변시세 그래프 — 반기별 평당가 중앙값 (실제 거래). 회원이 그래프를 고쳤으면(chartEdited) 그대로 둔다
+        const pts = t?.chart?.points || [];
+        const chart = pts.length >= 2 && !info0.chartEdited ? {
+          showChart: true,
+          chartBars: pts.map((p: any, i: number) => ({ label: p.label, value: `${p.value}`, isHighlight: i === pts.length - 1 })),
+          page2ChartBoxTitle: `주변시세 리포트 · ${t.chart.scope}`,
+          chartAdviseText: `${t.chart.scope} ${t.kindLabel} ${t.rentChart ? '전세' : '매매'} 실거래의 ${t.chart.basis} 평당 ${t.rentChart ? '보증금' : '가격'} 중앙값(만원, 반기별)입니다. 최근 구간 ${pts[pts.length - 1].value.toLocaleString('ko-KR')}만원/평 (${pts[pts.length - 1].count}건 기준). 자료: 국토교통부 실거래가 공개 자료.`,
+        } : {};
+        const patch = { landInfo: land, tradeInfo: t || info0.tradeInfo, visiblePages: vis, publicPreset: true, ...chart };
+        setState((prev) => ({ ...prev, info: { ...prev.info, ...patch } as any }));
+        const next = { ...info0, ...patch };
+        if (!t) say("지적도·건축물대장은 넣었어요. 층별 현황·실거래가는 받지 못했어요. 잠시 뒤 [지적도·대장·층별·실거래 새로 채우기]를 눌러 주세요.");
+        return next;
+      } catch (e: any) {
+        say("가져오지 못했어요: " + (e?.message || e));
+        return null;
+      } finally {
+        setLandBusy("");
+        publicRun.current = null;
+      }
+    })();
+    publicRun.current = run;
+    return run;
+  };
+  const fetchLand = () => { void fetchPublic(); };
+  /** 받아 둔 자료가 없거나 30일이 지났는가 */
+  const publicStale = (info: any) => !info?.tradeInfo?.fetchedAt || Date.now() - new Date(info.tradeInfo.fetchedAt).getTime() > PUBLIC_MAX_AGE;
+  // 보고서를 처음 열 때 — 아직 받지 않았으면 뒤에서 저절로 (편집은 계속 할 수 있다)
+  const autoPublicDone = useRef(false);
+  useEffect(() => {
+    if (!isInitialized || autoPublicDone.current) return;
+    if (!new URLSearchParams(window.location.search).get("vacancy_id")) return;
+    autoPublicDone.current = true;
+    const info: any = state.info;
+    if (!info.landInfo || !info.tradeInfo) void fetchPublic({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized]);
 
   const handleInfoChange = (newInfo: PropertyInfo) => {
     pushToHistoryDebounced(state);
@@ -2132,17 +2317,14 @@ ${clone.outerHTML}
   };
 
   // Generate selectable sections list
+  // 회원이 바꾼 쪽 차례·번호 그대로 (2026-10-24)
   const getExportableSections = () => {
-      return [
-          { id: 'page-0', label: '0. 표지 (Cover)' },
-          { id: 'page-1', label: '1. 개요 (Overview)' },
-          { id: 'page-2', label: '2. 가치 (Status & Valuation)' },
-          { id: 'page-3', label: '3. 임대현황 (Lease Status)' },
-          { id: 'page-4', label: '4. 사진 (Field Photos)' },
-          { id: 'page-5', label: '5. 입지 (Area Analysis)' },
-          { id: 'page-6', label: '6. 로드맵 (Roadmap)' },
-          { id: 'page-7', label: '7. 연락처 (Contact/Ending)' },
-      ];
+      return pageOrder(state.info as any).flatMap((id) => {
+          const label = pageNumberLabel(id, state.info as any);
+          if (id !== 4) return [{ id: `page-${id}`, label }];
+          // 늘린 사진 쪽
+          return [{ id: 'page-4', label }, ...Array.from({ length: photoPageCount(state.info) - 1 }, (_, i) => ({ id: `page-4-${i + 2}`, label: `${label} ${i + 2}쪽` }))];
+      });
   };
 
   if (authError) {
@@ -2389,6 +2571,10 @@ ${clone.outerHTML}
               onBackTab={handleBackTab}
               onOpenTableEditor={() => setIsTableEditorOpen(true)}
               onSave={handleSaveToStorage}
+              onInsertCaptures={captureBridge() ? () => void insertCaptures() : undefined}
+              capturesBusy={capturesBusy}
+              onFetchLand={() => void fetchLand()}
+              landBusy={landBusy}
             />
         </div>
         <div className={`report-preview-panel print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
@@ -2679,6 +2865,13 @@ ${clone.outerHTML}
         }}
       />
 
+      {/* 지적도·대장·층별·실거래가를 뒤에서 받는 중 — 편집은 계속 된다 (2026-10-24) */}
+      {landBusy && !aiProgress && (
+        <div className="print:hidden fixed top-3 left-1/2 -translate-x-1/2 z-[150] flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-lg text-[13px] font-bold text-gray-800">
+          <span className="w-3.5 h-3.5 rounded-full border-2 border-[#1a3a6b] border-t-transparent animate-spin" />
+          {landBusy}
+        </div>
+      )}
       {/* AI 채우는 중 (스튜디오 앱) */}
       {aiProgress && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">

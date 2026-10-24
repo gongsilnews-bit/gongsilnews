@@ -5,6 +5,7 @@ import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/stud
 import StudioChannelTabs from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
+import { BusyDots, LoadingCover } from "./StudioLoading";
 
 /**
  * SNS뉴스발행 (공실스튜디오 앱 전용)
@@ -31,7 +32,18 @@ type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?:
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
-  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; onProgress: (fn: (t: string) => void) => () => void };
+  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
+};
+/** [공실 바꾸기] 목록 한 줄 — 이 PC에서 작업한 공실 (앱 studio:vacancy-list) */
+type WorkRow = { vacancyId: string; no: string; title: string; priceText: string; saleKind: string; thumb: string | null; updatedAt: string; done: Record<string, boolean> };
+const DONE_LABELS: [string, string][] = [["article", "기사"], ["blog", "블로그"], ["instagram", "인스타"], ["threads", "스레드"], ["facebook", "페북"], ["youtube", "유튜브"]];
+const whenText = (iso: string) => {
+  const d = new Date(iso);
+  const now = new Date();
+  const hm = d.toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
+  if (d.toDateString() === now.toDateString()) return `오늘 ${hm}`;
+  if (new Date(now.getTime() - 86400000).toDateString() === d.toDateString()) return `어제 ${hm}`;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 };
 type VacancyRow = { id: string; vacancy_no: number; building_name?: string | null; trade_type?: string | null; property_type?: string | null; sido?: string; sigungu?: string; dong?: string };
 type MyVacancy = { id: string; vacancy_no: number; building_name: string | null; trade_type: string | null; property_type: string | null; deposit: number | null; monthly_rent: number | null; address: string; created_at: string; photo: string | null; photoCount: number };
@@ -77,7 +89,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [columnTab, setColumnTab] = useState("article"); // 뉴스칼럼의 채널 탭
   const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
-  const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
+  // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
+  const [mode, setMode] = useState<"" | "list" | "new">("");
   // .gsn 에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsn=<id> 로 연다.
   // 각 화면이 "이 기기에 기억한 마지막 작업"을 불러오는 길을 그대로 쓴다 — 효과(useEffect)보다 먼저, 처음 그릴 때 기억을 바꿔 둔다
   useState(() => {
@@ -130,6 +143,16 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<Analysis | null>(null);
+  const [curPicked, setCurPicked] = useState<VacancyRow | null>(null); // 지금 작업 중인 공실 ([취소]하면 되돌린다)
+  const [works, setWorks] = useState<WorkRow[] | null>(null);
+  const [workQ, setWorkQ] = useState("");
+  const [showMedia, setShowMedia] = useState(false); // 요약 줄 [분석 내용 보기]
+  const loadWorks = useCallback(() => {
+    const b = bridge();
+    if (!b?.vacancy.list) return setWorks([]);
+    b.vacancy.list().then(setWorks).catch(() => setWorks([]));
+  }, []);
+  useEffect(() => loadWorks(), [loadWorks]);
   const loadAi = useCallback(async () => {
     const b = bridge();
     if (b) setAi(await b.ai.list());
@@ -158,14 +181,38 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setError("");
     const res = await findStudioVacancyByNo(noInput);
     if (!res.success) return setError(res.error);
-    setPicked(res.data as VacancyRow);
-    setResult(null);
+    choose(res.data as VacancyRow);
   };
+  /* 공실을 고르면 — 이 PC에 작업이 있으면 바로 열고, 처음이면 분석·캡처를 저절로 시작 */
+  const choose = (v: VacancyRow) => {
+    setPicked(v);
+    setError("");
+    if (works?.some((w) => w.vacancyId === v.id)) void openWork(v.id, v);
+    else void analyze(v);
+  };
+  /* 작업해 둔 공실 열기 — 분석·캡처는 다시 하지 않는다 */
+  const openWork = async (id: string, v?: VacancyRow) => {
+    const b = bridge();
+    if (!b) return;
+    const r = await b.vacancy.load(id).catch(() => null);
+    if (!r) return v ? analyze(v) : setError("이 공실 작업을 열지 못했어요.");
+    const no = Number((r.vacancy.fields || []).find((f) => f.label === "공실광고번호")?.value) || 0;
+    const row: VacancyRow = v || { id, vacancy_no: no, building_name: r.vacancy.title || "" };
+    setPicked(row);
+    await applyResult(r, row);
+    chooseTab("article");
+  };
+  const openList = () => { setMode("list"); setWorkQ(""); loadWorks(); };
+  const openNew = () => { setMode("new"); setPicked(null); setNoInput(""); setError(""); };
+  const cancelPick = () => { setMode(""); setPicked(curPicked); setError(""); };
 
   /* 분석 결과를 화면에 올린다 (써 둔 기사·블로그·SNS 는 채널 탭이 불러온다) */
   const applyResult = async (r: Analysis, v: VacancyRow) => {
     setResult(r);
-    setPickOpen(false);
+    setMode("");
+    setCurPicked(v);
+    setShowMedia(false);
+    loadWorks();
     // 다른 메뉴(예: 기사쓰기)에 갔다 와도 이어서 보이게 이 기기에 기억한다
     try {
       localStorage.setItem(LAST_KEY, JSON.stringify({ vacancyId: r.vacancyId, picked: v }));
@@ -199,16 +246,17 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     } catch {}
   };
 
-  const analyze = async () => {
+  const analyze = async (v: VacancyRow | null = picked) => {
     const b = bridge();
-    if (!b || !picked) return;
+    if (!b || !v) return;
     setBusy(true);
     setError("");
-    setResult(null);
     const off = b.vacancy.onProgress(setProgress);
     try {
-      const r = await b.vacancy.analyze(picked.id);
-      await applyResult(r, picked);
+      const r = await b.vacancy.analyze(v.id);
+      const again = result?.vacancyId === v.id; // [다시 분석·캡처] — 끝나면 모은 사진을 바로 펼쳐 보여 준다
+      await applyResult(r, v);
+      if (again) setShowMedia(true);
     } catch (e) {
       setError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     } finally {
@@ -232,6 +280,27 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</span>
       <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{t}</h3>
     </div>
+  );
+  /* 분석 내용 — 모은 사진·화면 (요약 줄 [분석 내용 보기]) */
+  const mediaGrid = (r: Analysis) => (
+    <>
+      <div style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 1.7 }}>
+        상세 항목 {r.vacancy.fields?.length || 0}개{r.vacancy.themes?.length ? ` · ${r.vacancy.themes.join(" ")}` : ""}
+        {r.vacancy.infra ? <div>주변환경: {r.vacancy.infra}</div> : null}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 14 }}>
+        {r.media.map((m, i) => (
+          <figure key={i} style={{ margin: 0, border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa" }}>
+            <div style={{ position: "relative", aspectRatio: "4 / 3", background: "#e5e7eb" }}>
+              {m.thumb && <img src={m.thumb} alt={m.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+              <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: m.kind === "photo" ? "rgba(0,0,0,0.6)" : "#1a3a6b", color: "#fff" }}>{KIND_LABEL[m.kind] || m.kind}</span>
+            </div>
+            <figcaption style={{ padding: "8px 10px", fontSize: 12, lineHeight: 1.5, color: theme.textSecondary }}>{m.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+      {r.failures.length > 0 && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>못 가져온 것: {r.failures.join(" / ")}</div>}
+    </>
   );
   const vacancyLabel = (v: VacancyRow) => `${v.vacancy_no} · ${v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ") || "이름 없음"}${v.trade_type ? ` · ${v.trade_type}` : ""}`;
   const connectedAi = ai.filter((a) => a.ok);
@@ -309,38 +378,114 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         )}
 
         {category === "gongsil" && (<>
-        {/* ①② 접힌 요약 (분석이 끝나면) */}
-        {result && !pickOpen && (
-          <div style={{ ...card, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 4 }}>
-              {result.media.slice(0, 4).map((m, i) => (
-                <div key={i} style={{ width: 40, height: 40, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
-                  {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+        {/* 지금 작업 — 한 줄 요약. [공실 바꾸기] = 작업 목록 · [다시 분석·캡처] = 같은 공실 사진을 새로 */}
+        {result && mode === "" && (
+          <div style={{ ...card, padding: "14px 18px", position: "relative", minHeight: busy ? 200 : undefined }}>
+            {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4 }}>
+                {result.media.slice(0, 4).map((m, i) => (
+                  <div key={i} style={{ width: 40, height: 40, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
+                    {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                  </div>
+                ))}
+              </div>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
+                  {result.vacancy.saleKind && (
+                    <span style={{ fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>
+                  )}
+                  {picked ? vacancyLabel(picked) : result.vacancy.title}
                 </div>
-              ))}
-            </div>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
-                {result.vacancy.saleKind && (
-                  <span style={{ fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>
-                )}
-                {picked ? vacancyLabel(picked) : result.vacancy.title}
+                <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
+                  {result.vacancy.title} · {result.vacancy.priceText} · 사진 {result.media.length}장 분석·캡처 완료
+                  {/* 펼침·접기 — 눈에 띄게 테두리 단추로 (2026-10-24 사장님) */}
+                  <button onClick={() => setShowMedia((x) => !x)}
+                    style={{ marginLeft: 8, padding: "3px 10px", borderRadius: 6, border: `1px solid ${theme.darkMode ? "#ffffff" : "#1a3a6b"}`, background: showMedia ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : "transparent", color: showMedia ? (theme.darkMode ? "#1a3a6b" : "#ffffff") : (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontSize: 12.5, fontWeight: 800, cursor: "pointer", verticalAlign: "middle" }}>
+                    {showMedia ? "접기 ▲" : "분석 내용 보기 ▼"}
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
-                {result.vacancy.title} · {result.vacancy.priceText} · 사진 {result.media.length}장 분석·캡처 완료
-              </div>
+              {/* 분석·캡처 중에는 곤색 단추로 눈에 띄게 (2026-10-24 사장님) */}
+              <button onClick={() => void analyze(picked)} disabled={busy} title="같은 공실의 사진·화면을 새로 받습니다"
+                style={busy
+                  ? { padding: "8px 14px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "default" }
+                  : { padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                {busy ? <>분석·캡처 중<BusyDots /></> : "다시 분석·캡처"}
+              </button>
+              <button onClick={openList}
+                style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                공실 바꾸기
+              </button>
             </div>
-            <button onClick={() => setPickOpen(true)}
-              style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              공실 바꾸기
-            </button>
+            {error && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
+            {showMedia && <div style={{ marginTop: 6 }}>{mediaGrid(result)}</div>}
           </div>
         )}
 
-        {(!result || pickOpen) && (<>
-        {/* 1. 공실 고르기 */}
+        {/* [공실 바꾸기] — 이 PC에서 작업한 공실 목록. 누르면 써 둔 글이 바로 열린다 */}
+        {mode === "list" && (
+          <div style={card}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <h3 style={{ margin: 0, flex: 1, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>공실 바꾸기</h3>
+              <button onClick={openNew}
+                style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#16a34a", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ 새로 작성</button>
+              {result && <button onClick={cancelPick}
+                style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>취소</button>}
+            </div>
+            <input value={workQ} onChange={(e) => setWorkQ(e.target.value)} placeholder="번호·이름으로 찾기"
+              style={{ width: "100%", maxWidth: 360, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary, marginBottom: 10 }} />
+            {works === null ? (
+              <div style={{ fontSize: 13, color: theme.textSecondary }}>불러오는 중…</div>
+            ) : (() => {
+              const q = workQ.trim();
+              const cur = result?.vacancyId;
+              const rows = works
+                .filter((w) => !q || `${w.no} ${w.title} ${w.priceText}`.includes(q))
+                .sort((x, y) => Number(y.vacancyId === cur) - Number(x.vacancyId === cur)); // 지금 작업을 맨 위로
+              if (!rows.length) return <div style={{ fontSize: 13.5, color: theme.textSecondary, padding: "8px 0" }}>{q ? "찾는 공실이 없어요." : "아직 작업한 공실이 없어요. [+ 새로 작성]으로 시작해 주세요."}</div>;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", maxHeight: 520, overflowY: "auto" }}>
+                  {rows.map((w, i) => {
+                    const isCur = w.vacancyId === cur;
+                    return (
+                      <button key={w.vacancyId} onClick={() => (isCur ? cancelPick() : void openWork(w.vacancyId))}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: 0, borderTop: i ? `1px solid ${theme.border}` : 0, background: isCur ? (theme.darkMode ? "rgba(255,255,255,0.06)" : "#f0f6ff") : theme.cardBg, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}>
+                        <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
+                          {w.thumb && <img src={w.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: theme.textPrimary }}>
+                            {w.saleKind && <span style={{ flexShrink: 0, whiteSpace: "nowrap", fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{w.saleKind}</span>}
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[w.no, w.title, w.priceText].filter(Boolean).join(" · ")}</span>
+                            {isCur && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#1a3a6b", color: "#fff" }}>지금 작업</span>}
+                          </div>
+                          <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 12, flexWrap: "wrap" }}>
+                            {DONE_LABELS.map(([k, label]) => (
+                              <span key={k} style={{ color: w.done[k] ? "#16a34a" : theme.textSecondary, fontWeight: w.done[k] ? 700 : 400, opacity: w.done[k] ? 1 : 0.6 }}>{label}{w.done[k] ? "✓" : ""}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <span style={{ flexShrink: 0, fontSize: 12.5, color: theme.textSecondary }}>{whenText(w.updatedAt)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* [+ 새로 작성] (또는 처음) — ① 공실 고르기 ② 분석·캡처. 고르면 저절로 시작한다 */}
+        {(!result || mode === "new") && mode !== "list" && (<>
         <div style={card}>
-          {stepTitle(1, "공실 고르기")}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div style={{ flex: 1 }}>{stepTitle(1, "공실 고르기")}</div>
+            {!result && works && works.length > 0 && <button onClick={openList}
+              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>작업한 공실 목록</button>}
+            {result && <button onClick={cancelPick}
+              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>취소</button>}
+          </div>
           {/* 내가 등록한 공실은 셀렉트바로 (기사등록의 "보도 대상 공실 매물"과 같은 모양) */}
           <label style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6, display: "block" }}>보도 대상 공실 매물</label>
           {mine === null ? (
@@ -348,12 +493,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           ) : mine.length === 0 ? (
             <div style={{ fontSize: 13.5, color: "#b45309", padding: "6px 0" }}>{mineError || "아직 등록한 공실이 없습니다."} 공실등록 메뉴에서 공실을 등록하면 여기에 나옵니다.</div>
           ) : (
-            <select value={picked && mine.some((v) => v.id === picked.id) ? picked.id : ""}
+            <select value={picked && mine.some((v) => v.id === picked.id) ? picked.id : ""} disabled={busy}
               onChange={(e) => {
                 const v = mine.find((x) => x.id === e.target.value);
-                if (!v) return;
-                setPicked(v);
-                setResult(null);
+                if (v) choose(v);
               }}
               style={{ width: "100%", maxWidth: 560, padding: "10px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, background: theme.cardBg, color: theme.textPrimary }}>
               <option value="">공실을 골라 주세요 ({mine.length}개)</option>
@@ -367,9 +510,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {/* 경매·공매 물건이나 남의 공실은 물건번호로 */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, color: theme.textSecondary }}>또는</span>
-            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && pickByNo()} placeholder="공실번호 또는 경매 관리번호"
+            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !busy && pickByNo()} placeholder="공실번호 또는 경매 관리번호"
               style={{ width: 240, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }} />
-            <button onClick={pickByNo} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
+            <button onClick={pickByNo} disabled={busy} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>불러오기</button>
             {/* 공실열람을 새 창으로 열어 물건(경매·공매 포함)을 둘러보고 번호를 확인한다 */}
             <button onClick={openGongsil} title="공실열람을 새 창으로 열기"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
@@ -379,56 +522,33 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
         </div>
 
-        {/* 2. 분석·캡처 */}
-        <div style={card}>
+        {/* 2. 분석·캡처 — 고르면 저절로 시작 (멈췄을 때만 버튼으로 다시) */}
+        <div style={{ ...card, position: "relative", minHeight: busy ? 200 : undefined }}>
+          {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
           {stepTitle(2, "공실 분석·캡처")}
           {!picked ? (
-            <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 공실을 골라 주세요.</div>
+            <div style={{ fontSize: 14, color: theme.textSecondary }}>공실을 고르면 분석·캡처가 저절로 시작됩니다. 전에 작업한 공실이면 써 둔 글이 바로 열립니다.</div>
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: theme.textPrimary }}>{vacancyLabel(picked)}</span>
-                <button onClick={analyze} disabled={busy}
-                  style={{ padding: "10px 18px", background: busy ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
-                  {busy ? "분석·캡처 중…" : result ? "다시 분석·캡처" : "분석·캡처 시작"}
-                </button>
+                {(busy || error) && (
+                  <button onClick={() => void analyze(picked)} disabled={busy}
+                    style={{ padding: "10px 18px", background: busy ? "#1a3a6b" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
+                    {busy ? <>분석·캡처 중<BusyDots /></> : "다시 시도"}
+                  </button>
+                )}
               </div>
               <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다.</div>
             </>
           )}
           {progress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{progress}</div>}
           {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
-
-          {result && (
-            <div style={{ marginTop: 18 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: theme.textPrimary }}>{result.vacancy.title}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#2563eb", margin: "4px 0 8px" }}>{result.vacancy.priceText}</div>
-              <div style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 1.7 }}>
-                상세 항목 {result.vacancy.fields?.length || 0}개{result.vacancy.themes?.length ? ` · ${result.vacancy.themes.join(" ")}` : ""}
-                {result.vacancy.infra ? <div>주변환경: {result.vacancy.infra}</div> : null}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 14 }}>
-                {result.media.map((m, i) => (
-                  <figure key={i} style={{ margin: 0, border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa" }}>
-                    <div style={{ position: "relative", aspectRatio: "4 / 3", background: "#e5e7eb" }}>
-                      {m.thumb && <img src={m.thumb} alt={m.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: m.kind === "photo" ? "rgba(0,0,0,0.6)" : "#1a3a6b", color: "#fff" }}>{KIND_LABEL[m.kind] || m.kind}</span>
-                    </div>
-                    <figcaption style={{ padding: "8px 10px", fontSize: 12, lineHeight: 1.5, color: theme.textSecondary }}>{m.caption}</figcaption>
-                  </figure>
-                ))}
-              </div>
-              {result.failures.length > 0 && (
-                <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>못 가져온 것: {result.failures.join(" / ")}</div>
-              )}
-            </div>
-          )}
         </div>
-
         </>)}
 
-        {/* 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 */}
-        {result && <StudioChannelTabs key={result.vacancyId} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />}
+        {/* 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 (고르는 동안은 숨긴다) */}
+        {result && mode === "" && <StudioChannelTabs key={result.vacancyId} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />}
         </>)}
       </div>
       </div>

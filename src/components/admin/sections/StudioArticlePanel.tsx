@@ -31,7 +31,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 
 export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false, oneShot = false, pick, onPick, autoCover: autoCoverP, onAutoCover }: {
   theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void; column?: boolean;
-  /** 한 번에 쓰기 — 이 탭은 스타일만 고르고, 쓴 뒤에만 [이 글만 다시 쓰기] */
+  /** 한 번에 쓰기 — 이 탭은 스타일만 고르고, 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   oneShot?: boolean; pick?: { kind: string; length: string }; onPick?: (kind: string, length: string) => void;
   /** 뉴스칼럼 AI 대표 이미지 — 한 번에 쓰기에도 쓰이게 위에서 기억 */
   autoCover?: boolean; onAutoCover?: (v: boolean) => void;
@@ -109,12 +109,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
               {l.label} · {l.chars}
             </button>
           ))}
-          {oneShot ? (article || writing) && (
-            <button onClick={write} disabled={writing}
-              style={{ marginLeft: "auto", padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-              {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기"}
-            </button>
-          ) : (
+          {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
             <button onClick={write} disabled={writing}
               style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
               {writing ? `${aiName}가 쓰는 중…` : article ? "다시 쓰기" : `${aiName}로 기사 쓰기`}
@@ -124,7 +119,9 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
         {column && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13.5, color: theme.textPrimary, cursor: "pointer" }}>
             <input type="checkbox" checked={autoCover} onChange={(e) => setAutoCover(e.target.checked)} />
-            다 쓰면 기사에 맞는 <b>AI 대표 이미지</b>도 만들기 <span style={{ color: theme.textSecondary }}>(1~2분 더 · AI 이미지 하루 한도에서 1장)</span>
+            다 쓰면 기사에 맞는 <b>AI 대표 이미지</b>도 만들기
+            <span title="공실스터디 멤버십 전용" style={{ padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.4 }}>Membership</span>
+            <span style={{ color: theme.textSecondary }}>(1~2분 더 · AI 이미지 하루 한도에서 1장)</span>
           </label>
         )}
         <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>

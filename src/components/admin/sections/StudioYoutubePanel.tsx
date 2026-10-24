@@ -50,7 +50,7 @@ const clock = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 
 
 export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick }: {
   theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void;
-  /** 한 번에 쓰기 — 이 탭은 형식·길이·말투·숫자만 고르고(이 PC 에 기억), 쓴 뒤에만 [이 글만 다시 쓰기] */
+  /** 한 번에 쓰기 — 이 탭은 형식·길이·말투·숫자만 고르고(이 PC 에 기억), 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   oneShot?: boolean; remembered?: Record<string, unknown>; onPick?: (p: Record<string, string>) => void;
 }) {
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
@@ -215,12 +215,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
           <div style={{ flex: 1, minWidth: 260, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
             {oneShot ? "고르고 위 [한 번에 쓰기]를 누르세요 (탭 이름 옆 ☑). " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
           </div>
-          {oneShot ? (script || writing) && (
-            <button onClick={write} disabled={writing}
-              style={{ padding: "7px 12px", background: "transparent", color: writing ? theme.textSecondary : "#16a34a", border: "1px solid #16a34a", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-              {writing ? `${aiName}가 쓰는 중…` : "이 글만 다시 쓰기"}
-            </button>
-          ) : (
+          {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
             <button onClick={write} disabled={writing}
               style={{ padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
               {writing ? `${aiName}가 쓰는 중…` : script ? "다시 쓰기" : `${aiName}로 대본 쓰기`}

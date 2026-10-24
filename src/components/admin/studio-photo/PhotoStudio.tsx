@@ -26,7 +26,8 @@ import { PrintDialog, type PrintBridge } from "./PrintDialog";
 import { CanvasSizeDialog, ImageSizeDialog, TrimDialog } from "./ImageDialogs";
 import { FILTERS, FILTER_MENU, type FVals } from "./filters";
 import { FilterDialog } from "./FilterDialog";
-import { AiBar, AI_ACT_NAME, type AiAct, type BarTextSet } from "./AiBar";
+import { AiBar, AI_ACT_NAME, type AiAct, type AiGenOpts, type BarTextSet } from "./AiBar";
+import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
 import type { TextWarp } from "./warp";
 import { ColorPicker } from "./ColorPicker";
 import { DesignSide, type MyTpl } from "./DesignSide";
@@ -1100,7 +1101,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     }
   };
   const NO_TEXT = "Do not add any text, letters, logos or watermarks.";
-  const runAi = async (act: AiAct, prompt: string) => {
+  const runAi = async (act: AiAct, prompt: string, gen?: AiGenOpts) => {
     if (!doc || aiBusy) return;
     const d = doc, W = d.psd.width, H = d.psd.height;
     const short = prompt ? `: ${prompt.slice(0, 18)}` : "";
@@ -1167,7 +1168,11 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
         insert({ _k: uid(), name: `프롬프트로 편집${short}`, canvas: c, left: x, top: y, right: x + c.width, bottom: y + c.height });
       } else if (act === "gen") {
         const [ratio] = nearRatio(W, H);
-        const out = await aiPicture(`${prompt}. High quality, photorealistic. ${NO_TEXT}`, ratio, []);
+        // 그림 스타일(영상 편집기와 같은 16가지) · 참고 이미지 (2026-10-24 사장님)
+        const sty = IMAGE_STYLES.find((x) => x.id === gen?.style) || IMAGE_STYLES.find((x) => x.id === "realistic")!;
+        const ref = gen?.ref || null;
+        const scene = ref ? `Use the attached reference image only as a guide for the subject, composition and mood (do not copy any text or logos from it). ${prompt}.` : `${prompt}.`;
+        const out = await aiPicture(`${imagePrompt(scene, sty)} High quality. ${NO_TEXT}`, ratio, ref ? [ref] : []);
         const c = coverCanvas(out, W, H);
         insert({ _k: uid(), name: `이미지 생성${short}`, canvas: c, left: 0, top: 0, right: W, bottom: H });
       } else if (act === "removeBg") {
@@ -3046,7 +3051,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
                       if (selL._shape) mutate(() => { selL._shape = { ...selL._shape!, color: c }; selL.canvas = shapeCanvas(selL._shape); }, `bar-col-${selL._k}`);
                       else if (selL._picto) mutate(() => { selL._picto = { ...selL._picto!, color: c }; const w = selL.canvas!.width, h = selL.canvas!.height; const pc = pictoCanvas(selL._picto.id, Math.max(w, h), c, selL._picto.style); selL.canvas = w === h ? pc : sizeTo(pc, w, h); }, `bar-col-${selL._k}`);
                     }}
-                    onRun={(a, p) => void runAi(a, p)} onAddImage={() => void addImages()} onClose={() => setAiBar(false)}
+                    onRun={(a, p, g) => void runAi(a, p, g)} onAddImage={() => void addImages()} onClose={() => setAiBar(false)}
                     onSelInvert={() => { const m = selOf(doc); setSelMask(m ? invertMask(m) : null); }} onSelClear={() => setSelMask(null)} />
                 )}
                 {[...store.float.entries()].map(([id, r]) => {

@@ -36,9 +36,9 @@ const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:ai-set-mode", "studio:ai-get-order", "studio:ai-set-order", "studio:ai-get-method", "studio:ai-set-method", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
-  "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
+  "studio:vacancy-load", "studio:vacancy-list", "studio:vacancy-captures", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
   "studio:save-file", "studio:open-out-folder", "studio:storage-get", "studio:storage-choose", "studio:storage-open", "studio:busy-hold", "studio:busy-text", "studio:busy-release",
-  "studio:work-save", "studio:work-status", "studio:work-show", "studio:work-open",
+  "studio:work-save", "studio:work-save-as", "studio:work-status", "studio:work-show", "studio:work-open",
   "studio:report-get", "studio:report-list", "studio:report-save", "studio:report-remove",
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
@@ -132,6 +132,7 @@ async function openGsn(file) {
 }
 // 뉴스·SNS발행 [저장하기] · [불러오기] · 저장 상태 (2026-10-23 사장님)
 ipcMain.handle("studio:work-save", (_e, id) => require("./gsn").saveNow(id));
+ipcMain.handle("studio:work-save-as", (_e, id) => require("./gsn").saveAs(id, mainWindow));
 ipcMain.handle("studio:work-status", (_e, id) => require("./gsn").status(id));
 ipcMain.handle("studio:work-show", (_e, file) => { if (file && fs.existsSync(file)) shell.showItemInFolder(file); });
 ipcMain.handle("studio:work-open", async () => {
@@ -636,6 +637,7 @@ ipcMain.handle("studio:column-open-url", (_e, url) => columnWriter.openUrl(url))
 ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
 ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
 ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));
+ipcMain.handle("studio:column-refetch", (_e, id) => columnWriter.refetch(id)); // [다시 가져오기]
 ipcMain.handle("studio:column-list", () => columnWriter.list());
 // 인테리어뉴스·리모델링뉴스 시뮬레이션 (유료 전용)
 ipcMain.handle("studio:sim-options", (_e, kind) => simWriter.options(kind));
@@ -693,6 +695,47 @@ const analysisForWeb = (r) =>
   };
 // 다른 메뉴에 갔다 와도 이어서 보이게: 저장된 분석 결과를 다시 찍지 않고 그대로 돌려준다
 ipcMain.handle("studio:vacancy-load", (_e, vacancyId) => analysisForWeb(blogWriter.readJson(require("path").join(blogWriter.mediaDir(vacancyId), "analysis.json"))));
+// AI 매물보고서 [공실뉴스 캡처 사진 넣기] — 분석·캡처 때 찍은 공실열람 검증·지도·로드뷰 (보고서에 넣을 크기, 2026-10-24 사장님)
+ipcMain.handle("studio:vacancy-captures", (_e, vacancyId) => {
+  const a = blogWriter.readJson(require("path").join(blogWriter.mediaDir(vacancyId), "analysis.json"));
+  const LABEL = { proof: "공실열람 검증", map: "위치 지도", roadview: "현장 로드뷰" };
+  return ((a && a.media) || []).filter((m) => m.kind !== "photo" && m.file && fs.existsSync(m.file)).map((m) => {
+    let img = require("electron").nativeImage.createFromPath(m.file);
+    if (img.getSize().width > 1600) img = img.resize({ width: 1600, quality: "good" });
+    return { kind: m.kind, label: LABEL[m.kind] || m.kind, dataUrl: `data:image/jpeg;base64,${img.toJPEG(88).toString("base64")}` };
+  });
+});
+// [공실 바꾸기] 목록 — 이 PC에서 작업한 공실 (최근에 고친 순). 채널마다 써 둔 글이 있는지도 (2026-10-24 사장님)
+ipcMain.handle("studio:vacancy-list", () => {
+  const path = require("path");
+  const root = path.join(app.getPath("userData"), "media");
+  const out = [];
+  let names = [];
+  try { names = fs.readdirSync(root); } catch {}
+  for (const id of names) {
+    if (/^(col|int|rem|srp|rpt)-/.test(id)) continue; // 칼럼·시뮬레이션·보고서는 빼고 공실만
+    const dir = path.join(root, id);
+    const a = blogWriter.readJson(path.join(dir, "analysis.json"));
+    if (!a || !a.vacancy) continue;
+    let updatedAt = 0;
+    try { for (const f of fs.readdirSync(dir)) updatedAt = Math.max(updatedAt, fs.statSync(path.join(dir, f)).mtimeMs); } catch {}
+    const posts = (blogWriter.readJson(path.join(dir, "sns.json")) || {}).posts || {};
+    const has = (f) => fs.existsSync(path.join(dir, f));
+    const no = ((a.vacancy.fields || []).find((f) => f.label === "공실광고번호") || {}).value || "";
+    const first = (a.media || []).find((m) => m.kind === "photo") || (a.media || [])[0];
+    out.push({
+      vacancyId: id,
+      no: String(no),
+      title: a.vacancy.title || "",
+      priceText: a.vacancy.priceText || "",
+      saleKind: a.vacancy.saleKind || "",
+      thumb: first ? thumbOf(first.file, 120) : null,
+      updatedAt: new Date(updatedAt || Date.parse(a.analyzedAt) || 0).toISOString(),
+      done: { article: has("article.json"), blog: has("blog.json"), instagram: Boolean(posts.instagram), threads: Boolean(posts.threads), facebook: Boolean(posts.facebook), youtube: has("youtube.json") },
+    });
+  }
+  return out.sort((x, y) => (x.updatedAt < y.updatedAt ? 1 : -1));
+});
 ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
   const r = await analyzeVacancy(BASE_URL, vacancyId, (text) => e.sender.send("studio:vacancy-progress", text));
   return {

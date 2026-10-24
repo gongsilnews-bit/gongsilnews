@@ -85,9 +85,9 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
                     </div>
 
                     {(!info.mapType || info.mapType === "kakao") && (
-                        (info.mapAddress || info.address) ? (
-                            <KakaoMap 
-                                address={info.mapAddress || info.address} 
+                        (info.mapAddress || info.address || (info.page5Lat && info.page5Lng)) ? (
+                            <KakaoMap
+                                address={info.mapAddress || info.address || ""}
                                 lat={info.page5Lat}
                                 lng={info.page5Lng}
                                 onCoordsChange={(lat, lng) => {

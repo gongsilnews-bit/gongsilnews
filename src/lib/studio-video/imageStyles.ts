@@ -57,11 +57,11 @@ export const IMAGE_STYLES: ImageStyle[] = [
     prompt: "Style: Modern Bright Anime. Clean lines, soft shadows, bright and airy lighting, luminous skies with light rays, neat and detailed composition, vibrant colors, 8k resolution.",
   },
   {
-    id: "folktale", label: "한국 전래동화", desc: "한옥·한복·민화풍 옛이야기 그림책", bg: "linear-gradient(135deg,#b45309,#065f46)",
+    id: "folktale", thumb: "/studio-styles/folktale.jpg", label: "한국 전래동화", desc: "한옥·한복·민화풍 옛이야기 그림책", bg: "linear-gradient(135deg,#b45309,#065f46)",
     prompt: "Style: Korean traditional folktale storybook illustration. Inspired by Korean folk painting (minhwa) and ink-wash brushwork, soft muted natural colors on textured hanji paper, hanok houses with curved tile roofs, characters in traditional hanbok, pine trees, mountains, magpies and tigers as motifs, warm and gentle storytelling atmosphere, Joseon-era village setting.",
   },
   {
-    id: "archdict", label: "건축사전 3D", desc: "신비한 건축사전 느낌 — 실감 3D 재현·도시 모형·파란 강조", bg: "linear-gradient(135deg,#94a3b8,#60a5fa)",
+    id: "archdict", thumb: "/studio-styles/archdict.jpg", label: "건축사전 3D", desc: "신비한 건축사전 느낌 — 실감 3D 재현·도시 모형·파란 강조", bg: "linear-gradient(135deg,#94a3b8,#60a5fa)",
     prompt: "Style: Architecture explainer 3D visualization, like a Korean architecture documentary. Photorealistic 3D CG reconstruction of Korean cities, rivers, terrain and buildings, cinematic aerial or three-quarter view, realistic materials and water reflections, soft natural daylight with slight haze, Unreal Engine quality render. When explaining a place or plan, show the city as a clean model (white and light-grey massing blocks, soft low-poly green terrain, grey roads) and highlight the key area with a glowing translucent blue volume and light rays bursting outward. Calm, educational, wondrous mood.",
   },
   {

@@ -17,6 +17,9 @@ interface Page4PhotosProps {
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
   onDeleteImage?: (key: string) => void;
   isUploadingImage?: Record<string, boolean>;
+  /** 사진 쪽 2~5 (2026-10-24 사장님: 사진이 많으면 사진 쪽을 늘린다) — 이 쪽의 사진 칸 5개와 쪽 번호 */
+  extraSlots?: { src: string | null; key: string; captionKey: string; label: string }[];
+  photoPageNo?: number;
 }
 
 const Page4Photos: React.FC<Page4PhotosProps> = ({
@@ -34,6 +37,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
   onImageUpload,
   onDeleteImage,
   isUploadingImage,
+  extraSlots,
+  photoPageNo = 1,
 }) => {
   const handleTextChange = (key: string, value: string) => {
     if (onUpdateInfo) {
@@ -53,8 +58,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
         onUpdateTitle={(val) => handleTextChange('page4Title', val)}
         subtitle={info.page4Subtitle || "Property Photo"} 
         onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
-        badgeText="GALLERY"
-        exportId="page-4"
+        badgeText={photoPageNo > 1 ? `GALLERY ${photoPageNo}` : "GALLERY"}
+        exportId={photoPageNo > 1 ? `page-4-${photoPageNo}` : "page-4"}
         onUpdateBadge={(val) => {
             if (onUpdateInfo) {
                 onUpdateInfo({
@@ -68,13 +73,13 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
     >
         {(() => {
             // Group active uploaded photos
-            const activePhotos = [
+            const activePhotos = (extraSlots || [
                 { src: mainImage, key: 'mainImage', captionKey: 'main', label: "Exterior" },
                 { src: subImage1, key: 'subImage1', captionKey: 'sub1', label: "Side View" },
                 { src: subImage2, key: 'subImage2', captionKey: 'sub2', label: "Entrance" },
                 { src: featureImage1, key: 'featureImage1', captionKey: 'feat1', label: "Interior" },
                 { src: featureImage2, key: 'featureImage2', captionKey: 'feat2', label: "Rooftop" }
-            ].filter(p => p.src);
+            ]).filter(p => p.src);
 
             const count = activePhotos.length;
 
@@ -85,15 +90,15 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                         <EditableImage 
                             src="" 
                             alt="No Photos" 
-                            imageKey="mainImage"
+                            imageKey={extraSlots ? extraSlots[0].key : "mainImage"}
                             onImageUpload={onImageUpload}
-                            isUploading={isUploadingImage?.mainImage}
+                            isUploading={isUploadingImage?.[extraSlots ? extraSlots[0].key : "mainImage"]}
                             aspectRatioClass="object-cover"
                         />
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-6 text-center">
                             <span className="text-4xl mb-3">📸</span>
                             <h3 className="text-base font-bold text-gray-700 mb-1">등록된 현장 사진이 없습니다</h3>
-                            <p className="text-xs text-gray-400 max-w-sm">마우스를 올려 [사진 업로드] 버튼을 누르거나 좌측 사이드바에서 사진을 추가해 주세요. (최대 5장 등록 가능)</p>
+                            <p className="text-xs text-gray-400 max-w-sm">마우스를 올려 [사진 업로드] 버튼을 누르거나 좌측 사이드바에서 사진을 추가해 주세요. (이 쪽에 최대 5장)</p>
                         </div>
                     </div>
                 );

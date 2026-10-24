@@ -280,6 +280,22 @@ function forWeb(data) {
   return { id: data.id, source: data.source, label: nm.gwSourceLabel(data.source), createdAt: data.createdAt };
 }
 
+/** 같은 기사 주소로 만든 예전 칼럼의 캡처 (파일이 남아 있는 것, 가장 최근 칼럼) */
+function sameNewsCaptures(url) {
+  const root = path.dirname(mediaDir("x"));
+  let best = [], bestAt = "";
+  try {
+    for (const n of fs.readdirSync(root)) {
+      if (!n.startsWith("col-")) continue;
+      const d = readJson(path.join(root, n, "source.json"));
+      const u = d && d.source && d.source.news && String(d.source.news.url || "").split("?")[0];
+      const caps = ((d && d.captures) || []).filter((c) => c && fs.existsSync(c.file));
+      if (u === url && caps.length && String(d.createdAt || "") > bestAt) { best = caps; bestAt = String(d.createdAt || ""); }
+    }
+  } catch {}
+  return best;
+}
+
 /* [이 소재로 쓰기]: 새 칼럼 번호를 만든다 */
 function create(source) {
   const s = cleanSource(source);
@@ -288,14 +304,23 @@ function create(source) {
   const data = { id, source: s, createdAt: new Date().toISOString() };
   fs.mkdirSync(mediaDir(id), { recursive: true });
   // 가져올 때 찍은 기사 화면 — 같은 기사면 저장하고 출처를 붙인다 (기사·블로그·SNS 사진으로)
-  if (s.mode === "news" && lastShots.shots.length && lastShots.url && s.news.url && lastShots.url.split("?")[0] === s.news.url.split("?")[0]) {
-    const credit = `출처: ${s.news.publisher || "원문 기사"}${s.news.url ? ` (${s.news.url})` : ""}`;
+  //  같은 기사로 칼럼을 또 만들어도 붙게 비우지 않는다 (2026-10-24: 두 번째 칼럼에 캡처가 빠졌음) — 다음 뉴스를 가져오면 바뀐다
+  const bare = (u) => String(u || "").split("?")[0];
+  const credit = `출처: ${s.news && s.news.publisher || "원문 기사"}${s.news && s.news.url ? ` (${s.news.url})` : ""}`;
+  if (s.mode === "news" && lastShots.shots.length && lastShots.url && s.news.url && bare(lastShots.url) === bare(s.news.url)) {
     data.captures = lastShots.shots.map((buf, i) => {
       const file = path.join(mediaDir(id), `capture-${i + 1}.jpg`);
       fs.writeFileSync(file, buf);
       return { file, caption: `원문 기사 화면 ${i + 1} · ${credit}` };
     });
-    lastShots = { url: "", shots: [] };
+  } else if (s.mode === "news" && s.news.url) {
+    // 앱을 다시 켠 뒤 등 — 같은 기사로 만든 예전 칼럼의 캡처를 복사해 온다
+    const prev = sameNewsCaptures(bare(s.news.url));
+    if (prev.length) data.captures = prev.map((c, i) => {
+      const file = path.join(mediaDir(id), `capture-${i + 1}.jpg`);
+      fs.copyFileSync(c.file, file);
+      return { file, caption: `원문 기사 화면 ${i + 1} · ${credit}` };
+    });
   }
   fs.writeFileSync(sourceFile(id), JSON.stringify(data, null, 2));
   log.info(`[뉴스칼럼] 새 칼럼 ${id} (${s.mode})`);
@@ -303,7 +328,48 @@ function create(source) {
 }
 
 function get(id) {
-  return isColumn(id) ? forWeb(readJson(sourceFile(id))) : null;
+  if (!isColumn(id)) return null;
+  const data = readJson(sourceFile(id));
+  if (!data) return null;
+  // 요약 줄 썸네일 · [원문 보기] — 가져올 때 찍은 기사 화면 (2026-10-24 사장님: 칼럼도 분석 결과처럼)
+  const captures = (data.captures || []).filter((c) => c && fs.existsSync(c.file)).map((c) => {
+    let thumb = null;
+    try { thumb = nativeImage.createFromPath(c.file).resize({ width: 480 }).toDataURL(); } catch {}
+    return { thumb, caption: c.caption };
+  });
+  return { ...forWeb(data), captures };
+}
+
+/* [다시 가져오기] — 같은 기사 주소로 본문·기사 화면을 새로 받는다. 쓴 글에 캡처가 없으면 붙여 준다 */
+async function refetch(id) {
+  const data = isColumn(id) ? readJson(sourceFile(id)) : null;
+  if (!data) throw new Error("칼럼을 찾지 못했습니다.");
+  const url = data.source && data.source.mode === "news" && data.source.news && data.source.news.url;
+  if (!url) throw new Error("뉴스 주소가 없는 칼럼이에요 (주제 직접입력).");
+  const n = await fetchNews(url);
+  const s = cleanSource({ mode: "news", angle: data.source.angle, news: { ...n, url: n.url || url } });
+  data.source = s;
+  if (lastShots.shots.length) {
+    const credit = `출처: ${s.news.publisher || "원문 기사"} (${s.news.url})`;
+    for (const c of data.captures || []) { try { fs.unlinkSync(c.file); } catch {} }
+    data.captures = lastShots.shots.map((buf, i) => {
+      const file = path.join(mediaDir(id), `capture-${i + 1}.jpg`);
+      fs.writeFileSync(file, buf);
+      return { file, caption: `원문 기사 화면 ${i + 1} · ${credit}` };
+    });
+    // 이미 쓴 기사·블로그에 기사 화면이 하나도 없으면 붙인다 (같은 파일 이름이라 있으면 새 화면으로 저절로 바뀜)
+    for (const doc of ["article", "blog"]) {
+      const f = path.join(mediaDir(id), `${doc}.json`);
+      const d = readJson(f);
+      if (!d || (d.media || []).some((m) => m.kind === "capture")) continue;
+      const hasCover = (d.media || []).some((m) => m.isCover);
+      d.media = [...(d.media || []), ...data.captures.map((c, i) => ({ id: crypto.randomBytes(6).toString("hex"), kind: "capture", file: c.file, caption: c.caption, isCover: !hasCover && i === 0 }))];
+      fs.writeFileSync(f, JSON.stringify(d, null, 2));
+    }
+  }
+  fs.writeFileSync(sourceFile(id), JSON.stringify(data, null, 2));
+  log.info(`[뉴스칼럼] 다시 가져옴 ${id} · 화면 ${(data.captures || []).length}장`);
+  return get(id);
 }
 
 const readSource = (id) => {
@@ -382,4 +448,4 @@ async function addCover(baseUrl, id, draft, onProgress = () => {}) {
   return draft;
 }
 
-module.exports = { isColumn, fetchNews, openNews, openUrl, grabNews, create, get, list, readSource, articleOptions, writeArticle, addCover };
+module.exports = { isColumn, fetchNews, openNews, openUrl, grabNews, create, get, refetch, list, readSource, articleOptions, writeArticle, addCover };

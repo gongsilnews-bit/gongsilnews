@@ -419,8 +419,13 @@ function imageStyles(vacancyId) {
   return Object.entries(extPrompt.GW_IMAGE_STYLE).map(([id, s]) => ({ id, label: s.label }));
 }
 
+/* 영상 편집기 그림 스타일(src/lib/studio-video/imageStyles.ts 16가지)을 고르면 — 화면이 이름·조건을 함께 보낸다 (2026-10-24 사장님)
+   기사용 프롬프트 끝에 붙여 이 화풍을 가장 먼저 지키게 한다 */
+const withVideoStyle = (prompt, label, stylePrompt) => (!stylePrompt ? prompt
+  : `${prompt}\n\n[화풍·스타일 — 위 [선택한 스타일]보다 이것을 먼저 지킬 것] ${label || ""}\n${String(stylePrompt).slice(0, 1200)}\n- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것`);
+
 /* AI 이미지 만들기: 확장과 같은 이미지 프롬프트(매물 사실 + 글 + 화풍·장면 요청)로 ChatGPT 가 그린 그림을 넣는다 */
-async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", request = "", slot, replaceId = null }, onProgress = () => {}) {
+async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", request = "", slot, replaceId = null, styleLabel = "", stylePrompt = "" }, onProgress = () => {}) {
   const d = readJson(docFile(vacancyId, doc));
   if (isSim(vacancyId)) {
     if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
@@ -428,9 +433,9 @@ async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", req
     await useQuota(baseUrl, "ai_image");
     const st = L.GW_IMAGE_STYLE[style] ? style : Object.keys(L.GW_IMAGE_STYLE)[0];
     const article = { title: d.title, body: d.paragraphs.join("\n\n") };
-    const dataUrl = await chatgpt.askImage(L.gwBuildImagePrompt(vacancy || { title: result.title }, article, { style: st, request }), { onProgress });
+    const dataUrl = await chatgpt.askImage(withVideoStyle(L.gwBuildImagePrompt(vacancy || { title: result.title }, article, { style: st, request }), styleLabel, stylePrompt), { onProgress });
     onProgress("그림을 넣는 중…");
-    const label = (L.GW_IMAGE_STYLE[st] || {}).label || "AI 이미지";
+    const label = styleLabel || (L.GW_IMAGE_STYLE[st] || {}).label || "AI 이미지";
     return addPhoto({ vacancyId, doc, dataUrl, slot, replaceId, kind: "ai", caption: `${result.title} ${label} (AI 생성 이미지)` });
   }
   if (isColumn(vacancyId)) {
@@ -438,17 +443,17 @@ async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", req
     await useQuota(baseUrl, "ai_image");
     const st = nm.GW_IMAGE_STYLE[style] ? style : "auto";
     const article = { title: d.title, body: d.paragraphs.join("\n\n") };
-    const dataUrl = await chatgpt.askImage(nm.gwBuildImagePrompt(column().readSource(vacancyId), article, { style: st, request }), { onProgress });
+    const dataUrl = await chatgpt.askImage(withVideoStyle(nm.gwBuildImagePrompt(column().readSource(vacancyId), article, { style: st, request }), styleLabel, stylePrompt), { onProgress });
     onProgress("그림을 넣는 중…");
     return addPhoto({ vacancyId, doc, dataUrl, slot, replaceId, kind: "ai", caption: nm.gwAiImageCaption(article) });
   }
   const analysis = readAnalysis(vacancyId);
   if (!d || !analysis) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
   await useQuota(baseUrl, "ai_image");
-  const prompt = extPrompt.gwBuildImagePrompt(analysis.vacancy, { title: d.title, body: d.paragraphs.join("\n\n") }, { style, request });
+  const prompt = withVideoStyle(extPrompt.gwBuildImagePrompt(analysis.vacancy, { title: d.title, body: d.paragraphs.join("\n\n") }, { style, request, customStyle: styleLabel }), styleLabel, stylePrompt);
   const dataUrl = await chatgpt.askImage(prompt, { onProgress });
   onProgress("그림을 넣는 중…");
-  const label = (extPrompt.GW_IMAGE_STYLE[style] || {}).label || "AI 이미지";
+  const label = styleLabel || (extPrompt.GW_IMAGE_STYLE[style] || {}).label || "AI 이미지";
   const name = analysis.vacancy.title || "해당 매물";
   return addPhoto({ vacancyId, doc, dataUrl, slot, replaceId, kind: "ai", caption: `${name} ${label} (AI 생성 이미지)` });
 }

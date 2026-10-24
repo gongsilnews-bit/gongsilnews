@@ -121,6 +121,8 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
   const month = trialMonth();
 
   if (kind === "ai_image") {
+    // AI 이미지는 공실스터디 멤버십(유료회원) 전용 (2026-10-24 사장님)
+    if (!member.canRemodel) return { ok: false, reason: "AI 이미지는 공실스터디 멤버십 전용 기능입니다.", usage };
     if (usage.aiImageLimit !== null && usage.aiImageToday >= usage.aiImageLimit) {
       return { ok: false, reason: `AI 이미지는 계정 보호를 위해 하루 ${usage.aiImageLimit}장까지 만들 수 있습니다. 내일 다시 만들어 주세요.`, usage };
     }
