@@ -1582,6 +1582,21 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     void openRecent({ path: file, name: file.split(/[\\/]/).pop() || file, at: Date.now(), thumb: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 화면캡처 알림에서 [이미지제작에서 열기] (2026-10-24) — 메뉴를 바꾸며 놓아 둔 파일을 받아 연다
+  useEffect(() => {
+    if (embed) return;
+    const take = () => {
+      const w = window as unknown as { __gsSnapPhoto?: string };
+      const file = w.__gsSnapPhoto;
+      if (!file) return;
+      w.__gsSnapPhoto = undefined;
+      void openRecent({ path: file, name: file.split(/[\\/]/).pop() || file, at: Date.now(), thumb: "" });
+    };
+    take();
+    window.addEventListener("gs-snap-photo", take);
+    return () => window.removeEventListener("gs-snap-photo", take);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const create = (o:{ name: string; width: number; height: number; bg: string; ppi: number; guides?: PsdGuide[]; mode: "rgb" | "cmyk" }) => {
     setNewOpen(false);
     setNewInit(null);

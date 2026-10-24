@@ -245,3 +245,46 @@ export function TransPanel({ trans: trans0, from, to, maxA, maxB, onChange, onRe
     </Side>
   );
 }
+
+/* ── 타임라인 왼쪽 아래 [전환] 탭 (2026-10-25 사장님 — 프리미어처럼 끌어서 클립 사이에 놓기) ──
+ *  비디오 전환: V1 클립 사이 경계에 놓으면 그 자리 화면전환 · 오디오 전환(크로스페이드): A1 소리 경계에 놓기 */
+export const DRAG_TRANS = "application/x-gsv-trans";
+export type TransDrop = { kind: "video"; type: TransType } | { kind: "audio" };
+function BinTile({ id, name, onPick }: { id: TransType; name: string; onPick?: () => void }) {
+  const [on, setOn] = React.useState(false);
+  const p = useLoop(on);
+  return (
+    <div role="button" draggable title={`${name} — 끌어서 클립 사이 경계에 놓으세요 (누르면 고른 클립 앞에 넣기)`}
+      onDragStart={(e) => { e.dataTransfer.setData(DRAG_TRANS, JSON.stringify({ kind: "video", type: id } satisfies TransDrop)); e.dataTransfer.effectAllowed = "copy"; }}
+      onMouseEnter={() => setOn(true)} onMouseLeave={() => setOn(false)} onClick={onPick}
+      style={{ cursor: "grab", borderRadius: 5, padding: 3, border: `1px solid ${C.line2}`, background: C.panel2 }}>
+      <Mini type={id} p={p} />
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.text, marginTop: 3, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+    </div>
+  );
+}
+export function TransBin({ onPick }: { onPick?: (type: TransType) => void }) {
+  const groups = [...new Set(TRANSITIONS.map((t) => t.group))];
+  const head: React.CSSProperties = { fontSize: 12, fontWeight: 800, color: C.sub, margin: "10px 0 6px" };
+  return (
+    <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 10px 14px", fontFamily: FONT }}>
+      <div style={{ fontSize: 11.5, color: C.dim, lineHeight: 1.5, marginTop: 6 }}>끌어서 타임라인의 <b style={{ color: C.text }}>클립과 클립 사이</b>에 놓으세요.</div>
+      <div style={{ ...head, color: C.text, fontSize: 13 }}>오디오 전환</div>
+      <div role="button" draggable title="크로스페이드 — A1 소리 경계에 끌어다 놓으면 앞 소리는 작아지고 뒤 소리는 커지며 이어져요"
+        onDragStart={(e) => { e.dataTransfer.setData(DRAG_TRANS, JSON.stringify({ kind: "audio" } satisfies TransDrop)); e.dataTransfer.effectAllowed = "copy"; }}
+        style={{ display: "flex", alignItems: "center", gap: 8, cursor: "grab", borderRadius: 5, padding: "7px 8px", border: `1px solid ${C.line2}`, background: C.panel2, fontSize: 12.5, fontWeight: 700, color: C.text }}>
+        <svg width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="#2dd4bf" strokeWidth="2" strokeLinecap="round"><path d="M2 3l30 12" /><path d="M2 15L32 3" /></svg>
+        크로스페이드
+      </div>
+      <div style={{ ...head, color: C.text, fontSize: 13 }}>비디오 전환</div>
+      {groups.map((g) => (
+        <div key={g}>
+          <div style={head}>{g}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {TRANSITIONS.filter((t) => t.group === g).map((t) => <BinTile key={t.id} id={t.id} name={t.label} onPick={onPick ? () => onPick(t.id) : undefined} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

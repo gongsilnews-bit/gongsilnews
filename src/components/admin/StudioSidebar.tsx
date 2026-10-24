@@ -88,9 +88,12 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
     window.dispatchEvent(new Event("gs-admin-theme-change"));
   };
   const [hasAi, setHasAi] = useState(false);
+  const [hasSnap, setHasSnap] = useState(false);
   useEffect(() => {
+    const gs = (window as unknown as { gongsilStudio?: { openAiConnect?: () => void; snap?: unknown } }).gongsilStudio;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasAi(Boolean((window as unknown as { gongsilStudio?: { openAiConnect?: () => void } }).gongsilStudio?.openAiConnect));
+    setHasAi(Boolean(gs?.openAiConnect));
+    setHasSnap(Boolean(gs?.snap));
   }, []);
   // 공실스튜디오 저장 위치 (문서\공실스튜디오 · D 드라이브 · 외장하드) — 앱에서만
   type StorageInfo = { root: string; isDefault: boolean; offline: boolean; chosen: string; freeGB: number; oneDrive: boolean };
@@ -250,6 +253,16 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
         )}
       </nav>
 
+      {/* 화면캡처·녹화 (2026-10-24 사장님) — 앱에서만. 누르면 스튜디오 창이 내려가고 화면 오른쪽에 막대 */}
+      {hasSnap && (
+        <div style={{ padding: collapsed ? "0 8px 6px" : "0 10px 6px", flexShrink: 0 }}>
+          <button onClick={() => void (window as unknown as { gongsilStudio?: { snap?: { open: () => Promise<unknown> } } }).gongsilStudio?.snap?.open()} className="studio-nav-btn" title="화면캡처·녹화 — 영역·전체·스크롤 캡처, 전체·영역 녹화 (찍으면 바로 Ctrl+V)"
+            style={{ ...plainBtn, width: "100%", height: 36, borderRadius: 8, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid rgba(255,255,255,0.2)", whiteSpace: "nowrap" }}>
+            <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" /><circle cx="12" cy="12" r="3" /></svg>
+            {!collapsed && "화면캡처 · 녹화"}
+          </button>
+        </div>
+      )}
       {/* 정보설정 구분선 위 — [화면 모드] [AI 설정] (2026-10-23 사장님) */}
       <div style={{ display: "flex", flexDirection: collapsed ? "column" : "row", gap: 6, padding: collapsed ? "0 8px 10px" : "0 10px 10px", flexShrink: 0 }}>
         <button onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="studio-nav-btn" title={theme === "light" ? "어두운 화면으로" : "밝은 화면으로"}

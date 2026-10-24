@@ -8,6 +8,7 @@ import { RATIO_LABEL, errText, fmtTime, uid, videoBridge, datedName, ymd } from 
 import { splitScript } from "./timeline";
 import { useStudioWriter } from "@/components/admin/sections/useStudioWriter";
 import { RecordMini, openMiniWindow } from "./RecordMini";
+import { InkSettings } from "./InkSettings";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
 
@@ -2304,6 +2305,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
             <VolumeControl muted={pcMuted} value={pcVol} onMute={setPcMuted} onVolume={(v) => { setPcVol(v); if (v > 0) setPcMuted(false); }} />
             {phase !== "setup" && pcMuted !== false && <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>녹화를 시작할 때 무음이었으면 녹화 중에 켤 수 없어요.</div>}
           </div>
+          {mode !== "camera" && <InkSettings setup={phase === "setup"} />}
           {err && <div style={{ color: C.danger, fontSize: 14.5, lineHeight: 1.5 }}>{err}</div>}
           {b.record.defaultDir && (
             <div>

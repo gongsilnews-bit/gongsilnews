@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>화면캡처·녹화</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; user-select: none; }
+  .bar { position: absolute; inset: 4px; display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 6px 6px 8px; border-radius: 14px; background: rgba(17, 20, 28, 0.95); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 8px 24px rgba(0,0,0,0.45); color: #e5e7eb; }
+  .grip { height: 16px; display: flex; align-items: center; justify-content: center; cursor: grab; color: rgba(255,255,255,0.35); font-size: 12px; letter-spacing: 2px; }
+  .lab { font-size: 10.5px; font-weight: 800; color: rgba(255,255,255,0.45); text-align: center; margin: 4px 0 1px; }
+  button { height: 52px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #e5e7eb; font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; }
+  button:hover { background: rgba(255,255,255,0.10); }
+  button:disabled { opacity: .35; cursor: default; background: transparent; }
+  button.small { height: 34px; flex-direction: row; font-size: 11px; gap: 4px; }
+  button.on { color: #fff; background: #2563eb; }
+  button.stop { background: #dc2626; color: #fff; height: 60px; }
+  button.stop:hover { background: #b91c1c; }
+  .sep { height: 1px; background: rgba(255,255,255,0.12); margin: 4px 2px; }
+  svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .time { text-align: center; font-size: 14px; font-weight: 800; color: #fca5a5; font-variant-numeric: tabular-nums; display: flex; align-items: center; justify-content: center; gap: 5px; height: 26px; }
+  .dot { width: 9px; height: 9px; border-radius: 5px; background: #ef4444; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .msg { font-size: 10.5px; line-height: 1.35; color: #fde68a; text-align: center; padding: 2px 0; word-break: keep-all; }
+  .fill { flex: 1; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<script>
+// 오른쪽 세로 막대 — 캡처·녹화에 안 찍힌다. 누르면 앱(snap.js)이 한다
+const I = {
+  area: '<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><rect x="8" y="8" width="8" height="8" rx="1"/>',
+  full: '<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/>',
+  scroll: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 8v8M9 13l3 3 3-3"/>',
+  recFull: '<rect x="3" y="4" width="18" height="13" rx="1.5"/><circle cx="12" cy="10.5" r="3" fill="currentColor"/><path d="M8 21h8"/>',
+  recArea: '<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>',
+  ink: '<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/>',
+  folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/>',
+};
+const svg = (k) => `<svg viewBox="0 0 24 24">${I[k]}</svg>`;
+let st = { mode: "idle", text: "", startedAt: 0, mic: false };
+let tick = null;
+
+function render() {
+  const b = document.getElementById("bar");
+  b.innerHTML = "";
+  const busy = st.mode === "busy" || st.mode === "scroll";
+  const add = (k, name, title, fn, cls = "", off = false) => {
+    const e = document.createElement("button");
+    e.innerHTML = (k ? svg(k) : "") + `<span>${name}</span>`;
+    e.title = title;
+    if (cls) e.className = cls;
+    e.disabled = off;
+    e.onclick = fn;
+    b.appendChild(e);
+    return e;
+  };
+  const div = (cls, html) => { const e = document.createElement("div"); e.className = cls; if (html) e.innerHTML = html; b.appendChild(e); return e; };
+  const g = div("grip", "• • •");
+  g.title = "끌어서 옮기기";
+  g.onpointerdown = (ev) => {
+    g.setPointerCapture(ev.pointerId);
+    const sx = ev.screenX, sy = ev.screenY;
+    window.snap.cmd("drag-start");
+    g.onpointermove = (m) => window.snap.cmd("drag", { dx: m.screenX - sx, dy: m.screenY - sy });
+    g.onpointerup = () => (g.onpointermove = null);
+  };
+
+  div("lab", "캡처");
+  add("area", "영역", "마우스로 끌어 고른 곳만 찍기 (Ctrl+Shift+1)", () => window.snap.cmd("area"), "", busy);
+  add("full", "전체", "모니터 화면 전체 찍기 (Ctrl+Shift+2)", () => window.snap.cmd("full"), "", busy);
+  add("scroll", "스크롤", "고른 칸을 아래로 굴리며 길게 한 장으로 (Ctrl+Shift+3)", () => window.snap.cmd("scroll"), "", busy);
+  div("sep");
+  div("lab", "녹화");
+  if (st.mode === "rec") {
+    const t = div("time");
+    const show = () => { const s = Math.max(0, Math.floor((Date.now() - st.startedAt) / 1000)); t.innerHTML = `<span class="dot"></span>${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+    show();
+    clearInterval(tick);
+    tick = setInterval(show, 500);
+    // 녹화 끝은 누르는 순간 (떼기를 기다리지 않게 — 2026-10-24 사장님 "녹화끝이 안먹혀")
+    const s = add("stop", "녹화 끝", "녹화 끝내기 (Ctrl+Shift+4 · 5)", null, "stop");
+    s.onpointerdown = () => { s.disabled = true; window.snap.cmd("rec-stop"); };
+  } else {
+    clearInterval(tick);
+    add("recFull", "전체", "모니터 전체 녹화 — 1920×1080 으로 저장 (Ctrl+Shift+4)", () => window.snap.cmd("rec-full"), "", busy);
+    add("recArea", "영역", "마우스로 고른 곳만 녹화 (Ctrl+Shift+5)", () => window.snap.cmd("rec-area"), "", busy);
+    add("mic", st.mic ? "마이크 켬" : "마이크 끔", st.mic ? "녹화할 때 내 목소리도 (누르면 끔)" : "녹화할 때 PC 소리만 (누르면 마이크도)", () => window.snap.cmd("mic"), "small" + (st.mic ? " on" : ""));
+  }
+  div("sep");
+  add("ink", "판서", "녹화 화면 위에 펜·형광펜·글자 (F9)", () => window.snap.cmd("ink"), "small");
+  add("folder", "폴더", "찍은 그림 폴더 (07 녹화파일\\화면캡쳐)", () => window.snap.cmd("folder"), "small");
+  if (st.text) {
+    div("msg", st.text);
+    if (st.mode === "scroll") add("", "멈추기", "여기까지만 붙이기", () => window.snap.cmd("scroll-stop"), "small");
+  }
+  div("fill");
+  add("close", "닫기", st.mode === "rec" ? "녹화를 끝낸 뒤 닫을 수 있어요" : "막대를 닫고 공실스튜디오로", () => window.snap.cmd("close"), "small", st.mode === "rec" || st.mode === "busy");
+}
+window.snap.on("snap:state", (s) => { st = { ...st, ...s }; render(); });
+window.snap.init().then((r) => { if (r && r.state) st = { ...st, ...r.state }; render(); });
+render();
+</script>
+</body>
+</html>

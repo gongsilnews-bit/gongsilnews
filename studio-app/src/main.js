@@ -787,6 +787,7 @@ app.whenReady().then(async () => {
   photoIpc.register();
   docIpc.register();
   require("./fonts-pc").register();
+  require("./snap/snap").register(() => mainWindow); // 화면캡처·녹화 유틸리티 (2026-10-24)
   videoIpc.setupCapture();
   const url = findDeepLink(process.argv);
   if (url) pendingDeepLink = url;

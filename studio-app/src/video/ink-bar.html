@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>판서 도구</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; user-select: none; }
+  .bar { position: absolute; left: 4px; right: 4px; bottom: 4px; height: 50px; display: flex; align-items: center; gap: 4px; padding: 0 10px; border-radius: 12px; background: rgba(17, 20, 28, 0.94); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 8px 24px rgba(0,0,0,0.45); color: #e5e7eb; }
+  button { height: 36px; min-width: 36px; padding: 0 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #e5e7eb; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  button:hover { background: rgba(255,255,255,0.10); }
+  button.on { background: #2563eb; color: #fff; }
+  .sep { width: 1px; height: 26px; background: rgba(255,255,255,0.16); margin: 0 4px; }
+  .dot { width: 22px; height: 22px; min-width: 22px; padding: 0; border-radius: 11px; border: 2px solid rgba(255,255,255,0.25); }
+  .dot.on { border-color: #fff; box-shadow: 0 0 0 2px #2563eb; background-clip: padding-box; }
+  .end { margin-left: auto; background: #374151; }
+  .end.go { background: #2563eb; color: #fff; }
+  .idle button.on:not(.end) { background: rgba(255,255,255,0.14); color: #e5e7eb; }
+  .more { position: relative; }
+  .more::after { content: ""; position: absolute; right: 3px; bottom: 3px; border: 3px solid transparent; border-right-color: currentColor; border-bottom-color: currentColor; opacity: .7; }
+  .menu { position: absolute; bottom: 60px; display: flex; gap: 4px; padding: 5px; border-radius: 10px; background: rgba(17, 20, 28, 0.96); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+  .menu button { padding: 0 10px; }
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="menu" id="menu" hidden></div>
+<script>
+// 판서 도구 막대 — 녹화에 안 찍힌다. 누르면 앱(ink.js)을 거쳐 판서 판에 알린다
+const I = {
+  pen: '<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/>',
+  hl: '<path d="M9 15l-4 4h5l2-2"/><path d="M8 13l7-7 4 4-7 7z"/>',
+  check: '<path d="M4 12l5 5L20 6"/>',
+  circle: '<circle cx="12" cy="12" r="8"/>',
+  arrow: '<path d="M5 19L19 5"/><path d="M10 5h9v9"/>',
+  rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>',
+  text: '<path d="M5 6V4h14v2"/><path d="M12 4v16"/><path d="M9 20h6"/>',
+  erase: '<path d="M7 20h11"/><path d="M5 15l9-9 5 5-8 8H8z"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/>',
+};
+const svg = (k) => `<svg viewBox="0 0 24 24">${I[k]}</svg>`;
+const TOOLS = [["pen", "펜"], ["hl", "형광펜"], ["text", "글자 — 누른 자리에 쓰기 (Enter 끝 · Shift+Enter 줄바꿈)"], ["check", "체크"], ["shape", ""], ["arrow", "화살표"], ["erase", "지우개"]];
+// 네모 칸 — 짧게 누르면 마지막에 고른 도형, 길게 누르면(또는 오른쪽 클릭) 네모·동그라미 고르기
+const SHAPES = [["rect", "네모"], ["circle", "동그라미"]];
+let shape = "rect";
+let menuOn = false;
+const COLORS = ["#ef4444", "#facc15", "#3b82f6", "#22c55e", "#111827", "#ffffff"];
+let st = { drawing: false, tool: "pen", color: "#ef4444", board: "" };
+
+function render() {
+  const b = document.getElementById("bar");
+  b.innerHTML = "";
+  b.classList.toggle("idle", !st.drawing); // 판서가 꺼져 있으면 고른 도구를 옅게
+  const add = (html, cls, title, fn) => { const e = document.createElement("button"); e.innerHTML = html; if (cls) e.className = cls; e.title = title; if (fn) e.onclick = () => { closeMenu(); fn(); }; b.appendChild(e); return e; };
+  const sep = () => { const s = document.createElement("span"); s.className = "sep"; b.appendChild(s); };
+  for (const [k, n] of TOOLS) {
+    if (k !== "shape") { add(svg(k), st.tool === k ? "on" : "", n, () => window.ink.set({ tool: k })); continue; }
+    if (SHAPES.some(([s]) => s === st.tool)) shape = st.tool;
+    const name = SHAPES.find(([s]) => s === shape)[1];
+    const e = add(svg(shape), "more" + (shape === st.tool ? " on" : ""), `${name} (길게 누르면 도형 고르기)`, null);
+    let t = null, long = false;
+    e.onpointerdown = () => { long = false; t = setTimeout(() => { long = true; openMenu(e); }, 400); };
+    e.onpointerup = () => { clearTimeout(t); if (!long) { closeMenu(); window.ink.set({ tool: shape }); } };
+    e.onpointerleave = () => clearTimeout(t);
+    e.oncontextmenu = (ev) => { ev.preventDefault(); clearTimeout(t); openMenu(e); };
+  }
+  sep();
+  for (const c of COLORS) { const e = add("", "dot" + (st.color === c ? " on" : ""), c, () => window.ink.set({ color: c, tool: st.tool === "erase" ? "pen" : st.tool })); e.style.background = c; }
+  sep();
+  add("흰 칠판", st.board === "white" ? "on" : "", "흰 칠판으로 덮고 쓰기 (다시 누르면 원래 화면)", () => window.ink.set({ board: st.board === "white" ? "" : "white" }));
+  add("검은 칠판", st.board === "black" ? "on" : "", "검은 칠판으로 덮고 쓰기 (다시 누르면 원래 화면)", () => window.ink.set({ board: st.board === "black" ? "" : "black", color: st.board !== "black" && st.color === "#111827" ? "#ffffff" : st.color }));
+  sep();
+  add(svg("undo"), "", "되돌리기 (Ctrl+Z)", () => window.ink.cmd("undo"));
+  add("전체 지우기", "", "그린 것 모두 지우기", () => window.ink.cmd("clear"));
+  if (st.drawing) add("판서 끝 · F9", "end", "판서 끄기 (F9 · Esc) — 그린 것은 남고, 마우스는 뒤 화면을 눌러요", () => window.ink.cmd("off"));
+  else add("판서 시작 · F9", "end go", "판서 켜기 (F9) — 도구를 눌러도 켜져요", () => window.ink.cmd("on"));
+}
+function openMenu(btn) {
+  const m = document.getElementById("menu");
+  m.innerHTML = "";
+  for (const [k, n] of SHAPES) {
+    const e = document.createElement("button");
+    e.innerHTML = svg(k) + n; e.className = st.tool === k ? "on" : ""; e.title = n;
+    e.onclick = () => { shape = k; closeMenu(); window.ink.set({ tool: k }); };
+    m.appendChild(e);
+  }
+  m.style.left = 4 + btn.offsetLeft + "px";
+  m.hidden = false;
+  if (!menuOn) { menuOn = true; window.ink.cmd("menu-on"); }
+}
+function closeMenu() {
+  document.getElementById("menu").hidden = true;
+  if (menuOn) { menuOn = false; window.ink.cmd("menu-off"); }
+}
+window.ink.on("ink:state", (s) => { st = { ...st, ...s }; render(); });
+window.ink.init().then((r) => { if (r) st = { ...st, ...r.state }; render(); });
+render();
+</script>
+</body>
+</html>

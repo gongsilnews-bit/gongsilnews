@@ -468,6 +468,20 @@ const rangeAudio = (k, r, i, n) => {
  *  소리는 원음으로 이어 붙여 맨 마지막에 한 번만 압축한다 — 조각마다 AAC 로 압축해 이으면 이음매마다 "뚝" (2026-10-18)
  *  frames: 화면 칸 수 (앞에서부터 누적으로 맞춰 소리와 어긋나지 않게)  edge: { in, out } 앞·뒤가 원본에서 이어지지 않으면 true
  */
+/** 볼륨 키프레임 → ffmpeg volume 식 (t = 그 조각 처음부터 초, 점 사이는 곧게) · 없으면 "" (2026-10-25) */
+function volEnv(kf) {
+  const k = (Array.isArray(kf) ? kf : []).filter((q) => isFinite(q.t) && isFinite(q.g)).sort((a, b) => a.t - b.t);
+  if (!k.length) return "";
+  const f = (x) => Math.max(0, Math.min(2, x)).toFixed(4);
+  let e = f(k[k.length - 1].g);
+  for (let i = k.length - 1; i >= 1; i--) {
+    const a = k[i - 1], b = k[i];
+    const sl = ((b.g - a.g) / Math.max(1e-6, b.t - a.t)).toFixed(6);
+    e = `if(lt(t,${b.t.toFixed(3)}),${f(a.g)}+(t-${a.t.toFixed(3)})*(${sl}),${e})`;
+  }
+  e = `if(lt(t,${k[0].t.toFixed(3)}),${f(k[0].g)},${e})`;
+  return `,volume='${e}':eval=frame`;
+}
 async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, edge = { in: true, out: true }, ctx = null) {
   const [W, H] = RATIOS[p.ratio] || RATIOS["16:9"];
   const st = p.settings || {};
@@ -767,7 +781,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
       args.push("-ss", src.toFixed(3), "-t", len.toFixed(3), "-i", file);
       const ka = n++;
       const ms = Math.round(s0 * 1000);
-      ovAud.push(`[${ka}:a]volume=${vol.toFixed(3)},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""},apad,atrim=duration=${dur.toFixed(3)}[ova${j}]`);
+      const env = volEnv(l.volKf);
+      ovAud.push(`[${ka}:a]asetpts=PTS-STARTPTS,volume=${(env ? 1 : vol).toFixed(3)}${env},aresample=48000,aformat=channel_layouts=stereo${ms > 0 ? `,adelay=${ms}|${ms}` : ""},apad,atrim=duration=${dur.toFixed(3)}[ova${j}]`);
     }
   };
   const ovAud = [];
@@ -934,6 +949,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
 
   // 소리
   const vol = (x) => Math.max(0, Math.min(3, Number(x ?? 1)));
+  const clipEnv = volEnv(clip.volKf); // 볼륨 키프레임 (2026-10-25) — 있으면 클립 크기 대신 그 선
   // 첨부한 화면 영상의 소리 (올렸을 때만) — 원본 메인 소리와 섞는다
   // 넣은 영상 소리 — [원본 소리] 칩·썸네일 메뉴의 값만 (목소리 칩 볼륨과는 따로, 미리보기 Player.tsx 와 같게)
   const vv = visIn >= 0 && visual && visual.hasAudio ? Math.max(0, Math.min(2, Number(clip.visualVolume) || 0)) : 0;
@@ -950,12 +966,12 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     // 나눈 클립 — 같은 목소리 파일의 o 초부터 duration 초만 (다시 만들지 않는다)
     const vo = Number(clip.voice.o) || 0;
     const vcut = vo > 0 || clip.voice.ng ? `atrim=start=${vo.toFixed(3)}:duration=${Number(clip.voice.duration).toFixed(3)},asetpts=PTS-STARTPTS,` : "";
-    filters.push(`[${k}:a]${vcut}${tempo.length ? tempo.join(",") + "," : ""}volume=${(vol(st.voice && st.voice.volume) * vol(clip.volume)).toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "avo" : "aout"}]`);
+    filters.push(`[${k}:a]${vcut}${tempo.length ? tempo.join(",") + "," : ""}volume=${(vol(st.voice && st.voice.volume) * (clipEnv ? 1 : vol(clip.volume))).toFixed(3)}${clipEnv},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "avo" : "aout"}]`);
     if (vv > 0) filters.push(`[avo][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else if (vv > 0) {
     filters.push(`[avis]anull[aout]`);
   } else if (aIn && !clip.muted && !offs.source) {
-    filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${(dur + 0.01).toFixed(3)}[${vv > 0 ? "aso" : "aout"}]`);
+    filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * (clipEnv ? 1 : vol(clip.volume))}${clipEnv},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${(dur + 0.01).toFixed(3)}[${vv > 0 ? "aso" : "aout"}]`);
     if (vv > 0) filters.push(`[aso][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else {
     args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", "anullsrc=r=48000:cl=stereo");
@@ -970,7 +986,11 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     aMain = "aoutm";
   }
   // 클립 앞뒤 — 원본에서 이어지지 않는 쪽만 줄였다 키우기 (이어진 클립은 원본 소리 그대로)
-  const ef = [edge.in && dur > EDGE * 3 ? `afade=t=in:st=0:d=${EDGE}` : "", edge.out && dur > EDGE * 3 ? `afade=t=out:st=${(dur - EDGE).toFixed(4)}:d=${EDGE}` : ""].filter(Boolean);
+  const xin = Math.min(Number(edge.xin) || 0, dur * 0.45), xout = Math.min(Number(edge.xout) || 0, dur * 0.45); // 크로스페이드
+  const ef = [
+    xin > 0.02 ? `afade=t=in:st=0:d=${xin.toFixed(3)}:curve=qsin` : edge.in && dur > EDGE * 3 ? `afade=t=in:st=0:d=${EDGE}` : "",
+    xout > 0.02 ? `afade=t=out:st=${(dur - xout).toFixed(4)}:d=${xout.toFixed(3)}:curve=qsin` : edge.out && dur > EDGE * 3 ? `afade=t=out:st=${(dur - EDGE).toFixed(4)}:d=${EDGE}` : "",
+  ].filter(Boolean);
   // 소리 길이는 샘플 수로 딱 맞춘다 — 원본에서 이어진 클립끼리는 샘플 하나 틈 없이 붙는다
   const nSmp = ranges && tl.srcSpeed(clip) === 1 && clip.type !== "voice" ? ranges.reduce((a, r) => a + smp(r.e) - smp(r.s), 0) : smp(dur);
   filters.push(`[${aMain}]${ef.length ? ef.join(",") + "," : ""}apad,atrim=end_sample=${nSmp}[afin]`);
@@ -1160,6 +1180,9 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
       // 화면 칸 수 — 앞에서부터 누적으로 (조각마다 반올림하면 뒤로 갈수록 입 모양이 소리와 어긋난다)
       const frames = Math.max(1, Math.round((items[i].start + items[i].dur) * FPS) - Math.round(items[i].start * FPS));
       const edge = { in: !continuous(items[i - 1] && items[i - 1].clip, items[i].clip), out: !continuous(items[i].clip, items[i + 1] && items[i + 1].clip) };
+      // 오디오 크로스페이드 (2026-10-25) — 경계 앞뒤 반씩: 앞 클립 끝은 줄이고 뒤 클립 처음은 키운다
+      if (i > 0 && Number(items[i].clip.xfade) > 0) edge.xin = Number(items[i].clip.xfade) / 2;
+      if (items[i + 1] && Number(items[i + 1].clip.xfade) > 0) edge.xout = Number(items[i + 1].clip.xfade) / 2;
       const seg = await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over, frames, edge, { items, order });
       segs.push(seg.video);
       auds.push(seg.audio);
@@ -1225,7 +1248,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
           const fo = Math.min(len / 2, Math.max(0, Number(l.fadeOut) || 0));
           const ms = Math.round(s * 1000);
           fl.push(
-            `[${i + 2}:a]volume=${mv},aresample=48000,aformat=channel_layouts=stereo,atrim=duration=${len.toFixed(3)},asetpts=PTS-STARTPTS` +
+            `[${i + 2}:a]volume=${volEnv(l.volKf) ? 1 : mv},aresample=48000,aformat=channel_layouts=stereo,atrim=duration=${len.toFixed(3)},asetpts=PTS-STARTPTS${volEnv(l.volKf)}` +
               (fi > 0 ? `,afade=t=in:st=0:d=${fi.toFixed(2)}` : "") +
               (fo > 0 ? `,afade=t=out:st=${(len - fo).toFixed(3)}:d=${fo.toFixed(2)}` : "") +
               (ms > 0 ? `,adelay=${ms}|${ms}` : "") +

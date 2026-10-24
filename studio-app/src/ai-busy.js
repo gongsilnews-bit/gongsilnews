@@ -127,7 +127,7 @@ const overlay = (text, startedAt, sub) => `(() => {
     el.innerHTML = \`<style>
       #__gsAiBusy{position:fixed;inset:0;z-index:2147483647;background:rgba(10,14,20,.62);display:flex;align-items:center;justify-content:center;font-family:'Pretendard Variable','Malgun Gothic',sans-serif;cursor:wait}
       #__gsAiBusy .c{background:#16202b;color:#fff;border-radius:14px;padding:30px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45);min-width:380px;cursor:default}
-      #__gsAiBusy .d{position:relative;width:88px;height:88px;margin:0 auto 18px}
+      #__gsAiBusy .d{display:none} /* 동그란 로고 — 정신없어서 뺌 (2026-10-24 사장님) */
       #__gsAiBusy .d .r{position:absolute;inset:0;border-radius:50%;border:4px solid rgba(245,166,35,.18);border-top-color:#f5a623;animation:gsr 1s linear infinite}
       #__gsAiBusy .d img{position:absolute;inset:10px;width:68px;height:68px;border-radius:50%;background:#fff;animation:gsp 1.6s ease-in-out infinite}
       @keyframes gsr{to{transform:rotate(360deg)}}

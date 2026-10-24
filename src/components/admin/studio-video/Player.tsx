@@ -3,7 +3,9 @@
 // 미리보기 — 굽기(render.js)와 같은 규칙으로 화면·성우·원본 소리·음악·자막을 맞춰 보여 준다 (PC 파일을 바로 재생)
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
 import type { Clip, Layer, Project } from "./types";
-import { RATIO_SIZE, rgba } from "./types";
+import { RATIO_SIZE, rgba, volAt } from "./types";
+/** 클립 소리 배수 — 볼륨 키프레임이 있으면 그 선을 따라 (2026-10-25) */
+const cgOf = (c: Clip, loc: number) => (c.volKf?.length ? volAt(c.volKf, loc) : c.volume ?? 1);
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
 import { effLeading, effSpacing, zLayers, sfxEvents, animAt, animCss, animOf, subAnimOf, layerSpan, clipOrder, clipText, flatten, motionCss, motionOf, layersAt, layerWindow, layerRange, musicLayers, sourceTimeAt, speedOf, srcSpeed, subStyleOf, subtitleLines, subWordOf, lineWords, wordState, layerAtTime, imgRect, kfAt, clipKeys, clipKeyBase, clipBaseRect, cropOf, adjMatrix, adjSvgValues } from "./timeline";
@@ -228,6 +230,10 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     if (!it) return;
     const c = it.clip;
     const loc = Math.max(0, time - it.start);
+    // 오디오 크로스페이드 (2026-10-25) — 경계 앞뒤 반씩: 클립 처음은 키우고, 다음 경계 앞은 줄인다 (굽기 render.js 와 같게)
+    const ii = flat.items.indexOf(it), nx = flat.items[ii + 1];
+    const xin = ii > 0 ? (Number(c.xfade) || 0) / 2 : 0, xout = nx ? (Number(nx.clip.xfade) || 0) / 2 : 0;
+    const xg = Math.max(0, Math.min(1, xin > 0.02 && loc < xin ? loc / xin : 1, xout > 0.02 && loc > it.dur - xout ? (it.dur - loc) / xout : 1));
     const vis = visualOf(c);
     const v = (vis?.kind === "video" ? elOf(vis.url) : null) || videoRef.current;
     for (const o of [vA.current, vB.current]) if (o && o !== v && !o.paused) { o.pause(); o.muted = true; } // 뒤에 숨은 창은 멈추고 소리 끄기
@@ -255,7 +261,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       // 넣은 영상 소리 — [원본 소리] 칩·썸네일 메뉴의 값만 (목소리 칩 볼륨과는 따로)
       const vv = Math.max(0, Math.min(2, c.visualVolume || 0));
       v.muted = sameSource ? Boolean(c.muted) || Boolean(project.settings.off?.source) : vv <= 0;
-      v.volume = sameSource ? Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1))) : Math.min(1, vv);
+      v.volume = (sameSource ? Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * cgOf(c, loc))) : Math.min(1, vv)) * xg;
       v.playbackRate = rateOk(previewRate * (sameSource ? srcSpeed(c) : 1));
       if (bgRef.current && fill === "blur") {
         try {
@@ -279,7 +285,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const sp = speedOf(c, project.settings);
         const target = loc * sp;
         a.playbackRate = rateOk(sp * previewRate);
-        a.volume = Math.max(0, Math.min(1, (project.settings.voice?.volume ?? 1) * (c.volume ?? 1)));
+        a.volume = Math.max(0, Math.min(1, (project.settings.voice?.volume ?? 1) * cgOf(c, loc))) * xg;
         if (force || Math.abs(a.currentTime - (Number(c.voice.o) || 0) - target) > 0.3) {
           try {
             a.currentTime = (Number(c.voice.o) || 0) + Math.min(target, Math.max(0, (c.voice.duration || 0) - 0.01)); // o = 나눈 클립의 파일 안 시작
@@ -298,7 +304,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const a = voiceRef.current;
     if (a) {
       if (c.type !== "voice" && c.src && !sameSource && project.assets[c.src.asset]?.hasAudio && !c.muted && !project.settings.off?.source) {
-        a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * (c.volume ?? 1)));
+        a.volume = Math.max(0, Math.min(1, (project.settings.sourceVolume ?? 1) * cgOf(c, loc))) * xg;
         a.playbackRate = rateOk(previewRate * srcSpeed(c));
         const target = sourceTimeAt(c, loc);
         if (Math.abs(a.currentTime - target) > (force ? 0.12 : 0.3)) {
@@ -351,7 +357,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       let g = 1;
       if (fi > 0 && loc < fi) g = Math.min(g, loc / fi);
       if (fo > 0 && len - loc < fo) g = Math.min(g, (len - loc) / fo);
-      setMusicVol(a, Math.max(0, Math.min(2, (l.volume ?? 0.15) * g)));
+      setMusicVol(a, Math.max(0, Math.min(2, (l.volKf?.length ? volAt(l.volKf, loc) : l.volume ?? 0.15) * g)));
       a.playbackRate = previewRate;
       if (force || Math.abs(a.currentTime - target) > 0.4) {
         try {
@@ -534,7 +540,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     return (Number(l.vs) || 0) + Math.max(0, t - (rg?.s ?? 0));
   };
   const media = (l: Layer, a: { url: string }, style: React.CSSProperties) =>
-    isVidLayer(l) ? <LayerVideo url={a.url} time={vidTime(l)} playing={playing} rate={previewRate} volume={l.muted ? 0 : Math.max(0, Math.min(1, l.volume ?? 1))} style={style} />
+    isVidLayer(l) ? <LayerVideo url={a.url} time={vidTime(l)} playing={playing} rate={previewRate} volume={l.muted ? 0 : Math.max(0, Math.min(1, l.volKf?.length ? volAt(l.volKf, vidTime(l) - (Number(l.vs) || 0)) : l.volume ?? 1))} style={style} />
       : <img src={a.url} alt="" draggable={false} style={style} />;
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
   // 겹치는 순서 (뒤 → 앞) — 스티커·사진·화면 글자 함께. 굽기와 같다 (timeline.zLayers)

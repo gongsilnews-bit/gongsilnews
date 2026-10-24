@@ -14,6 +14,7 @@ const media = require("./media");
 const ff = require("./ff");
 const vai = require("./ai");
 const myvoice = require("./myvoice");
+const ink = require("./ink"); // 강의 녹화 판서 · 마우스 강조 (2026-10-24)
 
 let baseUrl = "";
 const jobs = new Map(); // 굽기 멈추기
@@ -287,6 +288,7 @@ function showBig(win) {
 }
 /** 녹화 끝 — 막대를 닫고, 내려가 있던 큰 창을 다시 올린다 */
 function endLive() {
+  ink.close(); // 판서 판·도구 막대도 닫는다
   if (!live) return;
   const { win, onMin, onRestore } = live;
   live = null;
@@ -306,7 +308,8 @@ const send = (e, ch, ...a) => {
 
 function register(base) {
   baseUrl = base;
-  try { folders.ensure(); } catch {} // 07 녹화파일\녹화영상 · 08 AI생성물\AI보이스 폴더
+  ink.register();
+  try { folders.ensure(); } catch {} // 07 녹화파일\강의영상 · 08 AI생성물\AI보이스 폴더
   server.configure(base);
 
   /* ── 라이브러리 ── */
@@ -941,15 +944,15 @@ function register(base) {
     chosenSource = id;
     return true;
   });
-  // 저장할 곳 — 기본은 문서\공실스튜디오\07 녹화파일\녹화영상\날짜, 회원이 다른 폴더를 고를 수 있다
-  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실스튜디오\07 녹화파일\녹화영상\날짜)
+  // 저장할 곳 — 기본은 문서\공실스튜디오\07 녹화파일\강의영상 (날짜 폴더 없이), 회원이 다른 폴더를 고를 수 있다
+  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실스튜디오\07 녹화파일\강의영상)
   ipcMain.handle("video:record-default-dir", () => recDir());
   ipcMain.handle("video:record-pick-dir", async (e, cur) => {
     const r = await dialog.showOpenDialog(winOf(e), { title: "녹화 파일을 저장할 폴더", defaultPath: cur || recDir(), properties: ["openDirectory", "createDirectory"] });
     return r.canceled || !r.filePaths.length ? "" : r.filePaths[0];
   });
   ipcMain.handle("video:record-start", (_e, name, opt = {}) => {
-    const dir = folders.byDate(opt.dir && path.isAbsolute(String(opt.dir)) ? String(opt.dir) : recDir()); // 기본 녹화영상 폴더면 날짜별 (2026-10-23)
+    const dir = folders.byDate(opt.dir && path.isAbsolute(String(opt.dir)) ? String(opt.dir) : recDir()); // 강의영상은 날짜 폴더 없이 바로 (2026-10-24)
     fs.mkdirSync(dir, { recursive: true });
     const d = new Date();
     const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\.(mp4|webm)$/i, "").trim();
@@ -980,7 +983,25 @@ function register(base) {
     };
     win.on("minimize", live.onMin);
     win.on("restore", live.onRestore);
+    // 판서 판 (F9) · 마우스 강조 — 녹화하는 모니터에
+    recordDisplay(win).then((d) => live && d && ink.open(d)).catch(() => {});
     return true;
+  });
+  /* 판서 · 마우스 강조 (2026-10-24 사장님) — 설정 칸과 [판서] 단추가 부른다
+     prefs = 설정 읽기 · set-prefs = 설정 저장 · try = 녹화 없이 미리 써 보기(다시 부르면 닫기) · toggle = 판서 켜기·끄기 · state */
+  ipcMain.handle("video:ink", async (e, act, arg) => {
+    if (act === "prefs") return ink.getPrefs();
+    if (act === "set-prefs") return ink.setPrefs(arg);
+    if (act === "try") {
+      if (ink.isOpen()) return ink.close(), false;
+      ink.open(await recordDisplay(winOf(e)));
+      return ink.isOpen();
+    }
+    if (act === "toggle") {
+      if (!ink.isOpen()) ink.open(await recordDisplay(winOf(e)));
+      return ink.f9();
+    }
+    return { open: ink.isOpen(), drawing: ink.isDrawing() };
   });
   ipcMain.handle("video:record-minimize", (e) => {
     const win = winOf(e);

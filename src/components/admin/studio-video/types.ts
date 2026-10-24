@@ -53,6 +53,14 @@ export type Asset = {
 };
 
 export type Clip = {
+  /** 연결 해제 (2026-10-25, 프리미어처럼) — 타임라인에서 화면(V1)·소리(A1·A2)를 따로 고른다 */
+  unlink?: boolean;
+  /** 빈 공간 — 자석을 끄고 타임라인에서 지운 클립 자리 (검은 화면, 소리 없음, 길이 = hold). 2026-10-25 */
+  gap?: boolean;
+  /** 볼륨 키프레임 — 클립 처음부터 초(t) · 소리 크기 배수(g, 1 = 그대로). 있으면 volume 대신 이 선을 따라간다 (2026-10-25) */
+  volKf?: VolKf[];
+  /** 오디오 크로스페이드 — 앞 클립과의 경계에서 소리를 겹쳐 잇는 길이(초, 경계 앞뒤 반씩). 2026-10-25 */
+  xfade?: number;
   id: string;
   type: "source" | "silence" | "voice";
   text: string;
@@ -101,6 +109,15 @@ export type Clip = {
   hint?: { desc?: string; keywords?: string; kind?: string };
 };
 
+/** 볼륨 키프레임 점 하나 */
+export type VolKf = { t: number; g: number };
+/** 그 시각 소리 배수 — 점 사이는 곧게 잇고, 처음 점 앞·마지막 점 뒤는 그 값 그대로 */
+export function volAt(kf: VolKf[] | undefined, t: number, base = 1) {
+  if (!kf?.length) return base;
+  if (t <= kf[0].t) return kf[0].g;
+  for (let i = 1; i < kf.length; i++) if (t <= kf[i].t) { const a = kf[i - 1], b = kf[i]; return a.g + ((b.g - a.g) * (t - a.t)) / Math.max(1e-6, b.t - a.t); }
+  return kf[kf.length - 1].g;
+}
 export type Scene = { id: string; title?: string; clips: Clip[] };
 
 /**
@@ -133,6 +150,8 @@ export type Layer = {
   crop?: Crop; // 자르기 (사진·스티커·올린 영상)
   vs?: number; // 올린 영상 — 영상 안 시작 초 (타임라인 V2 위, 화면 속 화면)
   muted?: boolean; // 올린 영상 소리 끄기
+  volKf?: VolKf[]; // 볼륨 키프레임 — 레이어 처음부터 초 · 배수 (음악·효과음·올린 영상 소리, 2026-10-25)
+  pair?: string; // 연결 해제한 올린 영상 ↔ 그 소리(음악 레이어) — 서로의 id. [연결]을 누르면 다시 하나로 (2026-10-25)
   name?: string;
   // 음악
   file?: string;
@@ -280,7 +299,7 @@ export type Project = {
   /** 1 = 겹치는 순서를 layers 배열 순서 그대로 (뒤→앞, 스티커·사진·화면 글자 함께). 없으면 예전대로 사진 먼저·글자 위 (회의 3-26) */
   layerZ?: number;
   /** 타임라인 트랙 (2026-10-20, 프리미어처럼) — v: V 트랙 수(1 = 메인만), a: A 트랙 수(2 = 메인 소리·AI 목소리), 이름·잠금 (화면 결과와는 상관없음) */
-  tl?: { v?: number; a?: number; names?: Record<string, string>; lock?: string[] };
+  tl?: { v?: number; a?: number; names?: Record<string, string>; lock?: string[]; /** 트랙 높이 (px, 끌어서 바꾼 것만) — 2026-10-25 */ h?: Record<string, number> };
   dir: string;
   duration?: number;
   thumb?: string;
@@ -488,6 +507,8 @@ export type VideoBridge = {
     prompterOpen?: (o: { text: string; cps: number; size: number; opacity: number; mine: { cps: number; size: number } | null; startAt: number; rehearse?: boolean }) => Promise<boolean>;
     prompterClose?: () => Promise<boolean>;
     prompterShow?: () => Promise<boolean>;
+    // 판서(F9) · 마우스 강조 — 녹화하는 모니터 위 투명 판 (2026-10-24)
+    ink?: (act: "prefs" | "set-prefs" | "try" | "toggle" | "state", arg?: Partial<InkPrefs>) => Promise<any>;
     onPrompterClosed?: (fn: () => void) => () => void;
     onPrompterPrefs?: (fn: (o: { cps: number; size: number; opacity?: number; mine: { cps: number; size: number } | null }) => void) => () => void;
   };
@@ -544,6 +565,15 @@ export const rgba = (hex: string | undefined, a: number) => {
 
 /** 오른쪽 자료 칸에서 끌어 놓기 — dataTransfer 종류 이름 */
 export const DRAG_MEDIA = "application/x-gsv-media";
+/** 끄는 중인 자료의 길이·이름·그림 — 끄는 동안에는 dataTransfer 를 읽을 수 없어서 (타임라인이 그 길이만큼 자리를 그린다, 2026-10-25) */
+export const mediaDrag = { len: 0, name: "", thumb: "" };
+/** 끌 때 브라우저가 띄우는 큰 그림 대신 — 아무것도 안 보이게 (타임라인 자리 표시로 보여 준다) */
+export function blankDragImage(e: { dataTransfer: DataTransfer }) {
+  if (typeof document === "undefined") return;
+  const c = document.createElement("canvas");
+  c.width = c.height = 1;
+  e.dataTransfer.setDragImage(c, 0, 0);
+}
 /** 스티커·템플릿 칸에서 끌어 놓기 (2026-10-20 사장님) — 놓는 순간 그림을 그려 넣는다 (make 는 끌기 시작할 때 칸이 채워 둔다) */
 export const DRAG_STICKER = "application/x-gsv-sticker";
 export type StickerDrop = { item: LibItem; o: { anim: LayerAnim; w: number; y?: number; spec: { style: string; text: string; icon?: string; color?: string } } };
@@ -554,3 +584,6 @@ export type MyVoiceStatus = { engine: boolean; installing: boolean; voice: boole
 
 /** 타입캐스트 성우 (앱이 회원 키로 받아 온 목록) */
 export type TypecastVoice = { id: string; name: string; gender: string; age: string; useCases: string[]; preview: string; emotions: string[]; type: string; korean?: boolean };
+
+/** 판서 · 마우스 강조 설정 (앱이 PC 에 기억) */
+export type InkPrefs = { enabled: boolean; halo: boolean; haloColor: string; haloSize: number; big: boolean; scale: number };

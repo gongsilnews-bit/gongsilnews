@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>녹화</title>
+</head>
+<body>
+<script>
+// 화면녹화 숨은 창 — 모니터 화면 + PC 소리 (+ 마이크)를 녹화해 조각마다 앱으로 보낸다. 자르기·1920×1080 맞추기는 끝난 뒤 앱이 한다
+let rec = null;
+const fail = (e) => window.snap.cmd("rec-error", (e && e.message) || String(e));
+async function start() {
+  const r = await window.snap.init();
+  const video = { mandatory: { chromeMediaSource: "desktop", chromeMediaSourceId: r.sourceId, maxWidth: r.w, maxHeight: r.h, minWidth: Math.min(r.w, 640), maxFrameRate: 30 } };
+  let screenStream;
+  try {
+    screenStream = await navigator.mediaDevices.getUserMedia({ audio: { mandatory: { chromeMediaSource: "desktop" } }, video });
+  } catch {
+    screenStream = await navigator.mediaDevices.getUserMedia({ audio: false, video }); // PC 소리를 못 잡으면 화면만
+  }
+  const tracks = [...screenStream.getVideoTracks()];
+  const ac = new AudioContext();
+  const out = ac.createMediaStreamDestination();
+  let sound = false;
+  if (screenStream.getAudioTracks().length) { ac.createMediaStreamSource(new MediaStream(screenStream.getAudioTracks())).connect(out); sound = true; }
+  if (r.mic) {
+    try {
+      const m = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      ac.createMediaStreamSource(m).connect(out);
+      sound = true;
+    } catch {}
+  }
+  if (sound) tracks.push(...out.stream.getAudioTracks());
+  // H.264 먼저 — 그래픽카드가 압축해서 녹화 중에도 PC 가 느려지지 않게 (vp9 는 CPU 를 많이 써서 클릭이 안 먹힐 만큼 느려짐, 2026-10-24)
+  const types = ["video/webm;codecs=h264,opus", "video/webm;codecs=avc1,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+  const mimeType = types.find((t) => MediaRecorder.isTypeSupported(t));
+  rec = new MediaRecorder(new MediaStream(tracks), { mimeType, videoBitsPerSecond: 8_000_000 });
+  let q = Promise.resolve();
+  rec.ondataavailable = (e) => { if (e.data && e.data.size) q = q.then(async () => window.snap.cmd("rec-chunk", await e.data.arrayBuffer())); };
+  rec.onstop = () => q.then(() => { screenStream.getTracks().forEach((t) => t.stop()); window.snap.cmd("rec-ended"); });
+  rec.start(1000);
+}
+window.snap.on("snap:rec-stop", () => { if (rec && rec.state !== "inactive") rec.stop(); else window.snap.cmd("rec-ended"); });
+start().catch(fail);
+</script>
+</body>
+</html>

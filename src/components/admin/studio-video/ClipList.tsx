@@ -274,7 +274,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         style={{ display: "flex", alignItems: "center", gap: 12, margin: "6px 0", padding: "8px 14px", borderRadius: 6, border: `1px solid ${sel ? C.accent : C.line}`, background: C.panel2, cursor: "pointer", color: C.sub, fontSize: 14 }}>
         <span style={{ width: 28, textAlign: "center", fontWeight: 700 }}>{n}</span>
         <Icon name="silence" size={18} />
-        <span style={{ flexShrink: 0 }}>말이 없는 구간 {it.dur.toFixed(1)}초</span>
+        <span style={{ flexShrink: 0 }}>{c.gap ? `빈 공간 · 검은 화면 ${it.dur.toFixed(1)}초` : `말이 없는 구간 ${it.dur.toFixed(1)}초`}</span>
         <Icon name="sub" size={16} color={C.dim} />
         <SubLine c={c} p={p} empty="자막 넣기" />
         <ActionBtn icon="trash" label="이 구간 지우기" onClick={() => p.actions.removeClip([c.id])} />
@@ -520,7 +520,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {(p.view === "detail" || (isSrc && subOpen > 0)) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
             {/* 이 클립에만 있는 애셋 (글자·그래픽·사진·효과음) — 2개 클립 이상이면 왼쪽 줄로 나간다 */}
-            <SingleChips list={(p.lanes.singles || []).filter((x) => x.a === it.index)} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
+            <SingleChips list={(p.lanes.singles || []).filter((x) => x.a === it.index)} selLayer={p.selLayer} onDrag={p.onLayerDrag} thumbOf={(l) => (l.asset ? project.assets[l.asset]?.thumb || "" : "")} />
             {/* 끌어서 다른 클립으로 화면 옮기기 (2026-10-21 사장님) — 화면이 있는 클립끼리면 서로 바꾼다 */}
             <button type="button" data-drop-replace="" draggable={Boolean(thumb)} onDragStart={(e) => { e.stopPropagation(); setPeek(null); e.dataTransfer.effectAllowed = "copyMove"; e.dataTransfer.setData(DRAG_MEDIA, JSON.stringify({ fromClip: c.id })); }} onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
               onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}

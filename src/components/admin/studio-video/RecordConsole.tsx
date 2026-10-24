@@ -5,9 +5,10 @@
 // 녹화는 늘 1920×1080 화판에 그려서 한다 — 녹화를 멈추지 않고 [전환]으로 화면을 바꾼다.
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { LibItem } from "./types";
+import type { InkPrefs, LibItem } from "./types";
 import { errText, fmtTime, videoBridge, ymd } from "./types";
 import { Btn, C, FONT, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
+import { InkSettings } from "./InkSettings";
 import type { CamBox, Prompter, Rect } from "./Flows";
 import { CAM_COLORS, CAM_DEFAULT, MicMeter, PrompterPanel, SettingsBtn, SettingsNote, camPath, clampCps, clampSize, fitCamBox, loadPrompter, savePrompter, splitRects } from "./Flows";
 
@@ -573,6 +574,8 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
 
   /* ── 화면 ── */
   const [panel, setPanel] = useState<"" | "settings" | "prompter">("");
+  // 판서(F9) · 마우스 강조 (2026-10-24 사장님) — 앱이 녹화를 시작하면 판을 열고, 끝나면 닫는다
+  const [ink, setInk] = useState<InkPrefs | null>(null);
   const bindPg = (el: HTMLVideoElement | null) => {
     pgVid.current = el;
     if (el && media.stream && el.srcObject !== media.stream) {
@@ -676,6 +679,7 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
         <div style={{ ...label, marginBottom: 8 }}>PC 소리 <span style={{ color: C.dim, fontWeight: 600 }}>· 컴퓨터에서 나는 소리</span></div>
         <VolumeControl muted={pcMuted} value={pcVol} onMute={setPcMuted} onVolume={(v) => { setPcVol(v); if (v > 0) setPcMuted(false); }} />
       </div>
+      <InkSettings setup={phase === "setup"} onPrefs={setInk} />
       <div>
         <div style={{ ...label, marginBottom: 8 }}>저장</div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
@@ -790,6 +794,7 @@ export function RecordConsole({ onCancel, onRecorded }: { onCancel: () => void; 
         <button type="button" onClick={() => setMicMuted(!micMuted)} title="마이크 켜기·끄기 (녹화 중에도)" style={roundBtn(false, micMuted)}><Icon name={micMuted ? "mute" : "mic"} size={18} />{micMuted ? "마이크 꺼짐" : "마이크"}</button>
         <button type="button" onClick={() => setPcMuted(!pcMuted)} title="PC 소리 켜기·끄기 (녹화 중에도)" style={roundBtn(false, pcMuted)}><Icon name={pcMuted ? "mute" : "volume"} size={18} />{pcMuted ? "PC 소리 꺼짐" : "PC 소리"}</button>
         <span style={{ flex: 1 }} />
+        {recOn && ink?.enabled && b.record.ink && <button type="button" onClick={() => void b.record.ink?.("toggle")} title="판서 켜기·끄기 (F9) — 녹화하는 화면 위에 펜·형광펜·체크" style={roundBtn(false)}><Icon name="text" size={18} />판서 · F9</button>}
         <button type="button" onClick={() => (prOpen && b.record.prompterShow ? void b.record.prompterShow() : setPanel(panel === "prompter" ? "" : "prompter"))} style={roundBtn(panel === "prompter" || prOpen)}><Icon name="text" size={18} />프롬프터{pr.on && pr.text.trim() ? " ●" : ""}</button>
         <button type="button" onClick={() => setPanel(panel === "settings" ? "" : "settings")} style={roundBtn(panel === "settings")}><Icon name="gear" size={18} />설정</button>
       </div>

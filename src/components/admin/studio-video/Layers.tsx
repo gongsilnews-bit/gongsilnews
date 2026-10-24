@@ -80,12 +80,14 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
 }
 
 /** 카드 안 작은 아이콘 — 한 클립에만 있는 애셋 (누르면 설정, 아래로 끌면 범위를 늘려 왼쪽 줄로 나간다) */
-export function SingleChips({ list, selLayer, onDrag }: { list: LaneEntry[]; selLayer: string; onDrag: LayerDrag }) {
+/** thumbOf — 올린 영상이면 그 영상 썸네일을 아이콘 대신 보여 준다 (2026-10-25 사장님: 무슨 영상인지 보이게) */
+export function SingleChips({ list, selLayer, onDrag, thumbOf }: { list: LaneEntry[]; selLayer: string; onDrag: LayerDrag; thumbOf?: (l: Layer) => string }) {
   if (!list.length) return null;
   return (
     <span data-layer-ui="" style={{ display: "flex", gap: LANE_W - 26, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
       {list.map(({ layer }) => {
         const on = layer.id === selLayer;
+        const th = isVideoLayer(layer) && thumbOf ? thumbOf(layer) : "";
         return (
           <button key={layer.id} type="button" data-nodrag="" draggable={false}
             onPointerDown={(ev) => {
@@ -97,9 +99,14 @@ export function SingleChips({ list, selLayer, onDrag }: { list: LaneEntry[]; sel
             onMouseDown={(ev) => ev.preventDefault()} onDragStart={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}
             onClick={(ev) => ev.stopPropagation()}
             title={`${layerName(layer)}: ${layerTitle(layer)} — 이 클립에만 있어요 (누르면 메뉴 · 좌우로 끌면 겹치는 순서, 왼쪽일수록 앞 · 위아래 클립으로 끌면 범위가 늘어나 왼쪽 줄로 나가요)`}
-            style={{ width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, opacity: layer.off ? 0.35 : 1,
-              display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none" }}>
-            <Icon name={layerIcon(layer)} size={14} />
+            style={{ width: th ? 46 : 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, opacity: layer.off ? 0.35 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none", position: "relative", overflow: "hidden" }}>
+            {th ? (
+              <>
+                <img src={th} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+                <span style={{ position: "absolute", right: 1, bottom: 1, width: 12, height: 12, borderRadius: 3, background: "rgba(0,0,0,0.6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}><Icon name="play" size={8} /></span>
+              </>
+            ) : <Icon name={layerIcon(layer)} size={14} />}
           </button>
         );
       })}

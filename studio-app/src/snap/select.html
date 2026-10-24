@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>고르기</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+  #shot { position: fixed; inset: 0; width: 100%; height: 100%; display: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  #hint { position: fixed; left: 50%; top: 28px; transform: translateX(-50%); padding: 10px 18px; border-radius: 10px; background: rgba(17,20,28,0.88); color: #fff; font-size: 15px; font-weight: 700; pointer-events: none; white-space: nowrap; }
+  body.pick canvas { cursor: pointer; }
+  body.pick #hint { top: 50%; transform: translate(-50%, -50%); font-size: 22px; padding: 18px 28px; }
+</style>
+</head>
+<body>
+<img id="shot" alt="" />
+<canvas id="c"></canvas>
+<div id="hint"></div>
+<script>
+// 고르기 — area: 마우스로 끌어 네모 / pick: 이 모니터 누르기. Esc 취소
+const c = document.getElementById("c"), g = c.getContext("2d");
+let mode = "area", W = 0, H = 0, R = 1, a = null, b = null, hover = false;
+function fit() {
+  R = window.devicePixelRatio || 1; W = innerWidth; H = innerHeight;
+  c.width = Math.round(W * R); c.height = Math.round(H * R); g.setTransform(R, 0, 0, R, 0, 0); draw();
+}
+const rect = () => a && b ? { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) } : null;
+function draw() {
+  g.clearRect(0, 0, W, H);
+  if (mode === "pick") { g.fillStyle = hover ? "rgba(37,99,235,0.28)" : "rgba(0,0,0,0.45)"; g.fillRect(0, 0, W, H); if (hover) { g.strokeStyle = "#3b82f6"; g.lineWidth = 6; g.strokeRect(3, 3, W - 6, H - 6); } return; }
+  g.fillStyle = "rgba(0,0,0,0.38)";
+  const r = rect();
+  if (!r) return g.fillRect(0, 0, W, H);
+  g.fillRect(0, 0, W, r.y); g.fillRect(0, r.y + r.h, W, H - r.y - r.h); g.fillRect(0, r.y, r.x, r.h); g.fillRect(r.x + r.w, r.y, W - r.x - r.w, r.h);
+  g.strokeStyle = "#3b82f6"; g.lineWidth = 2; g.strokeRect(r.x + 0.5, r.y + 0.5, r.w, r.h);
+  // 크기 (실제 화소)
+  const t = `${Math.round(r.w * R)} × ${Math.round(r.h * R)}`;
+  g.font = "700 13px Pretendard, 'Malgun Gothic', sans-serif";
+  const tw = g.measureText(t).width + 14, ty = r.y > 30 ? r.y - 28 : r.y + r.h + 6;
+  g.fillStyle = "rgba(17,20,28,0.9)"; g.fillRect(r.x, ty, tw, 22);
+  g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(t, r.x + 7, ty + 11);
+}
+c.addEventListener("pointerdown", (e) => {
+  if (mode === "pick") return window.snap.cmd("sel-pick");
+  c.setPointerCapture(e.pointerId);
+  a = { x: e.clientX, y: e.clientY }; b = { ...a };
+  document.getElementById("hint").style.display = "none";
+  draw();
+});
+c.addEventListener("pointermove", (e) => { if (a) { b = { x: e.clientX, y: e.clientY }; draw(); } });
+c.addEventListener("pointerup", () => {
+  const r = rect();
+  a = b = null;
+  if (r && r.w >= 8 && r.h >= 8) window.snap.cmd("sel-done", r);
+  else { document.getElementById("hint").style.display = ""; draw(); }
+});
+c.addEventListener("pointerenter", () => { hover = true; draw(); });
+c.addEventListener("pointerleave", () => { hover = false; draw(); });
+window.addEventListener("keydown", (e) => { if (e.key === "Escape") window.snap.cmd("sel-cancel"); });
+window.addEventListener("contextmenu", (e) => { e.preventDefault(); window.snap.cmd("sel-cancel"); }); // 오른쪽 클릭도 취소
+window.addEventListener("resize", fit);
+window.snap.init().then((r) => {
+  mode = r.mode || "area";
+  document.body.classList.toggle("pick", mode === "pick");
+  document.getElementById("hint").textContent = r.hint || "";
+  if (r.img) { const s = document.getElementById("shot"); s.src = r.img; s.style.display = "block"; }
+  fit();
+});
+fit();
+</script>
+</body>
+</html>

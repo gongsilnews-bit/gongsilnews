@@ -159,6 +159,15 @@ if (allowed) {
       refetch: (id) => ipcRenderer.invoke("studio:column-refetch", id), // [다시 가져오기]
       list: () => ipcRenderer.invoke("studio:column-list"),
     },
+    /* 화면캡처·녹화 (2026-10-24) — 스튜디오 창을 내리고 오른쪽 막대. 찍은 그림을 [이미지제작에서 열기]하면 onPhoto(파일) */
+    snap: {
+      open: () => ipcRenderer.invoke("snap:open"),
+      onPhoto: (fn) => {
+        const h = (_e, file) => fn(file);
+        ipcRenderer.on("snap:photo", h);
+        return () => ipcRenderer.removeListener("snap:photo", h);
+      },
+    },
     /* 영상 편집기 (동영상제작) — PC 파일은 studio-media:// 주소로 바로 재생 */
     video: {
       lib: {
@@ -326,6 +335,8 @@ if (allowed) {
         prompterOpen: (opts) => ipcRenderer.invoke("video:prompter-open", opts),
         prompterClose: () => ipcRenderer.invoke("video:prompter-close"),
         prompterShow: () => ipcRenderer.invoke("video:prompter-show"),
+        // 판서(F9) · 마우스 강조 — prefs · set-prefs · try · toggle · state (2026-10-24)
+        ink: (act, arg) => ipcRenderer.invoke("video:ink", act, arg),
         onPrompterClosed: (fn) => {
           const h = () => fn();
           ipcRenderer.on("video:prompter-closed", h);

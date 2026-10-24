@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>판서</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #draw { cursor: crosshair; }
+  #cur { pointer-events: none; }
+  body.erase #draw { cursor: cell; }
+  body.text #draw { cursor: text; }
+  #txt { position: fixed; z-index: 2; margin: 0; padding: 2px 4px; border: 2px dashed rgba(37,99,235,.9); border-radius: 4px; background: transparent; outline: none; resize: none; overflow: hidden; white-space: pre; font: 800 34px/1.25 "Pretendard", "Malgun Gothic", sans-serif; min-width: 40px; }
+</style>
+</head>
+<body>
+<canvas id="draw"></canvas>
+<canvas id="cur"></canvas>
+<textarea id="txt" rows="1" spellcheck="false" hidden></textarea>
+<script>
+// 판서 판 (녹화에 찍힘) — 펜·형광펜·체크·동그라미·화살표·네모·지우개, 칠판(흰·검), 마우스 후광·큰 포인터
+const D = document.getElementById("draw"), Cc = document.getElementById("cur");
+const g = D.getContext("2d"), gc = Cc.getContext("2d");
+let W = 0, H = 0, R = 1;
+let st = { drawing: false, tool: "pen", color: "#ef4444", board: "" };
+let pf = { halo: false, haloColor: "#facc15", haloSize: 36, big: false, scale: 2 };
+let cur = null;
+// 화면 위 판서와 칠판 판서는 따로 둔다 (칠판을 걷으면 화면 판서가 그대로)
+const strokes = { screen: [], board: [] };
+const list = () => strokes[st.board ? "board" : "screen"];
+let now = null; // 그리는 중인 획
+
+function fit() {
+  R = window.devicePixelRatio || 1;
+  W = window.innerWidth; H = window.innerHeight;
+  for (const c of [D, Cc]) { c.width = Math.round(W * R); c.height = Math.round(H * R); }
+  g.setTransform(R, 0, 0, R, 0, 0); gc.setTransform(R, 0, 0, R, 0, 0);
+  draw(); drawCursor();
+}
+window.addEventListener("resize", fit);
+
+// 글자 — 판에 그릴 때와 쓰는 칸의 모양이 같게
+const TXT_FONT = '800 34px "Pretendard", "Malgun Gothic", sans-serif', TXT_LH = 34 * 1.25;
+function shape(s, ctx) {
+  ctx.save();
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = s.color; ctx.fillStyle = s.color;
+  if (s.t === "pen" || s.t === "hl") {
+    ctx.lineWidth = s.t === "hl" ? 26 : 5;
+    if (s.t === "hl") ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    s.p.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
+    if (s.p.length === 1) ctx.lineTo(s.p[0][0] + 0.1, s.p[0][1]);
+    ctx.stroke();
+  } else if (s.t === "text") {
+    ctx.font = TXT_FONT; ctx.textBaseline = "top";
+    s.lines.forEach((l, i) => ctx.fillText(l, s.x, s.y + i * TXT_LH));
+  } else if (s.t === "check") {
+    const k = s.k || 1; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(s.x - 26 * k, s.y - 2 * k); ctx.lineTo(s.x - 8 * k, s.y + 18 * k); ctx.lineTo(s.x + 30 * k, s.y - 26 * k); ctx.stroke();
+  } else {
+    ctx.lineWidth = 5;
+    const [x0, y0, x1, y1] = s.b;
+    ctx.beginPath();
+    if (s.t === "circle") ctx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.abs(x1 - x0) / 2 || 1, Math.abs(y1 - y0) / 2 || 1, 0, 0, Math.PI * 2);
+    else if (s.t === "rect") ctx.rect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+    else if (s.t === "arrow") {
+      ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+      const a = Math.atan2(y1 - y0, x1 - x0), L = 22;
+      ctx.moveTo(x1, y1); ctx.lineTo(x1 - L * Math.cos(a - 0.45), y1 - L * Math.sin(a - 0.45));
+      ctx.moveTo(x1, y1); ctx.lineTo(x1 - L * Math.cos(a + 0.45), y1 - L * Math.sin(a + 0.45));
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function draw() {
+  g.clearRect(0, 0, W, H);
+  if (st.board) { g.fillStyle = st.board === "black" ? "#1f2a24" : "#ffffff"; g.fillRect(0, 0, W, H); }
+  for (const s of list()) shape(s, g);
+  if (now) shape(now, g);
+}
+
+// 마우스 강조 — 후광 · 큰 포인터 (실제 커서 끝과 같은 자리)
+function drawCursor() {
+  gc.clearRect(0, 0, W, H);
+  if (!cur) return;
+  if (pf.halo) {
+    gc.save(); gc.globalAlpha = 0.38; gc.fillStyle = pf.haloColor;
+    gc.beginPath(); gc.arc(cur.x, cur.y, pf.haloSize, 0, Math.PI * 2); gc.fill(); gc.restore();
+  }
+  if (pf.big && !st.drawing) {
+    const k = pf.scale || 2;
+    gc.save(); gc.translate(cur.x, cur.y); gc.scale(k, k);
+    gc.beginPath();
+    gc.moveTo(0, 0); gc.lineTo(0, 17); gc.lineTo(4, 13); gc.lineTo(7, 20); gc.lineTo(10, 19); gc.lineTo(7, 12); gc.lineTo(12, 12); gc.closePath();
+    gc.fillStyle = "#fff"; gc.fill();
+    gc.lineWidth = 1.3; gc.strokeStyle = "#111"; gc.stroke();
+    gc.restore();
+  }
+}
+
+// 지우개 — 누른 자리 가까이 지나간 획을 통째로 지운다
+function near(s, x, y) {
+  const r = 16;
+  if (s.p) return s.p.some((q) => Math.hypot(q[0] - x, q[1] - y) < r + (s.t === "hl" ? 12 : 0));
+  if (s.t === "check") return Math.hypot(s.x - x, s.y - y) < 36;
+  if (s.t === "text") {
+    g.font = TXT_FONT;
+    const w = Math.max(...s.lines.map((l) => g.measureText(l).width));
+    return x >= s.x - 6 && x <= s.x + w + 6 && y >= s.y - 6 && y <= s.y + s.lines.length * TXT_LH + 6;
+  }
+  const [x0, y0, x1, y1] = s.b;
+  return x >= Math.min(x0, x1) - r && x <= Math.max(x0, x1) + r && y >= Math.min(y0, y1) - r && y <= Math.max(y0, y1) + r;
+}
+function erase(x, y) {
+  const l = list(), i = l.findIndex((s) => near(s, x, y));
+  if (i >= 0) { l.splice(i, 1); draw(); }
+}
+
+// 글자 쓰는 칸 — 누른 자리에 띄우고, Enter·다른 곳 누르기·도구 바꾸기로 판에 붙인다
+const T = document.getElementById("txt");
+let tAt = null;
+function fitTxt() {
+  T.style.height = "0px"; T.style.width = "0px";
+  T.style.height = T.scrollHeight + "px"; T.style.width = T.scrollWidth + 8 + "px";
+}
+function openTxt(x, y) {
+  tAt = { x, y, color: st.color };
+  T.value = ""; T.style.color = st.color;
+  // 칸 안쪽 여백만큼 당겨서, 붙인 글자가 쓴 자리 그대로 남게
+  T.style.left = x - 6 + "px"; T.style.top = y - 4 + "px";
+  T.hidden = false; fitTxt();
+  setTimeout(() => T.focus(), 0);
+}
+function commitTxt() {
+  if (!tAt) return;
+  const v = T.value.replace(/\s+$/, "");
+  if (v) list().push({ t: "text", x: tAt.x, y: tAt.y, color: tAt.color, lines: v.split("\n") });
+  tAt = null; T.hidden = true; T.value = "";
+  draw();
+}
+T.addEventListener("input", fitTxt);
+T.addEventListener("keydown", (e) => {
+  e.stopPropagation(); // 쓰는 중에는 Esc·Ctrl+Z 가 판서를 끄거나 되돌리지 않게
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); commitTxt(); }
+  else if (e.key === "Escape") { tAt = null; T.hidden = true; T.value = ""; }
+});
+
+let down = false;
+D.addEventListener("pointerdown", (e) => {
+  if (!st.drawing) return;
+  D.setPointerCapture(e.pointerId);
+  down = true;
+  const x = e.clientX, y = e.clientY, t = st.tool;
+  if (tAt) { commitTxt(); down = false; if (t === "text") return; }
+  if (t === "text") { down = false; e.preventDefault(); return openTxt(x, y); }
+  if (t === "erase") return erase(x, y);
+  if (t === "check") { list().push({ t, x, y, color: st.color, k: 1 }); draw(); down = false; return; }
+  now = t === "pen" || t === "hl" ? { t, color: st.color, p: [[x, y]] } : { t, color: st.color, b: [x, y, x, y] };
+  draw();
+});
+D.addEventListener("pointermove", (e) => {
+  if (!down) return;
+  const x = e.clientX, y = e.clientY;
+  if (st.tool === "erase") return erase(x, y);
+  if (!now) return;
+  if (now.p) now.p.push([x, y]); else { now.b[2] = x; now.b[3] = y; }
+  draw();
+});
+const up = () => {
+  down = false;
+  if (now) { list().push(now); now = null; draw(); }
+};
+D.addEventListener("pointerup", up);
+D.addEventListener("pointercancel", up);
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") window.ink.cmd("off");
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { list().pop(); draw(); }
+});
+
+window.ink.on("ink:state", (s) => {
+  st = { ...st, ...s };
+  if (tAt && (!st.drawing || st.tool !== "text")) commitTxt();
+  if (tAt) T.style.color = tAt.color = st.color;
+  document.body.classList.toggle("erase", st.tool === "erase");
+  document.body.classList.toggle("text", st.tool === "text");
+  draw();
+  drawCursor();
+});
+window.ink.on("ink:prefs", (p) => { pf = { ...pf, ...p }; drawCursor(); });
+window.ink.on("ink:cursor", (c) => { cur = c; drawCursor(); });
+window.ink.on("ink:cmd", (c) => {
+  if (c === "undo") list().pop();
+  else if (c === "clear") { list().length = 0; tAt = null; T.hidden = true; }
+  draw();
+});
+window.ink.init().then((r) => { if (r) { st = { ...st, ...r.state }; pf = { ...pf, ...r.prefs }; } fit(); });
+fit();
+</script>
+</body>
+</html>

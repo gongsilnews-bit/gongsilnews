@@ -149,6 +149,8 @@ function RealtyAdminContent() {
   const [userRole, setUserRole] = useState<string>("");
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const studioApp = useStudioApp();
+  // 동영상제작·이미지제작 편집 화면에서 [«]로 메뉴를 완전히 숨긴 상태 — 위 머리줄도 같이 숨긴다
+  const railGone = ((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing && railHidden;
 
   /* 메뉴 구성: 최고관리자 기본값 위에 회원 각자의 구성 (realtyMenu.tsx) */
   const [defaultLayout, setDefaultLayout] = useState<MenuLayout>(FACTORY_LAYOUT);
@@ -324,6 +326,15 @@ function RealtyAdminContent() {
     if (key !== "video" && guard) return guard(go);
     go();
   }, [isReporterEligible, router]);
+  // 화면캡처 알림의 [이미지제작에서 열기] — 이미지제작으로 가서 그 그림을 연다 (PhotoStudio 가 __gsSnapPhoto 를 받아 감)
+  useEffect(() => {
+    const snap = (window as unknown as { gongsilStudio?: { snap?: { onPhoto: (fn: (file: string) => void) => () => void } } }).gongsilStudio?.snap;
+    return snap?.onPhoto((file) => {
+      (window as unknown as { __gsSnapPhoto?: string }).__gsSnapPhoto = file;
+      selectMenu("photo");
+      window.dispatchEvent(new Event("gs-snap-photo"));
+    });
+  }, [selectMenu]);
 
   const [saving] = useState(false);
 
@@ -360,7 +371,7 @@ function RealtyAdminContent() {
           badges={badges}
           autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
           // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
-          hidden={((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing && railHidden}
+          hidden={railGone}
           onHide={((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing ? () => setRailHidden(true) : undefined}
         />
       ) : (
@@ -397,7 +408,7 @@ function RealtyAdminContent() {
 
       {/* ===== 우측 메인 영역 ===== */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
-        <header style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5, ...((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo" ? { display: "none" } : {}) /* 영상 편집기는 화면을 넓게 */ }}>
+        <header data-admin-head style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5, ...(railGone ? { display: "none" } : {}) /* 왼쪽 메뉴를 완전히 숨기면 위 머리줄도 함께 (2026-10-24 사장님) */ }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
             onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}

@@ -9,13 +9,14 @@ const file = () => path.join(app.getPath("userData"), "video-folders.json");
 const sr = () => require("../studio-root");
 const studioRoot = () => sr().root();
 // 녹화 영상은 따로 [녹화영상] 폴더 (2026-10-20 사장님 — 예전 기본은 영상\녹화, 이미 녹화한 것은 그대로 두고 [녹화] 칩에서 같이 보인다)
+// 강의녹화는 07 녹화파일\강의영상 에 날짜 폴더 없이 바로 (2026-10-24 사장님 — 유틸리티의 화면녹화·화면캡쳐와 나눔)
 // 동영상제작\프로젝트 · 동영상제작\패키지 (2026-10-23 사장님 — 메뉴 이름대로, 프로젝트와 패키지를 나눠서)
-const defaults = () => ({ projectDir: sr().dir("vid", "프로젝트"), recordDir: sr().dir("rec", "녹화영상"), exportDir: "", aiAudioDir: sr().dir("ai", "AI보이스") }); // AI오디오 → AI보이스 (2026-10-23 사장님)
-// 예전 녹화 자리 — 영상\녹화 (옛 기본) · 예전 이름 폴더(공실뉴스 스튜디오)의 녹화영상·영상\녹화
-const OLD_RECORD = () => { const o = require("../studio-root").oldRoot(); return [path.join(studioRoot(), "영상", "녹화"), path.join(o, "녹화영상"), path.join(o, "영상", "녹화")]; };
+const defaults = () => ({ projectDir: sr().dir("vid", "프로젝트"), recordDir: sr().dir("rec", "강의영상"), exportDir: "", aiAudioDir: sr().dir("ai", "AI보이스") }); // AI오디오 → AI보이스 (2026-10-23 사장님)
+// 예전 녹화 자리 — 07 녹화파일\녹화영상\날짜 (10-24 전 기본) · 영상\녹화 (옛 기본) · 예전 이름 폴더(공실뉴스 스튜디오)의 녹화영상·영상\녹화
+const OLD_RECORD = () => { const o = require("../studio-root").oldRoot(); return [sr().dir("rec", "녹화영상"), path.join(studioRoot(), "영상", "녹화"), path.join(o, "녹화영상"), path.join(o, "영상", "녹화")]; };
 /** AI 목소리 저장 (AI 보이스 녹음 · 텍스트로 영상 › 목소리만) — 고른 곳, 아니면 공실스튜디오\08 AI생성물\AI보이스\날짜 */
 const aiAudioDir = () => read().aiAudioDir || defaults().aiAudioDir;
-/** 공실스튜디오 폴더 안에 녹화영상·AI보이스 폴더를 미리 만들어 둔다 (PC 에서 바로 보이게) */
+/** 공실스튜디오 폴더 안에 강의영상·AI보이스 폴더를 미리 만들어 둔다 (PC 에서 바로 보이게) */
 function ensure() {
   // 이름을 바꾸기 전에 잠깐 만들어진 빈 AI오디오 폴더는 지운다 (안에 파일이 있으면 그대로)
   try { fs.rmdirSync(path.join(studioRoot(), "AI오디오")); } catch {}
@@ -55,7 +56,7 @@ const recordDir = () => read().recordDir || defaults().recordDir;
 const finishedRoot = () => sr().dir("done");
 const exportDir = () => read().exportDir || dated(finishedRoot());
 
-/* 기본 폴더(녹화영상 · AI보이스)는 안에서 날짜별로 — 녹화영상\20261023\ (AI그림·AI영상과 같게, 2026-10-23 사장님).
+/* 완성영상은 안에서 날짜별로 — 06 완성영상\20261023\ (2026-10-23 사장님). 강의영상은 날짜 폴더 없이 바로 (2026-10-24 사장님).
    회원이 [저장 폴더]에서 직접 고른 폴더는 그대로 */
 const same = (a, b) => path.resolve(String(a || "")).toLowerCase() === path.resolve(String(b || "")).toLowerCase();
 function dated(dir) {
@@ -65,11 +66,10 @@ function dated(dir) {
   fs.mkdirSync(out, { recursive: true });
   return out;
 }
-/** 기본 녹화·완성영상 폴더면 오늘 날짜 폴더, 아니면 그대로 */
+/** 완성영상 폴더면 오늘 날짜 폴더, 아니면 그대로 */
 function byDate(dir) {
-  const def = defaults();
-  // 프로젝트는 날짜 폴더 없이 바로 (파일 이름 앞에 20261023 이 있으니까 — 2026-10-23 사장님)
-  return dir && [def.recordDir, finishedRoot()].some((d) => same(dir, d)) ? dated(dir) : dir; // AI보이스도 날짜 폴더 없이 (2026-10-23 사장님)
+  // 프로젝트·강의영상은 날짜 폴더 없이 바로 (파일 이름 앞에 20261023 이 있으니까 — 2026-10-23·24 사장님)
+  return dir && same(dir, finishedRoot()) ? dated(dir) : dir; // AI보이스도 날짜 폴더 없이 (2026-10-23 사장님)
 }
 /** 완성영상 폴더 안(어느 날짜든)인가 — 내보내기 창은 늘 오늘 날짜 폴더에서 연다 */
 const inFinished = (dir) => (path.resolve(String(dir || "")).toLowerCase() + path.sep).startsWith(finishedRoot().toLowerCase() + path.sep);
