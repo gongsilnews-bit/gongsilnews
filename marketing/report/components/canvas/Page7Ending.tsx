@@ -13,6 +13,10 @@ import {
   PlayCircleIcon
 } from '@heroicons/react/24/solid';
 import ErrorBoundary from '../shared/ErrorBoundary';
+import { fieldProps } from '../../reportFields';
+
+// 글 칸은 칸 목록(reportFields)에서 — 입력란 [연락처] 탭과 같은 값 (2026-10-25). 상자들은 hc(key, v) 로 고친다
+const FX = (info: any, hc: (k: string, v: any) => void, key: string, cls = '') => ({ ...fieldProps(info, undefined, key, cls), onChange: (v: string) => hc(key, v) });
 
 interface Props {
   info: PropertyInfo;
@@ -127,15 +131,15 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
         <div className="flex items-center gap-1.5">
           <MapPinIcon className={`w-3.5 h-3.5 ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`} />
           <span className={`font-black text-xs tracking-widest ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`}>
-            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+            <EditableText {...FX(info, hc, 'page7DirectionsTitle')} />
           </span>
         </div>
         <div className={`text-[13px] font-extrabold ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-wider`}>
-          <EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
+          <EditableText {...FX(info, hc, 'agentName')} />
         </div>
       </div>
       <div className={`${dark ? 'text-white/90' : 'text-gray-700'} font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep`}>
-        <EditableText multiline value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} />
+        <EditableText {...FX(info, hc, 'agentAddress')} />
       </div>
     </div>
 
@@ -154,18 +158,18 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
       <div className={`flex-1 flex items-center gap-3`}>
         {/* Inquiry Label - Theme colored, slightly smaller than phone */}
         <div className={`text-[18px] ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} font-extrabold whitespace-nowrap shrink-0`}>
-          문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "담당자"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
+          문의 : <EditableText {...FX(info, hc, 'agentRepresentative', 'inline-block')} />
         </div>
         {/* Phone Number */}
         <div className={`text-[28px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-tight whitespace-nowrap`}>
-          <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} />
+          <EditableText {...FX(info, hc, 'agentMobile')} />
         </div>
       </div>
       <div className="flex gap-2 shrink-0">
-        <a href={`tel:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
+        <a href={`tel:${String(info.agentMobile || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
           <PhoneIcon className="w-4 h-4" />
         </a>
-        <a href={`sms:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
+        <a href={`sms:${String(info.agentMobile || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
           <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
         </a>
       </div>
@@ -222,7 +226,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
   const layoutType = layoutTheme?.type || 'type1';
 
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${String(info.agentAddress || '서울 강남구 논현동').split('\n')[0]}`)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${String(info.agentAddress || info.agentName || '').split('\n')[0]}`)}`;
 
   return (
     <ErrorBoundary>
@@ -279,15 +283,15 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <div className="text-gray-700 font-bold text-xs leading-relaxed space-y-1.5 mt-1">
                       <p className="flex justify-between">
                         <span className="text-gray-400">상호</span> 
-                        <span><EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} className="inline-block text-right" /></span>
+                        <span><EditableText {...FX(info, hc, 'agentName', 'inline-block text-right')} /></span>
                       </p>
                       <p className="flex justify-between">
                         <span className="text-gray-400">대표</span> 
-                        <span><EditableText value={info.agencyRepresentative || info.agentRepresentative || "대표자"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block text-right" /></span>
+                        <span><EditableText {...FX(info, hc, 'agencyRepresentative', 'inline-block text-right')} /></span>
                       </p>
                       <p className="flex justify-between">
                         <span className="text-gray-400">등록번호</span> 
-                        <span><EditableText value={info.agentRegistrationNumber || info.agentRegistrationNo || ""} onChange={(v) => hc('agentRegistrationNo', v)} className="inline-block text-right" /></span>
+                        <span><EditableText {...FX(info, hc, 'agentRegistrationNumber', 'inline-block text-right')} /></span>
                       </p>
                     </div>
                   </div>
@@ -297,11 +301,11 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <div className="flex items-center gap-1.5 mb-3 border-b border-gray-100 pb-2">
                       <MapPinIcon className="w-4 h-4 text-[var(--theme-primary)]" />
                       <span className="font-bold text-sm tracking-widest text-[var(--theme-primary)]">
-                        <EditableText value={info.page7DirectionsTitle || "오시는 길 및 주차안내"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                        <EditableText {...FX(info, hc, 'page7DirectionsTitle')} />
                       </span>
                     </div>
                     <div className="text-gray-700 font-bold text-xs leading-relaxed whitespace-pre-wrap break-keep mt-1">
-                      <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 도보 5분 거리\n건물 내 지하주차장 무료 이용 가능"} onChange={(v) => hc('agentAddress', v)} />
+                      <EditableText {...FX(info, hc, 'agentAddress')} />
                     </div>
                   </div>
 
@@ -344,18 +348,18 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <div className="w-full aspect-[9/5] border border-gray-300 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-start text-left">
                       {/* Inquiry Label */}
                       <div className="text-[22px] text-[var(--theme-primary)] font-black tracking-tight mb-1 whitespace-nowrap">
-                        문의  <EditableText value={info.agentRepresentative || info.agencyRepresentative || "담당자"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
+                        문의  <EditableText {...FX(info, hc, 'agentRepresentative', 'inline-block')} />
                       </div>
                       {/* Phone Number */}
                       <div className="text-[32px] font-black text-[var(--theme-primary)] tracking-tight mb-5">
-                        <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} />
+                        <EditableText {...FX(info, hc, 'agentMobile')} />
                       </div>
                       {/* Phone / SMS Buttons */}
                       <div className="flex gap-3">
-                        <a href={`tel:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--theme-primary)] text-white font-bold text-sm shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
+                        <a href={`tel:${String(info.agentMobile || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--theme-primary)] text-white font-bold text-sm shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
                           <PhoneIcon className="w-4 h-4" /> 전화하기
                         </a>
-                        <a href={`sms:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold text-sm hover:bg-[var(--theme-primary)] hover:text-white transition-colors" title="문자보내기">
+                        <a href={`sms:${String(info.agentMobile || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold text-sm hover:bg-[var(--theme-primary)] hover:text-white transition-colors" title="문자보내기">
                           <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" /> 문자보내기
                         </a>
                       </div>
@@ -371,15 +375,15 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                         <div className="flex items-center gap-1.5">
                           <MapPinIcon className="w-3.5 h-3.5 text-[var(--theme-primary)]" />
                           <span className="font-black text-xs tracking-widest text-[var(--theme-primary)]">
-                            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                            <EditableText {...FX(info, hc, 'page7DirectionsTitle')} />
                           </span>
                         </div>
                         <span className="text-[12px] font-extrabold text-[var(--theme-primary)] tracking-wider">
-                          <EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
+                          <EditableText {...FX(info, hc, 'agentName')} />
                         </span>
                       </div>
                       <div className="text-gray-700 font-bold text-[12px] leading-relaxed whitespace-pre-wrap break-keep">
-                        <EditableText multiline value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} />
+                        <EditableText {...FX(info, hc, 'agentAddress')} />
                       </div>
                     </div>
                   </div>
@@ -412,18 +416,18 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   <div>
                     <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-3">AGENT</span>
                     <div className="flex items-center gap-3">
-                      <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || info.agencyRepresentative || "담당자"} onChange={(v) => hc('agentRepresentative', v)} /></span>
-                      <a href={`tel:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
+                      <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText {...FX(info, hc, 'agentRepresentative')} /></span>
+                      <a href={`tel:${String(info.agentMobile || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
                         <PhoneIcon className="w-4 h-4" />
                       </a>
-                      <a href={`sms:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="문자보내기">
+                      <a href={`sms:${String(info.agentMobile || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="문자보내기">
                         <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-[30px] font-black text-[var(--theme-secondary)] tracking-tight">
-                      <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} />
+                      <EditableText {...FX(info, hc, 'agentMobile')} />
                     </div>
                   </div>
                 </div>
@@ -439,16 +443,16 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <MapPinIcon className="w-3.5 h-3.5 text-[var(--theme-secondary)]" />
                           <span className="font-black text-xs tracking-widest text-[var(--theme-secondary)]">
-                            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                            <EditableText {...FX(info, hc, 'page7DirectionsTitle')} />
                           </span>
                         </div>
                         <div className="font-bold text-[10px] leading-relaxed whitespace-pre-wrap break-keep text-white/80">
-                          <EditableText multiline value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} />
+                          <EditableText {...FX(info, hc, 'agentAddress')} />
                         </div>
                       </div>
                       
                       <div className="shrink-0 text-2xl font-black text-white tracking-tight text-right ml-4 mr-2">
-                        <EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
+                        <EditableText {...FX(info, hc, 'agentName')} />
                       </div>
                     </div>
                     
@@ -461,7 +465,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                         </div>
                       )}
                       <span className="text-[7px] font-bold mt-1 text-white/50">
-                        <EditableText value={info.qrLabel || "네이버 지도"} onChange={(v) => hc('qrLabel', v)} />
+                        <EditableText {...FX(info, hc, 'qrLabel')} />
                       </span>
                     </div>
                   </div>

@@ -219,3 +219,11 @@ select {
     min-width: 860px;
   }
 }
+
+/* 비어 있는 사진 설명 칸 — 편집 화면에서만 안내 글을 흐리게 (내보낼 때는 contenteditable 을 떼어 안 나온다, 2026-10-25) */
+.caption-ph[contenteditable]:empty::before,
+.field-ph[contenteditable]:empty::before {
+  content: attr(placeholder);
+  opacity: 0.6;
+  font-weight: 500;
+}

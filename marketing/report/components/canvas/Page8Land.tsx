@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { ReportPage, EditableText } from '../shared';
+import { pageHead } from '../../reportFields';
 
 /**
  * 8. 지적도 · 9. 건축물대장 요약 (2026-10-24 사장님: 로드맵 뒤에)
@@ -283,10 +284,8 @@ export const Page8Cadastral: React.FC<PageProps> = ({ info, pageString, isHidden
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
       pageNumber={8} pageString={pageString} isHidden={isHidden}
-      title={(info as any).page8Title || '지적도'} onUpdateTitle={(v) => set('page8Title', v)}
-      subtitle={(info as any).page8Subtitle || 'Cadastral Map'} onUpdateSubtitle={(v) => set('page8Subtitle', v)}
-      badgeText="LAND" exportId="page-8"
-      footerText={info.footerText || 'PROPERTY REPORT'} onUpdateFooter={(v) => set('footerText', v)}>
+      {...pageHead(info, onUpdateInfo, 8)}
+      badgeText="LAND" exportId="page-8">
       {body}
     </ReportPage>
   );
@@ -486,10 +485,8 @@ export const Page9Building: React.FC<PageProps> = ({ info, pageString, isHidden,
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
       pageNumber={9} pageString={pageString} isHidden={isHidden}
-      title={(info as any).page9Title || '건축물대장 요약'} onUpdateTitle={(v) => set('page9Title', v)}
-      subtitle={(info as any).page9Subtitle || 'Building Register'} onUpdateSubtitle={(v) => set('page9Subtitle', v)}
-      badgeText="BUILDING" exportId="page-9"
-      footerText={info.footerText || 'PROPERTY REPORT'} onUpdateFooter={(v) => set('footerText', v)}>
+      {...pageHead(info, onUpdateInfo, 9)}
+      badgeText="BUILDING" exportId="page-9">
       {body}
     </ReportPage>
   );
@@ -588,10 +585,8 @@ export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, 
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
       pageNumber={10} pageString={pageString} isHidden={isHidden}
-      title={(info as any).page10Title || '층별 현황'} onUpdateTitle={(v) => set('page10Title', v)}
-      subtitle={(info as any).page10Subtitle || 'Floor Overview'} onUpdateSubtitle={(v) => set('page10Subtitle', v)}
-      badgeText="FLOORS" exportId="page-10"
-      footerText={info.footerText || 'PROPERTY REPORT'} onUpdateFooter={(v) => set('footerText', v)}>
+      {...pageHead(info, onUpdateInfo, 10)}
+      badgeText="FLOORS" exportId="page-10">
       {body}
     </ReportPage>
   );
@@ -702,10 +697,8 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
       pageNumber={11} pageString={pageString} isHidden={isHidden}
-      title={(info as any).page11Title || '실거래 이력'} onUpdateTitle={(v) => set('page11Title', v)}
-      subtitle={(info as any).page11Subtitle || 'Transaction History'} onUpdateSubtitle={(v) => set('page11Subtitle', v)}
-      badgeText="TRADES" exportId="page-11"
-      footerText={info.footerText || 'PROPERTY REPORT'} onUpdateFooter={(v) => set('footerText', v)}>
+      {...pageHead(info, onUpdateInfo, 11)}
+      badgeText="TRADES" exportId="page-11">
       {body}
     </ReportPage>
   );

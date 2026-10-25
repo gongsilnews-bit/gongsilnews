@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { EditableText, ReportPage, EditableImage } from '../shared';
+import { pageHead, photoCaption } from '../../reportFields';
 
 interface Page4PhotosProps {
   info: PropertyInfo;
@@ -49,27 +50,17 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
     }
   };
 
+  const head = pageHead(info, onUpdateInfo, 4);
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
-        pageNumber={4} 
+        pageNumber={4}
         pageString={pageString}
         isHidden={isHidden}
-        title={info.page4Title || "매물 사진"} 
-        onUpdateTitle={(val) => handleTextChange('page4Title', val)}
-        subtitle={info.page4Subtitle || "Property Photo"} 
-        onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
-        badgeText={photoPageNo > 1 ? `GALLERY ${photoPageNo}` : "GALLERY"}
+        {...head}
+        // 늘린 사진 쪽은 배지 뒤에 쪽 번호 ("GALLERY 2") — 고치는 칸은 같은 배지 하나
+        badgeText={photoPageNo > 1 && head.badgeText ? `${head.badgeText} ${photoPageNo}` : head.badgeText}
+        onUpdateBadge={photoPageNo > 1 ? undefined : head.onUpdateBadge}
         exportId={photoPageNo > 1 ? `page-4-${photoPageNo}` : "page-4"}
-        onUpdateBadge={(val) => {
-            if (onUpdateInfo) {
-                onUpdateInfo({
-                    ...info,
-                    pageBadges: { ...(info.pageBadges || {}), page4: val }
-                });
-            }
-        }}
-        footerText={info.footerText || "PROPERTY REPORT"}
-        onUpdateFooter={(val) => handleTextChange('footerText', val)}
     >
         {(() => {
             // Group active uploaded photos
@@ -87,9 +78,9 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
             if (count === 0) {
                 return (
                     <div className="w-full h-[550px] border-4 border-dashed border-gray-300 rounded-3xl flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-50 hover:border-amber-400 transition-all p-8 relative cursor-pointer group">
-                        <EditableImage 
-                            src="" 
-                            alt="No Photos" 
+                        <EditableImage
+                            src=""
+                            alt="No Photos"
                             imageKey={extraSlots ? extraSlots[0].key : "mainImage"}
                             onImageUpload={onImageUpload}
                             isUploading={isUploadingImage?.[extraSlots ? extraSlots[0].key : "mainImage"]}
@@ -107,12 +98,12 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
             // Case 1: Single photo (100% full height & width)
             if (count === 1) {
                 const p = activePhotos[0];
-                const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                const captionValue = photoCaption(info, p.captionKey);
                 return (
                     <div className="w-full h-[550px] relative rounded-2xl overflow-hidden shadow-md group">
-                        <EditableImage 
-                            src={p.src || ""} 
-                            alt={p.label} 
+                        <EditableImage
+                            src={p.src || ""}
+                            alt={p.label}
                             imageKey={p.key}
                             onImageUpload={onImageUpload}
                             onDelete={() => onDeleteImage && onDeleteImage(p.key)}
@@ -121,8 +112,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                         />
                         <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
                             <span className="text-white font-bold relative z-30 text-sm">
-                                <EditableText 
-                                    value={captionValue} 
+                                <EditableText
+                                    value={captionValue}
                                     onChange={(val) => {
                                         if (onUpdateInfo) {
                                             onUpdateInfo({
@@ -131,7 +122,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                             });
                                         }
                                     }}
-                                    className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                 />
                             </span>
                         </div>
@@ -144,12 +136,12 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                 return (
                     <div className="flex gap-4 h-[550px] w-full">
                         {activePhotos.map((p, idx) => {
-                            const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                            const captionValue = photoCaption(info, p.captionKey);
                             return (
                                 <div key={idx} className="w-1/2 relative h-full rounded-2xl overflow-hidden shadow-md group">
-                                    <EditableImage 
-                                        src={p.src || ""} 
-                                        alt={p.label} 
+                                    <EditableImage
+                                        src={p.src || ""}
+                                        alt={p.label}
                                         imageKey={p.key}
                                         onImageUpload={onImageUpload}
                                         onDelete={() => onDeleteImage && onDeleteImage(p.key)}
@@ -158,8 +150,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                     />
                                     <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
                                         <span className="text-white font-bold relative z-30 text-sm">
-                                            <EditableText 
-                                                value={captionValue} 
+                                            <EditableText
+                                                value={captionValue}
                                                 onChange={(val) => {
                                                     if (onUpdateInfo) {
                                                         onUpdateInfo({
@@ -168,7 +160,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                                         });
                                                     }
                                                 }}
-                                                className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                             />
                                         </span>
                                     </div>
@@ -184,15 +177,15 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                 const largePhoto = activePhotos[0];
                 const small1 = activePhotos[1];
                 const small2 = activePhotos[2];
-                
-                const largeCaption = info.photoCaptions?.[largePhoto.captionKey] !== undefined ? info.photoCaptions[largePhoto.captionKey] : largePhoto.label;
-                
+
+                const largeCaption = photoCaption(info, largePhoto.captionKey);
+
                 return (
                     <div className="flex gap-4 h-[550px] w-full">
                         <div className="w-[60%] relative h-full rounded-2xl overflow-hidden shadow-md group">
-                            <EditableImage 
-                                src={largePhoto.src || ""} 
-                                alt={largePhoto.label} 
+                            <EditableImage
+                                src={largePhoto.src || ""}
+                                alt={largePhoto.label}
                                 imageKey={largePhoto.key}
                                 onImageUpload={onImageUpload}
                                 onDelete={() => onDeleteImage && onDeleteImage(largePhoto.key)}
@@ -201,8 +194,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                             />
                             <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
                                 <span className="text-white font-bold relative z-30 text-sm">
-                                    <EditableText 
-                                        value={largeCaption} 
+                                    <EditableText
+                                        value={largeCaption}
                                         onChange={(val) => {
                                             if (onUpdateInfo) {
                                                 onUpdateInfo({
@@ -211,20 +204,21 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                                 });
                                             }
                                         }}
-                                        className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                        className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                     />
                                 </span>
                             </div>
                         </div>
-                        
+
                         <div className="w-[40%] flex flex-col gap-4 h-full">
                             {[small1, small2].map((p, idx) => {
-                                const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                                const captionValue = photoCaption(info, p.captionKey);
                                 return (
                                     <div key={idx} className="h-[calc(50%-8px)] relative rounded-2xl overflow-hidden shadow-md group">
-                                        <EditableImage 
-                                            src={p.src || ""} 
-                                            alt={p.label} 
+                                        <EditableImage
+                                            src={p.src || ""}
+                                            alt={p.label}
                                             imageKey={p.key}
                                             onImageUpload={onImageUpload}
                                             onDelete={() => onDeleteImage && onDeleteImage(p.key)}
@@ -233,8 +227,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                         />
                                         <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/85 to-transparent z-20">
                                             <span className="text-white font-bold relative z-30 text-xs">
-                                                <EditableText 
-                                                    value={captionValue} 
+                                                <EditableText
+                                                    value={captionValue}
                                                     onChange={(val) => {
                                                         if (onUpdateInfo) {
                                                             onUpdateInfo({
@@ -243,7 +237,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                                             });
                                                         }
                                                     }}
-                                                    className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                    className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                                 />
                                             </span>
                                         </div>
@@ -260,12 +255,12 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-4 h-[550px] w-full">
                         {activePhotos.map((p, idx) => {
-                            const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                            const captionValue = photoCaption(info, p.captionKey);
                             return (
                                 <div key={idx} className="relative rounded-2xl overflow-hidden shadow-md group">
-                                    <EditableImage 
-                                        src={p.src || ""} 
-                                        alt={p.label} 
+                                    <EditableImage
+                                        src={p.src || ""}
+                                        alt={p.label}
                                         imageKey={p.key}
                                         onImageUpload={onImageUpload}
                                         onDelete={() => onDeleteImage && onDeleteImage(p.key)}
@@ -274,8 +269,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                     />
                                     <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/85 to-transparent z-20">
                                         <span className="text-white font-bold relative z-30 text-xs">
-                                            <EditableText 
-                                                value={captionValue} 
+                                            <EditableText
+                                                value={captionValue}
                                                 onChange={(val) => {
                                                     if (onUpdateInfo) {
                                                         onUpdateInfo({
@@ -284,7 +279,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                                         });
                                                     }
                                                 }}
-                                                className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                             />
                                         </span>
                                     </div>
@@ -297,14 +293,14 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
 
             // Case 5: 5 photos (Magazine layout: Left 1 large, Right 4 small)
             const mainP = activePhotos[0];
-            const mainCaption = info.photoCaptions?.[mainP.captionKey] !== undefined ? info.photoCaptions[mainP.captionKey] : mainP.label;
+            const mainCaption = photoCaption(info, mainP.captionKey);
             return (
                 <div className="flex gap-4 h-[550px] w-full">
                     {/* Main Large Photo */}
                     <div className="w-1/2 relative h-full group">
-                        <EditableImage 
-                            src={mainP.src || ""} 
-                            alt={mainP.label} 
+                        <EditableImage
+                            src={mainP.src || ""}
+                            alt={mainP.label}
                             imageKey={mainP.key}
                             onImageUpload={onImageUpload}
                             onDelete={() => onDeleteImage && onDeleteImage(mainP.key)}
@@ -313,8 +309,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                         />
                         <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
                             <span className="text-white font-bold relative z-30">
-                                <EditableText 
-                                    value={mainCaption} 
+                                <EditableText
+                                    value={mainCaption}
                                     onChange={(val) => {
                                         if (onUpdateInfo) {
                                             onUpdateInfo({
@@ -323,21 +319,22 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                             });
                                         }
                                     }}
-                                    className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                 />
                             </span>
                         </div>
                     </div>
-                    
+
                     {/* 4 Grid Photos */}
                     <div className="w-1/2 grid grid-cols-2 grid-rows-2 gap-4">
                         {[activePhotos[1], activePhotos[2], activePhotos[3], activePhotos[4]].map((p, i) => {
-                            const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                            const captionValue = photoCaption(info, p.captionKey);
                             return (
                                 <div key={i} className="relative rounded-xl overflow-hidden shadow-md bg-gray-200 group">
-                                    <EditableImage 
-                                        src={p.src || ""} 
-                                        alt={p.label || ""} 
+                                    <EditableImage
+                                        src={p.src || ""}
+                                        alt={p.label || ""}
                                         imageKey={p.key}
                                         onImageUpload={onImageUpload}
                                         onDelete={() => onDeleteImage && onDeleteImage(p.key)}
@@ -346,8 +343,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                     />
                                     <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-[var(--theme-dark)]/90 to-transparent z-20">
                                         <span className="text-white font-bold text-sm relative z-30">
-                                            <EditableText 
-                                                value={captionValue} 
+                                            <EditableText
+                                                value={captionValue}
                                                 onChange={(val) => {
                                                     if (onUpdateInfo) {
                                                         onUpdateInfo({
@@ -356,7 +353,8 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                                                         });
                                                     }
                                                 }}
-                                                className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                className="caption-ph hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    placeholder="사진 설명 한 줄 입력"
                                             />
                                         </span>
                                     </div>

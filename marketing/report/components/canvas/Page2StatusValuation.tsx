@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { EditableText, EditableBlock, ReportPage } from '../shared';
+import { fieldProps, fieldValue, pageHead } from '../../reportFields';
 
 interface Props {
   info: PropertyInfo; pageString: string; isHidden: boolean;
@@ -14,23 +15,18 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
         pageNumber={2} pageString={pageString} isHidden={isHidden}
-        title={info.page2Title || "매물설명 & 시세"} onUpdateTitle={(v) => hc('page2Title', v)}
-        subtitle={info.page2Subtitle || "Status & Valuation"} onUpdateSubtitle={(v) => hc('page2Subtitle', v)}
-        badgeText="DETAILS" exportId="page-2"
-        onUpdateBadge={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page2: v } }); }}
-        footerText={info.footerText || "PROPERTY REPORT"}
-        onUpdateFooter={(v) => hc('footerText', v)}
+        {...pageHead(info, onUpdateInfo, 2)} exportId="page-2"
     >
         <div className="flex gap-8 h-full w-full">
             <div className="w-full h-full flex flex-col">
                 <div className="text-gray-600 font-bold text-sm mb-4">
-                    <EditableText value={info.page2HighlightHeader || "PROPERTY INFORMATION & VALUE"} onChange={(v) => hc('page2HighlightHeader', v)} />
+                    <EditableText {...fieldProps(info, onUpdateInfo, 'page2HighlightHeader')} />
                 </div>
                 <div className="flex-1 flex gap-6">
                     {/* Left: Highlights */}
                     <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
                         <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
-                            <EditableText value={info.page2HighlightBoxTitle || "매물 핵심 하이라이트"} onChange={(v) => hc('page2HighlightBoxTitle', v)} />
+                            <EditableText {...fieldProps(info, onUpdateInfo, 'page2HighlightBoxTitle')} />
                         </h3>
                         <ul className="space-y-3 mb-8">
                             {info.highlights?.map((hl, i) => (
@@ -42,17 +38,17 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                         </ul>
                         <div className="mt-auto">
                             <div className="text-[10px] font-bold tracking-widest uppercase mb-1" style={{ color: colorTheme?.primary || '#cc5a27' }}>
-                                <EditableText value={ia.valuationAdvisoryTitle || "STRATEGIC ADVISORY"} onChange={(v) => hc('valuationAdvisoryTitle', v)} />
+                                <EditableText {...fieldProps(info, onUpdateInfo, 'valuationAdvisoryTitle')} />
                             </div>
                             <div className="text-xs text-gray-600 leading-relaxed">
-                                <EditableBlock value={info.valuationText || ""} onChange={(v) => hc('valuationText', v)} />
+                                <EditableBlock {...fieldProps(info, onUpdateInfo, 'valuationText')} />
                             </div>
                         </div>
                     </div>
                     {/* Right: Chart */}
                     <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
                         <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
-                            <EditableText value={ia.page2ChartBoxTitle || "주변시세 리포트"} onChange={(v) => hc('page2ChartBoxTitle', v)} />
+                            <EditableText {...fieldProps(info, onUpdateInfo, 'page2ChartBoxTitle')} />
                         </h3>
                         {(() => {
                             const showChart = info.showChart !== false;
@@ -61,6 +57,10 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                                 { label: "인근 시세", value: "", isHighlight: false },
                                 { label: "현재 금액", value: "", isHighlight: true }
                             ];
+                            // 실거래 그래프(평당 만원) 숫자는 "2,624만원"처럼 — 예전에 받아 둔 "2624"도 (2026-10-25 사장님)
+                            const isMarket = /주변시세/.test(fieldValue(info, 'page2ChartBoxTitle'));
+                            const shown = (v: string) => (isMarket && /^\d+(\.\d+)?$/.test(String(v || '').trim()) ? `${Number(v).toLocaleString('ko-KR')}만원` : v);
+                            const num = (v: string) => parseFloat(String(v || '').replace(/,/g, '')) || 0;
                             const upd = (newBars: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, chartBars: newBars, chartEdited: true }); }; // 고친 그래프는 다시 받아도 덮지 않는다
                             return (
                                 <div className="relative group/chart flex flex-col h-full justify-center">
@@ -78,9 +78,9 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                                         <div className="animate-fadeIn mt-auto mb-auto">
                                             <div className="h-40 flex items-end justify-around px-4 border-b border-slate-200 pb-2 mb-2 relative">
                                                 {bars.map((bar: any, idx: number) => {
-                                                    const nums = bars.map((b: any) => parseFloat(b.value) || 0);
+                                                    const nums = bars.map((b: any) => num(b.value));
                                                     const mx = Math.max(...nums, 1);
-                                                    const hp = Math.max(15, Math.min(95, Math.round(((parseFloat(bar.value) || 0) / mx) * 90)));
+                                                    const hp = Math.max(15, Math.min(95, Math.round((num(bar.value) / mx) * 90)));
                                                     return (
                                                         <div key={idx} className="flex flex-col items-center justify-end h-full relative w-20 group/bar">
                                                             {bars.length > 2 && (
@@ -90,7 +90,7 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                                                                 </button>
                                                             )}
                                                             <div className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded shadow-sm border border-slate-200/50 mb-1 leading-none hover:bg-amber-100 transition-colors">
-                                                                <EditableText value={bar.value} onChange={(v) => { const n = [...bars]; n[idx] = { ...n[idx], value: v }; upd(n); }} />
+                                                                <EditableText value={shown(bar.value)} onChange={(v) => { const n = [...bars]; n[idx] = { ...n[idx], value: v }; upd(n); }} />
                                                             </div>
                                                             <div className={`w-12 rounded-t transition-all duration-500 shadow-sm relative cursor-pointer ${bar.isHighlight || idx === bars.length - 1 ? 'bg-[#cc5a27] hover:bg-[#cc5a27]/90' : 'bg-slate-300 hover:bg-slate-400'}`}
                                                                 style={{ height: `${hp}%` }} title="클릭하여 강조 색상 변경"
@@ -120,10 +120,10 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                         })()}
                         <div className="mt-auto pt-6 border-t border-gray-100">
                             <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
-                                <EditableText value={ia.chartAdvisoryTitle || "STRATEGIC ADVISORY"} onChange={(v) => hc('chartAdvisoryTitle', v)} />
+                                <EditableText {...fieldProps(info, onUpdateInfo, 'chartAdvisoryTitle')} />
                             </div>
                             <div className="text-xs text-gray-600 leading-relaxed">
-                                <EditableBlock value={ia.chartAdviseText || ""} onChange={(v) => hc('chartAdviseText', v)} placeholder="그래프 분석 및 조언 입력..." />
+                                <EditableBlock {...fieldProps(info, onUpdateInfo, 'chartAdviseText')} />
                             </div>
                         </div>
                     </div>

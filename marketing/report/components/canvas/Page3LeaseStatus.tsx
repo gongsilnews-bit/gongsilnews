@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { EditableText, EditableBlock, ReportPage } from '../shared';
+import { fieldProps, pageHead } from '../../reportFields';
 
 interface Page3LeaseStatusProps {
   info: PropertyInfo;
@@ -21,7 +22,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
   const handleDragStart = (e: React.MouseEvent, colIdx: number, currentWidths: number[], leaseTableData: any) => {
       if (!tableRef.current || !onUpdateInfo) return;
       e.preventDefault();
-      
+
       dragRef.current = {
           startX: e.clientX,
           colIdx,
@@ -35,7 +36,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
           const { startX, colIdx: cIdx, startWidths, tableWidth } = dragRef.current;
           const deltaX = moveEvent.clientX - startX;
           const deltaPct = (deltaX / tableWidth) * 100;
-          
+
           const newWidths = [...startWidths];
           if (newWidths[cIdx] + deltaPct > 5 && newWidths[cIdx + 1] - deltaPct > 5) {
               newWidths[cIdx] = startWidths[cIdx] + deltaPct;
@@ -69,16 +70,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
         pageNumber={3} pageString={pageString} isHidden={isHidden}
-        title={info.page3Title || "임대 상세 현황"} 
-        onUpdateTitle={(val) => handleTextChange('page3Title', val)}
-        subtitle={info.page3Subtitle || "Rent Roll"} 
-        onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
-        badgeText="LEASING" exportId="page-3"
-        onUpdateBadge={(val) => {
-            if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page3: val } });
-        }}
-        footerText={info.footerText || "PROPERTY REPORT"}
-        onUpdateFooter={(val) => handleTextChange('footerText', val)}
+        {...pageHead(info, onUpdateInfo, 3)} exportId="page-3"
     >
         {(() => {
             const leaseTable = info.leaseTable || {
@@ -131,10 +123,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
             return (
                 <div className="flex flex-col h-full w-full">
                     <div className="text-gray-600 font-bold text-sm mb-4">
-                        <EditableText 
-                            value={(info as any).page3HighlightHeader || "PROPERTY RENTAL REPORT"} 
-                            onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
-                        />
+                        <EditableText {...fieldProps(info, onUpdateInfo, 'page3HighlightHeader')} />
                     </div>
                     <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative group/table">
                         {/* Toolbar for Rent Roll */}
@@ -161,8 +150,8 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                                         const currentWidths = localWidths || leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
                                         const colWidth = currentWidths[colIdx] || Math.round(100 / headers.length);
                                         return (
-                                            <th 
-                                                key={colIdx} 
+                                            <th
+                                                key={colIdx}
                                                 className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center uppercase relative group/header overflow-visible select-none"
                                                 style={{ backgroundColor: colorTheme.primary, width: `${colWidth}%` }}
                                             >
@@ -173,7 +162,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                                                         title="열 삭제">✕</button>
                                                 )}
                                                 {colIdx < headers.length - 1 && (
-                                                    <div 
+                                                    <div
                                                         className="absolute top-0 -right-2 w-4 h-full cursor-col-resize z-40 print:hidden group-hover/header:bg-white/20 hover:!bg-white/50 transition-colors"
                                                         onMouseDown={(e) => handleDragStart(e, colIdx, currentWidths, leaseTable)}
                                                     />
@@ -201,25 +190,25 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                             </tbody>
                         </table>
                     </div>
-                    
+
                     {/* Custom Total / Summary Block & Explanation */}
                     <div className="flex justify-between items-stretch mt-3 pt-2 gap-4">
                         <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col justify-center shadow-sm">
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Total Summary</span>
                             <div className="text-sm font-bold text-slate-800">
-                                <EditableText value={(info as any).leaseSummaryText || (rows.length === 1 ? `이 매물 · ${rows[0][3] || ""}` : rows.length ? `총 ${rows.length}건` : "")} onChange={(val) => handleTextChange('leaseSummaryText', val)} />
+                                <EditableText {...fieldProps(info, onUpdateInfo, 'leaseSummaryText')} />
                             </div>
                         </div>
                         {(info as any).showLeaseSummaryDesc !== false && (
                             <div className="flex-1 bg-white border border-slate-200 rounded-lg p-4 text-xs text-slate-600 shadow-sm flex flex-col justify-center">
-                                <EditableText multiline value={(info as any).leaseSummaryDesc || "상세 조건은 상담 때 함께 확인해 주세요."} onChange={(val) => handleTextChange('leaseSummaryDesc', val)} />
+                                <EditableText {...fieldProps(info, onUpdateInfo, 'leaseSummaryDesc')} />
                             </div>
                         )}
                     </div>
 
                     {/* Notice text block */}
                     <div className="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100 leading-normal shrink-0">
-                        <EditableBlock value={info.leaseNotice || ""} onChange={(val) => handleTextChange('leaseNotice', val)} />
+                        <EditableBlock {...fieldProps(info, onUpdateInfo, 'leaseNotice')} />
                     </div>
                     </div>
                     </div>

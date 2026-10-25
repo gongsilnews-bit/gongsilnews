@@ -12,6 +12,7 @@ import { simBridge, cleanErr } from './components/SimPanel';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content, type OverviewField } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { fillFieldDefaults, roadmapItems } from './reportFields';
 import { scrubSampleInfo, buildLeaseTable, buildLeaseRight, LEASE_NOTICE, floorText } from './realData';
 
 export const COLORS: FlyerColor[] = [
@@ -63,7 +64,6 @@ const INITIAL_INFO: PropertyInfo = {
   overviewTable: [],
   agentName: "",
   agentLabel: "REALTY AGENCY",
-  qrLabel: "QR REPORT",
   agentRegistrationNumber: "",
   agentRepresentative: "",
   agentPhone: "",
@@ -123,14 +123,7 @@ const INITIAL_INFO: PropertyInfo = {
     box4Title: "", box4Text: ""
   },
   
-  pageBadges: {
-    page1: "CONFIDENTIAL | INFORMATION MEMORANDUM",
-    page2: "DETAILS",
-    page3: "LEASING",
-    page4: "GALLERY",
-    page5: "LOCATION",
-    page6: "ROADMAP",
-  },
+  pageBadges: {}, // 처음 글은 칸 목록(reportFields) — 1쪽은 "종류 | 거래"로 계산
   
   // Backward compat
   promotionText: "",
@@ -350,7 +343,8 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
 
   return {
     ...loaded,
-    info: {
+    // 칸 목록의 처음 글을 실제 값으로 (보이는 글 = 저장된 글, 2026-10-25)
+    info: fillFieldDefaults({
       ...INITIAL_INFO,
       ...loadedInfo,
       coverQRLink,
@@ -374,22 +368,11 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       leaseRightTitle: loaded?.info?.leaseRightTitle !== undefined ? loaded?.info?.leaseRightTitle : INITIAL_INFO.leaseRightTitle,
       leaseRightText: loaded?.info?.leaseRightText !== undefined ? loaded?.info?.leaseRightText : INITIAL_INFO.leaseRightText,
       pageBadges: (() => {
-        const rawBadges = {
-          ...INITIAL_INFO.pageBadges,
-          ...(loaded?.info?.pageBadges || {})
-        };
-        
-        // Force standardized 1-word badge names (always override)
-        rawBadges.page2 = "DETAILS";
-        rawBadges.page3 = "LEASING";
-        rawBadges.page4 = "GALLERY";
-        rawBadges.page5 = "LOCATION";
-        rawBadges.page6 = "ROADMAP";
-
-        rawBadges.page1 = (loaded?.info?.pageBadges?.page1 && !["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes(loaded.info.pageBadges.page1.toUpperCase().trim()))
-          ? loaded.info.pageBadges.page1
-          : `${loaded?.info?.subCategory || loaded?.info?.sub_category || "매물"} | ${loaded?.info?.transactionType || loaded?.info?.trade_type || "매매"}`;
-          
+        // 회원이 고친 배지는 그대로 둔다 (예전엔 불러올 때마다 DETAILS 등으로 덮었다 — 2026-10-25). 빈 배지는 칸 목록의 처음 글로
+        const rawBadges: any = { ...(loaded?.info?.pageBadges || {}) };
+        const p1 = String(rawBadges.page1 || '').trim();
+        // 1쪽 배지: 옛 틀 문구면 비워서 "종류 | 거래" 로 계산되게
+        if (!p1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대", "CONFIDENTIAL | INFORMATION MEMORANDUM"].includes(p1.toUpperCase())) delete rawBadges.page1;
         return rawBadges;
       })(),
       subCategory: loaded?.info?.subCategory || loaded?.info?.sub_category || "",
@@ -405,7 +388,7 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
         ...INITIAL_INFO.roadmap,
         ...(loaded?.info?.roadmap || {})
       }
-    },
+    }),
     generated: {
       ...INITIAL_GENERATED,
       ...(loaded?.generated || {})
@@ -415,9 +398,36 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
   };
 };
 
+
+/** html2canvas 는 글자를 6px 쯤 아래로 그린다 — 고치는 칸(contentEditable)만 올리던 것을 일반 글자에도 똑같이.
+ *  (9쪽 건축물대장 표 이름 칸·"타입 구성" 제목이 내려가 값과 어긋나고 "이 매물" 표시에 겹쳤다, 2026-10-25 사장님) */
+const liftTextForCapture = (clone: HTMLElement) => {
+  const texts: Text[] = [];
+  const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const t = walker.currentNode as Text;
+    if (t.nodeValue?.trim() && !t.parentElement?.closest('[contenteditable], svg, style, script')) texts.push(t);
+  }
+  // 줄 바꿈·자리는 그대로 두고 그리는 자리만 올리게 relative 로
+  texts.forEach((t) => {
+    const s = document.createElement('span');
+    s.style.position = 'relative';
+    s.style.top = '-6px';
+    t.replaceWith(s);
+    s.appendChild(t);
+  });
+  // 편집 화면에만 있는 것(단추·비운 줄)은 결과물에서 뺀다 — 이미지·PDF·인쇄 모두
+  clone.querySelectorAll('.print\\:hidden').forEach(el => el.remove());
+  clone.querySelectorAll('[contentEditable]').forEach(el => {
+    el.removeAttribute('contentEditable');
+    el.removeAttribute('suppressContentEditableWarning');
+    (el as HTMLElement).style.transform = 'translateY(-6px)';
+  });
+};
+
 function App() {
   const [state, setState] = useState<FlyerState>({
-    info: INITIAL_INFO,
+    info: fillFieldDefaults(INITIAL_INFO),
     generated: INITIAL_GENERATED,
     mainImage: null,
     agentImage: null,
@@ -1005,7 +1015,7 @@ function App() {
       ...newImages,
       colorTheme: autoTheme,
       // 실제 매물로 만들 수 있는 칸은 실제로, 없는 자료는 비운다 (예시 값이 남지 않게)
-      info: scrubSampleInfo({
+      info: fillFieldDefaults(scrubSampleInfo({
         ...mappedInfo,
         leaseTable: buildLeaseTable(v),
         leaseNotice: LEASE_NOTICE,
@@ -1016,7 +1026,7 @@ function App() {
         showChart: false,
         photoCaptions: { main: "", sub1: "", sub2: "", feat1: "", feat2: "" },
         sections: finalSections
-      }, v),
+      }, v)),
       generated: aiCopy
     }));
     
@@ -1063,7 +1073,7 @@ function App() {
             subCategory: v.sub_category || "",
           };
           // 예전 저장본에 남은 예시(가짜) 값은 실제 값으로 바꾼다 (realData.ts)
-          merged.info = scrubSampleInfo(merged.info, v);
+          merged.info = fillFieldDefaults(scrubSampleInfo(merged.info, v));
           if (!merged.info.pageBadges) merged.info.pageBadges = {};
           if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
             merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
@@ -1093,7 +1103,7 @@ function App() {
               transactionType: v.trade_type || '매매',
               subCategory: v.sub_category || "",
             };
-            merged.info = scrubSampleInfo(merged.info, v);
+            merged.info = fillFieldDefaults(scrubSampleInfo(merged.info, v));
             if (!merged.info.pageBadges) merged.info.pageBadges = {};
             if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
               merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
@@ -1465,7 +1475,7 @@ function App() {
   /* ── 공실스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
      앱 화면 안의 틀(iframe)로 열리므로 바깥 창의 window.gongsilStudio.marketing 을 쓴다. 웹에서는 없다. */
   type StudioMarketing = {
-    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown>; facts?: Record<string, unknown>; publicFacts?: string }) => Promise<Record<string, any>>;
+    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown>; facts?: Record<string, unknown>; publicFacts?: string; request?: string }) => Promise<Record<string, any>>;
     onProgress?: (fn: (t: string) => void) => () => void;
     /** 그림·PDF 를 문서\공실스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
     saveFile?: (opts: { id: string; sub: string; fileName: string; dataUrl: string; hint?: { title?: string; no?: string } }) => Promise<{ file: string; folder: string }>;
@@ -1537,7 +1547,7 @@ function App() {
     if (fix.length) L.push(`- 중개사가 고친 값(위 값보다 이것을 따를 것): ${fix.slice(0, 15).join("; ")}`);
     return L.join("\n");
   };
-  const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void, infoOverride?: any) => {
+  const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void, infoOverride?: any, request?: string) => {
     const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id") || getLocalId();
     if (!vacancyId || !studioMarketing) return;
     setAiProgress("AI에 요청하는 중…");
@@ -1549,7 +1559,7 @@ function App() {
       "방향": i.direction, "방·욕실": i.roomCount, "주차": i.parking, "입주": i.moveInDate, "관리비": i.managementFee, "옵션": i.options, "중개사 설명": i.noticeContent,
     } : undefined;
     try {
-      const out = await studioMarketing.fill({ kind, vacancyId, fields, facts, publicFacts: kind === "report" ? publicFactsText(i) : undefined });
+      const out = await studioMarketing.fill({ kind, vacancyId, fields, facts, publicFacts: kind === "report" ? publicFactsText(i) : undefined, ...(request ? { request } : {}) });
       apply(out);
       setAiProgress("✓ AI가 채웠습니다. 확인하고 [저장하기]를 눌러 주세요.");
       setTimeout(() => setAiProgress(""), 2500);
@@ -1567,7 +1577,17 @@ function App() {
     "areaTargetName", "areaTargetDesc", "areaBox1Title", "areaBox1Text", "areaBox2Title", "areaBox2Text", "areaBox3Title", "areaBox3Text",
     "page4TargetTitle", "page6FooterQuote", "noticeContent", "chartAdviseText", "leaseRightTitle", "leaseRightText",
   ];
-  const handleAiFill = async () => {
+  /* 쪽별 [AI 수정 요청] — 그 쪽 글 칸만 사장님 요청대로 다시 쓴다 (2026-10-25 사장님) */
+  const REPORT_PAGE_KEYS: Record<number, string[]> = {
+    0: ["coverSubtitle"],
+    1: ["subTitle", "investmentSummary"],
+    2: ["page2HighlightBoxTitle", "highlights", "valuationText", "chartAdviseText"],
+    5: ["page4TargetTitle", "areaTargetName", "areaTargetDesc", "areaBox1Title", "areaBox1Text", "areaBox2Title", "areaBox2Text", "areaBox3Title", "areaBox3Text"],
+    6: ["roadmap", "page6FooterQuote"],
+  };
+  const handleAiFill = async (page?: number, request?: string) => {
+    const only = page === undefined ? null : REPORT_PAGE_KEYS[page];
+    const want = (k: string) => !only || only.includes(k);
     let info: any = state.info;
     // 지적도·대장·층별·실거래가 없거나 30일이 지났으면 먼저 받는다 (받는 중이면 기다린다) — AI 가 그 자료를 근거로 쓰게 (2026-10-24)
     if (studioMarketing && new URLSearchParams(window.location.search).get("vacancy_id") && (publicStale(info) || publicRun.current)) {
@@ -1577,15 +1597,18 @@ function App() {
     }
     const fields: Record<string, unknown> = {};
     for (const k of REPORT_TEXT_KEYS) {
+      if (!want(k)) continue;
       const v = info[k];
       if ((typeof v === "string" && v.trim()) || (Array.isArray(v) && v.length)) fields[k] = v;
     }
     // 비어 있으면 화면이 틀 문구를 대신 보여 주는 칸 — 그 틀 문구를 보내 같이 다시 쓰게 한다
-    if (!fields.chartAdviseText) fields.chartAdviseText = "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다.";
-    if (!fields.page6FooterQuote) fields.page6FooterQuote = '"최고의 입지에 미래 가치를 더합니다."';
+    if (want("chartAdviseText") && !fields.chartAdviseText) fields.chartAdviseText = "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다.";
+    if (want("page6FooterQuote") && !fields.page6FooterQuote) fields.page6FooterQuote = '"최고의 입지에 미래 가치를 더합니다."';
     const pickText = (o: any) => Object.fromEntries(Object.entries(o || {}).filter(([k, v]) => /(Title|Text)$/.test(k) && typeof v === "string"));
-    if (info.investmentSummary) fields.investmentSummary = pickText(info.investmentSummary);
-    if (info.roadmap) fields.roadmap = pickText(info.roadmap);
+    if (want("investmentSummary") && info.investmentSummary) fields.investmentSummary = pickText(info.investmentSummary);
+    // 로드맵은 화면·입력란이 보는 목록(roadmapList)을 보낸다 — 예전엔 roadmap 칸에만 써서 한 번 고친 보고서는 AI 글이 안 보였다 (2026-10-25)
+    const rmList = roadmapItems(info);
+    if (want("roadmap") && rmList.length) fields.roadmap = Object.fromEntries(rmList.flatMap((it, n) => [[`box${n + 1}Title`, it.title], [`box${n + 1}Text`, it.text]]));
     runAiFill("report", fields, (out) => {
       pushToHistoryInstant(state);
       setState((prev) => {
@@ -1597,10 +1620,11 @@ function App() {
             ...out,
             investmentSummary: out.investmentSummary ? { ...p.investmentSummary, ...out.investmentSummary } : p.investmentSummary,
             roadmap: out.roadmap ? { ...p.roadmap, ...out.roadmap } : p.roadmap,
+            roadmapList: out.roadmap ? roadmapItems(p).map((it, n) => ({ ...it, title: out.roadmap[`box${n + 1}Title`] ?? it.title, text: out.roadmap[`box${n + 1}Text`] ?? it.text })) : p.roadmapList,
           },
         };
       });
-    }, info);
+    }, info, request);
   };
 
   const handleResetAndRegenerate = async () => {
@@ -1739,7 +1763,7 @@ function App() {
         const pts = t?.chart?.points || [];
         const chart = pts.length >= 2 && !info0.chartEdited ? {
           showChart: true,
-          chartBars: pts.map((p: any, i: number) => ({ label: p.label, value: `${p.value}`, isHighlight: i === pts.length - 1 })),
+          chartBars: pts.map((p: any, i: number) => ({ label: p.label, value: `${Number(p.value).toLocaleString('ko-KR')}만원`, isHighlight: i === pts.length - 1 })),
           page2ChartBoxTitle: `주변시세 리포트 · ${t.chart.scope}`,
           chartAdviseText: `${t.chart.scope} ${t.kindLabel} ${t.rentChart ? '전세' : '매매'} 실거래의 ${t.chart.basis} 평당 ${t.rentChart ? '보증금' : '가격'} 중앙값(만원, 반기별)입니다. 최근 구간 ${pts[pts.length - 1].value.toLocaleString('ko-KR')}만원/평 (${pts[pts.length - 1].count}건 기준). 자료: 국토교통부 실거래가 공개 자료.`,
         } : {};
@@ -2169,12 +2193,7 @@ ${clone.outerHTML}
       // Clone the element to filter sections without affecting the view
       const clone = element.cloneNode(true) as HTMLElement;
       
-      // Strip contentEditable to fix html2canvas text baseline shift bug
-      clone.querySelectorAll('[contentEditable]').forEach(el => {
-          el.removeAttribute('contentEditable');
-          el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-6px)';
-      });
+      liftTextForCapture(clone);
 
       // We need to append the clone to the document to capture it, but keep it hidden/out of view
       clone.style.position = 'absolute';
@@ -2238,19 +2257,15 @@ ${clone.outerHTML}
   const [isExportingImage, setIsExportingImage] = useState(false);
 
   const downloadPdf = async () => {
-    if (!flyerRef.current) return;
+    // 이미지 내보내기와 같은 곳에서 찍는다 — 보고 있는 화면은 한 쪽만 열려 있을 수 있다 (2026-10-25)
+    if (!hiddenFlyerRef.current) return;
     try {
       setIsGeneratingPdf(true);
-      const element = flyerRef.current;
+      const element = hiddenFlyerRef.current;
       
       const clone = element.cloneNode(true) as HTMLElement;
       
-      // Strip contentEditable to fix html2canvas text baseline shift bug
-      clone.querySelectorAll('[contentEditable]').forEach(el => {
-          el.removeAttribute('contentEditable');
-          el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-6px)';
-      });
+      liftTextForCapture(clone);
 
       clone.style.position = 'absolute';
       clone.style.left = '0px';
@@ -2301,19 +2316,14 @@ ${clone.outerHTML}
   };
 
   const handleDirectPrint = async () => {
-    if (!flyerRef.current) return;
+    if (!hiddenFlyerRef.current) return;
     try {
       setIsPrinting(true);
-      const element = flyerRef.current;
+      const element = hiddenFlyerRef.current;
       
       const clone = element.cloneNode(true) as HTMLElement;
       
-      // Strip contentEditable to fix html2canvas text baseline shift bug
-      clone.querySelectorAll('[contentEditable]').forEach(el => {
-          el.removeAttribute('contentEditable');
-          el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-6px)';
-      });
+      liftTextForCapture(clone);
 
       clone.style.position = 'absolute';
       clone.style.left = '0px';
@@ -2618,6 +2628,9 @@ ${clone.outerHTML}
             <FlyerForm 
               info={state.info}
               setInfo={handleInfoChange}
+              onAiAsk={studioMarketing ? (page, req) => handleAiFill(page, req) : undefined}
+              aiPages={Object.keys(REPORT_PAGE_KEYS).map(Number)}
+              aiBusy={Boolean(aiProgress)}
               onImageUpload={handleImageUpload}
               onDeleteImage={(key) => {
                 pushToHistoryInstant(state);
@@ -2754,7 +2767,7 @@ ${clone.outerHTML}
           {/* 스튜디오 앱: 회원 ChatGPT 로 페이지별 문장 채우기 */}
           {studioMarketing && (
             <button
-              onClick={handleAiFill}
+              onClick={() => handleAiFill()}
               disabled={Boolean(aiProgress)}
               className="py-3 px-5 bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm shrink-0 whitespace-nowrap disabled:opacity-60"
               title="이 공실 정보로 페이지마다 문장을 연결한 AI가 새로 씁니다. 금액·표·사진은 그대로입니다."

@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { ReportPage, EditableText } from '../shared';
+import { pageHead } from '../../reportFields';
 
 /**
  * 12. 인테리어 전후 · 13. 리모델링 전후 (2026-10-24 사장님)
@@ -84,10 +85,8 @@ const PageSim: React.FC<PageProps> = ({ kind, info, pageString, isHidden, layout
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
       pageNumber={p} pageString={pageString} isHidden={isHidden}
-      title={(info as any)[`page${p}Title`] || `${SIM_LABEL[kind]} 전후 예측`} onUpdateTitle={(v) => set(`page${p}Title`, v)}
-      subtitle={(info as any)[`page${p}Subtitle`] || (kind === 'interior' ? 'Interior Before & After' : 'Remodeling Before & After')} onUpdateSubtitle={(v) => set(`page${p}Subtitle`, v)}
-      badgeText={kind === 'interior' ? 'INTERIOR' : 'REMODEL'} exportId={`page-${p}`}
-      footerText={info.footerText || 'PROPERTY REPORT'} onUpdateFooter={(v) => set('footerText', v)}>
+      {...pageHead(info, onUpdateInfo, p)}
+      badgeText={kind === 'interior' ? 'INTERIOR' : 'REMODEL'} exportId={`page-${p}`}>
       {body}
     </ReportPage>
   );

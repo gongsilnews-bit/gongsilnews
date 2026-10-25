@@ -12,7 +12,7 @@ const reportLocal = require("./report-local");
 const lib = () => ext.run(["marketing/marketing-prompt.js"]);
 const KINDS = new Set(["flyer", "report"]);
 
-async function fill({ baseUrl, kind, vacancyId, fields, facts, publicFacts }, onProgress = () => {}) {
+async function fill({ baseUrl, kind, vacancyId, fields, facts, publicFacts, request }, onProgress = () => {}) {
   if (!KINDS.has(kind)) throw new Error("알 수 없는 도구입니다.");
   if (!vacancyId || typeof vacancyId !== "string") throw new Error("공실을 먼저 골라 주세요.");
   if (!fields || typeof fields !== "object" || !Object.keys(fields).length) throw new Error("채울 칸이 없습니다.");
@@ -39,7 +39,9 @@ async function fill({ baseUrl, kind, vacancyId, fields, facts, publicFacts }, on
 
   // publicFacts = 보고서가 받아 둔 지적도·대장·층별·실거래 요약 (건축물대장·층별·인허가·실거래, 2026-10-24) — 글자만, 길이 제한
   const pub = typeof publicFacts === "string" ? publicFacts.slice(0, 3500) : "";
-  const prompt = L.gwBuildMarketingPrompt(kind, vacancy, fields, pub);
+  // request = 쪽별 [AI 수정 요청]에 회원이 적은 말 (2026-10-25) — 짧게 자른다
+  const req = typeof request === "string" ? request.trim().slice(0, 500) : "";
+  const prompt = L.gwBuildMarketingPrompt(kind, vacancy, fields, pub, req);
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => L.gwParseMarketing(t, fields).ok });
   onProgress("받은 글을 칸에 맞추는 중…");
   const parsed = L.gwParseMarketing(text, fields);

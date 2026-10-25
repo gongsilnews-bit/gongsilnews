@@ -16,7 +16,7 @@ const CompletedOverlay: React.FC<CompletedOverlayProps> = ({ info, colorTheme })
         <div className="absolute top-4 right-8 bg-white rounded-xl border border-gray-200/80 shadow-md p-4 w-[280px] text-left z-50 flex flex-col gap-1.5 select-none pointer-events-auto">
           <div className="text-[10px] font-black tracking-widest text-gray-400 uppercase">REALTY AGENCY</div>
           <div className="text-xs font-extrabold text-gray-800 truncate">
-            {info.agentName || "공인중개사사무소"} <span className="text-gray-300 font-normal mx-1">|</span> <span className="text-gray-500 font-semibold">대표 {info.agencyRepresentative || info.agentRepresentative || "대표자"}</span>
+            {info.agentName || ""} <span className="text-gray-300 font-normal mx-1">|</span> <span className="text-gray-500 font-semibold">대표 {info.agencyRepresentative || info.agentRepresentative || ""}</span>
           </div>
           <div className="text-[9px] text-gray-400 font-medium flex items-center gap-1">
             <span className="bg-gray-100 text-gray-500 px-1 rounded text-[8px] font-bold shrink-0">등록</span>
@@ -59,10 +59,10 @@ const CompletedOverlay: React.FC<CompletedOverlayProps> = ({ info, colorTheme })
               <span className="font-extrabold text-xs tracking-widest uppercase" style={{ color: primaryColor }}>오시는 길</span>
             </div>
             <div className="text-gray-700 font-bold text-[11px] leading-relaxed break-keep">
-              {info?.agentAddress || "서울 강남구 논현동 123-45"}
+              {info?.agentAddress || ""}
             </div>
             <a 
-              href={`https://map.naver.com/v5/search/${encodeURIComponent(info?.agentAddress || "서울 강남구 논현동 123-45")}`}
+              href={`https://map.naver.com/v5/search/${encodeURIComponent(info?.agentAddress || "")}`}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -78,12 +78,12 @@ const CompletedOverlay: React.FC<CompletedOverlayProps> = ({ info, colorTheme })
             <div className="text-[11px] font-extrabold tracking-widest uppercase" style={{ color: primaryColor }}>문의하기</div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-[17px] font-black text-gray-900 tracking-tight">
-                {info?.agentMobile || info?.agentPhone || "010-8831-9450"}
+                {info?.agentMobile || info?.agentPhone || ""}
               </span>
               <div className="flex items-center gap-2">
                 {/* Large Call Button */}
                 <a 
-                  href={`tel:${(info?.agentMobile || info?.agentPhone || "010-8831-9450").replace(/[^0-9]/g, '')}`} 
+                  href={`tel:${(info?.agentMobile || info?.agentPhone || "").replace(/[^0-9]/g, '')}`} 
                   onClick={(e) => e.stopPropagation()}
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-md hover:opacity-80 transition-opacity active:scale-95 pointer-events-auto shrink-0"
                   style={{ backgroundColor: primaryColor }}
@@ -93,7 +93,7 @@ const CompletedOverlay: React.FC<CompletedOverlayProps> = ({ info, colorTheme })
                 </a>
                 {/* SMS Button */}
                 <a 
-                  href={`sms:${(info?.agentMobile || info?.agentPhone || "010-8831-9450").replace(/[^0-9]/g, '')}`} 
+                  href={`sms:${(info?.agentMobile || info?.agentPhone || "").replace(/[^0-9]/g, '')}`} 
                   onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md hover:opacity-80 transition-opacity active:scale-95 pointer-events-auto shrink-0"
                   style={{ backgroundColor: primaryColor }}

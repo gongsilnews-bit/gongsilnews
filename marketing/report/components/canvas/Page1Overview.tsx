@@ -2,6 +2,7 @@ import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { detectPropertyCategory, getOverviewTemplate } from '../../propertyTemplates';
 import { EditableText, EditableBlock, ReportPage, SectionTitle, EditableImage } from '../shared';
+import { fieldProps, fieldValue, setField } from '../../reportFields';
 
 interface Props {
   info: PropertyInfo; pageString: string; isHidden: boolean;
@@ -15,8 +16,9 @@ interface Props {
 
 const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, mainImage, customQrImage, onUpdateInfo, onImageUpload, isUploadingImage }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
-  const targetTitle = info.address || '매물 안내서';
-  const price = info.priceMain || '75억 원';
+  // 글 칸은 칸 목록(reportFields)에서 — 입력란 [개요] 탭과 같은 값 (2026-10-25)
+  const F = (key: string, cls = '') => fieldProps(info, onUpdateInfo, key, cls);
+  const on = (key: string) => (v: string) => { if (onUpdateInfo) onUpdateInfo(setField(info, key, v)); };
 
   // [표지] QR코드 넣기를 끄면 표지·개요의 QR을 모두 뺀다
   const qrCodeUrl = info.coverQRLink && !info.hideCoverQR
@@ -27,21 +29,20 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
         pageNumber={1} pageString={pageString} isHidden={isHidden}
-        title={targetTitle} subtitle={info.subTitle} 
-        badgeText={info.pageBadges?.page1 || `${info.subCategory || "매물"} | ${info.transactionType || "매매"}`} exportId="page-1"
-        onUpdateTitle={(v) => hc('address', v)} onUpdateSubtitle={(v) => hc('subTitle', v)}
-        onUpdateBadge={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page1: v } }); }}
-        footerText={info.footerText || "PROPERTY REPORT"}
-        onUpdateFooter={(v) => hc('footerText', v)}
+        title={fieldValue(info, 'address')} subtitle={fieldValue(info, 'subTitle')}
+        badgeText={fieldValue(info, 'pageBadges.page1')} exportId="page-1"
+        onUpdateTitle={on('address')} onUpdateSubtitle={on('subTitle')}
+        onUpdateBadge={on('pageBadges.page1')}
+        footerText={fieldValue(info, 'footerText')}
+        onUpdateFooter={on('footerText')}
     >
         <div className="flex gap-8 h-full">
             {/* Left Col: Overview Table */}
             <div className="w-5/12 flex flex-col justify-between">
                 <div>
-                    <SectionTitle 
-                        title={info.overviewTitle || "PROPERTY OVERVIEW"} subtitle={info.overviewSubtitle || "물건개요"} 
-                        onUpdateTitle={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, overviewTitle: v }); }}
-                        onUpdateSubtitle={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, overviewSubtitle: v }); }}
+                    <SectionTitle
+                        title={fieldValue(info, 'overviewTitle')} subtitle={fieldValue(info, 'overviewSubtitle')}
+                        onUpdateTitle={on('overviewTitle')} onUpdateSubtitle={on('overviewSubtitle')}
                     />
                     <table className="w-full text-sm border-collapse table-fixed border-t-[3px] border-gray-800 border-b border-gray-200">
                         <tbody>
@@ -78,23 +79,17 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                         {/* Price Row */}
                         {(() => {
                             const tType = info.transactionType || "매매";
-                            let label = "매매가";
-                            if (tType === "전세") label = "보증금 (전세)";
-                            else if (tType === "월세" || tType === "임대") label = "보증금 / 월세";
-                            else if (tType !== "매매") label = "임대가";
                             return (
                                 <tr className="border-t border-gray-200" style={{ backgroundColor: info.priceBgColor || '#fff9f0' }}>
                                     <td className="w-1/3 text-gray-600 font-bold py-2 pl-4 align-middle">
-                                        <EditableText value={info.priceMainLabel || label} onChange={(v) => hc('priceMainLabel', v)} className="w-full hover:bg-white/50 hover:ring-2 hover:ring-amber-200 rounded px-1 -ml-1 transition-all text-left" />
+                                        <EditableText {...F('priceMainLabel', 'w-full hover:bg-white/50 hover:ring-2 hover:ring-amber-200 rounded px-1 -ml-1 transition-all text-left')} />
                                     </td>
                                     <td className="w-2/3 font-extrabold py-2 pl-4 align-middle" style={{ color: info.priceTextColor || '#cc5a27' }}>
-                                        <EditableText value={(() => {
-                                            const tType = info.transactionType || "매매";
-                                            if ((tType === "월세" || tType === "단기임대") && info.priceSub) {
-                                                return `${price} / ${info.priceSub}`;
-                                            }
-                                            return price;
-                                        })()} onChange={(v) => hc('priceMain', v)} />
+                                        {/* 가격 · 월세는 칸이 따로 (예전엔 "가격 / 월세"를 통째로 가격 칸에 써서 월세가 두 번 붙었다) */}
+                                        <span className="inline-flex items-center gap-1 w-full">
+                                            <EditableText {...F('priceMain', '!w-auto')} />
+                                            {(tType === "월세" || tType === "단기임대") && (<><span>/</span><EditableText {...F('priceSub', '!w-auto')} /></>)}
+                                        </span>
                                     </td>
                                 </tr>
                             );
@@ -106,22 +101,22 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                 <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mt-3 flex flex-col justify-center shadow-sm">
                     <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
                         <span className="text-gray-500 font-bold flex items-center">
-                            <EditableText value={info.agentNameLabel || "부동산명"} onChange={(v) => hc('agentNameLabel', v)} className="w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left" />
+                            <EditableText {...F('agentNameLabel', 'w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left')} />
                         </span>
                         <span className="text-gray-800 font-extrabold flex items-center">
-                            <EditableText value={info.agentName} onChange={(v) => hc('agentName', v)} className="w-full" />
+                            <EditableText {...F('agentName', 'w-full')} />
                         </span>
                         <span className="text-gray-500 font-bold flex items-center">
-                            <EditableText value={info.agentRepresentativeLabel || "담당자"} onChange={(v) => hc('agentRepresentativeLabel', v)} className="w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left" />
+                            <EditableText {...F('agentRepresentativeLabel', 'w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left')} />
                         </span>
                         <span className="text-gray-800 font-extrabold flex items-center">
-                            <EditableText value={info.agentRepresentative} onChange={(v) => hc('agentRepresentative', v)} className="w-full" />
+                            <EditableText {...F('agentRepresentative', 'w-full')} />
                         </span>
                         <span className="text-gray-500 font-bold flex items-center">
-                            <EditableText value={info.agentContactLabel || "연락처"} onChange={(v) => hc('agentContactLabel', v)} className="w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left" />
+                            <EditableText {...F('agentContactLabel', 'w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left')} />
                         </span>
                         <span className="text-[#cc5a27] font-black text-base flex items-center">
-                            <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} className="w-full" />
+                            <EditableText {...F('agentMobile', 'w-full')} />
                         </span>
                     </div>
                 </div>
@@ -137,10 +132,9 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                     )}
                 </div>
                 <div>
-                    <SectionTitle 
-                        title={info.investmentTitle || "INVESTMENT SUMMARY"} subtitle={info.investmentSubtitle || "투자요약"}
-                        onUpdateTitle={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, investmentTitle: v }); }}
-                        onUpdateSubtitle={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, investmentSubtitle: v }); }}
+                    <SectionTitle
+                        title={fieldValue(info, 'investmentTitle')} subtitle={fieldValue(info, 'investmentSubtitle')}
+                        onUpdateTitle={on('investmentTitle')} onUpdateSubtitle={on('investmentSubtitle')}
                     />
                     <div className="flex gap-4 border-l-4 pl-4" style={{ borderColor: colorTheme?.primary || '#cc5a27' }}>
                         {[1,2,3].map(i => (

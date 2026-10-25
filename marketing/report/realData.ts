@@ -123,6 +123,7 @@ export function scrubSampleInfo(info: any, v: any) {
   if (has(SAMPLE.roadmap, out.roadmap)) {
     const p6 = buildPage6Content(v, cat, trade);
     out.roadmap = p6.roadmap;
+    delete out.roadmapList; // 화면은 roadmapList 를 본다 — 새 로드맵으로 다시 만들게
   }
   if (has(SAMPLE.invest, out.investmentSummary)) {
     const s = buildInvestmentSummary(v, cat, trade);
