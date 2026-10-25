@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-b8000966-6304-42fe-bdf9-372228fd1ccf/styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="_ds/nocturne-b8000966-6304-42fe-bdf9-372228fd1ccf/_ds_bundle.js"></script>
+<script src="image-slot.js"></script>
+<style>
+body{margin:0;font-family:"Inter","Pretendard",system-ui,sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Inter","Pretendard",system-ui,sans-serif}
+a{color:oklch(0.6 0.17 48)}a:hover{color:oklch(0.48 0.14 45)}
+html{scroll-behavior:smooth;scroll-padding-top:120px}
+</style>
+</helmet>
+
+<div style="--color-bg:oklch(0.995 0 0);--color-surface:oklch(0.965 0.012 70);--color-text:oklch(0.27 0.02 55);--color-accent:oklch(0.6 0.17 48);--color-accent-200:oklch(0.93 0.05 60);--color-accent-400:oklch(0.72 0.15 55);--color-accent-600:oklch(0.6 0.17 48);--color-accent-700:oklch(0.48 0.14 45);--color-divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--color-neutral-100:oklch(0.995 0 0);--color-neutral-200:oklch(0.93 0.02 72);--color-neutral-300:oklch(0.38 0.02 55);--color-neutral-400:oklch(0.48 0.02 55);--color-neutral-500:oklch(0.52 0.02 55);min-height:100vh;background:var(--color-bg);color:var(--color-text)">
+
+<header style="position:sticky;top:0;z-index:10;background:color-mix(in srgb, var(--color-bg) 90%, transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--color-divider)">
+  <nav class="nav" style="max-width:1120px;margin:0 auto;padding:14px 24px;flex-wrap:wrap">
+    <a href="공실뉴스부동산 소개 v2 라이트.dc.html" class="nav-brand" style="text-decoration:none;color:var(--color-text);font-size:17px">공실뉴스부동산</a>
+    <a class="btn btn-primary" href="https://www.gongsilnews.com/newsrealty/apply" style="color:var(--color-accent)">신청하기</a>
+  </nav>
+  <div style="max-width:1120px;margin:0 auto;padding:0 24px;display:flex;gap:4px;overflow-x:auto">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+      <a href="{{ t.href }}" onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</a>
+    </sc-for>
+  </div>
+</header>
+
+<main>
+<section data-screen-label="Intro" style="max-width:1120px;margin:0 auto;padding:72px 24px 24px;display:flex;flex-direction:column;gap:16px">
+  <span style="font-size:13px;color:var(--color-accent-700)">공실뉴스 부동산 주요 헤택&nbsp;</span>
+  <h1 style="font-weight:700;font-family:Pretendard,system-ui,sans-serif;font-size:clamp(32px,4.6vw,48px);line-height:1.2;letter-spacing:-0.025em;margin:0;text-wrap:balance">공동중개 + 매매보고서 + 블로그/SNS포스팅 + 유튜브강의까지!<br>AI 시대! 부동산 마케팅 쉬워집니다.</h1>
+</section>
+
+<section id="cobroker" data-screen-label="01 공동중개" style="max-width:1120px;margin:0 auto;padding:96px 24px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center">
+  <div style="display:flex;flex-direction:column;gap:20px;max-width:480px">
+    <span style="font-size:13px;color:var(--color-accent)">01 · 공동중개 마케팅</span>
+    <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.3;margin:0;letter-spacing:-0.02em">11만 부동산이 무료 열람 가능<br>공동중개 등록 20건</h2>
+    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--color-neutral-300)">
+      <li>부동산 누구나 무료 열람 가능한 공동중개 채널</li><li>매일 실시간 업데이트 경매 열람</li><li>스마트폰 공동중개 등록 지원</li><li>지도/위치 기반 공동중개 검색</li>
+    </ul>
+  </div>
+  <div style="aspect-ratio:4/3;width:100%"><image-slot id="b-cobroker" shape="rounded" radius="14" placeholder="공동중개 화면 캡처"></image-slot></div>
+</section>
+
+<section id="report" data-screen-label="02 매매보고서" style="max-width:1120px;margin:0 auto;padding:128px 24px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center">
+  <div style="display:flex;flex-direction:column;gap:20px;max-width:480px">
+    <span style="font-size:13px;color:var(--color-accent)">02 · 부동산 마케팅</span>
+    <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.3;margin:0;letter-spacing:-0.02em">등록된 공실 원클릭!<br>매매보고서와 홈페이지 연동~&nbsp;</h2>
+    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--color-neutral-300)">
+      <li>AI 매매보고서 즉시 생성</li><li>공실뉴스 기사 송고 (월 4건)</li><li>유리창 홍보지 출력</li><li>내 물건 연동 홈페이지</li>
+    </ul>
+  </div>
+  <div style="aspect-ratio:4/3;width:100%"><image-slot id="b-report" shape="rounded" radius="14" placeholder="매매보고서 화면 캡처"></image-slot></div>
+</section>
+
+<section id="blog" data-screen-label="02 블로그 SNS" style="max-width:1120px;margin:0 auto;padding:128px 24px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center">
+  <div style="display:flex;flex-direction:column;gap:20px;max-width:480px">
+    <span style="font-size:13px;color:var(--color-accent)">03 · 블로그 · SNS</span>
+    <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.3;margin:0;letter-spacing:-0.02em">블로그/SNS 포스팅 초안을<br>1분 안에 자동 완성!</h2>
+    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--color-neutral-300)">
+      <li>네이버 블로그 · 인스타그램 · 페이스북 · 쓰레드</li><li>유튜브 대본 작성&nbsp;</li><li>별도 API 비용 없음 (내 챗GPT, 제미나이 계정 연동)</li>
+    </ul>
+  </div>
+  <div style="aspect-ratio:4/3;width:100%"><image-slot id="b-blog" shape="rounded" radius="14" placeholder="블로그 자동완성 화면 캡처"></image-slot></div>
+</section>
+
+<section id="video" data-screen-label="03 영상제작" style="max-width:1120px;margin:0 auto;padding:128px 24px 0;display:flex;flex-direction:column;gap:48px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:480px">
+      <span style="font-size:13px;color:var(--color-accent)">04 · 릴스 · 유튜브</span>
+      <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.3;margin:0;letter-spacing:-0.02em">촬영부터 편집까지<br>12개월 강의 열람</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag" style="background:var(--color-surface);color:var(--color-text)">브루 AI</span>
+        <span class="tag" style="background:var(--color-surface);color:var(--color-text)">캡컷</span>
+        <span class="tag" style="background:var(--color-surface);color:var(--color-text)">챗GPT 대본</span>
+      </div>
+      <p style="margin:0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">내 부동산 유튜브 실습 VOD 강의 무료 열람</p><p style="margin:0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">브루, 캡컷, 컷편집부터, AI 활용 영상 편집까지~&nbsp;</p><p style="margin:0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">매월 4회, 방송국&nbsp; PD출신 공실뉴스 편집장 새로운 강의 제공<br></p><p style="margin:0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">자료실, 드론 영상은 저작권 걱정 없이 내 영상에 사용할 수 있습니다.<br></p>
+    </div>
+    <div style="aspect-ratio:4/3;width:100%"><image-slot id="b-video" shape="rounded" radius="14" placeholder="영상 촬영 사진 또는 드론 영상 캡처"></image-slot></div>
+  </div>
+  <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px">
+    <sc-for list="{{ roadmap }}" as="r" hint-placeholder-count="4">
+      
+    </sc-for>
+  </ol>
+</section>
+
+<section id="lecture" data-screen-label="04 강의 업로딩" style="max-width:1120px;margin:0 auto;padding:128px 24px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center">
+  <div style="display:flex;flex-direction:column;gap:20px;max-width:480px">
+    <span style="font-size:13px;color:var(--color-accent)">05 · 강의 업로딩</span>
+    <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.3;margin:0;letter-spacing:-0.02em">공실스터디 강의 등록</h2>
+    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--color-neutral-300)">
+      <li>공실스터디 강의 등록 권한</li><li>스마트폰 촬영부터 강의 편집 VOD 강의 제공&nbsp;</li><li>내 지역/단지 특징, 상권 분석,&nbsp; 급매물/경매 강의 등록&nbsp;</li><li>강의 포인트를 현금으로 수익화 가능&nbsp;</li><li>전국 중개망에 홍보 · 공동중개 네트워크 강화&nbsp;</li>
+    </ul>
+  </div>
+  <div style="aspect-ratio:4/3;width:100%"><image-slot id="b-lecture" shape="rounded" radius="14" placeholder="강의 페이지 화면 캡처"></image-slot></div>
+</section>
+
+<section data-screen-label="편집장" style="max-width:1120px;margin:0 auto;padding:128px 24px 0">
+  
+</section>
+
+<section data-screen-label="CTA" style="max-width:1120px;margin:0 auto;padding:128px 24px">
+  <div style="display:flex;flex-direction:column;gap:24px;max-width:640px">
+    <h2 style="font-size:clamp(28px,4vw,40px);line-height:1.25;margin:0;letter-spacing:-0.02em">AI 시대, 공실뉴스와 함께 마케팅을 완성하세요!&nbsp;</h2>
+    
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="https://www.gongsilnews.com/newsrealty/apply" style="padding:12px 20px;font-size:15px;color:var(--color-accent)">공실뉴스부동산 신청하기</a>
+      <a class="btn btn-secondary" href="tel:15555343" style="padding:12px 20px;font-size:15px;color:var(--color-text)">1:1문의 접수&nbsp;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer style="max-width:1120px;margin:0 auto;padding:32px 24px 48px;font-size:12px;line-height:1.7;color:var(--color-neutral-500);border-top:1px solid var(--color-divider)">(주)공실마케팅 · 공실뉴스 · 고객센터 1555-5343</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { active: 'cobroker' };
+  renderVals() {
+    const items = [['cobroker','공동중개'],['report','매매보고서'],['blog','블로그 · SNS'],['video','릴스 · 유튜브'],['lecture','강의 업로딩']];
+    const base = 'padding:12px 14px;font-size:14px;text-decoration:none;white-space:nowrap;border-bottom:2px solid ';
+    return {
+      tabs: items.map(([id,label]) => {
+        const on = this.state.active === id;
+        return { label, href: '#' + id, onClick: () => this.setState({ active: id }),
+          style: { padding:'12px 14px', fontSize:14, textDecoration:'none', whiteSpace:'nowrap', borderBottom:'2px solid ' + (on ? 'var(--color-accent)' : 'transparent'), color: on ? 'var(--color-text)' : 'var(--color-neutral-400)', fontWeight: on ? 500 : 400 } };
+      }),
+      roadmap: [
+        { m: '1~3개월', t: '스마트폰 촬영 · 기본 편집' },
+        { m: '4~6개월', t: '영상 ㅋ' },
+        { m: '7~9개월', t: '캡컷 릴스 · 쇼츠' },
+        { m: '10~12개월', t: '드론 영상 · 채널 운영' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-b8000966-6304-42fe-bdf9-372228fd1ccf/styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="_ds/nocturne-b8000966-6304-42fe-bdf9-372228fd1ccf/_ds_bundle.js"></script>
+<style>
+body{margin:0;font-family:"Pretendard",system-ui,sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Pretendard",system-ui,sans-serif;font-weight:700}
+b,strong{font-weight:700}
+a{color:oklch(0.6 0.17 48)}a:hover{color:oklch(0.48 0.14 45)}
+summary::-webkit-details-marker{display:none}
+html{scroll-behavior:smooth}
+</style>
+</helmet>
+
+<div style="--color-bg:oklch(0.995 0 0);--color-surface:oklch(0.965 0.012 70);--color-text:oklch(0.27 0.02 55);--color-accent:oklch(0.6 0.17 48);--color-accent-200:oklch(0.93 0.05 60);--color-accent-400:oklch(0.72 0.15 55);--color-accent-600:oklch(0.6 0.17 48);--color-accent-700:oklch(0.48 0.14 45);--color-divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--color-neutral-100:oklch(0.995 0 0);--color-neutral-200:oklch(0.93 0.02 72);--color-neutral-300:oklch(0.38 0.02 55);--color-neutral-400:oklch(0.48 0.02 55);--color-neutral-500:oklch(0.52 0.02 55);min-height:100vh;background:var(--color-bg);color:var(--color-text)">
+
+<header style="position:sticky;top:0;z-index:10;background:color-mix(in srgb, var(--color-bg) 90%, transparent);backdrop-filter:blur(10px)">
+  <nav class="nav" style="max-width:1120px;margin:0 auto;padding:16px 24px;flex-wrap:wrap">
+    <a href="#top" class="nav-brand" style="text-decoration:none;color:var(--color-text);font-size:17px">공실뉴스부동산</a>
+    <a href="공실뉴스부동산 혜택.dc.html">혜택</a>
+    <a href="#pricing">금액안내</a>
+    <a href="#faq">FAQ</a>
+    <a class="btn btn-primary" href="https://www.gongsilnews.com/newsrealty/apply" style="color:var(--color-accent)">신청하기</a>
+  </nav>
+</header>
+
+<main id="top">
+<section data-screen-label="Hero" style="max-width:1120px;margin:0 auto;padding:64px 24px 72px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center">
+  <div style="display:flex;flex-direction:column;gap:24px;max-width:520px">
+    <span class="tag" style="background:var(--color-accent-200);color:var(--color-accent-700);align-self:flex-start">11만 부동산 무료 열람 채널</span>
+    <h1 style="font-size:clamp(34px,5vw,50px);line-height:1.2;letter-spacing:-0.025em;margin:0;text-wrap:balance">유튜브, 블로그, SNS<br>이제, 공실만 등록하면 자동으로</h1>
+    <p style="margin:0;font-size:17px;line-height:1.7;color:var(--color-neutral-300);text-wrap:pretty">공실뉴스부동산이 되시면 블로그 · 유튜브 · SNS 마케팅을 바로 시작하실 수 있습니다.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="https://www.gongsilnews.com/newsrealty/apply" style="padding:12px 20px;font-size:15px;font-weight:700;color:#fff;background:var(--color-accent-700);border-color:var(--color-accent-700)">공실뉴스부동산 신청 &gt;</a>
+      <a class="btn btn-secondary" href="공실뉴스부동산 혜택.dc.html" style="padding:12px 20px;font-size:15px;color:var(--color-text)">부동산 혜택 &gt;</a>
+    </div>
+  </div>
+  <img src="https://www.gongsilnews.com/images/newsrealty/hero_gangnam_multichannel_agent.jpg" alt="공실뉴스 AI 마케팅을 활용하는 공인중개사" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-lg);background:var(--color-surface)">
+</section>
+
+<section data-screen-label="Features" style="max-width:1120px;margin:0 auto;padding:0 24px">
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    <sc-for list="{{ chips }}" as="c" hint-placeholder-count="7">
+      <span style="padding:8px 14px;border-radius:999px;background:var(--color-surface);font-size:14px">{{ c }}</span>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Advantages" style="max-width:1120px;margin:0 auto;padding:112px 24px 0">
+  <h2 style="font-size:clamp(26px,3.4vw,34px);margin:0 0 12px;letter-spacing:-0.02em">무엇이 좋아질까요?</h2>
+  <p style="margin:0 0 48px;font-size:16px;color:var(--color-neutral-400)">공실뉴스부동산이 되시면, 부동산 마케팅이 쉬워집니다.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px">
+    <sc-for list="{{ advantages }}" as="a" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:12px;padding:28px 24px;background:var(--color-surface);border-radius:var(--radius-lg)">
+        <img src="{{ a.ic }}" alt="" style="width:32px;height:32px">
+        <span style="font-size:13px;color:var(--color-accent-700)">{{ a.n }}</span>
+        <h3 style="font-size:19px;line-height:1.4;margin:0">{{ a.t }}</h3>
+        <p style="margin:0;font-size:14px;line-height:1.7;color:var(--color-neutral-300)">{{ a.d }}</p>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Pipeline" style="max-width:1120px;margin:0 auto;padding:112px 24px 0">
+  <h2 style="font-size:clamp(26px,3.4vw,34px);margin:0 0 12px;letter-spacing:-0.02em">내가 꾸준히 할 수 있을까?</h2>
+  <p style="margin:0 0 48px;font-size:16px;color:var(--color-neutral-400)">공실만 등록하시면, AI가 기사 초안과 SNS 글을 작성합니다.</p>
+  <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2px">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+      <li style="padding:24px 20px;background:var(--color-surface);display:flex;flex-direction:column;gap:10px"><img src="{{ s.ic }}" alt="" style="width:28px;height:28px"><span style="font-size:12px;color:var(--color-accent)">STEP {{ s.n }}</span><span style="font-size:16px;font-weight:700">{{ s.t }}</span><span style="font-size:13px;color:var(--color-neutral-400)">{{ s.d }}</span></li>
+    </sc-for>
+  </ol>
+</section>
+
+<section data-screen-label="Market Reality" style="max-width:1120px;margin:0 auto;padding:128px 24px 0">
+  <span style="font-size:13px;color:var(--color-neutral-400)">대형 부동산</span>
+  <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.35;margin:8px 0 40px;letter-spacing:-0.02em;text-wrap:balance">대형 부동산은 매일 꾸준히<br>유튜브 · 블로그 · SNS를 운영합니다.</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px">
+    <sc-for list="{{ big }}" as="b" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <img src="{{ b.img }}" alt="{{ b.t }}" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--radius-lg);background:var(--color-surface)">
+        <span style="font-size:12px;color:var(--color-neutral-500)">{{ b.k }}</span>
+        <h3 style="font-size:18px;margin:0">{{ b.t }}</h3>
+        <p style="margin:0;font-size:14px;line-height:1.7;color:var(--color-neutral-300)">{{ b.d }}</p>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:16px;margin:72px 0">
+    <div style="flex:1;height:1px;background:var(--color-divider)"></div>
+    <span style="font-size:22px;font-weight:700;color:var(--color-accent)">VS</span>
+    <div style="flex:1;height:1px;background:var(--color-divider)"></div>
+  </div>
+
+  <span style="font-size:13px;color:var(--color-accent-700)">1~2인 로컬 부동산</span>
+  <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.35;margin:8px 0 40px;letter-spacing:-0.02em;text-wrap:balance">하지만 1~2인 부동산은<br>온라인 마케팅 할 시간이 없습니다.</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px">
+    <sc-for list="{{ local }}" as="b" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <img src="{{ b.img }}" alt="{{ b.t }}" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--radius-lg);background:var(--color-surface)">
+        <span style="font-size:12px;color:var(--color-accent-700)">{{ b.k }}</span>
+        <h3 style="font-size:18px;margin:0">{{ b.t }}</h3>
+        <p style="margin:0;font-size:14px;line-height:1.7;color:var(--color-neutral-300)">{{ b.d }}</p>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Solution" style="max-width:1120px;margin:0 auto;padding:128px 24px 0">
+  <div style="border-radius:var(--radius-lg);overflow:hidden;background:linear-gradient(120deg, oklch(0.5 0.14 42), oklch(0.6 0.16 52));color:var(--color-neutral-100);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));align-items:center">
+    <div style="padding:48px 40px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:14px;color:var(--color-neutral-200)">공실뉴스 AI 원스톱 솔루션</span>
+      <h2 style="font-size:clamp(26px,3.4vw,34px);line-height:1.35;margin:0;font-weight:700;letter-spacing:-0.02em;text-wrap:balance">공실만 등록하면<br>AI가 알아서 다 해줍니다.</h2>
+      <p style="margin:0;font-size:15px;line-height:1.7;color:var(--color-neutral-200)">매매보고서 작성부터 블로그, SNS포스팅, 홈페이지까지!<br>무엇보다, 유튜브도 배우고, 내 강의 개설로 수익화 가능!</p>
+    </div>
+    <img src="https://www.gongsilnews.com/images/newsrealty/newsrealty_partner_trio_success.jpg" alt="공실뉴스부동산 파트너 중개사들" style="width:100%;height:100%;min-height:300px;object-fit:cover">
+  </div>
+  <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:24px">
+    <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:12px;padding:24px;background:var(--color-surface);border-radius:var(--radius-lg)">
+        <img src="{{ b.ic }}" alt="" style="width:32px;height:32px">
+        <span style="font-size:12px;color:var(--color-accent-700)">{{ b.k }}</span>
+        <h3 style="font-size:18px;margin:0">{{ b.t }}</h3>
+        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--color-neutral-300)">
+          <sc-for list="{{ b.items }}" as="i" hint-placeholder-count="4"><li>{{ i }}</li></sc-for>
+        </ul>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Recommend" style="max-width:1120px;margin:0 auto;padding:128px 24px 0">
+  <h2 style="font-size:clamp(26px,3.4vw,34px);margin:0 0 40px;letter-spacing:-0.02em">이런 부동산에게 추천합니다</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px">
+    <sc-for list="{{ recs }}" as="r" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <img src="{{ r.img }}" alt="{{ r.t }}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-lg);background:var(--color-surface)">
+        <h3 style="font-size:18px;margin:4px 0 0">{{ r.t }}</h3>
+        <p style="margin:0;font-size:14px;line-height:1.7;color:var(--color-neutral-300)">{{ r.d }}</p>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="pricing" data-screen-label="Pricing" style="max-width:1120px;margin:0 auto;padding:128px 24px 0">
+  <h2 style="font-size:clamp(26px,3.4vw,34px);margin:0 0 12px;letter-spacing:-0.02em">월 3만 원, 12개월 36만 원</h2>
+  <p style="margin:0 0 40px;font-size:16px;color:var(--color-neutral-400)">12개월 단위 멤버십 · VAT 포함</p>
+  <div style="margin:0 0 56px;padding:36px 32px;border-radius:var(--radius-lg);background:var(--color-surface);display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:clamp(18px,2vw,22px);font-weight:700;color:var(--color-accent-700)">공실뉴스부동산 12개월 뒤</span>
+      <h3 style="font-size:clamp(22px,2.8vw,30px);line-height:1.35;margin:0;font-weight:700;letter-spacing:-0.02em">블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.</h3>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+      <sc-for list="{{ channels }}" as="c" hint-placeholder-count="5">
+        <div style="padding:18px;background:var(--color-bg);border-radius:var(--radius-md);font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px"><img src="{{ c.ic }}" alt="" style="width:24px;height:24px"><span>{{ c.t }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+  <table class="table" style="min-width:560px;font-size:15px">
+    <thead><tr>
+      <th style="width:30%;padding:12px 8px">항목</th>
+      <th style="width:28%;padding:12px 8px">일반 부동산<br><span style="font-size:18px;text-transform:none;letter-spacing:0;color:var(--color-text);font-weight:700">무료</span></th>
+      <th style="width:42%;padding:12px 8px;color:var(--color-accent)">공실뉴스부동산<br><span style="font-size:18px;text-transform:none;letter-spacing:0;color:var(--color-text);font-weight:700">₩30,000 / 월</span><br><span style="font-size:13px;text-transform:none;letter-spacing:0;color:var(--color-accent-700);font-weight:700">12개월 36만 원</span></th>
+    </tr></thead>
+    <tbody>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+        <tr><td style="padding:14px 8px;color:var(--color-neutral-300)">{{ r.a }}</td><td style="padding:14px 8px;color:var(--color-neutral-500)">{{ r.b }}</td><td style="padding:14px 8px">{{ r.c }}</td></tr>
+      </sc-for>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="faq" data-screen-label="FAQ" style="max-width:1120px;margin:0 auto;padding:112px 24px 0">
+  <h2 style="font-size:clamp(26px,3.4vw,34px);margin:0 0 32px;letter-spacing:-0.02em">자주 묻는 질문</h2>
+  <div style="display:flex;flex-direction:column;max-width:760px">
+    <details style="padding:20px 0;border-top:1px solid var(--color-divider)">
+      <summary style="cursor:pointer;list-style:none;font-size:16px;font-weight:700">공실뉴스부동산은 어떤 서비스인가요?</summary>
+      <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">공실뉴스에 공실 매물과 기사를 등록하면, AI가 매매보고서와 블로그 · SNS · 유튜브 대본 초안을 만들어 주는 12개월 공실등록 멤버십입니다.</p>
+    </details>
+    <details style="padding:20px 0;border-top:1px solid var(--color-divider)">
+      <summary style="cursor:pointer;list-style:none;font-size:16px;font-weight:700">블로그나 유튜브를 잘 모르는 초보도 할 수 있나요?</summary>
+      <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">네. 글은 AI가 초안을 작성하고, 영상은 촬영부터 편집까지 실습 강의로 안내합니다.</p>
+    </details>
+    <details style="padding:20px 0;border-top:1px solid var(--color-divider)">
+      <summary style="cursor:pointer;list-style:none;font-size:16px;font-weight:700">블로그 포스팅 초안은 어떻게 작성하나요? 별도 비용이 드나요?</summary>
+      <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">크롬 확장프로그램을 설치하면 바로 작성할 수 있습니다. 본인이 구독 중인 챗GPT 또는 제미나이 계정이 필요합니다.</p>
+    </details>
+    <details style="padding:20px 0;border-top:1px solid var(--color-divider)">
+      <summary style="cursor:pointer;list-style:none;font-size:16px;font-weight:700">결제는 어떻게 하나요? <span style="margin-left:6px;font-size:13px;color:var(--color-accent-700)">12개월 무이자 특별 이벤트</span></summary>
+      <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">지금 12개월 무이자 특별 이벤트를 진행 중입니다. 신청 후 네이버 쇼핑몰에서 결제하시면 바로 사용하실 수 있습니다.</p>
+    </details>
+    <details style="padding:20px 0;border-top:1px solid var(--color-divider)">
+      <summary style="cursor:pointer;list-style:none;font-size:16px;font-weight:700">모든 기사를 작성할 수 있나요?</summary>
+      <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">공실뉴스의 물건 기사를 작성할 수 있습니다. 기사는 작성 후 승인 신청을 거쳐 게재됩니다.</p>
+    </details>
+    <details style="padding:20px 0;border-top:1px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">
+      <summary style="cursor:pointer;list-style:none;font-size:16px;font-weight:700">신청 후 절차는 어떻게 되나요?</summary>
+      <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:var(--color-neutral-300)">네이버 쇼핑몰에서 결제하시면, 승인 이후 자동으로 공실 등록 20건과 기사 4편을 작성하실 수 있습니다.</p>
+    </details>
+  </div>
+</section>
+
+<section data-screen-label="CTA" style="max-width:1120px;margin:0 auto;padding:128px 24px">
+  <div style="display:flex;flex-direction:column;gap:20px;max-width:640px">
+    <span style="font-size:14px;color:var(--color-accent-700)">부동산중개 + 지역 부동산 기자</span>
+    <h2 style="font-size:clamp(28px,4vw,40px);line-height:1.3;margin:0;letter-spacing:-0.02em;text-wrap:balance">내 지역 · 단지<br>로컬 부동산 기자가 되세요.</h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="https://www.gongsilnews.com/newsrealty/apply" style="padding:12px 20px;font-size:15px;color:var(--color-accent)">공실뉴스부동산 신청하기</a>
+      <a class="btn btn-secondary" href="tel:15555343" style="padding:12px 20px;font-size:15px;color:var(--color-text)">상담 1555-5343</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer style="max-width:1120px;margin:0 auto;padding:32px 24px 48px;display:flex;flex-direction:column;gap:6px;font-size:12px;line-height:1.7;color:var(--color-neutral-500);border-top:1px solid var(--color-divider)">
+  <span style="color:var(--color-neutral-400);font-size:13px">(주)공실마케팅 · 공실뉴스</span>
+  <span>서울특별시 강남구 논현로115길 31, 105호 · 대표 김윤경 · 사업자등록번호 337-81-03010</span>
+  <span>인터넷신문 등록번호 서울 아55037 · master@gongsilnews.com · 고객센터 1555-5343</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const S = 'https://www.gongsilnews.com/images/study/';
+    const O = '#d9661f';
+    const P = {
+      report:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 17v-3M12 17V9M16 17v-5"/>',
+      news:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h10"/>',
+      click:'<path d="M9 3v3M3 9h3M5 5l2 2"/><path d="M10 10l10 4-4 1.5-1.5 4z"/>',
+      share:'<path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
+      blog:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+      insta:'<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="0.8" fill="'+O+'"/>',
+      fb:'<circle cx="12" cy="12" r="9"/><path d="M15 8.5h-1.5a2 2 0 0 0-2 2V21M9 13h5.5"/>',
+      threads:'<circle cx="12" cy="12" r="3.5"/><path d="M15.5 12v1.5a2.5 2.5 0 0 0 5 0V12a8.5 8.5 0 1 0-3.5 6.9"/>',
+      yt:'<rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.5 9.5v5l4-2.5z" fill="'+O+'"/>',
+      home:'<path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M10 20v-5h4v5"/>',
+      lecture:'<rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8 20h8M12 16.5V20"/>',
+      sns:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>'
+    };
+    const ic = k => 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="'+O+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + P[k] + '</svg>');
+    return {
+      chips: ['AI 공동중개등록','AI 매매보고서','AI 블로그 포스팅','AI SNS 인스타그램','부동산홈페이지','유리창홍보지','강의 채널 개설 (수익화)'],
+      advantages: [
+        { ic: ic('news'), n: '01 기본 혜택', t: '공실 20건 · 매월 언론 기사 4건 등록', d: '전국 11만 부동산이 무료 열람하는 공실뉴스에 매물과 기사를 등록 · 홍보합니다.' },
+        { ic: ic('report'), n: '02 AI 마케팅', t: '매매보고서 · 유리창홍보지 · 홈페이지', d: '등록한 공실을 분석해 AI가 매매보고서 초안, 유리창홍보지 및 부동산홈페이지를 제작해 드립니다.' },
+        { ic: ic('click'), n: '03 AI 원클릭', t: '유튜브 대본 · 블로그 · SNS', d: '기사 초안부터 블로그 글, SNS, 유튜브 대본까지 한 번의 클릭으로 완성합니다.' }
+      ],
+      steps: [
+        { ic: ic('share'), n: '01', t: '공동중개 등록', d: '11만 중개망 실시간 노출' },
+        { ic: ic('report'), n: '02', t: 'AI 매물보고서', d: '10초 완성 브리핑 리포트' },
+        { ic: ic('news'), n: '03', t: 'AI 기사초안', d: '공실뉴스 기사 등록' },
+        { ic: ic('sns'), n: '04', t: 'SNS · 블로그 · 유튜브 대본', d: '원클릭 멀티유즈 AI 자동화' },
+        { ic: ic('home'), n: '05', t: '부동산홈페이지', d: '내 등록 기사, 홈페이지 자동화' }
+      ],
+      big: [
+        { img: S + 'study-real-corp-filming.webp', k: '전문 기획 · 촬영팀 상주', t: '부동산 유튜브 채널 운영', d: '전담 PD와 드론으로 매주 임장 영상과 쇼츠를 올립니다.' },
+        { img: S + 'study-real-corp-report.webp', k: '전문적인 온라인 작업', t: '매매보고서 · 홈페이지 운영', d: '전문적인 보고서와 홈페이지를 꾸준히 운영합니다.' },
+        { img: S + 'study-real-corp-sns.webp', k: '팀별 채널 운영', t: 'SNS 마케팅 채널 운영', d: '젊은 고객에게 부동산 정보를 SNS로 빠르게 전달합니다.' }
+      ],
+      local: [
+        { img: S + 'study-real-local-cost.webp', k: '비용 부담', t: '비싼 광고비와 고정비', d: '마케팅 대행은 엄두가 나지 않습니다.' },
+        { img: S + 'study-real-local-busy.webp', k: '시간 부족', t: '혼자 하는 과중한 업무', d: '하루 종일 일하고 나면 글 한 편 쓰기도 어렵습니다.' },
+        { img: S + 'study-real-local-camera.webp', k: '제작 장벽', t: '스마트폰 앞에만 서면 막막', d: '장비도 없고 편집 툴도 낯설어 시작이 어렵습니다.' }
+      ],
+      benefits: [
+        { ic: ic('report'), k: '공실 등록 20건', t: '부동산 마케팅', items: ['공동중개 물건 홍보','AI 매매보고서 즉시 생성','유리창 홍보지 자동 출력','내 물건 연동 홈페이지'] },
+        { ic: ic('sns'), k: '공실 등록하면', t: 'SNS 마케팅 자동화', items: ['AI 블로그 포스팅 초안','인스타그램 · 페이스북 · 쓰레드 초안','유튜브 대본 초안','인테리어 · 리모델링 AI 견적 등등'] },
+        { ic: ic('yt'), k: '부동산 유튜브 강의', t: '유튜브 실습 · 커뮤니티', items: ['브루AI · 캡컷 편집 강의','AI 대본 활용 영상 제작','드론 영상 · Q&A 커뮤니티'] },
+        { ic: ic('lecture'), k: '강의 개설 지원', t: '내 온라인 강의 개설', items: ['공실뉴스 강의 등록 권한','촬영법 및 편집법 VOD 제공','물건소개, 단지/지역 시세 강의 등록','강의 수익화 가능 (공실포인트)'] }
+      ],
+      recs: [
+        { img: S + 'recommend_real_teheran_man.jpg', t: '사무실 · 상가 전문', d: '빠른 브리핑이 필요할 때, AI 매매보고서 10초 완성.' },
+        { img: S + 'recommend_real_apartment.jpg', t: '아파트 · 오피스텔 입점', d: '블로그, SNS 꾸준한 포스팅 및 매물접수 홈페이지로 차별화!' },
+        { img: S + 'recommend_real_villa.jpg', t: '빌라 · 주택 · 건물', d: '매매/지역 소개 유튜브를 꾸준히 운영하고 강의개설을 원하는 소장님!' }
+      ],
+      channels: [['블로그','blog'],['인스타그램','insta'],['페이스북','fb'],['쓰레드','threads'],['유튜브','yt']].map(([t,k]) => ({ t, ic: ic(k) })),
+      rows: [
+        { a: '공실 등록', b: '최초 3건', c: '월 20건 · 11만 중개망 노출' },
+        { a: '기사 등록', b: '최초 3건', c: '월 4건' },
+        { a: 'AI 물건보고서', b: '일부 열람', c: '무제한 생성' },
+        { a: '매물 광고 등록', b: '—', c: '가능' },
+        { a: '정회원 커뮤니티', b: '—', c: '가입' },
+        { a: '실무 자료실', b: '—', c: '서식 · 특약 · 계약서 다운로드' },
+        { a: '드론 영상', b: '—', c: '저작권 무료 상업 이용' },
+        { a: '공실스터디 강좌', b: '—', c: '일부 무료 수강' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
