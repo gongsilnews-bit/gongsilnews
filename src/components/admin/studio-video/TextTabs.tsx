@@ -52,7 +52,9 @@ export const resetTextTabs = () => { remember("tab", "text"); remember("sub", "b
 const FOCUS_EVT = "studio-text-basic";
 export const focusTextBasic = () => { resetTextTabs(); window.dispatchEvent(new Event(FOCUS_EVT)); };
 
-export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, anim, bubble, onClose, footerTop, pxPer100 = 67, titleExtra, posEl, basicBottom, sample }: {
+export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, anim, bubble, onClose, footerTop, pxPer100 = 67, titleExtra, posEl, basicBottom, sample, kindTabs }: {
+  /** 제목 자리 — "텍스트" + 지금 고치는 것 (2026-10-25) */
+  kindTabs?: React.ReactNode;
   /** 템플릿 칸 미리보기 글 — 지금 자막·글자 (2026-10-21) */
   sample?: string;
   title: string;
@@ -463,11 +465,11 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
     <div style={{ padding: "16px 16px 2px", fontSize: 14, fontWeight: 800, color: C.text, borderTop: `1px solid ${C.line}`, marginTop: 4 }}>{t}{n ? <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}> {n}</span> : null}</div>
   );
   return (
-    <Side title={title} onClose={onClose} titleExtra={titleExtra}
+    <Side title={title} onClose={onClose} titleExtra={titleExtra} tabs={kindTabs}
       footer={footerTop}>
       {/* 큰 탭 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        {([["text", "텍스트"], ["anim", "애니메이션"]] as const).filter(([k]) => k !== "anim" || anim).map(([k, l]) => (
+        {([["text", kindTabs ? "속성" : "텍스트"], ["anim", "애니메이션"]] as const).filter(([k]) => k !== "anim" || anim).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             style={{ flex: 1, height: 42, border: 0, borderBottom: `2px solid ${tab === k ? C.accent : "transparent"}`, background: "transparent", color: tab === k ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
             {l}{k === "anim" && anim?.value && Object.keys(anim.value).length ? " •" : ""}

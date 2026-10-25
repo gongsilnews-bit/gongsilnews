@@ -26,11 +26,11 @@ export function VoiceFace({ id, name, size = 52 }: { id: string; name: string; s
   );
 }
 
-export function Side({ title, onClose, children, footer, titleExtra }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; /** 제목 오른쪽 작은 단추들 */ titleExtra?: React.ReactNode }) {
+export function Side({ title, onClose, children, footer, titleExtra, tabs }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; /** 제목 오른쪽 작은 단추들 */ titleExtra?: React.ReactNode; /** 제목 자리에 따로 그린 제목 — 있으면 제목 글 대신 (텍스트 칸: "텍스트 · 메인자막 · 클립 3", 2026-10-25 사장님) */ tabs?: React.ReactNode }) {
   return (
     <aside style={{ position: "relative", width: 380, flexShrink: 0, display: "flex", flexDirection: "column", background: C.panel, borderLeft: `1px solid ${C.line}`, fontFamily: FONT, color: C.text, minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid ${C.line}` }}>
-        <span style={{ flex: titleExtra ? undefined : 1, fontSize: 17, fontWeight: 800, whiteSpace: "nowrap" }}>{title}</span>
+        {tabs ? <span style={{ flex: titleExtra ? undefined : 1, minWidth: 0, display: "flex" }}>{tabs}</span> : <span style={{ flex: titleExtra ? undefined : 1, fontSize: 17, fontWeight: 800, whiteSpace: "nowrap" }}>{title}</span>}
         {titleExtra && <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "flex-end", gap: 4, marginRight: 8 }}>{titleExtra}</span>}
         <button type="button" onClick={onClose} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer" }}>
           <Icon name="close" size={22} />
@@ -60,7 +60,7 @@ export function keywordsOf(text: string): string[] {
   return out.slice(0, 10);
 }
 
-export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips, pro, onAiMake }: { /** [AI 이미지·영상 제작] 열기 (2026-10-21 사장님: 사진·영상 쪽에서) */ onAiMake?: () => void; project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** 타임라인 편집 (캡컷처럼) — 썸네일 ＋ 단추로 넣기, 넣기 단추·크게 보기 없음 */ pro?: { onPlus: (item: LibItem) => void | Promise<void>; /** 두 번 누르면 소스 모니터에 열기 (2026-10-25) */ onSource?: (item: LibItem) => void }; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
+export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips, pro, onAiMake, onTrim }: { /** 텍스트 편집 — 두 번 누르면 쓸 부분(사진은 길이) 고르는 창 (2026-10-25 사장님) */ onTrim?: (item: LibItem) => void; /** [AI 이미지·영상 제작] 열기 (2026-10-21 사장님: 사진·영상 쪽에서) */ onAiMake?: () => void; project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** 타임라인 편집 (캡컷처럼) — 썸네일 ＋ 단추로 넣기, 넣기 단추·크게 보기 없음 */ pro?: { onPlus: (item: LibItem) => void | Promise<void>; /** 두 번 누르면 소스 모니터에 열기 (2026-10-25) */ onSource?: (item: LibItem) => void }; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
   const b = videoBridge();
   const [tab, setTab] = useState(initialTab === "vacancy" || initialTab === "store" || initialTab === "ai" ? "mine" : initialTab);
   const [vacOn, setVacOn] = useState(initialTab === "vacancy"); // 내 자료 › [공실 사진]
@@ -361,7 +361,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             <React.Fragment key={it.id}>
               <div role="button" draggable title="눌러서 고르기 · 클립으로 끌어다 놓기"
                 onClick={() => { if (picking) return setChk((v) => (v.includes(it.id) ? v.filter((x) => x !== it.id) : [...v, it.id])); setInlineId(it.id); setPicked(it); }}
-                onDoubleClick={() => pro?.onSource?.(it)}
+                onDoubleClick={() => (pro ? pro.onSource?.(it) : onTrim?.(it))}
                 onContextMenu={(e) => { e.preventDefault(); if (FOLDERS) setItemMenu({ ids: picking && chk.includes(it.id) ? chk : [it.id], x: e.clientX, y: e.clientY }); }}
                 onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)} // 크게 보기 (사진 보기와 같게)
                 onDragStart={(e) => { setHover(null); e.dataTransfer.setData(DRAG_MEDIA, JSON.stringify({ lib: it, ...(picking && chk.includes(it.id) ? { ids: chk } : {}) })); e.dataTransfer.effectAllowed = "copy"; if (pro) { blankDragImage(e); Object.assign(mediaDrag, { len: it.kind === "video" ? it.duration || 3 : it.kind === "audio" ? it.duration || 5 : 3, name: it.name, thumb: it.thumb }); } }}
@@ -449,7 +449,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             if (picking && "ready" in it) return setChk((v) => (v.includes(it.id) ? v.filter((x) => x !== it.id) : [...v, it.id]));
             if ("ready" in it) setInlineId(it.id);
             onClick(it);
-          }} onDoubleClick={() => { if ("ready" in it) pro?.onSource?.(it); }} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
+          }} onDoubleClick={() => { if ("ready" in it) { if (pro) pro.onSource?.(it); else onTrim?.(it); } }} onMouseEnter={(e) => setHover({ item: it, y: (e.currentTarget as HTMLElement).getBoundingClientRect().top })} onMouseLeave={() => setHover(null)}
             onContextMenu={(e) => { if (!FOLDERS || !("ready" in it) || tab !== "mine") return; e.preventDefault(); setItemMenu({ ids: picking && chk.includes(it.id) ? chk : [it.id], x: e.clientX, y: e.clientY }); }}
             draggable title="눌러서 고르기 · 클립 목록이나 미리보기로 끌어다 놓기"
             onDragStart={(e) => {
@@ -533,9 +533,9 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       {picked && !inlinePick ? (
         pickActions
       ) : picked ? (
-        <span style={{ fontSize: 14, color: C.sub }}>고른 자료 바로 아래 단추를 눌러 주세요.</span>
+        <span style={{ fontSize: 14, color: C.sub }}>고른 자료 바로 아래 단추를 눌러 주세요.{onTrim ? " 두 번 누르면 쓸 부분만 골라 넣어요." : ""}</span>
       ) : (
-        <span style={{ fontSize: 14, color: C.sub }}>사진이나 영상을 눌러 고르세요.</span>
+        <span style={{ fontSize: 14, color: C.sub }}>사진이나 영상을 눌러 고르세요.{onTrim ? " 두 번 누르면 쓸 부분만 골라 넣어요." : ""}</span>
       )}
     </>
   );
@@ -941,7 +941,11 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
 }
 
 /* ── 메인자막 (자막 서식) ── */
-export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onSubText, range, anim, pxPer100, ratio, kfEl }: {
+export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onSubText, range, anim, pxPer100, ratio, kfEl, kindTabs, onDetach }: {
+  /** 제목 아래 [메인자막][텍스트] 탭 */
+  kindTabs?: React.ReactNode;
+  /** 이 클립 자막을 같은 모양의 텍스트로 떼어 내기 (2026-10-25 사장님) */
+  onDetach?: (clipId: string) => void;
   /** 이 클립 메인자막 키프레임 칸 (2026-10-20) */
   kfEl?: React.ReactNode;
   settings: Settings;
@@ -996,6 +1000,7 @@ export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onS
             onBlur={() => { subFocus.current = false; commitSub(clip.id, clip.text, draft); }}
             style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical", fontSize: 15 }} />
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {onDetach && draft.trim() && <Btn small onClick={() => { window.clearTimeout(subTimer.current); commitSub(clip.id, clip.text, draft); onDetach(clip.id); }} title="이 클립 자막을 같은 자리·모양의 텍스트로 떼어 내요. 텍스트는 마음대로 옮기고 꾸밀 수 있어요"><Icon name="font" size={15} />텍스트로 떼어 내기</Btn>}
             <span style={{ flex: 1 }} />
             {clip.custom && <Btn small onClick={() => { window.clearTimeout(subTimer.current); onSubText(clip.id, null); }}>말한 그대로</Btn>}
           </div>
@@ -1033,7 +1038,7 @@ export function SubtitlePanel({ settings, onChange, onPreset, onClose, clip, onS
     </>
   );
   return (
-    <TextTabs title="메인자막" kind="sub" onClose={onClose} basicTop={top} anim={anim} posEl={posEl} sample={draft}
+    <TextTabs title="메인자막" kind="sub" kindTabs={kindTabs} onClose={onClose} basicTop={top} anim={anim} posEl={posEl} sample={draft}
       footerTop={range && (() => {
         // 적용 범위 — 맨 아래 고정 줄 [전체 적용][선택 클립 적용][↺] (2026-10-19 사장님)
         const b = (icon: string, on: boolean, ok: boolean, text: string, title: string, go: () => void) => (
@@ -1089,7 +1094,7 @@ export function RatioPanel({ ratio, fill, onRatio, onFill, onClose }: { ratio: R
 }
 
 /* ── 배경 음악 ── */
-export function MusicPanel({ project, current, rangeText, onPick, onClose, choose }: { project: Project; current: Layer | null; rangeText: string; onPick: (m: { file: string; url: string; name: string }) => void; onClose: () => void; /** 고르기만 (텍스트로 영상 — 프로젝트가 아직 없어 받지 않는다, 2026-10-20) */ choose?: (c: { kind: "lib" | "mine"; id: string; name: string }) => void }) {
+export function MusicPanel({ project, current, rangeText, onPick, onClose, choose, onTrim }: { /** 두 번 누르면 쓸 부분 고르는 창 (2026-10-25 사장님) */ onTrim?: (m: { file: string; url: string; name: string }) => void; project: Project; current: Layer | null; rangeText: string; onPick: (m: { file: string; url: string; name: string }) => void; onClose: () => void; /** 고르기만 (텍스트로 영상 — 프로젝트가 아직 없어 받지 않는다, 2026-10-20) */ choose?: (c: { kind: "lib" | "mine"; id: string; name: string }) => void }) {
   const b = videoBridge();
   const [tab, setTab] = useState<"lib" | "mine">(() => {
     try {
@@ -1136,26 +1141,26 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
     audio.current = a;
     setListen(id);
   };
-  const pickLib = async (id: string, name: string) => {
+  const pickLib = async (id: string, name: string, trim = false) => {
     if (choose) return choose({ kind: "lib", id, name });
     if (!b) return;
     setBusy(id);
     setMsg("");
     try {
       const r = await b.musicGet(project.dir, `bgm/lib/${id.slice(4)}.mp3`);
-      onPick({ file: r.file, url: r.url, name });
+      (trim && onTrim ? onTrim : onPick)({ file: r.file, url: r.url, name });
     } catch (e) {
       setMsg(errText(e));
     }
     setBusy("");
   };
-  const pickMine = async (it: LibItem) => {
+  const pickMine = async (it: LibItem, trim = false) => {
     if (choose) return choose({ kind: "mine", id: it.id, name: it.name });
     if (!b) return;
     setBusy(it.id);
     setMsg("");
     try {
-      onPick(await b.musicUse(project.dir, it.id));
+      (trim && onTrim ? onTrim : onPick)(await b.musicUse(project.dir, it.id));
     } catch (e) {
       setMsg(errText(e));
     }
@@ -1206,8 +1211,8 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
     }
     setBusy("");
   };
-  const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode) => (
-    <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
+  const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode, dbl?: () => void) => (
+    <div key={key} onDoubleClick={(e) => { if (!dbl || (e.target as HTMLElement).closest("button")) return; dbl(); }} title={dbl ? "두 번 누르면 쓸 부분만 골라 넣어요" : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
       {playBtn}
       {body}
       {right}
@@ -1245,7 +1250,8 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                 <>
                   <span style={{ fontSize: 13, color: C.dim }}>{fmtTime(t.duration, false)}</span>
                   <Btn small primary={current?.name === t.label} onClick={() => pickLib(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "고름" : "고르기"}</Btn>
-                </>
+                </>,
+                onTrim && !choose ? () => void pickLib(t.id, t.label, true) : undefined
               )
             )}
           </div>
@@ -1309,7 +1315,8 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                       style={{ width: 28, height: 28, flexShrink: 0, border: 0, background: "transparent", color: C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Icon name="close" size={15} />
                     </button>
-                  </>
+                  </>,
+                  onTrim && !choose ? () => void pickMine(it, true) : undefined
                 );
               })
             )}

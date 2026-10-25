@@ -531,7 +531,7 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, trim, o
   );
 }
 
-export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, imgAnim, onBubble, curClip, kfEl }: {
+export function LayerPanel({ project, layer, items, selRange, onChange, onRemove, onReplace, onClose, onZ, sticker, template, textAnim, imgAnim, onBubble, curClip, kfEl, kindTabs, onToSub }: {
   /** 그래픽·사진 — 속성 창 [애니메이션] 탭 (2026-10-21 사장님: 그래픽 속성에 모션이 나와야) */
   imgAnim?: AnimBodyProps;
   /** 키프레임 칸 (2026-10-20) — 맨 위 */
@@ -540,6 +540,9 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
   curClip?: string;
   /** 화면 글자 → 말풍선 스티커로 바꾸기 */
   onBubble?: (s: Sticker) => Promise<void>;
+  /** 화면 글자 — 제목 아래 [메인자막][텍스트] 탭 · [메인자막으로 바꾸기] (2026-10-25 사장님) */
+  kindTabs?: React.ReactNode;
+  onToSub?: () => void;
   /** 화면 글자 — [애니메이션] 탭 (글자 칸 탭, 회의 3-28) */
   textAnim?: AnimBodyProps;
   /** 스티커 글자 고치기 — 지금 글자, 고칠 수 있는지, 바꾸기 */
@@ -668,7 +671,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
       return o;
     };
     return (
-      <TextTabs title="텍스트" kind="layer" onClose={onClose} look={look} anim={textAnim} sample={layer.text || ""} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
+      <TextTabs title="텍스트" kind="layer" kindTabs={kindTabs} onClose={onClose} look={look} anim={textAnim} sample={layer.text || ""} pxPer100={Math.round(Math.min(...RATIO_SIZE[project.ratio]) * 0.08)}
         bubble={onBubble ? <BubbleGrid text={layer.text || ""} onPick={onBubble} /> : undefined}
         onLook={(p) => onChange(toLayer(p))} onPresetLook={(lk) => onChange(toLayer(lk))}
         basicTop={
@@ -686,6 +689,14 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
                 }}
                 onBlur={() => { window.clearTimeout(textTimer.current); if (draft.trim() && draft !== layer.text) onChange({ text: draft }); }}
                 style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical" }} />
+              {onToSub && (
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  {<Btn small onClick={() => { window.clearTimeout(textTimer.current); if (draft.trim() && draft !== layer.text) onChange({ text: draft }); onToSub(); }}
+                    title="이 글을 텍스트가 시작하는 클립의 메인자막으로 넣고, 텍스트는 지워요 (자막 모양은 메인자막 서식을 따라요)">
+                    <Icon name="sub" size={15} />메인자막으로 바꾸기
+                  </Btn>}
+                </div>
+              )}
             </div>
           </>
         }

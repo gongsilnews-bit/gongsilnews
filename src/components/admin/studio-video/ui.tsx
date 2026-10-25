@@ -338,7 +338,7 @@ export const ModalPage = React.createContext(false);
  * 공용 창. controls 면 오른쪽 위에 윈도우처럼 [— 작게][□ 크게][✕ 닫기].
  *  작게: 창을 숨기고 아래에 작은 막대만 (안의 내용은 그대로 살아 있다 — 카메라 미리보기 등). onMinimize 를 주면 그걸 대신 한다
  */
-export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote, win }: { title?: React.ReactNode; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode; /** 혼자 떠 있는 창 안 — 창 전체를 채우고, 위 줄 끌기·크게는 그 윈도우 창을 */ win?: { drag: (e: React.PointerEvent<HTMLDivElement>) => void; max: () => void; big: boolean } }) {
+export function Modal({ title, onClose, children, width = 760, footer, steps, step, controls, onMinimize, minNote, win, dock }: { /** 오른쪽에 붙여 띄우기 — 뒤를 어둡게 하지 않고 뒤 화면을 그대로 누르고 끌 수 있게. right = 오른쪽에서 띄울 거리 (2026-10-25 사장님) */ dock?: { right: number; top?: number }; title?: React.ReactNode; onClose?: () => void; children: React.ReactNode; width?: number; footer?: React.ReactNode; steps?: string[]; step?: number; controls?: boolean; onMinimize?: () => void; minNote?: React.ReactNode; /** 혼자 떠 있는 창 안 — 창 전체를 채우고, 위 줄 끌기·크게는 그 윈도우 창을 */ win?: { drag: (e: React.PointerEvent<HTMLDivElement>) => void; max: () => void; big: boolean } }) {
   const [mini, setMini] = React.useState(false);
   const [big, setBig] = React.useState(false);
   // 제목 줄을 잡고 끌면 창이 옮겨진다 (뒤 화면을 보려고 — 녹화 창 등). 제목 줄은 화면 밖으로 나가지 않게
@@ -419,7 +419,7 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
   }
   return (
     // 창(묻는 창 등)은 늘 맨 앞 — 단어 단추 막대(3000)·메뉴보다 위
-    <div style={{ position: "fixed", inset: 0, zIndex: 5000, background: win ? C.bg : mini ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini ? "none" : undefined, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 5000, background: win ? C.bg : mini || dock ? "transparent" : "rgba(0,0,0,0.55)", pointerEvents: mini || dock ? "none" : undefined, display: "flex", alignItems: dock?.top !== undefined ? "flex-start" : "center", justifyContent: dock ? "flex-end" : "center", paddingRight: dock ? dock.right : undefined, paddingTop: dock?.top, fontFamily: FONT }}>
       {mini && (
         // 작게 한 창 — 오른쪽 아래 작은 막대. 누르면 다시 커진다
         <div style={{ position: "fixed", right: 24, bottom: 24, pointerEvents: "auto", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px 12px 18px", borderRadius: 8, background: C.panel, border: `1px solid ${C.line2}`, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", color: C.text }}>
@@ -429,7 +429,7 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
           {onClose && <Btn onClick={onClose}><Icon name="close" size={16} />닫기</Btn>}
         </div>
       )}
-      <div ref={box} data-gsv-modal="" style={win ? { width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: C.panel, color: C.text } : { width: big ? "calc(100vw - 24px)" : width, maxWidth: big ? undefined : "94vw", height: big ? "calc(100vh - 24px)" : undefined, maxHeight: big ? undefined : "92vh", display: mini ? "none" : "flex", flexDirection: "column", background: C.panel, border: `1px solid ${C.line}`, borderRadius: big ? 6 : 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: !big && (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
+      <div ref={box} data-gsv-modal="" style={win ? { width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: C.panel, color: C.text } : { width: big ? "calc(100vw - 24px)" : width, maxWidth: big ? undefined : "94vw", height: big ? "calc(100vh - 24px)" : undefined, maxHeight: big ? undefined : dock?.top !== undefined ? `calc(100vh - ${dock.top + 12}px)` : "92vh", display: mini ? "none" : "flex", flexDirection: "column", pointerEvents: dock ? "auto" : undefined, background: C.panel, border: `1px solid ${dock ? C.line2 : C.line}`, borderRadius: big ? 6 : 10, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", color: C.text, transform: !big && (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : undefined }}>
         <div onPointerDown={drag} onDoubleClick={(e) => !(e.target as HTMLElement).closest("button") && (controls ? toggleBig() : setPos({ x: 0, y: 0 }))} title={isBig ? "두 번 누르면 원래 크기로" : controls ? "끌어서 창을 옮길 수 있어요 (두 번 누르면 크게)" : "끌어서 창을 옮길 수 있어요 (두 번 누르면 가운데로)"}
           style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${C.line}`, cursor: isBig && win ? "default" : "move", userSelect: "none" }}>
           {steps ? (

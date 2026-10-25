@@ -37,6 +37,8 @@ type Props = {
   what?: string;
   /** 그 종류만의 것 (맨 위) — 누르면 하고 닫힌다 */
   extra?: { icon: string; label: string; desc: string; run: () => void }[];
+  /** 삭제 바로 위에 넣는 항목 (글자 → 메인자막으로 바꾸기, 2026-10-25) */
+  extraEnd?: { icon: string; label: string; desc: string; run: () => void }[];
   /** [크기·설정 ›] 안의 끌개 · 켜고 끄기 (글자 크기 · 사진 크기·진하기 · 음악 볼륨·페이드) */
   sliders?: { label: string; value: number; min: number; max: number; step: number; show: string; onChange: (v: number) => void }[];
   toggles?: { label: string; on: boolean; set: (v: boolean) => void }[];
@@ -127,6 +129,7 @@ export default function MediaMenu(p: Props) {
       ...(p.onReplace ? [{ icon: "swap", label: "교체", desc: `다른 ${p.what === "그래픽" ? "그래픽으" : "사진·영상으"}로 바꿔요. 자리·범위는 그대로예요`, run: done(p.onReplace) }] : []),
       { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : `이 ${what}이(가) 몇 번 클립부터 몇 번 클립까지 나올지 정해요`, sub: true, run: go("range") },
       ...(p.kind === "layer" && p.order ? [{ icon: "layers", label: "순서", desc: "그래픽·사진·글자가 겹칠 때 어느 것을 위에 둘지 정해요", sub: true, off: !p.order.up && !p.order.down, run: go("order") }] : []),
+      ...(p.extraEnd || []).map((x) => ({ ...x, run: done(x.run) })),
       { icon: "trash", label: "삭제", desc: p.kind === "clip" ? "이 클립의 화면만 지워요. 글·목소리·자막은 그대로예요" : `이 ${what}을(를) 지워요`, danger: true, off: !p.canRemove, run: done(p.onRemove) },
     ];
   } else if (page === "fit") {

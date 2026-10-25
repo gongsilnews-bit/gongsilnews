@@ -12,7 +12,7 @@ import { LookTile, SubPresetGrid, loadMyPresets, type TextLook } from "./SubPres
 import { VarietyGrid } from "./Variety";
 import { tplAnim } from "./templateAnims";
 
-export function TextInsertPanel({ onAdd, onClose }: { onAdd: (look: TextLook, anim?: LayerAnim) => void; onClose: () => void; onTemplates?: () => void }) {
+export function TextInsertPanel({ onAdd, onClose, kindTabs }: { onAdd: (look: TextLook, anim?: LayerAnim) => void; onClose: () => void; onTemplates?: () => void; /** 제목 아래 [메인자막][텍스트] 탭 */ kindTabs?: React.ReactNode }) {
   // 글자 칸과 같은 순서 (2026-10-20 사장님): 기본 글자 → 내 설정(모양) → 템플릿(모양 + 움직임: 꾸민 글자 · 예능 자막 · 내 템플릿)
   const [my] = useState(() => loadMyPresets());
   const [t, setT] = useState<"deco" | "variety" | "mine">("deco");
@@ -30,7 +30,7 @@ export function TextInsertPanel({ onAdd, onClose }: { onAdd: (look: TextLook, an
     </div>
   );
   return (
-    <Side title="텍스트" onClose={onClose}>
+    <Side title="텍스트" onClose={onClose} tabs={kindTabs}>
       <div style={{ padding: "12px 16px 20px" }}>
         <Btn primary onClick={() => onAdd({})} style={{ width: "100%", justifyContent: "center" }}><Icon name="plus" size={16} />기본 글자 넣기</Btn>
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>고른 클립(없으면 지금 클립)에 들어가요. 단어를 고르고 넣으면 그 말 할 때만. 글은 미리보기에서 두 번 눌러 고쳐요.</div>
