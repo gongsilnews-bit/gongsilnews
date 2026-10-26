@@ -46,9 +46,9 @@ export default function PrivacyHtmlPage() {
       </section>
 
       <section style={{ marginBottom: "32px" }}>
-        <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#1a73e8", marginBottom: "16px" }}>3. 물건접수웹페이지를 통해 수집되는 정보</h2>
+        <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#1a73e8", marginBottom: "16px" }}>3. 물건접수홈페이지를 통해 수집되는 정보</h2>
         <p style={{ marginBottom: "12px" }}>
-          공실뉴스는 중개사 회원에게 물건접수웹페이지(<code>&#123;아이디&#125;.gongsilnews.com</code>)를 제공합니다.
+          공실뉴스는 중개사 회원에게 물건접수홈페이지(<code>&#123;아이디&#125;.gongsilnews.com</code>)를 제공합니다.
           이 페이지의 접수 폼을 통해 임대인·임차인 등 <strong>회원이 아닌 분의 정보</strong>가 수집될 수 있으며, 그 처리 기준은 다음과 같습니다.
         </p>
         <ul style={{ marginBottom: "12px", paddingLeft: "20px", lineHeight: 1.9 }}>

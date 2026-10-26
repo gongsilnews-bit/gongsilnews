@@ -12,7 +12,7 @@ async function adminId(): Promise<string | null> {
   const id = data?.user?.id;
   if (!id) return null;
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
-  const { data: m } = await db.from("members").select("id, role, plan_type, plan_end_date").eq("id", id).maybeSingle();
+  const { data: m } = await db.from("members").select("id, role, plan_type, plan_end_date, studio_end_date").eq("id", id).maybeSingle();
   return m && (getEffectivePlan(m) === "admin" || isAdminRole(m.role || "")) ? id : null;
 }
 

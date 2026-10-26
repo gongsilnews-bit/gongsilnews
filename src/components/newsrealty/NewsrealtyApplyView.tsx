@@ -3,8 +3,6 @@
 import React from "react";
 import Link from "next/link";
 
-/** 스마트스토어 "공실뉴스 1년 수강권" — 결제되면 공실뉴스부동산 1년이 자동으로 켜진다 (src/lib/smartstoreSync.ts) */
-const NAVER_PAY_URL = "https://smartstore.naver.com/mygongsil/products/13805832960";
 
 // 공실뉴스부동산 신청하기(/newsrealty/apply) 화면. 소개·혜택·금액안내와 같은 톤(미색 띠, 차분한 주황, Pretendard 700).
 // 로그인·신청서 제출 같은 동작은 PC·모바일 page.tsx 에 그대로 있고, 여기는 겉모양만 맡는다.
@@ -95,15 +93,16 @@ const CSS = `
 `;
 
 const BULLETS: React.ReactNode[] = [
-  <>공실뉴스부동산회원만 신청하실 수 있습니다. <strong style={{ color: "var(--accent-700)" }}>(무료)</strong></>,
-  <>가입신청 후, 네이버쇼핑몰에서 결제하셔요. <strong style={{ color: "var(--accent-700)" }}>(12개월 무이자)</strong></>,
+  <>공실뉴스부동산 가입은 <strong style={{ color: "var(--accent-700)" }}>무료</strong>입니다.</>,
+  <>가입 후 중개사 서류가 승인되면 공실 3건 · 기사 월 4건을 바로 등록할 수 있습니다.</>,
   <>문의는 1:1 게시판을 이용해주세요.</>,
 ];
 
 const GUIDE_STEPS: { n: string; t: string; lines: React.ReactNode[]; highlight?: boolean }[] = [
   { n: "1단계", t: "회원가입 · 신청", lines: [<>구글 · 카카오 계정으로 3초 만에 <strong>회원가입</strong>합니다.</>, <>신청자 · 연락처 · 중개사무소를 입력하고 신청서를 접수합니다.</>] },
-  { n: "2단계", t: "네이버쇼핑몰 결제", highlight: true, lines: [<><strong>36만원 (12개월 · VAT 포함)</strong></>, <>네이버쇼핑몰에서 결제하시면 되고, <strong>12개월 무이자 할부</strong>가 가능합니다.</>] },
-  { n: "3단계", t: "바로 승인", lines: [<>결제가 확인되면 <strong>바로 승인</strong>됩니다.</>, <>승인 즉시 공실 등록 월 20건 · 기사 작성 월 4건을 이용하실 수 있습니다.</>] },
+  { n: "2단계", t: "중개사 서류 제출", highlight: true, lines: [<>관리자페이지 <strong>정보설정 → 중개소 가입</strong>에서 중개사무소 등록증을 냅니다.</>, <>가입비 · 이용료는 <strong>없습니다.</strong></>] },
+  { n: "3단계", t: "승인", lines: [<>서류가 확인되면 <strong>공실뉴스부동산</strong>으로 승인됩니다.</>, <>승인 즉시 공실 등록 3건 · 기사 작성 월 4건을 이용하실 수 있습니다.</>] },
+  { n: "선택", t: "공실스튜디오 멤버십", lines: [<>영상뉴스 · 블로그 · SNS를 만들려면 <strong>공실스튜디오</strong> (월 3만원 · 1년 36만원)</>, <>공실 20건과 공실스튜디오 모든 프로그램이 열립니다.</>] },
 ];
 
 function GoogleIcon() {
@@ -158,9 +157,9 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
         <button type="button" onClick={onGuide} className="nra-btn nra-btn-outline" style={{ width: "100%" }}>
           회원가입 및 이용 절차가 궁금해요
         </button>
-        {/* 결제는 스마트스토어 (2026-10-26 공실스터디 신청 화면에 있던 버튼을 여기로 — 신청은 공실뉴스부동산 하나) */}
-        <a href={NAVER_PAY_URL} target="_blank" rel="noopener noreferrer" className="nra-btn" style={{ width: "100%", background: "#03c75a", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          네이버결제 바로가기
+        {/* 공실뉴스부동산은 무료 — 결제는 공실스튜디오 멤버십에서 (2026-10-26) */}
+        <a href="/studio" className="nra-btn" style={{ width: "100%", background: "#1a3a6b", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          공실스튜디오 알아보기
         </a>
       </div>
       </>
@@ -183,7 +182,7 @@ function GuideModal({ onClose, mobile }: { onClose: () => void; mobile?: boolean
         <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 13, color: "var(--accent-700)" }}>공실뉴스부동산 입점 안내</span>
           <h3 style={{ fontSize: mobile ? 20 : 24, margin: 0, letterSpacing: "-0.02em" }}>회원가입 및 이용 절차 안내</h3>
-          <p style={{ fontSize: 14, color: "var(--n400)", margin: 0 }}>회원가입하고 네이버쇼핑몰에서 결제하시면 바로 승인됩니다.</p>
+          <p style={{ fontSize: 14, color: "var(--n400)", margin: 0 }}>가입은 무료입니다. 중개사 서류가 승인되면 바로 이용합니다.</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {GUIDE_STEPS.map((s) => (
@@ -410,7 +409,7 @@ export default function NewsrealtyApplyView(p: NewsrealtyApplyViewProps) {
             </div>
           )}
           <button type="submit" disabled={p.submitting} className="nra-btn nra-btn-solid" style={{ width: "100%", height: 54, fontSize: 16 }}>
-            {p.submitting ? "신청 처리 중..." : "공실뉴스부동산 신청하기"}
+            {p.submitting ? "신청 처리 중..." : "공실뉴스부동산 무료 가입하기"}
           </button>
         </form>
       );

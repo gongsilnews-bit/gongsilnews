@@ -26,7 +26,7 @@ export async function getBusinessProfileById(profileId: string) {
     // 회원 정보 별도 조회
     const { data: member } = await supabase
       .from('members')
-      .select('id, name, email, profile_image_url, plan_type, plan_end_date')
+      .select('id, name, email, profile_image_url, plan_type, plan_end_date, studio_end_date')
       .eq('id', profile.user_id)
       .single();
 

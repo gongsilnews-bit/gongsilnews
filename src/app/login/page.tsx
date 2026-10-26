@@ -8,6 +8,8 @@ function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnToParam = searchParams.get('returnTo') || '/';
+  // ?simple=1 — 오른쪽 위 [공실뉴스 무료가입 및 로그인] 으로 왔을 때 왼쪽 설명 칸 없이 로그인만 (2026-10-26 사장님)
+  const simple = searchParams.get('simple') === '1';
 
   // 🔒 이미 로그인된 상태면 로그인 폼을 보여주지 않고 즉시 returnTo로 이동
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -119,7 +121,7 @@ function LoginClient() {
             flex: 1.2,
             background: 'radial-gradient(circle at top right, #1e1b4b 0%, #090d16 100%)',
             color: '#ffffff',
-            display: 'flex',
+            display: simple ? 'none' : 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
             padding: '60px 80px',
@@ -185,6 +187,7 @@ function LoginClient() {
           className="login-right-container"
           style={{
             flex: 1,
+            ...(simple ? { background: '#ffffff' } : {}),
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -276,12 +279,13 @@ function LoginClient() {
             /* Main Login Mode */
             <div>
               <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                <h2 style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', margin: '0 0 10px', letterSpacing: '-0.5px' }}>공실뉴스 시작하기</h2>
+                <h2 style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', margin: '0 0 10px', letterSpacing: '-0.5px' }}>공실뉴스 무료 시작하기</h2>
                 <p style={{ fontSize: 14, color: '#64748b', margin: 0, lineHeight: 1.5 }}>
                   3초 만에 소셜 연동으로 간편하게 시작하세요.<br />
                   첫 로그인 시 자동으로 가입이 완료됩니다.
                 </p>
               </div>
+
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {/* 구글 */}
@@ -356,6 +360,14 @@ function LoginClient() {
                   어떤 계정으로 가입했는지 모르시나요?
                 </button>
               </div>
+              {/* 간단 로그인(?simple=1)에서만 — 왼쪽 설명 칸을 줄여 한 상자로 (2026-10-26 사장님) */}
+              {simple && (
+                <div style={{ marginTop: 20, padding: '14px 16px', borderRadius: 10, background: '#fff7ed', border: '1px solid #fed7aa', fontSize: 13, lineHeight: 1.7, color: '#7c2d12', textAlign: 'left' }}>
+                  <div style={{ fontWeight: 800, color: '#c2410c', marginBottom: 4 }}>부동산이세요? 공동중개 등록/열람 평생 무료!</div>
+                  <div>· <b>일반회원</b> 공실 3건 등록 · 경공매 열람</div>
+                  <div style={{ whiteSpace: 'nowrap' }}>· <b>부동산회원</b> 공동중개 3건 등록 · 경공매 열람 · <b>기사 4편 작성</b></div>
+                </div>
+              )}
             </div>
           )}
 

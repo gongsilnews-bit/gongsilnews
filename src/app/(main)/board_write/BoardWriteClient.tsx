@@ -9,7 +9,8 @@ import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permis
 import { getBoardListUrl } from "@/utils/boardListUrl";
 import { convertToWebp } from "@/utils/convertToWebp";
 import { INQUIRY_PHOTO_LIMIT } from "@/constants/inquiry";
-import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
+import StudioSiteHeader from "@/components/studio-site/StudioSiteHeader";
+import { isStudioBoard } from "@/utils/studioBoards";
 import MobileTopBarHeader from "@/app/m/_components/MobileTopBarHeader";
 import StudySubMenuBar from "@/app/m/_components/StudySubMenuBar";
 
@@ -423,7 +424,7 @@ export default function BoardWriteClient({
     );
   }
 
-  const isStudyBoard = ["doc", "drone", "prompt", "sound", "app", "studyqa", "free"].includes(boardId);
+  const isStudyBoard = isStudioBoard(boardId); // 공실스튜디오 게시판 (2026-10-26)
 
   return (
     <>
@@ -434,7 +435,7 @@ export default function BoardWriteClient({
             <StudySubMenuBar />
           </>
         ) : (
-          <StudyHeader background={STUDY_HERO_BAR} />
+          <StudioSiteHeader />
         )
       )}
       {!isStudyBoard && isMobile && (

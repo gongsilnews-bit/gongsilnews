@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
 function MobileBottomNavContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -199,7 +200,7 @@ function MobileBottomNavContent() {
         className="max-w-md mx-auto flex justify-between items-center h-[60px] px-2"
         style={{ maxWidth: '448px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px', padding: '0 8px' }}
       >
-        {navItems.map((item) => {
+        {navItems.filter((item) => SHOW_STUDY || item.path !== "/m/study").map((item) => {
           const isActive = (() => {
             if (item.name === "홈") {
               if (pathname === "/m") return true;

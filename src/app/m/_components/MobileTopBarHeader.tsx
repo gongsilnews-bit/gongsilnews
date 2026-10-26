@@ -4,12 +4,13 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
 const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: false });
 
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "부동산특강", path: "/m/study" },
+  ...(SHOW_STUDY ? [{ key: "study", label: "부동산특강", path: "/m/study" }] : []),
   { key: "help", label: "고객센터", path: "/m/help" },
 ];
 

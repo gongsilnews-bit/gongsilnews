@@ -30,7 +30,7 @@ async function getArticleActor(supabase: ReturnType<typeof getAdminClient>) {
 
   const { data: member, error } = await supabase
     .from("members")
-    .select("id, name, email, role, plan_type, plan_end_date, max_articles_per_month")
+    .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, max_articles_per_month")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -94,7 +94,7 @@ export async function checkArticleWritePermission(authorId?: string) {
 
     const { data: member, error: memberError } = await supabase
       .from("members")
-      .select("role, plan_type, plan_end_date, max_articles_per_month")
+      .select("role, plan_type, plan_end_date, studio_end_date, max_articles_per_month")
       .eq("id", targetAuthorId)
       .single();
     if (memberError || !member) {
@@ -166,7 +166,7 @@ export async function saveArticle(data: {
       : actor.user.id;
     const { data: authorMember, error: authorMemberError } = await supabase
       .from("members")
-      .select("id, name, email, role, plan_type, plan_end_date, max_articles_per_month")
+      .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, max_articles_per_month")
       .eq("id", effectiveAuthorId)
       .maybeSingle();
 

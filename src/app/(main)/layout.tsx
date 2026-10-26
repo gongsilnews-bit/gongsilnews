@@ -27,7 +27,7 @@ export default async function MainLayout({
       <Header topFullBanners={topFullBanners} headerTextBanners={headerTextBanners} navCounts={navCounts} />
       {/* 하위의 모든 page.tsx 파일 내용물이 이 자리에 렌더링 됩니다 */}
       {children}
-      <RealEstateInfoBanner />
+      <RealEstateInfoBanner /> {/* 공공기관 바로가기 7개 (2026-10-26) */}
       <Footer />
     </div>
   );

@@ -14,7 +14,7 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
  * 2. 내가 작성한 블로그/유튜브 영상으로 기사 4편 매월 작성 -> 실전 연습 & 포털 송고 브랜딩
  * 3. 등록한 공실이 매물보고서 바로 작성 -> 보고서 출력 및 카톡/문자로 손님에게 즉시 전달
  * 4. 부동산 유리창 전단지 홍보물로 바로 만들어짐 (쇼윈도 워크인 마케팅)
- * 5. 등록한 공실과 기사가 실시간으로 내 물건접수 웹페이지에 자동 연동 -> 유튜브/블로그 링크 홍보 & 카톡 홈페이지 활용
+ * 5. 등록한 공실과 기사가 실시간으로 내 물건접수 홈페이지에 자동 연동 -> 유튜브/블로그 링크 홍보 & 카톡 홈페이지 활용
  */
 
 const POINT = "#059669";
@@ -47,7 +47,7 @@ export default function StudyVacancyRegisterClient() {
     {
       step: "04",
       title: "웹페이지 무료 연동",
-      desc: "등록한 공실 매물이 내 단독 물건접수 웹페이지에 실시간으로 자동 진열됩니다.",
+      desc: "등록한 공실 매물이 내 단독 물건접수 홈페이지에 실시간으로 자동 진열됩니다.",
       tag: "100% 자동 동기화",
     },
   ];
@@ -597,7 +597,7 @@ export default function StudyVacancyRegisterClient() {
               </div>
             </div>
 
-            {/* ── BENEFIT 04: 등록한 공실이 실시간으로 내 물건접수 웹페이지 연동 ── */}
+            {/* ── BENEFIT 04: 등록한 공실이 실시간으로 내 물건접수 홈페이지 연동 ── */}
             <div
               style={{
                 display: "grid",
@@ -637,11 +637,11 @@ export default function StudyVacancyRegisterClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  등록한 공실이 내 물건접수 웹페이지에 연동!<br />
+                  등록한 공실이 내 물건접수 홈페이지에 연동!<br />
                   <span style={{ color: POINT }}>유튜브·블로그 링크 홍보 & 카톡 홈페이지 활용</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  멤버십 회원에게는 나만의 독립된 &lsquo;물건접수 웹페이지(공인중개사 홈페이지)&rsquo;가 무료로 제공됩니다.
+                  멤버십 회원에게는 나만의 독립된 &lsquo;물건접수 홈페이지(공인중개사 홈페이지)&rsquo;가 무료로 제공됩니다.
                   등록한 20건의 공실이 내 홈페이지에 실시간으로 자동 동기화되어 채워집니다.
                   유튜브 영상 더보기란이나 블로그 프로필에 링크만 걸어두면 매물 접수와 문의 실시간 연동되며,
                   카톡/문자로 임대인에게 공유할 수 있습니다.
@@ -669,7 +669,7 @@ export default function StudyVacancyRegisterClient() {
                 </div>
               </div>
 
-              {/* 물건접수 웹페이지 샘플 */}
+              {/* 물건접수 홈페이지 샘플 */}
               <div
                 style={{
                   position: "relative",
@@ -683,7 +683,7 @@ export default function StudyVacancyRegisterClient() {
               >
                 <Image
                   src="/images/study/partner-webpage-sample.png"
-                  alt="나만의 물건접수 웹페이지 샘플"
+                  alt="나만의 물건접수 홈페이지 샘플"
                   fill
                   style={{ objectFit: "contain", objectPosition: "center", padding: 8 }}
                 />
@@ -826,7 +826,7 @@ export default function StudyVacancyRegisterClient() {
               }}
             >
               공실등록 20건 · AI 매매보고서 · 유리창 홍보지<br />
-              나만의 웹페이지까지 월 3만원대로 시작하세요
+              나만의 웹페이지까지 공실스튜디오 월 3만원으로 시작하세요
             </h3>
 
             <p
@@ -858,7 +858,7 @@ export default function StudyVacancyRegisterClient() {
                   transition: "transform 0.15s ease",
                 }}
               >
-                공실뉴스부동산 신청하기 &gt;&gt;
+                공실뉴스부동산 무료 가입하기 &gt;&gt;
               </Link>
               <Link
                 href="/study"

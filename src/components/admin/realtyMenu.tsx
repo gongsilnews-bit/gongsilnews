@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm, IconImage, IconMegaphone } from "@/components/admin/sections/AdminIcons";
+import { SHOW_STUDY } from "@/utils/siteFlags";
 
 /**
  * 중개사 관리자(/realty_admin) 메뉴 구성 — 2026-10-15 회의 (다)안
@@ -23,17 +24,20 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "photo", label: "이미지제작", icon: <IconImage /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "article_ad", label: "광고관리", icon: <IconAd /> },
-  { key: "study", label: "특강관리", icon: <IconStudy /> },
+  // 부동산특강은 아직 안 쓴다 (2026-10-26 사장님) — siteFlags SHOW_STUDY 를 켜면 다시 보인다
+  ...(SHOW_STUDY ? [{ key: "study", label: "특강관리", icon: <IconStudy /> }] : []),
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
-  { key: "homepage", label: "물건접수웹페이지", icon: <IconHomepage /> },
+  { key: "homepage", label: "물건접수홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
 ];
 
 /** 공실뉴스가 처음 정한 기본 (최고관리자가 바꾸기 전) */
+// 목록에 없는 메뉴(예: SHOW_STUDY 가 꺼져 숨긴 특강관리)는 뺀다 — 빈 칸이 생기면 메뉴가 깨진다 (2026-10-26)
+const inCatalog = (k: string) => REALTY_MENU_CATALOG.some((m) => m.key === k);
 export const FACTORY_LAYOUT: MenuLayout = {
-  main: ["dashboard", "gongsil", "article", "marketing", "sns", "video", "photo", "customer"],
-  more: ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"],
+  main: ["dashboard", "gongsil", "article", "marketing", "sns", "video", "photo", "customer"].filter(inCatalog),
+  more: ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"].filter(inCatalog),
 };
 
 const KEYS = new Set(REALTY_MENU_CATALOG.map((m) => m.key));

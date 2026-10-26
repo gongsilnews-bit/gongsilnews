@@ -244,7 +244,7 @@ export default function StudyLanding() {
             </div>
             <div className="stl-hero-cta">
               <Link href={APPLY} className="stl-btn">
-                공실뉴스부동산 신청하기 <i className="ph ph-arrow-right" />
+                공실뉴스부동산 무료 가입하기 <i className="ph ph-arrow-right" />
               </Link>
               <a href="#lectures" className="stl-btn-ghost">
                 강의 둘러보기
@@ -464,26 +464,26 @@ export default function StudyLanding() {
           <div className="stl-grid2">
             <div className="stl-plan">
               <div className="stl-plan-top">
-                <span className="k">공실뉴스 일반</span>
-                <span className="t">강의 개설 불가</span>
+                <span className="k">공실뉴스부동산</span>
+                <span className="t">가입 무료</span>
               </div>
               <div className="stl-plan-list">
                 <div><i className="ph ph-check" />공동중개 열람 무료</div>
-                <div><i className="ph ph-check" />누구나 공실 3건 무료 등록</div>
+                <div><i className="ph ph-check" />공실 3건 · 기사 월 4건 등록</div>
               </div>
-              <Link href="/login" className="stl-plan-btn ghost">공실뉴스 회원가입하기 &gt;&gt;</Link>
+              <Link href={APPLY} className="stl-plan-btn ghost">공실뉴스부동산 무료 가입하기 &gt;&gt;</Link>
             </div>
             <div className="stl-plan rec">
               <div className="stl-plan-top">
-                <span className="k">공실뉴스부동산<em>추천</em></span>
-                <span className="t">1년 36만원 (월 3만원꼴)</span>
+                <span className="k">+ 공실스튜디오<em>추천</em></span>
+                <span className="t">월 3만원 · 1년 36만원</span>
               </div>
               <div className="stl-plan-list">
                 <div><i className="ph ph-check" /><b>공실 20건 등록 가능</b></div>
-                <div><i className="ph ph-check" />AI 마케팅·영상 제작·실무 강의 수강</div>
+                <div><i className="ph ph-check" />영상 제작 · AI 마케팅 · 공실스튜디오 모든 프로그램</div>
                 <div><i className="ph ph-check" />강의 개설과 수익화</div>
               </div>
-              <Link href={APPLY} className="stl-plan-btn solid">공실뉴스부동산 신청하기 &gt;</Link>
+              <Link href="/studio" className="stl-plan-btn solid">공실스튜디오 알아보기 &gt;</Link>
             </div>
           </div>
         </div>
@@ -544,7 +544,7 @@ export default function StudyLanding() {
             <p>공실뉴스와 부동산특강은 부동산이 가진 매물과 지역정보를 더 많은 사람에게 전달하고, 더 많은 부동산과 연결되도록 돕습니다.</p>
           </div>
           <Link href={APPLY} className="stl-btn">
-            공실뉴스부동산 신청하기 <i className="ph ph-arrow-right" />
+            공실뉴스부동산 무료 가입하기 <i className="ph ph-arrow-right" />
           </Link>
         </div>
       </section>

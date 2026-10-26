@@ -18,8 +18,12 @@ import NewsrealtyJoinButton, { showNewsrealtyJoin } from "@/components/Newsrealt
 import { getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
+import LoginJoinButton from "@/components/LoginJoinButton";
+import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
   const pathname = usePathname();
+  const studioBoard = useStudioBoardPage(); // 공실스튜디오 게시판 글 읽기·쓰기 (2026-10-26)
   // 핵심 메뉴(공실열람·공실스터디) 위에 가끔 떠오르는 말풍선
   const navBubble = useNavHighlightBubbles(navCounts);
   const router = useRouter();
@@ -165,7 +169,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
         // members 테이블에서 현재 회원의 상태 파악
         const { data, error } = await supabase
           .from('members')
-          .select('signup_completed, email, name, role, plan_type')
+          .select('signup_completed, email, name, role, plan_type, plan_end_date, studio_end_date')
           .eq('id', user.id)
           .single();
         if (data) {
@@ -215,7 +219,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   // 나의 강의실은 헤더·풋터 없이 깔끔하게 — 위의 [‹ 부동산특강] 으로 돌아간다 (2026-10-26 사장님)
   // 강의 상세(/study_read)도 위 헤더 없이 — 경로 줄 [‹ 부동산특강] 으로 돌아간다 (2026-10-26)
   // 공실뉴스부동산(/newsrealty)도 메인 헤더 없이 — 자기 메뉴 줄 앞의 공실뉴스 로고로 홈에 간다 (2026-10-26)
-  if (pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || pathname?.startsWith('/newsrealty') || pathname === '/study/about') {
+  if (pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || pathname?.startsWith('/newsrealty') || pathname === '/study/about' || studioBoard) {
     return null;
   }
 
@@ -309,12 +313,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 공실등록 &gt;&gt;
               </div>
 
-              <div 
-                style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} 
-                onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
-              >
-                로그인
-              </div>
+              <LoginJoinButton tone="dark" small />
             </div>
           )}
 
@@ -423,14 +422,14 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
-                  <div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                  {SHOW_STUDY && (<div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                     <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>부동산특강</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "study"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="study" />
                     {/* 2026-10-26 사장님: 부동산특강은 펼침 메뉴 없음 — [내 강의실]은 특강 첫 화면에 */}
-                  </div>
+                  </div>)}
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/help" className={pathname === "/help" || pathname?.startsWith("/help") ? "active" : ""}>고객센터</Link>
                     <div className="gnb-dropdown">
@@ -459,14 +458,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             {/* === [Sticky State] 스크롤 시 나타나는 우측 액션 버튼들 === */}
             {isSmallHeader && (
               <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
-                {!currentUser && (
-                  <div 
-                    style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} 
-                    onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
-                  >
-                    로그인
-                  </div>
-                )}
+                {!currentUser && <LoginJoinButton />}
 
                 <NotificationBell />
 
@@ -702,7 +694,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실열람</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>
+                  {SHOW_STUDY && <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>}
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/newsrealty/resources"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>
                 </ul>

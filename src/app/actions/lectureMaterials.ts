@@ -41,7 +41,7 @@ export async function getLectureMaterialUrl(lectureId: string, index: number, fo
     let editor = false;
     let enrolled = false;
     if (user) {
-      const { data: member } = await client.from('members').select('role, plan_type, plan_end_date').eq('id', user.id).single();
+      const { data: member } = await client.from('members').select('role, plan_type, plan_end_date, studio_end_date').eq('id', user.id).single();
       editor = lecture.author_id === user.id || isAdminRole(member?.role);
       const { data: enrollments } = await client.from('lecture_enrollments').select('expires_at, granted_by_plan').eq('lecture_id', lectureId).eq('user_id', user.id).eq('status', 'ACTIVE');
       /*

@@ -5,7 +5,7 @@ import { getHomepageSettings, saveHomepageSettings } from "@/app/actions/homepag
 import { HOMEPAGE_ACTIVE_EVENT, shareHomepageUrl } from "@/hooks/useHomepageEditor";
 
 /**
- * 관리자 상단의 물건접수웹페이지 바로가기.
+ * 관리자 상단의 물건접수홈페이지 바로가기.
  *
  * 편집기 왼쪽 위와 같은 [사용 중] 스위치 · 주소 · 공유하기를 어느 메뉴에서든 쓰게 한다.
  * 편집기와 달리 저장 버튼이 없으므로 스위치는 누르는 즉시 저장하고, 편집기와 서로
@@ -60,7 +60,7 @@ export default function HomepageHeaderBar({ memberId, darkMode, onDark = false }
 
   const share = async () => {
     try {
-      const result = await shareHomepageUrl(liveUrl, siteTitle || "물건접수웹페이지");
+      const result = await shareHomepageUrl(liveUrl, siteTitle || "물건접수홈페이지");
       if (result !== "aborted") flash(result === "shared" ? "공유 완료" : "주소 복사됨");
     } catch {
       flash("공유 실패");
@@ -69,7 +69,7 @@ export default function HomepageHeaderBar({ memberId, darkMode, onDark = false }
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-      <span style={{ fontSize: 15, fontWeight: 800, color: text, whiteSpace: "nowrap" }}>물건접수웹페이지</span>
+      <span style={{ fontSize: 15, fontWeight: 800, color: text, whiteSpace: "nowrap" }}>물건접수홈페이지</span>
       <button
         type="button"
         role="switch"

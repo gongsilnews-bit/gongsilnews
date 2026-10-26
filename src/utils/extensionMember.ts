@@ -23,8 +23,8 @@ export const NEWSMAKER_PLANS = ["admin", "news_premium", "study_premium"] as con
 
 export const PLAN_LABELS: Record<string, string> = {
   admin: "최고관리자",
-  news_premium: "공실뉴스부동산",
-  study_premium: "공실뉴스부동산",
+  news_premium: "공실뉴스부동산 Studio",
+  study_premium: "공실뉴스부동산 Studio",
   free: "무료",
 };
 
@@ -137,7 +137,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
 
   const { data: member } = await admin
     .from("members")
-    .select("id, name, email, role, plan_type, plan_end_date")
+    .select("id, name, email, role, plan_type, plan_end_date, studio_end_date")
     .eq("id", userId)
     .maybeSingle();
   if (!member) return null;
@@ -153,7 +153,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
     email: member.email || "",
     role,
     plan,
-    planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "무료부동산" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
+    planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "공실뉴스부동산" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
     canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan),
     canYoutubeWriter: isAdmin || (YOUTUBE_WRITER_PLANS as readonly string[]).includes(plan),
     canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan) || isBiz,

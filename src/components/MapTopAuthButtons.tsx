@@ -32,7 +32,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
       if (user) {
         const { data } = await supabase
           .from('members')
-          .select('signup_completed, email, name, role, plan_type')
+          .select('signup_completed, email, name, role, plan_type, plan_end_date, studio_end_date')
           .eq('id', user.id)
           .single();
           

@@ -873,7 +873,7 @@ export default function StudyAiYoutubeClient() {
                 border: "1px solid rgba(255, 255, 255, 0.3)",
               }}
             >
-              12개월 연간 멤버십 하나로 모든 특강 & 드론 저작권 무제한
+              공실스튜디오 멤버십 하나로 모든 특강 & 드론 저작권 무제한
             </div>
 
             <h3
@@ -886,7 +886,7 @@ export default function StudyAiYoutubeClient() {
               }}
             >
               유튜브 대본부터 편집, 릴스·쇼츠 제작, 드론 저작권까지!<br />
-              월 3만원대로 내 중개업의 마케팅 체급을 바꾸세요
+              공실스튜디오 월 3만원으로 내 중개업의 마케팅 체급을 바꾸세요
             </h3>
 
             <p
@@ -919,7 +919,7 @@ export default function StudyAiYoutubeClient() {
                   transition: "transform 0.15s ease",
                 }}
               >
-                공실뉴스부동산 신청하기 &gt;&gt;
+                공실뉴스부동산 무료 가입하기 &gt;&gt;
               </Link>
               <Link
                 href="/study"

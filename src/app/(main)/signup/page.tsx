@@ -781,7 +781,7 @@ export default function SignupPage() {
                   router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=settings&tab=agency'));
                 }}
               >
-                공실뉴스부동산 신청하기
+                공실뉴스부동산 무료 가입하기
               </button>
             </div>
           </div>

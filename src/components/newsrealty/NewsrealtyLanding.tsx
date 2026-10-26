@@ -97,32 +97,33 @@ const channels: { t: string; ic: IconKey }[] = [
   { t: "유튜브", ic: "yt" },
 ];
 
+// 2026-10-26 사장님: 공실뉴스부동산은 무료 (b), 공실스튜디오 멤버십을 쓰면 (c). 계획서 docs/2026-10-26_studio_membership_plan.md
 const rows = [
-  { a: "공실 등록", b: "최초 3건", c: "월 20건 · 11만 중개망 노출" },
-  { a: "기사 등록", b: "최초 3건", c: "월 4건" },
-  { a: "AI 물건보고서", b: "일부 열람", c: "무제한 생성" },
-  { a: "매물 광고 등록", b: "—", c: "가능" },
-  { a: "정회원 커뮤니티", b: "—", c: "가입" },
-  { a: "실무 자료실", b: "—", c: "서식 · 특약 · 계약서 다운로드" },
+  { a: "공실뉴스 열람", b: "무료", c: "무료" },
+  { a: "공실 등록", b: "3건", c: "20건 · 11만 중개망 노출" },
+  { a: "기사 등록 (내 지역/단지 정보)", b: "월 4건", c: "월 4건" },
+  { a: "블로그 · SNS 자동발행", b: "3건 체험", c: "무제한" },
+  { a: "AI 매물보고서", b: "3건 체험", c: "무제한" },
+  { a: "영상 · 이미지 · 리모델링", b: "—", c: "공실스튜디오 모든 프로그램" },
+  { a: "정회원 커뮤니티 · 실무 자료실", b: "—", c: "이용" },
   { a: "드론 영상", b: "—", c: "저작권 무료 상업 이용" },
-  { a: "부동산특강 강좌", b: "—", c: "일부 무료 수강" },
 ];
 
 // 같은 본문을 공실뉴스부동산(/newsrealty, 주황)과 공실스터디(/study, 녹색)가 함께 쓴다.
 // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로 보여 준다.
 type Brand = { name: string; applyHref: string; applyShort: string; applyLong: string; benefitsLabel: string };
 const BRANDS: Record<"orange" | "green", Brand> = {
-  orange: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 신청", applyLong: "공실뉴스부동산 신청하기", benefitsLabel: "부동산 혜택" },
-  green: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 신청", applyLong: "공실뉴스부동산 신청하기", benefitsLabel: "멤버십 혜택" },
+  orange: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 무료 가입", applyLong: "공실뉴스부동산 무료 가입하기", benefitsLabel: "부동산 혜택" },
+  green: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 무료 가입", applyLong: "공실뉴스부동산 무료 가입하기", benefitsLabel: "멤버십 혜택" },
 };
 
 const faqs = (brand: Brand): { q: string; badge?: string; a: string }[] => [
-  { q: `${brand.name}은 어떤 서비스인가요?`, a: "공실뉴스에 공실 매물과 기사를 등록하면, AI가 매매보고서와 블로그 · SNS · 유튜브 대본 초안을 만들어 주는 12개월 공실등록 멤버십입니다." },
+  { q: `${brand.name}은 어떤 서비스인가요?`, a: "내 지역·단지 공실과 소식을 공실뉴스에 뉴스로 전하는 무료 중개사 회원입니다. 가입하고 중개사 서류가 승인되면 공실 3건과 기사 월 4건을 등록할 수 있습니다." },
   { q: "블로그나 유튜브를 잘 모르는 초보도 할 수 있나요?", a: "네. 글은 AI가 초안을 작성하고, 영상은 촬영부터 편집까지 실습 강의로 안내합니다." },
   { q: "블로그 포스팅 초안은 어떻게 작성하나요? 별도 비용이 드나요?", a: "크롬 확장프로그램을 설치하면 바로 작성할 수 있습니다. 본인이 구독 중인 챗GPT 또는 제미나이 계정이 필요합니다." },
-  { q: "결제는 어떻게 하나요?", badge: "12개월 무이자 특별 이벤트", a: "지금 12개월 무이자 특별 이벤트를 진행 중입니다. 신청 후 네이버 쇼핑몰에서 결제하시면 바로 사용하실 수 있습니다." },
+  { q: "비용이 드나요?", badge: "가입 무료", a: "공실뉴스부동산 가입은 무료입니다. 영상뉴스 · 블로그 · SNS를 공실스튜디오로 만들려면 공실스튜디오 멤버십(월 3만원 · 1년 36만원)을 결제합니다." },
   { q: "모든 기사를 작성할 수 있나요?", a: "공실뉴스의 물건 기사를 작성할 수 있습니다. 기사는 작성 후 승인 신청을 거쳐 게재됩니다." },
-  { q: "신청 후 절차는 어떻게 되나요?", a: "네이버 쇼핑몰에서 결제하시면, 승인 이후 자동으로 공실 등록 20건과 기사 4편을 작성하실 수 있습니다." },
+  { q: "신청 후 절차는 어떻게 되나요?", a: "가입 후 중개사 서류가 승인되면 바로 공실 3건 · 기사 월 4건을 등록할 수 있습니다. 공실스튜디오 멤버십을 결제하면 공실 20건과 공실스튜디오 모든 프로그램이 열립니다." },
 ];
 
 const CSS = `
@@ -179,13 +180,13 @@ const studyRows = [
   { a: "수강 후", b: "수료하면 끝", c: "스터디 Q&A · 정회원 커뮤니티" },
 ];
 
-// 금액 제목 + 네이버결제 12개월 무이자 작은 태그
+// 금액 제목 — 공실뉴스부동산은 무료, 공실스튜디오 멤버십 월 3만원 · 1년 36만원 (2026-10-26)
 function PriceHeading() {
   return (
     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px", margin: "0 0 12px" }}>
-      <h2 className="nrl-h2" style={{ margin: 0 }}>월 3만 원, 12개월 36만 원</h2>
+      <h2 className="nrl-h2" style={{ margin: 0 }}>공실뉴스부동산은 무료입니다</h2>
       <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--accent-200)", color: "var(--accent-700)", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>
-        네이버결제 12개월 무이자
+        공실스튜디오 월 3만원 · 1년 36만원
       </span>
     </div>
   );
@@ -202,12 +203,12 @@ function PriceTable({ brand }: { brand: Brand }) {
           <tr>
             <th style={{ width: "30%" }}>항목</th>
             <th style={{ width: "28%" }}>
-              {study ? "시중 오프라인 실무교육" : "일반 부동산"}<br /><span className="nrl-th-price">{study ? "수백만 원" : "무료"}</span>
+              {study ? "시중 오프라인 실무교육" : brand.name}<br /><span className="nrl-th-price">{study ? "수백만 원" : "무료"}</span>
               {study && <><br /><span style={{ fontSize: 13, letterSpacing: 0, color: "var(--n500)", fontWeight: 700 }}>12개월 일시불</span></>}
             </th>
             <th className="nrl-col-hl" style={{ width: "42%", color: "var(--accent)", textAlign: "center", borderRadius: "10px 10px 0 0" }}>
-              {brand.name}<br /><span className="nrl-th-price">₩30,000 / 월</span><br />
-              <span style={{ fontSize: 13, letterSpacing: 0, color: "var(--accent-700)", fontWeight: 700 }}>12개월 36만 원</span>
+              + 공실스튜디오 멤버십<br /><span className="nrl-th-price">₩30,000 / 월</span><br />
+              <span style={{ fontSize: 13, letterSpacing: 0, color: "var(--accent-700)", fontWeight: 700 }}>1년 36만 원</span>
             </th>
           </tr>
         </thead>
@@ -231,7 +232,7 @@ function PricingBody({ brand }: { brand: Brand }) {
     <>
       <div style={{ margin: "0 0 56px", padding: "36px 32px", borderRadius: "var(--r-lg)", background: "var(--surface)", display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: "clamp(18px,2vw,22px)", fontWeight: 700, color: "var(--accent-700)" }}>{brand.name} 12개월 뒤</span>
+          <span style={{ fontSize: "clamp(18px,2vw,22px)", fontWeight: 700, color: "var(--accent-700)" }}>공실스튜디오와 12개월 뒤</span>
           <h3 style={{ fontSize: "clamp(22px,2.8vw,30px)", lineHeight: 1.35, margin: 0, letterSpacing: "-0.02em" }}>
             블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.
           </h3>
@@ -246,7 +247,7 @@ function PricingBody({ brand }: { brand: Brand }) {
         </div>
       </div>
       <PriceHeading />
-      <p className="nrl-lead" style={{ marginBottom: 40 }}>12개월 단위 멤버십 · VAT 포함</p>
+      <p className="nrl-lead" style={{ marginBottom: 40 }}>가입 무료 · 공실스튜디오 멤버십은 월 3만원 또는 1년 36만원 (VAT 포함)</p>
       <PriceTable brand={brand} />
     </>
   );
@@ -258,9 +259,9 @@ function CtaBand({ onApplyClick, brand = BRANDS.orange }: { onApplyClick: (e: Re
     <div style={{ background: "var(--band)", marginTop: 128 }}>
       <section className="nrl-sec" style={{ padding: "96px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
-          <span style={{ fontSize: 14, color: "var(--band-kicker)" }}>공실등록 + 블로그/유튜브/SNS</span>
+          <span style={{ fontSize: 14, color: "var(--band-kicker)" }}>공실뉴스부동산 · 가입 무료</span>
           <h2 style={{ fontSize: "clamp(28px,4vw,40px)", lineHeight: 1.3, margin: 0, letterSpacing: "-0.02em", textWrap: "balance", color: "#ffffff" }}>
-            12개월안에<br />내 마케팅채널 완성할 수 있습니다.
+            내 지역/단지 공실을<br />뉴스로 전달하세요.
           </h2>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <a href={brand.applyHref} onClick={onApplyClick} className="nrl-btn nrl-btn-cta">{brand.applyLong}</a>
@@ -319,10 +320,10 @@ export default function NewsrealtyLanding({
               11만 부동산 무료 열람 채널
             </span>
             <h1 style={{ fontSize: "clamp(34px,5vw,50px)", lineHeight: 1.2, letterSpacing: "-0.025em", margin: 0, textWrap: "balance" }}>
-              유튜브, 블로그, SNS<br />이제, 공실만 등록하면 자동으로
+              내 지역/단지 공실을<br />뉴스로 전달하세요
             </h1>
             <p style={{ margin: 0, fontSize: 17, lineHeight: 1.7, color: "var(--n300)", textWrap: "pretty" }}>
-              {brand.name} 회원이 되시면 블로그 · 유튜브 · SNS 마케팅을 바로 시작하실 수 있습니다.
+              1주일에 1번, 내 지역/단지 공실정보를 영상뉴스로 전달하세요. {brand.name} 가입은 무료이고, 영상뉴스는 공실스튜디오로 만듭니다.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <a href={brand.applyHref} onClick={applyClick} className="nrl-btn nrl-btn-solid">{brand.applyShort} &gt;</a>
@@ -473,9 +474,9 @@ export default function NewsrealtyLanding({
   );
 }
 
-// 금액안내 페이지(/newsrealty/pricing) 본문: 리뉴얼 전 주황 2열 카드 형태(일반부동산 vs 공실뉴스부동산).
-// 금액·혜택 항목은 비교표(rows)를 기준으로 한다.
-export function NewsrealtyPricing({ onApply, onGeneral }: { onApply: () => void; onGeneral: () => void }) {
+// 금액안내 페이지(/newsrealty/pricing) 본문 (2026-10-26 사장님: 공실뉴스부동산 무료 · 공실스튜디오 멤버십 월 3만원 · 1년 36만원)
+// 항목은 비교표(rows): b = 공실뉴스부동산(무료), c = 공실스튜디오 멤버십
+export function NewsrealtyPricing({ onApply }: { onApply: () => void; onGeneral?: () => void }) {
   const applyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     onApply();
@@ -489,43 +490,38 @@ export function NewsrealtyPricing({ onApply, onGeneral }: { onApply: () => void;
       <section style={{ background: "linear-gradient(180deg, #fff7ed 0%, #ffffff 100%)", padding: "70px 20px 0", textAlign: "center" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", fontSize: 13, fontWeight: 800, padding: "6px 18px", borderRadius: 20, marginBottom: 20, border: "1px solid #ffd8b2" }}>
-            네이버결제 12개월 무이자
+            공실뉴스부동산 가입 무료
           </div>
           <h1 style={{ fontSize: "clamp(30px,4vw,42px)", fontWeight: 900, color: "#1c1917", letterSpacing: "-1.5px", margin: "0 0 16px", lineHeight: 1.3 }}>
-            공실등록 + 블로그/유튜브/SNS<br />
-            월 <span style={{ color: "#ff8e15" }}>3만원</span>이면 OK!
+            내 지역/단지 공실을 뉴스로<br />
+            가입은 <span style={{ color: "#ff8e15" }}>무료</span>입니다
           </h1>
           <p style={{ fontSize: 17, color: "#64748b", margin: "0 auto 50px", maxWidth: 620, lineHeight: 1.6 }}>
-            12개월 동안 블로그 · 유튜브 · SNS 마케팅 채널을 완성하실 수 있습니다.
+            영상뉴스 · 블로그 · SNS는 공실스튜디오로 만듭니다. 공실스튜디오 멤버십은 월 3만원 · 1년 36만원입니다.
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,340px),1fr))", gap: 32, alignItems: "stretch", textAlign: "left", maxWidth: 1000, margin: "0 auto" }}>
-            {/* 일반부동산 (무료) */}
-            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 20, padding: "42px 34px", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+            {/* 공실뉴스부동산 (무료) */}
+            <div style={{ background: "#ffffff", border: "2.5px solid #ff8e15", borderRadius: 20, padding: "42px 34px", boxShadow: "0 16px 44px rgba(255, 142, 21, 0.18)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#334155", margin: 0 }}>일반부동산</h3>
-                <span style={{ fontSize: 12, fontWeight: 700, background: "#f1f5f9", color: "#64748b", padding: "4px 10px", borderRadius: 20 }}>기본 플랜</span>
+                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>공실뉴스부동산</h3>
+                <span style={{ fontSize: 12, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "4px 12px", borderRadius: 20 }}>가입 무료</span>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 38, fontWeight: 900, color: "#1e293b", letterSpacing: "-1px" }}>
-                  ₩0<span style={{ fontSize: 14, fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>/ 평생 무료</span>
-                </div>
-                <p style={{ fontSize: 13, color: "#94a3b8", margin: "6px 0 0" }}>기본적인 공실 등록과 시스템 체험이 가능한 입문용 플랜</p>
+                <div style={{ fontSize: 38, fontWeight: 900, color: "#1e293b", letterSpacing: "-1px" }}>₩0</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", margin: "6px 0 0" }}>중개사 서류가 승인되면 바로 이용합니다</p>
               </div>
-              <button type="button" onClick={onGeneral} style={{ width: "100%", height: 50, marginBottom: 28, backgroundColor: "#1e293b", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", cursor: "pointer", fontFamily: "inherit" }}>
-                일반부동산 바로가기 ➔
-              </button>
-              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 24 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b", marginBottom: 16 }}>제공되는 기본 기능</div>
+              <a href="/newsrealty/apply" onClick={applyClick} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#ff8e15", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none" }}>
+                무료로 가입하기 ➔
+              </a>
+              <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 24 }}>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14, fontSize: 13.5 }}>
                   {rows.map((r) => {
                     const on = r.b !== "—";
                     return (
-                      <li key={r.a} style={{ display: "flex", alignItems: "center", gap: 10, color: on ? "#475569" : "#94a3b8" }}>
-                        {check(on, "#059669")}
-                        {on
-                          ? <span>{r.a} : <strong>{r.b}</strong></span>
-                          : <span style={{ textDecoration: "line-through" }}>{r.a} : 불가</span>}
+                      <li key={r.a} style={{ display: "flex", alignItems: "center", gap: 10, color: on ? "#1c1917" : "#94a3b8" }}>
+                        {check(on, "#ff8e15")}
+                        {on ? <span>{r.a} : <strong>{r.b}</strong></span> : <span>{r.a}</span>}
                       </li>
                     );
                   })}
@@ -533,33 +529,26 @@ export function NewsrealtyPricing({ onApply, onGeneral }: { onApply: () => void;
               </div>
             </div>
 
-            {/* 공실뉴스부동산 (강조) */}
-            <div style={{ background: "#ffffff", border: "2.5px solid #ff8e15", borderRadius: 20, padding: "42px 34px", boxShadow: "0 16px 44px rgba(255, 142, 21, 0.18)", position: "relative" }}>
-              <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg, #ff8e15 0%, #e67e10 100%)", color: "#ffffff", padding: "5px 20px", borderRadius: 20, fontSize: 12, fontWeight: 900, boxShadow: "0 4px 12px rgba(255, 142, 21, 0.35)", whiteSpace: "nowrap" }}>
-                🔥 강력 추천 · 대표 파트너십
-              </div>
+            {/* 공실스튜디오 멤버십 */}
+            <div style={{ background: "#ffffff", border: "1.5px solid #1a3a6b", borderRadius: 20, padding: "42px 34px", boxShadow: "0 4px 16px rgba(0,0,0,0.04)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>공실뉴스부동산</h3>
-                <span style={{ fontSize: 12, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "4px 12px", borderRadius: 20 }}>12개월 멤버십</span>
+                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1a3a6b", margin: 0 }}>+ 공실스튜디오 멤버십</h3>
+                <span style={{ fontSize: 12, fontWeight: 800, background: "#1a3a6b", color: "#ffffff", padding: "4px 10px", borderRadius: 6 }}>Studio</span>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 40, fontWeight: 900, color: "#1c1917", letterSpacing: "-1px" }}>
-                    36만원<span style={{ fontSize: 14.5, fontWeight: 700, color: "#64748b", marginLeft: 6 }}>/ 1년 (12개월)</span>
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "#ea580c", background: "#fff2e8", border: "1px solid #ffd8b2", padding: "3px 10px", borderRadius: 20 }}>월 3만원꼴</span>
+                <div style={{ fontSize: 38, fontWeight: 900, color: "#1e293b", letterSpacing: "-1px" }}>
+                  월 3만원<span style={{ fontSize: 14.5, fontWeight: 700, color: "#64748b", marginLeft: 8 }}>· 1년 36만원</span>
                 </div>
-                <p style={{ fontSize: 13, color: "#ff8e15", fontWeight: 700, margin: "8px 0 0" }}>VAT 포함 · 네이버결제 12개월 무이자 할부 가능</p>
+                <p style={{ fontSize: 13, color: "#64748b", margin: "6px 0 0" }}>VAT 포함 · 이름표에 공실스튜디오 로고가 붙습니다</p>
               </div>
-              <a href="/newsrealty/apply" onClick={applyClick} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#ff8e15", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none", boxShadow: "0 4px 14px rgba(255, 142, 21, 0.35)" }}>
-                공실뉴스부동산 신청하기 ➔
+              <a href="/studio" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#1a3a6b", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none" }}>
+                공실스튜디오 알아보기 ➔
               </a>
-              <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 24 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 800, color: "#1c1917", marginBottom: 16 }}>포함된 모든 전용 혜택</div>
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 24 }}>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14, fontSize: 13.5 }}>
                   {rows.map((r) => (
                     <li key={r.a} style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      {check(true, "#ff8e15")}
+                      {check(true, "#1a3a6b")}
                       <span>{r.a} : <strong>{r.c}</strong></span>
                     </li>
                   ))}

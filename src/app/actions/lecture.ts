@@ -754,7 +754,7 @@ export async function enrollLecture(lectureId: string, userId: string) {
      * 끝났을 때 이 수강을 닫아야 하는지 가릴 방법이 없다.
      */
     const { data: me } = await supabase
-      .from("members").select("role, plan_type, plan_end_date").eq("id", userId).single();
+      .from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", userId).single();
     const freePlan = canTakeFree(me, lecture.free_for_plans) ? (lecturePlanOf(me) || "admin") : null;
 
     const pointsRequired = freePlan ? 0 : (lecture.discount_price || lecture.price || 0);
@@ -839,7 +839,7 @@ export async function checkEnrollment(lectureId: string, userId: string) {
      */
     if (latest.granted_by_plan) {
       const [{ data: me }, { data: lec }] = await Promise.all([
-        supabase.from("members").select("role, plan_type, plan_end_date").eq("id", userId).single(),
+        supabase.from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", userId).single(),
         supabase.from("lectures").select("free_for_plans").eq("id", lectureId).single(),
       ]);
       if (!canTakeFree(me, lec?.free_for_plans)) {

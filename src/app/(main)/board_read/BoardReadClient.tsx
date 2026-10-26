@@ -7,7 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, isAdminRole } from "@/utils/permissionCheck";
 import { getBoardListUrl } from "@/utils/boardListUrl";
-import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
+import StudioSiteHeader from "@/components/studio-site/StudioSiteHeader";
+import StudioFooter from "@/components/studio-site/StudioFooter";
+import { isStudioBoard } from "@/utils/studioBoards";
 import BannerSlot from "@/components/BannerSlot";
 import { BoardAccessCard } from "@/components/common/BoardAccessModal";
 
@@ -44,7 +46,8 @@ export default function BoardReadClient({
   const searchParams = useSearchParams();
   const boardId = board?.board_id || post?.board_id || "";
   const boardName = board?.name || "게시판";
-  const isStudyBoard = ["doc", "drone", "prompt", "sound", "app", "studyqa", "free"].includes(boardId);
+  // 자료실 · 커뮤니티는 공실스튜디오 소속 (2026-10-26) — 머리 · 풋터를 공실스튜디오 것으로
+  const isStudyBoard = isStudioBoard(boardId);
   const tabs = board?.categories ? ["전체", ...board.categories.split(",").map((c: string) => c.trim())] : ["전체"];
 
   const pageParam = searchParams.get('page') || '1';
@@ -246,7 +249,7 @@ export default function BoardReadClient({
   if (board && !canAccessBoard(userLevel, board.perm_read ?? 0)) {
     return (
       <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
-        {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
+        {isStudyBoard && <StudioSiteHeader />}
         <div style={{ padding: "80px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, width: "100%", maxWidth: 380 }}>
             <BoardAccessCard level={board.perm_read ?? 0} isLoggedIn={!!currentUser} />
@@ -259,7 +262,7 @@ export default function BoardReadClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
-      {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
+      {isStudyBoard && <StudioSiteHeader />}
       <div className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
         {/* 게시판 헤더 */}
         <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid var(--board-navy, #1a2e50)", paddingBottom: 15, marginBottom: 0 }}>
@@ -310,7 +313,7 @@ export default function BoardReadClient({
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* 브레드크럼 */}
             <div style={{ fontSize: 14, color: "#999", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-              <Link href="/" style={{ color: "#999", textDecoration: "none" }}>홈</Link>
+              <Link href={isStudyBoard ? "/studio" : "/"} style={{ color: "#999", textDecoration: "none" }}>{isStudyBoard ? "공실스튜디오" : "홈"}</Link>
               <span style={{ color: "#ccc" }}>›</span>
               <Link href={listUrl} style={{ color: "#999", textDecoration: "none" }}>
                 {isStudyBoard ? (["studyqa", "free"].includes(boardId) ? "커뮤니티" : "자료실") : "게시판"}
@@ -689,6 +692,7 @@ export default function BoardReadClient({
           .b-sidebar .sb-title { border-bottom: 2px solid var(--board-navy, #1a2e50) !important; }
         `}</style>
       )}
+      {isStudyBoard && <StudioFooter />}
     </div>
   );
 }

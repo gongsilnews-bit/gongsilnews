@@ -27,7 +27,7 @@ export async function canUseArticleBanner(memberId: string): Promise<boolean> {
   const supabase = getAdminClient();
   const { data: member } = await supabase
     .from("members")
-    .select("role, plan_type, plan_end_date, can_article_banner")
+    .select("role, plan_type, plan_end_date, studio_end_date, can_article_banner")
     .eq("id", memberId)
     .single();
   if (!member) return false;

@@ -25,7 +25,7 @@ import { isPermissionAlive } from "@/utils/planCheck";
 export const HOMEPAGE_ACTIVE_EVENT = "homepage-active-change";
 
 /**
- * 물건접수웹페이지 주소 공유. 공유창이 있으면 띄우고, 없으면 주소를 복사한다.
+ * 물건접수홈페이지 주소 공유. 공유창이 있으면 띄우고, 없으면 주소를 복사한다.
  * 사용자가 공유창을 닫으면 "aborted" 를 돌려준다.
  */
 export async function shareHomepageUrl(url: string, title: string): Promise<"shared" | "copied" | "aborted"> {
@@ -44,7 +44,7 @@ export async function shareHomepageUrl(url: string, title: string): Promise<"sha
 }
 
 /**
- * 홈페이지(물건접수웹페이지) 편집기의 속.
+ * 홈페이지(물건접수홈페이지) 편집기의 속.
  *
  * 불러오기·저장·사진 업로드·슬라이드 다루기·주소 변경은 PC 편집기와 폰 편집기가
  * 똑같이 한다. 화면만 다르다. 두 벌로 짜두면 칸을 하나 늘릴 때마다 두 곳을 고쳐야
@@ -309,7 +309,7 @@ export function useHomepageEditor(memberId: string) {
     if (!liveUrl) return;
     setShareNotice("");
     try {
-      const result = await shareHomepageUrl(liveUrl, siteTitle || "물건접수웹페이지");
+      const result = await shareHomepageUrl(liveUrl, siteTitle || "물건접수홈페이지");
       if (result === "aborted") return;
       setShareNotice(result === "shared" ? "공유 완료" : "주소 복사됨");
       window.setTimeout(() => setShareNotice(""), 2000);

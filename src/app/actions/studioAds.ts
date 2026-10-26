@@ -13,7 +13,7 @@ async function adminId(): Promise<string | null> {
   const { data } = await (await createCookieSupabase()).auth.getUser();
   const id = data?.user?.id;
   if (!id) return null;
-  const { data: m } = await db().from("members").select("id, role, plan_type, plan_end_date").eq("id", id).maybeSingle();
+  const { data: m } = await db().from("members").select("id, role, plan_type, plan_end_date, studio_end_date").eq("id", id).maybeSingle();
   return m && (getEffectivePlan(m) === "admin" || isAdminRole(m.role || "")) ? id : null;
 }
 const missingTable = (e: { code?: string; message?: string } | null) => Boolean(e && (e.code === "42P01" || e.code === "PGRST205" || /does not exist|Could not find the table/i.test(e.message || "")));
@@ -133,7 +133,7 @@ export async function pickStudioAd(place: string, lastId?: number): Promise<Wait
   const { data: u } = await (await createCookieSupabase()).auth.getUser();
   if (!u?.user?.id) return null;
   const c = db();
-  const { data: m } = await c.from("members").select("role, plan_type, plan_end_date").eq("id", u.user.id).maybeSingle();
+  const { data: m } = await c.from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", u.user.id).maybeSingle();
   if (m && (getEffectivePlan(m) === "admin" || isAdminRole(m.role || ""))) return null;
   const now = new Date().toISOString();
   const { data: rows, error } = await c.from("studio_ads").select("id, advertiser_id, youtube_id, link_url, weight, starts_at, ends_at, max_views, daily_cap").eq("status", "approved").contains("places", [place]);

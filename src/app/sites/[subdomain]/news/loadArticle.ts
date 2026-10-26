@@ -55,7 +55,7 @@ export async function loadSubdomainArticle(subdomain: string, articleId: string)
     );
     const { data: member } = await supabase
       .from("members")
-      .select("role, email, plan_type, plan_end_date, can_article_vacancy_banner")
+      .select("role, email, plan_type, plan_end_date, studio_end_date, can_article_vacancy_banner")
       .eq("id", article.author_id)
       .single();
     if (member) {

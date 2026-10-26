@@ -1,34 +1,32 @@
+/** 공실스튜디오 이용 기간(members.studio_end_date)이 남아 있나 — 2026-10-26 이용권은 등급과 따로 저장 */
+export function studioAlive(member: { studio_end_date?: string | Date | null } | null | undefined): boolean {
+  if (!member?.studio_end_date) return false;
+  const end = new Date(member.studio_end_date);
+  if (Number.isNaN(end.getTime())) return false;
+  end.setHours(23, 59, 59, 999);
+  return new Date() <= end;
+}
+
 export function getEffectivePlan(member: {
   role?: string;
   plan_type?: string;
   plan_end_date?: string | Date | null;
+  studio_end_date?: string | Date | null;
 }): string {
   if (!member) return 'free';
   
   // 최고관리자는 모든 권한 무제한 통과용 특별 식별자 반환
   if (member.role === 'ADMIN' || member.role === '최고관리자') return 'admin';
+
+  // 공실스튜디오 이용 중이면 예전 유료 등급(news_premium)과 같은 권한 — 비즈니스회원도 이용권을 사면 같다 (2026-10-26)
+  if (studioAlive(member) && (member.role === 'REALTOR' || member.role === '부동산회원' || member.role === 'BIZ')) return 'news_premium';
   
   // 일반 회원은 무료 취급
   if (member.role !== 'REALTOR' && member.role !== '부동산회원') return 'free';
-  
-  // 부동산 회원 중 요금제가 지정 안 된 경우 무료 취급
-  if (!member.plan_type || member.plan_type === 'free') return 'free';
 
-  // 유료 요금제 (공실뉴스, 공실등록 등) 만료일 검사
-  if (member.plan_end_date) {
-    const endDate = new Date(member.plan_end_date);
-    // 종료일의 자정까지 유효하도록 처리 (optional)
-    endDate.setHours(23, 59, 59, 999);
-    
-    const now = new Date();
-    if (now > endDate) {
-      // 기간이 지났으면 무료로 Fallback
-      return 'free';
-    }
-  }
-
-  // 아직 만료되지 않았으면 해당 요금제 그대로 유지
-  return member.plan_type;
+  // 부동산회원은 공실스튜디오 이용기간 하나로만 가른다 (2026-10-26 사장님 "요금제 기간 · 스튜디오 기간 중복")
+  // 예전 유료 등급 값(news_premium · study_premium)은 더 보지 않는다 — 이용기간이 없으면 공실뉴스부동산(무료)
+  return 'free';
 }
 
 /** 요금제를 내고 받는 권한들. 이 요금제로 열린 권한은 요금제가 끝나면 같이 닫힌다. */
@@ -53,12 +51,16 @@ export function isPermissionAlive(
     role?: string | null;
     plan_type?: string | null;
     plan_end_date?: string | Date | null;
+    studio_end_date?: string | Date | null;
   } | null | undefined,
   granted?: boolean | null
 ): boolean {
   if (!member) return false;
   if (isSuperRole(member.role)) return true;
   if (!granted) return false;
+  if (studioAlive(member)) return true; // 공실스튜디오 이용 중이면 켜 둔 권한도 살아 있다
+  // 부동산회원의 유료 권한은 공실스튜디오 이용기간과 같이 닫힌다 (예전 유료 등급 값은 안 본다, 2026-10-26)
+  if ((member.role === 'REALTOR' || member.role === '부동산회원') && (member.plan_type === 'news_premium' || member.plan_type === 'study_premium')) return false;
 
   if (!member.plan_type || !PAID_PLANS.includes(member.plan_type)) return true;
   if (!member.plan_end_date) return true;

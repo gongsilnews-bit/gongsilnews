@@ -328,7 +328,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}</span>
                 {/* 유료 회원 전용 표시 — 주황 = 공실뉴스부동산 색 (2026-10-23 사장님) */}
                 {(c.id === "interior" || c.id === "remodel") && (
-                  <span title="공실뉴스부동산(유료 회원) 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
+                  <span title="공실스튜디오 회원 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
                 )}
               </button>
             );
@@ -357,11 +357,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               </span>
             ) : u.monthRemaining > 0 ? (
               <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
-                이번 달 {name} {u.monthRemaining}/{u.monthLimit}회 남음
+                이번 주 {name} {u.monthRemaining} / {u.monthLimit}번 남음
               </span>
             ) : (
-              <a href="/study" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {u.monthLimit === 0 ? `${name}는 부동산회원 기능입니다` : `이번 달 ${u.monthLimit}회를 모두 썼어요 · 공실뉴스부동산 무제한 →`}
+              <a href="/studio/pricing" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
+                {u.monthLimit === 0 ? `${name}는 공실뉴스부동산 회원 기능입니다` : `이번 주 ${u.monthLimit}번을 모두 사용했습니다 · 공실스튜디오에서 무제한 →`}
               </a>
             );
           })()}

@@ -244,7 +244,7 @@ export default function StudyCommunityClient({
           {/* 검색 및 상단 헤더 */}
           <div className="board-header" style={{ borderBottom: "none", paddingBottom: 0 }}>
             <div className="board-title" style={{ fontSize: 20 }}>
-              {activeBoard === "studyqa" ? "스터디 질의응답 목록" : "수강생 자유게시판"}
+              {activeBoard === "studyqa" ? "회원 Q&A 목록" : "자유게시판"}
             </div>
             <div className="board-search-write">
               <div className="b-search">

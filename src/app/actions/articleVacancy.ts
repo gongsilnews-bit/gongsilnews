@@ -30,7 +30,7 @@ export async function checkRealtorPaidPlan(authorId: string): Promise<{
   const supabase = getAdminClient();
   const { data: member } = await supabase
     .from("members")
-    .select("id, role, plan_type, plan_end_date, can_article_vacancy_banner")
+    .select("id, role, plan_type, plan_end_date, studio_end_date, can_article_vacancy_banner")
     .eq("id", authorId)
     .single();
 
@@ -119,7 +119,7 @@ export async function getEligibleVacanciesByAuthors(authorIds: string[]): Promis
 
     const { data: members, error: mErr } = await supabase
       .from("members")
-      .select("id, role, plan_type, plan_end_date, can_article_vacancy_banner")
+      .select("id, role, plan_type, plan_end_date, studio_end_date, can_article_vacancy_banner")
       .in("id", ids);
 
     if (mErr) return { success: false, optionsByAuthor, error: mErr.message };

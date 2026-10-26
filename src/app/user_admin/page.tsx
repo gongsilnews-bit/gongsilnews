@@ -23,7 +23,8 @@ const USER_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
-  { key: "study", label: "특강관리", icon: <IconStudy /> },
+  // 부동산특강은 아직 안 쓴다 (2026-10-26 사장님) — siteFlags SHOW_STUDY 를 켜면 다시 보인다
+  ...(SHOW_STUDY ? [{ key: "study", label: "특강관리", icon: <IconStudy /> }] : []),
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
@@ -32,6 +33,7 @@ const USER_MENU: MenuItem[] = [
 ];
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { SHOW_STUDY } from "@/utils/siteFlags";
 
 export default function UserAdminPage() {
   return (

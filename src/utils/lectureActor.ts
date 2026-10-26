@@ -35,7 +35,7 @@ export async function getLectureActor(): Promise<LectureActor | null> {
   const db = lectureDb();
   const first = await db
     .from("members")
-    .select("name, role, plan_type, plan_end_date, max_lectures")
+    .select("name, role, plan_type, plan_end_date, studio_end_date, max_lectures")
     .eq("id", user.id)
     .maybeSingle<Row>();
   let member = first.data;
@@ -43,7 +43,7 @@ export async function getLectureActor(): Promise<LectureActor | null> {
   if (first.error) {
     const retry = await db
       .from("members")
-      .select("name, role, plan_type, plan_end_date")
+      .select("name, role, plan_type, plan_end_date, studio_end_date")
       .eq("id", user.id)
       .maybeSingle<Row>();
     member = retry.data;

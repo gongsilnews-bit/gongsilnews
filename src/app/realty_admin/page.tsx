@@ -34,6 +34,7 @@ const StudioMarketingSection = lazy(() => import("@/components/admin/sections/St
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
 const VideoStudio = lazy(() => import("@/components/admin/studio-video/VideoStudio"));
 const PhotoStudio = lazy(() => import("@/components/admin/studio-photo/PhotoStudio"));
+import StudioMark from "@/components/StudioMark";
 import StudioPromoSection from "@/components/admin/sections/StudioPromoSection";
 
 /* ── 부동산관리자 메뉴 ── */
@@ -41,15 +42,14 @@ const REALTY_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
-  { key: "article_ad", label: "광고관리", icon: <IconAd /> },
-  { key: "study", label: "특강관리", icon: <IconStudy /> },
-  { key: "customer", label: "고객문의", icon: <IconCustomer /> },
+  // 광고관리 · 고객관리는 공실스튜디오 멤버 기능 — 스튜디오 메뉴에만 (2026-10-26 사장님)
+  // 부동산특강은 아직 안 쓴다 (2026-10-26 사장님) — siteFlags SHOW_STUDY 를 켜면 다시 보인다
+  ...(SHOW_STUDY ? [{ key: "study", label: "특강관리", icon: <IconStudy /> }] : []),
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
-  { key: "homepage", label: "물건접수웹페이지", icon: <IconHomepage /> },
+  { key: "homepage", label: "물건접수홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
-  // 웹에서만 — 공실스튜디오(PC 앱) 소개·받기 (2026-10-26 사장님: 만드는 기능은 앱에서)
-  { key: "studio", label: "공실스튜디오", icon: <IconFilm /> },
+  // 공실스튜디오 소개 메뉴는 뺐다 (2026-10-26 사장님) — 소개는 위쪽 [공실스튜디오] 버튼 → /studio
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
 
@@ -69,17 +69,19 @@ const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
 ];
 const STUDIO_MORE_KEYS = ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"];
-const STUDIO_MORE_MENU = REALTY_MENU.filter((m) => STUDIO_MORE_KEYS.includes(m.key));
+const STUDIO_ONLY_MENU: MenuItem[] = [{ key: "article_ad", label: "광고관리", icon: <IconAd /> }];
+const STUDIO_MORE_MENU = [...STUDIO_ONLY_MENU, ...REALTY_MENU].filter((m) => STUDIO_MORE_KEYS.includes(m.key));
 const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
 // 메뉴 오른쪽 파일 표시 — 그 메뉴가 만드는 파일 (.gsn·.gsm·.gss·.psd, 글자 + 동그라미 픽토그램 — StudioSidebar FileBadge) — 2026-10-23 사장님: NEW 대신
 // 앱에서만 잠시 숨기는 메뉴 — 공실마케팅은 미완성이라 앱 배포에서 뺀다 (2026-10-23 사장님). 다시 보이려면 [] 로 (코드·작업은 그대로)
 const HIDDEN_IN_APP: string[] = []; // 공실마케팅 공개 (2026-10-23 사장님 — AI 매물보고서만, 나머지는 메뉴 안에서 "작업중")
 const STUDIO_BADGES = { sns: "file:gsn", marketing: "file:gsm", video: "file:gss", photo: "file:psd" };
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
-const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing");
+const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing" || key === "customer" || key === "article_ad");
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getPlanLabel, isStudioMember, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { SHOW_STUDY } from "@/utils/siteFlags";
 
 export default function RealtyAdminPage() {
   return (
@@ -150,6 +152,7 @@ function RealtyAdminContent() {
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [planType, setPlanType] = useState<string>("free");
   const [planEndDate, setPlanEndDate] = useState<string | null>(null);
+  const [studioEndDate, setStudioEndDate] = useState<string | null>(null); // 공실스튜디오 이용 기간 (2026-10-26)
   const [userRole, setUserRole] = useState<string>("");
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const studioApp = useStudioApp();
@@ -180,12 +183,11 @@ function RealtyAdminContent() {
     setMenuLayout(layout ? normalizeLayout(layout, defaultLayout) : defaultLayout);
     setMenuDraft(null);
   };
-  // 2026-10-26 사장님: 웹에서도 유료 회원(공실뉴스부동산·비즈니스, 기간 안)과 최고관리자는 바뀐 화면, 무료부동산은 예전 아이콘 메뉴
-  // (공실뉴스부동산을 무료로 바꾸면 이 조건을 '공실스튜디오 이용권'으로 바꾼다)
+  // 2026-10-26 사장님: 웹에서도 공실스튜디오 이용 중(Studio 마크)·비즈니스(기간 안)·최고관리자는 바뀐 화면, 공실뉴스부동산(무료)은 예전 아이콘 메뉴
   const paidOnWeb = (() => {
     if (isAdminRole(userRole)) return true;
-    const label = getPlanLabel({ role: userRole, plan_type: planType });
-    if (label !== "공실뉴스부동산" && label !== "비즈니스회원") return false;
+    if (isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })) return true;
+    if (userRole !== "BIZ" || planType !== "biz_premium") return false;
     if (!planEndDate) return true;
     const end = new Date(planEndDate); end.setHours(23, 59, 59, 999);
     return end >= new Date();
@@ -249,7 +251,7 @@ function RealtyAdminContent() {
       const { data: { user } } = await supabase.auth.getUser();
 
       // 🔐 비로그인 → 로그인 화면으로 보내고, 끝나면 보던 화면으로 되돌린다.
-      //    메인으로 떨구면 물건접수웹페이지를 고치러 온 사람이 다시 메뉴를 찾아 들어와야 한다.
+      //    메인으로 떨구면 물건접수홈페이지를 고치러 온 사람이 다시 메뉴를 찾아 들어와야 한다.
       if (!user) {
         const returnTo = window.location.pathname + window.location.search;
         window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`;
@@ -259,7 +261,7 @@ function RealtyAdminContent() {
       // 🔐 회원정보 조회 (로그인 필수)
       const { data: member } = await supabase
         .from("members")
-        .select("id, name, role, plan_type, plan_end_date")
+        .select("id, name, role, plan_type, plan_end_date, studio_end_date")
         .eq("id", user.id)
         .single();
 
@@ -281,6 +283,7 @@ function RealtyAdminContent() {
       setUserName(member.name || "이름없음");
       setPlanType(member.plan_type || "free");
       setPlanEndDate(member.plan_end_date || null);
+      setStudioEndDate((member as { studio_end_date?: string | null }).studio_end_date || null);
       setUserRole(member.role || "USER");
 
       const { data: agencyList } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).limit(1);
@@ -439,8 +442,11 @@ function RealtyAdminContent() {
                * 언제 끝나는지 상단에서 알 수 없었다.
                */
               (() => {
-                const paid = userRole === 'BIZ' || (userRole === 'REALTOR' && planType !== 'free');
-                const soon = paid && isPlanEndingSoon(planEndDate);
+                // 부동산회원은 공실스튜디오 이용기간 하나로 (2026-10-26) — 끝나는 날도 그 기간
+                const studioOnTag = isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
+                const paid = userRole === 'BIZ' || (userRole === 'REALTOR' && studioOnTag);
+                const endDate = userRole === 'REALTOR' ? studioEndDate : planEndDate;
+                const soon = paid && isPlanEndingSoon(endDate);
                 // 사이트 위쪽 [○○ admin >>] 버튼과 같은 회원별 색 (공실스터디부동산 녹색, 무료부동산 파랑 등)
                 const tone = soon
                   ? { bg: "#f59e0b", fg: "#fff" }
@@ -451,13 +457,13 @@ function RealtyAdminContent() {
                       : userRole === 'REALTOR'
                         ? { bg: "#2563eb", fg: "#fff" }
                         : { bg: "#6b7280", fg: "#fff" };
-                const until = paid ? formatPlanEnd(planEndDate) : "";
+                const until = paid ? formatPlanEnd(endDate) : "";
                 return (
                   <span
                     title={soon ? "요금제 만료가 얼마 남지 않았습니다" : undefined}
                     style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: tone.bg, color: tone.fg }}
                   >
-                    {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}
+                    {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small />}
                   </span>
                 );
               })()
@@ -511,7 +517,7 @@ function RealtyAdminContent() {
           {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} />}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
-          {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
+          {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}

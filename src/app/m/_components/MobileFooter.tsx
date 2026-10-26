@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import FooterAuthButtons from "./FooterAuthButtons";
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
 const CATEGORIES = [
   { label: "우리동네뉴스", href: "/m/news_map" },
   { label: "공실뉴스", href: "/m/news_gongsil" },
@@ -9,7 +10,7 @@ const CATEGORIES = [
   { label: "AI마케팅", href: "/m/news_marketing" },
   { label: "라이프·오피니언", href: "/m/news_etc" },
   { label: "공실열람", href: "/m/gongsil" },
-  { label: "부동산특강", href: "/m/study" },
+  ...(SHOW_STUDY ? [{ label: "부동산특강", href: "/m/study" }] : []),
   { label: "자료실", href: "/m/board?id=drone" },
   { label: "커뮤니티", href: "/m/board?id=free" },
 ];

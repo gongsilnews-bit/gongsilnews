@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminGetMemberDetail, adminUpdateAgency, adminUpdateMember } from "@/app/admin/actions";
 import { createClient } from "@/utils/supabase/client";
+import { isStudioMember } from "@/utils/permissionCheck";
 
 function MobileMemberWrite() {
   const router = useRouter();
@@ -179,7 +180,7 @@ function MobileMemberWrite() {
             {renderInfoRow("가입일", member.created_at ? new Date(member.created_at).toLocaleDateString() : "-")}
             {member.role === 'REALTOR' && (
               <>
-                {renderInfoRow("요금제", member.plan_type === 'news_premium' || member.plan_type === 'study_premium' ? '공실뉴스부동산' : '무료부동산')}
+                {renderInfoRow("공실스튜디오", isStudioMember(member) ? `이용 중 (~${String(member.studio_end_date).slice(0, 10)})` : '이용 안 함 (공실뉴스부동산 무료)')}
                 {renderInfoRow("최대 공실광고", `${member.max_vacancies || 5}개`)}
                 {renderInfoRow("월 기사", `${member.max_articles_per_month || 0}개`)}
               </>

@@ -171,7 +171,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     const vacancyId = new URLSearchParams(window.location.search).get("studioDraft");
     type StudioDraft = { title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; saleKind: string; section1?: string; section2?: string; photos: { dataUrl: string; caption: string; isCover: boolean; slot: number }[] };
     const studio = (window as unknown as { gongsilStudio?: { article?: { exportDraft: (id: string) => Promise<StudioDraft | null> } } }).gongsilStudio;
-    if (!vacancyId || !studio?.article) return;
+    // 웹 공실관리 [SNS뉴스발행]이 남긴 초안 (2026-10-26) — 앱 초안과 같은 모양, 사진은 data URL 대신 공실 사진 주소
+    const webDraft = (): StudioDraft | null => {
+      try {
+        const raw = vacancyId ? sessionStorage.getItem(`gsn-web-draft:${vacancyId}`) : null;
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    };
+    const fromWeb = !studio?.article ? webDraft() : null;
+    if (!vacancyId || (!studio?.article && !fromWeb)) return;
     studioDraftDoneRef.current = true;
 
     const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
@@ -180,7 +188,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       return new File([blob], `gongsil-studio-${i + 1}.${blob.type.includes("png") ? "png" : "jpg"}`, { type: blob.type || "image/jpeg" });
     };
     (async () => {
-      const d = await studio.article!.exportDraft(vacancyId);
+      const d = fromWeb || (await studio!.article!.exportDraft(vacancyId));
       if (!d) return;
       // 에디터가 그려질 때까지 기다린다
       for (let i = 0; i < 50 && !editorRef.current; i++) await new Promise((r) => setTimeout(r, 100));

@@ -72,6 +72,8 @@ export async function adminCreateMember(formData: FormData) {
         plan_type: planType,
         plan_start_date: formData.get("plan_start_date") as string || null,
         plan_end_date: formData.get("plan_end_date") as string || null,
+        studio_start_date: formData.get("studio_start_date") as string || null,
+        studio_end_date: formData.get("studio_end_date") as string || null,
         use_custom_registration_limits: useCustomRegistrationLimits,
         ...registrationLimits,
       }, { onConflict: 'id' });
@@ -93,6 +95,9 @@ export async function adminUpdateMember(memberId: string, updates: {
   plan_type?: string;
   plan_start_date?: string | null;
   plan_end_date?: string | null;
+  /** 공실스튜디오 멤버십 이용 기간 (2026-10-26, 등급과 따로) */
+  studio_start_date?: string | null;
+  studio_end_date?: string | null;
   max_vacancies?: number;
   max_articles_per_month?: number;
   max_lectures?: number;
@@ -120,6 +125,8 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.plan_type !== undefined) dbUpdates.plan_type = updates.plan_type;
     if (updates.plan_start_date !== undefined) dbUpdates.plan_start_date = updates.plan_start_date;
     if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
+    if (updates.studio_start_date !== undefined) dbUpdates.studio_start_date = updates.studio_start_date;
+    if (updates.studio_end_date !== undefined) dbUpdates.studio_end_date = updates.studio_end_date;
     if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
     // 최고관리자가 회원 화면에서 직접 체크한 값. 등급과 무관하게 이 값이 그대로 들어간다.
     if (updates.can_article_banner !== undefined) dbUpdates.can_article_banner = updates.can_article_banner;
@@ -289,7 +296,7 @@ async function getRequesterContext(): Promise<RequesterContext> {
     const { data } = await cookieClient.auth.getUser();
     const userId = data?.user?.id;
     if (!userId) return { userId: null, isAdmin: false };
-    const { data: me } = await getAdminClient().from('members').select('role, plan_type, plan_end_date').eq('id', userId).maybeSingle();
+    const { data: me } = await getAdminClient().from('members').select('role, plan_type, plan_end_date, studio_end_date').eq('id', userId).maybeSingle();
     if (!me) return { userId, isAdmin: false };
     return {
       userId,
@@ -340,7 +347,7 @@ export async function adminFindAgencyDuplicates(memberId: string) {
     const addr = `${String(mine.address || '').trim()} ${String(mine.address_detail || '').trim()}`.trim();
     const { data, error } = await supabaseAdmin
       .from('agencies')
-      .select('owner_id, name, status, reg_num, biz_num, cell, address, address_detail, members:owner_id(email, name, role, plan_type, plan_end_date)')
+      .select('owner_id, name, status, reg_num, biz_num, cell, address, address_detail, members:owner_id(email, name, role, plan_type, plan_end_date, studio_end_date)')
       .neq('owner_id', memberId)
       .in('status', ACTIVE_AGENCY_STATUSES)
       .limit(2000);

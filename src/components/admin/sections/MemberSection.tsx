@@ -6,6 +6,7 @@ import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import RealtyMenuDefaultSettings from "./RealtyMenuDefaultSettings";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication, adminGetLimitPolicies, adminUpdateLimitPolicies, adminToggleMemberHomepage } from "@/app/admin/actions";
+import { isStudioMember } from "@/utils/permissionCheck";
 
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: string;
@@ -297,7 +298,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             </thead>
             <tbody>
               {displayMembers.length > 0 ? displayMembers.map((member, idx) => {
-                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '무료부동산', 'BIZ': '비즈니스', 'USER': '일반회원' };
+                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '공실뉴스부동산', 'BIZ': '비즈니스', 'USER': '일반회원' };
                 let displayRole = roleMap[member.role] || member.role || '일반회원';
                 const memberAgency = Array.isArray(member.agencies) ? member.agencies[0] : member.agencies;
                 const memberBiz = Array.isArray(member.business_profiles) ? member.business_profiles[0] : member.business_profiles;
@@ -306,9 +307,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                 } else if (member.role === 'USER' && memberBiz) {
                   displayRole = '비즈니스(신청)';
                 }
-                if (member.role === 'REALTOR' && member.plan_type) {
-                  if (member.plan_type === 'news_premium' || member.plan_type === 'study_premium') displayRole = '공실뉴스';
-                }
+                // 부동산회원은 공실스튜디오 이용기간 하나로 가른다 (2026-10-26)
+                if (member.role === 'REALTOR' && isStudioMember(member)) displayRole = '공실뉴스부동산+Studio';
                 if (member.role === 'BIZ' && member.plan_type === 'biz_premium') {
                   displayRole = '비즈니스';
                 }
@@ -428,7 +428,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
+                      {member.role === 'REALTOR' ? (member.studio_end_date ? new Date(member.studio_end_date).toISOString().split('T')[0] : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
                     </td>
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
@@ -546,11 +546,11 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   );
 }
 
-/** 물건접수웹페이지 구역의 줄 순서. 위 표와 같은 순서로 세운다. */
+/** 물건접수홈페이지 구역의 줄 순서. 위 표와 같은 순서로 세운다. */
 const HOMEPAGE_ROWS: [string, string][] = [
   ["일반회원", "USER"],
-  ["부동산회원 (무료)", "REALTOR_FREE"],
-  ["부동산회원 (공실뉴스부동산)", "REALTOR_NEWS"],
+  ["공실뉴스부동산 (무료)", "REALTOR_FREE"],
+  ["공실뉴스부동산 + Studio", "REALTOR_NEWS"],
   ["비즈니스회원", "BIZ"],
 ];
 
@@ -722,7 +722,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>최대 강의 등록</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 배너광고 권한</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 공실배너 권한</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>물건접수웹페이지 권한</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>물건접수홈페이지 권한</span>
         </div>
       </div>
 
@@ -739,10 +739,10 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         </div>
       </div>
 
-      {/* 부동산회원 (무료) */}
+      {/* 공실뉴스부동산 (무료) — 공실스튜디오 이용기간 없음 */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>부동산회원 (무료)</span>
+          <span style={labelStyle}>공실뉴스부동산 (무료)</span>
           <input type="number" value={formData.LIMIT_REALTOR_FREE_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_FREE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_FREE_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_FREE_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
@@ -752,10 +752,10 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         </div>
       </div>
 
-      {/* 부동산회원 (공실뉴스부동산) */}
+      {/* 공실뉴스부동산 + Studio — 공실스튜디오 이용기간 안 (2026-10-26) */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>부동산회원 (공실뉴스부동산)</span>
+          <span style={labelStyle}>공실뉴스부동산 + Studio</span>
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
@@ -778,11 +778,11 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         </div>
       </div>
 
-      {/* ── 물건접수웹페이지 ──
+      {/* ── 물건접수홈페이지 ──
           위 표는 등급이 가로로 늘어나 있어서 항목을 더 붙이면 화면 밖으로 나간다.
           홈페이지 쪽은 등급을 세로로 놓고 따로 본다. */}
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: `2px solid ${border}` }}>
-        <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0" }}>물건접수웹페이지</h3>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0" }}>물건접수홈페이지</h3>
         <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 18px 0" }}>
           홈페이지는 부동산회원 전원에게 열고, 여기서 기능으로 등급을 나눕니다.
           추천공실·기사 노출은 위의 공실·기사 한도를 그대로 따라가므로 따로 설정하지 않습니다.

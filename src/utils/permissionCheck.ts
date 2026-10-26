@@ -24,7 +24,7 @@ export function getPermissionLevel(member: {
 
     // 유료는 공실뉴스부동산 하나 (2026-10-26 공실스터디부동산을 없애고 합침 — 옛 study_premium 도 같은 4레벨)
     if (member.plan_type === 'news_premium' || member.plan_type === 'study_premium') return 4;
-    return 2; // 무료부동산회원
+    return 2; // 공실뉴스부동산 (무료, 2026-10-26 무료부동산 이름이 바뀜)
   }
 
   return 1; // 기본적으로 인증된 사용자는 1레벨로 취급
@@ -64,9 +64,9 @@ export function getLevelName(level: number): string {
   switch (level) {
     case 0: return "비회원";
     case 1: return "일반회원";
-    case 2: return "무료부동산회원";
-    case 3: return "공실뉴스부동산 회원"; // 예전 공실스터디부동산 자리 — 2026-10-26 합침
-    case 4: return "공실뉴스부동산 회원";
+    case 2: return "공실뉴스부동산 회원";
+    case 3: return "공실스튜디오 이용 회원"; // 예전 공실스터디부동산 자리 — 2026-10-26 합침
+    case 4: return "공실스튜디오 이용 회원";
     case 5: return "최고관리자";
     default: return "회원";
   }
@@ -89,9 +89,9 @@ export function getPlanLabel(member: {
 
   if (role === 'REALTOR' || role === '부동산회원') {
     const plan = member?.plan_type;
-    // 유료 회원은 공실뉴스부동산 하나 (2026-10-26 사장님: 공실스터디부동산을 없애고 합침 — 옛 값도 공실뉴스부동산으로 읽는다)
-    if (plan === 'news_premium' || plan === 'news_basic' || plan === 'study_premium' || plan === 'vacancy_premium' || plan === 'vacancy_basic') return '공실뉴스부동산';
-    return '무료부동산';
+    // 2026-10-26 사장님: 승인된 중개사는 모두 공실뉴스부동산(무료). 유료는 등급이 아니라 공실스튜디오 이용권 — 이름표 옆 Studio 마크 (isStudioMember)
+    void plan;
+    return '공실뉴스부동산';
   }
 
   return '일반회원';
@@ -105,6 +105,27 @@ export function isNewsAdminButton(
 ): boolean {
   if (agencyStatus === 'REJECTED') return false;
   return getPlanLabel(member) === '공실뉴스부동산';
+}
+
+/**
+ * 공실스튜디오 멤버십 이용 중인가 — 이름표 옆 Studio 마크, 유료 기능의 기준 (2026-10-26 사장님, docs/2026-10-26_studio_membership_plan.md)
+ * 이용권은 등급과 따로 members.studio_end_date 에 저장한다. 이 기간 하나로만 가른다 (예전 유료 등급 값은 안 본다, 2026-10-26).
+ */
+export function isStudioMember(member: {
+  role?: string | null;
+  plan_type?: string | null;
+  plan_end_date?: string | Date | null;
+  studio_end_date?: string | Date | null;
+} | null | undefined): boolean {
+  if (!member) return false;
+  const alive = (d?: string | Date | null) => {
+    if (!d) return false;
+    const end = new Date(d);
+    if (Number.isNaN(end.getTime())) return false;
+    end.setHours(23, 59, 59, 999);
+    return end >= new Date();
+  };
+  return alive(member.studio_end_date);
 }
 
 /** 사이트 헤더에서 관리자 화면으로 들어가는 버튼에 쓸 글자 */

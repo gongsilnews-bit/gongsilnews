@@ -1,3 +1,4 @@
+import { studioAlive } from "@/utils/planCheck";
 /**
  * 강의를 공짜로 들을 수 있는 등급.
  *
@@ -15,8 +16,8 @@ export type LecturePlanKey = (typeof LECTURE_PLAN_KEYS)[number];
 
 export const LECTURE_PLAN_LABELS: Record<LecturePlanKey, string> = {
   user: "일반회원",
-  realtor_free: "무료부동산",
-  news_premium: "공실뉴스부동산",
+  realtor_free: "공실뉴스부동산",
+  news_premium: "공실뉴스부동산 Studio",
   biz_premium: "비즈니스회원",
 };
 
@@ -37,22 +38,15 @@ export function lecturePlanOf(member: {
   role?: string | null;
   plan_type?: string | null;
   plan_end_date?: string | Date | null;
+  studio_end_date?: string | Date | null;
 } | null | undefined): LecturePlanKey | null {
   if (!member) return null;
 
   const role = member.role;
   if (role === "BIZ" || role === "비즈니스회원") return "biz_premium";
   if (role !== "REALTOR" && role !== "부동산회원") return "user";
-
-  const plan = member.plan_type;
-  if (plan !== "study_premium" && plan !== "news_premium") return "realtor_free";
-
-  if (member.plan_end_date) {
-    const end = new Date(member.plan_end_date);
-    end.setHours(23, 59, 59, 999);
-    if (new Date() > end) return "realtor_free";
-  }
-  return "news_premium";
+  // 부동산회원은 공실스튜디오 이용기간 하나로만 가른다 — 예전 유료 등급 값은 안 본다 (2026-10-26)
+  return studioAlive(member) ? "news_premium" : "realtor_free";
 }
 
 /** 지금 이 회원이 이 강의를 공짜로 들을 수 있는가 */

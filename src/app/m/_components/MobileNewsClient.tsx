@@ -19,7 +19,8 @@ import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import { formatSection1, formatSection2 } from "@/utils/formatCategory";
 import { MobilePopularNewsWidget } from "./MobilePopularNewsWidget";
-
+
+import { SHOW_STUDY } from "@/utils/siteFlags";
 function formatPrice(v: any): string {
   const formatValue = (val: number) => {
     if (!val) return "";
@@ -58,7 +59,7 @@ const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "특강", path: "/m/study" },
+  ...(SHOW_STUDY ? [{ key: "study", label: "특강", path: "/m/study" }] : []),
   { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 

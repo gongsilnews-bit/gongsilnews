@@ -728,7 +728,7 @@ export default function MobileSignupPage() {
                   router.push('/m/login?returnTo=' + encodeURIComponent('/m/admin/settings?tab=agency'));
                 }}
               >
-                공실뉴스부동산 신청하기
+                공실뉴스부동산 무료 가입하기
               </button>
             </div>
           </div>

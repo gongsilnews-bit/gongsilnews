@@ -5,10 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openChannelTalk } from "@/utils/channelTalk";
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
+import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 export default function Footer() {
   const pathname = usePathname();
+  const studioBoard = useStudioBoardPage(); // 공실스튜디오 게시판 글 읽기·쓰기 (2026-10-26)
 
-  if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read')) {
+  if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || studioBoard) {
     return null;
   }
 
@@ -215,7 +218,7 @@ export default function Footer() {
             <h4 className="sitemap-title">공실마케팅</h4>
             <Link href="/gongsil" className="sitemap-link">공실열람</Link>
             <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
-            <Link href="/study" className="sitemap-link">부동산특강</Link>
+            {SHOW_STUDY && <Link href="/study" className="sitemap-link">부동산특강</Link>}
             <Link href="/board" className="sitemap-link">자료실</Link>
             <Link href="/help" className="sitemap-link">고객센터</Link>
           </div>

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
 function formatDate(d: string) {
   if (!d) return "";
   const dt = new Date(d);
@@ -64,7 +65,7 @@ const CATEGORIES = [
   { key: "home", label: "홈", path: "/m" },
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "특강", path: "/m/study" },
+  ...(SHOW_STUDY ? [{ key: "study", label: "특강", path: "/m/study" }] : []),
   { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 
@@ -411,7 +412,7 @@ export default function MobileHomeClient(props: Props) {
       <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
 
       {/* ⑨ 공실스터디 (PC SpecialLectureBanner 대응) */}
-      {lectures.length > 0 && (
+      {SHOW_STUDY && lectures.length > 0 && (
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
             <h2>부동산특강</h2>

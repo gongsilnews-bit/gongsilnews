@@ -8,6 +8,7 @@ import { getUserActivityCounts } from '@/app/actions/userActivity';
 import { openChannelTalk } from '@/utils/channelTalk';
 import { isAdminRole, getPlanLabel } from '@/utils/permissionCheck';
 
+import { SHOW_STUDY } from "@/utils/siteFlags";
 export default function MenuPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [memberData, setMemberData] = useState<any>(null);
@@ -136,7 +137,7 @@ export default function MenuPage() {
     };
     const member = { icon: '👥', label: '회원관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };
     const realtor: any[] = [
-      { icon: '📥', label: '물건접수웹페이지', href: '/m/admin/homepage' },
+      { icon: '📥', label: '물건접수홈페이지', href: '/m/admin/homepage' },
       { icon: '👥', label: '고객/문의', href: '/m/admin/customer' },
       { icon: '⚙️', label: '정보설정', href: '/m/admin/settings' },
     ];
@@ -175,7 +176,7 @@ export default function MenuPage() {
 
   const serviceMenus = [
     { name: "공실열람", path: "/m/gongsil" },
-    { name: "부동산특강", path: "/m/study" },
+    ...(SHOW_STUDY ? [{ name: "부동산특강", path: "/m/study" }] : []),
     { name: "드론영상", path: "/m/board?id=drone" },
     { name: "APP(앱)", path: "/m/board?id=app" },
     { name: "AI 프롬프트", path: "/m/board?id=prompt" },
@@ -288,10 +289,10 @@ export default function MenuPage() {
           )}
 
           {/* 공실뉴스부동산 — PC 헤더 오른쪽 위 버튼과 같은 자리 (2026-10-26). 누구에게나, 이미 회원·최고관리자면 "가입" 없이 */}
-          {(() => { const joined = isAdminRole(memberData?.role) || getPlanLabel(memberData ? { role: memberData.role, plan_type: memberData.plan_type } : null) === '공실뉴스부동산'; return (
+          {(() => { const joined = isAdminRole(memberData?.role) || getPlanLabel(memberData ? { role: memberData.role, plan_type: memberData.plan_type } : null) === '공실뉴스부동산'; if (!joined) return null; /* 2026-10-26 가입 버튼은 없앰 */ return (
             <div style={{ padding: '0 20px 10px', background: '#fff' }}>
-              <Link href="/m/newsrealty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: '1px solid #d1d5db', borderRadius: 8, color: '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                {joined ? '공실뉴스부동산 ›' : '공실뉴스부동산 가입 ›'}
+              <Link href={joined ? '/studio' : '/m/newsrealty'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: `1px solid ${joined ? '#1a3a6b' : '#d1d5db'}`, borderRadius: 8, color: joined ? '#1a3a6b' : '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                {joined ? '공실스튜디오 ›' : '공실뉴스부동산 가입 ›'}
               </Link>
             </div>
           ); })()}

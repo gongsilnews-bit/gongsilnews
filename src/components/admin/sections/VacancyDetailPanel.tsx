@@ -5,6 +5,7 @@ import { getVacancyDetail, getAgencyInfo, getOwnerVacancySummary, updateVacancyS
 import { createClient } from "@/utils/supabase/client";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import "./vacancy-detail.css";
+import WebSnsNewsModal from "./WebSnsNewsModal";
 
 declare global {
   interface Window { kakao: any; }
@@ -17,6 +18,7 @@ interface VacancyDetailPanelProps {
 }
 
 export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: VacancyDetailPanelProps) {
+  const [snsNewsOpen, setSnsNewsOpen] = useState(false);
   const [vacancy, setVacancy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deviceMode, setDeviceMode] = useState<"pc" | "tablet" | "mobile">("pc");
@@ -717,6 +719,10 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/marketing/report?vacancy_id=${vacancyId}`, '_blank')} title="AI 물건보고서">
                 AI물건보고서
               </button>
+              {/* [SNS뉴스발행] — 기사 초안 + SNS 글 (2026-10-26 사장님) */}
+              <button className="gdv-btn-toolbar" onClick={() => setSnsNewsOpen(true)} title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기" style={{ color: "#ea580c", fontWeight: 700 }}>
+                SNS뉴스발행
+              </button>
               <button className="gdv-btn-toolbar" onClick={copyShareLink}>🔗 주소복사</button>
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/gongsil?id=${vacancyId}`)}>💻 미리보기</button>
               <button className={`gdv-btn-toolbar ${isAdOn ? 'gdv-blue' : ''}`} onClick={toggleStatus}>
@@ -948,6 +954,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
           </div>
         </div>
 
+      {snsNewsOpen && <WebSnsNewsModal vacancyId={vacancyId} vacancyTitle={[vacancy?.dong, vacancy?.building_name || vacancy?.sub_category].filter(Boolean).join(" ")} onClose={() => setSnsNewsOpen(false)} />}
       </div>
     </div>
   );

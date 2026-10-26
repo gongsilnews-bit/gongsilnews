@@ -78,7 +78,7 @@ export default function MobileNewsRealtyPage() {
             cursor: "pointer",
           }}
         >
-          공실뉴스부동산 신청하기 &gt;
+          공실뉴스부동산 무료 가입하기 &gt;
         </button>
       </div>
     </div>

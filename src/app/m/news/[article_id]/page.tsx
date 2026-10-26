@@ -85,7 +85,7 @@ export default async function MobileNewsReadPage({
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const supabase = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     
-    const { data: member } = await supabase.from("members").select("role, email, plan_type, plan_end_date, can_article_vacancy_banner").eq("id", article.author_id).single();
+    const { data: member } = await supabase.from("members").select("role, email, plan_type, plan_end_date, studio_end_date, can_article_vacancy_banner").eq("id", article.author_id).single();
     if (member) {
       authorRole = member.role;
       authorEmail = member.email;

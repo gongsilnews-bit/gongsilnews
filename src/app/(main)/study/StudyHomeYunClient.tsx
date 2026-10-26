@@ -21,7 +21,7 @@ const TARGET_AUDIENCE = [
     image: "/images/study/recommend_real_apartment.jpg",
     imageAlt: "아파트와 오피스텔 매물 브리핑을 진행하는 전문 여성 공인중개사",
     description: "단지 내 물건작업과 임장작업이 필수인 아파트/오피스텔 입점 부동산 대표님!~  차별화된 서비스를 고객에게 제공하고 싶을때~",
-    solution: "물건접수웹페이지, 아파트/오피스텔 인테리어 예상AI서비스로 스마트하게 중개할 수 있습니다.",
+    solution: "물건접수홈페이지, 아파트/오피스텔 인테리어 예상AI서비스로 스마트하게 중개할 수 있습니다.",
   },
   {
     tag: "RECOMMEND 03",
@@ -95,7 +95,7 @@ export default function StudyHomeYunClient() {
                 </Link>
               </div>
               <Link href="/newsrealty/apply" className={styles.heroV2Newsrealty}>
-                공실뉴스부동산 신청하기 &gt;
+                공실뉴스부동산 무료 가입하기 &gt;
               </Link>
               <ul className={styles.heroV2Notes}>
                 <li>물건 등록 한 번으로 자동 완성</li>

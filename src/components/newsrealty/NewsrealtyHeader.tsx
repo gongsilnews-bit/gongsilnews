@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
-import { getEffectiveMemberRole, getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getEffectiveMemberRole, getAdminEntryLabel, isStudioMember, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
+import LoginJoinButton from "@/components/LoginJoinButton";
 // 공실뉴스부동산 메뉴 줄. 공실스터디(StudyHeader)와 같은 방식으로 메인 헤더 아래에 붙고,
 // 스크롤해서 화면 위에 닿으면 이 줄이 고정된다.
 
@@ -89,19 +90,20 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
   }, []);
 
   // 붙었을 때 오른쪽에 메인 헤더와 같은 알림·검색·전체메뉴·관리자 버튼을 둔다
-  const [member, setMember] = useState<{ role: string; planType: string; agencyStatus: string } | null>(null);
+  const [member, setMember] = useState<{ role: string; planType: string; agencyStatus: string; studioOn: boolean } | null>(null);
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const [{ data: m }, { data: agency }] = await Promise.all([
-        supabase.from("members").select("role, plan_type").eq("id", user.id).single(),
+        supabase.from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", user.id).single(),
         supabase.from("agencies").select("status").eq("owner_id", user.id).maybeSingle(),
       ]);
       setMember({
         role: getEffectiveMemberRole(m?.role, agency?.status),
         planType: (m as { plan_type?: string } | null)?.plan_type || "",
         agencyStatus: agency?.status || "",
+        studioOn: isStudioMember(m as any),
       });
     });
   }, []);
@@ -230,7 +232,7 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
           {(
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
               {member ? <NotificationBell color="#333" /> : (
-                <Link href={"/login?returnTo=" + encodeURIComponent(pathname)} style={{ fontSize: "13px", fontWeight: 700, color: "#333", textDecoration: "none" }}>로그인</Link>
+                <LoginJoinButton />
               )}
               {member ? (
                 <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>

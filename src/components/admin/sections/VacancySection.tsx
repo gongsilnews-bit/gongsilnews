@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
+import WebSnsNewsModal from "./WebSnsNewsModal";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail, getVacancyTabCounts, getVacancyFlyerStates } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -25,6 +26,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
   const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
+  const [snsNewsTarget, setSnsNewsTarget] = useState<{ id: string; title: string } | null>(null); // [SNS뉴스발행] 창 (2026-10-26)
 
   useEffect(() => {
     async function checkFlyers() {
@@ -512,7 +514,18 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       >
                                         AI물건보고서
                                       </button>
-                                    
+
+                                    {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 공실뉴스부동산은 1주일에 3번 (2026-10-26 사장님) */}
+                                    {role !== "user" && (
+                                      <button
+                                        onClick={() => setSnsNewsTarget({ id: row.id, title: addrText })}
+                                        style={{ height: 30, padding: "0 10px", background: darkMode ? "#3b2412" : "#fff7ed", color: "#ea580c", border: `1px solid ${darkMode ? "#7c2d12" : "#fdba74"}`, borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                                        title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기"
+                                      >
+                                        SNS뉴스발행
+                                      </button>
+                                    )}
+
                                     {/* [유리창홍보지] 단추는 뺐다 (2026-10-22 사장님) — 홍보지는 이미지 편집에서 */}
 
                                     {/* 공실 릴스: 1차는 관리자 시험판 (회원 공개는 REELS_REALTOR_ENABLED + 이 조건 확장) */}
@@ -614,6 +627,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           </div>
         )}
       </div>
+      {snsNewsTarget && <WebSnsNewsModal vacancyId={snsNewsTarget.id} vacancyTitle={snsNewsTarget.title} darkMode={darkMode} onClose={() => setSnsNewsTarget(null)} />}
     </div>
   );
 }

@@ -38,7 +38,7 @@ export async function searchMembersForSmartstore(keyword: string) {
   if (k.length < 2) return [];
   const { data } = await getAdminClient()
     .from("members")
-    .select("id, name, email, phone, plan_type, plan_end_date")
+    .select("id, name, email, phone, plan_type, plan_end_date, studio_end_date")
     .or(`name.ilike.%${k}%,phone.ilike.%${k}%,email.ilike.%${k}%`)
     .limit(10);
   return data || [];

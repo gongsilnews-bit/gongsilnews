@@ -3,6 +3,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 
+import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 /* ── 14대 공식 브랜드 및 공공기관 실물 배너 데이터 (7x2 14개) ── */
 const BANNERS = [
   // ── 1열 (부동산 플랫폼 & 영상/AI 툴 7개) ──
@@ -169,6 +170,26 @@ const BANNERS = [
     ),
   },
   {
+    id: "eum",
+    url: "https://www.eum.go.kr/web/am/amMain.jsp",
+    title: "토지이음 (토지이용계획)",
+    render: (
+      <div style={{ width: "100%", height: "100%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        {/* 집 모양 네모 네 칸 (토지이음 로고 느낌, 직접 그림) */}
+        <svg width="18" height="18" viewBox="0 0 20 20" style={{ flexShrink: 0 }}>
+          <rect x="1" y="9" width="8" height="10" rx="1" fill="#f59e0b"/>
+          <rect x="11" y="5" width="8" height="14" rx="1" fill="#22c55e"/>
+          <rect x="3" y="12" width="4" height="4" fill="#2563eb"/>
+          <rect x="13" y="8" width="4" height="4" fill="#0ea5e9"/>
+        </svg>
+        <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
+          <span style={{ fontSize: 14, fontWeight: 900, color: "#1e3a8a", letterSpacing: "-0.5px" }}>토지이음</span>
+          <span style={{ fontSize: 8, color: "#64748b", fontWeight: 600 }}>토지이용계획 열람</span>
+        </span>
+      </div>
+    ),
+  },
+  {
     id: "gov24",
     url: "https://www.gov.kr/",
     title: "정부24",
@@ -199,10 +220,15 @@ const BANNERS = [
   },
 ];
 
+// 2026-10-26 사장님: 공공기관 바로가기만 남긴다 (+ 토지이음) (아실·호갱노노·네이버부동산·디스코·pixabay·vrew·CapCut·ChatGPT 는 뺌)
+const KEEP = ["인터넷등기소", "부동산거래관리시스템", "국세청", "서울부동산정보광장", "세움터", "토지이음", "정부24"];
+const SHOWN = BANNERS.filter((b) => KEEP.some((k) => b.title.includes(k)));
+
 export default function RealEstateInfoBanner() {
   const pathname = usePathname();
+  const studioBoard = useStudioBoardPage(); // 공실스튜디오 게시판 글 읽기·쓰기 (2026-10-26)
 
-  if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read')) {
+  if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || studioBoard) {
     return null;
   }
 
@@ -255,7 +281,7 @@ export default function RealEstateInfoBanner() {
       `}</style>
 
       <div className="static-banner-grid">
-        {BANNERS.map((item) => (
+        {SHOWN.map((item) => (
           <a
             key={item.id}
             href={item.url}
