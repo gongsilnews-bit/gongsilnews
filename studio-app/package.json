@@ -1,7 +1,7 @@
 {
   "name": "gongsil-studio",
   "productName": "공실스튜디오",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "공실스튜디오 - 공실등록·기사등록·SNS뉴스발행·동영상제작·고객관리",
   "author": "공실뉴스",
   "private": true,
