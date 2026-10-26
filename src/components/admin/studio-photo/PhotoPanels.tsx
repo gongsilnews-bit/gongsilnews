@@ -178,9 +178,11 @@ export function EffectsPanel({ l, mutate }: { l: PLayer; mutate: Mutate }) {
 /** 글자 레이어 — 영상 편집기 글자 칸 (애니메이션 탭 없이) */
 export function TextPanel({ doc, l, mutate, onClose, apply }: { doc: Doc; l: PLayer; mutate: Mutate; onClose: () => void; apply: (l: PLayer, look: Look) => void }) {
   const look = lookOf(l);
+  // 바로 앞에서 바뀐 모양 위에 얹는다 — 화면에 그릴 때의 look 을 쓰면 [내 디자인]처럼 모양 → 크기를 잇달아 넣을 때
+  // 두 번째가 첫 번째를 덮어써 "적용이 안 된다" (2026-10-26 사장님). mutate 는 바로 돌고 l 을 그 자리에서 고친다
   const set = (patch: TextLook, key?: string) => mutate(() => {
     const { size, ...rest } = patch;
-    const next: Look = { ...look, ...rest };
+    const next: Look = { ...lookOf(l), ...rest };
     if (typeof size === "number") next.px = size;
     apply(l, next);
   }, key);
