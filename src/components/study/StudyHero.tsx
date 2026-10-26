@@ -20,6 +20,8 @@ export interface StudyHeroProps {
   description: string;
   tabs?: StudyHeroTab[];
   rightAction?: React.ReactNode;
+  /** 제목 위 [‹ 돌아가기] — 헤더 없이 쓰는 화면(나의 강의실)에서 */
+  back?: { href: string; label: string };
 }
 
 export default function StudyHero({
@@ -28,6 +30,7 @@ export default function StudyHero({
   description,
   tabs,
   rightAction,
+  back,
 }: StudyHeroProps) {
   return (
     <section
@@ -36,7 +39,7 @@ export default function StudyHero({
         boxSizing: "border-box",
         background: "linear-gradient(145deg, #191512 0%, #28211c 60%, #362c26 100%)",
         color: "#ffffff",
-        height: 250,
+        height: back ? "auto" : 250, // [‹ 돌아가기] 줄만큼 늘어나게
         minHeight: 250,
         paddingTop: 42,
         paddingBottom: 32,
@@ -58,6 +61,11 @@ export default function StudyHero({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
+          {back && (
+            <Link href={back.href} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 14, fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.8)", textDecoration: "none" }}>
+              <span style={{ fontSize: 20, lineHeight: 1 }}>‹</span> {back.label}
+            </Link>
+          )}
           {/* 1. 타이틀 행 (한글 + 영문) - 모든 페이지 동일한 위치/크기 */}
           <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 12 }}>
             <h1

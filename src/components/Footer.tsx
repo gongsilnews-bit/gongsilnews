@@ -8,7 +8,7 @@ import { openChannelTalk } from "@/utils/channelTalk";
 export default function Footer() {
   const pathname = usePathname();
 
-  if (pathname === '/newsrealty/apply') {
+  if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read')) {
     return null;
   }
 
@@ -215,7 +215,7 @@ export default function Footer() {
             <h4 className="sitemap-title">공실마케팅</h4>
             <Link href="/gongsil" className="sitemap-link">공실열람</Link>
             <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
-            <Link href="/study/lectures" className="sitemap-link">공실스터디</Link>
+            <Link href="/study" className="sitemap-link">부동산특강</Link>
             <Link href="/board" className="sitemap-link">자료실</Link>
             <Link href="/help" className="sitemap-link">고객센터</Link>
           </div>
@@ -235,7 +235,7 @@ export default function Footer() {
             <span className="divider">|</span>
             <Link href="/terms" onClick={scrollToTop}>이용약관</Link>
             <span className="divider">|</span>
-            <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
+            <Link href="/com/privacy.html" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
             <span className="divider">|</span>
             <Link href="/youth-policy" onClick={scrollToTop}>청소년 보호정책</Link>
           </div>

@@ -29,8 +29,8 @@ export default function SimReportSection({ theme, kind }: { theme: Theme; kind: 
   if (allowed === false)
     return (
       <div style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "44px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{kind === "interior" ? "인테리어" : "리모델링"} 예측 시뮬레이션은 공실스터디 멤버십(유료) 전용입니다</div>
-        <a href="/study" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, padding: "11px 20px", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>공실스터디 멤버십 알아보기 →</a>
+        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{kind === "interior" ? "인테리어" : "리모델링"} 예측 시뮬레이션은 공실뉴스부동산(유료) 전용입니다</div>
+        <a href="/study" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, padding: "11px 20px", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>공실뉴스부동산 알아보기 →</a>
       </div>
     );
   return <SimReport key={kind} kind={kind} theme={theme} />;

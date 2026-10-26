@@ -14,14 +14,14 @@ export default function MobileStudyAboutClient() {
     if (typeof window !== "undefined") {
       localStorage.setItem("signup_member_type", "broker");
     }
-    router.push("/m/study/apply");
+    router.push("/m/newsrealty/apply");
   };
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#fdfdfd" }}>
       <MobileTopBarHeader activeTab="study" />
       <StudySubMenuBar activeMenu="about" />
-      <NewsrealtyLanding onApply={handleApplyClick} benefitsHref="/m/study/benefits" tone="green" showFooter />
+      <NewsrealtyLanding onApply={handleApplyClick} benefitsHref="/m/newsrealty/benefits/brokerage-article" tone="green" showFooter />
     </div>
   );
 }

@@ -112,7 +112,7 @@ export default function ArticleAdSettingSlot({
                     설정이 날아가 재결제해도 돌아올 값이 없다. 잠긴 채로 보여준다.
                   */}
                   <label
-                    title={canBanner ? undefined : "공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다"}
+                    title={canBanner ? undefined : "공실뉴스부동산 · 공실뉴스부동산 요금제에서 열립니다"}
                     style={{ display: "flex", alignItems: "center", gap: 6, cursor: canBanner ? "pointer" : "not-allowed", fontSize: 14, fontWeight: 600, color: !canBanner ? textMuted : writeAdType === "BANNER" ? "#2563eb" : textPrimary }}
                   >
                     <input

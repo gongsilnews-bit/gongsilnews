@@ -366,8 +366,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
   const g =
     role === "일반회원" || role === "최고관리자" ? "USER"
     : role === "비즈니스회원" ? "BIZ"
-    : planType === "news_premium" ? "REALTOR_NEWS"
-    : planType === "study_premium" ? "REALTOR_STUDY"
+    : planType === "news_premium" || planType === "study_premium" ? "REALTOR_NEWS"
     : "REALTOR_FREE";
   return {
     max_vacancies: p[`LIMIT_${g}_VACANCY`],
@@ -909,7 +908,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             <option value="30">30회</option>
             <option value="-1">무제한</option>
           </select>
-          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 무료부동산 3회 · 공실스터디부동산·비즈니스 무제한 · 일반회원 0회</span>
+          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 무료부동산 3회 · 공실뉴스부동산·비즈니스 무제한 · 일반회원 0회</span>
         </label>
       </div>
     </div>
@@ -1152,7 +1151,6 @@ function gradeDefaults(p: any, role: string, planType?: string) {
               <div style={contentStyle}>
                 <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} disabled={!isAdmin} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
                   <option value="free">무료부동산 (Free)</option>
-                  <option value="study_premium">공실스터디부동산</option>
                   <option value="news_premium">공실뉴스부동산</option>
                 </select>
               </div>

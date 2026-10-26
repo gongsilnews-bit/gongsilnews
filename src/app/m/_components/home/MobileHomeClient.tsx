@@ -64,7 +64,7 @@ const CATEGORIES = [
   { key: "home", label: "홈", path: "/m" },
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "스터디", path: "/m/study" },
+  { key: "study", label: "특강", path: "/m/study" },
   { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 
@@ -414,7 +414,7 @@ export default function MobileHomeClient(props: Props) {
       {lectures.length > 0 && (
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
-            <h2>공실스터디</h2>
+            <h2>부동산특강</h2>
             <Link href="/m/study" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>

@@ -43,7 +43,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
     <div className="container px-20 mt-50 mb-50">
       <div className="sec-title-wrap">
         <Link href="/study" style={{ textDecoration: "none" }}>
-          <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>공실스터디</h2>
+          <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>부동산특강</h2>
         </Link>
         <Link href="/study" className="sec-more-btn">more</Link>
       </div>

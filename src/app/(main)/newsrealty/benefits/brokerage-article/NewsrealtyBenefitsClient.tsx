@@ -21,7 +21,8 @@ export default function NewsrealtyBenefitsClient() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#fdfdfd" }}>
       <NewsrealtyHeader />
-      <NewsrealtyBenefits onApply={handleApplyClick} tabsTop={STUCK_HEADER_HEIGHT} />
+      {/* 강의 업로딩만 [자세히 보기] → 부동산특강이란? (2026-10-26) */}
+      <NewsrealtyBenefits onApply={handleApplyClick} tabsTop={STUCK_HEADER_HEIGHT} detailHrefs={{ lecture: "/study/about" }} />
     </div>
   );
 }

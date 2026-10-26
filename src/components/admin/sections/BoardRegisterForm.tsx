@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { saveBoard, getBoard } from "@/app/actions/board";
 
+/** 옛 3레벨(공실스터디부동산)은 4레벨(공실뉴스부동산)로 읽는다 */
+const lv = (n: number) => (n === 3 ? 4 : n);
+
 interface BoardRegisterFormProps {
   onBack: () => void;
   darkMode?: boolean;
@@ -42,11 +45,12 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             board_type: res.data.board_type || "standard",
             skin_type: res.data.skin_type || "LIST",
             columns_count: res.data.columns_count || 3,
-            perm_list: res.data.perm_list ?? 0,
-            perm_read: res.data.perm_read ?? 0,
-            perm_write: res.data.perm_write ?? 5,
+            // 3레벨(옛 공실스터디부동산)은 2026-10-26 없어져서 4레벨로 보여 준다 — 저장하면 4로 바뀐다
+            perm_list: lv(res.data.perm_list ?? 0),
+            perm_read: lv(res.data.perm_read ?? 0),
+            perm_write: lv(res.data.perm_write ?? 5),
             comments_enabled: res.data.comments_enabled !== false,
-            perm_comment: res.data.perm_comment ?? 1,
+            perm_comment: lv(res.data.perm_comment ?? 1),
             categories: res.data.categories || "",
             max_photos: res.data.max_photos ?? (res.data.board_type === "inquiry" ? 5 : 0),
           }));
@@ -123,7 +127,6 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     { label: "0레벨 (비회원 이상)", value: 0 },
     { label: "1레벨 (일반회원 이상)", value: 1 },
     { label: "2레벨 (무료부동산회원 이상)", value: 2 },
-    { label: "3레벨 (공실스터디부동산 이상)", value: 3 },
     { label: "4레벨 (공실뉴스부동산 이상)", value: 4 },
     { label: "5레벨 (최고관리자 이상)", value: 5 },
   ];

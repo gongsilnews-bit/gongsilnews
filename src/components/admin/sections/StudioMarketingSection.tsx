@@ -341,9 +341,9 @@ function NewLocalReport({ theme, paid, onClose, onMade }: { theme: Theme; paid: 
         </p>
         {paid === false ? (
           <div style={{ marginTop: 18, padding: "22px 18px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #6ee7b7", textAlign: "center" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#065f46" }}>공실 없이 만드는 매물보고서는 공실스터디 멤버십 전용입니다</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#065f46" }}>공실 없이 만드는 매물보고서는 공실뉴스부동산 전용입니다</div>
             <div style={{ fontSize: 13.5, color: "#047857", marginTop: 6 }}>등록한 공실로 만드는 매물보고서는 지금처럼 쓸 수 있어요.</div>
-            <a href="/study" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 14, padding: "10px 18px", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>공실스터디 멤버십 알아보기 →</a>
+            <a href="/study" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 14, padding: "10px 18px", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>공실뉴스부동산 알아보기 →</a>
           </div>
         ) : (
           <>

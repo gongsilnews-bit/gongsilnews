@@ -280,13 +280,13 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   if (allowed === false) {
     return (
       <div style={{ ...card, textAlign: "center", padding: "44px 24px" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{name}뉴스는 공실스터디 멤버십(유료) 전용입니다</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{name}뉴스는 공실뉴스부동산(유료) 전용입니다</div>
         <div style={{ marginTop: 8, fontSize: 13.5, color: theme.textSecondary, lineHeight: 1.7 }}>
           사진 한 장으로 {kind === "interior" ? "실내 인테리어" : "건물 외관 리모델링"} 예측 이미지와 예상 공사비를 만들고, 기사·블로그·SNS·유튜브 대본까지 씁니다.
         </div>
         <a href="/study" target="_blank" rel="noreferrer"
           style={{ display: "inline-block", marginTop: 16, padding: "11px 20px", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>
-          공실스터디 멤버십 알아보기 →
+          공실뉴스부동산 알아보기 →
         </a>
       </div>
     );

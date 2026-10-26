@@ -9,7 +9,7 @@ const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: fal
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "공실스터디", path: "/m/study" },
+  { key: "study", label: "부동산특강", path: "/m/study" },
   { key: "help", label: "고객센터", path: "/m/help" },
 ];
 

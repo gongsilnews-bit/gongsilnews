@@ -7,14 +7,14 @@
  */
 const SECTION_BOARD_PATHS: Record<string, string> = {
   // 공실스터디 자료실 5대 게시판
-  doc: "/study/resources?board=doc",
-  drone: "/study/resources?board=drone",
-  prompt: "/study/resources?board=prompt",
-  sound: "/study/resources?board=sound",
-  app: "/study/resources?board=app",
+  doc: "/newsrealty/resources?board=doc",
+  drone: "/newsrealty/resources?board=drone",
+  prompt: "/newsrealty/resources?board=prompt",
+  sound: "/newsrealty/resources?board=sound",
+  app: "/newsrealty/resources?board=app",
   // 공실스터디 커뮤니티 2대 게시판
-  studyqa: "/study/community?board=studyqa",
-  free: "/study/community?board=free",
+  studyqa: "/newsrealty/community?board=studyqa",
+  free: "/newsrealty/community?board=free",
   // 고객센터 자주 묻는 질문
   faq: "/help",
 };

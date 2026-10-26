@@ -202,7 +202,7 @@ const BANNERS = [
 export default function RealEstateInfoBanner() {
   const pathname = usePathname();
 
-  if (pathname === '/newsrealty/apply') {
+  if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read')) {
     return null;
   }
 

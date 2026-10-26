@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
 import AuthModal from "@/components/AuthModal";
-import StudyHeader from "@/components/study/StudyHeader";
 
 interface Props {
   initialLectures: any[];
@@ -32,7 +31,7 @@ const FAQS = [
     a: "네, 100% 가능합니다. 복잡한 코딩이나 어려운 이론 없이, 클릭 몇 번으로 매물 쇼츠 영상을 만들고 ChatGPT로 매물 설명글을 뽑아내는 실습 위주로 진행됩니다. 컴퓨터를 잘 다루지 못하셔도 순서대로만 따라 하시면 됩니다.",
   },
   {
-    q: "1년 연간 스터디는 언제부터 참여할 수 있나요?",
+    q: "1년 연간 특강은 언제부터 참여할 수 있나요?",
     a: "상시 가입하여 즉시 수강을 시작할 수 있습니다. 가입한 날로부터 1년(365일) 동안 모든 VOD 강의 무제한 시청 및 매달 새롭게 업데이트되는 신규 특강과 실무 서식을 모두 이용하실 수 있습니다.",
   },
   {
@@ -104,7 +103,7 @@ export default function StudyLecturesClient({
       return;
     }
     setActiveTab(tab);
-    router.replace(`/study/lectures?tab=${tab}`, { scroll: false });
+    router.replace(`/study?tab=${tab}`, { scroll: false });
   };
 
   const filteredLectures = lectures.filter((item) => {
@@ -135,7 +134,7 @@ export default function StudyLecturesClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#261f1b", minHeight: "100vh" }}>
-      <StudyHeader />
+      {/* 2026-10-26 사장님: 배너 위 제목 줄 없이 — "부동산특강" 제목·[내 강의실]은 배너 아래 목록 위로 */}
       
       {/* ━━━ 1. HERO (윤자동 스타일: 배경을 화면 끝까지 깔지 않고 본문 폭에 맞춘 둥근 카드) ━━━ */}
       <section style={{ backgroundColor: "#ffffff", padding: "18px 0 4px" }}>
@@ -177,14 +176,15 @@ export default function StudyLecturesClient({
             {/* 좌측 카피 */}
             <div style={{ position: "relative", zIndex: 2, flex: "1 1 400px", maxWidth: 620, minWidth: 300, padding: "56px 48px" }}>
               <h1 style={{ fontSize: "32px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.8px", margin: "0 0 28px 0" }}>
-                다들 AI 유튜브로 중개한다던데<br />
-                <span style={{ color: "#34d399" }}>나만 못 쓰고 있는 것 같으신가요?</span>
+                {/* 2026-10-26: 부동산특강이란?(/study/about) 첫 제목과 같게 */}
+                내 지역, 단지, 물건 정보<br />
+                <span style={{ color: "#34d399" }}>이제 유튜브 강의로</span>
               </h1>
 
-              {/* 공실스터디란? + 멤버십 신청 */}
+              {/* 부동산특강이란? + 공실뉴스부동산 신청 */}
               <div style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
                 <Link
-                  href="/study"
+                  href="/study/about"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -199,10 +199,10 @@ export default function StudyLecturesClient({
                     transition: "all 0.2s",
                   }}
                 >
-                  공실스터디란?
+                  부동산특강이란?
                 </Link>
                 <Link
-                  href="/study/apply"
+                  href="/newsrealty/apply"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -213,7 +213,7 @@ export default function StudyLecturesClient({
                     textDecoration: "none",
                   }}
                 >
-                  공실스터디 멤버십 신청하기 &gt;&gt;
+                  공실뉴스부동산 신청하기 &gt;&gt;
                 </Link>
               </div>
             </div>
@@ -226,55 +226,17 @@ export default function StudyLecturesClient({
       {activeTab === "lecture" && (
         <>
           {/* ━━━ CURATED STUDY LECTURES LIST (특강 목록 및 실시간 신청) ━━━ */}
-          <section id="study-lectures-section" style={{ padding: "60px 0 80px", backgroundColor: "#ffffff" }}>
+          <section id="study-lectures-section" style={{ padding: "24px 0 80px", backgroundColor: "#ffffff" }}>
             <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
               
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+              <div style={{ marginBottom: 20 }}>
                 <div>
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
                     CURRICULUM & LECTURES
                   </span>
                   <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#1c1917", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
-                    1년 연간 스터디 특강 라인업
+                    부동산특강
                   </h2>
-                </div>
-
-                {/* 검색창 */}
-                <div style={{ width: 280, position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="특강 제목 또는 강사명 검색..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      width: "100%",
-                      height: 42,
-                      background: "#f5f6f8",
-                      border: "1.5px solid #a7f3d0",
-                      borderRadius: 8,
-                      padding: "0 38px 0 14px",
-                      fontSize: 13.5,
-                      color: "#1e293b",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      boxShadow: "0 1px 2px rgba(5, 150, 105, 0.05)",
-                      transition: "all 0.15s ease",
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = "#059669";
-                      e.currentTarget.style.backgroundColor = "#f3f4f6";
-                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(16, 185, 129, 0.15)";
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = "#a7f3d0";
-                      e.currentTarget.style.backgroundColor = "#f5f6f8";
-                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(5, 150, 105, 0.05)";
-                    }}
-                  />
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 13, top: 13, pointerEvents: "none" }}>
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
                 </div>
               </div>
 
@@ -317,6 +279,53 @@ export default function StudyLecturesClient({
                       </button>
                     );
                   })}
+
+                {/* 검색창 */}
+                <div style={{ width: 280, position: "relative" }}>
+                  <input
+                    type="text"
+                    placeholder="특강 제목 또는 강사명 검색..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      background: "#f5f6f8",
+                      border: "1.5px solid #a7f3d0",
+                      borderRadius: 8,
+                      padding: "0 38px 0 14px",
+                      fontSize: 13.5,
+                      color: "#1e293b",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      boxShadow: "0 1px 2px rgba(5, 150, 105, 0.05)",
+                      transition: "all 0.15s ease",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#059669";
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(16, 185, 129, 0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "#a7f3d0";
+                      e.currentTarget.style.backgroundColor = "#f5f6f8";
+                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(5, 150, 105, 0.05)";
+                    }}
+                  />
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 13, top: 13, pointerEvents: "none" }}>
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </div>
+
+                <Link
+                  href="/study/classroom"
+                  title="나의 강의실로 이동"
+                  style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", padding: "11px 22px", borderRadius: 9, fontSize: 15, fontWeight: 800, color: "#ffffff", background: "#059669", boxShadow: "0 4px 12px rgba(5, 150, 105, 0.3)", textDecoration: "none", whiteSpace: "nowrap" }}
+                >
+                  내 강의실
+                </Link>
+
                 </div>
 
               {/* 강의 카드 그리드 (3열 레이아웃) */}
@@ -390,7 +399,7 @@ export default function StudyLecturesClient({
                                 }}
                               >
                                 <span style={{ fontSize: 24, marginBottom: 4 }}>🎓</span>
-                                <span style={{ fontSize: 13.5, fontWeight: 700, color: "#34d399" }}>{item.category || "공실스터디"}</span>
+                                <span style={{ fontSize: 13.5, fontWeight: 700, color: "#34d399" }}>{item.category || "부동산특강"}</span>
                               </div>
                             )}
                           </div>
@@ -554,7 +563,7 @@ export default function StudyLecturesClient({
                   boxShadow: "0 4px 16px rgba(5, 150, 105, 0.4)",
                 }}
               >
-                1년 스터디 지금 시작하기 →
+                1년 특강 지금 시작하기 →
               </button>
             </div>
           </section>

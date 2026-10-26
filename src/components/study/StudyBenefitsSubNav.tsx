@@ -8,7 +8,7 @@ export const STUDY_BENEFITS = [
   { slug: "vacancy-register", label: "공실등록20건", href: "/study/benefits/vacancy-register" },
   { slug: "blog-automation", label: "블로그포스팅자동화", href: "/study/benefits/blog-automation" },
   { slug: "ai-youtube", label: "유튜브강의+드론저작권", href: "/study/benefits/ai-youtube" },
-  { slug: "lecture-upload", label: "강의영상업로딩", href: "/study/benefits/lecture-upload" },
+  { slug: "lecture-upload", label: "강의영상업로딩", href: "/study/about" },
 ] as const;
 
 const POINT = "#059669";
@@ -18,7 +18,7 @@ export default function StudyBenefitsSubNav({ active }: { active: string }) {
     <div style={{ borderBottom: "1px solid #eaedf0", background: "#ffffff" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", display: "flex", gap: 28 }}>
         {/* 멤버십혜택 전체(/study/benefits)로 돌아가는 길 */}
-        <Link href="/study/benefits" style={{ padding: "16px 0", fontSize: 14.5, fontWeight: 700, color: POINT, textDecoration: "none", whiteSpace: "nowrap" }}>
+        <Link href="/newsrealty/benefits/brokerage-article" style={{ padding: "16px 0", fontSize: 14.5, fontWeight: 700, color: POINT, textDecoration: "none", whiteSpace: "nowrap" }}>
           ← 멤버십혜택 전체
         </Link>
         {STUDY_BENEFITS.map((item) => {
@@ -67,7 +67,7 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
     >
       {/* 멤버십혜택 전체(/study/benefits)로 돌아가는 길 */}
       <Link
-        href="/study/benefits"
+        href="/newsrealty/benefits/brokerage-article"
         style={{ padding: "9px 15px", borderRadius: 8, fontSize: 13.5, whiteSpace: "nowrap", textDecoration: "none", fontWeight: 700, color: "#047857", background: "#ecfdf5" }}
       >
         ← 멤버십혜택 전체

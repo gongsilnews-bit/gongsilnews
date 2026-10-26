@@ -120,7 +120,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13.5, color: theme.textPrimary, cursor: "pointer" }}>
             <input type="checkbox" checked={autoCover} onChange={(e) => setAutoCover(e.target.checked)} />
             다 쓰면 기사에 맞는 <b>AI 대표 이미지</b>도 만들기
-            <span title="공실스터디 멤버십 전용" style={{ padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.4 }}>Membership</span>
+            <span title="공실뉴스부동산 전용" style={{ padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.4 }}>Membership</span>
             <span style={{ color: theme.textSecondary }}>(1~2분 더 · AI 이미지 하루 한도에서 1장)</span>
           </label>
         )}

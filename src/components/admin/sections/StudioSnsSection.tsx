@@ -361,7 +361,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               </span>
             ) : (
               <a href="/study" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {u.monthLimit === 0 ? `${name}는 부동산회원 기능입니다` : `이번 달 ${u.monthLimit}회를 모두 썼어요 · 공실스터디 멤버십 무제한 →`}
+                {u.monthLimit === 0 ? `${name}는 부동산회원 기능입니다` : `이번 달 ${u.monthLimit}회를 모두 썼어요 · 공실뉴스부동산 무제한 →`}
               </a>
             );
           })()}

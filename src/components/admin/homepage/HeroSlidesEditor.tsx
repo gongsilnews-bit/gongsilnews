@@ -151,7 +151,7 @@ export default function HeroSlidesEditor({
               <div style={{ marginBottom: 12, padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
                 첫 화면에 유튜브 영상을 걸 수 있습니다
                 <br />
-                <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+                <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실뉴스부동산 요금제에서 열립니다</span>
               </div>
             )}
 
@@ -259,7 +259,7 @@ export default function HeroSlidesEditor({
         >
           첫 화면을 {MAX_HERO_SLIDES}장까지 넘길 수 있습니다
           <br />
-          <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+          <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실뉴스부동산 요금제에서 열립니다</span>
         </div>
       )}
     </div>

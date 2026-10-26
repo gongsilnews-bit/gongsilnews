@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
-import StudyHeader from "@/components/study/StudyHeader";
+import NewsrealtyHeader from "@/components/newsrealty/NewsrealtyHeader";
 import BannerSlot from "@/components/BannerSlot";
 
 const POINT = "#1a2e50";
@@ -198,7 +198,7 @@ export default function StudyCommunityClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#261f1b" }}>
-      <StudyHeader />
+      <NewsrealtyHeader />
 
       {/* ━━━ [2] 게시판 본문 (시원한 풀 와이드 스터디 레이아웃) ━━━ */}
       {!canAccessBoard(userLevel, activeBoardData?.perm_list ?? 0) ? (
@@ -210,7 +210,7 @@ export default function StudyCommunityClient({
             목록 보기 레벨: <strong>{activeBoardData?.perm_list ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)
           </p>
           <button
-            onClick={() => router.push("/study")}
+            onClick={() => router.push("/newsrealty")}
             style={{
               marginTop: 24,
               padding: "10px 24px",
@@ -222,7 +222,7 @@ export default function StudyCommunityClient({
               fontWeight: 700,
             }}
           >
-            공실스터디 홈으로
+            부동산특강 홈으로
           </button>
         </div>
       ) : (

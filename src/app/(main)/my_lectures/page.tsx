@@ -82,7 +82,7 @@ export default function MyLecturesPage() {
                     onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                   >
-                    공실스터디 둘러보기
+                    부동산특강 둘러보기
                   </button>
                 </div>
               </div>

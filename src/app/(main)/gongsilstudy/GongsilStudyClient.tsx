@@ -153,7 +153,7 @@ function ImageSlot({ caption, ratio = "4/3", dark = false }: { caption: string; 
 function SubscribeButton({ large = false }: { large?: boolean }) {
   return (
     <Link
-      href="/study/pricing"
+      href="/newsrealty/pricing"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -169,7 +169,7 @@ function SubscribeButton({ large = false }: { large?: boolean }) {
         letterSpacing: "-0.3px",
       }}
     >
-      <span>공실 스터디 구독 신청</span>
+      <span>공실뉴스부동산 신청</span>
       <span>》</span>
     </Link>
   );
@@ -231,7 +231,7 @@ export default function GongsilStudyClient() {
               ))}
             </ul>
             <div style={{ flex: "1 1 420px", minWidth: 280 }}>
-              <ImageSlot caption="공실스터디 현장 사진" ratio="16/10" />
+              <ImageSlot caption="부동산특강 현장 사진" ratio="16/10" />
             </div>
           </div>
 

@@ -252,7 +252,7 @@ export default function StudySettingsModal({
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 20 }}>⚙️</span>
               <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>
-                공실스터디 설정
+                부동산특강 설정
               </h2>
               <span
                 style={{
@@ -268,7 +268,7 @@ export default function StudySettingsModal({
               </span>
             </div>
             <p style={{ fontSize: 12.5, color: textSecondary, margin: "4px 0 0 0" }}>
-              등록창 및 PC/모바일 스터디 메인의 카테고리 탭을 동적으로 추가·수정·삭제합니다.
+              등록창 및 PC/모바일 부동산특강 메인의 카테고리 탭을 동적으로 추가·수정·삭제합니다.
             </p>
           </div>
 

@@ -29,7 +29,8 @@ async function requireAdmin() {
 
 const PLAN_BY_SERVICE: Record<MembershipService, { planType: string; label: string }> = {
   newsrealty: { planType: "news_premium", label: "공실뉴스부동산" },
-  study: { planType: "study_premium", label: "공실스터디부동산" },
+  // 공실스터디 신청도 공실뉴스부동산으로 (2026-10-26 공실스터디부동산을 없애고 합침)
+  study: { planType: "news_premium", label: "공실뉴스부동산" },
 };
 
 /**

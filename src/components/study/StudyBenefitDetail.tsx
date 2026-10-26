@@ -36,7 +36,7 @@ const DETAIL_TABS = [
   { label: "공실등록 · 매매보고서", href: "/study/benefits/vacancy-register" },
   { label: "블로그 · SNS", href: "/study/benefits/blog-automation" },
   { label: "릴스 · 유튜브", href: "/study/benefits/ai-youtube" },
-  { label: "강의 업로딩", href: "/study/benefits/lecture-upload" },
+  { label: "강의 업로딩", href: "/study/about" },
 ];
 
 // 공실스터디 메뉴 줄이 위에 붙었을 때의 높이. 탭 줄이 그 아래에 붙는다.
@@ -90,7 +90,7 @@ export default function StudyBenefitDetail({ c }: { c: BenefitDetailContent }) {
       {/* 상세 페이지 탭 (메뉴 줄 아래에 붙는다) */}
       <div style={{ position: "sticky", top: TABS_TOP, zIndex: 50, background: "rgba(255,255,255,0.94)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--divider)" }}>
         <div className="sbd-wrap" style={{ display: "flex", gap: 4, overflowX: "auto" }}>
-          <Link href="/study/benefits" className="sbd-tab back">← 멤버십혜택 전체</Link>
+          <Link href="/newsrealty/benefits/brokerage-article" className="sbd-tab back">← 멤버십혜택 전체</Link>
           {DETAIL_TABS.map((t) => (
             <Link key={t.href} href={t.href} className={"sbd-tab" + (pathname.startsWith(t.href) ? " on" : "")}>
               {t.label}
@@ -113,7 +113,7 @@ export default function StudyBenefitDetail({ c }: { c: BenefitDetailContent }) {
                 </div>
               )}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-                <Link href="/study/apply" className="sbd-btn sbd-btn-cta">공실스터디 멤버십 신청하기 &gt;</Link>
+                <Link href="/newsrealty/apply" className="sbd-btn sbd-btn-cta">공실뉴스부동산 신청하기 &gt;</Link>
               </div>
             </div>
             <img src={c.heroImg} alt={c.heroAlt} className="sbd-img" />
@@ -182,11 +182,11 @@ export default function StudyBenefitDetail({ c }: { c: BenefitDetailContent }) {
         <div style={{ background: "var(--dark)", marginTop: 112 }}>
           <section className="sbd-wrap" style={{ padding: "88px 24px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 640 }}>
-              <span style={{ fontSize: 14, color: "var(--on-dark-accent)" }}>공실스터디 멤버십 · 1년 36만원 (월 3만원꼴)</span>
+              <span style={{ fontSize: 14, color: "var(--on-dark-accent)" }}>공실뉴스부동산 · 1년 36만원 (월 3만원꼴)</span>
               <h2 style={{ fontSize: "clamp(26px,3.8vw,38px)", lineHeight: 1.3, letterSpacing: "-0.02em", color: "#fff", fontWeight: 700 }}>{c.ctaTitle}</h2>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <Link href="/study/apply" className="sbd-btn sbd-btn-cta">공실스터디 멤버십 신청하기 &gt;</Link>
-                <Link href="/study/lectures" className="sbd-btn sbd-btn-ghost">강의 둘러보기 &gt;</Link>
+                <Link href="/newsrealty/apply" className="sbd-btn sbd-btn-cta">공실뉴스부동산 신청하기 &gt;</Link>
+                <Link href="/study" className="sbd-btn sbd-btn-ghost">강의 둘러보기 &gt;</Link>
               </div>
             </div>
           </section>

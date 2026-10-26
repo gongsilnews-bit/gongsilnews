@@ -4,10 +4,10 @@ import { isAdminRole } from "@/utils/permissionCheck";
 /**
  * 강의를 올릴 수 있는 유료 등급.
  *
- * 공실스터디부동산·공실뉴스부동산·비즈니스회원. 최고관리자는 따로 늘 통과한다.
+ * 공실뉴스부동산·비즈니스회원. 최고관리자는 따로 늘 통과한다.
  * 요금제가 끝난 회원은 lecturePlanOf 가 무료로 떨어뜨리므로 여기서도 막힌다.
  */
-const PAID_LECTURE_PLANS: LecturePlanKey[] = ["study_premium", "news_premium", "biz_premium"];
+const PAID_LECTURE_PLANS: LecturePlanKey[] = ["news_premium", "biz_premium"];
 
 export type LectureQuota = {
   isAdmin: boolean;
@@ -39,7 +39,7 @@ export function lectureQuotaOf(
   const max = Math.max(0, Number(member?.max_lectures) || 0);
 
   let reason: string | null = null;
-  if (!paid) reason = "강의 등록은 유료회원(공실스터디부동산·공실뉴스부동산·비즈니스회원)만 할 수 있습니다.";
+  if (!paid) reason = "강의 등록은 유료회원(공실뉴스부동산·비즈니스회원)만 할 수 있습니다.";
   else if (max <= 0) reason = "강의 등록 한도가 없습니다. 최고관리자에게 문의해 주세요.";
   else if (used >= max) reason = `강의는 최대 ${max}개까지 등록할 수 있습니다. (현재 ${used}개)`;
 

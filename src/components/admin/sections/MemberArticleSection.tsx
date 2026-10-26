@@ -499,10 +499,10 @@ export default function MemberArticleSection({
           </button>
           <button
             disabled={!canBanner}
-            title={canBanner ? undefined : "공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다"}
+            title={canBanner ? undefined : "공실뉴스부동산 요금제에서 열립니다"}
             onClick={() => {
               if (!canBanner) {
-                alert("기사 배너광고는 공실뉴스부동산 · 공실스터디부동산 요금제 전용 기능입니다.");
+                alert("기사 배너광고는 공실뉴스부동산 요금제 전용 기능입니다.");
                 return;
               }
               if (checkedIds.length === 0) {
@@ -537,7 +537,7 @@ export default function MemberArticleSection({
                 return;
               }
               if (!isPaidRealtor) {
-                alert("공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다.");
+                alert("공실뉴스부동산 유료 회원 전용 기능입니다.");
                 return;
               }
               setBulkSelectedVacancyId("NONE");
@@ -559,7 +559,7 @@ export default function MemberArticleSection({
               transition: "all 0.15s",
               opacity: isPaidRealtor ? 1 : 0.6,
             }}
-            title={!isPaidRealtor ? "공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다." : undefined}
+            title={!isPaidRealtor ? "공실뉴스부동산 유료 회원 전용 기능입니다." : undefined}
           >
             🏢 공실 일괄적용
           </button>
@@ -679,7 +679,7 @@ export default function MemberArticleSection({
                             disabled={!canBanner}
                             title={canBanner ? undefined : (adType === "BANNER"
                               ? "설정은 그대로 있습니다. 결제하시면 다시 노출됩니다."
-                              : "공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다")}
+                              : "공실뉴스부동산 요금제에서 열립니다")}
                             onClick={(e) => {
                               e.stopPropagation();
                               setActiveDropdownArticleId(isOpen ? null : a.id);

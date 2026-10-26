@@ -9,7 +9,7 @@ const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOve
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "스터디", path: "/m/study" },
+  { key: "study", label: "특강", path: "/m/study" },
   { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 

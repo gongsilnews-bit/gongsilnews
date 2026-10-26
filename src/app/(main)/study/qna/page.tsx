@@ -3,5 +3,5 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default function StudyQnaPage() {
-  redirect("/study/community?board=studyqa");
+  redirect("/newsrealty/community?board=studyqa");
 }

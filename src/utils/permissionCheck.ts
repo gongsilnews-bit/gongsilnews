@@ -22,9 +22,8 @@ export function getPermissionLevel(member: {
       return 1; // 미승인 부동산 회원은 일반회원(1레벨) 권한으로 제한
     }
 
-    // 공실뉴스부동산이 최상위다. 공실스터디부동산이 그 아래.
-    if (member.plan_type === 'news_premium') return 4;
-    if (member.plan_type === 'study_premium') return 3;
+    // 유료는 공실뉴스부동산 하나 (2026-10-26 공실스터디부동산을 없애고 합침 — 옛 study_premium 도 같은 4레벨)
+    if (member.plan_type === 'news_premium' || member.plan_type === 'study_premium') return 4;
     return 2; // 무료부동산회원
   }
 
@@ -66,7 +65,7 @@ export function getLevelName(level: number): string {
     case 0: return "비회원";
     case 1: return "일반회원";
     case 2: return "무료부동산회원";
-    case 3: return "공실스터디부동산 회원";
+    case 3: return "공실뉴스부동산 회원"; // 예전 공실스터디부동산 자리 — 2026-10-26 합침
     case 4: return "공실뉴스부동산 회원";
     case 5: return "최고관리자";
     default: return "회원";
@@ -90,23 +89,12 @@ export function getPlanLabel(member: {
 
   if (role === 'REALTOR' || role === '부동산회원') {
     const plan = member?.plan_type;
-    // 2026-10-23 사장님: 유료 회원은 기존 "공실뉴스부동산" 이름 그대로 보인다 (10-12 의 "공실스터디 하나로" 표시를 되돌림). 공실스터디는 그대로
-    if (plan === 'news_premium' || plan === 'news_basic') return '공실뉴스부동산';
-    if (plan === 'study_premium' || plan === 'vacancy_premium' || plan === 'vacancy_basic') return '공실스터디부동산';
+    // 유료 회원은 공실뉴스부동산 하나 (2026-10-26 사장님: 공실스터디부동산을 없애고 합침 — 옛 값도 공실뉴스부동산으로 읽는다)
+    if (plan === 'news_premium' || plan === 'news_basic' || plan === 'study_premium' || plan === 'vacancy_premium' || plan === 'vacancy_basic') return '공실뉴스부동산';
     return '무료부동산';
   }
 
   return '일반회원';
-}
-
-/** 공실스터디부동산 회원의 관리자 버튼은 공실스터디 색(녹색)으로 칠한다. 서류보완 안내는 빨강 그대로 */
-export const STUDY_ADMIN_BUTTON_GREEN = '#059669';
-export function isStudyAdminButton(
-  member: { role?: string | null; plan_type?: string | null } | null | undefined,
-  agencyStatus?: string | null
-): boolean {
-  if (agencyStatus === 'REJECTED') return false;
-  return getPlanLabel(member) === '공실스터디부동산';
 }
 
 /** 공실뉴스부동산 회원의 관리자 버튼은 공실뉴스부동산 색(주황)으로 (2026-10-23) */

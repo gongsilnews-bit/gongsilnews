@@ -105,7 +105,7 @@ const rows = [
   { a: "정회원 커뮤니티", b: "—", c: "가입" },
   { a: "실무 자료실", b: "—", c: "서식 · 특약 · 계약서 다운로드" },
   { a: "드론 영상", b: "—", c: "저작권 무료 상업 이용" },
-  { a: "공실스터디 강좌", b: "—", c: "일부 무료 수강" },
+  { a: "부동산특강 강좌", b: "—", c: "일부 무료 수강" },
 ];
 
 // 같은 본문을 공실뉴스부동산(/newsrealty, 주황)과 공실스터디(/study, 녹색)가 함께 쓴다.
@@ -113,7 +113,7 @@ const rows = [
 type Brand = { name: string; applyHref: string; applyShort: string; applyLong: string; benefitsLabel: string };
 const BRANDS: Record<"orange" | "green", Brand> = {
   orange: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 신청", applyLong: "공실뉴스부동산 신청하기", benefitsLabel: "부동산 혜택" },
-  green: { name: "공실스터디 멤버십", applyHref: "/study/apply", applyShort: "공실스터디 멤버십 신청", applyLong: "공실스터디 멤버십 신청하기", benefitsLabel: "멤버십 혜택" },
+  green: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 신청", applyLong: "공실뉴스부동산 신청하기", benefitsLabel: "멤버십 혜택" },
 };
 
 const faqs = (brand: Brand): { q: string; badge?: string; a: string }[] => [

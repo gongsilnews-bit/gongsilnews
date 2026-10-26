@@ -13,7 +13,7 @@ const FAQS = [
       "네. 복잡한 이론보다 실제 매물을 가지고 화면을 보며 따라 하는 실습에 집중합니다. 필요한 부분은 온라인에서 반복해서 볼 수 있습니다.",
   },
   {
-    question: "공실스터디에서는 무엇을 배우나요?",
+    question: "부동산특강에서는 무엇을 배우나요?",
     answer:
       "AI를 활용한 매물 설명과 블로그 글 작성, 유튜브 콘텐츠 제작, 공실 홍보 등 1~2인 부동산이 현장에서 바로 활용할 수 있는 내용을 배웁니다.",
   },
@@ -43,7 +43,7 @@ export default function StudyHomeClient() {
       <main>
         <section className={styles.hero} aria-labelledby="study-title">
           <div className={styles.heroInner}>
-            <p className={styles.overline}>공실뉴스 · 공실스터디</p>
+            <p className={styles.overline}>공실뉴스 · 부동산특강</p>
             <h1 id="study-title">
               유튜브·블로그는
               <br />
@@ -56,11 +56,11 @@ export default function StudyHomeClient() {
                 가장 현실적인 콘텐츠 실무 강의.
               </p>
               <div className={styles.heroActions}>
-                <Link href="/study/lectures" className={styles.primaryLink}>
+                <Link href="/study" className={styles.primaryLink}>
                   강의 둘러보기 <Arrow />
                 </Link>
                 <a href="#story" className={styles.plainLink}>
-                  공실스터디 소개
+                  부동산특강 소개
                 </a>
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function StudyHomeClient() {
           </figcaption>
         </figure>
 
-        <section id="story" className={styles.story} aria-label="공실스터디가 필요한 이유">
+        <section id="story" className={styles.story} aria-label="부동산특강이 필요한 이유">
           <article className={styles.storyItem}>
             <p className={styles.index}>01&nbsp;&nbsp; 변화</p>
             <div>
@@ -123,7 +123,7 @@ export default function StudyHomeClient() {
               </h2>
               <p>
                 AI가 매물 정보를 정리해 누구나 쉽고 빠르게 블로그 포스팅 초안을 만들 수 있습니다.
-                공실스터디는 그 과정을 처음부터 차근차근 알려드립니다.
+                부동산특강은 그 과정을 처음부터 차근차근 알려드립니다.
               </p>
             </div>
           </article>
@@ -194,8 +194,8 @@ export default function StudyHomeClient() {
               11만 부동산 네트워크가 이용하는 공실뉴스에서
               배운 내용을 내 매물에 바로 적용해 보세요.
             </p>
-            <Link href="/study/lectures" className={styles.statementLink}>
-              공실스터디 시작하기 <Arrow />
+            <Link href="/study" className={styles.statementLink}>
+              부동산특강 시작하기 <Arrow />
             </Link>
           </div>
         </section>
@@ -229,7 +229,7 @@ export default function StudyHomeClient() {
                   </div>
                 );
               })}
-              <Link href="/study/qna" className={styles.qnaLink}>
+              <Link href="/newsrealty/community?board=studyqa" className={styles.qnaLink}>
                 다른 질문 남기기 <Arrow />
               </Link>
             </div>

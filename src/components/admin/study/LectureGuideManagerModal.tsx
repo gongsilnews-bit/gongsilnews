@@ -75,11 +75,11 @@ export default function LectureGuideManagerModal({ darkMode = false, onClose, on
         <section style={{ background: panel, border: `1px solid ${border}`, borderRadius: 12, padding: 18 }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 15 }}>{editingId ? "수강안내 수정" : "새 수강안내 등록"}</h3>
           <label style={{ fontSize: 12, fontWeight: 700 }}>관리용 이름</label>
-          <input value={form.name} onChange={e => setForm(v => ({ ...v, name: e.target.value }))} placeholder="예: 공실스터디 기본 수강안내" style={{ ...input, margin: "6px 0 14px" }} />
+          <input value={form.name} onChange={e => setForm(v => ({ ...v, name: e.target.value }))} placeholder="예: 부동산특강 기본 수강안내" style={{ ...input, margin: "6px 0 14px" }} />
           <label style={{ fontSize: 12, fontWeight: 700 }}>화면 노출 제목</label>
-          <input value={form.title} onChange={e => setForm(v => ({ ...v, title: e.target.value }))} placeholder="예: 공실스터디 수강 안내" style={{ ...input, margin: "6px 0 14px" }} />
+          <input value={form.title} onChange={e => setForm(v => ({ ...v, title: e.target.value }))} placeholder="예: 부동산특강 수강 안내" style={{ ...input, margin: "6px 0 14px" }} />
           <label style={{ fontSize: 12, fontWeight: 700 }}>안내 내용</label>
-          <textarea value={form.body} onChange={e => setForm(v => ({ ...v, body: e.target.value }))} rows={8} placeholder={"반복수업 가능\n공실스터디 동산 무료 열람"} style={{ ...input, resize: "vertical", lineHeight: 1.6, margin: "6px 0 12px" }} />
+          <textarea value={form.body} onChange={e => setForm(v => ({ ...v, body: e.target.value }))} rows={8} placeholder={"반복수업 가능\n부동산특강 동산 무료 열람"} style={{ ...input, resize: "vertical", lineHeight: 1.6, margin: "6px 0 12px" }} />
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, marginBottom: 16 }}><input type="checkbox" checked={form.is_active} onChange={e => setForm(v => ({ ...v, is_active: e.target.checked }))} />강의 선택 목록에서 사용</label>
           {message && <p style={{ color: "#dc2626", fontSize: 12, lineHeight: 1.5 }}>{message}</p>}
           <div style={{ display: "flex", gap: 8 }}>

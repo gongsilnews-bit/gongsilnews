@@ -425,7 +425,7 @@ export default function NewsrealtyStudyMarketingSection() {
               >
                 <Image
                   src="/images/study/benefit_youtube_40s_female_broker.jpg"
-                  alt="아파트 단지 상가 부동산에서 브루 AI로 매물 쇼츠를 제작하고 공실스터디 온라인 강의를 수강하는 40대 여성 공인중개사 대표 소장님"
+                  alt="아파트 단지 상가 부동산에서 브루 AI로 매물 쇼츠를 제작하고 부동산특강 온라인 강의를 수강하는 40대 여성 공인중개사 대표 소장님"
                   fill
                   sizes="(max-width: 900px) 100vw, 540px"
                   className={studyStyles.freeOfferImg}

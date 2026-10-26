@@ -32,7 +32,7 @@ async function assertPaid(baseUrl) {
   const res = await session.defaultSession.fetch(`${baseUrl}/api/studio/usage`, { cache: "no-store" });
   const json = await res.json().catch(() => ({}));
   if (!json || !json.success) throw new Error((json && json.error) || "회원 확인을 하지 못했습니다. 다시 로그인해 주세요.");
-  if (json.simAllowed !== true) throw new Error("공실 없이 만드는 매물보고서는 공실스터디 멤버십 전용입니다.");
+  if (json.simAllowed !== true) throw new Error("공실 없이 만드는 매물보고서는 공실뉴스부동산 전용입니다.");
 }
 
 /** 이름이 비면 매물 정보로 (예: 논현동 무지개빌라 전세) */

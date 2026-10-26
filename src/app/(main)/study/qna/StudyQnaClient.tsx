@@ -236,7 +236,7 @@ export default function StudyQnaClient({
             onClick={() => router.push("/study")}
             style={{ marginTop: 24, padding: "10px 24px", background: POINT, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700 }}
           >
-            공실스터디 홈으로
+            부동산특강 홈으로
           </button>
         </div>
       ) : (

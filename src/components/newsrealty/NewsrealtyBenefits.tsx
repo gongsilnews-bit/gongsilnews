@@ -59,10 +59,10 @@ const sections: Section[] = [
     id: "lecture",
     tab: "강의 업로딩",
     label: "05 · 강의 업로딩",
-    title: <>공실스터디 강의 등록</>,
+    title: <>부동산특강 강의 등록</>,
     img: S + "real-estate-youtube-filming.png",
     alt: "스마트폰으로 강의 촬영",
-    bullets: ["공실스터디 강의 등록 권한", "스마트폰 촬영부터 강의 편집 VOD 강의 제공", "내 지역/단지 특징, 상권 분석, 급매물/경매 강의 등록", "강의 포인트를 현금으로 수익화 가능", "전국 중개망에 홍보 · 공동중개 네트워크 강화"],
+    bullets: ["부동산특강 강의 등록 권한", "스마트폰 촬영부터 강의 편집 VOD 강의 제공", "내 지역/단지 특징, 상권 분석, 급매물/경매 강의 등록", "강의 포인트를 현금으로 수익화 가능", "전국 중개망에 홍보 · 공동중개 네트워크 강화"],
   },
 ];
 
@@ -130,7 +130,7 @@ export default function NewsrealtyBenefits({
   const [active, setActive] = useState(sections[0].id);
   // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로.
   const brand = tone === "green"
-    ? { name: "공실스터디 멤버십", applyHref: "/study/apply" }
+    ? { name: "공실뉴스부동산", applyHref: "/newsrealty/apply" }
     : { name: "공실뉴스부동산", applyHref: "/newsrealty/apply" };
 
   // 탭 줄 고정. 사이트 body 에 overflow-x:hidden 이 걸려 있어 CSS sticky 가 안 먹으므로
@@ -210,7 +210,7 @@ export default function NewsrealtyBenefits({
         {/* 맨 위 제목: 화면 끝까지 미색 배경 (소개 페이지 히어로와 같은 색) */}
         <div style={{ background: "var(--cream)" }}>
           <section style={{ maxWidth: 1120, margin: "0 auto", padding: "88px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-            <span style={{ fontSize: 13, color: "var(--accent-700)" }}>{tone === "green" ? "공실스터디 멤버십 주요 혜택" : "공실뉴스 부동산 주요 혜택"}</span>
+            <span style={{ fontSize: 13, color: "var(--accent-700)" }}>{tone === "green" ? "공실뉴스부동산 주요 혜택" : "공실뉴스 부동산 주요 혜택"}</span>
             <h1 style={{ fontSize: "clamp(32px,4.6vw,48px)", lineHeight: 1.2, letterSpacing: "-0.025em", margin: 0, textWrap: "balance" }}>
               공동중개 + 매매보고서 + 블로그/SNS포스팅 + 유튜브강의까지!<br />AI 시대! 부동산 마케팅 쉬워집니다.
             </h1>

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
-import { getEffectiveMemberRole, getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getEffectiveMemberRole, getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 // 공실뉴스부동산 메뉴 줄. 공실스터디(StudyHeader)와 같은 방식으로 메인 헤더 아래에 붙고,
 // 스크롤해서 화면 위에 닿으면 이 줄이 고정된다.
@@ -15,6 +15,9 @@ const POINT = "#d9661f";
 interface SubNavItem {
   label: string;
   href: string;
+  /** 자료실·커뮤니티 2차 탭 — 주소의 ?board= 값 (없는 주소면 first 가 켜진다) */
+  board?: string;
+  first?: boolean;
 }
 
 interface NavItem {
@@ -25,10 +28,32 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "공실뉴스부동산이란?", href: "/newsrealty", match: (p) => p === "/newsrealty" },
+  // "공실뉴스부동산이란?"은 뺐다 (2026-10-26 사장님) — 소개는 제목 [공실뉴스부동산] 을 누르면 나온다
   { label: "혜택", href: "/newsrealty/benefits/brokerage-article", match: (p) => p.startsWith("/newsrealty/benefits") },
   { label: "금액안내", href: "/newsrealty/pricing", match: (p) => p.startsWith("/newsrealty/pricing") },
   { label: "신청하기", href: "/newsrealty/apply", match: (p) => p.startsWith("/newsrealty/apply") },
+  // 자료실·커뮤니티는 2026-10-26 부동산특강(/study)에서 옮겨 왔다 — 게시판은 그대로, 회원 전용(4레벨) 혜택
+  {
+    label: "자료실",
+    href: "/newsrealty/resources?board=drone",
+    match: (p) => p.startsWith("/newsrealty/resources"),
+    subItems: [
+      { label: "드론영상", href: "/newsrealty/resources?board=drone", board: "drone", first: true },
+      { label: "APP(앱)", href: "/newsrealty/resources?board=app", board: "app" },
+      { label: "AI 프롬프트", href: "/newsrealty/resources?board=prompt", board: "prompt" },
+      { label: "음원", href: "/newsrealty/resources?board=sound", board: "sound" },
+      { label: "계약서/양식", href: "/newsrealty/resources?board=doc", board: "doc" },
+    ],
+  },
+  {
+    label: "커뮤니티",
+    href: "/newsrealty/community",
+    match: (p) => p.startsWith("/newsrealty/community"),
+    subItems: [
+      { label: "회원 Q&A", href: "/newsrealty/community?board=studyqa", board: "studyqa", first: true },
+      { label: "자유게시판", href: "/newsrealty/community?board=free", board: "free" },
+    ],
+  },
 ];
 
 interface NewsrealtyHeaderProps {
@@ -100,14 +125,19 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
           aria-label="공실뉴스부동산 메뉴"
           className="container px-20"
           style={{
-            display: "flex", alignItems: stuck ? "center" : "flex-end", gap: stuck ? "32px" : "40px",
-            padding: stuck ? "14px 20px" : "20px 20px 14px",
+            display: "flex", alignItems: "center", gap: "32px",
+            padding: stuck ? "12px 20px" : "16px 20px",
           }}
         >
+          {/* 공실열람처럼 공실뉴스 로고 → 공실뉴스 홈 (2026-10-26 사장님: 메인 헤더 없이) */}
+          <Link href="/" title="공실뉴스 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -20 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="공실뉴스" style={{ height: stuck ? 34 : 40 }} />
+          </Link>
           <Link
             href="/newsrealty"
             style={{
-              fontSize: stuck ? "22px" : "32px", fontWeight: 900, color: "#111", letterSpacing: "-1px", lineHeight: 1,
+              fontSize: stuck ? "20px" : "24px", fontWeight: 900, color: "#111", letterSpacing: "-0.5px", lineHeight: 1,
               textDecoration: "none", whiteSpace: "nowrap",
             }}
             title="공실뉴스부동산 홈"
@@ -132,7 +162,7 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
                     onClick={() => setHoveredNav(null)}
                     style={{
                       fontSize: "16px",
-                      fontWeight: isActive ? 800 : 500,
+                      fontWeight: isActive ? 800 : 600,
                       color: isActive ? POINT : "#6b7280",
                       textDecoration: "none",
                       whiteSpace: "nowrap",
@@ -196,20 +226,14 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
             })}
           </div>
 
-          {/* 붙었을 때(stuck)만 우측 끝에 메인 헤더 기능 버튼들 노출 */}
-          {stuck && (
+          {/* 2026-10-26 사장님: 메인 헤더 없이 — 오른쪽에 로그인(알림)·관리자 버튼을 늘 둔다 */}
+          {(
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
               {member ? <NotificationBell color="#333" /> : (
                 <Link href={"/login?returnTo=" + encodeURIComponent(pathname)} style={{ fontSize: "13px", fontWeight: 700, color: "#333", textDecoration: "none" }}>로그인</Link>
               )}
-              <button type="button" aria-label="검색" onClick={() => window.dispatchEvent(new Event("gongsil:open-search"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              </button>
-              <button type="button" aria-label="전체 메뉴" onClick={() => window.dispatchEvent(new Event("gongsil:open-megamenu"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-              </button>
               {member ? (
-                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isStudyAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                   {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
                 </button>
               ) : (
@@ -220,6 +244,41 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
             </div>
           )}
         </nav>
+        <Suspense fallback={null}>
+          <NewsrealtySubTabs pathname={pathname} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+/** 자료실·커뮤니티 아래 2차 탭 줄 — 게시판은 주소(?board=)로 바뀐다 */
+function NewsrealtySubTabs({ pathname }: { pathname: string }) {
+  const searchParams = useSearchParams();
+  const active = NAV_ITEMS.find((item) => item.match(pathname) && item.subItems?.some((s) => s.board));
+  if (!active?.subItems) return null;
+  const board = searchParams?.get("board");
+  return (
+    <div style={{ borderTop: "1px solid #f1ece6", borderBottom: "1px solid #e5e7eb" }}>
+      <div className="container px-20" style={{ display: "flex", gap: 4, overflowX: "auto", padding: "0 20px" }}>
+        {active.subItems.map((sub) => {
+          const on = board ? board === sub.board : !!sub.first;
+          return (
+            <Link
+              key={sub.href}
+              href={sub.href}
+              aria-current={on ? "page" : undefined}
+              style={{
+                display: "inline-flex", alignItems: "center", padding: "12px 14px",
+                fontSize: 14, whiteSpace: "nowrap", textDecoration: "none",
+                borderBottom: `2px solid ${on ? POINT : "transparent"}`,
+                color: on ? "#1e293b" : "#64748b", fontWeight: on ? 600 : 400,
+              }}
+            >
+              {sub.label}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

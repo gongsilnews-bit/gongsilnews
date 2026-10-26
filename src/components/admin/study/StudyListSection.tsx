@@ -185,7 +185,7 @@ export default function StudyListSection({ theme, mode = "admin" }: AdminSection
             </span>
           </div>
           {!quota.paid && (
-            <button type="button" onClick={() => router.push("/study")} style={btn("#2563eb")}>공실스터디 신청하기</button>
+            <button type="button" onClick={() => router.push("/study")} style={btn("#2563eb")}>부동산특강 신청하기</button>
           )}
         </div>
       )}

@@ -307,8 +307,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                   displayRole = '비즈니스(신청)';
                 }
                 if (member.role === 'REALTOR' && member.plan_type) {
-                  if (member.plan_type === 'news_premium') displayRole = '공실뉴스';
-                  else if (member.plan_type === 'study_premium') displayRole = '공실스터디';
+                  if (member.plan_type === 'news_premium' || member.plan_type === 'study_premium') displayRole = '공실뉴스';
                 }
                 if (member.role === 'BIZ' && member.plan_type === 'biz_premium') {
                   displayRole = '비즈니스';
@@ -551,7 +550,6 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
 const HOMEPAGE_ROWS: [string, string][] = [
   ["일반회원", "USER"],
   ["부동산회원 (무료)", "REALTOR_FREE"],
-  ["부동산회원 (공실스터디부동산)", "REALTOR_STUDY"],
   ["부동산회원 (공실뉴스부동산)", "REALTOR_NEWS"],
   ["비즈니스회원", "BIZ"],
 ];
@@ -751,19 +749,6 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           {perm("PERM_REALTOR_FREE_ARTICLE_BANNER")}
           {perm("PERM_REALTOR_FREE_ARTICLE_VACANCY")}
           {perm("PERM_REALTOR_FREE_HOMEPAGE")}
-        </div>
-      </div>
-
-      {/* 부동산회원 (공실스터디부동산) */}
-      <div style={sectionStyle}>
-        <div style={rowStyle}>
-          <span style={labelStyle}>부동산회원 (공실스터디부동산)</span>
-          <input type="number" value={formData.LIMIT_REALTOR_STUDY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_STUDY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          <input type="number" value={formData.LIMIT_REALTOR_STUDY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          <input type="number" value={formData.LIMIT_REALTOR_STUDY_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          {perm("PERM_REALTOR_STUDY_ARTICLE_BANNER")}
-          {perm("PERM_REALTOR_STUDY_ARTICLE_VACANCY")}
-          {perm("PERM_REALTOR_STUDY_HOMEPAGE")}
         </div>
       </div>
 

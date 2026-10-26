@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import StudyBackButton from "@/components/study/StudyBackButton";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
-import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
-import StudyHero from "@/components/study/StudyHero";
 import TypingText from "@/components/study/TypingText";
 
 
@@ -27,6 +26,15 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("전체");
+  // 나의 강의실 ↔ 강의신청내역 — 같은 화면(헤더 없이)에서 바꾼다. 주소 ?view=applications (2026-10-26 사장님)
+  const [view, setView] = useState<"classroom" | "applications">("classroom");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("view") === "applications") setView("applications");
+  }, []);
+  const switchView = (v: "classroom" | "applications") => {
+    setView(v);
+    router.replace(v === "applications" ? "/study/classroom?view=applications" : "/study/classroom", { scroll: false });
+  };
 
   const [oauthLoading, setOauthLoading] = useState<"google" | "kakao" | null>(null);
   const [showFindAccount, setShowFindAccount] = useState(false);
@@ -126,28 +134,25 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
 
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#261f1b", minHeight: "100vh" }}>
-      <StudyHeader background={STUDY_HERO_BAR} />
-
       {/* ━━━ [1] 페이지 헤드 (통일된 프리미엄 스터디 히어로) ━━━ */}
-      <StudyHero
-        title="나의 강의실"
-        englishTitle="My Study"
-        description="오늘 등록한 공실! 블로그포스팅/유튜브 영상으로 따라하면서 만드세요~"
-        tabs={[
-          {
-            label: "내 강의실",
-            href: "/study/classroom",
-            isActive: true,
-          },
-          {
-            label: "강의신청내역",
-            href: "/study/lectures?tab=applications",
-            isActive: false,
-          },
-        ]}
-      />
+      {/* 강의 상세(/study_read)와 같은 밝은 경로 줄 (2026-10-26 사장님: 짙은 머리 없이 통일) */}
+      <div style={{ borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "12px 24px", fontSize: 14, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+          <StudyBackButton />
+          <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>부동산특강</Link>
+          <span>›</span>
+          <span style={{ color: "#334155", fontWeight: 600 }}>{view === "applications" ? "강의신청내역" : "나의 강의실"}</span>
+          <button
+            type="button"
+            onClick={() => switchView(view === "applications" ? "classroom" : "applications")}
+            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", padding: "8px 18px", borderRadius: 8, fontSize: 14, fontWeight: 800, color: "#ffffff", background: "#059669", border: "none", boxShadow: "0 2px 6px rgba(5, 150, 105, 0.25)", cursor: "pointer", whiteSpace: "nowrap" }}
+          >
+            {view === "applications" ? "나의 강의실" : "강의신청내역"}
+          </button>
+        </div>
+      </div>
 
-      <main className="container px-20" style={{ maxWidth: 1200, width: "100%", margin: "0 auto", padding: "36px 20px 80px", boxSizing: "border-box" }}>
+      <main style={{ maxWidth: 1160, width: "100%", margin: "0 auto", padding: "36px 24px 80px", boxSizing: "border-box" }}>
 
         {/* ━━━ 로그인 전: 나의 강의실에서 바로 로그인 ━━━ */}
         {!checkingAuth && !currentUser && (
@@ -368,15 +373,46 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
         )}
 
         {/* ━━━ 수강 내역 없음 ━━━ */}
-        {currentUser && !loading && enrollments.length === 0 && (
+        {/* ━━━ 강의신청내역 ━━━ */}
+        {currentUser && !loading && view === "applications" && (
+          <div style={{ background: "#ffffff", borderRadius: 14, padding: "32px 28px", border: "1px solid #d1fae5" }}>
+            {enrollments.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: "#94a3b8" }}>
+                <div style={{ fontSize: 44, marginBottom: 14 }}>📭</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#1c1917", marginBottom: 8 }}>수강 신청 내역이 없습니다</div>
+                <Link href="/study" style={{ display: "inline-block", marginTop: 12, padding: "8px 20px", background: "#1a1613", color: "#fff", borderRadius: 8, fontSize: 13.5, fontWeight: 700, textDecoration: "none" }}>
+                  특강 목록 둘러보기
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {enrollments.map((en: any) => (
+                  <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: 16, border: "1px solid #d1fae5", borderRadius: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", marginBottom: 4 }}>{en.lecture?.title || "특강"}</div>
+                      <div style={{ fontSize: 13, color: "#64748b" }}>
+                        신청일: {en.created_at?.substring(0, 10)} | 결제: {Number(en.points_paid || 0).toLocaleString()}P{en.expires_at ? ` | 만료: ${new Date(en.expires_at).toLocaleDateString()}` : ""}
+                      </div>
+                    </div>
+                    <Link href={`/study_read?id=${en.lecture_id}`} style={{ padding: "8px 18px", background: "#059669", color: "#fff", borderRadius: 6, fontSize: 13.5, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                      강의실 입장
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentUser && !loading && view === "classroom" && enrollments.length === 0 && (
           <div style={{ background: "#fbf8f4", border: "1px solid #d1fae5", borderRadius: 16, padding: "70px 24px", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
             <div style={{ fontSize: 19, fontWeight: 800, color: "#1c1917", marginBottom: 8 }}>아직 수강 중인 강의가 없습니다</div>
             <p style={{ fontSize: 14.5, color: "#64748b", margin: "0 0 22px 0", lineHeight: 1.7 }}>
-              공실스터디 특강을 신청하면 이곳에서 바로 이어보실 수 있습니다.
+              부동산특강을 신청하면 이곳에서 바로 이어보실 수 있습니다.
             </p>
             <Link
-              href="/study/lectures"
+              href="/study"
               style={{ display: "inline-block", padding: "12px 30px", background: "#1a1613", color: "#ffffff", borderRadius: 10, fontSize: 15, fontWeight: 800, textDecoration: "none" }}
             >
               특강 목록 둘러보기 →
@@ -385,42 +421,9 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
         )}
 
         {/* ━━━ 강의 목록 ━━━ */}
-        {currentUser && !loading && enrollments.length > 0 && (
+        {currentUser && !loading && view === "classroom" && enrollments.length > 0 && (
           <>
-            {/* 강의목록과 같은 제목 + 분류 탭 */}
-            <div style={{ marginBottom: 24 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
-                MY STUDY
-              </span>
-              <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#1c1917", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
-                내가 신청한 강의 목록이에요!
-              </h2>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
-              {categories.map((cat) => {
-                const isSel = activeCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    style={{
-                      padding: "7px 16px",
-                      borderRadius: 8,
-                      fontSize: 13.5,
-                      fontWeight: isSel ? 700 : 500,
-                      color: isSel ? "#ffffff" : "#a8381a",
-                      backgroundColor: isSel ? "#211b17" : "#f0fdf4",
-                      border: isSel ? "1px solid #211b17" : "1px solid #d1fae5",
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-
+            {/* 2026-10-26 사장님: 제목·분류 버튼 없이 강의만 */}
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "70px 20px", background: "#fbf8f4", borderRadius: 12, border: "1px solid #d1fae5", color: "#64748b" }}>
                 <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
@@ -480,7 +483,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                               }}
                             >
                               <span style={{ fontSize: 30 }}>▶</span>
-                              <span style={{ fontSize: 13, fontWeight: 700 }}>{lecture.category || "공실스터디"}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700 }}>{lecture.category || "부동산특강"}</span>
                             </div>
                           )}
 
@@ -555,7 +558,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                 새로운 특강은 매월 업데이트됩니다. 아직 신청하지 않은 특강을 확인해 보세요.
               </div>
               <Link
-                href="/study/lectures"
+                href="/study"
                 style={{ padding: "10px 22px", background: "#1a1613", color: "#ffffff", borderRadius: 8, fontSize: 13.5, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}
               >
                 강의목록 보기 →

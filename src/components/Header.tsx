@@ -14,7 +14,8 @@ import NavHighlightBubble, { useNavHighlightBubbles, NavCategoryHighlightMarker,
 import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
-import { getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import NewsrealtyJoinButton, { showNewsrealtyJoin } from "@/components/NewsrealtyJoinButton";
+import { getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
@@ -39,8 +40,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [userRole, setUserRole] = useState<string>('');
   const [planType, setPlanType] = useState<string>('');
   const [agencyStatus, setAgencyStatus] = useState<string>('');
-  // 공실스터디부동산 회원은 관리자 버튼을 공실스터디 녹색으로
-  const studyGreen = isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus);
   const newsOrange = isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus);
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -213,6 +212,12 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   if (pathname?.startsWith('/gongsilstudy')) {
     return null;
   }
+  // 나의 강의실은 헤더·풋터 없이 깔끔하게 — 위의 [‹ 부동산특강] 으로 돌아간다 (2026-10-26 사장님)
+  // 강의 상세(/study_read)도 위 헤더 없이 — 경로 줄 [‹ 부동산특강] 으로 돌아간다 (2026-10-26)
+  // 공실뉴스부동산(/newsrealty)도 메인 헤더 없이 — 자기 메뉴 줄 앞의 공실뉴스 로고로 홈에 간다 (2026-10-26)
+  if (pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || pathname?.startsWith('/newsrealty') || pathname === '/study/about') {
+    return null;
+  }
 
   return (
     <>
@@ -266,8 +271,9 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <NotificationBell color="#ffffff" />
+              <NewsrealtyJoinButton tone="dark" small joined={!showNewsrealtyJoin({ role: userRole, plan_type: planType })} />
               <div style={{
-                background: userRole === 'ADMIN' ? '#111827' : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : '#ef4444',
+                background: userRole === 'ADMIN' ? '#111827' : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : '#ef4444',
                 color: '#fff',
                 padding: '4px 10px',
                 borderRadius: '4px',
@@ -290,6 +296,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingRight: "4px" }}>
+              <NewsrealtyJoinButton tone="dark" small />
               <div
                 onClick={() => { router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write')); }}
                 style={{
@@ -417,20 +424,12 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
                   <div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
-                    <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
-                      <span style={{ position: "relative", zIndex: 1 }}>공실스터디</span>
+                    <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
+                      <span style={{ position: "relative", zIndex: 1 }}>부동산특강</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "study"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="study" />
-                    <div className="gnb-dropdown">
-                      <ul>
-                        <li><Link href="/study/lectures">강의목록</Link></li>
-                        <li><Link href="/study/benefits">멤버십혜택</Link></li>
-                        <li><Link href="/study/apply">멤버십신청</Link></li>
-                        <li><Link href="/study/resources">자료실</Link></li>
-                        <li><Link href="/study/community">커뮤니티</Link></li>
-                      </ul>
-                    </div>
+                    {/* 2026-10-26 사장님: 부동산특강은 펼침 메뉴 없음 — [내 강의실]은 특강 첫 화면에 */}
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/help" className={pathname === "/help" || pathname?.startsWith("/help") ? "active" : ""}>고객센터</Link>
@@ -479,6 +478,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28 }}><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
 
+                <NewsrealtyJoinButton joined={!showNewsrealtyJoin(currentUser ? { role: userRole, plan_type: planType } : null)} />
+
                 {/* 스크롤해도 상단 바와 같은 등급 버튼을 유지한다.
                     (비로그인 상태에서만 공실등록 버튼을 노출) */}
                 {currentUser ? (
@@ -489,13 +490,13 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     else router.push('/user_admin');
                   }}
                     style={{
-                      background: userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
+                      background: userRole === 'ADMIN' ? "#111827" : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
                       padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
-                      boxShadow: userRole === 'ADMIN' ? "0 2px 4px rgba(17, 24, 39, 0.2)" : studyGreen ? "0 2px 4px rgba(5, 150, 105, 0.2)" : "0 2px 4px rgba(239, 68, 68, 0.2)",
+                      boxShadow: userRole === 'ADMIN' ? "0 2px 4px rgba(17, 24, 39, 0.2)" : "0 2px 4px rgba(239, 68, 68, 0.2)",
                       transition: "background 0.2s", whiteSpace: "nowrap", flexShrink: 0
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : studyGreen ? "#047857" : "#dc2626"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444"}>
+                    onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : "#dc2626"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444"}>
                     {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
                   </button>
                 ) : (
@@ -701,8 +702,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실열람</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study/lectures"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실스터디</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study/resources"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/newsrealty/resources"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>
                 </ul>
               </div>

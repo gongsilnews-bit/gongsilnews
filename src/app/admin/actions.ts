@@ -555,7 +555,7 @@ async function applyRealtorApproval(
         title: "🎉 부동산회원 승인 완료",
         body: "공인중개사 서류 심사가 통과되어 부동산회원으로 승인되었습니다.",
         link: "/realty_admin",
-        mobileLink: "/m/admin",
+        mobileLink: "/m/admin/dashboard",
         sourceId: `realtor_approved_${memberId}`,
         revive: true,
       });
@@ -631,7 +631,7 @@ export async function adminUpdateAgency(
             success: false,
             duplicate: true,
             error: `이미 가입된 중개사무소입니다${masked ? ` (${masked})` : ''}. 무료 회원은 중개사무소 한 곳당 부동산회원 계정을 하나만 만들 수 있습니다. ` +
-              '같은 사무소 직원 계정은 사무소 대표 계정이 공실스터디부동산(유료)일 때 만들 수 있습니다. ' +
+              '같은 사무소 직원 계정은 사무소 대표 계정이 공실뉴스부동산(유료)일 때 만들 수 있습니다. ' +
               '기존 계정으로 로그인하시거나, 계정을 찾을 수 없으면 고객센터로 문의해 주세요.',
           };
         }
@@ -1367,7 +1367,8 @@ function planDefaults(
       can_sns_links: !!policies.PERM_BIZ_SNS_LINKS,
     };
   }
-  if (planType === 'news_premium') {
+  // 옛 공실스터디부동산(study_premium)도 공실뉴스부동산 한도로 (2026-10-26 합침)
+  if (planType === 'news_premium' || planType === 'study_premium') {
     return {
       max_vacancies: policies.LIMIT_REALTOR_NEWS_VACANCY,
       max_articles_per_month: policies.LIMIT_REALTOR_NEWS_ARTICLE,
@@ -1381,22 +1382,6 @@ function planDefaults(
       can_site_logo: !!policies.PERM_REALTOR_NEWS_SITE_LOGO,
       can_hero_video: !!policies.PERM_REALTOR_NEWS_HERO_VIDEO,
       can_sns_links: !!policies.PERM_REALTOR_NEWS_SNS_LINKS,
-    };
-  }
-  if (planType === 'study_premium') {
-    return {
-      max_vacancies: policies.LIMIT_REALTOR_STUDY_VACANCY,
-      max_articles_per_month: policies.LIMIT_REALTOR_STUDY_ARTICLE,
-      max_lectures: policies.LIMIT_REALTOR_STUDY_LECTURE,
-      can_article_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_BANNER,
-      can_article_vacancy_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_VACANCY,
-      can_homepage: !!policies.PERM_REALTOR_STUDY_HOMEPAGE,
-      max_hero_slides: policies.LIMIT_REALTOR_STUDY_HERO_SLIDES,
-      can_hide_footer_badge: !!policies.PERM_REALTOR_STUDY_FOOTER_HIDE,
-      can_intake_photo: !!policies.PERM_REALTOR_STUDY_INTAKE_PHOTO,
-      can_site_logo: !!policies.PERM_REALTOR_STUDY_SITE_LOGO,
-      can_hero_video: !!policies.PERM_REALTOR_STUDY_HERO_VIDEO,
-      can_sns_links: !!policies.PERM_REALTOR_STUDY_SNS_LINKS,
     };
   }
   return {

@@ -170,11 +170,11 @@ export default function MobileStudyReadClient({
       objectType: "feed",
       content: {
         title: lecture?.title,
-        description: lecture?.category || "공실스터디 | 공실뉴스",
+        description: lecture?.category || "부동산특강 | 공실뉴스",
         imageUrl: lecture?.thumbnail_url || "",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
-      buttons: [{ title: "스터디 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
+      buttons: [{ title: "특강 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
     });
   };
 
@@ -270,7 +270,7 @@ export default function MobileStudyReadClient({
           <button onClick={() => onClose ? onClose() : router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
-          <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 700, color: "#111827" }}>공실스터디</div>
+          <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 700, color: "#111827" }}>부동산특강</div>
         </div>
         <div style={{ textAlign: "center", padding: 80, color: "#999" }}>📭 등록된 강의가 없습니다.</div>
       </div>
@@ -330,7 +330,7 @@ export default function MobileStudyReadClient({
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1917" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 800, color: "#1c1917" }}>
-          공실스터디
+          부동산특강
         </div>
         <button onClick={handleKakaoShare} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
@@ -344,7 +344,7 @@ export default function MobileStudyReadClient({
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #1a1613 0%, #3a2c22 100%)", color: "#fff" }}>
             <span style={{ fontSize: 32, marginBottom: 4 }}>🎓</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>{lecture.category || "공실스터디"}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>{lecture.category || "부동산특강"}</span>
           </div>
         )}
         <span style={{ position: "absolute", top: 12, left: 12, background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
@@ -388,7 +388,7 @@ export default function MobileStudyReadClient({
           {lecture.title}
         </h1>
         <p style={{ fontSize: "13.5px", color: "#64748b", lineHeight: 1.5, margin: "0 0 14px 0" }}>
-          {lecture.short_description || "11만 부동산 전문가와 함께 1년 동안 실전 노하우를 배우고 성장하는 공실스터디 과정"}
+          {lecture.short_description || "11만 부동산 전문가와 함께 1년 동안 실전 노하우를 배우고 성장하는 부동산특강 과정"}
         </p>
 
         {/* 뱃지들 */}
@@ -455,7 +455,7 @@ export default function MobileStudyReadClient({
         {activeTab === "introduce" && (
           <div style={{ fontSize: 14, color: "#334155", lineHeight: 1.7 }}>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 12px 0" }}>
-              스터디 안내
+              특강 안내
             </h3>
             {lecture.description ? (
               lecture.description_html

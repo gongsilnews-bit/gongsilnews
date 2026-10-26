@@ -103,7 +103,7 @@ export default function MenuPage() {
 
   // 공실스터디 멤버십(유료) 부동산은 "공실스터디부동산" 녹색 배지로 (2026-10-12)
   const isStudyMember = (role?: string, planType?: string) =>
-    getPlanLabel({ role: role?.trim().toUpperCase() === 'REALTOR' ? 'REALTOR' : role, plan_type: planType }) === '공실스터디부동산';
+    getPlanLabel({ role: role?.trim().toUpperCase() === 'REALTOR' ? 'REALTOR' : role, plan_type: planType }) === '공실뉴스부동산';
 
   // 공실뉴스부동산(유료) — 주황 배지 (2026-10-23)
   const isNewsMember = (role?: string, planType?: string) =>
@@ -112,7 +112,7 @@ export default function MenuPage() {
   const getRoleLabel = (role?: string, agencyStatus?: string, planType?: string) => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실스터디부동산' : isNewsMember(role, planType) ? '공실뉴스부동산' : '부동산회원';
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실뉴스부동산' : isNewsMember(role, planType) ? '공실뉴스부동산' : '부동산회원';
     return '일반회원';
   };
 
@@ -175,7 +175,7 @@ export default function MenuPage() {
 
   const serviceMenus = [
     { name: "공실열람", path: "/m/gongsil" },
-    { name: "공실스터디", path: "/m/study" },
+    { name: "부동산특강", path: "/m/study" },
     { name: "드론영상", path: "/m/board?id=drone" },
     { name: "APP(앱)", path: "/m/board?id=app" },
     { name: "AI 프롬프트", path: "/m/board?id=prompt" },
@@ -235,7 +235,7 @@ export default function MenuPage() {
           ) : (
             <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
               {/* 공실스터디 멤버십(유료) 회원은 녹색 카드, 그 외는 공실뉴스 남색 */}
-              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실스터디부동산' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
+              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실뉴스부동산' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
                     {memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url ? (
@@ -286,6 +286,15 @@ export default function MenuPage() {
               </div>
             </div>
           )}
+
+          {/* 공실뉴스부동산 — PC 헤더 오른쪽 위 버튼과 같은 자리 (2026-10-26). 누구에게나, 이미 회원·최고관리자면 "가입" 없이 */}
+          {(() => { const joined = isAdminRole(memberData?.role) || getPlanLabel(memberData ? { role: memberData.role, plan_type: memberData.plan_type } : null) === '공실뉴스부동산'; return (
+            <div style={{ padding: '0 20px 10px', background: '#fff' }}>
+              <Link href="/m/newsrealty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: '1px solid #d1d5db', borderRadius: 8, color: '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                {joined ? '공실뉴스부동산 ›' : '공실뉴스부동산 가입 ›'}
+              </Link>
+            </div>
+          ); })()}
 
           {/* 부동산회원 전환 유도 */}
           {currentUser && memberData && (memberData.role === 'USER' || (!memberData.role)) && (() => {

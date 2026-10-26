@@ -79,7 +79,7 @@ export default function MyLecturesPage() {
               onClick={() => router.push("/m/study")}
               style={{ marginTop: 20, padding: "10px 24px", background: "#059669", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
             >
-              공실스터디 둘러보기
+              부동산특강 둘러보기
             </button>
           </div>
         </div>

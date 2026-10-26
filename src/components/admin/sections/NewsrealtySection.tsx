@@ -14,7 +14,7 @@ import {
 
 const SERVICE_META = {
   newsrealty: { label: "공실뉴스부동산", planLabel: "공실뉴스부동산", icon: "🏢", color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
-  study: { label: "공실스터디", planLabel: "공실스터디부동산", icon: "🎓", color: "#047857", bg: "#ecfdf5", border: "#a7f3d0" },
+  study: { label: "부동산특강", planLabel: "공실뉴스부동산", icon: "🎓", color: "#047857", bg: "#ecfdf5", border: "#a7f3d0" },
 } as const;
 
 function ServiceBadge({ service }: { service?: string }) {

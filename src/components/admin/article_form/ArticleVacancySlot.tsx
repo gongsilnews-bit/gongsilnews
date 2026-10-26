@@ -70,7 +70,7 @@ export default function ArticleVacancySlot({
         </select>
         <div style={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>
           {!canAttach
-            ? "공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다."
+            ? "공실뉴스부동산 유료 회원 전용 기능입니다."
             : vacancies.length === 0
               ? "연결할 수 있는 공실이 없습니다. 광고중이면서 일반인에게도 노출되는 내 공실만 선택할 수 있습니다."
               : "선택한 공실이 기사 하단에 추천 공실로 노출됩니다."}

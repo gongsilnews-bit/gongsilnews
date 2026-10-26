@@ -8,7 +8,7 @@ import { isAdminRole } from "@/utils/permissionCheck";
  * 크롬 확장(공실뉴스 AI 기사작성기) 회원 판정
  *
  * - 공실뉴스 로그인 쿠키(확장은 gongsilnews.com 권한으로 쿠키를 함께 보낸다) 또는 Bearer 토큰으로만 판정한다.
- * - 3단계 블로그 작성: 공실뉴스부동산·공실스터디부동산(요금제 기간 내)·최고관리자는 무제한.
+ * - 3단계 블로그 작성: 공실뉴스부동산(요금제 기간 내)·최고관리자는 무제한. (옛 study_premium 도 같이 — 2026-10-26 공실뉴스부동산으로 합침)
  * - AI 유튜브작성기: 위와 같은 회원 범위지만 별도 권한 값으로 응답한다.
  * - 그 외 로그인 회원은 블로그·유튜브 대본을 기능별로 매월 3번 무료 체험한다 (아래 consumeTrial).
  *   1·2단계는 비회원도 쓸 수 있으므로 여기서 막지 않는다.
@@ -24,7 +24,7 @@ export const NEWSMAKER_PLANS = ["admin", "news_premium", "study_premium"] as con
 export const PLAN_LABELS: Record<string, string> = {
   admin: "최고관리자",
   news_premium: "공실뉴스부동산",
-  study_premium: "공실스터디부동산",
+  study_premium: "공실뉴스부동산",
   free: "무료",
 };
 

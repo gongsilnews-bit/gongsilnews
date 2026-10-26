@@ -272,8 +272,8 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
 
   const aiPanel = (target: { slot?: number; replaceId?: string }, heading: string, onClose: () => void) => paid === false ? (
     <div style={{ padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: theme.textPrimary }}><b>AI 이미지</b>는 공실스터디 멤버십 전용 기능이에요.</span>
-      <button onClick={openStudy} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>공실스터디 멤버십 보기 →</button>
+      <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: theme.textPrimary }}><b>AI 이미지</b>는 공실뉴스부동산 전용 기능이에요.</span>
+      <button onClick={openStudy} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>공실뉴스부동산 보기 →</button>
       <button onClick={onClose} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
     </div>
   ) : (

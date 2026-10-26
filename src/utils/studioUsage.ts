@@ -105,7 +105,7 @@ export async function getStudioUsage(member: ExtensionMember, feature: StudioFea
 export type ConsumeResult = { ok: true; charged: boolean; usage: StudioUsage } | { ok: false; reason: string; usage: StudioUsage };
 
 const SIM_ID = /^(int|rem)-[a-f0-9]+$/;
-const SIM_LOCKED = "인테리어뉴스·리모델링뉴스는 유료회원(공실스터디 멤버십) 전용 기능입니다.";
+const SIM_LOCKED = "인테리어뉴스·리모델링뉴스는 유료회원(공실뉴스부동산) 전용 기능입니다.";
 
 /** 블로그를 쓰기 전(kind 'blog', 공실 하나 1회) 또는 AI 이미지를 만들기 전(kind 'ai_image')에 부른다 */
 export async function consumeStudio(member: ExtensionMember, kind: StudioFeature | "ai_image" | "simulation", vacancyId?: string): Promise<ConsumeResult> {
@@ -122,7 +122,7 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
 
   if (kind === "ai_image") {
     // AI 이미지는 공실스터디 멤버십(유료회원) 전용 (2026-10-24 사장님)
-    if (!member.canRemodel) return { ok: false, reason: "AI 이미지는 공실스터디 멤버십 전용 기능입니다.", usage };
+    if (!member.canRemodel) return { ok: false, reason: "AI 이미지는 공실뉴스부동산 전용 기능입니다.", usage };
     if (usage.aiImageLimit !== null && usage.aiImageToday >= usage.aiImageLimit) {
       return { ok: false, reason: `AI 이미지는 계정 보호를 위해 하루 ${usage.aiImageLimit}장까지 만들 수 있습니다. 내일 다시 만들어 주세요.`, usage };
     }
@@ -139,7 +139,7 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
     return { ok: false, reason: `${name} 쓰기는 부동산회원(중개사) 기능입니다. 부동산회원으로 전환하면 매월 무료로 써 볼 수 있습니다.`, usage };
   }
   if (usage.monthRemaining !== null && usage.monthRemaining <= 0) {
-    return { ok: false, reason: `이번 달 ${name} ${usage.monthLimit}회를 모두 썼습니다. 공실스터디 멤버십이면 무제한으로 쓸 수 있습니다.`, usage };
+    return { ok: false, reason: `이번 달 ${name} ${usage.monthLimit}회를 모두 썼습니다. 공실뉴스부동산이면 무제한으로 쓸 수 있습니다.`, usage };
   }
   if (usage.dailyLimit !== null && usage.todayUsed >= usage.dailyLimit) {
     return { ok: false, reason: `계정 보호를 위해 ${name}는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };

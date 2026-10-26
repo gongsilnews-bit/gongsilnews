@@ -174,12 +174,12 @@ function MobileBottomNavContent() {
       ),
     },
     {
-      name: "공실스터디", path: "/m/study",
+      name: "부동산특강", path: "/m/study",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>,
       iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M2 10l10-5 10 5-10 5z" fill="currentColor"/><path d="M6 12v5c3 3 9 3 12 0v-5L12 15 6 12z" fill="currentColor" opacity=".6"/><rect x="21" y="10" width="2" height="6" rx="1" fill="currentColor"/></svg>,
     },
     {
-      name: "마이", path: "/m/mypage",
+      name: "마이", path: "/m/menu", // /m/mypage 는 없는 주소 (2026-10-26)
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
       iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" fill="currentColor"/><path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2H4z" fill="currentColor"/></svg>,
     },
@@ -219,7 +219,7 @@ function MobileBottomNavContent() {
           })();
 
           const activeColor = isActive
-            ? ((item.name === "홈" || item.name === "공실") ? '#1a73e8' : (item.name === "공실스터디" ? '#059669' : '#ea580c'))
+            ? ((item.name === "홈" || item.name === "공실") ? '#1a73e8' : (item.name === "부동산특강" ? '#059669' : '#ea580c'))
             : '#333';
 
           return item.name === "마이" ? (

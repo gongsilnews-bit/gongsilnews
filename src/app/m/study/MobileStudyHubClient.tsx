@@ -182,10 +182,10 @@ export default function MobileStudyHubClient({
                     boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
                   }}
                 >
-                  공실스터디란?
+                  부동산특강이란?
                 </Link>
                 <Link
-                  href="/m/study/apply"
+                  href="/m/newsrealty/apply"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -198,7 +198,7 @@ export default function MobileStudyHubClient({
                     textShadow: "0 1px 5px rgba(0, 0, 0, 0.55)",
                   }}
                 >
-                  공실스터디 멤버십 신청하기 &gt;&gt;
+                  공실뉴스부동산 신청하기 &gt;&gt;
                 </Link>
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function MobileStudyHubClient({
           {/* 2. 특강 목록 */}
           <div style={{ padding: "0 16px 24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "#1c1917" }}>전체 스터디 특강</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#1c1917" }}>전체 특강</span>
               <span style={{ fontSize: 12.5, color: "#64748b", fontWeight: 600 }}>총 {filteredLectures.length}개</span>
             </div>
 
@@ -254,7 +254,7 @@ export default function MobileStudyHubClient({
                       ) : (
                         <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#1a1613,#3a2c22)", color: "#fff" }}>
                           <span style={{ fontSize: 28, marginBottom: 4 }}>🎓</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#34d399" }}>{lecture.category || "공실스터디"}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#34d399" }}>{lecture.category || "부동산특강"}</span>
                         </div>
                       )}
                       <span style={{ position: "absolute", top: 10, left: 10, background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>

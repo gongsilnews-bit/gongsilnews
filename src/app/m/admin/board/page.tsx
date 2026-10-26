@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getBoards, deleteBoard, saveBoard, getBoard } from "@/app/actions/board";
 
+/** 옛 3레벨(공실스터디부동산)은 4레벨(공실뉴스부동산)로 읽는다 */
+const lv = (n: number) => (n === 3 ? 4 : n);
+
 const SKIN_LABELS: Record<string, string> = { 
   FILE_THUMB: "자료실형", 
   VIDEO_ALBUM: "영상/파일형", 
@@ -16,7 +19,6 @@ const PERMISSION_OPTIONS = [
   { label: "0레벨 (비회원 이상)", value: 0 },
   { label: "1레벨 (일반회원 이상)", value: 1 },
   { label: "2레벨 (무료부동산 이상)", value: 2 },
-  { label: "3레벨 (공실스터디부동산)", value: 3 },
   { label: "4레벨 (공실뉴스부동산)", value: 4 },
   { label: "5레벨 (최고관리자)", value: 5 },
 ];
@@ -96,9 +98,10 @@ function MobileBoardAdmin() {
       setFormData(prev => ({
         ...prev, id: d.id || "", board_id: d.board_id || "", name: d.name || "",
         subtitle: d.subtitle || d.description || "", board_type: d.board_type || "standard", skin_type: d.skin_type || "LIST",
-        columns_count: d.columns_count || 3, perm_list: d.perm_list ?? 0,
-        perm_read: d.perm_read ?? 0, perm_write: d.perm_write ?? 5,
-        comments_enabled: d.comments_enabled !== false, perm_comment: d.perm_comment ?? 1,
+        // 3레벨(옛 공실스터디부동산)은 없어져서 4레벨로 (2026-10-26)
+        columns_count: d.columns_count || 3, perm_list: lv(d.perm_list ?? 0),
+        perm_read: lv(d.perm_read ?? 0), perm_write: lv(d.perm_write ?? 5),
+        comments_enabled: d.comments_enabled !== false, perm_comment: lv(d.perm_comment ?? 1),
         categories: d.categories || "", max_photos: d.max_photos ?? (d.board_type === "inquiry" ? 5 : 0),
       }));
     }

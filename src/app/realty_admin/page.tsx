@@ -34,6 +34,7 @@ const StudioMarketingSection = lazy(() => import("@/components/admin/sections/St
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
 const VideoStudio = lazy(() => import("@/components/admin/studio-video/VideoStudio"));
 const PhotoStudio = lazy(() => import("@/components/admin/studio-photo/PhotoStudio"));
+import StudioPromoSection from "@/components/admin/sections/StudioPromoSection";
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -47,13 +48,16 @@ const REALTY_MENU: MenuItem[] = [
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "homepage", label: "물건접수웹페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
+  // 웹에서만 — 공실스튜디오(PC 앱) 소개·받기 (2026-10-26 사장님: 만드는 기능은 앱에서)
+  { key: "studio", label: "공실스튜디오", icon: <IconFilm /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
 
 /* ── 공실스튜디오 텍스트 메뉴 ──
    업무 메뉴 6개만 위에 두고 나머지는 [더보기]에 접는다.
-   2026-10-15 앱에서 먼저 써 보고 웹에도 켰다. 예전 아이콘 메뉴로 돌리려면 STUDIO_MENU_ON_WEB 을 false 로. */
-const STUDIO_MENU_ON_WEB = true;
+   2026-10-15 앱에서 먼저 써 보고 웹에도 켰다. 예전 아이콘 메뉴로 돌리려면 STUDIO_MENU_ON_WEB 을 false 로.
+   2026-10-26 사장님: 웹은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만) — 지금 모양은 공실스튜디오 앱에서만 */
+const STUDIO_MENU_ON_WEB = false;
 const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
@@ -75,7 +79,7 @@ const STUDIO_BADGES = { sns: "file:gsn", marketing: "file:gsm", video: "file:gss
 const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing");
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 export default function RealtyAdminPage() {
   return (
@@ -176,7 +180,17 @@ function RealtyAdminContent() {
     setMenuLayout(layout ? normalizeLayout(layout, defaultLayout) : defaultLayout);
     setMenuDraft(null);
   };
-  const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
+  // 2026-10-26 사장님: 웹에서도 유료 회원(공실뉴스부동산·비즈니스, 기간 안)과 최고관리자는 바뀐 화면, 무료부동산은 예전 아이콘 메뉴
+  // (공실뉴스부동산을 무료로 바꾸면 이 조건을 '공실스튜디오 이용권'으로 바꾼다)
+  const paidOnWeb = (() => {
+    if (isAdminRole(userRole)) return true;
+    const label = getPlanLabel({ role: userRole, plan_type: planType });
+    if (label !== "공실뉴스부동산" && label !== "비즈니스회원") return false;
+    if (!planEndDate) return true;
+    const end = new Date(planEndDate); end.setHours(23, 59, 59, 999);
+    return end >= new Date();
+  })();
+  const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB || paidOnWeb;
   // 최고관리자는 앱에서도 숨긴 메뉴까지 모두 본다 — 숨긴 메뉴에는 [개발중] 표시 (2026-10-23 사장님)
   const isSuperAdmin = isAdminRole(userRole);
   const shown = (k: string) => !(studioApp.isApp && HIDDEN_IN_APP.includes(k) && !isSuperAdmin);
@@ -194,7 +208,7 @@ function RealtyAdminContent() {
     planType === "news_basic" ||
     planType === "news_premium" ||
     planType === "vacancy_basic" ||
-    planType === "study_premium" ||
+    planType === "study_premium" || // 옛 공실스터디부동산 — 공실뉴스부동산으로 합침 (2026-10-26)
     planType === "business";
 
   /* ── 프리페치 데이터 저장소 ── */
@@ -282,8 +296,9 @@ function RealtyAdminContent() {
         if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED' && member.role === 'REALTOR') setShowDocWarning(true);
       } else {
-        // 등록증 심사가 완료되지 않은 회원은 서류 검토중 상태로 기본 노출 (최고관리자는 서류가 없으니 검토중을 띄우지 않는다 — 앱에서도 쓴다)
-        setAgencyStatus(isAdminRole(member.role) ? "APPROVED" : "PENDING");
+        // 등록증 심사가 완료되지 않은 부동산회원은 서류 검토중 상태로 기본 노출 (최고관리자는 서류가 없으니 검토중을 띄우지 않는다 — 앱에서도 쓴다)
+        // 일반회원은 신청한 적이 없으니 아무 표시도 하지 않는다
+        setAgencyStatus(isAdminRole(member.role) ? "APPROVED" : member.role === "REALTOR" ? "PENDING" : "");
         setUserRole(getEffectiveMemberRole(member.role, null));
       }
 
@@ -429,8 +444,6 @@ function RealtyAdminContent() {
                 // 사이트 위쪽 [○○ admin >>] 버튼과 같은 회원별 색 (공실스터디부동산 녹색, 무료부동산 파랑 등)
                 const tone = soon
                   ? { bg: "#f59e0b", fg: "#fff" }
-                  : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
-                    ? { bg: STUDY_ADMIN_BUTTON_GREEN, fg: "#fff" }
                     : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
                     ? { bg: NEWS_ADMIN_BUTTON_ORANGE, fg: "#fff" }
                     : userRole === 'BIZ'
@@ -504,6 +517,7 @@ function RealtyAdminContent() {
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
           {activeMenu === "video" && studioApp.isApp && <VideoStudio />}
           {activeMenu === "photo" && <PhotoStudio menu={null} />}
+          {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
           {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}

@@ -559,7 +559,7 @@ export default function StudyAiYoutubeClient() {
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#241d19", marginBottom: 14, borderBottom: "1px solid #f1f5f9", paddingBottom: 10 }}>
-                  스터디에서 완벽 마스터하는 실전 툴
+                  부동산특강에서 완벽 마스터하는 실전 툴
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -636,7 +636,7 @@ export default function StudyAiYoutubeClient() {
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   드론 기기 구입비 수백만 원, 위험한 비행 허가와 촬영 승인 절차 때문에 포기하셨나요?
-                  공실스터디 멤버십 회원에게는 서울 강남, 여의도, 테헤란로, 한강변 등 주요 상권과 랜드마크의
+                  공실뉴스부동산 회원에게는 서울 강남, 여의도, 테헤란로, 한강변 등 주요 상권과 랜드마크의
                   고화질 항공 드론 촬영 원본 소스를 상업적 저작권 걱정 없이 무료로 제공합니다.
                   내 유튜브 영상 도입부에 넣기만 해도 대형 방송국 수준의 시네마틱 퀄리티가 완성됩니다.
                 </p>
@@ -899,12 +899,12 @@ export default function StudyAiYoutubeClient() {
               }}
             >
               방송국 PD 직강과 매월 4회 업데이트되는 신규 특강, 드론 영상까지
-              공실스터디 멤버십에서 모두 제공합니다.
+              공실뉴스부동산에서 모두 제공합니다.
             </p>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
               <Link
-                href="/study/apply"
+                href="/newsrealty/apply"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -919,10 +919,10 @@ export default function StudyAiYoutubeClient() {
                   transition: "transform 0.15s ease",
                 }}
               >
-                공실스터디 멤버십 신청하기 &gt;&gt;
+                공실뉴스부동산 신청하기 &gt;&gt;
               </Link>
               <Link
-                href="/study/lectures"
+                href="/study"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

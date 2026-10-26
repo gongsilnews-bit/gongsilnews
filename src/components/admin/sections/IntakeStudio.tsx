@@ -299,7 +299,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                             <div style={{ padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
                               로고를 올리면 상호 글자 대신 내 로고가 걸립니다
                               <br />
-                              <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+                              <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실뉴스부동산 요금제에서 열립니다</span>
                             </div>
                           )}
                         </div>

@@ -40,7 +40,7 @@ const FAQS = [
       "네. 복잡한 이론보다 실제 매물을 가지고 화면을 보며 순서대로 따라 하는 실습에 집중합니다. 필요한 부분은 온라인에서 반복해 볼 수 있습니다.",
   },
   {
-    question: "공실스터디에서는 무엇을 배우나요?",
+    question: "부동산특강에서는 무엇을 배우나요?",
     answer:
       "AI를 활용한 매물 설명과 블로그 글 작성, 유튜브 콘텐츠 기획과 편집, 공실 홍보 등 1~2인 부동산이 현장에서 바로 활용할 수 있는 내용을 배웁니다.",
   },
@@ -84,13 +84,13 @@ export default function StudyHomeYunClient() {
               <p className={styles.heroV2Description}>
                 정보를 주고 받는 부동산에게 유튜브/블로그/SNS 마케팅은 선택이 아니라 필수입니다!{" "}
                 <br />
-                이제, 공실스터디멤버가 되시면, 블로그/유튜브/SNS 마케팅 바로 시작하실 수 있습니다!
+                이제, 공실뉴스부동산 회원이 되시면, 블로그/유튜브/SNS 마케팅 바로 시작하실 수 있습니다!
               </p>
               <div className={styles.heroV2Actions}>
                 <Link href="/study/benefits/vacancy-register" className={styles.heroV2Primary}>
                   멤버쉽 혜택 &gt;&gt;
                 </Link>
-                <Link href="/study/apply" className={styles.heroV2Secondary}>
+                <Link href="/newsrealty/apply" className={styles.heroV2Secondary}>
                   멤버쉽 신청하기 &gt;&gt;
                 </Link>
               </div>
@@ -307,7 +307,7 @@ export default function StudyHomeYunClient() {
             <header className={styles.processHeader}>
               <p className={styles.kicker}>공실뉴스 AI 원스톱 솔루션</p>
               <h2 id="process-section-title">
-                <span className={styles.painTitleHighlight} style={{ color: "#ffffff" }}>오늘부터</span> 공실스터디멤버가 되시면,
+                <span className={styles.painTitleHighlight} style={{ color: "#ffffff" }}>오늘부터</span> 공실뉴스부동산 회원이 되시면,
                 <br />
                 <span>바로 시작하실 수 있습니다.</span>
               </h2>
@@ -317,7 +317,7 @@ export default function StudyHomeYunClient() {
                 <div className={styles.trioBannerImgBox}>
                   <Image
                     src="/images/study/study-real-trio-cheer.webp"
-                    alt="공실스터디 멤버가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
+                    alt="공실뉴스부동산 회원이 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
                     fill
                     sizes="(max-width: 1200px) 100vw, 1100px"
                     className={styles.trioBannerImg}
@@ -499,7 +499,7 @@ export default function StudyHomeYunClient() {
                 >
                   <Image
                     src="/images/study/benefit_youtube_40s_female_broker.jpg"
-                    alt="아파트 단지 상가 부동산에서 브루 AI로 매물 쇼츠를 제작하고 공실스터디 온라인 강의를 수강하는 40대 여성 공인중개사 대표 소장님"
+                    alt="아파트 단지 상가 부동산에서 브루 AI로 매물 쇼츠를 제작하고 부동산특강 온라인 강의를 수강하는 40대 여성 공인중개사 대표 소장님"
                     fill
                     sizes="(max-width: 900px) 100vw, 540px"
                     className={styles.freeOfferImg}
@@ -566,7 +566,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>공실스터디 강의</strong> 등록권한 부여
+                        <strong className={styles.freeOfferCheckStrong}>부동산특강 강의</strong> 등록권한 부여
                       </span>
                     </li>
                     <li className={styles.freeOfferCheckItem}>
@@ -602,13 +602,13 @@ export default function StudyHomeYunClient() {
                   </ul>
                 </div>
                 <Link
-                  href="/study/benefits/lecture-upload"
+                  href="/study/about"
                   className={styles.freeOfferImgBox}
                   title="온라인 강의 개설 지원 자세히 보기"
                 >
                   <Image
                     src="/images/study/real-estate-youtube-filming.png"
-                    alt="스마트폰과 삼각대로 매물 분석 및 중개 노하우 온라인 강의를 촬영하여 공실스터디에 업로드하는 공인중개사 대표님"
+                    alt="스마트폰과 삼각대로 매물 분석 및 중개 노하우 온라인 강의를 촬영하여 부동산특강에 업로드하는 공인중개사 대표님"
                     fill
                     sizes="(max-width: 900px) 100vw, 540px"
                     className={styles.freeOfferImg}
@@ -670,11 +670,11 @@ export default function StudyHomeYunClient() {
 
         <section className={styles.finalCta} aria-labelledby="final-title">
           <div>
-            <p>AI 시대, 부동산 맞춤 스터디</p>
+            <p>AI 시대, 부동산 맞춤 특강</p>
             <h2 id="final-title">
               꾸준한 유튜브/블로그 포스팅~
               <br />
-              <span>공실스터디로 바로 시작하세요!</span>
+              <span>부동산특강으로 바로 시작하세요!</span>
             </h2>
             <p className={styles.finalDescription}>
               공실을 등록하고, 콘텐츠를 만들고, 더 많은 공동중개 기회로 바로 실무에 활용할 수 있습니다!
@@ -683,7 +683,7 @@ export default function StudyHomeYunClient() {
               <Link href="/study/benefits/vacancy-register" className={styles.heroPrimary}>
                 멤버쉽 혜택 &gt;&gt;
               </Link>
-              <Link href="/study/apply" className={styles.heroSecondary}>
+              <Link href="/newsrealty/apply" className={styles.heroSecondary}>
                 멤버쉽 신청하기 &gt;&gt;
               </Link>
             </div>
@@ -716,7 +716,7 @@ export default function StudyHomeYunClient() {
                   </div>
                 );
               })}
-              <Link href="/study/qna" className={styles.qnaLink}>
+              <Link href="/newsrealty/community?board=studyqa" className={styles.qnaLink}>
                 다른 질문 남기기 <Arrow />
               </Link>
             </div>

@@ -949,7 +949,7 @@ export default function HomepageViewPage() {
                     <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", margin: 0 }}>
                       {hasAuthorArticles ? "이 중개사의 공실뉴스" : "주요 공실뉴스"}
                     </h3>
-                    <span onClick={() => router.push("/news")} style={{ fontSize: 12, color: "#888", fontWeight: "normal", cursor: "pointer" }}>더보기 {'>'}</span>
+                    <span onClick={() => router.push("/news_all")} style={{ fontSize: 12, color: "#888", fontWeight: "normal", cursor: "pointer" }}>더보기 {'>'}</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     {agencyArticles.map((art, idx) => (

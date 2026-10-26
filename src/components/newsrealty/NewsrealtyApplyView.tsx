@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link";
 
+/** 스마트스토어 "공실뉴스 1년 수강권" — 결제되면 공실뉴스부동산 1년이 자동으로 켜진다 (src/lib/smartstoreSync.ts) */
+const NAVER_PAY_URL = "https://smartstore.naver.com/mygongsil/products/13805832960";
+
 // 공실뉴스부동산 신청하기(/newsrealty/apply) 화면. 소개·혜택·금액안내와 같은 톤(미색 띠, 차분한 주황, Pretendard 700).
 // 로그인·신청서 제출 같은 동작은 PC·모바일 page.tsx 에 그대로 있고, 여기는 겉모양만 맡는다.
 
@@ -155,6 +158,10 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
         <button type="button" onClick={onGuide} className="nra-btn nra-btn-outline" style={{ width: "100%" }}>
           회원가입 및 이용 절차가 궁금해요
         </button>
+        {/* 결제는 스마트스토어 (2026-10-26 공실스터디 신청 화면에 있던 버튼을 여기로 — 신청은 공실뉴스부동산 하나) */}
+        <a href={NAVER_PAY_URL} target="_blank" rel="noopener noreferrer" className="nra-btn" style={{ width: "100%", background: "#03c75a", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          네이버결제 바로가기
+        </a>
       </div>
       </>
       )}

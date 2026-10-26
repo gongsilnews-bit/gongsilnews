@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import StudyBackButton from "@/components/study/StudyBackButton";
 import LecturePublicMaterialsModal from "@/components/LecturePublicMaterialsModal";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, getLectures, createLectureReview, updateLectureReview, deleteLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
@@ -9,7 +10,6 @@ import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import styles from "./studyRead.module.css";
-import StudyHeader from "@/components/study/StudyHeader";
 
 /* ── YouTube URL → embed URL ── */
 const toEmbedUrl = (url: string): string => {
@@ -24,7 +24,7 @@ const toEmbedUrl = (url: string): string => {
 export default function StudyReadClient({ initialLecture }: { initialLecture: any }) {
   return (
     <>
-      <StudyHeader />
+      {/* 2026-10-26 사장님: 위 "부동산특강" 제목 줄 없이 — 경로 줄에 [‹ 부동산특강 › 분류] · [내 강의실] */}
       <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>강의 상세 정보를 불러오는 중입니다...</div>}>
         <StudyReadContent initialLecture={initialLecture} />
       </Suspense>
@@ -243,12 +243,12 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       objectType: "feed",
       content: {
         title: lecture.title,
-        description: lecture.category || "공실스터디 | 공실뉴스",
+        description: lecture.category || "부동산특강 | 공실뉴스",
         imageUrl: slideImages[0] || "",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
       buttons: [
-        { title: "스터디 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+        { title: "특강 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
       ],
     });
   };
@@ -358,7 +358,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       <div style={{ minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>등록된 강의가 없습니다</h2>
-        <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>공실스터디 목록으로 돌아가기 ›</Link>
+        <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>부동산특강 목록으로 돌아가기 ›</Link>
       </div>
     );
   }
@@ -426,10 +426,18 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
       {/* ── 상단 Breadcrumb ── */}
       <div style={{ borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "14px 24px", fontSize: 13, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
-          <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>공실스터디</Link>
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "12px 24px", fontSize: 14, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+          <StudyBackButton />
+          <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>부동산특강</Link>
           <span>›</span>
           <span style={{ color: "#334155", fontWeight: 600 }}>{lecture.category || "중개실무"}</span>
+          <Link
+            href="/study/classroom"
+            title="나의 강의실로 이동"
+            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", padding: "8px 18px", borderRadius: 8, fontSize: 14, fontWeight: 800, color: "#ffffff", background: "#059669", boxShadow: "0 2px 6px rgba(5, 150, 105, 0.25)", textDecoration: "none", whiteSpace: "nowrap" }}
+          >
+            내 강의실
+          </Link>
         </div>
       </div>
 
@@ -468,7 +476,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
             ) : (
               <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #1a1613 0%, #3a2c22 100%)", color: "#ffffff" }}>
                 <span style={{ fontSize: 40, marginBottom: 8 }}>🎓</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#34d399" }}>{lecture.category || "공실스터디"}</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#34d399" }}>{lecture.category || "부동산특강"}</span>
               </div>
             )}
             
@@ -513,7 +521,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               {lecture.title}
             </h1>
             <p style={{ fontSize: 15.5, color: "#475569", lineHeight: 1.6, margin: "0 0 18px 0" }}>
-              {lecture.short_description || "11만 부동산 실무자와 함께 1년 동안 실전 노하우를 배우고 성장하는 공실스터디 마스터 과정"}
+              {lecture.short_description || "11만 부동산 실무자와 함께 1년 동안 실전 노하우를 배우고 성장하는 부동산특강 마스터 과정"}
             </p>
 
             {/* 메타 뱃지 */}
@@ -579,7 +587,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
           {activeTab === "introduce" && (
             <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.8 }}>
               <h3 style={{ fontSize: 19, fontWeight: 800, color: "#1c1917", margin: "0 0 16px 0" }}>
-                스터디 소개
+                특강 소개
               </h3>
               {lecture.description ? (
                 <div dangerouslySetInnerHTML={{ __html: lecture.description_html || lecture.description }} />
@@ -758,7 +766,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                 </div>
                 <textarea
                   rows={3}
-                  placeholder="스터디 수강 후기를 남겨주세요 (실명 보호)"
+                  placeholder="특강 수강 후기를 남겨주세요 (실명 보호)"
                   value={newReview}
                   onChange={(e) => setNewReview(e.target.value)}
                   style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "vertical" }}
@@ -972,15 +980,25 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <button
                 onClick={handleKakaoShare}
-                style={{ padding: "9px 0", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#475569", cursor: "pointer" }}
+                style={{ padding: "9px 0", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#475569", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
-                💬 공유하기
+                {/* 공유 — 점 세 개를 잇는 선 아이콘 */}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                공유하기
               </button>
               <button
                 onClick={handleCopyUrl}
-                style={{ padding: "9px 0", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#475569", cursor: "pointer" }}
+                style={{ padding: "9px 0", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#475569", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
-                🔗 링크 복사
+                {/* 링크 — 고리 두 개 선 아이콘 */}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                링크 복사
               </button>
             </div>
 

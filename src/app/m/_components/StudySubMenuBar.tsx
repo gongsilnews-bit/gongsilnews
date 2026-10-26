@@ -15,9 +15,7 @@ interface Props {
 // PC와 100% 일치하는 5대 메뉴 (공실스터디란 삭제)
 const MENUS: { key: StudyMenuKey; label: string; href: string }[] = [
   { key: "lecture", label: "강의목록", href: "/m/study" },
-  { key: "resources", label: "자료실", href: "/m/board?id=drone" },
-  { key: "community", label: "커뮤니티", href: "/m/board?id=free" },
-  { key: "apply", label: "멤버십신청", href: "/m/study/apply" },
+  // 2026-10-26 자료실·커뮤니티·멤버십신청은 공실뉴스부동산으로 옮김 — 부동산특강은 강의만
   { key: "my_lectures", label: "내강의실", href: "/m/my_lectures" },
 ];
 
@@ -34,8 +32,8 @@ function StudySubMenuBarInner({ activeMenu, activeTab, onTabChange }: Props) {
     if (activeMenu) return activeMenu;
     if (activeTab === "applications") return "my_lectures";
     if (pathname.includes("/m/my_lectures")) return "my_lectures";
-    if (pathname.includes("/m/study/apply") || pathname.includes("/m/study/pricing")) return "apply";
-    if (pathname.includes("/m/study/benefits") || pathname.includes("/m/study/about")) return "apply";
+    if (pathname.includes("/m/newsrealty/apply") || pathname.includes("/m/newsrealty/pricing")) return "apply";
+    if (pathname.includes("/m/newsrealty/benefits/brokerage-article") || pathname.includes("/m/study/about")) return "apply";
     if (pathname.includes("/m/board")) {
       if (boardId === "free" || boardId === "studyqa") return "community";
       return "resources";

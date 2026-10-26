@@ -162,7 +162,7 @@ function StudyWatchContent() {
         <div style={{ fontSize: 48 }}>📭</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b" }}>강의 정보를 찾을 수 없습니다.</div>
         <Link href="/study" style={{ padding: "10px 24px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 8, fontWeight: 700 }}>
-          공실스터디 목록으로 돌아가기
+          부동산특강 목록으로 돌아가기
         </Link>
       </div>
     );
@@ -193,23 +193,26 @@ function StudyWatchContent() {
         {/* Left: Back Link & Title */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, maxWidth: "60%" }}>
           <button
-            onClick={() => router.push(`/study_read?id=${lectureId}`)}
+            // 이전 화면으로 — 새 탭에서 바로 열었으면 강의 소개로 (2026-10-26 사장님, 강의 상세·나의 강의실과 같게)
+            onClick={() => (window.history.length > 1 ? router.back() : router.push(`/study_read?id=${lectureId}`))}
             style={{
               display: "flex",
               alignItems: "center",
               gap: 6,
               fontSize: 13.5,
               fontWeight: 700,
-              color: "#059669",
+              color: "#334155",
               background: "none",
               border: "none",
               cursor: "pointer",
               padding: 0,
             }}
           >
-            ← 강의 소개
+            <span style={{ fontSize: 20, lineHeight: 1 }}>‹</span> 이전화면
           </button>
           <span style={{ color: "#cbd5e1" }}>|</span>
+          <Link href="/study" style={{ fontSize: 14, fontWeight: 700, color: "#059669", textDecoration: "none", whiteSpace: "nowrap" }}>부동산특강</Link>
+          <span style={{ color: "#94a3b8", marginLeft: -8, marginRight: -8 }}>›</span>
           <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {lecture.title}
           </span>

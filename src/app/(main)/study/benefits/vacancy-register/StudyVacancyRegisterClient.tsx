@@ -838,12 +838,12 @@ export default function StudyVacancyRegisterClient() {
                 lineHeight: 1.6,
               }}
             >
-              공실스터디 멤버 부동산이 되시면, 1년동안 부동산마케팅을 효율적으로 할 수 있습니다.
+              공실뉴스부동산 회원이 되시면, 1년동안 부동산마케팅을 효율적으로 할 수 있습니다.
             </p>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
               <Link
-                href="/study/apply"
+                href="/newsrealty/apply"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -858,10 +858,10 @@ export default function StudyVacancyRegisterClient() {
                   transition: "transform 0.15s ease",
                 }}
               >
-                공실스터디 멤버십 신청하기 &gt;&gt;
+                공실뉴스부동산 신청하기 &gt;&gt;
               </Link>
               <Link
-                href="/study/lectures"
+                href="/study"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -875,7 +875,7 @@ export default function StudyVacancyRegisterClient() {
                   border: "1px solid rgba(255, 255, 255, 0.4)",
                 }}
               >
-                공실스터디 강의보기
+                부동산특강 강의보기
               </Link>
             </div>
           </div>

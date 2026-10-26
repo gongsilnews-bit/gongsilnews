@@ -10,7 +10,7 @@ import { checkExistingNewsrealtyApplication } from "./newsrealtyApply";
  *
  * 공실뉴스부동산 신청과 같은 newsrealty_applications 표에 service='study' 로 저장한다.
  * 관리자는 멤버십관리 화면에서 두 신청을 함께 보고, 승인완료 시 회원 등급이
- * 공실스터디부동산(study_premium)으로 바뀐다.
+ * 공실뉴스부동산(news_premium)으로 바뀐다 (2026-10-26 공실스터디부동산을 없애고 합침).
  */
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -57,7 +57,7 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
       return {
         success: false,
         alreadyApplied: true,
-        message: "이미 공실스터디 멤버십 신청서가 접수되어 있습니다.",
+        message: "이미 공실뉴스부동산 신청서가 접수되어 있습니다.",
       };
     }
 
@@ -75,8 +75,8 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
           phone: cleanPhone,
           email: email || null,
           agency_name: agencyName || "-",
-          interests: ["공실스터디"],
-          memo: `[공실스터디 멤버십 신청] 신청자: ${name} / 연락처: ${cleanPhone} / 이메일: ${email || "미입력"} / 중개사무소: ${agencyName || "미입력"}`,
+          interests: ["부동산특강"],
+          memo: `[공실뉴스부동산 신청] 신청자: ${name} / 연락처: ${cleanPhone} / 이메일: ${email || "미입력"} / 중개사무소: ${agencyName || "미입력"}`,
           status: "신규",
           sms_sent: false,
           email_sent: false,
@@ -95,7 +95,7 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
     await createNotification({
       recipientRole: "ADMIN",
       type: "study_apply",
-      title: "공실스터디 멤버십 신청이 접수되었습니다",
+      title: "공실뉴스부동산 신청이 접수되었습니다",
       body: `${name} · ${cleanPhone}${agencyName ? ` · ${agencyName}` : ""}`,
       link: "/admin?menu=newsrealty&service=study",
       sourceId: String(inserted.id),
@@ -107,11 +107,11 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
       const smsRes = await sendPpurioSms({
         to: cleanPhone,
         content:
-          `[공실스터디] 멤버십 신청이 정상 접수되었습니다.\n\n` +
+          `[공실뉴스부동산] 신청이 정상 접수되었습니다.\n\n` +
           `■ 신청자: ${name}님\n\n` +
           `담당자가 확인 후 1~2일 이내 연락드리겠습니다.\n\n` +
           `공실뉴스 고객지원: 1555-5343`,
-        subject: "[공실스터디] 멤버십 신청완료",
+        subject: "[공실뉴스부동산] 신청완료",
       });
       smsSent = !!smsRes.success;
 
@@ -119,10 +119,10 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
       sendPpurioSms({
         to: adminNoticePhone,
         content:
-          `[신규 접수] 공실스터디 멤버십 신청\n` +
+          `[신규 접수] 공실뉴스부동산 신청\n` +
           `- 신청자: ${name} (${cleanPhone})\n` +
           `- 중개사무소: ${agencyName || "미입력"}`,
-        subject: "[관리자알림] 공실스터디 신규접수",
+        subject: "[관리자알림] 부동산특강 신규접수",
       }).catch((err) => console.error("Study admin SMS failed:", err));
 
       if (smsSent) {

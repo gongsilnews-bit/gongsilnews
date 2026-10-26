@@ -1,15 +1,6 @@
-import React, { Suspense } from "react";
-import MobileStudyBenefitsClient from "./MobileStudyBenefitsClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "멤버십혜택 | 공실스터디",
-  description: "공실 등록 월 20건, 기사 4편 송고, AI 유튜브 영상 제작 및 네이버 블로그 원클릭 자동화까지! 공실스터디 멤버십의 압도적인 혜택을 확인하세요.",
-};
-
-export default function MobileStudyBenefitsPage() {
-  return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666" }}>혜택 안내를 불러오는 중...</div>}>
-      <MobileStudyBenefitsClient />
-    </Suspense>
-  );
+// 2026-10-26 신청·혜택·금액은 공실뉴스부동산 하나로 통일 — 예전 부동산특강(공실스터디) 주소는 그쪽으로
+export default function MobileStudyBenefitsRedirect() {
+  redirect("/m/newsrealty/benefits/brokerage-article");
 }

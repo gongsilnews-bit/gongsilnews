@@ -20,7 +20,7 @@ export async function lectureMetadata(lectureId?: string): Promise<Metadata> {
   if (!lectureId) return {};
   const lecture = await loadDetail(lectureId);
   if (!lecture) return {};
-  const title = `${(lecture.title || "").trim()} | 공실스터디`;
+  const title = `${(lecture.title || "").trim()} | 부동산특강`;
   const description = (lecture.subtitle || lecture.title || "").trim().slice(0, 160);
   const images = lecture.thumbnail_url ? [lecture.thumbnail_url] : undefined;
   return {
