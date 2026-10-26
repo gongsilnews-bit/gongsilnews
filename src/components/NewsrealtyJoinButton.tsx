@@ -10,6 +10,9 @@ import { getPlanLabel, isAdminRole } from "@/utils/permissionCheck";
  * 이미 공실뉴스부동산·최고관리자면 다음 단계 [공실스튜디오 ›] → /studio (2026-10-26 사장님). /newsrealty 안에서는 가입 버튼만 숨긴다.
  * tone: dark = 어두운 바탕(메인 홈 위쪽 줄), light = 흰 바탕.
  */
+/** 공실스튜디오 공개 전이라 헤더 단추를 숨긴다 (2026-10-27 사장님) */
+const STUDIO_BUTTON_HIDDEN = true;
+
 /** 아직 공실뉴스부동산이 아닌가 (가입 글자를 붙일지) */
 export function showNewsrealtyJoin(member: { role?: string | null; plan_type?: string | null } | null | undefined): boolean {
   if (isAdminRole(member?.role)) return false;
@@ -20,6 +23,8 @@ export default function NewsrealtyJoinButton({ tone = "light", small = false, jo
   const pathname = usePathname();
   // 2026-10-26 사장님: [공실뉴스부동산 가입 ›] 은 없앤다 — 가입 전에는 [공실뉴스 무료가입 및 로그인](LoginJoinButton) 하나만
   if (!joined) return null;
+  // 2026-10-27 사장님: 공실스튜디오는 아직 열지 않는다 — 열 때 STUDIO_BUTTON_HIDDEN 을 false 로
+  if (STUDIO_BUTTON_HIDDEN) return null;
   void pathname;
   void tone;
   // 2026-10-26 사장님: admin 버튼 옆 마크 대신, 이 버튼을 공실스튜디오 로고 + 이름으로 (앱 색: 짙은 밤색 바탕 + 오렌지)
