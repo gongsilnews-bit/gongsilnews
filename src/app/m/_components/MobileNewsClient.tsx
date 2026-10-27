@@ -909,7 +909,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   const loadSidoData = async () => {
     try {
-      const res = await fetch('https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=*00000000');
+      const res = await fetch('/api/regcodes?regcode_pattern=*00000000');
       const data = await res.json();
       setSidoList(data.regcodes || []);
     } catch (e) { console.error(e); }
@@ -918,7 +918,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const loadGugunData = async (code: string) => {
     setGugunList([]);
     try {
-      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${code.substring(0,2)}*00000&is_ignore_zero=true`);
+      const res = await fetch(`/api/regcodes?regcode_pattern=${code.substring(0,2)}*00000&is_ignore_zero=true`);
       const data = await res.json();
       setGugunList((data.regcodes || []).sort((a:any,b:any) => a.name.localeCompare(b.name)).map((c:any) => ({ code: c.code, name: c.name.split(' ').slice(1).join(' ') })));
     } catch (e) { console.error(e); }
@@ -927,7 +927,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const loadDongData = async (code: string) => {
     setDongList([]);
     try {
-      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${code.substring(0,5)}*&is_ignore_zero=true`);
+      const res = await fetch(`/api/regcodes?regcode_pattern=${code.substring(0,5)}*&is_ignore_zero=true`);
       const data = await res.json();
       setDongList((data.regcodes || []).filter((c:any) => c.code !== code).sort((a:any,b:any) => a.name.localeCompare(b.name)).map((c:any) => { const p = c.name.split(' '); return { code: c.code, name: p[p.length-1] }; }));
     } catch (e) { console.error(e); }

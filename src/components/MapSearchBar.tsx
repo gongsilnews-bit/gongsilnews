@@ -70,7 +70,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
   const loadRegSido = async () => {
     try {
-      const res = await fetch('https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=*00000000');
+      const res = await fetch('/api/regcodes?regcode_pattern=*00000000');
       const data = await res.json();
       setSidoList(data.regcodes || []);
     } catch (e) {
@@ -82,7 +82,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
     setGugunList([]);
     const prefix = sidoCode.substring(0, 2);
     try {
-      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${prefix}*00000&is_ignore_zero=true`);
+      const res = await fetch(`/api/regcodes?regcode_pattern=${prefix}*00000&is_ignore_zero=true`);
       const data = await res.json();
       const sorted = (data.regcodes || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
       const formatted = sorted.map((c: any) => {
@@ -99,7 +99,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
     setDongList([]);
     const prefix = gugunCode.substring(0, 5);
     try {
-      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${prefix}*&is_ignore_zero=true`);
+      const res = await fetch(`/api/regcodes?regcode_pattern=${prefix}*&is_ignore_zero=true`);
       const data = await res.json();
       const sorted = (data.regcodes || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
       const formatted = sorted
