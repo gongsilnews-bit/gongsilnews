@@ -781,6 +781,17 @@ app.whenReady().then(async () => {
   try { await require("./storage-place").startup(); } catch (e) { log.warn(`[저장 위치] ${e.message}`); }
   try { require("./studio-root").ensureAll(); } catch {}
   try { require("./helper-server").start(); } catch (e) { log.warn(`[도우미] 창구 못 염: ${e.message}`); } // 공실스튜디오 도우미(크롬 확장)와 PC 안에서만 (2026-10-23)
+  // 회원이 발행한 글 주소 → 서버 홍보현황에 "연결됨" (2026-10-27). 앱 홈은 창이 앞으로 오면 다시 읽는다
+  require("./helper-server").onPublished(async ({ vacancyId, channel, url }) => {
+    const res = await session.defaultSession.fetch(`${BASE_URL}/api/studio/promo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vacancyId, channel, url }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.success) throw new Error(data.error || `HTTP ${res.status}`);
+    mainWindow?.webContents.send("studio:promo-saved", { vacancyId, channel });
+  });
   try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();
   videoIpc.register(BASE_URL);

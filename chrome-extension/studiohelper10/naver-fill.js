@@ -253,6 +253,7 @@
 
   function pressEnter(el) {
     const view = el.ownerDocument.defaultView;
+    if (!view) return; // 발행해서 글쓰기 화면이 닫힌 뒤 (프레임이 떨어져 나감)
     const init = { bubbles: true, cancelable: true, key: "Enter", code: "Enter", keyCode: 13, which: 13 };
     ["keydown", "keypress", "keyup"].forEach((type) => el.dispatchEvent(new view.KeyboardEvent(type, init)));
   }

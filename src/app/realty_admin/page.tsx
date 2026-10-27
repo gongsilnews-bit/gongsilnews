@@ -20,6 +20,7 @@ import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
 
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
+const StudioHomeSection = lazy(() => import("@/components/admin/sections/StudioHomeSection")); // 공실스튜디오 첫 화면 (2026-10-27)
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 const MemberArticleAdSection = lazy(() => import("@/components/admin/sections/MemberArticleAdSection"));
@@ -59,7 +60,7 @@ const REALTY_MENU: MenuItem[] = [
    2026-10-26 사장님: 웹은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만) — 지금 모양은 공실스튜디오 앱에서만 */
 const STUDIO_MENU_ON_WEB = false;
 const STUDIO_MAIN_MENU: MenuItem[] = [
-  { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
+  { key: "dashboard", label: "홈", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
   { key: "article", label: "기사등록", icon: <IconArticle /> },
   { key: "marketing", label: "공실마케팅", icon: <IconSend /> },
@@ -75,7 +76,8 @@ const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
 // 메뉴 오른쪽 파일 표시 — 그 메뉴가 만드는 파일 (.gsn·.gsm·.gss·.psd, 글자 + 동그라미 픽토그램 — StudioSidebar FileBadge) — 2026-10-23 사장님: NEW 대신
 // 앱에서만 잠시 숨기는 메뉴 — 공실마케팅은 미완성이라 앱 배포에서 뺀다 (2026-10-23 사장님). 다시 보이려면 [] 로 (코드·작업은 그대로)
 const HIDDEN_IN_APP: string[] = []; // 공실마케팅 공개 (2026-10-23 사장님 — AI 매물보고서만, 나머지는 메뉴 안에서 "작업중")
-const STUDIO_BADGES = { sns: "file:gsn", marketing: "file:gsm", video: "file:gss", photo: "file:psd" };
+// 메뉴 옆 파일 표시(GSM·GSN·GSS·PSD)는 뺐다 (2026-10-27 사장님)
+const STUDIO_BADGES: Record<string, string> = {};
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
 const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing" || key === "customer" || key === "article_ad");
 
@@ -482,7 +484,8 @@ function RealtyAdminContent() {
         </header>
 
         <Suspense fallback={<AdminLoadingFallback />}>
-          {activeMenu === "dashboard" && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
+          {activeMenu === "dashboard" && useStudioMenu && <StudioHomeSection theme={theme} memberId={memberId || undefined} onMenuChange={selectMenu} />}
+          {activeMenu === "dashboard" && !useStudioMenu && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && memberId && (
             <MemberArticleSection

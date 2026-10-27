@@ -35,6 +35,14 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:vacancy-progress", h);
       },
     },
+    // 홍보현황 — 도우미가 잡은 발행 글 주소를 서버에 저장했을 때 (2026-10-27)
+    promo: {
+      onSaved: (fn) => {
+        const h = (_e, info) => fn(info);
+        ipcRenderer.on("studio:promo-saved", h);
+        return () => ipcRenderer.removeListener("studio:promo-saved", h);
+      },
+    },
     sns: {
       channels: () => ipcRenderer.invoke("studio:sns-channels"),
       get: (vacancyId) => ipcRenderer.invoke("studio:sns-get", vacancyId),

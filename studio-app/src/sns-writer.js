@@ -333,7 +333,9 @@ async function fillByHelper({ vacancyId, channel }, onProgress = () => {}) {
   const r = await channelFiles({ vacancyId, channel });
   const photos = r.files.map((f) => `data:image/jpeg;base64,${fs.readFileSync(f).toString("base64")}`);
   const helper = require("./helper-server");
-  const id = helper.addJob(channel, { channel, label: c.label, text: r.text, posts: r.posts, photos });
+  // 공실 글이면 회원이 [공유하기]한 뒤 게시물 주소를 홍보현황에 (2026-10-27, 지금은 인스타그램만 잡는다)
+  const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(vacancyId || ""));
+  const id = helper.addJob(channel, { channel, label: c.label, text: r.text, posts: r.posts, photos }, isVacancy ? { vacancyId, channel } : null);
   void shell.openExternal(HOME[channel]);
   onProgress(`평소 크롬에 ${c.label}을(를) 열었어요. 공실스튜디오 도우미가 채우기를 기다리는 중…`);
   if (!(await helper.wait(id, "taken", 45000))) {

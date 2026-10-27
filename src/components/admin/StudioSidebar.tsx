@@ -139,7 +139,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
   const moreActive = more.some((m) => m.key === activeMenu);
   const [moreToggled, setMoreToggled] = useState(false);
   const moreOpen = moreActive || moreToggled;
-  const width = collapsed ? 68 : 220;
+  const width = collapsed ? 80 : 220; // 접으면 캔바처럼 아이콘 밑에 작은 이름 (2026-10-27 사장님)
 
   const item = (m: MenuItem, small = false) => {
     const active = activeMenu === m.key;
@@ -152,8 +152,8 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
           data-active={active ? "1" : undefined}
           title={collapsed ? m.label : undefined}
           style={{
-            position: "relative", display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: 10, width: "100%", border: "none", cursor: "pointer",
-            padding: collapsed ? "11px 0" : small ? "8px 12px 8px 40px" : "10px 12px", borderRadius: 8, fontFamily: "inherit",
+            position: "relative", display: "flex", flexDirection: collapsed ? "column" : "row", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: collapsed ? 5 : 10, width: "100%", border: "none", cursor: "pointer",
+            padding: collapsed ? "9px 2px 8px" : small ? "8px 12px 8px 40px" : "10px 12px", borderRadius: 8, fontFamily: "inherit",
             fontSize: small ? 13 : 14, fontWeight: active ? 700 : 500, textAlign: "left",
             color: active ? "#ffffff" : "rgba(255,255,255,0.72)",
             background: active ? "rgba(255,255,255,0.16)" : "transparent",
@@ -164,7 +164,9 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
               {React.cloneElement(m.icon as React.ReactElement<React.SVGProps<SVGSVGElement>>, { style: { width: 18, height: 18, stroke: active ? "#ffffff" : "rgba(255,255,255,0.72)" } })}
             </span>
           )}
-          {!collapsed && <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}</span>}
+          {collapsed
+            ? <span style={{ fontSize: 11, lineHeight: 1.25, textAlign: "center", wordBreak: "keep-all", overflowWrap: "anywhere" }}>{m.label}</span>
+            : <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}</span>}
           {badges[m.key] && badges[m.key].startsWith("dev:") ? (
             // [개발중] — 최고관리자에게만 보이는 미완성 메뉴 (2026-10-23 사장님)
             !collapsed && <span style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#64748b", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.3 }}>{badges[m.key].slice(4)}</span>
@@ -208,8 +210,12 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
           </div>
         )}
         <button onClick={toggle} title={collapsed ? "메뉴 펼치기" : "메뉴 접기"} className="studio-nav-btn"
-          style={{ ...plainBtn, width: 34, height: 34, borderRadius: 8, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {collapsed ? "»" : "«"}
+          style={{ ...plainBtn, width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* 캔바처럼 창 모양 단추 — 왼쪽 칸이 메뉴 */}
+          <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="4" width="18" height="16" rx="3" /><line x1="9" y1="4" x2="9" y2="20" />
+            {!collapsed && <rect x="3.9" y="4.9" width="4.2" height="14.2" rx="1.6" fill="currentColor" stroke="none" />}
+          </svg>
         </button>
       </div>
 
@@ -235,7 +241,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
               padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "1px",
             }}
           >
-            {collapsed ? "···" : "더보기"}
+            {collapsed ? <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, letterSpacing: 0 }}><span style={{ fontSize: 16, lineHeight: 1 }}>···</span>더보기</span> : "더보기"}
             {!collapsed && <span style={{ fontSize: 10, transform: moreOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>}
           </button>
         )}
@@ -257,9 +263,9 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
       {hasSnap && (
         <div style={{ padding: collapsed ? "0 8px 6px" : "0 10px 6px", flexShrink: 0 }}>
           <button onClick={() => void (window as unknown as { gongsilStudio?: { snap?: { open: () => Promise<unknown> } } }).gongsilStudio?.snap?.open()} className="studio-nav-btn" title="화면캡처·녹화 — 영역·전체·스크롤 캡처, 전체·영역 녹화 (찍으면 바로 Ctrl+V)"
-            style={{ ...plainBtn, width: "100%", height: 36, borderRadius: 8, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid rgba(255,255,255,0.2)", whiteSpace: "nowrap" }}>
+            style={{ ...plainBtn, width: "100%", height: collapsed ? 50 : 36, borderRadius: 8, fontSize: collapsed ? 11 : 13, fontWeight: 700, display: "flex", flexDirection: collapsed ? "column" : "row", alignItems: "center", justifyContent: "center", gap: collapsed ? 3 : 6, border: "1px solid rgba(255,255,255,0.2)", whiteSpace: "nowrap" }}>
             <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" /><circle cx="12" cy="12" r="3" /></svg>
-            {!collapsed && "화면캡처 · 녹화"}
+            {collapsed ? "캡처·녹화" : "화면캡처 · 녹화"}
           </button>
         </div>
       )}

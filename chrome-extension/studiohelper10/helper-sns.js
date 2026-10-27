@@ -535,10 +535,172 @@
     await sleep(1500); // 화면이 다 뜨기를
     const result = await runFlow();
     await send({ type: "GS_DONE", id: job.id, result });
+    if (target === "instagram") void watchInstagramShared(job);
+    else void afterFillPost(job);
+  }
+
+  /* 홍보현황 (2026-10-27) — 회원이 [공유하기]를 누르면 "게시물이 공유되었습니다" 창이 뜬다.
+     그때 내 계정 최근 게시물에서 우리가 넣은 글로 시작하는 것을 찾아 그 주소를 앱에 알린다 (30분까지 지켜본다) */
+  const SHARED = ["게시물이 공유되었습니다.", "게시물이 공유되었습니다", "릴스가 공유되었습니다.", "릴스가 공유되었습니다", "Your post has been shared.", "Your reel has been shared.", "Post shared"];
+  const dlog = (text) => { void send({ type: "GS_LOG", text: `${target} ${text}` }); };
+  // 공유 직후 인스타가 화면을 새로 열기도 해서, 찾을 것을 크롬에 적어 두고 새 화면에서 이어서 찾는다
+  const PENDING_IG = "gsPendingInsta"; // { id, head, at }
+  async function watchInstagramShared(j) {
+    dlog(`공유 기다림 ${j.id}`);
+    const seen = await waitFor(() => byText(SHARED, document, "span,div,h1,h2,h3"), 30 * 60 * 1000, 1000);
+    if (!seen) { dlog("30분 동안 공유 안내를 못 봄"); return; }
+    const p = { id: j.id, head: String(j.text || "").replace(/\s+/g, "").slice(0, 20), at: Date.now() };
+    try { await chrome.storage.local.set({ [PENDING_IG]: p }); } catch (_) {}
+    dlog("공유 안내 봄");
+    await findShared(p);
+  }
+  // 인스타가 게시물 목록 읽기를 막는다 (웹 화면 HTML · 429 너무 많은 요청 — 2026-10-27 시험).
+  // 계정이 의심받지 않게 목록은 읽지 않고, 회원이 올린 게시물을 한 번 열면 그 주소를 잡는다
+  async function findShared(p) {
+    watchPostAddress(p);
+    dlog("게시물을 열어 달라고 안내");
+    toast("방금 올린 게시물을 한 번 눌러 열어 주세요.\n열면 그 주소를 공실스튜디오 홍보현황에 연결해요.");
+  }
+  let linkedDone = false;
+  async function linked(ok) {
+    linkedDone = true;
+    try { await chrome.storage.local.remove(PENDING_IG); } catch (_) {}
+    toast(ok ? "게시물 주소를 공실스튜디오 홍보현황에 연결했어요." : "", 4000);
+    if (ok && panel) panel.status("게시물 주소를 공실스튜디오 홍보현황에 연결했어요.", "ok");
+  }
+  // 인스타는 화면을 새로 열지 않고 주소만 바꾼다 → 1초마다 주소를 보고, 내 게시물(/p/…·/reel/…) 화면이면 그 주소를 보낸다
+  let watchingAddr = false;
+  function watchPostAddress(p) {
+    if (watchingAddr) return;
+    watchingAddr = true;
+    let last = "";
+    const t = setInterval(async () => {
+      if (linkedDone || Date.now() - p.at > 10 * 60 * 1000) { clearInterval(t); return; }
+      if (location.href === last) return;
+      last = location.href;
+      const m = /^\/(?:[^/]+\/)?(p|reel)\/([\w-]+)/.exec(location.pathname);
+      if (!m) return;
+      const url = `https://www.instagram.com/${m[1]}/${m[2]}/`;
+      const r = await send({ type: "GS_PUBLISHED", id: p.id, url });
+      dlog(`게시물 화면 주소 보냄 ${url} → ${r && r.ok ? "연결됨" : "앱이 거절"}`);
+      if (r && r.ok) { clearInterval(t); await linked(true); }
+    }, 1000);
+  }
+  // 화면 위 작은 안내 (도우미 상자가 없을 때도 — 공유 뒤 새로 열린 화면)
+  function toast(text, ms = 0) {
+    let el = document.getElementById("gs-ig-toast");
+    if (!text) { el && el.remove(); return; }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "gs-ig-toast";
+      el.style.cssText = "position:fixed;right:20px;bottom:20px;z-index:2147483647;max-width:320px;padding:14px 16px;border-radius:12px;background:#111;color:#fff;font:600 13px/1.5 sans-serif;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,.3)";
+      document.body.appendChild(el);
+    }
+    el.textContent = `공실스튜디오 도우미
+${text}`;
+    if (ms) setTimeout(() => el.remove(), ms);
+  }
+  // 새로 열린 인스타 화면 — 공유한 지 10분 안에 못 찾은 게 있으면 이어서
+  async function resumeShared() {
+    let p = null;
+    try { p = (await chrome.storage.local.get(PENDING_IG))[PENDING_IG]; } catch (_) { return; }
+    if (!p || !p.id) return;
+    if (Date.now() - p.at > 10 * 60 * 1000) { try { await chrome.storage.local.remove(PENDING_IG); } catch (_) {} return; }
+    dlog("새 화면에서 이어서 찾기");
+    await findShared(p);
+  }
+  /* 스레드 · 페이스북 홍보현황 (2026-10-27) — 채운 뒤 회원이 [게시]하고 올린 게시물을 한 번 열면 그 주소를 잡는다.
+     페이스북은 화면을 통째로 새로 열기도 해서 기다림을 크롬에 적어 두고 새 화면에서도 이어서 본다.
+     다른 사람 글을 잡지 않게 — 연 게시물 화면에 우리가 넣은 글 첫머리가 보여야 보낸다 */
+  const PENDING_POST = `gsPendingPost_${target}`; // { id, head, at }
+  const POST_WAIT = 30 * 60 * 1000;
+  function postAddress(href = location.href) {
+    let u;
+    try { u = new URL(href, location.href); } catch (_) { return ""; }
+    if (target === "threads") {
+      const m = /^\/@([^/]+)\/post\/([\w-]+)/.exec(u.pathname);
+      return m ? `https://www.threads.com/@${m[1]}/post/${m[2]}` : "";
+    }
+    if (target === "facebook") {
+      if (/^\/(permalink|story)\.php$/.test(u.pathname) && u.searchParams.get("story_fbid")) {
+        return `https://www.facebook.com${u.pathname}?story_fbid=${u.searchParams.get("story_fbid")}&id=${u.searchParams.get("id") || ""}`;
+      }
+      // 사진 게시물의 사진을 눌러 연 화면 — set=pcb.<게시물 번호> 가 붙으면 그 게시물
+      const pcb = /^pcb\.(\d+)$/.exec(u.searchParams.get("set") || "");
+      if (/^\/photo\/?$/.test(u.pathname) && pcb) return `https://www.facebook.com/photo/?fbid=${u.searchParams.get("fbid") || ""}&set=pcb.${pcb[1]}`;
+      if (/^\/(?:[^/]+\/)?posts\/[\w.-]+\/?$/.test(u.pathname) || /^\/groups\/[^/]+\/posts\/[\w.-]+/.test(u.pathname) || /^\/share\/p\/[\w-]+/.test(u.pathname)) {
+        return `https://www.facebook.com${u.pathname.replace(/\/$/, "")}`;
+      }
+    }
+    return "";
+  }
+  // 피드에 뜬 우리 게시물에서 주소 링크 찾기 — 따로 열지 않아도 (스레드: 시간 링크 · 페이스북: 사진 링크)
+  function findInFeed(head) {
+    if (!head) return "";
+    // 아직 글쓰기 칸에 우리 글이 있으면(게시 전) 찾지 않는다 — 예전 게시물을 잘못 잡지 않게
+    const composing = Array.from(document.querySelectorAll("[contenteditable='true'], textarea")).some((e) => norm(e.innerText || e.value || "").replace(/\s+/g, "").includes(head));
+    if (composing) return "";
+    for (const a of document.querySelectorAll("a[href]")) {
+      const url = postAddress(a.getAttribute("href"));
+      if (!url) continue;
+      let el = a;
+      for (let i = 0; i < 15 && el && el !== document.body; i++, el = el.parentElement) {
+        const t = norm(el.innerText || "").replace(/\s+/g, "");
+        if (t.length > 8000) break; // 피드 전체까지 올라가면 다른 게시물과 섞인다
+        if (t.includes(head)) return url;
+      }
+    }
+    return "";
+  }
+  async function startPostWatch(p) {
+    if (watchingAddr) return;
+    watchingAddr = true;
+    const head = norm(p.head).replace(/\s+/g, "");
+    let last = "";
+    const t = setInterval(async () => {
+      if (linkedDone || Date.now() - p.at > POST_WAIT) { clearInterval(t); return; }
+      let url = findInFeed(head);
+      if (url) dlog(`피드에서 우리 게시물 찾음 ${url}`);
+      else {
+        if (location.href === last) return;
+        last = location.href;
+        url = postAddress();
+        if (!url) return;
+        // 게시물 화면이 다 뜨기를 기다리며 우리 글이 보이는지 (10초까지)
+        const mine = await waitFor(() => !head || norm(document.body.innerText).replace(/\s+/g, "").includes(head), 10000, 500);
+        if (!mine) { dlog(`게시물 화면인데 우리 글이 아님 ${url}`); return; }
+      }
+      const r = await send({ type: "GS_PUBLISHED", id: p.id, url });
+      dlog(`게시물 화면 주소 보냄 ${url} → ${r && r.ok ? "연결됨" : "앱이 거절"}`);
+      if (r && r.ok) {
+        clearInterval(t);
+        linkedDone = true;
+        try { await chrome.storage.local.remove(PENDING_POST); } catch (_) {}
+        toast("게시물 주소를 공실스튜디오 홍보현황에 연결했어요.", 4000);
+        if (panel) panel.status("게시물 주소를 공실스튜디오 홍보현황에 연결했어요.", "ok");
+      }
+    }, 2000);
+  }
+  async function afterFillPost(j) {
+    const p = { id: j.id, head: String(texts()[0] || "").replace(/\s+/g, "").slice(0, 15), at: Date.now() };
+    try { await chrome.storage.local.set({ [PENDING_POST]: p }); } catch (_) {}
+    dlog(`게시 기다림 ${j.id}`);
+    if (panel) panel.status("확인하고 [게시]를 눌러 주세요. 올라가면 도우미가 게시물 주소를 홍보현황에 연결해요.", "ok");
+    void startPostWatch(p);
+  }
+  async function resumePostWatch() {
+    let p = null;
+    try { p = (await chrome.storage.local.get(PENDING_POST))[PENDING_POST]; } catch (_) { return; }
+    if (!p || !p.id) return;
+    if (Date.now() - p.at > POST_WAIT) { try { await chrome.storage.local.remove(PENDING_POST); } catch (_) {} return; }
+    dlog(`새 화면에서 이어서 기다림 ${p.id}`);
+    void startPostWatch(p);
   }
   if (self.__GS_HELPER_TEST__) {
     Object.assign(self.__GS_HELPER_TEST__, { canonicalEditor, collectEditors, findBox, insertText, textbox });
     return;
   }
+  if (target === "instagram") void resumeShared();
+  else void resumePostWatch();
   void main();
 })();

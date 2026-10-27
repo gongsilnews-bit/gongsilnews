@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실스튜디오 도우미",
-  "version": "1.0.3",
+  "version": "1.0.17",
   "description": "공실스튜디오 앱에서 쓴 글과 사진을 평소 쓰는 크롬의 네이버 블로그·인스타그램·스레드·페이스북 글쓰기 화면에 채워 줍니다. 발행·공유는 직접 누릅니다.",
   "icons": {
     "16": "icons/icon16.png",
@@ -19,6 +19,9 @@
       "128": "icons/icon128.png"
     }
   },
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "http://127.0.0.1/*"
   ],

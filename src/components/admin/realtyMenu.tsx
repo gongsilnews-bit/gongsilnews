@@ -15,7 +15,7 @@ import { SHOW_STUDY } from "@/utils/siteFlags";
 export type MenuLayout = { main: string[]; more: string[] };
 
 export const REALTY_MENU_CATALOG: MenuItem[] = [
-  { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
+  { key: "dashboard", label: "홈", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
   { key: "article", label: "기사등록", icon: <IconArticle /> },
   { key: "marketing", label: "공실마케팅", icon: <IconMegaphone /> },

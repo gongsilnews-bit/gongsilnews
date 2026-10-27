@@ -11,11 +11,23 @@ const log = require("electron-log/main");
 const PORTS = [47615, 47616, 47617, 47618, 47619]; // 확장도 같은 목록을 차례로 두드린다
 const TTL = 5 * 60 * 1000;
 const jobs = new Map(); // id → { id, target, payload, at, taken, done, waiters }
+// 홍보현황 (2026-10-27): 채운 글이 어느 공실·채널인지 — 회원이 [발행]하면 도우미가 글 주소를 보내 온다(published)
+const PUB_TTL = 3 * 60 * 60 * 1000;
+const pubs = new Map(); // id → { meta: { vacancyId, channel }, at } — 앱을 껐다 켜도 남게 PC 파일에도 둔다
+const pubFile = () => require("path").join(require("electron").app.getPath("userData"), "helper-pubs.json");
+const savePubs = () => {
+  try { require("fs").writeFileSync(pubFile(), JSON.stringify([...pubs])); } catch {}
+};
+const loadPubs = () => {
+  try { for (const [id, p] of JSON.parse(require("fs").readFileSync(pubFile(), "utf8"))) if (Date.now() - p.at < PUB_TTL) pubs.set(id, p); } catch {}
+};
+const pubListeners = [];
 let server = null;
 let port = 0;
 
 const sweep = () => {
   for (const [id, j] of jobs) if (Date.now() - j.at > TTL) jobs.delete(id);
+  for (const [id, p] of pubs) if (Date.now() - p.at > PUB_TTL) pubs.delete(id);
 };
 
 function send(res, code, obj) {
@@ -73,12 +85,43 @@ function handle(req, res) {
     });
     return;
   }
+  // 확장이 남기는 진행 기록 (발행 주소 잡기가 어디서 멈추는지 보려고, 2026-10-27)
+  if (url.pathname === "/gs-helper/log" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 1e4) req.destroy(); });
+    req.on("end", () => {
+      let r = {};
+      try { r = JSON.parse(body || "{}"); } catch {}
+      log.info(`[도우미 확장] ${String(r.text || "").slice(0, 500)}`);
+      send(res, 200, { ok: true });
+    });
+    return;
+  }
+  if (url.pathname === "/gs-helper/published" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 1e5) req.destroy(); });
+    req.on("end", () => {
+      let r = {};
+      try { r = JSON.parse(body || "{}"); } catch {}
+      const p = pubs.get(r.id);
+      const ok = Boolean(p && /^https:\/\//.test(String(r.url || "")));
+      if (ok) {
+        pubs.delete(r.id);
+        savePubs();
+        log.info(`[도우미] 발행 ${p.meta.channel} ${p.meta.vacancyId} ${r.url}`);
+        for (const fn of pubListeners) Promise.resolve(fn({ ...p.meta, url: String(r.url) })).catch((e) => log.warn(`[도우미] 발행 기록 못함: ${e.message}`));
+      }
+      send(res, 200, { ok });
+    });
+    return;
+  }
   send(res, 404, { ok: false });
 }
 
 /** 앱이 켜질 때 — 비어 있는 첫 번호에서 듣는다 */
 function start() {
   if (server) return;
+  loadPubs();
   const tryPort = (i) => {
     if (i >= PORTS.length) return log.warn("[도우미] 창구를 열 번호가 없음");
     const s = http.createServer(handle);
@@ -92,12 +135,13 @@ function start() {
   tryPort(0);
 }
 
-/** 일감 올리기 — 돌려줌: id */
-function addJob(target, payload) {
+/** 일감 올리기 — 돌려줌: id. meta = { vacancyId, channel } 이면 발행 뒤 글 주소를 받는다 */
+function addJob(target, payload, meta) {
   // 같은 곳에 남은 옛 일감은 버린다 (마지막 것만)
   for (const [id, j] of jobs) if (j.target === target && !j.taken) jobs.delete(id);
   const id = crypto.randomBytes(8).toString("hex");
   jobs.set(id, { id, target, payload, at: Date.now(), taken: 0, done: null, waiters: [] });
+  if (meta && meta.vacancyId) { pubs.set(id, { meta, at: Date.now() }); savePubs(); }
   return id;
 }
 
@@ -120,4 +164,7 @@ function wait(id, what, ms) {
 
 const cancel = (id) => jobs.delete(id);
 
-module.exports = { start, addJob, wait, cancel, port: () => port };
+/** 회원이 발행한 글 주소가 오면 — fn({ vacancyId, channel, url }) */
+const onPublished = (fn) => pubListeners.push(fn);
+
+module.exports = { start, addJob, wait, cancel, onPublished, port: () => port };

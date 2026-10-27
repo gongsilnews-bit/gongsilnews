@@ -53,6 +53,12 @@ export default function VideoStudio() {
       b.project.open(f).then(take).catch((e) => setErr(errText(e)));
     };
     b.project.pendingFile?.().then(openFile).catch(() => {});
+    // 첫 화면 [작업 계속하기]에서 누른 프로젝트 (StudioHomeSection, 2026-10-27)
+    try {
+      const v = JSON.parse(sessionStorage.getItem("gs-video-open") || "null");
+      sessionStorage.removeItem("gs-video-open");
+      if (v?.dir && Date.now() - (v.at || 0) < 60 * 1000) openFile(v.dir);
+    } catch {}
     return b.project.onOpenFile?.(openFile);
   }, [b]);
 

@@ -49,5 +49,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => sendResponse({ ok: true }));
     return true;
   }
+  if (msg?.type === "GS_LOG") {
+    call("/gs-helper/log", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `v${chrome.runtime.getManifest().version} ${msg.text}` }) })
+      .then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  // 회원이 발행한 글 주소 → 앱 (홍보현황 "연결됨", 2026-10-27)
+  if (msg?.type === "GS_PUBLISHED") {
+    call("/gs-helper/published", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: msg.id, url: msg.url }) })
+      .then((j) => sendResponse({ ok: Boolean(j && j.ok) }));
+    return true;
+  }
   return false;
 });
