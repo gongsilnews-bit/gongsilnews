@@ -4,7 +4,12 @@
 // 진짜 편집이 되면서 어르신도 쉽게: 모든 기능을 눈에 보이는 단추로, 되돌리기, 자동 저장
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SubFormatBar } from "./SubFormatBar";
-import type { Asset, Clip, Keyframe, KfProp, Layer, LibItem, Project, Ratio, Roll, Scene, StockItem, VolKf, Word } from "./types";
+import type { Asset, Clip, Keyframe, KfProp, Layer, LibItem, MotionOpts, Project, Ratio, Roll, Scene, StockItem, VolKf, Word } from "./types";
+import MotionDialog from "./MotionDialog";
+import MotionAutoDialog, { type AutoRun } from "./MotionAutoDialog";
+import { STYLE_PACKS, outroOfIntro, packOfIntro } from "./stylePacks";
+import { SUB_PRESETS } from "./SubPresets";
+import { MUSIC_LIBRARY } from "@/lib/reels/music-catalog";
 import { DRAG_MEDIA, DRAG_STICKER, RATIO_LABEL, RATIO_SIZE, autoSubPosition, errText, fmtTime, stickerDrag, uid, videoBridge } from "./types";
 import { chainVisuals, layLeads, tailGap, layRolls, zLayers, gapOf, voiceGap, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes, layerRange, kfAt, kfUpsert, kfIndexAt, kfSort, kfAny, kfHasAt, kfSetProps, kfToggleProp, kfClearProps, kfMoveProps, cropOf, KF_PROPS, clipKeyBase, clipBaseRect, imgRect, clipDuration, sourceTimeAt } from "./timeline";
 import Timeline, { AudioMeter, type Pick, type TlTool, type TrackOp } from "./TimelineView";
@@ -272,7 +277,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     pref.current = next;
     setProjectState(next);
   };
+  // 녹화를 열자마자 뒤에서 자막을 만드는 동안(2026-10-28 사장님) — 보기·듣기만, 고치기는 잠시 막는다 (끝난 자막과 엉키지 않게)
+  const subLock = useRef<null | (() => void)>(null);
   const change = useCallback((fn: (p: Project) => void, history = true) => {
+    if (subLock.current && history) return subLock.current(); // 앱이 스스로 하는 바로잡기(history=false)는 그대로
     const prev = pref.current;
     const next = structuredClone(prev) as Project;
     fn(next);
@@ -321,9 +329,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   // 처음 열 때의 프로젝트 — 이것과 같으면 고친 게 아니다 (2026-10-20: 예전엔 "첫 번째 실행만 건너뛰기"라서,
   //  개발판(React 엄격 모드)이 효과를 두 번 돌리면 아무것도 안 고쳐도 "저장 안 함"이 떴다)
   const opened = useRef(project);
+  // 마지막으로 저장한 내용 — 이것과 내용이 같으면 고친 게 아니다 (2026-10-28 사장님: 고친 게 없는데도 늘 "저장하지 않은 내용"이 떴다.
+  //  열자마자 앱이 스스로 채우는 값(길이 재기·미리보기 그림 등)이나 시각만 바뀐 것은 고친 것으로 치지 않는다)
+  const snapOf = (p: unknown) => JSON.stringify(p, (k, v) => (k === "updatedAt" || k === "savedAt" ? undefined : v));
+  const savedSnap = useRef(snapOf(project));
+  const openedAt = useRef(Date.now());
+  const markSaved = (p: unknown = pref.current) => { savedSnap.current = snapOf(p); };
   useEffect(() => {
     if (project === opened.current) return;
-    setDirty(true);
+    const s = snapOf(project);
+    if (Date.now() - openedAt.current < 2500 && !dirtyRef.current) savedSnap.current = s; // 열면서 앱이 채운 값
+    setDirty(s !== savedSnap.current);
     const t = setTimeout(() => {
       b.project.save(project).catch((e) => setSaved(`저장 실패: ${errText(e)}`));
     }, 800);
@@ -1076,7 +1092,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   };
 
   /* ── 자동 자막 — 녹화·촬영 영상 클립의 말소리를 글로 (지금 클립은 그대로, 글만 채움). 소리만 서버로, AI 비용 있음 ── */
-  const autoSub = async (ids: string[]) => {
+  const [bgSub, setBgSub] = useState<{ title: string; frac: number | null } | null>(null);
+  const bgStop = useRef(false);
+  const autoSub = async (ids: string[], bg = false) => {
     if (!b.transcribeClips) return say("공실마케팅를 껐다 켜 주세요 (자동 자막 기능을 새로 연결해요)");
     const targets = ids
       .map((id) => findClip(pref.current, id)?.clip)
@@ -1084,10 +1102,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       .map((c) => ({ id: c.id, asset: c.src!.asset, s: c.src!.s, e: c.src!.e }));
     setDialog("");
     if (!targets.length) return say("받아쓸 클립이 없어요 (녹화·촬영 영상 클립만 돼요)");
-    setWork({ title: "말소리를 글로 바꾸는 중…" });
-    const off = b.onProgress((t, f) => setWork({ title: t, frac: typeof f === "number" ? f : null }));
+    // bg: 화면을 막지 않고 뒤에서 — 영상은 바로 보고, 위쪽 작은 띠에 진행 · [그만]
+    if (bg) {
+      bgStop.current = false;
+      setBgSub({ title: "자막 만드는 중…", frac: null });
+      subLock.current = () => say("자막을 만드는 중이에요 — 끝나면 고칠 수 있어요 (필요 없으면 위쪽 [그만])");
+    } else setWork({ title: "말소리를 글로 바꾸는 중…" });
+    const off = b.onProgress((t, f) => (bg ? setBgSub({ title: t, frac: typeof f === "number" ? f : null }) : setWork({ title: t, frac: typeof f === "number" ? f : null })));
     try {
       const r = await b.transcribeClips(pref.current, targets);
+      subLock.current = null;
+      if (bg && bgStop.current) return;
       let n = 0;
       let made = 0;
       change((p) => {
@@ -1141,17 +1166,25 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       say(errText(e));
     } finally {
       off();
-      setWork(null);
+      subLock.current = null;
+      if (bg) setBgSub(null);
+      else setWork(null);
     }
   };
-  // 오디오로 편집하기 — 처음 열면 받아쓰기를 바로 (한 번만, 2026-10-20)
+  // 오디오로 편집하기·녹화 — 처음 열면 받아쓰기를 바로 (한 번만, 2026-10-20). 2026-10-28: 화면을 막지 않고 뒤에서
+  const stopBgSub = () => {
+    bgStop.current = true;
+    subLock.current = null;
+    setBgSub(null);
+    say("자막 만들기를 멈췄어요 — 영상은 통째로 한 클립이에요. 필요하면 [자동 자막 만들기]");
+  };
   const autoOnce = useRef(false);
   useEffect(() => {
     if (autoOnce.current || !project.autoSubOnOpen) return;
     autoOnce.current = true;
     const ids = project.scenes.flatMap((s) => s.clips).filter((c) => c.type === "source" && c.src && !c.words?.length).map((c) => c.id);
     change((p) => { delete p.autoSubOnOpen; });
-    if (ids.length) setTimeout(() => void autoSub(ids), 300);
+    if (ids.length) setTimeout(() => void autoSub(ids, true), 300);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── 자막 시각 맞추기 — 글은 그대로, 단어 시각만 실제 말소리에 다시 맞춘다 (PC에서, 무료). 지운 단어는 그대로 ── */
@@ -2797,6 +2830,95 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     await placeMedia(a, lastSelected(), false, rg, opt?.hold);
   };
 
+  /** 모션그래픽 틀 (2026-10-28 사장님) — 이 영상 공실 정보로 구워 맨 앞에 넣는다 */
+  const [motionAsk, setMotionAsk] = useState<"" | "intro" | "outro">(""); // 인트로·끝 화면 고르기 창
+  const openMotion = (kind: "intro" | "outro" = "intro") => {
+    const p = pref.current;
+    if (!b.project.motionRender) return say("앱을 새 버전으로 다시 켜 주세요");
+    // 공실이 없어도 된다 — 글자를 직접 쓰거나 공실을 불러온다 (2026-10-28 사장님)
+    if (!b.project.motionOptions) return p.vacancyId ? void insertMotion({ template: "intro", vacancyId: p.vacancyId, ratio: p.ratio }) : say("앱을 새 버전으로 다시 켜 주세요");
+    setMotionAsk(kind);
+  };
+  /* ── 모션 자동 입히기 (2026-10-28 사장님) — 장면마다 문장을 읽어 고른 모션을, 그 장면 화면을 배경으로 구워 화면을 바꾼다 ── */
+  const [autoMotion, setAutoMotion] = useState(false);
+  const runAutoMotion = async (r: AutoRun) => {
+    setAutoMotion(false);
+    const p0 = pref.current;
+    const P = STYLE_PACKS.find((x) => x.id === r.packId) || STYLE_PACKS[0];
+    const font = SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === P.sub)?.look.font || "Pretendard";
+    const accent = P.swatch[1];
+    let done = 0;
+    for (const { clipId, plan } of r.plans) {
+      const it = flatten(pref.current).items.find((x) => x.clip.id === clipId);
+      if (!it) continue;
+      const c = it.clip;
+      const vis = c.visual || (c.src ? { asset: c.src.asset, s: c.src.s } : null);
+      const a = vis ? pref.current.assets[vis.asset] : null;
+      setWork({ title: `장면 ${++done}/${r.plans.length} — ${plan.label} 입히는 중…`, detail: clipText(c).slice(0, 40), frac: done / (r.plans.length + 1) });
+      try {
+        const item = await b.project.motionScene!({ template: plan.template, data: plan.data, ratio: p0.ratio, seconds: it.dur, bg: a ? a.edit || a.path : "", bgStart: vis?.s || 0, font, accent, dir: p0.dir });
+        setWork(null);
+        const na = await ensureAsset(item);
+        change((p) => { const cc = findClip(p, clipId)?.clip; if (!cc) return; cc.mg = { template: plan.template, data: plan.data, prev: cc.mg?.prev ?? (cc.visual ? { ...cc.visual } : null) }; cc.visual = { asset: na.id, s: 0 }; cc.visualHold = true; });
+      } catch (e) {
+        say(`장면 ${done} 모션을 못 입혔어요: ${errText(e)}`);
+      }
+    }
+    setWork(null);
+    say(`장면 ${done}개에 모션을 입혔어요`);
+    // 인트로 · 끝 화면 · 자막·전환·음악까지 같은 스타일로
+    if (r.intro && b.project.motionRender) await insertMotion({ template: r.intro, vacancyId: p0.vacancyId || "", ratio: p0.ratio, font, accent }, true);
+  };
+  /** 모션 빼기 — 입히기 전 화면으로 */
+  const removeMotion = (ids: string[]) => change((p) => { for (const id of ids) { const c = findClip(p, id)?.clip; if (!c?.mg) continue; c.visual = c.mg.prev || null; delete c.mg; delete c.visualHold; } });
+  /** 인트로와 짝인 편집 스타일을 영상 전체에 (2026-10-28 사장님) — 자막 모양·나타나기 · 클립 사이 전환 · 배경음악(없을 때) */
+  const applyIntroPack = async (template: string, font?: string) => {
+    const P = packOfIntro(template);
+    const base = SUB_PRESETS.flatMap((g) => g.items).find((x) => x.id === P.sub)?.look;
+    // 인트로에서 고른 글씨를 자막·화면 글자에도 (2026-10-28 사장님: 폰트부터 전체가 맞아야)
+    const look = base ? { ...base, ...(font ? { font } : {}) } : font ? { font } : undefined;
+    let music: { file: string; url: string; name: string } | null = null;
+    if (!(pref.current.layers || []).some((l) => l.type === "music")) {
+      const track = MUSIC_LIBRARY.find((t) => t.mood === P.music) || MUSIC_LIBRARY[0];
+      if (track) { const r = await b.musicGet(pref.current.dir, `bgm/lib/${track.id.slice(4)}.mp3`).catch(() => null); if (r) music = { file: r.file, url: r.url, name: track.label }; }
+    }
+    change((p) => {
+      for (const l of p.layers || []) if (l.type === "text" && font) l.font = font; // 화면 글자도 같은 글씨
+      if (look) p.settings.subtitle = { ...p.settings.subtitle, ...look, anim: { ...(p.settings.subtitle.anim || {}), in: P.subIn, ...(P.word ? { wshow: "word" as const, whl: "color" as const } : {}) } };
+      const items = flatten(p).items;
+      items.forEach((x, i) => { if (i === 0) return; const c = findClip(p, x.clip.id)?.clip; if (c) c.trans = { type: P.trans[(i - 1) % P.trans.length], a: 0.3, b: 0.3 }; });
+      if (music && items.length) p.layers = [...(p.layers || []), { id: uid(), type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, name: music.name, file: music.file, url: music.url, volume: 0.15, fadeIn: 0, fadeOut: 2, offset: 0, loop: true } as Layer];
+    });
+    say(`영상 전체를 "${P.label}" 스타일로 맞췄어요 (글씨·자막·전환${music ? "·배경음악" : ""})`);
+  };
+  const insertMotion = async (o: MotionOpts, styleAll = false, at: "start" | "end" = "start") => {
+    const p = pref.current;
+    if (!b.project.motionRender) return;
+    setMotionAsk("");
+    const what = at === "end" ? "끝 화면" : "인트로";
+    setWork({ title: `모션그래픽 ${what}을 굽는 중…`, detail: "3초 장면을 만들어요" });
+    const off = b.onProgress((t) => setWork({ title: t, detail: `${what} 장면을 만들어요` }));
+    let item: LibItem;
+    try {
+      item = await b.project.motionRender({ ...o, ratio: p.ratio, dir: p.dir });
+    } catch (e) {
+      off();
+      setWork(null);
+      return say(errText(e));
+    }
+    off();
+    setWork(null);
+    const a = await ensureAsset(item);
+    const its = flatten(pref.current).items;
+    if (at === "end") await placeMedia(a, its[its.length - 1]?.clip.id, false);
+    else await placeMedia(a, its[0]?.clip.id, true);
+    say(`${what}을 맨 ${at === "end" ? "끝" : "앞"}에 넣었어요`);
+    if (styleAll && at === "start") {
+      await applyIntroPack(o.template, o.font).catch((e) => say(errText(e)));
+      // 짝 끝 화면도 맨 끝에 (같은 글씨·색·글자) — 이미 끝 화면을 넣었으면 그대로
+      await insertMotion({ ...o, template: outroOfIntro(o.template) }, false, "end");
+    }
+  };
   /** 자료를 클립으로 넣기 — 말소리 있는 영상은 받아써서 클립으로, 사진·소리 없는 영상은 화면 클립으로 (refId 앞/뒤, 없으면 끝) */
   const insertAt = (clips: Clip[], refId: string | undefined, before: boolean) => {
     if (!before) return insertAfter(clips, refId);
@@ -3045,6 +3167,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       await b.project.save(pref.current);
       const r = await b.project.flush?.(pref.current);
       if (r?.savedAt) pref.current.savedAt = r.savedAt;
+      markSaved();
       setDirty(false);
       setSaved(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
       say(pref.current.file ? `저장했어요 (${pref.current.name}.gss)` : "저장했어요");
@@ -3058,7 +3181,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [closeAsk, setCloseAsk] = useState(false);
   const pendingNext = useRef<(() => void) | null>(null);
   const guard = (next: () => void) => {
-    if (!dirty || !gssMode) return next();
+    // 지금 내용이 저장한 것과 같으면 묻지 않는다 (고쳤다가 되돌린 경우 포함)
+    if (!gssMode || snapOf(pref.current) === savedSnap.current) { if (dirty) setDirty(false); return next(); }
     pendingNext.current = next;
     setCloseAsk(true);
   };
@@ -3163,6 +3287,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       await b.project.flush?.(np).catch(() => {}); // 새 파일은 저장된 상태로
       if (orig.file) await b.project.discard?.({ ...orig, savedAt: orig.savedAt ?? "x" }).catch(() => {});
       setWork(null);
+      markSaved(np);
       setDirty(false);
       if (pendingNext.current) runNext(); // 닫으려다 [다른 이름으로 저장]을 골랐으면 이어서 닫기
       else onSwitch?.(np);
@@ -3665,6 +3790,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "font", label: "텍스트", onClick: addTextLayer, title: "고른 클립(없으면 지금 클립)에 글자를 올려요" },
       { icon: "image", label: "사진·영상 올리기", onClick: () => { setOverlayTarget(""); openLib("mine", true); }, title: "고른 클립(없으면 지금 클립) 화면 위에 사진이나 영상을 올려요" },
       { icon: "star", label: "그래픽", onClick: () => { setStickerTarget(""); setPanel(panel === "sticker" ? "" : "sticker"); }, title: "가격대비 짱! · 역 1분! · 초품아! — 부동산 그래픽 (반짝이·움직임·효과음 자동)" },
+      ...(b.project.motionScene ? [{ icon: "ai", label: "모션 자동 입히기", onClick: () => setAutoMotion(true), title: "장면마다 성우 문장을 읽어 어울리는 모션(가격·정보 카드·위치 핀·장점 체크·키네틱)을 한 번에 입혀요" }] : []),
+      ...(b.project.motionRender ? [{ icon: "ai", label: "끝 화면 (모션)", onClick: () => openMotion("outro"), title: "맨 끝에 사무소·대표·등록번호·전화·QR 이 나오는 끝 화면을 넣어요" }] : []),
+      ...(b.project.motionRender ? [{ icon: "ai", label: "인트로 (모션)", onClick: () => openMotion("intro"), title: "이 영상 공실의 동네·종류·가격·면적이 튀어나오는 3초 인트로를 맨 앞에 넣어요" }] : []),
       { icon: "music", label: "배경 음악", onClick: () => openMusic(""), title: "고른 클립(없으면 영상 전체)에 음악을 깔아요" },
       "|",
       { icon: "image", label: "내 이미지·비디오", onClick: () => { openLib("mine"); } },
@@ -4867,6 +4995,19 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               <button type="button" onClick={() => setPhotoHintHide(true)} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", display: "flex" }}><Icon name="close" size={18} /></button>
             </div>
           )}
+          {/* 글은 있는데 AI 목소리가 없는 클립 — 한 번에 만들기 (2026-10-28 사장님: 목소리 없으면 자동 생성 요청) */}
+          {(() => {
+            const need = flat.items.filter((x) => x.clip.type === "voice" && !x.clip.voice && !x.clip.muted && clipText(x.clip).trim() && !busy[x.clip.id]).map((x) => x.clip.id);
+            const making = Object.keys(busy).length > 0;
+            if (!need.length && !making) return null;
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", borderBottom: `1px solid ${C.line}`, background: C.panel, fontSize: 14.5 }}>
+                <Icon name="voice" size={18} />
+                <span style={{ flex: 1 }}>{making ? `AI 목소리를 만드는 중… (${Object.keys(busy).length}개 남음)` : `AI 목소리가 없는 클립이 ${need.length}개 있어요. 글을 그대로 성우가 읽어요.`}</span>
+                {!making && <Btn small primary onClick={() => void revoice(need)}>AI 목소리 모두 만들기</Btn>}
+              </div>
+            );
+          })()}
           {/* 녹화·촬영 영상에 글이 하나도 없을 때만 — 자동 자막 안내 */}
           {!autoSubHide && noTextIds.length > 0 && noTextIds.length === srcItems.length && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", borderBottom: `1px solid ${C.line}`, background: C.panel, fontSize: 14.5 }}>
@@ -5292,6 +5433,16 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           onAnim={l.type === "text" ? () => { setAnimTarget(l.id); setSelLayer(l.id); setPanel("anim"); setPop(null); } : undefined} />;
       })()}
       {work && <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac} /></Modal>}
+      {bgSub && (
+        <div style={{ position: "fixed", top: 76, left: "50%", transform: "translateX(-50%)", zIndex: 900, display: "flex", alignItems: "center", gap: 12, padding: "9px 12px 9px 16px", borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, boxShadow: "0 6px 24px rgba(0,0,0,.45)", fontFamily: FONT }}>
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: C.text, whiteSpace: "nowrap" }}>{bgSub.title}{typeof bgSub.frac === "number" ? ` ${Math.round(bgSub.frac * 100)}%` : ""}</span>
+          <div style={{ width: 140, height: 5, borderRadius: 3, background: C.line2, overflow: "hidden" }}>
+            <div style={{ width: `${typeof bgSub.frac === "number" ? Math.round(bgSub.frac * 100) : 30}%`, height: "100%", background: C.accent, transition: "width .3s" }} />
+          </div>
+          <span style={{ fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>영상은 지금 볼 수 있어요 · 고치기는 끝난 뒤에</span>
+          <Btn small onClick={stopBgSub}>그만</Btn>
+        </div>
+      )}
       {learn && (
         <Modal title="다음에도 이렇게 고칠까요?" onClose={() => setLearn(null)} width={560}
           footer={<><Btn onClick={() => setLearn(null)}>아니요</Btn><Btn primary onClick={async () => {
@@ -5316,6 +5467,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       )}
       {dialog === "export" && <ExportDialog project={project} selected={selected} sceneOf={sel1?.scene.id} onClose={() => setDialog("")} />}
       {dialog === "formats" && <FormatsDialog project={project} onClose={() => setDialog("")} />}
+      {autoMotion && <MotionAutoDialog items={flat.items} onClose={() => setAutoMotion(false)} onRun={(r) => void runAutoMotion(r)} />}
+      {selected.some((id) => flat.items.find((x) => x.clip.id === id)?.clip.mg) && (
+        <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 50 }}>
+          <Btn onClick={() => { removeMotion(selected); say("고른 장면의 모션을 뺐어요"); }}>고른 장면 모션 빼기</Btn>
+        </div>
+      )}
+      {motionAsk && <MotionDialog key={motionAsk} kind={motionAsk} vacancyId={project.vacancyId || ""} ratio={project.ratio} onClose={() => setMotionAsk("")} onInsert={(o, all) => void insertMotion(o, all, motionAsk === "outro" ? "end" : "start")} />}
       {dialog === "saveAs" && (
         <Modal title="다른 이름으로 저장" onClose={() => setDialog("")} width={520}
           footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn primary onClick={doSaveAs} disabled={!saveAsName.trim()}>저장</Btn></>}>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 강조 · 반짝 입자 — 문구 둘레로 별·하트 모양 입자가 떠오르며 반짝인다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.3); }
+  #t { position: absolute; left: var(--pad); right: var(--pad); text-align: center; font-size: calc(var(--u) * 10); font-weight: 900; line-height: 1.2; text-shadow: 0 0 calc(var(--u) * 3) var(--accent); }
+  .p { position: absolute; width: calc(var(--u) * 4); height: calc(var(--u) * 4); }
+  .p svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="t"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "chime", vol: 0.5 }, { t: 0.5, name: "sparkle", vol: 0.7 }, { t: 1.4, name: "sparkle", vol: 0.4 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const ws = S.words($("t"), D.title, D.highlight);
+    const top = V ? M.H * 0.26 : M.H * 0.3; $("t").style.top = top + "px";
+    const acc = getComputedStyle($("stage")).getPropertyValue("--accent").trim() || "#FFD400";
+    const shapes = ['<svg viewBox="0 0 24 24"><path d="M12 1 L14.5 9.5 L23 12 L14.5 14.5 L12 23 L9.5 14.5 L1 12 L9.5 9.5 Z" fill="' + acc + '"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 21 C 4 14 1 10 4 6 C 7 3 10 4 12 7 C 14 4 17 3 20 6 C 23 10 20 14 12 21 Z" fill="#ff5fa2"/></svg>', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#fff"/></svg>'];
+    const ps = Array.from({ length: 14 }, (_, i) => { const d = document.createElement("div"); d.className = "p"; d.innerHTML = shapes[i % 3]; d.style.left = ((i * 37) % 90 + 5) + "%"; d.style.top = top + u * (4 + (i * 13) % 14) + "px"; $("stage").appendChild(d); return d; });
+    S.hide(ws, ps);
+    tl.add(ws, { opacity: [0, 1], scale: [0.7, 1], duration: 450, delay: stagger(90), ease: "outBack(1.6)" }, 100)
+      .add(ps, { opacity: [{ to: 1, duration: 150 }, { to: 0, duration: 700, delay: 500 }], y: [0, () => -u * anime.utils.random(8, 22)], rotate: () => [0, anime.utils.random(-90, 90)], scale: [0.3, 1.1], duration: 1350, delay: stagger(60), ease: "outCubic" }, 450);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

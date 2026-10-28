@@ -167,6 +167,7 @@ if (allowed) {
       get: (id) => ipcRenderer.invoke("studio:column-get", id),
       refetch: (id) => ipcRenderer.invoke("studio:column-refetch", id), // [다시 가져오기]
       list: (limit) => ipcRenderer.invoke("studio:column-list", limit), // limit 없으면 최근 8개
+      media: (id, op) => ipcRenderer.invoke("studio:column-media", id, op), // 기사 화면 정리 — 빼기·순서·AI 이미지·내 사진 (2026-10-28)
     },
     /* 화면캡처·녹화 (2026-10-24) — 스튜디오 창을 내리고 오른쪽 막대. 찍은 그림을 [이미지제작에서 열기]하면 onPhoto(파일) */
     snap: {
@@ -204,6 +205,20 @@ if (allowed) {
         create: (opts) => ipcRenderer.invoke("video:project-create", opts),
         open: (dir, choice) => ipcRenderer.invoke("video:project-open", dir, choice), // choice: "work" 이어서 / "file" 마지막 저장
         openPick: () => ipcRenderer.invoke("video:project-open-pick"),
+        // 가져오기 — 캡컷 · 클로드(AI) 설계도 (0.1.15부터)
+        importList: () => ipcRenderer.invoke("video:import-list"),
+        importAny: (target) => ipcRenderer.invoke("video:import", target),
+        importPick: () => ipcRenderer.invoke("video:import-pick"),
+        importOpenInbox: () => ipcRenderer.invoke("video:import-open-inbox"),
+        importGuide: () => ipcRenderer.invoke("video:import-guide"),
+        importText: (text) => ipcRenderer.invoke("video:import-text", text), // 설계도 붙여넣기
+        motionRender: (o) => ipcRenderer.invoke("video:motion-render", o), // 모션그래픽 틀 굽기 (0.1.15부터)
+        motionOptions: (vacancyId) => ipcRenderer.invoke("video:motion-options", vacancyId),
+        motionPreview: (o) => ipcRenderer.invoke("video:motion-preview", o),
+        motionPickBg: () => ipcRenderer.invoke("video:motion-pick-bg"),
+        motionScene: (o) => ipcRenderer.invoke("video:motion-scene", o), // 장면에 모션 입히기
+        aiDesignVacancies: () => ipcRenderer.invoke("video:ai-design-vacancies"),
+        aiDesign: (o) => ipcRenderer.invoke("video:ai-design", o), // 연결된 AI 에게 영상 설계 맡기기
         save: (p) => ipcRenderer.invoke("video:project-save", p),
         flush: (p) => ipcRenderer.invoke("video:project-flush", p), // [저장] — .gss 로 묶기
         defaultDir: () => ipcRenderer.invoke("video:project-dir"), // 새 프로젝트 기본 폴더 (0.1.11부터)

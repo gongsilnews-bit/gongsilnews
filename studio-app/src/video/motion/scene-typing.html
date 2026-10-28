@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 타자 — 어두운 띠 위에 문장이 한 글자씩 쳐지고 커서가 깜빡인다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.3); }
+  #band { position: absolute; left: var(--pad); right: var(--pad); background: rgba(10,12,20,.82); border-left: calc(var(--u) * 1.4) solid var(--accent); padding: calc(var(--u) * 3) calc(var(--u) * 3.4); }
+  #t { font-size: calc(var(--u) * 7); font-weight: 800; line-height: 1.35; min-height: 1.35em; }
+  #cur { display: inline-block; width: .5em; height: .1em; background: var(--accent); margin-left: .05em; vertical-align: -.05em; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="band"><span id="t"></span><span id="cur"></span></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "typing", vol: 0.5 }, { t: 1.4, name: "typing", vol: 0.4 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const cs = S.chars($("t"), D.title);
+    $("band").style.top = (V ? M.H * 0.2 : M.H * 0.3) + "px";
+    S.hide(cs);
+    const blink = { b: 0 };
+    tl.add(cs, { opacity: [0, 1], duration: 1, delay: stagger(55) }, 200)
+      .add(blink, { b: [0, 12], duration: (M.D.seconds || 3) * 1000, ease: "linear", onUpdate: () => { $("cur").style.opacity = Math.floor(blink.b) % 2 ? "0" : "1"; } }, 0);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

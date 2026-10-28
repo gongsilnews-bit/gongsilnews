@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 강조 · 화살표 — 큰 화살표가 날아와 화면을 가리키고 옆에 문구 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.25); }
+  #arrow { position: absolute; width: calc(var(--u) * 28); height: calc(var(--u) * 28); }
+  #arrow svg { width: 100%; height: 100%; }
+  #t { position: absolute; left: var(--pad); right: var(--pad); font-size: calc(var(--u) * 8.5); font-weight: 900; line-height: 1.2; text-shadow: 0 4px 16px rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="t"></div><div id="arrow"><svg viewBox="0 0 100 100"><path id="ap" d="M10 70 Q 40 20 80 30 L 72 18 M 80 30 L 68 40" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "whoosh", vol: 0.7 }, { t: 0.5, name: "pop", vol: 0.6 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const ws = S.words($("t"), D.title, D.highlight);
+    $("ap").setAttribute("stroke", getComputedStyle($("stage")).getPropertyValue("--accent").trim() || "#ff2d2d");
+    $("t").style.top = (V ? M.H * 0.18 : M.H * 0.18) + "px";
+    Object.assign($("arrow").style, { left: M.W * 0.5 - u * 14 + "px", top: (V ? M.H * 0.32 : M.H * 0.42) + "px" });
+    S.hide(ws, $("arrow"));
+    tl.add($("arrow"), { opacity: [0, 1], x: [-u * 40, 0], y: [u * 20, 0], rotate: [-40, 0], duration: 550, ease: "outBack(1.5)" }, 100)
+      .add($("arrow"), { x: [0, u * 2, 0], y: [0, u * 2, 0], duration: 500, ease: "inOutSine", loop: 4 }, 700)
+      .add(ws, { opacity: [0, 1], x: [u * 5, 0], duration: 400, delay: stagger(80) }, 400);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

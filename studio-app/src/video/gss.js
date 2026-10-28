@@ -212,7 +212,12 @@ function unpack(file, keepWork = false) {
     log.info(`[.gss] 저장 안 한 고친 내용을 이어서 엶 ${file}`);
     return work;
   }
-  fs.rmSync(work, { recursive: true, force: true });
+  // 방금 보던 영상(모션 mp4 등)을 화면이 아직 잡고 있으면 Windows 가 지우기를 막는다(EBUSY) → 몇 번 다시 해 보고, 그래도 안 되면 덮어쓰며 연다
+  try {
+    fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 });
+  } catch (e) {
+    log.warn(`[.gss] 작업 폴더를 다 못 지움(쓰는 중인 파일) — 덮어쓰며 엶: ${e.message}`);
+  }
   fs.mkdirSync(work, { recursive: true });
   for (const e of zipRead(file)) {
     const to = path.join(work, ...e.name.split("/"));
@@ -221,7 +226,15 @@ function unpack(file, keepWork = false) {
     if (e.name === "project.json") {
       const data = fromPortable(JSON.parse(e.data.toString("utf8")), work, path.dirname(file));
       fs.writeFileSync(to, JSON.stringify(data, null, 1));
-    } else fs.writeFileSync(to, e.data);
+    } else {
+      try {
+        fs.writeFileSync(to, e.data);
+      } catch (err) {
+        // 잡혀 있는 파일 — 이름이 같으면 내용도 같다(모션·미디어 파일은 새로 만들 때 새 이름)
+        if (!fs.existsSync(to)) throw err;
+        log.warn(`[.gss] 쓰는 중이라 그대로 둠 ${e.name}`);
+      }
+    }
   }
   if (!fs.existsSync(pj)) throw new Error(".gss 파일 안에 프로젝트 정보가 없어요.");
   setSource(work, file);

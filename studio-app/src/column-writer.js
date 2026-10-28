@@ -335,9 +335,9 @@ function get(id) {
   const captures = (data.captures || []).filter((c) => c && fs.existsSync(c.file)).map((c) => {
     let thumb = null;
     try { thumb = nativeImage.createFromPath(c.file).resize({ width: 480 }).toDataURL(); } catch {}
-    return { thumb, caption: c.caption };
+    return { thumb, caption: c.caption, kind: c.kind || "capture" };
   });
-  return { ...forWeb(data), captures };
+  return { ...forWeb(data), captures, hiddenCount: (data.hidden || []).length };
 }
 
 /* [다시 가져오기] — 같은 기사 주소로 본문·기사 화면을 새로 받는다. 쓴 글에 캡처가 없으면 붙여 준다 */
@@ -351,12 +351,14 @@ async function refetch(id) {
   data.source = s;
   if (lastShots.shots.length) {
     const credit = `출처: ${s.news.publisher || "원문 기사"} (${s.news.url})`;
-    for (const c of data.captures || []) { try { fs.unlinkSync(c.file); } catch {} }
+    // 회원이 넣은 AI 사진·내 사진은 남긴다 (2026-10-28)
+    const mine = (data.captures || []).filter((c) => c && (c.kind === "ai" || c.kind === "upload"));
+    for (const c of data.captures || []) { if (!mine.includes(c)) { try { fs.unlinkSync(c.file); } catch {} } }
     data.captures = lastShots.shots.map((buf, i) => {
       const file = path.join(mediaDir(id), `capture-${i + 1}.jpg`);
       fs.writeFileSync(file, buf);
       return { file, caption: `원문 기사 화면 ${i + 1} · ${credit}` };
-    });
+    }).concat(mine);
     // 이미 쓴 기사·블로그에 기사 화면이 하나도 없으면 붙인다 (같은 파일 이름이라 있으면 새 화면으로 저절로 바뀜)
     for (const doc of ["article", "blog"]) {
       const f = path.join(mediaDir(id), `${doc}.json`);

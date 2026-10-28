@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 반쪽 색판 — 화면 한쪽에 색판이 밀려 들어오고 그 위에 큰 문구 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #panel { position: absolute; background: var(--accent); opacity: .93; }
+  #t { position: absolute; font-size: calc(var(--u) * 9.5); font-weight: 900; line-height: 1.2; }
+  #sub { position: absolute; font-size: calc(var(--u) * 4.4); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="panel"></div><div id="t"></div><div id="sub"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.05, name: "whoosh", vol: 0.6 }, { t: 0.5, name: "pop", vol: 0.5 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const ws = S.words($("t"), D.title, ""); M.text("sub", D.sub);
+    if (V) { Object.assign($("panel").style, { left: 0, right: 0, top: M.H * 0.12 + "px", height: M.H * 0.3 + "px" }); Object.assign($("t").style, { left: u * 6 + "px", right: u * 6 + "px", top: M.H * 0.16 + "px" }); Object.assign($("sub").style, { left: u * 6 + "px", top: M.H * 0.36 + "px" }); }
+    else { Object.assign($("panel").style, { left: 0, top: 0, bottom: 0, width: M.W * 0.45 + "px" }); Object.assign($("t").style, { left: u * 6 + "px", width: M.W * 0.38 + "px", top: M.H * 0.3 + "px" }); Object.assign($("sub").style, { left: u * 6 + "px", top: M.H * 0.62 + "px" }); }
+    S.hide(ws, $("sub"));
+    tl.add($("panel"), { [V ? "translateY" : "translateX"]: ["-110%", "0%"], duration: 600 }, 0)
+      .add(ws, { opacity: [0, 1], x: [-u * 6, 0], duration: 500, delay: stagger(90) }, 350)
+      .add($("sub"), { opacity: [0, 1], duration: 400 }, 700);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

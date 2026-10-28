@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑨ 폴라로이드 — 찰칵 소리와 함께 사진이 폴라로이드로 떨어지고, 아래 여백에 글이 적힌다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #e9e4da; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #222; background: radial-gradient(circle at 30% 20%, #f6f2ea, #ddd5c6); }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  #card { position: absolute; left: 50%; background: #fff; padding: calc(var(--u) * 3); padding-bottom: calc(var(--u) * 24); box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 5) rgba(0,0,0,.3); }
+  #bg { width: 100%; height: 100%; overflow: hidden; position: relative; }
+  #cap { position: absolute; left: calc(var(--u) * 3); right: calc(var(--u) * 3); bottom: calc(var(--u) * 2.5); }
+  #ck { font-size: calc(var(--u) * 6); font-weight: 900; }
+  #cp { font-size: calc(var(--u) * 7.5); font-weight: 900; color: var(--accent); }
+  #tape { position: absolute; left: 50%; top: calc(var(--u) * -2.5); width: calc(var(--u) * 22); height: calc(var(--u) * 5.5); margin-left: calc(var(--u) * -11); background: rgba(255,230,150,.75); transform: rotate(-4deg); }
+  #side { position: absolute; left: var(--pad); right: var(--pad); text-align: center; }
+  #place { font-size: calc(var(--u) * 5); font-weight: 800; color: #3a3326; }
+  #chips { font-size: calc(var(--u) * 4); font-weight: 700; color: #5a5040; margin-top: calc(var(--u) * 1.2); }
+  #brand { font-size: calc(var(--u) * 3.6); font-weight: 800; color: #3a3326; margin-top: calc(var(--u) * 2); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="side"><div id="place"></div><div id="chips"></div><div id="brand"></div></div>
+  <div id="card"><div id="tape"></div><div id="bg"></div><div id="cap"><div id="ck"></div><div id="cp"></div></div></div>
+  <div id="flash"></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outBack, outCubic } = M;
+  window.__SFX = [{ t: 0.1, name: "click-loud", vol: 0.8 }, { t: 0.35, name: "whoosh", vol: 0.5 }, { t: 1.0, name: "pop", vol: 0.5 }, { t: 1.5, name: "sparkle", vol: 0.4 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    M.text("ck", D.kind); M.text("cp", [D.trade, D.price].filter(Boolean).join(" ")); M.text("place", D.place); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("  ·  ");
+    const cw = M.vertical ? M.W * 0.78 : M.H * 0.62;
+    $("card").style.width = cw + "px"; $("card").style.height = cw * 1.12 + "px"; $("card").style.marginLeft = -cw / 2 - u * 3 + "px";
+    $("card").style.top = (M.vertical ? M.H * 0.1 : M.H * 0.04) + "px";
+    if (M.vertical) $("side").style.top = M.H * 0.1 + cw * 1.12 + u * 34 + "px";
+    else { $("card").style.left = M.W * 0.3 + "px"; $("side").style.left = M.W * 0.55 + "px"; $("side").style.top = M.H * 0.38 + "px"; $("side").style.textAlign = "left"; }
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    $("flash").style.opacity = String(t >= 0.1 ? 0.8 * (1 - seg(t, 0.1, 0.35)) : 0);
+    const d = outBack(seg(t, 0.3, 0.85));
+    $("card").style.opacity = String(seg(t, 0.3, 0.4));
+    $("card").style.transform = `translateY(${(1 - d) * -M.u * 40}px) rotate(${-12 + 9 * d}deg) scale(${1.15 - 0.15 * d})`;
+    // 사진이 하얗게 시작해서 드러난다 (인화)
+    $("bg").style.filter = `brightness(${2.2 - 1.2 * outCubic(seg(t, 0.5, 1.4))}) saturate(${0.3 + 0.7 * seg(t, 0.5, 1.4)})`;
+    const c = outCubic(seg(t, 1.0, 1.4));
+    $("cap").style.opacity = String(c); $("cap").style.transform = `translateY(${(1 - c) * 20}px)`;
+    const s = outCubic(seg(t, 1.4, 1.9));
+    $("side").style.opacity = String(s); $("side").style.transform = `translateY(${(1 - s) * 30}px)`;
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑭ 럭셔리 라인 (Anime.js) — 금빛 선이 사진 둘레를 그리며 감싸고, 글자가 흐림에서 또렷하게 한 자씩, 빛이 글자를 훑는다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #07080d; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #f6efe0; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(7,8,13,.35), rgba(7,8,13,.88) 75%); }
+  svg#frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #wrap { position: absolute; left: 0; right: 0; text-align: center; padding: 0 var(--pad); }
+  #place { font-size: calc(var(--u) * 4); letter-spacing: .5em; color: var(--gold); font-weight: 700; }
+  #kind { font-size: calc(var(--u) * 11); font-weight: 900; margin-top: calc(var(--u) * 2); line-height: 1.1; position: relative; display: inline-block; }
+  #kind .ch, #price .ch { display: inline-block; }
+  #shine { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,240,200,.85) 50%, transparent 70%); mix-blend-mode: overlay; transform: translateX(-120%); }
+  #price { font-size: calc(var(--u) * 15); font-weight: 900; color: var(--gold); margin-top: calc(var(--u) * 2); }
+  #trade { font-size: calc(var(--u) * 4.4); letter-spacing: .4em; margin-top: calc(var(--u) * 1.5); }
+  #chips { font-size: calc(var(--u) * 3.6); letter-spacing: .1em; margin-top: calc(var(--u) * 3); opacity: .85; }
+  #brand { position: absolute; left: 0; right: 0; bottom: calc(var(--pad) * 1.4); text-align: center; letter-spacing: .4em; font-size: calc(var(--u) * 3.2); color: var(--gold); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div>
+  <svg id="frame"><rect id="r1" fill="none" stroke-width="3"></rect><rect id="r2" fill="none" stroke-width="1.5"></rect></svg>
+  <div id="wrap"><div id="place"></div><div id="kind"><span id="kt"></span><div id="shine"></div></div><div id="trade"></div><div id="price"></div><div id="chips"></div></div>
+  <div id="brand"></div>
+</div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline, stagger, svg } = anime;
+  let tl = null;
+  window.__SFX = [{ t: 0.05, name: "chime", vol: 0.6 }, { t: 0.4, name: "whoosh", vol: 0.35 }, { t: 1.2, name: "sparkle", vol: 0.6 }, { t: 1.9, name: "chime", vol: 0.35 }];
+  const split = (el, text) => { el.textContent = ""; for (const c of String(text || "")) { const s = document.createElement("span"); s.className = "ch"; s.textContent = c === " " ? " " : c; el.appendChild(s); } return el.querySelectorAll(".ch"); };
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    const gold = D.accent && D.accent !== "#E8590C" ? D.accent : "#D4AF37";
+    $("stage").style.setProperty("--gold", gold);
+    await M.bg($("bg"));
+    M.text("place", D.place); M.text("trade", D.trade); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("   ·   ");
+    const kc = split($("kt"), D.kind);
+    const pc = split($("price"), D.price);
+    const m1 = u * 4, m2 = u * 6;
+    const svgEl = $("frame"); svgEl.setAttribute("viewBox", `0 0 ${M.W} ${M.H}`);
+    Object.entries({ r1: m1, r2: m2 }).forEach(([id, m]) => { const r = $(id); r.setAttribute("x", m); r.setAttribute("y", m); r.setAttribute("width", M.W - m * 2); r.setAttribute("height", M.H - m * 2); r.setAttribute("stroke", gold); });
+    $("wrap").style.top = (M.vertical ? M.H * 0.32 : M.H * 0.2) + "px";
+    await p;
+    anime.utils.set([$("place"), ...kc, $("trade"), ...pc, $("chips"), $("brand")], { opacity: 0 }); // 나올 차례 전에는 숨김
+    const [d1] = svg.createDrawable($("r1")), [d2] = svg.createDrawable($("r2"));
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outQuart" } })
+      .add($("bg"), { scale: [1.12, 1.02], filter: ["grayscale(.6) brightness(.5)", "grayscale(.25) brightness(.8)"], duration: 3000, ease: "linear" }, 0)
+      .add(d1, { draw: ["0 0", "0 1"], duration: 1100, ease: "inOutCubic" }, 0)
+      .add(d2, { draw: ["0.5 0.5", "0 1"], duration: 1100, ease: "inOutCubic" }, 250)
+      .add($("place"), { opacity: [0, 1], letterSpacing: ["1.2em", "0.5em"], duration: 800 }, 300)
+      .add(kc, { opacity: [0, 1], filter: ["blur(12px)", "blur(0px)"], y: [u * 2, 0], duration: 700, delay: stagger(70) }, 550)
+      .add($("trade"), { opacity: [0, 1], duration: 500 }, 1000)
+      .add(pc, { opacity: [0, 1], scale: [1.4, 1], filter: ["blur(8px)", "blur(0px)"], duration: 600, delay: stagger(80) }, 1150)
+      .add($("shine"), { x: ["-120%", "120%"], duration: 900, ease: "inOutSine" }, 1500)
+      .add($("chips"), { opacity: [0, 0.85], y: [u * 3, 0], duration: 600 }, 1800)
+      .add($("brand"), { opacity: [0, 1], duration: 600 }, 2000);
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    if (tl) tl.seek(t * 1000);
+  };
+</script>
+</body>
+</html>

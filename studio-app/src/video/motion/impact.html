@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ② 가격 쾅 — 흐린 사진 위에 가격 숫자가 올라가다 쾅 찍히고 화면이 흔들린다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: -4%; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,.35) 0%, rgba(0,0,0,.85) 75%); }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  #wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 var(--pad); }
+  #label { font-size: calc(var(--u) * 5); font-weight: 800; letter-spacing: .02em; opacity: .95; }
+  #kind { font-size: calc(var(--u) * 7); font-weight: 900; margin-top: calc(var(--u) * 1); }
+  #trade { display: inline-block; margin-top: calc(var(--u) * 5); font-size: calc(var(--u) * 5.4); font-weight: 900; padding: calc(var(--u) * .5) calc(var(--u) * 2.4); border-radius: 99px; background: var(--accent); }
+  #price { font-size: calc(var(--u) * 26); font-weight: 900; letter-spacing: -.05em; line-height: 1.05; margin-top: calc(var(--u) * 1.5); text-shadow: 0 0 calc(var(--u) * 6) rgba(0,0,0,.6); }
+  #ring { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 60); height: calc(var(--u) * 60); margin: calc(var(--u) * -30) 0 0 calc(var(--u) * -30); border-radius: 50%; border: calc(var(--u) * 1.4) solid var(--accent); opacity: 0; }
+  #chips { margin-top: calc(var(--u) * 4); font-size: calc(var(--u) * 4.4); font-weight: 800; opacity: .95; }
+  #brand { position: absolute; left: 0; right: 0; bottom: calc(var(--pad) * 1.6); text-align: center; font-size: calc(var(--u) * 3.6); font-weight: 800; opacity: .9; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div><div id="ring"></div>
+  <div id="wrap">
+    <div id="label"></div><div id="kind"></div>
+    <div id="trade"></div>
+    <div id="price"></div>
+    <div id="chips"></div>
+  </div>
+  <div id="brand"></div><div id="flash"></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outCubic, outBack, outExpo } = M;
+  const SLAM = 1.25;
+  window.__SFX = [{ t: 0.1, name: "whoosh", vol: 0.6 }, { t: 0.55, name: "typing", vol: 0.35 }, { t: SLAM, name: "impact-bass-1", vol: 1 }, { t: SLAM + 0.1, name: "sparkle", vol: 0.5 }, { t: 1.7, name: "pop", vol: 0.6 }];
+  let cnt = null;
+  window.__setup = async (data) => {
+    const p = M.setup(data);
+    const D = M.D;
+    await M.bg($("bg"));
+    M.text("label", D.place); M.text("kind", D.kind); M.text("trade", D.trade); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("  ·  ");
+    cnt = M.count(D.price);
+    $("price").textContent = D.price || "";
+    await p;
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    const D = M.D;
+    $("bg").style.filter = `blur(${M.u * (1.2 - 0.8 * seg(t, 0, 1.2))}px) brightness(${0.5 + 0.3 * seg(t, 0, 0.6)})`;
+    $("bg").style.transform = `scale(${1.15 - 0.08 * seg(t, 0, 3)})`;
+    const a = outCubic(seg(t, 0.05, 0.5));
+    $("label").style.opacity = String(a); $("label").style.transform = `translateY(${(1 - a) * -40}px)`;
+    const k = outCubic(seg(t, 0.2, 0.65));
+    $("kind").style.opacity = String(k); $("kind").style.transform = `translateY(${(1 - k) * -30}px)`;
+    const tr = outBack(seg(t, 0.45, 0.8));
+    $("trade").style.opacity = String(seg(t, 0.45, 0.55)); $("trade").style.transform = `scale(${0.5 + 0.5 * tr})`;
+    // 숫자 올라가기 0.55 ~ SLAM, 쾅에서 커졌다 제자리
+    if (cnt) { const c = outExpo(seg(t, 0.55, SLAM)); $("price").textContent = `${(cnt.n * c).toFixed(cnt.dec)}${cnt.unit}`; }
+    $("price").style.opacity = String(seg(t, 0.5, 0.6));
+    const hit = seg(t, SLAM, SLAM + 0.35);
+    const sc = t < SLAM ? 0.85 + 0.1 * seg(t, 0.55, SLAM) : 1 + 0.18 * Math.sin(Math.PI * hit) * (1 - hit);
+    $("price").style.transform = `scale(${sc})`;
+    // 쾅 — 흔들림 · 번쩍 · 고리
+    const shake = t >= SLAM && t < SLAM + 0.3 ? (1 - hit) * M.u * 1.6 : 0;
+    $("wrap").style.transform = `translate(${Math.sin(t * 90) * shake}px, ${Math.cos(t * 70) * shake}px)`;
+    $("flash").style.opacity = String(t >= SLAM ? 0.55 * (1 - seg(t, SLAM, SLAM + 0.25)) : 0);
+    const r = seg(t, SLAM, SLAM + 0.6);
+    $("ring").style.opacity = String(r > 0 && r < 1 ? 0.9 * (1 - r) : 0); $("ring").style.transform = `scale(${0.3 + 1.4 * outCubic(r)})`;
+    const ch = outCubic(seg(t, 1.6, 2.0));
+    $("chips").style.opacity = String(ch); $("chips").style.transform = `translateY(${(1 - ch) * 30}px)`;
+    $("brand").style.opacity = String(0.9 * seg(t, 1.8, 2.2));
+  };
+</script>
+</body>
+</html>

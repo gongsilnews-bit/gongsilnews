@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑥ 네온 — 어두운 거리 위에 네온 간판처럼 글자가 깜빡이며 켜진다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #05060c; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: rgba(4,6,14,.78); }
+  #wrap { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; padding: 0 var(--pad); }
+  .neon { color: #fff; text-shadow: 0 0 calc(var(--u) * .6) #fff, 0 0 calc(var(--u) * 2) var(--accent), 0 0 calc(var(--u) * 4.5) var(--accent), 0 0 calc(var(--u) * 8) var(--accent); }
+  #place { font-size: calc(var(--u) * 5); font-weight: 800; letter-spacing: .08em; }
+  #kind { font-size: calc(var(--u) * 10); font-weight: 900; margin-top: calc(var(--u) * 2); }
+  #box { display: inline-block; margin-top: calc(var(--u) * 4); padding: calc(var(--u) * 1.4) calc(var(--u) * 4); border: calc(var(--u) * .7) solid #fff; border-radius: calc(var(--u) * 2.5); box-shadow: 0 0 calc(var(--u) * 2) var(--accent), inset 0 0 calc(var(--u) * 2) var(--accent), 0 0 calc(var(--u) * 6) var(--accent); }
+  #price { font-size: calc(var(--u) * 14); font-weight: 900; line-height: 1.05; }
+  #trade { font-size: calc(var(--u) * 5); font-weight: 800; }
+  #chips { margin-top: calc(var(--u) * 4); font-size: calc(var(--u) * 4); font-weight: 700; color: #cfd6ff; }
+  #brand { position: absolute; left: 0; right: 0; bottom: calc(var(--pad) * 1.5); text-align: center; font-size: calc(var(--u) * 3.6); font-weight: 800; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div>
+  <div id="wrap"><div id="place" class="neon"></div><div id="kind" class="neon"></div><div id="box"><div id="trade" class="neon"></div><div id="price" class="neon"></div></div><div id="chips"></div></div>
+  <div id="brand" class="neon"></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outCubic } = M;
+  window.__SFX = [{ t: 0.2, name: "click", vol: 0.6 }, { t: 0.35, name: "click", vol: 0.5 }, { t: 0.75, name: "click", vol: 0.6 }, { t: 1.1, name: "ping", vol: 0.5 }, { t: 1.25, name: "sparkle", vol: 0.5 }];
+  // 네온이 켜질 때 깜빡임 — 정해진 순간에만 꺼졌다 켜진다 (매번 같게)
+  const flick = (t, a) => { if (t < a) return 0; const d = t - a; if (d < 0.05 || (d > 0.1 && d < 0.14) || (d > 0.22 && d < 0.25)) return 0.15; return 1; };
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D;
+    await M.bg($("bg"));
+    M.text("place", D.place); M.text("kind", D.kind); M.text("trade", D.trade); M.text("price", D.price); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("  ·  ");
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    $("bg").style.filter = `blur(${M.u * 0.5}px) saturate(1.4)`; $("bg").style.transform = `scale(${1.1 - 0.05 * seg(t, 0, 3)})`;
+    $("place").style.opacity = String(flick(t, 0.2));
+    $("kind").style.opacity = String(flick(t, 0.35));
+    const bx = flick(t, 0.75);
+    $("box").style.opacity = String(bx);
+    $("chips").style.opacity = String(outCubic(seg(t, 1.5, 1.9)));
+    $("brand").style.opacity = String(flick(t, 1.8));
+    $("price").style.transform = `scale(${1 + 0.05 * Math.sin(Math.PI * seg(t, 1.1, 1.4))})`;
+  };
+</script>
+</body>
+</html>

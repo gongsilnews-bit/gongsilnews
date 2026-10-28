@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑫ 카운트다운 — 3·2·1 숫자가 원을 그리며 줄어들고, 0에서 매물이 공개된다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #0d1117; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #cover { position: absolute; inset: 0; background: #0d1117; }
+  #ringBox { position: absolute; left: 50%; top: 50%; }
+  svg { position: absolute; transform: translate(-50%, -50%) rotate(-90deg); overflow: visible; }
+  #num { position: absolute; transform: translate(-50%, -50%); font-weight: 900; line-height: 1; }
+  #open { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: calc(var(--u) * 6); font-weight: 900; letter-spacing: .1em; color: var(--accent); white-space: nowrap; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.85) 100%); }
+  #info { position: absolute; left: var(--pad); right: var(--pad); }
+  #place { font-size: calc(var(--u) * 4.6); font-weight: 800; color: var(--accent); }
+  #kind { font-size: calc(var(--u) * 9); font-weight: 900; }
+  #price { font-size: calc(var(--u) * 13); font-weight: 900; }
+  #chips { font-size: calc(var(--u) * 4); font-weight: 700; color: #ddd; margin-top: calc(var(--u) * 1); }
+  #brand { position: absolute; right: var(--pad); top: var(--pad); font-size: calc(var(--u) * 3.6); font-weight: 800; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div><div id="cover"></div>
+  <div id="ringBox"><svg id="svg"><circle id="track" fill="none" stroke="rgba(255,255,255,.15)"></circle><circle id="arc" fill="none" stroke-linecap="round"></circle></svg><div id="num"></div></div>
+  <div id="open">OPEN</div>
+  <div id="info"><div id="place"></div><div id="kind"></div><div id="price"></div><div id="chips"></div></div>
+  <div id="brand"></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outCubic, outBack } = M;
+  const STEP = 0.4, REVEAL = 1.2;
+  window.__SFX = [{ t: 0.0, name: "click-loud", vol: 0.6 }, { t: STEP, name: "click-loud", vol: 0.6 }, { t: STEP * 2, name: "click-loud", vol: 0.6 }, { t: REVEAL, name: "chime", vol: 0.7 }, { t: REVEAL + 0.1, name: "whoosh", vol: 0.5 }, { t: 1.8, name: "pop", vol: 0.5 }];
+  let R = 100, C = 0;
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    R = u * 18; C = 2 * Math.PI * R;
+    const s = $("svg"); s.setAttribute("width", R * 2.4); s.setAttribute("height", R * 2.4); s.setAttribute("viewBox", `${-R * 1.2} ${-R * 1.2} ${R * 2.4} ${R * 2.4}`);
+    for (const id of ["track", "arc"]) { $(id).setAttribute("r", R); $(id).setAttribute("stroke-width", u * 2); }
+    $("arc").setAttribute("stroke", getComputedStyle($("stage")).getPropertyValue("--accent") || "#E8590C");
+    $("arc").setAttribute("stroke-dasharray", C);
+    $("num").style.fontSize = u * 22 + "px";
+    M.text("place", D.place); M.text("kind", D.kind); M.text("price", [D.trade, D.price].filter(Boolean).join(" ")); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("  ·  ");
+    $("info").style.bottom = (M.vertical ? u * 30 : u * 8) + "px";
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    const k = Math.min(2, Math.floor(t / STEP));
+    const local = seg(t, k * STEP, (k + 1) * STEP);
+    const counting = t < STEP * 3;
+    $("num").textContent = counting ? String(3 - k) : "";
+    $("num").style.transform = `translate(-50%, -50%) scale(${counting ? 1.3 - 0.3 * outCubic(Math.min(1, local * 2.5)) : 0})`;
+    $("arc").setAttribute("stroke-dashoffset", String(C * (counting ? local : 1)));
+    $("ringBox").style.opacity = String(t < STEP * 3 ? 1 : 1 - seg(t, STEP * 3, REVEAL));
+    const op = seg(t, STEP * 3, REVEAL);
+    $("open").style.opacity = String(op > 0 && op < 1 ? Math.sin(Math.PI * op) : 0);
+    $("open").style.transform = `translate(-50%, -50%) scale(${0.8 + 0.6 * op})`;
+    // 공개 — 덮개가 원으로 열림
+    const r = outCubic(seg(t, REVEAL, REVEAL + 0.5));
+    $("cover").style.clipPath = `circle(${(1 - r) * 120}% at 50% 50%)`;
+    $("cover").style.opacity = t < REVEAL ? "1" : String(1 - r * 0.0);
+    if (t >= REVEAL) $("cover").style.clipPath = `circle(${(1 - r) * 0}% at 50% 50%)`;
+    $("bg").style.transform = `scale(${1.25 - 0.18 * outCubic(seg(t, REVEAL, 3))})`;
+    const i = outBack(seg(t, REVEAL + 0.3, REVEAL + 0.7));
+    $("info").style.opacity = String(seg(t, REVEAL + 0.3, REVEAL + 0.4)); $("info").style.transform = `translateY(${(1 - i) * 50}px)`;
+    $("brand").style.opacity = String(seg(t, REVEAL + 0.4, REVEAL + 0.8));
+  };
+</script>
+</body>
+</html>

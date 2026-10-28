@@ -212,10 +212,11 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
     const hidden = [];
     if (prev) {
       const ok = (m) => m && m.file && fs.existsSync(m.file);
-      const goneFiles = new Set((prev.hidden || []).filter((m) => m.kind !== "ai").map((m) => m.file));
+      const mine = (m) => m.kind === "ai" || m.kind === "upload"; // 회원이 넣은 것 (AI 사진 · 내 사진)
+      const goneFiles = new Set((prev.hidden || []).filter((m) => !mine(m)).map((m) => m.file));
       for (let i = media.length - 1; i >= 0; i--) if (goneFiles.has(media[i].file)) hidden.unshift(...media.splice(i, 1));
-      media.push(...(prev.media || []).filter((m) => m.kind === "ai" && ok(m)));
-      hidden.push(...(prev.hidden || []).filter((m) => m.kind === "ai" && ok(m)));
+      media.push(...(prev.media || []).filter((m) => mine(m) && ok(m)));
+      hidden.push(...(prev.hidden || []).filter((m) => mine(m) && ok(m)));
     }
     const result = { vacancyId, vacancy, media, hidden, failures, dir, analyzedAt: new Date().toISOString() };
     fs.writeFileSync(path.join(dir, "analysis.json"), JSON.stringify(result, null, 2));

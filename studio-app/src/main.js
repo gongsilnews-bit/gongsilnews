@@ -710,13 +710,9 @@ ipcMain.handle("studio:vacancy-captures", (_e, vacancyId) => {
    op: { type: "order", order: [옛 번호…] } · { type: "remove", index } (지우지 않고 hidden 으로) · { type: "restore" } ·
        { type: "ai", prompt, ai } (회원 AI 로 그림 → 끝에 붙임, "AI 생성" 표시)
    대표(맨 앞)는 실제 사진 — 실제 사진이 있는데 AI 그림이 맨 앞이면 첫 실제 사진을 앞으로 (매물을 AI 그림으로 대신하지 않게) */
-ipcMain.handle("studio:vacancy-media", async (e, vacancyId, op) => {
+/* 사진 정리 작업 (2026-10-28) — 공실 분석(analysis.json media) · 뉴스칼럼(source.json captures) 같이. list·hidden 을 고친다 */
+async function mediaOp(e, a, dir, op) {
   const path = require("path");
-  const file = path.join(blogWriter.mediaDir(vacancyId), "analysis.json");
-  const a = blogWriter.readJson(file);
-  if (!a) throw new Error("공실 분석 자료가 없어요. 먼저 [분석·캡처]를 해 주세요.");
-  a.media = a.media || [];
-  a.hidden = a.hidden || [];
   const o = op || {};
   if (o.type === "order") {
     const ord = (o.order || []).map(Number);
@@ -728,6 +724,15 @@ ipcMain.handle("studio:vacancy-media", async (e, vacancyId, op) => {
   } else if (o.type === "restore") {
     a.media.push(...a.hidden);
     a.hidden = [];
+  } else if (o.type === "upload") {
+    // 내 PC 사진 올리기 (2026-10-28 사장님) — 실제 사진으로 (여러 장)
+    const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(e.sender), { title: "넣을 사진 고르기", properties: ["openFile", "multiSelections"], filters: [{ name: "사진", extensions: ["jpg", "jpeg", "png", "webp", "gif"] }] });
+    if (r.canceled || !r.filePaths.length) return false;
+    for (const src of r.filePaths) {
+      const out = path.join(dir, `up-${Date.now()}-${Math.random().toString(36).slice(2, 6)}${path.extname(src).toLowerCase() || ".jpg"}`);
+      fs.copyFileSync(src, out);
+      a.media.push({ kind: "upload", file: out, caption: `${path.basename(src, path.extname(src))} (직접 올린 사진)`, real: true });
+    }
   } else if (o.type === "ai") {
     const prompt = String(o.prompt || "").trim();
     if (!prompt) throw new Error("무엇을 그릴지 적어 주세요.");
@@ -739,16 +744,43 @@ ipcMain.handle("studio:vacancy-media", async (e, vacancyId, op) => {
     const dataUrl = await require("./video/ai").image(ask, send, { ai: o.ai, ratio: "4:3" });
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
     if (!m) throw new Error("그림을 받지 못했어요. 다시 해 주세요.");
-    const out = path.join(blogWriter.mediaDir(vacancyId), `ai-${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    const out = path.join(dir, `ai-${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
     fs.writeFileSync(out, Buffer.from(m[2], "base64"));
     a.media.push({ kind: "ai", file: out, caption: `AI 생성 이미지${o.styleLabel ? `(${o.styleLabel})` : ""} — ${prompt.slice(0, 40)} (실제 매물 사진 아님)`, real: false });
   } else throw new Error("알 수 없는 작업이에요.");
+  return true;
+}
+ipcMain.handle("studio:vacancy-media", async (e, vacancyId, op) => {
+  const path = require("path");
+  const file = path.join(blogWriter.mediaDir(vacancyId), "analysis.json");
+  const a = blogWriter.readJson(file);
+  if (!a) throw new Error("공실 분석 자료가 없어요. 먼저 [분석·캡처]를 해 주세요.");
+  a.media = a.media || [];
+  a.hidden = a.hidden || [];
+  if (!(await mediaOp(e, a, blogWriter.mediaDir(vacancyId), op))) return analysisForWeb(a);
   const isReal = (m) => m && m.kind !== "ai" && m.real !== false;
   const firstReal = a.media.findIndex(isReal);
   if (firstReal > 0 && !isReal(a.media[0])) a.media.unshift(a.media.splice(firstReal, 1)[0]);
   fs.writeFileSync(file, JSON.stringify(a, null, 2));
   try { blogWriter.syncAnalysisMedia(vacancyId); } catch (e) { log.warn(`[사진 맞춤] ${e.message}`); } // 이미 쓴 기사·블로그에도
   return analysisForWeb(a);
+});
+// 뉴스칼럼 사진 정리 (2026-10-28 사장님: 공실뉴스와 같게) — source.json captures · hidden
+ipcMain.handle("studio:column-media", async (e, id, op) => {
+  const cw = require("./column-writer");
+  const file = require("path").join(blogWriter.mediaDir(id), "source.json");
+  const d = blogWriter.readJson(file);
+  if (!d) throw new Error("칼럼을 찾지 못했어요.");
+  d.captures = d.captures || [];
+  d.hidden = d.hidden || [];
+  const w = { media: d.captures, hidden: d.hidden };
+  if (await mediaOp(e, w, blogWriter.mediaDir(id), op)) {
+    d.captures = w.media;
+    d.hidden = w.hidden;
+    fs.writeFileSync(file, JSON.stringify(d, null, 2));
+    try { blogWriter.syncAnalysisMedia(id); } catch (err) { log.warn(`[사진 맞춤] ${err.message}`); }
+  }
+  return cw.get(id);
 });
 // [공실 바꾸기] 목록 — 이 PC에서 작업한 공실 (최근에 고친 순). 채널마다 써 둔 글이 있는지도 (2026-10-24 사장님)
 ipcMain.handle("studio:vacancy-list", () => {

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 정보 카드 (Anime.js) — 클립 화면 위에 숫자 카드 2~3개가 차례로 올라오며 숫자가 올라간다. 길이는 클립(성우) 길이 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.1) 45%, rgba(0,0,0,.25) 100%); }
+  #cards { position: absolute; left: var(--pad); right: var(--pad); display: flex; gap: calc(var(--u) * 2); }
+  .card { flex: 1; min-width: 0; background: rgba(255,255,255,.94); color: #111; border-radius: calc(var(--u) * 2.4); padding: calc(var(--u) * 2.4) calc(var(--u) * 2); text-align: center; box-shadow: 0 calc(var(--u) * 1.4) calc(var(--u) * 4) rgba(0,0,0,.35); border-top: calc(var(--u) * 1) solid var(--accent); }
+  .num { font-size: calc(var(--u) * 13); font-weight: 900; letter-spacing: -.03em; line-height: 1.05; white-space: nowrap; }
+  .unit { font-size: .45em; font-weight: 800; margin-left: .08em; }
+  .lab { font-size: calc(var(--u) * 4.4); font-weight: 700; color: #555; margin-top: calc(var(--u) * .8); white-space: nowrap; }
+  #title { position: absolute; left: var(--pad); right: var(--pad); font-size: calc(var(--u) * 5.4); font-weight: 900; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+  #title b { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="title"></div><div id="cards"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline, stagger } = anime;
+  let tl = null, nums = [];
+  window.__SFX = [{ t: 0.15, name: "whoosh-short", vol: 0.5 }, { t: 0.45, name: "pop", vol: 0.5 }, { t: 0.65, name: "pop", vol: 0.5 }, { t: 0.85, name: "pop", vol: 0.5 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    $("title").textContent = D.title || "";
+    // items: [{ v: "24", unit: "평", l: "전용면적" }]
+    const items = (D.items || []).slice(0, 3);
+    const cards = items.map((it) => {
+      const c = document.createElement("div"); c.className = "card";
+      const n = document.createElement("div"); n.className = "num";
+      const v = document.createElement("span"); v.textContent = it.v; n.appendChild(v);
+      if (it.unit) { const s = document.createElement("span"); s.className = "unit"; s.textContent = it.unit; n.appendChild(s); }
+      const l = document.createElement("div"); l.className = "lab"; l.textContent = it.l || "";
+      c.appendChild(n); c.appendChild(l); $("cards").appendChild(c);
+      const num = parseFloat(String(it.v).replace(/,/g, ""));
+      nums.push({ el: v, to: Number.isFinite(num) && /^[\d.,]+$/.test(String(it.v)) ? num : null, dec: (String(it.v).split(".")[1] || "").length, raw: it.v });
+      return c;
+    });
+    const top = M.vertical ? M.H * 0.16 : M.H * 0.1;
+    $("title").style.top = top + "px";
+    $("cards").style.top = top + u * 9 + "px";
+    if (cards.length === 1) $("cards").style.right = M.W * 0.35 + "px";
+    await p;
+    anime.utils.set([$("title"), ...cards], { opacity: 0 });
+    const counter = { k: 0 };
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outExpo" } })
+      .add($("bg"), { scale: [1.12, 1.02], duration: (D.seconds || 3) * 1000, ease: "linear" }, 0)
+      .add($("title"), { opacity: [0, 1], x: [-u * 5, 0], duration: 500 }, 150)
+      .add(cards, { opacity: [0, 1], y: [u * 8, 0], scale: [0.85, 1], duration: 650, delay: stagger(200), ease: "outBack(1.5)" }, 400)
+      .add(counter, { k: [0, 1], duration: 1100, ease: "outQuart", onUpdate: () => nums.forEach((n) => { if (n.to !== null) n.el.textContent = (n.to * counter.k).toFixed(n.dec); }) }, 450);
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => { await M.bgSeek(t); if (tl) tl.seek(Math.min(t * 1000, tl.duration)); };
+</script>
+</body>
+</html>

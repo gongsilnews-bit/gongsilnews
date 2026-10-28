@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 강조 · 글리치 — 글자가 빨강·파랑으로 갈라지며 지지직 흔들리다 맞춰진다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.45); }
+  .g { position: absolute; left: var(--pad); right: var(--pad); text-align: center; font-size: calc(var(--u) * 11); font-weight: 900; line-height: 1.15; }
+  #r { color: #ff2a55; mix-blend-mode: screen; }
+  #c { color: #00e5ff; mix-blend-mode: screen; }
+  #w { color: #fff; }
+  #scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 2px, transparent 2px 6px); opacity: 0; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div class="g" id="r"></div><div class="g" id="c"></div><div class="g" id="w"></div><div id="scan"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.05, name: "click", vol: 0.7 }, { t: 0.2, name: "click", vol: 0.6 }, { t: 0.35, name: "click", vol: 0.6 }, { t: 0.6, name: "notification", vol: 0.5 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const txt = D.title.split(/\s+/).slice(0, 5).join(" ");
+    for (const id of ["r", "c", "w"]) { $(id).textContent = txt; $(id).style.top = (V ? M.H * 0.24 : M.H * 0.3) + "px"; }
+    S.hide($("r"), $("c"), $("w"));
+    const g = { k: 0 };
+    tl.add(g, { k: [0, 1], duration: 700, ease: "linear", onUpdate: () => {
+        const on = g.k < 1; const j = on ? (Math.sin(g.k * 90) * u * 2.2 * (1 - g.k)) : 0;
+        $("r").style.opacity = $("c").style.opacity = on ? "0.9" : "0"; $("w").style.opacity = g.k > 0.15 ? "1" : "0";
+        $("r").style.transform = `translate(${j}px, ${-j * .4}px)`; $("c").style.transform = `translate(${-j}px, ${j * .4}px)`;
+        $("w").style.clipPath = on && Math.floor(g.k * 20) % 3 === 0 ? `inset(${(g.k * 70) % 60}% 0 ${30 - (g.k * 40) % 30}% 0)` : "none";
+        $("scan").style.opacity = on ? "1" : "0";
+      } }, 0);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 큰 숫자 — 숫자 하나가 크게 올라가고 단위·설명이 붙는다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,.2), rgba(0,0,0,.7) 80%); }
+  #box { position: absolute; left: 0; right: 0; text-align: center; }
+  #n { font-size: calc(var(--u) * 30); font-weight: 900; letter-spacing: -.04em; line-height: 1; color: #fff; text-shadow: 0 0 calc(var(--u) * 4) rgba(0,0,0,.5); }
+  #unit { font-size: calc(var(--u) * 10); font-weight: 900; color: var(--accent); margin-left: calc(var(--u) * 1); }
+  #lab { font-size: calc(var(--u) * 5); font-weight: 800; margin-top: calc(var(--u) * 2); }
+  #bar { width: calc(var(--u) * 30); height: calc(var(--u) * .9); background: var(--accent); margin: calc(var(--u) * 2.4) auto 0; border-radius: 99px; transform-origin: center; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="box"><div><span id="n"></span><span id="unit"></span></div><div id="bar"></div><div id="lab"></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.15, name: "typing", vol: 0.35 }, { t: 1.0, name: "impact-bass-1", vol: 0.6 }, { t: 1.1, name: "sparkle", vol: 0.4 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const raw = String(D.num || ""); const to = parseFloat(raw.replace(/,/g, "")); const dec = (raw.split(".")[1] || "").length;
+    $("n").textContent = raw; M.text("unit", D.unit); M.text("lab", D.label || D.title);
+    $("box").style.top = (V ? M.H * 0.2 : M.H * 0.22) + "px";
+    S.hide($("box"));
+    const c = { k: 0 };
+    tl.add($("box"), { opacity: [0, 1], scale: [0.8, 1], duration: 400 }, 100)
+      .add(c, { k: [0, 1], duration: 900, ease: "outQuart", onUpdate: () => { if (Number.isFinite(to)) $("n").textContent = (to * c.k).toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ","); } }, 150)
+      .add($("n"), { scale: [1, 1.12, 1], duration: 350, ease: "outQuad" }, 1000)
+      .add($("bar"), { scaleX: [0, 1], duration: 500 }, 1000);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

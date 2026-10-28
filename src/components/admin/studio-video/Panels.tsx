@@ -94,10 +94,39 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [vac, setVac] = useState(project.vacancyId || "");
   // 무료 자료
   const [stockQ, setStockQ] = useState("");
-  const [stockType, setStockType] = useState<"all" | "photo" | "video">("all");
+  const [stockType, setStockType] = useState<"all" | "photo" | "video" | "drone">("photo"); // [전체] 탭은 뺐다 (2026-10-29 사장님) — 이미지부터
+  // [공실뉴스 드론] 탭 (2026-10-28 사장님) — 처음 열 때 한 번 전부 받아 두고, 동·검색어로 여기서 거른다 (찍은 모양 단추는 빼기로)
+  const [drones, setDrones] = useState<StockItem[] | null>(null);
+  const [droneGu, setDroneGu] = useState("");
+  const openDrones = async () => {
+    setStockType("drone");
+    setStockQ(""); // 다른 탭 검색어가 남아 있으면 드론이 하나도 안 나온다
+    setDroneGu("");
+    if (drones || !b) return;
+    setBusy("공실뉴스 드론 영상을 불러오는 중…");
+    setMsg("");
+    try {
+      const r = await b.stock.search("", "drone", "");
+      if (!r.success) setMsg(r.error || "불러오지 못했어요.");
+      setDrones(r.items || []);
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setBusy("");
+  };
+  // 동 — 장소 글의 첫 "…동" (논현동·역삼동·구로3동), 없으면 구
+  const droneGuOf = (it: StockItem) => (/(?:^|\s)([가-힣]+\d*동)(?=\s|$)/.exec(it.credit) || [])[1] || (/\S+구(?=\s|$)/.exec(it.credit) || [""])[0];
+  const droneShown = useMemo(() => {
+    const words = stockQ.trim().split(/\s+/).filter((w) => w && w !== "드론");
+    return (drones || []).filter((it) => (!droneGu || droneGuOf(it) === droneGu) && words.every((w) => it.credit.replace(/\s+/g, "").includes(w)));
+  }, [drones, droneGu, stockQ]); // eslint-disable-line react-hooks/exhaustive-deps
+  const countBy = (f: (it: StockItem) => string) => {
+    const m = new Map<string, number>();
+    for (const it of drones || []) { const k = f(it); if (k) m.set(k, (m.get(k) || 0) + 1); }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
   const [stock, setStock] = useState<StockItem[] | null>(null);
   const [replaceOn, setReplaceOn] = useState(true); // [교체할 이미지] — 켜져 있으면 누르면 바로 바꾸기 (브루처럼)
-  const chips = useMemo(() => keywordsOf(target?.text || ""), [target?.text]);
   // AI 그림
   const [aiPrompt, setAiPrompt] = useState("");
   const imgAi = useStudioImager();
@@ -143,9 +172,12 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       setPicked(added[0]);
     }
   };
+  // 검색어가 없으면 부동산 영상에 어울리는 기본 자료를 보여 준다 (검색창은 비워 둔 채로, 2026-10-29 사장님)
+  //  비디오는 "한국 건물 서울" (2026-10-29 사장님)
+  const baseQ = (type: string) => (type === "video" ? "한국 건물 서울" : "아파트 인테리어");
   const searchStock = async (word?: string, type = stockType) => {
-    const qq = (word ?? stockQ).trim();
-    if (!b || !qq) return;
+    const qq = (word ?? stockQ).trim() || baseQ(type);
+    if (!b) return;
     if (word !== undefined) setStockQ(word);
     setBusy("찾는 중…");
     setStock(null);
@@ -153,7 +185,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     const orient = project.ratio === "9:16" || project.ratio === "4:5" ? "portrait" : project.ratio === "1:1" ? "square" : "landscape";
     try {
       // 전체 = 사진·영상을 함께 찾아 번갈아
-      const kinds: ("photo" | "video")[] = type === "all" ? ["video", "photo"] : [type];
+      const kinds: ("photo" | "video")[] = type === "all" || type === "drone" ? ["video", "photo"] : [type];
       const rs = await Promise.all(kinds.map((k) => b.stock.search(qq, k, orient)));
       const bad = rs.find((r) => !r.success);
       const lists = rs.filter((r) => r.success).map((r) => r.items || []);
@@ -167,14 +199,11 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     }
     setBusy("");
   };
-  // 무료 자료를 열면 고른 클립 글의 첫 낱말로 바로 찾는다
-  const lastAuto = useRef("");
+  // 무료 자료를 열면 — 클립 글의 첫 낱말("3개" 등)로 찾지 않고(엉뚱한 것이 나왔다) 기본 자료를 보여 준다 (2026-10-29 사장님)
   useEffect(() => {
-    if (tab !== "free" || !chips.length || lastAuto.current === (target?.text || "")) return;
-    lastAuto.current = target?.text || "";
-    void searchStock(chips[0]);
+    if (tab === "free" && stockType !== "drone" && !stock && !busy) void searchStock();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, chips]);
+  }, [tab]);
   const getStock = async (s: StockItem) => {
     if (!b) return;
     setBusy("무료 자료를 PC로 받는 중…");
@@ -253,8 +282,11 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           }}
           style={{ position: "relative", display: "block", width: "100%", marginBottom: 8, breakInside: "avoid", aspectRatio: it.width && it.height ? `${it.width} / ${it.height}` : "16 / 10", padding: 0, border: 0, borderRadius: 4, overflow: "hidden", background: "#000", cursor: "pointer" }}>
           {it.thumb && <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+          {it.source === "공실뉴스" && <span style={{ position: "absolute", left: 6, top: 6, fontSize: 11.5, fontWeight: 800, color: "#fff", background: "#E8590C", padding: "1px 6px", borderRadius: 3 }}>공실뉴스 드론</span>}
           {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{it.duration ? fmtTime(it.duration, false) : "영상"}</span>}
           {pro && plusBtn(it)}
+          {/* 공실뉴스 드론은 PC에 받지 않는다 — 쓸 때마다 불러온다 (2026-10-28 사장님) */}
+          {it.source !== "공실뉴스" && <>
           <span role="button" title="PC에 받기 (문서\공실스튜디오\09 받은자료)" draggable={false}
             onClick={(e) => { e.stopPropagation(); void saveStock(it); }}
             style={{ position: "absolute", right: 34, top: 4, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", color: "#fff", cursor: "pointer" }}>
@@ -265,6 +297,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             style={{ position: "absolute", right: 4, top: 4, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", color: stockFav[it.id] ? "#FACC15" : "#fff", cursor: "pointer" }}>
             <svg width={16} height={16} viewBox="0 0 24 24" fill={stockFav[it.id] ? "#FACC15" : "none"} stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z" /></svg>
           </span>
+          </>}
         </button>
       ))}
     </div>
@@ -684,21 +717,29 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           <div style={{ padding: "12px 14px 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 10px", borderRadius: 8, border: "1px solid #22d3ee", background: C.bg }}>
               <Icon name="search" size={17} />
-              <input value={stockQ} onChange={(e) => setStockQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchStock()} placeholder="예: 서울 아파트, 거실"
+              <input value={stockQ} onChange={(e) => setStockQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && stockType !== "drone" && searchStock()} placeholder={stockType === "drone" ? "동네·역·건물 이름 (예: 논현동, 역삼역)" : "예: 서울 아파트, 거실"}
                 style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: C.text, fontSize: 15, fontFamily: FONT }} />
-              {stockQ && <button type="button" onClick={() => { setStockQ(""); setStock(null); }} title="지우기" style={{ width: 22, height: 22, borderRadius: 11, border: 0, background: C.sub, color: C.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={13} stroke={2.6} /></button>}
+              {stockQ && <button type="button" onClick={() => { setStockQ(""); if (stockType !== "drone") void searchStock("", stockType); }} title="지우기" style={{ width: 22, height: 22, borderRadius: 11, border: 0, background: C.sub, color: C.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={13} stroke={2.6} /></button>}
             </div>
-            {chips.length > 0 && (
-              <div style={{ display: "flex", gap: 6, marginTop: 10, overflowX: "auto", paddingBottom: 2 }}>
-                {chips.map((w) => <button key={w} type="button" onClick={() => searchStock(w)} style={{ ...chip(stockQ === w), height: 30, borderRadius: 15, flexShrink: 0, fontSize: 13 }}>{w}</button>)}
-              </div>
-            )}
+            {/* 검색어 단추(클립 글에서 뽑은 낱말)는 뺐다 — 복잡하다 (2026-10-29 사장님) */}
           </div>
           <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, marginTop: 8 }}>
-            {(["all", "photo", "video"] as const).map((k) => <button key={k} type="button" onClick={() => { setStockType(k); if (stockQ.trim()) void searchStock(undefined, k); }} style={tabBtn(stockType === k)}>{k === "all" ? "전체" : k === "photo" ? "이미지" : "비디오"}</button>)}
+            {(["photo", "video"] as const).map((k) => <button key={k} type="button" onClick={() => { setStockType(k); void searchStock(undefined, k); }} style={tabBtn(stockType === k)}>{k === "photo" ? "이미지" : "비디오"}</button>)}
+            <button type="button" onClick={() => void openDrones()} title="공실뉴스가 직접 찍은 드론 영상" style={{ ...tabBtn(stockType === "drone"), whiteSpace: "nowrap" }}>공실뉴스 드론</button>
           </div>
-          {stock && (stock.length ? masonry(stock) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
-          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실스튜디오\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</div>
+          {stockType === "drone" ? (
+            <>
+              {drones && drones.length > 0 && (
+                <div style={{ padding: "10px 14px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {[["", drones.length] as [string, number], ...countBy(droneGuOf)].map(([g, n]) => <button key={g || "all"} type="button" onClick={() => setDroneGu(g)} style={{ ...chip(droneGu === g), height: 30, borderRadius: 15, flexShrink: 0, fontSize: 13 }}>{g || "전체"} {n}</button>)}
+                  </div>
+                </div>
+              )}
+              {drones && (droneShown.length ? masonry(droneShown) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>맞는 드론 영상이 없어요.</div>)}
+            </>
+          ) : stock && (stock.length ? masonry(stock) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
+          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실스튜디오\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
         </div>
       )}
 

@@ -70,8 +70,9 @@ function FoldersDialog({ onClose }: { onClose: () => void }) {
 
 /* ── 처음 화면 ── */
 const iconBtn: React.CSSProperties = { flexShrink: 0, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: "#8b95a3", cursor: "pointer" };
-export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void }) {
+export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void; onImported?: (p: Project) => void }) {
   const b = videoBridge()!;
+  const [importOpen, setImportOpen] = useState(false);
   const [recent, setRecent] = useState<Recent[] | null>(null);
   useEffect(() => {
     b.project.recent().then(setRecent).catch(() => setRecent([]));
@@ -239,7 +240,9 @@ export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenP
         <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
           {big("plus", "새로 만들기", "원하는 방식으로 새 영상을 만들어요", onNew, true)}
           {big("open", "프로젝트 열기", "저장한 프로젝트를 이어서 편집해요", onOpenPick)}
+          {b.project.importList && onImported && big("ai", "가져오기", "캡컷 프로젝트 · 클로드(AI)가 만든 영상을 열어 마무리해요", () => setImportOpen(true))}
         </div>
+        {importOpen && onImported && <ImportDialog onClose={() => setImportOpen(false)} onDone={(p) => { setImportOpen(false); onImported(p); }} />}
         <div style={{ marginTop: 52 }}>
           {/* 캡컷처럼 — 검색 · 보기(크게/목록) · 휴지통 */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -2392,4 +2395,136 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   );
   // 녹화 중 녹화하기 창이 따로 떠 있으면 그 창에, 아니면 앱 안에
   return <>{miniView}{bigWin ? createPortal(dialog, bigWin.root) : dialog}</>;
+}
+
+/**
+ * 가져오기 (2026-10-28 사장님) — 캡컷 프로젝트 · 클로드(AI)가 만든 "공실마케팅 영상 JSON" 을 편집기 프로젝트로.
+ * 클로드에게는 설명서(AI받기 폴더의 "클로드용 설명서.md")를 주고 그 폴더에 저장하게 하면 여기 [AI받기 폴더]에 나타난다.
+ */
+function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: (p: Project) => void }) {
+  const b = videoBridge()!;
+  const [list, setList] = useState<Awaited<ReturnType<NonNullable<typeof b.project.importList>>> | null>(null);
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  const [copied, setCopied] = useState(false);
+  const load = () => b.project.importList!().then(setList).catch((e) => setErr(errText(e)));
+  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 붙여넣기 · AI 에게 맡기기 (2026-10-28 사장님)
+  const [paste, setPaste] = useState("");
+  const [vacs, setVacs] = useState<{ id: string; no: string; title: string; photos: number }[]>([]);
+  const [ask, setAsk] = useState({ vacancyId: "", request: "", ratio: "9:16", seconds: 40 });
+  useEffect(() => { b.project.aiDesignVacancies?.().then((l) => { setVacs(l || []); setAsk((a) => ({ ...a, vacancyId: a.vacancyId || l?.[0]?.id || "" })); }).catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const run = async (target: string, how: "file" | "text" | "ai" = "file") => {
+    if (!target && how !== "ai") return;
+    setErr("");
+    setBusy(how === "ai" ? "AI에게 영상 설계를 맡기는 중…" : "설계도를 읽는 중…");
+    const off = b.onProgress((t) => setBusy(t));
+    try {
+      const r = how === "ai" ? await b.project.aiDesign!(ask) : how === "text" ? await b.project.importText!(target) : await b.project.importAny!(target);
+      if (r.skipped.length) alert(`가져왔어요. 옮기지 못한 것이 있어요:\n· ${r.skipped.join("\n· ")}\n\n(캡컷 전용 효과·필터·전환·스티커는 우리 편집기에서 다시 넣어 주세요)`);
+      onDone(r.project);
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      off();
+      setBusy("");
+    }
+  };
+  const copyGuide = async () => {
+    try {
+      const g = await b.project.importGuide!();
+      await navigator.clipboard.writeText(`${g}\n\n저장 폴더: ${list?.inboxDir || ""}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      setErr(errText(e));
+    }
+  };
+  const when = (ms: number) => (ms ? new Date(ms).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
+  const row = (key: string, name: string, sub: string, tag: string, target: string, thumb?: string) => (
+    <div key={key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card }}>
+      <div style={{ width: 64, height: 40, borderRadius: 6, background: thumb ? `center / cover no-repeat url("${thumb}")` : C.panel, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.dim }}>{!thumb && <Icon name="video" size={18} />}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+        <div style={{ fontSize: 12.5, color: C.sub, marginTop: 2 }}><span style={{ fontWeight: 800, color: tag === "클로드" ? C.accent : C.sub }}>{tag}</span>{sub ? ` · ${sub}` : ""}</div>
+      </div>
+      <Btn primary onClick={() => void run(target)}>가져오기</Btn>
+    </div>
+  );
+  return (
+    <Modal title="가져오기 — 캡컷 · 클로드(AI)" onClose={busy ? undefined : onClose} width={720}>
+      {busy ? <Working title={busy} /> : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {err && <div style={{ color: C.danger, fontSize: 14, fontWeight: 700 }}>{err}</div>}
+          {b.project.aiDesign && (
+            <div style={{ padding: 14, borderRadius: 10, border: `1px solid ${C.accent}`, background: C.panel }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 16, fontWeight: 800 }}>AI에게 영상 설계 맡기기</span>
+                <span style={{ fontSize: 12.5, color: C.sub }}>연결한 내 AI(ChatGPT·클로드·Gemini)가 설계도를 만들고 바로 편집기로 열어요</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <select value={ask.vacancyId} onChange={(e) => setAsk({ ...ask, vacancyId: e.target.value })} style={{ ...input, flex: 1, minWidth: 260 }}>
+                  <option value="">공실 없이 (요청만으로)</option>
+                  {vacs.map((v) => <option key={v.id} value={v.id}>{v.title} · 사진 {v.photos}장</option>)}
+                </select>
+                <select value={ask.ratio} onChange={(e) => setAsk({ ...ask, ratio: e.target.value })} style={{ ...input, width: 150 }}>
+                  <option value="9:16">세로 9:16 (릴스·쇼츠)</option><option value="16:9">가로 16:9 (유튜브)</option><option value="1:1">정사각 1:1</option><option value="4:5">4:5</option>
+                </select>
+                <select value={ask.seconds} onChange={(e) => setAsk({ ...ask, seconds: Number(e.target.value) })} style={{ ...input, width: 100 }}>
+                  {[20, 30, 40, 60, 90].map((n) => <option key={n} value={n}>{n}초</option>)}
+                </select>
+              </div>
+              <textarea value={ask.request} onChange={(e) => setAsk({ ...ask, request: e.target.value })} rows={3} placeholder="예: 첫 장면에서 위치와 가격을 말하고, 지도는 위치를 말할 때 넣어 줘. 마지막은 공실뉴스에서 자세히 보라고."
+                style={{ ...input, width: "100%", boxSizing: "border-box", marginTop: 8, resize: "vertical", fontFamily: FONT }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <Btn primary onClick={() => void run("", "ai")}><Icon name="ai" size={15} />AI에게 맡기기</Btn>
+              </div>
+            </div>
+          )}
+          {b.project.importText && (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 16, fontWeight: 800 }}>설계도 붙여넣기</span>
+                <span style={{ fontSize: 12.5, color: C.sub }}>ChatGPT·클로드 웹에서 받은 JSON 을 그대로 붙여 넣으세요</span>
+              </div>
+              <textarea value={paste} onChange={(e) => setPaste(e.target.value)} rows={4} placeholder='{ "format": "gongsil-video", ... }'
+                style={{ ...input, width: "100%", boxSizing: "border-box", resize: "vertical", fontFamily: "Consolas, monospace", fontSize: 12.5 }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <Btn primary onClick={() => void run(paste, "text")}>붙여넣은 설계도 가져오기</Btn>
+              </div>
+            </div>
+          )}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 16, fontWeight: 800 }}>AI받기 폴더</span>
+              <span style={{ fontSize: 12.5, color: C.sub }}>클로드가 만든 영상 설계도가 여기에 와요</span>
+              <span style={{ flex: 1 }} />
+              <Btn onClick={() => void b.project.importOpenInbox?.()}><Icon name="folder" size={15} />폴더 열기</Btn>
+              <Btn onClick={() => void copyGuide()}>{copied ? "✓ 복사했어요" : "클로드용 설명서 복사"}</Btn>
+            </div>
+            <Hint>클로드에게 [클로드용 설명서 복사]한 내용을 붙여 넣고 "이 형식으로 92199 공실 30초 릴스를 만들어 이 폴더에 저장해 줘"라고 하세요. 저장되면 [새로 고침]을 누르세요.</Hint>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              {list === null ? <span style={{ color: C.sub, fontSize: 14 }}>불러오는 중…</span>
+                : list.inbox.length ? list.inbox.map((x) => row(x.file, x.name, when(x.at), x.kind === "gongsil" ? "클로드" : "캡컷 프로젝트", x.file))
+                : <span style={{ color: C.sub, fontSize: 14 }}>아직 들어온 설계도가 없어요.</span>}
+            </div>
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 16, fontWeight: 800 }}>이 PC의 캡컷 프로젝트</span>
+              <span style={{ fontSize: 12.5, color: C.sub }}>영상·사진·음악·자르기·글자를 옮겨요 (캡컷 전용 효과는 빠져요)</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto" }}>
+              {list === null ? null : list.capcut.length ? list.capcut.map((x) => row(x.dir, x.name, when(x.at), "캡컷", x.dir, x.cover))
+                : <span style={{ color: C.sub, fontSize: 14 }}>이 PC에서 캡컷 프로젝트를 찾지 못했어요.</span>}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn onClick={() => void load()}>새로 고침</Btn>
+            <Btn onClick={async () => { const f = await b.project.importPick!(); if (f) void run(f); }}><Icon name="file" size={15} />파일 직접 고르기</Btn>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
 }

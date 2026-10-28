@@ -107,6 +107,8 @@ export type Clip = {
   subText?: string; // 자막만 따로 쓴 글 (말소리·목소리는 그대로). 무음 클립에도 자막을 넣을 수 있다
   del?: boolean;
   hint?: { desc?: string; keywords?: string; kind?: string };
+  /** 모션 자동 입히기 (2026-10-28) — 입힌 모션 틀·글자 · 입히기 전 화면 (빼기·다시 굽기) */
+  mg?: { template: string; data: Record<string, unknown>; prev?: { asset: string; s: number; e?: number } | null };
 };
 
 /** 볼륨 키프레임 점 하나 */
@@ -319,6 +321,10 @@ export type PostDraft = {
   tail: { url: string; hasListing: boolean };
 };
 export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; /** 내 폴더 (이름표) */ tags?: string[]; addedAt?: number; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
+/** 모션그래픽 틀 고르기 (2026-10-28) */
+/** 인트로 글자 — 공실이 있으면 그 정보가 처음 값, 없으면 직접 (place 위 작은 글 · kind 큰 제목 · trade 딱지 · price 강조 · chips 꼬리표 · brand 사무소) */
+export type MotionTexts = { place: string; kind: string; trade: string; price: string; chips: string[]; brand: string; /** 끝 화면 — 대표·등록번호·소재지 (표시광고) */ info?: string; phone?: string; /** QR 로 열 주소 */ link?: string };
+export type MotionOpts = { template: string; vacancyId: string; ratio: Ratio; font?: string; bg?: string; accent?: string; texts?: MotionTexts };
 export type LibTag = { id: string; name: string; count: number };
 /** .gss 를 열 때 저장 안 한 고친 내용이 남아 있으면 — [이어서 열기 / 마지막 저장 상태로] 를 묻는다 */
 export type Recover = { recover: true; file: string; name: string };
@@ -364,6 +370,21 @@ export type VideoBridge = {
     defaultDir?: () => Promise<string>;
     open: (dir: string, choice?: "work" | "file") => Promise<Project | Recover>;
     openPick: () => Promise<Project | null>;
+    /** 가져오기 — 캡컷 · 클로드(AI) 설계도 (0.1.15부터) */
+    importList?: () => Promise<{ inboxDir: string; inbox: { file: string; name: string; kind: "capcut" | "gongsil"; at: number }[]; capcut: { dir: string; name: string; at: number; cover: string }[] }>;
+    importAny?: (target: string) => Promise<{ project: Project; skipped: string[] }>;
+    importPick?: () => Promise<string>;
+    importOpenInbox?: () => Promise<string>;
+    importGuide?: () => Promise<string>;
+    importText?: (text: string) => Promise<{ project: Project; skipped: string[] }>;
+    /** 모션그래픽 틀 굽기 — 공실 정보로 (0.1.15부터) */
+    motionRender?: (o: MotionOpts & { dir: string; brand?: string }) => Promise<LibItem>;
+    motionOptions?: (vacancyId: string) => Promise<{ templates: { id: string; label: string; desc: string; kind?: string }[]; fonts: { family: string; label: string }[]; photos: { file: string; url: string }[]; photo: string; texts?: MotionTexts }>;
+    motionPreview?: (o: MotionOpts) => Promise<{ url: string }>;
+    motionPickBg?: () => Promise<{ file: string; url: string; kind: string } | null>;
+    motionScene?: (o: { template: string; data: Record<string, unknown>; ratio: Ratio; seconds: number; bg: string; bgStart: number; font?: string; accent?: string; dir: string }) => Promise<LibItem>;
+    aiDesignVacancies?: () => Promise<{ id: string; no: string; title: string; photos: number }[]>;
+    aiDesign?: (o: { request: string; vacancyId?: string; ratio?: string; seconds?: number }) => Promise<{ project: Project; skipped: string[] }>;
     save: (p: Project) => Promise<{ updatedAt: string; duration: number }>;
     // .gss 파일 (옛 앱에는 없음)
     flush?: (p: Project) => Promise<{ savedAt: string }>;
@@ -463,7 +484,7 @@ export type VideoBridge = {
   /** 기사·보도자료 화면 캡쳐 — head: 제목 부분 1장, full: 제목부터 몇 장 (2026-10-20) */
   capturePage?: (url: string, opts: { mode: "head" | "full"; title?: string; credit?: string; max?: number }) => Promise<LibItem[]>;
   stock: {
-    search: (q: string, type: "photo" | "video", orientation: string, page?: number) => Promise<{ success: boolean; items?: StockItem[]; error?: string; needKey?: boolean }>;
+    search: (q: string, type: "photo" | "video" | "drone", orientation: string, page?: number) => Promise<{ success: boolean; items?: StockItem[]; error?: string; needKey?: boolean }>;
     get: (dir: string, item: StockItem) => Promise<LibItem>;
   };
   musicGet: (dir: string, rel: string) => Promise<{ file: string; url: string }>;

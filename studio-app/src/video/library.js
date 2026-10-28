@@ -138,6 +138,7 @@ function scan() {
 const queue = [];
 let busy = 0;
 function ensureMeta(item) {
+  if (item.remote) return Promise.resolve(item); // 공실뉴스 자료 — 정보는 서버 목록 그대로
   if (item.meta && (item.kind === "audio" || (item.thumb && fs.existsSync(item.thumb)))) return Promise.resolve(item);
   if (item._p) return item._p;
   item._p = new Promise((resolve) => {
@@ -231,14 +232,26 @@ async function add(files, extra = {}) {
   return out.map(forWeb);
 }
 
+// 공실뉴스 자료 (드론 영상, 2026-10-28) — PC 파일이 없는 자료. 목록에 저장하지 않고 이번에 앱을 켠 동안만 기억한다
+//  path·thumb 는 "gsremote:…" (remote.js · media.js 가 쓸 때마다 서버에서 불러온다)
+const remoteItems = new Map();
+function putRemote({ id, kind = "drone", name, duration = 0, width = 1920, height = 1080, credit = "" }) {
+  const remote = require("./remote");
+  const clean = String(id).replace(/[^\w-]/g, "");
+  const item = { id: `gsr-${kind}-${clean}`, path: remote.pathOf(kind, clean), thumb: remote.pathOf(`${kind}thumb`, clean), name: name || `공실뉴스 드론 ${clean}`, kind: "video", size: 0, mtime: Date.now(), addedAt: Date.now(), source: "gongsil", fav: false, credit, remote: true, meta: { duration, width, height, fps: 30, vcodec: "h264", hasAudio: false } };
+  remoteItems.set(item.id, item);
+  return forWeb(item);
+}
+
 function get(id) {
-  return load().items[id] || null;
+  return load().items[id] || remoteItems.get(id) || null;
 }
 
 /** 편집용 사본을 만들어 둔다 (미리보기·굽기를 빠르게) — 사본 경로 또는 원본 */
 async function prepare(id, onProgress) {
   const it = get(id);
   if (!it) throw new Error("자료를 찾지 못했습니다.");
+  if (it.remote) return it.path; // 사본을 만들지 않는다 (PC에 받지 않음)
   await ensureMeta(it);
   if (it.edit && fs.existsSync(it.edit)) return it.edit;
   const out = await ff.prepare(it.path, path.join(cacheDir(), "edit", it.id), { ...it.meta, kind: it.kind }, onProgress);
@@ -314,4 +327,5 @@ function removeFolder(dir) {
   return d.folders;
 }
 
-module.exports = { list, add, get, prepare, setFav, tagList, tagAdd, tagRename, tagRemove, tagSet, remove, scan, addFolder, removeFolder, folders, ensureMeta, forWeb, cacheDir, studioRoot, musicDir };
+module.exports = {
+  putRemote, list, add, get, prepare, setFav, tagList, tagAdd, tagRename, tagRemove, tagSet, remove, scan, addFolder, removeFolder, folders, ensureMeta, forWeb, cacheDir, studioRoot, musicDir };

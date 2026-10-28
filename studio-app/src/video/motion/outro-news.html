@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 끝 화면 ③ 뉴스형 — 사진 위 뉴스 자막처럼: [문의] 딱지 · 사무소 띠 · 전화 · 오른쪽 QR · 흐르는 정보 줄 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.8)); }
+  #lower { position: absolute; left: 0; right: 0; }
+  #tag { display: inline-block; margin-left: var(--pad); background: var(--accent); font-size: calc(var(--u) * 4.6); font-weight: 900; padding: calc(var(--u) * 1) calc(var(--u) * 2.6); transform-origin: left center; }
+  #band { margin-top: calc(var(--u) * .5); background: rgba(10,14,24,.94); border-left: calc(var(--u) * 1.6) solid var(--accent); padding: calc(var(--u) * 2.6) var(--pad); display: flex; align-items: center; gap: calc(var(--u) * 3); transform-origin: left center; }
+  #txt { flex: 1; min-width: 0; }
+  #brand { font-size: calc(var(--u) * 7); font-weight: 900; }
+  #phone { font-size: calc(var(--u) * 8); font-weight: 900; color: #ffe14d; margin-top: calc(var(--u) * .6); }
+  #qr { width: calc(var(--u) * 18); height: calc(var(--u) * 18); background: #fff; padding: calc(var(--u) * .8); border-radius: calc(var(--u) * .8); }
+  #ticker { background: var(--accent); overflow: hidden; white-space: nowrap; font-size: calc(var(--u) * 3.4); font-weight: 700; padding: calc(var(--u) * 1) 0; }
+  #tickerIn { display: inline-block; padding-left: 100%; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div>
+  <div id="lower"><div id="tag">문의</div><div id="band"><div id="txt"><div id="brand"></div><div id="phone"></div></div><img id="qr" alt=""></div><div id="ticker"><span id="tickerIn"></span></div></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outCubic, outExpo } = M;
+  window.__SFX = [{ t: 0.05, name: "notification", vol: 0.6 }, { t: 0.35, name: "whoosh-short", vol: 0.6 }, { t: 0.9, name: "typing", vol: 0.3 }, { t: 1.4, name: "pop", vol: 0.5 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D;
+    await M.bg($("bg"));
+    M.text("brand", D.brand || "공실뉴스"); M.text("phone", D.phone);
+    if (D.qr) $("qr").src = D.qr; else $("qr").style.display = "none";
+    $("tickerIn").textContent = [String(D.info || "").replace(/\n/g, "  ·  "), D.cta || "자세한 사진·위치는 공실뉴스에서"].filter(Boolean).join("     ●     ");
+    $("lower").style.bottom = (M.vertical ? M.u * 30 : M.u * 6) + "px";
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    $("bg").style.transform = `scale(${1.08 - 0.05 * seg(t, 0, 3)})`;
+    $("tag").style.transform = `scaleX(${outExpo(seg(t, 0, 0.35))})`;
+    $("band").style.transform = `scaleX(${outExpo(seg(t, 0.3, 0.7))})`;
+    const b = outCubic(seg(t, 0.6, 0.95)); $("brand").style.opacity = String(b);
+    const ph = String(M.D.phone || ""); $("phone").textContent = ph.slice(0, Math.round(ph.length * seg(t, 0.9, 1.4)));
+    const q = outCubic(seg(t, 1.3, 1.6)); $("qr").style.opacity = String(q); $("qr").style.transform = `scale(${0.7 + 0.3 * q})`;
+    $("ticker").style.opacity = String(seg(t, 1.5, 1.7)); $("tickerIn").style.transform = `translateX(${-seg(t, 1.5, 3.0) * 100}%)`;
+  };
+</script>
+</body>
+</html>

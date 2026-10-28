@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 하단 바 — 방송 자막처럼 색 띠가 밀려 들어오고 제목·설명 두 줄 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,.35)); }
+  #wrap { position: absolute; left: var(--pad); right: var(--pad); }
+  #tag { display: inline-block; background: var(--accent); font-size: calc(var(--u) * 7); font-weight: 900; padding: calc(var(--u) * 1) calc(var(--u) * 2.4); transform-origin: left center; }
+  #sub { display: inline-block; margin-top: calc(var(--u) * .6); background: rgba(255,255,255,.95); color: #111; font-size: calc(var(--u) * 4.6); font-weight: 800; padding: calc(var(--u) * .9) calc(var(--u) * 2.4); transform-origin: left center; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="wrap"><div><span id="tag"></span></div><div><span id="sub"></span></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "whoosh-short", vol: 0.6 }, { t: 0.4, name: "whoosh-short", vol: 0.4 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    $("tag").textContent = D.title || ""; M.text("sub", D.sub);
+    $("wrap").style.top = (V ? M.H * 0.56 : M.H * 0.62) + "px";
+    S.hide($("tag"), $("sub"));
+    tl.add($("tag"), { opacity: [0, 1], scaleX: [0, 1], duration: 500 }, 100)
+      .add($("sub"), { opacity: [0, 1], scaleX: [0, 1], duration: 500 }, 400);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

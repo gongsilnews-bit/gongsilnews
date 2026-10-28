@@ -450,7 +450,10 @@ function kfExpr(keys, get, prop, base) {
   return ex;
 }
 
-const assetFile = (a) => (a.edit && fs.existsSync(a.edit) ? a.edit : a.path);
+// 공실뉴스 자료(드론 영상, gsremote:…) — PC 파일이 없다. 굽기 전에 받아 둔 서명 주소에서 ffmpeg 가 필요한 구간만 읽는다
+const remote = require("./remote");
+const assetFile = (a) => (remote.isRemote(a.path) ? remote.urlSync(a.path) : a.edit && fs.existsSync(a.edit) ? a.edit : a.path);
+const assetOk = (a) => (remote.isRemote(a.path) ? Boolean(remote.urlSync(a.path)) : fs.existsSync(assetFile(a)));
 
 /* 소리 이음매 — 실제로 잘라 낸 곳만 아주 짧게 줄였다 키운다 ("뚝" 소리 막기, 귀로는 안 들림) */
 const EDGE = 0.008;
@@ -498,7 +501,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
   const visual = offs.visual ? null : clip.visual && p.assets[clip.visual.asset] ? p.assets[clip.visual.asset] : clip.type === "voice" ? null : srcAsset;
   const ranges = clip.type === "voice" ? null : tl.keepRanges(clip);
   const sameAsSource = ranges && visual && srcAsset && visual === srcAsset;
-  const ok = (a) => a && !a.missing && fs.existsSync(assetFile(a));
+  const ok = (a) => a && !a.missing && assetOk(a);
   if (sameAsSource && ok(visual) && visual.kind === "video") {
     // 촬영 영상: 남길 구간들을 잘라 잇는다 (지운 단어 빠짐)
     args.push("-i", assetFile(visual));
@@ -726,6 +729,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
     if (D0 > 0.1) src = src % D0;
     const file = assetFile(a);
     if (loop) args.push("-stream_loop", "-1");
+    // 투명 모션(.alpha.webm) — ffmpeg 기본 VP9 해독기는 투명을 버린다 → libvpx 로 읽어야 투명 그대로
+    if (/\.alpha\.webm$/i.test(file)) args.push("-c:v", "libvpx-vp9");
     args.push("-itsoffset", s0.toFixed(3), "-ss", src.toFixed(3), "-t", len.toFixed(3), "-i", file);
     const k = n++;
     const lflip = flipChain(l);
@@ -1134,6 +1139,11 @@ async function joinWithTransitions(segs, trs, out, tmp, enc) {
  *  opts: { scope: all|scene|selected, sceneId, clipIds, height(해상도 세로, 기본 원본) }
  */
 async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => false) {
+  // 공실뉴스 자료 — 서명 주소를 먼저 받아 둔다 (인터넷·로그인 필요)
+  if (Object.values(p.assets || {}).some((a) => remote.isRemote(a.path))) {
+    onProgress("공실뉴스 자료를 불러오는 중…");
+    await remote.prefetch(Object.values(p.assets || {}).map((a) => a.path));
+  }
   const [W0, H0] = RATIOS[p.ratio] || RATIOS["16:9"];
   const scale = opts.height && opts.height < Math.min(W0, H0) ? opts.height / Math.min(W0, H0) : 1;
   const proj = scale === 1 ? p : { ...p, ratio: p.ratio };

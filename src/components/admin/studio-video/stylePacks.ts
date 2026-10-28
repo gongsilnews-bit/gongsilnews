@@ -45,3 +45,16 @@ export function defaultPack(kind: string, ratio: string): StylePack {
   return STYLE_PACKS.find((p) => p.id === id)!;
 }
 export const packOf = (id: string) => STYLE_PACKS.find((p) => p.id === id) || null;
+
+/**
+ * 인트로(모션그래픽 틀) ↔ 편집 스타일 팩 (2026-10-28 사장님: 인트로만 고르면 영상 전체 분위기가 맞춰지게)
+ *  인트로를 넣을 때 [영상 전체 스타일도 맞추기] 면 이 팩의 자막·전환·배경음악을 영상 전체에
+ */
+export const INTRO_PACK: Record<string, string> = {
+  intro: "modern", impact: "shorts", split: "gongsil", breaking: "breaking", gold: "gold", neon: "city",
+  typewriter: "warm", punch: "shorts", polaroid: "warm", minimal: "shortsmin", stamp: "gongsil", countdown: "city", kinetic: "shorts", luxe: "gold",
+};
+export const packOfIntro = (template: string) => STYLE_PACKS.find((x) => x.id === INTRO_PACK[template]) || STYLE_PACKS[0];
+/** 스타일 팩 ↔ 끝 화면 틀 — 인트로를 넣을 때 짝 끝 화면도 맨 끝에 (전체 스타일 맞추기) */
+const PACK_OUTRO: Record<string, string> = { gold: "outro-gold", navy: "outro-gold", news: "outro-news", breaking: "outro-news", shorts: "outro-pop", shortsmin: "outro-minimal", modern: "outro-minimal" };
+export const outroOfIntro = (template: string) => PACK_OUTRO[packOfIntro(template).id] || "outro";

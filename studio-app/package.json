@@ -14,9 +14,12 @@
     "dist": "node scripts/sync-ext.mjs && node scripts/fetch-ffmpeg.mjs && node scripts/fetch-whisper.mjs && electron-builder --win nsis"
   },
   "dependencies": {
+    "animejs": "^4.5.0",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.6.2",
-    "playwright-core": "1.63"
+    "lottie-web": "^5.13.0",
+    "playwright-core": "1.63",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "electron": "^38.2.0",

@@ -387,7 +387,7 @@ function convert(p) {
 function externals(p) {
   const out = new Map(); // 원래 위치(소문자) → { path, size }
   const add = (f) => {
-    if (!f || gss.under(f, p.dir) || !fs.existsSync(f)) return;
+    if (!f || require("./remote").isRemote(f) || gss.under(f, p.dir) || !fs.existsSync(f)) return;
     if (!out.has(gss.norm(f))) out.set(gss.norm(f), { path: f, size: fs.statSync(f).size });
   };
   for (const a of Object.values(p.assets || {})) add(a.path);
@@ -397,7 +397,7 @@ function externals(p) {
 }
 function packageInfo(p) {
   const list = externals(p);
-  const missing = Object.values(p.assets || {}).filter((a) => !fs.existsSync(a.path)).map((a) => a.name);
+  const missing = Object.values(p.assets || {}).filter((a) => !require("./remote").isRemote(a.path) && !fs.existsSync(a.path)).map((a) => a.name);
   return { count: list.length, bytes: list.reduce((a, x) => a + x.size, 0), missing };
 }
 async function makePackage(p, parent, onProgress = () => {}) {
@@ -463,6 +463,12 @@ function open(target, choice = "") {
   media.allowRoot(dir);
   const here = file ? path.dirname(file) : "";
   for (const a of Object.values(p.assets || {})) {
+    // 공실뉴스 자료(드론 영상) — PC 파일이 없다. 쓸 때마다 서버에서 불러온다
+    if (require("./remote").isRemote(a.path)) {
+      a.missing = false;
+      a.edit = "";
+      continue;
+    }
     // 원본이 없으면 .gss 옆 "미디어" 폴더·.gss 옆에서 같은 이름을 찾는다 (프로젝트 패키지·다른 PC)
     if (!fs.existsSync(a.path) && here) {
       const nm = path.basename(String(a.path || ""));
@@ -529,6 +535,7 @@ async function addAsset(p, libId, onProgress = () => {}) {
     source: it.source,
     credit: it.credit || "",
   };
+  if (it.remote) a.remote = true;
   media.allow(a.path);
   if (a.edit) media.allow(a.edit);
   if (it.thumb) media.allow(it.thumb);

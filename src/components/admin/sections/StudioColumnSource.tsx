@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
+import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 
 /**
  * 뉴스·SNS발행 > 뉴스칼럼 (크롬 확장 뉴스메이커를 앱으로 옮긴 것)
@@ -20,9 +21,10 @@ import { LoadingCover } from "./StudioLoading";
 type News = { title: string; publisher: string; publishedAt: string; url: string; body: string; truncated?: boolean; shots?: string[] };
 type Topic = { subject: string; intro: string; points: string[]; outro: string; memo: string };
 type Source = { mode: "news" | "topic"; angle?: string; news?: News; topic?: Topic };
-type Column = { id: string; source: Source; label: string; createdAt: string; articleTitle?: string; captures?: { thumb: string | null; caption: string }[] };
+type Column = { id: string; source: Source; label: string; createdAt: string; articleTitle?: string; captures?: { thumb: string | null; caption: string; kind?: string }[]; hiddenCount?: number };
 type Bridge = {
   column: {
+    media?: (id: string, op: MediaOp) => Promise<Column>; // 기사 화면 정리 (2026-10-28)
     fetchNews: (url: string) => Promise<News>;
     openNews: () => Promise<unknown>;
     grabNews: () => Promise<News>;
@@ -157,6 +159,18 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
     setView("list");
     bridge()?.column.list().then(setRecent).catch(() => {});
   };
+  // "무엇을 그릴까요?" 추천 — 소재 제목·주제로 바로 (AI 안 씀)
+  const columnIdeas = (c: Column): string[] => {
+    const t = (c.source.mode === "news" ? c.source.news?.title : c.source.topic?.subject) || c.label || "";
+    const head = t.replace(/^\[[^\]]*\]\s*/, "").slice(0, 40);
+    return Array.from(new Set([
+      `${head} — 기사 내용을 보여 주는 현장 사진`,
+      `${head}를 상징하는 도시 풍경, 맑은 날 낮`,
+      "기사 주제와 어울리는 사람들의 일상 장면 (얼굴은 멀리, 뒷모습)",
+      "부동산 중개사무소 안에서 상담하는 장면, 따뜻한 조명",
+      "기사 핵심 숫자를 설명하는 깔끔한 인포그래픽 느낌 (글자 없이)",
+    ])).filter(Boolean);
+  };
   const openNew = () => {
     setView("new");
     setUrl(""); setNews(null); setTopic(EMPTY_TOPIC); setAngle(""); setHint(""); setError("");
@@ -215,7 +229,15 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
             {/* [원문 보기] — 기사 화면 크게 + 가져온 원문 (읽기만, 고치려면 새로 작성) */}
             {showSource && (
               <div style={{ marginTop: 14 }}>
-                {isNews && caps.length > 0 && (
+                {/* 사진 정리 — 공실뉴스와 같게: 빼기·순서·AI 이미지·내 사진 (2026-10-28 사장님) */}
+                {bridge()?.column.media ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <MediaEditGrid theme={theme} items={caps.map((c) => ({ kind: c.kind || "capture", caption: c.caption, thumb: c.thumb }))} hiddenCount={column.hiddenCount || 0} styleKey={column.id}
+                      ideas={columnIdeas(column)} seed={columnIdeas(column)[0] || column.label}
+                      note="끌어서 순서를 바꿔요 · 맨 앞이 대표 사진 · 정리한 사진은 기사·블로그·SNS·영상에 바로 들어가요"
+                      onOp={async (op) => { const c = await bridge()!.column.media!(column.id, op); if (c) setColumn(c); }} />
+                  </div>
+                ) : isNews && caps.length > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
                     {caps.map((c, i) => (
                       <figure key={i} style={{ margin: 0, border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa" }}>

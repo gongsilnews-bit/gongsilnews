@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 끝 화면 ⑤ 쇼츠 팝 — 노랑·검정, "지금 전화!" 가 통통 튀고 전화번호가 크게, QR 이 흔들리며 등장 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #111; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #111; background: var(--accent); }
+  #stripes { position: absolute; inset: -20%; background: repeating-linear-gradient(-30deg, rgba(0,0,0,.06) 0 calc(var(--u) * 4), transparent calc(var(--u) * 4) calc(var(--u) * 8)); }
+  #wrap { position: absolute; left: var(--pad); right: var(--pad); text-align: center; }
+  #shout { display: inline-block; background: #111; color: var(--accent); font-size: calc(var(--u) * 7); font-weight: 900; padding: calc(var(--u) * 1) calc(var(--u) * 4); border-radius: calc(var(--u) * 1.5); transform-origin: center bottom; }
+  #brand { font-size: calc(var(--u) * 7.5); font-weight: 900; margin-top: calc(var(--u) * 4); }
+  #phone { display: inline-block; margin-top: calc(var(--u) * 2); font-size: calc(var(--u) * 11); font-weight: 900; background: #fff; padding: calc(var(--u) * 1) calc(var(--u) * 3); border-radius: calc(var(--u) * 2); border: calc(var(--u) * .8) solid #111; letter-spacing: -.02em; }
+  #info { font-size: calc(var(--u) * 3.2); font-weight: 700; margin-top: calc(var(--u) * 3); line-height: 1.6; white-space: pre-line; color: #222; }
+  #qrWrap { display: inline-block; margin-top: calc(var(--u) * 4); background: #fff; padding: calc(var(--u) * 1.4); border-radius: calc(var(--u) * 1.6); border: calc(var(--u) * .8) solid #111; }
+  #qr { width: calc(var(--u) * 20); height: calc(var(--u) * 20); display: block; }
+  #qrLabel { font-size: calc(var(--u) * 3.4); font-weight: 900; margin-top: calc(var(--u) * 1); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="stripes"></div>
+  <div id="wrap"><div id="shout">지금 문의하세요!</div><div id="brand"></div><div id="phone"></div><div id="info"></div><div><div id="qrWrap"><img id="qr" alt=""><div id="qrLabel">📷 사진·위치 보기</div></div></div></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outBack, outCubic } = M;
+  window.__SFX = [{ t: 0.05, name: "pop", vol: 0.8 }, { t: 0.45, name: "whoosh-short", vol: 0.6 }, { t: 0.8, name: "impact-bass-1", vol: 0.6 }, { t: 1.3, name: "pop", vol: 0.7 }, { t: 1.8, name: "sparkle", vol: 0.5 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D;
+    M.text("brand", D.brand || "공실뉴스"); M.text("phone", D.phone); M.text("info", D.info);
+    if (D.qr) $("qr").src = D.qr; else $("qrWrap").style.display = "none";
+    $("wrap").style.top = (M.vertical ? M.H * 0.18 : M.H * 0.08) + "px";
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    $("stripes").style.transform = `translateX(${(t * 40) % 80}px)`;
+    const s = outBack(seg(t, 0.0, 0.4)); $("shout").style.transform = `scale(${0.3 + 0.7 * s}) rotate(${-3 + 3 * Math.sin(t * 8) * (t > 0.4 ? 0.6 : 0)}deg)`;
+    const b = outCubic(seg(t, 0.4, 0.75)); $("brand").style.opacity = String(b); $("brand").style.transform = `translateY(${(1 - b) * 30}px)`;
+    const ph = outBack(seg(t, 0.75, 1.15)); $("phone").style.transform = `scale(${0.5 + 0.5 * ph})`; $("phone").style.opacity = String(seg(t, 0.75, 0.85));
+    $("info").style.opacity = String(outCubic(seg(t, 1.1, 1.5)));
+    const q = outBack(seg(t, 1.3, 1.7)); $("qrWrap").style.transform = `scale(${0.4 + 0.6 * q}) rotate(${(1 - q) * 12 + Math.sin(t * 6) * (t > 1.7 ? 2 : 0)}deg)`; $("qrWrap").style.opacity = String(seg(t, 1.3, 1.4));
+  };
+</script>
+</body>
+</html>

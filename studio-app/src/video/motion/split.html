@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ③ 갈라짐 — 색 판이 위아래(가로 화면은 좌우)로 갈라지며 사진이 드러나고, 흰 상자에 글이 올라온다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #111; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #111; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  .door { position: absolute; background: var(--accent); }
+  #door1 { left: 0; top: 0; }
+  #door2 { right: 0; bottom: 0; }
+  #title { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: calc(var(--u) * 9); font-weight: 900; white-space: nowrap; letter-spacing: -.02em; }
+  #card { position: absolute; left: var(--pad); right: var(--pad); background: #fff; border-radius: calc(var(--u) * 2.2); padding: calc(var(--u) * 4) calc(var(--u) * 4.5); box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(0,0,0,.35); }
+  #place { font-size: calc(var(--u) * 4.2); font-weight: 800; color: var(--accent); }
+  #kind { font-size: calc(var(--u) * 8.5); font-weight: 900; line-height: 1.15; margin-top: calc(var(--u) * .6); }
+  #row { display: flex; align-items: baseline; gap: calc(var(--u) * 1.8); margin-top: calc(var(--u) * 1.2); }
+  #trade { font-size: calc(var(--u) * 5.4); font-weight: 900; color: #fff; background: #111; padding: calc(var(--u) * .4) calc(var(--u) * 1.6); border-radius: calc(var(--u) * .8); }
+  #price { font-size: calc(var(--u) * 13); font-weight: 900; letter-spacing: -.04em; line-height: 1; }
+  #chips { margin-top: calc(var(--u) * 2.2); font-size: calc(var(--u) * 4); font-weight: 700; color: #444; }
+  #brand { position: absolute; left: var(--pad); top: var(--pad); color: #fff; font-size: calc(var(--u) * 3.6); font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div class="door" id="door1"></div><div class="door" id="door2"></div>
+  <div id="title"></div>
+  <div id="brand"></div>
+  <div id="card"><div id="place"></div><div id="kind"></div><div id="row"><div id="trade"></div><div id="price"></div></div><div id="chips"></div></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outCubic, outBack, inOut } = M;
+  window.__SFX = [{ t: 0.05, name: "pop", vol: 0.5 }, { t: 0.45, name: "whoosh", vol: 0.8 }, { t: 1.0, name: "whoosh-short", vol: 0.6 }, { t: 1.35, name: "pop", vol: 0.7 }, { t: 1.8, name: "ping", vol: 0.4 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data);
+    const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    M.text("title", D.trade ? `${D.trade} 매물` : D.place || D.kind || ""); M.text("place", D.place); M.text("kind", D.kind); M.text("trade", D.trade); M.text("price", D.price); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("  ·  ");
+    const half = M.vertical ? { w: "100%", h: "50%" } : { w: "50%", h: "100%" };
+    for (const id of ["door1", "door2"]) { $(id).style.width = half.w; $(id).style.height = half.h; }
+    $("card").style.bottom = (M.vertical ? u * 28 : u * 8) + "px";
+    if (!M.vertical) { $("card").style.right = "auto"; $("card").style.width = M.W * 0.48 + "px"; }
+    await p;
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    // 0~0.45 색 판 위에 큰 글 → 0.45~1.0 갈라짐
+    const tt = outCubic(seg(t, 0.05, 0.35));
+    $("title").style.opacity = String(tt * (1 - seg(t, 0.45, 0.6)));
+    $("title").style.transform = `translate(-50%, -50%) scale(${0.8 + 0.2 * tt + 0.15 * seg(t, 0.45, 0.6)})`;
+    const o = inOut(seg(t, 0.45, 1.0));
+    if (M.vertical) { $("door1").style.transform = `translateY(${-o * 100}%)`; $("door2").style.transform = `translateY(${o * 100}%)`; }
+    else { $("door1").style.transform = `translateX(${-o * 100}%)`; $("door2").style.transform = `translateX(${o * 100}%)`; }
+    $("bg").style.transform = `scale(${1.25 - 0.17 * outCubic(seg(t, 0.45, 3))})`;
+    // 1.0~ 흰 상자가 아래에서 튀어 올라옴, 안의 글이 차례로
+    const c = outBack(seg(t, 1.0, 1.45));
+    $("card").style.opacity = String(seg(t, 1.0, 1.1));
+    $("card").style.transform = `translateY(${(1 - c) * M.u * 25}px)`;
+    [["place", 1.15], ["kind", 1.25], ["row", 1.35], ["chips", 1.75]].forEach(([id, a]) => { const q = outCubic(seg(t, a, a + 0.35)); $(id).style.opacity = String(q); $(id).style.transform = `translateX(${(1 - q) * -24}px)`; });
+    $("brand").style.opacity = String(0.9 * seg(t, 1.0, 1.4));
+  };
+</script>
+</body>
+</html>

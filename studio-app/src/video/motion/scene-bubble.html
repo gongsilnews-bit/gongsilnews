@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 말풍선 — 말풍선이 통통 튀어나오고 그 안에 문구, 작은 꼬리 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.2); }
+  #b { position: absolute; background: #fff; color: #111; border-radius: calc(var(--u) * 5); padding: calc(var(--u) * 3.4) calc(var(--u) * 4.4); box-shadow: 0 calc(var(--u) * 1.4) calc(var(--u) * 4) rgba(0,0,0,.3); max-width: calc(var(--u) * 78); transform-origin: 20% 100%; }
+  #b::after { content: ""; position: absolute; left: calc(var(--u) * 8); bottom: calc(var(--u) * -3.4); border: calc(var(--u) * 2) solid transparent; border-top: calc(var(--u) * 3.6) solid #fff; }
+  #t { font-size: calc(var(--u) * 7.4); font-weight: 900; line-height: 1.3; }
+  #t .hl { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="b"><div id="t"></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "pop", vol: 0.8 }, { t: 0.45, name: "pop", vol: 0.4 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const ws = S.words($("t"), D.title, D.highlight);
+    Object.assign($("b").style, V ? { left: u * 8 + "px", top: M.H * 0.18 + "px" } : { left: M.W * 0.1 + "px", top: M.H * 0.18 + "px" });
+    S.hide($("b"), ws);
+    tl.add($("b"), { opacity: [0, 1], scale: [0.2, 1], duration: 600, ease: "outBack(2.4)" }, 50)
+      .add(ws, { opacity: [0, 1], y: [u * 2, 0], duration: 350, delay: stagger(80) }, 350);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

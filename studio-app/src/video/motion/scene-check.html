@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 장점 체크 (Anime.js) — 클립 화면 위에 장점이 한 줄씩 들어오며 ✓ 가 그려진다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.7) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.1) 100%); }
+  #list { position: absolute; left: var(--pad); right: var(--pad); display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+  .row { display: flex; align-items: center; gap: calc(var(--u) * 2); background: rgba(10,14,24,.72); border-radius: calc(var(--u) * 1.6); padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4); width: fit-content; max-width: 100%; }
+  .box { width: calc(var(--u) * 8); height: calc(var(--u) * 8); border-radius: calc(var(--u) * 1.4); background: var(--accent); flex-shrink: 0; }
+  .box svg { width: 100%; height: 100%; }
+  .txt { font-size: calc(var(--u) * 7.4); font-weight: 900; white-space: nowrap; }
+  #title { font-size: calc(var(--u) * 5.4); font-weight: 800; color: var(--accent); letter-spacing: .06em; margin-bottom: calc(var(--u) * .5); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="list"><div id="title"></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline, stagger, svg } = anime;
+  let tl = null;
+  window.__SFX = [{ t: 0.2, name: "whoosh-short", vol: 0.5 }, { t: 0.55, name: "click", vol: 0.6 }, { t: 0.9, name: "click", vol: 0.6 }, { t: 1.25, name: "click", vol: 0.6 }, { t: 1.6, name: "click", vol: 0.6 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    $("title").textContent = D.title || "이런 점이 좋아요";
+    const rows = (D.items || []).slice(0, 4).map((t) => {
+      const r = document.createElement("div"); r.className = "row";
+      r.innerHTML = '<div class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5 L10 17 L19 7" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+      const s = document.createElement("div"); s.className = "txt"; s.textContent = typeof t === "string" ? t : t.l || t.v; r.appendChild(s);
+      $("list").appendChild(r); return r;
+    });
+    $("list").style.top = (M.vertical ? M.H * 0.16 : M.H * 0.18) + "px";
+    await p;
+    anime.utils.set([$("title"), ...rows], { opacity: 0 });
+    const checks = rows.map((r) => svg.createDrawable(r.querySelector("path"))[0]);
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outExpo" } })
+      .add($("bg"), { scale: [1.1, 1.02], duration: (D.seconds || 3) * 1000, ease: "linear" }, 0)
+      .add($("title"), { opacity: [0, 1], duration: 400 }, 150)
+      .add(rows, { opacity: [0, 1], x: [-u * 10, 0], duration: 500, delay: stagger(350) }, 350);
+    checks.forEach((c, i) => tl.add(c, { draw: ["0 0", "0 1"], duration: 350, ease: "outQuad" }, 550 + i * 350));
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => { await M.bgSeek(t); if (tl) tl.seek(Math.min(t * 1000, tl.duration)); };
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 스포트라이트 — 화면이 어두워지며 원형 빛이 비추고 문구가 떠오른다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: radial-gradient(circle at 50% 38%, transparent 0, transparent var(--r, 0px), rgba(0,0,0,.82) calc(var(--r, 0px) + 2px)); }
+  #t { position: absolute; left: var(--pad); right: var(--pad); text-align: center; font-size: calc(var(--u) * 9); font-weight: 900; text-shadow: 0 4px 20px rgba(0,0,0,.6); line-height: 1.25; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="t"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "whoosh", vol: 0.5 }, { t: 0.7, name: "sparkle", vol: 0.5 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const ws = S.words($("t"), D.title, D.highlight);
+    $("t").style.top = (V ? M.H * 0.62 : M.H * 0.7) + "px";
+    S.hide(ws);
+    const o = { r: 0 };
+    tl.add(o, { r: [0, Math.max(M.W, M.H) * 0.28], duration: 900, ease: "outCubic", onUpdate: () => $("shade").style.setProperty("--r", o.r + "px") }, 0)
+      .add(ws, { opacity: [0, 1], y: [u * 4, 0], duration: 500, delay: stagger(100) }, 500);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

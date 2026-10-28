@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑩ 미니멀 — 흰 바탕에 가는 선, 사진이 네모 창으로 열리고 글이 깔끔하게 밀려 들어온다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #fff; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #111; background: #fafafa; }
+  #win { position: absolute; overflow: hidden; }
+  #bg { position: absolute; inset: 0; }
+  .rule { position: absolute; background: #111; height: 2px; transform-origin: left center; }
+  #txt { position: absolute; left: var(--pad); right: var(--pad); }
+  .mask { overflow: hidden; }
+  #num { font-size: calc(var(--u) * 3.4); font-weight: 700; color: var(--accent); letter-spacing: .3em; }
+  #kind { font-size: calc(var(--u) * 9.5); font-weight: 900; letter-spacing: -.03em; line-height: 1.15; }
+  #price { font-size: calc(var(--u) * 12); font-weight: 900; letter-spacing: -.04em; line-height: 1.05; }
+  #trade { font-size: calc(var(--u) * 4.4); font-weight: 700; color: #666; }
+  #chips { font-size: calc(var(--u) * 3.8); font-weight: 600; color: #444; margin-top: calc(var(--u) * 2); }
+  #brand { position: absolute; right: var(--pad); bottom: var(--pad); font-size: calc(var(--u) * 3.2); font-weight: 800; color: #111; }
+  #dot { position: absolute; width: calc(var(--u) * 2.4); height: calc(var(--u) * 2.4); border-radius: 50%; background: var(--accent); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="win"><div id="bg"></div></div>
+  <div class="rule" id="r1"></div><div class="rule" id="r2"></div><div id="dot"></div>
+  <div id="txt"><div class="mask"><div id="num"></div></div><div class="mask"><div id="kind"></div></div><div class="mask"><div id="trade"></div></div><div class="mask"><div id="price"></div></div><div id="chips"></div></div>
+  <div id="brand"></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outExpo, outCubic, inOut } = M;
+  window.__SFX = [{ t: 0.1, name: "whoosh-short", vol: 0.5 }, { t: 0.6, name: "click", vol: 0.5 }, { t: 1.0, name: "click", vol: 0.5 }, { t: 1.4, name: "ping", vol: 0.4 }];
+  let box = {};
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    $("num").textContent = [D.place].filter(Boolean).join(" ");
+    M.text("kind", D.kind); M.text("trade", D.trade); M.text("price", D.price); M.text("brand", D.brand);
+    $("chips").textContent = (D.chips || []).slice(0, 3).join("   /   ");
+    box = M.vertical ? { l: u * 6, t: u * 14, w: M.W - u * 12, h: M.H * 0.42 } : { l: M.W * 0.52, t: u * 8, w: M.W * 0.42, h: M.H - u * 16 };
+    Object.assign($("win").style, { left: box.l + "px", top: box.t + "px", width: box.w + "px", height: box.h + "px" });
+    if (M.vertical) { $("txt").style.top = box.t + box.h + u * 8 + "px"; }
+    else { $("txt").style.right = "auto"; $("txt").style.width = M.W * 0.42 + "px"; $("txt").style.top = M.H * 0.25 + "px"; }
+    const rt = M.vertical ? box.t + box.h + u * 4 : M.H * 0.2;
+    Object.assign($("r1").style, { left: (M.vertical ? u * 6 : u * 6) + "px", top: rt + "px", width: (M.vertical ? M.W - u * 12 : M.W * 0.42) + "px" });
+    Object.assign($("r2").style, { left: (M.vertical ? u * 6 : u * 6) + "px", top: (M.vertical ? M.H - u * 22 : M.H * 0.8) + "px", width: (M.vertical ? M.W - u * 12 : M.W * 0.42) + "px" });
+    Object.assign($("dot").style, { left: box.l + box.w - u * 1.2 + "px", top: box.t - u * 1.2 + "px" });
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    // 사진 창 — 가운데에서 위아래(가로 화면은 좌우)로 열림
+    const o = inOut(seg(t, 0.1, 0.6));
+    $("win").style.clipPath = M.vertical ? `inset(${(1 - o) * 50}% 0 ${(1 - o) * 50}% 0)` : `inset(0 ${(1 - o) * 50}% 0 ${(1 - o) * 50}%)`;
+    $("bg").style.transform = `scale(${1.15 - 0.1 * seg(t, 0.1, 3)})`;
+    $("r1").style.transform = `scaleX(${outExpo(seg(t, 0.4, 0.9))})`;
+    $("r2").style.transform = `scaleX(${outExpo(seg(t, 1.6, 2.1))})`;
+    $("dot").style.transform = `scale(${outExpo(seg(t, 0.55, 0.8))})`;
+    [["num", 0.55], ["kind", 0.7], ["trade", 0.95], ["price", 1.05]].forEach(([id, a]) => { $(id).style.transform = `translateY(${(1 - outCubic(seg(t, a, a + 0.4))) * 105}%)`; });
+    const c = outCubic(seg(t, 1.5, 1.9));
+    $("chips").style.opacity = String(c);
+    $("brand").style.opacity = String(seg(t, 1.8, 2.2));
+  };
+</script>
+</body>
+</html>

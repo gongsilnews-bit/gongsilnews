@@ -79,9 +79,9 @@ function forWeb(data) {
 /* 분석에서 새로 넣은 사진(AI 사진 등)을 이미 쓴 SNS 글에도 — 채널마다 끝에 붙인다 (최대 장수까지), 분석에서 뺀 사진은 뺀다 (2026-10-28 사장님)
  * SNS 글을 쓴 뒤 새로 생긴 사진만 · 한 번 넣은 것은 seenFiles 에 적어 두어 일부러 뺀 것을 다시 넣지 않는다 */
 function syncNewMedia(vacancyId, data) {
-  if (!data || data.kind === "sim" || data.kind === "column" || blogWriter.isColumn(vacancyId) || blogWriter.isSim(vacancyId)) return data;
+  if (!data || data.kind === "sim" || blogWriter.isSim(vacancyId)) return data;
   try { blogWriter.syncAnalysisMedia(vacancyId); } catch {}
-  const an = readJson(path.join(mediaDir(vacancyId), "analysis.json")) || {};
+  const an = blogWriter.mediaSourceOf(vacancyId) || {}; // 칼럼은 기사 화면 (2026-10-28)
   const gone = new Set((an.hidden || []).map((m) => m.file));
   // 사진 모음(pool)에 새 사진을 더하고, 채널마다 "그 채널에 한 번도 들어간 적 없는" 사진을 끝에 붙인다
   let pool = (data.pool || []).filter((m) => !gone.has(m.file));
@@ -398,7 +398,7 @@ function saveAll(vacancyId, { noun, listing, posts, column = false }) {
   if (Array.isArray(prevSeen)) data.seenFiles = prevSeen;
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
   log.info(`[SNS] ${vacancyId} ${Object.keys(posts).join(",")} (한 번에)`);
-  try { return forWeb(column ? data : syncNewMedia(vacancyId, data)); } catch { return forWeb(data); } // 분석에서 넣은 사진도
+  try { return forWeb(syncNewMedia(vacancyId, data)); } catch { return forWeb(data); } // 분석에서 넣은 사진도
 }
 
 module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, saveSimPosts, useQuota, saveAll, toneLine, NO_REF, keepOthers };

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑬ 키네틱 (Anime.js) — 글자가 한 자씩 회전하며 튀어 들어오고, 가격 숫자가 뒤섞이다 맞춰지고, 밑줄이 그려진다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #0b0f1a; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,12,24,.55), rgba(8,12,24,.25) 35%, rgba(8,12,24,.85)); }
+  #wrap { position: absolute; left: var(--pad); right: var(--pad); }
+  #place { font-size: calc(var(--u) * 5); font-weight: 800; color: var(--accent); letter-spacing: .04em; }
+  #kind { font-size: calc(var(--u) * 13); font-weight: 900; line-height: 1.08; letter-spacing: -.03em; margin-top: calc(var(--u) * 1); }
+  #kind .ch, #price .ch { display: inline-block; will-change: transform; }
+  #priceRow { display: flex; align-items: baseline; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 2); }
+  #trade { font-size: calc(var(--u) * 6); font-weight: 900; color: #111; background: var(--accent); padding: calc(var(--u) * .5) calc(var(--u) * 2); border-radius: calc(var(--u) * 1); }
+  #price { font-size: calc(var(--u) * 18); font-weight: 900; letter-spacing: -.04em; line-height: 1; }
+  svg#line { display: block; width: 100%; height: calc(var(--u) * 6); margin-top: calc(var(--u) * 1); overflow: visible; }
+  #chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.4); margin-top: calc(var(--u) * 2.6); }
+  .chip { font-size: calc(var(--u) * 4.2); font-weight: 800; padding: calc(var(--u) * .7) calc(var(--u) * 2); border-radius: 99px; background: rgba(255,255,255,.12); border: calc(var(--u) * .25) solid rgba(255,255,255,.5); }
+  .dot { position: absolute; width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6); border-radius: 50%; background: var(--accent); }
+  #brand { position: absolute; right: var(--pad); top: var(--pad); font-size: calc(var(--u) * 3.6); font-weight: 800; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div><div id="brand"></div>
+  <div id="wrap">
+    <div id="place"></div>
+    <div id="kind"></div>
+    <div id="priceRow"><div id="trade"></div><div id="price"></div></div>
+    <svg id="line" viewBox="0 0 1000 60" preserveAspectRatio="none"><path id="path" d="M5 40 C 200 5, 380 60, 560 30 S 860 10, 995 35" fill="none" stroke-width="10" stroke-linecap="round"></path></svg>
+    <div id="chips"></div>
+  </div>
+</div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline, stagger, svg } = anime;
+  let tl = null;
+  window.__SFX = [{ t: 0.1, name: "whoosh", vol: 0.6 }, { t: 0.45, name: "typing", vol: 0.35 }, { t: 1.05, name: "impact-bass-1", vol: 0.7 }, { t: 1.35, name: "whoosh-short", vol: 0.5 }, { t: 1.7, name: "pop", vol: 0.6 }, { t: 2.0, name: "sparkle", vol: 0.5 }];
+  const split = (el, text) => { el.textContent = ""; for (const c of String(text || "")) { const s = document.createElement("span"); s.className = "ch"; s.textContent = c === " " ? " " : c; el.appendChild(s); } return el.querySelectorAll(".ch"); };
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    M.text("place", D.place); M.text("trade", D.trade); M.text("brand", D.brand);
+    const kc = split($("kind"), D.kind);
+    const pc = split($("price"), D.price);
+    $("path").setAttribute("stroke", D.accent || "#E8590C");
+    const chips = (D.chips || []).slice(0, 3).map((t) => { const s = document.createElement("span"); s.className = "chip"; s.textContent = t; $("chips").appendChild(s); return s; });
+    // 튀는 점 6개 — 가격이 박힐 때 사방으로
+    const dots = Array.from({ length: 8 }, () => { const d = document.createElement("div"); d.className = "dot"; $("wrap").appendChild(d); return d; });
+    if (M.vertical) $("wrap").style.bottom = u * 32 + "px"; else { $("wrap").style.top = M.H * 0.22 + "px"; $("wrap").style.right = M.W * 0.3 + "px"; }
+    await p;
+    // 나올 차례 전에는 숨겨 둔다 (타임라인은 시작 전 값을 미리 넣지 않는다)
+    anime.utils.set([$("place"), ...kc, $("trade"), ...pc, ...chips, $("brand")], { opacity: 0 });
+    const draw = svg.createDrawable($("path"));
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outExpo" } })
+      .add($("bg"), { scale: [1.18, 1.04], duration: 3000, ease: "linear" }, 0)
+      .add($("place"), { opacity: [0, 1], x: [-u * 6, 0], duration: 500 }, 100)
+      .add(kc, { opacity: [0, 1], y: [u * 10, 0], rotate: [() => anime.utils.random(-40, 40), 0], scale: [0.4, 1], duration: 700, delay: stagger(45), ease: "outBack(1.6)" }, 300)
+      .add($("trade"), { opacity: [0, 1], scale: [0.2, 1], duration: 450, ease: "outBack(2)" }, 900)
+      .add(pc, { opacity: [0, 1], y: [-u * 14, 0], duration: 500, delay: stagger(60), ease: "outBounce" }, 1000)
+      .add(dots, { opacity: [{ to: 1, duration: 60 }, { to: 0, duration: 500 }], x: () => [0, anime.utils.random(-u * 30, u * 30)], y: () => [0, anime.utils.random(-u * 25, u * 8)], scale: [1, 0.2], duration: 600, ease: "outCubic" }, 1100)
+      .add(draw, { draw: ["0 0", "0 1"], duration: 700, ease: "inOutQuad" }, 1350)
+      .add(chips, { opacity: [0, 1], y: [u * 5, 0], duration: 500, delay: stagger(120), ease: "outBack(1.4)" }, 1650)
+      .add($("brand"), { opacity: [0, 0.9], duration: 500 }, 1800);
+    // 점은 가격 자리에서 시작
+    const pr = $("price").getBoundingClientRect(), wr = $("wrap").getBoundingClientRect();
+    dots.forEach((d) => { d.style.left = pr.left - wr.left + pr.width / 2 + "px"; d.style.top = pr.top - wr.top + pr.height / 2 + "px"; d.style.opacity = "0"; });
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    if (tl) tl.seek(t * 1000);
+  };
+</script>
+</body>
+</html>

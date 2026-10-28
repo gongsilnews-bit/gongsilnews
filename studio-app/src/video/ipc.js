@@ -309,6 +309,7 @@ const send = (e, ch, ...a) => {
 function register(base) {
   baseUrl = base;
   ink.register();
+  ink.setControls(() => [mini, consoleWin, popMini, prompter]); // 판서 중에도 [녹화 끝내기]·프롬프터를 누를 수 있게 판 위로
   try { folders.ensure(); } catch {} // 07 녹화파일\강의영상 · 08 AI생성물\AI보이스 폴더
   server.configure(base);
 
@@ -428,6 +429,98 @@ function register(base) {
     const f = r.filePaths[0];
     return project.open(f.toLowerCase().endsWith(".gss") ? f : path.dirname(f));
   });
+  /* ── 가져오기 — 캡컷 프로젝트 · 클로드(AI)가 만든 공실마케팅 영상 JSON (2026-10-28 사장님) ── */
+  ipcMain.handle("video:import-list", () => {
+    const im = require("./import");
+    return { inboxDir: im.inboxDir(), inbox: im.inboxList(), capcut: im.capcutList() };
+  });
+  ipcMain.handle("video:import", (e, target) => require("./import").importAny(target, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:import-pick", async (e) => {
+    const im = require("./import");
+    const r = await dialog.showOpenDialog(winOf(e), { title: "가져올 설계도 고르기 (공실마케팅 영상 JSON · 캡컷 draft_content.json)", defaultPath: im.inboxDir(), properties: ["openFile"], filters: [{ name: "영상 설계도 (JSON)", extensions: ["json"] }] });
+    return r.canceled || !r.filePaths[0] ? "" : r.filePaths[0];
+  });
+  ipcMain.handle("video:import-open-inbox", () => shell.openPath(require("./import").inboxDir()));
+  /* 모션그래픽 틀 (2026-10-28 사장님) — 글자는 회원이 쓴 것(texts), 비면 공실 분석 자료. 공실 없이도 된다
+   *  사무소 이름은 공실 등록자(중개사무소) — 회원이 지우면(빈 글) 안 나온다 */
+  // 공실 등록자(중개사무소) — 사무소 이름 · 표시광고 정보 · 전화 · 공실 주소 (끝 화면 QR)
+  const motionOwner = async (vacancyId) => {
+    if (!vacancyId) return {};
+    try {
+      const l = await require("../naver-write").fetchListing(baseUrl, vacancyId);
+      const o = (l && l.owner) || {};
+      const agency = o.type === "agency";
+      const info = agency ? [[o.ceo && `대표 ${o.ceo}`, o.regNo && `등록번호 ${o.regNo}`].filter(Boolean).join(" · "), o.address ? `소재지 ${o.address}` : ""].filter(Boolean).join("\n") : "";
+      return { brand: agency ? o.name || "" : "", info, phone: String(o.phone || "").split(",")[0].trim(), link: (l && l.detailUrl) || "" };
+    } catch { return {}; }
+  };
+  const motionBrand = async (vacancyId) => (await motionOwner(vacancyId)).brand || "";
+  const motionData = async (o) => {
+    const motion = require("./motion");
+    const base = (o.vacancyId && motion.vacancyData(o.vacancyId)) || {};
+    const tx = o.texts || {};
+    const d = { ...base };
+    const own = await motionOwner(o.vacancyId);
+    Object.assign(d, own);
+    for (const k of ["place", "kind", "trade", "price", "brand", "info", "phone", "link", "cta"]) if (typeof tx[k] === "string") d[k] = tx[k];
+    if (Array.isArray(tx.chips)) d.chips = tx.chips.filter(Boolean).slice(0, 3);
+    // QR — 공실 주소(또는 회원이 쓴 주소)
+    if (d.link) { try { d.qr = await require("qrcode").toDataURL(d.link, { margin: 1, width: 480 }); } catch {} }
+    return d;
+  };
+  ipcMain.handle("video:motion-render", async (e, o = {}) => {
+    const motion = require("./motion");
+    const data = await motionData(o);
+    const out = path.join(o.dir || require("electron").app.getPath("temp"), "assets", "motion", `${o.template || "intro"}_${data.no || "인트로"}_${Date.now().toString(36)}.mp4`);
+    const file = await motion.render({ template: o.template || "intro", data: { ...data, accent: o.accent || "#E8590C" }, ratio: o.ratio || "9:16", out, font: o.font || "", bg: o.bg || "" }, (t) => send(e, "video:progress", t));
+    const [it] = await library.add([file], { source: "motion" });
+    return it;
+  });
+  // 장면에 입히기 — 클립 화면(bg·bgStart)을 배경으로, 클립 길이(seconds)만큼. 글자는 화면이 문장에서 뽑아 보낸다 (data)
+  ipcMain.handle("video:motion-scene", async (e, o = {}) => {
+    const motion = require("./motion");
+    const seconds = Math.max(1.5, Math.min(30, Number(o.seconds) || 4));
+    // overlay: 원본 영상은 그대로, 모션만 투명하게 (편집기에서 그래픽처럼 위에 얹는다)
+    const out = path.join(o.dir || require("electron").app.getPath("temp"), "assets", "motion", `${o.template}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}${o.overlay ? ".alpha.webm" : ".mp4"}`);
+    const file = await motion.render({ template: o.template, data: { ...(o.data || {}), seconds, accent: o.accent || "#E8590C" }, ratio: o.ratio || "9:16", out, font: o.font || "", bg: o.bg || "", bgStart: Number(o.bgStart) || 0, fps: 25, overlay: Boolean(o.overlay) }, (t) => send(e, "video:progress", t));
+    const [it] = await library.add([file], { source: "motion" });
+    return it;
+  });
+  // 고르기 창 — 틀·글꼴·배경(공실 사진) 목록 + 글자 처음 값 (공실이 있으면 그 정보)
+  ipcMain.handle("video:motion-options", async (_e, vacancyId) => {
+    const motion = require("./motion");
+    const data = vacancyId ? motion.vacancyData(vacancyId) : null;
+    const photos = ((data && data.photos) || []).map((f) => { media.allow(f); return { file: f, url: media.urlOf(f) }; });
+    const own = data ? await motionOwner(vacancyId) : {};
+    const texts = data ? { place: data.place, kind: data.kind, trade: data.trade, price: data.price, chips: data.chips, brand: own.brand || "", info: own.info || "", phone: own.phone || "", link: own.link || "" } : { place: "", kind: "", trade: "", price: "", chips: [], brand: "", info: "", phone: "", link: "" };
+    return { templates: Object.entries(motion.TEMPLATES).map(([id, t]) => ({ id, label: t.label, desc: t.desc, kind: t.kind })), fonts: motion.FONT_CHOICES.map(([family, label]) => ({ family, label })), photos, photo: (data && data.photo) || "", texts };
+  });
+  // 미리보기 — 작게·빨리 (같은 설정이면 다시 쓰기)
+  const motionPreviews = new Map();
+  ipcMain.handle("video:motion-preview", async (e, o = {}) => {
+    const motion = require("./motion");
+    const key = JSON.stringify([o.template, o.vacancyId, o.ratio, o.font, o.bg, o.accent, o.texts]);
+    const hit = motionPreviews.get(key);
+    if (hit && fs.existsSync(hit)) return { url: media.urlOf(hit) };
+    const data = await motionData(o);
+    const out = path.join(require("electron").app.getPath("temp"), "gs-motion-preview", `${require("crypto").createHash("sha1").update(key).digest("hex").slice(0, 16)}.mp4`);
+    await motion.render({ template: o.template || "intro", data: { ...data, accent: o.accent || "#E8590C" }, ratio: o.ratio || "9:16", out, font: o.font || "", bg: o.bg || "", preview: true }, () => {});
+    media.allow(out);
+    motionPreviews.set(key, out);
+    return { url: media.urlOf(out) };
+  });
+  // 배경을 내 PC 사진·영상으로
+  ipcMain.handle("video:motion-pick-bg", async (e) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "인트로 배경 — 사진이나 영상 고르기", properties: ["openFile"], filters: [{ name: "사진·영상", extensions: ["jpg", "jpeg", "png", "webp", "mp4", "mov", "m4v", "webm"] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const f = r.filePaths[0];
+    media.allow(f);
+    return { file: f, url: media.urlOf(f), kind: require("./ff").kindOf(f) };
+  });
+  ipcMain.handle("video:import-text", (e, text) => require("./import").importText(text, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-design-vacancies", () => require("./import").analyzedVacancies());
+  ipcMain.handle("video:ai-design", (e, o) => require("./import").aiDesign(o || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:import-guide", () => require("fs").readFileSync(require("path").join(__dirname, "claude-guide.md"), "utf8"));
   ipcMain.handle("video:project-save", (_e, p) => project.save(p));
   // .gss — 바로 묶기 · 예전 폴더 → .gss · 프로젝트 패키지 · 없어진 원본 다시 연결
   ipcMain.handle("video:project-flush", (_e, p) => project.flush(p));
@@ -858,8 +951,16 @@ function register(base) {
     server.call(`/api/studio/video/stock?q=${encodeURIComponent(q || "")}&type=${type || "photo"}&orientation=${orientation || ""}&page=${page || 1}`)
   );
   ipcMain.handle("video:stock-get", async (e, dir, item) => {
+    // 공실뉴스 드론 — PC에 받지 않는다. 쓸 때마다 서버에서 불러오는 자료로 넣는다 (2026-10-28 사장님)
+    if (item && item.source === "공실뉴스") {
+      const m = /^gongsil-d-([\w-]+)$/.exec(String(item.id));
+      if (!m) throw new Error("공실뉴스 자료를 찾지 못했어요.");
+      return library.putRemote({ id: m[1], kind: "drone", name: String(item.credit || "").replace(/^드론 · /, "공실뉴스 드론 · ").slice(0, 80), duration: Number(item.duration) || 0, width: Number(item.width) || 1920, height: Number(item.height) || 1080, credit: "공실뉴스 · 드론" });
+    }
     const ext = item.kind === "video" ? "mp4" : (/\.(png|webp)(\?|$)/i.exec(item.url) || [0, "jpg"])[1];
-    const file = path.join(dir || folders.received(item.kind === "video" ? "무료영상" : "무료사진"), `${String(item.id).replace(/[^\w-]/g, "")}.${ext}`);
+    // 공실뉴스 자료(드론 영상 등, R2) 는 따로 — 09 받은자료\공실뉴스자료 (2026-10-28)
+    const sub = item.source === "공실뉴스" ? "공실뉴스자료" : item.kind === "video" ? "무료영상" : "무료사진";
+    const file = path.join(dir || folders.received(sub), `${String(item.id).replace(/[^\w-]/g, "")}.${ext}`);
     if (!fs.existsSync(file)) {
       send(e, "video:progress", "무료 자료를 PC로 받는 중…");
       // 같은 자료를 받는 중이면 (⬇·★·고르기를 연달아 누름) 그 받기를 함께 기다린다

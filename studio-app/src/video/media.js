@@ -18,7 +18,9 @@ const isAllowed = (file) => {
   return allowedFiles.has(n) || allowedRoots.some((r) => n.startsWith(r));
 };
 
-const urlOf = (file) => (file ? `${SCHEME}://f/${Buffer.from(path.resolve(file), "utf8").toString("base64url")}` : "");
+// 공실뉴스 자료(gsremote:…) — 파일이 아니라 서버 자료. studio-media://r/<…> 로 받아 서명 주소에서 구간째 이어 준다 (remote.js)
+const isRemote = (p) => typeof p === "string" && p.startsWith("gsremote:");
+const urlOf = (file) => (!file ? "" : isRemote(file) ? `${SCHEME}://r/${Buffer.from(file, "utf8").toString("base64url")}` : `${SCHEME}://f/${Buffer.from(path.resolve(file), "utf8").toString("base64url")}`);
 const fileOf = (url) => {
   const m = /^studio-media:\/\/f\/([A-Za-z0-9_-]+)/.exec(String(url || ""));
   return m ? Buffer.from(m[1], "base64url").toString("utf8") : "";
@@ -32,7 +34,22 @@ function registerScheme() {
 }
 
 function handle() {
-  protocol.handle(SCHEME, (req) => {
+  protocol.handle(SCHEME, async (req) => {
+    const rm = /^studio-media:\/\/r\/([A-Za-z0-9_-]+)/.exec(req.url);
+    if (rm) {
+      const p = Buffer.from(rm[1], "base64url").toString("utf8");
+      if (!isRemote(p)) return new Response("not found", { status: 404 });
+      try {
+        const url = await require("./remote").urlFor(p);
+        const range = req.headers.get("range");
+        const r = await fetch(url, { headers: range ? { Range: range } : {} });
+        const headers = { "Content-Type": r.headers.get("content-type") || "video/mp4", "Accept-Ranges": "bytes", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-cache" };
+        for (const h of ["content-length", "content-range"]) if (r.headers.get(h)) headers[h === "content-length" ? "Content-Length" : "Content-Range"] = r.headers.get(h);
+        return new Response(r.body, { status: r.status, headers });
+      } catch {
+        return new Response("not found", { status: 404 });
+      }
+    }
     const file = fileOf(req.url);
     if (!file || !isAllowed(file) || !fs.existsSync(file)) return new Response("not found", { status: 404 });
     const size = fs.statSync(file).size;
@@ -56,4 +73,4 @@ function handle() {
   allowRoot(require("../studio-root").oldRoot()); // 예전 이름 폴더의 자료도 그대로 쓴다
 }
 
-module.exports = { registerScheme, handle, allow, allowRoot, urlOf, fileOf, isAllowed, SCHEME };
+module.exports = { registerScheme, handle, allow: (f) => (isRemote(f) ? undefined : allow(f)), allowRoot, urlOf, fileOf, isAllowed, SCHEME };

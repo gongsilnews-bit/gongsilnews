@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 인트로 ⑧ 줌 펀치 — 큰 글자가 한 단어씩 화면 가득 펀치처럼 들어오고, 마지막에 사진과 함께 정리 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #panel { position: absolute; inset: 0; background: var(--accent); }
+  .word { position: absolute; left: 0; right: 0; top: 50%; text-align: center; font-weight: 900; letter-spacing: -.04em; line-height: 1; transform-origin: center; white-space: nowrap; }
+  #final { position: absolute; left: var(--pad); right: var(--pad); text-align: left; }
+  #fk { font-size: calc(var(--u) * 9); font-weight: 900; text-shadow: 0 4px 20px rgba(0,0,0,.6); }
+  #fp { font-size: calc(var(--u) * 14); font-weight: 900; color: #fff; text-shadow: 0 4px 24px rgba(0,0,0,.6); }
+  #ftag { display: inline-block; background: var(--accent); font-size: calc(var(--u) * 4.4); font-weight: 900; padding: calc(var(--u) * .5) calc(var(--u) * 1.8); border-radius: calc(var(--u) * .6); }
+  #fc { font-size: calc(var(--u) * 4); font-weight: 700; margin-top: calc(var(--u) * 1.5); text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,.8) 100%); }
+  #brand { position: absolute; right: var(--pad); top: var(--pad); font-size: calc(var(--u) * 3.6); font-weight: 800; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div><div id="shade"></div><div id="panel"></div>
+  <div class="word" id="w0"></div><div class="word" id="w1"></div><div class="word" id="w2"></div>
+  <div id="final"><div id="ftag"></div><div id="fk"></div><div id="fp"></div><div id="fc"></div></div>
+  <div id="brand"></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outExpo, outCubic } = M;
+  const BEAT = [0.0, 0.45, 0.9]; // 단어 펀치 시각
+  const REVEAL = 1.4;
+  window.__SFX = [{ t: 0.0, name: "whoosh-short", vol: 0.7 }, { t: 0.45, name: "whoosh-short", vol: 0.7 }, { t: 0.9, name: "impact-bass-1", vol: 0.8 }, { t: REVEAL, name: "whoosh", vol: 0.6 }, { t: 1.9, name: "pop", vol: 0.6 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    const words = [D.place, D.kind, D.price];
+    words.forEach((w, i) => { $("w" + i).textContent = w || ""; $("w" + i).style.fontSize = u * (i === 2 ? 30 : 15) + "px"; $("w" + i).style.marginTop = -u * (i === 2 ? 15 : 8) + "px"; });
+    M.text("ftag", D.trade); M.text("fk", D.kind); M.text("fp", D.price); M.text("brand", D.brand);
+    $("fc").textContent = [D.place, ...(D.chips || []).slice(0, 2)].filter(Boolean).join(" · ");
+    $("final").style.bottom = (M.vertical ? u * 32 : u * 8) + "px";
+    // 긴 단어는 화면 폭에 맞게 줄인다
+    for (let i = 0; i < 3; i++) { const el = $("w" + i); const max = M.W * 0.9; if (el.scrollWidth > max) el.style.fontSize = parseFloat(el.style.fontSize) * max / el.scrollWidth + "px"; }
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    await M.bgSeek(t);
+    for (let i = 0; i < 3; i++) {
+      const a = BEAT[i], b = i < 2 ? BEAT[i + 1] : REVEAL;
+      const on = t >= a && t < b;
+      const k = outExpo(seg(t, a, a + 0.2));
+      $("w" + i).style.opacity = on ? "1" : "0";
+      $("w" + i).style.transform = `scale(${2.2 - 1.2 * k})`;
+      $("w" + i).style.color = i % 2 ? "#111" : "#fff";
+    }
+    $("panel").style.background = t < BEAT[1] ? "var(--accent)" : t < BEAT[2] ? "#fff" : t < REVEAL ? "var(--accent)" : "transparent";
+    $("panel").style.opacity = t < REVEAL ? "1" : String(1 - seg(t, REVEAL, REVEAL + 0.15));
+    $("bg").style.transform = `scale(${1.3 - 0.2 * outCubic(seg(t, REVEAL, 3))})`;
+    const f = outCubic(seg(t, REVEAL + 0.1, REVEAL + 0.5));
+    $("final").style.opacity = String(f); $("final").style.transform = `translateY(${(1 - f) * 50}px)`;
+    $("brand").style.opacity = String(seg(t, REVEAL, REVEAL + 0.4));
+  };
+</script>
+</body>
+</html>

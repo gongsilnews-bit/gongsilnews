@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 키네틱 강조 (Anime.js) — 클립 화면 위에 핵심 문구가 단어씩 튀어 들어오고 강조 단어에 형광 밑줄 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.12) 45%, rgba(0,0,0,.2) 100%); }
+  #line { position: absolute; left: var(--pad); right: var(--pad); display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.4) calc(var(--u) * 2); }
+  .w { position: relative; display: inline-block; font-size: calc(var(--u) * 12); font-weight: 900; letter-spacing: -.02em; line-height: 1.15; text-shadow: 0 calc(var(--u) * .4) calc(var(--u) * 2) rgba(0,0,0,.6); white-space: nowrap; }
+  .hl { color: #111; }
+  .hl::before { content: ""; position: absolute; left: -.08em; right: -.08em; top: .1em; bottom: .02em; background: var(--accent); z-index: -1; border-radius: .12em; transform-origin: left center; transform: scaleX(var(--k, 0)); }
+  .hl .tx { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="line"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline, stagger } = anime;
+  let tl = null;
+  window.__SFX = [{ t: 0.15, name: "whoosh-short", vol: 0.5 }, { t: 0.45, name: "pop", vol: 0.5 }, { t: 0.95, name: "sparkle", vol: 0.4 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    const hl = String(D.highlight || "");
+    const words = String(D.title || "").split(/\s+/).filter(Boolean).slice(0, 8);
+    const els = words.map((w) => {
+      const s = document.createElement("span"); s.className = "w" + (hl && w.includes(hl) ? " hl" : "");
+      const t = document.createElement("span"); t.className = "tx"; t.textContent = w; s.appendChild(t);
+      $("line").appendChild(s); return s;
+    });
+    $("line").style.top = (M.vertical ? M.H * 0.18 : M.H * 0.16) + "px";
+    if (!M.vertical) $("line").style.right = M.W * 0.25 + "px";
+    await p;
+    anime.utils.set(els, { opacity: 0 });
+    const hls = els.filter((e) => e.classList.contains("hl"));
+    const k = { v: 0 };
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outExpo" } })
+      .add($("bg"), { scale: [1.12, 1.02], duration: (D.seconds || 3) * 1000, ease: "linear" }, 0)
+      .add(els, { opacity: [0, 1], y: [u * 6, 0], rotate: [() => anime.utils.random(-8, 8), 0], scale: [0.7, 1], duration: 550, delay: stagger(110), ease: "outBack(1.7)" }, 150)
+      .add(k, { v: [0, 1], duration: 450, ease: "outQuart", onUpdate: () => hls.forEach((e) => e.style.setProperty("--k", String(k.v))) }, 150 + els.length * 110 + 150);
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => { await M.bgSeek(t); if (tl) tl.seek(Math.min(t * 1000, tl.duration)); };
+</script>
+</body>
+</html>

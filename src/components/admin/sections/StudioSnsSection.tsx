@@ -1,6 +1,6 @@
 "use client";
 
-import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
+import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
@@ -22,7 +22,7 @@ import { BusyDots, LoadingCover } from "./StudioLoading";
  */
 
 type MediaThumb = { kind: string; caption: string; thumb: string | null; real?: boolean };
-type MediaOp = { type: "order"; order: number[] } | { type: "remove"; index: number } | { type: "restore" } | { type: "ai"; prompt: string; ai?: unknown; style?: string; styleLabel?: string; stylePrompt?: string };
+
 type Analysis = {
   vacancyId: string;
   vacancy: { title?: string; priceText?: string; saleKind?: string; fields?: { label: string; value: string }[]; themes?: string[]; infra?: string };
@@ -78,7 +78,7 @@ const NEWS_CATEGORIES = [
 ];
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진" };
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
@@ -292,50 +292,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{t}</h3>
     </div>
   );
-  /* 분석 사진 정리 (2026-10-28 사장님) — [×] 빼기 · 끌어서 순서 · [+ AI 이미지] · 되살리기. 맨 앞 = 대표 사진 (실제 사진만) */
-  const [dragFrom, setDragFrom] = useState(-1);
-  const [mediaBusy, setMediaBusy] = useState("");
-  const [mediaErr, setMediaErr] = useState("");
-  const [aiAsk, setAiAsk] = useState<string | null>(null); // [+ AI 이미지] 무엇을 그릴지 (null = 닫힘)
-  const editMedia = async (op: MediaOp) => {
+  /* 분석 사진 정리 (2026-10-28 사장님) — 화면은 MediaEditGrid (뉴스칼럼과 같이 씀) */
+  const mediaOp = async (op: MediaOp) => {
     const b = bridge();
-    if (!result || !b?.vacancy.media) return setMediaErr("앱을 새 버전으로 다시 켜 주세요.");
-    setMediaErr("");
-    setMediaBusy(op.type === "ai" ? "AI가 그림을 그리는 중… (30초~1분)" : "저장하는 중…");
-    const off = op.type === "ai" ? b.vacancy.onProgress((t) => setMediaBusy(t)) : () => {};
-    try {
-      setResult(await b.vacancy.media(result.vacancyId, op));
-      if (op.type === "ai") setAiAsk(null);
-    } catch (e) {
-      setMediaErr((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
-    } finally {
-      off();
-      setMediaBusy("");
-    }
-  };
-  const moveMedia = (from: number, to: number) => {
-    if (!result || from === to || from < 0) return;
-    const order = result.media.map((_, i) => i);
-    const [x] = order.splice(from, 1);
-    order.splice(to, 0, x);
-    void editMedia({ type: "order", order });
-  };
-  // 그림 스타일 — 블로그 AI 이미지와 같은 목록: 기사용(앱) + 영상 편집기 스타일 (2026-10-28 사장님)
-  const [artStyles, setArtStyles] = useState<{ id: string; label: string }[]>([]);
-  const [aiStyle, setAiStyle] = useState("");
-  useEffect(() => {
-    if (aiAsk === null || artStyles.length || !result) return;
-    bridge()?.blog?.imageStyles?.(result.vacancyId).then((l) => { setArtStyles(l || []); setAiStyle((cur) => cur || l?.[0]?.id || ""); }).catch(() => {});
-  }, [aiAsk]); // eslint-disable-line react-hooks/exhaustive-deps
-  const styleCards = [
-    ...artStyles.map((st) => ({ key: st.id, label: st.label, desc: "기사용 스타일", bg: "linear-gradient(135deg,#1a3a6b,#3b6fb6)", thumb: ["news", "building", "area", "animation", "infographic"].includes(st.id) ? `/studio-styles/${st.id}.jpg` : "" })),
-    ...IMAGE_STYLES.map((st) => ({ key: `vs:${st.id}`, label: st.label, desc: st.desc, bg: st.bg, thumb: st.thumb || "" })),
-  ];
-  const styleOp = () => {
-    const vs = aiStyle.startsWith("vs:") ? IMAGE_STYLES.find((x) => x.id === aiStyle.slice(3)) : undefined;
-    if (vs) return { styleLabel: vs.label, stylePrompt: vs.prompt };
-    const a = artStyles.find((x) => x.id === aiStyle);
-    return a ? { style: a.id, styleLabel: a.label } : {};
+    if (!result || !b?.vacancy.media) throw new Error("앱을 새 버전으로 다시 켜 주세요.");
+    setResult(await b.vacancy.media(result.vacancyId, op));
   };
   // "무엇을 그릴까요?" 추천 — 공실 정보(종류·주변 역·동네·테마)로 바로 만든다, AI 안 씀 (2026-10-28 사장님)
   const aiIdeas = (r: Analysis): string[] => {
@@ -365,80 +326,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         상세 항목 {r.vacancy.fields?.length || 0}개{r.vacancy.themes?.length ? ` · ${r.vacancy.themes.join(" ")}` : ""}
         {r.vacancy.infra ? <div>주변환경: {r.vacancy.infra}</div> : null}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 14 }}>
-        {r.media.map((m, i) => (
-          <figure key={i} className="gs-media-card" draggable={!mediaBusy} onDragStart={() => setDragFrom(i)} onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); moveMedia(dragFrom, i); setDragFrom(-1); }} title="끌어서 순서를 바꿔요 · 맨 앞이 대표 사진"
-            style={{ margin: 0, border: `${dragFrom === i ? 2 : 1}px solid ${dragFrom === i ? "#3b82f6" : theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa", cursor: mediaBusy ? "wait" : "grab", opacity: mediaBusy ? 0.7 : 1 }}>
-            <div style={{ position: "relative", aspectRatio: "4 / 3", background: "#e5e7eb" }}>
-              {m.thumb && <img src={m.thumb} alt={m.caption} draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-              <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: m.kind === "ai" ? "#7048e8" : m.kind === "photo" ? "rgba(0,0,0,0.6)" : "#1a3a6b", color: "#fff" }}>{i === 0 ? "대표 · " : ""}{KIND_LABEL[m.kind] || m.kind}</span>
-              <button className="gs-media-x" title="이 사진 빼기 (아래에서 되살릴 수 있어요)" disabled={Boolean(mediaBusy)} onClick={() => void editMedia({ type: "remove", index: i })}
-                style={{ position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: "50%", border: 0, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 15, fontWeight: 800, lineHeight: 1, cursor: "pointer" }}>×</button>
-            </div>
-            <figcaption style={{ padding: "8px 10px", fontSize: 12, lineHeight: 1.5, color: theme.textSecondary }}>{m.caption}</figcaption>
-          </figure>
-        ))}
-        {/* + AI 이미지 만들기 */}
-        <div style={{ border: `2px dashed ${theme.border}`, borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, minHeight: 180 }}>
-          <button disabled={Boolean(mediaBusy)} onClick={() => setAiAsk(aiSeed(r))}
-            style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: "#7048e8", fontSize: 14, fontWeight: 800 }}>＋ AI 이미지 만들기</button>
-        </div>
-      </div>
-      {/* AI 이미지 만들기 — 팝업 (2026-10-28 사장님) */}
-      {aiAsk !== null && (
-        <div onClick={() => !mediaBusy && setAiAsk(null)} style={{ position: "fixed", inset: 0, zIndex: 10002, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="AI 이미지 만들기"
-            style={{ width: 720, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh - 48px)", overflowY: "auto", background: theme.cardBg, borderRadius: 16, padding: "22px 24px", boxShadow: "0 16px 48px rgba(0,0,0,0.25)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: theme.textPrimary }}>AI 이미지 만들기</div>
-              <button onClick={() => setAiAsk(null)} disabled={Boolean(mediaBusy)} aria-label="닫기" style={{ border: 0, background: "transparent", color: theme.textSecondary, fontSize: 18, cursor: "pointer" }}>✕</button>
-            </div>
-            <div style={{ marginTop: 4, fontSize: 12.5, color: theme.textSecondary }}>만든 그림은 사진 모음 끝에 "AI 생성" 표시로 붙어요. 대표 사진(맨 앞)은 실제 사진만 돼요.</div>
-            <div style={{ marginTop: 16, fontSize: 13.5, fontWeight: 800, color: theme.textPrimary }}>그림 스타일</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 6, marginTop: 8 }}>
-              {styleCards.map((c) => {
-                const on = aiStyle === c.key;
-                return (
-                  <button key={c.key} type="button" onClick={() => setAiStyle(c.key)} title={c.desc}
-                    style={{ position: "relative", height: 56, borderRadius: 8, border: 0, outline: on ? "3px solid #7048e8" : "none", outlineOffset: -3, background: c.thumb ? `center / cover no-repeat url(${c.thumb}), ${c.bg}` : c.bg, cursor: "pointer", overflow: "hidden" }}>
-                    <span style={{ position: "absolute", inset: 0, background: on ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.45)" }} />
-                    <span style={{ position: "relative", color: "#fff", fontSize: 12.5, fontWeight: 800, textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{on ? "✓ " : ""}{c.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ marginTop: 16, fontSize: 13.5, fontWeight: 800, color: theme.textPrimary }}>무엇을 그릴까요?</div>
-            {result && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                {aiIdeas(result).map((x) => (
-                  <button key={x} type="button" onClick={() => setAiAsk(x)} title="누르면 아래 칸에 넣어요 (고칠 수 있어요)"
-                    style={{ padding: "6px 11px", borderRadius: 999, border: `1px solid ${aiAsk === x ? "#7048e8" : theme.border}`, background: aiAsk === x ? "rgba(112,72,232,0.1)" : "transparent", color: aiAsk === x ? "#7048e8" : theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
-                    {x}
-                  </button>
-                ))}
-              </div>
-            )}
-            <textarea value={aiAsk} onChange={(e) => setAiAsk(e.target.value)} rows={3}
-              style={{ marginTop: 8, width: "100%", boxSizing: "border-box", fontSize: 14, padding: 10, borderRadius: 10, border: "2px solid #3b82f6", resize: "vertical", background: theme.cardBg, color: theme.textPrimary }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-              {mediaBusy && <span style={{ fontSize: 13, fontWeight: 800, color: "#7048e8" }}>{mediaBusy}</span>}
-              {mediaErr && <span style={{ fontSize: 13, fontWeight: 800, color: "#c92a2a" }}>{mediaErr}</span>}
-              <button onClick={() => setAiAsk(null)} disabled={Boolean(mediaBusy)} style={{ marginLeft: "auto", height: 38, padding: "0 18px", borderRadius: 999, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textPrimary, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>취소</button>
-              <button onClick={() => void editMedia({ type: "ai", prompt: aiAsk, ...styleOp() })} disabled={Boolean(mediaBusy) || !aiAsk.trim()}
-                style={{ height: 38, padding: "0 22px", borderRadius: 999, border: 0, background: "#7048e8", color: "#fff", fontSize: 13.5, fontWeight: 800, cursor: mediaBusy ? "wait" : "pointer", opacity: mediaBusy || !aiAsk.trim() ? 0.6 : 1 }}>{mediaBusy ? "만드는 중…" : "만들기"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <style>{`.gs-media-x{opacity:0;transition:opacity .15s}.gs-media-card:hover .gs-media-x{opacity:1}`}</style>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, fontSize: 12.5, color: theme.textSecondary, flexWrap: "wrap" }}>
-        <span>끌어서 순서를 바꿔요 · 맨 앞이 대표 사진(실제 사진만) · 정리한 사진은 다음에 쓰는 기사·블로그·SNS부터 써요</span>
-        {(r.hiddenCount || 0) > 0 && <button disabled={Boolean(mediaBusy)} onClick={() => void editMedia({ type: "restore" })}
-          style={{ border: 0, background: "transparent", color: "#1a73e8", fontSize: 12.5, fontWeight: 800, cursor: "pointer", padding: 0 }}>뺀 사진 {r.hiddenCount}장 되살리기</button>}
-        {mediaBusy && <span style={{ fontWeight: 800, color: "#1a3a6b" }}>{mediaBusy}</span>}
-        {mediaErr && <span style={{ fontWeight: 800, color: "#c92a2a" }}>{mediaErr}</span>}
-      </div>
+      <MediaEditGrid theme={theme} items={r.media} hiddenCount={r.hiddenCount || 0} styleKey={r.vacancyId} ideas={aiIdeas(r)} seed={aiSeed(r)} onOp={mediaOp} />
       {r.failures.length > 0 && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>못 가져온 것: {r.failures.join(" / ")}</div>}
     </>
   );

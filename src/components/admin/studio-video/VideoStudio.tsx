@@ -166,7 +166,7 @@ export default function VideoStudio() {
               <div style={{ flex: 1, minHeight: 0, display: "flex", maxWidth: 760 }}><MyVoicePane selected={false} onPick={() => {}} /></div>
             </div>
           ) : (
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} /></div>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} onImported={(p) => take(p)} /></div>
           )}
         </div>
       )}

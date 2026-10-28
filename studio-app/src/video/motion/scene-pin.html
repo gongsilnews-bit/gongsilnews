@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 위치 핀 (Anime.js) — 클립 화면 위에 핀이 떨어지고 물결이 퍼지며, 말풍선 카드에 장소·거리가 나온다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #111; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: rgba(0,0,0,.18); }
+  #spot { position: absolute; }
+  .ring { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 14); height: calc(var(--u) * 14); margin: calc(var(--u) * -7) 0 0 calc(var(--u) * -7); border-radius: 50%; border: calc(var(--u) * .7) solid var(--accent); opacity: 0; }
+  #pin { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 13); height: calc(var(--u) * 13); margin: calc(var(--u) * -16) 0 0 calc(var(--u) * -6.5); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 3) rgba(0,0,0,.4); }
+  #pin::after { content: ""; position: absolute; inset: 30%; border-radius: 50%; background: #fff; }
+  #bubble { position: absolute; left: var(--pad); right: var(--pad); background: #fff; border-radius: calc(var(--u) * 2.2); padding: calc(var(--u) * 2.4) calc(var(--u) * 3); box-shadow: 0 calc(var(--u) * 1.4) calc(var(--u) * 4) rgba(0,0,0,.35); display: flex; align-items: center; gap: calc(var(--u) * 2.4); }
+  #ico { width: calc(var(--u) * 8); height: calc(var(--u) * 8); border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 4.4); font-weight: 900; flex-shrink: 0; }
+  #name { font-size: calc(var(--u) * 8.5); font-weight: 900; line-height: 1.15; }
+  #sub { font-size: calc(var(--u) * 5.2); font-weight: 700; color: var(--accent); margin-top: calc(var(--u) * .4); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="spot"><div class="ring" id="r1"></div><div class="ring" id="r2"></div><div id="pin"></div></div><div id="bubble"><div id="ico">●</div><div><div id="name"></div><div id="sub"></div></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline } = anime;
+  let tl = null;
+  window.__SFX = [{ t: 0.2, name: "whoosh-short", vol: 0.5 }, { t: 0.55, name: "pop", vol: 0.7 }, { t: 0.9, name: "ping", vol: 0.5 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    $("name").textContent = D.title || ""; $("sub").textContent = D.sub || "";
+    if (!D.sub) $("sub").style.display = "none";
+    const sx = M.W * 0.5, sy = M.vertical ? M.H * 0.3 : M.H * 0.36;
+    Object.assign($("spot").style, { left: sx + "px", top: sy + "px" });
+    $("bubble").style.top = sy + u * 10 + "px";
+    if (!M.vertical) { $("bubble").style.left = M.W * 0.28 + "px"; $("bubble").style.right = M.W * 0.28 + "px"; }
+    await p;
+    anime.utils.set([$("pin"), $("bubble")], { opacity: 0 });
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outExpo" } })
+      .add($("bg"), { scale: [1.04, 1.16], duration: (D.seconds || 3) * 1000, ease: "linear" }, 0)
+      .add($("pin"), { opacity: [0, 1], translateY: [-u * 40, 0], duration: 600, ease: "outBounce" }, 150)
+      .add($("r1"), { opacity: [0.9, 0], scale: [0.2, 2.4], duration: 1200, ease: "outCubic" }, 650)
+      .add($("r2"), { opacity: [0.9, 0], scale: [0.2, 2.4], duration: 1200, ease: "outCubic" }, 950)
+      .add($("bubble"), { opacity: [0, 1], y: [u * 6, 0], scale: [0.9, 1], duration: 600, ease: "outBack(1.6)" }, 800);
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => { await M.bgSeek(t); if (tl) tl.seek(Math.min(t * 1000, tl.duration)); };
+</script>
+</body>
+</html>

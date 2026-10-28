@@ -3,7 +3,7 @@
 // 텍스트로 영상 만들기 — 브루와 같은 3단계: ① 스타일 고르기 ② 대본 작성 ③ 영상 꾸미기 → 확인 → 자동 만들기
 // 대본은 회원 AI(기본 글쓰기 AI), 길이는 글자 수 (사장님 결정). 화면 자료: 공실 사진 → 무료 자료 → AI 그림
 import React, { useEffect, useMemo, useRef, useState , useCallback } from "react";
-import type { LibItem, Project, Ratio, Fill, Clip, Layer } from "./types";
+import type { LibItem, Project, Ratio, Fill, Clip, Layer, StockItem } from "./types";
 import { RATIO_LABEL, datedName, errText, uid, videoBridge } from "./types";
 import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
 import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
@@ -825,16 +825,30 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       }
       // 화면 검색어가 없는 문장은 회원 AI 에게 한 번에 묻는다
       // 문단별 화면 요청 — 그 씬 클립은 요청을 붙여 검색어를 새로 (무료 영상·사진에서 찾기)
-      const reqOf = new Map<string, { req: string; kind: "video" | "photo" | "ai" }>();
+      //  "공실뉴스 드론"(드론) — AI 에 묻지 않고 공실뉴스 드론 영상에서 바로 (2026-10-28 사장님). "공실뉴스 드론 역삼동"처럼 동네를 붙이면 그곳
+      const reqOf = new Map<string, { req: string; kind: "video" | "photo" | "ai" | "drone" }>();
       for (const c of clips) {
         const r = (paraReq[paraOf.get(c.id) ?? -1] || "").trim();
         if (!r || c.visual) continue;
-        reqOf.set(c.id, { req: r, kind: /AI\s*(그림|이미지|사진)/i.test(r) ? "ai" : /사진|이미지/.test(r) && !/영상|동영상|비디오/.test(r) ? "photo" : "video" });
+        reqOf.set(c.id, { req: r, kind: /드론/.test(r) ? "drone" : /AI\s*(그림|이미지|사진)/i.test(r) ? "ai" : /사진|이미지/.test(r) && !/영상|동영상|비디오/.test(r) ? "photo" : "video" });
       }
+      // 드론 — 요청에 쓴 동네 · 없으면 이 공실의 동네 · 그래도 없으면 전체에서 (같은 영상은 되도록 한 번만)
+      const droneLists = new Map<string, StockItem[]>();
+      const vacDong = src === "vacancy" ? (/[가-힣]+\d*동(?=[\s"]|$)/.exec(JSON.stringify(vacInfo?.vacancy || "")) || [""])[0] : "";
+      const droneFor = async (req: string): Promise<StockItem | null> => {
+        const words = req.replace(/공실뉴스|드론|영상|화면|으로|넣어\s*줘|넣어|해\s*줘|사용|써\s*줘/g, " ").split(/\s+/).filter((w) => w.length >= 2);
+        for (const q of [words.join(" "), vacDong, ""].filter((x, k, a) => a.indexOf(x) === k)) {
+          if (!droneLists.has(q)) droneLists.set(q, (await b.stock.search(q, "drone", "").catch(() => ({ success: false, items: [] as StockItem[] }))).items || []);
+          const list = droneLists.get(q)!;
+          const pick = list.find((x) => !used.has(x.id)) || (q === "" ? list[Math.floor(Math.random() * list.length)] : null);
+          if (pick) return pick;
+        }
+        return null;
+      };
       if (reqOf.size && !halt()) {
         setGen({ title: `${writer}가 씬별 화면 요청에 맞는 화면을 고르는 중…`, frac: 0.11 });
         try {
-          const rc = clips.filter((c) => reqOf.has(c.id));
+          const rc = clips.filter((c) => reqOf.has(c.id) && reqOf.get(c.id)!.kind !== "drone");
           const hs = await b.ai.scenes(rc.map((c) => `[화면 요청: ${reqOf.get(c.id)!.req}] ${c.text}`), { ai: aiUse });
           rc.forEach((c, i) => { const k = reqOf.get(c.id)!.kind; c.hint = { ...(hs[i] || {}), kind: k === "photo" ? "image" : "video" }; });
         } catch {}
@@ -859,6 +873,18 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         }
         setGen({ title: `화면 자료를 고르는 중… (${i + 1}/${clips.length})`, frac: 0.15 + (i / clips.length) * 0.45 });
         const rq = reqOf.get(c.id);
+        if (rq?.kind === "drone") { // 요청: 공실뉴스 드론 — PC에 받지 않고 쓸 때마다 불러오는 자료
+          setGen({ title: `공실뉴스 드론 영상을 고르는 중… (${i + 1}/${clips.length})`, frac: 0.15 + (i / clips.length) * 0.45 });
+          try {
+            const pick = await droneFor(rq.req);
+            if (pick) {
+              used.add(pick.id);
+              const it = await b.stock.get(p.dir, pick);
+              c.visual = { asset: await addAsset(it), s: 0 };
+              continue;
+            }
+          } catch {}
+        }
         if (rq?.kind === "ai") { // 요청: AI 그림
           setGen({ title: `${imager}가 그림을 그리는 중… (${i + 1}/${clips.length})`, detail: "한 장에 30초~1분 걸려요", frac: 0.15 + (i / clips.length) * 0.45 });
           try {

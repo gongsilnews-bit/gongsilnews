@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 강조 · 막대 그래프 — 문장 속 숫자들로 막대가 차오르고 숫자가 올라간다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(5,8,16,.6); }
+  #chart { position: absolute; left: var(--pad); right: var(--pad); display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 4); height: calc(var(--u) * 50); }
+  .col { display: flex; flex-direction: column; align-items: center; width: calc(var(--u) * 16); }
+  .v { font-size: calc(var(--u) * 6); font-weight: 900; margin-bottom: calc(var(--u) * 1); white-space: nowrap; }
+  .bar { width: 100%; background: var(--accent); border-radius: calc(var(--u) * 1) calc(var(--u) * 1) 0 0; transform-origin: bottom; }
+  .l { font-size: calc(var(--u) * 3.6); font-weight: 700; margin-top: calc(var(--u) * 1); opacity: .9; white-space: nowrap; }
+  #title { position: absolute; left: var(--pad); right: var(--pad); text-align: center; font-size: calc(var(--u) * 6); font-weight: 900; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="title"></div><div id="chart"></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "whoosh-short", vol: 0.5 }, { t: 0.4, name: "typing", vol: 0.3 }, { t: 1.2, name: "ping", vol: 0.5 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const items = (D.items || []).slice(0, 4); const max = Math.max(...items.map((x) => parseFloat(String(x.v).replace(/,/g, "")) || 0), 1);
+    const H = u * 34; $("title").textContent = D.label || "";
+    const cols = items.map((x) => { const c = document.createElement("div"); c.className = "col"; const n = parseFloat(String(x.v).replace(/,/g, "")) || 0;
+      c.innerHTML = `<div class="v"><span>${x.v}</span>${x.unit || ""}</div><div class="bar" style="height:${Math.max(u * 3, H * n / max)}px"></div><div class="l">${x.l || ""}</div>`; $("chart").appendChild(c); return { c, n, v: c.querySelector(".v span"), b: c.querySelector(".bar"), raw: String(x.v) }; });
+    $("title").style.top = (V ? M.H * 0.14 : M.H * 0.1) + "px"; $("chart").style.top = (V ? M.H * 0.18 : M.H * 0.18) + "px";
+    S.hide($("title"), cols.map((x) => x.c));
+    const k = { v: 0 };
+    tl.add($("title"), { opacity: [0, 1], duration: 400 }, 100)
+      .add(cols.map((x) => x.c), { opacity: [0, 1], duration: 300, delay: stagger(120) }, 250)
+      .add(cols.map((x) => x.b), { scaleY: [0, 1], duration: 900, delay: stagger(120), ease: "outQuart" }, 300)
+      .add(k, { v: [0, 1], duration: 900, ease: "outQuart", onUpdate: () => cols.forEach((x) => { const dec = (x.raw.split(".")[1] || "").length; x.v.textContent = (x.n * k.v).toFixed(dec); }) }, 300);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

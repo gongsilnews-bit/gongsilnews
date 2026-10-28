@@ -100,6 +100,7 @@ function close() {
   } catch {}
   if (timer) clearInterval(timer);
   timer = null;
+  passLoop(false);
   state.drawing = false;
   state.board = "";
   if (alive(bar)) bar.close();
@@ -175,17 +176,59 @@ function barTall(on) {
 }
 let barBase = null;
 
+// 판서 판을 맨 위로 올리면 녹화 막대([녹화 끝])·프롬프터가 그 밑에 깔려 눌러도 판서가 된다 (2026-10-28 사장님)
+//  → 판서를 켤 때마다 그 창들을 판 위로 다시 올린다 (둘 다 녹화에 안 찍히는 창)
+//  조정실(녹화하기 창)·작은 창은 한 단계 낮은 "floating" 이라 moveTop 만으로는 판 위로 못 온다 → 판과 같은 단계로 올린다
+let controls = () => [];
+const setControls = (fn) => (controls = fn);
+// 오른쪽 [화면캡처·녹화] 세로 막대도 — 판서 중에 녹화 끝·캡처 단추가 그대로 눌리게 (snap.js 창 제목)
+const CONTROL_TITLES = ["화면캡처·녹화"];
+const controlWins = () => {
+  const byTitle = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && CONTROL_TITLES.includes(w.getTitle()));
+  return [...controls(), ...byTitle, bar].filter((w) => w && w !== ink && !w.isDestroyed() && w.isVisible());
+};
+function raiseControls() {
+  for (const w of controlWins()) {
+    if (w === bar) continue;
+    w.setAlwaysOnTop(true, "screen-saver");
+    w.moveTop();
+  }
+}
+// 판서 중 마우스가 막대(오른쪽 캡처·녹화, 아래 판서 도구, 녹화 창, 프롬프터) 위에 오면 — 판이 클릭을 그대로 흘려보낸다
+//  (2026-10-28 사장님: 무엇을 고르고 있든 막대 위에서는 보통 마우스로). 창 순서와 상관없이 된다
+let passTimer = null;
+let passing = false;
+function passLoop(on) {
+  if (passTimer) clearInterval(passTimer);
+  passTimer = null;
+  passing = false;
+  if (!on) return;
+  passTimer = setInterval(() => {
+    if (!alive(ink) || !state.drawing) return passLoop(false);
+    const pt = screen.getCursorScreenPoint();
+    const over = controlWins().some((w) => {
+      const b = w.getBounds();
+      return pt.x >= b.x && pt.x < b.x + b.width && pt.y >= b.y && pt.y < b.y + b.height;
+    });
+    if (over === passing) return;
+    passing = over;
+    ink.setIgnoreMouseEvents(over);
+  }, 30);
+}
+
 /** F9 — 판서 켜기·끄기. 끌 때 칠판도 걷는다 (그린 것은 남겨 둠). 도구 막대는 녹화 내내 떠 있다 */
 function toggle(on) {
   if (!alive(ink)) return false;
   state.drawing = typeof on === "boolean" ? on : !state.drawing;
   if (!state.drawing) state.board = "";
   ink.setIgnoreMouseEvents(!state.drawing);
+  passLoop(state.drawing);
   if (state.drawing) {
     ink.moveTop();
     ink.focus();
     openBar();
     if (alive(bar)) bar.moveTop();
+    raiseControls();
   }
   send("ink:state", state);
   return state.drawing;
@@ -220,4 +263,4 @@ function register() {
   app.on("will-quit", close);
 }
 
-module.exports = { register, open, close, toggle, f9, getPrefs, setPrefs, isOpen: () => alive(ink), isDrawing: () => state.drawing };
+module.exports = { register, setControls, open, close, toggle, f9, getPrefs, setPrefs, isOpen: () => alive(ink), isDrawing: () => state.drawing };

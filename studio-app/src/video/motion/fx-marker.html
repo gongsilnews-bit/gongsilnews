@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 강조 · 형광펜 — 문장이 나오고 강조 낱말에 형광펜이 쓱 칠해지고 물결 밑줄 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.35); }
+  #t { position: absolute; left: var(--pad); right: var(--pad); font-size: calc(var(--u) * 9.5); font-weight: 900; line-height: 1.35; }
+  #t .hl { color: #111; background: linear-gradient(transparent 12%, var(--accent) 12%, var(--accent) 92%, transparent 92%) no-repeat; background-size: var(--m, 0%) 100%; padding: 0 .1em; }
+  svg#wave { position: absolute; left: var(--pad); width: calc(100% - var(--pad) * 2); height: calc(var(--u) * 6); overflow: visible; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="t"></div><svg id="wave" viewBox="0 0 1000 40" preserveAspectRatio="none"><path id="wp" d="M0 20 Q 50 0 100 20 T 200 20 T 300 20 T 400 20 T 500 20 T 600 20 T 700 20 T 800 20 T 900 20 T 1000 20" fill="none" stroke-width="7" stroke-linecap="round"></path></svg></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.1, name: "whoosh-short", vol: 0.5 }, { t: 0.65, name: "whoosh", vol: 0.4 }, { t: 1.0, name: "ping", vol: 0.4 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const ws = S.words($("t"), D.title, D.highlight || (D.title.split(/\s+/).sort((a, b) => b.length - a.length)[0] || ""));
+    $("t").style.top = (V ? M.H * 0.2 : M.H * 0.24) + "px";
+    $("wp").setAttribute("stroke", getComputedStyle($("stage")).getPropertyValue("--accent").trim() || "#FFD400");
+    const tb = $("t").getBoundingClientRect(), sb = $("stage").getBoundingClientRect(); $("wave").style.top = tb.bottom - sb.top + u * 1 + "px";
+    S.hide(ws);
+    const hls = ws.filter((w) => w.classList.contains("hl")); const m = { v: 0 };
+    const [dw] = anime.svg.createDrawable($("wp")); anime.utils.set(dw, { draw: "0 0" });
+    tl.add(ws, { opacity: [0, 1], y: [u * 3, 0], duration: 400, delay: stagger(80) }, 100)
+      .add(m, { v: [0, 100], duration: 500, ease: "outQuad", onUpdate: () => hls.forEach((h) => h.style.setProperty("--m", m.v + "%")) }, 650)
+      .add(dw, { draw: ["0 0", "0 1"], duration: 700, ease: "inOutQuad" }, 1000);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

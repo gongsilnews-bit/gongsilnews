@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 장면 · 가격 강조 (Anime.js) — 클립 화면 위 가운데에 거래 딱지와 큰 가격이 박히고 반짝 테두리가 돈다 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,.15), rgba(0,0,0,.65) 80%); }
+  #box { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; padding: calc(var(--u) * 3) calc(var(--u) * 6); border-radius: calc(var(--u) * 3); background: rgba(10,12,20,.72); border: calc(var(--u) * .6) solid var(--accent); }
+  #trade { display: inline-block; font-size: calc(var(--u) * 5); font-weight: 900; background: var(--accent); padding: calc(var(--u) * .4) calc(var(--u) * 2.2); border-radius: 99px; }
+  #price { font-size: calc(var(--u) * 19); font-weight: 900; letter-spacing: -.04em; line-height: 1.05; margin-top: calc(var(--u) * 1.4); white-space: nowrap; }
+  #price .ch { display: inline-block; }
+  #sub { font-size: calc(var(--u) * 4); font-weight: 700; opacity: .9; margin-top: calc(var(--u) * .8); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="box"><div id="trade"></div><div id="price"></div><div id="sub"></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script>
+  const { $ } = M;
+  const { createTimeline, stagger } = anime;
+  let tl = null;
+  window.__SFX = [{ t: 0.15, name: "whoosh", vol: 0.5 }, { t: 0.55, name: "impact-bass-1", vol: 0.8 }, { t: 0.75, name: "sparkle", vol: 0.5 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D, u = M.u;
+    await M.bg($("bg"));
+    M.text("trade", D.trade); M.text("sub", D.sub);
+    $("price").textContent = "";
+    for (const c of String(D.price || "")) { const s = document.createElement("span"); s.className = "ch"; s.textContent = c === " " ? " " : c; $("price").appendChild(s); }
+    $("box").style.top = (M.vertical ? M.H * 0.2 : M.H * 0.2) + "px";
+    await p;
+    const chs = $("price").querySelectorAll(".ch");
+    anime.utils.set([$("box"), $("trade"), ...chs, $("sub")], { opacity: 0 });
+    tl = createTimeline({ autoplay: false, defaults: { ease: "outExpo" } })
+      .add($("bg"), { scale: [1.15, 1.04], duration: (D.seconds || 3) * 1000, ease: "linear" }, 0)
+      .add($("box"), { opacity: [0, 1], scale: [0.7, 1], duration: 500, ease: "outBack(1.4)" }, 150)
+      .add($("trade"), { opacity: [0, 1], y: [-u * 4, 0], duration: 400 }, 350)
+      .add(chs, { opacity: [0, 1], scale: [2.2, 1], duration: 450, delay: stagger(60), ease: "outQuart" }, 450)
+      .add($("box"), { scale: [1, 1.05, 1], duration: 400, ease: "outQuad" }, 600)
+      .add($("sub"), { opacity: [0, 0.9], duration: 500 }, 900);
+    await window.__seek(0);
+  };
+  window.__seek = async (t) => { await M.bgSeek(t); if (tl) tl.seek(Math.min(t * 1000, tl.duration)); };
+</script>
+</body>
+</html>

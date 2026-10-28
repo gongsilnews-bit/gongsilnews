@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 강조 · 폭발 말풍선 — 만화처럼 톱니 모양 말풍선이 쾅 터지며 강조 낱말 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #fff; }
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #shade { position: absolute; inset: 0; }
+  .hl { color: var(--accent); }
+  #shade { background: rgba(0,0,0,.2); }
+  #wrap { position: absolute; left: 50%; width: calc(var(--u) * 70); height: calc(var(--u) * 52); margin-left: calc(var(--u) * -35); }
+  #wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #t { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #111; font-size: calc(var(--u) * 9); font-weight: 900; line-height: 1.1; padding: 0 calc(var(--u) * 10); transform: rotate(-6deg); }
+  .rays { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 1.2); height: calc(var(--u) * 10); background: #fff; transform-origin: 50% 0; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="shade"></div><div id="wrap"><svg viewBox="0 0 200 150"><polygon id="star" stroke="#111" stroke-width="4"></polygon></svg><div id="t"></div></div></div>
+<script src="vendor/anime.umd.min.js"></script>
+<script src="base.js"></script>
+<script src="scene-common.js"></script>
+<script>
+  const { $ } = M;
+  const { stagger } = anime;
+  window.__SFX = [{ t: 0.05, name: "pop", vol: 0.9 }, { t: 0.15, name: "impact-bass-1", vol: 0.5 }, { t: 0.4, name: "sparkle", vol: 0.5 }];
+  window.__setup = async (data) => {
+    await S.start(data); const tl = S.tl; const D = M.D, u = M.u, V = M.vertical;
+    const pts = []; for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2, rr = i % 2 ? 52 : 74; pts.push(`${100 + Math.cos(a) * rr * 1.25},${75 + Math.sin(a) * rr * .9}`); }
+    $("star").setAttribute("points", pts.join(" ")); $("star").setAttribute("fill", getComputedStyle($("stage")).getPropertyValue("--accent").trim() || "#FFD400");
+    $("t").textContent = D.highlight || D.title.split(/\s+/).slice(0, 3).join(" ");
+    $("wrap").style.top = (V ? M.H * 0.16 : M.H * 0.2) + "px";
+    S.hide($("wrap"));
+    tl.add($("wrap"), { opacity: [0, 1], scale: [0, 1.15, 1], rotate: [-25, 0], duration: 600, ease: "outBack(2)" }, 50)
+      .add($("wrap"), { scale: [1, 1.04, 1], duration: 600, ease: "inOutSine", loop: 3 }, 700);
+    await window.__seek(0);
+  };
+</script>
+</body>
+</html>

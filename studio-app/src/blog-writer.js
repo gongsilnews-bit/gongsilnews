@@ -148,7 +148,7 @@ function forWeb(d, doc = "blog") {
 }
 
 function get(vacancyId, doc = "blog") {
-  try { if (!isColumn(vacancyId) && !isSim(vacancyId)) syncAnalysisMedia(vacancyId); } catch {} // 분석에서 새로 넣은 사진 (이미 쓴 글에도)
+  try { if (!isSim(vacancyId)) syncAnalysisMedia(vacancyId); } catch {} // 분석(칼럼은 기사 화면)에서 새로 넣은 사진 (이미 쓴 글에도)
   const d = readJson(docFile(vacancyId, doc));
   // 사진 목록이 없는 예전 글이면 분석 사진(등록 사진 전부 + 캡처 3장, 첫 장 대표)으로 채워 둔다
   if (d && !Array.isArray(d.media)) {
@@ -201,7 +201,7 @@ function saveWritten(vacancyId, doc, parsed, extra) {
   fs.writeFileSync(docFile(vacancyId, doc), JSON.stringify(d, null, 2));
   log.info(`[${DOC_NAME[doc]}] ${vacancyId} 문단 ${paragraphs.length}개`);
   // 다시 써도 분석에서 넣은 사진(AI 사진 등)이 빠지지 않게 (2026-10-28 사장님: 블로그에 AI 사진이 안 들어갔다)
-  if (!isColumn(vacancyId) && !isSim(vacancyId) && prev) {
+  if (!isSim(vacancyId) && prev) {
     try { syncAnalysisMedia(vacancyId); return forWeb(readJson(docFile(vacancyId, doc)), doc); } catch {}
   }
   return forWeb(d, doc);
@@ -497,8 +497,13 @@ function seenOf(d, an, files = (d.media || []).map((m) => m.file)) {
   const old = (an.media || []).filter((m) => m.kind !== "ai" && (() => { try { return fs.statSync(m.file).mtimeMs <= since; } catch { return true; } })()).map((m) => m.file);
   return new Set([...files, ...old]);
 }
+/** 사진 원본 목록 — 공실은 분석(analysis.json), 뉴스칼럼은 기사 화면(source.json captures) */
+function mediaSourceOf(vacancyId) {
+  const src = isColumn(vacancyId) ? readJson(path.join(mediaDir(vacancyId), "source.json")) : null;
+  return src ? { media: (src.captures || []).map((c) => ({ kind: c.kind || "capture", file: c.file, caption: c.caption })), hidden: (src.hidden || []).map((c) => ({ kind: c.kind || "capture", file: c.file })) } : readAnalysis(vacancyId);
+}
 function syncAnalysisMedia(vacancyId) {
-  const an = readAnalysis(vacancyId);
+  const an = mediaSourceOf(vacancyId);
   if (!an) return;
   const keep = new Set((an.media || []).map((m) => m.file));
   const gone = new Set((an.hidden || []).map((m) => m.file));
@@ -524,4 +529,4 @@ function syncAnalysisMedia(vacancyId) {
   }
 }
 
-module.exports = { syncAnalysisMedia, seenOf, isSim, styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };
+module.exports = { syncAnalysisMedia, seenOf, mediaSourceOf, isSim, styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };

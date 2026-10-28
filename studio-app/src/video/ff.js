@@ -100,6 +100,7 @@ async function prepare(file, destDir, info, onProgress = () => {}) {
     return dest;
   }
   if (kind !== "video") return null;
+  if (/\.alpha\.webm$/i.test(file)) return null; // 투명 모션(VP9 알파) — 사본(mp4)을 만들면 투명이 사라진다
   const okCodec = info.vcodec === "h264";
   const small = Math.min(info.width, info.height) <= 1080;
   if (okCodec && small && /\.(mp4|mov|m4v)$/i.test(file)) return null;

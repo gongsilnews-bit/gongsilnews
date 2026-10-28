@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 끝 화면 ② 고급형 — 어두운 바탕·금빛 테두리, 사무소 이름이 넓게 퍼졌다 모이고 금빛 QR 테 -->
+<style>
+  html, body { margin: 0; overflow: hidden; background: #0c0f18; }
+  #stage { position: relative; overflow: hidden; font-family: "GsFont", "Pretendard", "Malgun Gothic", sans-serif; color: #f5ecd7; background: radial-gradient(ellipse at 50% 40%, #1a2133, #07090f 70%); }
+  #frame { position: absolute; inset: calc(var(--pad) * .7); border: calc(var(--u) * .3) solid var(--gold); }
+  #wrap { position: absolute; left: 0; right: 0; text-align: center; padding: 0 var(--pad); }
+  #brand { font-size: calc(var(--u) * 9); font-weight: 900; color: var(--gold); }
+  .line { height: calc(var(--u) * .35); width: 60%; margin: calc(var(--u) * 3) auto; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  #info { font-size: calc(var(--u) * 3.3); line-height: 1.7; opacity: .85; white-space: pre-line; }
+  #phone { font-size: calc(var(--u) * 10); font-weight: 900; margin-top: calc(var(--u) * 3); letter-spacing: .02em; }
+  #qrWrap { display: inline-block; margin-top: calc(var(--u) * 4); padding: calc(var(--u) * 1.2); border: calc(var(--u) * .4) solid var(--gold); border-radius: calc(var(--u) * 1); }
+  #qr { width: calc(var(--u) * 20); height: calc(var(--u) * 20); display: block; }
+  #qrLabel { font-size: calc(var(--u) * 3); color: var(--gold); margin-top: calc(var(--u) * 1.4); letter-spacing: .2em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="frame"></div>
+  <div id="wrap"><div id="brand"></div><div class="line" id="l1"></div><div id="info"></div><div id="phone"></div><div id="qrWrap"><img id="qr" alt=""></div><div id="qrLabel">사진 · 위치 보기</div></div>
+</div>
+<script src="base.js"></script>
+<script>
+  const { $, seg, outCubic, inOut } = M;
+  window.__SFX = [{ t: 0.1, name: "chime", vol: 0.6 }, { t: 0.9, name: "whoosh", vol: 0.4 }, { t: 1.3, name: "sparkle", vol: 0.6 }];
+  window.__setup = async (data) => {
+    const p = M.setup(data); const D = M.D;
+    $("stage").style.setProperty("--gold", D.accent && D.accent !== "#E8590C" ? D.accent : "#D4AF37");
+    M.text("brand", D.brand || "공실뉴스"); M.text("info", D.info); M.text("phone", D.phone);
+    if (D.qr) $("qr").src = D.qr; else { $("qrWrap").style.display = "none"; $("qrLabel").style.display = "none"; }
+    $("wrap").style.top = (M.vertical ? M.H * 0.2 : M.H * 0.1) + "px";
+    await p; await window.__seek(0);
+  };
+  window.__seek = async (t) => {
+    $("frame").style.opacity = String(0.6 * outCubic(seg(t, 0, 0.6)));
+    const ap = (id, a, b, from) => { const q = outCubic(seg(t, a, b)); $(id).style.opacity = String(q); $(id).style.letterSpacing = `${from * (1 - q)}em`; };
+    ap("brand", 0.15, 0.8, 0.8);
+    $("l1").style.transform = `scaleX(${inOut(seg(t, 0.5, 1.0))})`;
+    ap("info", 0.7, 1.1, 0.2); ap("phone", 0.9, 1.4, 0.5);
+    const q = outCubic(seg(t, 1.2, 1.7)); $("qrWrap").style.opacity = String(q); $("qrWrap").style.transform = `scale(${0.85 + 0.15 * q})`;
+    $("qrLabel").style.opacity = String(seg(t, 1.5, 1.9));
+  };
+</script>
+</body>
+</html>
