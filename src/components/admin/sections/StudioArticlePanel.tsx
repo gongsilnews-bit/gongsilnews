@@ -125,7 +125,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
           </label>
         )}
         <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
-          {oneShot ? "스타일·분량을 고르고 위 [한 번에 쓰기]를 누르세요. " : ""}{column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. 기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. " : ""}기사 한도는 기사 등록할 때 셉니다.
+          {oneShot ? "스타일·분량을 고르고 오른쪽 위 [이 기사만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}{column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. 기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. " : ""}기사 한도는 기사 등록할 때 셉니다.
         </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
@@ -134,7 +134,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
       </div>
 
       {article && (
-        <div style={{ ...card, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div id="gs-step-3" style={{ ...card, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", scrollMarginTop: 16 }}>
           <div style={{ flex: 1, minWidth: 260, fontSize: 13.5, color: theme.textSecondary, lineHeight: 1.6 }}>
             기사쓰기 화면에 제목·부제·본문·사진 {article.media.length}장·키워드가 채워집니다.
             {column && article.section1 ? <> 섹션은 <b>{article.section1}{article.section2 ? ` > ${article.section2}` : ""}</b>로 채워집니다.</> : ""} 섹션을 확인하고 <b>[기사 등록]</b>을 눌러 주세요.

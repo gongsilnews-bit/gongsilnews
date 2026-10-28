@@ -46,7 +46,7 @@ export default function BoardReadClient({
   const searchParams = useSearchParams();
   const boardId = board?.board_id || post?.board_id || "";
   const boardName = board?.name || "게시판";
-  // 자료실 · 커뮤니티는 공실스튜디오 소속 (2026-10-26) — 머리 · 풋터를 공실스튜디오 것으로
+  // 자료실 · 커뮤니티는 공실마케팅 소속 (2026-10-26) — 머리 · 풋터를 공실마케팅 것으로
   const isStudyBoard = isStudioBoard(boardId);
   const tabs = board?.categories ? ["전체", ...board.categories.split(",").map((c: string) => c.trim())] : ["전체"];
 
@@ -313,7 +313,7 @@ export default function BoardReadClient({
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* 브레드크럼 */}
             <div style={{ fontSize: 14, color: "#999", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-              <Link href={isStudyBoard ? "/studio" : "/"} style={{ color: "#999", textDecoration: "none" }}>{isStudyBoard ? "공실스튜디오" : "홈"}</Link>
+              <Link href={isStudyBoard ? "/marketing" : "/"} style={{ color: "#999", textDecoration: "none" }}>{isStudyBoard ? "공실마케팅" : "홈"}</Link>
               <span style={{ color: "#ccc" }}>›</span>
               <Link href={listUrl} style={{ color: "#999", textDecoration: "none" }}>
                 {isStudyBoard ? (["studyqa", "free"].includes(boardId) ? "커뮤니티" : "자료실") : "게시판"}

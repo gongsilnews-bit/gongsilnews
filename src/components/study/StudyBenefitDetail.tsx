@@ -182,7 +182,7 @@ export default function StudyBenefitDetail({ c }: { c: BenefitDetailContent }) {
         <div style={{ background: "var(--dark)", marginTop: 112 }}>
           <section className="sbd-wrap" style={{ padding: "88px 24px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 640 }}>
-              <span style={{ fontSize: 14, color: "var(--on-dark-accent)" }}>공실뉴스부동산 가입 무료 · 공실스튜디오 월 3만원 · 1년 36만원</span>
+              <span style={{ fontSize: 14, color: "var(--on-dark-accent)" }}>공실뉴스부동산 가입 무료 · 공실마케팅 월 3만원 · 1년 36만원</span>
               <h2 style={{ fontSize: "clamp(26px,3.8vw,38px)", lineHeight: 1.3, letterSpacing: "-0.02em", color: "#fff", fontWeight: 700 }}>{c.ctaTitle}</h2>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Link href="/newsrealty/apply" className="sbd-btn sbd-btn-cta">공실뉴스부동산 무료 가입하기 &gt;</Link>

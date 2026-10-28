@@ -145,6 +145,8 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
   const dir = path.join(app.getPath("userData"), "media", String(vacancyId).replace(/[^\w-]/g, ""));
   // 분석이 만드는 파일(등록 사진·캡처)만 새로 만든다. 써 둔 블로그(blog.json)와 추가한 사진(added/)은 둔다
   fs.mkdirSync(dir, { recursive: true });
+  let prev = null;
+  try { prev = JSON.parse(fs.readFileSync(path.join(dir, "analysis.json"), "utf8")); } catch {}
   for (const f of fs.readdirSync(dir)) {
     if (/^(photo-\d+|proof|map|roadview)\.(jpe?g|png|webp|gif)$/i.test(f)) fs.rmSync(path.join(dir, f), { force: true });
   }
@@ -206,7 +208,16 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
     }
     await win.webContents.executeJavaScript("window.__gongsilStudio.restoreScroll()").catch(() => {});
 
-    const result = { vacancyId, vacancy, media, failures, dir, analyzedAt: new Date().toISOString() };
+    // 다시 분석해도 회원이 넣은 AI 사진은 남기고, 뺀 사진은 계속 뺀 채로 (2026-10-28 사장님: 전부 다 고쳐줘)
+    const hidden = [];
+    if (prev) {
+      const ok = (m) => m && m.file && fs.existsSync(m.file);
+      const goneFiles = new Set((prev.hidden || []).filter((m) => m.kind !== "ai").map((m) => m.file));
+      for (let i = media.length - 1; i >= 0; i--) if (goneFiles.has(media[i].file)) hidden.unshift(...media.splice(i, 1));
+      media.push(...(prev.media || []).filter((m) => m.kind === "ai" && ok(m)));
+      hidden.push(...(prev.hidden || []).filter((m) => m.kind === "ai" && ok(m)));
+    }
+    const result = { vacancyId, vacancy, media, hidden, failures, dir, analyzedAt: new Date().toISOString() };
     fs.writeFileSync(path.join(dir, "analysis.json"), JSON.stringify(result, null, 2));
     log.info(`[공실 분석] ${vacancyId} 사진 ${media.filter((m) => m.kind === "photo").length}장, 캡처 ${media.filter((m) => m.kind !== "photo").length}장, 실패 ${failures.length}`);
     return result;

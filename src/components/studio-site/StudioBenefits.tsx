@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-// 공실스튜디오 혜택 페이지(/studio/benefits) 본문.
+// 공실마케팅 혜택 페이지(/marketing/benefits) 본문.
 // Claude Design 시안(design/newsrealty, benefits.dc.html)을 옮긴 것. 혜택 5가지를 한 페이지 + 상단 탭으로 보여 준다.
 // PC·모바일이 같이 쓰고, 탭 줄이 붙는 높이(tabsTop)만 각자 넘겨준다.
 
@@ -111,7 +111,7 @@ const CSS = `
 
 export default function StudioBenefits({
   onApply,
-  inquiryHref = "/studio/guide/inquiry",
+  inquiryHref = "/marketing/guide/inquiry",
   tabsTop = 0,
   showFooter = false,
   tone = "orange",
@@ -130,8 +130,8 @@ export default function StudioBenefits({
   const [active, setActive] = useState(sections[0].id);
   // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로.
   const brand = tone === "green"
-    ? { name: "공실스튜디오", applyHref: "/studio/apply" }
-    : { name: "공실스튜디오", applyHref: "/studio/apply" };
+    ? { name: "공실마케팅", applyHref: "/marketing/apply" }
+    : { name: "공실마케팅", applyHref: "/marketing/apply" };
 
   // 탭 줄 고정. 사이트 body 에 overflow-x:hidden 이 걸려 있어 CSS sticky 가 안 먹으므로
   // 공실스터디 메뉴 줄(StudyHeader)처럼 원래 자리(slot)가 tabsTop 에 닿으면 fixed 로 바꾼다.
@@ -210,7 +210,7 @@ export default function StudioBenefits({
         {/* 맨 위 제목: 화면 끝까지 미색 배경 (소개 페이지 히어로와 같은 색) */}
         <div style={{ background: "var(--cream)" }}>
           <section style={{ maxWidth: 1120, margin: "0 auto", padding: "88px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-            <span style={{ fontSize: 13, color: "var(--accent-700)" }}>{tone === "green" ? "공실스튜디오 주요 혜택" : "공실뉴스 부동산 주요 혜택"}</span>
+            <span style={{ fontSize: 13, color: "var(--accent-700)" }}>{tone === "green" ? "공실마케팅 주요 혜택" : "공실뉴스 부동산 주요 혜택"}</span>
             <h1 style={{ fontSize: "clamp(32px,4.6vw,48px)", lineHeight: 1.2, letterSpacing: "-0.025em", margin: 0, textWrap: "balance" }}>
               공동중개 + 매매보고서 + 블로그/SNS포스팅 + 유튜브강의까지!<br />AI 시대! 부동산 마케팅 쉬워집니다.
             </h1>

@@ -104,3 +104,39 @@ export async function checkMyPromoLinks(): Promise<{ success: boolean; removed: 
   }));
   return { success: true, removed };
 }
+
+/**
+ * 내 공실 카드 (2026-10-28) — 홈 "내 공실 홍보현황" · 공실등록 [카드형]
+ * getVacancies 는 표·지도용이라 무겁다 (1,000건씩 10번 · 회원·중개소 정보까지). 카드에 쓰는 칸만, 내 것만 한 번에 읽는다.
+ */
+export async function getMyVacancyCards(): Promise<{ success: boolean; data: any[]; error?: string }> {
+  const user = await me();
+  if (!user) return { success: false, data: [], error: "로그인이 필요합니다." };
+  const { data, error } = await admin()
+    .from("vacancies")
+    .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
+    .eq("owner_id", user.id)
+    .neq("status", "DELETED")
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  if (error) return { success: false, data: [], error: error.message };
+  return { success: true, data: data || [] };
+}
+
+/**
+ * 광고 내리기 — 거래 완료 (2026-10-28 사장님 회의)
+ *  거래 완료면 공실을 내리고(STOPPED) metadata.deal_closed_at 에 표시 → 홈 카드가 "거래 완료 · SNS 정리" 로 보여 준다.
+ *  올라간 블로그·SNS 글은 회원이 직접 지우거나 비공개로 (거래 완료된 매물 광고를 그대로 두면 부당 표시·광고가 될 수 있다).
+ *  closed=false 는 다시 올리기 (ACTIVE · 표시 지움)
+ */
+export async function setVacancyDealClosed(vacancyId: string, closed: boolean): Promise<{ success: boolean; error?: string }> {
+  const user = await me();
+  if (!user) return { success: false, error: "로그인이 필요합니다." };
+  const db = admin();
+  const { data: v, error: e1 } = await db.from("vacancies").select("owner_id, metadata").eq("id", vacancyId).maybeSingle();
+  if (e1) return { success: false, error: e1.message };
+  if (!v || v.owner_id !== user.id) return { success: false, error: "내 공실이 아닙니다." };
+  const metadata = { ...((v.metadata as Record<string, unknown>) || {}), deal_closed_at: closed ? new Date().toISOString() : null };
+  const { error } = await db.from("vacancies").update({ status: closed ? "STOPPED" : "ACTIVE", metadata }).eq("id", vacancyId);
+  return error ? { success: false, error: error.message } : { success: true };
+}

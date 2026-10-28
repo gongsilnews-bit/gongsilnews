@@ -22,7 +22,7 @@ export default function SimReportSection({ theme, kind }: { theme: Theme; kind: 
   if (!inApp)
     return (
       <div style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center", fontSize: 14, color: theme.textSecondary }}>
-        예측 시뮬레이션은 공실스튜디오 앱에서 쓸 수 있어요. (회원님 AI로 예측 이미지를 그립니다)
+        예측 시뮬레이션은 공실마케팅 앱에서 쓸 수 있어요. (회원님 AI로 예측 이미지를 그립니다)
       </div>
     );
   // 유료 전용 (공실스터디 멤버십 — 무료 체험 없음)

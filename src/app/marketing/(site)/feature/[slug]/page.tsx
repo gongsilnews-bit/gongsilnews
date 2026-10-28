@@ -7,7 +7,7 @@ import StudioSiteHeader from "@/components/studio-site/StudioSiteHeader";
 import { FEATURES, featureBySlug } from "@/components/studio-site/studioFeatures";
 
 /**
- * 공실스튜디오 기능 상세 (/studio/feature/[slug]) — 브루 기능 페이지와 같은 6칸 (2026-10-26 사장님)
+ * 공실마케팅 기능 상세 (/marketing/feature/[slug]) — 브루 기능 페이지와 같은 6칸 (2026-10-26 사장님)
  *  ① 큰 제목 두 줄 + 설명 + 버튼 + 앱 화면  ② 한 줄 약속  ③ 좋은 점 3가지  ④ 어떻게 하나요(3단계)  ⑤ 활용  ⑥ 마지막 한 줄
  * 글이 없는 칸은 안 그린다.
  * 그림은 실제 앱에서 찍은 화면 (public/studio-shots/f-<slug>.webp · f-<slug>-<1~3>.webp, 2026-10-26 Claude 가 앱을 띄워 캡처 · 이메일·이름·전화 흐림).
@@ -22,7 +22,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const f = featureBySlug((await params).slug);
-  return f ? { title: `${f.name} | 공실스튜디오`, description: f.lead } : {};
+  return f ? { title: `${f.name} | 공실마케팅`, description: f.lead } : {};
 }
 
 /** 찍어 둔 화면이 있으면 그 주소 */
@@ -61,7 +61,7 @@ export default async function StudioFeaturePage({ params }: { params: Promise<{ 
         <h1 style={{ fontSize: "clamp(38px,5vw,60px)", lineHeight: 1.22, fontWeight: 900, letterSpacing: "-0.03em", margin: "0 0 24px" }}>{f.title[0]}<br />{f.title[1]}</h1>
         <p style={{ fontSize: 18, lineHeight: 1.75, color: "#4b5563", margin: "0 auto 32px", maxWidth: 680 }}>{f.lead}</p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/studio#download" style={btn(true)}>앱 받기</Link>
+          <Link href="/marketing#download" style={btn(true)}>앱 받기</Link>
         </div>
         <Shot label={`${f.name} 앱 화면`} src={shotSrc(`f-${f.slug}`)} />
       </section>
@@ -115,10 +115,10 @@ export default async function StudioFeaturePage({ params }: { params: Promise<{ 
 
       {/* ⑥ */}
       <div style={{ background: "#1f1714", color: "#fff", marginTop: 112, padding: "88px 24px", textAlign: "center" }}>
-        <h2 style={{ ...h2, color: "#fff" }}>{f.end || `${f.name}, 공실스튜디오로 시작하세요.`}</h2>
+        <h2 style={{ ...h2, color: "#fff" }}>{f.end || `${f.name}, 공실마케팅로 시작하세요.`}</h2>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 28, flexWrap: "wrap" }}>
-          <Link href="/studio#download" style={btn(true)}>앱 받기</Link>
-          <Link href="/studio/pricing" style={{ ...btn(false), color: "#fff", background: "transparent", borderColor: "rgba(255,255,255,.7)" }}>이용료 보기</Link>
+          <Link href="/marketing#download" style={btn(true)}>앱 받기</Link>
+          <Link href="/marketing/pricing" style={{ ...btn(false), color: "#fff", background: "transparent", borderColor: "rgba(255,255,255,.7)" }}>이용료 보기</Link>
         </div>
       </div>
     </div>

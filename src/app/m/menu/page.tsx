@@ -291,8 +291,8 @@ export default function MenuPage() {
           {/* 공실뉴스부동산 — PC 헤더 오른쪽 위 버튼과 같은 자리 (2026-10-26). 누구에게나, 이미 회원·최고관리자면 "가입" 없이 */}
           {(() => { const joined = isAdminRole(memberData?.role) || getPlanLabel(memberData ? { role: memberData.role, plan_type: memberData.plan_type } : null) === '공실뉴스부동산'; if (!joined) return null; /* 2026-10-26 가입 버튼은 없앰 */ return (
             <div style={{ padding: '0 20px 10px', background: '#fff' }}>
-              <Link href={joined ? '/studio' : '/m/newsrealty'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: `1px solid ${joined ? '#1a3a6b' : '#d1d5db'}`, borderRadius: 8, color: joined ? '#1a3a6b' : '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                {joined ? '공실스튜디오 ›' : '공실뉴스부동산 가입 ›'}
+              <Link href={joined ? '/marketing' : '/m/newsrealty'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: `1px solid ${joined ? '#1a3a6b' : '#d1d5db'}`, borderRadius: 8, color: joined ? '#1a3a6b' : '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                {joined ? '공실마케팅 ›' : '공실뉴스부동산 가입 ›'}
               </Link>
             </div>
           ); })()}

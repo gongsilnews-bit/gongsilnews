@@ -5,7 +5,7 @@ import StudyCommunityClient from "./StudyCommunityClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "커뮤니티 | 공실스튜디오",
+  title: "커뮤니티 | 공실마케팅",
   description: "막히는 건 물어보고, 아는 건 나눠 주세요!",
 };
 

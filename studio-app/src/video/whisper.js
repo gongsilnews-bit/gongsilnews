@@ -72,7 +72,7 @@ async function addWords(pairs) {
  *  돌려줌: [{ start, end, text }] (토막 맨 앞 = 0초)
  */
 async function segments(file, { start = 0, len = 0, fix = true } = {}) {
-  if (!ready()) throw new Error("받아쓰기 프로그램(Whisper)이 없습니다. 공실스튜디오를 다시 설치해 주세요.");
+  if (!ready()) throw new Error("받아쓰기 프로그램(Whisper)이 없습니다. 공실마케팅를 다시 설치해 주세요.");
   const tmp = path.join(os.tmpdir(), `gsw-${crypto.randomBytes(4).toString("hex")}`);
   fs.mkdirSync(tmp, { recursive: true });
   try {

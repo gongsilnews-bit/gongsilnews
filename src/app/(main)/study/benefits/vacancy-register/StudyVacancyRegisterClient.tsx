@@ -826,7 +826,7 @@ export default function StudyVacancyRegisterClient() {
               }}
             >
               공실등록 20건 · AI 매매보고서 · 유리창 홍보지<br />
-              나만의 웹페이지까지 공실스튜디오 월 3만원으로 시작하세요
+              나만의 웹페이지까지 공실마케팅 월 3만원으로 시작하세요
             </h3>
 
             <p

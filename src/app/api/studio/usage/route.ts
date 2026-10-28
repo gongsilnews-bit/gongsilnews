@@ -3,7 +3,7 @@ import { getExtensionMember } from "@/utils/extensionMember";
 import { consumeStudio, getStudioUsage } from "@/utils/studioUsage";
 
 /**
- * 공실스튜디오 이용 횟수
+ * 공실마케팅 이용 횟수
  *  GET  → 이번 달·오늘 사용 현황 (SNS뉴스발행 화면 위쪽 표시)
  *  POST { kind: "blog" | "sns" | "youtube", vacancyId } | { kind: "simulation", vacancyId } (인테리어·리모델링, 유료 전용) | { kind: "ai_image" } → 쓰기 전에 확인하고 기록 (앱이 부름)
  * 로그인 쿠키(앱 창·웹 화면)로 회원을 확인한다.

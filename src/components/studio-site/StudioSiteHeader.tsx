@@ -1,4 +1,4 @@
-// 공실스튜디오 메뉴 줄 — 공실뉴스부동산 메뉴 줄(NewsrealtyHeader)을 그대로 옮김 (2026-10-26)
+// 공실마케팅 메뉴 줄 — 공실뉴스부동산 메뉴 줄(NewsrealtyHeader)을 그대로 옮김 (2026-10-26)
 "use client";
 
 import React, { Suspense, useEffect, useRef, useState } from "react";
@@ -10,7 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getEffectiveMemberRole, getAdminEntryLabel, isStudioMember, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 import LoginJoinButton from "@/components/LoginJoinButton";
-// 공실스튜디오 메뉴 줄. 공실스터디(StudyHeader)와 같은 방식으로 메인 헤더 아래에 붙고,
+// 공실마케팅 메뉴 줄. 공실스터디(StudyHeader)와 같은 방식으로 메인 헤더 아래에 붙고,
 // 스크롤해서 화면 위에 닿으면 이 줄이 고정된다.
 
 const POINT = "#d9661f";
@@ -32,32 +32,32 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // "공실스튜디오란?"은 뺐다 (2026-10-26 사장님) — 소개는 제목 [공실스튜디오] 을 누르면 나온다
+  // "공실마케팅란?"은 뺐다 (2026-10-26 사장님) — 소개는 제목 [공실마케팅] 을 누르면 나온다
   // 브루식 [주요 기능 ▾] 큰 펼침 판 (2026-10-26) — 목록은 studioFeatures.ts
-  { label: "주요 기능", href: "/studio/feature/news", match: (p) => p.startsWith("/studio/feature") || p.startsWith("/studio/benefits"), mega: true },
-  { label: "사용법 배우기", href: "/studio/guide", match: (p) => p.startsWith("/studio/guide") }, // 유튜브 사용법 영상 게시판 (2026-10-26)
-  { label: "금액안내", href: "/studio/pricing", match: (p) => p.startsWith("/studio/pricing") },
-  // "신청하기"는 뺐다 (2026-10-26 사장님) — 금액안내의 [공실스튜디오 신청하기] 버튼으로 신청 (/studio/apply 화면은 그대로)
+  { label: "주요 기능", href: "/marketing/feature/news", match: (p) => p.startsWith("/marketing/feature") || p.startsWith("/marketing/benefits"), mega: true },
+  { label: "사용법 배우기", href: "/marketing/guide", match: (p) => p.startsWith("/marketing/guide") }, // 유튜브 사용법 영상 게시판 (2026-10-26)
+  { label: "금액안내", href: "/marketing/pricing", match: (p) => p.startsWith("/marketing/pricing") },
+  // "신청하기"는 뺐다 (2026-10-26 사장님) — 금액안내의 [공실마케팅 신청하기] 버튼으로 신청 (/marketing/apply 화면은 그대로)
   // 자료실·커뮤니티는 2026-10-26 부동산특강(/study)에서 옮겨 왔다 — 게시판은 그대로, 회원 전용(4레벨) 혜택
   {
     label: "자료실",
-    href: "/studio/resources?board=drone",
-    match: (p) => p.startsWith("/studio/resources"),
+    href: "/marketing/resources?board=drone",
+    match: (p) => p.startsWith("/marketing/resources"),
     subItems: [
-      { label: "드론영상", href: "/studio/resources?board=drone", board: "drone", first: true },
-      { label: "APP(앱)", href: "/studio/resources?board=app", board: "app" },
-      { label: "AI 프롬프트", href: "/studio/resources?board=prompt", board: "prompt" },
-      { label: "음원", href: "/studio/resources?board=sound", board: "sound" },
-      { label: "계약서/양식", href: "/studio/resources?board=doc", board: "doc" },
+      { label: "드론영상", href: "/marketing/resources?board=drone", board: "drone", first: true },
+      { label: "APP(앱)", href: "/marketing/resources?board=app", board: "app" },
+      { label: "AI 프롬프트", href: "/marketing/resources?board=prompt", board: "prompt" },
+      { label: "음원", href: "/marketing/resources?board=sound", board: "sound" },
+      { label: "계약서/양식", href: "/marketing/resources?board=doc", board: "doc" },
     ],
   },
   {
     label: "커뮤니티",
-    href: "/studio/community",
-    match: (p) => p.startsWith("/studio/community"),
+    href: "/marketing/community",
+    match: (p) => p.startsWith("/marketing/community"),
     subItems: [
-      { label: "회원 Q&A", href: "/studio/community?board=studyqa", board: "studyqa", first: true },
-      { label: "자유게시판", href: "/studio/community?board=free", board: "free" },
+      { label: "회원 Q&A", href: "/marketing/community?board=studyqa", board: "studyqa", first: true },
+      { label: "자유게시판", href: "/marketing/community?board=free", board: "free" },
     ],
   },
 ];
@@ -69,7 +69,7 @@ interface StudioSiteHeaderProps {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
-  const pathname = usePathname() || "/studio";
+  const pathname = usePathname() || "/marketing";
   const router = useRouter();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
@@ -153,27 +153,27 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
           : { background: "#ffffff" }}
       >
         <nav
-          aria-label="공실스튜디오 메뉴"
+          aria-label="공실마케팅 메뉴"
           className="container px-20"
           style={{
             display: "flex", alignItems: "center", gap: "32px",
             padding: stuck ? "12px 20px" : "16px 20px",
           }}
         >
-          {/* 공실스튜디오 앱 아이콘 (공실뉴스 홈은 위 남색 줄의 "공실뉴스"로, 2026-10-26 사장님) */}
-          <Link href="/studio" title="공실스튜디오 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -22 }}>
+          {/* 공실마케팅 앱 아이콘 (공실뉴스 홈은 위 남색 줄의 "공실뉴스"로, 2026-10-26 사장님) */}
+          <Link href="/marketing" title="공실마케팅 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -22 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/studio-app-icon.png" alt="공실스튜디오" style={{ height: stuck ? 34 : 42, width: stuck ? 34 : 42, borderRadius: 8 }} />
+            <img src="/studio-app-icon.png" alt="공실마케팅" style={{ height: stuck ? 34 : 42, width: stuck ? 34 : 42, borderRadius: 8 }} />
           </Link>
           <Link
-            href="/studio"
+            href="/marketing"
             style={{
               fontSize: stuck ? "20px" : "24px", fontWeight: 900, color: "#111", letterSpacing: "-0.5px", lineHeight: 1,
               textDecoration: "none", whiteSpace: "nowrap",
             }}
-            title="공실스튜디오 홈"
+            title="공실마케팅 홈"
           >
-            공실스튜디오
+            공실마케팅
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
@@ -216,9 +216,9 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
                             {g.slugs.map((sl) => {
                               const f = featureBySlug(sl);
                               if (!f) return null;
-                              const on = pathname === `/studio/feature/${sl}`;
+                              const on = pathname === `/marketing/feature/${sl}`;
                               return (
-                                <Link key={sl} href={`/studio/feature/${sl}`} onClick={() => setHoveredNav(null)}
+                                <Link key={sl} href={`/marketing/feature/${sl}`} onClick={() => setHoveredNav(null)}
                                   style={{ display: "block", padding: "8px 0", fontSize: 15, fontWeight: on ? 800 : 500, color: on ? POINT : "#1f2937", textDecoration: "none" }}
                                   onMouseEnter={(e) => { e.currentTarget.style.color = POINT; }}
                                   onMouseLeave={(e) => { if (!on) e.currentTarget.style.color = "#1f2937"; }}>

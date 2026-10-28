@@ -45,7 +45,7 @@ export function lecturePlanOf(member: {
   const role = member.role;
   if (role === "BIZ" || role === "비즈니스회원") return "biz_premium";
   if (role !== "REALTOR" && role !== "부동산회원") return "user";
-  // 부동산회원은 공실스튜디오 이용기간 하나로만 가른다 — 예전 유료 등급 값은 안 본다 (2026-10-26)
+  // 부동산회원은 공실마케팅 이용기간 하나로만 가른다 — 예전 유료 등급 값은 안 본다 (2026-10-26)
   return studioAlive(member) ? "news_premium" : "realtor_free";
 }
 

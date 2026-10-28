@@ -102,7 +102,7 @@ const GUIDE_STEPS: { n: string; t: string; lines: React.ReactNode[]; highlight?:
   { n: "1단계", t: "회원가입 · 신청", lines: [<>구글 · 카카오 계정으로 3초 만에 <strong>회원가입</strong>합니다.</>, <>신청자 · 연락처 · 중개사무소를 입력하고 신청서를 접수합니다.</>] },
   { n: "2단계", t: "중개사 서류 제출", highlight: true, lines: [<>관리자페이지 <strong>정보설정 → 중개소 가입</strong>에서 중개사무소 등록증을 냅니다.</>, <>가입비 · 이용료는 <strong>없습니다.</strong></>] },
   { n: "3단계", t: "승인", lines: [<>서류가 확인되면 <strong>공실뉴스부동산</strong>으로 승인됩니다.</>, <>승인 즉시 공실 등록 3건 · 기사 작성 월 4건을 이용하실 수 있습니다.</>] },
-  { n: "선택", t: "공실스튜디오 멤버십", lines: [<>영상뉴스 · 블로그 · SNS를 만들려면 <strong>공실스튜디오</strong> (월 3만원 · 1년 36만원)</>, <>공실 20건과 공실스튜디오 모든 프로그램이 열립니다.</>] },
+  { n: "선택", t: "공실마케팅 멤버십", lines: [<>영상뉴스 · 블로그 · SNS를 만들려면 <strong>공실마케팅</strong> (월 3만원 · 1년 36만원)</>, <>공실 20건과 공실마케팅 모든 프로그램이 열립니다.</>] },
 ];
 
 function GoogleIcon() {
@@ -157,9 +157,9 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
         <button type="button" onClick={onGuide} className="nra-btn nra-btn-outline" style={{ width: "100%" }}>
           회원가입 및 이용 절차가 궁금해요
         </button>
-        {/* 공실뉴스부동산은 무료 — 결제는 공실스튜디오 멤버십에서 (2026-10-26) */}
-        <a href="/studio" className="nra-btn" style={{ width: "100%", background: "#1a3a6b", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          공실스튜디오 알아보기
+        {/* 공실뉴스부동산은 무료 — 결제는 공실마케팅 멤버십에서 (2026-10-26) */}
+        <a href="/marketing" className="nra-btn" style={{ width: "100%", background: "#1a3a6b", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          공실마케팅 알아보기
         </a>
       </div>
       </>

@@ -1,4 +1,4 @@
-/** 공실스튜디오 이용 기간(members.studio_end_date)이 남아 있나 — 2026-10-26 이용권은 등급과 따로 저장 */
+/** 공실마케팅 이용 기간(members.studio_end_date)이 남아 있나 — 2026-10-26 이용권은 등급과 따로 저장 */
 export function studioAlive(member: { studio_end_date?: string | Date | null } | null | undefined): boolean {
   if (!member?.studio_end_date) return false;
   const end = new Date(member.studio_end_date);
@@ -18,13 +18,13 @@ export function getEffectivePlan(member: {
   // 최고관리자는 모든 권한 무제한 통과용 특별 식별자 반환
   if (member.role === 'ADMIN' || member.role === '최고관리자') return 'admin';
 
-  // 공실스튜디오 이용 중이면 예전 유료 등급(news_premium)과 같은 권한 — 비즈니스회원도 이용권을 사면 같다 (2026-10-26)
+  // 공실마케팅 이용 중이면 예전 유료 등급(news_premium)과 같은 권한 — 비즈니스회원도 이용권을 사면 같다 (2026-10-26)
   if (studioAlive(member) && (member.role === 'REALTOR' || member.role === '부동산회원' || member.role === 'BIZ')) return 'news_premium';
   
   // 일반 회원은 무료 취급
   if (member.role !== 'REALTOR' && member.role !== '부동산회원') return 'free';
 
-  // 부동산회원은 공실스튜디오 이용기간 하나로만 가른다 (2026-10-26 사장님 "요금제 기간 · 스튜디오 기간 중복")
+  // 부동산회원은 공실마케팅 이용기간 하나로만 가른다 (2026-10-26 사장님 "요금제 기간 · 스튜디오 기간 중복")
   // 예전 유료 등급 값(news_premium · study_premium)은 더 보지 않는다 — 이용기간이 없으면 공실뉴스부동산(무료)
   return 'free';
 }
@@ -58,8 +58,8 @@ export function isPermissionAlive(
   if (!member) return false;
   if (isSuperRole(member.role)) return true;
   if (!granted) return false;
-  if (studioAlive(member)) return true; // 공실스튜디오 이용 중이면 켜 둔 권한도 살아 있다
-  // 부동산회원의 유료 권한은 공실스튜디오 이용기간과 같이 닫힌다 (예전 유료 등급 값은 안 본다, 2026-10-26)
+  if (studioAlive(member)) return true; // 공실마케팅 이용 중이면 켜 둔 권한도 살아 있다
+  // 부동산회원의 유료 권한은 공실마케팅 이용기간과 같이 닫힌다 (예전 유료 등급 값은 안 본다, 2026-10-26)
   if ((member.role === 'REALTOR' || member.role === '부동산회원') && (member.plan_type === 'news_premium' || member.plan_type === 'study_premium')) return false;
 
   if (!member.plan_type || !PAID_PLANS.includes(member.plan_type)) return true;

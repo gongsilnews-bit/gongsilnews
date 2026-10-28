@@ -1000,7 +1000,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const c0 = findClip(pref.current, id)?.clip;
       if (!c0?.src || c0.type !== "source") return;
       if (!t) return say("말한 내용을 적어 주세요");
-      if (!b.realign) return say("공실스튜디오를 껐다 켜 주세요 (말한 내용 고치기 기능을 새로 연결해요)");
+      if (!b.realign) return say("공실마케팅를 껐다 켜 주세요 (말한 내용 고치기 기능을 새로 연결해요)");
       setWork({ title: "단어 시각을 말소리에 맞추는 중… (PC에서)" });
       try {
         const before = (c0.words || []).map((w) => w.w);
@@ -1077,7 +1077,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
   /* ── 자동 자막 — 녹화·촬영 영상 클립의 말소리를 글로 (지금 클립은 그대로, 글만 채움). 소리만 서버로, AI 비용 있음 ── */
   const autoSub = async (ids: string[]) => {
-    if (!b.transcribeClips) return say("공실스튜디오를 껐다 켜 주세요 (자동 자막 기능을 새로 연결해요)");
+    if (!b.transcribeClips) return say("공실마케팅를 껐다 켜 주세요 (자동 자막 기능을 새로 연결해요)");
     const targets = ids
       .map((id) => findClip(pref.current, id)?.clip)
       .filter((c): c is Clip => Boolean(c && c.type === "source" && c.src))
@@ -1156,7 +1156,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
   /* ── 자막 시각 맞추기 — 글은 그대로, 단어 시각만 실제 말소리에 다시 맞춘다 (PC에서, 무료). 지운 단어는 그대로 ── */
   const realignSubs = async () => {
-    if (!b.realign) return say("공실스튜디오를 껐다 켜 주세요 (자막 시각 맞추기 기능을 새로 연결해요)");
+    if (!b.realign) return say("공실마케팅를 껐다 켜 주세요 (자막 시각 맞추기 기능을 새로 연결해요)");
     const items = flatten(pref.current).items
       .filter((x) => x.clip.type === "source" && x.clip.src && x.clip.words?.length)
       .map((x) => ({ id: x.clip.id, asset: x.clip.src!.asset, s: x.clip.src!.s, e: x.clip.src!.e, text: x.clip.words!.map((w) => w.w).join(" ") }));
@@ -1205,7 +1205,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     const assets = [...new Set(flatten(pref.current).items.filter((x) => x.clip.type === "source" && x.clip.src).map((x) => x.clip.src!.asset))];
     const hasOld = flatten(pref.current).items.some((x) => x.clip.type === "silence");
     if (!assets.length && !hasOld) return say("무음을 줄일 영상 클립이 없어요 (녹화·촬영 영상 클립만 돼요)");
-    if (!b.speech) return say("공실스튜디오를 껐다 켜 주세요 (무음 줄이기 기능을 새로 연결해요)");
+    if (!b.speech) return say("공실마케팅를 껐다 켜 주세요 (무음 줄이기 기능을 새로 연결해요)");
     setWork({ title: "말소리 구간을 찾는 중… (PC에서)" });
     const off = b.onProgress((t, f) => setWork({ title: t, frac: typeof f === "number" ? f : null }));
     try {
@@ -2550,7 +2550,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const stickerText = async (id: string, text: string) => {
     const l = (pref.current.layers || []).find((x) => x.id === id);
     const spec = l && stickerSpecOf(l);
-    if (!l || !spec || !b.lib.saveImage) return say("공실스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
+    if (!l || !spec || !b.lib.saveImage) return say("공실마케팅를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
     try {
       const s = { ...spec, text };
       const item = await b.lib.saveImage(pref.current.dir, await stickerPng(s), stickerFileName(text));
@@ -2568,7 +2568,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 템플릿 글·색 고치기 — 같은 모양으로 다시 그려 그림만 바꾼다 (자리·움직임·범위 그대로, 높이를 맞춰 너비를 다시 잡는다) */
   const templateText = async (id: string, text: string, color?: string) => {
     const l = (pref.current.layers || []).find((x) => x.id === id);
-    if (!l?.stk || !isTplStyle(l.stk.style) || !b.lib.saveImage) return say("공실스튜디오를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
+    if (!l?.stk || !isTplStyle(l.stk.style) || !b.lib.saveImage) return say("공실마케팅를 껐다 켜 주세요 (템플릿 기능을 새로 연결해요)");
     try {
       await tplFonts();
       const item = await b.lib.saveImage(pref.current.dir, drawTemplate(l.stk.style, text, color).toDataURL("image/png"), l.name || "템플릿");
@@ -2589,7 +2589,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 화면 글자 → 그 글자가 든 말풍선 스티커로 (회의 3-28 ④) — 자리·범위·애니메이션·겹치는 순서 그대로 */
   const textToBubble = async (id: string, st: { text: string; style: string; icon?: string; color?: string }) => {
     const l = (pref.current.layers || []).find((x) => x.id === id);
-    if (!l || !b.lib.saveImage) return say("공실스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
+    if (!l || !b.lib.saveImage) return say("공실마케팅를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
     try {
       const spec = { text: st.text, style: st.style as Parameters<typeof stickerPng>[0]["style"], icon: st.icon, color: st.color };
       const item = await b.lib.saveImage(pref.current.dir, await stickerPng(spec), stickerFileName(st.text));
@@ -3104,7 +3104,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     });
   };
   const openPackage = async () => {
-    if (!b.project.packageInfo) return say("공실스튜디오를 껐다 켜 주세요 (프로젝트 패키지 기능을 새로 연결해요)");
+    if (!b.project.packageInfo) return say("공실마케팅를 껐다 켜 주세요 (프로젝트 패키지 기능을 새로 연결해요)");
     try {
       setPkg(await b.project.packageInfo(pref.current));
     } catch (e) {
@@ -3274,7 +3274,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (!selWord) return;
     const f = findClip(pref.current, selWord.clip);
     if (!f || f.clip.type !== "voice" || !f.clip.words?.length) return say("AI 목소리 클립의 단어를 골라 주세요");
-    if (!b.voiceJoin) return say("공실스튜디오를 새 버전으로 다시 켜 주세요 (단어 목소리 잇기)");
+    if (!b.voiceJoin) return say("공실마케팅를 새 버전으로 다시 켜 주세요 (단어 목소리 잇기)");
     const is = wordIs();
     const id = f.clip.id;
     change((p) => {
@@ -5666,7 +5666,7 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
           return miss.length ? (
             <div style={{ padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, background: "rgba(239,68,68,0.1)", fontSize: 14, lineHeight: 1.6 }}>
               <b style={{ color: C.danger }}>이 앱은 {miss.join("·")}을(를) 영상에 넣지 못해요.</b><br />
-              <span style={{ color: C.sub }}>공실스튜디오를 최신 버전으로 업데이트한 뒤 내보내 주세요. (지금 내보내면 그 부분은 움직이지 않아요)</span>
+              <span style={{ color: C.sub }}>공실마케팅를 최신 버전으로 업데이트한 뒤 내보내 주세요. (지금 내보내면 그 부분은 움직이지 않아요)</span>
             </div>
           ) : null;
         })()}

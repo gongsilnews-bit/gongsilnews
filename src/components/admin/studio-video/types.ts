@@ -309,10 +309,13 @@ export type Project = {
 export type AiEditCatalog = { presets: { id: string; label: string }[]; ins: { id: string; label: string }[]; emphs: { id: string; label: string }[]; whl: { id: string; label: string }[]; stickers: { id: string; label: string }[]; sfx: { id: string; label: string }[]; examples: string[] };
 
 /** 완성 영상 SNS 올리기 (2026-10-21) — text = 링크·출처·해시태그까지 붙인 최종 글 */
-export type PostChannel = "youtube" | "instagram";
+export type PostChannel = "youtube" | "instagram" | "threads" | "facebook";
 export type PostDraft = {
   youtube: { title: string; description: string; hashtags: string[]; text: string };
   instagram: { caption: string; hashtags: string[]; text: string };
+  /** 앱 0.1.15부터 (예전 앱이면 없음 → 페이스북은 유튜브 글, 스레드는 인스타 글) */
+  facebook?: { text: string };
+  threads?: { text: string; posts: string[] };
   tail: { url: string; hasListing: boolean };
 };
 export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; /** 내 폴더 (이름표) */ tags?: string[]; addedAt?: number; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
@@ -436,7 +439,7 @@ export type VideoBridge = {
     scenes: (lines: string[], opts?: { ai?: unknown }) => Promise<{ desc: string; keywords: string; kind: string }[]>;
     shorts: (clips: Clip[], o: { count: number; maxSec: number; request?: string }) => Promise<{ title: string; start: number; end: number; reason: string }[]>;
     /** 대본 + 내 영상 → 문장마다 장면 (v: 자료 번호, -1 = 없음 · t: 시작 초). 앱 0.1.10부터 */
-    footage?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts?: { ai?: unknown }) => Promise<{ v: number; t: number }[]>;
+    footage?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts?: { ai?: unknown; /** 화면 구성(검색어)까지 한 번에 (2026-10-28) */ hints?: boolean }) => Promise<{ v: number; t: number; hint?: { desc: string; keywords: string; kind: string } }[]>;
     /** [AI 편집] 글 AI 의 편집 계획 — 앱 0.1.10부터 */
     edit?: (lines: string[], items: { path: string; kind: string; duration: number }[], opts: { aiMax: number; moods: string[]; screen?: boolean; ratio?: string; catalog?: AiEditCatalog; kind?: string; request?: string; locked?: number[]; stock?: boolean; graphics?: string; sfx?: string; ai?: { provider: string; mode: string } | null; packs?: { id: string; label: string; desc: string }[] }) => Promise<{
       music: string;
@@ -515,9 +518,9 @@ export type VideoBridge = {
   showFile: (file: string) => Promise<void>;
   /** 완성 영상 SNS 올리기 — 반자동 (앱 0.1.11부터) · [게시]는 회원이 */
   post?: {
-    draft: (o: { title: string; lines: string[]; vacancyId?: string; saleKind?: string; ratio: string; seconds: number }) => Promise<PostDraft>;
+    draft: (o: { title: string; lines: string[]; vacancyId?: string; saleKind?: string; ratio: string; seconds: number; /** 이미 올린 채널 — 그 채널 글은 후속 글로 (2026-10-28) */ posted?: string[] }) => Promise<PostDraft>;
     thumbs: (o: { file: string; title: string; duration: number }) => Promise<{ at: number; plain: { file: string; url: string }; title: { file: string; url: string } | null }[]>;
-    fill: (o: { channel: PostChannel; file: string; title: string; text: string; visibility?: "public" | "unlisted" | "private"; thumb?: string }) => Promise<{ ok: boolean; partial?: string; thumb?: string; vis?: string }>;
+    fill: (o: { channel: PostChannel; file: string; title: string; text: string; visibility?: "public" | "unlisted" | "private"; thumb?: string; /** 영상의 공실(또는 칼럼) — 게시한 주소를 홍보현황에 */ vacancyId?: string; /** 내 기사 번호 — 기사 홍보현황에 */ articleNo?: string; /** 스레드 — 이어 쓰는 글 */ posts?: string[] }) => Promise<{ ok: boolean; partial?: string; thumb?: string; vis?: string }>;
     login: (ch: PostChannel) => Promise<boolean>;
     finishLogin: () => Promise<void>;
     open: (ch: PostChannel, what?: "verify") => Promise<boolean>;
@@ -543,7 +546,7 @@ export const datedName = (title?: string, d?: Date) => `${ymd(d)} ${String(title
 export const errText = (e: unknown) => {
   const m = String(e instanceof Error ? e.message : e);
   // 앱 본체가 영상 기능보다 먼저 켜졌거나(옛 버전) — 화면만 새것이라 통로가 없다
-  if (/No handler registered for 'video:/.test(m)) return "공실스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
+  if (/No handler registered for 'video:/.test(m)) return "공실마케팅를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
   // 스튜디오 크롬(AI 웹 창)이 닫혔을 때 — 사람이 보기 어려운 영어 대신 (2026-10-21)
   if (/Target page, context or browser has been closed|Target closed|browser has been closed|Browser closed/i.test(m)) return "AI 크롬 창이 닫혀 있었어요 — 다시 눌러 주세요. 계속 이러면 [AI 설정]에서 AI를 다시 연결해 주세요.";
   return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");

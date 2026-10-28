@@ -424,7 +424,7 @@ export default function BoardWriteClient({
     );
   }
 
-  const isStudyBoard = isStudioBoard(boardId); // 공실스튜디오 게시판 (2026-10-26)
+  const isStudyBoard = isStudioBoard(boardId); // 공실마케팅 게시판 (2026-10-26)
 
   return (
     <>

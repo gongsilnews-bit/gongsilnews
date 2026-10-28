@@ -115,7 +115,7 @@ export function MyVoicePane({ selected, onPick }: { selected: boolean; onPick: (
 
   const wrap = (children: React.ReactNode) => <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14, fontFamily: FONT }}><style>{"@keyframes gsvMvSpin{to{transform:rotate(360deg)}}.gsv-mv-spin{animation:gsvMvSpin .8s linear infinite}"}</style>{children}{err && <div style={{ fontSize: 15, color: C.danger, lineHeight: 1.6 }}>{err}</div>}</div>;
 
-  if (!mv) return wrap(<div style={box}><div style={big}>공실스튜디오를 새로 받아 주세요</div><div style={{ ...sub, marginTop: 6 }}>내 목소리 성우는 스튜디오 앱 새 버전부터 쓸 수 있어요.</div></div>);
+  if (!mv) return wrap(<div style={box}><div style={big}>공실마케팅를 새로 받아 주세요</div><div style={{ ...sub, marginTop: 6 }}>내 목소리 성우는 스튜디오 앱 새 버전부터 쓸 수 있어요.</div></div>);
   if (!st) return wrap(<div style={sub}>불러오는 중…</div>);
   if (busy) return wrap(<Progress text={busy.text} frac={busy.frac} />);
   // 앱이 뒤에서 미리 받는 중 (켜고 3분 뒤 저절로) — 다음 진행 알림이 오면 막대가 찬다
@@ -371,7 +371,7 @@ type WizStep = "intro" | "consent" | "tips" | "mic" | "rec" | "pick";
 type Take = { text: string; bytes: ArrayBuffer; url: string; lead: number }; // lead: 앞의 3·2·1 무음 (초)
 // 읽을 문장 3개 (각 10초 안팎) — 우리 엔진은 녹음 하나(10초)를 보고 흉내 내서, 길게(30문장) 녹음해도 나아지지 않는다. 대신 셋 중 잘된 것을 고른다
 const SENTENCES = [
-  "안녕하세요. 공실스튜디오에서 제 목소리로 성우를 만들고 있습니다. 좋은 매물을 찾고 계신다면 언제든 편하게 연락 주세요.",
+  "안녕하세요. 공실마케팅에서 제 목소리로 성우를 만들고 있습니다. 좋은 매물을 찾고 계신다면 언제든 편하게 연락 주세요.",
   "이번에 소개해 드릴 매물은 역세권에 있는 깨끗한 오피스텔입니다. 채광이 좋고 관리 상태도 아주 훌륭합니다.",
   "궁금하신 점은 언제든 편하게 문의해 주세요. 직접 방문하시면 더 자세히 안내해 드리겠습니다.",
 ];

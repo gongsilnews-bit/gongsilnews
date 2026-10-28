@@ -54,7 +54,7 @@ export interface PropertyInfo {
   hiddenFields?: string[];  // 홍보지에서 뺀 항목 (입력란의 [표시] 체크를 끈 것)
   sizeLine?: string;        // 물건명 아래 크기 줄 e.g. "46평 · 25층" (물건 종류별로 처음 채움)
   /** 새 디자인 글자 조정 — 드래그로 옮긴 위치(px)와 글씨 배율. 키는 '디자인-방향-항목' */
-  adjust?: Record<string, { x: number; y: number; s: number; c?: string; f?: string; h?: boolean }>;
+  adjust?: Record<string, { x: number; y: number; s: number; c?: string; f?: string; h?: boolean; z?: number }>;
   /** 새 디자인에서 손으로 고친 글자 (머리 띠·금액 이름·칩·사무소 줄 등). '' 이면 그 글자를 뺀다 */
   texts?: Record<string, string>;
   /** 새 디자인에 특징(소개글)을 넣을지 — 처음엔 꺼 둔다 */
@@ -117,7 +117,7 @@ export interface FlyerColor {
 export interface FlyerLayout {
   id: string;
   name: string;
-  type: 'big' | 'photo' | 'type1' | 'type2' | 'type3' | 'type4' | 'type5' | 'type6';
+  type: 'big' | 'photo' | 'board' | 'diagonal' | 'split' | 'color' | 'frame' | 'gallery' | 'type1' | 'type2' | 'type3' | 'type4' | 'type5' | 'type6';
   headingFont: string; // Tailwind class for headings
   bodyFont: string;    // Tailwind class for body text
 }
@@ -145,3 +145,7 @@ export interface FlyerItem {
   /** 이미지 기본 폭(px) */
   w?: number;
 }
+
+/** 새 유리창 디자인 (2026-10-15 숫자 크게·사진형, 2026-10-28 추천 걸이판·사선 사진·반반 사진) — 끌어서 옮기기·크기·글자 고치기가 되는 것들 */
+export const NEW_LAYOUT_TYPES: string[] = ['big', 'photo', 'board', 'diagonal', 'split', 'color', 'frame', 'gallery'];
+export const isNewLayout = (t?: string) => NEW_LAYOUT_TYPES.includes(t || '');

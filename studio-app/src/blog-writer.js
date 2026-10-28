@@ -148,6 +148,7 @@ function forWeb(d, doc = "blog") {
 }
 
 function get(vacancyId, doc = "blog") {
+  try { if (!isColumn(vacancyId) && !isSim(vacancyId)) syncAnalysisMedia(vacancyId); } catch {} // 분석에서 새로 넣은 사진 (이미 쓴 글에도)
   const d = readJson(docFile(vacancyId, doc));
   // 사진 목록이 없는 예전 글이면 분석 사진(등록 사진 전부 + 캡처 3장, 첫 장 대표)으로 채워 둔다
   if (d && !Array.isArray(d.media)) {
@@ -194,10 +195,15 @@ function saveWritten(vacancyId, doc, parsed, extra) {
     paragraphs,
     keywords: a.keywords || [],
     media: materializeSlots(media, paragraphs.length),
+    ...(prev && Array.isArray(prev.seenFiles) ? { seenFiles: prev.seenFiles } : {}),
     writtenAt: new Date().toISOString(),
   };
   fs.writeFileSync(docFile(vacancyId, doc), JSON.stringify(d, null, 2));
   log.info(`[${DOC_NAME[doc]}] ${vacancyId} 문단 ${paragraphs.length}개`);
+  // 다시 써도 분석에서 넣은 사진(AI 사진 등)이 빠지지 않게 (2026-10-28 사장님: 블로그에 AI 사진이 안 들어갔다)
+  if (!isColumn(vacancyId) && !isSim(vacancyId) && prev) {
+    try { syncAnalysisMedia(vacancyId); return forWeb(readJson(docFile(vacancyId, doc)), doc); } catch {}
+  }
   return forWeb(d, doc);
 }
 
@@ -460,6 +466,7 @@ async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", req
 
 /* 기사쓰기 화면으로 보내기: 기사 초안 + 사진(data URL)을 순서·자리대로 넘긴다 (기사쓰기 화면이 받아 채운다) */
 function exportArticleDraft(vacancyId) {
+  try { if (!isColumn(vacancyId) && !isSim(vacancyId)) syncAnalysisMedia(vacancyId); } catch {} // 분석에서 새로 넣은 사진도 기사에
   const d = readJson(docFile(vacancyId, "article"));
   if (!d) return null;
   const analysis = readAnalysis(vacancyId) || { vacancy: {} };
@@ -482,4 +489,39 @@ function exportArticleDraft(vacancyId) {
   };
 }
 
-module.exports = { isSim, styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };
+/* 분석 사진을 고치면(빼기·되살리기·AI 이미지 넣기) 이미 쓴 기사·블로그에도 바로 반영 (2026-10-28 사장님: AI 사진 2장이 안 들어갔다)
+ * 글에 직접 옮겨 둔 자리·순서는 그대로 두고 — 새로 생긴 사진은 글 끝에 붙이고, 뺀 사진은 글에서도 뺀다. SNS 는 이 글 사진에서 고른다 */
+function seenOf(d, an, files = (d.media || []).map((m) => m.file)) {
+  if (Array.isArray(d.seenFiles)) return new Set([...d.seenFiles, ...files]);
+  const since = Date.parse(d.writtenAt || "") || 0;
+  const old = (an.media || []).filter((m) => m.kind !== "ai" && (() => { try { return fs.statSync(m.file).mtimeMs <= since; } catch { return true; } })()).map((m) => m.file);
+  return new Set([...files, ...old]);
+}
+function syncAnalysisMedia(vacancyId) {
+  const an = readAnalysis(vacancyId);
+  if (!an) return;
+  const keep = new Set((an.media || []).map((m) => m.file));
+  const gone = new Set((an.hidden || []).map((m) => m.file));
+  for (const doc of ["article", "blog"]) {
+    const f = docFile(vacancyId, doc);
+    const d = readJson(f);
+    if (!d || !Array.isArray(d.media)) continue;
+    const before = d.media.length;
+    let media = d.media.filter((m) => !gone.has(m.file));
+    const have = new Set(media.map((m) => m.file));
+    const end = (d.paragraphs || []).length;
+    // 이 글에 한 번도 들어간 적 없는 분석 사진만 넣는다 (글에서 일부러 뺀 사진은 다시 넣지 않는다)
+    const seen = seenOf(d, an);
+    const added = (an.media || []).filter((m) => !have.has(m.file) && !seen.has(m.file)).map((m) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: false, insertAfterParagraph: end }));
+    if (!added.length && media.length === before && Array.isArray(d.seenFiles)) continue;
+    media = media.concat(added);
+    if (media.length && !media.some((m) => m.isCover)) media[0].isCover = true;
+    d.media = media;
+    d.seenFiles = [...new Set([...seen, ...media.map((m) => m.file)])];
+    d.editedAt = new Date().toISOString(); // 화면 편집기를 새로 그리게
+    fs.writeFileSync(f, JSON.stringify(d, null, 2));
+    log.info(`[사진 맞춤] ${vacancyId} ${doc} +${added.length} -${before - (media.length - added.length)}`);
+  }
+}
+
+module.exports = { syncAnalysisMedia, seenOf, isSim, styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };

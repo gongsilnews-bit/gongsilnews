@@ -11,7 +11,7 @@ export const TEMPLATE_CATS: { id: TemplateCat; name: string }[] = [
 ];
 export type Template = { id: string; name: string; desc: string; cat: TemplateCat; html?: string; file?: string; source?: string; page?: Partial<PageSetup>; thumb: string[] };
 
-const NOTE = `<p></p><p><span style="font-size:8pt;color:#7F7F7F">※ 이 서식은 참고용이며 법률 자문이 아닙니다. 법이 바뀌거나 사정이 특별하면 전문가에게 확인하세요. (공실스튜디오 서식)</span></p>`;
+const NOTE = `<p></p><p><span style="font-size:8pt;color:#7F7F7F">※ 이 서식은 참고용이며 법률 자문이 아닙니다. 법이 바뀌거나 사정이 특별하면 전문가에게 확인하세요. (공실마케팅 서식)</span></p>`;
 const th = (t: string, w?: number) => `<td data-bg="#F2F2F2" style="background-color:#F2F2F2"${w ? ` colwidth="${w}"` : ""}><p style="text-align:center"><strong>${t}</strong></p></td>`;
 const td = (t = "", span = 1) => `<td${span > 1 ? ` colspan="${span}"` : ""}><p>${t}</p></td>`;
 const kv = (rows: [string, string][], w = 140) => `<table>${rows.map(([a, b]) => `<tr>${th(a, w)}${td(b)}</tr>`).join("")}</table>`;

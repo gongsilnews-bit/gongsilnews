@@ -1,11 +1,11 @@
-// 공실스튜디오 소개 (2026-10-26 사장님: 예전 공실뉴스부동산(/newsrealty) 내용이 실은 공실스튜디오 내용 — 일단 그대로, 이름·주소만 바꿈)
+// 공실마케팅 소개 (2026-10-26 사장님: 예전 공실뉴스부동산(/newsrealty) 내용이 실은 공실마케팅 내용 — 일단 그대로, 이름·주소만 바꿈)
 "use client";
 
 import React from "react";
 import Link from "next/link";
 
-// 공실스튜디오 소개(/studio) 본문. Claude Design 시안(design/newsrealty, v3)을 옮긴 것.
-// PC(/studio)와 모바일(/m/newsrealty)이 같이 쓴다. 그리드는 auto-fit 이라 폭에 따라 알아서 줄바꿈된다.
+// 공실마케팅 소개(/marketing) 본문. Claude Design 시안(design/newsrealty, v3)을 옮긴 것.
+// PC(/marketing)와 모바일(/m/newsrealty)이 같이 쓴다. 그리드는 auto-fit 이라 폭에 따라 알아서 줄바꿈된다.
 
 const S = "/images/study/";
 
@@ -109,12 +109,12 @@ const rows = [
   { a: "부동산특강 강좌", b: "—", c: "일부 무료 수강" },
 ];
 
-// 같은 본문을 공실스튜디오(/studio, 주황)과 공실스터디(/study, 녹색)가 함께 쓴다.
+// 같은 본문을 공실마케팅(/studio, 주황)과 공실스터디(/study, 녹색)가 함께 쓴다.
 // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로 보여 준다.
 type Brand = { name: string; applyHref: string; applyShort: string; applyLong: string; benefitsLabel: string };
 const BRANDS: Record<"orange" | "green", Brand> = {
-  orange: { name: "공실스튜디오", applyHref: "/studio/apply", applyShort: "공실스튜디오 신청", applyLong: "공실스튜디오 신청하기", benefitsLabel: "부동산 혜택" },
-  green: { name: "공실스튜디오", applyHref: "/studio/apply", applyShort: "공실스튜디오 신청", applyLong: "공실스튜디오 신청하기", benefitsLabel: "멤버십 혜택" },
+  orange: { name: "공실마케팅", applyHref: "/marketing/apply", applyShort: "공실마케팅 신청", applyLong: "공실마케팅 신청하기", benefitsLabel: "부동산 혜택" },
+  green: { name: "공실마케팅", applyHref: "/marketing/apply", applyShort: "공실마케팅 신청", applyLong: "공실마케팅 신청하기", benefitsLabel: "멤버십 혜택" },
 };
 
 const faqs = (brand: Brand): { q: string; badge?: string; a: string }[] => [
@@ -192,7 +192,7 @@ function PriceHeading() {
   );
 }
 
-// 일반 부동산 vs 공실스튜디오 금액·혜택 비교표. 금액안내 페이지(/studio/pricing)도 이것을 쓴다.
+// 일반 부동산 vs 공실마케팅 금액·혜택 비교표. 금액안내 페이지(/marketing/pricing)도 이것을 쓴다.
 function PriceTable({ brand }: { brand: Brand }) {
   const study = brand === BRANDS.green;
   const list = study ? studyRows : rows;
@@ -290,7 +290,7 @@ function PhotoCards({ items, kickerColor }: { items: PhotoCard[]; kickerColor: s
 
 export default function StudioLanding({
   onApply,
-  benefitsHref = "/studio/benefits",
+  benefitsHref = "/marketing/benefits",
   showFooter = false,
   tone = "orange",
 }: {
@@ -474,7 +474,7 @@ export default function StudioLanding({
   );
 }
 
-// 금액안내 페이지(/studio/pricing) 본문: 리뉴얼 전 주황 2열 카드 형태(일반부동산 vs 공실스튜디오).
+// 금액안내 페이지(/marketing/pricing) 본문: 리뉴얼 전 주황 2열 카드 형태(일반부동산 vs 공실마케팅).
 // 금액·혜택 항목은 비교표(rows)를 기준으로 한다.
 export function StudioPricing({ onApply, onGeneral }: { onApply: () => void; onGeneral: () => void }) {
   const applyClick = (e: React.MouseEvent) => {
@@ -534,13 +534,13 @@ export function StudioPricing({ onApply, onGeneral }: { onApply: () => void; onG
               </div>
             </div>
 
-            {/* 공실스튜디오 (강조) */}
+            {/* 공실마케팅 (강조) */}
             <div style={{ background: "#ffffff", border: "2.5px solid #ff8e15", borderRadius: 20, padding: "42px 34px", boxShadow: "0 16px 44px rgba(255, 142, 21, 0.18)", position: "relative" }}>
               <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg, #ff8e15 0%, #e67e10 100%)", color: "#ffffff", padding: "5px 20px", borderRadius: 20, fontSize: 12, fontWeight: 900, boxShadow: "0 4px 12px rgba(255, 142, 21, 0.35)", whiteSpace: "nowrap" }}>
                 🔥 강력 추천 · 대표 파트너십
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>공실스튜디오</h3>
+                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>공실마케팅</h3>
                 <span style={{ fontSize: 12, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "4px 12px", borderRadius: 20 }}>12개월 멤버십</span>
               </div>
               <div style={{ marginBottom: 20 }}>
@@ -552,8 +552,8 @@ export function StudioPricing({ onApply, onGeneral }: { onApply: () => void; onG
                 </div>
                 <p style={{ fontSize: 13, color: "#ff8e15", fontWeight: 700, margin: "8px 0 0" }}>VAT 포함 · 네이버결제 12개월 무이자 할부 가능</p>
               </div>
-              <a href="/studio/apply" onClick={applyClick} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#ff8e15", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none", boxShadow: "0 4px 14px rgba(255, 142, 21, 0.35)" }}>
-                공실스튜디오 신청하기 ➔
+              <a href="/marketing/apply" onClick={applyClick} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#ff8e15", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none", boxShadow: "0 4px 14px rgba(255, 142, 21, 0.35)" }}>
+                공실마케팅 신청하기 ➔
               </a>
               <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 24 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 800, color: "#1c1917", marginBottom: 16 }}>포함된 모든 전용 혜택</div>

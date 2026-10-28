@@ -76,8 +76,39 @@ function forWeb(data) {
   };
 }
 
+/* 분석에서 새로 넣은 사진(AI 사진 등)을 이미 쓴 SNS 글에도 — 채널마다 끝에 붙인다 (최대 장수까지), 분석에서 뺀 사진은 뺀다 (2026-10-28 사장님)
+ * SNS 글을 쓴 뒤 새로 생긴 사진만 · 한 번 넣은 것은 seenFiles 에 적어 두어 일부러 뺀 것을 다시 넣지 않는다 */
+function syncNewMedia(vacancyId, data) {
+  if (!data || data.kind === "sim" || data.kind === "column" || blogWriter.isColumn(vacancyId) || blogWriter.isSim(vacancyId)) return data;
+  try { blogWriter.syncAnalysisMedia(vacancyId); } catch {}
+  const an = readJson(path.join(mediaDir(vacancyId), "analysis.json")) || {};
+  const gone = new Set((an.hidden || []).map((m) => m.file));
+  // 사진 모음(pool)에 새 사진을 더하고, 채널마다 "그 채널에 한 번도 들어간 적 없는" 사진을 끝에 붙인다
+  let pool = (data.pool || []).filter((m) => !gone.has(m.file));
+  const inPool = new Set(pool.map((m) => m.file));
+  pool = pool.concat(photoPool(vacancyId).filter((m) => !inPool.has(m.file) && !gone.has(m.file)).map((m) => ({ ...m, isCover: false })));
+  const byId = new Map(pool.map((m) => [m.id, m]));
+  const used = new Set();
+  for (const ch of CHANNELS) for (const id of (data.media && data.media[ch]) || []) { const m = byId.get(id); if (m) used.add(m.file); }
+  const seen = blogWriter.seenOf(data, an, [...used]);
+  const fresh = pool.filter((m) => !used.has(m.file) && !seen.has(m.file));
+  const changed = fresh.length || pool.length !== (data.pool || []).length || !Array.isArray(data.seenFiles);
+  if (!changed) return data;
+  const max = Object.fromEntries(channelInfo().map((c) => [c.id, c.maxMedia || 10]));
+  const media = {};
+  for (const ch of CHANNELS) {
+    const cur = ((data.media && data.media[ch]) || []).filter((id) => byId.has(id));
+    media[ch] = cur.concat(fresh.map((m) => m.id)).slice(0, max[ch]);
+  }
+  const next = { ...data, pool, media, seenFiles: [...new Set([...seen, ...used, ...fresh.map((m) => m.file)])] };
+  fs.writeFileSync(snsFile(vacancyId), JSON.stringify(next, null, 2));
+  log.info(`[SNS 사진 맞춤] ${vacancyId} +${fresh.length}`);
+  return next;
+}
+
 function get(vacancyId) {
-  return forWeb(readJson(snsFile(vacancyId)));
+  const data = readJson(snsFile(vacancyId));
+  try { return forWeb(syncNewMedia(vacancyId, data)); } catch { return forWeb(data); }
 }
 
 async function useQuota(baseUrl, vacancyId) {
@@ -296,7 +327,7 @@ async function exportChannel({ vacancyId, channel }) {
 
 /* 채널 비율로 자른 사진·글을 폴더에 만든다 — [사진·글 저장]·도우미 채우기 공용 */
 async function channelFiles({ vacancyId, channel }) {
-  const data = readJson(snsFile(vacancyId));
+  const data = syncNewMedia(vacancyId, readJson(snsFile(vacancyId))); // 분석에서 새로 넣은 사진도
   if (!data) throw new Error("먼저 SNS 글을 써 주세요.");
   const c = sns.GW_SNS_CHANNELS[channel];
   const web = forWeb(data).channels[channel];
@@ -323,7 +354,7 @@ async function channelFiles({ vacancyId, channel }) {
   return { folder, files, total: list.length, text: web.composed.text, posts: web.composed.posts || [] };
 }
 
-/* [도우미로 채우기] — 평소 크롬에 그 채널을 열고, 공실스튜디오 도우미 확장이 사진·글을 넣는다 ([공유하기]·[게시]는 회원이)
+/* [도우미로 채우기] — 평소 크롬에 그 채널을 열고, 공실마케팅 도우미 확장이 사진·글을 넣는다 ([공유하기]·[게시]는 회원이)
    30초 안에 도우미가 안 받아 가면 HELPER_NONE (화면이 [글 복사]·[사진·글 저장]을 안내) */
 const HOME = { instagram: "https://www.instagram.com/", threads: "https://www.threads.com/", facebook: "https://www.facebook.com/" };
 async function fillByHelper({ vacancyId, channel }, onProgress = () => {}) {
@@ -335,12 +366,13 @@ async function fillByHelper({ vacancyId, channel }, onProgress = () => {}) {
   const helper = require("./helper-server");
   // 공실 글이면 회원이 [공유하기]한 뒤 게시물 주소를 홍보현황에 (2026-10-27, 지금은 인스타그램만 잡는다)
   const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(vacancyId || ""));
-  const id = helper.addJob(channel, { channel, label: c.label, text: r.text, posts: r.posts, photos }, isVacancy ? { vacancyId, channel } : null);
+  const articleNo = isVacancy ? "" : require("./column-writer").articleOf(vacancyId); // 홈 "내 기사"로 쓴 글 (2026-10-28)
+  const id = helper.addJob(channel, { channel, label: c.label, text: r.text, posts: r.posts, photos }, isVacancy ? { vacancyId, channel } : articleNo ? { articleNo, channel } : null);
   void shell.openExternal(HOME[channel]);
-  onProgress(`평소 크롬에 ${c.label}을(를) 열었어요. 공실스튜디오 도우미가 채우기를 기다리는 중…`);
+  onProgress(`평소 크롬에 ${c.label}을(를) 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…`);
   if (!(await helper.wait(id, "taken", 45000))) {
     helper.cancel(id);
-    throw new Error(`HELPER_NONE: 공실스튜디오 도우미(크롬 확장)가 응답하지 않았어요. [글 복사]·[사진·글 저장]으로 직접 올리거나, 도우미를 설치해 주세요.`);
+    throw new Error(`HELPER_NONE: 공실마케팅 도우미(크롬 확장)가 응답하지 않았어요. [글 복사]·[사진·글 저장]으로 직접 올리거나, 도우미를 설치해 주세요.`);
   }
   onProgress(`도우미가 ${c.label}에 사진 ${photos.length}장과 글을 넣는 중… (크롬 창을 닫지 마세요)`);
   const done = await helper.wait(id, "done", 180000);
@@ -349,15 +381,24 @@ async function fillByHelper({ vacancyId, channel }, onProgress = () => {}) {
   return { ...done, folder: r.folder };
 }
 
+/** 채널 하나만 쓰기 (2026-10-28 사장님) — 새로 받은 글 중 그 채널만 바꾸고 나머지 채널 글은 그대로 둔다 */
+function keepOthers(vacancyId, posts, only) {
+  if (!only || !posts || !posts[only]) return posts;
+  const prev = (readJson(snsFile(vacancyId)) || {}).posts || {};
+  return { ...prev, [only]: posts[only] };
+}
+
 /** 한 번에 모두 쓰기(all-writer.js)가 받은 SNS 글을 따로 쓴 것과 같은 자리에 저장 */
 function saveAll(vacancyId, { noun, listing, posts, column = false }) {
   const { pool, media } = pickMedia(vacancyId);
   const data = column
     ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(require("./column-writer").readSource(vacancyId)), posts, pool, media, chatUrl: "", writtenAt: new Date().toISOString() }
     : { vacancyId, noun, listing, posts, pool, media, chatUrl: "", writtenAt: new Date().toISOString() };
+  const prevSeen = (readJson(snsFile(vacancyId)) || {}).seenFiles;
+  if (Array.isArray(prevSeen)) data.seenFiles = prevSeen;
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
   log.info(`[SNS] ${vacancyId} ${Object.keys(posts).join(",")} (한 번에)`);
-  return forWeb(data);
+  try { return forWeb(column ? data : syncNewMedia(vacancyId, data)); } catch { return forWeb(data); } // 분석에서 넣은 사진도
 }
 
-module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, saveSimPosts, useQuota, saveAll, toneLine, NO_REF };
+module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, saveSimPosts, useQuota, saveAll, toneLine, NO_REF, keepOthers };

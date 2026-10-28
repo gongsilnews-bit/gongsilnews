@@ -8,6 +8,7 @@ import { getAuthorEligibleVacancies, getAuthorArticlesVacancyMap, updateArticleA
 import ArticleVacancyDropdown from "@/components/admin/ArticleVacancyDropdown";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import ArticleCardGrid from "./ArticleCardGrid";
 import { createClient } from "@supabase/supabase-js";
 
 // ⚡ 5,566줄 대형 에디터를 지연 로딩하여 목록 화면 번들 용량을 80% 이상 절감
@@ -67,6 +68,16 @@ export default function MemberArticleSection({
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeFilters, setActiveFilters] = useState({ articleNo: "", section: "전체", keyword: "" });
   const router = useRouter();
+  // 보기 방식 (2026-10-28 사장님 — 공실관리와 같이): 카드형(기본 — 홈 "내 기사"와 같은 카드) / 목록형(표). 고른 보기는 이 기기에 기억
+  const [view, setView] = useState<"card" | "list">("card");
+  const [cardQ, setCardQ] = useState("");
+  useEffect(() => {
+    try { if (localStorage.getItem("gs-article-view") === "list") setView("list"); } catch {}
+  }, []);
+  const pickView = (v: "card" | "list") => {
+    setView(v);
+    try { localStorage.setItem("gs-article-view", v); } catch {}
+  };
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
   const editId = searchParams.get("id");
@@ -426,14 +437,49 @@ export default function MemberArticleSection({
     );
   }
 
+  // [☰ 목록형] [▦ 카드형] · 카드형 찾기 칸 (공실관리 VacancySection 과 같은 모양)
+  const titleRow = (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사관리</h1>
+      <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
+        ( 승인대기 {articles.filter(a => a.status === "PENDING").length}건 / 전체 {articles.length}건 )
+      </span>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+        {view === "card" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, width: 280, height: 38, padding: "0 12px", borderRadius: 10, border: `1px solid ${border}`, background: cardBg }}>
+            <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke={textSecondary} strokeWidth={1.8} strokeLinecap="round" aria-hidden><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /></svg>
+            <input value={cardQ} onChange={(e) => setCardQ(e.target.value)} placeholder="기사 제목·기사번호 찾기"
+              style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", fontSize: 14, color: textPrimary }} />
+            {cardQ && <button onClick={() => setCardQ("")} aria-label="지우기" style={{ border: 0, background: "transparent", color: textSecondary, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>}
+          </div>
+        )}
+        <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: darkMode ? "#2c2d31" : "#f1f3f5" }}>
+          {([["list", "목록형", "M4 6h16M4 12h16M4 18h16"], ["card", "카드형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => (
+            <button key={k} onClick={() => pickView(k)} aria-pressed={view === k}
+              style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: 0, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                background: view === k ? (darkMode ? "#45474d" : "#fff") : "transparent", color: view === k ? textPrimary : textSecondary, boxShadow: view === k ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>
+              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // 카드형 — 홈 "내 기사"와 같은 카드 (바둑판). 채널 아이콘 ✓ · [링크 수정] · 오른쪽 클릭 메뉴 · ☆
+  if (view === "card") {
+    return (
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px 48px", background: bg }}>
+        {titleRow}
+        <ArticleCardGrid theme={theme} memberId={memberId} onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })} keyword={cardQ} layout="grid" />
+      </div>
+    );
+  }
+
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사관리</h1>
-        <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
-          ( 승인대기 {articles.filter(a => a.status === "PENDING").length}건 / 전체 {articles.length}건 )
-        </span>
-      </div>
+      {titleRow}
 
       {/* 필터 검색 바 */}
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>

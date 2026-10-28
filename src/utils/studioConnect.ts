@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 
 /**
- * 공실스튜디오(데스크톱 앱) "클릭 한 번 연결"용 연결 신호
+ * 공실마케팅(데스크톱 앱) "클릭 한 번 연결"용 연결 신호
  *
  * 구글은 앱 안 창에서의 구글 로그인을 막는다. 그래서 회원 크롬에 이미 되어 있는
  * 공실뉴스 로그인으로 연결 신호를 만들어 gongsilstudio:// 주소로 앱에 넘긴다.

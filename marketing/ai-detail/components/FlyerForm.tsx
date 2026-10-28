@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PropertyInfo, TransactionType, FlyerColor, FlyerLayout, FlyerRow } from '../types';
+import { PropertyInfo, TransactionType, FlyerColor, FlyerLayout, FlyerRow, isNewLayout } from '../types';
 import { GROUP_NAME, FlyerGroup } from '../flyerRows';
 import { PhotoIcon, DocumentTextIcon, PlusIcon, TrashIcon, SwatchIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 
@@ -178,21 +178,21 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
         </h3>
         {/* 새 디자인 2가지가 기본, 예전 6가지는 접어 둔다 (이미 만든 홍보지용) */}
         <div className="grid grid-cols-2 gap-2">
-             {layouts.filter((l) => l.type === 'big' || l.type === 'photo').map((layout, idx) => (
+             {layouts.filter((l) => isNewLayout(l.type)).map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
                     className={`py-3 rounded-lg border text-sm font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
                  >
-                     <span className="block text-lg mb-0.5">{idx === 0 ? '①' : '②'}</span>
+                     <span className="block text-lg mb-0.5">{'①②③④⑤⑥⑦⑧⑨⑩'[idx]}</span>
                      <span>{layout.name}</span>
                  </button>
              ))}
         </div>
-        <details className="mt-2" open={!(currentLayout.type === 'big' || currentLayout.type === 'photo')}>
+        <details className="mt-2" open={!isNewLayout(currentLayout.type)}>
           <summary className="text-[11px] text-gray-400 cursor-pointer select-none">예전 디자인</summary>
           <div className="grid grid-cols-6 gap-1 mt-2">
-             {layouts.filter((l) => l.type !== 'big' && l.type !== 'photo').map((layout, idx) => (
+             {layouts.filter((l) => !isNewLayout(l.type)).map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
@@ -327,8 +327,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
         {/* ⑥ 특징 — 새 디자인은 처음에 꺼 두고 [표시]로 켠다 (필요한 매물만, 2026-10-15 사장님) */}
         <Group title="특징" color={primaryColor}>
             <Field label="특징 설명 (소개글)"
-                show={(currentLayout.type === 'big' || currentLayout.type === 'photo') ? !!info.showNotice : shown('noticeContent')}
-                onShow={(v) => ((currentLayout.type === 'big' || currentLayout.type === 'photo') ? setInfo({ ...info, showNotice: v }) : toggle('noticeContent', v))}>
+                show={isNewLayout(currentLayout.type) ? !!info.showNotice : shown('noticeContent')}
+                onShow={(v) => (isNewLayout(currentLayout.type) ? setInfo({ ...info, showNotice: v }) : toggle('noticeContent', v))}>
                 <textarea name="noticeContent" value={info.noticeContent} onChange={handleChange} rows={4}
                     className="w-full px-3 py-2 text-xs border rounded outline-none focus:ring-1"
                     style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}

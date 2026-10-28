@@ -423,7 +423,7 @@ function register(base) {
   ipcMain.handle("video:project-create", (_e, opts) => project.withUrls(project.create(opts || {})));
   ipcMain.handle("video:project-open", (_e, dir, choice) => project.open(dir, choice));
   ipcMain.handle("video:project-open-pick", async (e) => {
-    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: folders.projectDir(), properties: ["openFile"], filters: [{ name: "공실스튜디오 영상 파일", extensions: ["gss"] }, { name: "예전 폴더 방식 프로젝트 (project.json)", extensions: ["json"] }] });
+    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: folders.projectDir(), properties: ["openFile"], filters: [{ name: "공실마케팅 영상 파일", extensions: ["gss"] }, { name: "예전 폴더 방식 프로젝트 (project.json)", extensions: ["json"] }] });
     if (r.canceled || !r.filePaths[0]) return null;
     const f = r.filePaths[0];
     return project.open(f.toLowerCase().endsWith(".gss") ? f : path.dirname(f));
@@ -621,7 +621,7 @@ function register(base) {
     fs.mkdirSync(dir, { recursive: true });
     for (const f of fs.readdirSync(dir)) if (/^el_sample_/.test(f)) { try { fs.unlinkSync(path.join(dir, f)); } catch {} }
     const f = path.join(dir, `el_sample_${Date.now()}.wav`);
-    await eleven.say(String(text || "안녕하세요. 공실스튜디오에서 새 매물을 소개해 드립니다."), f, { voiceId, emotion });
+    await eleven.say(String(text || "안녕하세요. 공실마케팅에서 새 매물을 소개해 드립니다."), f, { voiceId, emotion });
     media.allow(f);
     return media.urlOf(f);
   });
@@ -703,7 +703,7 @@ function register(base) {
     const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t), opts || {});
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
     if (!m) throw new Error("그림을 받지 못했습니다.");
-    // 만든 AI 그림은 문서공실스튜디오AI그림날짜 에 모은다 (2026-10-21 사장님: 따로 모아 볼 폴더가 없었다). 내 자료·프로젝트는 이 파일을 쓴다
+    // 만든 AI 그림은 문서공실마케팅AI그림날짜 에 모은다 (2026-10-21 사장님: 따로 모아 볼 폴더가 없었다). 내 자료·프로젝트는 이 파일을 쓴다
     const d = new Date();
     const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; // 20261021
     const file = path.join(require("../studio-root").dir("ai", "AI이미지"), day, `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
@@ -743,10 +743,12 @@ function register(base) {
       const { analyzeVacancy } = require("../vacancy-capture");
       a = await analyzeVacancy(baseUrl, vacancyId, (t) => send(e, "video:progress", t));
     }
-    const photos = (a.media || []).filter((m) => m.kind === "photo" && m.file && fs.existsSync(m.file)).map((m) => m.file);
+    // 공실 사진 = 분석 내용에서 정리한 순서 그대로 — 등록 사진 + 넣은 AI 사진 (뺀 사진은 hidden 이라 빠진다, 2026-10-28 사장님)
+    const isScreen = (m) => ["proof", "map", "roadview"].includes(m.kind);
+    const photos = (a.media || []).filter((m) => !isScreen(m) && m.file && fs.existsSync(m.file)).map((m) => m.file);
     const items = await library.add(photos, { source: "vacancy" });
     // 공실 분석 때 찍어 둔 화면 (공실열람 검증·지도·로드뷰) — 영상에서 문장에 맞춰 AI 가 고른다 (2026-10-20 사장님)
-    const shotFiles = (a.media || []).filter((m) => m.kind !== "photo" && m.file && fs.existsSync(m.file)).map((m) => m.file);
+    const shotFiles = (a.media || []).filter((m) => isScreen(m) && m.file && fs.existsSync(m.file)).map((m) => m.file);
     const shots = shotFiles.length ? await library.add(shotFiles, { source: "vacancy" }) : [];
     return { vacancy: a.vacancy, photos: items, shots };
   });

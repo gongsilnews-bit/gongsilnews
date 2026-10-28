@@ -119,7 +119,7 @@ function scan() {
       walk(r.dir, files);
       for (const f of files) {
         if (/_edit\.(mp4|jpg)$/i.test(f)) continue; // 편집용 사본은 따로 보이지 않게
-        // AI 그림 모음 폴더(문서공실스튜디오AI그림)·AI그림_ 파일은 늘 "ai" — 훑을 때 "studio"로 바뀌지 않게 (2026-10-21)
+        // AI 그림 모음 폴더(문서공실마케팅AI그림)·AI그림_ 파일은 늘 "ai" — 훑을 때 "studio"로 바뀌지 않게 (2026-10-21)
         const isAi = /^AI(그림|영상)_/.test(path.basename(f)) || [path.join(oldRoot(), "AI그림"), path.join(oldRoot(), "AI영상"), require("../studio-root").dir("ai")].some((d) => (f.toLowerCase() + path.sep).startsWith(d.toLowerCase() + path.sep));
         const it = put(f, { source: isAi ? "ai" : r.source });
         if (it) seen.add(it.id);

@@ -7,10 +7,10 @@ import { getPlanLabel, isAdminRole } from "@/utils/permissionCheck";
 /**
  * 헤더 오른쪽 위 [공실뉴스부동산 가입 ›] — 직방 "중개사무소 가입 및 상품문의" 자리 (2026-10-26 사장님).
  * 아직 가입 전(일반회원·비회원)이면 [공실뉴스부동산 가입 ›] → /newsrealty,
- * 이미 공실뉴스부동산·최고관리자면 다음 단계 [공실스튜디오 ›] → /studio (2026-10-26 사장님). /newsrealty 안에서는 가입 버튼만 숨긴다.
+ * 이미 공실뉴스부동산·최고관리자면 다음 단계 [공실마케팅 ›] → /studio (2026-10-26 사장님). /newsrealty 안에서는 가입 버튼만 숨긴다.
  * tone: dark = 어두운 바탕(메인 홈 위쪽 줄), light = 흰 바탕.
  */
-/** 공실스튜디오 공개 전이라 헤더 단추를 숨긴다 (2026-10-27 사장님) */
+/** 공실마케팅 공개 전이라 헤더 단추를 숨긴다 (2026-10-27 사장님) */
 const STUDIO_BUTTON_HIDDEN = true;
 
 /** 아직 공실뉴스부동산이 아닌가 (가입 글자를 붙일지) */
@@ -23,16 +23,16 @@ export default function NewsrealtyJoinButton({ tone = "light", small = false, jo
   const pathname = usePathname();
   // 2026-10-26 사장님: [공실뉴스부동산 가입 ›] 은 없앤다 — 가입 전에는 [공실뉴스 무료가입 및 로그인](LoginJoinButton) 하나만
   if (!joined) return null;
-  // 2026-10-27 사장님: 공실스튜디오는 아직 열지 않는다 — 열 때 STUDIO_BUTTON_HIDDEN 을 false 로
+  // 2026-10-27 사장님: 공실마케팅는 아직 열지 않는다 — 열 때 STUDIO_BUTTON_HIDDEN 을 false 로
   if (STUDIO_BUTTON_HIDDEN) return null;
   void pathname;
   void tone;
-  // 2026-10-26 사장님: admin 버튼 옆 마크 대신, 이 버튼을 공실스튜디오 로고 + 이름으로 (앱 색: 짙은 밤색 바탕 + 오렌지)
+  // 2026-10-26 사장님: admin 버튼 옆 마크 대신, 이 버튼을 공실마케팅 로고 + 이름으로 (앱 색: 짙은 밤색 바탕 + 오렌지)
   const icon = small ? 16 : 18;
   return (
     <Link
-      href="/studio"
-      title="공실스튜디오"
+      href="/marketing"
+      title="공실마케팅"
       style={{
         display: "inline-flex", alignItems: "center", gap: 6,
         height: small ? 24 : 28, padding: small ? "0 10px 0 4px" : "0 12px 0 5px", borderRadius: 999,
@@ -42,7 +42,7 @@ export default function NewsrealtyJoinButton({ tone = "light", small = false, jo
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/studio-app-icon.png" alt="" width={icon} height={icon} style={{ width: icon, height: icon, borderRadius: "50%" }} />
-      공실스튜디오
+      공실마케팅
     </Link>
   );
 }

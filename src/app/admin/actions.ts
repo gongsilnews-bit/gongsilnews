@@ -95,7 +95,7 @@ export async function adminUpdateMember(memberId: string, updates: {
   plan_type?: string;
   plan_start_date?: string | null;
   plan_end_date?: string | null;
-  /** 공실스튜디오 멤버십 이용 기간 (2026-10-26, 등급과 따로) */
+  /** 공실마케팅 멤버십 이용 기간 (2026-10-26, 등급과 따로) */
   studio_start_date?: string | null;
   studio_end_date?: string | null;
   max_vacancies?: number;

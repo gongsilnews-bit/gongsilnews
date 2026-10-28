@@ -180,7 +180,7 @@ function MobileMemberWrite() {
             {renderInfoRow("가입일", member.created_at ? new Date(member.created_at).toLocaleDateString() : "-")}
             {member.role === 'REALTOR' && (
               <>
-                {renderInfoRow("공실스튜디오", isStudioMember(member) ? `이용 중 (~${String(member.studio_end_date).slice(0, 10)})` : '이용 안 함 (공실뉴스부동산 무료)')}
+                {renderInfoRow("공실마케팅", isStudioMember(member) ? `이용 중 (~${String(member.studio_end_date).slice(0, 10)})` : '이용 안 함 (공실뉴스부동산 무료)')}
                 {renderInfoRow("최대 공실광고", `${member.max_vacancies || 5}개`)}
                 {renderInfoRow("월 기사", `${member.max_articles_per_month || 0}개`)}
               </>

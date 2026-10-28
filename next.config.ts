@@ -25,6 +25,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  // 공실마케팅 소개 사이트 주소 /studio → /marketing (2026-10-28 사장님). 앱 연결 화면 /studio/connect · /studio/callback 은 그대로
+  async redirects() {
+    return [
+      { source: '/studio', destination: '/marketing', permanent: false },
+      { source: '/studio/:path((?!connect|callback).*)', destination: '/marketing/:path', permanent: false },
+    ];
+  },
   async rewrites() {
     if (process.env.USE_VITE_DEV_SERVER === 'true') {
       return [

@@ -4,7 +4,7 @@ import { createClient as createCookieSupabase } from "@/utils/supabase/server";
 import { sealStudioCode } from "@/utils/studioConnect";
 
 /**
- * 공실스튜디오 연결 신호 만들기 (크롬의 /studio/connect 화면이 부름)
+ * 공실마케팅 연결 신호 만들기 (크롬의 /studio/connect 화면이 부름)
  * 로그인 쿠키로 회원을 확인하고, 그 회원의 1회용 로그인 토큰을 암호화해 돌려준다.
  * generateLink 는 메일을 보내지 않는다.
  */

@@ -92,7 +92,7 @@
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
   }
-  const fileInput = (scope = document) => Array.from(scope.querySelectorAll("input[type='file']")).find((i) => !i.disabled && (!i.accept || /image/.test(i.accept))) || null;
+  const fileInput = (scope = document) => Array.from(scope.querySelectorAll("input[type='file']")).find((i) => !i.disabled && (!i.accept || /image|video/.test(i.accept))) || null;
 
   const EDITOR_SELECTOR = [
     "[data-lexical-editor='true'][contenteditable]:not([contenteditable='false'])",
@@ -381,7 +381,27 @@
       : `👉 ${name} 글 칸을 한 번 눌러 주세요 — 바로 넣고, 안 들어가면 복사해 둘 테니 Ctrl+V 한 번이면 돼요.`);
     return false;
   }
-  const files = () => toFiles(job.photos || []);
+  /* 영상(릴스) — 앱이 내준 파일을 보이지 않는 확장 창(file-bridge)으로 받는다 (helper-youtube.js 와 같은 길) */
+  function fetchFile(f) {
+    return new Promise((resolve, reject) => {
+      const frame = document.createElement("iframe");
+      frame.style.cssText = "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none";
+      frame.src = chrome.runtime.getURL(`file-bridge.html?token=${encodeURIComponent(f.token)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type)}&origin=${encodeURIComponent(location.origin)}`);
+      const done = (fn) => { window.removeEventListener("message", on); clearTimeout(t); frame.remove(); fn(); };
+      const on = (e) => {
+        if (e.origin !== new URL(chrome.runtime.getURL("")).origin || !e.data || e.data.gsFile !== f.token) return; // 우리 확장 창이 보낸 것만
+        done(() => (e.data.file ? resolve(e.data.file) : reject(new Error(e.data.error || "파일을 받지 못했어요."))));
+      };
+      const t = setTimeout(() => done(() => reject(new Error("영상 파일을 받는 데 너무 오래 걸려요."))), 5 * 60 * 1000);
+      window.addEventListener("message", on);
+      document.documentElement.appendChild(frame);
+    });
+  }
+  let videoFile = null;
+  const files = async () => {
+    if (job.video) return [videoFile ||= await fetchFile(job.video)];
+    return toFiles(job.photos || []);
+  };
   const texts = () => (target === "threads" && job.posts && job.posts.length ? job.posts : [job.text || ""]);
 
   /* 인스타그램: 만들기 → 게시물 → 사진 → 다음·다음 → 문구 */
@@ -394,6 +414,11 @@
     const post = byText(SEL.instagram.post);
     if (post && !fileInput(dialog() || document)) { click(post); await sleep(1200); }
     if (!(await addPhotos())) return;
+    // 영상이면 "동영상 게시물은 이제 릴스로 공유됩니다" 안내 [확인]
+    if (job.video) {
+      const ok = await waitFor(() => byText(["확인", "OK"], dialog() || document), 6000);
+      if (ok) { click(ok); await sleep(1200); }
+    }
     for (let i = 0; i < 2; i++) {
       const nx = await waitFor(() => byText(SEL.instagram.next, dialog() || document), 20000);
       if (!nx) return warn("[다음]을 못 찾았어요. 크롬 창에서 [다음]을 눌러 문구 칸까지 간 뒤 상자의 [글 넣기]를 눌러 주세요.");
@@ -418,7 +443,7 @@
       await waitFor(() => facebookDialog() || findBox(BOX_NAMES.facebook), 12000);
       await sleep(800); // 글 칸이 다 뜨기를
     }
-    if (!composerWasOpen && job.photos && job.photos.length) {
+    if (!composerWasOpen && (job.video || (job.photos && job.photos.length))) {
       if (!fileInput(dialog() || document)) {
         const ph = firstSel(SEL.facebook.photo, dialog() || document);
         if (ph) { click(ph); await sleep(1200); }
@@ -456,7 +481,7 @@
     const list = texts();
     if (!box) return warn("글 칸을 못 찾았어요. 글 칸을 한 번 누르고 상자의 [글 넣기]를 눌러 주세요." + boxDiag());
     if (!(await putText(box, list[0], "스레드 첫"))) return;
-    if (job.photos && job.photos.length) { await sleep(500); if (!(await addPhotos())) return; }
+    if (job.video || (job.photos && job.photos.length)) { await sleep(500); if (!(await addPhotos())) return; }
     for (let i = 1; i < list.length; i++) {
       const add = byText(SEL.threads.add, dialog() || document) || byContains(SEL.threads.add, dialog() || document);
       if (!add) return warn(`이어 쓰기 ${i}번부터는 [스레드에 추가]를 눌러 상자의 [글 넣기]로 넣어 주세요.`);
@@ -475,14 +500,14 @@
   }
 
   async function addPhotos() {
-    if (!job.photos || !job.photos.length) return true;
-    panel.status(`사진 ${job.photos.length}장을 넣는 중…`);
+    if (!job.video && (!job.photos || !job.photos.length)) return true;
+    panel.status(job.video ? "영상을 넣는 중… (파일이 크면 조금 걸려요)" : `사진 ${job.photos.length}장을 넣는 중…`);
     const input = await waitFor(() => fileInput(dialog() || document) || fileInput(document), 10000);
     if (!input) {
       warn("사진 넣는 곳을 못 찾았어요. 사진 추가 단추(사진/동영상·컴퓨터에서 선택)를 누르고 창이 뜨면 닫은 뒤, 상자의 [사진 넣기]를 다시 눌러 주세요.");
       return false;
     }
-    const list = files();
+    const list = await files();
     setFiles(input, input.multiple ? list : list.slice(0, 1));
     await sleep(2500);
     return true;
@@ -558,15 +583,53 @@
   // 계정이 의심받지 않게 목록은 읽지 않고, 회원이 올린 게시물을 한 번 열면 그 주소를 잡는다
   async function findShared(p) {
     watchPostAddress(p);
+    // 프로필 화면에 와 있으면 (단추를 누른 뒤 · 새로 열린 화면) 바로 맨 앞 게시물을 연다
+    me = me || p.me || "";
+    if (p.step === "profile" && isProfilePage()) { void openNewestPost(p); return; }
     dlog("게시물을 열어 달라고 안내");
-    toast("방금 올린 게시물을 한 번 눌러 열어 주세요.\n열면 그 주소를 공실스튜디오 홍보현황에 연결해요.");
+    toast("방금 올린 게시물을 열면 그 주소를 공실마케팅 홍보현황에 연결해요.\n아래 단추를 누르면 도우미가 열어 드려요.", 0,
+      { label: "방금 올린 게시물 열기", onClick: () => void goProfile(p) });
+  }
+  // 내 프로필 링크 — 왼쪽 메뉴의 [프로필] (글자·그림 이름으로 찾는다)
+  function myProfileLink() {
+    const links = Array.from(document.querySelectorAll("a[href]")).filter((a) => /^\/[A-Za-z0-9._]+\/$/.test(a.getAttribute("href") || ""));
+    return links.find((a) => /프로필|Profile/i.test(`${a.innerText || ""} ${a.getAttribute("aria-label") || ""} ${a.querySelector("img")?.getAttribute("alt") || ""}`)) || null;
+  }
+  let me = "";
+  function isProfilePage() {
+    return Boolean(me) && location.pathname.replace(/\/$/, "") === `/${me}`;
+  }
+  async function goProfile(p) {
+    const a = myProfileLink();
+    if (!a) { dlog("프로필 링크를 못 찾음 — 직접 열어 달라고 안내"); toast("내 프로필을 못 찾았어요. 방금 올린 게시물을 직접 한 번 눌러 열어 주세요."); return; }
+    me = (a.getAttribute("href") || "").replace(/\//g, "");
+    const next = { ...p, step: "profile", me };
+    try { await chrome.storage.local.set({ [PENDING_IG]: next }); } catch (_) {}
+    dlog(`내 프로필로 ${me}`);
+    toast("내 프로필에서 방금 올린 게시물을 여는 중…");
+    click(a);
+    await waitFor(() => isProfilePage(), 8000, 300);
+    void openNewestPost(next);
+  }
+  // 프로필 맨 앞 게시물 — 위에 고정해 둔 게시물은 건너뛴다
+  async function openNewestPost(p) {
+    me = me || p.me || "";
+    const grid = await waitFor(() => {
+      const list = Array.from(document.querySelectorAll("main a[href]")).filter((a) => /\/(p|reel)\/[\w-]+/.test(a.getAttribute("href") || ""));
+      return list.length ? list : null;
+    }, 12000, 400);
+    if (!grid) { dlog("프로필에서 게시물을 못 찾음"); toast("게시물을 못 찾았어요. 방금 올린 게시물을 직접 한 번 눌러 열어 주세요."); return; }
+    const pinned = (a) => Boolean(a.querySelector("svg[aria-label*='고정'], svg[aria-label*='Pinned'], svg[aria-label*='pinned']"));
+    const first = grid.find((a) => !pinned(a)) || grid[0];
+    dlog(`맨 앞 게시물 열기 ${first.getAttribute("href")}`);
+    click(first);
   }
   let linkedDone = false;
   async function linked(ok) {
     linkedDone = true;
     try { await chrome.storage.local.remove(PENDING_IG); } catch (_) {}
-    toast(ok ? "게시물 주소를 공실스튜디오 홍보현황에 연결했어요." : "", 4000);
-    if (ok && panel) panel.status("게시물 주소를 공실스튜디오 홍보현황에 연결했어요.", "ok");
+    toast(ok ? "게시물 주소를 공실마케팅 홍보현황에 연결했어요." : "", 4000);
+    if (ok && panel) panel.status("게시물 주소를 공실마케팅 홍보현황에 연결했어요.", "ok");
   }
   // 인스타는 화면을 새로 열지 않고 주소만 바꾼다 → 1초마다 주소를 보고, 내 게시물(/p/…·/reel/…) 화면이면 그 주소를 보낸다
   let watchingAddr = false;
@@ -586,8 +649,8 @@
       if (r && r.ok) { clearInterval(t); await linked(true); }
     }, 1000);
   }
-  // 화면 위 작은 안내 (도우미 상자가 없을 때도 — 공유 뒤 새로 열린 화면)
-  function toast(text, ms = 0) {
+  // 화면 위 작은 안내 (도우미 상자가 없을 때도 — 공유 뒤 새로 열린 화면) · btn = 큰 단추 하나
+  function toast(text, ms = 0, btn = null) {
     let el = document.getElementById("gs-ig-toast");
     if (!text) { el && el.remove(); return; }
     if (!el) {
@@ -596,8 +659,15 @@
       el.style.cssText = "position:fixed;right:20px;bottom:20px;z-index:2147483647;max-width:320px;padding:14px 16px;border-radius:12px;background:#111;color:#fff;font:600 13px/1.5 sans-serif;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,.3)";
       document.body.appendChild(el);
     }
-    el.textContent = `공실스튜디오 도우미
+    el.textContent = `공실마케팅 도우미
 ${text}`;
+    if (btn) {
+      const b = document.createElement("button");
+      b.textContent = btn.label;
+      b.style.cssText = "display:block;width:100%;margin-top:10px;padding:10px 12px;border:0;border-radius:10px;background:#fff;color:#111;font:800 14px/1.2 sans-serif;cursor:pointer";
+      b.addEventListener("click", (e) => { e.preventDefault(); btn.onClick(); });
+      el.appendChild(b);
+    }
     if (ms) setTimeout(() => el.remove(), ms);
   }
   // 새로 열린 인스타 화면 — 공유한 지 10분 안에 못 찾은 게 있으면 이어서
@@ -652,6 +722,22 @@ ${text}`;
     }
     return "";
   }
+  // 게시 직후 아래쪽 알림 "게시되었습니다 · [보기]" — 그 링크가 방금 올린 글 (스레드, 2026-10-28)
+  const POSTED = /게시되었습니다|게시됨|업로드되었습니다|Posted|Your thread was posted/i;
+  function findPostedToast() {
+    if (target !== "threads") return "";
+    for (const a of document.querySelectorAll("a[href]")) {
+      const url = postAddress(a.getAttribute("href"));
+      if (!url) continue;
+      let el = a;
+      for (let i = 0; i < 5 && el && el !== document.body; i++, el = el.parentElement) {
+        const t = norm(el.innerText || "");
+        if (t.length > 200) break; // 알림은 짧다 — 피드 글까지 올라가면 그만
+        if (POSTED.test(t)) return url;
+      }
+    }
+    return "";
+  }
   async function startPostWatch(p) {
     if (watchingAddr) return;
     watchingAddr = true;
@@ -659,7 +745,9 @@ ${text}`;
     let last = "";
     const t = setInterval(async () => {
       if (linkedDone || Date.now() - p.at > POST_WAIT) { clearInterval(t); return; }
-      let url = findInFeed(head);
+      let url = findPostedToast();
+      if (url) dlog(`게시 알림에서 찾음 ${url}`);
+      if (!url) url = findInFeed(head);
       if (url) dlog(`피드에서 우리 게시물 찾음 ${url}`);
       else {
         if (location.href === last) return;
@@ -676,8 +764,8 @@ ${text}`;
         clearInterval(t);
         linkedDone = true;
         try { await chrome.storage.local.remove(PENDING_POST); } catch (_) {}
-        toast("게시물 주소를 공실스튜디오 홍보현황에 연결했어요.", 4000);
-        if (panel) panel.status("게시물 주소를 공실스튜디오 홍보현황에 연결했어요.", "ok");
+        toast("게시물 주소를 공실마케팅 홍보현황에 연결했어요.", 4000);
+        if (panel) panel.status("게시물 주소를 공실마케팅 홍보현황에 연결했어요.", "ok");
       }
     }, 2000);
   }

@@ -100,7 +100,7 @@ async function confirmPaid(name, err) {
   const { dialog, BrowserWindow } = require("electron");
   const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
   const r = await dialog.showMessageBox(win || undefined, {
-    type: "question", title: "공실스튜디오",
+    type: "question", title: "공실마케팅",
     message: `${name} 내 계정(무료)이 막혔어요`,
     detail: `${String((err && err.message) || "").slice(0, 160)}
 

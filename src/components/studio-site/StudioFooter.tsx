@@ -6,8 +6,8 @@ import { openChannelTalk } from "@/utils/channelTalk";
 import { FEATURE_GROUPS, featureBySlug } from "@/components/studio-site/studioFeatures";
 
 /**
- * 공실스튜디오 풋터 (/studio 아래 모든 페이지, 2026-10-26 사장님)
- * 위: 공실스튜디오 아이콘 + 주요 기능 5칸(펼침 판과 같은 목록) + 고객지원 · 회사
+ * 공실마케팅 풋터 (/marketing 아래 모든 페이지, 2026-10-26 사장님)
+ * 위: 공실마케팅 아이콘 + 주요 기능 5칸(펼침 판과 같은 목록) + 고객지원 · 회사
  * 아래: 회사 정보 — 사이트 풋터(src/components/Footer.tsx)와 같은 실제 값만 (인터넷신문 등록번호 · 제호 · 편집인처럼 뉴스 전용 줄은 뺐다)
  */
 const BG = "#1f1714";
@@ -23,13 +23,13 @@ export default function StudioFooter() {
         <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
           {/* 브랜드 */}
           <div style={{ minWidth: 200 }}>
-            <Link href="/studio" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
+            <Link href="/marketing" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/studio-app-icon.png" alt="" style={{ width: 36, height: 36, borderRadius: 8 }} />
-              <span style={{ fontSize: 20, fontWeight: 900 }}>공실스튜디오</span>
+              <span style={{ fontSize: 20, fontWeight: 900 }}>공실마케팅</span>
             </Link>
             <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS · 영상까지</p>
-            <Link href="/studio#download" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>앱 받기</Link>
+            <Link href="/marketing#download" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>앱 받기</Link>
           </div>
 
           {/* 주요 기능 */}
@@ -39,16 +39,16 @@ export default function StudioFooter() {
                 <div style={head}>{g.name}</div>
                 {g.slugs.map((sl) => {
                   const f = featureBySlug(sl);
-                  return f ? <Link key={sl} href={`/studio/feature/${sl}`} style={link}>{f.name}</Link> : null;
+                  return f ? <Link key={sl} href={`/marketing/feature/${sl}`} style={link}>{f.name}</Link> : null;
                 })}
               </div>
             ))}
             <div>
               <div style={head}>고객지원</div>
-              <Link href="/studio/guide" style={link}>사용법 배우기</Link>
-              <Link href="/studio/pricing" style={link}>금액안내</Link>
-              <Link href="/studio/resources" style={link}>자료실</Link>
-              <Link href="/studio/community" style={link}>커뮤니티</Link>
+              <Link href="/marketing/guide" style={link}>사용법 배우기</Link>
+              <Link href="/marketing/pricing" style={link}>금액안내</Link>
+              <Link href="/marketing/resources" style={link}>자료실</Link>
+              <Link href="/marketing/community" style={link}>커뮤니티</Link>
               <Link href="/help" style={link}>고객센터</Link>
             </div>
           </div>

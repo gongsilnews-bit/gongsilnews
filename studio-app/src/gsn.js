@@ -64,11 +64,10 @@ function ready(id) {
   const p = mainPath(id);
   return isRpt(id) ? fs.existsSync(p) : fs.existsSync(path.join(p, KEY_FILE[kindOf(id)]));
 }
-/** 이 기능을 켠 뒤 새로 만든 작업인가 (또는 작업 파일에서 연 작업) */
-function eligible(id, idx) {
+/** 저절로 저장할 작업인가 — 준비만 돼 있으면 예전 작업도 (고칠 때 저장된다, 2026-10-28 사장님: [저장하기] 안 눌러도) */
+function eligible(id, idx) { // eslint-disable-line no-unused-vars
   try {
-    const st = fs.statSync(mainPath(id));
-    return (Boolean(idx.files[id]) || (st.birthtimeMs || st.ctimeMs) >= idx.since) && ready(id);
+    return ready(id);
   } catch {
     return false;
   }
@@ -179,7 +178,7 @@ function write(type, id, force = false) {
     file = defaultFile(type, id);
     fs.mkdirSync(path.dirname(file), { recursive: true });
   }
-  const entries = [{ name: T.meta, data: Buffer.from(JSON.stringify({ app: "공실스튜디오", type: T.label, version: VERSION, id, kind: kindOf(id), savedAt: new Date().toISOString() }, null, 1), "utf8") }];
+  const entries = [{ name: T.meta, data: Buffer.from(JSON.stringify({ app: "공실마케팅", type: T.label, version: VERSION, id, kind: kindOf(id), savedAt: new Date().toISOString() }, null, 1), "utf8") }];
   for (const p of partsOf(type, id)) entries.push({ name: p.rel, data: fs.readFileSync(p.abs) });
   const tmp = `${file}.saving`;
   require("./video/gss").zipWrite(tmp, entries);
@@ -244,7 +243,7 @@ async function open(file, win) {
   const gss = require("./video/gss");
   const type = typeOfFile(file);
   const T = TYPES[type];
-  const bad = () => new Error(`공실스튜디오 ${type === "gsm" ? "마케팅" : "뉴스"} 파일(${T ? T.ext : ".gsn"})이 아니거나 깨졌어요.`);
+  const bad = () => new Error(`공실마케팅 ${type === "gsm" ? "마케팅" : "뉴스"} 파일(${T ? T.ext : ".gsn"})이 아니거나 깨졌어요.`);
   if (!T) throw bad();
   let entries;
   try { entries = gss.zipRead(file); } catch { throw bad(); }
@@ -259,7 +258,7 @@ async function open(file, win) {
     const mine = newestIn(here);
     const theirs = Date.parse(info.savedAt) || fs.statSync(file).mtimeMs;
     const r = await dialog.showMessageBox(win || undefined, {
-      type: "question", title: "공실스튜디오", buttons: ["파일 것으로 열기", "지금 PC 것 그대로 열기", "취소"], defaultId: theirs >= mine ? 0 : 1, cancelId: 2,
+      type: "question", title: "공실마케팅", buttons: ["파일 것으로 열기", "지금 PC 것 그대로 열기", "취소"], defaultId: theirs >= mine ? 0 : 1, cancelId: 2,
       message: "이 PC에 같은 작업이 이미 있어요.",
       detail: `파일: ${when(theirs)} 저장${theirs >= mine ? " (더 최근)" : ""}\n이 PC: ${when(mine)} 고침${mine > theirs ? " (더 최근)" : ""}\n\n[파일 것으로 열기]를 누르면 이 PC의 작업을 파일 내용으로 바꿉니다.`,
     });
@@ -321,7 +320,7 @@ async function saveAs(id, win) {
   const r = await require("electron").dialog.showSaveDialog(win || undefined, {
     title: "다른 이름으로 저장",
     defaultPath: cur && fs.existsSync(path.dirname(cur)) ? cur : defaultFile(w.type, w.id),
-    filters: [{ name: `공실스튜디오 ${T.label} 파일`, extensions: [T.ext.slice(1)] }],
+    filters: [{ name: `공실마케팅 ${T.label} 파일`, extensions: [T.ext.slice(1)] }],
   });
   if (r.canceled || !r.filePath) return { file: "", savedAt: "", canceled: true };
   const file = r.filePath.toLowerCase().endsWith(T.ext) ? r.filePath : `${r.filePath}${T.ext}`;

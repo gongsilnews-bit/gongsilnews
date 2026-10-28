@@ -114,7 +114,7 @@ export default function NewsRealtyApplyPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/studio/apply")}`,
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/marketing/apply")}`,
         },
       });
       if (error) throw error;
@@ -135,7 +135,7 @@ export default function NewsRealtyApplyPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/studio/apply")}`,
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/marketing/apply")}`,
         },
       });
       if (error) throw error;
@@ -181,7 +181,7 @@ export default function NewsRealtyApplyPage() {
         email: finalEmail,
         agencyName: agencyName.trim(),
         interests: ["로컬기자", "부동산중개"],
-        memo: `[공실스튜디오 신청] 신청자: ${applicantName.trim()} / 연락처: ${phone.trim()} / 이메일: ${finalEmail} / 중개사무소: ${agencyName.trim()}`,
+        memo: `[공실마케팅 신청] 신청자: ${applicantName.trim()} / 연락처: ${phone.trim()} / 이메일: ${finalEmail} / 중개사무소: ${agencyName.trim()}`,
       });
 
       if (res.success) {
@@ -219,7 +219,7 @@ export default function NewsRealtyApplyPage() {
       stage={stage}
       mobile={false}
       header={<StudioSiteHeader />}
-      links={{ intro: "/studio", home: "/", approvedAdmin: "/admin", findAccount: `/login?returnTo=${encodeURIComponent("/studio/apply")}` }}
+      links={{ intro: "/marketing", home: "/", approvedAdmin: "/admin", findAccount: `/login?returnTo=${encodeURIComponent("/marketing/apply")}` }}
       googleLoading={googleLoading}
       kakaoLoading={kakaoLoading}
       onGoogle={handleGoogleSignup}

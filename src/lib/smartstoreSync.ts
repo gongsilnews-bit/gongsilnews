@@ -1,5 +1,5 @@
-// 스마트스토어 결제 → 공실스튜디오 멤버십 자동 연동. /api/cron/smartstore-sync 가 5분마다 부른다.
-// 결제 1건 = 공실스튜디오 멤버십 1년 (2026-10-26 사장님: 공실뉴스부동산은 무료, 돈은 공실스튜디오 이용료).
+// 스마트스토어 결제 → 공실마케팅 멤버십 자동 연동. /api/cron/smartstore-sync 가 5분마다 부른다.
+// 결제 1건 = 공실마케팅 멤버십 1년 (2026-10-26 사장님: 공실뉴스부동산은 무료, 돈은 공실마케팅 이용료).
 // 이용 기간은 members.studio_start_date·studio_end_date. 옮기는 동안은 등급 값(news_premium)도 같이 켠다 —
 // 공실·기사 한도(20건 등)가 아직 등급 값으로 정해지기 때문. 이미 기간이 남은 회원은 그 뒤로 1년 늘린다.
 // 회원은 주문자 연락처로 찾는다 (스토어 정책상 옵션으로 휴대폰·이메일을 받지 못한다).
@@ -190,7 +190,7 @@ async function handleOrder(supabase: ReturnType<typeof db>, d: ProductOrderDetai
   if (granted.status === "granted") result.granted++;
   else result.needsReview++;
   await notifyAdmin(
-    granted.status === "granted" ? "스마트스토어 결제 → 공실스튜디오 멤버십 자동 부여" : "스마트스토어 결제 — 확인 필요",
+    granted.status === "granted" ? "스마트스토어 결제 → 공실마케팅 멤버십 자동 부여" : "스마트스토어 결제 — 확인 필요",
     `${base.orderer_name || ""} · ${granted.review_reason || "1년 부여 완료"}`,
     po.productOrderId,
   );
@@ -206,7 +206,7 @@ async function findMember(supabase: ReturnType<typeof db>, tel: string | null) {
   return { memberId: null, reason: `같은 번호의 회원이 ${hits.length}명입니다` };
 }
 
-/** 공실스튜디오 멤버십을 quantity 년 부여. 남은 기간이 있으면 그 뒤로 이어 붙인다. */
+/** 공실마케팅 멤버십을 quantity 년 부여. 남은 기간이 있으면 그 뒤로 이어 붙인다. */
 export async function grant(supabase: ReturnType<typeof db>, memberId: string, quantity = 1) {
   const { data: member } = await supabase
     .from("members")
@@ -217,7 +217,7 @@ export async function grant(supabase: ReturnType<typeof db>, memberId: string, q
   if (isAdminRole(member.role)) return { status: "needs_review", member_id: memberId, review_reason: "관리자 계정이라 등급을 바꾸지 않았습니다" };
 
   const now = new Date();
-  // 남은 기간: 공실스튜디오 기간과 예전 유료 등급 기간 중 늦은 쪽
+  // 남은 기간: 공실마케팅 기간과 예전 유료 등급 기간 중 늦은 쪽
   const ends = [member.studio_end_date, member.plan_end_date].filter(Boolean).map((d) => new Date(d as string));
   const currentEnd = ends.length ? new Date(Math.max(...ends.map((d) => d.getTime()))) : null;
   const active = !!currentEnd && currentEnd > now;
@@ -242,7 +242,7 @@ export async function grant(supabase: ReturnType<typeof db>, memberId: string, q
     .from("members")
     .update({ studio_start_date: studioStart, studio_end_date: end.toISOString() })
     .eq("id", memberId);
-  if (studioError) return { status: "needs_review", member_id: memberId, review_reason: `공실스튜디오 기간 저장 실패: ${studioError.message}` };
+  if (studioError) return { status: "needs_review", member_id: memberId, review_reason: `공실마케팅 기간 저장 실패: ${studioError.message}` };
 
   return {
     status: "granted",
@@ -281,7 +281,7 @@ async function revoke(supabase: ReturnType<typeof db>, row: Row) {
     plan_end_date: row.prev_plan_end,
   });
   if (!res.success) return { status: "revoke_review", review_reason: `되돌리기 실패: ${res.error}` };
-  // 공실스튜디오 기간도 결제 전으로 — 예전 유료 기간이 있었으면 그 끝, 없었으면 비운다
+  // 공실마케팅 기간도 결제 전으로 — 예전 유료 기간이 있었으면 그 끝, 없었으면 비운다
   const prevPaid = row.prev_plan_type === PLAN_TYPE || row.prev_plan_type === OLD_PLAN;
   await supabase
     .from("members")

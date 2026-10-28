@@ -4,8 +4,8 @@ import React from "react";
 import StudioAppDownload from "./StudioAppDownload";
 
 /**
- * 웹 관리 화면 [공실스튜디오] 메뉴 (2026-10-26 사장님)
- *  - 웹 관리 화면은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만). 만드는 기능은 공실스튜디오(PC 앱)에서
+ * 웹 관리 화면 [공실마케팅] 메뉴 (2026-10-26 사장님)
+ *  - 웹 관리 화면은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만). 만드는 기능은 공실마케팅(PC 앱)에서
  *  - 여기서 앱을 소개하고 받게 한다. 이미지제작만 설치 없이 웹에서 맛보기 (photo-editor-on-web)
  *  - 이용료는 아직 정하지 않아서 금액은 쓰지 않는다
  */
@@ -26,9 +26,9 @@ export default function StudioPromoSection({ theme, onTryPhoto }: Props) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: 28 }}>
       <div style={{ maxWidth: 820, margin: "0 auto", background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "40px 36px", wordBreak: "keep-all" }}>
-        <h2 style={{ margin: "0 0 10px", fontSize: 24, fontWeight: 800, color: theme.textPrimary }}>공실스튜디오</h2>
+        <h2 style={{ margin: "0 0 10px", fontSize: 24, fontWeight: 800, color: theme.textPrimary }}>공실마케팅</h2>
         <p style={{ margin: "0 0 26px", fontSize: 15, lineHeight: 1.7, color: theme.textSecondary }}>
-          공실만 등록하면 뉴스·블로그·SNS·영상까지. 내 지역·단지 소식을 공실스튜디오(PC 앱)로 만들어 알리세요.
+          공실만 등록하면 뉴스·블로그·SNS·영상까지. 내 지역·단지 소식을 공실마케팅(PC 앱)로 만들어 알리세요.
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12, marginBottom: 28 }}>

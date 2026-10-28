@@ -29,6 +29,7 @@ if (allowed) {
       load: (vacancyId) => ipcRenderer.invoke("studio:vacancy-load", vacancyId),
       list: () => ipcRenderer.invoke("studio:vacancy-list"), // [공실 바꾸기] 목록
       captures: (vacancyId) => ipcRenderer.invoke("studio:vacancy-captures", vacancyId), // AI 매물보고서 [공실뉴스 캡처 사진 넣기]
+      media: (vacancyId, op) => ipcRenderer.invoke("studio:vacancy-media", vacancyId, op), // 분석 사진 정리 — 빼기·되살리기·순서·AI 이미지 (2026-10-28)
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:vacancy-progress", h);
@@ -52,7 +53,7 @@ if (allowed) {
       save: (opts) => ipcRenderer.invoke("studio:sns-save", opts),
       revise: (opts) => ipcRenderer.invoke("studio:sns-revise", opts),
       exportChannel: (opts) => ipcRenderer.invoke("studio:sns-export", opts),
-      // 평소 크롬 + 공실스튜디오 도우미 확장으로 그 채널에 사진·글 넣기 (2026-10-23)
+      // 평소 크롬 + 공실마케팅 도우미 확장으로 그 채널에 사진·글 넣기 (2026-10-23)
       fillByHelper: (opts) => ipcRenderer.invoke("studio:sns-helper-fill", opts),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
@@ -165,7 +166,7 @@ if (allowed) {
       create: (source) => ipcRenderer.invoke("studio:column-create", source),
       get: (id) => ipcRenderer.invoke("studio:column-get", id),
       refetch: (id) => ipcRenderer.invoke("studio:column-refetch", id), // [다시 가져오기]
-      list: () => ipcRenderer.invoke("studio:column-list"),
+      list: (limit) => ipcRenderer.invoke("studio:column-list", limit), // limit 없으면 최근 8개
     },
     /* 화면캡처·녹화 (2026-10-24) — 스튜디오 창을 내리고 오른쪽 막대. 찍은 그림을 [이미지제작에서 열기]하면 onPhoto(파일) */
     snap: {

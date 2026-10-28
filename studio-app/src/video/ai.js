@@ -263,7 +263,13 @@ async function matchFootage(lines, items, onProgress = () => {}, opts = {}) {
       "",
       "문장마다 내용에 가장 어울리는 장면을 골라 주세요. 같은 장면을 되도록 겹치지 않게, 이야기 흐름(외관 → 실내 → 주변 등)도 생각해 주세요.",
       "어울리는 것이 없으면 src 를 \"\" 로 두세요.",
-      '답은 JSON 만: {"lines":[{"n":1,"src":"V2","t":12},{"n":2,"src":"P1","t":0}]}  (t: 그 영상에서 시작할 초, 사진은 0)',
+      ...(opts.hints
+        ? [
+            // 화면 구성까지 한 번에 — 고른 장면이 없는 문장은 무료 영상·사진에서 찾을 화면 (scenesFor 와 같은 칸)
+            "src 가 \"\" 인 문장은 무료 영상·사진에서 찾을 화면도 정해 주세요: desc(한국어 화면 설명), keywords(무료 영상 사이트 영어 검색어 2~4단어), kind(video 또는 image).",
+            '답은 JSON 만: {"lines":[{"n":1,"src":"V2","t":12},{"n":2,"src":"","t":0,"desc":"화면 설명","keywords":"english keywords","kind":"video"}]}  (t: 그 영상에서 시작할 초, 사진은 0)',
+          ]
+        : ['답은 JSON 만: {"lines":[{"n":1,"src":"V2","t":12},{"n":2,"src":"P1","t":0}]}  (t: 그 영상에서 시작할 초, 사진은 0)']),
     ].join("\n");
     const parse = (t) => {
       const m = /\{[\s\S]*\}/.exec(String(t || ""));
@@ -280,7 +286,9 @@ async function matchFootage(lines, items, onProgress = () => {}, opts = {}) {
       const l = (j.lines || []).find((x) => Number(x.n) === i + 1) || {};
       const m = /^([VP])(\d+)$/i.exec(String(l.src || "").trim());
       const v = m ? Number(m[2]) - 1 : -1;
-      if (v < 0 || v >= items.length) return { v: -1, t: 0 };
+      // 화면 구성 (opts.hints) — 장면을 못 고른 문장의 무료 자료 검색어
+      const hint = opts.hints && l.keywords ? { desc: String(l.desc || ""), keywords: String(l.keywords || ""), kind: l.kind === "image" ? "image" : "video" } : undefined;
+      if (v < 0 || v >= items.length) return { v: -1, t: 0, hint };
       const dur = Number(items[v].duration) || 0;
       return { v, t: items[v].kind === "image" ? 0 : Math.max(0, Math.min(Number(l.t) || 0, Math.max(0, dur - 1))) };
     });

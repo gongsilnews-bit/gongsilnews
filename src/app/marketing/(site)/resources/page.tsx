@@ -5,7 +5,7 @@ import StudyResourcesClient from "./StudyResourcesClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "자료실 | 공실스튜디오",
+  title: "자료실 | 공실마케팅",
   description: "부동산마케팅에 필요한 자료 공유실입니다.",
 };
 

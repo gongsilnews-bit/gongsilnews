@@ -225,7 +225,7 @@ async function connect(id, onProgress = () => {}) {
   if (!p) throw new Error("알 수 없는 AI입니다.");
   if (!p.ready) throw new Error(`${p.name} 연결은 준비 중입니다.`);
 
-  onProgress(`새로 뜬 "공실스튜디오" 크롬 창에서 ${p.name}에 로그인한 뒤 [로그인 다 했어요]를 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)`);
+  onProgress(`새로 뜬 "공실마케팅" 크롬 창에서 ${p.name}에 로그인한 뒤 [로그인 다 했어요]를 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)`);
   await chrome.openPlain(p.url);
   onProgress(`${p.name} 로그인을 확인하는 중…`);
   await chrome.sleep(1500); // 크롬이 로그인 정보를 다 쓰고 닫힐 틈

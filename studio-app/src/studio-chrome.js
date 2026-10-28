@@ -47,12 +47,12 @@ function findBrowser() {
   return null;
 }
 
-/** 처음 만들 때 프로필 이름을 "공실스튜디오"로 해 둔다 (창 위쪽 프로필 표시) */
+/** 처음 만들 때 프로필 이름을 "공실마케팅"로 해 둔다 (창 위쪽 프로필 표시) */
 function seedProfile() {
   const pref = path.join(profileDir(), "Default", "Preferences");
   if (!fs.existsSync(pref)) {
     fs.mkdirSync(path.dirname(pref), { recursive: true });
-    fs.writeFileSync(pref, JSON.stringify({ profile: { name: "공실스튜디오" }, browser: { has_seen_welcome_page: true } }));
+    fs.writeFileSync(pref, JSON.stringify({ profile: { name: "공실마케팅" }, browser: { has_seen_welcome_page: true } }));
   }
   // 창을 닫으면 크롬이 완전히 끝나게 한다 (뒤에서 계속 실행하면 다음 작업이 그 크롬에 막힌다)
   const localState = path.join(profileDir(), "Local State");
@@ -292,11 +292,11 @@ async function openPage(host, url) {
    보낸 뒤: 창 위에 "작업 중 — 닫지 마세요" 띠 + 창을 작업 표시줄로 내린다 (가려진 창도 절전하지 않게 켜 둠 — spawnChrome)
    닫혔으면: 기억한 대화 주소로 다시 열어 이어서 기다린다 · 끝나면 띠를 지운다 */
 const BANNER = `(() => { if (document.getElementById("gw-busy-banner")) return; const d = document.createElement("div"); d.id = "gw-busy-banner";
-  d.textContent = "공실스튜디오가 이 창으로 작업 중이에요 — 끝날 때까지 닫지 마세요 (닫아도 다시 열어 이어서 받아요)";
+  d.textContent = "공실마케팅가 이 창으로 작업 중이에요 — 끝날 때까지 닫지 마세요 (닫아도 다시 열어 이어서 받아요)";
   Object.assign(d.style, { position: "fixed", top: "0", left: "0", right: "0", zIndex: "2147483647", background: "#1a3a6b", color: "#fff", font: "600 13px sans-serif", padding: "6px 12px", textAlign: "center", pointerEvents: "none" });
   (document.body || document.documentElement).appendChild(d); })()`;
 async function backstage(page) {
-  // 작업 중 띠는 넣지 않는다 (2026-10-23 사장님) — 창에 공실스튜디오 흔적을 남기지 않게. BANNER 는 남겨 둠(지우기용)
+  // 작업 중 띠는 넣지 않는다 (2026-10-23 사장님) — 창에 공실마케팅 흔적을 남기지 않게. BANNER 는 남겨 둠(지우기용)
   // 창을 작업 표시줄로 내리지 않는다 (2026-10-23 사장님: 전용 크롬 Gemini 가 느림) — 내려 둔 창은 크롬이 화면 그리기를 멈춰,
   //  Gemini 가 답을 다 만든 뒤에야 한꺼번에 보였다 (답 시작 80~160초, 시작 뒤 5초 만에 끝). 오른쪽 창은 그대로 두고 깨워 둔다
   await keepAwake(page);

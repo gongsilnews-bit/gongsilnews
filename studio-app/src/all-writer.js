@@ -37,6 +37,8 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
   const analysis = col || sim ? null : blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));
   if (!col && !sim && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   const v = sim ? simRes.vacancy : col ? null : analysis.vacancy;
+  const snsOnly = ["instagram", "threads", "facebook"].includes(snsOpt.only) ? snsOpt.only : ""; // 채널 하나만 (나머지 채널 글은 그대로)
+  const keep = (posts) => require("./sns-writer").keepOthers(vacancyId, posts, snsOnly);
   const want = { article: article.on !== false, blog: blog.on !== false, sns: snsOpt.on !== false, youtube: youtube.on === true };
   if (!want.article && !want.blog && !want.sns && !want.youtube) throw new Error("쓸 글을 하나 이상 골라 주세요.");
   if ((col || sim) && !want.article && !blogWriter.referenceArticle(vacancyId)) throw new Error(`${sim ? "인테리어·리모델링" : "뉴스칼럼"}은 기사를 바탕으로 블로그·SNS·대본을 써요. [공실뉴스 기사]도 ☑ 해 주세요.`);
@@ -104,11 +106,11 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
     const ps = L.gwSnsParse(fence(o.sns));
     if (ps.ok) {
       onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
-      out.sns = await require("./sns-writer").saveSimPosts(baseUrl, vacancyId, ps.posts);
+      out.sns = await require("./sns-writer").saveSimPosts(baseUrl, vacancyId, keep(ps.posts));
     } else miss.push("SNS");
   } else if (want.sns && col) {
     const ps = nm.gwSnsParse(fence(o.sns));
-    if (ps.ok) out.sns = require("./sns-writer").saveAll(vacancyId, { posts: ps.posts, column: true });
+    if (ps.ok) out.sns = require("./sns-writer").saveAll(vacancyId, { posts: keep(ps.posts), column: true });
     else miss.push("SNS");
   } else if (want.sns) {
     const ps = sns.gwSnsParse(fence(o.sns));
@@ -116,7 +118,7 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
       const saleKind = v.saleKind || "";
       onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
       const listing = await fetchListing(baseUrl, vacancyId, saleKind).catch(() => null);
-      out.sns = require("./sns-writer").saveAll(vacancyId, { noun: saleKind ? "물건" : "매물", listing, posts: ps.posts });
+      out.sns = require("./sns-writer").saveAll(vacancyId, { noun: saleKind ? "물건" : "매물", listing, posts: keep(ps.posts) });
     } else miss.push("SNS");
   }
   if (want.youtube) {

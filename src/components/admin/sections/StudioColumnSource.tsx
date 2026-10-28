@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import StudioChannelTabs from "./StudioChannelTabs";
+import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 
 /**
@@ -44,7 +44,7 @@ const MODES = [
   { id: "local", label: "우리동네 시세", ready: false },
 ];
 
-type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
 function shortDate(v: string) {
   const d = new Date(v);
@@ -112,7 +112,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
   });
   const openNaverNews = () => run("", async () => {
     await bridge()?.column.openNews();
-    setHint("오른쪽 \"공실스튜디오\" 크롬 창에서 기사 한 건을 연 뒤 [지금 보는 뉴스 가져오기]를 눌러 주세요.");
+    setHint("오른쪽 \"공실마케팅\" 크롬 창에서 기사 한 건을 연 뒤 [지금 보는 뉴스 가져오기]를 눌러 주세요.");
   });
   const grab = () => run("보고 있는 뉴스를 읽는 중…", async () => {
     const b = bridge();
@@ -172,15 +172,22 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
         const caps = column.captures || [];
         const isNews = column.source.mode === "news";
         const NAVY = "#1a3a6b";
-        return (
-          <div style={{ ...card, padding: "14px 18px", position: "relative", minHeight: refetching ? 200 : undefined }}>
+        return (<>
+          {/* 1단계 표시 + 오른쪽 단계 막대 — 공실뉴스와 같게 (2026-10-28 사장님) */}
+          <StepNav theme={theme} tab={tab} onTab={onTab} onOpen1={() => setShowSource(true)} first="소재 선택 및 분석" />
+          <div id="gs-step-1" style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px 2px", scrollMarginTop: 16 }}>
+            <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>이 소재로 씁니다</span>
+            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 소재는 [소재 바꾸기]</span>
+          </div>
+          <div style={{ ...card, padding: "16px 20px", position: "relative", minHeight: refetching ? 200 : undefined, border: `2px solid ${theme.darkMode ? "#5b8def" : NAVY}`, background: theme.darkMode ? "rgba(91,141,239,0.10)" : "#f3f7ff" }}>
             {refetching && <LoadingCover theme={theme} title="다시 가져오는 중" detail="같은 기사 주소로 본문·기사 화면을 새로 받아요 (5~15초)" />}
             <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
               {/* 왼쪽 — 기사 화면 썸네일 (공실뉴스의 사진 자리) */}
               {isNews && caps.length > 0 ? (
                 <div style={{ display: "flex", gap: 4 }}>
                   {caps.slice(0, 3).map((c, i) => (
-                    <div key={i} style={{ width: 40, height: 40, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
+                    <div key={i} style={{ width: 58, height: 58, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
                       {c.thumb && <img src={c.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />}
                     </div>
                   ))}
@@ -189,7 +196,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
                 <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: isNews ? "#eff6ff" : "#f5f3ff", color: isNews ? "#1d4ed8" : "#6d28d9" }}>{isNews ? "뉴스" : "주제"}</span>
               )}
               <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{column.label}</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: theme.textPrimary }}>{column.label}</div>
                 <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
                   {isNews ? [n?.publisher, n?.publishedAt, caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음"].filter(Boolean).join(" · ") : "주제 직접입력"}
                   <button onClick={() => setShowSource((x) => !x)}
@@ -200,9 +207,9 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
               </div>
               {isNews && bridge()?.column.refetch && (
                 <button onClick={() => void refetch()} disabled={refetching} title="같은 기사 주소로 본문·기사 화면을 새로 받습니다"
-                  style={plainBtn}>다시 가져오기·캡처</button>
+                  style={{ ...plainBtn, border: `2px solid ${theme.darkMode ? "#5b8def" : NAVY}`, background: theme.darkMode ? "transparent" : "#ffffff", color: theme.darkMode ? "#ffffff" : NAVY, fontWeight: 800 }}>↻ 다시 가져오기·캡처</button>
               )}
-              <button onClick={openList} style={plainBtn}>소재 바꾸기</button>
+              <button onClick={openList} style={{ ...plainBtn, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>소재 바꾸기</button>
             </div>
             {error && !refetching && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
             {/* [원문 보기] — 기사 화면 크게 + 가져온 원문 (읽기만, 고치려면 새로 작성) */}
@@ -242,7 +249,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
               </div>
             )}
           </div>
-        );
+        </>);
       })()}
 
       {/* [소재 바꾸기] — 이 PC의 칼럼 목록. 누르면 써 둔 글이 바로 열린다 */}

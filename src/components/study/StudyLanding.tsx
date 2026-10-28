@@ -475,15 +475,15 @@ export default function StudyLanding() {
             </div>
             <div className="stl-plan rec">
               <div className="stl-plan-top">
-                <span className="k">+ 공실스튜디오<em>추천</em></span>
+                <span className="k">+ 공실마케팅<em>추천</em></span>
                 <span className="t">월 3만원 · 1년 36만원</span>
               </div>
               <div className="stl-plan-list">
                 <div><i className="ph ph-check" /><b>공실 20건 등록 가능</b></div>
-                <div><i className="ph ph-check" />영상 제작 · AI 마케팅 · 공실스튜디오 모든 프로그램</div>
+                <div><i className="ph ph-check" />영상 제작 · AI 마케팅 · 공실마케팅 모든 프로그램</div>
                 <div><i className="ph ph-check" />강의 개설과 수익화</div>
               </div>
-              <Link href="/studio" className="stl-plan-btn solid">공실스튜디오 알아보기 &gt;</Link>
+              <Link href="/marketing" className="stl-plan-btn solid">공실마케팅 알아보기 &gt;</Link>
             </div>
           </div>
         </div>

@@ -1,8 +1,8 @@
 {
   "name": "gongsil-studio",
-  "productName": "공실스튜디오",
+  "productName": "공실마케팅",
   "version": "0.1.14",
-  "description": "공실스튜디오 - 공실등록·기사등록·SNS뉴스발행·동영상제작·고객관리",
+  "description": "공실마케팅 - 공실등록·기사등록·SNS뉴스발행·동영상제작·고객관리",
   "author": "공실뉴스",
   "private": true,
   "main": "src/main.js",
@@ -24,7 +24,7 @@
   },
   "build": {
     "appId": "com.gongsilnews.studio",
-    "productName": "공실스튜디오",
+    "productName": "공실마케팅",
     "executableName": "GongsilStudio",
     "artifactName": "GongsilStudio-Setup-${version}.${ext}",
     "directories": {
@@ -61,7 +61,7 @@
     ],
     "protocols": [
       {
-        "name": "공실스튜디오",
+        "name": "공실마케팅",
         "schemes": [
           "gongsilstudio"
         ]
@@ -74,22 +74,22 @@
     "fileAssociations": [
       {
         "ext": "gss",
-        "name": "공실스튜디오 영상 파일",
-        "description": "공실스튜디오 동영상제작 프로젝트",
+        "name": "공실마케팅 영상 파일",
+        "description": "공실마케팅 동영상제작 프로젝트",
         "role": "Editor",
         "icon": "gss.ico"
       },
       {
         "ext": "gsn",
-        "name": "공실스튜디오 뉴스 파일",
-        "description": "공실스튜디오 뉴스·SNS발행 작업",
+        "name": "공실마케팅 뉴스 파일",
+        "description": "공실마케팅 뉴스·SNS발행 작업",
         "role": "Editor",
         "icon": "gsn.ico"
       },
       {
         "ext": "gsm",
-        "name": "공실스튜디오 마케팅 파일",
-        "description": "공실스튜디오 공실마케팅 작업 (예측 보고서 · 매물보고서)",
+        "name": "공실마케팅 마케팅 파일",
+        "description": "공실마케팅 보고서·홍보지 작업 (예측 보고서 · 매물보고서)",
         "role": "Editor",
         "icon": "gsm.ico"
       }
@@ -101,7 +101,7 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "공실스튜디오",
+      "shortcutName": "공실마케팅",
       "language": "1042",
       "include": "build/installer.nsh"
     },

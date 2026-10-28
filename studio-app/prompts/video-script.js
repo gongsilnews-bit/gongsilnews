@@ -96,17 +96,29 @@ function gwShortsPrompt(transcript, { count = 3, maxSec = 60, request = "" } = {
 
 /* 완성 영상 SNS 올리기 — 유튜브 제목·설명·해시태그 + 인스타그램 캡션·해시태그 (2026-10-21, docs/2026-10-21_studio_sns_upload_plan.md)
    중개사무소 정보·공실뉴스 링크·출처 줄은 코드가 붙인다 (AI 는 쓰지 않는다) */
-function gwVideoPostPrompt({ title = "", lines = [], vacancy = null, ratio = "16:9", seconds = 0 } = {}) {
+/* previous — 이 공실(기사)로 전에 쓴 사진 글 { blog, instagram, facebook, threads } (겹치지 않게)
+   posted — 이미 올린 채널 이름들 (그 채널 글은 "이번엔 영상으로" 후속 글로) */
+const GW_POST_CH = { youtube: "유튜브", instagram: "인스타그램", facebook: "페이스북", threads: "스레드", blog: "네이버 블로그" };
+function gwVideoPostPrompt({ title = "", lines = [], vacancy = null, ratio = "16:9", seconds = 0, previous = null, posted = [] } = {}) {
   const facts = gwVideoFacts(vacancy);
   const shorts = ratio === "9:16" || ratio === "1:1";
   const script = (lines || []).map((t) => String(t || "").replace(/\s+/g, " ").trim()).filter(Boolean).join("\n").slice(0, 6000);
+  const prev = Object.entries(previous || {})
+    .map(([k, t]) => [k, String(t || "").replace(/\s+\n/g, "\n").trim().slice(0, 700)])
+    .filter(([, t]) => t)
+    .map(([k, t]) => `(${GW_POST_CH[k] || k})\n${t}`)
+    .join("\n\n");
+  const done = (posted || []).filter((k) => GW_POST_CH[k]).map((k) => GW_POST_CH[k]);
   return [
-    "당신은 부동산 전문 매체 '공실뉴스'의 SNS 에디터입니다. 아래 완성된 부동산 영상을 유튜브와 인스타그램에 올릴 글을 씁니다.",
+    "당신은 부동산 전문 매체 '공실뉴스'의 SNS 에디터입니다. 아래 완성된 부동산 영상을 유튜브·인스타그램·페이스북·스레드에 올릴 글을 씁니다.",
+    "이 글은 \"영상 소개\" 글입니다. 같은 매물의 사진 소개 글과 다르게, 영상으로 직접 둘러보는 경험(보이는 장면·순서·분위기)을 중심으로 씁니다.",
     "",
     title ? `[영상 제목(편집기 이름)] ${title}` : "",
     `[영상] ${shorts ? "세로 짧은 영상 (유튜브 쇼츠 · 인스타그램 릴스)" : "가로 영상 (유튜브 일반 영상)"}${seconds ? ` · 약 ${Math.round(seconds)}초` : ""}`,
     facts ? `[매물 정보 — 확인된 사실, 숫자·주소는 한 글자도 바꾸지 말 것, 없는 정보는 지어내지 말 것]\n${facts}` : "",
     script ? `[영상 대본 — 성우가 읽은 그대로]\n${script}` : "",
+    prev ? `[이 매물로 전에 쓴 사진 글 — 첫 문장·표현·문장 순서를 겹치지 말 것. 같은 사실은 다른 말로]\n${prev}` : "",
+    done.length ? `[이미 사진 글을 올린 채널] ${done.join(", ")} — 이 채널 글은 "지난번 소개한 ○○, 이번엔 영상으로 담았어요"처럼 이어지는 후속 글로 시작하십시오. 나머지 채널은 처음 소개하는 글로.` : "",
     "",
     "[원칙]",
     "- 영상과 매물 정보에 실제로 있는 내용만 씁니다. 없는 수치·시세·수익률·개발 호재·교통 시간을 만들지 않습니다.",
@@ -123,8 +135,17 @@ function gwVideoPostPrompt({ title = "", lines = [], vacancy = null, ratio = "16
     "- caption: 첫 줄은 25자 안팎의 훅 (지역 + 매물 핵심, 이모지 1개). 이어서 한 줄에 정보 하나씩 3~6줄, 줄마다 알맞은 이모지 하나로 시작. 전체 500자 이내",
     "- hashtags: 8~12개. # 없이 낱말만, 띄어쓰기 없이",
     "",
+    "[페이스북 — facebook]",
+    "- body: 250~500자. 첫 문장에 영상 속 매물의 결론(어디·무엇·조건), 이어서 영상에서 볼 장면 2~3개를 짧은 문단으로. 이모지는 0~2개",
+    "- hashtags: 3~5개. # 없이 낱말만",
+    "",
+    "[스레드 — threads]",
+    "- text: 300자 이내 한 글. 대화하듯 짧게, 영상에서 눈에 띄는 한 가지를 중심으로. 해시태그 없이",
+    "",
+    "- 네 채널 글은 서로도 첫 문장이 같지 않게 쓰십시오.",
+    "",
     "[출력] 설명 없이 아래 JSON 하나만 ```json 상자로:",
-    '{"youtube":{"title":"","description":"","hashtags":[]},"instagram":{"caption":"","hashtags":[]}}',
+    '{"youtube":{"title":"","description":"","hashtags":[]},"instagram":{"caption":"","hashtags":[]},"facebook":{"body":"","hashtags":[]},"threads":{"text":""}}',
   ].filter((x) => x !== "").join("\n");
 }
 

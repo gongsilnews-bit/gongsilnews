@@ -4,7 +4,7 @@ import { createClient as createAdminSupabase } from "@supabase/supabase-js";
 import { createClient as createCookieSupabase } from "@/utils/supabase/server";
 
 /**
- * 공실스튜디오: 번호로 공실열람에 공개 중인 공실·경매 물건을 찾는다.
+ * 공실마케팅: 번호로 공실열람에 공개 중인 공실·경매 물건을 찾는다.
  *  - 숫자만: 공실번호(vacancy_no)
  *  - "2026-18154-001" 처럼 - 가 들어 있으면: 경매·공매 관리번호·사건번호 (공실열람 경매 화면에 보이는 번호)
  * 블로그는 공실열람의 어떤 매물로도 쓸 수 있으므로(크롬 확장과 같음) 내 공실로 한정하지 않는다.
@@ -37,7 +37,7 @@ export async function findStudioVacancyByNo(input: string) {
 }
 
 /**
- * 공실스튜디오: 로그인한 회원이 등록한 공실 목록 (SNS뉴스발행 공실 고르기)
+ * 공실마케팅: 로그인한 회원이 등록한 공실 목록 (SNS뉴스발행 공실 고르기)
  * 회원 번호를 받지 않고 로그인 쿠키로 본인을 확인한다 (남의 목록을 볼 수 없게).
  * 고르기에 필요한 값과 대표 사진만 돌려준다.
  */

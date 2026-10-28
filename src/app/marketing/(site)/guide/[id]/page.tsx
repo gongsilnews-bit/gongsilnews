@@ -9,7 +9,7 @@ import { GUIDE_BOARD, postYoutube } from "@/components/studio-site/guideUtil";
 
 export const dynamic = "force-dynamic";
 
-/** 사용법 영상 한 편 (/studio/guide/[id]) — 제목 · 조회수 · 유튜브 영상 · 설명 (2026-10-26, 브루 튜토리얼 보기처럼 깔끔하게) */
+/** 사용법 영상 한 편 (/marketing/guide/[id]) — 제목 · 조회수 · 유튜브 영상 · 설명 (2026-10-26, 브루 튜토리얼 보기처럼 깔끔하게) */
 export default async function StudioGuideRead({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -34,7 +34,7 @@ export default async function StudioGuideRead({ params }: { params: Promise<{ id
       <main style={{ maxWidth: 1260, margin: "0 auto", padding: "28px 24px 96px" }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, margin: "0 0 12px" }}>{p.title}</h1>
         <div style={{ display: "flex", gap: 10, fontSize: 13, color: "#6b7280", paddingBottom: 20, borderBottom: "1px solid #e5e7eb" }}>
-          <Link href="/studio/guide" style={{ color: "#6b7280", textDecoration: "none" }}>사용법 배우기</Link>
+          <Link href="/marketing/guide" style={{ color: "#6b7280", textDecoration: "none" }}>사용법 배우기</Link>
           {p.category && <span>{p.category}</span>}
           <span>조회수 {((p.view_count || 0) + 1).toLocaleString()}</span>
           {admin && <Link href={`/board_write?board_id=${GUIDE_BOARD}&id=${p.id}`} style={{ marginLeft: "auto", color: "#e8890c", fontWeight: 700, textDecoration: "none" }}>수정</Link>}
@@ -51,7 +51,7 @@ export default async function StudioGuideRead({ params }: { params: Promise<{ id
         {text && <div style={{ maxWidth: 860, margin: "32px auto 0", fontSize: 16, lineHeight: 1.8, color: "#374151", whiteSpace: "pre-line" }}>{text}</div>}
 
         <div style={{ maxWidth: 860, margin: "48px auto 0", textAlign: "center" }}>
-          <Link href="/studio/guide" style={{ display: "inline-block", padding: "10px 22px", border: "1px solid #d1d5db", borderRadius: 8, color: "#374151", fontSize: 14, fontWeight: 600, textDecoration: "none" }}>목록으로</Link>
+          <Link href="/marketing/guide" style={{ display: "inline-block", padding: "10px 22px", border: "1px solid #d1d5db", borderRadius: 8, color: "#374151", fontSize: 14, fontWeight: 600, textDecoration: "none" }}>목록으로</Link>
         </div>
       </main>
     </div>

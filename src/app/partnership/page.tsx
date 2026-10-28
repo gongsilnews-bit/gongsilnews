@@ -244,7 +244,7 @@ export default function PartnershipPage() {
         </Link>
         <div className="header-links">
           <Link href="/about" className="header-link">회사소개</Link>
-          <Link href="/marketing" className="header-link">광고안내</Link>
+          <Link href="/advertise" className="header-link">광고안내</Link>
           <Link href="/partnership" className="header-link active">제휴문의</Link>
         </div>
       </header>

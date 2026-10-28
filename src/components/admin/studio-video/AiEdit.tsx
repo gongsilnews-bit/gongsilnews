@@ -321,7 +321,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
    *  rest — ② 빈 곳 (오른쪽에서 고른 빈칸, 안 골랐으면 빈칸 모두): 무료 → AI 그림 → 내 사진 다시 (AI 요청 2번)
    *  한 번에 되돌리기 한 칸. 회원이 직접 넣은 화면은 그대로 */
   const fillOnly = async (mode: "mine" | "rest") => {
-    if (!b.ai.edit) return setErr("공실스튜디오를 껐다 켜 주세요 (AI 편집 기능을 새로 연결해요)");
+    if (!b.ai.edit) return setErr("공실마케팅를 껐다 켜 주세요 (AI 편집 기능을 새로 연결해요)");
     setErr("");
     setRows(null);
     setNote("");
@@ -489,7 +489,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
 
   /** [씬 정리] — 글 AI 가 클립 글을 읽고 이야기 묶음(씬)으로 다시 나누고 이름 붙이기 (회의 3-22) */
   const group = async () => {
-    if (!b.ai.group) return setErr("공실스튜디오를 껐다 켜 주세요 (씬 정리 기능을 새로 연결해요)");
+    if (!b.ai.group) return setErr("공실마케팅를 껐다 켜 주세요 (씬 정리 기능을 새로 연결해요)");
     const clips = project.scenes.flatMap((s) => s.clips);
     if (clips.length < 2) return setErr("클립이 2개 이상 있어야 씬을 나눌 수 있어요.");
     setErr("");
@@ -536,7 +536,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
 
   /* ── AI 편집 시작 ── */
   const start = async () => {
-    if (!b.ai.edit) return setErr("공실스튜디오를 껐다 켜 주세요 (AI 편집 기능을 새로 연결해요)");
+    if (!b.ai.edit) return setErr("공실마케팅를 껐다 켜 주세요 (AI 편집 기능을 새로 연결해요)");
     setErr("");
     setRows(null);
     const off = b.onProgress((t) => setBusy(t));
@@ -898,8 +898,8 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
   });
   /** 글 AI 로 장면 설명 — ids 클립만 (스타일마다 따로 묶어 한 번씩) */
   const writePics = async (ids: string[], modify?: { current: string; request: string }, mode: "both" | "image" | "video" = "both") => {
-    if (!b.ai.imagePrompts) throw new Error("공실스튜디오를 껐다 켜 주세요 (장면 설명 기능을 새로 연결해요)");
-    if (mode === "video" && !b.ai.clipPrompts) throw new Error("공실스튜디오를 껐다 켜 주세요 (동영상 프롬프트 만들기를 새로 연결해요)");
+    if (!b.ai.imagePrompts) throw new Error("공실마케팅를 껐다 켜 주세요 (장면 설명 기능을 새로 연결해요)");
+    if (mode === "video" && !b.ai.clipPrompts) throw new Error("공실마케팅를 껐다 켜 주세요 (동영상 프롬프트 만들기를 새로 연결해요)");
     const cs = flatten(pref.current).items.map((x) => x.clip).filter((c) => ids.includes(c.id) && clipText(c).trim());
     const made: Record<string, string> = {};
     // [자동] — 아직 안 골랐거나 전체를 다시 만들 때: AI 가 스타일 하나를 고르며 프롬프트를 쓴다 (고쳐 달라는 말은 빼고)
@@ -1000,7 +1000,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
     setVidAsk("");
     const c = flatten(pref.current).items.find((x) => x.clip.id === id)?.clip;
     if (!c) return false;
-    if (!b.ai.video) { setErr("공실스튜디오를 껐다 켜 주세요 (AI 영상 기능을 새로 연결해요 — 앱 0.1.12부터)"); return "stop"; }
+    if (!b.ai.video) { setErr("공실마케팅를 껐다 켜 주세요 (AI 영상 기능을 새로 연결해요 — 앱 0.1.12부터)"); return "stop"; }
     let r: boolean | "stop" = false;
     setErr("");
     setDrawing((v) => [...v, id]);
@@ -1123,7 +1123,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
     // 머리말 — Flow 쓰는 법 (2026-10-21 사장님: 캐릭터 시트는 Flow 재료로 직접 올린다)
     const sty0 = styleOf(undefined);
     const header = [
-      `# 공실스튜디오 — ${project.name || "무제"} · ${what === "image" ? "이미지" : "동영상"} 프롬프트 · 이미지 스타일: ${sty0.label} · ${lines.length}개 clip`,
+      `# 공실마케팅 — ${project.name || "무제"} · ${what === "image" ? "이미지" : "동영상"} 프롬프트 · 이미지 스타일: ${sty0.label} · ${lines.length}개 clip`,
       "# [clip N] 아래 프롬프트를 하나씩 Flow에 붙여 넣으세요. 만든 파일 이름을 clip 1, clip 2 … 로 바꾸면 [한 번에 올리기]에서 바로 맞춰져요.",
       pf.charSheet.length ? "# 캐릭터 시트 사진은 Flow의 재료(참고 이미지)로 직접 올려 주세요 — 모든 clip에 같은 인물이 나와요." : "",
       what === "video" ? "# 첫 장면 이미지가 있는 clip은 그 이미지를 첫 프레임으로 올리면 더 똑같이 나와요. 없어도 글만으로 만들 수 있어요." : "",
@@ -1444,7 +1444,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
                 </div>
                 {pf.charSheet.length > 0 && (charApp
                   ? <div style={{ fontSize: 12, color: C.dim, marginTop: 6, lineHeight: 1.5 }}>사람이 나오는 그림마다 이 인물로 그려요 (얼굴·머리·옷·나이). 배경만 나오는 그림은 그대로예요.</div>
-                  : <div style={{ fontSize: 12, color: "#facc15", marginTop: 6, lineHeight: 1.5 }}>⚠ 공실스튜디오를 껐다 켜야 캐릭터 시트가 그림에 첨부돼요 (지금은 빼고 그려요).</div>)}
+                  : <div style={{ fontSize: 12, color: "#facc15", marginTop: 6, lineHeight: 1.5 }}>⚠ 공실마케팅를 껐다 켜야 캐릭터 시트가 그림에 첨부돼요 (지금은 빼고 그려요).</div>)}
               </div>
             )}
             {/* [빈 곳 AI로 채우기] 단추는 뺐다 (2026-10-21 사장님) — [AI 편집 시작]을 누르면 빈 곳부터 AI 그림으로 채우고 이어서 꾸민다 */}

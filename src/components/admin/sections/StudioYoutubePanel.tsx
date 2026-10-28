@@ -213,7 +213,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
         {row("숫자", "number", opts?.numbers)}
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
           <div style={{ flex: 1, minWidth: 260, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
-            {oneShot ? "고르고 위 [한 번에 쓰기]를 누르세요 (탭 이름 옆 ☑). " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
+            {oneShot ? "고르고 오른쪽 위 [이 대본만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
           </div>
           {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
             <button onClick={write} disabled={writing}
@@ -227,7 +227,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
       </div>
 
       {script && (
-        <div style={card}>
+        <div id="gs-step-3" style={{ ...card, scrollMarginTop: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>제목</div>
           <div style={{ position: "relative" }}>
             <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title !== script.title && persist({ title })}

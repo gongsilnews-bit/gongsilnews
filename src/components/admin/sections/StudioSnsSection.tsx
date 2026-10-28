@@ -1,14 +1,15 @@
 "use client";
 
+import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
-import StudioChannelTabs from "./StudioChannelTabs";
+import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
 import { BusyDots, LoadingCover } from "./StudioLoading";
 
 /**
- * SNS뉴스발행 (공실스튜디오 앱 전용)
+ * SNS뉴스발행 (공실마케팅 앱 전용)
  *
  * 1단계 공실 분석·캡처: 공실을 고르면 앱이 안 보이는 창에서 공실열람을 열어
  * 매물 정보를 읽고, 등록 사진 전부 + 화면 3장(공실열람 검증·지도·로드뷰)을 모은다.
@@ -20,19 +21,22 @@ import { BusyDots, LoadingCover } from "./StudioLoading";
  * 뉴스칼럼 카테고리(StudioColumnSource): 뉴스·주제를 소재로 확장 뉴스메이커와 같은 기사·블로그·SNS 를 쓴다.
  */
 
-type MediaThumb = { kind: string; caption: string; thumb: string | null };
+type MediaThumb = { kind: string; caption: string; thumb: string | null; real?: boolean };
+type MediaOp = { type: "order"; order: number[] } | { type: "remove"; index: number } | { type: "restore" } | { type: "ai"; prompt: string; ai?: unknown; style?: string; styleLabel?: string; stylePrompt?: string };
 type Analysis = {
   vacancyId: string;
   vacancy: { title?: string; priceText?: string; saleKind?: string; fields?: { label: string; value: string }[]; themes?: string[]; infra?: string };
   media: MediaThumb[];
   failures: string[];
+  hiddenCount?: number;
 };
 type Usage = { plan: string; monthLimit: number; monthUsed: number; monthRemaining: number | null; dailyLimit: number | null; todayUsed: number; custom: boolean };
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
-  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
+  blog?: { imageStyles?: (vacancyId?: string) => Promise<{ id: string; label: string }[]> };
+  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; media?: (id: string, op: MediaOp) => Promise<Analysis>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
 };
 /** [공실 바꾸기] 목록 한 줄 — 이 PC에서 작업한 공실 (앱 studio:vacancy-list) */
 type WorkRow = { vacancyId: string; no: string; title: string; priceText: string; saleKind: string; thumb: string | null; updatedAt: string; done: Record<string, boolean> };
@@ -74,7 +78,7 @@ const NEWS_CATEGORIES = [
 ];
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성" };
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
@@ -86,7 +90,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   // 채널 탭 (회의 결정: 공통 ①②를 한 번 하고, 채널마다 탭)
   const [tab, setTab] = useState("article"); // 공실뉴스 기사가 맨 앞
   const [category, setCategoryState] = useState("gongsil"); // 왼쪽 뉴스 카테고리
-  const [columnTab, setColumnTab] = useState("article"); // 뉴스칼럼의 채널 탭
+  // 뉴스칼럼의 채널 탭 — 홈 "내 기사"에서 고른 채널이 있으면 그 탭으로 한 번 연다 (2026-10-28)
+  const [columnTab, setColumnTab] = useState(() => {
+    try {
+      const t = typeof window === "undefined" ? "" : sessionStorage.getItem("gs-column-tab") || "";
+      if (t) { sessionStorage.removeItem("gs-column-tab"); return t; }
+    } catch {}
+    return "article";
+  });
   const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
@@ -281,6 +292,72 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{t}</h3>
     </div>
   );
+  /* 분석 사진 정리 (2026-10-28 사장님) — [×] 빼기 · 끌어서 순서 · [+ AI 이미지] · 되살리기. 맨 앞 = 대표 사진 (실제 사진만) */
+  const [dragFrom, setDragFrom] = useState(-1);
+  const [mediaBusy, setMediaBusy] = useState("");
+  const [mediaErr, setMediaErr] = useState("");
+  const [aiAsk, setAiAsk] = useState<string | null>(null); // [+ AI 이미지] 무엇을 그릴지 (null = 닫힘)
+  const editMedia = async (op: MediaOp) => {
+    const b = bridge();
+    if (!result || !b?.vacancy.media) return setMediaErr("앱을 새 버전으로 다시 켜 주세요.");
+    setMediaErr("");
+    setMediaBusy(op.type === "ai" ? "AI가 그림을 그리는 중… (30초~1분)" : "저장하는 중…");
+    const off = op.type === "ai" ? b.vacancy.onProgress((t) => setMediaBusy(t)) : () => {};
+    try {
+      setResult(await b.vacancy.media(result.vacancyId, op));
+      if (op.type === "ai") setAiAsk(null);
+    } catch (e) {
+      setMediaErr((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+    } finally {
+      off();
+      setMediaBusy("");
+    }
+  };
+  const moveMedia = (from: number, to: number) => {
+    if (!result || from === to || from < 0) return;
+    const order = result.media.map((_, i) => i);
+    const [x] = order.splice(from, 1);
+    order.splice(to, 0, x);
+    void editMedia({ type: "order", order });
+  };
+  // 그림 스타일 — 블로그 AI 이미지와 같은 목록: 기사용(앱) + 영상 편집기 스타일 (2026-10-28 사장님)
+  const [artStyles, setArtStyles] = useState<{ id: string; label: string }[]>([]);
+  const [aiStyle, setAiStyle] = useState("");
+  useEffect(() => {
+    if (aiAsk === null || artStyles.length || !result) return;
+    bridge()?.blog?.imageStyles?.(result.vacancyId).then((l) => { setArtStyles(l || []); setAiStyle((cur) => cur || l?.[0]?.id || ""); }).catch(() => {});
+  }, [aiAsk]); // eslint-disable-line react-hooks/exhaustive-deps
+  const styleCards = [
+    ...artStyles.map((st) => ({ key: st.id, label: st.label, desc: "기사용 스타일", bg: "linear-gradient(135deg,#1a3a6b,#3b6fb6)", thumb: ["news", "building", "area", "animation", "infographic"].includes(st.id) ? `/studio-styles/${st.id}.jpg` : "" })),
+    ...IMAGE_STYLES.map((st) => ({ key: `vs:${st.id}`, label: st.label, desc: st.desc, bg: st.bg, thumb: st.thumb || "" })),
+  ];
+  const styleOp = () => {
+    const vs = aiStyle.startsWith("vs:") ? IMAGE_STYLES.find((x) => x.id === aiStyle.slice(3)) : undefined;
+    if (vs) return { styleLabel: vs.label, stylePrompt: vs.prompt };
+    const a = artStyles.find((x) => x.id === aiStyle);
+    return a ? { style: a.id, styleLabel: a.label } : {};
+  };
+  // "무엇을 그릴까요?" 추천 — 공실 정보(종류·주변 역·동네·테마)로 바로 만든다, AI 안 씀 (2026-10-28 사장님)
+  const aiIdeas = (r: Analysis): string[] => {
+    const t = r.vacancy.title || "";
+    const dong = (/(\S+동)(?=\s|$)/.exec(t) || [])[1] || "";
+    const station = (/지하철역:\s*([^,/]+?역)/.exec(r.vacancy.infra || "") || [])[1]?.replace(/\s*\d+호선/, "").trim() || "";
+    const biz = /상가|사무실|오피스(?!텔)|빌딩|건물|공장|창고|토지|지식산업/.test(t);
+    const out = biz
+      ? [`${t} 건물 외관, 맑은 날 낮, 정면 3/4 시점`, "깔끔하게 정리된 사무 공간 내부, 큰 창으로 들어오는 자연광", "1층 상가 전면 유리창과 보행자가 있는 거리 (간판 글자 없이)"]
+      : [`${t} 건물 외관, 맑은 날 낮`, "밝은 채광의 거실과 큰 창, 깔끔한 바닥", "정돈된 주방과 수납공간이 보이는 실내", "아늑한 침실, 부드러운 오후 햇살"];
+    if (station) out.push(`${station} 주변 거리와 출구 풍경, 사람들이 오가는 낮`);
+    if (dong) out.push(`${dong} 골목과 동네 상권 분위기, 따뜻한 저녁 조명`);
+    if (/공원/.test(r.vacancy.infra || "")) out.push("가까운 공원과 산책로, 푸른 나무와 벤치");
+    if (/학교|초등/.test(r.vacancy.infra || "")) out.push("등굣길 학교 앞 안전한 보행로, 아침 햇살");
+    for (const th of r.vacancy.themes || []) {
+      if (/반려/.test(th)) out.push("반려동물과 함께하는 밝은 거실");
+      if (/주차/.test(th)) out.push("넓고 정돈된 건물 주차장");
+      if (/엘리베이터/.test(th)) out.push("깔끔한 엘리베이터 홀과 복도");
+    }
+    return Array.from(new Set(out)).slice(0, 8);
+  };
+  const aiSeed = (r: Analysis) => [r.vacancy.title, r.vacancy.themes?.slice(0, 3).join(" "), "밝은 채광의 실내"].filter(Boolean).join(", ");
   /* 분석 내용 — 모은 사진·화면 (요약 줄 [분석 내용 보기]) */
   const mediaGrid = (r: Analysis) => (
     <>
@@ -290,14 +367,77 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 14 }}>
         {r.media.map((m, i) => (
-          <figure key={i} style={{ margin: 0, border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa" }}>
+          <figure key={i} className="gs-media-card" draggable={!mediaBusy} onDragStart={() => setDragFrom(i)} onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); moveMedia(dragFrom, i); setDragFrom(-1); }} title="끌어서 순서를 바꿔요 · 맨 앞이 대표 사진"
+            style={{ margin: 0, border: `${dragFrom === i ? 2 : 1}px solid ${dragFrom === i ? "#3b82f6" : theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa", cursor: mediaBusy ? "wait" : "grab", opacity: mediaBusy ? 0.7 : 1 }}>
             <div style={{ position: "relative", aspectRatio: "4 / 3", background: "#e5e7eb" }}>
-              {m.thumb && <img src={m.thumb} alt={m.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-              <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: m.kind === "photo" ? "rgba(0,0,0,0.6)" : "#1a3a6b", color: "#fff" }}>{KIND_LABEL[m.kind] || m.kind}</span>
+              {m.thumb && <img src={m.thumb} alt={m.caption} draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+              <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: m.kind === "ai" ? "#7048e8" : m.kind === "photo" ? "rgba(0,0,0,0.6)" : "#1a3a6b", color: "#fff" }}>{i === 0 ? "대표 · " : ""}{KIND_LABEL[m.kind] || m.kind}</span>
+              <button className="gs-media-x" title="이 사진 빼기 (아래에서 되살릴 수 있어요)" disabled={Boolean(mediaBusy)} onClick={() => void editMedia({ type: "remove", index: i })}
+                style={{ position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: "50%", border: 0, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 15, fontWeight: 800, lineHeight: 1, cursor: "pointer" }}>×</button>
             </div>
             <figcaption style={{ padding: "8px 10px", fontSize: 12, lineHeight: 1.5, color: theme.textSecondary }}>{m.caption}</figcaption>
           </figure>
         ))}
+        {/* + AI 이미지 만들기 */}
+        <div style={{ border: `2px dashed ${theme.border}`, borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, minHeight: 180 }}>
+          <button disabled={Boolean(mediaBusy)} onClick={() => setAiAsk(aiSeed(r))}
+            style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: "#7048e8", fontSize: 14, fontWeight: 800 }}>＋ AI 이미지 만들기</button>
+        </div>
+      </div>
+      {/* AI 이미지 만들기 — 팝업 (2026-10-28 사장님) */}
+      {aiAsk !== null && (
+        <div onClick={() => !mediaBusy && setAiAsk(null)} style={{ position: "fixed", inset: 0, zIndex: 10002, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="AI 이미지 만들기"
+            style={{ width: 720, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh - 48px)", overflowY: "auto", background: theme.cardBg, borderRadius: 16, padding: "22px 24px", boxShadow: "0 16px 48px rgba(0,0,0,0.25)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: theme.textPrimary }}>AI 이미지 만들기</div>
+              <button onClick={() => setAiAsk(null)} disabled={Boolean(mediaBusy)} aria-label="닫기" style={{ border: 0, background: "transparent", color: theme.textSecondary, fontSize: 18, cursor: "pointer" }}>✕</button>
+            </div>
+            <div style={{ marginTop: 4, fontSize: 12.5, color: theme.textSecondary }}>만든 그림은 사진 모음 끝에 "AI 생성" 표시로 붙어요. 대표 사진(맨 앞)은 실제 사진만 돼요.</div>
+            <div style={{ marginTop: 16, fontSize: 13.5, fontWeight: 800, color: theme.textPrimary }}>그림 스타일</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 6, marginTop: 8 }}>
+              {styleCards.map((c) => {
+                const on = aiStyle === c.key;
+                return (
+                  <button key={c.key} type="button" onClick={() => setAiStyle(c.key)} title={c.desc}
+                    style={{ position: "relative", height: 56, borderRadius: 8, border: 0, outline: on ? "3px solid #7048e8" : "none", outlineOffset: -3, background: c.thumb ? `center / cover no-repeat url(${c.thumb}), ${c.bg}` : c.bg, cursor: "pointer", overflow: "hidden" }}>
+                    <span style={{ position: "absolute", inset: 0, background: on ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.45)" }} />
+                    <span style={{ position: "relative", color: "#fff", fontSize: 12.5, fontWeight: 800, textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{on ? "✓ " : ""}{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 16, fontSize: 13.5, fontWeight: 800, color: theme.textPrimary }}>무엇을 그릴까요?</div>
+            {result && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                {aiIdeas(result).map((x) => (
+                  <button key={x} type="button" onClick={() => setAiAsk(x)} title="누르면 아래 칸에 넣어요 (고칠 수 있어요)"
+                    style={{ padding: "6px 11px", borderRadius: 999, border: `1px solid ${aiAsk === x ? "#7048e8" : theme.border}`, background: aiAsk === x ? "rgba(112,72,232,0.1)" : "transparent", color: aiAsk === x ? "#7048e8" : theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                    {x}
+                  </button>
+                ))}
+              </div>
+            )}
+            <textarea value={aiAsk} onChange={(e) => setAiAsk(e.target.value)} rows={3}
+              style={{ marginTop: 8, width: "100%", boxSizing: "border-box", fontSize: 14, padding: 10, borderRadius: 10, border: "2px solid #3b82f6", resize: "vertical", background: theme.cardBg, color: theme.textPrimary }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
+              {mediaBusy && <span style={{ fontSize: 13, fontWeight: 800, color: "#7048e8" }}>{mediaBusy}</span>}
+              {mediaErr && <span style={{ fontSize: 13, fontWeight: 800, color: "#c92a2a" }}>{mediaErr}</span>}
+              <button onClick={() => setAiAsk(null)} disabled={Boolean(mediaBusy)} style={{ marginLeft: "auto", height: 38, padding: "0 18px", borderRadius: 999, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textPrimary, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>취소</button>
+              <button onClick={() => void editMedia({ type: "ai", prompt: aiAsk, ...styleOp() })} disabled={Boolean(mediaBusy) || !aiAsk.trim()}
+                style={{ height: 38, padding: "0 22px", borderRadius: 999, border: 0, background: "#7048e8", color: "#fff", fontSize: 13.5, fontWeight: 800, cursor: mediaBusy ? "wait" : "pointer", opacity: mediaBusy || !aiAsk.trim() ? 0.6 : 1 }}>{mediaBusy ? "만드는 중…" : "만들기"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`.gs-media-x{opacity:0;transition:opacity .15s}.gs-media-card:hover .gs-media-x{opacity:1}`}</style>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, fontSize: 12.5, color: theme.textSecondary, flexWrap: "wrap" }}>
+        <span>끌어서 순서를 바꿔요 · 맨 앞이 대표 사진(실제 사진만) · 정리한 사진은 다음에 쓰는 기사·블로그·SNS부터 써요</span>
+        {(r.hiddenCount || 0) > 0 && <button disabled={Boolean(mediaBusy)} onClick={() => void editMedia({ type: "restore" })}
+          style={{ border: 0, background: "transparent", color: "#1a73e8", fontSize: 12.5, fontWeight: 800, cursor: "pointer", padding: 0 }}>뺀 사진 {r.hiddenCount}장 되살리기</button>}
+        {mediaBusy && <span style={{ fontWeight: 800, color: "#1a3a6b" }}>{mediaBusy}</span>}
+        {mediaErr && <span style={{ fontWeight: 800, color: "#c92a2a" }}>{mediaErr}</span>}
       </div>
       {r.failures.length > 0 && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>못 가져온 것: {r.failures.join(" / ")}</div>}
     </>
@@ -328,7 +468,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}</span>
                 {/* 유료 회원 전용 표시 — 주황 = 공실뉴스부동산 색 (2026-10-23 사장님) */}
                 {(c.id === "interior" || c.id === "remodel") && (
-                  <span title="공실스튜디오 회원 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
+                  <span title="공실마케팅 회원 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
                 )}
               </button>
             );
@@ -345,6 +485,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {/* 작업 파일 줄(저장·불러오기)이 여기로 올라온다 — WorkFileBar 가 이 자리에 그린다 (2026-10-28 사장님) */}
+          <div id="gs-workfile-slot" />
           {(() => {
             const t = category === "column" ? columnTab : category === "gongsil" ? tab : simTabs[category];
             if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
@@ -360,8 +502,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 이번 주 {name} {u.monthRemaining} / {u.monthLimit}번 남음
               </span>
             ) : (
-              <a href="/studio/pricing" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {u.monthLimit === 0 ? `${name}는 공실뉴스부동산 회원 기능입니다` : `이번 주 ${u.monthLimit}번을 모두 사용했습니다 · 공실스튜디오에서 무제한 →`}
+              <a href="/marketing/pricing" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
+                {u.monthLimit === 0 ? `${name}는 공실뉴스부동산 회원 기능입니다` : `이번 주 ${u.monthLimit}번을 모두 사용했습니다 · 공실마케팅에서 무제한 →`}
               </a>
             );
           })()}
@@ -379,19 +521,25 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         {category === "gongsil" && (<>
         {/* 지금 작업 — 한 줄 요약. [공실 바꾸기] = 작업 목록 · [다시 분석·캡처] = 같은 공실 사진을 새로 */}
-        {result && mode === "" && (
-          <div style={{ ...card, padding: "14px 18px", position: "relative", minHeight: busy ? 200 : undefined }}>
+        {result && mode === "" && (<>
+          {/* 1단계 표시 — 여기서부터 시작인 걸 알게 (2026-10-28 사장님: 밋밋해서 인지가 안 됨) */}
+          <div id="gs-step-1" style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px 2px", scrollMarginTop: 16 }}>
+            <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>이 공실로 씁니다</span>
+            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 공실은 [공실 바꾸기]</span>
+          </div>
+          <div style={{ ...card, padding: "16px 20px", position: "relative", minHeight: busy ? 200 : undefined, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.darkMode ? "rgba(91,141,239,0.10)" : "#f3f7ff" }}>
             {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
             <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 5 }}>
                 {result.media.slice(0, 4).map((m, i) => (
-                  <div key={i} style={{ width: 40, height: 40, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
+                  <div key={i} style={{ width: 58, height: 58, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
                     {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
                   </div>
                 ))}
               </div>
               <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 17, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
                   {result.vacancy.saleKind && (
                     <span style={{ fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>
                   )}
@@ -410,18 +558,18 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               <button onClick={() => void analyze(picked)} disabled={busy} title="같은 공실의 사진·화면을 새로 받습니다"
                 style={busy
                   ? { padding: "8px 14px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "default" }
-                  : { padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {busy ? <>분석·캡처 중<BusyDots /></> : "다시 분석·캡처"}
+                  : { padding: "8px 14px", borderRadius: 8, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.darkMode ? "transparent" : "#ffffff", color: theme.darkMode ? "#ffffff" : "#1a3a6b", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                {busy ? <>분석·캡처 중<BusyDots /></> : "↻ 다시 분석·캡처"}
               </button>
               <button onClick={openList}
-                style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
                 공실 바꾸기
               </button>
             </div>
             {error && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
             {showMedia && <div style={{ marginTop: 6 }}>{mediaGrid(result)}</div>}
           </div>
-        )}
+        </>)}
 
         {/* [공실 바꾸기] — 이 PC에서 작업한 공실 목록. 누르면 써 둔 글이 바로 열린다 */}
         {mode === "list" && (
@@ -548,6 +696,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         </>)}
 
         {/* 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 (고르는 동안은 숨긴다) */}
+        {result && mode === "" && <StepNav theme={theme} tab={tab} onTab={chooseTab} onOpen1={() => setShowMedia(true)} />}
         {result && mode === "" && <StudioChannelTabs key={result.vacancyId} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />}
         </>)}
       </div>

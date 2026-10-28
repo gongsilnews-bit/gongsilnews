@@ -903,7 +903,7 @@ export function SaveAsFields({ name, setName, folder, setFolder, note, compact }
       )}
       <div style={row}>
         <span style={lab}>파일 형식</span>
-        <span style={{ fontSize: 14, color: C.text }}>공실스튜디오 영상 파일 (*.gss) <span style={{ color: C.dim, fontSize: 12.5 }}>· {note || `${(name.trim() || "무제").replace(/[\\/:*?"<>|]/g, "_")}.gss 로 저장돼요 (같은 이름이 있으면 _2)`}</span></span>
+        <span style={{ fontSize: 14, color: C.text }}>공실마케팅 영상 파일 (*.gss) <span style={{ color: C.dim, fontSize: 12.5 }}>· {note || `${(name.trim() || "무제").replace(/[\\/:*?"<>|]/g, "_")}.gss 로 저장돼요 (같은 이름이 있으면 _2)`}</span></span>
         <span />
       </div>
     </div>
@@ -1257,7 +1257,7 @@ export function PrompterPanel({ value, onChange, disabled, rehearsing, onRehears
         <span style={{ fontSize: 13.5, color: C.sub }}>켜기</span>
         <Toggle on={value.on} onChange={(v) => set({ on: v })} disabled={disabled} />
       </div>
-      {!can && <div style={{ marginTop: 10, fontSize: 13.5, color: C.danger }}>공실스튜디오를 새 버전으로 업데이트하면 쓸 수 있어요.</div>}
+      {!can && <div style={{ marginTop: 10, fontSize: 13.5, color: C.danger }}>공실마케팅를 새 버전으로 업데이트하면 쓸 수 있어요.</div>}
       {value.on && (
         <>
           <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>

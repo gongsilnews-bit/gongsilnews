@@ -1,6 +1,6 @@
 "use client";
 
-// 공실스튜디오 [이미지 편집] (포토랩) — PSD 를 열고 고치고 PSD 로 저장 (포토샵과 주고받기). 회의: docs/2026-10-19_photolab_meeting.md
+// 공실마케팅 [이미지 편집] (포토랩) — PSD 를 열고 고치고 PSD 로 저장 (포토샵과 주고받기). 회의: docs/2026-10-19_photolab_meeting.md
 //  - 모든 일은 이 PC 안에서 (서버 없음) — 열기·그리기·저장이 바로바로
 //  - 화면: 처음 화면(새 파일·열기·최근 파일) → 문서 탭 · 그림판 · 오른쪽 속성 칸 · 레이어 목록
 import React, { useCallback, useEffect, useRef, useState } from "react";

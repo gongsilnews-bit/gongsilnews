@@ -5,7 +5,7 @@ import { MenuItem } from "@/components/admin/sections/types";
 import { useStudioTheme } from "@/components/admin/studio-video/ui";
 
 /**
- * 공실스튜디오 텍스트 메뉴 (중개사 관리자 /realty_admin)
+ * 공실마케팅 텍스트 메뉴 (중개사 관리자 /realty_admin)
  *
  * 좁은 아이콘 막대 대신, 작은 아이콘 옆에 글씨를 둔 넓은 메뉴.
  * 자주 쓰는 업무 메뉴만 위에 두고 나머지는 [더보기]에 접는다.
@@ -14,13 +14,13 @@ import { useStudioTheme } from "@/components/admin/studio-video/ui";
  * - [메뉴 편집]으로 업무·더보기와 순서를 회원이 바꾼다 (realtyMenu.tsx).
  */
 
-/** 공실스튜디오 앱 안에서 열렸는지. 앱 창의 브라우저 정보에 gongsil-studio/버전 이 들어 있다. */
+/** 공실마케팅 앱 안에서 열렸는지. 앱 창의 브라우저 정보에 gongsil-studio/버전 이 들어 있다. */
 const noSubscribe = () => () => {};
 export function useStudioApp(): { isApp: boolean; version: string | null } {
   // 서버에서 그릴 때는 빈 값 → 브라우저에서만 판정 (화면 어긋남 방지)
   const ua = useSyncExternalStore(noSubscribe, () => navigator.userAgent, () => "");
-  // 설치판은 앱 이름이 한글(공실스튜디오)로 들어가므로 Electron 표시로도 판정한다
-  const m = ua.match(/(?:gongsil-studio|GongsilStudio|공실스튜디오)\/([\d.]+)/i);
+  // 설치판은 앱 이름이 한글(공실마케팅)로 들어가므로 Electron 표시로도 판정한다
+  const m = ua.match(/(?:gongsil-studio|GongsilStudio|공실마케팅)\/([\d.]+)/i);
   const isApp = !!m || /Electron\//.test(ua);
   const version = m ? m[1] : ua.match(/\/([\d.]+) Chrome\//)?.[1] ?? null;
   return { isApp, version };
@@ -292,7 +292,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 0 3px rgba(52,211,153,0.25)" }} />
                   이 PC 연결됨
                 </div>
-                <div style={{ marginTop: 3, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>공실스튜디오 v{appVersion}</div>
+                <div style={{ marginTop: 3, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>공실마케팅 v{appVersion}</div>
                 {storage && (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.10)" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
@@ -310,7 +310,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
               </>
             ) : (
               <>
-                <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>공실스튜디오</div>
+                <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>공실마케팅</div>
                 <div style={{ marginTop: 3, color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 1.5 }}>PC 앱에서 SNS 자동 발행 · 영상 제작</div>
               </>
             )}

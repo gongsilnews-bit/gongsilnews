@@ -37,14 +37,14 @@ const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as
 const cleanErr = (e: unknown) => {
   const m = e instanceof Error ? e.message : String(e);
   // 앱 본체가 새 기능보다 옛것 (다시 켜기 전)
-  if (/No handler registered/.test(m)) return "공실스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 예측 보고서 기능이 연결돼요)";
+  if (/No handler registered/.test(m)) return "공실마케팅를 다시 켜 주세요. (앱을 껐다 켜면 예측 보고서 기능이 연결돼요)";
   return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 };
 const ymd = (d = new Date()) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
 const safe = (s: string) => s.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
 const blobUrl = (b: Blob) => new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
 const readFile = (f: File) => new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
-const RESTART = "공실스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 예측 보고서 기능이 연결돼요)";
+const RESTART = "공실마케팅를 다시 켜 주세요. (앱을 껐다 켜면 예측 보고서 기능이 연결돼요)";
 
 /* 공간 추가 단추 — 인테리어는 방 이름과 공간 유형, 리모델링은 건물의 면 */
 const ADD: Record<Kind, { name: string; roomType?: string }[]> = {

@@ -5,6 +5,7 @@ import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
 import WebSnsNewsModal from "./WebSnsNewsModal";
+import VacancyCardGrid from "./VacancyCardGrid";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail, getVacancyTabCounts, getVacancyFlyerStates } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -22,6 +23,19 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
   const editId = searchParams.get("id");
+  const copyId = searchParams.get("copy"); // 사본 만들기 — 내용만 채우고 새로 등록 (2026-10-28)
+  // 보기 방식 (2026-10-28 사장님): 카드형(기본 — 홈 "내 공실 홍보현황"과 같은 카드) / 목록형(표 — 여러 개 골라 처리)
+  // 최고관리자 화면은 전체 공실이라 표만 · 회원이 고른 보기는 이 기기에 기억
+  const canCard = role !== "admin";
+  const [view, setView] = useState<"card" | "list">("card");
+  const [cardQ, setCardQ] = useState(""); // 카드형 찾기 칸 (2026-10-28 사장님)
+  useEffect(() => {
+    try { if (localStorage.getItem("gs-vacancy-view") === "list") setView("list"); } catch {}
+  }, []);
+  const pickView = (v: "card" | "list") => {
+    setView(v);
+    try { localStorage.setItem("gs-vacancy-view", v); } catch {}
+  };
   
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
@@ -170,12 +184,19 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       if (editId && action === "write") {
         const res = await getVacancyDetail(editId);
         if (res.success) setEditingVacancy(res.data);
+      } else if (copyId && action === "write") {
+        const res = await getVacancyDetail(copyId);
+        // id·번호·상태·등록일을 빼면 등록 화면이 "새 공실"로 저장한다 (VacancyRegisterForm 은 editData.id 로 수정/등록을 가른다)
+        if (res.success && res.data) {
+          const { id: _id, vacancy_no: _no, status: _st, created_at: _at, ...rest } = res.data as any;
+          setEditingVacancy(rest);
+        }
       } else {
         setEditingVacancy(null);
       }
     };
     fetchEditData();
-  }, [editId, action]);
+  }, [editId, copyId, action]);
 
   if (showRegisterForm) {
     const returnUrl = role === "realtor" ? "/realty_admin?menu=gongsil" : role === "user" ? "/user_admin?menu=gongsil" : "/admin?menu=gongsil";
@@ -210,13 +231,53 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   let filteredVacancies = dbVacancies;
 
+  // [☰ 목록형] [▦ 카드형]
+  const viewSwitch = canCard && (
+    <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: darkMode ? "#2c2d31" : "#f1f3f5" }}>
+      {([["list", "목록형", "M4 6h16M4 12h16M4 18h16"], ["card", "카드형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => (
+        <button key={k} onClick={() => pickView(k)} aria-pressed={view === k}
+          style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: 0, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700,
+            background: view === k ? (darkMode ? "#45474d" : "#fff") : "transparent", color: view === k ? textPrimary : textSecondary, boxShadow: view === k ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>
+          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+  const titleRow = (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
+      <span style={{ fontSize: 13, color: darkMode ? textSecondary : "#111", fontWeight: 600 }}>(광고 {counts.광고중}건 / 전체 {counts.전체}건)</span>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+        {/* 카드형 찾기 — 주소·건물 이름·광고번호·가격 */}
+        {canCard && view === "card" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, width: 280, height: 38, padding: "0 12px", borderRadius: 10, border: `1px solid ${border}`, background: cardBg }}>
+            <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke={textSecondary} strokeWidth={1.8} strokeLinecap="round" aria-hidden><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /></svg>
+            <input value={cardQ} onChange={(e) => setCardQ(e.target.value)} placeholder="주소·건물 이름·광고번호 찾기"
+              style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: "transparent", fontSize: 14, color: textPrimary }} />
+            {cardQ && <button onClick={() => setCardQ("")} aria-label="지우기" style={{ border: 0, background: "transparent", color: textSecondary, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>}
+          </div>
+        )}
+        {viewSwitch}
+      </div>
+    </div>
+  );
+
+  // 카드형 — 홈과 같은 카드 (오른쪽 클릭 메뉴·☆ 즐겨찾기·홍보현황 그대로)
+  if (canCard && view === "card") {
+    return (
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px 48px", background: bg }}>
+        {titleRow}
+        <VacancyCardGrid theme={theme} memberId={ownerId} keyword={cardQ} showTypes onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
+          onAdd={() => router.push("?menu=gongsil&action=write", { scroll: false })} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       {/* 타이틀 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
-        <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>(광고 {counts.광고중}건 / 전체 {counts.전체}건)</span>
-      </div>
+      {titleRow}
 
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>

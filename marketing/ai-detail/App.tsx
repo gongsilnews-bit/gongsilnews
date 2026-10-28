@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas, { FlyerOrientation, PAGE_SIZE } from './components/FlyerCanvas';
 // Removed geminiService import
-import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
+import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout, isNewLayout } from './types';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
@@ -22,6 +22,13 @@ export const LAYOUTS: FlyerLayout[] = [
   // 새 기본 디자인 (2026-10-15) — 유리창 밖에서 3초 안에 읽히게
   { id: 'big', name: '숫자 크게', type: 'big', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'photo', name: '사진형', type: 'photo', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  // 2026-10-28 사장님이 보내 준 견본 스타일
+  { id: 'board', name: '추천 걸이판', type: 'board', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'diagonal', name: '사선 사진', type: 'diagonal', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'split', name: '반반 사진', type: 'split', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'color', name: '색 바탕', type: 'color', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'frame', name: '테두리', type: 'frame', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'gallery', name: '사진 갤러리', type: 'gallery', headingFont: 'font-sans', bodyFont: 'font-sans' },
   // 예전 디자인 — 이미 만든 홍보지가 그대로 열리게 남겨 둔다
   { id: 'type1', name: 'Modern Overlay', type: 'type1', headingFont: 'font-serif-kr', bodyFont: 'font-sans' },
   { id: 'type2', name: 'Luxury Center', type: 'type2', headingFont: 'font-serif-kr', bodyFont: 'font-serif-kr' },
@@ -228,6 +235,7 @@ function App() {
   const [isExporting, setIsExporting] = useState(false);
   /** QR 이 여는 매물 페이지 주소 (서버가 알려 준다) 와 그 QR 그림 */
   const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [vacPhotos, setVacPhotos] = useState<string[]>([]); // 이 매물 등록 사진 — 사진 여러 장 디자인용
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
@@ -242,12 +250,53 @@ function App() {
   const [loadingData, setLoadingData] = useState(false);
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  /* ── 되돌리기 Ctrl+Z · 다시 하기 Ctrl+Shift+Z / Ctrl+Y (2026-10-28 사장님) ──
+   * 고친 것(isDirty)만 기록한다. 끌기처럼 잇달아 바뀌는 것은 0.5초 안이면 한 번으로 묶는다. 최근 100번까지. */
+  const hist = useRef<{ past: FlyerState[]; future: FlyerState[]; last: FlyerState | null; burst: ReturnType<typeof setTimeout> | null; skip: boolean }>({ past: [], future: [], last: null, burst: null, skip: false });
+  useEffect(() => {
+    const h = hist.current;
+    if (h.skip || !isDirty) { h.skip = false; h.last = state; return; }
+    if (h.last && h.last !== state) {
+      if (!h.burst) {
+        h.past.push(h.last);
+        if (h.past.length > 100) h.past.shift();
+        h.future = [];
+      } else clearTimeout(h.burst);
+      h.burst = setTimeout(() => { h.burst = null; }, 500);
+    }
+    h.last = state;
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const step = (back: boolean) => {
+      const h = hist.current;
+      const from = back ? h.past : h.future;
+      const to = back ? h.future : h.past;
+      const next = from.pop();
+      if (!next || !h.last) return;
+      to.push(h.last);
+      if (h.burst) { clearTimeout(h.burst); h.burst = null; }
+      h.skip = true;
+      setState(next);
+      setIsDirty(true);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return; // 글자 고치는 중엔 그 칸의 되돌리기
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); step(true); }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); step(false); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
   const [authError, setAuthError] = useState<string | null>(null);
 
   /* 새 디자인 글자 옮기기·크기 — info.adjust 에 저장 (null 이면 처음대로) */
-  const handleAdjust = (key: string, value: { x: number; y: number; s: number; c?: string; f?: string; h?: boolean } | null) => {
+  const handleAdjust = (key: string, value: { x: number; y: number; s: number; c?: string; f?: string; h?: boolean; z?: number } | null) => {
       setState(prev => {
           const next = { ...(prev.info.adjust || {}) };
           if (value) next[key] = value; else delete next[key];
@@ -321,7 +370,7 @@ function App() {
     if (!window.confirm('이 칸의 디자인을 지울까요?')) return;
     if (await callPresets(slot, null)) setPresetMsg(`내 디자인 ${slot + 1}을 비웠습니다.`);
   };
-  const presetBox = (state.layoutTheme?.type === 'big' || state.layoutTheme?.type === 'photo') && (
+  const presetBox = isNewLayout(state.layoutTheme?.type) && (
     <div className="mt-4">
       <div className="text-xs font-bold text-gray-600 mb-1">내 디자인 <span className="font-normal text-gray-400">· 계정에 저장, 다른 매물에서 불러오기</span></div>
       <div className="grid grid-cols-3 gap-2">
@@ -386,6 +435,7 @@ function App() {
   };
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
+    hist.current.past = []; hist.current.future = []; // 다른 매물로 바꾸면 되돌리기 기록은 새로
     setLoadingData(true);
     try {
       const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
@@ -401,6 +451,7 @@ function App() {
         vacancyMetaRef.current = { title: v.building_name || [v.dong, v.property_type].filter(Boolean).join(' '), no: v.vacancy_no ? String(v.vacancy_no) : '' };
         const photos = json.photos || [];
         if (json.qrUrl) setQrUrl(json.qrUrl);
+        setVacPhotos(photos.map((p: { url?: string }) => p.url || '').filter(Boolean));
 
         // 포맷팅 헬퍼들
         const formatAmount = (amt: number) => {
@@ -1429,7 +1480,7 @@ function App() {
         </div>
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 flex flex-col">
             <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500 rounded-t-xl">
-                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다){(state.layoutTheme?.type === 'big' || state.layoutTheme?.type === 'photo') && <span className="text-sky-600 font-bold">· 클릭 후 끌면 이동 · 모서리로 크기 · 더블클릭으로 글자 고치기</span>}</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다){isNewLayout(state.layoutTheme?.type) && <span className="text-sky-600 font-bold">· 클릭 후 끌면 이동 · 모서리로 크기 · 더블클릭으로 글자 고치기</span>}</span>
                 <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                     {([['portrait', '세로'], ['landscape', '가로']] as const).map(([key, label]) => (
                         <button
@@ -1461,6 +1512,7 @@ function App() {
                                     onTextOverride={handleTextOverride}
                                     onItemsChange={handleItemsChange}
                                     onPickImage={handlePickImage}
+                                    photos={vacPhotos}
                                 />
                             </div>
                         </div>

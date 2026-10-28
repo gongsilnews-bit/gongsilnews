@@ -5,9 +5,9 @@ import Link from "next/link";
 import { InstallGuideModal, useStudioInstaller } from "@/components/admin/sections/StudioInstallGuide";
 
 /**
- * 공실스튜디오 소개 (/studio) — 브루(vrew.ai)식: 섹션마다 큰 제목 한 줄 · 설명 두 줄 · 버튼 · 큰 그림 하나 (2026-10-26 사장님)
+ * 공실마케팅 소개 (/marketing) — 브루(vrew.ai)식: 섹션마다 큰 제목 한 줄 · 설명 두 줄 · 버튼 · 큰 그림 하나 (2026-10-26 사장님)
  * 그림·시연 영상 자리는 비워 둔다 (<Shot>) — 실제 앱에서 찍은 화면으로 채운다. 지어낸 화면·숫자·후기 넣지 않음.
- * 색은 공실스튜디오 앱 아이콘에서: 짙은 블랙·밤색 바탕 + 오렌지 버튼 (2026-10-26 사장님). ACCENT 만 바꾸면 전체가 바뀐다.
+ * 색은 공실마케팅 앱 아이콘에서: 짙은 블랙·밤색 바탕 + 오렌지 버튼 (2026-10-26 사장님). ACCENT 만 바꾸면 전체가 바뀐다.
  */
 const ACCENT = "#e8890c";
 const ACCENT_SOFT = "#fdf4e7";
@@ -133,7 +133,7 @@ function VideoModal({ id, onClose }: { id: string; onClose: () => void }) {
     <div className="sv-vmodal" onClick={onClose}>
       <div className="box" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="x" onClick={onClose} aria-label="닫기">×</button>
-        <iframe src={`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`} title="공실스튜디오 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
+        <iframe src={`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`} title="공실마케팅 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
       </div>
     </div>
   );
@@ -150,13 +150,13 @@ const SOURCES: { t: string; i: string; src?: string }[] = [
 /** 회원 후기 — 실제 회원이 남긴 글만 넣는다 (지어낸 후기 금지). 비어 있으면 자리만 보인다 (2026-10-26 사장님) */
 const REVIEWS: { text: string; who: string }[] = [
   { text: "블로그 포스팅, 아무리 교육을 받아도 안 됐는데\n이제 매일 2개씩 부담 없이 꾸준히 하고 있어요.", who: "양재 OO부동산" },
-  { text: "포토샵으로 만들어 둔 홍보물이 많았는데,\n공실스튜디오 이미지편집이 PSD와 호환돼서\n기존 자료를 그대로 불러와 다 쓰고 있어요.", who: "서초 OO공인" },
-  { text: "인스타 릴스, 부동산 소개 영상을\n공실스튜디오에서 녹화하고 바로 편집해요.\n따로 배울 필요도 없고, 정말 너무 쉬워요.", who: "반포 단지 공인" },
-  { text: "대형 부동산은 비싼 프로그램으로 매매보고서를 만든다던데,\n공실스튜디오에서는 다양한 매물보고서를\n온라인 · 오프라인으로 바로 만들어 손님께 보내요.", who: "논현 사무실 전문 부동산" },
+  { text: "포토샵으로 만들어 둔 홍보물이 많았는데,\n공실마케팅 이미지편집이 PSD와 호환돼서\n기존 자료를 그대로 불러와 다 쓰고 있어요.", who: "서초 OO공인" },
+  { text: "인스타 릴스, 부동산 소개 영상을\n공실마케팅에서 녹화하고 바로 편집해요.\n따로 배울 필요도 없고, 정말 너무 쉬워요.", who: "반포 단지 공인" },
+  { text: "대형 부동산은 비싼 프로그램으로 매매보고서를 만든다던데,\n공실마케팅에서는 다양한 매물보고서를\n온라인 · 오프라인으로 바로 만들어 손님께 보내요.", who: "논현 사무실 전문 부동산" },
 ];
 
 /** 실제 후기가 들어오기 전 자리 — 3개가 돌아가는 모양만 보여 준다 */
-const REVIEW_SLOTS = [1, 2, 3].map(() => ({ text: "공실스튜디오를 쓰는 대표님의 실제 후기가 이 자리에 들어갑니다.", who: "" }));
+const REVIEW_SLOTS = [1, 2, 3].map(() => ({ text: "공실마케팅를 쓰는 대표님의 실제 후기가 이 자리에 들어갑니다.", who: "" }));
 
 /** 후기 쓴 분 얼굴 자리 — 선으로 그린 작은 사람 (브루 후기처럼) */
 const AVATAR = (
@@ -307,7 +307,7 @@ export default function StudioVrewLanding() {
           </a>
         </div>
         {/* 첫 화면 영상 — 사장님이 만든 studio.mp4 (소리 빼고 줄임, 2026-10-26). 소리 없이 자동 재생 · 반복 */}
-        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실스튜디오로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
+        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실마케팅로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
       </section>
 
       {/* 2 뉴스·SNS 자동 발행 */}
@@ -316,7 +316,7 @@ export default function StudioVrewLanding() {
         <p className="sv-p">공실을 고르고 <b>[한 번에 쓰기]</b>만 누르세요.<br /><b>공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 페이스북 · 스레드</b> 글이 동시에 완성됩니다.<br />채널마다 따로 쓸 필요 없이, [발행]만 누르면 포스팅 끝.</p>
         {btns}
         {/* 네이버 블로그 자동 채우기 영상 — 사장님이 찍은 naver.mp4 (소리 빼고 줄임, 2026-10-26) */}
-        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/sns.mp4" poster="/studio-shots/sns-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="공실스튜디오가 네이버 블로그 글을 채우는 화면" />
+        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/sns.mp4" poster="/studio-shots/sns-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="공실마케팅가 네이버 블로그 글을 채우는 화면" />
       </section>
 
       {/* 2-1 어렵지 않아요 — 뉴스·SNS 바로 아래 (2026-10-26 사장님) */}
@@ -393,7 +393,7 @@ export default function StudioVrewLanding() {
       {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
       <section className="sv-sec">
         <h2 className="sv-h2">부동산 마케팅, 이거 하나면 끝!</h2>
-        <p className="sv-p">뉴스 · 블로그 · SNS · 영상 · 보고서 · 디자인까지<br />공실스튜디오 하나로 한 번에 해결하세요.</p>
+        <p className="sv-p">뉴스 · 블로그 · SNS · 영상 · 보고서 · 디자인까지<br />공실마케팅 하나로 한 번에 해결하세요.</p>
         {btns}
         <Reviews />
       </section>
@@ -412,9 +412,9 @@ export default function StudioVrewLanding() {
             <div key={c.t} className="sv-case"><img src={c.src} alt={c.t} loading="lazy" style={{ display: "block", width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 14, marginBottom: 16 }} /><div className="t">{c.t}</div><div className="d">{c.d}</div></div>
           ))}
         </div>
-        {/* 공실뉴스부동산 소개(/newsrealty) "공실스튜디오와 12개월 뒤" 상자 그대로 (2026-10-26 사장님) */}
+        {/* 공실뉴스부동산 소개(/newsrealty) "공실마케팅와 12개월 뒤" 상자 그대로 (2026-10-26 사장님) */}
         <div className="sv-after">
-          <div className="k">공실스튜디오와 12개월 뒤</div>
+          <div className="k">공실마케팅와 12개월 뒤</div>
           <h3>블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.</h3>
           <div className="row">
             {CHANNELS.map((c) => (
@@ -424,9 +424,9 @@ export default function StudioVrewLanding() {
         </div>
       </section>
 
-      {/* 8-1 이렇게 쓰세요 — 브루 "이렇게 Vrew를 사용하고 있어요"식 2×2, 그림은 공실스튜디오로 실제 만든 결과물 (2026-10-26 사장님) */}
+      {/* 8-1 이렇게 쓰세요 — 브루 "이렇게 Vrew를 사용하고 있어요"식 2×2, 그림은 공실마케팅로 실제 만든 결과물 (2026-10-26 사장님) */}
       <section className="sv-sec">
-        <h2 className="sv-h2">이렇게 공실스튜디오를 사용하세요</h2>
+        <h2 className="sv-h2">이렇게 공실마케팅를 사용하세요</h2>
         <div className="sv-uses">
           {[
             { t: "공동중개 광고", d: "등록한 공실이 공실뉴스 공실열람에 올라가\n중개사님들과 함께 공동중개로 홍보됩니다.", src: "/studio-shots/case-news.webp" },
@@ -473,7 +473,7 @@ export default function StudioVrewLanding() {
         <div className="logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/studio-app-icon.png" alt="" />
-          <span>공실스튜디오</span>
+          <span>공실마케팅</span>
         </div>
         <h2 className="sv-h2">부동산 AI를 가장 잘 활용할 수 있도록,</h2>
         <div className="sv-btns">
@@ -482,7 +482,7 @@ export default function StudioVrewLanding() {
           <a href={installer.ready ? installer.href : "#download"} onClick={() => installer.ready && setGuide(true)} className="sv-btn solid">무료 다운로드</a>
         </div>
         {guide && <InstallGuideModal ver={installer.ver} onClose={() => setGuide(false)} />}
-        <p className="os">공실스튜디오는 윈도우 10 · 11 PC를 지원합니다.</p>
+        <p className="os">공실마케팅는 윈도우 10 · 11 PC를 지원합니다.</p>
         <div className="osi" aria-hidden>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.4 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z" /></svg>
         </div>

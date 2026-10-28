@@ -50,11 +50,31 @@ async function tailOf(baseUrl, vacancyId, saleKind) {
  *  → { youtube: { title, description, hashtags, text }, instagram: { caption, hashtags, text }, tail: { url, hasListing } }
  *  text = 코드가 링크·출처·해시태그까지 붙인 최종 글 (회원이 고칠 수 있다)
  */
+/** 이 공실(또는 칼럼)로 전에 쓴 블로그·SNS 글 — 영상 글이 겹치지 않게 (2026-10-28) */
+function previousPosts(id) {
+  if (!id) return null;
+  try {
+    const dir = blogWriter.mediaDir(id);
+    const s = blogWriter.readJson(path.join(dir, "sns.json")) || {};
+    const b = blogWriter.readJson(path.join(dir, "blog.json")) || {};
+    const p = s.posts || {};
+    const out = {
+      blog: [b.title, ...(Array.isArray(b.paragraphs) ? b.paragraphs.slice(0, 2) : [])].filter(Boolean).join("\n"),
+      instagram: p.instagram && p.instagram.body,
+      facebook: p.facebook && p.facebook.body,
+      threads: p.threads && Array.isArray(p.threads.posts) ? p.threads.posts.join("\n") : "",
+    };
+    return Object.values(out).some(Boolean) ? out : null;
+  } catch {
+    return null;
+  }
+}
+
 async function draft(baseUrl, o, onProgress = () => {}) {
   await ext.ensure(); // 지시문·SNS 정리는 서버에서 받은 파일 (video: 채널은 main.js 가 기다려 주지 않는다)
   const vacancy = vacancyOf(o.vacancyId);
-  onProgress("글 AI가 유튜브·인스타그램 글을 쓰는 중… (1분 안팎)");
-  const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds });
+  onProgress("글 AI가 유튜브·인스타그램·페이스북·스레드 글을 쓰는 중… (1분 안팎)");
+  const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds, previous: previousPosts(o.vacancyId), posted: Array.isArray(o.posted) ? o.posted : [] });
   const parse = (t) => {
     const j = lib.gwVideoParse(t);
     return j && j.youtube && j.instagram ? j : null;
@@ -72,7 +92,14 @@ async function draft(baseUrl, o, onProgress = () => {}) {
   // 유튜브 = 페이스북과 같은 모양 (링크가 눌린다) · 인스타 = 프로필 링크 안내
   yt.text = sns.gwSnsCompose("facebook", { body: yt.description, hashtags: yt.hashtags }, ctx).text || yt.description;
   ig.text = sns.gwSnsCompose("instagram", { body: ig.caption, hashtags: ig.hashtags }, ctx).text || ig.caption;
-  return { youtube: yt, instagram: ig, tail: { url: t.url, hasListing: Boolean(t.listing) } };
+  // 페이스북·스레드 (2026-10-28) — 같은 질문 한 번에 받은 글. 예전 지시문이라 없으면 유튜브 설명 · 인스타 캡션으로
+  const fbBody = String((j.facebook && j.facebook.body) || "").trim() || yt.description;
+  const fbTags = clean(j.facebook && j.facebook.hashtags).slice(0, 5);
+  const fb = { text: sns.gwSnsCompose("facebook", { body: fbBody, hashtags: fbTags.length ? fbTags : yt.hashtags.slice(0, 5) }, ctx).text || fbBody };
+  const thBody = String((j.threads && j.threads.text) || "").trim() || ig.caption;
+  const thc = sns.gwSnsCompose("threads", { posts: [thBody.slice(0, 430)] }, ctx);
+  const th = { text: thc.text || thBody, posts: thc.posts && thc.posts.length ? thc.posts : [thBody] };
+  return { youtube: yt, instagram: ig, facebook: fb, threads: th, tail: { url: t.url, hasListing: Boolean(t.listing) } };
 }
 
 /* ── 썸네일 (유튜브 일반 영상, 2026-10-21 결정) — 완성 영상에서 장면 3장 · 제목을 크게 얹은 것 / 글자 없는 것 ──
@@ -275,7 +302,47 @@ async function fillYoutube(o, onProgress) {
   }
   await page.bringToFront().catch(() => {});
   log.info(`[유튜브] 채움 — 썸네일 ${thumb} · 공개 범위 ${vis}`);
+  void watchYoutubePublish(page, o);
   return { ok: true, thumb, vis };
+}
+
+/* 홍보현황 (2026-10-28) — 회원이 [게시]하면 그 영상 주소를 공실(또는 내 기사) 홍보현황에.
+   영상 주소는 올리는 중에 이미 보인다 (YT.videoLink). "게시됨" 창 모양은 자주 바뀌어 믿지 않고 (2026-10-28 쇼츠에서 못 알아봄),
+   업로드 창이 닫힌 뒤 유튜브에 그 영상이 공개(일부 공개 포함)됐는지 직접 묻는다 (oEmbed — 비공개·임시 저장이면 404).
+   업로드 창이 열린 채 30분, 닫힌 뒤 10분까지 본다 */
+const ytId = (href) => (/(?:youtu\.be\/|shorts\/|[?&]v=)([\w-]{6,})/.exec(String(href || "")) || [])[1] || "";
+async function isPublic(id) {
+  try {
+    const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`);
+    return r.ok;
+  } catch { return false; }
+}
+async function watchYoutubePublish(page, o) {
+  const id = String(o.vacancyId || "");
+  const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const articleNo = isVacancy ? "" : require("./column-writer").articleOf(id);
+  if (!isVacancy && !articleNo) return;
+  const meta = isVacancy ? { vacancyId: id, channel: "youtube" } : { articleNo, channel: "youtube" };
+  let vid = "", link = "", closedAt = 0;
+  const end = Date.now() + 30 * 60 * 1000;
+  while (Date.now() < (closedAt ? closedAt + 10 * 60 * 1000 : end)) {
+    if (!vid && !page.isClosed()) {
+      for (const sel of YT.videoLink) {
+        const href = await page.locator(sel).first().getAttribute("href", { timeout: 1000 }).catch(() => null);
+        if (href && ytId(href)) { vid = ytId(href); link = /shorts\//.test(href) ? `https://www.youtube.com/shorts/${vid}` : `https://www.youtube.com/watch?v=${vid}`; break; }
+      }
+    }
+    if (vid && !closedAt) {
+      const open = !page.isClosed() && (await page.locator("ytcp-uploads-dialog").first().isVisible().catch(() => false));
+      if (!open) { closedAt = Date.now(); log.info(`[유튜브] 업로드 창 닫힘 — 공개됐는지 확인 ${vid}`); }
+    }
+    if (closedAt && (await isPublic(vid))) {
+      require("./helper-server").published(meta, link);
+      return;
+    }
+    await sleep(closedAt ? 10000 : 3000);
+  }
+  log.info(`[유튜브] 공개된 것을 못 봐서 홍보현황 연결 안 함 ${id} ${vid || "(영상 주소 못 봄)"}`);
 }
 
 /* ── 인스타그램 (릴스) ── */
@@ -334,9 +401,76 @@ async function fillInstagram(o, onProgress) {
 /** 채우기 — { channel, file, title, text, visibility, thumb } */
 async function fill(o, onProgress = () => {}) {
   if (!o || !o.file || !fs.existsSync(o.file)) throw new Error("올릴 영상 파일을 찾지 못했어요. 다시 내보내 주세요.");
-  if (o.channel === "youtube") return fillYoutube(o, onProgress);
-  if (o.channel === "instagram") return fillInstagram(o, onProgress);
+  if (o.channel === "youtube") return fillYoutubeByHelper(o, onProgress);
+  if (o.channel === "instagram" || o.channel === "threads" || o.channel === "facebook") return fillVideoPostByHelper(o, onProgress);
   throw new Error("아직 준비되지 않은 채널이에요.");
+}
+
+/* 유튜브 — 평소 크롬 + 공실마케팅 도우미 (2026-10-28 사장님: 전용 크롬 싫어)
+   영상·썸네일 파일은 PC 안 창구로 내주고(helper-server addFile), 평소 크롬에 업로드 화면을 연다 →
+   도우미(helper-youtube.js)가 받아 가서 영상·제목·설명·썸네일·아동용 아님·공개 범위까지 채운다. [게시]는 회원이.
+   공실(또는 내 기사) 영상이면 업로드 창이 닫힐 때 주소를 받아, 공개됐는지 확인하고 홍보현황에 */
+async function fillYoutubeByHelper(o, onProgress) {
+  const { shell } = require("electron");
+  const helper = require("./helper-server");
+  onProgress("영상 파일을 준비하는 중…");
+  const video = helper.addFile(o.file, "video/mp4");
+  let thumb = null;
+  if (o.thumb && fs.existsSync(o.thumb)) {
+    try { thumb = helper.addFile(await thumbJpg(o.thumb), "image/jpeg"); } catch (e) { log.warn("[유튜브] 썸네일 준비 못함", e.message); }
+  }
+  const id = String(o.vacancyId || "");
+  const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  // 내 기사 — 화면에서 고른 기사 번호 또는 칼럼(홈 "내 기사")의 기사
+  const articleNo = isVacancy ? "" : /^\d+$/.test(String(o.articleNo || "")) ? String(o.articleNo) : require("./column-writer").articleOf(id);
+  const meta = isVacancy ? { vacancyId: id, channel: "youtube" } : articleNo ? { articleNo, channel: "youtube" } : null;
+  const job = helper.addJob("youtube", { title: o.title, text: o.text, visibility: o.visibility || "public", video, thumb }, meta);
+  void shell.openExternal(URLS.youtube.upload);
+  onProgress("평소 크롬에 유튜브 올리기 화면을 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…");
+  if (!(await helper.wait(job, "taken", 45000))) {
+    helper.cancel(job);
+    throw new Error("공실마케팅 도우미(크롬 확장)가 응답하지 않았어요. 평소 크롬에 도우미가 켜져 있고 유튜브에 로그인돼 있는지 확인해 주세요. 안 되면 [영상 폴더]·[글 복사]로 직접 올려 주세요.");
+  }
+  onProgress("도우미가 영상을 넣고 제목·설명을 채우는 중… (영상이 크면 1~2분)");
+  const r = await helper.wait(job, "done", 10 * 60 * 1000);
+  if (!r) return { ok: true, partial: "도우미가 끝났다고 알려 오지 않았어요. 크롬 창에서 제목·설명·공개 범위를 확인해 주세요." };
+  if (!r.ok) throw new Error(r.error || "유튜브 채우기를 마치지 못했어요. 크롬 창에서 이어서 해 주세요.");
+  log.info(`[유튜브] 도우미 채움 — 썸네일 ${r.thumb} · 공개 범위 ${r.vis}`);
+  return { ok: true, thumb: r.thumb, vis: r.vis, partial: r.partial };
+}
+
+/* 인스타그램 릴스 · 스레드 · 페이스북 영상 — 평소 크롬 + 공실마케팅 도우미 (2026-10-28 사장님: 전용 크롬 싫어)
+   영상은 PC 안 창구로 내주고 평소 크롬에 그 채널을 연다 → 도우미(helper-sns.js)가 사진 게시물과 같은 흐름으로 영상·글을 넣는다.
+   [공유하기]·[게시]는 회원이. 공실(또는 내 기사) 영상이면 올린 글 주소를 홍보현황에 — 같은 채널에 예전 링크가 있으면 새 것으로 바뀐다 */
+const VIDEO_POST = {
+  instagram: { home: "https://www.instagram.com/", label: "인스타그램 릴스", name: "인스타그램" },
+  threads: { home: "https://www.threads.com/", label: "스레드", name: "스레드" },
+  facebook: { home: "https://www.facebook.com/", label: "페이스북", name: "페이스북" },
+};
+async function fillVideoPostByHelper(o, onProgress) {
+  const ch = VIDEO_POST[o.channel];
+  const { shell } = require("electron");
+  const helper = require("./helper-server");
+  onProgress("영상 파일을 준비하는 중…");
+  const video = helper.addFile(o.file, "video/mp4");
+  const id = String(o.vacancyId || "");
+  const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const articleNo = isVacancy ? "" : /^\d+$/.test(String(o.articleNo || "")) ? String(o.articleNo) : require("./column-writer").articleOf(id);
+  const meta = isVacancy ? { vacancyId: id, channel: o.channel } : articleNo ? { articleNo, channel: o.channel } : null;
+  const posts = Array.isArray(o.posts) && o.posts.length ? o.posts : [o.text];
+  const job = helper.addJob(o.channel, { channel: o.channel, label: ch.label, text: o.text, posts, photos: [], video }, meta);
+  void shell.openExternal(ch.home);
+  onProgress(`평소 크롬에 ${ch.name}을(를) 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…`);
+  if (!(await helper.wait(job, "taken", 45000))) {
+    helper.cancel(job);
+    throw new Error(`공실마케팅 도우미(크롬 확장)가 응답하지 않았어요. 평소 크롬에 도우미가 켜져 있고 ${ch.name}에 로그인돼 있는지 확인해 주세요. 안 되면 [영상 폴더]·[글 복사]로 직접 올려 주세요.`);
+  }
+  onProgress("도우미가 영상을 넣고 글을 채우는 중…");
+  const r = await helper.wait(job, "done", 10 * 60 * 1000);
+  if (!r) return { ok: true, partial: "도우미가 끝났다고 알려 오지 않았어요. 크롬 창에서 이어서 해 주세요." };
+  if (!r.ok && r.error) throw new Error(r.error);
+  log.info(`[${ch.label}] 영상 도우미 채움 ${JSON.stringify(r).slice(0, 120)}`);
+  return { ok: true, partial: r.partial ? "몇 단계는 크롬 창의 도우미 상자 안내대로 이어서 해 주세요." : undefined };
 }
 
 /** 로그인 — 조종하지 않는 평범한 크롬에서 회원이 직접 (구글 로그인은 조종 중이면 막힌다) */
@@ -350,8 +484,13 @@ function login(channel) {
 const finishLogin = () => chrome.closePlain();
 /** 사이트만 열기 (채우기가 안 될 때) */
 async function open(channel, what) {
+  if (VIDEO_POST[channel] && !URLS[channel]) { void require("electron").shell.openExternal(VIDEO_POST[channel].home); return true; } // 스레드·페이스북 — 평소 크롬
   const u = URLS[channel];
   if (!u) return false;
+  if (channel === "youtube" || channel === "instagram") { // 평소 크롬 (2026-10-28)
+    void require("electron").shell.openExternal(what === "verify" && u.verify ? u.verify : u.upload);
+    return true;
+  }
   const page = await chrome.openPage(u.host, u.open);
   // what = "verify" — 유튜브 전화번호 인증 (맞춤 썸네일을 올리려면)
   const to = what === "verify" && u.verify ? u.verify : channel === "youtube" ? u.upload : "";

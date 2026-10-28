@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel";
@@ -27,7 +28,7 @@ type Bridge = {
     openMyBlog: () => Promise<unknown>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
-  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null>; writeAll?: (o: Omit<AllOpts, "sns"> & { sns: { on: boolean; tone: Record<string, string> }; vacancyId: string }) => Promise<{ article?: BlogDraft; blog?: BlogDraft; sns?: SnsData; youtube?: unknown; miss?: string[] }> };
+  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null>; writeAll?: (o: Omit<AllOpts, "sns"> & { sns: { on: boolean; tone: Record<string, string>; only?: string }; vacancyId: string }) => Promise<{ article?: BlogDraft; blog?: BlogDraft; sns?: SnsData; youtube?: unknown; miss?: string[] }> };
   article?: { options: (vacancyId: string) => Promise<{ kinds: { id: string; label: string }[]; lengths: { id: string; label: string }[] }> };
   youtube: { get: (vacancyId: string) => Promise<unknown> };
   work?: { save: (id: string) => Promise<WorkSaved>; saveAs?: (id: string) => Promise<WorkSaved & { canceled?: boolean }>; status: (id: string) => Promise<WorkSaved>; show: (file: string) => Promise<void>; open: () => Promise<boolean> };
@@ -91,21 +92,28 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   // SNS 문체 — 채널마다 (전에 세 채널 같이 고른 값이 있으면 그것으로 시작)
   const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => [ch, all.sns.tones?.[ch] || all.sns.tone || "polite"]));
   const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
-  const runAll = async () => {
+  // only — 이 탭 글만 쓰기 (2026-10-28 사장님: 한 번에 쓰기와 함께 각각 쓰기도). ☑ 기억은 바꾸지 않는다
+  // SNS 는 채널 하나만도 (instagram · threads · facebook — 나머지 채널 글은 그대로, 2026-10-28 사장님)
+  const runAll = async (only?: "article" | "blog" | "sns" | "youtube" | "instagram" | "threads" | "facebook") => {
+    const snsOnly = only === "instagram" || only === "threads" || only === "facebook" ? only : "";
+    if (snsOnly) only = "sns";
     const b = bridge();
     if (!b?.sns.writeAll) return setAllMsg("앱을 새 버전으로 다시 켜 주세요.");
-    if (!all.article.on && !all.blog.on && !all.sns.on && !all.youtube.on) return setAllMsg("탭 이름 옆 ☑ 로 쓸 글을 하나 이상 골라 주세요.");
+    const pick: AllOpts = only
+      ? { ...all, article: { ...all.article, on: only === "article" }, blog: { ...all.blog, on: only === "blog" }, sns: { ...all.sns, on: only === "sns" }, youtube: { ...all.youtube, on: only === "youtube" } }
+      : all;
+    if (!pick.article.on && !pick.blog.on && !pick.sns.on && !pick.youtube.on) return setAllMsg("탭 이름 옆 ☑ 로 쓸 글을 하나 이상 골라 주세요.");
     setAllBusy("AI에게 보내는 중…");
     setAllMsg("");
     const off = b.blog.onProgress(setAllBusy);
     try {
       const st = blogOpts?.styles.some((x) => x.id === style) ? style : blogOpts?.styles[0]?.id || "";
-      const r = await b.sns.writeAll({ vacancyId: workId, ...all, sns: { on: all.sns.on, tone: snsTones }, blog: { on: all.blog.on, style: st, length } });
+      const r = await b.sns.writeAll({ vacancyId: workId, ...pick, sns: { on: pick.sns.on, tone: snsTones, only: snsOnly }, blog: { on: pick.blog.on, style: st, length } });
       if (r.article) setArticle({ ...r.article, doc: "article" });
       if (r.blog) { setBlog(r.blog); setNaverDone(null); setDesign(designFor(st)); }
       if (r.sns) setSnsData(r.sns);
       if (r.youtube) { setHasYoutube(true); setYtVer((n) => n + 1); }
-      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭 ☑만 남기고 [한 번에 쓰기]를 다시 눌러 주세요.` : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 탭 이름 옆 ☑를 그것만 남기고 [한 번에 쓰기].");
+      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭에서 [이 글만 쓰기]를 다시 눌러 주세요.` : only ? "다 썼어요. 확인하고 고쳐 보세요." : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 그 탭에서 [이 글만 쓰기].");
     } catch (e) {
       setAllMsg(cleanErr(e));
     } finally {
@@ -201,7 +209,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     }
   };
 
-  /* via — helper(처음 값: 평소 크롬 + 공실스튜디오 도우미) · manual(복사·사진 폴더) · ""(전용 크롬, 예전 방식) — 2026-10-23 사장님 */
+  /* via — helper(처음 값: 평소 크롬 + 공실마케팅 도우미) · manual(복사·사진 폴더) · ""(전용 크롬, 예전 방식) — 2026-10-23 사장님 */
   const fillNaver = async (via = "helper") => {
     const b = bridge();
     if (!b || !blog) return;
@@ -247,11 +255,18 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     }
   };
 
+  // 오른쪽 단계 막대(StepNav)에 ✓ 알리기 — ② 쓴 글이 있음 · ③ 네이버에 채움 (2026-10-28 사장님)
+  useEffect(() => {
+    const written = Boolean(article || blog || hasYoutube || Object.values(snsData?.channels || {}).some((c) => c?.post));
+    window.dispatchEvent(new CustomEvent("gs-steps", { detail: { written, filled: Boolean(naverDone) } }));
+  }, [article, blog, hasYoutube, snsData, naverDone]);
+
   const card: React.CSSProperties = { background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 };
+  // 단계 제목은 카드 바깥 — 위 ①② 와 같은 자리 (2026-10-28 사장님)
   const stepTitle = (n: number, t: string) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+    <div id={`gs-step-${n}`} style={{ display: "flex", alignItems: "center", gap: 8, margin: "6px 0 8px 2px", scrollMarginTop: 16 }}>
       <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</span>
-      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{t}</h3>
+      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{t}</h3>
     </div>
   );
   // 칼럼은 기사가 있어야 블로그·SNS 를 쓴다 (뉴스메이커와 같다: 기사 → 블로그·SNS)
@@ -262,6 +277,14 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     <>
       {/* 작업 파일 — [저장하기] · [다른 이름으로 저장] · [불러오기] */}
       <WorkFileBar theme={theme} workId={workId} />
+      {/* 2단계 표시 — 위 ① 공실 다음은 여기 (2026-10-28 사장님) */}
+      {kind !== "sim" && (
+        <div id="gs-step-2" style={{ display: "flex", alignItems: "center", gap: 8, margin: "22px 0 4px 2px", scrollMarginTop: 16 }}>
+          <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>쓸 글 고르기</span>
+          <span style={{ fontSize: 12.5, color: theme.textSecondary }}>☑ 한 글을 오른쪽 [한 번에 쓰기]로 함께 써요 · 하나만 쓰려면 아래 칸 오른쪽 위 [이 ○○만 쓰기]</span>
+        </div>
+      )}
       {/* 채널 탭 — 탭에서는 스타일만 고르고, 오른쪽 끝 [한 번에 쓰기]로 ☑ 한 글을 함께 쓴다 (2026-10-23 사장님) */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: allBusy || allMsg ? 8 : 16 }}>
         <div style={{ display: "flex", gap: 4, flex: 1, minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
@@ -283,7 +306,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         {oneShot && (
           <button type="button" onClick={() => void runAll()} disabled={Boolean(allBusy)} title="☑ 한 탭의 글을 각 탭에서 고른 스타일로 한 번에 씁니다"
             style={{ flexShrink: 0, marginBottom: 6, padding: "9px 18px", borderRadius: 8, border: 0, background: allBusy ? "#94a3b8" : "#16a34a", color: "#fff", fontSize: 14, fontWeight: 800, cursor: allBusy ? "default" : "pointer", whiteSpace: "nowrap" }}>
-            {allBusy ? "쓰는 중…" : "한 번에 쓰기"}
+            {allBusy ? "쓰는 중…" : `☑ ${(all.article.on ? 1 : 0) + (all.blog.on ? 1 : 0) + (all.sns.on ? channels.length : 0) + (all.youtube.on ? 1 : 0)}개 한 번에 쓰기`}
           </button>
         )}
       </div>
@@ -293,6 +316,22 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         </div>
       )}
 
+      <div style={{ position: "relative", height: 0 }}>
+        {/* 이 글만 쓰기 — 아래 카드 오른쪽 위 (한 번에 쓰기와 자리를 나눔, 2026-10-28 사장님) */}
+        {oneShot && (() => {
+          // 이 글만 쓰기 — 지금 탭 (인스타·스레드·페북은 SNS 세 채널을 같이)
+          const ch = channels.find((c) => c.id === tab);
+          const part = tab === "article" ? "article" : tab === "blog" ? "blog" : tab === "youtube" ? "youtube" : ch ? (tab as "instagram" | "threads" | "facebook") : null;
+          if (!part) return null;
+          const label = part === "article" ? "이 기사만 쓰기" : part === "blog" ? "이 블로그만 쓰기" : part === "youtube" ? "이 대본만 쓰기" : `이 ${ch?.label || "SNS"} 글만 쓰기`;
+          return (
+            <button type="button" onClick={() => void runAll(part)} disabled={Boolean(allBusy)} title={ch ? `${ch.label} 글만 새로 씁니다 (다른 SNS 글은 그대로)` : "이 탭 글만 씁니다"}
+              style={{ position: "absolute", right: 22, top: 18, zIndex: 2, padding: "8px 16px", borderRadius: 8, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.cardBg, color: allBusy ? theme.textSecondary : (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontSize: 13.5, fontWeight: 800, cursor: allBusy ? "default" : "pointer", whiteSpace: "nowrap" }}>
+              {label}
+            </button>
+          );
+        })()}
+      </div>
       {tab === "article" && (
         <StudioArticlePanel theme={theme} vacancyId={workId} article={article} onArticle={setArticle} column={column}
           oneShot={oneShot} pick={all.article} onPick={(k, l) => keepAll({ ...all, article: { ...all.article, kind: k, length: l } })}
@@ -316,12 +355,15 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
 
       {tab === "blog" && (<>
         {/* 블로그 쓰기 */}
+        {/* 공실뉴스는 쓰기가 ② 쓸 글 고르기에 들어가므로 제목 없이, 채우기가 ③ (2026-10-28 사장님) */}
+        {kind === "sim" && stepTitle(firstStep, "블로그 쓰기")}
         <div style={card}>
-          {stepTitle(firstStep, "블로그 쓰기")}
           {needArticle ? (
             <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. 블로그는 그 기사를 바탕으로 씁니다.</div>
           ) : (
             <>
+              {/* 제목 — 기사·대본 탭과 같게 (오른쪽 위 [이 블로그만 쓰기]와 한 줄, 2026-10-28 사장님) */}
+              <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 12 }}>네이버 블로그 스타일</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>문체</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
                 {(blogOpts?.styles || []).map((s) => (
@@ -349,7 +391,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                   </button>
                 )}
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{oneShot ? "문체·글자 수를 고르고 위 [한 번에 쓰기]를 누르세요. 탭 이름 옆 ☑ 한 글만 함께 씁니다." : `${aiName}가 씁니다. 1~2분 걸립니다.`}</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{oneShot ? "문체·글자 수를 고르고 오른쪽 위 [이 블로그만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요." : `${aiName}가 씁니다. 1~2분 걸립니다.`}</div>
             </>
           )}
           {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{blogProgress}</div>}
@@ -359,8 +401,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         </div>
 
         {/* 네이버 블로그 채우기 */}
+        {stepTitle(kind !== "sim" ? 3 : firstStep + 1, "네이버 블로그 채우기")}
         <div style={{ ...card, opacity: blog ? 1 : 0.6 }}>
-          {stepTitle(firstStep + 1, "네이버 블로그 채우기")}
           {!blog ? (
             <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 블로그 글을 써 주세요.</div>
           ) : (
@@ -378,7 +420,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
-                  평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실스튜디오 도우미</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
+                  평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실마케팅 도우미</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
                 </div>
                 <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
                 <button onClick={() => void fillNaver("helper")} disabled={filling}
@@ -396,7 +438,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>복사·사진 폴더로 직접 붙여 넣기</button>
               <button onClick={() => void fillNaver("")} disabled={filling} title="예전 방식 — 앱이 따로 띄운 크롬에서 채워요 (네이버 로그인을 그 창에서 한 번 해야 해요)"
                 style={{ padding: "10px 16px", background: "transparent", color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>전용 크롬으로 채우기</button>
-              <span style={{ fontSize: 12.5, color: theme.textSecondary }}>도우미 설치: 크롬 › 확장 프로그램 › &quot;공실스튜디오 도우미&quot;</span>
+              <span style={{ fontSize: 12.5, color: theme.textSecondary }}>도우미 설치: 크롬 › 확장 프로그램 › &quot;공실마케팅 도우미&quot;</span>
             </div>
           )}
           {naverLogin === "need" && (
@@ -408,7 +450,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           {naverLogin === "open" && (
             <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <span style={{ fontSize: 14, color: "#065f46", flex: 1, minWidth: 240, lineHeight: 1.6 }}>
-                오른쪽에 새로 뜬 &quot;공실스튜디오&quot; 크롬 창에서 네이버에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)
+                오른쪽에 새로 뜬 &quot;공실마케팅&quot; 크롬 창에서 네이버에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)
               </span>
               <button onClick={() => bridge()?.ai.finishLogin()}
                 style={{ padding: "10px 16px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
@@ -462,6 +504,8 @@ export function WorkFileBar({ theme, workId }: { theme: Theme; workId: string })
     const t = setInterval(load, 8000); // 저절로 저장된 시각도 따라가게
     return () => clearInterval(t);
   }, [workId]);
+  // 오른쪽 단계 막대 아래에도 "자동 저장됨" 보이기 (2026-10-28 사장님)
+  useEffect(() => { window.dispatchEvent(new CustomEvent("gs-saved", { detail: saved?.file ? saved.savedAt : "" })); }, [saved]);
   const saveNow = async () => {
     const w = bridge()?.work;
     if (!w) return;
@@ -480,9 +524,12 @@ export function WorkFileBar({ theme, workId }: { theme: Theme; workId: string })
     if (r && r.file) { setSaved(r); setSaveMsg("저장했어요"); setTimeout(() => setSaveMsg(""), 2500); }
     else setSaveMsg("아직 저장할 내용이 없어요. 분석·캡처나 글쓰기를 먼저 해 주세요.");
   };
+  // 맨 위 제목 줄 오른쪽 자리(#gs-workfile-slot)가 있으면 거기에 그린다 (2026-10-28 사장님: 저장은 위로)
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => { setSlot(document.getElementById("gs-workfile-slot")); }, []);
   if (!bridge()?.work) return null;
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 8, fontSize: 12.5, color: theme.textSecondary }}>
+  const bar = (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: slot ? 0 : 8, fontSize: 12.5, color: theme.textSecondary }}>
       {saveMsg ? <span style={{ color: /없어요/.test(saveMsg) ? "#c2410c" : "#16a34a", fontWeight: 700 }}>{saveMsg}</span>
         : saved?.file ? <span title={saved.file}>✓ 저장됨 · {hhmm(saved.savedAt)}</span> : <span>아직 저장 안 됨</span>}
       {saved?.file && <button type="button" onClick={() => void bridge()?.work?.show(saved.file)} title={saved.file}
@@ -493,6 +540,77 @@ export function WorkFileBar({ theme, workId }: { theme: Theme; workId: string })
         style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>다른 이름으로 저장</button>}
       <button type="button" onClick={() => void bridge()?.work?.open()} title="저장해 둔 .gsn 작업 파일 열기"
         style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>불러오기</button>
+    </div>
+  );
+  return slot ? createPortal(bar, slot) : bar;
+}
+
+/** 오른쪽에 떠 있는 단계 이동 막대 — ① 공실(소재) ② 쓸 글 ③ 채우기, 누르면 그 자리로 · 끝난 단계 ✓ (2026-10-28 사장님). 공실뉴스·뉴스칼럼 같이 씀 */
+export function StepNav({ theme, tab, onTab, onOpen1, first = "공실 선택 및 분석" }: { theme: Theme; tab: string; onTab: (t: string) => void; onOpen1: () => void; first?: string }) {
+  // ③은 지금 탭에 맞게 — 기사는 등록 보내기, 블로그·SNS 는 채우기, 대본은 동영상 (2026-10-28 사장님: 페북이면 페북)
+  const third = tab === "article" ? "기사 등록 보내기" : tab === "blog" ? "블로그 채우기" : tab === "instagram" ? "인스타그램 채우기" : tab === "threads" ? "스레드 채우기" : tab === "facebook" ? "페이스북 채우기" : tab === "youtube" ? "동영상 만들기" : "채우기";
+  const steps = [{ n: 1, t: first }, { n: 2, t: "쓸 글 고르기" }, { n: 3, t: third }];
+  const [on, setOn] = useState(1);
+  const [wide, setWide] = useState(true);
+  // 단계별 ✓ — ① 분석 끝 · ② 쓴 글 있음 · ③ 네이버에 채움 (StudioChannelTabs 가 "gs-steps" 로 알려 준다)
+  const [done, setDone] = useState({ written: false, filled: false });
+  useEffect(() => {
+    const f = (e: Event) => setDone((e as CustomEvent).detail);
+    window.addEventListener("gs-steps", f);
+    return () => window.removeEventListener("gs-steps", f);
+  }, []);
+  const [savedAt, setSavedAt] = useState("");
+  useEffect(() => {
+    const f = (e: Event) => setSavedAt(String((e as CustomEvent).detail || ""));
+    window.addEventListener("gs-saved", f);
+    return () => window.removeEventListener("gs-saved", f);
+  }, []);
+  const isDone = (n: number) => n === 1 || (n === 2 && done.written) || (n === 3 && tab === "blog" && done.filled);
+  const go = (n: number) => {
+    if (n === 1) onOpen1(); // ①은 분석 내용을 펼쳐서 보여 준다
+    let tries = 0;
+    const jump = () => {
+      const el = document.getElementById(`gs-step-${n}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else if (tries++ < 20) setTimeout(jump, 60);
+    };
+    jump();
+  };
+  useEffect(() => {
+    const look = () => {
+      setWide(window.innerWidth >= 1500); // 좁으면 본문을 가리므로 숨김
+      let cur = 1;
+      for (const s of steps) {
+        const el = document.getElementById(`gs-step-${s.n}`);
+        if (el && el.getBoundingClientRect().top < window.innerHeight * 0.4) cur = s.n;
+      }
+      setOn(cur);
+    };
+    look();
+    document.addEventListener("scroll", look, true);
+    window.addEventListener("resize", look);
+    return () => { document.removeEventListener("scroll", look, true); window.removeEventListener("resize", look); };
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!wide) return null;
+  const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
+  return (
+    <div style={{ position: "fixed", right: 28, top: "50%", transform: "translateY(-50%)", zIndex: 30, display: "flex", flexDirection: "column", gap: 4, padding: 8, borderRadius: 14, background: theme.cardBg, border: `1px solid ${theme.border}`, boxShadow: "0 6px 20px rgba(0,0,0,0.12)" }}>
+      {steps.map((s) => {
+        const act = on === s.n;
+        return (
+          <button key={s.n} type="button" onClick={() => go(s.n)} title={isDone(s.n) ? "끝난 단계 — 눌러서 이동" : "눌러서 이동"}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 9, border: 0, cursor: "pointer", textAlign: "left", background: act ? (theme.darkMode ? "rgba(91,141,239,0.18)" : "#eef3ff") : "transparent", color: act ? navy : theme.textSecondary, fontSize: 13, fontWeight: act ? 800 : 600, whiteSpace: "nowrap" }}>
+            <span style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, background: act ? navy : "transparent", border: `1.5px solid ${act ? navy : theme.border}`, color: act ? "#fff" : theme.textSecondary, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.n}</span>
+            <span style={{ flex: 1 }}>{s.t}</span>
+            <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginLeft: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900,
+              background: isDone(s.n) ? "#16a34a" : "transparent", border: isDone(s.n) ? 0 : `1.5px dashed ${theme.border}`, color: "#fff" }}>{isDone(s.n) ? "✓" : ""}</span>
+          </button>
+        );
+      })}
+      {/* 자동 저장 — 고치면 3초 뒤 작업 파일(.gsn)에 저절로 저장된다 */}
+      <div style={{ borderTop: `1px solid ${theme.border}`, marginTop: 4, padding: "8px 12px 2px", fontSize: 12, color: theme.textSecondary, whiteSpace: "nowrap" }} title="고치면 3초 뒤 작업 파일(.gsn)에 저절로 저장돼요">
+        {savedAt ? <><span style={{ color: "#16a34a", fontWeight: 800 }}>✓ 자동 저장됨</span> · {hhmm(savedAt)}</> : "자동 저장 준비 중"}
+      </div>
     </div>
   );
 }

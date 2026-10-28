@@ -1,4 +1,4 @@
-// 공실스튜디오 메뉴 줄로 — /newsrealty 와 같은 게시판 (2026-10-26)
+// 공실마케팅 메뉴 줄로 — /newsrealty 와 같은 게시판 (2026-10-26)
 "use client";
 
 import React, { useState, useTransition, useEffect } from "react";
@@ -232,7 +232,7 @@ export default function StudyResourcesClient({
             목록 보기 레벨: <strong>{activeBoardData?.perm_list ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)
           </p>
           <button
-            onClick={() => router.push("/studio")}
+            onClick={() => router.push("/marketing")}
             style={{
               marginTop: 24,
               padding: "10px 24px",

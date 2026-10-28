@@ -1,4 +1,4 @@
-// 공실스튜디오 도우미(크롬 확장)와 이야기하는 PC 안 창구 (2026-10-23 사장님 회의)
+// 공실마케팅 도우미(크롬 확장)와 이야기하는 PC 안 창구 (2026-10-23 사장님 회의)
 //  전용 크롬 대신 회원이 평소 쓰는 크롬에서 채운다:
 //   앱이 채울 글·사진을 "일감"으로 올려 두고 평소 크롬에 네이버 글쓰기·인스타그램 등을 연다 →
 //   그 화면의 도우미 확장이 일감을 받아 가서(claim) 채우고 → 결과를 알려 준다(done).
@@ -22,12 +22,16 @@ const loadPubs = () => {
   try { for (const [id, p] of JSON.parse(require("fs").readFileSync(pubFile(), "utf8"))) if (Date.now() - p.at < PUB_TTL) pubs.set(id, p); } catch {}
 };
 const pubListeners = [];
+// 도우미가 받아 갈 파일 (영상·썸네일, 2026-10-28) — token → { file, type, at }. 30분 지나면 버린다
+const FILE_TTL = 30 * 60 * 1000;
+const files = new Map();
 let server = null;
 let port = 0;
 
 const sweep = () => {
   for (const [id, j] of jobs) if (Date.now() - j.at > TTL) jobs.delete(id);
   for (const [id, p] of pubs) if (Date.now() - p.at > PUB_TTL) pubs.delete(id);
+  for (const [t, f] of files) if (Date.now() - f.at > FILE_TTL) files.delete(t);
 };
 
 function send(res, code, obj) {
@@ -58,7 +62,18 @@ function handle(req, res) {
   }
   const url = new URL(req.url, "http://127.0.0.1");
   sweep();
-  if (url.pathname === "/gs-helper/ping") return send(res, 200, { ok: true, app: "공실스튜디오" });
+  if (url.pathname === "/gs-helper/ping") return send(res, 200, { ok: true, app: "공실마케팅" });
+  // 영상·썸네일 파일 — 앱이 addFile 로 내준 것만 (번호표 모르면 못 받는다)
+  if (url.pathname === "/gs-helper/file") {
+    const f = files.get(url.searchParams.get("token") || "");
+    const fs = require("fs");
+    if (!f || !fs.existsSync(f.file)) return send(res, 404, { ok: false });
+    const size = fs.statSync(f.file).size;
+    res.writeHead(200, { "Content-Type": f.type, "Content-Length": size, "Cache-Control": "no-store" });
+    fs.createReadStream(f.file).pipe(res);
+    log.info(`[도우미] 파일 넘김 ${require("path").basename(f.file)} ${Math.round(size / 1048576)}MB`);
+    return;
+  }
   if (url.pathname === "/gs-helper/claim") {
     const target = url.searchParams.get("target") || "";
     // 가장 최근에 올린, 아직 안 받아 간 일감
@@ -108,7 +123,8 @@ function handle(req, res) {
       if (ok) {
         pubs.delete(r.id);
         savePubs();
-        log.info(`[도우미] 발행 ${p.meta.channel} ${p.meta.vacancyId} ${r.url}`);
+        // 유튜브도 바로 — 공개·비공개·예약 상관없이 영상 주소가 생기면 ✓ (2026-10-28 사장님). 잘못 붙으면 회원이 [연결 끊기]
+        log.info(`[도우미] 발행 ${p.meta.channel} ${p.meta.vacancyId || `기사 ${p.meta.articleNo}`} ${r.url}`);
         for (const fn of pubListeners) Promise.resolve(fn({ ...p.meta, url: String(r.url) })).catch((e) => log.warn(`[도우미] 발행 기록 못함: ${e.message}`));
       }
       send(res, 200, { ok });
@@ -135,13 +151,37 @@ function start() {
   tryPort(0);
 }
 
-/** 일감 올리기 — 돌려줌: id. meta = { vacancyId, channel } 이면 발행 뒤 글 주소를 받는다 */
+/** 유튜브 영상이 공개(일부 공개 포함)됐는지 — oEmbed 는 비공개·임시 저장이면 401/403/404 (2026-10-28) */
+async function isPublicYoutube(url) {
+  try {
+    const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+    return r.ok;
+  } catch { return false; }
+}
+/** 올린 영상 — 회원이 [게시]해서 공개된 걸 볼 때까지 10초마다, 30분까지 (도우미는 주소가 보이면 바로 보낸다) */
+async function whenPublic(meta, url) {
+  log.info(`[홍보현황] 유튜브 공개 기다림 ${url}`);
+  for (let i = 0; i < 180; i++) {
+    if (await isPublicYoutube(url)) return published(meta, url);
+    await new Promise((r) => setTimeout(r, 10000));
+  }
+  log.info(`[홍보현황] 유튜브가 공개되지 않아 연결 안 함 ${url}`);
+}
+
+/** 파일 내주기 — 돌려줌: { token, name, type } (도우미가 /gs-helper/file?token= 으로 받아 간다) */
+function addFile(file, type) {
+  const token = crypto.randomBytes(12).toString("hex");
+  files.set(token, { file, type, at: Date.now() });
+  return { token, name: require("path").basename(file), type };
+}
+
+/** 일감 올리기 — 돌려줌: id. meta = { vacancyId, channel } 또는 { articleNo, channel }(내 기사) 이면 발행 뒤 글 주소를 받는다 */
 function addJob(target, payload, meta) {
   // 같은 곳에 남은 옛 일감은 버린다 (마지막 것만)
   for (const [id, j] of jobs) if (j.target === target && !j.taken) jobs.delete(id);
   const id = crypto.randomBytes(8).toString("hex");
   jobs.set(id, { id, target, payload, at: Date.now(), taken: 0, done: null, waiters: [] });
-  if (meta && meta.vacancyId) { pubs.set(id, { meta, at: Date.now() }); savePubs(); }
+  if (meta && (meta.vacancyId || meta.articleNo)) { pubs.set(id, { meta, at: Date.now() }); savePubs(); }
   return id;
 }
 
@@ -164,7 +204,12 @@ function wait(id, what, ms) {
 
 const cancel = (id) => jobs.delete(id);
 
-/** 회원이 발행한 글 주소가 오면 — fn({ vacancyId, channel, url }) */
+/** 회원이 발행한 글 주소가 오면 — fn({ vacancyId | articleNo, channel, url }) */
 const onPublished = (fn) => pubListeners.push(fn);
+/** 도우미가 아닌 곳에서 잡은 발행 주소 (동영상제작 › 유튜브 올리기, 2026-10-28) — meta = { vacancyId | articleNo, channel } */
+const published = (meta, url) => {
+  log.info(`[홍보현황] 발행 ${meta.channel} ${meta.vacancyId || `기사 ${meta.articleNo}`} ${url}`);
+  for (const fn of pubListeners) Promise.resolve(fn({ ...meta, url: String(url) })).catch((e) => log.warn(`[홍보현황] 발행 기록 못함: ${e.message}`));
+};
 
-module.exports = { start, addJob, wait, cancel, onPublished, port: () => port };
+module.exports = { start, addJob, addFile, wait, cancel, onPublished, published, port: () => port };

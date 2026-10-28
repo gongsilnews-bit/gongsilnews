@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import StudioSiteHeader from "@/components/studio-site/StudioSiteHeader";
 import StudioBenefits from "@/components/studio-site/StudioBenefits";
 
-// 공실스튜디오 메뉴 줄이 화면 위에 붙었을 때의 높이. 혜택 탭 줄이 그 아래에 붙는다.
+// 공실마케팅 메뉴 줄이 화면 위에 붙었을 때의 높이. 혜택 탭 줄이 그 아래에 붙는다.
 const STUCK_HEADER_HEIGHT = 65;
 
 export default function StudioBenefitsClient() {
@@ -15,7 +15,7 @@ export default function StudioBenefitsClient() {
     if (typeof window !== "undefined") {
       localStorage.setItem("signup_member_type", "broker");
     }
-    router.push("/studio/apply");
+    router.push("/marketing/apply");
   };
 
   return (

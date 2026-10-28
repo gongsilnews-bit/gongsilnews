@@ -9,14 +9,22 @@ import { createPortal } from "react-dom";
 import type { PhotoEmbed } from "@/components/admin/studio-photo/PhotoStudio";
 import type { PostChannel, PostDraft, Project } from "./types";
 import { errText, videoBridge } from "./types";
+import { listMyStudioVacancies } from "@/app/actions/studio";
+import { getMyArticleCards } from "@/app/actions/myArticles";
+import { getMyVacancyPromos } from "@/app/actions/vacancyPromos";
 import { clipText } from "./timeline";
 import { Btn, C, FONT, Icon, Modal, Working, input, label } from "./ui";
 import { loadImg, thumbDoc, thumbFonts, thumbLayouts, thumbPng, thumbPreview } from "./thumbRender";
 
 const PhotoStudio = lazy(() => import("@/components/admin/studio-photo/PhotoStudio"));
 
-/** 채널 픽토그램 — 유튜브(빨간 재생 단추) · 인스타그램(카메라) (2026-10-21 사장님) */
+/** 채널 픽토그램 — 유튜브(빨간 재생 단추) · 인스타그램(카메라) · 스레드(@) · 페이스북(f) (2026-10-21·28 사장님) */
 export function ChannelMark({ ch, size = 18 }: { ch: PostChannel; size?: number }) {
+  if (ch === "threads" || ch === "facebook")
+    return (
+      <span aria-hidden style={{ width: size, height: size, borderRadius: size * 0.28, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: ch === "threads" ? "#111" : "#1877f2", color: "#fff", fontWeight: 900, fontSize: size * 0.72, fontFamily: "Arial, sans-serif", lineHeight: 1 }}>{ch === "threads" ? "@" : "f"}</span>
+    );
   if (ch === "youtube")
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0 }}>
@@ -53,6 +61,8 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
   const [ytTitle, setYtTitle] = useState(m.draft?.youtube.title || "");
   const [ytText, setYtText] = useState(m.draft?.youtube.text || "");
   const [igText, setIgText] = useState(m.draft?.instagram.text || "");
+  const [fbText, setFbText] = useState(m.draft?.facebook?.text || m.draft?.youtube.text || "");
+  const [thText, setThText] = useState(m.draft?.threads?.text || m.draft?.instagram.text || "");
   const [vis, setVis] = useState<Vis>("public");
   const [thumbs, setThumbs] = useState<Thumb[] | null>(m.thumbs || null);
   const [useTitle, setUseTitle] = useState(true);
@@ -74,6 +84,31 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
   const [login, setLogin] = useState<"" | "need" | "open">("");
   const [done, setDone] = useState<{ ch: PostChannel; partial?: string; thumb?: string; vis?: string } | null>(null);
   const [note, setNote] = useState("");
+  // 홍보현황 — 올린 주소를 붙일 공실·기사 (2026-10-28). 영상에 공실(또는 내 기사 칼럼)이 붙어 있으면 그것, 없으면 회원이 고른다
+  //  linkTo: "" = 안 붙임 · "v:공실id" · "a:기사번호"
+  const [linkTo, setLinkTo] = useState("");
+  const [myVacs, setMyVacs] = useState<{ id: string; label: string }[] | null>(null);
+  const [myArts, setMyArts] = useState<{ no: string; label: string }[] | null>(null);
+  useEffect(() => {
+    if (project.vacancyId) return;
+    const sq = (t: string) => t.replace(/[\s\[\]()「」"'·,.]/g, "");
+    const nm = sq(project.name);
+    void Promise.all([
+      listMyStudioVacancies().then((r) => (r.success ? r.data : [])).catch(() => []),
+      getMyArticleCards().then((r) => (r.success ? r.data : [])).catch(() => []),
+    ]).then(([vs, as]) => {
+      const vList = (vs as { id: string; vacancy_no?: number | null; building_name?: string | null; property_type?: string | null; dong?: string | null }[]).map((v) =>
+        ({ id: v.id, name: v.building_name || "", no: v.vacancy_no ? String(v.vacancy_no) : "", label: `${v.vacancy_no ? `${v.vacancy_no} · ` : ""}${[v.dong, v.building_name || v.property_type].filter(Boolean).join(" ")}` }));
+      const aList = (as as { no: string; title: string }[]).map((a) => ({ no: a.no, title: a.title, label: `${a.no} · ${a.title}` }));
+      setMyVacs(vList);
+      setMyArts(aList);
+      // 영상 이름으로 미리 골라 둔다 (하나만 맞을 때) — 공실은 건물 이름·광고번호, 기사는 제목 앞부분
+      const vHit = vList.filter((v) => (v.name && nm.includes(sq(v.name))) || (v.no && nm.includes(v.no)));
+      const aHit = aList.filter((a) => sq(a.title).length >= 8 && nm.includes(sq(a.title).slice(0, 12)));
+      const pick = aHit.length === 1 && !vHit.length ? `a:${aHit[0].no}` : vHit.length === 1 && !aHit.length ? `v:${vHit[0].id}` : "";
+      if (pick) setLinkTo((cur) => cur || pick);
+    });
+  }, [project.vacancyId]); // eslint-disable-line react-hooks/exhaustive-deps
   const shorts = project.ratio === "9:16" || project.ratio === "1:1";
   const lines = project.scenes.flatMap((s) => s.clips).map((c) => clipText(c)).filter((t) => t.trim());
   // AI 그림이 들어간 영상 — 채널의 AI 표시를 켜도록 알린다
@@ -89,11 +124,21 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     setBusy("글 AI가 쓰는 중…");
     const off = listen();
     try {
-      const d = await post.draft({ title: project.name, lines, vacancyId: project.vacancyId, ratio: project.ratio, seconds });
+      // 이미 올린 채널 (홍보현황 ✓) — 그 채널 글은 "이번엔 영상으로" 후속 글로 (2026-10-28 사장님)
+      const vid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(project.vacancyId || "") ? project.vacancyId : linkTo.startsWith("v:") ? linkTo.slice(2) : "";
+      const artNo = linkTo.startsWith("a:") ? linkTo.slice(2) : "";
+      const posted = vid
+        ? await getMyVacancyPromos().then((r) => Object.keys(r.promos[vid]?.links || {})).catch(() => [] as string[])
+        : artNo
+          ? await getMyArticleCards().then((r) => Object.keys(r.data.find((a) => a.no === artNo)?.links || {})).catch(() => [] as string[])
+          : [];
+      const d = await post.draft({ title: project.name, lines, vacancyId: project.vacancyId, ratio: project.ratio, seconds, posted });
       setDraft(d);
       setYtTitle(d.youtube.title);
       setYtText(d.youtube.text);
       setIgText(d.instagram.text);
+      setFbText(d.facebook?.text || d.youtube.text);
+      setThText(d.threads?.text || d.instagram.text);
       memo.set(file, { ...(memo.get(file) || {}), draft: d });
     } catch (e) {
       setErr(errText(e));
@@ -154,7 +199,8 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     return () => { live = false; clearTimeout(tm); };
   }, [bgs, layoutId, tTitle, thumbI, useTitle, layouts]);
 
-  const text = ch === "youtube" ? ytText : igText;
+  const text = ch === "youtube" ? ytText : ch === "facebook" ? fbText : ch === "threads" ? thText : igText;
+  const setText = (v: string) => (ch === "youtube" ? setYtText(v) : ch === "facebook" ? setFbText(v) : ch === "threads" ? setThText(v) : setIgText(v));
   const plainFile = thumbs && thumbs[thumbI] ? thumbs[thumbI].plain.file : undefined;
   /** 올릴 썸네일 파일 — 내 그림 · 장면만 · 고른 틀로 그린 1280×720 PNG(임시 파일) */
   const thumbFileFor = async (): Promise<string | undefined> => {
@@ -175,7 +221,9 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     const off = listen();
     try {
       const thumbFile = ch === "youtube" ? await thumbFileFor() : undefined;
-      const r = await post.fill({ channel: ch, file, title: ytTitle, text, visibility: ch === "youtube" ? vis : undefined, thumb: thumbFile });
+      const r = await post.fill({ channel: ch, file, title: ytTitle, text, visibility: ch === "youtube" ? vis : undefined, thumb: thumbFile,
+        vacancyId: project.vacancyId || (linkTo.startsWith("v:") ? linkTo.slice(2) : undefined), articleNo: linkTo.startsWith("a:") ? linkTo.slice(2) : undefined,
+        posts: ch === "threads" ? text.split(/\n\n―――\n\n/).map((x) => x.trim()).filter(Boolean) : undefined }); // 스레드 — 이어 쓰는 글
       setDone({ ch, partial: r.partial, thumb: r.thumb, vis: r.vis });
       try {
         const log = JSON.parse(localStorage.getItem("gsv:postLog") || "[]");
@@ -248,17 +296,17 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
   };
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(ch === "youtube" ? `${ytTitle}\n\n${ytText}` : igText);
+      await navigator.clipboard.writeText(ch === "youtube" ? `${ytTitle}\n\n${ytText}` : text);
       setNote("글을 복사했어요");
       setTimeout(() => setNote(""), 1800);
     } catch {}
   };
-  const name = ch === "youtube" ? "유튜브" : "인스타그램";
+  const name = ch === "youtube" ? "유튜브" : ch === "threads" ? "스레드" : ch === "facebook" ? "페이스북" : "인스타그램";
 
   if (!post) {
     return (
       <Modal title="SNS에 올리기" onClose={onClose} width={560}>
-        <div style={{ padding: 22, fontSize: 15, lineHeight: 1.7 }}>이 기능은 공실스튜디오 앱 0.1.11부터 쓸 수 있어요. 앱을 새로 받아 주세요.</div>
+        <div style={{ padding: 22, fontSize: 15, lineHeight: 1.7 }}>이 기능은 공실마케팅 앱 0.1.11부터 쓸 수 있어요. 앱을 새로 받아 주세요.</div>
       </Modal>
     );
   }
@@ -285,7 +333,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
         <Btn primary onClick={fill} disabled={Boolean(busy) || !draft}><Icon name="export" size={15} />크롬에서 채우기</Btn>
       </>}>
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        {([["youtube", shorts ? "유튜브 쇼츠" : "유튜브"], ["instagram", "인스타그램 릴스"]] as const).map(([k, l]) => (
+        {([["youtube", shorts ? "유튜브 쇼츠" : "유튜브"], ["instagram", "인스타그램 릴스"], ["threads", "스레드"], ["facebook", "페이스북"]] as const).map(([k, l]) => (
           <button key={k} type="button" onClick={() => { setCh(k); setDone(null); setErr(""); setLogin(""); }}
             style={{ flex: 1, height: 42, border: 0, borderBottom: `2px solid ${ch === k ? C.accent : "transparent"}`, background: "transparent", color: ch === k ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}><ChannelMark ch={k} />{l}</button>
         ))}
@@ -302,12 +350,22 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
             )}
             <div>
               <div style={{ ...label, marginBottom: 6 }}>{ch === "youtube" ? "설명" : "문구 (캡션)"} <span style={{ color: C.dim, fontWeight: 600, fontSize: 12.5 }}>· 끝의 공실뉴스 링크·매물 정보 출처는 앱이 붙였어요{draft.tail.hasListing ? "" : " (매물 정보가 없는 영상이라 출처 줄 없음)"}</span></div>
-              <textarea value={text} onChange={(e) => (ch === "youtube" ? setYtText(e.target.value) : setIgText(e.target.value))} rows={11}
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={11}
                 style={{ ...input, width: "100%", boxSizing: "border-box", height: "auto", padding: 10, lineHeight: 1.6, resize: "vertical", fontSize: 14 }} />
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                 <Btn small onClick={writeDraft}><Icon name="ai" size={14} />글 다시 쓰기</Btn>
               </div>
             </div>
+            {!project.vacancyId && (
+              <div>
+                <div style={{ ...label, marginBottom: 6 }}>어느 공실·기사 영상인가요? <span style={{ color: C.dim, fontWeight: 600, fontSize: 12.5 }}>· 고르면 올린 주소가 그 공실·기사 홍보현황에 ✓로 붙어요</span></div>
+                <select value={linkTo} onChange={(e) => setLinkTo(e.target.value)} style={{ ...input, width: "100%", boxSizing: "border-box", border: "2px solid #3b82f6" }}>
+                  <option value="">연결 안 함</option>
+                  {!!myVacs?.length && <optgroup label="내 공실">{myVacs.map((v) => <option key={v.id} value={`v:${v.id}`}>{v.label}</option>)}</optgroup>}
+                  {!!myArts?.length && <optgroup label="내 기사">{myArts.map((a) => <option key={a.no} value={`a:${a.no}`}>{a.label}</option>)}</optgroup>}
+                </select>
+              </div>
+            )}
             {ch === "youtube" && (
               <div>
                 <div style={{ ...label, marginBottom: 6 }}>공개 범위 <span style={{ color: C.dim, fontWeight: 600, fontSize: 12.5 }}>· 크롬에서 마지막 단계까지 가서 골라 둬요. [게시]는 직접</span></div>
@@ -391,13 +449,13 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
         )}
         {login === "open" && (
           <div style={{ padding: "12px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: C.accentDim, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <span style={{ flex: 1, minWidth: 240, fontSize: 14, lineHeight: 1.6 }}>새로 뜬 &quot;공실스튜디오&quot; 크롬 창에서 {name}에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아니에요)</span>
+            <span style={{ flex: 1, minWidth: 240, fontSize: 14, lineHeight: 1.6 }}>새로 뜬 &quot;공실마케팅&quot; 크롬 창에서 {name}에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아니에요)</span>
             <Btn primary onClick={() => { void post.finishLogin(); setLogin(""); setErr(""); }}>로그인 다 했어요</Btn>
           </div>
         )}
         {done && (
           <div style={{ padding: "12px 14px", borderRadius: 8, border: "1px solid #16a34a", background: "rgba(22,163,74,0.12)", fontSize: 14, lineHeight: 1.7 }}>
-            {name} 올리기 화면에 영상과 글을 넣었어요. 크롬 창에서 내용을 확인하고 <b>{done.ch === "youtube" ? "[게시]" : "[공유하기]"}</b>를 직접 눌러 주세요.
+            {name} 올리기 화면에 영상과 글을 넣었어요. 크롬 창에서 내용을 확인하고 <b>{done.ch === "instagram" ? "[공유하기]" : "[게시]"}</b>를 직접 눌러 주세요. 올린 글 주소는 홍보현황에 새 링크로 붙어요.
             {done.partial && <div style={{ color: "#facc15", marginTop: 4 }}>{done.partial}</div>}
             {done.ch === "youtube" && done.thumb === "verify" && (
               <div style={{ color: "#facc15", marginTop: 6 }}>

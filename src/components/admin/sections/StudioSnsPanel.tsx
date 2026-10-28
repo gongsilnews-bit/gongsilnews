@@ -6,7 +6,7 @@ import StudioReviseBar from "./StudioReviseBar";
 import { useStudioWriter } from "./useStudioWriter";
 
 /**
- * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실스튜디오)
+ * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실마케팅)
  *
  * - [ChatGPT로 SNS 글 쓰기] 한 번에 세 채널 글을 함께 쓴다 (크롬 확장 sns.js 와 같은 프롬프트, 이용 횟수 SNS 1회).
  * - 채널마다 그 채널에 올라갈 모양으로 보여 주고 고친다: 사진 순서·빼기·다시 넣기, 글(스레드는 글마다), 해시태그.
@@ -162,7 +162,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       setError(cleanErr(e));
     }
   };
-  /* [도우미로 채우기] — 평소 크롬 + 공실스튜디오 도우미 확장 (2026-10-23 사장님) */
+  /* [도우미로 채우기] — 평소 크롬 + 공실마케팅 도우미 확장 (2026-10-23 사장님) */
   const [helping, setHelping] = useState(false);
   const [helpMsg, setHelpMsg] = useState("");
   const fillHelper = async () => {
@@ -226,10 +226,10 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
     <div>
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{oneShot ? `${info.label} 문체` : `${info.label} 글 쓰기`}</div>
+          <div style={{ flex: 1, minWidth: 260, paddingRight: oneShot ? 230 : 0 /* 오른쪽 위 [이 ○○ 글만 쓰기] 자리 */ }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{oneShot ? `${info.label} 스타일` : `${info.label} 글 쓰기`}</div>
             <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4, lineHeight: 1.6 }}>
-              인스타그램·스레드·페이스북 글을 {vacancyId.startsWith("col-") ? "뉴스칼럼 기사·원문을 바탕으로" : "처음 분석·캡처한 공실 정보로"} 함께 씁니다 (SNS 1회). 문체는 채널마다 따로 골라요 (이 탭은 {info.label}).
+              {vacancyId.startsWith("col-") ? "뉴스칼럼 기사·원문을 바탕으로" : "처음 분석·캡처한 공실 정보로"} 씁니다 (SNS 1회). 문체는 채널마다 따로 골라요. 오른쪽 위 [이 {info.label} 글만 쓰기]는 이 채널만, [한 번에 쓰기]는 ☑ 한 SNS를 함께 씁니다.
             </div>
           </div>
           {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
@@ -253,7 +253,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       </div>
 
       {ch && ch.post && (
-        <div style={card}>
+        <div id="gs-step-3" style={{ ...card, scrollMarginTop: 16 }}>
           {/* 사진 */}
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>
@@ -353,7 +353,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             <ChannelButton channel={channel} label={`${info.label} 열기`} onClick={openChannel} />
             {/* [채널 열기] 바로 옆 · 블로그 [네이버 블로그에 채우기]와 같은 남색 (2026-10-23 사장님) */}
             {bridge()?.sns.fillByHelper && (
-              <button onClick={() => void fillHelper()} disabled={helping} title="평소 크롬에 이 채널을 열고 공실스튜디오 도우미(크롬 확장)가 사진·글을 넣어요"
+              <button onClick={() => void fillHelper()} disabled={helping} title="평소 크롬에 이 채널을 열고 공실마케팅 도우미(크롬 확장)가 사진·글을 넣어요"
                 style={{ ...btn(true), background: helping ? "#94a3b8" : "#1a3a6b" }}>{helping ? "도우미가 채우는 중…" : `도우미로 ${info.label}에 채우기`}</button>
             )}
           </div>

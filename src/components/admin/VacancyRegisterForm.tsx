@@ -1268,7 +1268,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         <button type="button" onClick={onBack} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
           ← 목록으로
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>{editData ? "공실수정" : "공실등록"}</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>{editData?.id ? "공실수정" : "공실등록"}</h1>
       </div>
 
       {/* ── 작성 중이던 내용 되살리기 ── */}
@@ -2967,8 +2967,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 setSubmittingLabel(
                   customStatus === "DRAFT" ? "임시저장 중입니다..."
                   : customStatus === "REJECTED" ? "반려 처리 중입니다..."
-                  : customStatus === "ACTIVE" && userRole === "admin" && editData ? "승인 처리 중입니다..."
-                  : editData ? "공실 수정 중입니다..."
+                  : customStatus === "ACTIVE" && userRole === "admin" && editData?.id ? "승인 처리 중입니다..."
+                  : editData?.id ? "공실 수정 중입니다..."
                   : "공실 등록 중입니다..."
                 );
                 setSubmitting(true);
@@ -3072,7 +3072,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   }
 
                   if (!result.success) {
-                    alert((editData ? "수정" : "등록") + " 실패: " + result.error);
+                    alert((editData?.id ? "수정" : "등록") + " 실패: " + result.error);
                     return;
                   }
 
@@ -3107,7 +3107,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                        alert("공실광고가 반려 처리되었습니다.");
                      }
                   } else {
-                     const statusMsg = editData ? '공실 수정이 완료되었습니다!' : '공실이 등록되었습니다! 광고가 바로 시작됩니다.';
+                     const statusMsg = editData?.id ? '공실 수정이 완료되었습니다!' : '공실이 등록되었습니다! 광고가 바로 시작됩니다.';
                      alert(statusMsg);
                   }
                   onBack();
@@ -3138,7 +3138,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 );
               }
 
-              if (userRole === "admin" && !editData) {
+              if (userRole === "admin" && !editData?.id) {
                 return (
                   <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
                     <button
@@ -3202,7 +3202,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                       }}
                     >
-                      {submitting ? "처리 중..." : (editData ? (
+                      {submitting ? "처리 중..." : (editData?.id ? (
                         <>✅ 수정완료</>
                       ) : (
                         <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
@@ -3237,7 +3237,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                     }}
                   >
-                    {submitting ? "처리 중..." : (editData ? (
+                    {submitting ? "처리 중..." : (editData?.id ? (
                       <>✅ 수정완료</>
                     ) : (
                       <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>

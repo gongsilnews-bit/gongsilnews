@@ -367,7 +367,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
  * 가려야 하므로 여기 한 벌을 둔다. 한쪽만 고치면 어긋나니 같이 고칠 것.
  */
 /**
- * 부동산회원 · 비즈니스회원의 등급 값은 공실스튜디오 이용기간에서 저절로 정해진다
+ * 부동산회원 · 비즈니스회원의 등급 값은 공실마케팅 이용기간에서 저절로 정해진다
  * (2026-10-26 사장님 "요금제 기간 · 스튜디오 기간 중복" → 스튜디오 기간 하나로 심플하게).
  * 끝나는 날이 오늘 이후면 부동산 news_premium · 비즈니스 biz_premium(미니홈피), 아니면 free. 화면에는 이용기간만 보인다.
  * 나중에 스튜디오 요금제(Basic · Standard · Business)를 나누면 "요금제" 칸 하나만 더 붙인다.
@@ -615,7 +615,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
       const wasApproved = agencyData.status === "APPROVED";
       let memberId = editMemberId;
 
-      // 부동산 · 비즈니스회원은 요금제 칸이 없다 — 등급 값과 요금제 기간을 공실스튜디오 이용기간에 맞춘다 (2026-10-26)
+      // 부동산 · 비즈니스회원은 요금제 칸이 없다 — 등급 값과 요금제 기간을 공실마케팅 이용기간에 맞춘다 (2026-10-26)
       const plan = usesStudioPeriod(formData.role)
         ? { plan_type: planFromStudio(formData.role, formData.studio_end_date), plan_start_date: formData.studio_start_date, plan_end_date: formData.studio_end_date }
         : { plan_type: formData.plan_type, plan_start_date: formData.plan_start_date, plan_end_date: formData.plan_end_date };
@@ -935,7 +935,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           <br />0은 해당 등록 기능을 사용하지 않는다는 뜻입니다.
         </div>
 
-        {/* 공실스튜디오 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
+        {/* 공실마케팅 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, flexWrap: "wrap" }}>
           <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>스튜디오 블로그·SNS(월):</span>
           <select value={formData.studio_blog_limit} disabled={!isAdmin}
@@ -1186,14 +1186,14 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {formData.role === "부동산회원" && (
           <>
-            {/* 부동산회원은 요금제 칸 없이 공실스튜디오 이용기간 하나 — 비우면 공실뉴스부동산(무료), 날짜가 있으면 그동안 스튜디오 (2026-10-26 사장님) */}
+            {/* 부동산회원은 요금제 칸 없이 공실마케팅 이용기간 하나 — 비우면 공실뉴스부동산(무료), 날짜가 있으면 그동안 스튜디오 (2026-10-26 사장님) */}
             <div style={rowStyle}>
-              <div style={labelStyle}>공실스튜디오 이용기간</div>
+              <div style={labelStyle}>공실마케팅 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 공실스튜디오 회원 — 이름표 로고 · 공실스튜디오 모든 프로그램.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 공실마케팅 회원 — 이름표 로고 · 공실마케팅 모든 프로그램.</span>
               </div>
             </div>
 
@@ -1261,14 +1261,14 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {formData.role === "비즈니스회원" && (
           <>
-            {/* 비즈니스회원도 요금제 칸 없이 공실스튜디오 이용기간 하나 — 날짜가 있으면 그동안 미니홈피 · 공실스튜디오 (2026-10-26 사장님) */}
+            {/* 비즈니스회원도 요금제 칸 없이 공실마케팅 이용기간 하나 — 날짜가 있으면 그동안 미니홈피 · 공실마케팅 (2026-10-26 사장님) */}
             <div style={rowStyle}>
-              <div style={labelStyle}>공실스튜디오 이용기간</div>
+              <div style={labelStyle}>공실마케팅 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · 이름표 공실스튜디오 로고 · 공실스튜디오 모든 프로그램. 비우면 이용 안 함.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · 이름표 공실마케팅 로고 · 공실마케팅 모든 프로그램. 비우면 이용 안 함.</span>
               </div>
             </div>
           </>

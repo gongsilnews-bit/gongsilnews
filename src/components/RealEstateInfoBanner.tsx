@@ -226,7 +226,7 @@ const SHOWN = BANNERS.filter((b) => KEEP.some((k) => b.title.includes(k)));
 
 export default function RealEstateInfoBanner() {
   const pathname = usePathname();
-  const studioBoard = useStudioBoardPage(); // 공실스튜디오 게시판 글 읽기·쓰기 (2026-10-26)
+  const studioBoard = useStudioBoardPage(); // 공실마케팅 게시판 글 읽기·쓰기 (2026-10-26)
 
   if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || studioBoard) {
     return null;

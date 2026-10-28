@@ -104,7 +104,7 @@ export function AiVoiceStudio() {
     setPv("busy");
     try {
       const r = await b.voiceSave(lines, voiceId, { kind: "mp3", outFile: "", speed, gap, emotion, preview: true });
-      if (!r.url) throw new Error("공실스튜디오를 껐다 켜 주세요 (미리 듣기를 새로 연결해요)");
+      if (!r.url) throw new Error("공실마케팅를 껐다 켜 주세요 (미리 듣기를 새로 연결해요)");
       pvAudio.current?.pause();
       const a = new Audio(r.url);
       pvAudio.current = a;
@@ -180,7 +180,7 @@ export function AiVoiceStudio() {
           </Modal>
         )}
         {work && <Modal title=""><Working title={work.title} detail="문장마다 AI 목소리를 만들어 한 파일로 이어요" frac={work.frac ?? null} /></Modal>}
-        {!ok && <div style={{ marginTop: 14, color: C.danger, fontSize: 14.5 }}>공실스튜디오를 새 버전으로 업데이트하면 쓸 수 있어요.</div>}
+        {!ok && <div style={{ marginTop: 14, color: C.danger, fontSize: 14.5 }}>공실마케팅를 새 버전으로 업데이트하면 쓸 수 있어요.</div>}
 
         {/* 목소리 */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 22, padding: 12, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card }}>

@@ -98,7 +98,7 @@ function render() {
     if (st.mode === "scroll") add("", "멈추기", "여기까지만 붙이기", () => window.snap.cmd("scroll-stop"), "small");
   }
   div("fill");
-  add("close", "닫기", st.mode === "rec" ? "녹화를 끝낸 뒤 닫을 수 있어요" : "막대를 닫고 공실스튜디오로", () => window.snap.cmd("close"), "small", st.mode === "rec" || st.mode === "busy");
+  add("close", "닫기", st.mode === "rec" ? "녹화를 끝낸 뒤 닫을 수 있어요" : "막대를 닫고 공실마케팅로", () => window.snap.cmd("close"), "small", st.mode === "rec" || st.mode === "busy");
 }
 window.snap.on("snap:state", (s) => { st = { ...st, ...s }; render(); });
 window.snap.init().then((r) => { if (r && r.state) st = { ...st, ...r.state }; render(); });

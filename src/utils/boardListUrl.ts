@@ -6,17 +6,17 @@
  * 헤더와 흐름이 끊기지 않는다.
  */
 const SECTION_BOARD_PATHS: Record<string, string> = {
-  // 공실스튜디오 자료실 5대 게시판 (2026-10-26 /studio 로)
-  doc: "/studio/resources?board=doc",
-  drone: "/studio/resources?board=drone",
-  prompt: "/studio/resources?board=prompt",
-  sound: "/studio/resources?board=sound",
-  app: "/studio/resources?board=app",
-  // 공실스튜디오 커뮤니티 2대 게시판
-  studyqa: "/studio/community?board=studyqa",
-  free: "/studio/community?board=free",
-  // 공실스튜디오 사용법 배우기 (유튜브 영상, 2026-10-26)
-  studio_guide: "/studio/guide",
+  // 공실마케팅 자료실 5대 게시판 (2026-10-26 /studio 로)
+  doc: "/marketing/resources?board=doc",
+  drone: "/marketing/resources?board=drone",
+  prompt: "/marketing/resources?board=prompt",
+  sound: "/marketing/resources?board=sound",
+  app: "/marketing/resources?board=app",
+  // 공실마케팅 커뮤니티 2대 게시판
+  studyqa: "/marketing/community?board=studyqa",
+  free: "/marketing/community?board=free",
+  // 공실마케팅 사용법 배우기 (유튜브 영상, 2026-10-26)
+  studio_guide: "/marketing/guide",
   // 고객센터 자주 묻는 질문
   faq: "/help",
 };

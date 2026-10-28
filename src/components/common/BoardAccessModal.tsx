@@ -61,7 +61,7 @@ export function BoardAccessCard({
         <strong style={{ color: "#0f9d6b" }}>{levelName}</strong>부터 {verb} 수 있습니다.
         {!needsLoginOnly && !adminOnly && (
           level >= 3
-            ? <><br />공실스튜디오 멤버십으로 바로 이용하실 수 있습니다.</>
+            ? <><br />공실마케팅 멤버십으로 바로 이용하실 수 있습니다.</>
             : <><br />공실뉴스부동산에 무료로 가입하시면 바로 이용하실 수 있습니다.</>
         )}
       </div>
@@ -70,9 +70,9 @@ export function BoardAccessCard({
           !isLoggedIn && <a href={loginHref} style={primary}>로그인</a>
         ) : !adminOnly && (
           <>
-            {/* 2026-10-26: 3·4레벨(공실스튜디오 이용) → 금액안내, 2레벨(공실뉴스부동산) → 무료 가입 */}
+            {/* 2026-10-26: 3·4레벨(공실마케팅 이용) → 금액안내, 2레벨(공실뉴스부동산) → 무료 가입 */}
             {level >= 3
-              ? <a href="/studio/pricing" style={primary}>공실스튜디오 알아보기</a>
+              ? <a href="/marketing/pricing" style={primary}>공실마케팅 알아보기</a>
               : <a href="/newsrealty/apply" style={primary}>공실뉴스부동산 무료 가입하기</a>}
             {!isLoggedIn && <a href={loginHref} style={secondary}>로그인</a>}
           </>

@@ -23,7 +23,7 @@ import LoginJoinButton from "@/components/LoginJoinButton";
 import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
   const pathname = usePathname();
-  const studioBoard = useStudioBoardPage(); // 공실스튜디오 게시판 글 읽기·쓰기 (2026-10-26)
+  const studioBoard = useStudioBoardPage(); // 공실마케팅 게시판 글 읽기·쓰기 (2026-10-26)
   // 핵심 메뉴(공실열람·공실스터디) 위에 가끔 떠오르는 말풍선
   const navBubble = useNavHighlightBubbles(navCounts);
   const router = useRouter();

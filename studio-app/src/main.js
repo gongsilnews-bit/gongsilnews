@@ -1,4 +1,4 @@
-// 공실스튜디오 - Electron 메인 프로세스
+// 공실마케팅 - Electron 메인 프로세스
 // 앱 창은 공실뉴스 중개사 관리자 화면(/realty_admin)을 그대로 불러온다.
 // 로그인은 "클릭 한 번 연결": 크롬의 /studio/connect → gongsilstudio://connect?code=… → 앱 창의 /studio/callback
 const { app, BrowserWindow, Menu, dialog, ipcMain, nativeImage, screen, session, shell } = require("electron");
@@ -52,14 +52,14 @@ const PROTOCOL = "gongsilstudio";
 // 앱 창 안에서 띄워도 되는 팝업 (주소 검색 등). 그 외 다른 사이트는 평소 브라우저로 연다.
 const IN_APP_POPUP_HOSTS = [/(^|\.)daum\.net$/, /(^|\.)daumcdn\.net$/, /(^|\.)kakao\.com$/];
 
-// 앱 이름을 "공실스튜디오"로 바꿨어도(2026-10-23) 회원 PC 저장 공간(로그인·AI 키·설정·공실 없는 보고서)은 예전 이름 폴더 그대로 —
+// 앱 이름을 "공실마케팅"로 바꿨어도(2026-10-23) 회원 PC 저장 공간(로그인·AI 키·설정·공실 없는 보고서)은 예전 이름 폴더 그대로 —
 // 이름을 따라 새 폴더로 가면 전부 사라진 것처럼 보인다 (docs/2026-10-23_naming_plan.md 4-2)
 if (app.isPackaged) app.setPath("userData", path.join(app.getPath("appData"), "공실뉴스 스튜디오"));
 // 개발 실행은 설치판과 저장 공간(로그인·전용 크롬)과 "한 번만 실행"이 겹치지 않게 이름을 달리 한다
 if (!app.isPackaged) {
   // STUDIO_INSTANCE 를 주면 개발판을 하나 더 따로 띄울 수 있다 (자동 시험용)
   const inst = process.env.STUDIO_INSTANCE ? ` ${process.env.STUDIO_INSTANCE}` : "";
-  app.setName(`공실스튜디오 (개발${inst})`);
+  app.setName(`공실마케팅 (개발${inst})`);
   app.setPath("userData", path.join(app.getPath("appData"), `공실뉴스 스튜디오 (개발${inst})`)); // 저장 공간은 예전 이름 그대로
 }
 
@@ -105,7 +105,7 @@ function findGss(argv) {
 function findGsn(argv) {
   return (argv || []).find((a) => typeof a === "string" && /\.gs[nm]$/i.test(a) && fs.existsSync(a)) || null;
 }
-/** 탐색기에서 두 번 누른 PSD (포토샵이 없는 PC — 설치할 때 PSD 기본 프로그램이 없으면 공실스튜디오로 연결, build/installer.nsh) */
+/** 탐색기에서 두 번 누른 PSD (포토샵이 없는 PC — 설치할 때 PSD 기본 프로그램이 없으면 공실마케팅로 연결, build/installer.nsh) */
 function findPsd(argv) {
   return (argv || []).find((a) => typeof a === "string" && /\.(psd|psb)$/i.test(a) && fs.existsSync(a)) || null;
 }
@@ -127,7 +127,7 @@ async function openGsn(file) {
     } else mainWindow.loadURL(`${BASE_URL}/realty_admin?menu=sns&gsn=${encodeURIComponent(r.id)}`);
   } catch (e) {
     log.warn(`[.gsn] 열지 못함 ${file}: ${e.message}`);
-    dialog.showMessageBox(mainWindow || undefined, { type: "warning", title: "공실스튜디오", message: "작업 파일을 열지 못했어요.", detail: e.message });
+    dialog.showMessageBox(mainWindow || undefined, { type: "warning", title: "공실마케팅", message: "작업 파일을 열지 못했어요.", detail: e.message });
   }
 }
 // 뉴스·SNS발행 [저장하기] · [불러오기] · 저장 상태 (2026-10-23 사장님)
@@ -139,7 +139,7 @@ ipcMain.handle("studio:work-open", async () => {
   const r = await dialog.showOpenDialog(mainWindow || undefined, {
     title: "작업 파일 불러오기",
     defaultPath: require("./studio-root").dir("sns", "프로젝트"),
-    filters: [{ name: "공실스튜디오 작업 파일", extensions: ["gsn", "gsm"] }],
+    filters: [{ name: "공실마케팅 작업 파일", extensions: ["gsn", "gsm"] }],
     properties: ["openFile"],
   });
   if (r.canceled || !r.filePaths[0]) return false;
@@ -215,7 +215,7 @@ async function createWindow() {
     show: false,
     minWidth: 1024,
     minHeight: 640,
-    title: `공실스튜디오 v${app.getVersion()}`,
+    title: `공실마케팅 v${app.getVersion()}`,
     icon: path.join(__dirname, "..", "build", "icon.png"),
     autoHideMenuBar: false, // 메뉴 막대는 아래에서 숨긴다 (Alt 로도 안 나오게 false)
     backgroundColor: "#f6f8fa",
@@ -294,7 +294,7 @@ async function createWindow() {
     // 이미지 편집에 저장 안 한 파일 — 닫을지 묻는다
     if (photoIpc.dirtyCount() > 0) {
       const r = dialog.showMessageBoxSync(mainWindow, {
-        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실스튜디오",
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실마케팅",
         message: `이미지 편집에 저장하지 않은 파일이 ${photoIpc.dirtyCount()}개 있어요.`,
         detail: "[취소]를 누르고 이미지 편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
       });
@@ -303,7 +303,7 @@ async function createWindow() {
     }
     if (docIpc.dirtyCount() > 0) {
       const r = dialog.showMessageBoxSync(mainWindow, {
-        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실스튜디오",
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실마케팅",
         message: "문서편집에 저장하지 않은 문서가 있어요.",
         detail: "[취소]를 누르고 문서편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
       });
@@ -326,7 +326,7 @@ async function createWindow() {
       buttons: ["저장하고 나가기", "저장 안 함", "취소"],
       defaultId: 0,
       cancelId: 2,
-      title: "공실스튜디오",
+      title: "공실마케팅",
       message: "동영상제작에 저장하지 않은 내용이 있어요.",
       detail: "[저장 안 함]을 누르면 마지막으로 저장한 상태로 돌아가요.",
     });
@@ -419,12 +419,12 @@ function buildMenu() {
       submenu: [
         { label: "업데이트 확인", click: () => checkForUpdates(true) },
         {
-          label: "공실스튜디오 정보",
+          label: "공실마케팅 정보",
           click: () =>
             dialog.showMessageBox(mainWindow, {
               type: "info",
-              title: "공실스튜디오",
-              message: `공실스튜디오 v${app.getVersion()}`,
+              title: "공실마케팅",
+              message: `공실마케팅 v${app.getVersion()}`,
               detail: `연결 주소: ${BASE_URL}\nFFmpeg: ${ffmpegPath() ? "설치됨" : "없음"}\n로그: ${log.transports.file.getFile().path}`,
             }),
         },
@@ -473,9 +473,9 @@ async function startupUpdate() {
   if (!result || !result.isUpdateAvailable) return false;
   const ver = (result.updateInfo && result.updateInfo.version) || "";
   log.info(`[업데이트] 켤 때 새 버전 v${ver} — 받아서 설치`);
-  const win = new BrowserWindow({ width: 440, height: 160, frame: false, resizable: false, alwaysOnTop: true, backgroundColor: "#16202b", title: "공실스튜디오 업데이트", icon: path.join(__dirname, "..", "build", "icon.png"), webPreferences: { sandbox: true } });
+  const win = new BrowserWindow({ width: 440, height: 160, frame: false, resizable: false, alwaysOnTop: true, backgroundColor: "#16202b", title: "공실마케팅 업데이트", icon: path.join(__dirname, "..", "build", "icon.png"), webPreferences: { sandbox: true } });
   const html = `<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 28px;box-sizing:border-box;background:#16202b;color:#fff;font-family:'Malgun Gothic',sans-serif">
-<div style="font-size:17px;font-weight:800">공실스튜디오 새 버전${ver ? ` v${ver}` : ""}</div>
+<div style="font-size:17px;font-weight:800">공실마케팅 새 버전${ver ? ` v${ver}` : ""}</div>
 <div id="t" style="font-size:14px;color:#b6c2cf;margin-top:8px">새 버전을 받는 중… 0%</div>
 <div style="height:6px;border-radius:3px;background:#2b3644;margin-top:12px;overflow:hidden"><div id="b" style="height:100%;width:0;background:#3b82f6"></div></div></body>`;
   win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
@@ -638,7 +638,7 @@ ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
 ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
 ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));
 ipcMain.handle("studio:column-refetch", (_e, id) => columnWriter.refetch(id)); // [다시 가져오기]
-ipcMain.handle("studio:column-list", () => columnWriter.list());
+ipcMain.handle("studio:column-list", (_e, limit) => columnWriter.list(Number(limit) || undefined));
 // 인테리어뉴스·리모델링뉴스 시뮬레이션 (유료 전용)
 ipcMain.handle("studio:sim-options", (_e, kind) => simWriter.options(kind));
 ipcMain.handle("studio:sim-estimate", (_e, kind, costBase, design) => simWriter.estimate(kind, costBase, design));
@@ -691,7 +691,8 @@ const analysisForWeb = (r) =>
     vacancyId: r.vacancyId,
     vacancy: r.vacancy,
     failures: r.failures || [],
-    media: (r.media || []).map((m) => ({ kind: m.kind, caption: m.caption, thumb: thumbOf(m.file) })),
+    media: (r.media || []).map((m) => ({ kind: m.kind, caption: m.caption, thumb: thumbOf(m.file), real: m.kind !== "ai" && m.real !== false })),
+    hiddenCount: (r.hidden || []).length, // [×]로 뺀 사진 (되살릴 수 있다)
   };
 // 다른 메뉴에 갔다 와도 이어서 보이게: 저장된 분석 결과를 다시 찍지 않고 그대로 돌려준다
 ipcMain.handle("studio:vacancy-load", (_e, vacancyId) => analysisForWeb(blogWriter.readJson(require("path").join(blogWriter.mediaDir(vacancyId), "analysis.json"))));
@@ -704,6 +705,50 @@ ipcMain.handle("studio:vacancy-captures", (_e, vacancyId) => {
     if (img.getSize().width > 1600) img = img.resize({ width: 1600, quality: "good" });
     return { kind: m.kind, label: LABEL[m.kind] || m.kind, dataUrl: `data:image/jpeg;base64,${img.toJPEG(88).toString("base64")}` };
   });
+});
+/* 분석 사진 정리 (2026-10-28 사장님) — 이 순서·이 사진으로 다음에 쓰는 기사·블로그·SNS 가 사진을 고른다
+   op: { type: "order", order: [옛 번호…] } · { type: "remove", index } (지우지 않고 hidden 으로) · { type: "restore" } ·
+       { type: "ai", prompt, ai } (회원 AI 로 그림 → 끝에 붙임, "AI 생성" 표시)
+   대표(맨 앞)는 실제 사진 — 실제 사진이 있는데 AI 그림이 맨 앞이면 첫 실제 사진을 앞으로 (매물을 AI 그림으로 대신하지 않게) */
+ipcMain.handle("studio:vacancy-media", async (e, vacancyId, op) => {
+  const path = require("path");
+  const file = path.join(blogWriter.mediaDir(vacancyId), "analysis.json");
+  const a = blogWriter.readJson(file);
+  if (!a) throw new Error("공실 분석 자료가 없어요. 먼저 [분석·캡처]를 해 주세요.");
+  a.media = a.media || [];
+  a.hidden = a.hidden || [];
+  const o = op || {};
+  if (o.type === "order") {
+    const ord = (o.order || []).map(Number);
+    if (ord.length !== a.media.length || new Set(ord).size !== ord.length || ord.some((i) => !(i >= 0 && i < a.media.length))) throw new Error("사진 순서를 읽지 못했어요.");
+    a.media = ord.map((i) => a.media[i]);
+  } else if (o.type === "remove") {
+    const [m] = a.media.splice(Number(o.index), 1);
+    if (m) a.hidden.push(m);
+  } else if (o.type === "restore") {
+    a.media.push(...a.hidden);
+    a.hidden = [];
+  } else if (o.type === "ai") {
+    const prompt = String(o.prompt || "").trim();
+    if (!prompt) throw new Error("무엇을 그릴지 적어 주세요.");
+    const send = (t) => { try { e.sender.send("studio:vacancy-progress", t); } catch {} };
+    // 그림 스타일 (2026-10-28 사장님: 블로그 AI 이미지와 같은 스타일 목록) — 영상 편집기 스타일은 화면이 조건을 보내고, 기사용은 확장 조건
+    let style = String(o.stylePrompt || "").slice(0, 1200);
+    if (!style && o.style) { try { style = ((require("./ext-prompt").GW_IMAGE_STYLE || {})[o.style] || {}).prompt || ""; } catch {} }
+    const ask = [prompt, style ? `[화풍·스타일] ${o.styleLabel || ""}\n${style}` : "부동산 매물 소개에 쓸 실사 느낌 사진", "이미지 안에 글자·숫자·로고·사람 얼굴 없이"].join("\n\n");
+    const dataUrl = await require("./video/ai").image(ask, send, { ai: o.ai, ratio: "4:3" });
+    const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
+    if (!m) throw new Error("그림을 받지 못했어요. 다시 해 주세요.");
+    const out = path.join(blogWriter.mediaDir(vacancyId), `ai-${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    fs.writeFileSync(out, Buffer.from(m[2], "base64"));
+    a.media.push({ kind: "ai", file: out, caption: `AI 생성 이미지${o.styleLabel ? `(${o.styleLabel})` : ""} — ${prompt.slice(0, 40)} (실제 매물 사진 아님)`, real: false });
+  } else throw new Error("알 수 없는 작업이에요.");
+  const isReal = (m) => m && m.kind !== "ai" && m.real !== false;
+  const firstReal = a.media.findIndex(isReal);
+  if (firstReal > 0 && !isReal(a.media[0])) a.media.unshift(a.media.splice(firstReal, 1)[0]);
+  fs.writeFileSync(file, JSON.stringify(a, null, 2));
+  try { blogWriter.syncAnalysisMedia(vacancyId); } catch (e) { log.warn(`[사진 맞춤] ${e.message}`); } // 이미 쓴 기사·블로그에도
+  return analysisForWeb(a);
 });
 // [공실 바꾸기] 목록 — 이 PC에서 작업한 공실 (최근에 고친 순). 채널마다 써 둔 글이 있는지도 (2026-10-24 사장님)
 ipcMain.handle("studio:vacancy-list", () => {
@@ -780,17 +825,18 @@ app.whenReady().then(async () => {
   // 저장 위치 — 외장하드가 빠졌는지 · 처음 켤 때 OneDrive/자리 부족이면 옮기기 권하기 (storage-place.js)
   try { await require("./storage-place").startup(); } catch (e) { log.warn(`[저장 위치] ${e.message}`); }
   try { require("./studio-root").ensureAll(); } catch {}
-  try { require("./helper-server").start(); } catch (e) { log.warn(`[도우미] 창구 못 염: ${e.message}`); } // 공실스튜디오 도우미(크롬 확장)와 PC 안에서만 (2026-10-23)
+  try { require("./helper-server").start(); } catch (e) { log.warn(`[도우미] 창구 못 염: ${e.message}`); } // 공실마케팅 도우미(크롬 확장)와 PC 안에서만 (2026-10-23)
   // 회원이 발행한 글 주소 → 서버 홍보현황에 "연결됨" (2026-10-27). 앱 홈은 창이 앞으로 오면 다시 읽는다
-  require("./helper-server").onPublished(async ({ vacancyId, channel, url }) => {
+  //  홈 "내 기사"로 쓴 글은 articleNo — 기사 홍보현황 (2026-10-28)
+  require("./helper-server").onPublished(async ({ vacancyId, articleNo, channel, url }) => {
     const res = await session.defaultSession.fetch(`${BASE_URL}/api/studio/promo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ vacancyId, channel, url }),
+      body: JSON.stringify({ vacancyId, articleNo, channel, url }),
     });
     const data = await res.json().catch(() => ({}));
     if (!data.success) throw new Error(data.error || `HTTP ${res.status}`);
-    mainWindow?.webContents.send("studio:promo-saved", { vacancyId, channel });
+    mainWindow?.webContents.send("studio:promo-saved", { vacancyId, articleNo, channel });
   });
   try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();

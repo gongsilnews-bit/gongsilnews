@@ -962,7 +962,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     };
   };
   const insert = async (s: Sticker = cur) => {
-    if (!b.lib.saveImage) return setErr("공실스튜디오를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
+    if (!b.lib.saveImage) return setErr("공실마케팅를 껐다 켜 주세요 (그래픽 기능을 새로 연결해요)");
     setErr("");
     setBusy(true);
     try {

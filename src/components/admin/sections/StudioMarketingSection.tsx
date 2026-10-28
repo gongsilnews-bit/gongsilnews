@@ -22,6 +22,8 @@ const SimReportSection = lazy(() => import("@/components/admin/studio-sim/SimRep
 
 const CATEGORIES = [
   { id: "report", label: "AI 매물보고서", path: "/marketing/report", lead: "공실 하나로 매물 소개 보고서를 AI가 만듭니다. 손님에게 보내거나 인쇄해 쓰세요." },
+  // 물건홍보지 — 2026-10-22 에 뺐다가 다시 (2026-10-28 사장님: 우리 물건홍보지 보이게). 공실등록 목록 [유리창홍보지]와 같은 도구
+  { id: "flyer", label: "물건홍보지", path: "/marketing/ai-detail", lead: "공실 하나로 사무실 유리창·온라인에 붙일 물건홍보지(전단지)를 AI가 만듭니다." },
   { id: "doc", label: "문서편집", path: "", lead: "워드(.docx)·한글(.hwpx·.hwp) 문서를 열고, 고치고, 그대로 저장합니다. PDF·그림으로도 저장돼요." },
   { id: "interior_sim", label: "인테리어 예측 시뮬레이션", path: "", lead: "실내 사진과 조건을 넣으면 AI 예측 이미지와 예상 견적서가 든 보고서를 만듭니다. 고객에게 보내거나 인쇄해 쓰세요. (유료회원 전용)" },
   { id: "remodel_sim", label: "리모델링 예측 시뮬레이션", path: "", lead: "건물 외관 사진과 조건을 넣으면 AI 예측 이미지와 예상 견적서가 든 보고서를 만듭니다. 고객에게 보내거나 인쇄해 쓰세요. (유료회원 전용)" },
@@ -175,7 +177,7 @@ export default function StudioMarketingSection({ theme, dev = false }: { theme: 
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
       {/* 왼쪽: 2차 카테고리 (뉴스·SNS발행과 같은 모양) */}
       <aside style={{ width: 210, flexShrink: 0, background: theme.cardBg, borderRight: `1px solid ${theme.border}`, padding: "22px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
-        <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>공실마케팅</h2>
+        <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>보고서·홍보지</h2>
         {ai && (
           <button onClick={() => aiBridge()?.openAiConnect()} title="내 AI 연결"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",

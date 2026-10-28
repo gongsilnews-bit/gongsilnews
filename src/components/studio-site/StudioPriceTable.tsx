@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 
 /**
- * 공실스튜디오 금액안내 (/studio/pricing) — 브루 가격 정책(vrew.ai/ko/payment/pricepolicy)과 같은 틀 (2026-10-26 사장님: "똑같이")
+ * 공실마케팅 금액안내 (/marketing/pricing) — 브루 가격 정책(vrew.ai/ko/payment/pricepolicy)과 같은 틀 (2026-10-26 사장님: "똑같이")
  *  큰 제목 → [월 구독 | 연 구독] → 요금제 칸(추천 띠 · 아이콘 · 가격 · 월 환산 · 시작하기 · 기본 제공 · 사용 가능 항목 · 특별한 기능) → 안내 → "모든 플랜에서" 알약 줄
- * 요금제는 두 개만: 공실뉴스부동산(무료) · 공실스튜디오 멤버십(월 3만원 / 1년 36만원 — 연 구독 할인 없음, 할인 표시 안 함)
+ * 요금제는 두 개만: 공실뉴스부동산(무료) · 공실마케팅 멤버십(월 3만원 / 1년 36만원 — 연 구독 할인 없음, 할인 표시 안 함)
  */
 const ACCENT = "#e8890c";
 const SOFT = "#fdf4e7";
@@ -28,6 +28,7 @@ const ic = (d: string) => (
 
 /**
  * 2026-10-26 사장님: Free · Basic · Standard · 법인/기업/단체/기관용 네 칸 — 금액·항목은 "일단 랜덤"(임시).
+ * 2026-10-28 사장님: 월 3만 = Pro(공실 20건) · 월 5만 = Studio(공실 50건, 영상 편집·이미지 편집은 Studio부터) — 화면만(더미), 실제 등급·권한은 아직
  * TEMP_PRICES 가 true 인 동안 화면에 "임시 금액" 표시가 붙는다. 금액을 정하면 아래 값을 고치고 false 로.
  */
 const TEMP_PRICES = true;
@@ -45,33 +46,33 @@ const PLANS: Plan[] = [
     extra: ["중개사 서류 승인 후 이용", "가입비 · 이용료 없음"],
   },
   {
-    key: "basic", name: "Basic",
+    key: "basic", name: "Pro",
     icon: ic("M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18.4 5.6l-2.1 2.1M21 12h-3M8 16a4 4 0 1 1 8 0v3H8z"),
     price: mon(30000),
-    cta: { label: "시작하기", href: "/studio/apply" },
+    cta: { label: "시작하기", href: "/marketing/apply" },
     base: ["공실 20건 등록", "기사 월 4건 등록"],
-    items: ["블로그 · SNS 자동 작성 월 30건", "AI 매물보고서 월 30건", "이미지 편집 템플릿 전체", "영상뉴스 월 4편"],
+    items: ["블로그 · SNS 자동 작성 월 30건", "AI 매물보고서 월 30건", "물건홍보지 · 매물보고서 만들기", "홍보현황 · 링크 관리"],
     extraTitle: "Free의 모든 기능 포함",
-    extra: ["자료실 · 커뮤니티", "이름표 공실스튜디오 로고"],
+    extra: ["자료실 · 커뮤니티", "이름표 공실마케팅 로고"],
   },
   {
-    key: "standard", name: "Standard", tag: "추천",
+    key: "standard", name: "Studio", tag: "추천",
     icon: ic("M4 6h16v12H4zM10 9l5 3-5 3z"),
     price: mon(50000),
-    cta: { label: "시작하기", href: "/studio/apply", solid: true },
+    cta: { label: "시작하기", href: "/marketing/apply", solid: true },
     base: ["공실 50건 등록", "기사 월 10건 등록"],
-    items: ["블로그 · SNS 자동 작성 무제한", "AI 매물보고서 무제한", "영상뉴스 · AI 성우 · 자동 자막 무제한", "이미지 편집 템플릿 전체"],
-    extraTitle: "Basic의 모든 기능 포함",
+    items: ["블로그 · SNS 자동 작성 무제한", "AI 매물보고서 무제한", "영상 편집 (동영상제작) · AI 성우 · 자동 자막", "이미지 편집 · 템플릿 전체"],
+    extraTitle: "Pro의 모든 기능 포함",
     extra: ["인테리어 · 리모델링 AI", "화면캡처 · 녹화 · 강의 녹화"],
   },
   {
     key: "biz", name: "Business", tag: "법인/기업/단체/기관용",
     icon: ic("M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"),
     price: mon(100000),
-    cta: { label: "시작하기", href: "/studio/apply", solid: true },
+    cta: { label: "시작하기", href: "/marketing/apply", solid: true },
     base: ["공실 100건 등록", "기사 월 20건 등록"],
-    items: ["Standard 항목 모두 무제한", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
-    extraTitle: "Standard의 모든 기능 포함",
+    items: ["Studio 항목 모두 무제한", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
+    extraTitle: "Studio의 모든 기능 포함",
     extra: ["전담 상담", "세금계산서 발행"],
   },
 ];
@@ -209,7 +210,7 @@ export default function StudioPriceTable() {
             return (
               <div key={p.key + "items"} style={{ padding: "26px 24px", textAlign: "left", background: hl ? SOFT : "#fff", borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${hl ? ACCENT : LINE}`, borderRight: hl || i === cols - 1 ? `1px solid ${hl ? ACCENT : LINE}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 4 }}>사용 가능 항목</div>
-                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "가입만 하면 바로 써요." : "공실스튜디오 앱에서 써요."}</div>
+                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "가입만 하면 바로 써요." : "공실마케팅 앱에서 써요."}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {p.items.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span>{info}</div>)}
                 </div>

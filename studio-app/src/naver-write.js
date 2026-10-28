@@ -106,6 +106,7 @@ async function fillNaver({ baseUrl, vacancyId, design, via = "" }, onProgress = 
   if (isColumn(vacancyId)) return fillColumn({ vacancyId, design, via }, onProgress);
   if (isSim(vacancyId)) return fillSim({ baseUrl, vacancyId, design, via }, onProgress);
   const dir = mediaDir(vacancyId);
+  try { require("./blog-writer").syncAnalysisMedia(vacancyId); } catch {} // 분석에서 새로 넣은 사진도 블로그에
   const analysisFile = path.join(dir, "analysis.json");
   const blogFile = path.join(dir, "blog.json");
   if (!fs.existsSync(analysisFile)) throw new Error("먼저 [분석·캡처]를 해 주세요.");
@@ -202,19 +203,20 @@ async function fillEditor({ title, blocks, tags }, onProgress) {
   return res;
 }
 
-/* ── 평소 크롬 + 공실스튜디오 도우미 확장 (2026-10-23 사장님: 전용 크롬 대신) ──
+/* ── 평소 크롬 + 공실마케팅 도우미 확장 (2026-10-23 사장님: 전용 크롬 대신) ──
    일감을 PC 안 창구에 올리고 평소 브라우저에 새 글쓰기를 연다 → 도우미가 받아 가서 채운다.
    30초 안에 안 받아 가면(확장이 없거나 꺼짐) HELPER_NONE — 화면이 복사·폴더 방식을 띄운다 */
 async function fillByHelper({ title, blocks, tags, vacancyId }, onProgress) {
   const helper = require("./helper-server");
   // 공실 글이면 발행 뒤 글 주소를 홍보현황에 (2026-10-27) — 칼럼·시뮬레이션은 공실이 아니라 빼고
   const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(vacancyId || ""));
-  const id = helper.addJob("naver", { title, blocks, tags }, isVacancy ? { vacancyId, channel: "blog" } : null);
+  const articleNo = isVacancy ? "" : require("./column-writer").articleOf(vacancyId); // 홈 "내 기사"로 쓴 글 (2026-10-28)
+  const id = helper.addJob("naver", { title, blocks, tags }, isVacancy ? { vacancyId, channel: "blog" } : articleNo ? { articleNo, channel: "blog" } : null);
   void shell.openExternal(naverBlog.WRITE_URL);
-  onProgress("평소 크롬에 네이버 블로그 글쓰기를 열었어요. 공실스튜디오 도우미가 채우기를 기다리는 중…");
+  onProgress("평소 크롬에 네이버 블로그 글쓰기를 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…");
   if (!(await helper.wait(id, "taken", 45000))) {
     helper.cancel(id);
-    throw new Error("HELPER_NONE: 공실스튜디오 도우미(크롬 확장)가 응답하지 않았어요. 아래 복사·사진 폴더로 직접 붙여 넣거나, 도우미를 설치해 주세요.");
+    throw new Error("HELPER_NONE: 공실마케팅 도우미(크롬 확장)가 응답하지 않았어요. 아래 복사·사진 폴더로 직접 붙여 넣거나, 도우미를 설치해 주세요.");
   }
   onProgress(`도우미가 제목·본문·사진 ${blocks.filter((b) => b.type === "image").length}장을 채우는 중… (크롬 창을 닫지 마세요)`);
   const done = await helper.wait(id, "done", 240000);

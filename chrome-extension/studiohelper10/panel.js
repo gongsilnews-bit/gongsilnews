@@ -1,4 +1,4 @@
-/* 공실스튜디오 도우미 상자 — SNS 글쓰기 화면 오른쪽 아래에 뜬다 (사이트 모양과 섞이지 않게 shadow DOM)
+/* 공실마케팅 도우미 상자 — SNS 글쓰기 화면 오른쪽 아래에 뜬다 (사이트 모양과 섞이지 않게 shadow DOM)
    자동으로 못 한 단계는 이 상자의 단추로 회원이 이어서 한다: [글 넣기] [글 복사] [사진 넣기] [다시 채우기] */
 (() => {
   "use strict";
@@ -38,7 +38,7 @@
       <div class="lab"><span class="pl"></span><button class="b ap">사진 넣기</button></div><div class="ph"></div>
       <div class="row"><button class="b re">처음부터 다시 채우기</button></div>
       <div class="note">[공유하기]·[게시]는 도우미가 누르지 않아요. 확인하고 직접 눌러 주세요.</div></div></div>`;
-    root.querySelector(".hd b").textContent = `공실스튜디오 도우미 · ${opts.label} · v${chrome.runtime.getManifest().version}`; // 판 번호 — ↻로 새 판이 들어갔는지 보이게
+    root.querySelector(".hd b").textContent = `공실마케팅 도우미 · ${opts.label} · v${chrome.runtime.getManifest().version}`; // 판 번호 — ↻로 새 판이 들어갔는지 보이게
     root.querySelector(".cl").onclick = () => host.remove();
     // 끌어서 옮기기 · 접기 — 자리는 이 사이트에 기억 (2026-10-23 사장님)
     const box = root.querySelector(".box");

@@ -307,7 +307,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                 } else if (member.role === 'USER' && memberBiz) {
                   displayRole = '비즈니스(신청)';
                 }
-                // 부동산회원은 공실스튜디오 이용기간 하나로 가른다 (2026-10-26)
+                // 부동산회원은 공실마케팅 이용기간 하나로 가른다 (2026-10-26)
                 if (member.role === 'REALTOR' && isStudioMember(member)) displayRole = '공실뉴스부동산+Studio';
                 if (member.role === 'BIZ' && member.plan_type === 'biz_premium') {
                   displayRole = '비즈니스';
@@ -739,7 +739,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         </div>
       </div>
 
-      {/* 공실뉴스부동산 (무료) — 공실스튜디오 이용기간 없음 */}
+      {/* 공실뉴스부동산 (무료) — 공실마케팅 이용기간 없음 */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
           <span style={labelStyle}>공실뉴스부동산 (무료)</span>
@@ -752,7 +752,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         </div>
       </div>
 
-      {/* 공실뉴스부동산 + Studio — 공실스튜디오 이용기간 안 (2026-10-26) */}
+      {/* 공실뉴스부동산 + Studio — 공실마케팅 이용기간 안 (2026-10-26) */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
           <span style={labelStyle}>공실뉴스부동산 + Studio</span>

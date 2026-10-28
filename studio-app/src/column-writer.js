@@ -390,7 +390,9 @@ function list(limit = 8) {
         const data = readJson(sourceFile(id));
         if (!data) return null;
         const article = readJson(path.join(mediaDir(id), "article.json"));
-        return { ...forWeb(data), articleTitle: (article && article.title) || "" };
+        // worked — 기사·블로그·SNS·유튜브 중 써 둔 글이 있다 (홈 "내 기사"가 같은 기사면 이 칼럼을 다시 연다, 2026-10-28)
+        const worked = ["article.json", "blog.json", "sns.json", "youtube.json"].some((f) => fs.existsSync(path.join(mediaDir(id), f)));
+        return { ...forWeb(data), articleTitle: (article && article.title) || "", worked };
       } catch {
         return null;
       }
@@ -448,4 +450,15 @@ async function addCover(baseUrl, id, draft, onProgress = () => {}) {
   return draft;
 }
 
-module.exports = { isColumn, fetchNews, openNews, openUrl, grabNews, create, get, refetch, list, readSource, articleOptions, writeArticle, addCover };
+/* 홈 "내 기사"에서 만든 칼럼이면 그 공실뉴스 기사 번호 — 발행 글 주소를 기사 홍보현황에 (2026-10-28) */
+function articleOf(id) {
+  if (!isColumn(id)) return "";
+  try {
+    const n = (readJson(sourceFile(id)) || {}).source?.news;
+    if (!n || n.publisher !== "공실뉴스") return "";
+    const m = /\/news\/(\d+)(?:[/?#]|$)/.exec(String(n.url || ""));
+    return m ? m[1] : "";
+  } catch { return ""; }
+}
+
+module.exports = { isColumn, articleOf, fetchNews, openNews, openUrl, grabNews, create, get, refetch, list, readSource, articleOptions, writeArticle, addCover };

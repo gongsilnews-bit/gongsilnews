@@ -67,7 +67,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
   const [fav, setFav] = useState(false);
   const [rec, setRec] = useState(false); // [녹화] — 녹화한 영상만 (2026-10-20 사장님)
-  const [aiOnly, setAiOnly] = useState(false); // [AI 그림] — 만든 AI 그림만 (문서공실스튜디오AI그림, 2026-10-21 사장님)
+  const [aiOnly, setAiOnly] = useState(false); // [AI 그림] — 만든 AI 그림만 (문서공실마케팅AI그림, 2026-10-21 사장님)
   // 고르기 — 여러 개 골라 목록에서 빼기 (PC 파일은 그대로, 다시 불러오면 다시 보인다)
   const [selMode, setSelMode] = useState(false);
   const [chk, setChk] = useState<string[]>([]);
@@ -658,7 +658,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
                   <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} placeholder="파일 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
                   <Btn small onClick={load}><Icon name="search" size={16} /></Btn>
                 </div>
-                <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>{tab === "fav" ? "★ 를 누른 사진·영상이 모여요 (내 자료·오픈자료·AI 사진)." : "공실스튜디오로 만든 사진·영상과 불러온 파일이 자동으로 모여요."}</div>
+                <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>{tab === "fav" ? "★ 를 누른 사진·영상이 모여요 (내 자료·오픈자료·AI 사진)." : "공실마케팅로 만든 사진·영상과 불러온 파일이 자동으로 모여요."}</div>
               </>
             )}
           </div>

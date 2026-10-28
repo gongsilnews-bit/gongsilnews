@@ -65,8 +65,8 @@ export function getLevelName(level: number): string {
     case 0: return "비회원";
     case 1: return "일반회원";
     case 2: return "공실뉴스부동산 회원";
-    case 3: return "공실스튜디오 이용 회원"; // 예전 공실스터디부동산 자리 — 2026-10-26 합침
-    case 4: return "공실스튜디오 이용 회원";
+    case 3: return "공실마케팅 이용 회원"; // 예전 공실스터디부동산 자리 — 2026-10-26 합침
+    case 4: return "공실마케팅 이용 회원";
     case 5: return "최고관리자";
     default: return "회원";
   }
@@ -89,7 +89,7 @@ export function getPlanLabel(member: {
 
   if (role === 'REALTOR' || role === '부동산회원') {
     const plan = member?.plan_type;
-    // 2026-10-26 사장님: 승인된 중개사는 모두 공실뉴스부동산(무료). 유료는 등급이 아니라 공실스튜디오 이용권 — 이름표 옆 Studio 마크 (isStudioMember)
+    // 2026-10-26 사장님: 승인된 중개사는 모두 공실뉴스부동산(무료). 유료는 등급이 아니라 공실마케팅 이용권 — 이름표 옆 Studio 마크 (isStudioMember)
     void plan;
     return '공실뉴스부동산';
   }
@@ -108,7 +108,7 @@ export function isNewsAdminButton(
 }
 
 /**
- * 공실스튜디오 멤버십 이용 중인가 — 이름표 옆 Studio 마크, 유료 기능의 기준 (2026-10-26 사장님, docs/2026-10-26_studio_membership_plan.md)
+ * 공실마케팅 멤버십 이용 중인가 — 이름표 옆 Studio 마크, 유료 기능의 기준 (2026-10-26 사장님, docs/2026-10-26_studio_membership_plan.md)
  * 이용권은 등급과 따로 members.studio_end_date 에 저장한다. 이 기간 하나로만 가른다 (예전 유료 등급 값은 안 본다, 2026-10-26).
  */
 export function isStudioMember(member: {

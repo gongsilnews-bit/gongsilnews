@@ -59,7 +59,8 @@ const NEWS_PURPOSES: { id: NewsPurpose; name: string; chars?: number; ratio?: Ra
   { id: "etc", name: "기타", hint: "[대본 요청]에 적은 대로", prompt: "" },
 ];
 type News = { title: string; publisher: string; publishedAt: string; url: string; body: string };
-type ColumnBridge = { fetchNews: (url: string) => Promise<News>; openNews: () => Promise<unknown>; openUrl?: (url: string) => Promise<unknown>; grabNews: () => Promise<News> };
+type ColumnBridge = { fetchNews: (url: string) => Promise<News>; openNews: () => Promise<unknown>; openUrl?: (url: string) => Promise<unknown>; grabNews: () => Promise<News>;
+  get?: (id: string) => Promise<{ source?: { mode?: string; news?: News } } | null> };
 /* 보도자료 사이트 바로가기 (2026-10-20 사장님) — 주소는 열어서 확인한 것만 */
 const PRESS_SITES: { group: string; items: { name: string; url: string }[] }[] = [
   { group: "정부", items: [
@@ -99,7 +100,7 @@ const siteName = (url: string) => {
 const columnBridge = () => (window as unknown as { gongsilStudio?: { column?: ColumnBridge } }).gongsilStudio?.column;
 
 export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }: { onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void; /** 작성 중 초안(.gss)을 열었으면 — 그 단계에서 이어서 */ resume?: Project;
-  /** 뉴스·SNS발행 › 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 그 대본으로 시작 (2026-10-23 사장님) */ seed?: { vacancyId: string; script: string } }) {
+  /** 뉴스·SNS발행 › 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 그 대본으로 시작 (2026-10-23 사장님) · col-… 이면 뉴스 기사로 */ seed?: { vacancyId: string; script: string } }) {
   const b = videoBridge()!;
   const writer = useStudioWriter();
   const imager = useStudioImager();
@@ -171,7 +172,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     const first = (script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim()).find(Boolean) || "").replace(/[.!?。]+$/, "");
     const short = first.length > 24 ? first.slice(0, 24).replace(/\s+\S*$/, "") : first; // 말줄임 없이 낱말 끝에서
     setAiTitleBusy(true);
-    void aiTitle(two).catch(() => "").then((t) => {
+    void scriptTitle(two).catch(() => "").then((t) => {
       setDeco((d) => {
         if (d.titleText.trim()) return d; // 그사이 직접 썼으면 그대로
         if (t && two) { const [a2, b2] = t.split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean); return { ...d, titleText: (a2 || short).slice(0, 20), title2: (b2 || "").slice(0, 24) }; }
@@ -189,7 +190,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     const lines = script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim().replace(/[.!?。]+$/, "")).filter(Boolean);
     const cut = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
     setAiTitleBusy(true);
-    void aiTitle(true).catch(() => "").then((t) => {
+    void scriptTitle(true).catch(() => "").then((t) => {
       const [a2, b2] = (t || "").split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean);
       setDeco((d) => {
         if ((d.title2 || "").trim()) return d; // 그사이 직접 썼으면 그대로
@@ -200,6 +201,15 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     }).finally(() => setAiTitleBusy(false));
   }, [step, deco.title]); // eslint-disable-line react-hooks/exhaustive-deps
   /** 대본으로 영상 제목 — 회원 AI (이미지 편집 [AI 문구 바꾸기] 통로) */
+  /** 대본 첫 문단 앞부분으로 제목 (AI 안 씀, 2026-10-28 사장님) — 한 줄은 첫 문장을 24자 안쪽 낱말 끝까지,
+   *  2단은 첫 문장(14자 안쪽) / 둘째 문장(24자 안쪽). 숫자·가격도 대본 그대로 */
+  const scriptTitle = async (two = false): Promise<string> => {
+    const para = (script.split(/\n\s*\n/).map((x) => x.trim()).find(Boolean) || "");
+    const sents = para.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim().replace(/[.!?。]+$/, "")).filter(Boolean);
+    const cut = (t: string, n: number) => (t.length > n ? t.slice(0, n).replace(/\s+\S*$/, "") || t.slice(0, n) : t); // 말줄임 없이 낱말 끝에서
+    if (two) return [cut(sents[0] || "", 14), cut(sents[1] || "", 24)].filter(Boolean).join("\n");
+    return cut(sents[0] || "", 24);
+  };
   const aiTitle = async (two = false): Promise<string> => {
     const pb = (window as unknown as { gongsilStudio?: { photo?: { aiText?: (o: { text: string; request: string; ai?: unknown }) => Promise<{ text: string }> } } }).gongsilStudio?.photo;
     if (!pb?.aiText || !script.trim()) return "";
@@ -362,6 +372,19 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   // 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 대본 칸에 그 대본 (오른쪽 칸에서 바로 고쳐 쓴다)
   useEffect(() => {
     if (!seed?.vacancyId) return;
+    // 뉴스칼럼(홈 "내 기사" 포함)에서 넘어온 대본 — 공실이 아니라 뉴스 기사로 (2026-10-28)
+    //  공실뉴스 기사면 그 기사(번호)를 불러오고, 남의 뉴스면 칼럼에 담긴 뉴스를 그대로
+    if (/^col-/.test(seed.vacancyId)) {
+      setSrc("news");
+      if (seed.script.trim()) setScript(seed.script);
+      columnBridge()?.get?.(seed.vacancyId).then((c) => {
+        const n = c?.source?.news;
+        const m = /\/news\/(\d+)(?:[/?#]|$)/.exec(String(n?.url || ""));
+        if (n?.publisher === "공실뉴스" && m) void takeNews("article", m[1]);
+        else if (n) { setNews(n); if (!topic.trim()) setTopic(n.title); }
+      }).catch(() => {});
+      return;
+    }
     setSrc("vacancy");
     if (seed.script.trim()) setScript(seed.script);
     void chooseVac(seed.vacancyId);
@@ -407,7 +430,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         n = r.data;
       } else {
         const c = columnBridge();
-        if (!c) throw new Error("네이버 뉴스 가져오기는 공실스튜디오 앱에서 돼요.");
+        if (!c) throw new Error("네이버 뉴스 가져오기는 공실마케팅 앱에서 돼요.");
         n = how === "grab" ? await c.grabNews() : await c.fetchNews(key);
         // 기관 이름이 주소(fsc.go.kr)로만 왔거나 제목이 "상세화면 - 보도자료 - …" 같은 메뉴 줄이면 다듬는다
         const nm = siteName(n.url);
@@ -537,7 +560,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         } else if (e.kind === "url") {
           await step(`에피소드 ${i + 1} · 뉴스 기사를 읽는 중…`);
           const c = columnBridge();
-          if (!c) throw new Error("뉴스 주소 가져오기는 공실스튜디오 앱에서 돼요.");
+          if (!c) throw new Error("뉴스 주소 가져오기는 공실마케팅 앱에서 돼요.");
           const n = await c.fetchNews(e.ref.trim());
           const pub = n.publisher || siteName(n.url) || "원문 기사";
           if (b.capturePage && n.url && e.capRef !== e.ref) {
@@ -687,7 +710,9 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         p.method = "text";
         delete (p as unknown as { draft?: unknown }).draft;
       } else {
-        p = await b.project.create({ method: "text", ratio, vacancyId: src === "vacancy" ? vacId : "", name: want, folder: folder || undefined });
+        // 공실이면 공실 id · 뉴스칼럼(홈 "내 기사")에서 넘어온 영상이면 그 칼럼 번호 (게시한 주소를 기사 홍보현황에, 2026-10-28)
+        const link = src === "vacancy" ? vacId : src === "news" && seed && /^col-/.test(seed.vacancyId) ? seed.vacancyId : "";
+        p = await b.project.create({ method: "text", ratio, vacancyId: link, name: want, folder: folder || undefined });
         made = p;
       }
       // 영상 종류 · 이 영상 자료 — 편집 화면 [AI 편집]이 처음부터 알고 쓴다 (2026-10-20 사장님)
@@ -778,13 +803,17 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       const footIds: Record<string, string> = {};
       const capList = useCaps ? (src === "vacancy" ? vacInfo?.shots || [] : src === "news" ? caps : []) : [];
       const footAll = [...(footOn ? foot : []), ...capList];
+      const reqOf0 = clips.some((c) => (paraReq[paraOf.get(c.id) ?? -1] || "").trim()); // 문단별 화면 요청이 있으면 화면 구성은 따로 (요청을 붙여 묻는다)
       if (!visualLater && footAll.length && b.ai.footage && !halt()) {
         setGen({ title: `${writer}가 내 영상에서 문장마다 장면을 고르는 중…`, detail: "장면 모음을 만들어 AI 에 보내요 (원본 영상은 보내지 않아요)", frac: 0.1 });
         try {
           const ok = footAll.filter((f) => f.path && (f.kind === "video" || f.kind === "image"));
-          const r = await b.ai.footage(clips.map((c) => c.text), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })), { ai: aiUse });
+          // 화면 구성(무료 자료 검색어)도 한 번에 — 붙여 넣기를 한 번으로 (2026-10-28 사장님). 앱 0.1.14 는 hints 를 몰라 그대로 두 번
+          const wantHints = (useStock || useAi) && !reqOf0;
+          const r = await b.ai.footage(clips.map((c) => c.text), ok.map((f) => ({ path: f.path!, kind: f.kind, duration: f.duration })), { ai: aiUse, hints: wantHints }) as { v: number; t: number; hint?: { desc: string; keywords: string; kind: string } }[];
           for (let i = 0; i < clips.length; i++) {
             const m = r[i];
+            if (m?.hint?.keywords && !clips[i].hint?.keywords) clips[i].hint = m.hint;
             if (!m || m.v < 0 || !ok[m.v]) continue;
             const f = ok[m.v];
             if (!footIds[f.id]) footIds[f.id] = await addAsset(f);
@@ -935,7 +964,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         }
         const tS = deco.titleOv ? undefined : TITLE_STYLES.find((x) => x.id === deco.title);
         let tText = deco.titleText.trim();
-        if (tS && !tS.two && !tText) { setGen({ title: "AI 가 제목을 쓰는 중…", frac: 0.99 }); tText = await aiTitle().catch(() => ""); }
+        if (tS && !tS.two && !tText) tText = await scriptTitle().catch(() => ""); // 대본 첫 문단 앞부분 (AI 안 씀)
         if (tS?.newsBar && tText && first && last && b.lib.saveImage) {
           // 뉴스 자막 바 — 아래쪽 (왼쪽 네모 = 제목 로고, 없으면 NEWS)
           const lg = deco.titleLogo ? await new Promise<HTMLImageElement | null>((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = deco.titleLogo!; }) : null;
@@ -959,7 +988,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           let l1 = deco.titleText.trim(), l2 = (deco.title2 || "").trim();
           if (tS.subnews) { l1 = l1 || "자막뉴스"; }
           else if (!l1 && !l2) {
-            const two = await aiTitle(true).catch(() => "");
+            const two = await scriptTitle(true).catch(() => "");
             const [a2, b2] = two.split(/\n|\s*[/|]\s*/).map((x) => x.trim()).filter(Boolean);
             l1 = a2 || ""; l2 = b2 || "";
           }
@@ -1470,7 +1499,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             {writing && script.trim() && <div style={{ fontSize: 13.5, color: C.sub, marginTop: 6 }}>{writing}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 14, marginTop: 8, fontSize: 14, color: C.sub }}>
               {b.saveText && script.trim() && (
-                <Btn small onClick={async () => { try { const f = await b.saveText!((projName ?? defaultName).trim() || "대본", script); setTextSaved(f || ""); if (f) setErr(""); } catch (e) { setErr(errText(e)); } }} style={{ marginRight: "auto" }} title="저장할 폴더와 파일 이름을 고르고 .txt 로 저장 (처음은 문서 › 공실스튜디오 › 대본)">
+                <Btn small onClick={async () => { try { const f = await b.saveText!((projName ?? defaultName).trim() || "대본", script); setTextSaved(f || ""); if (f) setErr(""); } catch (e) { setErr(errText(e)); } }} style={{ marginRight: "auto" }} title="저장할 폴더와 파일 이름을 고르고 .txt 로 저장 (처음은 문서 › 공실마케팅 › 대본)">
                   <Icon name="file" size={15} />텍스트로 내려받기
                 </Btn>
               )}
@@ -1843,7 +1872,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             <div style={{ fontWeight: 800, marginBottom: 6 }}>영상 초안 만들기를 시작할까요?</div>
             <div style={{ color: C.sub, fontSize: 15 }}>
               클립 {lineCount}개 · {voiceOn ? findVoice(voiceId)?.name : "목소리 없음"}
-              {visualLater ? " · 화면은 나중에" : <>{footOn && foot.length ? ` · 내 영상 ${foot.length}개 (AI가 골라요)` : ""}{photoCount ? ` · 공실 사진 ${photoCount}장` : ""}{useStock ? " · 무료 영상" : ""}{useAi ? ` · AI 그림(${imager})` : ""}</>}
+              {visualLater ? " · 화면은 나중에" : <>{footOn && foot.length ? ` · 내 영상 ${foot.length}개 (AI가 골라요)` : ""}{photoCount ? (() => { const ai = (vacInfo?.photos || []).filter((p) => /(^|[\\/])ai-\d+/.test(p.name || p.path || "")).length; return ` · 공실 사진 ${photoCount - ai}장${ai ? ` · AI 사진 ${ai}장` : ""}`; })() : ""}{src === "vacancy" && vacInfo?.shots?.length ? ` · 캡처 ${vacInfo.shots.length}장 (문장에 맞춰 AI가 골라요)` : ""}{useStock ? " · 무료 영상" : ""}{useAi ? ` · AI 그림(${imager})` : ""}</>}
               <br />예상 {visualLater ? "1분 안팎" : useAi ? "5~10분" : lineCount > 20 ? "2~4분" : "1~2분"}
             </div>
           </div>

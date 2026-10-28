@@ -3,12 +3,12 @@ import { trialMonth, type ExtensionMember } from "@/utils/extensionMember";
 import { isAdminRole } from "@/utils/permissionCheck";
 
 /**
- * 공실스튜디오 이용 횟수 (2026-10-15 회의 결정)
+ * 공실마케팅 이용 횟수 (2026-10-15 회의 결정)
  *
  * 블로그(SNS뉴스발행) 1주일 기본 횟수 — 등급별 (2026-10-26 사장님: 한 달 → 1주일, 한국 시간 월요일 0시에 새로):
- *   일반회원 0 · 공실뉴스부동산(무료) 3 · 공실스튜디오 이용 중·비즈니스회원 무제한 · 최고관리자 무제한
+ *   일반회원 0 · 공실뉴스부동산(무료) 3 · 공실마케팅 이용 중·비즈니스회원 무제한 · 최고관리자 무제한
  * 최고관리자가 회원마다 정할 수 있다: members.studio_blog_limit (NULL=등급 기본, -1=무제한, n=1주일 n회)
- * 화면 글에 "무료 체험"이라는 말은 쓰지 않는다 — "1주일에 3번 사용할 수 있습니다" / "공실스튜디오에서 무제한으로 사용하실 수 있습니다".
+ * 화면 글에 "무료 체험"이라는 말은 쓰지 않는다 — "1주일에 3번 사용할 수 있습니다" / "공실마케팅에서 무제한으로 사용하실 수 있습니다".
  *
  * - 1회 = 이번 주 공실 하나. 같은 공실의 다시 쓰기·수정·네이버 채우기는 더 깎지 않는다.
  * - 크롬 확장 블로그 체험과 같은 기록(extension_trial_usage, feature 'blog')을 함께 센다.
@@ -147,7 +147,7 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
     return { ok: false, reason: `${name} 쓰기는 공실뉴스부동산(중개사) 회원 기능입니다. 공실뉴스부동산 회원은 1주일에 3번 사용할 수 있습니다.`, usage };
   }
   if (usage.monthRemaining !== null && usage.monthRemaining <= 0) {
-    return { ok: false, reason: `이번 주 ${name} ${usage.monthLimit}번을 모두 사용했습니다. 공실스튜디오에서 무제한으로 사용하실 수 있습니다.`, usage };
+    return { ok: false, reason: `이번 주 ${name} ${usage.monthLimit}번을 모두 사용했습니다. 공실마케팅에서 무제한으로 사용하실 수 있습니다.`, usage };
   }
   if (usage.dailyLimit !== null && usage.todayUsed >= usage.dailyLimit) {
     return { ok: false, reason: `계정 보호를 위해 ${name}는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };

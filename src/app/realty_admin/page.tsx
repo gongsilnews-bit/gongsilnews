@@ -7,6 +7,7 @@ import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm, IconImage } from "@/components/admin/sections/AdminIcons";
 import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
+import StudioHistoryNav from "@/components/admin/StudioHistoryNav";
 import { FACTORY_LAYOUT, normalizeLayout, menuItem, MenuLayoutEditor, type MenuLayout } from "@/components/admin/realtyMenu";
 import { getRealtyMenu, saveMyRealtyMenu } from "@/app/actions/realtyMenu";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
@@ -20,7 +21,7 @@ import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
 
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
-const StudioHomeSection = lazy(() => import("@/components/admin/sections/StudioHomeSection")); // 공실스튜디오 첫 화면 (2026-10-27)
+const StudioHomeSection = lazy(() => import("@/components/admin/sections/StudioHomeSection")); // 공실마케팅 첫 화면 (2026-10-27)
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 const MemberArticleAdSection = lazy(() => import("@/components/admin/sections/MemberArticleAdSection"));
@@ -43,27 +44,27 @@ const REALTY_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
-  // 광고관리 · 고객관리는 공실스튜디오 멤버 기능 — 스튜디오 메뉴에만 (2026-10-26 사장님)
+  // 광고관리 · 고객관리는 공실마케팅 멤버 기능 — 스튜디오 메뉴에만 (2026-10-26 사장님)
   // 부동산특강은 아직 안 쓴다 (2026-10-26 사장님) — siteFlags SHOW_STUDY 를 켜면 다시 보인다
   ...(SHOW_STUDY ? [{ key: "study", label: "특강관리", icon: <IconStudy /> }] : []),
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "homepage", label: "물건접수홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
-  // 공실스튜디오 소개 메뉴는 뺐다 (2026-10-26 사장님) — 소개는 위쪽 [공실스튜디오] 버튼 → /studio
+  // 공실마케팅 소개 메뉴는 뺐다 (2026-10-26 사장님) — 소개는 위쪽 [공실마케팅] 버튼 → /studio
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
 
-/* ── 공실스튜디오 텍스트 메뉴 ──
+/* ── 공실마케팅 텍스트 메뉴 ──
    업무 메뉴 6개만 위에 두고 나머지는 [더보기]에 접는다.
    2026-10-15 앱에서 먼저 써 보고 웹에도 켰다. 예전 아이콘 메뉴로 돌리려면 STUDIO_MENU_ON_WEB 을 false 로.
-   2026-10-26 사장님: 웹은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만) — 지금 모양은 공실스튜디오 앱에서만 */
+   2026-10-26 사장님: 웹은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만) — 지금 모양은 공실마케팅 앱에서만 */
 const STUDIO_MENU_ON_WEB = false;
 const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "홈", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
   { key: "article", label: "기사등록", icon: <IconArticle /> },
-  { key: "marketing", label: "공실마케팅", icon: <IconSend /> },
+  { key: "marketing", label: "보고서·홍보지", icon: <IconSend /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
   { key: "photo", label: "이미지제작", icon: <IconImage /> },
@@ -154,7 +155,7 @@ function RealtyAdminContent() {
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [planType, setPlanType] = useState<string>("free");
   const [planEndDate, setPlanEndDate] = useState<string | null>(null);
-  const [studioEndDate, setStudioEndDate] = useState<string | null>(null); // 공실스튜디오 이용 기간 (2026-10-26)
+  const [studioEndDate, setStudioEndDate] = useState<string | null>(null); // 공실마케팅 이용 기간 (2026-10-26)
   const [userRole, setUserRole] = useState<string>("");
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const studioApp = useStudioApp();
@@ -185,7 +186,7 @@ function RealtyAdminContent() {
     setMenuLayout(layout ? normalizeLayout(layout, defaultLayout) : defaultLayout);
     setMenuDraft(null);
   };
-  // 2026-10-26 사장님: 웹에서도 공실스튜디오 이용 중(Studio 마크)·비즈니스(기간 안)·최고관리자는 바뀐 화면, 공실뉴스부동산(무료)은 예전 아이콘 메뉴
+  // 2026-10-26 사장님: 웹에서도 공실마케팅 이용 중(Studio 마크)·비즈니스(기간 안)·최고관리자는 바뀐 화면, 공실뉴스부동산(무료)은 예전 아이콘 메뉴
   const paidOnWeb = (() => {
     if (isAdminRole(userRole)) return true;
     if (isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })) return true;
@@ -273,8 +274,8 @@ function RealtyAdminContent() {
         return;
       }
 
-      // 🔐 최고관리자는 /admin으로 리다이렉트 — 단 공실스튜디오 앱 안에서는 그대로 두고 모든 메뉴를 쓴다 (2026-10-23 사장님)
-      const inStudioApp = /gongsil-studio|GongsilStudio|공실스튜디오|Electron\//i.test(navigator.userAgent);
+      // 🔐 최고관리자는 /admin으로 리다이렉트 — 단 공실마케팅 앱 안에서는 그대로 두고 모든 메뉴를 쓴다 (2026-10-23 사장님)
+      const inStudioApp = /gongsil-studio|GongsilStudio|공실마케팅|Electron\//i.test(navigator.userAgent);
       if (isAdminRole(member.role) && !inStudioApp) {
         window.location.href = "/admin";
         return;
@@ -429,6 +430,9 @@ function RealtyAdminContent() {
       {/* ===== 우측 메인 영역 ===== */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
         <header data-admin-head style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5, ...(railGone ? { display: "none" } : {}) /* 왼쪽 메뉴를 완전히 숨기면 위 머리줄도 함께 (2026-10-24 사장님) */ }}>
+          {/* 뒤로·앞으로 (2026-10-28 사장님 — 앱엔 뒤로가기가 없다) + 이름·등급 */}
+          <div style={{ display: "flex", alignItems: "center", minWidth: 0, flexShrink: 1 }}>
+          {useStudioMenu && <StudioHistoryNav onHome={() => selectMenu("dashboard")} atHome={activeMenu === "dashboard" && !searchParams.get("action")} />}
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
             onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}
@@ -444,7 +448,7 @@ function RealtyAdminContent() {
                * 언제 끝나는지 상단에서 알 수 없었다.
                */
               (() => {
-                // 부동산회원은 공실스튜디오 이용기간 하나로 (2026-10-26) — 끝나는 날도 그 기간
+                // 부동산회원은 공실마케팅 이용기간 하나로 (2026-10-26) — 끝나는 날도 그 기간
                 const studioOnTag = isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
                 const paid = userRole === 'BIZ' || (userRole === 'REALTOR' && studioOnTag);
                 const endDate = userRole === 'REALTOR' ? studioEndDate : planEndDate;
@@ -474,6 +478,7 @@ function RealtyAdminContent() {
             {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 서류 검토중</span>}
             {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
             {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
+          </div>
           </div>
           {memberId && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>

@@ -31,7 +31,7 @@ const ME = { wav: path.join(P.voices, "me.wav"), txt: path.join(P.voices, "me.tx
 const SAMPLE_TEXT = "서울 강남구 논현동에 새 공실이 나왔습니다.";
 
 // 읽을 문장 — [문장 읽고 녹음] 화면과 같은 글 (약 10초)
-const READ_TEXT = "안녕하세요. 공실스튜디오에서 제 목소리로 성우를 만들고 있습니다. 좋은 매물을 찾고 계신다면 언제든 편하게 연락 주세요.";
+const READ_TEXT = "안녕하세요. 공실마케팅에서 제 목소리로 성우를 만들고 있습니다. 좋은 매물을 찾고 계신다면 언제든 편하게 연락 주세요.";
 
 const uvEnv = () => ({
   ...process.env,

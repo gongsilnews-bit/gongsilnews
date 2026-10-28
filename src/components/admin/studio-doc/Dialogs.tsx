@@ -741,7 +741,7 @@ function AiDlg({ x, close, arg, extra }: P) {
     else ed.chain().focus().insertContentAt(to, html).run();
     close();
   };
-  if (!x.isApp) return <Dialog title={m.title} onClose={close} width={420} foot={btn("닫기", close)}><p>AI 는 공실스튜디오 앱에서 내 AI 를 연결하면 쓸 수 있어요.</p></Dialog>;
+  if (!x.isApp) return <Dialog title={m.title} onClose={close} width={420} foot={btn("닫기", close)}><p>AI 는 공실마케팅 앱에서 내 AI 를 연결하면 쓸 수 있어요.</p></Dialog>;
   const noText = m.needText && !text.trim();
   return (
     <Dialog title={m.title} onClose={close} width={600} foot={out ? <>{mode !== "write" && mode !== "synonym" && btn(whole ? "문서 바꾸기" : "선택 영역 바꾸기", () => apply(true), true)}{btn(mode === "write" ? "삽입" : "아래에 넣기", () => apply(false), mode === "write")}{btn("다시", run)}{btn("닫기", close)}</> : <>{btn(busy ? "쓰는 중…" : "실행", run, true, busy || noText)}{btn("닫기", close)}</>}>

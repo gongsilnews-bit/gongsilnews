@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { openStudioCode } from "@/utils/studioConnect";
 
 /**
- * 공실스튜디오 연결 신호 풀기 (앱 창의 /studio/callback 화면이 부름)
+ * 공실마케팅 연결 신호 풀기 (앱 창의 /studio/callback 화면이 부름)
  * 풀어 낸 1회용 토큰으로 화면이 verifyOtp 를 해서 앱 창에 로그인 쿠키가 생긴다.
  */
 export async function POST(request: Request) {

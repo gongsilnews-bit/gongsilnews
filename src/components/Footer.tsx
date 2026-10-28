@@ -9,7 +9,7 @@ import { SHOW_STUDY } from "@/utils/siteFlags";
 import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 export default function Footer() {
   const pathname = usePathname();
-  const studioBoard = useStudioBoardPage(); // 공실스튜디오 게시판 글 읽기·쓰기 (2026-10-26)
+  const studioBoard = useStudioBoardPage(); // 공실마케팅 게시판 글 읽기·쓰기 (2026-10-26)
 
   if (pathname === '/newsrealty/apply' || pathname?.startsWith('/study/classroom') || pathname?.startsWith('/study_read') || studioBoard) {
     return null;
@@ -232,7 +232,7 @@ export default function Footer() {
           <div className="footer-links">
             <Link href="/about" onClick={scrollToTop}>회사소개</Link>
             <span className="divider">|</span>
-            <Link href="/marketing" onClick={scrollToTop}>광고안내</Link>
+            <Link href="/advertise" onClick={scrollToTop}>광고안내</Link>
             <span className="divider">|</span>
             <Link href="/partnership" onClick={scrollToTop}>제휴문의</Link>
             <span className="divider">|</span>
