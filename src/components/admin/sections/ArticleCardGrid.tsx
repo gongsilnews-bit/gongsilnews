@@ -2,7 +2,7 @@
 
 // 내 기사 카드 (2026-10-28) — 홈 "내 기사"(한 줄로 옆으로 넘기기)와 기사관리 [카드형](바둑판)이 함께 쓴다
 // 누르면 그 기사를 글감으로 뉴스·SNS발행 › 뉴스칼럼 블로그·SNS · 사진 위 채널 아이콘(올린 곳 ✓) ·
-// 오른쪽 클릭·[···] = 카드 메뉴 · 아이콘 오른쪽 클릭 = 링크 작은 창 · [링크 수정] = 다섯 채널 한눈에 · ☆ 즐겨찾기
+// 오른쪽 클릭·[···] = 카드 메뉴 · 아이콘 오른쪽 클릭 = 링크 작은 창 · [링크체크] = 다섯 채널 한눈에 · ☆ 즐겨찾기
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminSectionProps } from "./types";
@@ -50,8 +50,8 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
   const [opening, setOpening] = useState(""); // 글감 만드는 중인 기사
   const [artErr, setArtErr] = useState("");
   const [pasteFor, setPasteFor] = useState<{ a: MyArticleCard; ch: ArtCh; x: number; y: number } | null>(null); // 아이콘 오른쪽 클릭 — 링크 작은 창
-  const [linksFor, setLinksFor] = useState<{ a: MyArticleCard; x: number; y: number } | null>(null); // [링크 수정] — 다섯 채널 한눈에
-  // [링크 수정]을 열면 이 기사 링크만 바로 확인 — 서버(블로그·스레드·유튜브) + 도우미(인스타·페북) (2026-10-29 사장님)
+  const [linksFor, setLinksFor] = useState<{ a: MyArticleCard; x: number; y: number } | null>(null); // [링크체크] — 다섯 채널 한눈에
+  // [링크체크]을 열면 이 기사 링크만 바로 확인 — 서버(블로그·스레드·유튜브) + 도우미(인스타·페북) (2026-10-29 사장님)
   const [linkStatus, setLinkStatus] = useState("");
   useEffect(() => {
     if (!linksFor) { setLinkStatus(""); return; }
@@ -243,11 +243,11 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
                           </span>
                         );
                       })}
-                      {/* 링크 수정 — 사진 안 아이콘 줄 끝 (2026-10-28 사장님) */}
+                      {/* 링크체크 — 사진 안 아이콘 줄 끝 (2026-10-28 사장님) */}
                       <span role="button" title="채널별 링크 보기·복사·수정"
                         onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setLinksFor({ a, x: r.right - 420, y: r.bottom + 6 }); }}
                         style={{ marginLeft: "auto", height: 22, padding: "0 7px", borderRadius: 6, background: "rgba(233,236,239,0.92)", color: "#495057", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
-                        링크 수정
+                        링크체크
                       </span>
                     </span>
                     {pending && <span style={{ position: "absolute", left: 8, top: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 6, background: "#f59f00", color: "#fff" }}>검토 중</span>}

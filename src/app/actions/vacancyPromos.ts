@@ -124,7 +124,7 @@ async function promoGone(channel: string, url: string): Promise<boolean | null> 
 const CH_NAME: Record<string, string> = { blog: "네이버 블로그", threads: "스레드", youtube: "유튜브", instagram: "인스타그램", facebook: "페이스북" };
 
 /** 홍보현황 링크 중 지운 글은 연결을 푼다 — 공실·기사 모두 (2026-10-29 사장님: 블로그 + 스레드·유튜브) */
-//  only — [링크 수정]을 연 공실·기사 하나만 (몇 개라 바로 끝난다). 없으면 전체 — 화면은 6시간에 한 번만 부른다 (2026-10-29 사장님: 물건 50개면 느리지 않나)
+//  only — [링크체크]을 연 공실·기사 하나만 (몇 개라 바로 끝난다). 없으면 전체 — 화면은 6시간에 한 번만 부른다 (2026-10-29 사장님: 물건 50개면 느리지 않나)
 export async function checkMyPromoLinks(only?: { vacancyId?: string; articleNo?: string }): Promise<{ success: boolean; removed: { vacancyId: string; channel: string; title: string }[] }> {
   const user = await me();
   if (!user) return { success: false, removed: [] };

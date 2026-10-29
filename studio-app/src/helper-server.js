@@ -132,7 +132,7 @@ function handle(req, res) {
     return;
   }
   // 지운 인스타·페북 글 확인 (2026-10-29) — 확장이 확인할 링크를 묻고, 지운 글이면 알린다. 서버와 이야기는 main.js 가 (setVerifier)
-  // 확장이 1분마다 묻는다 — 회원이 [링크 수정]을 눌렀으면 지금 확인 (한 번 대답하면 내린다)
+  // 확장이 1분마다 묻는다 — 회원이 [링크체크]을 눌렀으면 지금 확인 (한 번 대답하면 내린다)
   if (url.pathname === "/gs-helper/verify-wanted") {
     const urls = verifyWanted;
     const all = verifyAll;
@@ -166,7 +166,7 @@ function handle(req, res) {
 let verifier = null;
 let verifyWanted = [];
 let verifyAll = false; // 앱 홈을 열 때(6시간에 한 번) — 내 인스타·페북·스레드 링크 전체
-/** 회원이 [링크 수정]을 눌렀다 — 그 공실·기사의 인스타·페북 링크만, 확장이 다음에 물을 때(1분 안) 확인 */
+/** 회원이 [링크체크]을 눌렀다 — 그 공실·기사의 인스타·페북 링크만, 확장이 다음에 물을 때(1분 안) 확인 */
 const requestVerify = (urls) => {
   if (urls === "all") { verifyAll = true; return; }
   const ok = (Array.isArray(urls) ? urls : []).map(String).filter((u) => /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u));

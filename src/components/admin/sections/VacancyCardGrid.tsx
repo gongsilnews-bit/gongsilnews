@@ -261,8 +261,8 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   // 공실 카드 메뉴 (2026-10-28 사장님 — 캔바식): 오른쪽 클릭 또는 [···]
   const [menu, setMenu] = useState<{ v: VacancyCard; x: number; y: number } | null>(null);
   const [pasteFor, setPasteFor] = useState<{ v: VacancyCard; ch: PromoChannel; x: number; y: number } | null>(null); // 아이콘 오른쪽 클릭 — 링크 작은 창
-  const [linksFor, setLinksFor] = useState<{ v: VacancyCard; x: number; y: number } | null>(null); // [링크 수정] 창
-  // [링크 수정]을 열면 지운 글 확인을 바로 — 서버(블로그·유튜브)는 창에 결과까지, 도우미(인스타·페북·스레드)는 1분 안 (2026-10-29 사장님)
+  const [linksFor, setLinksFor] = useState<{ v: VacancyCard; x: number; y: number } | null>(null); // [링크체크] 창
+  // [링크체크]을 열면 지운 글 확인을 바로 — 서버(블로그·유튜브)는 창에 결과까지, 도우미(인스타·페북·스레드)는 1분 안 (2026-10-29 사장님)
   const [linkStatus, setLinkStatus] = useState("");
   useEffect(() => {
     if (!linksFor) { setLinkStatus(""); return; }
@@ -581,10 +581,10 @@ function PromoRows({ theme, v, promo, homepage = "", onMake, onListing, onPaste,
             )}
           </button>
         ))}
-        {/* 링크 수정 — 채널 링크를 한눈에 보고 복사·고치기 (2026-10-28 사장님: 회색으로) */}
+        {/* 링크체크 — 채널 링크를 한눈에 보고 복사·고치기 (2026-10-28 사장님: 회색으로) */}
         <button onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onLinks(r.left, r.bottom + 6); }} title="채널별 링크 보기·복사·수정"
           style={{ marginLeft: "auto", height: 32, padding: "0 10px", borderRadius: 10, border: 0, background: darkMode ? "#3a3b40" : "#e9ecef", color: textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-          링크 수정
+          링크체크
         </button>
       </div>
     </div>
@@ -665,7 +665,7 @@ export function LinkPopover({ theme, x, y, channel, url, onSave, onClose }: {
   );
 }
 
-/* [링크 수정] 창 — 다섯 채널 링크를 한 번에: 주소 보기 · [복사] · [수정](파란 칸) · 빈 채널은 [붙여넣기] (2026-10-28 사장님) */
+/* [링크체크] 창 — 다섯 채널 링크를 한 번에: 주소 보기 · [복사] · [수정](파란 칸) · 빈 채널은 [붙여넣기] (2026-10-28 사장님) */
 export function LinksPanel({ theme, x, y, links, onSave, onClose, status }: {
   theme: AdminSectionProps["theme"]; x: number; y: number; links: Partial<Record<PromoChannel, string>>;
   onSave: (ch: PromoChannel, url: string) => Promise<string>; onClose: () => void;
@@ -704,9 +704,9 @@ export function LinksPanel({ theme, x, y, links, onSave, onClose, status }: {
   return (
     <>
       <div onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} style={{ position: "fixed", inset: 0, zIndex: 10001 }} />
-      <div ref={ref} role="dialog" aria-label="링크 수정"
+      <div ref={ref} role="dialog" aria-label="링크체크"
         style={{ position: "fixed", left: pos.left, top: pos.top, zIndex: 10002, width: 420, maxWidth: "calc(100vw - 16px)", background: cardBg, border: `1px solid ${border}`, borderRadius: 12, padding: "12px 14px", boxShadow: "0 10px 32px rgba(0,0,0,0.2)" }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>링크 수정</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>링크체크</div>
         {status && <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8, color: /풀었/.test(status) ? "#dc2626" : /중…/.test(status) ? "#2563eb" : "#16a34a" }}>{status}</div>}
         {CLEAN_CH.map(([c, label]) => {
           const url = links[c];

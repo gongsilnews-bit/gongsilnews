@@ -467,7 +467,7 @@ export default function MemberArticleSection({
     </div>
   );
 
-  // 카드형 — 홈 "내 기사"와 같은 카드 (바둑판). 채널 아이콘 ✓ · [링크 수정] · 오른쪽 클릭 메뉴 · ☆
+  // 카드형 — 홈 "내 기사"와 같은 카드 (바둑판). 채널 아이콘 ✓ · [링크체크] · 오른쪽 클릭 메뉴 · ☆
   if (view === "card") {
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px 48px", background: bg }}>

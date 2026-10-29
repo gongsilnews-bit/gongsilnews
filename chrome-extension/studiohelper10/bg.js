@@ -26,7 +26,7 @@ async function call(pathAndQuery, init) {
    페이지 쪽(helper-sns.js)이 #gs-verify 를 보고 "없는 페이지" 글자를 찾아 GS_VERIFY 로 알린다. 확인 못 하면(로그인 안 됨 등) 그대로 둔다 */
 const VERIFY_EVERY = 24 * 60 * 60 * 1000;
 const waiting = new Map(); // tabId → resolve
-//  only — [링크 수정]에서 부탁한 링크만 (몇 개). 없으면 하루 한 번 전체 (최대 60개, 하나에 몇 초씩 최소화 창에서)
+//  only — [링크체크]에서 부탁한 링크만 (몇 개). 없으면 하루 한 번 전체 (최대 60개, 하나에 몇 초씩 최소화 창에서)
 async function verifyLinks(force, only) {
   let urls = Array.isArray(only) && only.length ? only : null;
   let full = false;
@@ -65,7 +65,7 @@ async function verifyLinks(force, only) {
 }
 // 크롬을 켜거나 확장을 새로고침하면 1분 뒤 한 번 — setTimeout 은 크롬이 확장을 잠재우면 사라져서 알람으로 (2026-10-29)
 chrome.runtime.onStartup.addListener(() => { chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
-// 1분마다 앱에 "지금 확인할까" 묻는다 — 회원이 앱에서 [링크 수정]을 누르면 바로 (앱이 꺼져 있으면 아무 일 없음)
+// 1분마다 앱에 "지금 확인할까" 묻는다 — 회원이 앱에서 [링크체크]을 누르면 바로 (앱이 꺼져 있으면 아무 일 없음)
 const alarms = () => { chrome.alarms.create("gs-verify", { periodInMinutes: 180 }); chrome.alarms.create("gs-verify-poll", { periodInMinutes: 1 }); };
 // 새로 깔거나 새로고침하면 "오늘 확인함"을 지우고 1분 뒤 전체를 다시
 chrome.runtime.onInstalled.addListener(() => { alarms(); chrome.storage.local.remove("gsVerifiedAt"); chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
