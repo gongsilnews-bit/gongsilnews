@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { listMyStudioVacancies } from "@/app/actions/studio";
+import { SNS_TONES } from "./StudioSnsPanel";
 import { PostDialog } from "@/components/admin/studio-video/PostDialog";
 import type { LibItem, PostChannel, Project, Ratio } from "@/components/admin/studio-video/types";
 import { errText, videoBridge } from "@/components/admin/studio-video/types";
@@ -33,6 +34,8 @@ export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
   const [err, setErr] = useState("");
   const [vacs, setVacs] = useState<Vac[] | null>(null);
   const [vacId, setVacId] = useState("");
+  const [tone, setTone] = useState(() => { try { return localStorage.getItem("gs-myvideo-tone") || "polite"; } catch { return "polite"; } });
+  const pickTone = (t: string) => { setTone(t); try { localStorage.setItem("gs-myvideo-tone", t); } catch {} };
   useEffect(() => {
     listMyStudioVacancies().then((r) => {
       const list = (r.success ? r.data : []) as { id: string; vacancy_no?: number | null; building_name?: string | null; property_type?: string | null; dong?: string | null }[];
@@ -121,6 +124,17 @@ export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
 
       {step(3, "SNS 글 한 번에 쓰기")}
       <div style={{ ...card, opacity: item ? 1 : 0.55 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>문체 — 네 채널 같이</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, marginBottom: 16 }}>
+          {SNS_TONES.map((t) => (
+            <button key={t.id} type="button" onClick={() => pickTone(t.id)}
+              style={{ textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: "pointer", color: theme.textPrimary,
+                border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>
+              <div style={{ fontSize: 14, fontWeight: 800 }}>{t.label}{tone === t.id ? " ✓" : ""}</div>
+              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{t.brief}</div>
+            </button>
+          ))}
+        </div>
         <button disabled={!item} onClick={() => setCh("youtube")}
           style={{ padding: "12px 22px", borderRadius: 10, border: 0, background: item ? "#16a34a" : "#94a3b8", color: "#fff", fontSize: 15, fontWeight: 800, cursor: item ? "pointer" : "default" }}>
           유튜브 · 인스타 릴스 · 스레드 · 페이스북 글 한 번에 쓰기
@@ -131,7 +145,7 @@ export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
       </div>
 
       {project && item?.path && ch && (
-        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} onClose={() => setCh("")} />
+        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => setCh("")} />
       )}
     </div>
   );

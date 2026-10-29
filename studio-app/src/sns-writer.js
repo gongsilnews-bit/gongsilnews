@@ -401,4 +401,4 @@ function saveAll(vacancyId, { noun, listing, posts, column = false }) {
   try { return forWeb(syncNewMedia(vacancyId, data)); } catch { return forWeb(data); } // 분석에서 넣은 사진도
 }
 
-module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, saveSimPosts, useQuota, saveAll, toneLine, NO_REF, keepOthers };
+module.exports = { channelInfo, get, write, revise, save, exportChannel, fillByHelper, saveSimPosts, useQuota, saveAll, toneLine, TONES, NO_REF, keepOthers };

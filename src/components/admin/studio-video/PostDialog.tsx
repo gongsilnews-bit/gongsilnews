@@ -53,7 +53,7 @@ type Thumb = { at: number; plain: { file: string; url: string }; title: { file: 
 type Vis = "public" | "unlisted" | "private";
 
 // lines — 대본 줄을 따로 줄 때 (뉴스·SNS발행 › 내 영상 올리기: 편집 작업 없이 파일만, 2026-10-29)
-export function PostDialog({ project, file, seconds, channel: ch0, onClose, lines: linesIn }: { project: Project; file: string; seconds: number; channel: PostChannel; onClose: () => void; lines?: string[] }) {
+export function PostDialog({ project, file, seconds, channel: ch0, onClose, lines: linesIn, tone }: { project: Project; file: string; seconds: number; channel: PostChannel; onClose: () => void; lines?: string[]; tone?: string }) {
   const b = videoBridge();
   const post = b?.post;
   const m = memo.get(file) || {};
@@ -133,7 +133,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose, line
         : artNo
           ? await getMyArticleCards().then((r) => Object.keys(r.data.find((a) => a.no === artNo)?.links || {})).catch(() => [] as string[])
           : [];
-      const d = await post.draft({ title: project.name, lines, vacancyId: vid || project.vacancyId, ratio: project.ratio, seconds, posted });
+      const d = await post.draft({ title: project.name, lines, vacancyId: vid || project.vacancyId, ratio: project.ratio, seconds, posted, tone });
       setDraft(d);
       setYtTitle(d.youtube.title);
       setYtText(d.youtube.text);

@@ -78,7 +78,16 @@ async function draft(baseUrl, o, onProgress = () => {}) {
   const base = vacancyOf(o.vacancyId);
   const vacancy = base || owner.type ? { ...(base || {}), ...(owner.type === "agency" ? { office: owner.name, homepage: owner.homepage || "" } : owner.type === "general" ? { landlord: owner.name } : {}) } : null;
   onProgress("글 AI가 유튜브·인스타그램·페이스북·스레드 글을 쓰는 중… (1분 안팎)");
-  const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds, previous: previousPosts(o.vacancyId), posted: Array.isArray(o.posted) ? o.posted : [] });
+  // 문체 — 내 영상 올리기에서 고른 것 (사진 SNS 글과 같은 6가지, 네 채널 같이, 2026-10-29 사장님)
+  const TONES = require("./sns-writer").TONES || {};
+  const toneRule = o.tone && TONES[o.tone] && o.tone !== "polite"
+    ? `
+
+[문체 지정 — 위 지시보다 우선 · 네 채널 같이]
+- ${TONES[o.tone]}
+문체만 바꾸고 사실은 자료에 있는 것만 쓰십시오. 정보 글 원칙과 출력 JSON 형식은 그대로 지키십시오.`
+    : "";
+  const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds, previous: previousPosts(o.vacancyId), posted: Array.isArray(o.posted) ? o.posted : [] }) + toneRule;
   const parse = (t) => {
     const j = lib.gwVideoParse(t);
     return j && j.youtube && j.instagram ? j : null;
