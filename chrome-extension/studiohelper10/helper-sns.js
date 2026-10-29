@@ -31,6 +31,12 @@
         const text = (document.body && document.body.innerText) || "";
         // 페이스북은 지운 글 주소를 홈 피드로 보낸다 — 글 주소(permalink·posts·story_fbid)가 사라지면 지운 것 (2026-10-29)
         if (target === "facebook" && i >= 2 && !/permalink|\/posts\/|story_fbid|\/videos\/|\/reel\//.test(location.pathname + location.search)) { state = true; break; }
+        // 페이스북: 지운 글 주소는 그대로 둔 채 홈 피드(글쓰기 칸 "무슨 생각을 하고 계신가요?")를 보여 준다 (2026-10-29 기록)
+        if (target === "facebook" && i >= 2 && /무슨 생각을 하고 계신가요|What.s on your mind/.test(text.slice(0, 300))) { state = true; break; }
+        // 스레드: 지운 글은 프로필 화면(/@아이디)으로 보낸다 — 글 주소(/post/)가 사라지면 지운 것
+        if (target === "threads" && code && i >= 2 && !/\/post\//.test(location.pathname)) { state = true; break; }
+        //  주소는 그대로인데 프로필 머리(팔로워 n명)만 보이고 그 글이 없을 때도 (5초 기다린 뒤)
+        if (target === "threads" && code && i >= 5 && /팔로워|followers/i.test(text.slice(0, 150)) && !document.querySelector(`a[href*="/post/${code}"] time`)) { state = true; break; }
         if (GONE.test(text) || (target === "threads" && GONE_TH.test(text.slice(0, 600))) || /error=invalid_post/.test(location.search)) { state = true; break; }
         const shown = target === "instagram" ? document.querySelector("article, main [role='presentation'] img, video")
           // 스레드는 그 글 주소(시간 줄 링크)가 보여야 "있음" — 글자만으로는 모른다 (지운 글도 다른 글이 보인다)
