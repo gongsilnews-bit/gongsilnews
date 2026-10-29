@@ -536,6 +536,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
                               {(() => {
                                 const hasReport = (flyerMap[row.id] || { report: false }).report;
+                                const hasFlyer = (flyerMap[row.id] || { flyer: false }).flyer;
 
                                 return (
                                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -573,6 +574,18 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         AI물건보고서
                                       </button>
 
+                                    {/* [유리창홍보지] 다시 (2026-10-29 사장님: 웹·앱 모두, AI물건보고서와 SNS뉴스발행 사이) — 물건홍보지 도구 */}
+                                    <button
+                                      onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, "_blank")}
+                                      style={{ height: 30, padding: "0 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                                        background: hasFlyer ? (darkMode ? "#14532d" : "#f0fdf4") : (darkMode ? "#2a2d35" : "#f3f4f6"),
+                                        color: hasFlyer ? (darkMode ? "#86efac" : "#15803d") : (darkMode ? "#7c8ba1" : "#8a94a6"),
+                                        border: hasFlyer ? `1px solid ${darkMode ? "#166534" : "#bbf7d0"}` : `1px solid ${darkMode ? "#444" : "#e5e7eb"}` }}
+                                      title={hasFlyer ? "유리창홍보지 완성됨 (클릭하여 편집/수정)" : "유리창홍보지 미작성 (클릭하여 제작)"}
+                                    >
+                                      유리창홍보지
+                                    </button>
+
                                     {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 공실뉴스부동산은 1주일에 3번 (2026-10-26 사장님) */}
                                     {role !== "user" && (
                                       <button
@@ -584,7 +597,6 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       </button>
                                     )}
 
-                                    {/* [유리창홍보지] 단추는 뺐다 (2026-10-22 사장님) — 홍보지는 이미지 편집에서 */}
 
                                     {/* 공실 릴스: 1차는 관리자 시험판 (회원 공개는 REELS_REALTOR_ENABLED + 이 조건 확장) */}
                                     {role === "admin" && (

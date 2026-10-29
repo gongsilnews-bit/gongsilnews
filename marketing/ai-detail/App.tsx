@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { buildFlyerRows } from './flyerRows';
 import { toCanvas } from 'html-to-image';
+import { WebLockCover, InstallAppModal, askInstallApp, webLayoutAllowed } from './webLimit';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -704,6 +705,7 @@ function App() {
   };
 
   const handleKakaoShare = async () => {
+    if (!webLayoutAllowed(state.layoutTheme?.id)) { askInstallApp(); return; } // 웹은 숫자 크게·사진형만 (2026-10-29)
     const Kakao = (window as any).Kakao;
     if (!Kakao || !Kakao.isInitialized()) {
       alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
@@ -734,6 +736,7 @@ function App() {
   };
 
   const handleCopyUrl = async () => {
+    if (!webLayoutAllowed(state.layoutTheme?.id)) { askInstallApp(); return; } // 웹은 숫자 크게·사진형만 (2026-10-29)
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) {
@@ -1090,6 +1093,7 @@ function App() {
 
   // ── 이미지 내보내기: 보이는 한 장 그대로 JPG ──
   const handleExportImage = async () => {
+    if (!webLayoutAllowed(state.layoutTheme?.id)) { askInstallApp(); return; } // 웹은 숫자 크게·사진형만 (2026-10-29)
     setIsExporting(true);
     try {
       const canvas = await capturePage();
@@ -1111,6 +1115,7 @@ function App() {
 
   // ── 인쇄: A4 한 장 (세로/가로 그대로). 화면 그대로 뜬 그림 → jsPDF → iframe 인쇄 ──
   const handlePrintFlyer = async () => {
+    if (!webLayoutAllowed(state.layoutTheme?.id)) { askInstallApp(); return; } // 웹은 숫자 크게·사진형만 (2026-10-29)
     setIsPrinting(true);
     try {
       const canvas = await capturePage();
@@ -1499,7 +1504,8 @@ function App() {
                     const { w, h } = PAGE_SIZE[orientation];
                     const scale = previewBoxWidth ? Math.min(1, (previewBoxWidth - 48) / w) : 1;
                     return (
-                        <div className="mx-auto shadow-2xl" style={{ width: w * scale, height: h * scale }}>
+                        <div className="mx-auto shadow-2xl relative" style={{ width: w * scale, height: h * scale }}>
+                            <WebLockCover layoutId={state.layoutTheme?.id} />
                             <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                                 <FlyerCanvas
                                     ref={flyerRef}
@@ -1689,6 +1695,7 @@ function App() {
         </div>
       )}
 
+      <InstallAppModal />
     </div>
   );
 }

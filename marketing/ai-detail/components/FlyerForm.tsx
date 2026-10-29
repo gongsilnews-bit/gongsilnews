@@ -1,4 +1,5 @@
 
+import { webLayoutAllowed } from '../webLimit';
 import React from 'react';
 import { PropertyInfo, TransactionType, FlyerColor, FlyerLayout, FlyerRow, isNewLayout } from '../types';
 import { GROUP_NAME, FlyerGroup } from '../flyerRows';
@@ -185,7 +186,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
                     className={`py-3 rounded-lg border text-sm font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
                  >
                      <span className="block text-lg mb-0.5">{'①②③④⑤⑥⑦⑧⑨⑩'[idx]}</span>
-                     <span>{layout.name}</span>
+                     <span>{layout.name}{!webLayoutAllowed(layout.id) && ' 🔒'}</span>
                  </button>
              ))}
         </div>
@@ -199,7 +200,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
                     title={layout.name}
                     className={`py-1.5 rounded-md border text-xs font-bold ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}
                  >
-                     {idx + 1}
+                     {idx + 1}{!webLayoutAllowed(layout.id) && '🔒'}
                  </button>
              ))}
           </div>

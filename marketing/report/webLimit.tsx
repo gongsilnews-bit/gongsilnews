@@ -6,7 +6,7 @@ import React, { useState } from 'react';
  */
 export const inStudioApp = (): boolean => {
   try {
-    return Boolean((window.parent as any)?.gongsilStudio || (window as any).gongsilStudio);
+    return Boolean((window.parent as any)?.gongsilStudio || (window as any).gongsilStudio || (window.opener as any)?.gongsilStudio); // 앱에서 새 창으로 연 것도
   } catch {
     return false;
   }
