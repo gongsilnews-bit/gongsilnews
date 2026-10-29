@@ -412,13 +412,18 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
             {/* [☰ 공실등록형] [▦ SNS홍보형] — 공실관리 제목 옆과 똑같이 (2026-10-29 사장님). 여기는 SNS홍보형, 공실등록형은 공실관리 표로 */}
-            {category === "gongsil" && mode === "list" && (
+            {((category === "gongsil" && mode === "list") || (category === "column" && wideList)) && (
               <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: theme.darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
-                {([["list", "공실등록형", "M4 6h16M4 12h16M4 18h16"], ["card", "SNS홍보형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => {
+                {([["list", category === "column" ? "기사등록형" : "공실등록형", "M4 6h16M4 12h16M4 18h16"], ["card", "SNS홍보형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => {
                   const on = k === "card";
                   return (
                     <button key={k} aria-pressed={on}
-                      onClick={() => { if (on) return; try { localStorage.setItem("gs-vacancy-view", "list"); } catch {} router.push("?menu=gongsil", { scroll: false }); }}
+                      onClick={() => {
+                        if (on) return;
+                        const art = category === "column"; // 뉴스칼럼 → 기사관리 표 · 공실뉴스 → 공실관리 표
+                        try { localStorage.setItem(art ? "gs-article-view" : "gs-vacancy-view", "list"); } catch {}
+                        router.push(art ? "?menu=article" : "?menu=gongsil", { scroll: false });
+                      }}
                       style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: 0, borderRadius: 8, cursor: on ? "default" : "pointer", fontSize: 13, fontWeight: 700,
                         background: on ? (theme.darkMode ? "#45474d" : "#fff") : "transparent", color: on ? theme.textPrimary : theme.textSecondary, boxShadow: on ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>
                       <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
