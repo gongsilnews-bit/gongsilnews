@@ -1,0 +1,119 @@
+"use client";
+
+import React, { useState } from "react";
+import { PostDialog } from "@/components/admin/studio-video/PostDialog";
+import type { LibItem, PostChannel, Project, Ratio } from "@/components/admin/studio-video/types";
+import { errText, videoBridge } from "@/components/admin/studio-video/types";
+
+/**
+ * 뉴스·SNS발행 › 내 영상 올리기 (2026-10-29 사장님) — 편집이 끝난 영상 파일을 다시 굽지 않고 그대로 SNS에
+ *  ① 영상 고르기(PC) → ② 채널 누르기 → 영상 올리기 창(PostDialog, 편집기 [SNS에 올리기]와 같은 것)
+ *  공실·기사 연결 · AI 글 · 글 끝(부동산 이름·홈페이지·물건 맡기기) · [크롬에서 채우기] · 홍보현황 ✓ 는 그 창이 한다
+ */
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; darkMode?: boolean };
+
+const CHANNELS: { id: PostChannel; label: string; bg: string }[] = [
+  { id: "youtube", label: "유튜브", bg: "#ff0000" },
+  { id: "instagram", label: "인스타그램 릴스", bg: "linear-gradient(45deg,#f9a825,#e1306c 55%,#833ab4)" },
+  { id: "threads", label: "스레드", bg: "#111" },
+  { id: "facebook", label: "페이스북", bg: "#1877f2" },
+];
+
+/* 가로·세로로 비율 — 세로면 쇼츠·릴스 */
+function ratioOf(w: number, h: number): Ratio {
+  if (!w || !h) return "16:9";
+  const r = w / h;
+  if (r < 0.7) return "9:16";
+  if (r < 0.9) return "4:5";
+  if (r < 1.15) return "1:1";
+  return "16:9";
+}
+const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
+  const b = videoBridge();
+  const [item, setItem] = useState<(LibItem & { path?: string }) | null>(null);
+  const [ch, setCh] = useState<PostChannel | "">("");
+  const [err, setErr] = useState("");
+
+  const pick = async () => {
+    setErr("");
+    if (!b?.lib.pick) return setErr("공실마케팅 앱에서 쓸 수 있어요.");
+    try {
+      const got = await b.lib.pick({ kinds: "media" });
+      const v = got.find((x) => x.kind === "video" && x.path);
+      if (!v) return got.length ? setErr("영상 파일을 골라 주세요 (사진은 [이미지제작]에서).") : undefined;
+      setItem(v);
+    } catch (e) {
+      setErr(errText(e));
+    }
+  };
+
+  const ratio = item ? ratioOf(item.width, item.height) : "16:9";
+  const name = item ? item.name.replace(/\.[^.]+$/, "") : "";
+  // 영상 올리기 창이 쓰는 칸만 채운 작업 — 편집 작업(.gss)은 만들지 않는다
+  const project = item
+    ? ({ name, vacancyId: "", ratio, scenes: [], assets: {}, settings: {}, dir: String(item.path || "").replace(/[\\/][^\\/]+$/, "") } as unknown as Project)
+    : null;
+
+  const card: React.CSSProperties = { background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 };
+  const step = (n: number, t: string) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+      <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</span>
+      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{t}</h3>
+    </div>
+  );
+
+  return (
+    <div>
+      {step(1, "올릴 영상 고르기")}
+      <div style={card}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          {item?.thumb && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.thumb} alt="" style={{ width: ratio === "16:9" ? 160 : 72, height: ratio === "16:9" ? 90 : 128, objectFit: "cover", borderRadius: 8, background: "#000" }} />
+          )}
+          <div style={{ flex: 1, minWidth: 220 }}>
+            {item ? (
+              <>
+                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, wordBreak: "break-all" }}>{item.name}</div>
+                <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4 }}>
+                  {clock(item.duration || 0)} · {ratio === "9:16" || ratio === "1:1" || ratio === "4:5" ? "세로 영상 → 유튜브 쇼츠 · 인스타 릴스" : "가로 영상 → 유튜브 일반 영상"}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 14, color: theme.textSecondary, lineHeight: 1.6 }}>
+                편집이 끝난 영상을 <b>다시 굽지 않고 그대로</b> 올립니다. 공실마케팅에서 만든 영상은 <b>06 완성영상</b> 폴더에 있어요.
+              </div>
+            )}
+          </div>
+          <button onClick={() => void pick()}
+            style={{ padding: "10px 18px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+            {item ? "다른 영상 고르기" : "PC에서 영상 고르기"}
+          </button>
+        </div>
+        {err && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{err}</div>}
+      </div>
+
+      {step(2, "어디에 올릴까요?")}
+      <div style={{ ...card, opacity: item ? 1 : 0.55 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {CHANNELS.map((c) => (
+            <button key={c.id} disabled={!item} onClick={() => setCh(c.id)}
+              style={{ padding: "12px 18px", borderRadius: 10, border: 0, background: c.bg, color: "#fff", fontSize: 14, fontWeight: 800, cursor: item ? "pointer" : "default" }}>
+              {c.label}에 올리기
+            </button>
+          ))}
+        </div>
+        <div style={{ marginTop: 12, fontSize: 13, color: theme.textSecondary, lineHeight: 1.7 }}>
+          누르면 영상 올리기 창이 열려요 — <b>어느 공실·기사 영상인지</b> 고르면 AI가 제목·설명을 쓰고, 글 끝에 부동산 이름·홈페이지·물건 맡기기 링크가 붙어요.
+          [크롬에서 채우기]로 평소 크롬에 영상과 글을 넣고, 마지막 [게시]는 직접 눌러요. 올린 주소는 그 공실 홍보현황에 ✓.
+        </div>
+      </div>
+
+      {project && item?.path && ch && (
+        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} onClose={() => setCh("")} />
+      )}
+    </div>
+  );
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
+import StudioMyVideoPanel from "./StudioMyVideoPanel";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
@@ -73,6 +74,8 @@ const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((win
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
+  // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
+  { id: "myvideo", label: "내 영상 올리기", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
   { id: "interior", label: "인테리어뉴스", lead: "실내 사진 한 장으로 인테리어 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
@@ -406,6 +409,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           })()}
           </div>
         </div>
+
+        {category === "myvideo" && <StudioMyVideoPanel theme={theme} />}
 
         {category === "column" && (
           <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} />

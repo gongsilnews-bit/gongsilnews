@@ -52,7 +52,8 @@ const memo = new Map<string, { draft?: PostDraft; thumbs?: Thumb[] }>();
 type Thumb = { at: number; plain: { file: string; url: string }; title: { file: string; url: string } | null };
 type Vis = "public" | "unlisted" | "private";
 
-export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { project: Project; file: string; seconds: number; channel: PostChannel; onClose: () => void }) {
+// lines — 대본 줄을 따로 줄 때 (뉴스·SNS발행 › 내 영상 올리기: 편집 작업 없이 파일만, 2026-10-29)
+export function PostDialog({ project, file, seconds, channel: ch0, onClose, lines: linesIn }: { project: Project; file: string; seconds: number; channel: PostChannel; onClose: () => void; lines?: string[] }) {
   const b = videoBridge();
   const post = b?.post;
   const m = memo.get(file) || {};
@@ -110,7 +111,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
     });
   }, [project.vacancyId]); // eslint-disable-line react-hooks/exhaustive-deps
   const shorts = project.ratio === "9:16" || project.ratio === "1:1";
-  const lines = project.scenes.flatMap((s) => s.clips).map((c) => clipText(c)).filter((t) => t.trim());
+  const lines = linesIn || project.scenes.flatMap((s) => s.clips).map((c) => clipText(c)).filter((t) => t.trim());
   // AI 그림이 들어간 영상 — 채널의 AI 표시를 켜도록 알린다
   const aiCount = project.scenes.flatMap((s) => s.clips).filter((c) => {
     const a = c.visual ? project.assets[c.visual.asset] : null;
