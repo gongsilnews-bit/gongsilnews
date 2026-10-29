@@ -62,8 +62,8 @@ const REALTY_MENU: MenuItem[] = [
 const STUDIO_MENU_ON_WEB = false;
 const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "홈", icon: <IconDashboard /> },
-  { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
-  { key: "article", label: "기사등록", icon: <IconArticle /> },
+  { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
+  { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "marketing", label: "보고서·홍보지", icon: <IconSend /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
