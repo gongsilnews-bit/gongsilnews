@@ -33,7 +33,7 @@ export function AiSettingsBox({ light = false }: { light?: boolean } = {}) {
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: FONT, marginBottom: 6,
         background: connected.length ? (light ? "#ecfdf5" : "rgba(34,197,94,0.12)") : "transparent", border: `1px solid ${connected.length ? (light ? "#6ee7b7" : "rgba(110,231,183,0.6)") : light ? "#d1d5db" : C.line2}`, color: connected.length ? (light ? "#047857" : "#6ee7b7") : light ? "#111827" : C.text }}>
       <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: connected.length ? "#22c55e" : "#64748b", boxShadow: connected.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
-      {connected.length ? `${connected.map((a) => a.name).join(", ")} 연결됨` : "AI 설정 · 내 AI 연결하기"}
+      {connected.length ? `AI 설정 · ${connected.map((a) => a.name).join(", ")}` : "AI 설정"}
     </button>
   );
 }

@@ -382,7 +382,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
               background: connectedAi.length ? (theme.darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5") : theme.cardBg, border: `1px solid ${connectedAi.length ? (theme.darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7") : theme.border}`, color: connectedAi.length ? (theme.darkMode ? "#6ee7b7" : "#047857") : theme.textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
-            {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
+            {connectedAi.length ? `AI 설정 · ${connectedAi.map((a) => a.name).join(", ")}` : "AI 설정"}
           </button>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
           {NEWS_CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.includes(c.id)).map((c) => {

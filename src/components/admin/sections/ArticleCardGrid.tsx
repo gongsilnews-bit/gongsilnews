@@ -126,8 +126,13 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
   const openArticle = async (a: MyArticleCard, tab = "blog") => {
     const url = `${window.location.origin}/news/${a.no}`;
     const g = bridge();
-    // 웹에서는 글감 만들기(앱)가 없어 기사 화면을 연다
-    if (!g?.column) { window.open(url, "_blank", "noopener"); return; }
+    // 웹에서도 앱과 같이 뉴스·SNS발행으로 — 웹의 뉴스·SNS발행은 공실마케팅 앱 안내 (2026-10-29 사장님). 기사 보기는 집 모양 칸
+    if (!g?.column) {
+      try { localStorage.setItem("studio_news_category", "column"); } catch {}
+      // 일반회원(user_admin)에는 뉴스·SNS발행이 없다 — 기사 화면
+      if (onOpenColumn || !window.location.pathname.startsWith("/realty_admin")) window.open(url, "_blank", "noopener"); else onMenuChange("sns");
+      return;
+    }
     if (opening) return;
     setOpening(a.id);
     setArtErr("");
@@ -237,12 +242,12 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
                     {/* 채널 아이콘 — 올린 곳 ✓ (누르면 그 글) · 아직 = 흐리게 (누르면 그 채널 글쓰기) · 오른쪽 클릭 = 링크 작은 창 */}
                     <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "18px 6px 6px", display: "flex", gap: 3, alignItems: "center",
                       background: "linear-gradient(transparent, rgba(0,0,0,0.55))" }}>
-                      {/* 기사 보기 — 내 홈페이지가 작동하면 홈페이지의 그 기사, 아니면 공실뉴스 기사 (2026-10-29 사장님) */}
+                      {/* 기사 보기 — 집 모양 (공실 카드의 홈페이지 칸과 같게) · 내 홈페이지가 작동하면 홈페이지의 그 기사, 아니면 공실뉴스 기사 (2026-10-29 사장님) */}
                       {!pending && (
                         <span role="button" title={homepage ? "내 홈페이지에서 기사 보기" : "공실뉴스에서 기사 보기"}
                           onClick={(e) => { e.stopPropagation(); openOutUrl(shareUrl(a)); }}
-                          style={{ position: "relative", width: 24, height: 24, borderRadius: 7, background: BG.article, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
-                          {G.article}
+                          style={{ position: "relative", width: 24, height: 24, borderRadius: 7, background: BG.listing, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
+                          {G.listing}
                           <span style={{ position: "absolute", right: -4, bottom: -4, width: 14, height: 14, borderRadius: "50%", background: "#2f9e44", border: "2px solid #fff", color: "#fff", fontSize: 8, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>
                         </span>
                       )}

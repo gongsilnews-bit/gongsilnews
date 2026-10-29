@@ -36,6 +36,9 @@ export default function VideoStudio() {
       const v = JSON.parse(sessionStorage.getItem("gs-video-seed") || "null");
       sessionStorage.removeItem("gs-video-seed");
       if (v && v.vacancyId && Date.now() - (v.at || 0) < 10 * 60 * 1000) { setSeed(v); setResume(null); setFlow("text"); }
+      // 홈 [강의영상녹화] — 바로 강의/영상녹화 (2026-10-29 사장님)
+      if (sessionStorage.getItem("gs-video-flow") === "record") setFlow("record");
+      sessionStorage.removeItem("gs-video-flow");
     } catch {}
   }, []);
   const take = (r: Project | Recover | null) => {
