@@ -56,17 +56,18 @@ function gwBuildSnsPrompt(source) {
   const auction = noun === "물건";
   const office = auction ? "" : String((input.vacancy && input.vacancy.office) || "").trim();
   const landlord = auction || office ? "" : String((input.vacancy && input.vacancy.landlord) || "").trim();
-  const hasHome = Boolean(office && input.vacancy && input.vacancy.homepage);
-  /* 일반 매물은 매물을 등록한 중개사무소가 소개하는 글 (2026-10-29 사장님) — 경매·공매는 예전처럼 공실뉴스 소식 */
+  /* 일반 매물은 "정보 글" — 부동산 티를 내지 않는다 (2026-10-29 사장님). 경매·공매는 예전처럼 공실뉴스 소식 */
   const lead = auction
     ? `- "공실뉴스에 이런 ${noun}이 나왔다"는 객관적인 물건 소식입니다. 광고 문구가 아닙니다`
-    : landlord
-    ? `- 집주인 ${landlord}님이 자기 SNS에서 본인 물건을 직접 알리는 글입니다(직거래). 중개사무소가 쓴 글처럼 쓰지 말고 "중개"·"중개보수" 같은 표현도 쓰지 말 것
-- "공실뉴스에 이런 매물이 나왔다"처럼 공실뉴스를 주어로 내세우지 말 것. 첫 문장(인스타는 첫 줄 다음 줄)에서 집주인이 직접 내놓은 물건임을 밝힐 것`
-    : `- ${office || "매물을 등록한 중개사무소"}가 자기 SNS에서 이 매물을 소개하는 글입니다. 주인공은 공실뉴스가 아니라 이 중개사무소입니다
-- "공실뉴스에 이런 매물이 나왔다"처럼 공실뉴스를 주어로 내세우지 말 것. 첫 문장(인스타는 첫 줄 다음 줄)에서 ${office ? `"${office}"가` : "중개사무소가"} 소개하는 매물임을 밝힐 것`;
+    : `- 이 글은 동네·집 정보를 전하는 "정보 글"입니다. 광고·매물 소개 글처럼 보이지 않게 쓸 것
+- 중개사무소 이름·"중개"·"중개사"·"매물을 소개합니다"·"저희"·"문의" 같은 부동산 영업 표현을 본문·제목·해시태그에 쓰지 말 것. "공실뉴스"도 쓰지 말 것
+- 주어는 집과 동네입니다 (예: "논현동에 전세 5억 아파트가 있다", "언주역과 신논현역 사이 생활권이다")
+- 물건번호·공실광고번호는 본문에 쓰지 말 것 (글 끝에 자동으로 붙습니다)
+- 중개보수·공동중개 같은 중개 조건은 쓰지 말 것
+- 연락처·링크·홈페이지·사무소 정보는 쓰지 말 것 (글 끝에 법에 필요한 표시만 작게 자동으로 붙습니다)${landlord ? `
+- 집주인이 직접 내놓은 물건이라는 점은 마지막 줄에 한 번만` : ""}`;
 
-  return `당신은 ${auction ? "부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터" : landlord ? "집주인이 자기 물건을 정확하게 알리도록 돕는 SNS 에디터" : "중개사무소가 자기 매물을 정확하게 소개하도록 돕는 SNS 에디터"}입니다.
+  return `당신은 ${auction ? "부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터" : "동네·집 정보를 정확하고 짧게 전하는 SNS 에디터"}입니다.
 아래 참조 기사와 확인된 ${noun} 정보로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
 세 글은 같은 사실을 전하지만 플랫폼마다 모양이 다릅니다. 같은 문장을 돌려 쓰지 마십시오.
 
@@ -83,12 +84,10 @@ ${lead}
 - 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 없는 수치·시세·수익률·개발 호재·현장 방문·고객 반응을 만들지 말 것. 자료에 없는 거리·도보 시간도 만들지 말 것
 - 소재지가 동까지만 공개됐다면 더 자세한 주소를 추측하지 말 것
-${auction ? "" : `- 번호는 "물건번호"라고 쓸 것 ("공실광고번호"·"광고번호" 금지). 페이스북 마지막 문단은 "물건번호 ○○번${hasHome ? `이며, ${office} 홈페이지에서 자세히 확인할 수 있습니다` : "으로 확인할 수 있습니다"}."처럼 맺을 것
-- 중개보수·공동중개 같은 중개 조건은 쓰지 말 것. 해시태그에 "공실뉴스"를 넣지 말 것
-`}- 중개사무소 이름은 위에서 말한 한 번만. 연락처·링크·홈페이지·"프로필 링크" 안내는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
+- 연락처·링크·홈페이지·"프로필 링크" 안내는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
 
 [페이스북 — facebook]
-- 매물 소개형. 첫 문단 1~2문장이 피드에서 "더 보기" 전에 보이는 곳이므로 무엇이 어디에 어떤 조건으로 나왔는지 결론부터
+- 정보 전달형. 첫 문단 1~2문장이 피드에서 "더 보기" 전에 보이는 곳이므로 무엇이 어디에 어떤 조건으로 나왔는지 결론부터
 - 문단 3~5개, 문단마다 2~3문장, 전체 300~600자. 기사체 또는 부드러운 존댓말
 - 순서: 결론 → 위치·면적·금액 → 특징 → 주변 교통·생활 정보 → 확인할 점 한 문장
 - hashtags: 3~5개 (지역명·${noun} 종류 중심)
@@ -199,7 +198,7 @@ function gwSnsParse(raw) {
 function gwSnsSourceText(listing, noun) {
   if (!listing) return "";
   const { lines } = GWNaverBlog.sourceBlockLines(listing, "");
-  return [listing.saleKind ? `[${noun} 정보 출처]` : "[문의 · 매물 정보]", ...lines].join("\n");
+  return listing.saleKind ? [`[${noun} 정보 출처]`, ...lines].join("\n") : lines.join("\n"); // 일반 매물은 제목 없이 작게 (2026-10-29)
 }
 
 function gwSnsCompose(channel, post, ctx) {
@@ -212,8 +211,9 @@ function gwSnsCompose(channel, post, ctx) {
   const url = L && c.url ? GWNaverBlog.listingUrl(null, { ...L, detailUrl: c.url }) : c.url || "";
   const office = L && L.owner && L.owner.type === "agency" ? L.owner.name : "";
   const landlordPost = Boolean(L && L.owner && L.owner.type === "general" && !L.saleKind); // 임대인 직접 등록 — "공실뉴스에서" 대신 그냥 "자세히 보기"
-  const where = office || (landlordPost ? "" : "공실뉴스");
-  const homeLine = home && !(L && L.saleKind) ? `▶ ${office || "우리 사무소"} 홈페이지 — 다른 매물 보기 · 팔거나 세놓을 물건은 홈페이지에 남겨 주세요\n${home}` : "";
+  // 링크 문구는 중립적으로 — 사무소 이름을 앞세우지 않는다 (2026-10-29 사장님: 정보 느낌). 경매·공매만 예전처럼 공실뉴스
+  const where = L && L.saleKind ? "공실뉴스" : office || landlordPost ? "" : "공실뉴스";
+  const homeLine = home && !(L && L.saleKind) ? `▶ 이 동네 다른 집 보기 · 내 집 내놓기\n${home}` : "";
   const source = gwSnsSourceText(c.listing, noun);
   const tagLine = (tags) => (tags || []).map((tag) => `#${tag}`).join(" ");
 
@@ -221,7 +221,7 @@ function gwSnsCompose(channel, post, ctx) {
     const posts = (post?.posts || []).map((text) => String(text || "").trim()).filter(Boolean);
     if (!posts.length) return { posts: [], text: "" };
     if (post.topic) posts[0] = `${posts[0]}\n\n#${post.topic}`;
-    const tail = [url ? `▶ ${where ? `${where}에서 ` : ""}${noun} 자세히 보기\n${url}` : "", homeLine, source].filter(Boolean).join("\n\n");
+    const tail = [url ? `▶ ${where ? `${where}에서 ` : ""}물건 상세 확인하기\n${url}` : "", homeLine, source].filter(Boolean).join("\n\n");
     if (tail) {
       const last = posts.length - 1;
       if (posts[last].length + tail.length + 2 <= GW_SNS_CHANNELS.threads.maxChars) posts[last] = `${posts[last]}\n\n${tail}`;
@@ -236,10 +236,10 @@ function gwSnsCompose(channel, post, ctx) {
   if (channel === "instagram") {
     /* 인스타 캡션의 링크는 눌리지 않는다 — 프로필 링크 안내를 먼저, 주소는 복사해 갈 수 있게 글자로 함께 */
     parts.push(url
-      ? `자세한 ${noun} 정보는 프로필 링크${where ? ` → ${where}` : ""}\n${url}`
-      : `자세한 ${noun} 정보는 프로필 링크${where ? ` → ${where}` : ""}`);
+      ? `물건 상세 확인하기 → 프로필 링크 🔗\n${url}`
+      : `물건 상세 확인하기 → 프로필 링크 🔗`);
   } else if (url) {
-    parts.push(`▶ ${where ? `${where}에서 ` : ""}${noun} 자세히 보기\n${url}`);
+    parts.push(`▶ ${where ? `${where}에서 ` : ""}물건 상세 확인하기\n${url}`);
   }
   if (homeLine) parts.push(homeLine);
   if (source) parts.push(source);

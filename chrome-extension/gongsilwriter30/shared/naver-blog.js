@@ -242,15 +242,13 @@
     /* 내 부동산이 먼저, 공실뉴스는 맨 아래 한 줄 (2026-10-29 사장님) */
     const owner = listing?.owner || {};
     const lines = [];
+    // 정보 글 끝에 법에 필요한 표시만 작게 (공인중개사법 표시·광고 — 상호·대표·등록번호·소재지·연락처, 2026-10-29 사장님)
     if (owner.type === "agency") {
-      lines.push(`${owner.name}${owner.ceo ? ` | 대표 ${owner.ceo}` : ""}`);
-      if (owner.phone) lines.push(`전화 ${owner.phone}`);
-      lines.push(`${owner.address}${owner.regNo ? ` | 등록번호 ${owner.regNo}` : ""}`);
+      lines.push(`${owner.name}${owner.ceo ? ` | 대표 ${owner.ceo}` : ""}${owner.regNo ? ` · 등록번호 ${owner.regNo}` : ""}`);
+      lines.push([owner.address, owner.phone].filter(Boolean).join(" · "));
     } else if (owner.name) {
-      lines.push(`집주인 직접 등록 · ${owner.name}`);
-      if (owner.phone) lines.push(`전화 ${owner.phone}`);
+      lines.push(`집주인 직접 등록 · ${owner.name}${owner.phone ? ` · ${owner.phone}` : ""}`);
     }
-    lines.push("※ 매물 조건은 등록 시점 기준이며 실제와 다를 수 있습니다.");
     // 회원 글에는 공실뉴스를 쓰지 않는다 — 물건번호와 기준일만 (2026-10-29 사장님)
     lines.push(`${owner.vacancyNo ? `물건번호 ${owner.vacancyNo} · ` : ""}${formatDate(listing?.capturedAt)} 기준`);
     return { lines, url };
@@ -420,14 +418,14 @@
     const home = homepageOf(options.listing);
     const office = owner.type === "agency" ? owner.name : "";
     html("<hr>");
-    html(paragraphHtml(noun === "물건" ? `[${noun} 정보 출처]` : "[문의 · 매물 정보]", { size: 13, color: MUTED, bold: true }), { tight: true });
+    if (noun === "물건") html(paragraphHtml(`[${noun} 정보 출처]`, { size: 13, color: MUTED, bold: true }), { tight: true });
     source.lines.forEach((line) => html(paragraphHtml(line, { size: 13, color: MUTED }), { tight: true }));
     html(BLANK, { tight: true });
     if (noun === "물건") html(linkHtml(source.url, "▶ 공실뉴스 경매·공매 물건 상세 보기"));
-    else html(linkHtml(source.url, office ? `▶ ${office} 매물 자세히 보기` : "▶ 매물 자세히 보기"));
+    else html(linkHtml(source.url, "▶ 물건 상세 확인하기"));
     if (home && noun !== "물건") {
-      html(linkHtml(home, `▶ ${office || "우리 사무소"} 홈페이지 — 다른 매물 보기`));
-      html(linkHtml(`${home}/#intake`, "▶ 팔거나 세놓을 물건이 있으신가요? 홈페이지에 남겨 주세요"));
+      html(linkHtml(home, "▶ 이 동네 다른 집 보기"));
+      html(linkHtml(`${home}/#intake`, "▶ 내 집 내놓기"));
     }
     flush();
     return blocks;
