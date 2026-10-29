@@ -27,11 +27,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   // 보기 방식 (2026-10-28 사장님): 카드형(기본 — 홈 "내 공실 홍보현황"과 같은 카드) / 목록형(표 — 여러 개 골라 처리)
   // 최고관리자 화면은 전체 공실이라 표만 · 회원이 고른 보기는 이 기기에 기억
   const canCard = role !== "admin";
-  // 처음 화면 (2026-10-29 사장님): 공실마케팅 앱은 등록형(표), 웹은 SNS홍보형(카드)
-  const [view, setView] = useState<"card" | "list">("card");
-  useEffect(() => {
-    if ((window as unknown as { gongsilStudio?: unknown }).gongsilStudio) setView("list");
-  }, []);
+  // 처음 화면은 앱·웹 모두 등록형(표) (2026-10-29 사장님)
+  const [view, setView] = useState<"card" | "list">("list");
   const [cardQ, setCardQ] = useState(""); // 카드형 찾기 칸 (2026-10-28 사장님)
   const pickView = (v: "card" | "list") => {
     setView(v);
