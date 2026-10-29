@@ -467,8 +467,8 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
       <CardHoverStyle darkMode={darkMode} />
       {menu && (() => {
         const pr = promos[menu.v.id];
-        const onCount = (menu.v.active ? 1 : 0) + (pr?.article && !pr.article.pending ? 1 : 0) + CHANNELS.filter((c) => pr?.links[c.id]).length;
-        return <CardMenu theme={theme} title={menu.v.title} sub={[menu.v.no, menu.v.price, `광고 중 ${onCount}/${CHANNELS.length + 2}`].filter(Boolean).join(" · ")}
+        const onCount = (menu.v.active ? 1 : 0) + CHANNELS.filter((c) => pr?.links[c.id]).length;
+        return <CardMenu theme={theme} title={menu.v.title} sub={[menu.v.no, menu.v.price, `광고 중 ${onCount}/${CHANNELS.length + 1}`].filter(Boolean).join(" · ")}
           x={menu.x} y={menu.y} groups={menuGroups(menu.v)} onClose={() => setMenu(null)} />;
       })()}
       {stopFor && (
@@ -549,14 +549,12 @@ function PromoRows({ theme, v, promo, homepage = "", onMake, onListing, onPaste,
   const { textSecondary, darkMode } = theme;
   const green = "#2f9e44";
   const origin = typeof window === "undefined" ? "" : window.location.origin;
-  const art = promo?.article;
+  // (공실뉴스 기사 칸은 뺐다 — promo.article 은 더 쓰지 않는다)
 
   const slots: Slot[] = [
     // 내 홈페이지(Pro · Studio)가 있으면 물건접수 홈페이지의 그 매물 화면으로 (2026-10-29 사장님)
     { id: "listing", label: homepage ? "물건접수 홈페이지 매물" : "공실뉴스 매물", bg: BG.listing, glyph: G.listing, state: v.active ? "on" : "off", url: v.active ? `${homepage || origin}/gongsil/detail/${v.id}` : undefined, note: v.active ? undefined : "공개 전 — 누르면 공실 수정" },
-    { id: "article", label: "공실뉴스 기사", bg: BG.article, glyph: G.article, tab: "article",
-      state: art && !art.pending ? "on" : art || v.done.article ? "draft" : "off",
-      url: art && !art.pending ? `${origin}/news/${art.no}` : undefined, note: art?.pending ? "기사 검토 중" : undefined },
+    // 공실뉴스 기사 칸은 뺐다 (2026-10-29 사장님: 아이콘 필요 없음) — 기사는 기사관리에서
     ...CHANNELS.map((c): Slot => {
       const url = promo?.links[c.id];
       return { id: c.id, label: c.label, bg: BG[c.id], glyph: G[c.id], url, tab: c.id, channel: c.id, state: url ? "on" : v.done[c.id] ? "draft" : "off" };
