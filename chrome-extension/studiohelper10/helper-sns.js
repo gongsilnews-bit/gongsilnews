@@ -23,18 +23,23 @@
     const code = (/\/post\/([A-Za-z0-9_-]+)/.exec(location.pathname) || [])[1] || "";
     (async () => {
       let state = null;
+      let loggedOut = false;
       for (let i = 0; i < 16; i++) {
         await sleep(1000);
         const loginForm = document.querySelector("input[name='password'], input[name='pass'], form[action*='login']");
-        if (/\/accounts\/login|\/login/.test(location.pathname) || loginForm) { state = null; break; }
+        if (/\/accounts\/login|\/login/.test(location.pathname) || loginForm) { state = null; loggedOut = true; break; }
         const text = (document.body && document.body.innerText) || "";
+        // 페이스북은 지운 글 주소를 홈 피드로 보낸다 — 글 주소(permalink·posts·story_fbid)가 사라지면 지운 것 (2026-10-29)
+        if (target === "facebook" && i >= 2 && !/permalink|\/posts\/|story_fbid|\/videos\/|\/reel\//.test(location.pathname + location.search)) { state = true; break; }
         if (GONE.test(text) || (target === "threads" && GONE_TH.test(text.slice(0, 600))) || /error=invalid_post/.test(location.search)) { state = true; break; }
         const shown = target === "instagram" ? document.querySelector("article, main [role='presentation'] img, video")
           // 스레드는 그 글 주소(시간 줄 링크)가 보여야 "있음" — 글자만으로는 모른다 (지운 글도 다른 글이 보인다)
           : target === "threads" ? (code ? document.querySelector(`a[href*="/post/${code}"] time`) : null)
-          : document.querySelector("[role='article'], [data-ad-preview='message']");
+          : null; // 페이스북은 피드에도 다른 글(role=article)이 있어 글자로는 "있음"을 정하지 않는다 — 주소가 그대로면 아래에서
         if (shown && i >= 4) { state = false; break; }
       }
+      // 페이스북: 끝까지 글 주소 그대로이고 "없는 페이지" 글자도 없으면 있는 글
+      if (state === null && target === "facebook" && !loggedOut && /permalink|\/posts\/|story_fbid|\/videos\/|\/reel\//.test(location.pathname + location.search)) state = false;
       if (state !== true) send({ type: "GS_LOG", text: `${target} 확인 ${state === false ? "있음" : "모름"} — ${((document.body && document.body.innerText) || "").replace(/\s+/g, " ").slice(0, 120)}` });
       send({ type: "GS_VERIFY", gone: state });
     })();
