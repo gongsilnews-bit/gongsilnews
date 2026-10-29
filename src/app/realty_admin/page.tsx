@@ -187,16 +187,8 @@ function RealtyAdminContent() {
     setMenuLayout(layout ? normalizeLayout(layout, defaultLayout) : defaultLayout);
     setMenuDraft(null);
   };
-  // 2026-10-26 사장님: 웹에서도 공실마케팅 이용 중(Studio 마크)·비즈니스(기간 안)·최고관리자는 바뀐 화면, 공실뉴스부동산(무료)은 예전 아이콘 메뉴
-  const paidOnWeb = (() => {
-    if (isAdminRole(userRole)) return true;
-    if (isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })) return true;
-    if (userRole !== "BIZ" || planType !== "biz_premium") return false;
-    if (!planEndDate) return true;
-    const end = new Date(planEndDate); end.setHours(23, 59, 59, 999);
-    return end >= new Date();
-  })();
-  const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB || paidOnWeb;
+  // 2026-10-29 사장님: 웹은 공실마케팅 회원이라도 예전 아이콘 메뉴 — 바뀐 화면(심플한 글자 메뉴)은 공실마케팅 앱에서만
+  const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
   // 최고관리자는 앱에서도 숨긴 메뉴까지 모두 본다 — 숨긴 메뉴에는 [개발중] 표시 (2026-10-23 사장님)
   const isSuperAdmin = isAdminRole(userRole);
   const shown = (k: string) => !(studioApp.isApp && HIDDEN_IN_APP.includes(k) && !isSuperAdmin);
@@ -482,7 +474,8 @@ function RealtyAdminContent() {
             {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
           </div>
           </div>
-          {memberId && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
+          {/* 웹 아이콘 메뉴(간단한 화면)에는 물건접수홈페이지 줄도 뺀다 (2026-10-29 사장님) */}
+          {memberId && useStudioMenu && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
             <NotificationBell color={useStudioMenu ? "#ffffff" : darkMode ? "#e1e4e8" : "#333"} />
             {!useStudioMenu && <button onClick={() => setDarkMode(!darkMode)} style={{ background: useStudioMenu ? "rgba(255,255,255,0.08)" : darkMode ? "#2c2d31" : "none", border: `1px solid ${useStudioMenu ? "rgba(255,255,255,0.25)" : darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>}
