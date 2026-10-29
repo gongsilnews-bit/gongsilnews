@@ -396,7 +396,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
       {/* 오른쪽: 작업 공간 */}
       <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+      {/* 목록(공실 카드)일 때는 폭 제한 없이 왼쪽부터 — 공실관리와 같이 (2026-10-29 사장님) */}
+      <div style={category === "gongsil" && mode === "list" ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
