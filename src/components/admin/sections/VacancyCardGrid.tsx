@@ -262,11 +262,22 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   const [menu, setMenu] = useState<{ v: VacancyCard; x: number; y: number } | null>(null);
   const [pasteFor, setPasteFor] = useState<{ v: VacancyCard; ch: PromoChannel; x: number; y: number } | null>(null); // 아이콘 오른쪽 클릭 — 링크 작은 창
   const [linksFor, setLinksFor] = useState<{ v: VacancyCard; x: number; y: number } | null>(null); // [링크 수정] 창
-  // [링크 수정]을 열면 지운 글 확인을 바로 — 서버(블로그·스레드·유튜브) + 도우미 확장(인스타·페북, 1분 안) (2026-10-29 사장님)
+  // [링크 수정]을 열면 지운 글 확인을 바로 — 서버(블로그·유튜브)는 창에 결과까지, 도우미(인스타·페북·스레드)는 1분 안 (2026-10-29 사장님)
+  const [linkStatus, setLinkStatus] = useState("");
   useEffect(() => {
-    if (!linksFor) return;
-    checkLinks({ vacancyId: linksFor.v.id });
-    verifyByHelper(Object.values(promos[linksFor.v.id]?.links || {}));
+    if (!linksFor) { setLinkStatus(""); return; }
+    const links = promos[linksFor.v.id]?.links || {};
+    const helperOnes = Object.entries(links).filter(([c, u]) => u && ["instagram", "facebook", "threads"].includes(c)).length;
+    const helperNote = helperOnes && (window as unknown as { gongsilStudio?: unknown }).gongsilStudio ? ` · 인스타·페북·스레드 ${helperOnes}개는 도우미가 1분 안에 확인해요` : "";
+    setLinkStatus("지운 글인지 확인 중…");
+    checkMyPromoLinks({ vacancyId: linksFor.v.id }).then((r) => {
+      if (!r.success) return setLinkStatus("확인하지 못했어요 — 다시 열어 주세요");
+      if (r.removed.length) {
+        setLinkStatus(`지운 글 ${r.removed.length}개를 풀었어요 (${r.removed.map((x) => x.channel).join("·")})${helperNote}`);
+        void loadPromos();
+      } else setLinkStatus(`블로그·유튜브는 모두 있어요${helperNote}`);
+    }).catch(() => setLinkStatus("확인하지 못했어요 — 다시 열어 주세요"));
+    verifyByHelper(Object.values(links));
   }, [linksFor?.v.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [stopFor, setStopFor] = useState<VacancyCard | null>(null); // 광고 내리기 — 이유 묻기
   const [cleanFor, setCleanFor] = useState<VacancyCard | null>(null); // 거래 완료 — 올라간 글 정리 // [링크 붙여넣기] 창 (아이콘 오른쪽 클릭이면 그 채널)
@@ -462,7 +473,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
           }} />
       )}
       {linksFor && (
-        <LinksPanel theme={theme} x={linksFor.x} y={linksFor.y} links={promos[linksFor.v.id]?.links || {}} onClose={() => setLinksFor(null)}
+        <LinksPanel theme={theme} x={linksFor.x} y={linksFor.y} links={promos[linksFor.v.id]?.links || {}} onClose={() => setLinksFor(null)} status={linkStatus}
           onSave={async (ch, url) => {
             const r = await saveVacancyPromo(linksFor.v.id, ch, url);
             if (!r.success) return r.error || "저장하지 못했어요.";
@@ -655,9 +666,11 @@ export function LinkPopover({ theme, x, y, channel, url, onSave, onClose }: {
 }
 
 /* [링크 수정] 창 — 다섯 채널 링크를 한 번에: 주소 보기 · [복사] · [수정](파란 칸) · 빈 채널은 [붙여넣기] (2026-10-28 사장님) */
-export function LinksPanel({ theme, x, y, links, onSave, onClose }: {
+export function LinksPanel({ theme, x, y, links, onSave, onClose, status }: {
   theme: AdminSectionProps["theme"]; x: number; y: number; links: Partial<Record<PromoChannel, string>>;
   onSave: (ch: PromoChannel, url: string) => Promise<string>; onClose: () => void;
+  /** 지운 글 확인 상태 — "확인 중…" · "지운 글 n개를 풀었어요" (창 맨 위, 2026-10-29) */
+  status?: string;
 }) {
   const { cardBg, textPrimary, textSecondary, border, darkMode } = theme;
   const [edit, setEdit] = useState<PromoChannel | null>(null);
@@ -694,6 +707,7 @@ export function LinksPanel({ theme, x, y, links, onSave, onClose }: {
       <div ref={ref} role="dialog" aria-label="링크 수정"
         style={{ position: "fixed", left: pos.left, top: pos.top, zIndex: 10002, width: 420, maxWidth: "calc(100vw - 16px)", background: cardBg, border: `1px solid ${border}`, borderRadius: 12, padding: "12px 14px", boxShadow: "0 10px 32px rgba(0,0,0,0.2)" }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>링크 수정</div>
+        {status && <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8, color: /풀었/.test(status) ? "#dc2626" : /중…/.test(status) ? "#2563eb" : "#16a34a" }}>{status}</div>}
         {CLEAN_CH.map(([c, label]) => {
           const url = links[c];
           return (

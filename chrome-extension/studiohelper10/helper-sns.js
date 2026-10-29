@@ -34,7 +34,7 @@
         // 페이스북: 지운 글 주소는 그대로 둔 채 홈 피드(글쓰기 칸 "무슨 생각을 하고 계신가요?")를 보여 준다 (2026-10-29 기록)
         if (target === "facebook" && i >= 2 && /무슨 생각을 하고 계신가요|What.s on your mind/.test(text.slice(0, 300))) { state = true; break; }
         // 스레드: 지운 글은 프로필 화면(/@아이디)으로 보낸다 — 글 주소(/post/)가 사라지면 지운 것
-        if (target === "threads" && code && i >= 2 && !/\/post\//.test(location.pathname)) { state = true; break; }
+        if (target === "threads" && i >= 2 && !/\/post\//.test(location.pathname)) { state = true; break; } // 우리는 글 주소만 연다 — 글 화면이 아니면 지운 것
         //  주소는 그대로인데 프로필 머리(팔로워 n명)만 보이고 그 글이 없을 때도 (5초 기다린 뒤)
         if (target === "threads" && code && i >= 5 && /팔로워|followers/i.test(text.slice(0, 150)) && !document.querySelector(`a[href*="/post/${code}"] time`)) { state = true; break; }
         if (GONE.test(text) || (target === "threads" && GONE_TH.test(text.slice(0, 600))) || /error=invalid_post/.test(location.search)) { state = true; break; }

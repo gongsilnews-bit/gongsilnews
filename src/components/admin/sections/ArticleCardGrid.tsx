@@ -52,13 +52,22 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
   const [pasteFor, setPasteFor] = useState<{ a: MyArticleCard; ch: ArtCh; x: number; y: number } | null>(null); // 아이콘 오른쪽 클릭 — 링크 작은 창
   const [linksFor, setLinksFor] = useState<{ a: MyArticleCard; x: number; y: number } | null>(null); // [링크 수정] — 다섯 채널 한눈에
   // [링크 수정]을 열면 이 기사 링크만 바로 확인 — 서버(블로그·스레드·유튜브) + 도우미(인스타·페북) (2026-10-29 사장님)
+  const [linkStatus, setLinkStatus] = useState("");
   useEffect(() => {
-    if (!linksFor) return;
+    if (!linksFor) { setLinkStatus(""); return; }
+    const links = linksFor.a.links || {};
+    const helperOnes = Object.entries(links).filter(([c, u]) => u && ["instagram", "facebook", "threads"].includes(c)).length;
+    const inApp = Boolean((window as unknown as { gongsilStudio?: unknown }).gongsilStudio);
+    const helperNote = helperOnes && inApp ? ` · 인스타·페북·스레드 ${helperOnes}개는 도우미가 1분 안에 확인해요` : "";
+    setLinkStatus("지운 글인지 확인 중…");
     checkMyPromoLinks({ articleNo: linksFor.a.no }).then((r) => {
-      if (!r.removed.length) return;
-      getMyArticleCards().then((x) => { if (x.success) setArticles(x.data); }).catch(() => {});
-    }).catch(() => {});
-    verifyByHelper(Object.values(linksFor.a.links || {}));
+      if (!r.success) return setLinkStatus("확인하지 못했어요 — 다시 열어 주세요");
+      if (r.removed.length) {
+        setLinkStatus(`지운 글 ${r.removed.length}개를 풀었어요 (${r.removed.map((x) => x.channel).join("·")})${helperNote}`);
+        getMyArticleCards().then((x) => { if (x.success) setArticles(x.data); }).catch(() => {});
+      } else setLinkStatus(`블로그·유튜브는 모두 있어요${helperNote}`);
+    }).catch(() => setLinkStatus("확인하지 못했어요 — 다시 열어 주세요"));
+    verifyByHelper(Object.values(links));
   }, [linksFor?.a.no]); // eslint-disable-line react-hooks/exhaustive-deps
   const [artMenu, setArtMenu] = useState<{ a: MyArticleCard; x: number; y: number } | null>(null);
   const [flash, setFlash] = useState("");
@@ -265,7 +274,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
           }} />
       )}
       {linksFor && (
-        <LinksPanel theme={theme} x={linksFor.x} y={linksFor.y} links={(articles || []).find((x) => x.id === linksFor.a.id)?.links || {}} onClose={() => setLinksFor(null)}
+        <LinksPanel theme={theme} x={linksFor.x} y={linksFor.y} links={(articles || []).find((x) => x.id === linksFor.a.id)?.links || {}} onClose={() => setLinksFor(null)} status={linkStatus}
           onSave={async (ch, url) => {
             const r = await saveMyArticlePromo(linksFor.a.id, ch, url);
             if (!r.success) return r.error || "저장하지 못했어요.";
