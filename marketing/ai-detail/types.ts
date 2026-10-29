@@ -118,6 +118,8 @@ export interface FlyerLayout {
   id: string;
   name: string;
   type: 'big' | 'photo' | 'board' | 'diagonal' | 'split' | 'color' | 'frame' | 'gallery' | 'type1' | 'type2' | 'type3' | 'type4' | 'type5' | 'type6';
+  /** 목록에서 숨김 — 이미 만든 홍보지는 열린다 */
+  hidden?: boolean;
   headingFont: string; // Tailwind class for headings
   bodyFont: string;    // Tailwind class for body text
 }

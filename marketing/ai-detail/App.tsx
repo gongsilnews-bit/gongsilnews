@@ -24,7 +24,8 @@ export const LAYOUTS: FlyerLayout[] = [
   { id: 'photo', name: '사진형', type: 'photo', headingFont: 'font-sans', bodyFont: 'font-sans' },
   // 2026-10-28 사장님이 보내 준 견본 스타일
   { id: 'board', name: '추천 걸이판', type: 'board', headingFont: 'font-sans', bodyFont: 'font-sans' },
-  { id: 'diagonal', name: '사선 사진', type: 'diagonal', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  // 사선 사진은 목록에서 뺐다 (2026-10-29 사장님: 디자인이 별로) — 이미 만든 홍보지는 그대로 열린다
+  { id: 'diagonal', name: '사선 사진', type: 'diagonal', headingFont: 'font-sans', bodyFont: 'font-sans', hidden: true },
   { id: 'split', name: '반반 사진', type: 'split', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'color', name: '색 바탕', type: 'color', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'frame', name: '테두리', type: 'frame', headingFont: 'font-sans', bodyFont: 'font-sans' },

@@ -178,7 +178,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
         </h3>
         {/* 새 디자인 2가지가 기본, 예전 6가지는 접어 둔다 (이미 만든 홍보지용) */}
         <div className="grid grid-cols-2 gap-2">
-             {layouts.filter((l) => isNewLayout(l.type)).map((layout, idx) => (
+             {layouts.filter((l) => isNewLayout(l.type) && (!l.hidden || currentLayout.id === l.id)).map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
@@ -192,7 +192,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
         <details className="mt-2" open={!isNewLayout(currentLayout.type)}>
           <summary className="text-[11px] text-gray-400 cursor-pointer select-none">예전 디자인</summary>
           <div className="grid grid-cols-6 gap-1 mt-2">
-             {layouts.filter((l) => !isNewLayout(l.type)).map((layout, idx) => (
+             {layouts.filter((l) => !isNewLayout(l.type) && !l.hidden).map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
