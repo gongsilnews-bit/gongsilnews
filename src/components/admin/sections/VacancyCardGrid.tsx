@@ -107,10 +107,10 @@ export function useHomepageBase(memberId?: string) {
 }
 /** homepage 가 있으면 두 번째 버튼 [물건 맡기기] — 내 홈페이지 물건 접수 칸(#intake)으로 (2026-10-29 사장님) */
 /** 도우미 확장에게 인스타·페북 지운 글 확인을 부탁 (앱에서만, 2026-10-29) */
-export function verifyByHelper(urls: (string | undefined)[]) {
-  const list = urls.filter((u): u is string => !!u && /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u));
-  if (!list.length) return; // 인스타·페북 링크가 없으면 부탁할 것도 없다
-  try { void (window as unknown as { gongsilStudio?: { promo?: { verifyNow?: (u: string[]) => Promise<unknown> } } }).gongsilStudio?.promo?.verifyNow?.(list); } catch {}
+export function verifyByHelper(urls: (string | undefined)[] | "all") {
+  const list = urls === "all" ? "all" : urls.filter((u): u is string => !!u && /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u));
+  if (list !== "all" && !list.length) return; // 인스타·페북·스레드 링크가 없으면 부탁할 것도 없다
+  try { void (window as unknown as { gongsilStudio?: { promo?: { verifyNow?: (u: string[] | "all") => Promise<unknown> } } }).gongsilStudio?.promo?.verifyNow?.(list); } catch {}
 }
 export async function kakaoShare(o: { title: string; description: string; imageUrl?: string | null; url: string; button: string; homepage?: string }) {
   const K = await loadKakao();
@@ -201,6 +201,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
       if (Date.now() - last < 6 * 60 * 60 * 1000) return;
       checkedAt.current = Date.now();
       try { localStorage.setItem("gs-promo-checked", String(checkedAt.current)); } catch {}
+      verifyByHelper("all"); // 인스타·페북·스레드는 도우미가 평소 크롬에서 (1분 안, 2026-10-29)
     }
     checkMyPromoLinks(only).then((r) => {
       if (!r.removed.length) return;

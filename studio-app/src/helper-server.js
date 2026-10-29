@@ -135,8 +135,11 @@ function handle(req, res) {
   // 확장이 1분마다 묻는다 — 회원이 [링크 수정]을 눌렀으면 지금 확인 (한 번 대답하면 내린다)
   if (url.pathname === "/gs-helper/verify-wanted") {
     const urls = verifyWanted;
+    const all = verifyAll;
     verifyWanted = [];
-    return send(res, 200, { ok: true, want: urls.length > 0, urls });
+    verifyAll = false;
+    if (all || urls.length) log.info(`[홍보현황] 도우미에게 지운 글 확인 넘김 ${all ? "전체" : `${urls.length}개`}`);
+    return send(res, 200, { ok: true, want: all || urls.length > 0, urls: all ? [] : urls });
   }
   if (url.pathname === "/gs-helper/verify-list") {
     Promise.resolve(verifier ? verifier.list() : [])
@@ -162,8 +165,10 @@ function handle(req, res) {
 
 let verifier = null;
 let verifyWanted = [];
+let verifyAll = false; // 앱 홈을 열 때(6시간에 한 번) — 내 인스타·페북·스레드 링크 전체
 /** 회원이 [링크 수정]을 눌렀다 — 그 공실·기사의 인스타·페북 링크만, 확장이 다음에 물을 때(1분 안) 확인 */
 const requestVerify = (urls) => {
+  if (urls === "all") { verifyAll = true; return; }
   const ok = (Array.isArray(urls) ? urls : []).map(String).filter((u) => /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u));
   verifyWanted = [...new Set([...verifyWanted, ...ok])].slice(0, 20);
 };

@@ -64,7 +64,7 @@ async function verifyLinks(force, only) {
 chrome.runtime.onStartup.addListener(() => { setTimeout(() => verifyLinks(false), 60 * 1000); });
 // 1분마다 앱에 "지금 확인할까" 묻는다 — 회원이 앱에서 [링크 수정]을 누르면 바로 (앱이 꺼져 있으면 아무 일 없음)
 const alarms = () => { chrome.alarms.create("gs-verify", { periodInMinutes: 180 }); chrome.alarms.create("gs-verify-poll", { periodInMinutes: 1 }); };
-chrome.runtime.onInstalled.addListener(alarms);
+chrome.runtime.onInstalled.addListener(() => { alarms(); setTimeout(() => verifyLinks(false), 60 * 1000); });
 chrome.runtime.onStartup.addListener(alarms);
 let verifying = false;
 chrome.alarms.onAlarm.addListener(async (a) => {
