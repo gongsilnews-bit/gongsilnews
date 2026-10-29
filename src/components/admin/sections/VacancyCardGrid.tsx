@@ -112,6 +112,12 @@ export function verifyByHelper(urls: (string | undefined)[] | "all") {
   if (list !== "all" && !list.length) return; // 인스타·페북·스레드 링크가 없으면 부탁할 것도 없다
   try { void (window as unknown as { gongsilStudio?: { promo?: { verifyNow?: (u: string[] | "all") => Promise<unknown> } } }).gongsilStudio?.promo?.verifyNow?.(list); } catch {}
 }
+/** 새로고침 표시 — [링크체크] 앞 (2026-10-29 사장님) */
+export const RefreshGlyph = ({ size = 12 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" />
+  </svg>
+);
 export async function kakaoShare(o: { title: string; description: string; imageUrl?: string | null; url: string; button: string; homepage?: string }) {
   const K = await loadKakao();
   const intake = o.homepage ? `${o.homepage}/#intake` : "";
@@ -583,8 +589,8 @@ function PromoRows({ theme, v, promo, homepage = "", onMake, onListing, onPaste,
         ))}
         {/* 링크체크 — 채널 링크를 한눈에 보고 복사·고치기 (2026-10-28 사장님: 회색으로) */}
         <button onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onLinks(r.left, r.bottom + 6); }} title="채널별 링크 보기·복사·수정"
-          style={{ marginLeft: "auto", height: 32, padding: "0 10px", borderRadius: 10, border: 0, background: darkMode ? "#3a3b40" : "#e9ecef", color: textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-          링크체크
+          style={{ marginLeft: "auto", height: 32, padding: "0 10px", borderRadius: 10, border: 0, background: darkMode ? "#3a3b40" : "#e9ecef", color: textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+          <RefreshGlyph />링크체크
         </button>
       </div>
     </div>

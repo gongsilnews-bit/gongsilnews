@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import { IconArticle, IconSend } from "./AdminIcons";
 import { checkMyPromoLinks } from "@/app/actions/vacancyPromos";
-import { BG, G, SITE, kakaoShare, verifyByHelper, useHomepageBase, LinkPopover, LinksPanel, CardTools, CardHoverStyle, CardMenu, LoadingDots, IconOut, IconPen, IconStar, IconLink, IconTrash, type MenuItem } from "./VacancyCardGrid";
+import { BG, G, SITE, kakaoShare, verifyByHelper, RefreshGlyph, useHomepageBase, LinkPopover, LinksPanel, CardTools, CardHoverStyle, CardMenu, LoadingDots, IconOut, IconPen, IconStar, IconLink, IconTrash, type MenuItem } from "./VacancyCardGrid";
 import { deleteMyArticle, getMyArticleBody, getMyArticleCards, saveMyArticlePromo, type MyArticleCard } from "@/app/actions/myArticles";
 
 type ColumnNews = { title: string; publisher: string; publishedAt: string; url: string; body: string };
@@ -246,8 +246,8 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
                       {/* 링크체크 — 사진 안 아이콘 줄 끝 (2026-10-28 사장님) */}
                       <span role="button" title="채널별 링크 보기·복사·수정"
                         onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setLinksFor({ a, x: r.right - 420, y: r.bottom + 6 }); }}
-                        style={{ marginLeft: "auto", height: 22, padding: "0 7px", borderRadius: 6, background: "rgba(233,236,239,0.92)", color: "#495057", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
-                        링크체크
+                        style={{ marginLeft: "auto", height: 22, padding: "0 7px", borderRadius: 6, background: "rgba(233,236,239,0.92)", color: "#495057", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer" }}>
+                        <RefreshGlyph size={10} />링크체크
                       </span>
                     </span>
                     {pending && <span style={{ position: "absolute", left: 8, top: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 6, background: "#f59f00", color: "#fff" }}>검토 중</span>}
