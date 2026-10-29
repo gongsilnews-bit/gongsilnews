@@ -2,6 +2,8 @@
 
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import StudioMyVideoPanel from "./StudioMyVideoPanel";
+import VacancyCardGrid from "./VacancyCardGrid";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
@@ -86,6 +88,7 @@ const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
 export default function StudioSnsSection({ theme, memberId }: { theme: Theme; memberId: string }) {
+  const router = useRouter();
   const [ai, setAi] = useState<AiItem[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
@@ -104,10 +107,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
-  const [mode, setMode] = useState<"" | "list" | "new">("");
+  // 2026-10-29 사장님: 들어오면 기사관리처럼 목록이 먼저 — [+ 새로 만들기] + 만든 작업 카드. 홈 카드·.gsn 으로 오면 바로 작업
+  const [mode, setMode] = useState<"" | "list" | "new">("list");
   // .gsn 에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsn=<id> 로 연다.
   // 각 화면이 "이 기기에 기억한 마지막 작업"을 불러오는 길을 그대로 쓴다 — 효과(useEffect)보다 먼저, 처음 그릴 때 기억을 바꿔 둔다
-  useState(() => {
+  const [gsnOpened] = useState(() => {
     if (typeof window === "undefined") return "";
     const u = new URL(window.location.href);
     const id = u.searchParams.get("gsn") || "";
@@ -204,6 +208,18 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     if (works?.some((w) => w.vacancyId === v.id)) void openWork(v.id, v);
     else void analyze(v);
   };
+  /* 목록 카드에서 열기 (2026-10-29) — 써 둔 작업이 있으면 그 채널 탭으로, 처음이면 분석·캡처부터 */
+  const openFromCard = async (p: VacancyRow, t: string) => {
+    if (works?.some((w) => w.vacancyId === p.id)) {
+      await openWork(p.id, p);
+      chooseTab(t);
+    } else {
+      setPicked(p);
+      setTab(t);
+      setError("");
+      await analyze(p);
+    }
+  };
   /* 작업해 둔 공실 열기 — 분석·캡처는 다시 하지 않는다 */
   const openWork = async (id: string, v?: VacancyRow) => {
     const b = bridge();
@@ -244,6 +260,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       if (saved?.auto) localStorage.setItem(LAST_KEY, JSON.stringify({ ...saved, auto: undefined }));
     } catch {}
     if (!saved?.vacancyId) return;
+    // 그냥 들어오면 목록부터 — 홈 카드에서 막 눌렀거나(.auto) .gsn 파일로 열었을 때만 그 작업을 바로 연다
+    if (!saved.auto && !gsnOpened) return;
     b.vacancy.load(saved.vacancyId).catch(() => null).then(async (r) => {
       if (!r) {
         // 처음 작업하는 공실 — 홈 카드에서 누른 공실로 바로 분석·캡처, 끝나면 누른 채널 탭 (2026-10-29 사장님)
@@ -428,7 +446,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <div id="gs-step-1" style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px 2px", scrollMarginTop: 16 }}>
             <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
             <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>이 공실로 씁니다</span>
-            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 공실은 [공실 바꾸기]</span>
+            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 공실은 [← 목록]</span>
           </div>
           <div style={{ ...card, padding: "16px 20px", position: "relative", minHeight: busy ? 200 : undefined, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.darkMode ? "rgba(91,141,239,0.10)" : "#f3f7ff" }}>
             {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
@@ -465,7 +483,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               </button>
               <button onClick={openList}
                 style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-                공실 바꾸기
+                ← 목록
               </button>
             </div>
             {error && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
@@ -473,56 +491,42 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
         </>)}
 
-        {/* [공실 바꾸기] — 이 PC에서 작업한 공실 목록. 누르면 써 둔 글이 바로 열린다 */}
+        {/* 작업 목록 — 처음 화면 (2026-10-29 사장님: 기사관리처럼, 카드는 공실관리 SNS홍보형 그대로)
+            맨 앞 [+ 새로 만들기] → 공실 고르기 · 카드/채널을 누르면 이 자리에서 그 공실 작업 */}
         {mode === "list" && (
-          <div style={card}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <h3 style={{ margin: 0, flex: 1, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>공실 바꾸기</h3>
-              <button onClick={openNew}
-                style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#16a34a", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ 새로 작성</button>
-              {result && <button onClick={cancelPick}
-                style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>취소</button>}
-            </div>
-            <input value={workQ} onChange={(e) => setWorkQ(e.target.value)} placeholder="번호·이름으로 찾기"
-              style={{ width: "100%", maxWidth: 360, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary, marginBottom: 10 }} />
-            {works === null ? (
-              <div style={{ fontSize: 13, color: theme.textSecondary }}>불러오는 중…</div>
-            ) : (() => {
-              const q = workQ.trim();
-              const cur = result?.vacancyId;
-              const rows = works
-                .filter((w) => !q || `${w.no} ${w.title} ${w.priceText}`.includes(q))
-                .sort((x, y) => Number(y.vacancyId === cur) - Number(x.vacancyId === cur)); // 지금 작업을 맨 위로
-              if (!rows.length) return <div style={{ fontSize: 13.5, color: theme.textSecondary, padding: "8px 0" }}>{q ? "찾는 공실이 없어요." : "아직 작업한 공실이 없어요. [+ 새로 작성]으로 시작해 주세요."}</div>;
-              return (
-                <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", maxHeight: 520, overflowY: "auto" }}>
-                  {rows.map((w, i) => {
-                    const isCur = w.vacancyId === cur;
-                    return (
-                      <button key={w.vacancyId} onClick={() => (isCur ? cancelPick() : void openWork(w.vacancyId))}
-                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: 0, borderTop: i ? `1px solid ${theme.border}` : 0, background: isCur ? (theme.darkMode ? "rgba(255,255,255,0.06)" : "#f0f6ff") : theme.cardBg, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}>
-                        <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
-                          {w.thumb && <img src={w.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+          <div>
+            {result && (
+              <div style={{ marginBottom: 12 }}>
+                <button onClick={cancelPick}
+                  style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>지금 작업으로 돌아가기</button>
+              </div>
+            )}
+            <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} showTypes addLabel="새로 만들기" onAdd={openNew}
+              onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
+              onOpen={(p, t) => void openFromCard(p, t)} />
+            {/* 경매·공매로 쓴 작업 — 내 공실 카드에는 없어서 따로 */}
+            {(works || []).some((w) => w.saleKind) && (
+              <div style={{ marginTop: 28 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>경매·공매 물건으로 쓴 작업</div>
+                <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden" }}>
+                  {(works || []).filter((w) => w.saleKind).map((w, i) => (
+                    <button key={w.vacancyId} onClick={() => void openWork(w.vacancyId)}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: 0, borderTop: i ? `1px solid ${theme.border}` : 0, background: theme.cardBg, cursor: "pointer", textAlign: "left" }}>
+                      <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
+                        {w.thumb && <img src={w.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: theme.textPrimary }}>
+                          <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{w.saleKind}</span>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[w.no, w.title, w.priceText].filter(Boolean).join(" · ")}</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: theme.textPrimary }}>
-                            {w.saleKind && <span style={{ flexShrink: 0, whiteSpace: "nowrap", fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{w.saleKind}</span>}
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[w.no, w.title, w.priceText].filter(Boolean).join(" · ")}</span>
-                            {isCur && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#1a3a6b", color: "#fff" }}>지금 작업</span>}
-                          </div>
-                          <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 12, flexWrap: "wrap" }}>
-                            {DONE_LABELS.map(([k, label]) => (
-                              <span key={k} style={{ color: w.done[k] ? "#16a34a" : theme.textSecondary, fontWeight: w.done[k] ? 700 : 400, opacity: w.done[k] ? 1 : 0.6 }}>{label}{w.done[k] ? "✓" : ""}</span>
-                            ))}
-                          </div>
-                        </div>
-                        <span style={{ flexShrink: 0, fontSize: 12.5, color: theme.textSecondary }}>{whenText(w.updatedAt)}</span>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      <span style={{ flexShrink: 0, fontSize: 12.5, color: theme.textSecondary }}>{whenText(w.updatedAt)}</span>
+                    </button>
+                  ))}
                 </div>
-              );
-            })()}
+              </div>
+            )}
           </div>
         )}
 
@@ -532,7 +536,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <div style={{ flex: 1 }}>{stepTitle(1, "공실 고르기")}</div>
             {!result && works && works.length > 0 && <button onClick={openList}
-              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>작업한 공실 목록</button>}
+              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>← 목록</button>}
             {result && <button onClick={cancelPick}
               style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>취소</button>}
           </div>

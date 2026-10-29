@@ -143,7 +143,7 @@ export const KakaoGlyph = () => (
 export const IconBlog = (p: any) => <SvgIcon {...p}><path d="M4 4h16v12H8l-4 4z" /><line x1="8" y1="8" x2="16" y2="8" /><line x1="8" y1="12" x2="13" y2="12" /></SvgIcon>;
 export const IconReport = (p: any) => <SvgIcon {...p}><rect x="4" y="3" width="16" height="18" rx="2" /><line x1="8" y1="17" x2="8" y2="13" /><line x1="12" y1="17" x2="12" y2="9" /><line x1="16" y1="17" x2="16" y2="11" /></SvgIcon>;
 
-export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword = "", limit, onAdd, showTypes, row }: {
+export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword = "", limit, onAdd, showTypes, row, onOpen, addLabel = "공실등록" }: {
   theme: AdminSectionProps["theme"];
   memberId?: string;
   onMenuChange: (menu: string) => void;
@@ -152,6 +152,10 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   row?: boolean; // 홈 — 한 줄로 놓고 가로 스크롤 (2026-10-28 사장님)
   onAdd?: () => void; // 맨 앞 [+ 공실등록] 칸
   showTypes?: boolean; // 위에 매물별 칸 (공실등록 카드형)
+  /** 뉴스·SNS발행 목록에서 쓸 때 — 카드·채널을 누르면 그 자리에서 이 공실 작업을 연다 (2026-10-29 사장님: 공실관리 카드 그대로) */
+  onOpen?: (picked: { id: string; vacancy_no: number; building_name: string | null }, tab: string) => void;
+  /** 맨 앞 [+] 칸 글자 */
+  addLabel?: string;
 }) {
   const { cardBg, textPrimary, textSecondary, border, darkMode } = theme;
   const router = useRouter();
@@ -250,6 +254,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   // 진행판 칸을 누르면 뉴스·SNS발행에서 그 공실·그 탭으로 (StudioSnsSection 이 기억을 읽어 연다)
   // 처음 작업하는 공실도 다시 고르지 않게 공실 정보를 같이 넘긴다 — auto: 작업이 없으면 바로 분석·캡처 (2026-10-29 사장님)
   const openStep = (v: VacancyCard, tab: string) => {
+    if (onOpen) return onOpen({ id: v.id, vacancy_no: Number(v.no) || 0, building_name: v.building || null }, tab);
     try {
       const picked = { id: v.id, vacancy_no: Number(v.no) || 0, building_name: v.building || null };
       localStorage.setItem("studio_news_category", "gongsil");
@@ -398,7 +403,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
             style={{ minHeight: 230, borderRadius: 14, border: `2px dashed ${darkMode ? "#5c4033" : "#f3c9a8"}`, background: darkMode ? "#2b2320" : "#fff8f1", cursor: "pointer",
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
             <span style={{ width: 60, height: 60, borderRadius: "50%", background: "#e8590c", color: "#fff", fontSize: 34, fontWeight: 400, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(232,89,12,0.3)" }}>+</span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: darkMode ? "#ffd8a8" : "#5c3b2e" }}>공실등록</span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: darkMode ? "#ffd8a8" : "#5c3b2e" }}>{addLabel}</span>
           </button>
         )}
         {vacancies === null ? <div style={empty}><LoadingDots color={textSecondary} /></div>
