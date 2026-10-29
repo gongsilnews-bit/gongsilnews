@@ -277,14 +277,14 @@ export default function StudioVrewLanding() {
   const [src, setSrc] = React.useState(0);
   const installer = useStudioInstaller();
   const [guide, setGuide] = React.useState(false);
-  /** 칸마다 같은 두 버튼 — [영상보기] 유튜브 창 · [스튜디오 설치] 아래 앱 받기 칸 (2026-10-26 사장님) */
+  /** 칸마다 같은 두 버튼 — [영상보기] 유튜브 창 · [마케팅프로그램 PC설치] 아래 앱 받기 칸 (2026-10-26 사장님, 이름은 10-29) */
   const btns = (
     <div className="sv-btns">
       <button type="button" className="sv-btn line" onClick={() => setVideo(SAMPLE_VIDEO)}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
         영상보기
       </button>
-      <a href="#download" className="sv-btn solid">스튜디오 설치</a>
+      <a href="#download" className="sv-btn solid">마케팅프로그램 PC설치</a>
     </div>
   );
   return (
