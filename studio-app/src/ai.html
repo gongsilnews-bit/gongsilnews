@@ -49,6 +49,11 @@
   .pill small { display:block; font-size:11px; font-weight:600; opacity:.75; }
   .pill.on { background:#1a3a6b; color:#fff; border-color:#1a3a6b; }
   .pill:disabled { background:#f1f4f7; color:#a3adba; border-color:#e8ecf0; }
+  .steps { display:flex; align-items:stretch; gap:8px; }
+  .steps .step { flex:1; background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:16px 14px; display:flex; flex-direction:column; gap:6px; font-size:13.5px; color:#191f28; word-break:keep-all; }
+  .steps .step small { font-size:12px; line-height:1.6; color:#6b7684; }
+  .steps .n { width:24px; height:24px; border-radius:50%; background:#1a3a6b; color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .steps .arrow { align-self:center; color:#9aa4b2; font-weight:800; }
   .note { margin-top:16px; padding:12px 14px; border-radius:10px; background:#fff8eb; border:1px solid #fde4b0; font-size:12px; line-height:1.7; color:#7a4b00; word-break:keep-all; }
   /* API 사용 내역 탭 (2026-10-21) */
   .tabs { display:flex; gap:6px; margin:0 0 14px; }
@@ -88,6 +93,19 @@
     <b>API 키로</b> — 왼쪽 [API 입력]에 내 API 키를 넣으면 창 없이 바로 주고받아 빨라요.</p>
     <div class="writer" id="order"></div>
     <div class="writer" id="writer"></div>
+    <!-- 내 계정 안내 + 설정하는 법 3단계 (2026-10-29 사장님) -->
+    <div class="note" style="margin-top:0">
+      <b>크롬 브라우저</b>에서 쓰고, 쓰려는 AI(ChatGPT·Claude·Gemini)에 <b>꼭 로그인</b>해 두세요.<br>
+      무료 계정으로도 쓸 수 있지만, AI 회사에서 정한 <b>사용량 제한</b>이 있어 많이 쓰면 잠시 막힐 수 있어요.
+    </div>
+    <div style="margin:20px 0 10px;font-size:14px;font-weight:800;color:#191f28">내 AI로 설정하는 법</div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><b>크롬에서 AI 로그인하기</b><small>크롬을 열고 ChatGPT·Claude·Gemini 사이트에 내 계정으로 로그인해요</small></div>
+      <span class="arrow">→</span>
+      <div class="step"><span class="n">2</span><b>크롬 확장 프로그램 설치</b><small>공실마케팅 크롬 확장 프로그램을 크롬에 설치해요</small></div>
+      <span class="arrow">→</span>
+      <div class="step"><span class="n">3</span><b>복사 · 붙여넣기 · 결과 복사</b><small>앱이 복사해 준 질문을 AI에 붙여 넣고, 받은 답을 복사해 앱으로 가져와요</small></div>
+    </div>
     </div>
     <!-- API 입력 — ChatGPT · Claude · Gemini API 키 (AI 연결설정에서 따로 뺌, 2026-10-29 사장님) -->
     <div id="pageK" style="display:none">
