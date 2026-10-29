@@ -55,13 +55,17 @@ function gwBuildSnsPrompt(source) {
   const noun = gwSnsNoun(input.vacancy);
   const auction = noun === "물건";
   const office = auction ? "" : String((input.vacancy && input.vacancy.office) || "").trim();
+  const landlord = auction || office ? "" : String((input.vacancy && input.vacancy.landlord) || "").trim();
   /* 일반 매물은 매물을 등록한 중개사무소가 소개하는 글 (2026-10-29 사장님) — 경매·공매는 예전처럼 공실뉴스 소식 */
   const lead = auction
     ? `- "공실뉴스에 이런 ${noun}이 나왔다"는 객관적인 물건 소식입니다. 광고 문구가 아닙니다`
+    : landlord
+    ? `- 집주인 ${landlord}님이 자기 SNS에서 본인 물건을 직접 알리는 글입니다(직거래). 중개사무소가 쓴 글처럼 쓰지 말고 "중개"·"중개보수" 같은 표현도 쓰지 말 것
+- "공실뉴스에 이런 매물이 나왔다"처럼 공실뉴스를 주어로 내세우지 말 것. 첫 문장(인스타는 첫 줄 다음 줄)에서 집주인이 직접 내놓은 물건임을 밝힐 것`
     : `- ${office || "매물을 등록한 중개사무소"}가 자기 SNS에서 이 매물을 소개하는 글입니다. 주인공은 공실뉴스가 아니라 이 중개사무소입니다
 - "공실뉴스에 이런 매물이 나왔다"처럼 공실뉴스를 주어로 내세우지 말 것. 첫 문장(인스타는 첫 줄 다음 줄)에서 ${office ? `"${office}"가` : "중개사무소가"} 소개하는 매물임을 밝힐 것`;
 
-  return `당신은 ${auction ? "부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터" : "중개사무소가 자기 매물을 정확하게 소개하도록 돕는 SNS 에디터"}입니다.
+  return `당신은 ${auction ? "부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터" : landlord ? "집주인이 자기 물건을 정확하게 알리도록 돕는 SNS 에디터" : "중개사무소가 자기 매물을 정확하게 소개하도록 돕는 SNS 에디터"}입니다.
 아래 참조 기사와 확인된 ${noun} 정보로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
 세 글은 같은 사실을 전하지만 플랫폼마다 모양이 다릅니다. 같은 문장을 돌려 쓰지 마십시오.
 
@@ -204,7 +208,8 @@ function gwSnsCompose(channel, post, ctx) {
   const home = L ? GWNaverBlog.homepageOf(L) : "";
   const url = L && c.url ? GWNaverBlog.listingUrl(null, { ...L, detailUrl: c.url }) : c.url || "";
   const office = L && L.owner && L.owner.type === "agency" ? L.owner.name : "";
-  const where = office || "공실뉴스";
+  const landlordPost = Boolean(L && L.owner && L.owner.type === "general" && !L.saleKind); // 임대인 직접 등록 — "공실뉴스에서" 대신 그냥 "자세히 보기"
+  const where = office || (landlordPost ? "" : "공실뉴스");
   const homeLine = home && !(L && L.saleKind) ? `▶ ${office || "우리 사무소"} 홈페이지 — 다른 매물 보기 · 팔거나 세놓을 물건은 홈페이지에 남겨 주세요\n${home}` : "";
   const source = gwSnsSourceText(c.listing, noun);
   const tagLine = (tags) => (tags || []).map((tag) => `#${tag}`).join(" ");
@@ -213,7 +218,7 @@ function gwSnsCompose(channel, post, ctx) {
     const posts = (post?.posts || []).map((text) => String(text || "").trim()).filter(Boolean);
     if (!posts.length) return { posts: [], text: "" };
     if (post.topic) posts[0] = `${posts[0]}\n\n#${post.topic}`;
-    const tail = [url ? `▶ ${where}에서 ${noun} 자세히 보기\n${url}` : "", homeLine, source].filter(Boolean).join("\n\n");
+    const tail = [url ? `▶ ${where ? `${where}에서 ` : ""}${noun} 자세히 보기\n${url}` : "", homeLine, source].filter(Boolean).join("\n\n");
     if (tail) {
       const last = posts.length - 1;
       if (posts[last].length + tail.length + 2 <= GW_SNS_CHANNELS.threads.maxChars) posts[last] = `${posts[last]}\n\n${tail}`;
@@ -228,10 +233,10 @@ function gwSnsCompose(channel, post, ctx) {
   if (channel === "instagram") {
     /* 인스타 캡션의 링크는 눌리지 않는다 — 프로필 링크 안내를 먼저, 주소는 복사해 갈 수 있게 글자로 함께 */
     parts.push(url
-      ? `자세한 ${noun} 정보는 프로필 링크 → ${where}\n${url}`
-      : `자세한 ${noun} 정보는 프로필 링크 → ${where}`);
+      ? `자세한 ${noun} 정보는 프로필 링크${where ? ` → ${where}` : ""}\n${url}`
+      : `자세한 ${noun} 정보는 프로필 링크${where ? ` → ${where}` : ""}`);
   } else if (url) {
-    parts.push(`▶ ${where}에서 ${noun} 자세히 보기\n${url}`);
+    parts.push(`▶ ${where ? `${where}에서 ` : ""}${noun} 자세히 보기\n${url}`);
   }
   if (homeLine) parts.push(homeLine);
   if (source) parts.push(source);

@@ -861,6 +861,7 @@ function App() {
       options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
       
       agentName,
+      isOwnerDirect: !agency?.name,
       agentRepresentative,
       agencyRepresentative,
       agentPhone,
@@ -1217,6 +1218,7 @@ function App() {
               info: {
                 ...prev.info,
                 agentName: ag?.name || m.company_name || m.name || "",
+                isOwnerDirect: !ag?.name,
                 agentRepresentative: m.name || ag?.ceo_name || "",
                 agencyRepresentative: ag?.ceo_name || m.name || "",
                 agentPhone: ag?.phone || m.phone || "",
@@ -1306,12 +1308,15 @@ function App() {
     // 홍보 문구와 관계없이 항상 이 문장 (카톡 카드 설명은 두 줄 정도만 보인다)
     const agent = state.info.agentName;
     const provider = agent && agent !== "공실뉴스 중개소" ? agent : "공실뉴스";
+    const shareLine = state.info.isOwnerDirect && agent
+      ? `집주인 ${agent}님이 직접 내놓은 물건 보고서입니다.`
+      : `${provider}에서 제공하는 검증된 물건 보고서입니다.`;
 
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
         title: state.info.address || "물건보고서",
-        description: `${provider}에서 제공하는 검증된 물건 보고서입니다.`,
+        description: shareLine,
         imageUrl: state.mainImage || "https://gongsilnews.com/logo.png",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },

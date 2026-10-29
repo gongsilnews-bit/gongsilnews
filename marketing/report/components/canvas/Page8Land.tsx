@@ -102,7 +102,7 @@ const AddRow: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 const AE: React.FC<{ ed: Ed; t: string; r: number; c: number; v: string; ph?: string }> = ({ ed, t, r, c, v, ph = '입력' }) => (
   <EditableText value={v} onChange={(x) => ed.setCell(t, r, c, x)} placeholder={ph} className="!block leading-snug" />
 );
-const edited = (ed: Ed, prefix: string) => (ed.touched(prefix) ? ' · 일부 내용은 중개사가 수정함' : '');
+const edited = (ed: Ed, prefix: string) => (ed.touched(prefix) ? ' · 일부 내용은 작성자가 수정함' : '');
 
 /** 용도지역 색 — 토지이음 지적편집도와 비슷하게 (주거 노랑 · 상업 분홍 · 공업 보라 · 녹지 초록 · 관리 연갈색, 2026-10-24 사장님) */
 const zoneColor = (n: string) => {

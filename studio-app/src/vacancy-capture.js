@@ -222,6 +222,7 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
     if (!vacancy.saleKind) {
       const listing = await require("./naver-write").fetchListing(baseUrl, vacancyId, "").catch(() => null);
       if (listing && listing.owner && listing.owner.type === "agency" && listing.owner.name) vacancy.office = listing.owner.name;
+      else if (listing && listing.owner && listing.owner.type === "general" && listing.owner.name) vacancy.landlord = listing.owner.name; // 임대인 직접 등록
     }
     const result = { vacancyId, vacancy, media, hidden, failures, dir, analyzedAt: new Date().toISOString() };
     fs.writeFileSync(path.join(dir, "analysis.json"), JSON.stringify(result, null, 2));

@@ -8,7 +8,7 @@ import { getHomepageBase } from "@/app/actions/homepage";
  *
  * 블로그 글 끝의 "매물 정보 출처"(부동산 표시·광고 필수 항목)에 쓰인다.
  * 공개 상세 페이지(/gongsil/detail/[id])의 등록자정보 탭에 이미 공개된 값만 돌려준다.
- * 일반회원 매물은 연락처를 돌려주지 않는다.
+ * 일반회원(임대인) 매물은 본인이 쓰는 글일 때만 본인 전화를 돌려준다 (2026-10-29).
  */
 
 const corsHeaders = {
@@ -68,7 +68,13 @@ export async function GET(req: NextRequest) {
         homepage,
         vacancyNo: v.vacancy_no || null,
       }
-    : { type: "general", name: clean(member.name || v.client_name) };
+    : {
+        // 임대인이 본인 이름·본인 전화로 직접 내놓은 매물 (2026-10-29 사장님) — 전화는 본인이 쓰는 글일 때만
+        type: "general",
+        name: clean(member.name || v.client_name),
+        phone: requester?.id && requester.id === v.owner_id ? clean(member.phone) : "",
+        vacancyNo: v.vacancy_no || null,
+      };
 
   return NextResponse.json(
     {

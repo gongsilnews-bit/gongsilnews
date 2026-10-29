@@ -278,21 +278,19 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   {/* Section 1: 중개사무소 정보 */}
                   <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
                     <div className="flex items-center gap-1.5 mb-3 border-b border-gray-100 pb-2">
-                      <span className="font-bold text-sm tracking-widest text-[var(--theme-primary)]">🏢 중개사무소 정보</span>
+                      <span className="font-bold text-sm tracking-widest text-[var(--theme-primary)]">{info.isOwnerDirect ? "🏠 집주인 직접 등록" : "🏢 중개사무소 정보"}</span>
                     </div>
                     <div className="text-gray-700 font-bold text-xs leading-relaxed space-y-1.5 mt-1">
                       <p className="flex justify-between">
-                        <span className="text-gray-400">상호</span> 
+                        <span className="text-gray-400">{info.isOwnerDirect ? "이름" : "상호"}</span> 
                         <span><EditableText {...FX(info, hc, 'agentName', 'inline-block text-right')} /></span>
                       </p>
-                      <p className="flex justify-between">
-                        <span className="text-gray-400">대표</span> 
-                        <span><EditableText {...FX(info, hc, 'agencyRepresentative', 'inline-block text-right')} /></span>
-                      </p>
-                      <p className="flex justify-between">
-                        <span className="text-gray-400">등록번호</span> 
-                        <span><EditableText {...FX(info, hc, 'agentRegistrationNumber', 'inline-block text-right')} /></span>
-                      </p>
+                      {info.isOwnerDirect ? (
+                        <p className="flex justify-between"><span className="text-gray-400">전화</span> <span><EditableText {...FX(info, hc, 'agentMobile', 'inline-block text-right')} /></span></p>
+                      ) : (<>
+                        <p className="flex justify-between"><span className="text-gray-400">대표</span> <span><EditableText {...FX(info, hc, 'agencyRepresentative', 'inline-block text-right')} /></span></p>
+                        <p className="flex justify-between"><span className="text-gray-400">등록번호</span> <span><EditableText {...FX(info, hc, 'agentRegistrationNumber', 'inline-block text-right')} /></span></p>
+                      </>)}
                     </div>
                   </div>
 
@@ -337,7 +335,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT"}
                   </h1>
                   <span className="text-[var(--theme-primary)] text-xs font-bold tracking-widest uppercase mt-2 block">
-                    {info.isAdClosed ? "자세한 문의는 아래로 연락주시기 바랍니다" : "중개 및 매물 세부조건 문의처"}
+                    {info.isAdClosed ? "자세한 문의는 아래로 연락주시기 바랍니다" : (info.isOwnerDirect ? "매물 세부조건 문의처 (집주인 직접)" : "중개 및 매물 세부조건 문의처")}
                   </span>
                   <div className="w-16 h-[5px] bg-[var(--theme-primary)] mt-4"></div>
                 </div>

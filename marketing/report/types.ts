@@ -46,6 +46,8 @@ export interface PropertyInfo {
     value: string;
   }[];
   agentName: string;
+  /** 임대인(일반회원)이 본인 이름으로 직접 낸 매물 — 중개사무소 칸 대신 집주인 칸 (2026-10-29 사장님) */
+  isOwnerDirect?: boolean;
   agentLabel?: string;
   qrLabel?: string;
   agentRegistrationNumber?: string;
