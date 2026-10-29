@@ -217,10 +217,11 @@ function gwSnsCompose(channel, post, ctx) {
   const where = L && L.saleKind ? "공실뉴스" : office || landlordPost ? "" : "공실뉴스";
   const homeLine = home && !(L && L.saleKind) ? `▶ 이 동네 다른 집 보기 · 내 집 내놓기\n${home}` : "";
   const source = gwSnsSourceText(c.listing, noun);
-  const tagLine = (tags) => (tags || []).map((tag) => `#${tag}`).join(" ");
+  const tagLine = (tags) => GWNaverBlog.infoTags(tags || [], c.listing).map((tag) => `#${tag}`).join(" ");
+  const clean = (t) => GWNaverBlog.infoText(t, c.listing); // 정보 글 — 부동산 티 지우기 (2026-10-29)
 
   if (channel === "threads") {
-    const posts = (post?.posts || []).map((text) => String(text || "").trim()).filter(Boolean);
+    const posts = (post?.posts || []).map((text) => clean(String(text || "").trim())).filter(Boolean);
     if (!posts.length) return { posts: [], text: "" };
     if (post.topic) posts[0] = `${posts[0]}\n\n#${post.topic}`;
     const tail = [url ? `▶ ${where ? `${where}에서 ` : ""}물건 상세 확인하기\n${url}` : "", homeLine, source].filter(Boolean).join("\n\n");
@@ -232,7 +233,7 @@ function gwSnsCompose(channel, post, ctx) {
     return { posts, text: posts.join("\n\n―――\n\n") };
   }
 
-  const body = String(post?.body || "").trim();
+  const body = clean(String(post?.body || "").trim());
   if (!body) return { posts: [], text: "" };
   const parts = [body];
   if (channel === "instagram") {

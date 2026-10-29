@@ -261,4 +261,6 @@ async function openMyBlog() {
   return { ok: true };
 }
 
-module.exports = { designs, fillNaver, openMyBlog, fetchListing };
+// 공용 블로그 도구 (정보 글 정리 infoText 등) — 영상 올리기 글도 같이 쓴다 (2026-10-29)
+const naverBlogLib = () => naverBlog;
+module.exports = { designs, fillNaver, openMyBlog, fetchListing, naverBlogLib };

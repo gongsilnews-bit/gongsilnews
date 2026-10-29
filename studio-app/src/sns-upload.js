@@ -87,7 +87,12 @@ async function draft(baseUrl, o, onProgress = () => {}) {
 - ${TONES[o.tone]}
 문체만 바꾸고 사실은 자료에 있는 것만 쓰십시오. 정보 글 원칙과 출력 JSON 형식은 그대로 지키십시오.`
     : "";
-  const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds, previous: previousPosts(o.vacancyId), posted: Array.isArray(o.posted) ? o.posted : [] }) + toneRule;
+  // 예전 글을 넘길 때 사무소 이름·물건번호를 지운다 — 안 지우면 AI 가 "○○가 소개하는"을 따라 쓴다 (2026-10-29 사장님)
+  const nb = require("./naver-write").naverBlogLib ? require("./naver-write").naverBlogLib() : null;
+  const scrub = (txt) => (nb && nb.infoText ? nb.infoText(txt, t.listing) : String(txt || ""));
+  const prev = previousPosts(o.vacancyId);
+  const prevClean = prev ? Object.fromEntries(Object.entries(prev).map(([k, v]) => [k, scrub(v)])) : null;
+  const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds, previous: prevClean, posted: Array.isArray(o.posted) ? o.posted : [] }) + toneRule;
   const parse = (t) => {
     const j = lib.gwVideoParse(t);
     return j && j.youtube && j.instagram ? j : null;
@@ -96,7 +101,7 @@ async function draft(baseUrl, o, onProgress = () => {}) {
   const j = parse(answer);
   if (!j) throw new Error("AI 답을 읽지 못했습니다. 다시 눌러 주세요.");
   const clean = (a) => (Array.isArray(a) ? a : []).map((x) => String(x || "").replace(/^#+/, "").replace(/\s+/g, "")).filter(Boolean);
-  const yt = { title: String(j.youtube.title || "").trim().slice(0, 100), description: String(j.youtube.description || "").trim(), hashtags: clean(j.youtube.hashtags).slice(0, 10) };
+  const yt = { title: scrub(String(j.youtube.title || "").trim()).slice(0, 100), description: String(j.youtube.description || "").trim(), hashtags: clean(j.youtube.hashtags).slice(0, 10) };
   const ig = { caption: String(j.instagram.caption || "").trim(), hashtags: clean(j.instagram.hashtags).slice(0, 15) };
   const shorts = o.ratio === "9:16" || o.ratio === "1:1";
   if (shorts && !yt.hashtags.some((t) => t.toLowerCase() === "shorts")) yt.hashtags.push("Shorts");

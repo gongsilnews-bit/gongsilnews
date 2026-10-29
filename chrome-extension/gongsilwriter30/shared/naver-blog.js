@@ -186,6 +186,31 @@
     return /^https:\/\/[a-z0-9-]+\.gongsilnews\.com$/i.test(h) ? h : "";
   }
 
+  /* 정보 글 정리 (2026-10-29 사장님: "부동산 같아서 싫어, 무조건 정보성으로")
+     AI 가 지시를 어겨도 — "○○가 소개하는/보여주는/에서 소개합니다" · 본문 속 "물건번호 N" · "공실뉴스" 를 지운다.
+     법에 필요한 표시는 글 끝 정보 칸(sourceBlockLines)이 따로 붙인다. 경매·공매는 손대지 않는다 */
+  function infoText(text, listing) {
+    let t = String(text || "");
+    if (!listing || listing.saleKind) return t;
+    const owner = listing.owner || {};
+    const names = [owner.type === "agency" ? owner.name : "", "공실뉴스"].map((n) => String(n || "").trim()).filter((n) => n.length >= 2);
+    const esc = (n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    for (const n of names) {
+      const N = esc(n);
+      // "착한임대가 소개하는 " · "착한임대에서 소개합니다." · "착한임대가 보여주는" 같은 머리말
+      t = t.replace(new RegExp(`${N}\\s*(이|가|에서|의|이\\s*직접|가\\s*직접)?\\s*(소개하는|소개해\\s*드리는|소개합니다\\.?|보여\\s*주는|보여\\s*드리는|준비한|추천하는|전하는|알려\\s*드리는)\\s*`, "g"), "");
+      t = t.replace(new RegExp(`\\s*\\(?${N}\\)?\\s*(에\\s*)?(문의|연락)[^\\n.]*[.]?`, "g"), "");
+      t = t.replace(new RegExp(`#?${N}`, "g"), "");
+    }
+    t = t.replace(/[ \t]*물건\s*번호\s*\d+\s*(번)?\s*[.·]?/g, "").replace(/[ \t]*공실\s*광고\s*번호\s*\d+\s*(번)?\s*[.·]?/g, "");
+    return t.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").replace(/^[ \t]+|[ \t]+$/gm, "").trim();
+  }
+  function infoTags(tags, listing) {
+    const owner = (listing && listing.owner) || {};
+    const bad = [owner.type === "agency" ? owner.name : "", "공실뉴스", "공실열람"].map((n) => String(n || "").replace(/\s+/g, "")).filter(Boolean);
+    return (Array.isArray(tags) ? tags : []).filter((t) => !bad.some((b) => String(t).replace(/^#/, "").replace(/\s+/g, "").includes(b)));
+  }
+
   /* 매물 링크 — 홈페이지가 있으면 같은 매물의 내 홈페이지 화면으로 */
   function listingUrl(vacancy, listing) {
     let url = listing?.detailUrl || "";
@@ -295,7 +320,7 @@
   function buildNaverBlocks(body, media, options = {}) {
     const design = DESIGNS[options.design] ? options.design : "basic";
     const list = Array.isArray(media) ? media : [];
-    const paragraphs = splitParagraphs(body);
+    const paragraphs = splitParagraphs(body).map((x) => infoText(x, options.listing)).filter(Boolean); // 정보 글 — 부동산 티 지우기 (2026-10-29)
     const slots = layoutMediaSlots(paragraphs.length, list);
     const rows = factRows(options.vacancy, options.listing);
     const noun = isAuction(options.vacancy, options.listing) ? "물건" : "매물";
@@ -444,7 +469,7 @@
     HOME_URL, WRITE_URL, isNaverBlogUrl, isLikelyWriteUrl, selectLikelyWriteTab,
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
     DESIGNS, designHint, factRows, listingProblems, SITE_URL,
-    sourceBlockLines, listingUrl, homepageOf, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
+    sourceBlockLines, listingUrl, homepageOf, infoText, infoTags, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
