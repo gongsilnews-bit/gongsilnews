@@ -709,6 +709,9 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         p.ratio = ratio;
         p.method = "text";
         delete (p as unknown as { draft?: unknown }).draft;
+        // 중간 저장본을 이어 쓸 때도 공실·칼럼을 붙인다 — 안 붙이면 [SNS에 올리기]가 어느 공실인지 몰라 링크가 빠진다 (2026-10-29 사장님)
+        const link = src === "vacancy" ? vacId : src === "news" && seed && /^col-/.test(seed.vacancyId) ? seed.vacancyId : "";
+        if (link) p.vacancyId = link;
       } else {
         // 공실이면 공실 id · 뉴스칼럼(홈 "내 기사")에서 넘어온 영상이면 그 칼럼 번호 (게시한 주소를 기사 홍보현황에, 2026-10-28)
         const link = src === "vacancy" ? vacId : src === "news" && seed && /^col-/.test(seed.vacancyId) ? seed.vacancyId : "";

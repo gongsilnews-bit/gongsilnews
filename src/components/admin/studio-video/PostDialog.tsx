@@ -3,7 +3,7 @@
 // 완성 영상 SNS 올리기 — 반자동 (2026-10-21 사장님, docs/2026-10-21_studio_sns_upload_plan.md)
 //  [내보내기] 완료 → [유튜브에 올리기] [인스타그램에 올리기] → 이 창
 //  AI 가 제목·설명(캡션)·해시태그 초안 → 회원이 고침 → [크롬에서 채우기] (파일 첨부·글 채우기) → 회원이 [게시]
-//  중개사무소 정보·공실뉴스 링크·출처 줄은 앱이 붙인다 (글 끝)
+//  중개사무소 정보·매물 링크·문의 줄은 앱이 붙인다 (글 끝)
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PhotoEmbed } from "@/components/admin/studio-photo/PhotoStudio";
@@ -132,7 +132,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
         : artNo
           ? await getMyArticleCards().then((r) => Object.keys(r.data.find((a) => a.no === artNo)?.links || {})).catch(() => [] as string[])
           : [];
-      const d = await post.draft({ title: project.name, lines, vacancyId: project.vacancyId, ratio: project.ratio, seconds, posted });
+      const d = await post.draft({ title: project.name, lines, vacancyId: vid || project.vacancyId, ratio: project.ratio, seconds, posted });
       setDraft(d);
       setYtTitle(d.youtube.title);
       setYtText(d.youtube.text);
@@ -349,7 +349,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose }: { 
               </div>
             )}
             <div>
-              <div style={{ ...label, marginBottom: 6 }}>{ch === "youtube" ? "설명" : "문구 (캡션)"} <span style={{ color: C.dim, fontWeight: 600, fontSize: 12.5 }}>· 끝의 공실뉴스 링크·매물 정보 출처는 앱이 붙였어요{draft.tail.hasListing ? "" : " (매물 정보가 없는 영상이라 출처 줄 없음)"}</span></div>
+              <div style={{ ...label, marginBottom: 6 }}>{ch === "youtube" ? "설명" : "문구 (캡션)"} <span style={{ color: C.dim, fontWeight: 600, fontSize: 12.5 }}>· 끝의 매물 링크·문의 정보는 앱이 붙였어요{draft.tail.hasListing ? "" : " (아래에서 공실을 고르고 [글 다시 쓰기]를 누르면 붙어요)"}</span></div>
               <textarea value={text} onChange={(e) => setText(e.target.value)} rows={11}
                 style={{ ...input, width: "100%", boxSizing: "border-box", height: "auto", padding: 10, lineHeight: 1.6, resize: "vertical", fontSize: 14 }} />
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
