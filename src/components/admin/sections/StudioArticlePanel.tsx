@@ -29,10 +29,12 @@ const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).re
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
 
-export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false, oneShot = false, pick, onPick, autoCover: autoCoverP, onAutoCover }: {
+export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false, oneShot = false, pick, onPick, autoCover: autoCoverP, onAutoCover, writeBtn }: {
   theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void; column?: boolean;
   /** 한 번에 쓰기 — 이 탭은 스타일만 고르고, 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   oneShot?: boolean; pick?: { kind: string; length: string }; onPick?: (kind: string, length: string) => void;
+  /** [이 ○○만 쓰기] — 아래 버튼 줄 맨 앞에 (StudioChannelTabs 가 만든다, 2026-10-29) */
+  writeBtn?: React.ReactNode;
   /** 뉴스칼럼 AI 대표 이미지 — 한 번에 쓰기에도 쓰이게 위에서 기억 */
   autoCover?: boolean; onAutoCover?: (v: boolean) => void;
 }) {
@@ -125,8 +127,9 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
           </label>
         )}
         <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
-          {oneShot ? "스타일·분량을 고르고 오른쪽 위 [이 기사만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}{column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. 기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. " : ""}기사 한도는 기사 등록할 때 셉니다.
+          {oneShot ? "스타일·분량을 고르고 아래 [이 기사만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}{column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. 기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. " : ""}기사 한도는 기사 등록할 때 셉니다.
         </div>
+        {!article && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
 
@@ -139,6 +142,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
             기사쓰기 화면에 제목·부제·본문·사진 {article.media.length}장·키워드가 채워집니다.
             {column && article.section1 ? <> 섹션은 <b>{article.section1}{article.section2 ? ` > ${article.section2}` : ""}</b>로 채워집니다.</> : ""} 섹션을 확인하고 <b>[기사 등록]</b>을 눌러 주세요.
           </div>
+          {writeBtn /* [이 기사만 쓰기] — [기사쓰기 화면으로 보내기] 앞 (2026-10-29 사장님) */}
           <button onClick={onSend}
             style={{ padding: "11px 20px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
             기사쓰기 화면으로 보내기

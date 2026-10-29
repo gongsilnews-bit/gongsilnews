@@ -89,7 +89,7 @@
     basic: { label: "기본형", hint: "요약 인용구 · 매물표 · 큰 소제목. 어떤 매물에나 무난합니다." },
     magazine: { label: "매거진형", hint: "가운데 정렬 · 번호 소제목 · 핵심 문장 강조. 고급·신축 매물에 어울립니다." },
     qna: { label: "Q&A형", hint: "소제목을 질문으로, 본문을 답변으로. 질문형 검색에 유리합니다." },
-    news: { label: "뉴스기사형", hint: "큰 리드문 · 기사체 · 공실뉴스 서명. 언론사 느낌을 살립니다." },
+    news: { label: "뉴스기사형", hint: "큰 리드문 · 기사체. 언론사 느낌을 살립니다." },
   };
   /* 경매·공매 물건일 때 바뀌는 디자인 설명 */
   const AUCTION_HINTS = {
@@ -251,7 +251,8 @@
       if (owner.phone) lines.push(`전화 ${owner.phone}`);
     }
     lines.push("※ 매물 조건은 등록 시점 기준이며 실제와 다를 수 있습니다.");
-    lines.push(`공실뉴스 등록 매물${owner.vacancyNo ? ` · 물건번호 ${owner.vacancyNo}` : ""} (${formatDate(listing?.capturedAt)} 기준)`);
+    // 회원 글에는 공실뉴스를 쓰지 않는다 — 물건번호와 기준일만 (2026-10-29 사장님)
+    lines.push(`${owner.vacancyNo ? `물건번호 ${owner.vacancyNo} · ` : ""}${formatDate(listing?.capturedAt)} 기준`);
     return { lines, url };
   }
 

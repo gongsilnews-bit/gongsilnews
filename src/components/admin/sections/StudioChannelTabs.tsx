@@ -273,6 +273,20 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const needArticle = !oneShot && !article; // 시뮬레이션은 기사를 먼저 (뉴스칼럼은 한 번에 쓰기로 기사와 함께 쓴다)
   const firstStep = column ? 2 : 3;
 
+  const writeBtn = (() => {
+    if (!oneShot) return null;
+    const ch = channels.find((c) => c.id === tab);
+    const part = tab === "article" ? "article" : tab === "blog" ? "blog" : tab === "youtube" ? "youtube" : ch ? (tab as "instagram" | "threads" | "facebook") : null;
+    if (!part) return null;
+    const label = part === "article" ? "이 기사만 쓰기" : part === "blog" ? "이 블로그만 쓰기" : part === "youtube" ? "이 대본만 쓰기" : `이 ${ch?.label || "SNS"} 글만 쓰기`;
+    return (
+      <button type="button" onClick={() => void runAll(part)} disabled={Boolean(allBusy)} title={ch ? `${ch.label} 글만 새로 씁니다 (다른 SNS 글은 그대로)` : "이 탭 글만 씁니다"}
+        style={{ padding: "10px 16px", borderRadius: 8, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.cardBg, color: allBusy ? theme.textSecondary : (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontSize: 14, fontWeight: 800, cursor: allBusy ? "default" : "pointer", whiteSpace: "nowrap" }}>
+        {allBusy ? "쓰는 중…" : label}
+      </button>
+    );
+  })();
+
   return (
     <>
       {/* 작업 파일 — [저장하기] · [다른 이름으로 저장] · [불러오기] */}
@@ -316,33 +330,18 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         </div>
       )}
 
-      <div style={{ position: "relative", height: 0 }}>
-        {/* 이 글만 쓰기 — 아래 카드 오른쪽 위 (한 번에 쓰기와 자리를 나눔, 2026-10-28 사장님) */}
-        {oneShot && (() => {
-          // 이 글만 쓰기 — 지금 탭 (인스타·스레드·페북은 SNS 세 채널을 같이)
-          const ch = channels.find((c) => c.id === tab);
-          const part = tab === "article" ? "article" : tab === "blog" ? "blog" : tab === "youtube" ? "youtube" : ch ? (tab as "instagram" | "threads" | "facebook") : null;
-          if (!part) return null;
-          const label = part === "article" ? "이 기사만 쓰기" : part === "blog" ? "이 블로그만 쓰기" : part === "youtube" ? "이 대본만 쓰기" : `이 ${ch?.label || "SNS"} 글만 쓰기`;
-          return (
-            <button type="button" onClick={() => void runAll(part)} disabled={Boolean(allBusy)} title={ch ? `${ch.label} 글만 새로 씁니다 (다른 SNS 글은 그대로)` : "이 탭 글만 씁니다"}
-              style={{ position: "absolute", right: 22, top: 18, zIndex: 2, padding: "8px 16px", borderRadius: 8, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.cardBg, color: allBusy ? theme.textSecondary : (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontSize: 13.5, fontWeight: 800, cursor: allBusy ? "default" : "pointer", whiteSpace: "nowrap" }}>
-              {label}
-            </button>
-          );
-        })()}
-      </div>
+      {/* 이 글만 쓰기 — 각 패널 아래 버튼 줄 맨 앞 ([글 복사] 앞, 2026-10-29 사장님: 위에 있으면 헷갈린다). 인스타·스레드·페북은 SNS 세 채널을 같이 */}
       {tab === "article" && (
         <StudioArticlePanel theme={theme} vacancyId={workId} article={article} onArticle={setArticle} column={column}
           oneShot={oneShot} pick={all.article} onPick={(k, l) => keepAll({ ...all, article: { ...all.article, kind: k, length: l } })}
           autoCover={all.article.autoCover === true} onAutoCover={(v) => keepAll({ ...all, article: { ...all.article, autoCover: v } })}
-          onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} />
+          onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} writeBtn={writeBtn} />
       )}
 
       {tab === "youtube" && (needArticle
         ? <div style={{ ...card, fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. 대본은 그 기사를 바탕으로 씁니다.</div>
         : <StudioYoutubePanel key={ytVer} theme={theme} vacancyId={workId} onUsed={onUsed} onScript={setHasYoutube}
-            oneShot={oneShot} remembered={all.youtube} onPick={(p) => keepAll({ ...all, youtube: { ...all.youtube, ...p } })} />)}
+            oneShot={oneShot} remembered={all.youtube} onPick={(p) => keepAll({ ...all, youtube: { ...all.youtube, ...p } })} writeBtn={writeBtn} />)}
 
       {channels.some((c) => c.id === tab) && needArticle && (
         <div style={{ ...card, fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. SNS 글은 그 기사를 바탕으로 씁니다.</div>
@@ -350,7 +349,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       {tab !== "blog" && !needArticle && channels.find((c) => c.id === tab) && (
         <StudioSnsPanel theme={theme} channel={tab} info={channels.find((c) => c.id === tab)!} vacancyId={workId}
           data={snsData} onData={setSnsData} onUsed={onUsed}
-          oneShot={oneShot} tones={snsTones} onTone={(t) => keepAll({ ...all, sns: { ...all.sns, tones: { ...snsTones, [tab]: t } } })} />
+          oneShot={oneShot} tones={snsTones} onTone={(t) => keepAll({ ...all, sns: { ...all.sns, tones: { ...snsTones, [tab]: t } } })} writeBtn={writeBtn} />
       )}
 
       {tab === "blog" && (<>
@@ -362,7 +361,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
             <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. 블로그는 그 기사를 바탕으로 씁니다.</div>
           ) : (
             <>
-              {/* 제목 — 기사·대본 탭과 같게 (오른쪽 위 [이 블로그만 쓰기]와 한 줄, 2026-10-28 사장님) */}
+              {/* 제목 — 기사·대본 탭과 같게 (아래 [이 블로그만 쓰기]와 한 줄, 2026-10-28 사장님) */}
               <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 12 }}>네이버 블로그 스타일</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>문체</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
@@ -391,13 +390,15 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                   </button>
                 )}
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{oneShot ? "문체·글자 수를 고르고 오른쪽 위 [이 블로그만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요." : `${aiName}가 씁니다. 1~2분 걸립니다.`}</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{oneShot ? "문체·글자 수를 고르고 아래 [이 블로그만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요." : `${aiName}가 씁니다. 1~2분 걸립니다.`}</div>
             </>
           )}
           {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{blogProgress}</div>}
           {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
 
+          {!blog && !needArticle && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
           {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.version || blog.title}`} theme={theme} initial={blog} />}
+          {blog && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         </div>
 
         {/* 네이버 블로그 채우기 */}
@@ -593,6 +594,7 @@ export function StepNav({ theme, tab, onTab, onOpen1, first = "공실 선택 및
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!wide) return null;
   const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
+
   return (
     <div style={{ position: "fixed", right: 28, top: "50%", transform: "translateY(-50%)", zIndex: 30, display: "flex", flexDirection: "column", gap: 4, padding: 8, borderRadius: 14, background: theme.cardBg, border: `1px solid ${theme.border}`, boxShadow: "0 6px 20px rgba(0,0,0,0.12)" }}>
       {steps.map((s) => {

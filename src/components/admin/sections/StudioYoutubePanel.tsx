@@ -48,10 +48,12 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 const secondsOf = (text: string) => Math.round(text.replace(/\s/g, "").length / 5.5);
 const clock = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`);
 
-export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick }: {
+export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick, writeBtn }: {
   theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void;
   /** 한 번에 쓰기 — 이 탭은 형식·길이·말투·숫자만 고르고(이 PC 에 기억), 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   oneShot?: boolean; remembered?: Record<string, unknown>; onPick?: (p: Record<string, string>) => void;
+  /** [이 ○○만 쓰기] — 아래 버튼 줄 맨 앞에 (StudioChannelTabs 가 만든다, 2026-10-29) */
+  writeBtn?: React.ReactNode;
 }) {
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const router = useRouter();
@@ -213,7 +215,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
         {row("숫자", "number", opts?.numbers)}
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
           <div style={{ flex: 1, minWidth: 260, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
-            {oneShot ? "고르고 오른쪽 위 [이 대본만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
+            {oneShot ? "고르고 아래 [이 대본만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
           </div>
           {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
             <button onClick={write} disabled={writing}
@@ -222,6 +224,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
             </button>
           )}
         </div>
+        {!script && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
       </div>
@@ -272,6 +275,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
           <StudioReviseBar theme={theme} label="대본" onRevise={revise} examples="첫 문장 훅을 더 강하게, 마지막을 한 줄 정리로" />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
+            {writeBtn /* [이 대본만 쓰기] — [원고 복사] 앞 (2026-10-29 사장님) */}
             <button onClick={() => copy(paragraphs().join("\n\n"), "원고를 복사했습니다.", "narration")} style={btn(true)}>원고 복사</button>
             <button onClick={() => copy(descText, "설명란을 복사했습니다.", "desc")} style={btn()}>설명란 복사</button>
             <button onClick={exportText} style={btn()}>텍스트로 저장</button>

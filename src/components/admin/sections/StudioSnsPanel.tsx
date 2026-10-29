@@ -50,11 +50,13 @@ export const SNS_TONES = [
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
-export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone }: {
+export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone, writeBtn }: {
   theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
   /** 한 번에 쓰기 — 이 탭은 문체만 고르고, 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   /** 채널마다 문체 { instagram, threads, facebook } — 이 탭에서는 이 채널 것만 고른다 */
   oneShot?: boolean; tones?: Record<string, string>; onTone?: (t: string) => void;
+  /** [이 ○○만 쓰기] — 아래 버튼 줄 맨 앞에 (StudioChannelTabs 가 만든다, 2026-10-29) */
+  writeBtn?: React.ReactNode;
 }) {
   const tone = tones[channel] || "polite";
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
@@ -226,7 +228,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
     <div>
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 260, paddingRight: oneShot ? 230 : 0 /* 오른쪽 위 [이 ○○ 글만 쓰기] 자리 */ }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{oneShot ? `${info.label} 스타일` : `${info.label} 글 쓰기`}</div>
             <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4, lineHeight: 1.6 }}>
               {vacancyId.startsWith("col-") ? "뉴스칼럼 기사·원문을 바탕으로" : "처음 분석·캡처한 공실 정보로"} 씁니다 (SNS 1회). 문체는 채널마다 따로 골라요. 오른쪽 위 [이 {info.label} 글만 쓰기]는 이 채널만, [한 번에 쓰기]는 ☑ 한 SNS를 함께 씁니다.
@@ -248,6 +250,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             </button>
           ))}
         </div>
+        {!(ch && ch.post) && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
       </div>
@@ -348,6 +351,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             examples={channel === "threads" ? "첫 글을 더 짧게, 질문을 바꿔 줘" : channel === "instagram" ? "이모지를 줄이고 훅을 더 강하게" : "첫 문단을 더 짧게, 해시태그를 3개로"} />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
+            {writeBtn /* [이 ○○ 글만 쓰기] — [글 복사] 앞 (2026-10-29 사장님) */}
             <button onClick={copy} style={btn()}>글 복사</button>
             <button onClick={exportFolder} style={btn()}>사진·글 폴더로 저장</button>
             <ChannelButton channel={channel} label={`${info.label} 열기`} onClick={openChannel} />
