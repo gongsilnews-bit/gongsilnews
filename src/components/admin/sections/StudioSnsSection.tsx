@@ -72,12 +72,14 @@ function priceText(v: MyVacancy) {
 
 const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: StudioBridge }).gongsilStudio ?? null) : null);
 
+const HIDDEN_CATEGORIES = ["interior", "remodel"];
 /* 뉴스 카테고리 (2026-10-15 회의: 구성만 먼저, 공실뉴스부터) */
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
   { id: "myvideo", label: "내 영상 올리기", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
+  // 인테리어뉴스·리모델링뉴스는 메뉴에서 숨김 (2026-10-29 사장님) — 코드·작업 파일은 그대로, 다시 보이려면 HIDDEN_CATEGORIES 에서 빼기
   { id: "interior", label: "인테리어뉴스", lead: "실내 사진 한 장으로 인테리어 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
@@ -136,7 +138,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   useEffect(() => {
     try {
       const saved = localStorage.getItem(CATEGORY_KEY);
-      if (saved && NEWS_CATEGORIES.some((c) => c.id === saved)) setCategoryState(saved);
+      if (saved && NEWS_CATEGORIES.some((c) => c.id === saved) && !HIDDEN_CATEGORIES.includes(saved)) setCategoryState(saved);
     } catch {}
   }, []);
   const loadUsage = useCallback(() => {
@@ -376,7 +378,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
           </button>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
-          {NEWS_CATEGORIES.map((c) => {
+          {NEWS_CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.includes(c.id)).map((c) => {
             const on = category === c.id;
             return (
               <button key={c.id} onClick={() => setCategory(c.id)}
