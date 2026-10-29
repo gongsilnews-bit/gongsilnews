@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { WEB_LIMITED, webAllowed, askInstallApp, InstallAppModal } from './webLimit';
 import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
@@ -2221,10 +2222,11 @@ ${clone.outerHTML}
       // Filter sections: remove ones not in selectedIds
       sections.forEach((sec) => {
           const id = sec.getAttribute('data-export-id');
-          if (id && !selectedIds.includes(id)) {
+          if (id && (!selectedIds.includes(id) || !webAllowed(id))) {
               sec.remove();
           }
       });
+      clone.querySelectorAll('[data-web-lock]').forEach((n) => n.remove());
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = await (window as any).html2canvas(clone, {
@@ -2280,6 +2282,9 @@ ${clone.outerHTML}
 
       document.body.appendChild(clone);
 
+      // 웹에서는 표지·개요 두 쪽만 (2026-10-29 사장님 — 전체는 공실마케팅 앱)
+      clone.querySelectorAll('[data-export-id]').forEach((n) => { if (!webAllowed(n.getAttribute('data-export-id'))) n.remove(); });
+      clone.querySelectorAll('[data-web-lock]').forEach((n) => n.remove());
       const sections = Array.from(clone.querySelectorAll('[data-export-id]')) as HTMLElement[];
       sections.forEach(p => { p.style.display = 'flex'; });
 
@@ -2338,6 +2343,8 @@ ${clone.outerHTML}
 
       document.body.appendChild(clone);
 
+      clone.querySelectorAll('[data-export-id]').forEach((n) => { if (!webAllowed(n.getAttribute('data-export-id'))) n.remove(); });
+      clone.querySelectorAll('[data-web-lock]').forEach((n) => n.remove());
       const sections = Array.from(clone.querySelectorAll('[data-export-id]')) as HTMLElement[];
       sections.forEach(p => { p.style.display = 'flex'; });
 
@@ -2409,8 +2416,9 @@ ${clone.outerHTML}
   const getExportableSections = () => {
       return pageOrder(state.info as any).flatMap((id) => {
           const label = pageNumberLabel(id, state.info as any);
-          if (id !== 4) return [{ id: `page-${id}`, label }];
+          if (id !== 4) return webAllowed(`page-${id}`) ? [{ id: `page-${id}`, label }] : [];
           // 늘린 사진 쪽
+          if (!webAllowed('page-4')) return [];
           return [{ id: 'page-4', label }, ...Array.from({ length: photoPageCount(state.info) - 1 }, (_, i) => ({ id: `page-4-${i + 2}`, label: `${label} ${i + 2}쪽` }))];
       });
   };
@@ -2465,6 +2473,7 @@ ${clone.outerHTML}
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans relative">
+      <InstallAppModal />
       {isExportingImage && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-900/35 backdrop-blur-[2px]">
           <div className="flex items-center gap-3 rounded-xl border border-white/70 bg-white/95 px-5 py-4 shadow-xl">
@@ -2850,7 +2859,7 @@ ${clone.outerHTML}
           {/* Share Button (Relative Container for Popover) — 공실 없는 보고서는 공유 링크가 없다 (PDF·이미지로 보낸다) */}
           {!getLocalId() && <div ref={sharePopoverRef} className="relative shrink-0">
             <button 
-              onClick={() => setShowSharePopover(!showSharePopover)}
+              onClick={() => (WEB_LIMITED ? askInstallApp("공유는 공실마케팅 앱에서 할 수 있어요") : setShowSharePopover(!showSharePopover))}
               className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm whitespace-nowrap"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">

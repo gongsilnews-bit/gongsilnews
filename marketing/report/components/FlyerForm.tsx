@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { WEB_LIMITED, WEB_PAGE_NUMS, askInstallApp } from '../webLimit';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../types';
 import { detectPropertyCategory, getOverviewTemplate } from '../propertyTemplates';
 import { MAX_PHOTO_PAGES, photoPageCount, photoPageKeys } from './canvas/photoPages';
@@ -432,7 +433,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               return (
                   <div
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => (WEB_LIMITED && typeof tab.id === 'number' && !WEB_PAGE_NUMS.includes(tab.id) ? askInstallApp() : setActiveTab(tab.id))}
                       draggable={typeof tab.id === 'number' && tab.id !== 0}
                       onDragStart={(e) => { if (typeof tab.id === 'number') { setDragId(tab.id); e.dataTransfer.effectAllowed = 'move'; } }}
                       onDragOver={(e) => { if (dragId !== null && typeof tab.id === 'number') e.preventDefault(); }}
@@ -441,6 +442,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       title={typeof tab.id === 'number' && tab.id !== 0 ? '끌어서 순서를 바꿀 수 있어요' : undefined}
                       className={`group/tile relative flex flex-col justify-center items-center h-[75px] px-2 text-xs sm:text-[13px] font-bold rounded-lg transition-all cursor-pointer ${dragId === tab.id ? 'opacity-40' : ''} ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
                   >
+                      {WEB_LIMITED && typeof tab.id === 'number' && !WEB_PAGE_NUMS.includes(tab.id) && (
+                          <span className="absolute top-1 left-1.5 text-[11px]" title="공실마케팅 앱에서 만들 수 있어요">🔒</span>
+                      )}
                       {/* ◀ ▶ — 끌기가 불편할 때 (표지·전체는 없음) */}
                       {typeof tab.id === 'number' && tab.id !== 0 && (
                           <div className="absolute bottom-1 inset-x-1 justify-between hidden group-hover/tile:flex" onClick={(e) => e.stopPropagation()}>

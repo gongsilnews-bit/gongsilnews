@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { WebLockCover } from '../../webLimit';
 import EditableText from './EditableText';
 import { ReportContext } from './ReportContext';
 import CompletedOverlay from './CompletedOverlay';
@@ -155,6 +156,7 @@ const ReportPage = ({
 
     return (
         <div data-export-id={exportId} className={`relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8 ${bodyFont}`} style={{ pageBreakAfter: 'always' }}>
+            <WebLockCover exportId={exportId} />
             {isHidden && (
                 <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
                     ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
