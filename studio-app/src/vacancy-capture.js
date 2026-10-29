@@ -221,7 +221,10 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
     // 글쓰기 지시문에 넣을 중개사무소 이름 — 글의 주인공은 회원의 부동산 (2026-10-29 사장님). 못 받으면 빈칸으로 두고 진행
     if (!vacancy.saleKind) {
       const listing = await require("./naver-write").fetchListing(baseUrl, vacancyId, "").catch(() => null);
-      if (listing && listing.owner && listing.owner.type === "agency" && listing.owner.name) vacancy.office = listing.owner.name;
+      if (listing && listing.owner && listing.owner.type === "agency" && listing.owner.name) {
+        vacancy.office = listing.owner.name;
+        if (listing.owner.homepage) vacancy.homepage = listing.owner.homepage; // "○○ 홈페이지에서 확인" 으로 맺기
+      }
       else if (listing && listing.owner && listing.owner.type === "general" && listing.owner.name) vacancy.landlord = listing.owner.name; // 임대인 직접 등록
     }
     const result = { vacancyId, vacancy, media, hidden, failures, dir, analyzedAt: new Date().toISOString() };

@@ -251,7 +251,7 @@
       if (owner.phone) lines.push(`전화 ${owner.phone}`);
     }
     lines.push("※ 매물 조건은 등록 시점 기준이며 실제와 다를 수 있습니다.");
-    lines.push(`공실뉴스 등록 매물${owner.vacancyNo ? ` · 광고번호 ${owner.vacancyNo}` : ""} (${formatDate(listing?.capturedAt)} 기준)`);
+    lines.push(`공실뉴스 등록 매물${owner.vacancyNo ? ` · 물건번호 ${owner.vacancyNo}` : ""} (${formatDate(listing?.capturedAt)} 기준)`);
     return { lines, url };
   }
 

@@ -92,6 +92,7 @@ function gwBuildYtScriptPrompt(source, settings) {
   /* 매물을 등록한 중개사무소가 자기 채널에서 소개하는 영상 (2026-10-29 사장님) — 경매·공매는 아래 따로 */
   const office = String((source && source.vacancy && source.vacancy.office) || "").trim();
   const landlord = office ? "" : String((source && source.vacancy && source.vacancy.landlord) || "").trim();
+  const hasHome = Boolean(office && source && source.vacancy && source.vacancy.homepage);
 
   return `당신은 중개사무소가 자기 매물을 소개하는 유튜브 영상의 대본 작가입니다.
 아래 참조 기사와 확인된 물건 정보만 사용해 ${type.label} 영상의 내레이션 원고를 작성하십시오.${office ? `\n이 영상을 올리는 중개사무소: ${office}` : ""}
@@ -120,7 +121,8 @@ ${landlord ? `- 집주인 ${landlord}님이 자기 채널에서 본인 물건을
 - 첫 문장은 3초 안에 관심을 끄는 짧은 훅입니다.
 - 소리 내어 읽기 좋게 한 문장을 짧게 끊으십시오. 모든 문장은 마침표·물음표·느낌표로 끝내십시오.
 - 장면 제목·자막·화면 설명·괄호 지시문은 쓰지 마십시오. 읽을 문장만 씁니다.
-- 마지막은 핵심 조건과 확인할 점을 정리하고 "자세한 내용은 영상 설명란에서 확인할 수 있습니다."로 맺습니다.
+- 번호를 말할 때는 "물건번호"라고 하십시오 ("공실광고번호" 금지). 중개보수·공동중개는 말하지 마십시오.
+- 마지막은 핵심 조건과 확인할 점을 정리하고 ${hasHome ? `"물건번호 ○○번이며, ${office} 홈페이지에서 자세히 확인할 수 있습니다."` : `"자세한 내용은 영상 설명란에서 확인할 수 있습니다."`}로 맺습니다.
 
 ${GW_YT_OUTPUT}`;
 }
