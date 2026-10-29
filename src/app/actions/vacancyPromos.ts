@@ -103,7 +103,15 @@ async function promoGone(channel: string, url: string): Promise<boolean | null> 
     if (channel === "youtube") {
       if (!/youtube\.com|youtu\.be/.test(url)) return null;
       const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`, { headers: ua, signal: ac.signal, cache: "no-store" });
-      return res.status === 404 ? true : res.ok ? false : null; // 401·403 = 비공개·퍼가기 막음 — 지운 건 아니다
+      if (res.status === 404) return true;
+      if (res.ok) return false;
+      // 지운 영상도 oEmbed 는 403 을 줄 때가 있다 — 영상 화면의 재생 상태로 가른다 (2026-10-29)
+      //  ERROR(동영상을 재생할 수 없음) = 지움 · LOGIN_REQUIRED(비공개) · UNPLAYABLE(퍼가기·지역) = 그대로
+      const id = /(?:v=|shorts\/|youtu\.be\/)([\w-]{11})/.exec(url)?.[1];
+      if (!id) return null;
+      const page = await fetch(`https://www.youtube.com/watch?v=${id}`, { headers: { ...ua, "Accept-Language": "ko-KR" }, signal: ac.signal, cache: "no-store" });
+      const st = /"playabilityStatus":\{"status":"([A-Z_]+)"/.exec(await page.text())?.[1];
+      return st === "ERROR" ? true : st ? false : null;
     }
     return null;
   } catch {

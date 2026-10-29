@@ -61,14 +61,15 @@ async function verifyLinks(force, only) {
   }
   if (win) chrome.windows.remove(win.id).catch(() => {});
 }
-chrome.runtime.onStartup.addListener(() => { setTimeout(() => verifyLinks(false), 60 * 1000); });
+// 크롬을 켜거나 확장을 새로고침하면 1분 뒤 한 번 — setTimeout 은 크롬이 확장을 잠재우면 사라져서 알람으로 (2026-10-29)
+chrome.runtime.onStartup.addListener(() => { chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
 // 1분마다 앱에 "지금 확인할까" 묻는다 — 회원이 앱에서 [링크 수정]을 누르면 바로 (앱이 꺼져 있으면 아무 일 없음)
 const alarms = () => { chrome.alarms.create("gs-verify", { periodInMinutes: 180 }); chrome.alarms.create("gs-verify-poll", { periodInMinutes: 1 }); };
-chrome.runtime.onInstalled.addListener(() => { alarms(); setTimeout(() => verifyLinks(false), 60 * 1000); });
+chrome.runtime.onInstalled.addListener(() => { alarms(); chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
 chrome.runtime.onStartup.addListener(alarms);
 let verifying = false;
 chrome.alarms.onAlarm.addListener(async (a) => {
-  if (a.name === "gs-verify") verifyLinks(false);
+  if (a.name === "gs-verify" || a.name === "gs-verify-once") verifyLinks(false);
   if (a.name === "gs-verify-poll" && !verifying) {
     const j = await call("/gs-helper/verify-wanted");
     if (j && j.want) { verifying = true; try { await verifyLinks(true, j.urls || []); } finally { verifying = false; } }

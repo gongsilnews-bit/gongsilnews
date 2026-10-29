@@ -18,6 +18,9 @@
   // 스레드는 지운 글이면 #gs-verify 없이 ?error=invalid_post 로 넘긴다 — 확인 중이 아닌 탭이면 도우미가 무시한다
   if ((location.hash === "#gs-verify" || /error=invalid_post/.test(location.search)) && target) {
     const GONE = /Sorry, this page isn.t available|This page isn.t available|This content isn.t available|Post not found|페이지를 사용할 수 없습니다|이 페이지는 사용할 수 없|콘텐츠를 이용할 수 없|게시물을 사용할 수 없|게시물을 찾을 수 없|링크가 잘못되었거나 페이지가 삭제/i;
+    // 스레드만 — 인스타·페북은 댓글에도 "삭제" 같은 말이 있어 넓게 잡지 않는다
+    const GONE_TH = /Thread not found|has been deleted|was deleted|스레드를 찾을 수 없|찾을 수 없습니다|삭제되었|삭제된 게시물/i;
+    const code = (/\/post\/([A-Za-z0-9_-]+)/.exec(location.pathname) || [])[1] || "";
     (async () => {
       let state = null;
       for (let i = 0; i < 16; i++) {
@@ -25,12 +28,14 @@
         const loginForm = document.querySelector("input[name='password'], input[name='pass'], form[action*='login']");
         if (/\/accounts\/login|\/login/.test(location.pathname) || loginForm) { state = null; break; }
         const text = (document.body && document.body.innerText) || "";
-        if (GONE.test(text) || /error=invalid_post/.test(location.search)) { state = true; break; }
+        if (GONE.test(text) || (target === "threads" && GONE_TH.test(text.slice(0, 600))) || /error=invalid_post/.test(location.search)) { state = true; break; }
         const shown = target === "instagram" ? document.querySelector("article, main [role='presentation'] img, video")
-          : target === "threads" ? document.querySelector("[data-pressable-container], [role='main'] [dir='auto']")
+          // 스레드는 그 글 주소(시간 줄 링크)가 보여야 "있음" — 글자만으로는 모른다 (지운 글도 다른 글이 보인다)
+          : target === "threads" ? (code ? document.querySelector(`a[href*="/post/${code}"] time`) : null)
           : document.querySelector("[role='article'], [data-ad-preview='message']");
         if (shown && i >= 4) { state = false; break; }
       }
+      if (state !== true) send({ type: "GS_LOG", text: `${target} 확인 ${state === false ? "있음" : "모름"} — ${((document.body && document.body.innerText) || "").replace(/\s+/g, " ").slice(0, 120)}` });
       send({ type: "GS_VERIFY", gone: state });
     })();
     return;
