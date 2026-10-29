@@ -200,6 +200,20 @@ export async function markPromoGone(url: string): Promise<{ success: boolean; re
  * 내 공실 카드 (2026-10-28) — 홈 "내 공실 홍보현황" · 공실등록 [카드형]
  * getVacancies 는 표·지도용이라 무겁다 (1,000건씩 10번 · 회원·중개소 정보까지). 카드에 쓰는 칸만, 내 것만 한 번에 읽는다.
  */
+/** 경매·공매 카드 (2026-10-29) — 내가 뉴스·SNS발행으로 작업한 경매·공매 물건 (공개 물건이라 누구 것이든 읽는다) */
+export async function getVacancyCardsByIds(ids: string[]): Promise<{ success: boolean; data: any[]; error?: string }> {
+  const user = await me();
+  if (!user) return { success: false, data: [], error: "로그인이 필요합니다." };
+  const clean = (ids || []).filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 300);
+  if (!clean.length) return { success: true, data: [] };
+  const { data, error } = await admin()
+    .from("vacancies")
+    .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
+    .in("id", clean);
+  if (error) return { success: false, data: [], error: error.message };
+  return { success: true, data: data || [] };
+}
+
 export async function getMyVacancyCards(): Promise<{ success: boolean; data: any[]; error?: string }> {
   const user = await me();
   if (!user) return { success: false, data: [], error: "로그인이 필요합니다." };

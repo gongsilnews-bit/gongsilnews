@@ -9,7 +9,7 @@ import { AdminSectionProps } from "./types";
 import { SvgIcon, IconBuilding, IconArticle, IconSend, IconFilm, IconImage } from "./AdminIcons";
 import { updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
 import { getCleanAddrText, getPriceText, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
-import { checkMyPromoLinks, getMyVacancyCards, getMyVacancyPromos, saveVacancyPromo, setVacancyDealClosed, type VacancyPromo } from "@/app/actions/vacancyPromos";
+import { checkMyPromoLinks, getVacancyCardsByIds, getMyVacancyCards, getMyVacancyPromos, saveVacancyPromo, setVacancyDealClosed, type VacancyPromo } from "@/app/actions/vacancyPromos";
 import type { PromoChannel } from "@/utils/vacancyPromos";
 import { getHomepageBase } from "@/app/actions/homepage";
 
@@ -143,7 +143,7 @@ export const KakaoGlyph = () => (
 export const IconBlog = (p: any) => <SvgIcon {...p}><path d="M4 4h16v12H8l-4 4z" /><line x1="8" y1="8" x2="16" y2="8" /><line x1="8" y1="12" x2="13" y2="12" /></SvgIcon>;
 export const IconReport = (p: any) => <SvgIcon {...p}><rect x="4" y="3" width="16" height="18" rx="2" /><line x1="8" y1="17" x2="8" y2="13" /><line x1="12" y1="17" x2="12" y2="9" /><line x1="16" y1="17" x2="16" y2="11" /></SvgIcon>;
 
-export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword = "", limit, onAdd, showTypes, row, onOpen, addLabel = "공실등록" }: {
+export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword = "", limit, onAdd, showTypes, row, onOpen, addLabel = "공실등록", ids }: {
   theme: AdminSectionProps["theme"];
   memberId?: string;
   onMenuChange: (menu: string) => void;
@@ -156,10 +156,12 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   onOpen?: (picked: { id: string; vacancy_no: number; building_name: string | null }, tab: string) => void;
   /** 맨 앞 [+] 칸 글자 */
   addLabel?: string;
+  /** 경매·공매 목록 — 내 공실 대신 이 물건들 (뉴스·SNS발행에서 작업한 경매·공매, 2026-10-29) */
+  ids?: string[];
 }) {
   const { cardBg, textPrimary, textSecondary, border, darkMode } = theme;
   const router = useRouter();
-  const fresh = memo.member === memberId;
+  const fresh = !ids && memo.member === memberId; // 경매·공매 목록은 내 공실 기억을 쓰지 않는다
   const [vacancies, setVacancies] = useState<VacancyCard[] | null>(fresh ? memo.cards ?? null : null);
 
   // 내 공실 — 등록한 공실 + 이 PC에서 무엇을 만들었는지
@@ -168,7 +170,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
     if (!memberId) return;
     let off = false;
     Promise.all([
-      getMyVacancyCards().then((r) => (r.success ? r.data : [])).catch(() => [] as any[]),
+      (ids ? getVacancyCardsByIds(ids) : getMyVacancyCards()).then((r) => (r.success ? r.data : [])).catch(() => [] as any[]),
       localWorks(),
     ]).then(([rows, works]) => {
       if (off) return;
@@ -196,12 +198,12 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
         };
       });
       list.sort((x, y) => y.at - x.at);
-      memo.member = memberId;
-      memo.cards = list;
+      if (!ids) { memo.member = memberId;
+      memo.cards = list; }
       setVacancies(list);
     });
     return () => { off = true; };
-  }, [memberId, reloadVac]);
+  }, [memberId, reloadVac, ids?.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 홍보현황 — 공실뉴스 기사 · 채널별 글 주소 (서버)
   const [promos, setPromos] = useState<Record<string, VacancyPromo>>((fresh && memo.promos) || {});

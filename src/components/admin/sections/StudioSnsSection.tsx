@@ -516,12 +516,13 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
                 onOpen={(p, t) => void openFromCard(p, t)} />
             ) : (
-              <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>⚖️</span>}
-                empty="아직 경매·공매 물건으로 쓴 글이 없어요. [+ 새로 만들기]에서 사건번호·관리번호로 찾아 시작해 주세요."
-                cards={works && works.filter((w) => w.saleKind).map((w) => ({
-                  id: w.vacancyId, badge: w.saleKind, date: whenText(w.updatedAt), title: w.title || "경매·공매 물건", headline: w.priceText.split(" (")[0],
-                  line1: w.no ? `번호 ${w.no}` : "", thumb: w.thumb, done: w.done, current: w.vacancyId === result?.vacancyId }))}
-                onOpen={(id, t) => { void openWork(id).then(() => chooseTab(t)); }} />
+              // 경매·공매도 공실 카드 그대로 — 링크체크·채널 링크·메뉴까지 (2026-10-29 사장님)
+              works === null ? null : (
+                <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} addLabel="새로 만들기" onAdd={openNew}
+                  ids={works.filter((w) => w.saleKind).map((w) => w.vacancyId)}
+                  onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
+                  onOpen={(p, t) => void openFromCard(p, t)} />
+              )
             )}
           </div>
         )}
