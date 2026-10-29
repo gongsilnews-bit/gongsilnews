@@ -23,7 +23,7 @@ export const NEWSMAKER_PLANS = ["admin", "news_premium", "study_premium"] as con
 
 export const PLAN_LABELS: Record<string, string> = {
   admin: "최고관리자",
-  news_premium: "공실뉴스부동산 Studio",
+  news_premium: "공실뉴스부동산 Pro",
   study_premium: "공실뉴스부동산 Studio",
   free: "무료",
 };

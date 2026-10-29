@@ -31,6 +31,8 @@ interface Props {
   theme: any;
   memberId: string;
   planType?: string;
+  /** false = 공실마케팅 Pro · Studio 이용권이 없어 손님에게 안 보인다 (2026-10-29, planCheck canUseHomepage) */
+  allowed?: boolean;
 }
 
 type PanelKey = "basic" | "design" | "sections" | "fields" | "company";
@@ -43,7 +45,7 @@ const PANELS: { key: PanelKey; label: string; icon: string }[] = [
   { key: "company", label: "회사정보", icon: "🏢" },
 ];
 
-export default function IntakeStudio({ theme, memberId }: Props) {
+export default function IntakeStudio({ theme, memberId, allowed }: Props) {
   const dark = theme?.darkMode;
   const cardBg = dark ? "#1f2937" : "#ffffff";
   const border = dark ? "#374151" : "#e5e7eb";
@@ -167,6 +169,11 @@ export default function IntakeStudio({ theme, memberId }: Props) {
             </button>
           </div>
           <p style={{ margin: "5px 0 0", fontSize: 12.5, color: sub }}>임대인이 물건을 맡기는 페이지입니다</p>
+          {allowed === false && (
+            <p style={{ margin: "10px 0 0", padding: "8px 10px", borderRadius: 8, background: dark ? "#3b2a06" : "#fff7e6", color: dark ? "#fbbf24" : "#b45309", fontSize: 12.5, fontWeight: 700 }}>
+              공실마케팅 Pro · Studio 회원 전용입니다. 지금은 꾸며 둘 수만 있고 손님에게는 보이지 않아요.
+            </p>
+          )}
           {liveUrl && (
             <div style={{ display: "flex", alignItems: "stretch", gap: 7, marginTop: 13 }}>
               <a href={liveUrl} target="_blank" rel="noreferrer" title={liveUrl} style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: 6, padding: "9px 11px", border: `1px solid ${border}`, borderRadius: 8, background: dark ? "#111827" : "#f8fafc", color: text, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>

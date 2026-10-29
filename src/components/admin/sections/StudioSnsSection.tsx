@@ -234,13 +234,22 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   useEffect(() => {
     const b = bridge();
     if (!b) return;
-    let saved: { vacancyId: string; picked: VacancyRow; tab?: string } | null = null;
+    let saved: { vacancyId: string; picked: VacancyRow; tab?: string; auto?: boolean } | null = null;
     try {
       saved = JSON.parse(localStorage.getItem(LAST_KEY) || "null");
+      // auto 는 홈 카드에서 막 누른 한 번만 — 지워 두어 다음에 들어올 때 저절로 분석하지 않게
+      if (saved?.auto) localStorage.setItem(LAST_KEY, JSON.stringify({ ...saved, auto: undefined }));
     } catch {}
     if (!saved?.vacancyId) return;
-    b.vacancy.load(saved.vacancyId).then(async (r) => {
-      if (!r) return;
+    b.vacancy.load(saved.vacancyId).catch(() => null).then(async (r) => {
+      if (!r) {
+        // 처음 작업하는 공실 — 홈 카드에서 누른 공실로 바로 분석·캡처, 끝나면 누른 채널 탭 (2026-10-29 사장님)
+        if (!saved!.auto || !saved!.picked) return;
+        setPicked(saved!.picked);
+        if (saved!.tab) setTab(saved!.tab);
+        await analyze(saved!.picked);
+        return;
+      }
       // .gsn 에서 연 작업은 고른 공실 정보가 없다 — 불러온 공실 정보로 채운다 (2026-10-23)
       const no = Number((r.vacancy.fields || []).find((f) => f.label === "공실광고번호")?.value) || 0;
       const picked: VacancyRow = saved!.picked || { id: r.vacancyId, vacancy_no: no, building_name: r.vacancy.title || "" };

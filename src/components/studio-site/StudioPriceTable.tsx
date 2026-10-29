@@ -28,7 +28,8 @@ const ic = (d: string) => (
 
 /**
  * 2026-10-26 사장님: Free · Basic · Standard · 법인/기업/단체/기관용 네 칸 — 금액·항목은 "일단 랜덤"(임시).
- * 2026-10-28 사장님: 월 3만 = Pro(공실 20건) · 월 5만 = Studio(공실 50건, 영상 편집·이미지 편집은 Studio부터) — 화면만(더미), 실제 등급·권한은 아직
+ * 2026-10-28 사장님: 월 3만 = Pro(공실 20건) · 월 5만 = Studio(공실 50건, 영상 편집·이미지 편집은 Studio부터)
+ * 2026-10-29: 이용권 Pro · Studio 와 공실 한도는 실제로 들어감 (permissionCheck.ts studioPlan). 영상·이미지 편집 잠금은 아직
  * TEMP_PRICES 가 true 인 동안 화면에 "임시 금액" 표시가 붙는다. 금액을 정하면 아래 값을 고치고 false 로.
  */
 const TEMP_PRICES = true;

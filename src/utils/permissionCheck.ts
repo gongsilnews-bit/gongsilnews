@@ -128,6 +128,26 @@ export function isStudioMember(member: {
   return alive(member.studio_end_date);
 }
 
+/**
+ * 공실마케팅 이용권 종류 — Pro 월 3만(공실 20) · Studio 월 5만(공실 50) (2026-10-29 사장님, docs/2026-10-29_member_management_plan.md)
+ * 새 칸을 만들지 않고 등급 값(plan_type)의 유료 자리 둘을 쓴다: news_premium = Pro, study_premium = Studio.
+ * 비즈니스회원 · 최고관리자는 Studio 포함. 이용 기간이 끝났으면 null.
+ */
+export type StudioPlan = 'pro' | 'studio';
+export const STUDIO_PLAN_TYPE: Record<StudioPlan, string> = { pro: 'news_premium', studio: 'study_premium' };
+export const STUDIO_PLAN_LABEL: Record<StudioPlan, string> = { pro: 'Pro', studio: 'Studio' };
+export function studioPlan(member: {
+  role?: string | null;
+  plan_type?: string | null;
+  plan_end_date?: string | Date | null;
+  studio_end_date?: string | Date | null;
+} | null | undefined): StudioPlan | null {
+  if (!isStudioMember(member)) return null;
+  const role = member?.role;
+  if (role === 'BIZ' || role === '비즈니스회원' || role === 'ADMIN' || role === '최고관리자') return 'studio';
+  return member?.plan_type === STUDIO_PLAN_TYPE.studio ? 'studio' : 'pro';
+}
+
 /** 사이트 헤더에서 관리자 화면으로 들어가는 버튼에 쓸 글자 */
 export function getAdminEntryLabel(
   member: { role?: string | null; plan_type?: string | null } | null | undefined,

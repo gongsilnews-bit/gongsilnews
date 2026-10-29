@@ -83,7 +83,8 @@ const STUDIO_BADGES: Record<string, string> = {};
 const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing" || key === "customer" || key === "article_ad");
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPlanLabel, isStudioMember, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getPlanLabel, isStudioMember, studioPlan, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { canUseHomepage } from "@/utils/planCheck";
 import { SHOW_STUDY } from "@/utils/siteFlags";
 
 export default function RealtyAdminPage() {
@@ -469,7 +470,7 @@ function RealtyAdminContent() {
                     title={soon ? "요금제 만료가 얼마 남지 않았습니다" : undefined}
                     style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: tone.bg, color: tone.fg }}
                   >
-                    {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small />}
+                    {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
                   </span>
                 );
               })()
@@ -522,7 +523,7 @@ function RealtyAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} initialTab={searchParams.get("tab") === "agency" ? 1 : 0} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} />}
+          {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} allowed={canUseHomepage({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }, true)} />}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
           {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}

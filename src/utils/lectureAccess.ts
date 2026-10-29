@@ -17,7 +17,7 @@ export type LecturePlanKey = (typeof LECTURE_PLAN_KEYS)[number];
 export const LECTURE_PLAN_LABELS: Record<LecturePlanKey, string> = {
   user: "일반회원",
   realtor_free: "공실뉴스부동산",
-  news_premium: "공실뉴스부동산 Studio",
+  news_premium: "공실뉴스부동산 Pro·Studio",
   biz_premium: "비즈니스회원",
 };
 

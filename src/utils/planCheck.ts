@@ -46,6 +46,22 @@ function isSuperRole(role?: string | null): boolean {
  * 무료 회원에게 관리자가 직접 열어준 권한은 만료일과 상관없이 열려 있다.
  * 낼 요금제가 없으니 끝날 요금제도 없다.
  */
+/**
+ * 물건접수홈페이지를 쓸 수 있나 — 공실마케팅 Pro · Studio 이용 중인 회원만 (2026-10-29 사장님).
+ * 비즈니스회원은 Studio 포함이라 예전처럼 켜 둔 권한·기간으로, 최고관리자는 늘. 공실뉴스부동산(무료)·일반회원은 못 쓴다.
+ */
+export function canUseHomepage(
+  member: Parameters<typeof isPermissionAlive>[0],
+  granted?: boolean | null
+): boolean {
+  if (!member) return false;
+  if (isSuperRole(member.role)) return true;
+  if (!granted) return false;
+  if (studioAlive(member)) return true;
+  if (member.role === 'BIZ' || member.role === '비즈니스회원') return isPermissionAlive(member, granted);
+  return false;
+}
+
 export function isPermissionAlive(
   member: {
     role?: string | null;

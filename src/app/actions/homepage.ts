@@ -1,7 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { isPermissionAlive } from "@/utils/planCheck";
+import { canUseHomepage } from "@/utils/planCheck";
 
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'api', 'm', 'admin', 'news', 'study', 'biz', 'flyer', 'sites',
@@ -206,9 +206,9 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
 
     if (!member) return { success: false, reason: "not_found" as const, error: "회원 정보를 찾을 수 없습니다." };
 
-    // 홈페이지 권한 검사. 최고관리자가 회원별로 켜둔 칸을 보고,
-    // 요금제로 받은 권한이면 요금제가 끝나는 날 같이 닫힌다.
-    const isPremium = isPermissionAlive(member, member.can_homepage);
+    // 홈페이지 권한 검사. 최고관리자가 회원별로 켜둔 칸 + 공실마케팅 Pro · Studio 이용 중일 때만 (2026-10-29),
+    // 이용 기간이 끝나는 날 같이 닫힌다.
+    const isPremium = canUseHomepage(member, member.can_homepage);
 
     if (!isPremium) {
       return { success: false, reason: "paused" as const, error: "일시적으로 중단된 페이지입니다." };

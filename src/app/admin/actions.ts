@@ -1288,7 +1288,7 @@ const DEFAULT_LIMIT_POLICIES = {
   PERM_USER_SNS_LINKS: 0,
   PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
   PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
-  PERM_REALTOR_FREE_HOMEPAGE: 1,
+  PERM_REALTOR_FREE_HOMEPAGE: 0, // 물건접수홈페이지는 공실마케팅 Pro · Studio 전용 (2026-10-29)
   LIMIT_REALTOR_FREE_HERO_SLIDES: 1,
   PERM_REALTOR_FREE_FOOTER_HIDE: 0,
   PERM_REALTOR_FREE_INTAKE_PHOTO: 0,
@@ -1374,8 +1374,25 @@ function planDefaults(
       can_sns_links: !!policies.PERM_BIZ_SNS_LINKS,
     };
   }
-  // 옛 공실스터디부동산(study_premium)도 공실뉴스부동산 한도로 (2026-10-26 합침)
-  if (planType === 'news_premium' || planType === 'study_premium') {
+  // 공실마케팅 Studio 이용권 = study_premium → STUDY 칸 (2026-10-29, permissionCheck.ts studioPlan)
+  if (planType === 'study_premium') {
+    return {
+      max_vacancies: policies.LIMIT_REALTOR_STUDY_VACANCY,
+      max_articles_per_month: policies.LIMIT_REALTOR_STUDY_ARTICLE,
+      max_lectures: policies.LIMIT_REALTOR_STUDY_LECTURE,
+      can_article_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_BANNER,
+      can_article_vacancy_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_VACANCY,
+      can_homepage: !!policies.PERM_REALTOR_STUDY_HOMEPAGE,
+      max_hero_slides: policies.LIMIT_REALTOR_STUDY_HERO_SLIDES,
+      can_hide_footer_badge: !!policies.PERM_REALTOR_STUDY_FOOTER_HIDE,
+      can_intake_photo: !!policies.PERM_REALTOR_STUDY_INTAKE_PHOTO,
+      can_site_logo: !!policies.PERM_REALTOR_STUDY_SITE_LOGO,
+      can_hero_video: !!policies.PERM_REALTOR_STUDY_HERO_VIDEO,
+      can_sns_links: !!policies.PERM_REALTOR_STUDY_SNS_LINKS,
+    };
+  }
+  // 공실마케팅 Pro 이용권 = news_premium → NEWS 칸
+  if (planType === 'news_premium') {
     return {
       max_vacancies: policies.LIMIT_REALTOR_NEWS_VACANCY,
       max_articles_per_month: policies.LIMIT_REALTOR_NEWS_ARTICLE,

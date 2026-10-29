@@ -48,6 +48,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     plan_end_date: "",
     studio_start_date: "",
     studio_end_date: "",
+    studio_plan: "pro", // 공실마케팅 이용권 종류 pro / studio (부동산회원만, 2026-10-29)
     max_vacancies: 5,
     max_articles_per_month: 0,
     max_lectures: 0,
@@ -180,7 +181,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             role: resolvedRole,
             created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
             memberNumber: res.member.memberNumber || "",
-            plan_type: usesStudioPeriod(resolvedRole) ? planFromStudio(resolvedRole, studioEndOf(res.member, resolvedRole)) : res.member.plan_type || "free",
+            plan_type: usesStudioPeriod(resolvedRole) ? planFromStudio(resolvedRole, studioEndOf(res.member, resolvedRole), res.member.plan_type === "study_premium" ? "studio" : "pro") : res.member.plan_type || "free",
+            studio_plan: res.member.plan_type === "study_premium" ? "studio" : "pro",
             plan_start_date: res.member.plan_start_date ? new Date(res.member.plan_start_date).toISOString().split('T')[0] : "",
             plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : "",
             studio_start_date: dayOf(res.member.studio_start_date || (useOldBizPlan(res.member, resolvedRole) ? res.member.plan_start_date : null)),
@@ -379,9 +381,11 @@ function studioAliveOn(studioEnd?: string | null): boolean {
   end.setHours(23, 59, 59, 999);
   return end >= new Date();
 }
-function planFromStudio(role: string, studioEnd?: string | null): string {
+/* 이용권 종류(pro / studio)는 부동산회원만 고른다 — news_premium = Pro, study_premium = Studio (2026-10-29) */
+function planFromStudio(role: string, studioEnd?: string | null, kind: string = "pro"): string {
   if (!studioAliveOn(studioEnd)) return "free";
-  return role === "비즈니스회원" ? "biz_premium" : "news_premium";
+  if (role === "비즈니스회원") return "biz_premium";
+  return kind === "studio" ? "study_premium" : "news_premium";
 }
 const usesStudioPeriod = (role: string) => role === "부동산회원" || role === "비즈니스회원";
 const dayOf = (d?: string | null) => (d ? new Date(d).toISOString().split("T")[0] : "");
@@ -393,7 +397,8 @@ function gradeDefaults(p: any, role: string, planType?: string) {
   const g =
     role === "일반회원" || role === "최고관리자" ? "USER"
     : role === "비즈니스회원" ? "BIZ"
-    : planType === "news_premium" || planType === "study_premium" ? "REALTOR_NEWS"
+    : planType === "study_premium" ? "REALTOR_STUDY" // 공실마케팅 Studio (2026-10-29)
+    : planType === "news_premium" ? "REALTOR_NEWS" // 공실마케팅 Pro
     : "REALTOR_FREE";
   return {
     max_vacancies: p[`LIMIT_${g}_VACANCY`],
@@ -470,7 +475,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         PERM_USER_SNS_LINKS: 0,
         PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
         PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
-        PERM_REALTOR_FREE_HOMEPAGE: 1,
+        PERM_REALTOR_FREE_HOMEPAGE: 0,
         LIMIT_REALTOR_FREE_HERO_SLIDES: 1,
         PERM_REALTOR_FREE_FOOTER_HIDE: 0,
         PERM_REALTOR_FREE_INTAKE_PHOTO: 0,
@@ -512,7 +517,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
        * 예전에는 따로 손본 칸을 지켰는데, 등급을 바꿔도 한도가 그대로 남아 헷갈렸다.
        * 바뀐 숫자가 화면에 바로 보이므로, 이 회원만 다르게 줄 값은 저장 전에 다시 고치면 된다.
        */
-      const studioEndChanged = e.target.name === "studio_end_date" && usesStudioPeriod(prev.role);
+      const studioEndChanged = (e.target.name === "studio_end_date" || e.target.name === "studio_plan") && usesStudioPeriod(prev.role);
       if (e.target.name === "role" || e.target.name === "plan_type" || studioEndChanged) {
         const beforeRole = prev.role;
         const beforePlan = prev.plan_type;
@@ -521,10 +526,12 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         if (e.target.name === "role") {
           afterRole = val as string;
-          afterPlan = usesStudioPeriod(val as string) ? planFromStudio(val as string, prev.studio_end_date) : "free";
+          afterPlan = usesStudioPeriod(val as string) ? planFromStudio(val as string, prev.studio_end_date, prev.studio_plan) : "free";
           next.plan_type = afterPlan;
         } else if (studioEndChanged) {
-          afterPlan = planFromStudio(prev.role, val as string);
+          afterPlan = e.target.name === "studio_plan"
+            ? planFromStudio(prev.role, prev.studio_end_date, val as string)
+            : planFromStudio(prev.role, val as string, prev.studio_plan);
           next.plan_type = afterPlan;
         } else {
           afterPlan = val as string;
@@ -617,7 +624,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
       // 부동산 · 비즈니스회원은 요금제 칸이 없다 — 등급 값과 요금제 기간을 공실마케팅 이용기간에 맞춘다 (2026-10-26)
       const plan = usesStudioPeriod(formData.role)
-        ? { plan_type: planFromStudio(formData.role, formData.studio_end_date), plan_start_date: formData.studio_start_date, plan_end_date: formData.studio_end_date }
+        ? { plan_type: planFromStudio(formData.role, formData.studio_end_date, formData.studio_plan), plan_start_date: formData.studio_start_date, plan_end_date: formData.studio_end_date }
         : { plan_type: formData.plan_type, plan_start_date: formData.plan_start_date, plan_end_date: formData.plan_end_date };
 
       if (!editMemberId) {
@@ -1186,14 +1193,18 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {formData.role === "부동산회원" && (
           <>
-            {/* 부동산회원은 요금제 칸 없이 공실마케팅 이용기간 하나 — 비우면 공실뉴스부동산(무료), 날짜가 있으면 그동안 스튜디오 (2026-10-26 사장님) */}
+            {/* 부동산회원은 요금제 칸 없이 공실마케팅 이용권 종류 + 이용기간 — 비우면 공실뉴스부동산(무료) (2026-10-26, 종류 2026-10-29 사장님) */}
             <div style={rowStyle}>
               <div style={labelStyle}>공실마케팅 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select name="studio_plan" value={formData.studio_plan} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 170 }}>
+                  <option value="pro">Pro (월 3만 · 공실 20)</option>
+                  <option value="studio">Studio (월 5만 · 공실 50)</option>
+                </select>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 공실마케팅 회원 — 이름표 로고 · 공실마케팅 모든 프로그램.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 고른 이용권 — 이름표 옆 Pro / Studio 마크.</span>
               </div>
             </div>
 
@@ -1268,7 +1279,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · 이름표 공실마케팅 로고 · 공실마케팅 모든 프로그램. 비우면 이용 안 함.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · Studio 이용권 포함. 비우면 이용 안 함.</span>
               </div>
             </div>
           </>

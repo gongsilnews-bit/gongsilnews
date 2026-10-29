@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isPermissionAlive } from '@/utils/planCheck';
+import { canUseHomepage } from '@/utils/planCheck';
 
 /**
  * 닫힌 중개사 홈페이지에 무엇으로 답할 것인가.
@@ -68,7 +68,7 @@ async function isSitePaused(subdomain: string): Promise<boolean> {
   try {
     const res = await fetch(
       `${url}/rest/v1/homepage_settings?subdomain=eq.${encodeURIComponent(subdomain)}` +
-        `&select=is_active,members(role,plan_type,plan_end_date,can_homepage)`,
+        `&select=is_active,members(role,plan_type,plan_end_date,studio_end_date,can_homepage)`,
       {
         headers: { apikey: key, Authorization: `Bearer ${key}` },
         cache: 'no-store',
@@ -86,7 +86,7 @@ async function isSitePaused(subdomain: string): Promise<boolean> {
     const m = row.members || {};
     // 페이지(getHomepageSettingsBySubdomain)와 같은 판정을 쓴다.
     // 두 곳이 어긋나면 미들웨어는 통과시키는데 페이지가 닫히는 일이 생긴다.
-    return !isPermissionAlive(m, m.can_homepage);
+    return !canUseHomepage(m, m.can_homepage);
   } catch {
     return false;
   }

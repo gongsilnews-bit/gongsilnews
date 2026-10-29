@@ -18,8 +18,9 @@ import {
 /** 멤버십을 켜는 상품 (스마트스토어 판매자상품코드) */
 export const MEMBERSHIP_PRODUCT_CODE = "GS-STUDY-1Y";
 const MEMBERSHIP_PRODUCT_ID = "13805832960";
+// 지금 상품(1년 36만)은 공실마케팅 Pro 이용권 (2026-10-29, permissionCheck.ts studioPlan)
 const PLAN_TYPE = "news_premium";
-const OLD_PLAN = "study_premium"; // 예전 공실스터디부동산 — 남은 기간은 이어 붙인다
+const OLD_PLAN = "study_premium"; // 공실마케팅 Studio 이용권 — 이 상품으로 자동으로 바꾸지 않는다
 
 const PAID = ["PAYED", "DELIVERING", "DELIVERED", "PURCHASE_DECIDED"];
 const CANCELLED = ["CANCELED", "RETURNED", "CANCELED_BY_NOPAYMENT"];
@@ -222,6 +223,10 @@ export async function grant(supabase: ReturnType<typeof db>, memberId: string, q
   const currentEnd = ends.length ? new Date(Math.max(...ends.map((d) => d.getTime()))) : null;
   const active = !!currentEnd && currentEnd > now;
   const isPaid = !!member.studio_end_date || member.plan_type === PLAN_TYPE || member.plan_type === OLD_PLAN;
+  // Studio 이용 중인 회원이 Pro 상품을 사면 자동으로 낮추지 않고 관리자에게 넘긴다
+  if (active && member.plan_type === OLD_PLAN) {
+    return { status: "needs_review", member_id: memberId, review_reason: "Studio 이용권 회원이 Pro 상품을 결제했습니다 — 회원관리에서 기간을 직접 늘려 주세요" };
+  }
   const targetPlan = PLAN_TYPE;
   const startFrom = isPaid && active ? currentEnd! : now;
   const end = new Date(startFrom);

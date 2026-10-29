@@ -212,10 +212,12 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
     onMenuChange("marketing");
   };
   // 진행판 칸을 누르면 뉴스·SNS발행에서 그 공실·그 탭으로 (StudioSnsSection 이 기억을 읽어 연다)
-  const openStep = (vacancyId: string, tab: string) => {
+  // 처음 작업하는 공실도 다시 고르지 않게 공실 정보를 같이 넘긴다 — auto: 작업이 없으면 바로 분석·캡처 (2026-10-29 사장님)
+  const openStep = (v: VacancyCard, tab: string) => {
     try {
+      const picked = { id: v.id, vacancy_no: Number(v.no) || 0, building_name: v.building || null };
       localStorage.setItem("studio_news_category", "gongsil");
-      localStorage.setItem("studio_last_vacancy", JSON.stringify({ vacancyId, picked: null, tab }));
+      localStorage.setItem("studio_last_vacancy", JSON.stringify({ vacancyId: v.id, picked, tab, auto: true }));
     } catch {}
     onMenuChange("sns");
   };
@@ -259,10 +261,10 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
       { label: favs.includes(v.id) ? "즐겨찾기 해제" : "즐겨찾기", icon: <IconStar />, go: () => toggleFav(v.id) },
     ],
     [
-      { label: "기사 만들기", icon: <IconArticle />, go: () => openStep(v.id, "article") },
-      { label: "뉴스·SNS 만들기", icon: <IconSend />, go: () => openStep(v.id, "instagram") },
-      { label: "블로그 만들기", icon: <IconBlog />, go: () => openStep(v.id, "blog") },
-      { label: "동영상 만들기", icon: <IconFilm />, note: "대본부터", go: () => openStep(v.id, "youtube") },
+      { label: "기사 만들기", icon: <IconArticle />, go: () => openStep(v, "article") },
+      { label: "뉴스·SNS 만들기", icon: <IconSend />, go: () => openStep(v, "instagram") },
+      { label: "블로그 만들기", icon: <IconBlog />, go: () => openStep(v, "blog") },
+      { label: "동영상 만들기", icon: <IconFilm />, note: "대본부터", go: () => openStep(v, "youtube") },
       { label: "매물보고서 만들기", icon: <IconReport />, go: () => openMarketing(v.id, "report") },
       { label: "물건홍보지 만들기", icon: <IconImage />, go: () => openMarketing(v.id, "flyer") },
     ],
@@ -354,7 +356,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
               <CardTools style={{ top: 22, right: 22 }} fav={favs.includes(v.id)} onFav={() => toggleFav(v.id)}
                 onMore={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ v, x: r.left, y: r.bottom + 4 }); }} />
               {/* 카드 위쪽(제목·가격·사진)을 누르면 뉴스·SNS발행에서 그 공실 (2026-10-28 사장님) */}
-              <div role="button" title="뉴스·SNS발행에서 이 공실 열기" onClick={() => openStep(v.id, "article")} style={{ display: "flex", gap: 10, cursor: "pointer" }}>
+              <div role="button" title="뉴스·SNS발행에서 이 공실 열기" onClick={() => openStep(v, "article")} style={{ display: "flex", gap: 10, cursor: "pointer" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                     {v.commission && <span style={{ fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: 700, whiteSpace: "nowrap" }}>{v.commission}</span>}
@@ -385,7 +387,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
               </div>
               {/* 아래 — 홍보현황 (광고 중 n/7 · 채널) */}
               <div style={{ marginTop: 12, borderTop: `1px solid ${border}` }}>
-                <PromoRows theme={theme} v={v} promo={promos[v.id]} onMake={(tab) => openStep(v.id, tab)}
+                <PromoRows theme={theme} v={v} promo={promos[v.id]} onMake={(tab) => openStep(v, tab)}
                   onListing={() => router.push(`?menu=gongsil&action=write&id=${v.id}`, { scroll: false })} onPaste={(ch, x, y) => setPasteFor({ v, ch, x, y })} onLinks={(x, y) => setLinksFor({ v, x, y })} />
                 {/* 거래 완료인데 아직 올라가 있는 글 — 눈에 띄게 */}
                 {v.closed && (() => {

@@ -428,7 +428,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {member.role === 'REALTOR' ? (member.studio_end_date ? new Date(member.studio_end_date).toISOString().split('T')[0] : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
+                      {member.role === 'REALTOR' ? (member.studio_end_date ? `${member.plan_type === 'study_premium' ? 'Studio' : 'Pro'} ~${new Date(member.studio_end_date).toISOString().split('T')[0]}` : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
                     </td>
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
@@ -550,7 +550,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
 const HOMEPAGE_ROWS: [string, string][] = [
   ["일반회원", "USER"],
   ["공실뉴스부동산 (무료)", "REALTOR_FREE"],
-  ["공실뉴스부동산 + Studio", "REALTOR_NEWS"],
+  ["공실뉴스부동산 + Pro", "REALTOR_NEWS"],
+  ["공실뉴스부동산 + Studio", "REALTOR_STUDY"],
   ["비즈니스회원", "BIZ"],
 ];
 
@@ -585,7 +586,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     PERM_USER_SNS_LINKS: 0,
     PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
     PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
-    PERM_REALTOR_FREE_HOMEPAGE: 1,
+    PERM_REALTOR_FREE_HOMEPAGE: 0,
     LIMIT_REALTOR_FREE_HERO_SLIDES: 1,
     PERM_REALTOR_FREE_FOOTER_HIDE: 0,
     PERM_REALTOR_FREE_INTAKE_PHOTO: 0,
@@ -752,16 +753,29 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         </div>
       </div>
 
-      {/* 공실뉴스부동산 + Studio — 공실마케팅 이용기간 안 (2026-10-26) */}
+      {/* 공실뉴스부동산 + Pro — 공실마케팅 Pro 이용기간 안 (news_premium, 2026-10-29) */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>공실뉴스부동산 + Studio</span>
+          <span style={labelStyle}>공실뉴스부동산 + Pro</span>
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_REALTOR_NEWS_ARTICLE_BANNER")}
           {perm("PERM_REALTOR_NEWS_ARTICLE_VACANCY")}
           {perm("PERM_REALTOR_NEWS_HOMEPAGE")}
+        </div>
+      </div>
+
+      {/* 공실뉴스부동산 + Studio — 공실마케팅 Studio 이용기간 안 (study_premium, 2026-10-29) */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>공실뉴스부동산 + Studio</span>
+          <input type="number" value={formData.LIMIT_REALTOR_STUDY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_STUDY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_STUDY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_STUDY_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          {perm("PERM_REALTOR_STUDY_ARTICLE_BANNER")}
+          {perm("PERM_REALTOR_STUDY_ARTICLE_VACANCY")}
+          {perm("PERM_REALTOR_STUDY_HOMEPAGE")}
         </div>
       </div>
 
@@ -784,7 +798,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: `2px solid ${border}` }}>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0" }}>물건접수홈페이지</h3>
         <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 18px 0" }}>
-          홈페이지는 부동산회원 전원에게 열고, 여기서 기능으로 등급을 나눕니다.
+          홈페이지는 공실마케팅 Pro · Studio 회원(비즈니스회원 포함)만 쓰고, 여기서 기능으로 등급을 나눕니다.
           추천공실·기사 노출은 위의 공실·기사 한도를 그대로 따라가므로 따로 설정하지 않습니다.
         </p>
 
