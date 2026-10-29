@@ -3,7 +3,7 @@
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import StudioMyVideoPanel from "./StudioMyVideoPanel";
 import VacancyCardGrid from "./VacancyCardGrid";
-import WorkCardGrid from "./WorkCardGrid";
+import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
@@ -536,6 +536,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>지금 작업으로 돌아가기</button>
               </div>
             )}
+            <LinkNotice darkMode={Boolean((theme as { darkMode?: boolean }).darkMode)} />
             {category === "gongsil" ? (
               <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} showTypes addLabel="새로 만들기" onAdd={openNew}
                 onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}

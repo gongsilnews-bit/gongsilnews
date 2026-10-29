@@ -457,7 +457,7 @@ export function PostDialog({ project, file, seconds, channel: ch0, onClose, line
         )}
         {done && (
           <div style={{ padding: "12px 14px", borderRadius: 8, border: "1px solid #16a34a", background: "rgba(22,163,74,0.12)", fontSize: 14, lineHeight: 1.7 }}>
-            {name} 올리기 화면에 영상과 글을 넣었어요. 크롬 창에서 내용을 확인하고 <b>{done.ch === "instagram" ? "[공유하기]" : "[게시]"}</b>를 직접 눌러 주세요. 올린 글 주소는 홍보현황에 새 링크로 붙어요.
+            {name} 올리기 화면에 영상과 글을 넣었어요. 크롬 창에서 내용을 확인하고 <b>{done.ch === "instagram" ? "[공유하기]" : "[게시]"}</b>를 직접 눌러 주세요. 올린 글 주소는 자동으로 연결되지만, 못 잡을 때도 있어요 — ✓ 가 안 붙으면 카드의 [링크체크]에서 주소를 붙여 넣어 주세요.
             {done.partial && <div style={{ color: "#facc15", marginTop: 4 }}>{done.partial}</div>}
             {done.ch === "youtube" && done.thumb === "verify" && (
               <div style={{ color: "#facc15", marginTop: 6 }}>

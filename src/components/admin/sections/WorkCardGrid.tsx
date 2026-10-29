@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BG, G, CardHoverStyle } from "./VacancyCardGrid";
+import { BG, G, CardHoverStyle, RefreshGlyph } from "./VacancyCardGrid";
 
 /**
  * 뉴스·SNS발행 목록 카드 (2026-10-29 사장님: "디자인 다르게 하지 말고 복사해서 똑같이")
@@ -23,12 +23,28 @@ export type WorkCard = {
   thumb?: string | null;
   /** 채널마다 써 둔 글 { article, blog, instagram, threads, facebook, youtube } — 없으면 채널 줄을 그리지 않는다 */
   done?: Record<string, boolean>;
+  /** 채널마다 올린 게시물 주소 — 있으면 ✓, 글만 써 뒀으면 반투명 + ! (공실관리 카드와 같이, 내 영상 홍보 2026-10-29) */
+  links?: Record<string, string>;
   current?: boolean;
 };
 
+/** 링크 안내 — 올린 주소를 못 잡을 때가 있으니 [링크체크]에서 직접 연결하라고 (2026-10-29 사장님: 뉴스·SNS발행 목록 네 메뉴 같이) */
+export function LinkNotice({ darkMode }: { darkMode?: boolean }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 16, padding: "10px 14px", borderRadius: 10, fontSize: 13, lineHeight: 1.6,
+      background: darkMode ? "#3b2f1a" : "#fff8e6", border: `1px solid ${darkMode ? "#7a5c1f" : "#f5d68a"}`, color: darkMode ? "#f5d68a" : "#7a5200" }}>
+      <span style={{ flexShrink: 0, width: 16, height: 16, marginTop: 2, borderRadius: "50%", background: "#f59f00", color: "#fff", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>!</span>
+      <span>
+        올린 게시물 주소는 도우미가 자동으로 연결하지만, <b>채널에 따라 못 잡을 때가 있어요.</b> 올렸는데 아이콘에 <b>✓</b>가 없고 <b style={{ color: "#e8590c" }}>!</b>가 보이면,
+        카드의 <b>[링크체크]</b>를 눌러 올린 글 주소를 <b>[붙여넣기]</b>로 직접 연결해 주세요.
+      </span>
+    </div>
+  );
+}
+
 const CH_ALL: [string, string][] = [["article", "공실뉴스 기사"], ["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
 
-export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy", channels }: {
+export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy", channels, onLinks }: {
   theme: Theme;
   cards: WorkCard[] | null;
   addLabel?: string;
@@ -42,6 +58,8 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
   variant?: "vacancy" | "article";
   /** 채널 줄 — 없으면 기사·블로그·인스타·스레드·페북·유튜브 */
   channels?: [string, string][];
+  /** 있으면 채널 줄 끝에 [링크체크] (공실관리 카드와 같은 단추) */
+  onLinks?: (id: string, x: number, y: number) => void;
 }) {
   const CH = channels || CH_ALL;
   const { cardBg, textPrimary, textSecondary, border } = theme;
@@ -135,16 +153,26 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
                     </div>
                     <div style={{ display: "flex", gap: 4 }}>
                       {CH.map(([k, label]) => {
-                        const on = Boolean(c.done![k]);
+                        const wrote = Boolean(c.done![k]);
+                        const linked = c.links ? Boolean(c.links[k]) : wrote; // links 가 없으면 예전처럼 써 둔 글 = ✓
+                        const draft = Boolean(c.links) && wrote && !linked;
                         return (
-                          <button key={k} onClick={() => onOpen(c.id, k)} title={`${label} · ${on ? "써 둔 글 열기" : "만들기"}`}
+                          <button key={k} onClick={() => onOpen(c.id, k)}
+                            title={`${label} · ${c.links ? (linked ? "올린 게시물 보기" : draft ? "채워 뒀어요 — 올렸다면 [링크체크]에서 주소를 넣어 주세요" : "올리기") : wrote ? "써 둔 글 열기" : "만들기"}`}
                             style={{ position: "relative", width: 32, height: 32, padding: 0, border: 0, borderRadius: 10, cursor: "pointer", background: BG[k],
-                              display: "flex", alignItems: "center", justifyContent: "center", filter: on ? "none" : "grayscale(1)", opacity: on ? 1 : 0.25, transition: "opacity .15s" }}>
+                              display: "flex", alignItems: "center", justifyContent: "center", filter: linked || draft ? "none" : "grayscale(1)", opacity: linked ? 1 : draft ? 0.5 : 0.25, transition: "opacity .15s" }}>
                             {G[k]}
-                            {on && <span style={{ position: "absolute", right: -4, bottom: -4, width: 15, height: 15, borderRadius: "50%", background: "#2f9e44", border: `2px solid ${darkMode ? "#25262b" : "#fff"}`, color: "#fff", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>}
+                            {linked && <span style={{ position: "absolute", right: -4, bottom: -4, width: 15, height: 15, borderRadius: "50%", background: "#2f9e44", border: `2px solid ${darkMode ? "#25262b" : "#fff"}`, color: "#fff", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>}
+                            {draft && <span style={{ position: "absolute", right: -4, top: -4, width: 14, height: 14, borderRadius: "50%", background: "#f59f00", border: `2px solid ${darkMode ? "#25262b" : "#fff"}`, color: "#fff", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>!</span>}
                           </button>
                         );
                       })}
+                      {onLinks && (
+                        <button onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onLinks(c.id, r.left, r.bottom + 6); }} title="채널별 링크 보기·복사·수정 · 지운 글 확인"
+                          style={{ marginLeft: "auto", height: 32, padding: "0 10px", borderRadius: 10, border: 0, background: darkMode ? "#3a3b40" : "#e9ecef", color: textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                          <RefreshGlyph />링크체크
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

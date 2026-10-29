@@ -388,6 +388,9 @@ if (allowed) {
         login: (ch) => ipcRenderer.invoke("video:post-login", ch),
         finishLogin: () => ipcRenderer.invoke("video:post-finish-login"),
         open: (ch, what) => ipcRenderer.invoke("video:post-open", ch, what),
+        urls: () => ipcRenderer.invoke("video:post-urls"),
+        setUrl: (file, ch, url) => ipcRenderer.invoke("video:post-url-set", file, ch, url),
+        check: (file) => ipcRenderer.invoke("video:post-check", file),
       },
       openSettings: (what) => ipcRenderer.invoke("video:open-settings", what), // 윈도우 카메라·마이크 권한 화면
       openDeviceSettings: (what) => ipcRenderer.invoke("video:open-device-settings", what), // 윈도우 카메라·마이크 장치 설정 (0.1.8부터)

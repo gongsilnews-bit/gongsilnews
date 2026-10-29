@@ -124,7 +124,7 @@ function handle(req, res) {
         pubs.delete(r.id);
         savePubs();
         // 유튜브도 바로 — 공개·비공개·예약 상관없이 영상 주소가 생기면 ✓ (2026-10-28 사장님). 잘못 붙으면 회원이 [연결 끊기]
-        log.info(`[도우미] 발행 ${p.meta.channel} ${p.meta.vacancyId || `기사 ${p.meta.articleNo}`} ${r.url}`);
+        log.info(`[도우미] 발행 ${p.meta.channel} ${p.meta.vacancyId || (p.meta.articleNo ? `기사 ${p.meta.articleNo}` : `영상 ${p.meta.file}`)} ${r.url}`);
         for (const fn of pubListeners) Promise.resolve(fn({ ...p.meta, url: String(r.url) })).catch((e) => log.warn(`[도우미] 발행 기록 못함: ${e.message}`));
       }
       send(res, 200, { ok });
@@ -222,7 +222,7 @@ function addJob(target, payload, meta) {
   for (const [id, j] of jobs) if (j.target === target && !j.taken) jobs.delete(id);
   const id = crypto.randomBytes(8).toString("hex");
   jobs.set(id, { id, target, payload, at: Date.now(), taken: 0, done: null, waiters: [] });
-  if (meta && (meta.vacancyId || meta.articleNo)) { pubs.set(id, { meta, at: Date.now() }); savePubs(); }
+  if (meta && (meta.vacancyId || meta.articleNo || meta.file)) { pubs.set(id, { meta, at: Date.now() }); savePubs(); } // file = 공실 없는 영상도 주소를 이 PC에
   return id;
 }
 

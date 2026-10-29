@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import ArticleCardGrid from "./ArticleCardGrid";
 import { useRouter } from "next/navigation";
-import WorkCardGrid from "./WorkCardGrid";
+import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
@@ -289,6 +289,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             {column && <button onClick={() => setView("")} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>지금 작업으로 돌아가기</button>}
           </div>
+          <LinkNotice darkMode={Boolean((theme as { darkMode?: boolean }).darkMode)} />
           {/* 기사관리 SNS홍보형 카드 그대로 (2026-10-29 사장님: "이것과 똑같아야지") — 기사를 누르면 그 기사의 칼럼 (없으면 만든다) */}
           <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기" onAdd={openNew}
             onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}

@@ -860,7 +860,10 @@ app.whenReady().then(async () => {
   try { require("./helper-server").start(); } catch (e) { log.warn(`[도우미] 창구 못 염: ${e.message}`); } // 공실마케팅 도우미(크롬 확장)와 PC 안에서만 (2026-10-23)
   // 회원이 발행한 글 주소 → 서버 홍보현황에 "연결됨" (2026-10-27). 앱 홈은 창이 앞으로 오면 다시 읽는다
   //  홈 "내 기사"로 쓴 글은 articleNo — 기사 홍보현황 (2026-10-28)
-  require("./helper-server").onPublished(async ({ vacancyId, articleNo, channel, url }) => {
+  require("./helper-server").onPublished(async ({ vacancyId, articleNo, channel, url, file }) => {
+    // 내 영상 홍보 — 영상이면 이 PC에도 (공실·기사를 안 골랐어도, 2026-10-29)
+    if (file) { require("./sns-upload").savePostUrl(file, channel, url); mainWindow?.webContents.send("studio:promo-saved", { file, channel }); }
+    if (!vacancyId && !articleNo) return;
     const res = await session.defaultSession.fetch(`${BASE_URL}/api/studio/promo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -879,6 +882,7 @@ app.whenReady().then(async () => {
       return data.success ? data.urls || [] : [];
     },
     gone: async (url) => {
+      if (require("./sns-upload").removePostUrl(url)) mainWindow?.webContents.send("studio:promo-saved", { removed: url }); // 내 영상 홍보 링크도
       const res = await session.defaultSession.fetch(`${BASE_URL}/api/studio/promo`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gone: url }) });
       const data = await res.json().catch(() => ({}));
       if (data.removed) mainWindow?.webContents.send("studio:promo-saved", { removed: url });

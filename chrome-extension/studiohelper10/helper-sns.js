@@ -776,12 +776,15 @@ ${text}`;
     }
     return "";
   }
+  // 새 일감이 오면 예전 기다림은 버리고 새 것만 본다 — 예전엔 먼저 시작한 기다림이 남아
+  //  새로 올린 글 주소를 예전 공실에 붙였다 (2026-10-29 논현동 영상 스레드 → 팔용동)
+  let postTimer = null;
   async function startPostWatch(p) {
-    if (watchingAddr) return;
-    watchingAddr = true;
+    if (postTimer) clearInterval(postTimer);
+    linkedDone = false;
     const head = norm(p.head).replace(/\s+/g, "");
     let last = "";
-    const t = setInterval(async () => {
+    const t = postTimer = setInterval(async () => {
       if (linkedDone || Date.now() - p.at > POST_WAIT) { clearInterval(t); return; }
       let url = findPostedToast();
       if (url) dlog(`게시 알림에서 찾음 ${url}`);
@@ -796,6 +799,7 @@ ${text}`;
         const mine = await waitFor(() => !head || norm(document.body.innerText).replace(/\s+/g, "").includes(head), 10000, 500);
         if (!mine) { dlog(`게시물 화면인데 우리 글이 아님 ${url}`); return; }
       }
+      if (postTimer !== t) return; // 기다리는 사이 새 일감으로 바뀌었으면
       const r = await send({ type: "GS_PUBLISHED", id: p.id, url });
       dlog(`게시물 화면 주소 보냄 ${url} → ${r && r.ok ? "연결됨" : "앱이 거절"}`);
       if (r && r.ok) {

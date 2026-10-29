@@ -440,7 +440,8 @@ async function fillYoutubeByHelper(o, onProgress) {
   const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   // 내 기사 — 화면에서 고른 기사 번호 또는 칼럼(홈 "내 기사")의 기사
   const articleNo = isVacancy ? "" : /^\d+$/.test(String(o.articleNo || "")) ? String(o.articleNo) : require("./column-writer").articleOf(id);
-  const meta = isVacancy ? { vacancyId: id, channel: "youtube" } : articleNo ? { articleNo, channel: "youtube" } : null;
+  // 공실·기사가 없어도 영상 파일은 적어 둔다 — 내 영상 홍보 목록에서 채널 아이콘을 누르면 올린 게시물로 (2026-10-29 사장님)
+  const meta = { ...(isVacancy ? { vacancyId: id } : articleNo ? { articleNo } : {}), channel: "youtube", file: o.file };
   const job = helper.addJob("youtube", { title: o.title, text: o.text, visibility: o.visibility || "public", video, thumb }, meta);
   void shell.openExternal(URLS.youtube.upload);
   onProgress("평소 크롬에 유튜브 올리기 화면을 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…");
@@ -473,7 +474,7 @@ async function fillVideoPostByHelper(o, onProgress) {
   const id = String(o.vacancyId || "");
   const isVacancy = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const articleNo = isVacancy ? "" : /^\d+$/.test(String(o.articleNo || "")) ? String(o.articleNo) : require("./column-writer").articleOf(id);
-  const meta = isVacancy ? { vacancyId: id, channel: o.channel } : articleNo ? { articleNo, channel: o.channel } : null;
+  const meta = { ...(isVacancy ? { vacancyId: id } : articleNo ? { articleNo } : {}), channel: o.channel, file: o.file }; // 영상 파일도 (위 유튜브와 같이)
   const posts = Array.isArray(o.posts) && o.posts.length ? o.posts : [o.text];
   const job = helper.addJob(o.channel, { channel: o.channel, label: ch.label, text: o.text, posts, photos: [], video }, meta);
   void shell.openExternal(ch.home);
@@ -515,4 +516,52 @@ async function open(channel, what) {
   return true;
 }
 
-module.exports = { draft, thumbs, fill, login, finishLogin, open };
+/* 내 영상 홍보 — 올린 게시물 주소를 이 PC에 (2026-10-29 사장님: 채널 아이콘을 누르면 그 게시물로 · [링크체크])
+   공실·기사를 안 골라도 남긴다. { "<영상 파일 소문자>": { youtube: { url, at }, … } } */
+const postFile = () => path.join(require("electron").app.getPath("userData"), "video-posts.json");
+const postKey = (f) => String(f || "").replace(/\\/g, "/").toLowerCase();
+function readPosts() {
+  try { return JSON.parse(fs.readFileSync(postFile(), "utf8")) || {}; } catch { return {}; }
+}
+function writePosts(all) {
+  try { fs.writeFileSync(postFile(), JSON.stringify(all, null, 1)); } catch (e) { log.warn(`[내 영상] 주소 저장 못함 ${e.message}`); }
+}
+/** 돌려줌: { "<파일>": { youtube: "https://…", … } } */
+function postUrls() {
+  const out = {};
+  for (const [k, chs] of Object.entries(readPosts())) out[k] = Object.fromEntries(Object.entries(chs || {}).map(([c, v]) => [c, (v && v.url) || ""]).filter(([, u]) => u));
+  return out;
+}
+/** url 이 비면 연결 끊기 */
+function savePostUrl(file, channel, url) {
+  const k = postKey(file);
+  if (!k || !channel) return false;
+  const all = readPosts();
+  all[k] = all[k] || {};
+  if (url) all[k][channel] = { url: String(url), at: Date.now() }; else delete all[k][channel];
+  writePosts(all);
+  log.info(`[내 영상] ${channel} ${url ? "주소 " + url : "연결 끊음"} ${file}`);
+  return true;
+}
+/** 지운 글 — 그 주소를 모든 영상에서 뺀다. 돌려줌: 뺀 개수 */
+function removePostUrl(url) {
+  const all = readPosts();
+  let n = 0;
+  for (const chs of Object.values(all)) for (const [c, v] of Object.entries(chs || {})) if (v && v.url === url) { delete chs[c]; n++; }
+  if (n) { writePosts(all); log.info(`[내 영상] 지운 글 연결 끊음 ${url}`); }
+  return n;
+}
+/** [링크체크] — 유튜브는 여기서(oEmbed: 지웠거나 비공개면 안 열림), 인스타·페북·스레드는 도우미가 (verifyByHelper) */
+async function checkPostUrls(file) {
+  const chs = postUrls()[postKey(file)] || {};
+  const removed = [];
+  if (chs.youtube) {
+    try {
+      const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(chs.youtube)}`);
+      if (r.status === 404 || r.status === 400) { removePostUrl(chs.youtube); removed.push("youtube"); } // 401·403 = 비공개·일부 공개 — 지운 건 아니다
+    } catch {}
+  }
+  return { removed, urls: postUrls()[postKey(file)] || {} };
+}
+
+module.exports = { draft, thumbs, fill, login, finishLogin, open, postUrls, savePostUrl, removePostUrl, checkPostUrls };

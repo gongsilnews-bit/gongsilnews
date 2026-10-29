@@ -829,6 +829,10 @@ function register(base) {
   ipcMain.handle("video:post-login", (_e, ch) => snsUpload().login(ch));
   ipcMain.handle("video:post-finish-login", () => snsUpload().finishLogin());
   ipcMain.handle("video:post-open", (_e, ch, what) => snsUpload().open(ch, what));
+  // 내 영상 홍보 — 올린 게시물 주소 (이 PC) · 붙여넣기·고치기 · [링크체크] (2026-10-29)
+  ipcMain.handle("video:post-urls", () => snsUpload().postUrls());
+  ipcMain.handle("video:post-url-set", (_e, file, ch, url) => snsUpload().savePostUrl(file, ch, url));
+  ipcMain.handle("video:post-check", (_e, file) => snsUpload().checkPostUrls(file));
   ipcMain.handle("video:vacancy", async (e, vacancyId) => {
     const blogWriter = require("../blog-writer");
     let a = blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));

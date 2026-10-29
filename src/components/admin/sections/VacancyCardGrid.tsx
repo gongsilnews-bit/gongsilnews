@@ -685,8 +685,10 @@ export function LinkPopover({ theme, x, y, channel, url, onSave, onClose }: {
 }
 
 /* [링크체크] 창 — 다섯 채널 링크를 한 번에: 주소 보기 · [복사] · [수정](파란 칸) · 빈 채널은 [붙여넣기] (2026-10-28 사장님) */
-export function LinksPanel({ theme, x, y, links, onSave, onClose, status }: {
+export function LinksPanel({ theme, x, y, links, onSave, onClose, status, channels }: {
   theme: AdminSectionProps["theme"]; x: number; y: number; links: Partial<Record<PromoChannel, string>>;
+  /** 보여 줄 채널 — 없으면 다섯 채널 (내 영상 홍보는 블로그 없이 네 채널, 2026-10-29) */
+  channels?: [PromoChannel, string][];
   onSave: (ch: PromoChannel, url: string) => Promise<string>; onClose: () => void;
   /** 지운 글 확인 상태 — "확인 중…" · "지운 글 n개를 풀었어요" (창 맨 위, 2026-10-29) */
   status?: string;
@@ -727,7 +729,7 @@ export function LinksPanel({ theme, x, y, links, onSave, onClose, status }: {
         style={{ position: "fixed", left: pos.left, top: pos.top, zIndex: 10002, width: 420, maxWidth: "calc(100vw - 16px)", background: cardBg, border: `1px solid ${border}`, borderRadius: 12, padding: "12px 14px", boxShadow: "0 10px 32px rgba(0,0,0,0.2)" }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>링크체크</div>
         {status && <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8, color: /풀었/.test(status) ? "#dc2626" : /중…/.test(status) ? "#2563eb" : "#16a34a" }}>{status}</div>}
-        {CLEAN_CH.map(([c, label]) => {
+        {(channels || CLEAN_CH).map(([c, label]) => {
           const url = links[c];
           return (
             <div key={c} style={{ padding: "7px 0", borderTop: `1px solid ${border}` }}>

@@ -545,6 +545,11 @@ export type VideoBridge = {
     login: (ch: PostChannel) => Promise<boolean>;
     finishLogin: () => Promise<void>;
     open: (ch: PostChannel, what?: "verify") => Promise<boolean>;
+    /** 내 영상 홍보 — 올린 게시물 주소 (이 PC, 앱 0.1.17부터) { "<영상 파일 소문자>": { youtube: url, … } } */
+    urls?: () => Promise<Record<string, Partial<Record<PostChannel, string>>>>;
+    setUrl?: (file: string, ch: PostChannel, url: string) => Promise<boolean>;
+    /** [링크체크] — 유튜브 지운 영상은 연결을 풀고 돌려준다 */
+    check?: (file: string) => Promise<{ removed: PostChannel[]; urls: Partial<Record<PostChannel, string>> }>;
   };
   openSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 설정 화면 (옛 앱에는 없음)
   openDeviceSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 장치 설정 — 밝기·쓸 장치·입력 크기 (앱 0.1.8부터)

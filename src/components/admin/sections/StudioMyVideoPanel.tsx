@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { SNS_TONES } from "./StudioSnsPanel";
-import WorkCardGrid from "./WorkCardGrid";
+import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
+import { LinksPanel, verifyByHelper } from "./VacancyCardGrid";
+import type { PromoChannel } from "@/utils/vacancyPromos";
 import { PostDialog } from "@/components/admin/studio-video/PostDialog";
 import type { LibItem, PostChannel, Project, Ratio } from "@/components/admin/studio-video/types";
 import { errText, videoBridge } from "@/components/admin/studio-video/types";
@@ -27,6 +29,8 @@ function ratioOf(w: number, h: number): Ratio {
   return "16:9";
 }
 const MINE_KEY = "gs-myvideo-posted"; // 내 영상 홍보에서 올린 영상 { at, ch, file }[] (이 PC)
+const fileKey = (f: string) => f.replace(/\\/g, "/").toLowerCase(); // 앱 sns-upload.js postKey 와 같게
+const VIDEO_CH: [PromoChannel, string][] = [["youtube", "유튜브"], ["instagram", "인스타그램 릴스"], ["threads", "스레드"], ["facebook", "페이스북"]];
 const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
 export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme; onListView?: (on: boolean) => void }) {
@@ -63,6 +67,36 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
       setVideos(files.map((f) => ({ ...(byPath.get(norm(f)) || fromPath(f)), id: f, path: f })).sort((x, y) => (by[y.id]?.at || 0) - (by[x.id]?.at || 0)));
     }).catch(() => setVideos(files.map(fromPath)));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 올린 게시물 주소 (이 PC) — 채널 아이콘을 누르면 그 게시물로 · [링크체크] (2026-10-29 사장님)
+  const [urls, setUrls] = useState<Record<string, Partial<Record<PostChannel, string>>>>({});
+  const loadUrls = () => { void b?.post?.urls?.().then(setUrls).catch(() => {}); };
+  useEffect(() => {
+    loadUrls();
+    window.addEventListener("focus", loadUrls); // 크롬에서 게시하고 앱으로 돌아오면
+    const offSaved = (window as unknown as { gongsilStudio?: { promo?: { onSaved: (fn: () => void) => () => void } } }).gongsilStudio?.promo?.onSaved(loadUrls); // 도우미가 주소를 보내 오면
+    return () => { window.removeEventListener("focus", loadUrls); offSaved?.(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const openOut = (u: string) => {
+    const g = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<unknown> } }).gongsilStudio;
+    if (g?.openInBrowser) void g.openInBrowser(u); else window.open(u, "_blank", "noopener");
+  };
+  const [linksFor, setLinksFor] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [linkStatus, setLinkStatus] = useState("");
+  // [링크체크]을 열면 바로 지운 글 확인 — 유튜브는 앱이, 인스타·페북·스레드는 도우미가 1분 안에 (기사·공실 카드와 같이)
+  useEffect(() => {
+    if (!linksFor) { setLinkStatus(""); return; }
+    const mine = urls[fileKey(linksFor.id)] || {};
+    const helperOnes = (["instagram", "threads", "facebook"] as const).filter((c) => mine[c]).length;
+    const helperNote = helperOnes ? ` · 인스타·페북·스레드 ${helperOnes}개는 도우미가 1분 안에 확인해요` : "";
+    verifyByHelper(Object.values(mine));
+    if (!mine.youtube) { setLinkStatus(helperNote ? helperNote.slice(3) : ""); return; }
+    if (!b?.post?.check) { setLinkStatus(""); return; }
+    setLinkStatus("지운 글인지 확인 중…");
+    b.post.check(linksFor.id).then((r) => {
+      loadUrls();
+      setLinkStatus(r.removed.length ? `지운 영상이라 유튜브 연결을 풀었어요${helperNote}` : `유튜브는 그대로 있어요${helperNote}`);
+    }).catch(() => setLinkStatus("확인하지 못했어요 — 다시 열어 주세요"));
+  }, [linksFor?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [ch, setCh] = useState<PostChannel | "">("");
   const [err, setErr] = useState("");
   const [vacs, setVacs] = useState<Vac[] | null>(null);
@@ -117,6 +151,7 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
     const dateOf = (ms?: number) => (ms ? new Date(ms).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "") : "");
     return (
       <div>
+        <LinkNotice darkMode={theme.darkMode} />
         <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={() => void pick()} placeholder={<span style={{ fontSize: 30 }}>🎬</span>}
           empty="아직 올린 영상이 없어요. [+ 새로 만들기]로 PC에서 영상을 골라 올려 보세요."
           channels={[["youtube", "유튜브"], ["instagram", "인스타그램 릴스"], ["threads", "스레드"], ["facebook", "페이스북"]]}
@@ -125,9 +160,12 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
             const p = posted[v.id];
             return { id: v.id, badge: v.width ? (r === "16:9" ? "가로" : "세로") : undefined, date: dateOf(p?.at || v.addedAt), title: v.name.replace(/\.[^.]+$/, ""),
               headline: v.duration ? clock(v.duration) : undefined, line1: v.width ? (r === "16:9" ? "유튜브 일반 영상" : "유튜브 쇼츠 · 인스타 릴스") : undefined, thumb: v.thumb || null,
-              done: p?.done || {} };
+              done: p?.done || {}, links: b?.post?.urls ? (urls[fileKey(v.id)] || {}) as Record<string, string> : undefined };
           })}
+          onLinks={b?.post?.urls ? (id, x, y) => setLinksFor({ id, x, y }) : undefined}
           onOpen={(id, t) => {
+            const url = urls[fileKey(id)]?.[t as PostChannel];
+            if (url) return openOut(url); // 올린 채널 — 그 게시물로
             const v = (videos || []).find((x) => x.id === id);
             if (!v || !v.path) return void pick();
             setItem(v);
@@ -135,6 +173,18 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
             if (["youtube", "instagram", "threads", "facebook"].includes(t)) setCh(t as PostChannel); // 채널 아이콘을 누르면 그 채널로 바로 올리기 창
           }} />
         {err && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{err}</div>}
+        {linksFor && (
+          <LinksPanel theme={theme as never} x={linksFor.x} y={linksFor.y} channels={VIDEO_CH} status={linkStatus} onClose={() => setLinksFor(null)}
+            links={urls[fileKey(linksFor.id)] || {}}
+            onSave={async (c, u) => {
+              const v = u.trim();
+              if (v && !/^https:\/\//.test(v)) return "https:// 로 시작하는 주소를 넣어 주세요.";
+              if (!b?.post?.setUrl) return "공실마케팅 앱을 새 버전으로 바꿔 주세요.";
+              await b.post.setUrl(linksFor.id, c as PostChannel, v);
+              loadUrls();
+              return "";
+            }} />
+        )}
       </div>
     );
   }
@@ -209,7 +259,7 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
       </div>
 
       {project && item?.path && ch && (
-        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => { setCh(""); loadPosted(); }}
+        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => { setCh(""); loadPosted(); loadUrls(); }}
           onFilled={(c) => {
             try {
               const log = JSON.parse(localStorage.getItem(MINE_KEY) || "[]");
