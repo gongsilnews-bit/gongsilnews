@@ -195,13 +195,19 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   const checkedAt = React.useRef(0);
   const checkLinks = (only?: { vacancyId: string }) => {
     if (!only) {
-      // 전체 확인은 6시간에 한 번 (공실이 많아도 화면은 기다리지 않는다 — 뒤에서 돈다)
+      // 서버 전체 확인(블로그·스레드·유튜브)은 30분에 한 번 — 가볍고 뒤에서 돈다 (2026-10-29 사장님: 6시간은 너무 늦다)
       let last = checkedAt.current;
       try { last = Math.max(last, Number(localStorage.getItem("gs-promo-checked") || 0)); } catch {}
-      if (Date.now() - last < 6 * 60 * 60 * 1000) return;
+      if (Date.now() - last < 30 * 60 * 1000) return;
       checkedAt.current = Date.now();
       try { localStorage.setItem("gs-promo-checked", String(checkedAt.current)); } catch {}
-      verifyByHelper("all"); // 인스타·페북·스레드는 도우미가 평소 크롬에서 (1분 안, 2026-10-29)
+      // 도우미(인스타·페북·스레드)는 크롬 창을 여는 일이라 6시간에 한 번만
+      let lastHelper = 0;
+      try { lastHelper = Number(localStorage.getItem("gs-promo-helper") || 0); } catch {}
+      if (Date.now() - lastHelper > 6 * 60 * 60 * 1000) {
+        try { localStorage.setItem("gs-promo-helper", String(Date.now())); } catch {}
+        verifyByHelper("all");
+      }
     }
     checkMyPromoLinks(only).then((r) => {
       if (!r.removed.length) return;
