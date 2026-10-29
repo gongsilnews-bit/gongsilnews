@@ -308,7 +308,9 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   }, [flash]);
   const detailUrl = (v: VacancyCard) => `${window.location.origin}/gongsil/detail/${v.id}`;
   // 보내는 링크 — 내 홈페이지가 켜져 있으면 내 홈페이지의 그 공실, 아니면 공실뉴스 (2026-10-28 사장님)
-  const homepage = useHomepageBase(memberId);
+  // 경매·공매 물건은 회원 홈페이지에 없다 — 공실뉴스로 (2026-10-29 사장님)
+  const homepageBase = useHomepageBase(memberId);
+  const homepage = ids ? "" : homepageBase;
   const shareUrl = (v: VacancyCard) => `${homepage || SITE}/gongsil/detail/${v.id}`;
   const shareKakao = (v: VacancyCard) => {
     void kakaoShare({ title: `${v.title} ${v.price}`, description: [v.spec.join(" · "), v.rooms].filter(Boolean).join("\n"), imageUrl: v.thumb, url: shareUrl(v), button: "공실 보기", homepage })
