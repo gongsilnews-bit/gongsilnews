@@ -35,9 +35,32 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
   const [view, setView] = useState<"list" | "work">("list");
   useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const [videos, setVideos] = useState<(LibItem & { path?: string })[] | null>(null);
+  // 내가 올린 영상만 (2026-10-29 사장님) — [크롬에서 채우기] 기록(gsv:postLog, 편집기·여기 같이)으로. 사진·길이는 내 자료에서 찾는다
+  const [posted, setPosted] = useState<Record<string, { at: number; done: Record<string, boolean> }>>({});
+  const loadPosted = () => {
+    let log: { at: number; ch: string; file: string }[] = [];
+    try { log = JSON.parse(localStorage.getItem("gsv:postLog") || "[]"); } catch {}
+    const by: Record<string, { at: number; done: Record<string, boolean> }> = {};
+    for (const e of log) {
+      if (!e || !e.file) continue;
+      const k = e.file;
+      by[k] = by[k] || { at: 0, done: {} };
+      by[k].at = Math.max(by[k].at, e.at || 0);
+      by[k].done[e.ch] = true;
+    }
+    setPosted(by);
+    return by;
+  };
   useEffect(() => {
-    if (!b?.lib.list) return setVideos([]);
-    b.lib.list({ kind: "video" }).then((l) => setVideos([...l].filter((x) => x.kind === "video").sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0)).slice(0, 60))).catch(() => setVideos([]));
+    const by = loadPosted();
+    const files = Object.keys(by);
+    if (!files.length) return setVideos([]);
+    const norm = (p: string) => p.replace(/\\/g, "/").toLowerCase();
+    const fromPath = (f: string) => ({ id: f, path: f, name: f.split(/[\\/]/).pop() || f, kind: "video", source: "mine", fav: false, duration: 0, width: 0, height: 0, url: "", thumb: "", ready: true } as LibItem & { path?: string });
+    (b?.lib.list ? b.lib.list({ kind: "video" }) : Promise.resolve([] as LibItem[])).then((l) => {
+      const byPath = new Map(l.filter((x) => x.path).map((x) => [norm(String(x.path)), x]));
+      setVideos(files.map((f) => ({ ...(byPath.get(norm(f)) || fromPath(f)), id: f, path: f })).sort((x, y) => (by[y.id]?.at || 0) - (by[x.id]?.at || 0)));
+    }).catch(() => setVideos(files.map(fromPath)));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [ch, setCh] = useState<PostChannel | "">("");
   const [err, setErr] = useState("");
@@ -94,13 +117,22 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
     return (
       <div>
         <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={() => void pick()} placeholder={<span style={{ fontSize: 30 }}>🎬</span>}
-          empty="내 자료에 영상이 없어요. [+ 새로 만들기]로 PC에서 영상을 골라 주세요."
+          empty="아직 올린 영상이 없어요. [+ 새로 만들기]로 PC에서 영상을 골라 올려 보세요."
+          channels={[["youtube", "유튜브"], ["instagram", "인스타그램 릴스"], ["threads", "스레드"], ["facebook", "페이스북"]]}
           cards={videos && videos.map((v) => {
             const r = ratioOf(v.width, v.height);
-            return { id: v.id, badge: r === "16:9" ? "가로" : "세로", date: dateOf(v.addedAt), title: v.name.replace(/\.[^.]+$/, ""),
-              headline: clock(v.duration || 0), line1: r === "16:9" ? "유튜브 일반 영상" : "유튜브 쇼츠 · 인스타 릴스", thumb: v.thumb || null };
+            const p = posted[v.id];
+            return { id: v.id, badge: v.width ? (r === "16:9" ? "가로" : "세로") : undefined, date: dateOf(p?.at || v.addedAt), title: v.name.replace(/\.[^.]+$/, ""),
+              headline: v.duration ? clock(v.duration) : undefined, line1: v.width ? (r === "16:9" ? "유튜브 일반 영상" : "유튜브 쇼츠 · 인스타 릴스") : undefined, thumb: v.thumb || null,
+              done: p?.done || {} };
           })}
-          onOpen={(id) => { const v = (videos || []).find((x) => x.id === id); if (v && v.path) { setItem(v); setView("work"); } else void pick(); }} />
+          onOpen={(id, t) => {
+            const v = (videos || []).find((x) => x.id === id);
+            if (!v || !v.path) return void pick();
+            setItem(v);
+            setView("work");
+            if (["youtube", "instagram", "threads", "facebook"].includes(t)) setCh(t as PostChannel); // 채널 아이콘을 누르면 그 채널로 바로 올리기 창
+          }} />
         {err && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{err}</div>}
       </div>
     );
@@ -176,7 +208,7 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
       </div>
 
       {project && item?.path && ch && (
-        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => setCh("")} />
+        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => { setCh(""); loadPosted(); }} />
       )}
     </div>
   );

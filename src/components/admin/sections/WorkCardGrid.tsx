@@ -26,9 +26,9 @@ export type WorkCard = {
   current?: boolean;
 };
 
-const CH: [string, string][] = [["article", "공실뉴스 기사"], ["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
+const CH_ALL: [string, string][] = [["article", "공실뉴스 기사"], ["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
 
-export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy" }: {
+export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy", channels }: {
   theme: Theme;
   cards: WorkCard[] | null;
   addLabel?: string;
@@ -40,7 +40,10 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
   placeholder?: React.ReactNode;
   /** vacancy = 공실관리 카드 · article = 기사관리 SNS홍보형 카드 (사진 위 채널 아이콘, 아래 제목·날짜 — 2026-10-29 사장님: 뉴스칼럼) */
   variant?: "vacancy" | "article";
+  /** 채널 줄 — 없으면 기사·블로그·인스타·스레드·페북·유튜브 */
+  channels?: [string, string][];
 }) {
+  const CH = channels || CH_ALL;
   const { cardBg, textPrimary, textSecondary, border } = theme;
   const darkMode = Boolean(theme.darkMode);
   if (variant === "article") return (
