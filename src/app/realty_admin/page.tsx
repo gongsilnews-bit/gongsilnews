@@ -403,7 +403,8 @@ function RealtyAdminContent() {
           <img src="/new_logo.png" alt="공실뉴스 로고" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", cursor: "pointer" }} onClick={() => window.location.href = "/"} />
         </div>
         <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflowY: "auto", scrollbarWidth: "none" as const }}>
-          {REALTY_MENU.map((item) => (
+          {/* 물건접수홈페이지는 공실마케팅 Pro · Studio 메뉴에만 — 웹 아이콘 메뉴(공실뉴스 관리자)에서는 뺀다 (2026-10-29 사장님) */}
+          {REALTY_MENU.filter((item) => item.key !== "homepage").map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.separated ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" } : {}) }}
               onMouseEnter={() => handleMenuHover(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
               <button onClick={() => selectMenu(item.key)}
