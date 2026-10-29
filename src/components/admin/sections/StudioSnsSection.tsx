@@ -414,7 +414,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             {/* [☰ 공실등록형] [▦ SNS홍보형] — 공실관리 제목 옆과 똑같이 (2026-10-29 사장님). 여기는 SNS홍보형, 공실등록형은 공실관리 표로 */}
             {((category === "gongsil" && mode === "list") || (category === "column" && wideList)) && (
               <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: theme.darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
-                {([["list", category === "column" ? "기사등록형" : "공실등록형", "M4 6h16M4 12h16M4 18h16"], ["card", "SNS홍보형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => {
+                {/* 뉴스·SNS발행에서는 SNS홍보형만 (2026-10-29 사장님) — 등록형은 공실관리·기사관리에서 */}
+                {([["card", "SNS홍보형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => {
                   const on = k === "card";
                   return (
                     <button key={k} aria-pressed={on}
