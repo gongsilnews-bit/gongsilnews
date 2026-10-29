@@ -78,31 +78,99 @@ export async function saveVacancyPromo(vacancyId: string, channel: PromoChannel,
  * 지금은 네이버 블로그만 확인한다 (지운 글은 PostView 가 404). 인스타·스레드 등은 로그인 없이 확인할 수 없어 그대로 둔다.
  * 네트워크 오류는 "지움"으로 보지 않는다 — 404 일 때만 푼다.
  */
+/* 지운 글인가 — 로그인 없이 서버에서 알아볼 수 있는 채널만 (2026-10-29 사장님)
+   블로그: PostView 404 · 스레드: 지운 글은 ?error=invalid_post 로 넘김 · 유튜브: oEmbed 404
+   인스타·페북은 로그인 없이는 늘 같은 화면이라 여기서 못 본다 — 도우미 확장이 평소 크롬에서 본다 (markPromoGone)
+   true = 지움 · false = 있음 · null = 확인 못 함(그대로 둔다) */
+async function promoGone(channel: string, url: string): Promise<boolean | null> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), 8000);
+  const ua = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0 Safari/537.36" };
+  try {
+    if (channel === "blog") {
+      const m = /blog\.naver\.com\/([A-Za-z0-9_-]+)\/(\d+)/.exec(url);
+      if (!m) return null;
+      const res = await fetch(`https://blog.naver.com/PostView.naver?blogId=${m[1]}&logNo=${m[2]}`, { headers: ua, signal: ac.signal, cache: "no-store" });
+      return res.status === 404 ? true : res.ok ? false : null;
+    }
+    if (channel === "threads") {
+      if (!/^https:\/\/www\.threads\.(com|net)\/@[^/]+\/post\/[A-Za-z0-9_-]+/.test(url)) return null;
+      const res = await fetch(url, { headers: ua, signal: ac.signal, cache: "no-store", redirect: "manual" });
+      const loc = res.headers.get("location") || "";
+      if (res.status >= 300 && res.status < 400) return /error=invalid_post/.test(loc) ? true : null;
+      return res.ok ? false : null;
+    }
+    if (channel === "youtube") {
+      if (!/youtube\.com|youtu\.be/.test(url)) return null;
+      const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`, { headers: ua, signal: ac.signal, cache: "no-store" });
+      return res.status === 404 ? true : res.ok ? false : null; // 401·403 = 비공개·퍼가기 막음 — 지운 건 아니다
+    }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+const CH_NAME: Record<string, string> = { blog: "네이버 블로그", threads: "스레드", youtube: "유튜브", instagram: "인스타그램", facebook: "페이스북" };
+
+/** 홍보현황 링크 중 지운 글은 연결을 푼다 — 공실·기사 모두 (2026-10-29 사장님: 블로그 + 스레드·유튜브) */
 export async function checkMyPromoLinks(): Promise<{ success: boolean; removed: { vacancyId: string; channel: string; title: string }[] }> {
   const user = await me();
   if (!user) return { success: false, removed: [] };
   const db = admin();
-  const { data: rows, error } = await db.from("vacancy_promos").select("id, vacancy_id, channel, url, vacancies(building_name, dong)").eq("owner_id", user.id).eq("channel", "blog");
-  if (error || !rows?.length) return { success: !error, removed: [] };
+  const CH = ["blog", "threads", "youtube"];
+  const [{ data: vRows, error }, { data: aRows }] = await Promise.all([
+    db.from("vacancy_promos").select("id, vacancy_id, channel, url, vacancies(building_name, dong)").eq("owner_id", user.id).in("channel", CH),
+    db.from("article_promos").select("id, article_id, channel, url, articles(title)").eq("owner_id", user.id).in("channel", CH),
+  ]);
+  if (error) return { success: false, removed: [] };
   const removed: { vacancyId: string; channel: string; title: string }[] = [];
-  await Promise.all(rows.map(async (r) => {
-    const m = /blog\.naver\.com\/([A-Za-z0-9_-]+)\/(\d+)/.exec(String(r.url));
-    if (!m) return;
-    const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), 8000);
-    try {
-      const res = await fetch(`https://blog.naver.com/PostView.naver?blogId=${m[1]}&logNo=${m[2]}`, { headers: { "User-Agent": "Mozilla/5.0" }, signal: ac.signal, cache: "no-store" });
-      if (res.status !== 404) return;
+  const one = <T,>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x) || null;
+  await Promise.all([
+    ...(vRows || []).map(async (r) => {
+      if ((await promoGone(r.channel, String(r.url))) !== true) return;
       await db.from("vacancy_promos").delete().eq("id", r.id);
-      const v = (Array.isArray(r.vacancies) ? r.vacancies[0] : r.vacancies) as { building_name?: string; dong?: string } | null;
-      removed.push({ vacancyId: String(r.vacancy_id), channel: r.channel, title: v?.building_name || v?.dong || "공실" });
-    } catch {
-      /* 확인 못 함 — 그대로 둔다 */
-    } finally {
-      clearTimeout(t);
-    }
-  }));
+      const v = one(r.vacancies as { building_name?: string; dong?: string } | null);
+      removed.push({ vacancyId: String(r.vacancy_id), channel: CH_NAME[r.channel] || r.channel, title: v?.building_name || v?.dong || "공실" });
+    }),
+    ...(aRows || []).map(async (r) => {
+      if ((await promoGone(r.channel, String(r.url))) !== true) return;
+      await db.from("article_promos").delete().eq("id", r.id);
+      const a = one(r.articles as { title?: string } | null);
+      removed.push({ vacancyId: "", channel: CH_NAME[r.channel] || r.channel, title: (a?.title || "기사").slice(0, 20) });
+    }),
+  ]);
   return { success: true, removed };
+}
+
+/**
+ * 도우미 확장이 평소 크롬(로그인된 상태)에서 확인할 인스타그램·페이스북 링크 (2026-10-29 사장님)
+ * 앱이 이 목록을 확장에 넘기고, 지운 글로 보이면 markPromoGone 으로 푼다.
+ */
+export async function listPromoLinksToVerify(): Promise<{ success: boolean; urls: string[] }> {
+  const user = await me();
+  if (!user) return { success: false, urls: [] };
+  const db = admin();
+  const CH = ["instagram", "facebook"];
+  const [{ data: v }, { data: a }] = await Promise.all([
+    db.from("vacancy_promos").select("url").eq("owner_id", user.id).in("channel", CH),
+    db.from("article_promos").select("url").eq("owner_id", user.id).in("channel", CH),
+  ]);
+  return { success: true, urls: [...new Set([...(v || []), ...(a || [])].map((r) => String(r.url)).filter(Boolean))] };
+}
+
+/** 도우미 확장이 "지운 글"로 본 주소의 연결을 푼다 — 본인 링크만 */
+export async function markPromoGone(url: string): Promise<{ success: boolean; removed: number }> {
+  const user = await me();
+  if (!user || !url) return { success: false, removed: 0 };
+  const db = admin();
+  const [{ data: v }, { data: a }] = await Promise.all([
+    db.from("vacancy_promos").delete().eq("owner_id", user.id).eq("url", url).select("id"),
+    db.from("article_promos").delete().eq("owner_id", user.id).eq("url", url).select("id"),
+  ]);
+  return { success: true, removed: (v || []).length + (a || []).length };
 }
 
 /**

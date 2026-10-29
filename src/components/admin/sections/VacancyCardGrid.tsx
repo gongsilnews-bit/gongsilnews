@@ -192,8 +192,8 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
     checkedAt.current = Date.now();
     checkMyPromoLinks().then((r) => {
       if (!r.removed.length) return;
-      const names = r.removed.map((x) => x.title).join(", ");
-      setNotice(`${names} — 네이버 블로그 글이 지워져서 연결을 풀었어요.`);
+      const names = [...new Set(r.removed.map((x) => `${x.title} ${x.channel}`))].join(", ");
+      setNotice(`${names} 글이 지워져서 연결을 풀었어요.`);
       void loadPromos();
     }).catch(() => {});
   };
@@ -391,7 +391,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
               </div>
               {/* 아래 — 홍보현황 (광고 중 n/7 · 채널) */}
               <div style={{ marginTop: 12, borderTop: `1px solid ${border}` }}>
-                <PromoRows theme={theme} v={v} promo={promos[v.id]} onMake={(tab) => openStep(v, tab)}
+                <PromoRows theme={theme} v={v} promo={promos[v.id]} homepage={homepage} onMake={(tab) => openStep(v, tab)}
                   onListing={() => router.push(`?menu=gongsil&action=write&id=${v.id}`, { scroll: false })} onPaste={(ch, x, y) => setPasteFor({ v, ch, x, y })} onLinks={(x, y) => setLinksFor({ v, x, y })} />
                 {/* 거래 완료인데 아직 올라가 있는 글 — 눈에 띄게 */}
                 {v.closed && (() => {
@@ -489,14 +489,15 @@ export const BG: Record<string, string> = {
   threads: "#111", facebook: "#1877f2", youtube: "#ff0000",
 };
 
-function PromoRows({ theme, v, promo, onMake, onListing, onPaste, onLinks }: { theme: AdminSectionProps["theme"]; v: VacancyCard; promo?: VacancyPromo; onMake: (tab: string) => void; onListing: () => void; onPaste: (ch: PromoChannel, x: number, y: number) => void; onLinks: (x: number, y: number) => void }) {
+function PromoRows({ theme, v, promo, homepage = "", onMake, onListing, onPaste, onLinks }: { theme: AdminSectionProps["theme"]; v: VacancyCard; homepage?: string; promo?: VacancyPromo; onMake: (tab: string) => void; onListing: () => void; onPaste: (ch: PromoChannel, x: number, y: number) => void; onLinks: (x: number, y: number) => void }) {
   const { textSecondary, darkMode } = theme;
   const green = "#2f9e44";
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const art = promo?.article;
 
   const slots: Slot[] = [
-    { id: "listing", label: "공실뉴스 매물", bg: BG.listing, glyph: G.listing, state: v.active ? "on" : "off", url: v.active ? `${origin}/gongsil/detail/${v.id}` : undefined, note: v.active ? undefined : "공개 전 — 누르면 공실 수정" },
+    // 내 홈페이지(Pro · Studio)가 있으면 물건접수 홈페이지의 그 매물 화면으로 (2026-10-29 사장님)
+    { id: "listing", label: homepage ? "물건접수 홈페이지 매물" : "공실뉴스 매물", bg: BG.listing, glyph: G.listing, state: v.active ? "on" : "off", url: v.active ? `${homepage || origin}/gongsil/detail/${v.id}` : undefined, note: v.active ? undefined : "공개 전 — 누르면 공실 수정" },
     { id: "article", label: "공실뉴스 기사", bg: BG.article, glyph: G.article, tab: "article",
       state: art && !art.pending ? "on" : art || v.done.article ? "draft" : "off",
       url: art && !art.pending ? `${origin}/news/${art.no}` : undefined, note: art?.pending ? "기사 검토 중" : undefined },
