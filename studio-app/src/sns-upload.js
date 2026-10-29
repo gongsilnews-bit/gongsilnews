@@ -72,7 +72,11 @@ function previousPosts(id) {
 
 async function draft(baseUrl, o, onProgress = () => {}) {
   await ext.ensure(); // 지시문·SNS 정리는 서버에서 받은 파일 (video: 채널은 main.js 가 기다려 주지 않는다)
-  const vacancy = vacancyOf(o.vacancyId);
+  // 매물 정보(사무소 이름·홈페이지)를 먼저 받아 지시문에도 넣는다 — 글의 주인공은 회원의 부동산 (2026-10-29 사장님)
+  const t = await tailOf(baseUrl, o.vacancyId, o.saleKind);
+  const owner = (t.listing && t.listing.owner) || {};
+  const base = vacancyOf(o.vacancyId);
+  const vacancy = base || owner.type ? { ...(base || {}), ...(owner.type === "agency" ? { office: owner.name, homepage: owner.homepage || "" } : owner.type === "general" ? { landlord: owner.name } : {}) } : null;
   onProgress("글 AI가 유튜브·인스타그램·페이스북·스레드 글을 쓰는 중… (1분 안팎)");
   const prompt = lib.gwVideoPostPrompt({ title: o.title, lines: o.lines, vacancy, ratio: o.ratio, seconds: o.seconds, previous: previousPosts(o.vacancyId), posted: Array.isArray(o.posted) ? o.posted : [] });
   const parse = (t) => {
@@ -87,7 +91,6 @@ async function draft(baseUrl, o, onProgress = () => {}) {
   const ig = { caption: String(j.instagram.caption || "").trim(), hashtags: clean(j.instagram.hashtags).slice(0, 15) };
   const shorts = o.ratio === "9:16" || o.ratio === "1:1";
   if (shorts && !yt.hashtags.some((t) => t.toLowerCase() === "shorts")) yt.hashtags.push("Shorts");
-  const t = await tailOf(baseUrl, o.vacancyId, o.saleKind);
   const ctx = { noun: o.saleKind ? "물건" : "매물", url: t.url, listing: t.listing };
   // 유튜브 = 페이스북과 같은 모양 (링크가 눌린다) · 인스타 = 프로필 링크 안내
   yt.text = sns.gwSnsCompose("facebook", { body: yt.description, hashtags: yt.hashtags }, ctx).text || yt.description;
