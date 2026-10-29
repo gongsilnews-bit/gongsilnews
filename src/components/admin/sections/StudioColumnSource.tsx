@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ArticleCardGrid from "./ArticleCardGrid";
+import { useRouter } from "next/navigation";
 import WorkCardGrid from "./WorkCardGrid";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
@@ -57,7 +59,8 @@ function shortDate(v: string) {
 /* 보도일은 "2026.10.15" 처럼 짧게 보여 주고 고칠 수 있게 */
 const tidy = (n: News): News => ({ ...n, publishedAt: n.publishedAt ? shortDate(n.publishedAt) : "" });
 
-export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void }) {
+export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView, memberId }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void; memberId?: string }) {
+  const router = useRouter();
   const [column, setColumn] = useState<Column | null>(null);
   // "" = 지금 칼럼(한 줄 요약) · list = [소재 바꾸기] 칼럼 목록 · new = [+ 새로 작성] ① 소재 고르기 (공실뉴스와 같다, 2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 목록이 먼저 — [+ 새로 만들기] + 만든 칼럼 카드. 홈 "내 기사"·.gsn 으로 오면 바로 그 칼럼
@@ -284,18 +287,26 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
       {view === "list" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: theme.textSecondary }}>만든 칼럼 {recent.length}개</span>
             {column && <button onClick={() => setView("")} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>지금 작업으로 돌아가기</button>}
           </div>
-          <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
-            empty="아직 만든 칼럼이 없어요. [+ 새로 만들기]로 뉴스 주소나 주제를 넣어 시작해 주세요."
-            cards={recent.map((c) => {
-              const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };
-              const isNews = c.source.mode === "news";
-              return { id: c.id, badge: isNews ? "뉴스" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
-                line1: isNews ? (c.source.news?.publisher || "") : (c.source.topic?.subject || ""), thumb: x.thumb || null, done: x.done, current: c.id === column?.id };
-            })}
-            onOpen={(id, t) => { const c = recent.find((r) => r.id === id); if (c) { choose(c); onTab(t); } }} />
+          {/* 기사관리 SNS홍보형 카드 그대로 (2026-10-29 사장님: "이것과 똑같아야지") — 기사를 누르면 그 기사의 칼럼 (없으면 만든다) */}
+          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기" onAdd={openNew}
+            onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
+            onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
+          {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}
+          {recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
+            <div style={{ marginTop: 28 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>다른 뉴스·주제로 만든 칼럼</div>
+              <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
+                cards={recent.filter((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")).map((c) => {
+                  const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };
+                  const isNews = c.source.mode === "news";
+                  return { id: c.id, badge: isNews ? "뉴스" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
+                    line1: isNews ? (c.source.news?.publisher || "") : (c.source.topic?.subject || ""), thumb: x.thumb || null, done: x.done, current: c.id === column?.id };
+                })}
+                onOpen={(id, t) => { const c = recent.find((r) => r.id === id); if (c) { choose(c); onTab(t); } }} />
+            </div>
+          )}
         </div>
       )}
 

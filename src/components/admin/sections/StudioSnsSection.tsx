@@ -435,7 +435,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} />}
 
         {category === "column" && (
-          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} />
+          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} memberId={memberId} />
         )}
 
         {(category === "interior" || category === "remodel") && (

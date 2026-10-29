@@ -37,12 +37,17 @@ const ago = (t: number) => {
 const ART_CHANNELS = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브 대본"]] as const;
 type ArtCh = (typeof ART_CHANNELS)[number][0];
 
-export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword = "", layout = "row" }: {
+export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword = "", layout = "row", onOpenColumn, onAdd, addLabel = "기사 작성" }: {
   theme: AdminSectionProps["theme"];
   memberId?: string;
   onMenuChange: (menu: string) => void;
   keyword?: string;
   layout?: "row" | "grid"; // row = 홈 한 줄 · grid = 기사관리 바둑판
+  /** 뉴스·SNS발행 › 뉴스칼럼 목록에서 쓸 때 — 기사를 누르면 메뉴를 옮기지 않고 그 기사의 칼럼을 연다 (2026-10-29 사장님: 기사관리 카드 그대로) */
+  onOpenColumn?: (columnId: string, tab: string) => void;
+  /** 맨 앞 [+] 칸 — 없으면 기사 작성 */
+  onAdd?: () => void;
+  addLabel?: string;
 }) {
   const { textPrimary, textSecondary, border, darkMode } = theme;
   const router = useRouter();
@@ -117,7 +122,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
     return next;
   });
 
-  const newArticle = () => router.push("?menu=article&action=write", { scroll: false });
+  const newArticle = () => (onAdd ? onAdd() : router.push("?menu=article&action=write", { scroll: false }));
   const openArticle = async (a: MyArticleCard, tab = "blog") => {
     const url = `${window.location.origin}/news/${a.no}`;
     const g = bridge();
@@ -145,6 +150,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
         } });
         colId = col.id;
       }
+      if (onOpenColumn) { onOpenColumn(colId, tab); return; }
       try {
         localStorage.setItem("studio_news_category", "column");
         localStorage.setItem("studio_last_column", colId);
@@ -214,7 +220,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
           <div style={{ aspectRatio: "16 / 10", borderRadius: 12, border: `2px dashed ${darkMode ? "#2f5d62" : "#a5d8dd"}`, background: darkMode ? "#1f2b2d" : "#f0fafb",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <span style={{ width: 46, height: 46, borderRadius: "50%", background: "#0b7285", color: "#fff", fontSize: 28, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(11,114,133,0.3)" }}>+</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: darkMode ? "#99e9f2" : "#0b7285" }}>기사 작성</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: darkMode ? "#99e9f2" : "#0b7285" }}>{addLabel}</span>
           </div>
         </button>
         {articles === null ? <div style={{ ...empty, ...(grid ? {} : { flex: "0 0 210px" }) }}><LoadingDots color={textSecondary} /></div>
