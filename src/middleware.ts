@@ -152,6 +152,7 @@ export async function middleware(request: NextRequest) {
       !url.pathname.startsWith('/realty_admin') &&
       !url.pathname.startsWith('/user_admin') &&
       !url.pathname.startsWith('/com') &&
+      !url.pathname.startsWith('/go/') && // 홈페이지로 넘겨주는 길 (카톡 공유, 2026-10-29)
       !url.pathname.startsWith('/flyer')
     ) {
       url.pathname = `/m${url.pathname === '/' ? '' : url.pathname}`;

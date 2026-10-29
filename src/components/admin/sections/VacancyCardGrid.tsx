@@ -120,7 +120,13 @@ export const RefreshGlyph = ({ size = 12 }: { size?: number }) => (
 );
 export async function kakaoShare(o: { title: string; description: string; imageUrl?: string | null; url: string; button: string; homepage?: string }) {
   const K = await loadKakao();
-  const intake = o.homepage ? `${o.homepage}/#intake` : "";
+  // 카톡은 등록한 도메인(www.gongsilnews.com)으로만 링크를 보낸다 — 회원 홈페이지 주소는 /go/ 길로 감싼다 (2026-10-29)
+  const viaSite = (u: string) => {
+    const m = /^https:\/\/([a-z0-9-]+)\.gongsilnews\.com(\/.*)?$/i.exec(u);
+    return m && m[1].toLowerCase() !== "www" ? `${SITE}/go/${m[1]}${m[2] && m[2] !== "/" ? m[2] : ""}` : u;
+  };
+  o = { ...o, url: viaSite(o.url) };
+  const intake = o.homepage ? viaSite(`${o.homepage}/`) + "#intake" : "";
   K.Share.sendDefault({
     objectType: "feed",
     content: { title: o.title, description: o.description, imageUrl: o.imageUrl || `${SITE}/logo.png`, link: { mobileWebUrl: o.url, webUrl: o.url } },
