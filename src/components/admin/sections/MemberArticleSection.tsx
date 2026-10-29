@@ -444,6 +444,17 @@ export default function MemberArticleSection({
       <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
         ( 승인대기 {articles.filter(a => a.status === "PENDING").length}건 / 전체 {articles.length}건 )
       </span>
+      {/* [☰ 기사등록형] [▦ SNS홍보형] — 제목 바로 뒤 (2026-10-29 사장님) */}
+      <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
+        {([["list", "기사등록형", "M4 6h16M4 12h16M4 18h16"], ["card", "SNS홍보형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => (
+          <button key={k} onClick={() => pickView(k)} aria-pressed={view === k}
+            style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: 0, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700,
+              background: view === k ? (darkMode ? "#45474d" : "#fff") : "transparent", color: view === k ? textPrimary : textSecondary, boxShadow: view === k ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>
+            <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
+            {label}
+          </button>
+        ))}
+      </div>
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
         {view === "card" && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, width: 280, height: 38, padding: "0 12px", borderRadius: 10, border: `1px solid ${border}`, background: cardBg }}>
@@ -453,16 +464,6 @@ export default function MemberArticleSection({
             {cardQ && <button onClick={() => setCardQ("")} aria-label="지우기" style={{ border: 0, background: "transparent", color: textSecondary, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>}
           </div>
         )}
-        <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: darkMode ? "#2c2d31" : "#f1f3f5" }}>
-          {([["list", "목록형", "M4 6h16M4 12h16M4 18h16"], ["card", "카드형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => (
-            <button key={k} onClick={() => pickView(k)} aria-pressed={view === k}
-              style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: 0, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700,
-                background: view === k ? (darkMode ? "#45474d" : "#fff") : "transparent", color: view === k ? textPrimary : textSecondary, boxShadow: view === k ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>
-              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

@@ -231,10 +231,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   let filteredVacancies = dbVacancies;
 
-  // [☰ 목록형] [▦ 카드형]
+  // [☰ 공실등록형] [▦ SNS홍보형] — 제목 바로 뒤 (2026-10-29 사장님: 무엇을 하는 화면인지 보이게)
   const viewSwitch = canCard && (
-    <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: darkMode ? "#2c2d31" : "#f1f3f5" }}>
-      {([["list", "목록형", "M4 6h16M4 12h16M4 18h16"], ["card", "카드형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => (
+    <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
+      {([["list", "공실등록형", "M4 6h16M4 12h16M4 18h16"], ["card", "SNS홍보형", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"]] as const).map(([k, label, d]) => (
         <button key={k} onClick={() => pickView(k)} aria-pressed={view === k}
           style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: 0, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: view === k ? (darkMode ? "#45474d" : "#fff") : "transparent", color: view === k ? textPrimary : textSecondary, boxShadow: view === k ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>
@@ -248,6 +248,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
       <span style={{ fontSize: 13, color: darkMode ? textSecondary : "#111", fontWeight: 600 }}>(광고 {counts.광고중}건 / 전체 {counts.전체}건)</span>
+      {viewSwitch}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
         {/* 카드형 찾기 — 주소·건물 이름·광고번호·가격 */}
         {canCard && view === "card" && (
@@ -258,7 +259,6 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             {cardQ && <button onClick={() => setCardQ("")} aria-label="지우기" style={{ border: 0, background: "transparent", color: textSecondary, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>}
           </div>
         )}
-        {viewSwitch}
       </div>
     </div>
   );
