@@ -43,6 +43,8 @@ if (allowed) {
         ipcRenderer.on("studio:promo-saved", h);
         return () => ipcRenderer.removeListener("studio:promo-saved", h);
       },
+      // [링크 수정]을 누르면 — 도우미 확장에게 인스타·페북 지운 글 확인을 바로 부탁 (2026-10-29)
+      verifyNow: (urls) => ipcRenderer.invoke("studio:promo-verify-now", urls),
     },
     sns: {
       channels: () => ipcRenderer.invoke("studio:sns-channels"),

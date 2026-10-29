@@ -132,6 +132,12 @@ function handle(req, res) {
     return;
   }
   // 지운 인스타·페북 글 확인 (2026-10-29) — 확장이 확인할 링크를 묻고, 지운 글이면 알린다. 서버와 이야기는 main.js 가 (setVerifier)
+  // 확장이 1분마다 묻는다 — 회원이 [링크 수정]을 눌렀으면 지금 확인 (한 번 대답하면 내린다)
+  if (url.pathname === "/gs-helper/verify-wanted") {
+    const urls = verifyWanted;
+    verifyWanted = [];
+    return send(res, 200, { ok: true, want: urls.length > 0, urls });
+  }
   if (url.pathname === "/gs-helper/verify-list") {
     Promise.resolve(verifier ? verifier.list() : [])
       .then((urls) => send(res, 200, { ok: true, urls: Array.isArray(urls) ? urls : [] }))
@@ -155,6 +161,12 @@ function handle(req, res) {
 }
 
 let verifier = null;
+let verifyWanted = [];
+/** 회원이 [링크 수정]을 눌렀다 — 그 공실·기사의 인스타·페북 링크만, 확장이 다음에 물을 때(1분 안) 확인 */
+const requestVerify = (urls) => {
+  const ok = (Array.isArray(urls) ? urls : []).map(String).filter((u) => /^https:\/\/www\.(instagram|facebook)\.com\//.test(u));
+  verifyWanted = [...new Set([...verifyWanted, ...ok])].slice(0, 20);
+};
 /** main.js 가 넣는다 — { list: () => Promise<string[]>, gone: (url) => Promise } */
 const setVerifier = (v) => { verifier = v; };
 
@@ -236,4 +248,4 @@ const published = (meta, url) => {
   for (const fn of pubListeners) Promise.resolve(fn({ ...meta, url: String(url) })).catch((e) => log.warn(`[홍보현황] 발행 기록 못함: ${e.message}`));
 };
 
-module.exports = { start, addJob, addFile, wait, cancel, onPublished, published, setVerifier, port: () => port };
+module.exports = { start, addJob, addFile, wait, cancel, onPublished, published, setVerifier, requestVerify, port: () => port };

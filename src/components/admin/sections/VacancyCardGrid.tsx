@@ -106,6 +106,12 @@ export function useHomepageBase(memberId?: string) {
   return base;
 }
 /** homepage 가 있으면 두 번째 버튼 [물건 맡기기] — 내 홈페이지 물건 접수 칸(#intake)으로 (2026-10-29 사장님) */
+/** 도우미 확장에게 인스타·페북 지운 글 확인을 부탁 (앱에서만, 2026-10-29) */
+export function verifyByHelper(urls: (string | undefined)[]) {
+  const list = urls.filter((u): u is string => !!u && /^https:\/\/www\.(instagram|facebook)\.com\//.test(u));
+  if (!list.length) return; // 인스타·페북 링크가 없으면 부탁할 것도 없다
+  try { void (window as unknown as { gongsilStudio?: { promo?: { verifyNow?: (u: string[]) => Promise<unknown> } } }).gongsilStudio?.promo?.verifyNow?.(list); } catch {}
+}
 export async function kakaoShare(o: { title: string; description: string; imageUrl?: string | null; url: string; button: string; homepage?: string }) {
   const K = await loadKakao();
   const intake = o.homepage ? `${o.homepage}/#intake` : "";
@@ -187,10 +193,16 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   // 지운 글은 연결을 푼다 — 5분에 한 번까지 (화면을 열 때 · 앱으로 돌아올 때)
   const [notice, setNotice] = useState("");
   const checkedAt = React.useRef(0);
-  const checkLinks = () => {
-    if (Date.now() - checkedAt.current < 5 * 60 * 1000) return;
-    checkedAt.current = Date.now();
-    checkMyPromoLinks().then((r) => {
+  const checkLinks = (only?: { vacancyId: string }) => {
+    if (!only) {
+      // 전체 확인은 6시간에 한 번 (공실이 많아도 화면은 기다리지 않는다 — 뒤에서 돈다)
+      let last = checkedAt.current;
+      try { last = Math.max(last, Number(localStorage.getItem("gs-promo-checked") || 0)); } catch {}
+      if (Date.now() - last < 6 * 60 * 60 * 1000) return;
+      checkedAt.current = Date.now();
+      try { localStorage.setItem("gs-promo-checked", String(checkedAt.current)); } catch {}
+    }
+    checkMyPromoLinks(only).then((r) => {
       if (!r.removed.length) return;
       const names = [...new Set(r.removed.map((x) => `${x.title} ${x.channel}`))].join(", ");
       setNotice(`${names} 글이 지워져서 연결을 풀었어요.`);
@@ -242,6 +254,12 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   const [menu, setMenu] = useState<{ v: VacancyCard; x: number; y: number } | null>(null);
   const [pasteFor, setPasteFor] = useState<{ v: VacancyCard; ch: PromoChannel; x: number; y: number } | null>(null); // 아이콘 오른쪽 클릭 — 링크 작은 창
   const [linksFor, setLinksFor] = useState<{ v: VacancyCard; x: number; y: number } | null>(null); // [링크 수정] 창
+  // [링크 수정]을 열면 지운 글 확인을 바로 — 서버(블로그·스레드·유튜브) + 도우미 확장(인스타·페북, 1분 안) (2026-10-29 사장님)
+  useEffect(() => {
+    if (!linksFor) return;
+    checkLinks({ vacancyId: linksFor.v.id });
+    verifyByHelper(Object.values(promos[linksFor.v.id]?.links || {}));
+  }, [linksFor?.v.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [stopFor, setStopFor] = useState<VacancyCard | null>(null); // 광고 내리기 — 이유 묻기
   const [cleanFor, setCleanFor] = useState<VacancyCard | null>(null); // 거래 완료 — 올라간 글 정리 // [링크 붙여넣기] 창 (아이콘 오른쪽 클릭이면 그 채널)
   const [flash, setFlash] = useState("");

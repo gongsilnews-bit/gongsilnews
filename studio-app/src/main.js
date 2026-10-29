@@ -870,6 +870,7 @@ app.whenReady().then(async () => {
     if (!data.success) throw new Error(data.error || `HTTP ${res.status}`);
     mainWindow?.webContents.send("studio:promo-saved", { vacancyId, articleNo, channel });
   });
+  ipcMain.handle("studio:promo-verify-now", (_e, urls) => { require("./helper-server").requestVerify(urls); return true; });
   // 도우미 확장이 평소 크롬에서 확인하는 인스타·페북 지운 글 (2026-10-29) — 지우면 홍보현황 ✓ 를 풀고 앱 홈을 다시 읽게
   require("./helper-server").setVerifier({
     list: async () => {

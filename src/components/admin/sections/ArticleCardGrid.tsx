@@ -7,7 +7,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import { IconArticle, IconSend } from "./AdminIcons";
-import { BG, G, SITE, kakaoShare, useHomepageBase, LinkPopover, LinksPanel, CardTools, CardHoverStyle, CardMenu, LoadingDots, IconOut, IconPen, IconStar, IconLink, IconTrash, type MenuItem } from "./VacancyCardGrid";
+import { checkMyPromoLinks } from "@/app/actions/vacancyPromos";
+import { BG, G, SITE, kakaoShare, verifyByHelper, useHomepageBase, LinkPopover, LinksPanel, CardTools, CardHoverStyle, CardMenu, LoadingDots, IconOut, IconPen, IconStar, IconLink, IconTrash, type MenuItem } from "./VacancyCardGrid";
 import { deleteMyArticle, getMyArticleBody, getMyArticleCards, saveMyArticlePromo, type MyArticleCard } from "@/app/actions/myArticles";
 
 type ColumnNews = { title: string; publisher: string; publishedAt: string; url: string; body: string };
@@ -50,6 +51,15 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
   const [artErr, setArtErr] = useState("");
   const [pasteFor, setPasteFor] = useState<{ a: MyArticleCard; ch: ArtCh; x: number; y: number } | null>(null); // 아이콘 오른쪽 클릭 — 링크 작은 창
   const [linksFor, setLinksFor] = useState<{ a: MyArticleCard; x: number; y: number } | null>(null); // [링크 수정] — 다섯 채널 한눈에
+  // [링크 수정]을 열면 이 기사 링크만 바로 확인 — 서버(블로그·스레드·유튜브) + 도우미(인스타·페북) (2026-10-29 사장님)
+  useEffect(() => {
+    if (!linksFor) return;
+    checkMyPromoLinks({ articleNo: linksFor.a.no }).then((r) => {
+      if (!r.removed.length) return;
+      getMyArticleCards().then((x) => { if (x.success) setArticles(x.data); }).catch(() => {});
+    }).catch(() => {});
+    verifyByHelper(Object.values(linksFor.a.links || {}));
+  }, [linksFor?.a.no]); // eslint-disable-line react-hooks/exhaustive-deps
   const [artMenu, setArtMenu] = useState<{ a: MyArticleCard; x: number; y: number } | null>(null);
   const [flash, setFlash] = useState("");
   useEffect(() => {

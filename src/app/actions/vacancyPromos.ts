@@ -116,32 +116,47 @@ async function promoGone(channel: string, url: string): Promise<boolean | null> 
 const CH_NAME: Record<string, string> = { blog: "네이버 블로그", threads: "스레드", youtube: "유튜브", instagram: "인스타그램", facebook: "페이스북" };
 
 /** 홍보현황 링크 중 지운 글은 연결을 푼다 — 공실·기사 모두 (2026-10-29 사장님: 블로그 + 스레드·유튜브) */
-export async function checkMyPromoLinks(): Promise<{ success: boolean; removed: { vacancyId: string; channel: string; title: string }[] }> {
+//  only — [링크 수정]을 연 공실·기사 하나만 (몇 개라 바로 끝난다). 없으면 전체 — 화면은 6시간에 한 번만 부른다 (2026-10-29 사장님: 물건 50개면 느리지 않나)
+export async function checkMyPromoLinks(only?: { vacancyId?: string; articleNo?: string }): Promise<{ success: boolean; removed: { vacancyId: string; channel: string; title: string }[] }> {
   const user = await me();
   if (!user) return { success: false, removed: [] };
   const db = admin();
   const CH = ["blog", "threads", "youtube"];
+  let articleId = "";
+  if (only?.articleNo) {
+    const { data: art } = await db.from("articles").select("id").eq("article_no", Number(only.articleNo)).eq("author_id", user.id).maybeSingle();
+    articleId = art?.id ? String(art.id) : "-";
+  }
+  let vq = db.from("vacancy_promos").select("id, vacancy_id, channel, url, vacancies(building_name, dong)").eq("owner_id", user.id).in("channel", CH);
+  let aq = db.from("article_promos").select("id, article_id, channel, url, articles(title)").eq("owner_id", user.id).in("channel", CH);
+  if (only?.vacancyId) vq = vq.eq("vacancy_id", only.vacancyId);
+  if (articleId) aq = aq.eq("article_id", articleId);
   const [{ data: vRows, error }, { data: aRows }] = await Promise.all([
-    db.from("vacancy_promos").select("id, vacancy_id, channel, url, vacancies(building_name, dong)").eq("owner_id", user.id).in("channel", CH),
-    db.from("article_promos").select("id, article_id, channel, url, articles(title)").eq("owner_id", user.id).in("channel", CH),
+    only?.articleNo && !only.vacancyId ? Promise.resolve({ data: [] as never[], error: null }) : vq,
+    only?.vacancyId && !only.articleNo ? Promise.resolve({ data: [] as never[] }) : aq,
   ]);
   if (error) return { success: false, removed: [] };
   const removed: { vacancyId: string; channel: string; title: string }[] = [];
   const one = <T,>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x) || null;
-  await Promise.all([
-    ...(vRows || []).map(async (r) => {
+  // 동시에 6개씩 — 링크가 많아도 한꺼번에 두드리지 않는다
+  const jobs: (() => Promise<void>)[] = [
+    ...(vRows || []).map((r) => async () => {
       if ((await promoGone(r.channel, String(r.url))) !== true) return;
       await db.from("vacancy_promos").delete().eq("id", r.id);
       const v = one(r.vacancies as { building_name?: string; dong?: string } | null);
       removed.push({ vacancyId: String(r.vacancy_id), channel: CH_NAME[r.channel] || r.channel, title: v?.building_name || v?.dong || "공실" });
     }),
-    ...(aRows || []).map(async (r) => {
+    ...(aRows || []).map((r) => async () => {
       if ((await promoGone(r.channel, String(r.url))) !== true) return;
       await db.from("article_promos").delete().eq("id", r.id);
       const a = one(r.articles as { title?: string } | null);
       removed.push({ vacancyId: "", channel: CH_NAME[r.channel] || r.channel, title: (a?.title || "기사").slice(0, 20) });
     }),
-  ]);
+  ];
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(6, jobs.length) }, async () => {
+    while (next < jobs.length) await jobs[next++]();
+  }));
   return { success: true, removed };
 }
 

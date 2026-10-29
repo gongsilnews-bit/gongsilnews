@@ -26,13 +26,17 @@ async function call(pathAndQuery, init) {
    페이지 쪽(helper-sns.js)이 #gs-verify 를 보고 "없는 페이지" 글자를 찾아 GS_VERIFY 로 알린다. 확인 못 하면(로그인 안 됨 등) 그대로 둔다 */
 const VERIFY_EVERY = 24 * 60 * 60 * 1000;
 const waiting = new Map(); // tabId → resolve
-async function verifyLinks(force) {
-  const { gsVerifiedAt = 0 } = await chrome.storage.local.get("gsVerifiedAt");
-  if (!force && Date.now() - gsVerifiedAt < VERIFY_EVERY) return;
-  const j = await call("/gs-helper/verify-list");
-  if (!j || !j.ok) return; // 앱이 꺼져 있다 — 다음에
-  await chrome.storage.local.set({ gsVerifiedAt: Date.now() });
-  const urls = (j.urls || []).slice(0, 30);
+//  only — [링크 수정]에서 부탁한 링크만 (몇 개). 없으면 하루 한 번 전체 (최대 60개, 하나에 몇 초씩 최소화 창에서)
+async function verifyLinks(force, only) {
+  let urls = Array.isArray(only) && only.length ? only : null;
+  if (!urls) {
+    const { gsVerifiedAt = 0 } = await chrome.storage.local.get("gsVerifiedAt");
+    if (!force && Date.now() - gsVerifiedAt < VERIFY_EVERY) return;
+    const j = await call("/gs-helper/verify-list");
+    if (!j || !j.ok) return; // 앱이 꺼져 있다 — 다음에
+    await chrome.storage.local.set({ gsVerifiedAt: Date.now() });
+    urls = (j.urls || []).slice(0, 60);
+  }
   if (!urls.length) return;
   let win = null;
   for (const u of urls) {
@@ -58,8 +62,18 @@ async function verifyLinks(force) {
   if (win) chrome.windows.remove(win.id).catch(() => {});
 }
 chrome.runtime.onStartup.addListener(() => { setTimeout(() => verifyLinks(false), 60 * 1000); });
-chrome.runtime.onInstalled.addListener(() => { chrome.alarms.create("gs-verify", { periodInMinutes: 180 }); });
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === "gs-verify") verifyLinks(false); });
+// 1분마다 앱에 "지금 확인할까" 묻는다 — 회원이 앱에서 [링크 수정]을 누르면 바로 (앱이 꺼져 있으면 아무 일 없음)
+const alarms = () => { chrome.alarms.create("gs-verify", { periodInMinutes: 180 }); chrome.alarms.create("gs-verify-poll", { periodInMinutes: 1 }); };
+chrome.runtime.onInstalled.addListener(alarms);
+chrome.runtime.onStartup.addListener(alarms);
+let verifying = false;
+chrome.alarms.onAlarm.addListener(async (a) => {
+  if (a.name === "gs-verify") verifyLinks(false);
+  if (a.name === "gs-verify-poll" && !verifying) {
+    const j = await call("/gs-helper/verify-wanted");
+    if (j && j.want) { verifying = true; try { await verifyLinks(true, j.urls || []); } finally { verifying = false; } }
+  }
+});
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "GS_VERIFY") {
