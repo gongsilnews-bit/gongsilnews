@@ -3,6 +3,7 @@
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import StudioMyVideoPanel from "./StudioMyVideoPanel";
 import VacancyCardGrid from "./VacancyCardGrid";
+import WorkCardGrid from "./WorkCardGrid";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
@@ -79,6 +80,8 @@ const NEWS_CATEGORIES = [
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
   { id: "myvideo", label: "내 영상 올리기", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
+  // 경매·공매는 내 공실과 섞지 않고 따로 (2026-10-29 사장님) — 작업 화면은 공실뉴스와 같다
+  { id: "auction", label: "경매·공매", lead: "법원 경매·캠코 공매 물건 하나로 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 사건번호·관리번호로 찾습니다." },
   // 인테리어뉴스·리모델링뉴스는 메뉴에서 숨김 (2026-10-29 사장님) — 코드·작업 파일은 그대로, 다시 보이려면 HIDDEN_CATEGORIES 에서 빼기
   { id: "interior", label: "인테리어뉴스", lead: "실내 사진 한 장으로 인테리어 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
@@ -132,6 +135,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   });
   const setCategory = (id: string) => {
     setCategoryState(id);
+    if (id === "gongsil" || id === "auction") setMode("list");
     try {
       localStorage.setItem(CATEGORY_KEY, id);
     } catch {}
@@ -200,6 +204,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
   const pickByNo = async () => {
     setError("");
+    // 경매·공매 메뉴는 사건번호·관리번호만 — 숫자만 넣으면 남의 공실번호라 막는다 (다른 부동산 공실은 아직 쓰지 않는다, 2026-10-29)
+    if (/^\d{1,9}$/.test(noInput.trim())) return setError("경매·공매 사건번호나 관리번호를 넣어 주세요. 다른 부동산 공실은 아직 쓸 수 없어요.");
     const res = await findStudioVacancyByNo(noInput);
     if (!res.success) return setError(res.error);
     choose(res.data as VacancyRow);
@@ -400,7 +406,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       {/* 오른쪽: 작업 공간 */}
       <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
       {/* 목록(공실 카드)일 때는 폭 제한 없이 왼쪽부터 — 공실관리와 같이 (2026-10-29 사장님) */}
-      <div style={(category === "gongsil" && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
+      <div style={((category === "gongsil" || category === "auction") && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
@@ -410,7 +416,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {/* 작업 파일 줄(저장·불러오기)이 여기로 올라온다 — WorkFileBar 가 이 자리에 그린다 (2026-10-28 사장님) */}
           <div id="gs-workfile-slot" />
           {(() => {
-            const t = category === "column" ? columnTab : category === "gongsil" ? tab : simTabs[category];
+            const t = category === "column" ? columnTab : category === "gongsil" || category === "auction" ? tab : simTabs[category];
             if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
             const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
             const name = t === "blog" ? "블로그" : t === "youtube" ? "유튜브" : "SNS";
@@ -443,7 +449,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             onTab={(id) => setSimTabs((m) => ({ ...m, [category]: id }))} onUsed={loadUsage} />
         )}
 
-        {category === "gongsil" && (<>
+        {(category === "gongsil" || category === "auction") && (<>
         {/* 지금 작업 — 한 줄 요약. [공실 바꾸기] = 작업 목록 · [다시 분석·캡처] = 같은 공실 사진을 새로 */}
         {result && mode === "" && (<>
           {/* 1단계 표시 — 여기서부터 시작인 걸 알게 (2026-10-28 사장님: 밋밋해서 인지가 안 됨) */}
@@ -505,31 +511,17 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>지금 작업으로 돌아가기</button>
               </div>
             )}
-            <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} showTypes addLabel="새로 만들기" onAdd={openNew}
-              onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
-              onOpen={(p, t) => void openFromCard(p, t)} />
-            {/* 경매·공매로 쓴 작업 — 내 공실 카드에는 없어서 따로 */}
-            {(works || []).some((w) => w.saleKind) && (
-              <div style={{ marginTop: 28 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>경매·공매 물건으로 쓴 작업</div>
-                <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden" }}>
-                  {(works || []).filter((w) => w.saleKind).map((w, i) => (
-                    <button key={w.vacancyId} onClick={() => void openWork(w.vacancyId)}
-                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: 0, borderTop: i ? `1px solid ${theme.border}` : 0, background: theme.cardBg, cursor: "pointer", textAlign: "left" }}>
-                      <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
-                        {w.thumb && <img src={w.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: theme.textPrimary }}>
-                          <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{w.saleKind}</span>
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[w.no, w.title, w.priceText].filter(Boolean).join(" · ")}</span>
-                        </div>
-                      </div>
-                      <span style={{ flexShrink: 0, fontSize: 12.5, color: theme.textSecondary }}>{whenText(w.updatedAt)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {category === "gongsil" ? (
+              <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} showTypes addLabel="새로 만들기" onAdd={openNew}
+                onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
+                onOpen={(p, t) => void openFromCard(p, t)} />
+            ) : (
+              <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>⚖️</span>}
+                empty="아직 경매·공매 물건으로 쓴 글이 없어요. [+ 새로 만들기]에서 사건번호·관리번호로 찾아 시작해 주세요."
+                cards={works && works.filter((w) => w.saleKind).map((w) => ({
+                  id: w.vacancyId, badge: w.saleKind, date: whenText(w.updatedAt), title: w.title || "경매·공매 물건", headline: w.priceText.split(" (")[0],
+                  line1: w.no ? `번호 ${w.no}` : "", thumb: w.thumb, done: w.done, current: w.vacancyId === result?.vacancyId }))}
+                onOpen={(id, t) => { void openWork(id).then(() => chooseTab(t)); }} />
             )}
           </div>
         )}
@@ -538,13 +530,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         {(!result || mode === "new") && mode !== "list" && (<>
         <div style={card}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-            <div style={{ flex: 1 }}>{stepTitle(1, "공실 고르기")}</div>
+            <div style={{ flex: 1 }}>{stepTitle(1, category === "auction" ? "경매·공매 물건 찾기" : "공실 고르기")}</div>
             {!result && works && works.length > 0 && <button onClick={openList}
               style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>← 목록</button>}
             {result && <button onClick={cancelPick}
               style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>취소</button>}
           </div>
-          {/* 내가 등록한 공실은 셀렉트바로 (기사등록의 "보도 대상 공실 매물"과 같은 모양) */}
+          {/* 내가 등록한 공실은 셀렉트바로 (기사등록의 "보도 대상 공실 매물"과 같은 모양) — 경매·공매 메뉴에서는 번호 찾기만 */}
+          {category === "gongsil" && (<>
           <label style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6, display: "block" }}>보도 대상 공실 매물</label>
           {mine === null ? (
             <div style={{ fontSize: 13, color: theme.textSecondary }}>불러오는 중…</div>
@@ -565,10 +558,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               ))}
             </select>
           )}
-          {/* 경매·공매 물건이나 남의 공실은 물건번호로 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, color: theme.textSecondary }}>또는</span>
-            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !busy && pickByNo()} placeholder="공실번호 또는 경매 관리번호"
+          </>)}
+          {/* 경매·공매 물건은 사건번호·관리번호로 (경매·공매 메뉴) */}
+          {category === "auction" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !busy && pickByNo()} placeholder="사건번호 또는 관리번호 (예: 2024타경12345)"
               style={{ width: 240, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }} />
             <button onClick={pickByNo} disabled={busy} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>불러오기</button>
             {/* 공실열람을 새 창으로 열어 물건(경매·공매 포함)을 둘러보고 번호를 확인한다 */}
@@ -578,6 +572,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               공실열람
             </button>
           </div>
+          )}
         </div>
 
         {/* 2. 분석·캡처 — 고르면 저절로 시작 (멈췄을 때만 버튼으로 다시) */}
