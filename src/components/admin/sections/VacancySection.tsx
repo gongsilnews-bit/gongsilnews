@@ -38,6 +38,22 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
   const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
   const [snsNewsTarget, setSnsNewsTarget] = useState<{ id: string; title: string } | null>(null); // [SNS뉴스발행] 창 (2026-10-26)
+  // 앱에서는 표의 [AI물건보고서]·[유리창홍보지]·[SNS뉴스발행]이 새 창 대신 앱 안의 그 메뉴로 — 그 공실을 고른 채로 (2026-10-29 사장님)
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => { setInApp(Boolean((window as unknown as { gongsilStudio?: unknown }).gongsilStudio)); }, []);
+  const goMenu = (m: string) => router.push(`?menu=${m}`, { scroll: false });
+  const openMarketingIn = (vacancyId: string, cat: "report" | "flyer") => {
+    try { localStorage.setItem("studio_marketing_category", cat); localStorage.setItem("studio_marketing_vacancy", vacancyId); } catch {}
+    goMenu("marketing");
+  };
+  const openSnsIn = (r: { id: string; vacancy_no?: number | null; building_name?: string | null }) => {
+    try {
+      const picked = { id: r.id, vacancy_no: Number(r.vacancy_no) || 0, building_name: r.building_name || null };
+      localStorage.setItem("studio_news_category", "gongsil");
+      localStorage.setItem("studio_last_vacancy", JSON.stringify({ vacancyId: r.id, picked, tab: "article", auto: true }));
+    } catch {}
+    goMenu("sns");
+  };
 
   useEffect(() => {
     async function checkFlyers() {
@@ -541,7 +557,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                 return (
                                   <div style={{ display: 'flex', gap: '4px' }}>
                                       <button 
-                                        onClick={() => window.open(`/marketing/report?vacancy_id=${row.id}`, '_blank')}
+                                        onClick={() => (inApp ? openMarketingIn(row.id, "report") : window.open(`/marketing/report?vacancy_id=${row.id}`, '_blank'))}
                                         style={{ 
                                           height: 30, 
                                           padding: "0 10px", 
@@ -576,7 +592,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
                                     {/* [유리창홍보지] 다시 (2026-10-29 사장님: 웹·앱 모두, AI물건보고서와 SNS뉴스발행 사이) — 물건홍보지 도구 */}
                                     <button
-                                      onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, "_blank")}
+                                      onClick={() => (inApp ? openMarketingIn(row.id, "flyer") : window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, "_blank"))}
                                       style={{ height: 30, padding: "0 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                                         background: hasFlyer ? (darkMode ? "#14532d" : "#f0fdf4") : (darkMode ? "#2a2d35" : "#f3f4f6"),
                                         color: hasFlyer ? (darkMode ? "#86efac" : "#15803d") : (darkMode ? "#7c8ba1" : "#8a94a6"),
@@ -589,7 +605,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                     {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 공실뉴스부동산은 1주일에 3번 (2026-10-26 사장님) */}
                                     {role !== "user" && (
                                       <button
-                                        onClick={() => setSnsNewsTarget({ id: row.id, title: addrText })}
+                                        onClick={() => (inApp ? openSnsIn(row) : setSnsNewsTarget({ id: row.id, title: addrText }))}
                                         style={{ height: 30, padding: "0 10px", background: darkMode ? "#3b2412" : "#fff7ed", color: "#ea580c", border: `1px solid ${darkMode ? "#7c2d12" : "#fdba74"}`, borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
                                         title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기"
                                       >
