@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVacancyDetail } from "@/app/actions/vacancy";
 import { canSendBlog, getExtensionMember } from "@/utils/extensionMember";
+import { getHomepageBase } from "@/app/actions/homepage";
 
 /**
  * 크롬 확장 블로그 작성용 매물 출처 정보
@@ -53,6 +54,8 @@ export async function GET(req: NextRequest) {
   const isAgency = Boolean(agency) && (member.role === "REALTOR" || v.owner_role === "REALTOR" || Boolean(agency.registration_no || agency.reg_num));
 
   const clean = (value: unknown) => String(value ?? "").trim();
+  // 내 홈페이지를 쓸 수 있는 회원(Pro · Studio)이면 글 링크·소개를 홈페이지로 (2026-10-29 사장님). 무료 회원은 "" — 글에 언급하지 않는다
+  const homepage = isAgency ? await getHomepageBase(String(v.owner_id || "")).catch(() => "") : "";
   const phones = agency ? [agency.phone, agency.cell !== agency.phone ? agency.cell : ""].filter(Boolean) : [];
   const owner = isAgency
     ? {
@@ -62,6 +65,8 @@ export async function GET(req: NextRequest) {
         regNo: clean(agency.registration_no || agency.reg_num),
         address: [agency.address, agency.address_detail].map(clean).filter(Boolean).join(" "),
         phone: phones.map(clean).join(", "),
+        homepage,
+        vacancyNo: v.vacancy_no || null,
       }
     : { type: "general", name: clean(member.name || v.client_name) };
 

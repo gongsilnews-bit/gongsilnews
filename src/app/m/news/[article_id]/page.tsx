@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import { createClient } from "@supabase/supabase-js";
 import NewsReadContent from "@/components/NewsReadContent";
+import { getHomepageBase } from "@/app/actions/homepage";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,7 @@ export default async function MobileNewsReadPage({
 
   let authorRole = null;
   let authorEmail = null;
+  let authorHomepage = ""; // 작성자 홈페이지 — Pro · Studio 로 쓸 수 있을 때만 (2026-10-29)
   let attachedVacancy = null;
 
   // ⚡ 기사에 연결된 공실 매물(스냅샷) 추출 - 추가 DB 쿼리 0건!
@@ -89,6 +91,7 @@ export default async function MobileNewsReadPage({
     if (member) {
       authorRole = member.role;
       authorEmail = member.email;
+      if (member.role === "REALTOR" || member.role === "BIZ") authorHomepage = await getHomepageBase(article.author_id).catch(() => "");
       /*
        * 작성자가 권한을 잃었으면 추천 공실을 내린다. 저장된 스냅샷은 그대로
        * 두므로 재결제하면 손대지 않아도 다시 붙는다.
@@ -117,6 +120,7 @@ export default async function MobileNewsReadPage({
         initialAuthorRole={authorRole}
         initialAuthorEmail={authorEmail}
         initialAttachedVacancy={attachedVacancy}
+      authorHomepage={authorHomepage}
       />
     </div>
   );

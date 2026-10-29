@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
  *    그 화면의 문구·단추는 바꿀 수 없어서, 받는 순간 [추가 정보] → [실행] 을 크게 알려 준다
  */
 export const STUDIO_INSTALLER_BASE = "https://aijfktzqtnwhfotfwcka.supabase.co/storage/v1/object/public/studio-app/win";
-const FALLBACK = "GongsilStudio-Setup-0.1.15.exe";
+const FALLBACK = "GongsilStudio-Setup-0.1.16.exe";
 
 /** ready: 저장소에 설치 파일이 올라가 있나 (latest.yml 이 있어야) — null 은 확인 중 */
 export function useStudioInstaller() {

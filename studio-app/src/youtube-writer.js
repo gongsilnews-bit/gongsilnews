@@ -103,8 +103,12 @@ function description(id, d) {
     // 예측 이미지를 실제 모습으로 오해하지 않게 (SNS 와 같은 안내)
     const L = simW().lib(id);
     lines.push(d.detailUrl ? `▶ 매물 자세히 보기 (공실뉴스 공실열람)\n${d.detailUrl}` : `▶ 공실뉴스에서 더 보기\n${HOME}`, L.GW_SNS_SIM_NOTICE || "", d.detailUrl ? "공실뉴스" : simW().creditOf(id));
+  } else if (d.listing) {
+    // 내 부동산이 먼저 — 링크·홈페이지 소개·문의 정보는 SNS 와 같은 모양 (2026-10-29 사장님, 무료 회원은 홈페이지 언급 없음)
+    const tail = require("./ext-sns").gwSnsCompose("facebook", { body: "-" }, { noun: "매물", url: d.detailUrl, listing: d.listing }).text || "";
+    lines.push(tail.replace(/^-\n\n/, ""));
   } else {
-    lines.push(`▶ 매물 자세히 보기 (공실뉴스 공실열람)\n${d.detailUrl || HOME}`, "공실뉴스");
+    lines.push(`▶ 매물 자세히 보기\n${d.detailUrl || HOME}`);
   }
   const tags = (article.keywords || []).map((k) => `#${String(k).replace(/^#+/, "").replace(/\s+/g, "")}`).filter((t) => t.length > 1 && !(isColumn(id) && /공실뉴스/.test(t))).slice(0, 10); // 뉴스칼럼엔 공실뉴스 태그 없이
   return { text: lines.filter(Boolean).join("\n\n"), tags };
@@ -136,17 +140,19 @@ async function write({ baseUrl, vacancyId: id, videoType, duration, tone, number
   onProgress("이용 횟수를 확인하는 중…");
   await blogWriter.useQuota(baseUrl, "youtube", id);
   let detailUrl = "";
+  let listing = null;
   if (isSim(id)) {
     const { result } = simW().resultOf(id);
     if (result.vacancyId) detailUrl = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "").then((l) => l.detailUrl).catch(() => "");
   } else if (!isColumn(id)) {
     const analysis = readAnalysis(id);
-    detailUrl = await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").then((l) => l.detailUrl).catch(() => "");
+    listing = await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").catch(() => null);
+    detailUrl = (listing && listing.detailUrl) || "";
   }
   let chatUrl = "";
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => lib(id).GWYoutubeJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
   onProgress("받은 대본을 정리하는 중…");
-  const d = { ...parse(id, text), settings, detailUrl, chatUrl, writtenAt: new Date().toISOString() };
+  const d = { ...parse(id, text), settings, detailUrl, listing, chatUrl, writtenAt: new Date().toISOString() };
   fs.mkdirSync(mediaDir(id), { recursive: true });
   fs.writeFileSync(ytFile(id), JSON.stringify(d, null, 2));
   log.info(`[유튜브] ${id} ${settings.duration} 원고 ${d.narration.length}문단`);
@@ -230,11 +236,15 @@ function allPrompt(id, settings, article) {
 async function saveAll(baseUrl, id, text, settings) {
   const analysis = readAnalysis(id) || { vacancy: {} };
   let detailUrl = "";
+  let listing = null;
   if (isSim(id)) {
     const { result } = simW().resultOf(id);
     if (result.vacancyId) detailUrl = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "").then((l) => l.detailUrl).catch(() => "");
-  } else if (!isColumn(id)) detailUrl = await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").then((l) => l.detailUrl).catch(() => "");
-  const d = { ...parse(id, text), settings, detailUrl, chatUrl: "", writtenAt: new Date().toISOString() };
+  } else if (!isColumn(id)) {
+    listing = await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").catch(() => null);
+    detailUrl = (listing && listing.detailUrl) || "";
+  }
+  const d = { ...parse(id, text), settings, detailUrl, listing, chatUrl: "", writtenAt: new Date().toISOString() };
   fs.mkdirSync(mediaDir(id), { recursive: true });
   fs.writeFileSync(ytFile(id), JSON.stringify(d, null, 2));
   log.info(`[유튜브] ${id} ${settings.duration} 원고 ${d.narration.length}문단 (한 번에)`);

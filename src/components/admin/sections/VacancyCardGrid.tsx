@@ -11,7 +11,7 @@ import { updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
 import { getCleanAddrText, getPriceText, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
 import { checkMyPromoLinks, getMyVacancyCards, getMyVacancyPromos, saveVacancyPromo, setVacancyDealClosed, type VacancyPromo } from "@/app/actions/vacancyPromos";
 import type { PromoChannel } from "@/utils/vacancyPromos";
-import { getHomepageSettings } from "@/app/actions/homepage";
+import { getHomepageBase } from "@/app/actions/homepage";
 
 type Done = Record<string, boolean>;
 type LocalWork = { vacancyId: string; thumb: string | null; updatedAt: string; done: Done };
@@ -89,16 +89,15 @@ function loadKakao(): Promise<KakaoSdk> {
 }
 /** 링크는 늘 실제 사이트 주소로 (앱·개발 화면 주소가 아니라) */
 export const SITE = "https://www.gongsilnews.com";
-/** 내 홈페이지(물건접수홈페이지) 주소 — 켜져 있으면 링크 복사·카톡 보내기를 내 홈페이지로 (2026-10-28 사장님). 없거나 꺼져 있으면 "" */
+/** 내 홈페이지(물건접수홈페이지) 주소 — 쓸 수 있으면 링크 복사·카톡 보내기를 내 홈페이지로 (2026-10-28 사장님). 없거나 꺼져 있으면 "" */
 const homepageMemo: Record<string, string> = {};
 export function useHomepageBase(memberId?: string) {
   const [base, setBase] = useState(memberId ? homepageMemo[memberId] ?? "" : "");
   useEffect(() => {
     if (!memberId) return;
     let alive = true;
-    getHomepageSettings(memberId).then((r) => {
-      const d = (r.success ? r.data : null) as { subdomain?: string; is_active?: boolean } | null;
-      const b = d?.subdomain && d.is_active !== false ? `https://${d.subdomain}.gongsilnews.com` : "";
+    // Pro · Studio 로 쓸 수 있을 때만 (2026-10-29) — 무료 회원이 켜 둔 홈페이지는 중단 페이지라 공유하지 않는다
+    getHomepageBase(memberId).then((b) => {
       homepageMemo[memberId] = b;
       if (alive) setBase(b);
     }).catch(() => {});
@@ -106,12 +105,17 @@ export function useHomepageBase(memberId?: string) {
   }, [memberId]);
   return base;
 }
-export async function kakaoShare(o: { title: string; description: string; imageUrl?: string | null; url: string; button: string }) {
+/** homepage 가 있으면 두 번째 버튼 [물건 맡기기] — 내 홈페이지 물건 접수 칸(#intake)으로 (2026-10-29 사장님) */
+export async function kakaoShare(o: { title: string; description: string; imageUrl?: string | null; url: string; button: string; homepage?: string }) {
   const K = await loadKakao();
+  const intake = o.homepage ? `${o.homepage}/#intake` : "";
   K.Share.sendDefault({
     objectType: "feed",
     content: { title: o.title, description: o.description, imageUrl: o.imageUrl || `${SITE}/logo.png`, link: { mobileWebUrl: o.url, webUrl: o.url } },
-    buttons: [{ title: o.button, link: { mobileWebUrl: o.url, webUrl: o.url } }],
+    buttons: [
+      { title: o.button, link: { mobileWebUrl: o.url, webUrl: o.url } },
+      ...(intake ? [{ title: "물건 맡기기", link: { mobileWebUrl: intake, webUrl: intake } }] : []),
+    ],
   });
 }
 export const KakaoGlyph = () => (
@@ -251,7 +255,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   const homepage = useHomepageBase(memberId);
   const shareUrl = (v: VacancyCard) => `${homepage || SITE}/gongsil/detail/${v.id}`;
   const shareKakao = (v: VacancyCard) => {
-    void kakaoShare({ title: `${v.title} ${v.price}`, description: [v.spec.join(" · "), v.rooms].filter(Boolean).join("\n"), imageUrl: v.thumb, url: shareUrl(v), button: "공실 보기" })
+    void kakaoShare({ title: `${v.title} ${v.price}`, description: [v.spec.join(" · "), v.rooms].filter(Boolean).join("\n"), imageUrl: v.thumb, url: shareUrl(v), button: "공실 보기", homepage })
       .catch((e) => setFlash(e instanceof Error ? e.message : "카카오톡을 열지 못했어요."));
   };
   const menuGroups = (v: VacancyCard): MenuItem[][] => [

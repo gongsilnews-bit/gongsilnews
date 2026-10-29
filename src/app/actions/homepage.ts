@@ -65,6 +65,21 @@ function flattenRow(row: any) {
 }
 
 // ── 홈페이지 설정 조회 ──
+/**
+ * 글·공유에 쓸 내 홈페이지 주소 (2026-10-29 사장님) — 주소가 있고 켜져 있고 Pro · Studio 로 쓸 수 있을 때만
+ * "https://{주소}.gongsilnews.com", 아니면 "" (무료 회원은 글에 홈페이지를 언급하지 않는다)
+ */
+export async function getHomepageBase(ownerId: string): Promise<string> {
+  if (!ownerId) return "";
+  const supabase = getAdminClient();
+  const [{ data: hp }, { data: m }] = await Promise.all([
+    supabase.from('homepage_settings').select('subdomain, is_active').eq('owner_id', ownerId).maybeSingle(),
+    supabase.from('members').select('role, plan_type, plan_end_date, studio_end_date, can_homepage').eq('id', ownerId).maybeSingle(),
+  ]);
+  if (!hp?.subdomain || hp.is_active === false || !m) return "";
+  return canUseHomepage(m, m.can_homepage) ? `https://${hp.subdomain}.gongsilnews.com` : "";
+}
+
 export async function getHomepageSettings(ownerId: string) {
   const supabase = getAdminClient();
   try {

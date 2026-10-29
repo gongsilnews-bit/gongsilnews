@@ -54,9 +54,15 @@ function gwBuildSnsPrompt(source) {
   const input = source || {};
   const noun = gwSnsNoun(input.vacancy);
   const auction = noun === "물건";
+  const office = auction ? "" : String((input.vacancy && input.vacancy.office) || "").trim();
+  /* 일반 매물은 매물을 등록한 중개사무소가 소개하는 글 (2026-10-29 사장님) — 경매·공매는 예전처럼 공실뉴스 소식 */
+  const lead = auction
+    ? `- "공실뉴스에 이런 ${noun}이 나왔다"는 객관적인 물건 소식입니다. 광고 문구가 아닙니다`
+    : `- ${office || "매물을 등록한 중개사무소"}가 자기 SNS에서 이 매물을 소개하는 글입니다. 주인공은 공실뉴스가 아니라 이 중개사무소입니다
+- "공실뉴스에 이런 매물이 나왔다"처럼 공실뉴스를 주어로 내세우지 말 것. 첫 문장(인스타는 첫 줄 다음 줄)에서 ${office ? `"${office}"가` : "중개사무소가"} 소개하는 매물임을 밝힐 것`;
 
-  return `당신은 부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터입니다.
-아래 공실뉴스 기사와 확인된 ${noun} 정보로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
+  return `당신은 ${auction ? "부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터" : "중개사무소가 자기 매물을 정확하게 소개하도록 돕는 SNS 에디터"}입니다.
+아래 참조 기사와 확인된 ${noun} 정보로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
 세 글은 같은 사실을 전하지만 플랫폼마다 모양이 다릅니다. 같은 문장을 돌려 쓰지 마십시오.
 
 [참조 기사]
@@ -66,16 +72,16 @@ ${gwBlogArticleText(input.article)}
 ${gwBlogFactLines(input.vacancy)}
 
 [보도 원칙 — 세 플랫폼 공통, 가장 먼저 지킬 것]
-- "공실뉴스에 이런 ${noun}이 나왔다"는 객관적인 ${auction ? "물건" : "매물"} 소식입니다. 광고 문구가 아닙니다
+${lead}
 - 권유·호객·광고 표현 금지: "보세요", "추천합니다", "문의하세요", "연락 주세요", "DM 주세요", "놓치지 마세요", "급매", "지금이 기회", "역대급" 등
 - 금액·면적·층·주소·관리비·입주일·주차·옵션 등 고유 조건은 위 두 자료에 실제로 있는 것만 쓸 것. 두 자료가 다르면 [확인된 ${noun} 정보]를 우선
 - 면적은 평을 먼저 쓰고 ㎡는 바로 뒤 괄호에 쓰십시오. 예: 32평(105.6㎡). 자료에 평이 함께 적혀 있으면 그 숫자를 그대로 쓰고, ㎡만 있으면 ㎡ ÷ 3.3058을 소수 첫째 자리까지 반올림해 평으로 쓰십시오. ㎡만 따로 쓰지 마십시오.
 - 없는 수치·시세·수익률·개발 호재·현장 방문·고객 반응을 만들지 말 것. 자료에 없는 거리·도보 시간도 만들지 말 것
 - 소재지가 동까지만 공개됐다면 더 자세한 주소를 추측하지 말 것
-- 중개사무소 이름·연락처·링크·"프로필 링크" 안내는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
+- 중개사무소 이름은 위에서 말한 한 번만. 연락처·링크·홈페이지·"프로필 링크" 안내는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
 
 [페이스북 — facebook]
-- 기사 소개형. 첫 문단 1~2문장이 피드에서 "더 보기" 전에 보이는 곳이므로 무엇이 어디에 어떤 조건으로 나왔는지 결론부터
+- 매물 소개형. 첫 문단 1~2문장이 피드에서 "더 보기" 전에 보이는 곳이므로 무엇이 어디에 어떤 조건으로 나왔는지 결론부터
 - 문단 3~5개, 문단마다 2~3문장, 전체 300~600자. 기사체 또는 부드러운 존댓말
 - 순서: 결론 → 위치·면적·금액 → 특징 → 주변 교통·생활 정보 → 확인할 점 한 문장
 - hashtags: 3~5개 (지역명·${noun} 종류 중심)
@@ -186,13 +192,20 @@ function gwSnsParse(raw) {
 function gwSnsSourceText(listing, noun) {
   if (!listing) return "";
   const { lines } = GWNaverBlog.sourceBlockLines(listing, "");
-  return [`[${noun} 정보 출처]`, ...lines].join("\n");
+  return [listing.saleKind ? `[${noun} 정보 출처]` : "[문의 · 매물 정보]", ...lines].join("\n");
 }
 
 function gwSnsCompose(channel, post, ctx) {
   const c = ctx || {};
   const noun = c.noun || "매물";
-  const url = c.url || "";
+  /* 내 부동산을 앞세운다 — 홈페이지를 쓰는 회원은 링크도 내 홈페이지, 물건 맡기기 안내까지 (2026-10-29 사장님).
+     무료 회원은 홈페이지를 언급하지 않는다 (GWNaverBlog.homepageOf 가 "") */
+  const L = c.listing || null;
+  const home = L ? GWNaverBlog.homepageOf(L) : "";
+  const url = L && c.url ? GWNaverBlog.listingUrl(null, { ...L, detailUrl: c.url }) : c.url || "";
+  const office = L && L.owner && L.owner.type === "agency" ? L.owner.name : "";
+  const where = office || "공실뉴스";
+  const homeLine = home && !(L && L.saleKind) ? `▶ ${office || "우리 사무소"} 홈페이지 — 다른 매물 보기 · 팔거나 세놓을 물건은 홈페이지에 남겨 주세요\n${home}` : "";
   const source = gwSnsSourceText(c.listing, noun);
   const tagLine = (tags) => (tags || []).map((tag) => `#${tag}`).join(" ");
 
@@ -200,7 +213,7 @@ function gwSnsCompose(channel, post, ctx) {
     const posts = (post?.posts || []).map((text) => String(text || "").trim()).filter(Boolean);
     if (!posts.length) return { posts: [], text: "" };
     if (post.topic) posts[0] = `${posts[0]}\n\n#${post.topic}`;
-    const tail = [url ? `▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}` : "", source].filter(Boolean).join("\n\n");
+    const tail = [url ? `▶ ${where}에서 ${noun} 자세히 보기\n${url}` : "", homeLine, source].filter(Boolean).join("\n\n");
     if (tail) {
       const last = posts.length - 1;
       if (posts[last].length + tail.length + 2 <= GW_SNS_CHANNELS.threads.maxChars) posts[last] = `${posts[last]}\n\n${tail}`;
@@ -215,11 +228,12 @@ function gwSnsCompose(channel, post, ctx) {
   if (channel === "instagram") {
     /* 인스타 캡션의 링크는 눌리지 않는다 — 프로필 링크 안내를 먼저, 주소는 복사해 갈 수 있게 글자로 함께 */
     parts.push(url
-      ? `자세한 ${noun} 정보는 프로필 링크 → 공실뉴스\n${url}`
-      : `자세한 ${noun} 정보는 프로필 링크 → 공실뉴스`);
+      ? `자세한 ${noun} 정보는 프로필 링크 → ${where}\n${url}`
+      : `자세한 ${noun} 정보는 프로필 링크 → ${where}`);
   } else if (url) {
-    parts.push(`▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}`);
+    parts.push(`▶ ${where}에서 ${noun} 자세히 보기\n${url}`);
   }
+  if (homeLine) parts.push(homeLine);
   if (source) parts.push(source);
   const tags = tagLine(post.hashtags);
   if (tags) parts.push(tags);

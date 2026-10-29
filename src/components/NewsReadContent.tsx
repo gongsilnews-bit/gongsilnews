@@ -28,6 +28,8 @@ interface NewsReadContentProps {
   initialAuthorEmail?: string | null;
   initialAuthorVacancies?: any[];
   initialAttachedVacancy?: any;
+  /** 작성자 홈페이지 (Pro · Studio 로 쓸 수 있을 때만, actions/homepage getHomepageBase) — 기사 아래 [홈페이지 가기] (2026-10-29) */
+  authorHomepage?: string;
   /**
    * 사이드바의 [많이 본 뉴스].
    * 포털에서는 켜 두고, 중개사 자기 도메인에서 읽는 기사에서는 끈다 —
@@ -98,6 +100,7 @@ export default function NewsReadContent({
   initialAuthorEmail = null,
   initialAuthorVacancies = [],
   initialAttachedVacancy = null,
+  authorHomepage = "",
   showPopularNews = true,
   shareUrl,
   shareSiteName,
@@ -1027,6 +1030,12 @@ export default function NewsReadContent({
                     )}
                   </div>
                   {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
+                  {authorHomepage && showAuthorLinks && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      <a href={authorHomepage} target="_blank" rel="noopener" style={{ padding: "7px 14px", borderRadius: 8, background: "#111", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>홈페이지 가기 ›</a>
+                      <a href={`${authorHomepage}/#intake`} target="_blank" rel="noopener" style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #ddd", color: "#333", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>물건 맡기기</a>
+                    </div>
+                  )}
                 </div>
                 <div style={{ color: "#888", fontSize: 13, borderTop: "1px solid #f0f0f0", paddingTop: 12 }}>저작권자 © {copyrightName || "공실뉴스"} 무단전재 및 재배포 금지</div>
               </div>

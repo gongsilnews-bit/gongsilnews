@@ -180,10 +180,22 @@
   }
 
   /* 링크: 매물 고정 상세 주소 → 없으면 처음 매물을 본 공실뉴스 주소 */
+  /* 내 홈페이지(Pro · Studio 회원만 서버가 owner.homepage 를 준다) — 무료 회원은 "" 라 홈페이지를 언급하지 않는다 (2026-10-29) */
+  function homepageOf(listing) {
+    const h = String(listing?.owner?.homepage || "");
+    return /^https:\/\/[a-z0-9-]+\.gongsilnews\.com$/i.test(h) ? h : "";
+  }
+
+  /* 매물 링크 — 홈페이지가 있으면 같은 매물의 내 홈페이지 화면으로 */
   function listingUrl(vacancy, listing) {
-    if (listing?.detailUrl) return listing.detailUrl;
-    const url = String(vacancy?.url || "");
-    return /^https:\/\/([a-z0-9-]+\.)?gongsilnews\.com\//i.test(url) ? url : "";
+    let url = listing?.detailUrl || "";
+    if (!url) {
+      const raw = String(vacancy?.url || "");
+      url = /^https:\/\/([a-z0-9-]+\.)?gongsilnews\.com\//i.test(raw) ? raw : "";
+    }
+    const home = homepageOf(listing);
+    if (home && url) url = url.replace(/^https:\/\/(www\.)?gongsilnews\.com(?=\/)/i, home);
+    return url;
   }
 
   function formatDate(value) {
@@ -227,16 +239,18 @@
       lines.push("※ 입찰 조건은 공고 시점 기준이며 변경될 수 있습니다.");
       return { lines, url };
     }
+    /* 내 부동산이 먼저, 공실뉴스는 맨 아래 한 줄 (2026-10-29 사장님) */
     const owner = listing?.owner || {};
-    const lines = [`공실뉴스 매물 등록 정보 (${formatDate(listing?.capturedAt)} 기준)`];
+    const lines = [];
     if (owner.type === "agency") {
-      lines.push(`등록 중개사무소: ${owner.name}${owner.ceo ? ` | 대표 ${owner.ceo}` : ""}`);
-      lines.push(`등록번호 ${owner.regNo} | ${owner.address}`);
-      lines.push(`전화 ${owner.phone}`);
+      lines.push(`${owner.name}${owner.ceo ? ` | 대표 ${owner.ceo}` : ""}`);
+      if (owner.phone) lines.push(`전화 ${owner.phone}`);
+      lines.push(`${owner.address}${owner.regNo ? ` | 등록번호 ${owner.regNo}` : ""}`);
     } else if (owner.name) {
       lines.push(`등록자: ${owner.name} (일반회원 등록 매물)`);
     }
     lines.push("※ 매물 조건은 등록 시점 기준이며 실제와 다를 수 있습니다.");
+    lines.push(`공실뉴스 등록 매물${owner.vacancyNo ? ` · 광고번호 ${owner.vacancyNo}` : ""} (${formatDate(listing?.capturedAt)} 기준)`);
     return { lines, url };
   }
 
@@ -398,14 +412,21 @@
       }
     }
 
-    // 모든 디자인 공통: 매물 정보 출처 (표시·광고 필수 정보) + 고정 상세 링크 + 공실뉴스 서명
+    // 모든 디자인 공통: 내 부동산 소개(표시·광고 필수 정보) + 상세 링크 (+ 홈페이지 소개) — 공실뉴스는 맨 아래 한 줄 (2026-10-29)
     const source = sourceBlockLines(options.listing, url);
+    const owner = options.listing?.owner || {};
+    const home = homepageOf(options.listing);
+    const office = owner.type === "agency" ? owner.name : "";
     html("<hr>");
-    html(paragraphHtml(`[${noun} 정보 출처]`, { size: 13, color: MUTED, bold: true }), { tight: true });
+    html(paragraphHtml(noun === "물건" ? `[${noun} 정보 출처]` : "[문의 · 매물 정보]", { size: 13, color: MUTED, bold: true }), { tight: true });
     source.lines.forEach((line) => html(paragraphHtml(line, { size: 13, color: MUTED }), { tight: true }));
     html(BLANK, { tight: true });
-    html(linkHtml(source.url, noun === "물건" ? "▶ 공실뉴스 경매·공매 물건 상세 보기" : "▶ 공실뉴스 매물 상세 보기"));
-    html(paragraphHtml("공실뉴스 · gongsilnews.com", { size: 13, color: MUTED }));
+    if (noun === "물건") html(linkHtml(source.url, "▶ 공실뉴스 경매·공매 물건 상세 보기"));
+    else html(linkHtml(source.url, office ? `▶ ${office} 매물 자세히 보기` : "▶ 매물 자세히 보기"));
+    if (home && noun !== "물건") {
+      html(linkHtml(home, `▶ ${office || "우리 사무소"} 홈페이지 — 다른 매물 보기`));
+      html(linkHtml(`${home}/#intake`, "▶ 팔거나 세놓을 물건이 있으신가요? 홈페이지에 남겨 주세요"));
+    }
     flush();
     return blocks;
   }
@@ -423,7 +444,7 @@
     HOME_URL, WRITE_URL, isNaverBlogUrl, isLikelyWriteUrl, selectLikelyWriteTab,
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
     DESIGNS, designHint, factRows, listingProblems, SITE_URL,
-    sourceBlockLines, listingUrl, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
+    sourceBlockLines, listingUrl, homepageOf, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

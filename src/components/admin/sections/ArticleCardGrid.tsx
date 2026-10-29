@@ -145,7 +145,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
   const openOutUrl = (u: string) => { const g = bridge(); if (g?.openInBrowser) void g.openInBrowser(u); else window.open(u, "_blank", "noopener"); };
   // 카카오톡으로 보내기 (친구·단톡방) — 링크는 실제 사이트 주소
   const shareArticle = (a: MyArticleCard) => {
-    void kakaoShare({ title: a.title, description: "공실뉴스", imageUrl: a.thumb, url: shareUrl(a), button: "기사 보기" })
+    void kakaoShare({ title: a.title, description: homepage ? "맡길 물건이 있으면 홈페이지에 남겨 주세요" : "공실뉴스", imageUrl: a.thumb, url: shareUrl(a), button: "기사 보기", homepage })
       .catch((e) => setFlash(e instanceof Error ? e.message : "카카오톡을 열지 못했어요."));
   };
   const artGroups = (a: MyArticleCard): MenuItem[][] => [

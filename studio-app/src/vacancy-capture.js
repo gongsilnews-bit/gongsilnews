@@ -218,6 +218,11 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
       media.push(...(prev.media || []).filter((m) => mine(m) && ok(m)));
       hidden.push(...(prev.hidden || []).filter((m) => mine(m) && ok(m)));
     }
+    // 글쓰기 지시문에 넣을 중개사무소 이름 — 글의 주인공은 회원의 부동산 (2026-10-29 사장님). 못 받으면 빈칸으로 두고 진행
+    if (!vacancy.saleKind) {
+      const listing = await require("./naver-write").fetchListing(baseUrl, vacancyId, "").catch(() => null);
+      if (listing && listing.owner && listing.owner.type === "agency" && listing.owner.name) vacancy.office = listing.owner.name;
+    }
     const result = { vacancyId, vacancy, media, hidden, failures, dir, analyzedAt: new Date().toISOString() };
     fs.writeFileSync(path.join(dir, "analysis.json"), JSON.stringify(result, null, 2));
     log.info(`[공실 분석] ${vacancyId} 사진 ${media.filter((m) => m.kind === "photo").length}장, 캡처 ${media.filter((m) => m.kind !== "photo").length}장, 실패 ${failures.length}`);
