@@ -29,13 +29,14 @@ const waiting = new Map(); // tabId → resolve
 //  only — [링크 수정]에서 부탁한 링크만 (몇 개). 없으면 하루 한 번 전체 (최대 60개, 하나에 몇 초씩 최소화 창에서)
 async function verifyLinks(force, only) {
   let urls = Array.isArray(only) && only.length ? only : null;
+  let full = false;
   if (!urls) {
     const { gsVerifiedAt = 0 } = await chrome.storage.local.get("gsVerifiedAt");
     if (!force && Date.now() - gsVerifiedAt < VERIFY_EVERY) return;
     const j = await call("/gs-helper/verify-list");
     if (!j || !j.ok) return; // 앱이 꺼져 있다 — 다음에
-    await chrome.storage.local.set({ gsVerifiedAt: Date.now() });
     urls = (j.urls || []).slice(0, 60);
+    full = true; // 다 끝낸 뒤에 "오늘 확인함" — 중간에 크롬이 잠재우면 다음에 다시 (2026-10-29)
   }
   if (!urls.length) return;
   let win = null;
@@ -60,12 +61,14 @@ async function verifyLinks(force, only) {
     } catch (_) { /* 다음 링크 */ }
   }
   if (win) chrome.windows.remove(win.id).catch(() => {});
+  if (full) await chrome.storage.local.set({ gsVerifiedAt: Date.now() });
 }
 // 크롬을 켜거나 확장을 새로고침하면 1분 뒤 한 번 — setTimeout 은 크롬이 확장을 잠재우면 사라져서 알람으로 (2026-10-29)
 chrome.runtime.onStartup.addListener(() => { chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
 // 1분마다 앱에 "지금 확인할까" 묻는다 — 회원이 앱에서 [링크 수정]을 누르면 바로 (앱이 꺼져 있으면 아무 일 없음)
 const alarms = () => { chrome.alarms.create("gs-verify", { periodInMinutes: 180 }); chrome.alarms.create("gs-verify-poll", { periodInMinutes: 1 }); };
-chrome.runtime.onInstalled.addListener(() => { alarms(); chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
+// 새로 깔거나 새로고침하면 "오늘 확인함"을 지우고 1분 뒤 전체를 다시
+chrome.runtime.onInstalled.addListener(() => { alarms(); chrome.storage.local.remove("gsVerifiedAt"); chrome.alarms.create("gs-verify-once", { delayInMinutes: 1 }); });
 chrome.runtime.onStartup.addListener(alarms);
 let verifying = false;
 chrome.alarms.onAlarm.addListener(async (a) => {
