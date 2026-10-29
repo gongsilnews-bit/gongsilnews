@@ -870,6 +870,19 @@ app.whenReady().then(async () => {
     if (!data.success) throw new Error(data.error || `HTTP ${res.status}`);
     mainWindow?.webContents.send("studio:promo-saved", { vacancyId, articleNo, channel });
   });
+  // 도우미 확장이 평소 크롬에서 확인하는 인스타·페북 지운 글 (2026-10-29) — 지우면 홍보현황 ✓ 를 풀고 앱 홈을 다시 읽게
+  require("./helper-server").setVerifier({
+    list: async () => {
+      const res = await session.defaultSession.fetch(`${BASE_URL}/api/studio/promo`);
+      const data = await res.json().catch(() => ({}));
+      return data.success ? data.urls || [] : [];
+    },
+    gone: async (url) => {
+      const res = await session.defaultSession.fetch(`${BASE_URL}/api/studio/promo`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gone: url }) });
+      const data = await res.json().catch(() => ({}));
+      if (data.removed) mainWindow?.webContents.send("studio:promo-saved", { removed: url });
+    },
+  });
   try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();
   videoIpc.register(BASE_URL);

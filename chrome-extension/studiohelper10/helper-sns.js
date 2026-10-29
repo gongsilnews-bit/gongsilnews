@@ -13,6 +13,25 @@
   const send = (msg) => new Promise((resolve) => {
     try { chrome.runtime.sendMessage(msg, (r) => resolve(chrome.runtime.lastError ? null : r)); } catch (_) { resolve(null); }
   });
+
+  /* 지운 글 확인 (2026-10-29) — 도우미가 #gs-verify 를 붙여 연 창. 로그인 화면이면 모름(null), "없는 페이지"면 지움, 글이 보이면 있음 */
+  if (location.hash === "#gs-verify" && (target === "instagram" || target === "facebook")) {
+    const GONE = /Sorry, this page isn.t available|This page isn.t available|This content isn.t available|페이지를 사용할 수 없습니다|이 페이지는 사용할 수 없|콘텐츠를 이용할 수 없|게시물을 사용할 수 없|링크가 잘못되었거나 페이지가 삭제/i;
+    (async () => {
+      let state = null;
+      for (let i = 0; i < 16; i++) {
+        await sleep(1000);
+        const loginForm = document.querySelector("input[name='password'], input[name='pass'], form[action*='login']");
+        if (/\/accounts\/login|\/login/.test(location.pathname) || loginForm) { state = null; break; }
+        const text = (document.body && document.body.innerText) || "";
+        if (GONE.test(text)) { state = true; break; }
+        const shown = target === "instagram" ? document.querySelector("article, main [role='presentation'] img, video") : document.querySelector("[role='article'], [data-ad-preview='message']");
+        if (shown && i >= 4) { state = false; break; }
+      }
+      send({ type: "GS_VERIFY", gone: state });
+    })();
+    return;
+  }
   const visible = (el) => {
     if (!el || !el.isConnected) return false;
     if (el.closest("[aria-hidden='true'], [inert]")) return false;

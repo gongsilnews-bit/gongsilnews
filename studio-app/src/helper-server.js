@@ -131,8 +131,32 @@ function handle(req, res) {
     });
     return;
   }
+  // 지운 인스타·페북 글 확인 (2026-10-29) — 확장이 확인할 링크를 묻고, 지운 글이면 알린다. 서버와 이야기는 main.js 가 (setVerifier)
+  if (url.pathname === "/gs-helper/verify-list") {
+    Promise.resolve(verifier ? verifier.list() : [])
+      .then((urls) => send(res, 200, { ok: true, urls: Array.isArray(urls) ? urls : [] }))
+      .catch(() => send(res, 200, { ok: true, urls: [] }));
+    return;
+  }
+  if (url.pathname === "/gs-helper/gone" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 1e4) req.destroy(); });
+    req.on("end", () => {
+      let r = {};
+      try { r = JSON.parse(body || "{}"); } catch {}
+      const u = String(r.url || "");
+      if (!verifier || !/^https:\/\/www\.(instagram|facebook)\.com\//.test(u)) return send(res, 200, { ok: false });
+      log.info(`[홍보현황] 도우미가 지운 글로 봄 ${u}`);
+      Promise.resolve(verifier.gone(u)).then(() => send(res, 200, { ok: true })).catch(() => send(res, 200, { ok: false }));
+    });
+    return;
+  }
   send(res, 404, { ok: false });
 }
+
+let verifier = null;
+/** main.js 가 넣는다 — { list: () => Promise<string[]>, gone: (url) => Promise } */
+const setVerifier = (v) => { verifier = v; };
 
 /** 앱이 켜질 때 — 비어 있는 첫 번호에서 듣는다 */
 function start() {
@@ -212,4 +236,4 @@ const published = (meta, url) => {
   for (const fn of pubListeners) Promise.resolve(fn({ ...meta, url: String(url) })).catch((e) => log.warn(`[홍보현황] 발행 기록 못함: ${e.message}`));
 };
 
-module.exports = { start, addJob, addFile, wait, cancel, onPublished, published, port: () => port };
+module.exports = { start, addJob, addFile, wait, cancel, onPublished, published, setVerifier, port: () => port };
