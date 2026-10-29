@@ -287,7 +287,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
             <span style={{ fontSize: 14, fontWeight: 700, color: theme.textSecondary }}>만든 칼럼 {recent.length}개</span>
             {column && <button onClick={() => setView("")} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>지금 작업으로 돌아가기</button>}
           </div>
-          <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
+          <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
             empty="아직 만든 칼럼이 없어요. [+ 새로 만들기]로 뉴스 주소나 주제를 넣어 시작해 주세요."
             cards={recent.map((c) => {
               const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };

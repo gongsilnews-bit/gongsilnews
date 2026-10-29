@@ -28,7 +28,7 @@ export type WorkCard = {
 
 const CH: [string, string][] = [["article", "공실뉴스 기사"], ["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
 
-export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder }: {
+export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy" }: {
   theme: Theme;
   cards: WorkCard[] | null;
   addLabel?: string;
@@ -38,9 +38,55 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
   empty?: string;
   /** 사진이 없을 때 */
   placeholder?: React.ReactNode;
+  /** vacancy = 공실관리 카드 · article = 기사관리 SNS홍보형 카드 (사진 위 채널 아이콘, 아래 제목·날짜 — 2026-10-29 사장님: 뉴스칼럼) */
+  variant?: "vacancy" | "article";
 }) {
   const { cardBg, textPrimary, textSecondary, border } = theme;
   const darkMode = Boolean(theme.darkMode);
+  if (variant === "article") return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 18 }}>
+        <button onClick={onAdd} title={addLabel} style={{ border: 0, background: "transparent", cursor: "pointer", padding: 0, textAlign: "left" }}>
+          <div style={{ aspectRatio: "16 / 10", borderRadius: 12, border: `2px dashed ${darkMode ? "#2f5d62" : "#a5d8dd"}`, background: darkMode ? "#1f2b2d" : "#f0fafb",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <span style={{ width: 46, height: 46, borderRadius: "50%", background: "#0b7285", color: "#fff", fontSize: 28, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(11,114,133,0.3)" }}>+</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: darkMode ? "#99e9f2" : "#0b7285" }}>{addLabel}</span>
+          </div>
+        </button>
+        {cards === null && <div style={{ padding: 20, fontSize: 13, color: textSecondary }}>불러오는 중…</div>}
+        {cards && !cards.length && empty && <div style={{ padding: 20, fontSize: 13.5, color: textSecondary }}>{empty}</div>}
+        {(cards || []).map((c) => (
+          <div key={c.id} className="gs-work-card" style={{ position: "relative", minWidth: 0 }}>
+            <button onClick={() => onOpen(c.id, "article")} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", cursor: "pointer", padding: 0 }}>
+              <div style={{ position: "relative", aspectRatio: "16 / 10", borderRadius: 12, background: darkMode ? "#2c2d31" : "#f1f3f5", border: `${c.current ? 2 : 1}px solid ${c.current ? (darkMode ? "#5b8def" : "#1a3a6b") : border}`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {c.thumb ? <img src={c.thumb} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : placeholder}
+                {c.done && (
+                  <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "18px 6px 6px", display: "flex", gap: 3, alignItems: "center", background: "linear-gradient(transparent, rgba(0,0,0,0.55))" }}>
+                    {CH.map(([k, label]) => {
+                      const on = Boolean(c.done![k]);
+                      return (
+                        <span key={k} role="button" title={`${label} · ${on ? "써 둔 글 열기" : "이 칼럼으로 글 쓰기"}`} onClick={(e) => { e.stopPropagation(); onOpen(c.id, k); }}
+                          style={{ position: "relative", width: 24, height: 24, borderRadius: 7, background: BG[k], display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.3)", filter: on ? "none" : "grayscale(1)", opacity: on ? 1 : 0.6 }}>
+                          {G[k]}
+                          {on && <span style={{ position: "absolute", right: -4, bottom: -4, width: 14, height: 14, borderRadius: "50%", background: "#2f9e44", border: "2px solid #fff", color: "#fff", fontSize: 8, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>}
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
+                {c.badge && <span style={{ position: "absolute", left: 8, top: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 6, background: "#1971c2", color: "#fff" }}>{c.badge}</span>}
+                {c.current && <span style={{ position: "absolute", right: 8, top: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 6, background: "#1a3a6b", color: "#fff" }}>지금 작업</span>}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</div>
+            </button>
+            <div style={{ marginTop: 2, fontSize: 12, color: textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[c.line1, c.date].filter(Boolean).join(" · ")}</div>
+          </div>
+        ))}
+      </div>
+      <CardHoverStyle darkMode={darkMode} />
+    </div>
+  );
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 320px)", gap: 18 }}>
