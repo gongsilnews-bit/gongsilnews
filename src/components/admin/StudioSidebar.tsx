@@ -95,7 +95,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
     setHasAi(Boolean(gs?.openAiConnect));
     setHasSnap(Boolean(gs?.snap));
   }, []);
-  // 공실스튜디오 저장 위치 (문서\공실스튜디오 · D 드라이브 · 외장하드) — 앱에서만
+  // 공실마케팅 저장 위치 (문서\공실마케팅 · D 드라이브 · 외장하드) — 앱에서만
   type StorageInfo = { root: string; isDefault: boolean; offline: boolean; chosen: string; freeGB: number; oneDrive: boolean };
   type StorageBridge = { get: () => Promise<StorageInfo>; choose: () => Promise<unknown>; open: () => Promise<unknown> };
   const storageBridge = () => (typeof window !== "undefined" ? (window as unknown as { gongsilStudio?: { storage?: StorageBridge } }).gongsilStudio?.storage : undefined);
@@ -297,7 +297,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.10)" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
                       <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700 }}>저장 위치</span>
-                      <button onClick={() => { void storageBridge()?.choose().then(() => storageBridge()?.get().then(setStorage)); }} title="공실스튜디오 폴더를 D 드라이브·외장하드 등으로 옮겨요"
+                      <button onClick={() => { void storageBridge()?.choose().then(() => storageBridge()?.get().then(setStorage)); }} title="공실마케팅 폴더를 D 드라이브·외장하드 등으로 옮겨요"
                         style={{ ...plainBtn, padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.25)" }}>바꾸기</button>
                     </div>
                     <button onClick={() => { void storageBridge()?.open(); }} title={`${storage.root} — 눌러서 폴더 열기`}

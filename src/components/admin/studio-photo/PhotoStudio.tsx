@@ -1468,7 +1468,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   const saveMine = async (name: string) => {
     if (!doc || !b?.tplWrite) return say("스튜디오 앱에서만 돼요");
     if (!hasSlots(doc)) say("칸이 정해진 레이어가 없어요 — 다른 공실을 넣을 땐 글이 바뀌지 않아요 (레이어 칸 위 [칸] 에서 정하세요)");
-    // 저장 창에서 위치·이름을 고른다 — 처음엔 공실스튜디오\04 이미지제작\내템플릿, 다음부터는 지난번에 고른 폴더 (고른 곳에 저장해도 내 템플릿 목록에 뜬다)
+    // 저장 창에서 위치·이름을 고른다 — 처음엔 공실마케팅\04 이미지제작\내템플릿, 다음부터는 지난번에 고른 폴더 (고른 곳에 저장해도 내 템플릿 목록에 뜬다)
     const r = await b.tplWrite({ name: name || doc.name, bytes: savePsdBytes(doc), thumb: thumbOf(composite(doc)), w: doc.psd.width, h: doc.psd.height, ask: true });
     if (r.canceled) return;
     if (r.error) return say(`저장하지 못했어요: ${r.error}`);

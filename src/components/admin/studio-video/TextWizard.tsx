@@ -225,7 +225,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   const [voicePick, setVoicePick] = useState(false); // 목소리 고르기 창 (편집 화면과 같은 얼굴 카드 창)
   const [speed, setSpeed] = useState(1);
   const [voiceVol, setVoiceVol] = useState(1); // 목소리 크기 (2026-10-20 사장님)
-  // 녹음 파일(WAV) 저장 폴더 — 문서\공실스튜디오\08 AI생성물\AI보이스 (바꿨으면 그곳)
+  // 녹음 파일(WAV) 저장 폴더 — 문서\공실마케팅\08 AI생성물\AI보이스 (바꿨으면 그곳)
   const [audioDir, setAudioDir] = useState("");
   const [audioName, setAudioName] = useState<string | null>(null); // null = 프로젝트명 따라가기
   const [projDefDir, setProjDefDir] = useState(""); // 프로젝트 기본 저장 폴더
@@ -963,7 +963,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       } else {
         clips.forEach((c) => (c.hold = estimateSeconds(c.text, speed)));
       }
-      // AI 목소리 전체를 WAV 로 — 문서\공실스튜디오\08 AI생성물\AI보이스 (2026-10-20 사장님). 만든 목소리를 잇기만 (다시 만들지 않음)
+      // AI 목소리 전체를 WAV 로 — 문서\공실마케팅\08 AI생성물\AI보이스 (2026-10-20 사장님). 만든 목소리를 잇기만 (다시 만들지 않음)
       if (voiceOn && b.voiceSave && clips.some((c) => c.voice)) {
         try {
           setGen({ title: "목소리를 WAV 로 저장하는 중… (AI보이스)", frac: 0.99 });

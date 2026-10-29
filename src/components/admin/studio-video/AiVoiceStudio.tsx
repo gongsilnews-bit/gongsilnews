@@ -2,7 +2,7 @@
 
 // AI 보이스 녹음 (2026-10-20 사장님: "강의/영상녹화 아래에 — 말 그대로 텍스트로 녹화하는 거야")
 //  글을 쓰거나 붙여 넣고 → 목소리 고르기 → 문장마다 AI 목소리를 만들어 쉼을 두고 이어 MP3·WAV 한 파일 (영상·프로젝트 없이)
-//  기본 저장 폴더 = 문서\공실스튜디오\08 AI생성물\AI보이스. 만드는 법은 [텍스트로 영상 › 목소리만 저장]과 같다 (b.voiceSave)
+//  기본 저장 폴더 = 문서\공실마케팅\08 AI생성물\AI보이스. 만드는 법은 [텍스트로 영상 › 목소리만 저장]과 같다 (b.voiceSave)
 import React, { useEffect, useMemo, useState } from "react";
 import type { Project } from "./types";
 import { errText, videoBridge, datedName } from "./types";

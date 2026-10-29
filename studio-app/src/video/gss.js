@@ -136,8 +136,17 @@ function toPortable(data, workDir, extra = new Map()) {
 /** 열기용 — 표시를 이 PC 위치로 */
 function fromPortable(data, workDir, hereDir) {
   const at = (base, rel) => path.join(base, ...rel.split("/"));
+  // 저장 폴더 이름·위치가 바뀐 뒤(공실스튜디오 → 공실마케팅 등)에도 바깥 파일을 찾게 — 파일 안의 예전 경로를 지금 경로로
+  const remap = require("../storage-place").remap;
   return mapStrings(data, (s) => {
-    if (!s.startsWith("{{")) return s;
+    if (!s.startsWith("{{")) {
+      if (s.startsWith("studio-media://f/")) {
+        const f = media.fileOf(s), g = f && remap(f);
+        if (g && g !== f) { media.allow(g); return media.urlOf(g); }
+        return s;
+      }
+      return remap(s);
+    }
     let m = /^\{\{GSS\}\}\/(.*)$/.exec(s);
     if (m) return at(workDir, m[1]);
     m = /^\{\{HERE\}\}\/(.*)$/.exec(s);

@@ -595,7 +595,7 @@ function register(base) {
 
   /* ── AI 목소리 ── */
   ipcMain.handle("video:voice", (_e, dir, text, voiceId, opts) => project.voiceFor({ dir }, text, voiceId, opts || {}));
-  // 대본을 텍스트(.txt)로 내려받기 (텍스트로 영상, 2026-10-20 사장님) — 문서\공실스튜디오\05 동영상제작\대본 폴더에 바로 저장하고 탐색기로 보여 준다
+  // 대본을 텍스트(.txt)로 내려받기 (텍스트로 영상, 2026-10-20 사장님) — 문서\공실마케팅\05 동영상제작\대본 폴더에 바로 저장하고 탐색기로 보여 준다
   //  저장 전에 [다른 이름으로 저장] 창 — 폴더(처음은 대본 폴더)와 파일 이름을 고른다 (2026-10-20 사장님). 취소하면 ""
   ipcMain.handle("video:save-text", async (e, name, text) => {
     const dir = require("../studio-root").dir("vid", "대본");
@@ -807,7 +807,7 @@ function register(base) {
   });
 
   // AI 영상 — 회원 Gemini API 키 (Gemini Omni Flash), 클립마다 하나씩 (2026-10-21 사장님). 첫 장면 그림이 있으면 그림 → 영상
-  //  문서\공실스튜디오\08 AI생성물\AI영상\20261021\AI영상_….mp4 에 모은다 (AI그림과 같은 방식)
+  //  문서\공실마케팅\08 AI생성물\AI영상\20261021\AI영상_….mp4 에 모은다 (AI그림과 같은 방식)
   ipcMain.handle("video:ai-video", async (e, dir, prompt, opts) => {
     const o = opts || {};
     const image = o.image ? (path.isAbsolute(o.image) ? o.image : path.join(dir || "", o.image)) : "";
@@ -849,7 +849,7 @@ function register(base) {
   /* ── 기사·보도자료 화면 캡쳐 (2026-10-20 사장님) ──
    *  안 보이는 창(1280×720)에 주소를 열어 제목부터 화면을 찍는다. mode "head" = 제목 부분 1장 (남의 언론사 기사),
    *  "full" = 제목부터 아래로 몇 장 (공실뉴스 기사·보도자료). credit 이 있으면 오른쪽 아래에 "출처: ○○" 를 넣고 찍는다.
-   *  문서\공실스튜디오\07 녹화파일\캡쳐\<제목> 에 저장하고 [내 자료]에 올린다 */
+   *  문서\공실마케팅\07 녹화파일\캡쳐\<제목> 에 저장하고 [내 자료]에 올린다 */
   ipcMain.handle("video:capture-page", async (e, url, opts = {}) => {
     const href = String(url || "").trim();
     if (!/^https?:\/\//i.test(href)) throw new Error("캡쳐할 주소가 없습니다.");
@@ -1047,8 +1047,8 @@ function register(base) {
     chosenSource = id;
     return true;
   });
-  // 저장할 곳 — 기본은 문서\공실스튜디오\07 녹화파일\강의영상 (날짜 폴더 없이), 회원이 다른 폴더를 고를 수 있다
-  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실스튜디오\07 녹화파일\강의영상)
+  // 저장할 곳 — 기본은 문서\공실마케팅\07 녹화파일\강의영상 (날짜 폴더 없이), 회원이 다른 폴더를 고를 수 있다
+  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실마케팅\07 녹화파일\강의영상)
   ipcMain.handle("video:record-default-dir", () => recDir());
   ipcMain.handle("video:record-pick-dir", async (e, cur) => {
     const r = await dialog.showOpenDialog(winOf(e), { title: "녹화 파일을 저장할 폴더", defaultPath: cur || recDir(), properties: ["openDirectory", "createDirectory"] });

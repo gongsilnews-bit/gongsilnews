@@ -1,6 +1,6 @@
-// 회원 저장 폴더 — 모두 문서\공실스튜디오 하나에, 메뉴 순서대로 번호 (2026-10-23 사장님, docs/2026-10-23_folder_plan.md)
+// 회원 저장 폴더 — 모두 문서\공실마케팅 하나에, 메뉴 순서대로 번호 (2026-10-23 사장님, docs/2026-10-23_folder_plan.md)
 //
-//   문서\공실스튜디오\
+//   문서\공실마케팅\
 //     01 뉴스SNS발행\   매물\ 칼럼\ 시뮬레이션\
 //     02 공실마케팅\    AI매물보고서\ AI인테리어\ AI리모델링\   (안에서 날짜별)
 //     03 문서편집\      내템플릿\
@@ -19,7 +19,7 @@ const path = require("path");
 const { app } = require("electron");
 
 const docs = () => app.getPath("documents");
-// 기본은 문서\공실스튜디오 — 회원이 [저장 위치]에서 D 드라이브·외장하드로 옮길 수 있다 (storage-place.js)
+// 기본은 문서\공실마케팅 — 회원이 [저장 위치]에서 D 드라이브·외장하드로 옮길 수 있다 (storage-place.js)
 const root = () => require("./storage-place").root();
 
 /** 번호 붙은 큰 폴더 이름 — 이름을 바꿀 때는 여기만 */
@@ -36,7 +36,7 @@ const F = {
 };
 /** 큰 폴더(F 열쇠) 아래 경로 — 만들지는 않는다. 예: dir("ai", "AI이미지") */
 const dir = (key, ...subs) => path.join(root(), F[key], ...subs);
-/** 공실스튜디오 안의 폴더 (없으면 만든다) */
+/** 공실마케팅 안의 폴더 (없으면 만든다) */
 function sub(name) {
   const d = path.join(root(), name);
   try { fs.mkdirSync(d, { recursive: true }); } catch {}

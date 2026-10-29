@@ -8,7 +8,7 @@ let dirty = 0; // 저장 안 한 문서 수 — 앱을 닫을 때 묻는다
 const winOf = (e) => BrowserWindow.fromWebContents(e.sender);
 const recentFile = () => path.join(app.getPath("userData"), "photo-recent.json");
 const defaultDir = () => {
-  const d = require("../studio-root").dir("img"); // 문서\공실스튜디오\04 이미지제작
+  const d = require("../studio-root").dir("img"); // 문서\공실마케팅\04 이미지제작
   try { fs.mkdirSync(d, { recursive: true }); } catch {}
   return d;
 };
@@ -49,7 +49,7 @@ const autoDir = () => {
   return d;
 };
 const safeId = (id) => String(id || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 60);
-/* 내 템플릿 — 문서\공실스튜디오\04 이미지제작\내템플릿\*.psd (+ 같은 이름 .json 메모). 예전 문서\공실뉴스 이미지\내 템플릿 도 같이 보인다 */
+/* 내 템플릿 — 문서\공실마케팅\04 이미지제작\내템플릿\*.psd (+ 같은 이름 .json 메모). 예전 문서\공실뉴스 이미지\내 템플릿 도 같이 보인다 */
 const tplDir = () => {
   const d = path.join(defaultDir(), "내템플릿");
   try { fs.mkdirSync(d, { recursive: true }); } catch {}
@@ -112,7 +112,7 @@ function register() {
       const base = String(name || "제목 없음").replace(/[\\/:*?"<>|]/g, "_");
       const FILTERS = { gif: { name: "GIF", extensions: ["gif"] }, webp: { name: "WebP", extensions: ["webp"] }, psd: { name: "포토샵 (PSD)", extensions: ["psd"] }, jpg: { name: "JPG", extensions: ["jpg", "jpeg"] }, png: { name: "PNG", extensions: ["png"] }, pdf: { name: "인쇄용 PDF (CMYK)", extensions: ["pdf"] }, tif: { name: "인쇄용 TIFF (CMYK)", extensions: ["tif", "tiff"] } };
       const filters = [FILTERS[ext] || FILTERS.png];
-      // 예전 폴더(공실뉴스 이미지·공실뉴스 스튜디오)에 있던 파일이면 새 저장 폴더 공실스튜디오\04 이미지제작 에서 연다 (2026-10-23 저장 폴더 하나로)
+      // 예전 폴더(공실뉴스 이미지·공실뉴스 스튜디오)에 있던 파일이면 새 저장 폴더 공실마케팅\04 이미지제작 에서 연다 (2026-10-23 저장 폴더 하나로)
       const sr = require("../studio-root");
       const inOld = (d) => [sr.oldImage(), sr.oldRoot()].some((o) => (d.toLowerCase() + path.sep).startsWith(o.toLowerCase() + path.sep));
       const startDir = file && !inOld(path.dirname(file)) ? path.dirname(file) : defaultDir();

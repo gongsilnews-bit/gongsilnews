@@ -389,7 +389,7 @@ function buildMenu() {
       submenu: [
         { label: "새로고침", accelerator: "F5", role: "reload" },
         { label: "관리자 화면으로", accelerator: "Alt+Home", click: () => mainWindow && mainWindow.loadURL(`${BASE_URL}/realty_admin`) },
-        { label: "내 저장 폴더 열기 (문서\\공실스튜디오)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
+        { label: "내 저장 폴더 열기 (문서\\공실마케팅)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
         { type: "separator" },
         { label: "확대", role: "zoomIn" },
         { label: "축소", role: "zoomOut" },
@@ -662,7 +662,7 @@ ipcMain.handle("studio:sim-proj-save", (_e, opts) => simWriter.projSave(opts));
 ipcMain.handle("studio:sim-proj-add-space", (_e, opts) => simWriter.projAddSpace(opts));
 ipcMain.handle("studio:sim-proj-text", (e, id) => simWriter.projText({ id }, (text) => e.sender.send("studio:sim-progress", text)));
 // 공실마케팅 AI 채우기 (매물보고서·유리창홍보지 — 도구가 앱 화면 안에서 부른다)
-// 홍보지·매물보고서 [이미지 내보내기] — 저장 창 없이 문서\공실스튜디오\02 공실마케팅\<AI홍보지|AI매물보고서>\날짜\ 에 (out-folder.js)
+// 홍보지·매물보고서 [이미지 내보내기] — 저장 창 없이 문서\공실마케팅\02 공실마케팅\<AI홍보지|AI매물보고서>\날짜\ 에 (out-folder.js)
 ipcMain.handle("studio:save-file", (_e, opts) => require("./out-folder").saveFile(opts));
 ipcMain.handle("studio:open-out-folder", () => require("./out-folder").openRoot());
 ipcMain.handle("studio:marketing-fill", (e, opts) => marketingWriter.fill({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:marketing-progress", text)));
@@ -884,7 +884,7 @@ app.whenReady().then(async () => {
       if (data.removed) mainWindow?.webContents.send("studio:promo-saved", { removed: url });
     },
   });
-  try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실스튜디오 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
+  try { require("./gsn").start(); } catch (e) { log.warn(`[.gsn] 시작 못함: ${e.message}`); } // 뉴스·SNS발행 새 작업 → .gsn (docs/2026-10-23_gsn_plan.md) // 문서\공실마케팅 01~09 폴더를 미리 (처음 열어도 전체 모양이 보이게)
   videoMedia.handle();
   videoIpc.register(BASE_URL);
   photoIpc.register();

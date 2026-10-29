@@ -71,42 +71,48 @@
   <div class="shell">
   <nav class="side">
     <div class="st">설정</div>
-    <button type="button" class="on" data-p="pageC"><span class="ic">✦</span>AI 연결</button>
-    <button type="button" data-p="pageV"><span class="ic">🎙</span>AI 보이스</button>
+    <!-- 순서 (2026-10-29 사장님): AI 연결설정 · API 입력(따로) · API 사용 내역 · AI 보이스 · 저장 위치 -->
+    <button type="button" class="on" data-p="pageC"><span class="ic">✦</span>AI 연결설정</button>
+    <button type="button" data-p="pageK"><span class="ic">🔑</span>API 입력</button>
     <button type="button" data-p="pageU"><span class="ic">$</span>API 사용 내역</button>
+    <button type="button" data-p="pageV"><span class="ic">🎙</span>AI 보이스</button>
     <button type="button" data-p="pageS"><span class="ic">📁</span>저장 위치</button>
   </nav>
   <div class="main">
   <div class="wrap">
-    <h1 id="ttl">AI 연결</h1>
+    <h1 id="ttl">AI 연결설정</h1>
     <div class="msg" id="msg" style="margin:0 2px 10px"></div>
     <div id="pageC">
-    <p class="lead">기사·블로그·SNS·유튜브·영상을 쓸 AI를 고르세요. AI마다 쓰는 방법을 하나 고릅니다.<br>
-    <b>내 계정으로</b> — 구독 중인 AI에 <b>스튜디오 전용 크롬</b>에서 로그인해 두면, 그 창으로 씁니다. (평소 크롬과 따로, 처음 한 번 로그인)<br>
-    <b>API 키로</b> — 내 API 키를 넣으면 창 없이 바로 주고받아 빠르고 안정적이에요. 쓴 만큼 AI 회사에 직접 결제되고, <b>키는 이 PC에만 잠가서 저장</b>돼요 (공실뉴스로 보내지 않음).</p>
+    <p class="lead">기사·블로그·SNS·유튜브·영상을 쓸 AI를 고르세요.<br>
+    <b>내 계정으로 (무료)</b> — 앱이 질문을 복사해 주면, 크롬에서 ChatGPT·Claude·Gemini에 붙여 넣고 받은 답을 복사해 오면 됩니다. 따로 연결하거나 로그인할 것이 없어요.<br>
+    <b>API 키로</b> — 왼쪽 [API 입력]에 내 API 키를 넣으면 창 없이 바로 주고받아 빨라요.</p>
     <div class="writer" id="order"></div>
     <div class="writer" id="writer"></div>
+    </div>
+    <!-- API 입력 — ChatGPT · Claude · Gemini API 키 (AI 연결설정에서 따로 뺌, 2026-10-29 사장님) -->
+    <div id="pageK" style="display:none">
+    <p class="lead">내 API 키를 넣으면 창 없이 바로 주고받아 빠르고 안정적이에요. 쓴 만큼 AI 회사에 직접 결제되고, <b>키는 이 PC에만 잠가서 저장</b>돼요 (공실뉴스로 보내지 않음).<br>
+    키를 넣은 뒤 [AI 연결설정]의 쓰는 순서에서 <b>내 계정 먼저</b>나 <b>API 먼저</b>를 고르면 API 키를 써요.</p>
     <div id="list"></div>
     <div class="note">
-      <b>내 계정으로</b>: AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다. Gemini는 업무용 구글 계정 말고 별도 계정을 권합니다.<br>
       <b>API 키로</b>: 각 AI 사이트 결제 화면에서 <b>월 사용 한도</b>를 꼭 걸어 두세요. 키는 남에게 보여 주지 말고, 새 나갔으면 그 사이트에서 지우고 새로 만드세요.
     </div>
     </div>
     <!-- AI 보이스 (성우) — 회원 자기 API 키, 이 PC 에만 -->
     <div id="pageV" style="display:none">
-      <p class="desc">동영상제작의 AI 목소리 · AI 보이스 녹음에 써요. 내 API 키를 넣으면 그 회사 성우를 고를 수 있어요. Gemini 성우는 위 [AI 연결]의 Gemini 로 써요.</p>
+      <p class="desc">동영상제작의 AI 목소리 · AI 보이스 녹음에 써요. 내 API 키를 넣으면 그 회사 성우를 고를 수 있어요. Gemini 성우는 [API 입력]의 Gemini 키로 써요.</p>
       <div id="voices"></div>
     </div>
-    <!-- 저장 위치 — 공실스튜디오 폴더 (문서 · D 드라이브 · 외장하드) -->
+    <!-- 저장 위치 — 공실마케팅 폴더 (문서 · D 드라이브 · 외장하드) -->
     <div id="pageS" style="display:none">
-      <p class="desc">만든 영상·이미지·문서·녹화 파일이 모두 이 공실스튜디오 폴더(01~09)에 저장돼요. D 드라이브나 외장하드로 옮길 수 있어요.</p>
+      <p class="desc">만든 영상·이미지·문서·녹화 파일이 모두 이 공실마케팅 폴더(01~09)에 저장돼요. D 드라이브나 외장하드로 옮길 수 있어요.</p>
       <div class="card">
         <div class="muted">지금 저장 위치</div>
         <div id="sRoot" style="font-size:16px;font-weight:800;margin:6px 0 4px;word-break:break-all">—</div>
         <div class="muted" id="sInfo"></div>
         <div class="links" style="margin-top:12px"><button type="button" id="sChoose">위치 바꾸기</button><button type="button" class="ghost" id="sOpen">폴더 열기</button></div>
       </div>
-      <div class="note">위치를 바꾸면 공실스튜디오 폴더를 통째로 옮기고 앱이 다시 켜져요. 옮기는 동안 앱을 끄거나 외장하드를 빼지 마세요. 외장하드에 두면, 켤 때 빠져 있을 경우 [다시 확인]·[이번만 문서 폴더 쓰기]를 물어요.</div>
+      <div class="note">위치를 바꾸면 공실마케팅 폴더를 통째로 옮기고 앱이 다시 켜져요. 옮기는 동안 앱을 끄거나 외장하드를 빼지 마세요. 외장하드에 두면, 켤 때 빠져 있을 경우 [다시 확인]·[이번만 문서 폴더 쓰기]를 물어요.</div>
     </div>
     <div id="pageU" style="display:none">
       <div class="card">
@@ -162,7 +168,7 @@
     $("uLimit").value = s.limit || 0;
     $("uNote").innerHTML = "<b>예상 금액이에요.</b> AI 답에 들어 있는 사용량(토큰)에 각 회사 공식 가격표(" + s.priceDate + " 기준, 표준 요금)를 곱했어요. 가격표에 없는 모델·사용량을 못 받은 것은 금액을 비워 둬요. <b>정확한 청구액은 아래 각 회사 결제 화면</b>에서 확인하세요. 기록은 이 PC에만 있어요 (공실뉴스로 보내지 않음). 내 계정(무료) 웹 창으로 쓴 것은 기록하지 않아요.";
   }
-  const PAGES = ["pageC", "pageV", "pageU", "pageS"];
+  const PAGES = ["pageC", "pageK", "pageV", "pageU", "pageS"];
   async function loadStorage() {
     const st = studio.storage;
     if (!st) { $("sRoot").textContent = "앱을 다시 켜 주세요"; return; }
@@ -337,7 +343,8 @@
       if (on) row.classList.add("on");
       row.innerHTML = `<div class="top"><span class="dot ${on ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub ${on ? "on" : ""}"></div></div></div>`;
       row.querySelector(".name").textContent = it.name;
-      row.querySelector(".sub").textContent = it.ok ? (api ? "지금 먼저 쓰는 것: API 키(유료)" : "지금 먼저 쓰는 것: 내 계정(무료)") : (!it.ready ? "준비 중" : "연결 안 됨");
+      // 내 계정은 수동만 쓰므로 "지금 먼저 쓰는 것"·내 계정 줄(연결됨·창 열기·다시 확인)은 뺐다 (2026-10-29 사장님)
+      row.querySelector(".sub").textContent = !it.ready ? "준비 중" : "";
       // 내 계정(무료) · API 키(유료) — 둘 다 연결해 둘 수 있다. 어느 쪽을 먼저 쓸지는 위 [쓰는 순서] (2026-10-23)
       const part = (title, text, okk) => {
         const d = document.createElement("div");
@@ -348,8 +355,7 @@
         return d;
       };
       const accText = connectingId === it.id ? "오른쪽 크롬 창에서 로그인해 주세요" : checking.has(it.id) ? "확인 중…" : it.accountOk ? `● 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}` : "연결 안 됨";
-      const pa = part("내 계정 (무료)", accText, it.accountOk);
-      accountActs(it, pa.querySelector(".acts"));
+      void accText;
       if (it.noImage !== undefined && ["chatgpt", "claude", "gemini"].includes(it.id)) {
         const pk = part("API 키 (유료)", it.keyHas ? `● ${it.keyMasked}${it.keyModel ? " · " + it.keyModel : ""}` : "키 없음", it.keyHas);
         apiActs(it, pk, pk.querySelector(".acts"));
@@ -362,9 +368,10 @@
   async function load() { render(await studio.ai.list()); renderOrder(); }
   /* 쓰는 순서 — 무료 먼저 · 유료 먼저 · 무료만 (2026-10-23 사장님) */
   const ORDERS = [
-    { id: "paid", name: "API 먼저", sub: "API 키가 없으면 내 계정" },
-    { id: "free", name: "내 계정 먼저", sub: "막히면 API" },
+    // 순서·처음 값 (2026-10-29 사장님): 내 계정만(처음 값) · 내 계정 먼저 · API 먼저
     { id: "freeOnly", name: "내 계정만", sub: "API는 안 써요" },
+    { id: "free", name: "내 계정 먼저", sub: "막히면 API" },
+    { id: "paid", name: "API 먼저", sub: "빠르게 작업해요" },
   ];
   const METHODS = [
     { id: "manual", name: "수동", sub: "질문 복사 → 내 브라우저 → 답 복사" },
@@ -373,8 +380,8 @@
   async function renderOrder() {
     const box = document.getElementById("order");
     if (!studio.ai.getOrder) { box.style.display = "none"; return; }
-    const cur = await studio.ai.getOrder().catch(() => "free");
-    box.innerHTML = '<div class="t">쓰는 순서 <span>· 내 계정(무료)과 API 키(유료)를 둘 다 연결해 두면 이 순서로 써요. 막히면(로그인 풀림·한도) 다른 쪽으로 넘어가요</span></div><div class="pills" id="po"></div>';
+    const cur = await studio.ai.getOrder().catch(() => "freeOnly");
+    box.innerHTML = '<div class="t">쓰는 순서 <span>· API 키를 넣어 두면 내 계정(무료)과 이 순서로 써요</span></div><div class="pills" id="po"></div>';
     const curM = studio.ai.getMethod ? await studio.ai.getMethod().catch(() => "manual") : "auto";
     for (const o of ORDERS) {
       const b = document.createElement("button");
@@ -384,7 +391,8 @@
       b.onclick = async () => { await studio.ai.setOrder(o.id); say(o.name + "로 바꿨어요 — " + o.sub); load(); };
       box.querySelector("#po").appendChild(b);
     }
-    if (!studio.ai.getMethod) return;
+    // 내 계정 쓰는 방법(수동/자동) 칸은 뺐다 — 수동만 (2026-10-29 사장님)
+    return;
     // 내 계정 쓰는 방법 — 수동 / 자동 (자동은 경고 후)
     const mt = document.createElement("div");
     mt.innerHTML = '<div class="t" style="margin-top:14px">내 계정 쓰는 방법 <span>· API 키가 없을 때 · 수동은 내 브라우저에서 직접 묻고 답을 복사해 와요 (안전)</span></div><div class="pills" id="pm"></div>' + (curM === "auto" ? '<div class="note" style="margin-top:10px;background:#fff7ed;border-color:#fdba74;color:#9a3412"><b>⚠ 자동으로 쓰는 중</b> — AI 회사 약관상 개인 계정을 프로그램으로 자동 사용하면 <b>계정이 제한되거나 막힐 수 있어요.</b> 걱정되면 수동이나 API 를 쓰세요.</div>' : "");

@@ -318,7 +318,7 @@ function cropTo(src, dest, channel, kind) {
 
 const safeName = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
 
-/* [사진·글 저장]: 문서\공실스튜디오\01 뉴스SNS발행\<채널>\날짜\<작업 이름>\ 에 글(txt)과 채널 비율 사진을 만들고 폴더를 연다 */
+/* [사진·글 저장]: 문서\공실마케팅\01 뉴스SNS발행\<채널>\날짜\<작업 이름>\ 에 글(txt)과 채널 비율 사진을 만들고 폴더를 연다 */
 async function exportChannel({ vacancyId, channel }) {
   const r = await channelFiles({ vacancyId, channel });
   shell.openPath(r.folder);
@@ -331,7 +331,7 @@ async function channelFiles({ vacancyId, channel }) {
   if (!data) throw new Error("먼저 SNS 글을 써 주세요.");
   const c = sns.GW_SNS_CHANNELS[channel];
   const web = forWeb(data).channels[channel];
-  // 저장 자리: 문서\공실스튜디오\01 뉴스SNS발행\<채널>\날짜\<매물 이름_공실번호 | 뉴스칼럼_제목 | 시뮬레이션> (out-folder.js)
+  // 저장 자리: 문서\공실마케팅\01 뉴스SNS발행\<채널>\날짜\<매물 이름_공실번호 | 뉴스칼럼_제목 | 시뮬레이션> (out-folder.js)
   const folder = require("./out-folder").folderFor(vacancyId, c.label);
   fs.rmSync(folder, { recursive: true, force: true });
   fs.mkdirSync(folder, { recursive: true });

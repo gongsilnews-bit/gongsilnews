@@ -247,7 +247,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
         return;
       }
       setBusy("즐겨찾기에 담는 중… (PC로 받아요)");
-      // 프로젝트 작업 폴더가 아니라 [문서\공실스튜디오\09 받은자료\무료영상·무료사진]에 — 프로젝트를 지워도 남게
+      // 프로젝트 작업 폴더가 아니라 [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 — 프로젝트를 지워도 남게
       const it = await b.stock.get("", s);
       await b.lib.fav(it.id, true);
       saveFav({ ...stockFav, [s.id]: it.id });
@@ -256,7 +256,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     }
     setBusy("");
   };
-  /** ⬇ PC에 받기 — [문서\공실스튜디오\09 받은자료\무료영상·무료사진]에 받고 탐색기로 보여 준다 */
+  /** ⬇ PC에 받기 — [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 받고 탐색기로 보여 준다 */
   const saveStock = async (s: StockItem) => {
     if (!b) return;
     setBusy("PC로 받는 중…");
@@ -287,7 +287,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           {pro && plusBtn(it)}
           {/* 공실뉴스 드론은 PC에 받지 않는다 — 쓸 때마다 불러온다 (2026-10-28 사장님) */}
           {it.source !== "공실뉴스" && <>
-          <span role="button" title="PC에 받기 (문서\공실스튜디오\09 받은자료)" draggable={false}
+          <span role="button" title="PC에 받기 (문서\공실마케팅\09 받은자료)" draggable={false}
             onClick={(e) => { e.stopPropagation(); void saveStock(it); }}
             style={{ position: "absolute", right: 34, top: 4, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", color: "#fff", cursor: "pointer" }}>
             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
@@ -640,8 +640,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
               {(["all", "image", "video"] as const).map((k) => <button key={k} type="button" onClick={() => { setKind(k); setVacOn(false); }} style={chip(kind === k && !vacOn)}>{k === "all" ? "전체" : k === "image" ? "사진" : "영상"}</button>)}
               {tab === "mine" && <button type="button" onClick={() => { setVacOn(!vacOn); setRec(false); setAiOnly(false); }} style={chip(vacOn)} title="내 공실의 등록 사진 · 공실열람 검증·지도·로드뷰 화면">공실 사진</button>}
-              {tab === "mine" && <button type="button" onClick={() => { setRec(vacOn ? true : !rec); setAiOnly(false); setVacOn(false); }} style={chip(rec && !vacOn)} title="강의·화면·카메라로 녹화한 영상만 (공실스튜디오\07 녹화파일\강의영상)">녹화</button>}
-              {tab === "mine" && <button type="button" onClick={() => { setAiOnly(vacOn ? true : !aiOnly); setRec(false); setVacOn(false); }} style={chip(aiOnly && !vacOn)} title="만든 AI 그림만 (문서\공실스튜디오\08 AI생성물\AI이미지)">AI 그림</button>}
+              {tab === "mine" && <button type="button" onClick={() => { setRec(vacOn ? true : !rec); setAiOnly(false); setVacOn(false); }} style={chip(rec && !vacOn)} title="강의·화면·카메라로 녹화한 영상만 (공실마케팅\07 녹화파일\강의영상)">녹화</button>}
+              {tab === "mine" && <button type="button" onClick={() => { setAiOnly(vacOn ? true : !aiOnly); setRec(false); setVacOn(false); }} style={chip(aiOnly && !vacOn)} title="만든 AI 그림만 (문서\공실마케팅\08 AI생성물\AI이미지)">AI 그림</button>}
               <span style={{ flex: 1 }} />
               <button type="button" onClick={() => { setSelMode(!selMode); setChk([]); setPicked(null); }} style={chip(selMode)} title="여러 개 골라 목록에서 빼기">{selMode ? "선택 끝" : "선택"}</button>
               {FOLDERS && tab === "mine" && b?.lib.tagAdd && (
@@ -739,7 +739,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
               {drones && (droneShown.length ? masonry(droneShown) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>맞는 드론 영상이 없어요.</div>)}
             </>
           ) : stock && (stock.length ? masonry(stock) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
-          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실스튜디오\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
+          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
         </div>
       )}
 
@@ -752,7 +752,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             style={{ ...input, height: "auto", padding: 10, marginTop: 6, resize: "vertical", lineHeight: 1.5 }} />
           <Btn primary onClick={drawAi} disabled={!aiPrompt.trim() || Boolean(busy)} style={{ width: "100%", marginTop: 8 }}><Icon name="image" size={18} />{imgAi}로 그리기</Btn>
           <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>[내 AI 연결]에서 고른 이미지 AI가 그려요. 1~2분 걸려요.</div>
-          {/* 만든 AI 그림 모음 — 문서\공실스튜디오\08 AI생성물\AI이미지\날짜 (2026-10-21 사장님) */}
+          {/* 만든 AI 그림 모음 — 문서\공실마케팅\08 AI생성물\AI이미지\날짜 (2026-10-21 사장님) */}
           {b?.lib.aiFolder && <Btn small onClick={async () => { const d = await b.lib.aiFolder!(); await b.openPath(d); }} style={{ marginTop: 8 }}><Icon name="folder" size={14} />AI 그림 폴더 열기</Btn>}
           {items && items.length > 0 && <div style={{ margin: "8px -14px 0" }}><div style={{ ...label, padding: "8px 14px 0", fontSize: 14 }}>그린 그림</div>{grid(items, (x) => setPicked(x as LibItem))}</div>}
         </details>
@@ -1363,7 +1363,7 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
             )}
           </div>
           <div style={{ padding: "0 14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-            <Hint>문서\공실스튜디오\09 받은자료\BGM 폴더에 넣은 음악도 저절로 여기에 나와요. 음악은 PC에만 있고 올리지 않아요.</Hint>
+            <Hint>문서\공실마케팅\09 받은자료\BGM 폴더에 넣은 음악도 저절로 여기에 나와요. 음악은 PC에만 있고 올리지 않아요.</Hint>
             <Btn small onClick={openFolder}><Icon name="folder" size={16} />음악 폴더 열기</Btn>
           </div>
         </>

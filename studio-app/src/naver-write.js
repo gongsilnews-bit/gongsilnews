@@ -226,7 +226,7 @@ async function fillByHelper({ title, blocks, tags, vacancyId }, onProgress) {
 }
 
 /* 복사·폴더 (확장 없이) — 사진은 글 순서대로 번호를 붙여 폴더에, 본문은 디자인 그대로 복사(사진 자리는 [사진 N])
-   저장 자리: 문서\공실스튜디오\01 뉴스SNS발행\네이버 블로그\날짜\<작업 이름> (out-folder.js) */
+   저장 자리: 문서\공실마케팅\01 뉴스SNS발행\네이버 블로그\날짜\<작업 이름> (out-folder.js) */
 const htmlText = (h) => String(h || "").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|h\d|li|blockquote)>/gi, "\n").replace(/<[^>]+>/g, "")
   .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").replace(/\n{3,}/g, "\n\n").trim();
 async function fillManual({ title, blocks, tags, vacancyId }, onProgress) {

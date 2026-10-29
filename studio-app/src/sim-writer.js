@@ -497,7 +497,7 @@ function resultMedia(id) {
 const creditOf = (id) => KINDS[kindOf(id)].credit;
 
 /* ── 결과표 이미지 · 예측 이미지 저장 (확장 [📋 결과표 이미지 저장] [🖼 예측 이미지 저장]과 같다) ──
-   문서\공실스튜디오\02 공실마케팅\<AI인테리어|AI리모델링>\날짜\<작업 이름>\ 에 저장하고 폴더를 연다 */
+   문서\공실마케팅\02 공실마케팅\<AI인테리어|AI리모델링>\날짜\<작업 이름>\ 에 저장하고 폴더를 연다 */
 // 결과표 그림 코드는 조건표(이름·라벨)와 공사비 표기(rmWon)를 같이 쓴다
 const SHEET = {
   interior: ["interior/interior-spec.js", "interior/interior-cost.js", "interior/interior-sheet.js"],

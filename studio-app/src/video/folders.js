@@ -14,9 +14,9 @@ const studioRoot = () => sr().root();
 const defaults = () => ({ projectDir: sr().dir("vid", "프로젝트"), recordDir: sr().dir("rec", "강의영상"), exportDir: "", aiAudioDir: sr().dir("ai", "AI보이스") }); // AI오디오 → AI보이스 (2026-10-23 사장님)
 // 예전 녹화 자리 — 07 녹화파일\녹화영상\날짜 (10-24 전 기본) · 영상\녹화 (옛 기본) · 예전 이름 폴더(공실뉴스 스튜디오)의 녹화영상·영상\녹화
 const OLD_RECORD = () => { const o = require("../studio-root").oldRoot(); return [sr().dir("rec", "녹화영상"), path.join(studioRoot(), "영상", "녹화"), path.join(o, "녹화영상"), path.join(o, "영상", "녹화")]; };
-/** AI 목소리 저장 (AI 보이스 녹음 · 텍스트로 영상 › 목소리만) — 고른 곳, 아니면 공실스튜디오\08 AI생성물\AI보이스\날짜 */
+/** AI 목소리 저장 (AI 보이스 녹음 · 텍스트로 영상 › 목소리만) — 고른 곳, 아니면 공실마케팅\08 AI생성물\AI보이스\날짜 */
 const aiAudioDir = () => read().aiAudioDir || defaults().aiAudioDir;
-/** 공실스튜디오 폴더 안에 강의영상·AI보이스 폴더를 미리 만들어 둔다 (PC 에서 바로 보이게) */
+/** 공실마케팅 폴더 안에 강의영상·AI보이스 폴더를 미리 만들어 둔다 (PC 에서 바로 보이게) */
 function ensure() {
   // 이름을 바꾸기 전에 잠깐 만들어진 빈 AI오디오 폴더는 지운다 (안에 파일이 있으면 그대로)
   try { fs.rmdirSync(path.join(studioRoot(), "AI오디오")); } catch {}
@@ -52,7 +52,7 @@ function set(patch = {}) {
 const projectDir = () => read().projectDir || defaults().projectDir;
 const recordDir = () => read().recordDir || defaults().recordDir;
 // 내보내기 — 고른 곳, 아니면 .gss 파일 옆 (예전 폴더 방식은 그 안의 output)
-// 완성 영상 — 고른 곳, 아니면 공실스튜디오\06 완성영상\오늘날짜 (2026-10-23 사장님: 공실스튜디오 바로 아래, 날짜별)
+// 완성 영상 — 고른 곳, 아니면 공실마케팅\06 완성영상\오늘날짜 (2026-10-23 사장님: 공실마케팅 바로 아래, 날짜별)
 const finishedRoot = () => sr().dir("done");
 const exportDir = () => read().exportDir || dated(finishedRoot());
 

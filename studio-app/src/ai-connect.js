@@ -107,13 +107,13 @@ const API_IDS = ["chatgpt", "claude", "gemini"];
    AI 마다 계정·키를 둘 다 연결해 둘 수 있다. getMode = 지금 먼저 쓸 방법 */
 function getOrder() {
   const o = readSettings().order;
-  return o === "free" || o === "freeOnly" ? o : "paid"; // 처음 값 = API 먼저 (없으면 내 계정) — 2026-10-23 사장님
+  return o === "free" || o === "paid" ? o : "freeOnly"; // 처음 값 = 내 계정만 — 2026-10-29 사장님 (전에는 API 먼저)
 }
 /* 내 계정 쓰는 방법 — manual(수동: 질문 복사 → 내 브라우저 → 답 복사, 처음 값) · auto(자동: 전용 크롬 조종, 계정이 막힐 수 있음) */
-const getMethod = () => (readSettings().method === "auto" ? "auto" : "manual");
-function setMethod(m) {
-  writeSettings({ method: m === "auto" ? "auto" : "manual" });
-  log.info(`[AI 연결] 내 계정 방법: ${m === "auto" ? "자동" : "수동"}`);
+// 2026-10-29 사장님: 수동만 쓴다 — 자동(전용 크롬 조종)은 고르는 칸을 없앴고, 예전에 자동으로 해 둔 PC도 수동으로
+const getMethod = () => "manual";
+function setMethod() {
+  writeSettings({ method: "manual" });
   return list();
 }
 function setOrder(o) {

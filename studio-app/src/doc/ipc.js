@@ -10,7 +10,7 @@ let dirty = 0;
 const winOf = (e) => BrowserWindow.fromWebContents(e.sender);
 const recentFile = () => path.join(app.getPath("userData"), "doc-recent.json");
 const defaultDir = () => {
-  const d = require("../studio-root").dir("doc"); // 문서\공실스튜디오\03 문서편집 (2026-10-23 저장 폴더 하나로)
+  const d = require("../studio-root").dir("doc"); // 문서\공실마케팅\03 문서편집 (2026-10-23 저장 폴더 하나로)
   try { fs.mkdirSync(d, { recursive: true }); } catch {}
   return d;
 };

@@ -18,7 +18,7 @@ if (allowed) {
       text: (text, sub) => ipcRenderer.invoke("studio:busy-text", text, sub),
       release: () => ipcRenderer.invoke("studio:busy-release"),
     },
-    // 공실스튜디오 저장 위치 — 보기 · 바꾸기(옮기고 다시 켜기) · 폴더 열기
+    // 공실마케팅 저장 위치 — 보기 · 바꾸기(옮기고 다시 켜기) · 폴더 열기
     storage: {
       get: () => ipcRenderer.invoke("studio:storage-get"),
       choose: () => ipcRenderer.invoke("studio:storage-choose"),
@@ -103,7 +103,7 @@ if (allowed) {
     },
     marketing: {
       fill: (opts) => ipcRenderer.invoke("studio:marketing-fill", opts),
-      /** 그림·PDF 를 문서\공실스튜디오\01 뉴스SNS발행·02 공실마케팅 … (out-folder.js) 에 저장하고 탐색기로 보여 준다 */
+      /** 그림·PDF 를 문서\공실마케팅\01 뉴스SNS발행·02 공실마케팅 … (out-folder.js) 에 저장하고 탐색기로 보여 준다 */
       saveFile: (opts) => ipcRenderer.invoke("studio:save-file", opts),
       openFolder: () => ipcRenderer.invoke("studio:open-out-folder"),
       onProgress: (fn) => {
