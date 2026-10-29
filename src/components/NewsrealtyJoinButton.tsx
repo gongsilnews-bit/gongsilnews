@@ -41,7 +41,7 @@ export default function NewsrealtyJoinButton({ tone = "light", small = false, jo
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/studio-app-icon.png" alt="" width={icon} height={icon} style={{ width: icon, height: icon, borderRadius: "50%" }} />
+      <img src="/new_logo.png" alt="" width={icon} height={icon} style={{ width: icon, height: icon, borderRadius: "50%", objectFit: "cover" }} />
       공실마케팅
     </Link>
   );

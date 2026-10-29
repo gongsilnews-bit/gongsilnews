@@ -337,7 +337,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             <div style={{ display: "flex", alignItems: isSmallHeader ? "center" : "flex-end", gap: isSmallHeader ? "16px" : "20px", flex: 1, minWidth: 0 }}>
               {/* 1. 로고 (isSmallHeader에 따라 크기만 변경) */}
               <div style={{ display: "flex", alignItems: "flex-end", cursor: "pointer", flexShrink: 0 }} onClick={() => window.location.href = "/"}>
-                <img src="/logo.png" style={{ height: isSmallHeader ? "38px" : "56px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
+                {/* 그림 로고 대신 맨 위 줄 "공실뉴스"와 같은 글자를 남색으로 크게 (2026-10-29 사장님) */}
+                <span className="top-logo" style={{ color: "var(--brand-navy)", fontSize: isSmallHeader ? "30px" : "42px", lineHeight: 1, margin: 0, position: "relative", top: isSmallHeader ? 0 : -8, transition: "font-size 0.3s ease", whiteSpace: "nowrap" }}>공실뉴스</span>
               </div>
 
               {/* 2. 메인 메뉴 또는 기사 제목 (Indication Bar) */}

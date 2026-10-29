@@ -104,7 +104,7 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 @media (max-width:860px){.sv-maker .box{grid-template-columns:1fr}.sv-maker .pic{border-right:0;border-bottom:1px solid #3a3c40}.sv-maker .list{padding:32px 24px}}
 .sv-last{padding-bottom:120px}
 .sv-last .logo{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:48px}
-.sv-last .logo img{width:96px;height:96px;border-radius:24px}
+.sv-last .logo img{width:96px;height:96px;border-radius:50%;object-fit:cover}
 .sv-last .logo span{font-size:clamp(40px,5vw,60px);font-weight:900;letter-spacing:-0.03em;color:#1f1714}
 .sv-last .sv-h2{margin-bottom:40px}
 .sv-last .os{font-size:15px;color:#4b5563;margin:28px 0 14px}
@@ -472,7 +472,7 @@ export default function StudioVrewLanding() {
       <section id="download" className="sv-sec sv-last" style={{ scrollMarginTop: 80 }}>
         <div className="logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/studio-app-icon.png" alt="" />
+          <img src="/new_logo.png" alt="" />
           <span>공실마케팅</span>
         </div>
         <h2 className="sv-h2">부동산 AI를 가장 잘 활용할 수 있도록,</h2>

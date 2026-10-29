@@ -163,7 +163,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
           {/* 공실마케팅 앱 아이콘 (공실뉴스 홈은 위 남색 줄의 "공실뉴스"로, 2026-10-26 사장님) */}
           <Link href="/marketing" title="공실마케팅 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -22 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/studio-app-icon.png" alt="공실마케팅" style={{ height: stuck ? 34 : 42, width: stuck ? 34 : 42, borderRadius: 8 }} />
+            <img src="/new_logo.png" alt="공실마케팅" style={{ height: stuck ? 34 : 42, width: stuck ? 34 : 42, borderRadius: "50%", objectFit: "cover" }} /* 동그란 재생 단추 — 앱 왼쪽 위와 같게 (2026-10-29 사장님) */ />
           </Link>
           <Link
             href="/marketing"

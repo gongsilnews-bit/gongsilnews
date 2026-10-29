@@ -204,8 +204,9 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
           <div onClick={openHome} title="공실뉴스 홈 (새 창)" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <img src="/new_logo.png" alt="공실뉴스" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
             <div style={{ lineHeight: 1.2 }}>
-              <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px" }}>공실뉴스</div>
-              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: 700, letterSpacing: "1.5px" }}>STUDIO</div>
+              {/* 로고 (2026-10-29 사장님): 동그란 재생 단추는 그대로, 이름은 앱 이름 공실마케팅 + 작게 공실뉴스 (by 없이) */}
+              <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px" }}>공실마케팅</div>
+              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: 700 }}>공실뉴스</div>
             </div>
           </div>
         )}

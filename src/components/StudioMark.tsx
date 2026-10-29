@@ -8,12 +8,12 @@ export default function StudioMark({ small = false, plan }: { small?: boolean; p
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/studio-app-icon.png"
+      src="/new_logo.png"
       alt="공실마케팅"
       title={plan ? `공실마케팅 ${plan === "studio" ? "Studio" : "Pro"} 이용 중` : "공실마케팅 멤버십 이용 중"}
       width={size}
       height={size}
-      style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 4, width: size, height: size, borderRadius: Math.round(size * 0.22), flexShrink: 0 }}
+      style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 4, width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
     />
   );
 }

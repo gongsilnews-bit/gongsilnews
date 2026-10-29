@@ -25,7 +25,7 @@ export default function StudioFooter() {
           <div style={{ minWidth: 200 }}>
             <Link href="/marketing" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/studio-app-icon.png" alt="" style={{ width: 36, height: 36, borderRadius: 8 }} />
+              <img src="/new_logo.png" alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
               <span style={{ fontSize: 20, fontWeight: 900 }}>공실마케팅</span>
             </Link>
             <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS · 영상까지</p>
