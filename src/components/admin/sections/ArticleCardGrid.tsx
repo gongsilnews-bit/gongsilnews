@@ -80,8 +80,9 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
     void load();
     // 크롬에서 발행하고 앱으로 돌아오면 · 도우미가 글 주소를 보내 오면 다시 읽는다 (기사 홍보현황 ✓)
     window.addEventListener("focus", load);
+    window.addEventListener("gs-promo-changed", load); // 공실 카드 쪽 확인이 기사 링크를 풀었을 때
     const offSaved = (window as unknown as { gongsilStudio?: { promo?: { onSaved: (fn: () => void) => () => void } } }).gongsilStudio?.promo?.onSaved(load);
-    return () => { off = true; window.removeEventListener("focus", load); offSaved?.(); };
+    return () => { off = true; window.removeEventListener("focus", load); window.removeEventListener("gs-promo-changed", load); offSaved?.(); };
   }, [memberId]);
 
   // 즐겨찾기 — 이 기기에 회원별로, 별 누른 것이 맨 앞

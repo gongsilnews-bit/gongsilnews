@@ -208,6 +208,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
       const names = [...new Set(r.removed.map((x) => `${x.title} ${x.channel}`))].join(", ");
       setNotice(`${names} 글이 지워져서 연결을 풀었어요.`);
       void loadPromos();
+      window.dispatchEvent(new Event("gs-promo-changed")); // 기사 카드(ArticleCardGrid)도 다시 읽게
     }).catch(() => {});
   };
   useEffect(() => {
