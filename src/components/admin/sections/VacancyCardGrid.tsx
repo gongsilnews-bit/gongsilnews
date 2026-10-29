@@ -108,7 +108,7 @@ export function useHomepageBase(memberId?: string) {
 /** homepage 가 있으면 두 번째 버튼 [물건 맡기기] — 내 홈페이지 물건 접수 칸(#intake)으로 (2026-10-29 사장님) */
 /** 도우미 확장에게 인스타·페북 지운 글 확인을 부탁 (앱에서만, 2026-10-29) */
 export function verifyByHelper(urls: (string | undefined)[]) {
-  const list = urls.filter((u): u is string => !!u && /^https:\/\/www\.(instagram|facebook)\.com\//.test(u));
+  const list = urls.filter((u): u is string => !!u && /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u));
   if (!list.length) return; // 인스타·페북 링크가 없으면 부탁할 것도 없다
   try { void (window as unknown as { gongsilStudio?: { promo?: { verifyNow?: (u: string[]) => Promise<unknown> } } }).gongsilStudio?.promo?.verifyNow?.(list); } catch {}
 }

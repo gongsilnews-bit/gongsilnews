@@ -151,7 +151,7 @@ function handle(req, res) {
       let r = {};
       try { r = JSON.parse(body || "{}"); } catch {}
       const u = String(r.url || "");
-      if (!verifier || !/^https:\/\/www\.(instagram|facebook)\.com\//.test(u)) return send(res, 200, { ok: false });
+      if (!verifier || !/^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u)) return send(res, 200, { ok: false });
       log.info(`[홍보현황] 도우미가 지운 글로 봄 ${u}`);
       Promise.resolve(verifier.gone(u)).then(() => send(res, 200, { ok: true })).catch(() => send(res, 200, { ok: false }));
     });
@@ -164,7 +164,7 @@ let verifier = null;
 let verifyWanted = [];
 /** 회원이 [링크 수정]을 눌렀다 — 그 공실·기사의 인스타·페북 링크만, 확장이 다음에 물을 때(1분 안) 확인 */
 const requestVerify = (urls) => {
-  const ok = (Array.isArray(urls) ? urls : []).map(String).filter((u) => /^https:\/\/www\.(instagram|facebook)\.com\//.test(u));
+  const ok = (Array.isArray(urls) ? urls : []).map(String).filter((u) => /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u));
   verifyWanted = [...new Set([...verifyWanted, ...ok])].slice(0, 20);
 };
 /** main.js 가 넣는다 — { list: () => Promise<string[]>, gone: (url) => Promise } */

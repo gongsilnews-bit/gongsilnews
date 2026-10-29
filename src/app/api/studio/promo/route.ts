@@ -14,12 +14,12 @@ export async function GET(req: NextRequest) {
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, urls: [] }, { status: 401 });
   const db = adminDb();
-  const CH = ["instagram", "facebook"];
+  const CH = ["instagram", "facebook", "threads"]; // 스레드도 — 로그인 없이는 늘 같은 화면 (2026-10-29)
   const [{ data: v }, { data: a }] = await Promise.all([
     db.from("vacancy_promos").select("url").eq("owner_id", member.id).in("channel", CH),
     db.from("article_promos").select("url").eq("owner_id", member.id).in("channel", CH),
   ]);
-  const urls = [...new Set([...(v || []), ...(a || [])].map((r) => String(r.url)).filter((u) => /^https:\/\/www\.(instagram|facebook)\.com\//.test(u)))];
+  const urls = [...new Set([...(v || []), ...(a || [])].map((r) => String(r.url)).filter((u) => /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(u)))];
   return NextResponse.json({ success: true, urls });
 }
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401 });
   const body = await req.json().catch(() => ({}));
-  if (typeof body?.gone === "string" && /^https:\/\/www\.(instagram|facebook)\.com\//.test(body.gone)) {
+  if (typeof body?.gone === "string" && /^https:\/\/www\.(instagram|facebook|threads)\.(com|net)\//.test(body.gone)) {
     const db = adminDb();
     const [{ data: v }, { data: a }] = await Promise.all([
       db.from("vacancy_promos").delete().eq("owner_id", member.id).eq("url", body.gone).select("id"),
