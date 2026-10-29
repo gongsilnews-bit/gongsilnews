@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import WorkCardGrid from "./WorkCardGrid";
 import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
@@ -31,7 +32,7 @@ type Bridge = {
     create: (source: Source) => Promise<Column>;
     get: (id: string) => Promise<Column | null>;
     refetch?: (id: string) => Promise<Column>;
-    list: () => Promise<Column[]>;
+    list: (limit?: number) => Promise<Column[]>;
   };
 };
 const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
@@ -56,10 +57,12 @@ function shortDate(v: string) {
 /* 보도일은 "2026.10.15" 처럼 짧게 보여 주고 고칠 수 있게 */
 const tidy = (n: News): News => ({ ...n, publishedAt: n.publishedAt ? shortDate(n.publishedAt) : "" });
 
-export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void }) {
+export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void }) {
   const [column, setColumn] = useState<Column | null>(null);
   // "" = 지금 칼럼(한 줄 요약) · list = [소재 바꾸기] 칼럼 목록 · new = [+ 새로 작성] ① 소재 고르기 (공실뉴스와 같다, 2026-10-24 사장님)
-  const [view, setView] = useState<"" | "list" | "new">("");
+  // 2026-10-29 사장님: 들어오면 목록이 먼저 — [+ 새로 만들기] + 만든 칼럼 카드. 홈 "내 기사"·.gsn 으로 오면 바로 그 칼럼
+  const [view, setView] = useState<"" | "list" | "new">("list");
+  useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showSource, setShowSource] = useState(false); // 요약 줄 [원문 보기]
   const [refetching, setRefetching] = useState(false);
   const [recent, setRecent] = useState<Column[]>([]);
@@ -76,10 +79,13 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
   useEffect(() => {
     const b = bridge();
     if (!b) return;
-    b.column.list().then(setRecent).catch(() => {});
+    b.column.list(200).then(setRecent).catch(() => {});
     let id = "";
     try {
-      id = localStorage.getItem(LAST_COLUMN_KEY) || "";
+      if (localStorage.getItem("studio_open_column")) {
+        id = localStorage.getItem(LAST_COLUMN_KEY) || "";
+        localStorage.removeItem("studio_open_column");
+      }
     } catch {}
     if (id) b.column.get(id).then((c) => c && choose(c)).catch(() => {});
   }, []);
@@ -133,7 +139,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
     choose(c);
     setShowSource(true); // 가져온 원문·기사 화면을 펼친 채로 (2026-10-24 사장님)
     onTab("article");
-    b.column.list().then(setRecent).catch(() => {});
+    b.column.list(200).then(setRecent).catch(() => {});
   });
 
   const card: React.CSSProperties = { background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 };
@@ -157,7 +163,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
   };
   const openList = () => {
     setView("list");
-    bridge()?.column.list().then(setRecent).catch(() => {});
+    bridge()?.column.list(200).then(setRecent).catch(() => {});
   };
   // "무엇을 그릴까요?" 추천 — 소재 제목·주제로 바로 (AI 안 씀)
   const columnIdeas = (c: Column): string[] => {
@@ -192,7 +198,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
           <div id="gs-step-1" style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px 2px", scrollMarginTop: 16 }}>
             <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
             <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>이 소재로 씁니다</span>
-            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 소재는 [소재 바꾸기]</span>
+            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 소재는 [← 목록]</span>
           </div>
           <div style={{ ...card, padding: "16px 20px", position: "relative", minHeight: refetching ? 200 : undefined, border: `2px solid ${theme.darkMode ? "#5b8def" : NAVY}`, background: theme.darkMode ? "rgba(91,141,239,0.10)" : "#f3f7ff" }}>
             {refetching && <LoadingCover theme={theme} title="다시 가져오는 중" detail="같은 기사 주소로 본문·기사 화면을 새로 받아요 (5~15초)" />}
@@ -223,7 +229,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
                 <button onClick={() => void refetch()} disabled={refetching} title="같은 기사 주소로 본문·기사 화면을 새로 받습니다"
                   style={{ ...plainBtn, border: `2px solid ${theme.darkMode ? "#5b8def" : NAVY}`, background: theme.darkMode ? "transparent" : "#ffffff", color: theme.darkMode ? "#ffffff" : NAVY, fontWeight: 800 }}>↻ 다시 가져오기·캡처</button>
               )}
-              <button onClick={openList} style={{ ...plainBtn, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>소재 바꾸기</button>
+              <button onClick={openList} style={{ ...plainBtn, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>← 목록</button>
             </div>
             {error && !refetching && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
             {/* [원문 보기] — 기사 화면 크게 + 가져온 원문 (읽기만, 고치려면 새로 작성) */}
@@ -274,32 +280,22 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
         </>);
       })()}
 
-      {/* [소재 바꾸기] — 이 PC의 칼럼 목록. 누르면 써 둔 글이 바로 열린다 */}
+      {/* 칼럼 목록 — 처음 화면 (2026-10-29 사장님: 기사관리처럼). 맨 앞 [+ 새로 만들기], 이어서 이 PC의 칼럼 카드 */}
       {view === "list" && (
-        <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <h3 style={{ margin: 0, flex: 1, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>소재 바꾸기</h3>
-            <button onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#16a34a", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ 새로 작성</button>
-            {column && <button onClick={() => setView("")} style={plainBtn}>취소</button>}
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: theme.textSecondary }}>만든 칼럼 {recent.length}개</span>
+            {column && <button onClick={() => setView("")} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>지금 작업으로 돌아가기</button>}
           </div>
-          {recent.length === 0 ? (
-            <div style={{ fontSize: 13.5, color: theme.textSecondary, padding: "8px 0" }}>아직 쓴 칼럼이 없어요. [+ 새로 작성]으로 시작해 주세요.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", maxHeight: 520, overflowY: "auto" }}>
-              {[...recent].sort((x, y) => Number(y.id === column?.id) - Number(x.id === column?.id)).map((c, i) => {
-                const cur = c.id === column?.id;
-                return (
-                  <button key={c.id} onClick={() => choose(c)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", border: 0, borderTop: i ? `1px solid ${theme.border}` : 0, background: cur ? "rgba(26,58,107,0.08)" : theme.cardBg, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: c.source.mode === "news" ? "#eff6ff" : "#f5f3ff", color: c.source.mode === "news" ? "#1d4ed8" : "#6d28d9", flexShrink: 0 }}>{c.source.mode === "news" ? "뉴스" : "주제"}</span>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.articleTitle || c.label}</span>
-                    {cur && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#1a3a6b", color: "#fff" }}>지금 작업</span>}
-                    <span style={{ fontSize: 12.5, color: theme.textSecondary, flexShrink: 0 }}>{shortDate(c.createdAt)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
+            empty="아직 만든 칼럼이 없어요. [+ 새로 만들기]로 뉴스 주소나 주제를 넣어 시작해 주세요."
+            cards={recent.map((c) => {
+              const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };
+              const isNews = c.source.mode === "news";
+              return { id: c.id, badge: isNews ? "뉴스" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
+                line1: isNews ? (c.source.news?.publisher || "") : (c.source.topic?.subject || ""), thumb: x.thumb || null, done: x.done, current: c.id === column?.id };
+            })}
+            onOpen={(id, t) => { const c = recent.find((r) => r.id === id); if (c) { choose(c); onTab(t); } }} />
         </div>
       )}
 
@@ -311,7 +307,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed }: { them
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary, flex: 1 }}>소재 고르기</h3>
-            {!column && recent.length > 0 && <button onClick={openList} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>작업한 칼럼 목록</button>}
+            {!column && <button onClick={openList} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>← 목록</button>}
             {column && <button onClick={() => setView("")} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>취소</button>}
           </div>
 

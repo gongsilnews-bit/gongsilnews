@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { SNS_TONES } from "./StudioSnsPanel";
+import WorkCardGrid from "./WorkCardGrid";
 import { PostDialog } from "@/components/admin/studio-video/PostDialog";
 import type { LibItem, PostChannel, Project, Ratio } from "@/components/admin/studio-video/types";
 import { errText, videoBridge } from "@/components/admin/studio-video/types";
@@ -27,9 +28,17 @@ function ratioOf(w: number, h: number): Ratio {
 }
 const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
-export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
+export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme; onListView?: (on: boolean) => void }) {
   const b = videoBridge();
   const [item, setItem] = useState<(LibItem & { path?: string }) | null>(null);
+  // 처음 화면은 목록 (2026-10-29 사장님: 공실뉴스와 같이) — 맨 앞 [+ 새로 만들기] = PC에서 영상 고르기, 이어서 내 자료의 영상 카드
+  const [view, setView] = useState<"list" | "work">("list");
+  useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [videos, setVideos] = useState<(LibItem & { path?: string })[] | null>(null);
+  useEffect(() => {
+    if (!b?.lib.list) return setVideos([]);
+    b.lib.list({ kind: "video" }).then((l) => setVideos([...l].filter((x) => x.kind === "video").sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0)).slice(0, 60))).catch(() => setVideos([]));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [ch, setCh] = useState<PostChannel | "">("");
   const [err, setErr] = useState("");
   const [vacs, setVacs] = useState<Vac[] | null>(null);
@@ -59,6 +68,7 @@ export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
       const v = got.find((x) => x.kind === "video" && x.path);
       if (!v) return got.length ? setErr("영상 파일을 골라 주세요 (사진은 [이미지제작]에서).") : undefined;
       setItem(v);
+      setView("work");
     } catch (e) {
       setErr(errText(e));
     }
@@ -79,8 +89,29 @@ export default function StudioMyVideoPanel({ theme }: { theme: Theme }) {
     </div>
   );
 
+  if (view === "list") {
+    const dateOf = (ms?: number) => (ms ? new Date(ms).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "") : "");
+    return (
+      <div>
+        <WorkCardGrid theme={theme} addLabel="새로 만들기" onAdd={() => void pick()} placeholder={<span style={{ fontSize: 30 }}>🎬</span>}
+          empty="내 자료에 영상이 없어요. [+ 새로 만들기]로 PC에서 영상을 골라 주세요."
+          cards={videos && videos.map((v) => {
+            const r = ratioOf(v.width, v.height);
+            return { id: v.id, badge: r === "16:9" ? "가로" : "세로", date: dateOf(v.addedAt), title: v.name.replace(/\.[^.]+$/, ""),
+              headline: clock(v.duration || 0), line1: r === "16:9" ? "유튜브 일반 영상" : "유튜브 쇼츠 · 인스타 릴스", thumb: v.thumb || null };
+          })}
+          onOpen={(id) => { const v = (videos || []).find((x) => x.id === id); if (v && v.path) { setItem(v); setView("work"); } else void pick(); }} />
+        {err && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{err}</div>}
+      </div>
+    );
+  }
+
   return (
     <div>
+      <div style={{ marginBottom: 12 }}>
+        <button onClick={() => setView("list")}
+          style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>← 목록</button>
+      </div>
       {step(1, "올릴 영상 고르기")}
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>

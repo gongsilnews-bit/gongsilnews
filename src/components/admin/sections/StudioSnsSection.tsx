@@ -111,6 +111,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 기사관리처럼 목록이 먼저 — [+ 새로 만들기] + 만든 작업 카드. 홈 카드·.gsn 으로 오면 바로 작업
   const [mode, setMode] = useState<"" | "list" | "new">("list");
+  const [wideList, setWideList] = useState(true); // 뉴스칼럼·내 영상 올리기 목록일 때 폭을 넓힌다
   // .gsn 에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsn=<id> 로 연다.
   // 각 화면이 "이 기기에 기억한 마지막 작업"을 불러오는 길을 그대로 쓴다 — 효과(useEffect)보다 먼저, 처음 그릴 때 기억을 바꿔 둔다
   const [gsnOpened] = useState(() => {
@@ -121,7 +122,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     const cat = /^col-/.test(id) ? "column" : /^int-/.test(id) ? "interior" : /^rem-/.test(id) ? "remodel" : "gongsil";
     try {
       localStorage.setItem(CATEGORY_KEY, cat);
-      if (cat === "column") localStorage.setItem("studio_last_column", id);
+      if (cat === "column") { localStorage.setItem("studio_last_column", id); localStorage.setItem("studio_open_column", "1"); }
       else if (cat !== "gongsil") localStorage.setItem(`studio_last_sim_${cat}`, id);
       else localStorage.setItem(LAST_KEY, JSON.stringify({ vacancyId: id, picked: null }));
     } catch {}
@@ -399,7 +400,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       {/* 오른쪽: 작업 공간 */}
       <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
       {/* 목록(공실 카드)일 때는 폭 제한 없이 왼쪽부터 — 공실관리와 같이 (2026-10-29 사장님) */}
-      <div style={category === "gongsil" && mode === "list" ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
+      <div style={(category === "gongsil" && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
@@ -431,10 +432,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
         </div>
 
-        {category === "myvideo" && <StudioMyVideoPanel theme={theme} />}
+        {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} />}
 
         {category === "column" && (
-          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} />
+          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} />
         )}
 
         {(category === "interior" || category === "remodel") && (

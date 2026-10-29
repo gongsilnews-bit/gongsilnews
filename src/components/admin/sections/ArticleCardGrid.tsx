@@ -148,6 +148,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
       try {
         localStorage.setItem("studio_news_category", "column");
         localStorage.setItem("studio_last_column", colId);
+        localStorage.setItem("studio_open_column", "1"); // 뉴스칼럼 목록을 건너뛰고 이 칼럼을 바로 연다 (한 번만, 2026-10-29)
         sessionStorage.setItem("gs-column-tab", tab); // 기사 카드는 블로그부터 · 아이콘을 눌렀으면 그 채널
       } catch {}
       onMenuChange("sns");

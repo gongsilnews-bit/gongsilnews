@@ -394,7 +394,17 @@ function list(limit = 8) {
         const article = readJson(path.join(mediaDir(id), "article.json"));
         // worked — 기사·블로그·SNS·유튜브 중 써 둔 글이 있다 (홈 "내 기사"가 같은 기사면 이 칼럼을 다시 연다, 2026-10-28)
         const worked = ["article.json", "blog.json", "sns.json", "youtube.json"].some((f) => fs.existsSync(path.join(mediaDir(id), f)));
-        return { ...forWeb(data), articleTitle: (article && article.title) || "", worked };
+        // 목록 카드 (2026-10-29) — 첫 캡처 작은 그림 · 채널마다 써 둔 글
+        const dir = mediaDir(id);
+        const has = (f) => fs.existsSync(path.join(dir, f));
+        const posts = (readJson(path.join(dir, "sns.json")) || {}).posts || {};
+        const cap = ((data.captures) || []).find((c) => c && c.file && fs.existsSync(c.file));
+        let thumb = null;
+        try { if (cap) thumb = nativeImage.createFromPath(cap.file).resize({ width: 240 }).toDataURL(); } catch {}
+        let updatedAt = 0;
+        try { for (const f of fs.readdirSync(dir)) updatedAt = Math.max(updatedAt, fs.statSync(path.join(dir, f)).mtimeMs); } catch {}
+        const done = { article: has("article.json"), blog: has("blog.json"), instagram: Boolean(posts.instagram), threads: Boolean(posts.threads), facebook: Boolean(posts.facebook), youtube: has("youtube.json") };
+        return { ...forWeb(data), articleTitle: (article && article.title) || "", worked, thumb, done, updatedAt: new Date(updatedAt || Date.parse(data.createdAt) || 0).toISOString() };
       } catch {
         return null;
       }
