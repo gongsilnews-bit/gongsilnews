@@ -26,6 +26,7 @@ function ratioOf(w: number, h: number): Ratio {
   if (r < 1.15) return "1:1";
   return "16:9";
 }
+const MINE_KEY = "gs-myvideo-posted"; // 내 영상 올리기에서 올린 영상 { at, ch, file }[] (이 PC)
 const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
 export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme; onListView?: (on: boolean) => void }) {
@@ -35,11 +36,11 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
   const [view, setView] = useState<"list" | "work">("list");
   useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const [videos, setVideos] = useState<(LibItem & { path?: string })[] | null>(null);
-  // 내가 올린 영상만 (2026-10-29 사장님) — [크롬에서 채우기] 기록(gsv:postLog, 편집기·여기 같이)으로. 사진·길이는 내 자료에서 찾는다
+  // 내가 올린 영상만 (2026-10-29 사장님) — 이 화면에서 [크롬에서 채우기]한 영상만 따로 기억 (편집기 기록·시험 영상은 넣지 않는다). 사진·길이는 내 자료에서
   const [posted, setPosted] = useState<Record<string, { at: number; done: Record<string, boolean> }>>({});
   const loadPosted = () => {
     let log: { at: number; ch: string; file: string }[] = [];
-    try { log = JSON.parse(localStorage.getItem("gsv:postLog") || "[]"); } catch {}
+    try { log = JSON.parse(localStorage.getItem(MINE_KEY) || "[]"); } catch {}
     const by: Record<string, { at: number; done: Record<string, boolean> }> = {};
     for (const e of log) {
       if (!e || !e.file) continue;
@@ -208,7 +209,13 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
       </div>
 
       {project && item?.path && ch && (
-        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => { setCh(""); loadPosted(); }} />
+        <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => { setCh(""); loadPosted(); }}
+          onFilled={(c) => {
+            try {
+              const log = JSON.parse(localStorage.getItem(MINE_KEY) || "[]");
+              localStorage.setItem(MINE_KEY, JSON.stringify([{ at: Date.now(), ch: c, file: item.path }, ...log].slice(0, 300)));
+            } catch {}
+          }} />
       )}
     </div>
   );
