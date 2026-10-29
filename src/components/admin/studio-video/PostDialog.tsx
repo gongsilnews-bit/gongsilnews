@@ -52,8 +52,8 @@ const memo = new Map<string, { draft?: PostDraft; thumbs?: Thumb[] }>();
 type Thumb = { at: number; plain: { file: string; url: string }; title: { file: string; url: string } | null };
 type Vis = "public" | "unlisted" | "private";
 
-// lines — 대본 줄을 따로 줄 때 (뉴스·SNS발행 › 내 영상 올리기: 편집 작업 없이 파일만, 2026-10-29)
-export function PostDialog({ project, file, seconds, channel: ch0, onClose, lines: linesIn, tone, onFilled }: { project: Project; file: string; seconds: number; channel: PostChannel; onClose: () => void; lines?: string[]; tone?: string; /** 채우기가 끝났을 때 (내 영상 올리기 목록 기록) */ onFilled?: (ch: PostChannel) => void }) {
+// lines — 대본 줄을 따로 줄 때 (뉴스·SNS발행 › 내 영상 홍보: 편집 작업 없이 파일만, 2026-10-29)
+export function PostDialog({ project, file, seconds, channel: ch0, onClose, lines: linesIn, tone, onFilled }: { project: Project; file: string; seconds: number; channel: PostChannel; onClose: () => void; lines?: string[]; tone?: string; /** 채우기가 끝났을 때 (내 영상 홍보 목록 기록) */ onFilled?: (ch: PostChannel) => void }) {
   const b = videoBridge();
   const post = b?.post;
   const m = memo.get(file) || {};

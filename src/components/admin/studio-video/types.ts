@@ -539,7 +539,7 @@ export type VideoBridge = {
   showFile: (file: string) => Promise<void>;
   /** 완성 영상 SNS 올리기 — 반자동 (앱 0.1.11부터) · [게시]는 회원이 */
   post?: {
-    draft: (o: { title: string; lines: string[]; vacancyId?: string; saleKind?: string; ratio: string; seconds: number; /** 이미 올린 채널 — 그 채널 글은 후속 글로 (2026-10-28) */ posted?: string[]; /** 문체 (SNS_TONES id, 내 영상 올리기 2026-10-29) */ tone?: string }) => Promise<PostDraft>;
+    draft: (o: { title: string; lines: string[]; vacancyId?: string; saleKind?: string; ratio: string; seconds: number; /** 이미 올린 채널 — 그 채널 글은 후속 글로 (2026-10-28) */ posted?: string[]; /** 문체 (SNS_TONES id, 내 영상 홍보 2026-10-29) */ tone?: string }) => Promise<PostDraft>;
     thumbs: (o: { file: string; title: string; duration: number }) => Promise<{ at: number; plain: { file: string; url: string }; title: { file: string; url: string } | null }[]>;
     fill: (o: { channel: PostChannel; file: string; title: string; text: string; visibility?: "public" | "unlisted" | "private"; thumb?: string; /** 영상의 공실(또는 칼럼) — 게시한 주소를 홍보현황에 */ vacancyId?: string; /** 내 기사 번호 — 기사 홍보현황에 */ articleNo?: string; /** 스레드 — 이어 쓰는 글 */ posts?: string[] }) => Promise<{ ok: boolean; partial?: string; thumb?: string; vis?: string }>;
     login: (ch: PostChannel) => Promise<boolean>;

@@ -79,7 +79,7 @@ const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
-  { id: "myvideo", label: "내 영상 올리기", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
+  { id: "myvideo", label: "내 영상 홍보", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
   // 경매·공매는 내 공실과 섞지 않고 따로 (2026-10-29 사장님) — 작업 화면은 공실뉴스와 같다
   { id: "auction", label: "경매·공매", lead: "법원 경매·캠코 공매 물건 하나로 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 사건번호·관리번호로 찾습니다." },
   // 인테리어뉴스·리모델링뉴스는 메뉴에서 숨김 (2026-10-29 사장님) — 코드·작업 파일은 그대로, 다시 보이려면 HIDDEN_CATEGORIES 에서 빼기
@@ -114,7 +114,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 기사관리처럼 목록이 먼저 — [+ 새로 만들기] + 만든 작업 카드. 홈 카드·.gsn 으로 오면 바로 작업
   const [mode, setMode] = useState<"" | "list" | "new">("list");
-  const [wideList, setWideList] = useState(true); // 뉴스칼럼·내 영상 올리기 목록일 때 폭을 넓힌다
+  const [wideList, setWideList] = useState(true); // 뉴스칼럼·내 영상 홍보 목록일 때 폭을 넓힌다
   // .gsn 에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsn=<id> 로 연다.
   // 각 화면이 "이 기기에 기억한 마지막 작업"을 불러오는 길을 그대로 쓴다 — 효과(useEffect)보다 먼저, 처음 그릴 때 기억을 바꿔 둔다
   const [gsnOpened] = useState(() => {

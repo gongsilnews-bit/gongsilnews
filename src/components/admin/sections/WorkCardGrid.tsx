@@ -5,7 +5,7 @@ import { BG, G, CardHoverStyle } from "./VacancyCardGrid";
 
 /**
  * 뉴스·SNS발행 목록 카드 (2026-10-29 사장님: "디자인 다르게 하지 말고 복사해서 똑같이")
- * 공실관리 SNS홍보형 카드(VacancyCardGrid)와 같은 크기·여백·글자·채널 줄 — 뉴스칼럼·내 영상 올리기가 쓴다.
+ * 공실관리 SNS홍보형 카드(VacancyCardGrid)와 같은 크기·여백·글자·채널 줄 — 뉴스칼럼·내 영상 홍보가 쓴다.
  * 맨 앞 주황 [+ 새로 만들기] · 카드 = 위쪽(머리 글자·제목·두 줄·오른쪽 사진) + 아래 채널 줄(써 둔 글은 반투명, 없으면 흐리게)
  */
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; darkMode?: boolean };

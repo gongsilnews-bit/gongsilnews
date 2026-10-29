@@ -78,7 +78,7 @@ async function draft(baseUrl, o, onProgress = () => {}) {
   const base = vacancyOf(o.vacancyId);
   const vacancy = base || owner.type ? { ...(base || {}), ...(owner.type === "agency" ? { office: owner.name, homepage: owner.homepage || "" } : owner.type === "general" ? { landlord: owner.name } : {}) } : null;
   onProgress("글 AI가 유튜브·인스타그램·페이스북·스레드 글을 쓰는 중… (1분 안팎)");
-  // 문체 — 내 영상 올리기에서 고른 것 (사진 SNS 글과 같은 6가지, 네 채널 같이, 2026-10-29 사장님)
+  // 문체 — 내 영상 홍보에서 고른 것 (사진 SNS 글과 같은 6가지, 네 채널 같이, 2026-10-29 사장님)
   const TONES = require("./sns-writer").TONES || {};
   const toneRule = o.tone && TONES[o.tone] && o.tone !== "polite"
     ? `

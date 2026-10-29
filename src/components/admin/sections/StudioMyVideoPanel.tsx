@@ -9,7 +9,7 @@ import type { LibItem, PostChannel, Project, Ratio } from "@/components/admin/st
 import { errText, videoBridge } from "@/components/admin/studio-video/types";
 
 /**
- * 뉴스·SNS발행 › 내 영상 올리기 (2026-10-29 사장님) — 편집이 끝난 영상 파일을 다시 굽지 않고 그대로 SNS에
+ * 뉴스·SNS발행 › 내 영상 홍보 (2026-10-29 사장님) — 편집이 끝난 영상 파일을 다시 굽지 않고 그대로 SNS에
  *  ① 영상 고르기(PC) → ② 어느 공실 영상인지 → ③ [SNS 글 한 번에 쓰기] — 네 채널 글을 AI 한 번에 (영상 올리기 창 PostDialog, 편집기 [SNS에 올리기]와 같은 것)
  *  공실·기사 연결 · AI 글 · 글 끝(부동산 이름·홈페이지·물건 맡기기) · [크롬에서 채우기] · 홍보현황 ✓ 는 그 창이 한다
  */
@@ -26,7 +26,7 @@ function ratioOf(w: number, h: number): Ratio {
   if (r < 1.15) return "1:1";
   return "16:9";
 }
-const MINE_KEY = "gs-myvideo-posted"; // 내 영상 올리기에서 올린 영상 { at, ch, file }[] (이 PC)
+const MINE_KEY = "gs-myvideo-posted"; // 내 영상 홍보에서 올린 영상 { at, ch, file }[] (이 PC)
 const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
 export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme; onListView?: (on: boolean) => void }) {
