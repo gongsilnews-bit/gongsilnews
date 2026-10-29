@@ -9,7 +9,7 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { buildFlyerRows } from './flyerRows';
 import { toCanvas } from 'html-to-image';
-import { WebLockCover, InstallAppModal, askInstallApp, webLayoutAllowed } from './webLimit';
+import { WebLockCover, InstallAppModal, askInstallApp, webLayoutAllowed, WEB_LIMITED } from './webLimit';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -705,7 +705,7 @@ function App() {
   };
 
   const handleKakaoShare = async () => {
-    if (!webLayoutAllowed(state.layoutTheme?.id)) { askInstallApp(); return; } // 웹은 숫자 크게·사진형만 (2026-10-29)
+    if (WEB_LIMITED) { askInstallApp('공유는 공실마케팅 앱에서 해요'); return; } // 웹은 공유 막음 (2026-10-29 사장님)
     const Kakao = (window as any).Kakao;
     if (!Kakao || !Kakao.isInitialized()) {
       alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
@@ -736,7 +736,7 @@ function App() {
   };
 
   const handleCopyUrl = async () => {
-    if (!webLayoutAllowed(state.layoutTheme?.id)) { askInstallApp(); return; } // 웹은 숫자 크게·사진형만 (2026-10-29)
+    if (WEB_LIMITED) { askInstallApp('공유는 공실마케팅 앱에서 해요'); return; } // 웹은 공유 막음 (2026-10-29 사장님)
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) {
@@ -1628,7 +1628,7 @@ function App() {
         {/* Share Button (Relative Container for Popover) */}
         <div ref={sharePopoverRef} className="relative">
           <button 
-            onClick={() => setShowSharePopover(!showSharePopover)}
+            onClick={() => (WEB_LIMITED ? askInstallApp('공유는 공실마케팅 앱에서 해요') : setShowSharePopover(!showSharePopover))}
             className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">

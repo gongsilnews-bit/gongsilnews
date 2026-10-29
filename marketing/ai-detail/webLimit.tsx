@@ -38,7 +38,7 @@ export const InstallAppModal: React.FC = () => {
         <h3 className="mt-2 text-xl font-black text-gray-900">{why || '이 디자인은 공실마케팅 앱에서 만들어요'}</h3>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           웹에서는 <b>숫자 크게 · 사진형</b> 두 디자인만 만들 수 있어요.<br />
-          공실마케팅 앱을 설치하면 <b>모든 디자인</b>(추천 걸이판·반반 사진·색 바탕·테두리·사진 갤러리 등)을 쓸 수 있어요.
+          공실마케팅 앱을 설치하면 <b>모든 디자인</b>(추천 걸이판·반반 사진·색 바탕·테두리·사진 갤러리 등)과 <b>카톡 공유·링크 공유</b>까지 쓸 수 있어요.
         </p>
         <div className="mt-6 flex gap-2">
           <button className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50" onClick={() => setWhy(null)}>닫기</button>
