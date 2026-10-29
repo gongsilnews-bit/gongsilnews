@@ -443,7 +443,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 부동산 회원 전용 (Landlord/Realtor info)
   const [realtorCommission, setRealtorCommission] = useState("공동중개");
-  const [exposureType, setExposureType] = useState("부동산노출"); // Default changed
+  const [exposureType, setExposureType] = useState("부동산노출 + 일반인노출"); // 처음 값은 모두에게 노출 (2026-10-29 사장님)
   
   // 수정 가능한 부동산/기업정보
   const [rCompany, setRCompany] = useState("");
@@ -546,7 +546,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 사진 목록 (대표사진 0번 인덱스 및 순서 관리)
   const [photoList, setPhotoList] = useState<VacancyPhotoItem[]>([]);
-  // 사진 가운데 복사방지 로고 (기본: 켜짐, 우리 사무소 상호명)
+  // 사진 가운데 복사방지 로고 (기본: 꺼짐, 켜면 우리 사무소 상호명 — 2026-10-29)
   const [savedWmChoice, setWmChoice] = useWatermarkChoice();
   // 일반회원은 고르지 않고 공실뉴스 로고가 항상 들어간다
   const wmLocked = userRole === "user";

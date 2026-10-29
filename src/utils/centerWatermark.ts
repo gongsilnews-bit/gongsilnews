@@ -13,7 +13,8 @@ export interface WatermarkChoice {
   kind: WatermarkKind;
 }
 
-export const DEFAULT_WATERMARK_CHOICE: WatermarkChoice = { on: true, kind: "company" };
+// 처음엔 꺼 둔다 — 회원이 켤 때만 (2026-10-29 사장님: 체크 안 한 것이 기본)
+export const DEFAULT_WATERMARK_CHOICE: WatermarkChoice = { on: false, kind: "company" };
 
 const STORAGE_KEY = "gongsil-vacancy-watermark";
 
@@ -24,7 +25,7 @@ export function loadWatermarkChoice(): WatermarkChoice {
     if (!raw) return DEFAULT_WATERMARK_CHOICE;
     const parsed = JSON.parse(raw);
     return {
-      on: typeof parsed?.on === "boolean" ? parsed.on : DEFAULT_WATERMARK_CHOICE.on,
+      on: DEFAULT_WATERMARK_CHOICE.on, // 켬·끔은 기억하지 않고 매번 꺼진 채로 시작 — 로고 종류(상호명·공실뉴스)만 기억
       kind: parsed?.kind === "logo" ? "logo" : "company",
     };
   } catch {

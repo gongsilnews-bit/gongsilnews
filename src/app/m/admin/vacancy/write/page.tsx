@@ -290,7 +290,7 @@ function MobileVacancyWrite() {
 
   // 부동산 전용
   const [realtorCommission, setRealtorCommission] = useState("공동중개");
-  const [exposureType, setExposureType] = useState("부동산노출");
+  const [exposureType, setExposureType] = useState("부동산노출 + 일반인노출"); // 처음 값은 모두에게 노출 (2026-10-29 사장님)
   const [landlordName, setLandlordName] = useState("");
   const [landlordPhone, setLandlordPhone] = useState("");
   const [landlordMemo, setLandlordMemo] = useState("");
