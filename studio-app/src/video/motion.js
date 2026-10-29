@@ -139,13 +139,15 @@ async function render({ template = "intro", data = {}, ratio = "9:16", out, fps 
   const inputs = ["-framerate", String(fps), "-i", path.join(work, "%05d.png")];
   cues.forEach((c) => inputs.push("-i", path.join(SFX_DIR, `${c.name}.mp3`)));
   const filt = cues.length
-    ? [...cues.map((c, i) => `[${i + 1}:a]adelay=${Math.round(c.t * 1000)}|${Math.round(c.t * 1000)},volume=${Number(c.vol || 0.7).toFixed(2)}[s${i}]`), `${cues.map((_, i) => `[s${i}]`).join("")}amix=inputs=${cues.length}:normalize=0,apad,atrim=0:${seconds}[aout]`].join(";")
+    // 효과음마다 음질(44.1k·48k·24k)이 달라 48k 로 맞추고, 늘리는 길이도 정한다 — 끝없이 늘리면(apad) ffmpeg 가 안 끝났다 (2026-10-29 위치 핀 12분 멈춤)
+    ? [...cues.map((c, i) => `[${i + 1}:a]aresample=48000,adelay=${Math.round(c.t * 1000)}|${Math.round(c.t * 1000)},volume=${Number(c.vol || 0.7).toFixed(2)}[s${i}]`), `${cues.map((_, i) => `[s${i}]`).join("")}amix=inputs=${cues.length}:normalize=0,apad=whole_dur=${seconds},atrim=0:${seconds}[aout]`].join(";")
     : "";
+  const LIMIT = { timeoutMs: 3 * 60 * 1000 }; // 그래도 멈추면 3분에 끊고 알린다 (몇 초짜리라 보통 몇 초면 끝난다)
   if (overlay) {
-    await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", ...inputs, ...(filt ? ["-filter_complex", filt, "-map", "0:v", "-map", "[aout]", "-c:a", "libopus", "-b:a", "128k"] : []), "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "30", "-deadline", "realtime", "-cpu-used", "8", "-row-mt", "1", "-auto-alt-ref", "0", "-t", String(seconds), file]);
+    await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", ...inputs, ...(filt ? ["-filter_complex", filt, "-map", "0:v", "-map", "[aout]", "-c:a", "libopus", "-b:a", "128k"] : []), "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "30", "-deadline", "realtime", "-cpu-used", "8", "-row-mt", "1", "-auto-alt-ref", "0", "-t", String(seconds), file], LIMIT);
   } else {
     const args = (enc) => ["-y", "-hide_banner", "-loglevel", "error", ...inputs, ...(filt ? ["-filter_complex", filt, "-map", "0:v", "-map", "[aout]", "-c:a", "aac", "-b:a", "160k"] : []), "-pix_fmt", "yuv420p", ...enc.args(preview ? "fast" : "quality"), "-t", String(seconds), "-movflags", "+faststart", file];
-    try { await ff.run(ff.ff(), args(await ff.encoder())); } catch { await ff.run(ff.ff(), args(ff.fallbackEncoder())); }
+    try { await ff.run(ff.ff(), args(await ff.encoder()), LIMIT); } catch { await ff.run(ff.ff(), args(ff.fallbackEncoder()), LIMIT); }
   }
   try { fs.rmSync(work, { recursive: true, force: true }); } catch {}
   log.info(`[모션그래픽] ${template} ${ratio}${preview ? " 미리보기" : ""} → ${file}`);
