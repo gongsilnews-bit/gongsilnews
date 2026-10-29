@@ -73,8 +73,8 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
   const tools: { label: string; color: string; icon: React.ReactElement<React.SVGProps<SVGSVGElement>>; go: () => void; hide?: boolean }[] = [
     // 관리 화면으로 (2026-10-29 사장님) — 새 등록·작성은 아래 카드 줄 [+ 공실등록]·[+ 기사 작성]
     { label: "공실관리", color: "#e8590c", icon: <IconBuilding />, go: () => onMenuChange("gongsil") },
-    { label: "뉴스·SNS", color: "#1971c2", icon: <IconSend />, go: () => onMenuChange("sns") },
     { label: "기사관리", color: "#0b7285", icon: <IconArticle />, go: () => onMenuChange("article") },
+    { label: "뉴스·SNS", color: "#1971c2", icon: <IconSend />, go: () => onMenuChange("sns") },
     { label: "블로그", color: "#2f9e44", icon: <IconBlog />, go: () => onMenuChange("sns") },
     { label: "동영상", color: "#c2255c", icon: <IconFilm />, go: () => onMenuChange("video") },
     { label: "이미지", color: "#7048e8", icon: <IconImage />, go: () => onMenuChange("photo") },
