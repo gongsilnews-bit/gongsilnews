@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { C, FONT, useStudioTheme } from "@/components/admin/studio-video/ui";
 import { proofCanvas } from "./cmyk";
-import { boundsOf, composite, copyCanvas, textGeom, renderText, hitAll, offsetLayer, forgetMask, grayOf, dabLine, drawList, findLayer, forgetImage, hitTest, textHit, isText, kids, layerImage, lookOf, mk, paintGradient, pickColor, type Box, type Doc, type PLayer, type PsdGuide } from "./model";
+import { withLinked, boundsOf, composite, copyCanvas, textGeom, renderText, hitAll, offsetLayer, forgetMask, grayOf, dabLine, drawList, findLayer, forgetImage, hitTest, textHit, isText, kids, layerImage, lookOf, mk, paintGradient, pickColor, type Box, type Doc, type PLayer, type PsdGuide } from "./model";
 import { alphaOf, bucketFill, clearInside, clipTo, extract, inpaint, keepInside, type PenPt, type SelMode, type SelShape } from "./selection";
 
 export type View = { z: number; x: number; y: number };
@@ -878,15 +878,23 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
     }
     if (selAll.length > 1 && selAll.includes(k)) {
       // 함께 고른 레이어 중 하나를 잡았으면 모두 같이 옮긴다 (그룹 안 레이어는 그룹이 옮긴다)
-      const keys = selAll.filter((x) => {
+      const keys = withLinked(kids(doc.psd), selAll).filter((x) => {
         const l = findLayer(kids(doc.psd), x);
-        return l && !l.protected?.position && !selAll.some((y) => y !== x && findLayer(kids(findLayer(kids(doc.psd), y) || {}), x));
+        return l && !l.protected?.position;
       });
       const d: Drag = { k, mode: "multi", sx: e.clientX, sy: e.clientY, b0: { x: 0, y: 0, w: 1, h: 1 }, box: { x: 0, y: 0, w: 1, h: 1 }, moved: false, keys, done: { x: 0, y: 0 } };
       dragRef.current = d;
       return;
     }
     if (k !== sel) onSel(k);
+    // 연결된 레이어 — 하나를 잡아도 묶음이 같이 움직인다 (크기 손잡이는 그 레이어만, 포토샵처럼)
+    if (!handle && !(selMask && onMoveSel && !ctrl)) {
+      const lk = withLinked(kids(doc.psd), [k]).filter((x) => !findLayer(kids(doc.psd), x)?.protected?.position);
+      if (lk.length > 1) {
+        dragRef.current = { k, mode: "multi", sx: e.clientX, sy: e.clientY, b0: { x: 0, y: 0, w: 1, h: 1 }, box: { x: 0, y: 0, w: 1, h: 1 }, moved: false, keys: lk, done: { x: 0, y: 0 } };
+        return;
+      }
+    }
     const l = findLayer(kids(doc.psd), k);
     const b0 = l ? boundsOf(l) : null;
     if (!l || !b0 || l.protected?.position) return;

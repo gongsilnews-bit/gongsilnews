@@ -28,6 +28,9 @@ function Callback() {
         if (error) throw error;
         window.location.replace("/realty_admin");
       } catch (e) {
+        // 이미 로그인돼 있으면 (쓴 연결 신호로 이 화면이 다시 열린 것 — 새로 고침·앱 다시 켜기) 그냥 관리자 화면으로 (2026-10-30 사장님)
+        const { data } = await createClient().auth.getSession().catch(() => ({ data: { session: null } }));
+        if (data.session) { window.location.replace("/realty_admin"); return; }
         setMessage(`${e instanceof Error ? e.message : String(e)}\n앱 첫 화면에서 [크롬에서 연결하기]를 다시 눌러 주세요.`);
       }
     })();

@@ -89,7 +89,7 @@ export function ThumbPanel({ project, onClose, say }: { project: Project; onClos
       footer={<Btn primary onClick={() => void make()} disabled={Boolean(busy) || !pick} style={{ width: "100%" }}>{busy || "이 썸네일 만들기 (1280×720 PNG)"}</Btn>}>
       <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, borderBottom: `1px solid ${C.line}` }}>
         <input value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="썸네일 제목 — 낱말 반으로 나눠 큰 두 줄" style={{ ...input, height: 36, fontSize: 14 }} />
-        <input value={badge} onChange={(e) => setBadge(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="딱지 (선택 · 예: 신규 매물)" style={{ ...input, height: 32, fontSize: 13 }} />
+        <input value={badge} onChange={(e) => setBadge(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="키워드 (선택 · 예: 신규 매물)" style={{ ...input, height: 32, fontSize: 13 }} />
         <div style={{ fontSize: 12, color: C.dim }}>배경은 첫 클립 화면이에요. 글자·사진을 하나씩 고치려면 이미지 편집 › 유튜브에서 같은 틀을 열어요.</div>
       </div>
       <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

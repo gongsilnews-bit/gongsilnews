@@ -10,13 +10,15 @@ const path = require("path");
 const log = require("electron-log/main");
 
 const KEY = "F9";
-const DEFAULTS = { enabled: true, halo: false, haloColor: "#facc15", haloSize: 36, big: false, scale: 2 };
+const DEFAULTS = { enabled: true, halo: true, haloColor: "#facc15", haloSize: 36, big: true, scale: 2 };
+// 판서·후광·포인터 크게는 앱을 켤 때마다 다시 켠다 (2026-10-30 사장님 — 기본값). 끈 것은 그때만, 색·크기·배수는 기억
+const ALWAYS_ON = { enabled: true, halo: true, big: true };
 let prefs = null;
 const prefsFile = () => path.join(app.getPath("userData"), "record-ink.json");
 function getPrefs() {
   if (!prefs) {
     try {
-      prefs = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(prefsFile(), "utf8")) };
+      prefs = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(prefsFile(), "utf8")), ...ALWAYS_ON };
     } catch {
       prefs = { ...DEFAULTS };
     }
@@ -133,7 +135,7 @@ function cursorLoop() {
 /** 도구 막대 — 녹화하는 모니터 아래쪽 가운데 */
 function openBar() {
   if (alive(bar) || !bounds) return;
-  const W = 760, H = 58;
+  const W = 810, H = 58; // 맨 앞 마우스 단추만큼 넓힘 (2026-10-30)
   const wa = screen.getDisplayMatching(bounds).workArea;
   bar = new BrowserWindow({
     width: W,

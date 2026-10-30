@@ -41,7 +41,8 @@ export async function findStudioVacancyByNo(input: string) {
  * 회원 번호를 받지 않고 로그인 쿠키로 본인을 확인한다 (남의 목록을 볼 수 없게).
  * 고르기에 필요한 값과 대표 사진만 돌려준다.
  */
-export async function listMyStudioVacancies() {
+/** includeId — 광고종료 등 광고중이 아닌 내 공실도 이것 하나는 목록에 넣는다 (공실관리 표에서 그 공실을 눌러 들어올 때, 2026-10-30 사장님) */
+export async function listMyStudioVacancies(includeId?: string) {
   const cookie = await createCookieSupabase();
   const { data: { user } } = await cookie.auth.getUser();
   if (!user) return { success: false as const, error: "로그인이 필요합니다." };
@@ -57,6 +58,15 @@ export async function listMyStudioVacancies() {
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return { success: false as const, error: error.message };
+  if (includeId && /^[\w-]{8,64}$/.test(includeId) && !(data || []).some((v) => v.id === includeId)) {
+    const { data: one } = await supabase
+      .from("vacancies")
+      .select("id, vacancy_no, building_name, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, created_at, vacancy_photos(url, sort_order)")
+      .eq("owner_id", user.id)
+      .eq("id", includeId)
+      .maybeSingle();
+    if (one) (data || []).unshift(one);
+  }
 
   return {
     success: true as const,
@@ -88,7 +98,7 @@ const adminSupabase = () =>
 const publicArticles = () =>
   adminSupabase()
     .from("articles")
-    .select("id, article_no, title, subtitle, author_name, published_at, section1")
+    .select("id, article_no, title, subtitle, author_name, published_at, section1, thumbnail_url")
     .eq("is_deleted", false)
     .eq("status", "APPROVED")
     .lte("published_at", new Date().toISOString());
@@ -104,6 +114,67 @@ export async function listStudioArticles(q?: string) {
     success: true as const,
     data: (data || []).map((a) => ({ id: a.id as string, no: a.article_no as number | null, title: String(a.title || ""), author: String(a.author_name || ""), date: String(a.published_at || "").slice(0, 10) })),
   };
+}
+
+/**
+ * 내 기사·칼럼 (2026-10-30 사장님: 포토앱 새로 만들기에서 모든 기사가 아니라 내가 쓴 것만)
+ * 로그인 쿠키로 본인을 확인한다. 발행된(APPROVED) 내 글만, 최근 것부터
+ */
+export async function listMyStudioArticles(q?: string) {
+  const cookie = await createCookieSupabase();
+  const { data: { user } } = await cookie.auth.getUser();
+  if (!user) return { success: false as const, error: "로그인이 필요합니다." };
+  const kw = String(q || "").trim().replace(/[%,()]/g, " ").slice(0, 40);
+  let query = publicArticles().eq("author_id", user.id);
+  if (kw) query = query.or(`title.ilike.%${kw}%,subtitle.ilike.%${kw}%`);
+  const { data, error } = await query.order("published_at", { ascending: false }).limit(50);
+  if (error) return { success: false as const, error: error.message };
+  return {
+    success: true as const,
+    data: (data || []).map((a) => ({ id: a.id as string, no: a.article_no as number | null, title: String(a.title || ""), author: String(a.author_name || ""), date: String(a.published_at || "").slice(0, 10), thumb: (a.thumbnail_url as string | null) || null })),
+  };
+}
+
+/** 내 기사 한 건에 쓴 사진들 — 대표 사진 + 본문 사진 (포토앱 새로 만들기의 배경 고르기, 2026-10-30 사장님). 내 글만 */
+export async function getMyStudioArticlePhotos(id: string) {
+  const cookie = await createCookieSupabase();
+  const { data: { user } } = await cookie.auth.getUser();
+  if (!user) return { success: false as const, error: "로그인이 필요합니다." };
+  if (!/^[\w-]{1,40}$/.test(String(id || ""))) return { success: false as const, error: "기사를 찾지 못했습니다." };
+  const { data, error } = await adminSupabase().from("articles").select("thumbnail_url, content").eq("id", id).eq("author_id", user.id).maybeSingle();
+  if (error) return { success: false as const, error: error.message };
+  if (!data) return { success: false as const, error: "내 기사를 찾지 못했습니다." };
+  const inBody = [...String(data.content || "").matchAll(/<img[^>]+src="([^"]+)"/gi)].map((m) => m[1].replace(/&amp;/g, "&"));
+  const urls = [...new Set([data.thumbnail_url as string | null, ...inBody].filter((u): u is string => Boolean(u) && /^https:\/\//.test(u!)))].slice(0, 24);
+  return { success: true as const, data: urls };
+}
+
+/**
+ * 내 AI 매물보고서 — 내 공실로 저장한 보고서 (vacancy_flyers.flyer_state.report), 최근 것부터 (2026-10-30 사장님: 홈 카드)
+ * thumb = 저장할 때 찍은 표지 그림, 없으면 공실 대표 사진
+ */
+export async function listMyStudioReports(type: "report" | "flyer" = "report") {
+  const cookie = await createCookieSupabase();
+  const { data: { user } } = await cookie.auth.getUser();
+  if (!user) return { success: false as const, error: "로그인이 필요합니다." };
+  const db = adminSupabase();
+  const { data: vacs, error } = await db.from("vacancies").select("id, vacancy_no, building_name, property_type, dong, trade_type, vacancy_photos(url, sort_order)").eq("owner_id", user.id).eq("status", "ACTIVE").limit(300); // 보고서·홍보지에서 열 수 있는 공실만
+  if (error) return { success: false as const, error: error.message };
+  const ids = (vacs || []).map((v) => v.id as string);
+  if (!ids.length) return { success: true as const, data: [] };
+  // 보고서 전체(쪽마다 그림·HTML, 수 MB)는 받지 않고 표지 그림과 "보고서 있음" 표시만 (2026-10-30 — 1.1초 → 0.2초)
+  const { data: fl } = await db.from("vacancy_flyers").select(`vacancy_id, updated_at, cover:flyer_state->${type}->>coverThumb, layout:flyer_state->${type}->>layoutTheme`).in("vacancy_id", ids);
+  const out = ((fl || []) as unknown as { vacancy_id: string; updated_at: string | null; cover: string | null; layout: string | null }[]).flatMap((f) => {
+    const rep = f.layout != null || f.cover != null ? { coverThumb: f.cover || "" } : null;
+    if (!rep) return [];
+    const v = (vacs || []).find((x) => x.id === f.vacancy_id);
+    if (!v) return [];
+    const photos = ((v.vacancy_photos as { url: string; sort_order: number | null }[] | null) || []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    const name = [v.dong, v.building_name || v.property_type].filter(Boolean).join(" ") || "매물보고서";
+    return [{ id: v.id as string, no: v.vacancy_no as number, title: name, updatedAt: String(f.updated_at || ""), thumb: (typeof rep.coverThumb === "string" && rep.coverThumb.startsWith("data:image/") ? rep.coverThumb : photos[0]?.url) || "" }];
+  });
+  out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return { success: true as const, data: out.slice(0, 30) };
 }
 
 const htmlToText = (html: string) =>
@@ -144,6 +215,13 @@ export async function getStudioArticle(key: string) {
  * 동영상제작 › AI 편집 › 끝 화면 (2026-10-20 사장님: 매물 광고는 표시·광고 기준에 맞게 맨 끝에 상호부터)
  * 로그인한 회원의 중개사무소 정보 — 상호 · 대표 공인중개사 · 등록번호 · 연락처 · 소재지. 없으면 빈 값 (지어내지 않음)
  */
+/** 명함에 찍을 짧은 SNS 주소 — 인스타·유튜브·스레드는 @아이디, 나머지는 주소에서 https://·www. 를 뗀 것 */
+function snsShort(key: string, url: string) {
+  const u = url.replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "").replace(/\?.*$/, "");
+  const last = u.split("/").filter(Boolean).pop() || "";
+  if (["instagram", "threads", "youtube", "twitter"].includes(key) && u.includes("/") && last) return `@${last.replace(/^@/, "")}`;
+  return u;
+}
 export async function getStudioAgency() {
   const cookie = await createCookieSupabase();
   const { data: { user } } = await cookie.auth.getUser();
@@ -155,6 +233,24 @@ export async function getStudioAgency() {
     .maybeSingle();
   if (error) return { success: false as const, error: error.message };
   const a = (data || {}) as Record<string, string | null>;
+  // 명함 QR·SNS (2026-10-30 사장님) — 홈페이지는 물건접수홈페이지(켜 둔 것) 먼저, 없으면 정보설정의 홈페이지 주소.
+  // SNS 는 정보설정 › 마케팅 정보의 주소만 (로그인 정보는 절대 내보내지 않는다)
+  const [{ data: hs }, { data: mem }] = await Promise.all([
+    adminSupabase().from("homepage_settings").select("subdomain, is_active").eq("owner_id", user.id).maybeSingle(),
+    adminSupabase().from("members").select("sns_links").eq("id", user.id).maybeSingle(),
+  ]);
+  const links = ((mem as { sns_links?: Record<string, unknown> } | null)?.sns_links || {}) as Record<string, unknown>;
+  const urlOf = (k: string) => {
+    const v = links[k];
+    return String((typeof v === "string" ? v : (v as { url?: string } | null)?.url) || "").trim();
+  };
+  const sub = (hs as { subdomain?: string; is_active?: boolean } | null);
+  const homepage = sub?.subdomain && sub.is_active !== false ? `https://${sub.subdomain}.gongsilnews.com` : urlOf("homepage");
+  const sns = ["blog", "instagram", "youtube", "kakao", "cafe", "threads", "facebook", "twitter"]
+    .map((k) => [k, urlOf(k)])
+    .filter(([, u]) => /^https?:\/\/|^[\w-]+\./i.test(u))
+    .map(([k, u]) => `${k}|${snsShort(k, u)}`)
+    .join("\n");
   return {
     success: true as const,
     data: {
@@ -163,6 +259,8 @@ export async function getStudioAgency() {
       regNum: String(a.reg_num || "").trim(),
       phone: String(a.phone || a.cell || "").trim(),
       address: [a.address, a.address_detail].filter(Boolean).join(" ").trim(),
+      homepage,
+      sns,
     },
   };
 }

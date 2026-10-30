@@ -418,7 +418,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
               <CardTools style={{ top: 22, right: 22 }} fav={favs.includes(v.id)} onFav={() => toggleFav(v.id)}
                 onMore={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ v, x: r.left, y: r.bottom + 4 }); }} />
               {/* 카드 위쪽(제목·가격·사진)을 누르면 뉴스·SNS발행에서 그 공실 (2026-10-28 사장님) */}
-              <div role="button" title="뉴스·SNS발행에서 이 공실 열기" onClick={() => openStep(v, "article")} style={{ display: "flex", gap: 10, cursor: "pointer" }}>
+              <div role="button" title="뉴스·SNS자동화에서 이 공실 열기" onClick={() => openStep(v, "article")} style={{ display: "flex", gap: 10, cursor: "pointer" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                     {v.commission && <span style={{ fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: 700, whiteSpace: "nowrap" }}>{v.commission}</span>}
@@ -524,7 +524,14 @@ export function CardHoverStyle({ darkMode }: { darkMode: boolean }) {
   return (
     <style>{`.gs-vac-more{opacity:0;transition:opacity .15s}.gs-vac-card:hover .gs-vac-more,.gs-work-card:hover .gs-vac-more,.gs-vac-more:focus-within{opacity:1}
 .gs-vac-more.gs-fav-on{opacity:1}.gs-vac-more.gs-fav-on .gs-more-dots{display:none}.gs-vac-card:hover .gs-fav-on .gs-more-dots,.gs-work-card:hover .gs-fav-on .gs-more-dots{display:flex}
-.gs-vac-card{transition:background-color .15s}.gs-vac-card:hover{background-color:${darkMode ? "#2c2e33" : "#f5f6f7"} !important}`}</style>
+.gs-vac-card{transition:background-color .15s}.gs-vac-card:hover{background-color:${darkMode ? "#2c2e33" : "#f5f6f7"} !important}
+/* 가로로 미는 카드 줄의 막대 — 얇고 연하게, 마우스를 올릴 때만 조금 진하게 (2026-10-30 사장님: 진해서 촌스럽다) */
+[data-gs-home] *{scrollbar-width:thin;scrollbar-color:transparent transparent}
+[data-gs-home] *:hover{scrollbar-color:${darkMode ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.16)"} transparent}
+[data-gs-home] *::-webkit-scrollbar{height:6px;width:6px;background:transparent}
+[data-gs-home] *::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
+[data-gs-home] *:hover::-webkit-scrollbar-thumb{background:${darkMode ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.16)"}}
+[data-gs-home] *::-webkit-scrollbar-button{display:none;width:0;height:0}`}</style>
   );
 }
 

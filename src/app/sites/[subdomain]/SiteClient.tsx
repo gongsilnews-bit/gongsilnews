@@ -6,10 +6,11 @@ import HeroSection from "./sections/HeroSection";
 import VacancySection from "./sections/VacancySection";
 import ArticleSection from "./sections/ArticleSection";
 import IntakeFormSection from "./sections/IntakeFormSection";
+import IntakeCallSection from "./sections/IntakeCallSection";
 import ContactSection from "./sections/ContactSection";
 import MobileQuickActions from "./sections/MobileQuickActions";
 import { clampIntro, pickTheme, scrollToSection } from "./theme";
-import { isPermissionAlive } from "@/utils/planCheck";
+import { isPermissionAlive, canUseHomepage } from "@/utils/planCheck";
 
 interface Props {
   subdomain: string;
@@ -51,13 +52,15 @@ export default function SiteClient({
    * 미리보기(편집기)에서는 회원 정보가 그대로 넘어오므로 같은 값이 쓰인다 —
    * 중개사가 자기 화면에서 유료 기능을 미리 보고 착각하는 일이 없다.
    */
-  const maxSlides = isPermissionAlive(member, true) ? (member?.max_hero_slides ?? 1) : 1;
-  const hideFooterBadge = isPermissionAlive(member, member?.can_hide_footer_badge);
+  // 무료 공실뉴스부동산 홈페이지 (2026-10-30) — 기본색 하나·전화 연결만. 집주인 접수·로고·색상은 Pro 부터
+  const pro = canUseHomepage(member, member?.can_homepage);
+  const maxSlides = pro && isPermissionAlive(member, true) ? (member?.max_hero_slides ?? 1) : 1;
+  const hideFooterBadge = pro && isPermissionAlive(member, member?.can_hide_footer_badge);
   const allowIntakePhoto = isPermissionAlive(member, member?.can_intake_photo);
-  const allowLogo = isPermissionAlive(member, member?.can_site_logo);
-  const allowHeroVideo = isPermissionAlive(member, member?.can_hero_video);
+  const allowLogo = pro && isPermissionAlive(member, member?.can_site_logo);
+  const allowHeroVideo = pro && isPermissionAlive(member, member?.can_hero_video);
   const allowSns = isPermissionAlive(member, member?.can_sns_links);
-  const theme = pickTheme(cfg.theme_color);
+  const theme = pickTheme(pro ? cfg.theme_color : undefined);
 
   const officeName =
     settings?.site_title ||
@@ -288,7 +291,11 @@ export default function SiteClient({
 
       {showArticle && <ArticleSection officeName={officeName} theme={theme} articles={articles} hrefFor={hrefFor} />}
 
-      <IntakeFormSection subdomain={subdomain} theme={theme} cfg={cfg} phone={phone} allowPhoto={allowIntakePhoto} />
+      {pro ? (
+        <IntakeFormSection subdomain={subdomain} theme={theme} cfg={cfg} phone={phone} allowPhoto={allowIntakePhoto} />
+      ) : (
+        <IntakeCallSection theme={theme} phone={callNumber} />
+      )}
 
       <ContactSection
         officeName={officeName}

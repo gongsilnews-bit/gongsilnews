@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { Btn, C, FONT } from "@/components/admin/studio-video/ui";
 import { loadFont } from "@/components/admin/studio-video/Pickers";
 import { getStudioAgency } from "@/app/actions/studio";
-import { CAT_NAME, CAT_SIZES, LAYOUTS, layoutFonts, layoutsForCat, loadSampleBg, placeholderContent, previewOf, sampleSizeOf, type Cat, type CatSize, type Layout } from "./layouts";
+import { CAT_NAME, CAT_SIZES, LAYOUTS, BASIC_MAX, isOwnSize, layoutFonts, layoutsForCat, loadSampleBg, placeholderContent, previewOf, sampleBgFor, sampleSizeOf, type Cat, type CatSize, type Layout } from "./layouts";
 import type { MyTpl } from "./DesignSide";
 
 /* 목록에서 제외한 틀 — 이 PC 에 기억 ("틀 id|종류"). [숨긴 템플릿 다시 보기]로 되살린다. 여러 목록이 같이 바뀌게 알림 */
@@ -48,11 +48,15 @@ export function SampleGrid({ cat, onSample, compact = false, picks, oneRow = fal
     ? picks.map((p) => { const l = LAYOUTS.find((x) => x.id === p.id); return l ? { l, size: sampleSizeOf(l, p.cat), cat: p.cat } : null; })
     : only ? layoutsForCat(cat, only).map((l) => ({ l, size: only, cat }))
     : LAYOUTS.filter((l) => l.cats.includes(cat)).map((l) => ({ l, size: sampleSizeOf(l, cat), cat }))
-  ).filter((x): x is Item => Boolean(x && x.size));
+  ).filter((x): x is Item => Boolean(x && x.size))
+    // [기본] 은 크기마다 3개만 (layoutsForCat 와 같게)
+    .filter((x, i, arr) => picks || cat !== "basic" || arr.slice(0, i).filter((y) => y.size.name === x.size.name).length < BASIC_MAX);
   const hiddenHere = base.filter((x) => hidden.includes(keyOf(x.l, x.cat))).length;
   const list: Item[] = base.filter((x) => !hidden.includes(keyOf(x.l, x.cat)));
   // 내가 저장한 디자인 — 처음 화면은 모두, 종류별 목록은 비율이 맞는 것만
-  const myList = (mine || []).filter((t) => picks || (only ? ratioOk(t.w, t.h, only) : CAT_SIZES[cat].some((s) => ratioOk(t.w, t.h, s))));
+  // 채널 배너·영상 끝 화면·쇼츠 표지는 그 크기로 저장한 템플릿만 (비율이 같은 썸네일 템플릿이 섞이지 않게, 2026-10-30)
+  const mineFits = (t: MyTpl, s: CatSize) => (isOwnSize(s.name) ? t.w === s.w && t.h === s.h : ratioOk(t.w, t.h, s));
+  const myList = (mine || []).filter((t) => picks || (only ? mineFits(t, only) : CAT_SIZES[cat].some((s) => mineFits(t, s))));
 
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   // 카드 오른쪽 클릭 메뉴 — 목록에서 제외
@@ -73,14 +77,15 @@ export function SampleGrid({ cat, onSample, compact = false, picks, oneRow = fal
       const ag = await getStudioAgency().catch(() => null);
       const content = placeholderContent(ag?.success && ag.data.name ? ag.data : undefined);
       await Promise.all([...new Set(list.flatMap((x) => layoutFonts(x.l)))].map((f) => loadFont(f).catch(() => {})));
-      // 샘플 사진 — 유튜브(썸네일)는 건물 사진, 나머지는 거실 (없으면 사진 자리)
-      const bgL = await loadSampleBg(), bgB = await loadSampleBg("building");
+      // 샘플 사진 — 틀마다 어울리는 픽사베이 실사 (없으면 거실 사진, 2026-10-30)
+      const bgL = await loadSampleBg();
       const out: Record<string, string> = { ...thumbs };
       for (const { l, size, cat: c } of list) {
         if (out[`${l.id}-${c}`]) continue;
         await new Promise((r) => setTimeout(r, 0));
         if (!live) return;
-        try { out[`${l.id}-${c}`] = previewOf(l, size, content, c === "youtube" ? bgB || bgL : bgL, 420); } catch { out[`${l.id}-${c}`] = ""; }
+        const bg = (await loadSampleBg(sampleBgFor(l, c))) || bgL;
+        try { out[`${l.id}-${c}`] = previewOf(l, size, content, bg, 420); } catch { out[`${l.id}-${c}`] = ""; }
         setThumbs({ ...out });
       }
     })();

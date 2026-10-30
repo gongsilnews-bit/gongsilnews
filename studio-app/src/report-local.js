@@ -84,14 +84,16 @@ function list(limit = 30) {
   return names
     .map((f) => read(f.replace(/\.json$/, "")))
     .filter(Boolean)
-    .map((d) => ({ id: d.id, title: d.title, createdAt: d.createdAt, updatedAt: d.updatedAt }))
+    .map((d) => ({ id: d.id, title: d.title, createdAt: d.createdAt, updatedAt: d.updatedAt, thumb: d.thumb || (Array.isArray(d.photos) && d.photos[0]) || "" }))
     .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
     .slice(0, limit);
 }
 
-function save({ id, state, title }) {
+function save({ id, state, title, thumb }) {
   const d = get(id);
   if (state && typeof state === "object") d.state = state;
+  // 홈 카드 표지 그림 (작은 JPEG, 2026-10-30)
+  if (typeof thumb === "string" && /^data:image\/(jpeg|png);base64,/.test(thumb) && thumb.length < 600000) d.thumb = thumb;
   if (typeof title === "string" && title.trim()) d.title = title.trim().slice(0, 60);
   d.updatedAt = new Date().toISOString();
   write(d);

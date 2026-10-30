@@ -117,7 +117,8 @@ export default function StudioMarketingSection({ theme, dev = false }: { theme: 
   const connectedAi = (ai || []).filter((a) => a.ok);
 
   useEffect(() => {
-    listMyStudioVacancies().then((r) => setMine(r.success ? r.data : [])).catch(() => setMine([]));
+    // 공실관리 표에서 광고종료 공실을 눌러 들어와도 그 공실이 골라져 있게 (2026-10-30)
+    listMyStudioVacancies(remembered(VACANCY_KEY)).then((r) => setMine(r.success ? r.data : [])).catch(() => setMine([]));
   }, []);
 
   // 공실 없이 만든 보고서 (PC) · 멤버십 여부

@@ -3,7 +3,7 @@
 // 이미지 편집 — 레이어 목록 (포토샵처럼 위가 앞). 눈 · 작은 그림 · 이름 · 잠금, 끌어서 순서, 오른쪽 클릭 메뉴
 import React, { useEffect, useState } from "react";
 import { C, FONT, Icon } from "@/components/admin/studio-video/ui";
-import { isText, kids, thumbOf, type Doc, type PLayer } from "./model";
+import { isLinked, isText, kids, thumbOf, type Doc, type PLayer } from "./model";
 
 const thumbs = new WeakMap<HTMLCanvasElement, string>();
 const thumb = (c?: HTMLCanvasElement) => {
@@ -16,9 +16,11 @@ const thumb = (c?: HTMLCanvasElement) => {
   return t;
 };
 
+/** 사슬 모양 (레이어 연결) */
+export const LINK_D = "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1";
 /** 레이어 칸에서 다른 문서 창으로 끌어갈 때 쓰는 이름표 */
 export const LAYER_DRAG = "application/x-gsp-layer";
-export type MenuAct = "dup" | "del" | "group" | "ungroup" | "png" | "merge" | "lock" | "rename" | "hide" | "fx" | "raster" | "up" | "down" | "clip";
+export type MenuAct = "dup" | "del" | "group" | "ungroup" | "png" | "merge" | "lock" | "rename" | "hide" | "fx" | "raster" | "up" | "down" | "clip" | "link";
 /** clip = 아래 레이어에 끼운 것 (클리핑 마스크) · base = 위에 끼운 레이어가 있는 바탕 · bottom = 그 묶음 맨 아래 (끼울 바탕이 없음) */
 type Row = { l: PLayer; depth: number; clip?: boolean; base?: boolean; bottom?: boolean };
 
@@ -37,13 +39,13 @@ export function LayerList({ doc, tick, sel, selSet = [], onSel, onPick, onToggle
   /** 여러 개 고르기 — Ctrl+누르기 = 하나 더하기/빼기, Shift+누르기 = 사이 모두 (포토샵처럼) */
   onPick?: (k: string, keys: string[] | null) => void;
   onToggle: (k: string, what: "hidden" | "lock" | "open") => void;
-  /** k 를 target 의 위(before=true)·아래로 */
-  onDrop: (k: string, target: string, above: boolean) => void;
+  /** k 를 target 의 위·아래로, 또는 폴더(그룹) 안으로 (2026-10-30 사장님) */
+  onDrop: (k: string, target: string, where: "above" | "below" | "into") => void;
   onAct: (k: string, a: MenuAct) => void;
   onRename: (k: string, name: string) => void;
 }) {
   const [menu, setMenu] = useState<{ k: string; x: number; y: number } | null>(null);
-  const [over, setOver] = useState<{ k: string; above: boolean } | null>(null);
+  const [over, setOver] = useState<{ k: string; where: "above" | "below" | "into" } | null>(null);
   const [dragK, setDragK] = useState("");
   const [naming, setNaming] = useState("");
   void tick;
@@ -81,9 +83,11 @@ export function LayerList({ doc, tick, sel, selSet = [], onSel, onPick, onToggle
                 if (!dragK || dragK === k) return;
                 e.preventDefault();
                 const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                setOver({ k, above: e.clientY < r.top + r.height / 2 });
+                const y = (e.clientY - r.top) / r.height;
+                // 폴더 줄 한가운데(25~75%)에 놓으면 폴더 안으로 — 위·아래 가장자리는 그 위·아래로
+                setOver({ k, where: l.children && y > 0.25 && y < 0.75 ? "into" : y < 0.5 ? "above" : "below" });
               }}
-              onDrop={(e) => { e.preventDefault(); if (dragK && over) onDrop(dragK, over.k, over.above); setOver(null); setDragK(""); }}
+              onDrop={(e) => { e.preventDefault(); if (dragK && over) onDrop(dragK, over.k, over.where); setOver(null); setDragK(""); }}
               onPointerDown={(e) => {
                 // Alt+누르기 = 클리핑 마스크 만들기 / 풀기 (포토샵에서 Alt+레이어 사이 누르기)
                 if (e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); onAct(k, "clip"); return; }
@@ -98,9 +102,10 @@ export function LayerList({ doc, tick, sel, selSet = [], onSel, onPick, onToggle
               onContextMenu={(e) => { e.preventDefault(); if (!selSet.includes(k)) onSel(k); setMenu({ k, x: e.clientX, y: e.clientY }); }}
               style={{
                 display: "flex", alignItems: "center", gap: 6, height: 44, padding: `0 8px 0 ${6 + depth * 16}px`, cursor: "pointer",
-                background: on ? C.psCtrlHover : "transparent", borderLeft: `3px solid ${on ? "#fff" : "transparent"}`,
-                borderTop: over?.k === k && over.above ? "2px solid #3b82f6" : "2px solid transparent",
-                borderBottom: over?.k === k && !over.above ? "2px solid #3b82f6" : "2px solid transparent",
+                background: over?.k === k && over.where === "into" ? "rgba(59,130,246,0.25)" : on ? C.psCtrlHover : "transparent", borderLeft: `3px solid ${on ? "#fff" : "transparent"}`,
+                borderTop: over?.k === k && over.where === "above" ? "2px solid #3b82f6" : "2px solid transparent",
+                borderBottom: over?.k === k && over.where === "below" ? "2px solid #3b82f6" : "2px solid transparent",
+                outline: over?.k === k && over.where === "into" ? "2px solid #3b82f6" : "none", outlineOffset: -2,
                 opacity: dragK === k ? 0.4 : 1,
               }}>
               <button type="button" title={l.hidden ? "보이기" : "숨기기"} onPointerDown={(e) => e.stopPropagation()} onClick={() => onToggle(k, "hidden")}
@@ -145,6 +150,11 @@ export function LayerList({ doc, tick, sel, selSet = [], onSel, onPick, onToggle
               )}
               {l.effects && !l.effects.disabled && <span title="레이어 효과" style={{ fontSize: 11, color: C.sub, fontStyle: "italic", fontWeight: 800 }}>fx</span>}
               {locked(l) && <span title="잠김" style={{ fontSize: 12 }}>🔒</span>}
+              {isLinked(l) && (
+                <span title="연결된 레이어 — 하나를 옮기면 같이 움직여요" style={{ display: "flex", color: C.sub, flexShrink: 0 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={LINK_D} /></svg>
+                </span>
+              )}
             </div>
           );
         })}
@@ -176,6 +186,7 @@ export function LayerList({ doc, tick, sel, selSet = [], onSel, onPick, onToggle
             {item("png", "PNG 빠른 내보내기", !l.children && !l.adjustment)}
             {item("clip", l.clipping ? "클리핑 마스크 풀기" : "클리핑 마스크 만들기", Boolean(l.clipping) || !rows.find((r) => r.l === l)?.bottom, "Alt+Ctrl+G")}
             {item("merge", "아래 레이어와 병합", true, "Ctrl+E")}
+            {item("link", isLinked(l) && (selSet.length < 2 || selSet.every((x) => rows.find((r) => r.l._k === x)?.l.linkGroup === l.linkGroup)) ? "레이어 연결 풀기" : "레이어 연결", isLinked(l) || selSet.length > 1)}
             {item("raster", "그림으로 바꾸기 (래스터화)", isText(l) || Boolean(l.placedLayer) || Boolean(l.children))}
             {hr(3)}
             {item("up", "앞으로 (한 칸)", true, "Ctrl+]")}

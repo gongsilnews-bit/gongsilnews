@@ -47,7 +47,8 @@ function isSuperRole(role?: string | null): boolean {
  * 낼 요금제가 없으니 끝날 요금제도 없다.
  */
 /**
- * 물건접수홈페이지를 쓸 수 있나 — 공실마케팅 Pro · Studio 이용 중인 회원만 (2026-10-29 사장님).
+ * 물건접수홈페이지를 다 쓸 수 있나(집주인 접수·로고·색상) — 공실마케팅 Pro · Studio 이용 중인 회원만 (2026-10-29 사장님).
+ * 홈페이지가 보이는지는 canOpenHomepage — 무료 공실뉴스부동산도 열린다 (2026-10-30).
  * 비즈니스회원은 Studio 포함이라 예전처럼 켜 둔 권한·기간으로, 최고관리자는 늘. 공실뉴스부동산(무료)·일반회원은 못 쓴다.
  */
 export function canUseHomepage(
@@ -60,6 +61,20 @@ export function canUseHomepage(
   if (studioAlive(member)) return true;
   if (member.role === 'BIZ' || member.role === '비즈니스회원') return isPermissionAlive(member, granted);
   return false;
+}
+
+/**
+ * 물건접수홈페이지가 손님에게 보이나 (2026-10-30 사장님: 모든 부동산에게).
+ * 서류 승인된 공실뉴스부동산이면 무료로 열린다 — 기본색·전화 연결만, 집주인 접수는 Pro 부터 (canUseHomepage).
+ * 일반회원·승인 전 부동산은 닫힌다.
+ */
+export function canOpenHomepage(
+  member: Parameters<typeof isPermissionAlive>[0],
+  granted?: boolean | null,
+  agencyStatus?: string | null
+): boolean {
+  if (canUseHomepage(member, granted)) return true;
+  return (member?.role === 'REALTOR' || member?.role === '부동산회원') && agencyStatus === 'APPROVED';
 }
 
 export function isPermissionAlive(

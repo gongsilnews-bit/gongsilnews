@@ -1,6 +1,6 @@
 {
   "name": "gongsil-studio",
-  "productName": "공실마케팅",
+  "productName": "공실마케팅App",
   "version": "0.1.16",
   "description": "공실마케팅 - 공실등록·기사등록·SNS뉴스발행·동영상제작·고객관리",
   "author": "공실뉴스",
@@ -27,7 +27,7 @@
   },
   "build": {
     "appId": "com.gongsilnews.studio",
-    "productName": "공실마케팅",
+    "productName": "공실마케팅App",
     "executableName": "GongsilStudio",
     "artifactName": "GongsilStudio-Setup-${version}.${ext}",
     "directories": {
@@ -85,7 +85,7 @@
       {
         "ext": "gsn",
         "name": "공실마케팅 뉴스 파일",
-        "description": "공실마케팅 뉴스·SNS발행 작업",
+        "description": "공실마케팅 뉴스·SNS자동화 작업",
         "role": "Editor",
         "icon": "gsn.ico"
       },
@@ -104,7 +104,7 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "공실마케팅",
+      "shortcutName": "공실마케팅App",
       "language": "1042",
       "include": "build/installer.nsh"
     },

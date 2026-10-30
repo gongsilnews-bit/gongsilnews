@@ -50,7 +50,7 @@ export default function VideoMenu({ view, onView, onMethod }: { view: VideoView;
   const head: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: C.dim, margin: "14px 12px 4px" };
   return (
     <aside style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, padding: "22px 12px", background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto", fontFamily: FONT, color: C.text }}>
-      <h2 style={{ margin: "0 6px 10px", fontSize: 19, fontWeight: 800 }}>동영상제작</h2>
+      <h2 style={{ margin: "0 6px 10px", fontSize: 19, fontWeight: 800 }}>동영상studio</h2>
       <AiSettingsBox light={theme === "light"} />
       <button type="button" onClick={() => onView("home")} style={item(view === "home")}><Icon name="folder" size={17} />내 프로젝트</button>
       {METHODS.filter((m) => m.id !== "record").map((m) => (

@@ -64,7 +64,11 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
   const [column, setColumn] = useState<Column | null>(null);
   // "" = 지금 칼럼(한 줄 요약) · list = [소재 바꾸기] 칼럼 목록 · new = [+ 새로 작성] ① 소재 고르기 (공실뉴스와 같다, 2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 목록이 먼저 — [+ 새로 만들기] + 만든 칼럼 카드. 홈 "내 기사"·.gsn 으로 오면 바로 그 칼럼
-  const [view, setView] = useState<"" | "list" | "new">("list");
+  // 홈 기사 카드에서 막 눌렀으면 목록을 거치지 않고 바로 그 칼럼으로 (2026-10-30 사장님)
+  const [view, setView] = useState<"" | "list" | "new">(() => {
+    try { if (typeof window !== "undefined" && localStorage.getItem("studio_open_column")) return ""; } catch {}
+    return "list";
+  });
   useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showSource, setShowSource] = useState(false); // 요약 줄 [원문 보기]
   const [refetching, setRefetching] = useState(false);
@@ -90,7 +94,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
         localStorage.removeItem("studio_open_column");
       }
     } catch {}
-    if (id) b.column.get(id).then((c) => c && choose(c)).catch(() => {});
+    if (id) b.column.get(id).then((c) => (c ? choose(c) : setView("list"))).catch(() => setView("list"));
   }, []);
 
   const choose = (c: Column) => {
@@ -291,7 +295,9 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
           </div>
           <LinkNotice darkMode={Boolean((theme as { darkMode?: boolean }).darkMode)} />
           {/* 기사관리 SNS홍보형 카드 그대로 (2026-10-29 사장님: "이것과 똑같아야지") — 기사를 누르면 그 기사의 칼럼 (없으면 만든다) */}
-          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기" onAdd={openNew}
+          {/* [새로 만들기] → 기사등록 화면, 등록·취소하면 뉴스·SNS자동화(뉴스칼럼)로 돌아온다 (2026-10-30 사장님) */}
+          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기"
+            onAdd={() => router.push(`?menu=article&action=write&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false })}
             onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
             onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
           {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}

@@ -31,9 +31,10 @@ interface Props {
   theme: any;
   memberId: string;
   planType?: string;
-  /** false = 공실마케팅 Pro · Studio 이용권이 없어 손님에게 안 보인다 (2026-10-29, planCheck canUseHomepage) */
-  allowed?: boolean;
 }
+
+/** Pro 안내로 — 금액안내 (2026-10-30 무료 홈페이지 → Pro 유도) */
+const PRO_URL = "/marketing/pricing";
 
 type PanelKey = "basic" | "design" | "sections" | "fields" | "company";
 
@@ -45,7 +46,7 @@ const PANELS: { key: PanelKey; label: string; icon: string }[] = [
   { key: "company", label: "회사정보", icon: "🏢" },
 ];
 
-export default function IntakeStudio({ theme, memberId, allowed }: Props) {
+export default function IntakeStudio({ theme, memberId }: Props) {
   const dark = theme?.darkMode;
   const cardBg = dark ? "#1f2937" : "#ffffff";
   const border = dark ? "#374151" : "#e5e7eb";
@@ -96,6 +97,8 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
     setIntake,
     slides,
     maxSlides,
+    pro,
+    open: siteOpen,
     allowLogo,
     allowHeroVideo,
     setSlide,
@@ -142,6 +145,17 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
     </label>
   );
 
+  /* 무료에서 잠긴 칸 — 무엇이 열리는지 보여 주고 금액안내로 (2026-10-30 사장님: Pro 로 유도) */
+  const proLock = (title: string, desc: string) => (
+    <div style={{ padding: "14px 16px", border: `1px dashed ${dark ? "#4b5563" : "#c7d2fe"}`, borderRadius: 10, background: dark ? "#1e1b4b" : "#eef2ff" }}>
+      <div style={{ fontSize: 13.5, fontWeight: 800, color: dark ? "#c7d2fe" : "#3730a3" }}>🔒 {title}</div>
+      <div style={{ fontSize: 12.5, color: sub, marginTop: 5, lineHeight: 1.6 }}>{desc}</div>
+      <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 10, padding: "7px 12px", borderRadius: 7, background: "#4f46e5", color: "#fff", fontSize: 12.5, fontWeight: 800, textDecoration: "none" }}>
+        Pro 알아보기 →
+      </a>
+    </div>
+  );
+
   if (loading) {
     return (
       <div style={{ flex: 1, margin: 16, display: "flex", alignItems: "center", justifyContent: "center", color: sub }}>
@@ -169,10 +183,18 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
             </button>
           </div>
           <p style={{ margin: "5px 0 0", fontSize: 12.5, color: sub }}>임대인이 물건을 맡기는 페이지입니다</p>
-          {allowed === false && (
+          {!siteOpen && (
             <p style={{ margin: "10px 0 0", padding: "8px 10px", borderRadius: 8, background: dark ? "#3b2a06" : "#fff7e6", color: dark ? "#fbbf24" : "#b45309", fontSize: 12.5, fontWeight: 700 }}>
-              공실마케팅 Pro · Studio 회원 전용입니다. 지금은 꾸며 둘 수만 있고 손님에게는 보이지 않아요.
+              서류 승인된 공실뉴스부동산부터 손님에게 보여요. 지금은 꾸며 둘 수만 있어요.
             </p>
+          )}
+          {siteOpen && !pro && (
+            <div style={{ marginTop: 10, padding: "11px 12px", borderRadius: 8, background: dark ? "#1e1b4b" : "#eef2ff", fontSize: 12.5, lineHeight: 1.6, color: dark ? "#c7d2fe" : "#3730a3" }}>
+              <b>무료 홈페이지</b>예요. 손님은 전화·문자로만 연락해요.
+              <br />
+              Pro 로 바꾸면 <b>집주인이 홈페이지에서 바로 물건을 맡기고</b>, 색상·로고도 꾸밀 수 있어요.{" "}
+              <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 800 }}>Pro 알아보기 →</a>
+            </div>
           )}
           {liveUrl && (
             <div style={{ display: "flex", alignItems: "stretch", gap: 7, marginTop: 13 }}>
@@ -306,7 +328,8 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
                             <div style={{ padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
                               로고를 올리면 상호 글자 대신 내 로고가 걸립니다
                               <br />
-                              <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실뉴스부동산 요금제에서 열립니다</span>
+                              <span style={{ fontWeight: 600, fontSize: 12 }}>공실마케팅 Pro 부터 열립니다</span>{" "}
+                              {!pro && <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 800, fontSize: 12 }}>Pro 알아보기 →</a>}
                             </div>
                           )}
                         </div>
@@ -338,13 +361,16 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
                         <div style={group}>
                           <label style={label}>색상</label>
                           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                            {THEME_COLORS.map((c) => {
-                              const on = intake.theme_color === c.id;
+                            {THEME_COLORS.map((c, i) => {
+                              // 무료는 첫 색(기본) 하나 — 다른 색은 자물쇠 (2026-10-30)
+                              const locked = !pro && i > 0;
+                              const on = pro ? intake.theme_color === c.id : i === 0;
                               return (
                                 <button
                                   key={c.id}
                                   type="button"
-                                  title={c.name}
+                                  title={locked ? `${c.name} — Pro 부터` : c.name}
+                                  disabled={locked}
                                   onClick={() => setIntake({ ...intake, theme_color: c.id })}
                                   style={{
                                     width: 38,
@@ -353,7 +379,8 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
                                     background: c.primary,
                                     border: on ? `2px solid ${text}` : "2px solid transparent",
                                     boxShadow: on ? `0 0 0 3px ${dark ? "#4b5563" : "#e5e7eb"}` : "0 1px 3px rgba(0,0,0,.15)",
-                                    cursor: "pointer",
+                                    cursor: locked ? "not-allowed" : "pointer",
+                                    opacity: locked ? 0.35 : 1,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
@@ -362,10 +389,12 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
                                   }}
                                 >
                                   {on && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
+                                  {locked && <span style={{ fontSize: 13 }}>🔒</span>}
                                 </button>
                               );
                             })}
                           </div>
+                          {!pro && <div style={{ marginTop: 12 }}>{proLock("색상 고르기는 Pro 부터", "무료 홈페이지는 기본색 하나로 보여요. Pro 에서는 다섯 가지 색 중에 고를 수 있어요.")}</div>}
                         </div>
 
                         <div style={group}>
@@ -398,7 +427,8 @@ export default function IntakeStudio({ theme, memberId, allowed }: Props) {
                       </>
                     )}
 
-                    {p.key === "fields" && (
+                    {p.key === "fields" && !pro && proLock("집주인 접수는 Pro 부터", "무료 홈페이지는 이 자리에 [전화하기] · [문자 보내기] 단추가 보여요. Pro 로 바꾸면 집주인이 이름·연락처·사진·희망 금액을 남겨 바로 물건을 맡기고, 전화를 못 받을 때도 접수를 놓치지 않아요.")}
+                    {p.key === "fields" && pro && (
                       <>
                         <p style={{ margin: "0 0 6px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
                           이름과 연락처는 항상 받습니다. 칸이 적을수록 접수가 많아집니다.

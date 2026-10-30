@@ -12,7 +12,7 @@ const log = require("electron-log/main");
 
 const VERSION = 1;
 const TYPES = {
-  gsn: { ext: ".gsn", folder: "sns", meta: "gsn.json", label: "뉴스SNS발행" },
+  gsn: { ext: ".gsn", folder: "sns", meta: "gsn.json", label: "뉴스SNS자동화" },
   gsm: { ext: ".gsm", folder: "mkt", meta: "gsm.json", label: "공실마케팅" },
 };
 const EXT = TYPES.gsn.ext;

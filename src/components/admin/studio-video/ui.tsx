@@ -107,11 +107,12 @@ export const C = Object.fromEntries(Object.entries(DARK).map(([k, v]) => [k, `va
 export type StudioTheme = "dark" | "light";
 const THEME_KEY = "gs-studio-theme";
 const THEME_EVENT = "gs-studio-theme-change";
-/** 동영상제작·이미지제작은 하나로 묶어서 (2026-10-23 사장님) — 처음엔 어두운 화면. area 는 나중에 나눌 때를 위해 남겨 둠 */
+/** 동영상앱·포토앱은 각자 따로 기억 (2026-10-30 사장님) — 처음엔 어두운 화면. 포토앱은 따로 고른 적이 없으면 예전 같이 쓰던 값 */
 export type StudioArea = "video" | "photo";
-const keyOf = (_area: StudioArea) => THEME_KEY;
+const PHOTO_KEY = "gs-photo-theme";
+const keyOf = (area: StudioArea) => (area === "photo" ? PHOTO_KEY : THEME_KEY);
 const readTheme = (area: StudioArea = "video"): StudioTheme => {
-  try { return localStorage.getItem(keyOf(area)) === "light" ? "light" : "dark"; } catch { return "dark"; }
+  try { return (localStorage.getItem(keyOf(area)) ?? localStorage.getItem(THEME_KEY)) === "light" ? "light" : "dark"; } catch { return "dark"; }
 };
 /** 이미지제작·동영상제작 맨 바깥에서 한 번 — 고른 색 벌을 화면 전체(:root)에 넣고, 떠나면 뺀다 (창·떠 있는 창까지 같은 색) */
 export function useStudioTheme(apply = true, area: StudioArea = "video"): [StudioTheme, (t: StudioTheme) => void] {
@@ -351,15 +352,23 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
     const sx = e.clientX - pos.x;
     const sy = e.clientY - pos.y;
     const base = { left: r.left - pos.x, top: r.top - pos.y, w: r.width, h: r.height };
+    // 끄는 동안에는 창 위치(transform)만 바로 바꾸고, 다 놓았을 때 한 번만 기억한다 —
+    // 끌 때마다 창 안(녹화 미리보기 등)을 다시 그리면 버벅인다 (2026-10-30 사장님: 옮기려니 렉)
+    let last = { x: pos.x, y: pos.y }, raf = 0;
     const move = (ev: PointerEvent) => {
       // 창 전체가 화면 안에 남게 — 아래 단추([녹화 끝내기] 등)가 화면 밖으로 사라지지 않게 (2026-10-17)
-      const x = Math.min(Math.max(ev.clientX - sx, -base.left), Math.max(-base.left, window.innerWidth - base.left - base.w));
-      const y = Math.min(Math.max(ev.clientY - sy, -base.top), Math.max(-base.top, window.innerHeight - base.top - base.h));
-      setPos({ x, y });
+      last = {
+        x: Math.min(Math.max(ev.clientX - sx, -base.left), Math.max(-base.left, window.innerWidth - base.left - base.w)),
+        y: Math.min(Math.max(ev.clientY - sy, -base.top), Math.max(-base.top, window.innerHeight - base.top - base.h)),
+      };
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; if (box.current) box.current.style.transform = `translate(${last.x}px, ${last.y}px)`; });
     };
     const up = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      if (raf) cancelAnimationFrame(raf);
+      setPos(last);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);

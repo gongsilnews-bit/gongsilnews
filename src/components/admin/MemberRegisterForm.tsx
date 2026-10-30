@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { agencyKind, kindFromBizNum, AGENCY_KIND_LABEL } from "@/utils/agencyKind";
 import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies, adminApproveRealtorApplication, adminRejectRealtorApplication, adminFindAgencyDuplicates } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { getHomepageSettings } from "@/app/actions/homepage";
@@ -77,6 +78,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     intro: "",
     reg_num: "",
     biz_num: "",
+    biz_kind: "", // "" = 사업자등록번호로 자동 · general · corp (2026-10-30)
     status: ""
   });
 
@@ -247,6 +249,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               intro: res.agency.intro || "",
               reg_num: res.agency.reg_num || "",
               biz_num: res.agency.biz_num || "",
+              biz_kind: res.agency.biz_kind || "",
               status: res.agency.status || "PENDING"
             });
             if (typeof window !== "undefined" && res.agency.status) {
@@ -735,6 +738,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           address_detail: agencyData.address_detail || '',
           intro: agencyData.intro || '',
           biz_num: agencyData.biz_num || '',
+          ...((agencyData as { biz_kind?: string }).biz_kind ? { biz_kind: (agencyData as { biz_kind?: string }).biz_kind } : {}), // 최고관리자가 고른 일반/중개법인
           reg_num: agencyData.reg_num || '',
           reg_cert_url: regCertUrl,
           biz_cert_url: bizCertUrl,
@@ -1610,6 +1614,25 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             </div>
             <div style={contentStyle}>
               <input type="text" name="biz_num" value={agencyData.biz_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="000-00-00000" />
+              {/* 일반 중개사무소 / 중개법인 — 사업자등록번호로 저절로, 최고관리자는 바꿀 수 있다 (2026-10-30 사장님: 결제 요금 구분) */}
+              {(() => {
+                const kind = agencyKind(agencyData as { biz_kind?: string; biz_num?: string });
+                const auto = kindFromBizNum(agencyData.biz_num);
+                const set = (agencyData as { biz_kind?: string }).biz_kind || "";
+                return (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, marginLeft: 10 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, padding: "3px 10px", borderRadius: 999, background: kind === "corp" ? "#1e3a5f" : "#e5e7eb", color: kind === "corp" ? "#fff" : "#374151" }}>{AGENCY_KIND_LABEL[kind]}</span>
+                    {isAdmin && (
+                      <select value={set} onChange={(e) => setAgencyData({ ...agencyData, biz_kind: e.target.value } as typeof agencyData)}
+                        style={{ height: 32, padding: "0 8px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, background: darkMode ? "#2c2d31" : "#fff", color: darkMode ? "#e1e4e8" : "#111827" }}>
+                        <option value="">자동 ({AGENCY_KIND_LABEL[auto]})</option>
+                        <option value="general">일반 중개사무소</option>
+                        <option value="corp">중개법인</option>
+                      </select>
+                    )}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 

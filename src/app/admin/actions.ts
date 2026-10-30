@@ -371,6 +371,7 @@ export async function adminFindAgencyDuplicates(memberId: string) {
 const AGENCY_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
 const AGENCY_DOCUMENT_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const AGENCY_EDITABLE_FIELDS = [
+  'biz_kind', // 일반 / 중개법인 — 최고관리자만 (아래 adminUpdateAgency)
   'name',
   'ceo_name',
   'cell',
@@ -599,6 +600,8 @@ export async function adminUpdateAgency(
     /* "중복 허용" 표시는 화면이 보낸 값을 믿지 않는다 — 아래에서 서버가 정한다 */
     agencyData = sanitizeAgencyData(agencyData);
     if (!requester.isAdmin) delete agencyData.reject_reason;
+    // 일반 / 중개법인은 최고관리자만 정한다 (2026-10-30) — 값이 없으면 칸을 건드리지 않는다 (SQL 적용 전에도 저장이 깨지지 않게)
+    if (!requester.isAdmin || (agencyData.biz_kind !== 'general' && agencyData.biz_kind !== 'corp')) delete agencyData.biz_kind;
     let forcedPending = false;
     let paidOffice = false;
     let verificationStatus: string | null = null;

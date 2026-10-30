@@ -1,0 +1,212 @@
+{
+ "apt1": {
+  "source": "Pixabay",
+  "id": 2725230,
+  "user": "652234",
+  "page": "https://pixabay.com/photos/architecture-skyscraper-modern-2725230/"
+ },
+ "apt2": {
+  "source": "Pixabay",
+  "id": 1845884,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/apartments-architecture-balconies-1845884/"
+ },
+ "tower": {
+  "source": "Pixabay",
+  "id": 6819311,
+  "user": "jaxel",
+  "page": "https://pixabay.com/photos/buildings-sea-towers-apartment-sea-6819311/"
+ },
+ "living1": {
+  "source": "Pixabay",
+  "id": 2181947,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/chairs-floor-furniture-indoors-2181947/"
+ },
+ "living2": {
+  "source": "Pixabay",
+  "id": 3108037,
+  "user": "jeanvdmeulen",
+  "page": "https://pixabay.com/photos/dining-room-living-room-modern-3108037/"
+ },
+ "living3": {
+  "source": "Pixabay",
+  "id": 8714871,
+  "user": "23555986",
+  "page": "https://pixabay.com/photos/building-interior-design-furnitures-8714871/"
+ },
+ "kitchen1": {
+  "source": "Pixabay",
+  "id": 2165756,
+  "user": "ClickerHappy",
+  "page": "https://pixabay.com/photos/kitchen-home-interior-modern-room-2165756/"
+ },
+ "kitchen2": {
+  "source": "Pixabay",
+  "id": 1171462,
+  "user": "Giovanni_cg",
+  "page": "https://pixabay.com/photos/architecture-interior-furniture-1171462/"
+ },
+ "interior_dark": {
+  "source": "Pixabay",
+  "id": 8714884,
+  "user": "23555986",
+  "page": "https://pixabay.com/photos/building-interior-design-furnitures-8714884/"
+ },
+ "office1": {
+  "source": "Pixabay",
+  "id": 730681,
+  "user": "MagicDesk",
+  "page": "https://pixabay.com/photos/office-sitting-room-executive-730681/"
+ },
+ "office2": {
+  "source": "Pixabay",
+  "id": 2181980,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/chairs-conference-room-contemporary-2181980/"
+ },
+ "mall": {
+  "source": "Pixabay",
+  "id": 346434,
+  "user": "radesigns",
+  "page": "https://pixabay.com/photos/shopping-mall-mall-vancouver-346434/"
+ },
+ "corridor": {
+  "source": "Pixabay",
+  "id": 4777407,
+  "user": "652234",
+  "page": "https://pixabay.com/photos/architecture-corridor-hallway-4777407/"
+ },
+ "street": {
+  "source": "Pixabay",
+  "id": 5344027,
+  "user": "juergen-polle",
+  "page": "https://pixabay.com/photos/chicago-city-building-skyline-5344027/"
+ },
+ "night1": {
+  "source": "Pixabay",
+  "id": 9620082,
+  "user": "Michael_Pointner",
+  "page": "https://pixabay.com/photos/bridge-city-dark-japan-japanese-9620082/"
+ },
+ "night2": {
+  "source": "Pixabay",
+  "id": 647400,
+  "user": "zephylwer0",
+  "page": "https://pixabay.com/photos/buildings-skyline-city-lights-647400/"
+ },
+ "house1": {
+  "source": "Pixabay",
+  "id": 1836070,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/house-architecture-front-yard-1836070/"
+ },
+ "house2": {
+  "source": "Pixabay",
+  "id": 1867187,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/house-garage-driveway-architecture-1867187/"
+ },
+ "glass": {
+  "source": "Pixabay",
+  "id": 3122210,
+  "user": "jplenio",
+  "page": "https://pixabay.com/photos/skyscraper-glass-facade-facade-3122210/"
+ },
+ "studio1": {
+  "source": "Pixabay",
+  "id": 4043091,
+  "user": "Sunriseforever",
+  "page": "https://pixabay.com/photos/kitchen-living-room-4043091/"
+ },
+ "studio2": {
+  "source": "Pixabay",
+  "id": 4323127,
+  "user": "5460160",
+  "page": "https://pixabay.com/photos/room-lighting-interior-be-sofa-4323127/"
+ },
+ "bedroom1": {
+  "source": "Pixabay",
+  "id": 416062,
+  "user": "keresi72",
+  "page": "https://pixabay.com/photos/bedroom-bed-apartment-room-416062/"
+ },
+ "bedroom2": {
+  "source": "Pixabay",
+  "id": 1872196,
+  "user": "manbob86",
+  "page": "https://pixabay.com/photos/bedroom-cupboard-bed-room-sofa-1872196/"
+ },
+ "bedroom3": {
+  "source": "Pixabay",
+  "id": 1839183,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/bed-bedroom-carpet-curtains-1839183/"
+ },
+ "aerial1": {
+  "source": "Pixabay",
+  "id": 3671495,
+  "user": "evahegoh",
+  "page": "https://pixabay.com/photos/korea-seoul-architecture-3671495/"
+ },
+ "aerial2": {
+  "source": "Pixabay",
+  "id": 1026480,
+  "user": "Peggy_Marco",
+  "page": "https://pixabay.com/photos/apartment-building-villa-rendering-1026480/"
+ },
+ "hanriver": {
+  "source": "Pixabay",
+  "id": 7423593,
+  "user": "cskkkk",
+  "page": "https://pixabay.com/photos/seoul-city-landscape-architecture-7423593/"
+ },
+ "night3": {
+  "source": "Pixabay",
+  "id": 9620082,
+  "user": "Michael_Pointner",
+  "page": "https://pixabay.com/photos/bridge-city-dark-japan-japanese-9620082/"
+ },
+ "aptwhite": {
+  "source": "Pixabay",
+  "id": 2092849,
+  "user": "652234",
+  "page": "https://pixabay.com/photos/architecture-skyscraper-2092849/"
+ },
+ "land": {
+  "source": "Pixabay",
+  "id": 4552727,
+  "user": "hbieser",
+  "page": "https://pixabay.com/photos/arable-land-fields-agriculture-4552727/"
+ },
+ "crane": {
+  "source": "Pixabay",
+  "id": 3703469,
+  "user": "analogicus",
+  "page": "https://pixabay.com/photos/cranes-construction-load-crane-3703469/"
+ },
+ "skyline": {
+  "source": "Pixabay",
+  "id": 1867775,
+  "user": "Pexels",
+  "page": "https://pixabay.com/photos/buildings-city-panoramic-1867775/"
+ },
+ "seoul_tower": {
+  "source": "Pixabay",
+  "id": 7523474,
+  "user": "cskkkk",
+  "page": "https://pixabay.com/photos/night-view-dark-seoul-korea-7523474/"
+ },
+ "seoul_night": {
+  "source": "Pixabay",
+  "id": 7459162,
+  "user": "cskkkk",
+  "page": "https://pixabay.com/photos/city-buildings-night-view-seoul-7459162/"
+ },
+ "facade": {
+  "source": "Pixabay",
+  "id": 9761776,
+  "user": "manseok_Kim",
+  "page": "https://pixabay.com/photos/building-architecture-city-9761776/"
+ }
+}

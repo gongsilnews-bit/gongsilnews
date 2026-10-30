@@ -1182,7 +1182,10 @@ function App() {
     if (!localId || !bridge) return false;
     setIsSavingCloud(true);
     try {
-      await bridge.save({ id: localId, state: stateRef.current });
+      // 홈 [AI 매물보고서] 카드에 보일 표지 그림 (2026-10-30 사장님) — 못 찍어도 저장은 한다
+      let thumb = "";
+      try { thumb = await captureCover(); } catch {}
+      await bridge.save({ id: localId, state: stateRef.current, ...(thumb ? { thumb } : {}) });
       try { localStorage.removeItem(`easyflyer_saved_${localId}`); } catch {}
       hasUnsavedChangesRef.current = false;
       setIsLoadedFromStorage(true);
@@ -1283,7 +1286,7 @@ function App() {
       await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "report" })
       });
     } catch (err) {
       console.warn("Silent cloud save failed:", err);
@@ -1408,7 +1411,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "report" })
       });
       const json = await res.json();
       if (json.success) {
@@ -1443,7 +1446,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "report" })
       });
       const json = await res.json();
       if (!json.success) {
@@ -1689,7 +1692,7 @@ function App() {
     try {
       const caps = await b.captures(vacancyId);
       if (!caps.length) {
-        alert("이 공실을 공실뉴스에서 [분석·캡처]한 사진이 없어요.\n뉴스·SNS발행 → 공실뉴스에서 이 공실을 먼저 분석·캡처해 주세요.");
+        alert("이 공실을 공실뉴스에서 [분석·캡처]한 사진이 없어요.\n뉴스·SNS자동화 → 공실뉴스에서 이 공실을 먼저 분석·캡처해 주세요.");
         return;
       }
       // 빈 칸 찾기 (1쪽부터) — 모자라면 쪽을 늘린다
@@ -2141,7 +2144,7 @@ ${clone.outerHTML}
         const res = await fetch("/api/vacancy/save-flyer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
+          body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "report" })
         });
         const json = await res.json();
         if (!json.success) {
@@ -2261,6 +2264,39 @@ ${clone.outerHTML}
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const vacancyMetaRef = useRef<{ title?: string; no?: string }>({});
   const [isPrinting, setIsPrinting] = useState(false);
+  /* 홈 카드 메뉴 [PDF 내보내기]·[이미지 내보내기]·[인쇄] — 열리고 다 그려지면 한 번 실행 (2026-10-30, 10분 안에 누른 것만) */
+  const autoDoneRef = useRef(false);
+  useEffect(() => {
+    if (!isInitialized || autoDoneRef.current) return;
+    let job: { id?: string; action?: string; at?: number } | null = null;
+    try { job = JSON.parse(localStorage.getItem("gs-auto-action") || "null"); } catch {}
+    const id = new URLSearchParams(window.location.search).get("vacancy_id");
+    if (!job || !id || job.id !== id || Date.now() - (job.at || 0) > 10 * 60 * 1000) return;
+    autoDoneRef.current = true;
+    try { localStorage.removeItem("gs-auto-action"); } catch {}
+    const t = setTimeout(() => { if (job!.action === "pdf") void downloadPdf(); else if (job!.action === "image") setShowExportModal(true); }, 1200); // 사진·글꼴이 다 그려질 때까지 잠깐
+    return () => clearTimeout(t);
+  }, [isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** 표지(첫 쪽)를 작게 찍는다 — PDF 내보내기와 같은 숨은 판에서, 폭 480 JPEG */
+  const captureCover = async (): Promise<string> => {
+    const h2c = (window as any).html2canvas;
+    if (!hiddenFlyerRef.current || !h2c) return "";
+    const clone = hiddenFlyerRef.current.cloneNode(true) as HTMLElement;
+    liftTextForCapture(clone);
+    clone.style.position = 'absolute'; clone.style.left = '0px'; clone.style.top = '-99999px'; clone.style.minHeight = '0px'; clone.style.height = 'auto';
+    document.body.appendChild(clone);
+    try {
+      // 표지(page-0)를 콕 집어서 — 없으면 첫 쪽
+      const sec = (clone.querySelector('[data-export-id="page-0"]') || clone.querySelector('[data-export-id]')) as HTMLElement | null;
+      if (!sec) return "";
+      sec.style.display = 'flex';
+      const canvas = await h2c(sec, { scale: 480 / 1122, proxy: '/api/proxy-image', backgroundColor: '#ffffff', width: 1122, height: 794, windowWidth: 1400, scrollX: 0, scrollY: 0, logging: false });
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } finally {
+      document.body.removeChild(clone);
+    }
+  };
   const [isExportingImage, setIsExportingImage] = useState(false);
 
   const downloadPdf = async () => {

@@ -212,7 +212,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   }, [editId, copyId, action]);
 
   if (showRegisterForm) {
-    const returnUrl = role === "realtor" ? "/realty_admin?menu=gongsil" : role === "user" ? "/user_admin?menu=gongsil" : "/admin?menu=gongsil";
+    // back=sns 처럼 온 곳이 있으면 등록·취소 뒤 그 메뉴로 (뉴스·SNS자동화 [새로 만들기], 2026-10-30 사장님)
+    const back = searchParams.get("back") || "";
+    const base = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+    const returnUrl = `${base}?menu=${/^[a-z_]+$/.test(back) ? back : "gongsil"}`;
     return (
       <VacancyRegisterForm
         onBack={() => { router.push(returnUrl); }}

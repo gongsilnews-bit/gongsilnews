@@ -70,12 +70,11 @@ function FileBadge({ kind }: { kind: string }) {
 
 export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false, hidden = false, onHide }: Props) {
   const [savedCollapsed, setCollapsed] = useState(false);
-  // 화면 모드(밝은/어두운) — 앱 전체 하나 (이미지제작·동영상제작·관리 화면 같이, 2026-10-23 사장님)
-  const [studioTheme, setStudioTheme] = useStudioTheme(false); // 동영상제작·이미지제작 하나로
-  // 관리 화면(그 밖 메뉴) 모드 — 기본 밝게, 따로 기억
+  // 화면 모드(밝은/어두운) — 포토앱·동영상앱은 각자 (기본 어둡게), 그 밖 메뉴(홈~뉴스·SNS자동화)는 모두 하나로 (기본 밝게) (2026-10-30 사장님)
+  const [studioTheme, setStudioTheme] = useStudioTheme(false, activeMenu === "photo" ? "photo" : "video");
   const [adminTheme, setAdminThemeS] = useState<"light" | "dark">("light");
   useEffect(() => {
-    const load = () => { try { setAdminThemeS(localStorage.getItem(`gs-admin-theme:${activeMenu}`) === "dark" ? "dark" : "light"); } catch {} };
+    const load = () => { try { setAdminThemeS(localStorage.getItem("gs-admin-theme") === "dark" ? "dark" : "light"); } catch {} };
     load();
     window.addEventListener("gs-admin-theme-change", load);
     return () => window.removeEventListener("gs-admin-theme-change", load);
@@ -84,7 +83,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
   const theme = studioArea ? studioTheme : adminTheme;
   const setTheme = (t: "light" | "dark") => {
     if (studioArea) return setStudioTheme(t);
-    try { localStorage.setItem(`gs-admin-theme:${activeMenu}`, t); } catch {} // 메뉴마다 따로
+    try { localStorage.setItem("gs-admin-theme", t); } catch {} // 관리 메뉴 모두 하나로
     window.dispatchEvent(new Event("gs-admin-theme-change"));
   };
   const [hasAi, setHasAi] = useState(false);
@@ -201,12 +200,12 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
 
       <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "space-between", padding: collapsed ? 0 : "0 10px 0 18px", borderBottom: "1px solid rgba(255,255,255,0.15)", flexShrink: 0 }}>
         {!collapsed && (
-          <div onClick={openHome} title="공실뉴스 홈 (새 창)" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+          // 로고를 누르면 앱 홈으로 (2026-10-30 사장님 — 예전에는 공실뉴스 사이트를 새 창으로 열었다)
+          <div onClick={() => onSelect("dashboard")} title="홈" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <img src="/new_logo.png" alt="공실뉴스" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
             <div style={{ lineHeight: 1.2 }}>
               {/* 로고 (2026-10-29 사장님): 동그란 재생 단추는 그대로, 이름은 앱 이름 공실마케팅 + 작게 공실뉴스 (by 없이) */}
-              <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px" }}>공실마케팅</div>
-              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: 700 }}>공실뉴스</div>
+              <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px" }}>공실마케팅App</div>
             </div>
           </div>
         )}

@@ -23,7 +23,7 @@ const D = document.getElementById("draw"), Cc = document.getElementById("cur");
 const g = D.getContext("2d"), gc = Cc.getContext("2d");
 let W = 0, H = 0, R = 1;
 let st = { drawing: false, tool: "pen", color: "#ef4444", board: "" };
-let pf = { halo: false, haloColor: "#facc15", haloSize: 36, big: false, scale: 2 };
+let pf = { halo: true, haloColor: "#facc15", haloSize: 36, big: true, scale: 2 };
 let cur = null;
 // 화면 위 판서와 칠판 판서는 따로 둔다 (칠판을 걷으면 화면 판서가 그대로)
 const strokes = { screen: [], board: [] };

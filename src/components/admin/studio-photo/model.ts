@@ -67,6 +67,17 @@ export function findLayer(list: PLayer[], k: string): PLayer | null {
   walk(list, (l) => { if (!hit && l._k === k) hit = l; });
   return hit;
 }
+/** 레이어 연결 (포토샵 사슬, 2026-10-30 사장님) — 같은 묶음 번호(linkGroup)면 함께 움직인다. PSD 에 그대로 저장돼 포토샵에서도 연결된 채 열린다 */
+export const isLinked = (l: PLayer) => typeof l.linkGroup === "number" && l.linkGroupEnabled !== false;
+/** keys 에 연결된 레이어까지 더한 열쇠들 — 고른 그룹 안에 든 레이어는 그룹이 옮기므로 뺀다 */
+export function withLinked(list: PLayer[], keys: string[]): string[] {
+  const groups = new Set<number>();
+  walk(list, (l) => { if (keys.includes(l._k!) && isLinked(l)) groups.add(l.linkGroup!); });
+  const out = new Set(keys);
+  if (groups.size) walk(list, (l) => { if (isLinked(l) && groups.has(l.linkGroup!)) out.add(l._k!); });
+  const all = [...out];
+  return all.filter((k) => !all.some((g) => g !== k && findLayer(kids(findLayer(list, g) || {}), k)));
+}
 /** 그림(canvas)·바이트는 같이 쓰고 나머지는 새로 — 되돌리기 기록용 (그림을 제자리에서 바꾸지 않으므로 같이 써도 된다) */
 export function cloneTree<T>(v: T): T {
   if (Array.isArray(v)) return v.map((x) => cloneTree(x)) as unknown as T;
@@ -1455,15 +1466,17 @@ export function preparePaint(l: PLayer, W: number, H: number) {
   l.left = x0; l.top = y0; l.right = x1; l.bottom = y1;
   delete l._src;
 }
-/** 칠한 뒤 — 투명한 가장자리를 잘라 레이어 범위를 그림이 있는 곳에 맞춘다 (포토샵처럼 테두리가 칠한 부분에) */
-export function trimLayer(l: PLayer) {
-  if (!l.canvas || l.children || isText(l) || l._shape) return;
+/** 칠한 뒤 — 투명한 가장자리를 잘라 레이어 범위를 그림이 있는 곳에 맞춘다 (포토샵처럼 테두리가 칠한 부분에)
+ *  불투명도 3% 미만(알파 8 미만)은 없는 것으로 — 부드러운 지우개가 남긴 안 보이는 점 때문에 선택 틀이 커지지 않게 (2026-10-30)
+ *  돌려주는 값: 잘라 냈으면 true */
+export function trimLayer(l: PLayer): boolean {
+  if (!l.canvas || l.children || isText(l) || l._shape) return false;
   const c = l.canvas, W = c.width, H = c.height;
   const d = ctx2(c).getImageData(0, 0, W, H).data;
   let x0 = W, y0 = H, x1 = -1, y1 = -1;
   for (let y = 0; y < H; y++) {
     const row = y * W * 4;
-    for (let x = 0; x < W; x++) if (d[row + x * 4 + 3]) {
+    for (let x = 0; x < W; x++) if (d[row + x * 4 + 3] >= 8) {
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
@@ -1471,7 +1484,7 @@ export function trimLayer(l: PLayer) {
     }
   }
   if (x1 < 0) { x0 = y0 = 0; x1 = y1 = 0; } // 다 지웠으면 한 칸만
-  if (x0 === 0 && y0 === 0 && x1 === W - 1 && y1 === H - 1) return;
+  if (x0 === 0 && y0 === 0 && x1 === W - 1 && y1 === H - 1) return false;
   const out = mk(x1 - x0 + 1, y1 - y0 + 1);
   ctx2(out).drawImage(c, -x0, -y0);
   l.canvas = out;
@@ -1480,6 +1493,7 @@ export function trimLayer(l: PLayer) {
   l.right = l.left + out.width;
   l.bottom = l.top + out.height;
   delete l._src;
+  return true;
 }
 /** 브러시 한 점 (경도 1 = 또렷, 0 = 부드럽게) */
 export function dab(g: CanvasRenderingContext2D, x: number, y: number, size: number, hardness: number, color: string) {

@@ -15,7 +15,11 @@ const exe = () => path.join(dir(), "whisper-cli.exe");
 const ready = () => fs.existsSync(exe()) && fs.existsSync(path.join(dir(), MODEL));
 
 // 말이 없는 곳에서 지어내는 흔한 말 (교정이 안 될 때 대비)
-const HALLU = /(자막\s*제공|시청해\s*주셔서|구독|좋아요\s*(와|및)|MBC|KBS|SBS|뉴스\s*[가-힣]+입니다\.?$)/;
+// Whisper 가 무음에서 지어내는 자막 제작자 문구 — "한글자막 by 한효정" 등 (2026-10-30 사장님이 녹화 영상에서 봄)
+//  "○○자막 by 누구" 는 지우지 않고 우리 이름으로 바꾼다 (사장님: 한글자막 by 공실마케팅App) — 아래 CREDIT
+const HALLU = /(자막\s*제공|시청해\s*주셔서|구독|좋아요\s*(와|및)|MBC|KBS|SBS|뉴스\s*[가-힣]+입니다\.?$|^\s*by\s|번역\s*(by|:)|다음\s*영상에서\s*만나요)/i;
+const CREDIT = /^\s*(한글\s*)?자막\s*(by|제작|번역|:)?\s*[^\s]*\s*$/i;
+const CREDIT_TEXT = "한글자막 by 공실마케팅App";
 
 /* 부동산 영상에서 Whisper 가 자주 잘못 듣는 낱말 — 앞뒤 문맥이 맞을 때만 고친다 (예: "남양주"·"세계 여행"은 그대로).
    새로 발견하면 여기에 더한다 */
@@ -114,7 +118,7 @@ async function segments(file, { start = 0, len = 0, fix = true } = {}) {
     }
     log.info(`[받아쓰기] Whisper ${dur.toFixed(1)}초 → ${segs.length}구간, ${((Date.now() - t0) / 1000).toFixed(1)}초 (${threads}스레드)`);
     if (fix) segs = segs.map((x) => ({ ...x, text: fixWords(x.text) }));
-    return segs.filter((s) => s.text && !HALLU.test(s.text));
+    return segs.map((s) => (CREDIT.test(s.text) ? { ...s, text: CREDIT_TEXT, words: [] } : s)).filter((s) => s.text && (s.text === CREDIT_TEXT || !HALLU.test(s.text)));
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

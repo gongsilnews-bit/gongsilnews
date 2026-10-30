@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { registerIncomingInquiry } from "./customer";
 import { createNotification } from "./notification";
-import { isPermissionAlive } from "@/utils/planCheck";
+import { isPermissionAlive, canUseHomepage } from "@/utils/planCheck";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -168,9 +168,13 @@ export async function submitPropertyIntake(subdomain: string, input: IntakeInput
      */
     const { data: owner } = await supabase
       .from("members")
-      .select("role, plan_type, plan_end_date, studio_end_date, can_intake_photo")
+      .select("role, plan_type, plan_end_date, studio_end_date, can_intake_photo, can_homepage")
       .eq("id", hs.owner_id)
       .single();
+    // 집주인 접수는 공실마케팅 Pro 부터 (2026-10-30) — 무료 홈페이지는 폼 대신 전화·문자 단추라 여기 올 일이 없다
+    if (!canUseHomepage(owner, owner?.can_homepage)) {
+      return { success: false, message: "이 홈페이지는 전화·문자로 접수를 받고 있어요." };
+    }
     const allowPhoto = isPermissionAlive(owner, owner?.can_intake_photo);
     const photoUrls = allowPhoto && input.photoUrls?.length ? input.photoUrls : undefined;
 

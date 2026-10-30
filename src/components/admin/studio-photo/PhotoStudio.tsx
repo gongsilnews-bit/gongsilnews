@@ -11,13 +11,13 @@ import {
   applyLook, applyResize, shapeCanvas, boundsOf as boundsOfL, bytesToCanvas, cloneTree, composite, duplicate, exportBytes, findLayer, imageLayer, isText, kids, layerPng, lookOf, newDoc, offsetLayer,
   copyCanvas, guidesOf, mk, niceGrid, paintable, preparePaint, setGuides, type PsdGuide,
   openImageBytes, openPsdBytes, parentList, rasterize, resizeCanvas, savePsdBytes, shapeLayer, textLayer, thumbOf, uid, type Box, type Doc, type PLayer,
-  cropDoc, canvasRect, canvasSizeDoc, imageSizeDoc, rotateDoc, flipDoc, trimBox, revealBox, guidesOf as guidesOfDoc, setGuides as setGuidesDoc, shapeLayerAt, rotateLayer, pictoLayer, flipLayer, webBytes, flatExt, penShapeLayer, walk, makeMask, fullMask, applyMask, grayOf, forgetMask, trimLayer, type WebFmt,
+  cropDoc, canvasRect, canvasSizeDoc, imageSizeDoc, rotateDoc, flipDoc, trimBox, revealBox, guidesOf as guidesOfDoc, setGuides as setGuidesDoc, shapeLayerAt, rotateLayer, pictoLayer, flipLayer, webBytes, flatExt, penShapeLayer, walk, isLinked, withLinked, makeMask, fullMask, applyMask, grayOf, forgetMask, trimLayer, type WebFmt,
   pageCount, pageIndex, gotoPage, addPage, removePage, movePage,
 } from "./model";
 import { cmykPdf, cmykTiff } from "./cmyk";
 import { PAINT_TOOLS, SEL_TOOLS, Stage, type PaintOpts, type Tool, type View } from "./Stage";
 import { ADJUST_NAME, adjustCanvas, clearInside, clipTo, combine, extract, fillCanvas, fillInside, invertMask, maskBounds, modifyMask, selectAll, shapeMask, strokeCanvas, trimCanvas, wandMask, type Adjust, type FillOpt, type SelMode, type SelShape, type StrokeOpt } from "./selection";
-import { LAYER_DRAG, LayerList, type MenuAct } from "./LayerList";
+import { LAYER_DRAG, LINK_D, LayerList, type MenuAct } from "./LayerList";
 import { applyAdj, histogram, type AdjKind, type AdjVal } from "./adjust";
 import { AdjustDialog } from "./AdjustDialog";
 import { pictoCanvas } from "./pictos";
@@ -32,9 +32,10 @@ import type { TextWarp } from "./warp";
 import { ColorPicker } from "./ColorPicker";
 import { DesignSide, type MyTpl } from "./DesignSide";
 import { DesignDialog, ratioOf, type DesignResult } from "./DesignDialog";
+import { PRESETS, guidesForSize, type NewInit } from "./presets";
 import { SampleGrid } from "./SampleGrid";
 import { PageStrip } from "./PageStrip";
-import { CAT_SIZES, SLOT_NAME, SLOT_PICK, buildLayout, contentFor, coverCanvas, layoutFonts, loadSampleBg, placeholderBg, placeholderContent, refill, tplGroup, type Cat, type CatSize, type Layout, type Slot } from "./layouts";
+import { CAT_SIZES, SLOT_NAME, SLOT_PICK, backOf, buildLayout, contentFor, coverCanvas, layoutFonts, loadSampleBg, sampleBgFor, placeholderBg, placeholderContent, refill, tplGroup, type Cat, type CatSize, type Layout, type Slot } from "./layouts";
 import { getStudioAgency } from "@/app/actions/studio";
 import { videoBridge } from "@/components/admin/studio-video/types";
 import { AiSettingsBox } from "@/components/admin/studio-video/VideoMenu";
@@ -162,168 +163,7 @@ const readPaint = (): PaintOpts => {
   try { return { ...d, ...JSON.parse(localStorage.getItem(PAINT_KEY) || "{}") }; } catch { return d; }
 };
 
-/* ── 새 문서 크기 (포토샵 [새로운 문서] 처럼) ── */
-type Preset = { name: string; w: number; h: number; ppi?: number; note?: string; guides?: PsdGuide[] };
-/* 부동산에 필요한 종류 — 유튜브 · 블로그 · SNS · 부동산마케팅 (회의 2026-10-19). 인쇄는 300ppi, 큰 인쇄물은 150·100ppi (앱이 다룰 수 있는 크기)
-   ※ 공식 크기를 확인하지 못한 것(네이버 블로그 상단 배너·본문 폭, 카카오톡 채널)은 넣지 않았다 — 확인되면 더한다 */
-const v = (location: number): PsdGuide => ({ location, direction: "vertical" });
-const hz = (location: number): PsdGuide => ({ location, direction: "horizontal" });
-const PRESETS: { id: string; label: string; icon: string; desc: string; items: Preset[] }[] = [
-  { id: "youtube", label: "유튜브", icon: "video", desc: "썸네일 · 쇼츠 표지 · 채널 배너 · 로고", items: [
-    { name: "유튜브 썸네일", w: 1280, h: 720, note: "영상 목록에 보이는 그림" },
-    { name: "쇼츠 표지", w: 1080, h: 1920, note: "세로 9:16" },
-    { name: "채널 배너 (아트)", w: 2560, h: 1440, note: "글자는 가운데 1546×423 안에 (안내선)", guides: [v(507), v(2053), hz(508.5), hz(931.5)] },
-    { name: "채널 로고 (프로필)", w: 800, h: 800, note: "동그랗게 잘려 보여요" },
-    { name: "영상 워터마크", w: 150, h: 150, note: "구독 버튼 자리" },
-    { name: "영상 끝 화면", w: 1920, h: 1080, note: "다음 영상·구독 안내" },
-  ] },
-  { id: "blog", label: "블로그", icon: "pen", desc: "대표 이미지 · 본문 이미지", items: [
-    { name: "대표 이미지 (정사각)", w: 1080, h: 1080, note: "모바일 목록 1:1" },
-    { name: "대표 이미지 (가로 3:2)", w: 1200, h: 800, note: "PC 목록 3:2" },
-    { name: "본문 이미지 (가로 16:9)", w: 1920, h: 1080, note: "글 사이에 넣는 그림" },
-    { name: "본문 이미지 (세로 4:5)", w: 1080, h: 1350, note: "모바일에서 크게" },
-  ] },
-  { id: "sns", label: "SNS", icon: "phone", desc: "인스타 카드뉴스 · 피드 · 스토리 · 링크 공유", items: [
-    { name: "인스타 카드뉴스", w: 1080, h: 1350, note: "여러 장을 한 묶음으로" },
-    { name: "인스타 피드 정사각", w: 1080, h: 1080 },
-    { name: "스토리 · 릴스", w: 1080, h: 1920 },
-    { name: "링크 공유 이미지", w: 1200, h: 630, note: "페이스북·카카오톡 링크 미리보기" },
-    { name: "스레드", w: 1080, h: 1350 },
-  ] },
-  { id: "realty", label: "부동산마케팅", icon: "image", desc: "명함 · X배너 · 유리창 홍보지 · 전단 · 현수막", items: [
-    { name: "일반 명함", w: 1063, h: 591, ppi: 300, note: "90 × 50 mm" },
-    { name: "고급 명함 (양면)", w: 1063, h: 591, ppi: 300, note: "90 × 50 mm · 앞뒤 따로 만들기" },
-    { name: "X배너", w: 3543, h: 10630, ppi: 150, note: "600 × 1800 mm" },
-    { name: "유리창 홍보지 A2", w: 4961, h: 7016, ppi: 300, note: "420 × 594 mm" },
-    { name: "유리창 홍보지 A4", w: 2480, h: 3508, ppi: 300, note: "210 × 297 mm" },
-    { name: "전단지 A4", w: 2480, h: 3508, ppi: 300, note: "210 × 297 mm" },
-    { name: "현수막", w: 19685, h: 3543, ppi: 100, note: "5000 × 900 mm" },
-  ] },
-  { id: "basic", label: "기본", icon: "file", desc: "웹 화면 · A4 · A3", items: [
-    { name: "웹 큰 화면", w: 1920, h: 1080 }, { name: "웹 HD", w: 1280, h: 720 },
-    { name: "A4", w: 2480, h: 3508, ppi: 300, note: "210 × 297 mm" }, { name: "A3", w: 3508, h: 4961, ppi: 300, note: "297 × 420 mm" },
-  ] },
-];
-type NewInit = { tab?: string; preset?: Preset };
-const RECENT_KEY = "gsp-new-recent";
-const readRecentSizes = (): Preset[] => {
-  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
-};
-
-function NewDocDialog({ onCreate, onClose, init, onSample, mine, onMine, onMineRemove }: { onCreate: (o: { name: string; width: number; height: number; bg: string; ppi: number; guides?: PsdGuide[]; mode: "rgb" | "cmyk" }) => void; onClose: () => void; init?: NewInit | null; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; mine?: MyTpl[] | null; onMine?: (t: MyTpl, ai: boolean) => void; onMineRemove?: (t: MyTpl) => void }) {
-  const recent = readRecentSizes();
-  const p0 = init?.preset;
-  const [tab, setTab] = useState(init?.tab || "basic"); // 처음엔 [기본] (2026-10-22 사장님)
-  const [name, setName] = useState(p0?.name || "제목 없음-1");
-  const [w, setW] = useState(p0?.w || 1080), [h, setH] = useState(p0?.h || 1080), [ppi, setPpi] = useState(p0?.ppi || 72);
-  const [bg, setBg] = useState("white");
-  const [mode, setMode] = useState<"rgb" | "cmyk">((p0?.ppi || 72) >= 100 ? "cmyk" : "rgb"); // 인쇄물은 CMYK 가 기본
-  const [picked, setPicked] = useState(p0 ? `${p0.name}${p0.w}x${p0.h}` : "");
-  const [guides, setGuidesS] = useState<PsdGuide[] | undefined>(p0?.guides);
-  const list = tab === "recent" ? recent : PRESETS.find((p) => p.id === tab)?.items || [];
-  // 이 탭에서 고른 크기 — 아래 레이아웃 샘플을 그 크기에 맞는 것만 (2026-10-22 사장님)
-  const pickedP = list.find((p) => `${p.name}${p.w}x${p.h}` === picked);
-  const pickedSize = pickedP ? { name: pickedP.name, w: pickedP.w, h: pickedP.h, ppi: pickedP.ppi } : undefined;
-  const pick = (p: Preset) => { setW(p.w); setH(p.h); setPpi(p.ppi || 72); setGuidesS(p.guides); setMode((p.ppi || 72) >= 100 ? "cmyk" : "rgb"); setPicked(`${p.name}${p.w}x${p.h}`); if (/^제목 없음/.test(name) || PRESETS.some((c) => c.items.some((x) => x.name === name))) setName(p.name); };
-  const make = () => {
-    const ww = Math.max(1, Math.min(30000, Math.round(w))), hh = Math.max(1, Math.min(30000, Math.round(h)));
-    try {
-      const r = [{ name: name || "제목 없음", w: ww, h: hh, ppi }, ...readRecentSizes().filter((x) => !(x.w === ww && x.h === hh))].slice(0, 8);
-      localStorage.setItem(RECENT_KEY, JSON.stringify(r));
-    } catch {}
-    onCreate({ name: name.trim() || "제목 없음-1", width: ww, height: hh, bg, ppi, guides: ww === w && hh === h ? guides : undefined, mode });
-  };
-  const tabBtn = (id: string, t: string) => (
-    <button key={id} type="button" onClick={() => setTab(id)}
-      style={{ height: 40, padding: "0 16px", border: 0, borderBottom: `2px solid ${tab === id ? C.accent : "transparent"}`, background: "transparent", color: tab === id ? C.text : C.sub, fontSize: 14.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
-  );
-  const portrait = h > w;
-  const numIn = (v: number, set: (n: number) => void) => (
-    <input type="number" value={v} onChange={(e) => set(Number(e.target.value))} onKeyDown={(e) => e.stopPropagation()} style={{ ...input, height: 36, fontSize: 14 }} />
-  );
-  return (
-    <Modal title="새로운 문서" onClose={onClose} width={980}
-      footer={<><Btn onClick={onClose}>닫기</Btn><Btn primary onClick={make}>만들기</Btn></>}>
-      <div style={{ display: "flex", minHeight: 440 }}>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, padding: "0 12px" }}>
-            {/* 기본 → 유튜브 · 블로그 · SNS · 부동산마케팅 → 최근 사용 */}
-            {[...PRESETS.filter((p) => p.id === "basic"), ...PRESETS.filter((p) => p.id !== "basic")].map((p) => tabBtn(p.id, p.label))}
-            {tabBtn("recent", "최근 사용")}
-          </div>
-          <div style={{ padding: "12px 16px 0", display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 800 }}>빈 문서</span>
-            <span style={{ fontSize: 12.5, color: C.dim }}>누르면 오른쪽에서 크기를 확인하고 [만들기] · 아래 레이아웃 샘플로도 시작할 수 있어요</span>
-          </div>
-          <div style={{ flex: 1, maxHeight: "62vh", overflowY: "auto" }}>
-          <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, alignContent: "start" }}>
-            {list.map((p, i) => {
-              const on = picked === `${p.name}${p.w}x${p.h}`;
-              const k = Math.min(64 / p.w, 40 / p.h);
-              return (
-                <button key={i} type="button" onClick={() => pick(p)} onDoubleClick={() => { pick(p); setTimeout(make, 0); }}
-                  title={p.note || undefined}
-                  style={{ padding: "8px 6px", borderRadius: 8, border: `2px solid ${on ? C.sel : C.line}`, background: on ? C.cardHover : "transparent", color: C.text, cursor: "pointer", fontFamily: FONT, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ height: 44, display: "flex", alignItems: "center" }}><span style={{ width: Math.max(4, p.w * k), height: Math.max(4, p.h * k), border: `1.5px solid ${C.sub}`, borderRadius: 2 }} /></span>
-                  <span style={{ fontSize: 12.5, fontWeight: 800, textAlign: "center", lineHeight: 1.25 }}>{p.name}</span>
-                  <span style={{ fontSize: 11, color: C.sub }}>{p.w} × {p.h}{p.ppi ? ` · ${p.ppi}ppi` : ""}</span>
-                </button>
-              );
-            })}
-            {!list.length && <div style={{ gridColumn: "1 / -1", color: C.sub, fontSize: 14, padding: 20 }}>아직 만든 문서가 없어요. 다른 탭에서 크기를 골라 보세요.</div>}
-          </div>
-          {onSample && ["youtube", "blog", "sns", "realty", "basic"].includes(tab) && (
-            <div style={{ padding: "0 16px 16px" }}>
-              <SampleGrid key={tab} cat={tab as Cat} compact size={pickedSize} onSample={(l, size, ai, cat) => { onClose(); onSample(l, size, ai, cat); }}
-                mine={mine} onMine={onMine ? (t, ai) => { onClose(); onMine(t, ai); } : undefined} onMineRemove={onMineRemove} />
-            </div>
-          )}
-          </div>
-        </div>
-        <div style={{ width: 300, flexShrink: 0, borderLeft: `1px solid ${C.line}`, padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: C.sub }}>사전 설정 세부 정보</div>
-          <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.stopPropagation()} style={{ ...input, fontSize: 16, fontWeight: 700 }} />
-          <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 30px", gap: 8, alignItems: "center", fontSize: 13.5, color: C.sub }}>
-            <span>폭</span>{numIn(w, setW)}<span>px</span>
-            <span>높이</span>{numIn(h, setH)}<span>px</span>
-            <span>해상도</span>{numIn(ppi, setPpi)}<span>ppi</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>
-            <span style={{ width: 48 }}>방향</span>
-            {[false, true].map((pt) => (
-              <button key={String(pt)} type="button" title={pt ? "세로" : "가로"} onClick={() => { if (pt !== portrait) { setW(h); setH(w); } }}
-                style={{ width: 40, height: 34, borderRadius: 5, border: `1px solid ${portrait === pt ? C.sel : C.line2}`, background: portrait === pt ? C.sel : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ width: pt ? 12 : 20, height: pt ? 20 : 12, border: `2px solid ${portrait === pt ? C.bg : C.sub}`, borderRadius: 2 }} />
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13.5, color: C.sub }}>
-            <span>색상 모드</span>
-            <div style={{ display: "flex", gap: 6 }}>
-              {([["rgb", "RGB", "화면용 (SNS·유튜브·블로그)"], ["cmyk", "CMYK", "인쇄용 (명함·전단·배너)"]] as const).map(([v2, t, d2]) => (
-                <button key={v2} type="button" onClick={() => setMode(v2)} title={d2}
-                  style={{ flex: 1, height: 44, borderRadius: 5, border: `2px solid ${mode === v2 ? C.sel : C.line2}`, background: "transparent", color: C.text, fontFamily: FONT, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <b style={{ fontSize: 13.5 }}>{t}</b><span style={{ fontSize: 11, color: C.dim }}>{v2 === "rgb" ? "화면용" : "인쇄용"}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13.5, color: C.sub }}>
-            <span>배경</span>
-            <div style={{ display: "flex", gap: 6 }}>
-              {([["white", "흰색", "#fff"], ["#000000", "검정", "#000"], ["transparent", "투명", "repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 8px 8px"]] as const).map(([v, t, bgc]) => (
-                <button key={v} type="button" onClick={() => setBg(v)}
-                  style={{ flex: 1, height: 36, borderRadius: 5, border: `2px solid ${bg === v ? C.sel : C.line2}`, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: bgc, border: `1px solid ${C.line2}` }} />{t}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
+/* 새 문서 크기 목록은 presets.ts · 새로 만들기 창(빈 문서 + 템플릿 + AI 채우기)은 DesignDialog.tsx (2026-10-30 하나로) */
 
 /* ── 처음 화면 ── */
 function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onAi, mine, onMine, onMineRemove }: { onNew: () => void; onOpen: () => void; onRecent: (r: Recent) => void; busy: boolean; onPreset: (i: NewInit) => void; top?: React.ReactNode; onSample?: (l: Layout, size: CatSize, ai: boolean, cat: Cat) => void; onAi?: () => void; mine?: MyTpl[] | null; onMine?: (t: MyTpl, ai: boolean) => void; onMineRemove?: (t: MyTpl) => void }) {
@@ -349,7 +189,7 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
     {/* 왼쪽 — 만들 것 고르기 (부동산에 필요한 것) */}
     {/* 왼쪽 둘째 칸 — 밝은 화면이면 흰색, 어두운 화면이면 어둡게 (2026-10-23 사장님) */}
     <aside style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2, padding: "22px 12px", background: C.panel, borderRight: `1px solid ${C.line}`, fontFamily: FONT }}>
-      <h2 style={{ margin: "0 6px 12px", fontSize: 19, fontWeight: 800, color: C.text }}>이미지제작</h2>
+      <h2 style={{ margin: "0 6px 12px", fontSize: 19, fontWeight: 800, color: C.text }}>포토studio</h2>
       <AiSettingsBox light={theme === "light"} />
       {catBtn("", "최근 파일", "folder")}
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.dim, margin: "14px 12px 4px" }}>만들기</div>
@@ -385,7 +225,7 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
     ) : (
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "26px 28px", color: C.text, fontFamily: FONT }}>
       {top}
-      <div style={{ fontSize: 22, fontWeight: 800 }}>이미지제작</div>
+      <div style={{ fontSize: 22, fontWeight: 800 }}>포토studio</div>
       <div style={{ fontSize: 14.5, color: C.sub, marginTop: 6 }}>포토샵 파일(PSD)을 그대로 열고, 고치고, PSD 로 저장해요. 디자이너와 파일을 주고받을 수 있어요.</div>
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
         <Btn primary onClick={onNew}><Icon name="plus" size={17} />새 파일</Btn>
@@ -411,10 +251,7 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
           </div>
         ))}
       </div>
-      {onSample && (
-        <SampleGrid cat="youtube" oneRow title="AI 템플릿" onSample={onSample} onAi={onAi} mine={mine} onMine={onMine} onMineRemove={onMineRemove}
-          picks={[{ id: "yt_split", cat: "youtube" }, { id: "band", cat: "youtube" }, { id: "blog_clean", cat: "blog" }, { id: "card", cat: "sns" }, { id: "sns_cover", cat: "sns" }, { id: "flyer_a", cat: "realty" }, { id: "window", cat: "realty" }, { id: "yt_price", cat: "youtube" }]} />
-      )}
+      {/* 처음 화면의 [AI 템플릿] 줄은 뺐다 (2026-10-30 사장님) — 템플릿·AI 채우기는 [새 파일] 의 새로 만들기 창에서 */}
     </div>
     )}
     </div>
@@ -445,7 +282,11 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   const [designOpen, setDesignOpen] = useState(false); // AI 자동 디자인 창
   const [myTpls, setMyTpls] = useState<MyTpl[] | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newInit, setNewInit] = useState<NewInit | null>(null); // 처음 화면에서 고른 종류 (새 문서 창의 탭·크기)
+  const [newInit, setNewInit] = useState<NewInit | null>(null);
+  // 홈 [+ 이미지 만들기] — 새로 만들기 창을 바로 (2026-10-30 사장님)
+  useEffect(() => {
+    try { if (sessionStorage.getItem("gs-photo-new")) { sessionStorage.removeItem("gs-photo-new"); setNewOpen(true); } } catch {}
+  }, []); // 처음 화면에서 고른 종류 (새 문서 창의 탭·크기)
   const [closing, setClosing] = useState<Doc | null>(null);
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState("");
@@ -529,6 +370,13 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   }, [hasDoc]);
   useEffect(() => () => { window.dispatchEvent(new CustomEvent("studio:editor", { detail: false })); }, []);
   const setSel = (k: string | null) => { if (k !== sel) setMaskEditS(false); setSelS(k); setSide(""); };
+  // 그림 레이어를 고르면 투명한 가장자리를 정리 — 파란 선택 틀이 보이는 그림에 딱 맞게 (포토샵처럼, 2026-10-30 사장님)
+  // 보이는 모습은 그대로라 되돌리기 기록에 남기지 않는다
+  useEffect(() => {
+    if (!doc || !sel) return;
+    const l = findLayer(kids(doc.psd), sel);
+    if (paintable(l) && !l._maskOf && l.canvas && l.canvas.width * l.canvas.height <= 8_000_000 && trimLayer(l)) bump();
+  }, [sel, doc?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   /** 지금 고른 레이어 모두 (맨 처음이 속성 칸에 보이는 것) */
   const allSel = (): string[] => {
     if (!doc || !sel) return [];
@@ -1393,12 +1241,23 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
       await Promise.all(layoutFonts(l).map((f) => loadFont(f).catch(() => {})));
       const ag = await getStudioAgency().catch(() => null);
       const d = newDoc({ name: l.name.replace(/[\\/:*?"<>|]/g, " "), width: size.w, height: size.h, bg: "transparent", ppi: size.ppi });
-      d.psd.children = buildLayout(d, l, contentFor(l, placeholderContent(ag?.success && ag.data.name ? ag.data : undefined)), (await loadSampleBg(cat === "youtube" ? "building" : "living")) || placeholderBg(size.w, size.h, "사진을 넣어 주세요"), false); // 샘플 사진 — [사진 바꾸기] 로 내 사진으로
+      d.psd.children = buildLayout(d, l, contentFor(l, placeholderContent(ag?.success && ag.data.name ? ag.data : undefined)), (await loadSampleBg(sampleBgFor(l, cat))) || (await loadSampleBg()) || placeholderBg(size.w, size.h, "사진을 넣어 주세요"), false); // 샘플 사진 — [사진 바꾸기] 로 내 사진으로
+      { const g = guidesForSize(size.w, size.h); if (g.length) setGuides(d, g); } // 채널 배너 — 기기별 영역 안내선
       d.dirty = true;
       d.pristine = false;
       addDoc(d);
+      const bk = backOf(l);
+      if (bk) {
+        // 명함 앞뒤 세트 — 뒷면 문서도 함께 (2026-10-30)
+        d.name = `${d.name} (앞면)`;
+        const d2 = newDoc({ name: `${l.name.replace(/[\\/:*?"<>|]/g, " ")} (뒷면)`, width: size.w, height: size.h, bg: "transparent", ppi: size.ppi });
+        d2.psd.children = buildLayout(d2, bk, contentFor(bk, placeholderContent(ag?.success && ag.data.name ? ag.data : undefined)), null, false);
+        d2.dirty = true;
+        d2.pristine = false;
+        addDoc(d2);
+      }
       syncDirty();
-      say("샘플을 열었어요 — 글자를 두 번 눌러 고치고, [배경 사진] 레이어에서 [사진 바꾸기] 로 사진을 넣어요");
+      say(bk ? "명함 앞면·뒷면을 열었어요 — 위 탭에서 앞면·뒷면을 오가며 고쳐요" : "샘플을 열었어요 — 글자를 두 번 눌러 고치고, [배경 사진] 레이어에서 [사진 바꾸기] 로 사진을 넣어요");
     } finally {
       setBusy("");
     }
@@ -1445,14 +1304,26 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
       if (!r.layout) return;
       d = newDoc({ name: title, width: r.w, height: r.h, bg: "transparent", ppi: r.ppi });
       d.psd.children = buildLayout(d, r.layout, r.content, r.bg, r.aiMark);
+      { const g = guidesForSize(r.w, r.h); if (g.length) setGuides(d, g); } // 채널 배너 — 기기별 영역 안내선
     }
     d.name = title;
     d.meta = r.meta;
     d.dirty = true;
     d.pristine = false;
     addDoc(d);
+    const bk = !r.mine ? backOf(r.layout) : null;
+    if (bk) {
+      // 명함 앞뒤 세트 — 뒷면 문서도 함께 (2026-10-30)
+      d.name = `${title} (앞면)`;
+      const d2 = newDoc({ name: `${title} (뒷면)`, width: r.w, height: r.h, bg: "transparent", ppi: r.ppi });
+      d2.psd.children = buildLayout(d2, bk, r.content, null, false);
+      d2.meta = r.meta;
+      d2.dirty = true;
+      d2.pristine = false;
+      addDoc(d2);
+    }
     syncDirty();
-    say("레이어로 만들었어요 — 글자·사진을 하나씩 고칠 수 있어요");
+    say(bk ? "명함 앞면·뒷면을 만들었어요 — 위 탭에서 앞면·뒷면을 오가며 고쳐요" : "레이어로 만들었어요 — 글자·사진을 하나씩 고칠 수 있어요");
   };
   const insertTpl = (id: string) => {
     if (!doc) return;
@@ -1814,7 +1685,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     // 그룹 · 병합 — 맨 위 것 자리에 새 것을 놓고 나머지는 뺀다
     const W = doc.psd.width, H = doc.psd.height;
     const made: PLayer | null = a === "group"
-      ? { _k: uid(), name: nextName("그룹"), opened: true, children: ls.map((l) => l), blendMode: "pass through" }
+      ? { _k: uid(), name: nextName("폴더"), opened: true, children: ls.map((l) => l), blendMode: "pass through" }
       : rasterize(ls, W, H, top.name || "병합");
     if (!made) return;
     mutate(() => {
@@ -1834,8 +1705,27 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   };
 
   /* 레이어 메뉴 · 단축키 */
+  /** 레이어 연결 / 풀기 (포토샵 사슬 단추) — 고른 레이어가 모두 같은 묶음이면 풀고, 아니면 하나로 묶는다 */
+  const toggleLink = () => {
+    if (!doc) return;
+    const root = kids(doc.psd);
+    const ls = allSel().map((k) => findLayer(root, k)).filter((l): l is PLayer => Boolean(l));
+    if (!ls.length) return;
+    const g0 = ls[0].linkGroup;
+    if (ls.every((l) => isLinked(l) && l.linkGroup === g0)) {
+      mutate(() => { for (const l of ls) { delete l.linkGroup; delete l.linkGroupEnabled; } });
+      say("레이어 연결을 풀었어요");
+      return;
+    }
+    if (ls.length < 2) { say("연결할 레이어를 두 개 이상 골라 주세요 (Ctrl+누르기)"); return; }
+    let max = 0;
+    walk(root, (l) => { if (typeof l.linkGroup === "number") max = Math.max(max, l.linkGroup); });
+    mutate(() => { for (const l of ls) { l.linkGroup = max + 1; l.linkGroupEnabled = true; } });
+    say("레이어를 연결했어요 — 하나를 옮기면 같이 움직여요");
+  };
   const act = async (k: string, a: MenuAct) => {
     if (!doc) return;
+    if (a === "link") { toggleLink(); return; }
     const root = kids(doc.psd);
     const pl = parentList(root, k);
     if (!pl) return;
@@ -1861,7 +1751,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
         setSel(null);
         break;
       case "group": {
-        const g: PLayer = { _k: uid(), name: nextName("그룹"), opened: true, children: [l], blendMode: "pass through" };
+        const g: PLayer = { _k: uid(), name: nextName("폴더"), opened: true, children: [l], blendMode: "pass through" };
         mutate(() => { pl.list.splice(pl.i, 1, g); });
         setSelS(g._k!);
         break;
@@ -1919,18 +1809,34 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     if (what === "open") { l.opened = l.opened === false; bump(); return; }
     act(k, what === "hidden" ? "hide" : "lock");
   };
-  const dropLayer = (k: string, target: string, above: boolean) => {
-    if (!doc || k === target) return;
+  /**
+   * 레이어 끌어 놓기 — target 의 위·아래, 또는 폴더 안으로 (2026-10-30 사장님)
+   * 함께 고른 레이어를 잡고 끌면 모두 같이 · 폴더는 안의 레이어까지 통째로
+   */
+  const dropLayer = (k: string, target: string, where: "above" | "below" | "into") => {
+    if (!doc) return;
     const root = kids(doc.psd);
-    const from = parentList(root, k);
-    if (!from) return;
-    const l = from.list[from.i];
-    if (l.children && findLayer(kids(l), target)) return; // 그룹을 제 안으로는 못 넣는다
+    const picked = allSel().includes(k) ? allSel() : [k];
+    // 쌓인 차례(아래부터)로 — 고른 폴더 안에 든 것은 폴더가 데려간다 · 놓을 자리(target)를 품은 폴더는 못 옮긴다
+    const order: string[] = [];
+    walk(root, (l) => { if (l._k && picked.includes(l._k)) order.push(l._k); });
+    const keys = order.filter((x) => x !== target && !order.some((y) => y !== x && findLayer(kids(findLayer(root, y) || {}), x)));
+    const ls = keys.map((x) => findLayer(root, x)).filter((l): l is PLayer => Boolean(l));
+    if (!ls.length || ls.some((l) => l.children && findLayer(kids(l), target))) return;
+    const tgt = findLayer(root, target);
+    if (where === "into" && !tgt?.children) where = "above";
     mutate(() => {
-      from.list.splice(from.i, 1);
-      const to = parentList(root, target)!;
+      for (const l of ls) { const p = parentList(root, l._k!); if (p) p.list.splice(p.i, 1); }
+      if (where === "into" && tgt) {
+        // 폴더 안 맨 위로 (목록은 위가 앞 — 배열에서는 뒤쪽)
+        tgt.children = [...kids(tgt), ...ls];
+        tgt.opened = true;
+        return;
+      }
+      const to = parentList(root, target);
+      if (!to) return;
       // 목록은 위가 앞 → 배열(아래가 0)에서 "위"는 뒤쪽
-      to.list.splice(above ? to.i + 1 : to.i, 0, l);
+      to.list.splice(where === "above" ? to.i + 1 : to.i, 0, ...ls);
     });
   };
 
@@ -1976,7 +1882,8 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
       // 선택
       if (ctrl && c === "KeyA") return go(() => setSelMask(selectAll(doc.psd.width, doc.psd.height), { kind: "rect", box: { x: 0, y: 0, w: doc.psd.width, h: doc.psd.height } }));
       if (ctrl && sh && c === "KeyD") return go(() => { const o = sels.get(doc.id); if (o?.prev) setSelMask(o.prev, o.pvec || null); });
-      if (ctrl && c === "KeyD") return go(() => setSelMask(null));
+      // Ctrl+D — 선택 영역이 있으면 그것을 풀고(포토샵), 없으면 고른 레이어를 풀어 파란 틀을 없앤다 (2026-10-30 사장님)
+      if (ctrl && c === "KeyD") return go(() => { if (selOf(doc)) setSelMask(null); else setSel(null); });
       if (ctrl && sh && c === "KeyI") return go(() => { const m = selOf(doc); setSelMask(m ? invertMask(m) : null); });
       // 보정
       if (ctrl && sh && alt && c === "KeyB") return go(() => adjust("gray"));
@@ -2046,7 +1953,8 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
         e.preventDefault();
         const n = sh ? 10 : 1;
         const dx = c === "ArrowLeft" ? -n : c === "ArrowRight" ? n : 0, dy = c === "ArrowUp" ? -n : c === "ArrowDown" ? n : 0;
-        const ls = selInOrder().filter((l) => !l.protected?.position);
+        // 연결된 레이어도 같이 (2026-10-30)
+        const ls = withLinked(kids(doc.psd), selInOrder().map((l) => l._k!)).map((k) => findLayer(kids(doc.psd), k)).filter((l): l is PLayer => Boolean(l) && !l!.protected?.position);
         if (ls.length) mutate(() => { for (const l of ls) offsetLayer(l, dx, dy); }, `nudge:${allSel().join(",")}`);
       }
     };
@@ -2291,7 +2199,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   const newGroup = () => {
     if (!doc) return;
     if (sel) { void act(sel, "group"); return; }
-    const g: PLayer = { _k: uid(), name: nextName("그룹"), opened: true, children: [], blendMode: "pass through" };
+    const g: PLayer = { _k: uid(), name: nextName("폴더"), opened: true, children: [], blendMode: "pass through" };
     mutate(() => placeAbove(g));
     setSelS(g._k!);
   };
@@ -2426,7 +2334,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     ] },
     { id: "layer", label: "레이어", items: [
       { t: "새 레이어", key: "Shift+Ctrl+N", go: () => newLayer(), off: !doc },
-      { t: "새 그룹", go: () => { setSelS(null); const g: PLayer = { _k: uid(), name: nextName("그룹"), opened: true, children: [], blendMode: "pass through" }; if (doc) { mutate(() => { if (doc.psd.children) doc.psd.children.push(g); else doc.psd.children = [g]; }); setSelS(g._k!); } }, off: !doc },
+      { t: "새 그룹", go: () => { setSelS(null); const g: PLayer = { _k: uid(), name: nextName("폴더"), opened: true, children: [], blendMode: "pass through" }; if (doc) { mutate(() => { if (doc.psd.children) doc.psd.children.push(g); else doc.psd.children = [g]; }); setSelS(g._k!); } }, off: !doc },
       "-",
       { t: "새 그룹으로 묶기", key: "Ctrl+G", go: () => void act(S, "group"), off: !sel },
       { t: "그룹 풀기", key: "Shift+Ctrl+G", go: () => void act(S, "ungroup"), off: !selL?.children },
@@ -2994,6 +2902,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
         onLayerThumb={() => setMaskEditS(false)} onDrop={dropLayer} onAct={(k, a) => void act(k, a)}
         onRename={(k, name) => { const l = findLayer(kids(doc.psd), k); if (l && l.name !== name) mutate(() => { l.name = name; }); }} />
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2, height: 36, padding: "0 8px", borderTop: `1px solid ${C.line}` }}>
+        {iconBtn(svg(LINK_D), "레이어 연결 / 풀기 — 두 개 이상 고르고 누르면 같이 움직여요", toggleLink, !sel, Boolean(selL && isLinked(selL)))}
         {iconBtn(<span style={{ fontStyle: "italic", fontWeight: 800, fontSize: 14 }}>fx</span>, "레이어 스타일 (효과)", () => void act(S, "fx"), !sel || Boolean(selL?.children))}
         <button type="button" title={"레이어 마스크 추가 — 선택 영역이 있으면 그 안만 보여요 · Alt+누르기 = 모두 숨기기(검정)"} disabled={!sel || Boolean(selL?.children)}
           onClick={(e) => addMask(e.altKey)}
@@ -3244,7 +3153,8 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
           </div>
         </Modal>
       )}
-      {designOpen && <DesignDialog init={designInit} canRefill={Boolean(doc && hasSlots(doc))} mine={myTpls || []} onDone={(r) => void onDesignDone(r)} onClose={() => setDesignOpen(false)} />}
+      {designOpen && <DesignDialog init={designInit} canRefill={Boolean(doc && hasSlots(doc))} mine={myTpls || []} onDone={(r) => void onDesignDone(r)} onClose={() => setDesignOpen(false)}
+        onCreate={(o) => { setDesignOpen(false); create(o); }} onOpenMine={(t) => { setDesignOpen(false); void openMine(t); }} onMineRemove={(t) => void removeMine(t)} />}
       {fltDlg && FILTERS[fltDlg.id] && <FilterDialog key={fltDlg.id + fltDlg.k} filter={FILTERS[fltDlg.id]} init={lastFilter.current?.id === fltDlg.id ? lastFilter.current.v : null} onPreview={fltPreview} onOk={fltOk} onCancel={fltCancel} />}
       {imgDlg === "size" && doc && <ImageSizeDialog w0={doc.psd.width} h0={doc.psd.height} ppi0={ppi || 72} onClose={() => setImgDlg("")}
         onOk={(w, h, p) => { setImgDlg(""); if (w === doc.psd.width && h === doc.psd.height && p === (ppi || 72)) return; mutate(() => imageSizeDoc(doc, w, h, p)); sels.delete(doc.id); fitDoc(doc.id); }} />}
@@ -3299,7 +3209,9 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
           </div>
         </Modal>
       )}
-      {newOpen && <NewDocDialog init={newInit} onCreate={create} onClose={() => { setNewOpen(false); setNewInit(null); }} onSample={(l, size, ai, cat) => void openSample(l, size, ai, cat)} mine={myTpls} onMine={useMine} onMineRemove={(t) => void removeMine(t)} />}
+      {/* [새 파일] — 새로 만들기 창을 재료 없음(빈 문서)부터 (2026-10-30 새로운 문서 + AI 자동 디자인 하나로) */}
+      {newOpen && <DesignDialog start="none" newInit={newInit} canRefill={false} mine={myTpls || []} onClose={() => { setNewOpen(false); setNewInit(null); }}
+        onCreate={create} onDone={(r) => { setNewOpen(false); setNewInit(null); void onDesignDone(r); }} onOpenMine={(t) => { setNewOpen(false); setNewInit(null); void openMine(t); }} onMineRemove={(t) => void removeMine(t)} />}
       {closing && (
         <Modal title="저장하지 않은 내용이 있어요" onClose={() => setClosing(null)} width={500}
           footer={<><Btn onClick={() => setClosing(null)}>취소</Btn><Btn onClick={() => reallyClose(closing)}>저장 안 함</Btn><Btn primary onClick={async () => { if (await save(closing)) reallyClose(closing); }}>저장</Btn></>}>

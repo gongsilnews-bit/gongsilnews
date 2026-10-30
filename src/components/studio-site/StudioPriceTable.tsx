@@ -10,11 +10,12 @@ import Link from "next/link";
  */
 const ACCENT = "#e8890c";
 const SOFT = "#fdf4e7";
+const CORP = "#1e3a5f"; // Studio 법인 — 남색 (2026-10-30)
 const LINE = "#e5e7eb";
 
 type Plan = {
   key: string; name: string; icon: React.ReactNode; tag?: string;
-  price: (y: boolean) => { won: string; per: string; sub?: string };
+  price: (y: boolean) => { won: string; per: string; sub?: string; day?: string; year?: string };
   cta: { label: string; href: string; solid?: boolean };
   base: string[];
   items: string[];
@@ -32,10 +33,16 @@ const ic = (d: string) => (
  * 2026-10-29: 이용권 Pro · Studio 와 공실 한도는 실제로 들어감 (permissionCheck.ts studioPlan). 영상·이미지 편집 잠금은 아직
  * TEMP_PRICES 가 true 인 동안 화면에 "임시 금액" 표시가 붙는다. 금액을 정하면 아래 값을 고치고 false 로.
  */
-const TEMP_PRICES = true;
-const mon = (m: number) => (y: boolean) => (y ? { won: (m * 12).toLocaleString(), per: "/ 년", sub: `월 환산 ₩ ${m.toLocaleString()}/월` } : { won: m.toLocaleString(), per: "/ 월" });
+export const TEMP_PRICES = true;
+/* 연 구독만 받는다 (2026-10-30 사장님) — 큰 글자는 월 금액, 작게 1년 결제 금액 · 하루 금액 (연 금액만 크면 부담스러워 보여서) */
+const mon = (m: number) => () => ({
+  won: m.toLocaleString(), per: "/ 월",
+  sub: `1년 ${(m * 12).toLocaleString()}원 · 한 번에 결제`,
+  day: `하루 약 ${(Math.round((m * 12) / 365 / 100) * 100).toLocaleString()}원`,
+  year: (m * 12).toLocaleString(),
+});
 
-const PLANS: Plan[] = [
+export const PLANS: Plan[] = [
   {
     key: "free", name: "Free",
     icon: ic("M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"),
@@ -47,7 +54,7 @@ const PLANS: Plan[] = [
     extra: ["중개사 서류 승인 후 이용", "가입비 · 이용료 없음"],
   },
   {
-    key: "basic", name: "Pro",
+    key: "basic", name: "Pro(일반사무소)",
     icon: ic("M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18.4 5.6l-2.1 2.1M21 12h-3M8 16a4 4 0 1 1 8 0v3H8z"),
     price: mon(30000),
     cta: { label: "시작하기", href: "/marketing/apply" },
@@ -57,30 +64,41 @@ const PLANS: Plan[] = [
     extra: ["자료실 · 커뮤니티", "이름표 공실마케팅 로고"],
   },
   {
-    key: "standard", name: "Studio", tag: "추천",
+    key: "standard", name: "Studio(일반사무소)", tag: "추천",
     icon: ic("M4 6h16v12H4zM10 9l5 3-5 3z"),
     price: mon(50000),
     cta: { label: "시작하기", href: "/marketing/apply", solid: true },
     base: ["공실 50건 등록", "기사 월 10건 등록"],
     items: ["블로그 · SNS 자동 작성 무제한", "AI 매물보고서 무제한", "영상 편집 (동영상제작) · AI 성우 · 자동 자막", "이미지 편집 · 템플릿 전체"],
-    extraTitle: "Pro의 모든 기능 포함",
+    extraTitle: "Pro(일반사무소)의 모든 기능 포함",
     extra: ["인테리어 · 리모델링 AI", "화면캡처 · 녹화 · 강의 녹화"],
   },
   {
-    key: "biz", name: "Business", tag: "법인/기업/단체/기관용",
+    // 중개법인 (2026-10-30 사장님) — 기능은 Studio 와 같고 한도만 20% 더 (공실 60 · 기사 월 12), 월 7만
+    key: "corp", name: "Studio(중개법인)", tag: "중개법인용",
+    icon: ic("M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"),
+    price: mon(70000),
+    cta: { label: "시작하기", href: "/marketing/apply", solid: true },
+    base: ["공실 60건 등록", "기사 월 12건 등록"],
+    items: ["Studio(일반사무소)의 모든 기능 그대로", "블로그 · SNS 자동 작성 무제한", "AI 매물보고서 무제한", "영상 편집 (동영상studio) · 이미지 편집 (포토studio)"],
+    extraTitle: "Studio(일반사무소)와 같은 기능",
+    extra: ["사업자등록번호로 중개법인 확인"],
+  },
+  {
+    key: "biz", name: "Business", tag: "세무사·법무사·변호사 등 전문가용",
     icon: ic("M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"),
     price: mon(100000),
     cta: { label: "시작하기", href: "/marketing/apply", solid: true },
     base: ["공실 100건 등록", "기사 월 20건 등록"],
-    items: ["Studio 항목 모두 무제한", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
-    extraTitle: "Studio의 모든 기능 포함",
+    items: ["Studio(일반사무소) 항목 모두 무제한", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
+    extraTitle: "Studio(일반사무소)의 모든 기능 포함",
     extra: ["전담 상담", "세금계산서 발행"],
   },
 ];
 
 const NOTES = [
   "모든 금액은 부가세를 포함한 최종 결제 금액이에요.",
-  "월 구독과 연 구독은 쓰는 기능이 같아요. 연 구독은 1년 요금을 한 번에 결제해요.",
+  "모든 요금제는 1년 단위로 결제해요. 표의 월 금액은 1년 금액을 12로 나눈 금액이에요.",
   "공실뉴스부동산은 중개사 서류가 승인되면 무료로 이용할 수 있어요.",
   "그 외 궁금한 점이 있으시다면 채팅 상담을 통해 문의 주세요.",
 ];
@@ -155,27 +173,46 @@ const coin = (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.8" aria-hidden style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /></svg>
 );
 
-export default function StudioPriceTable() {
-  const [yearly, setYearly] = useState(false);
+/**
+ * compact = 앱 머리줄 [업그레이드하기] 창 안에서 (2026-10-30 사장님: 캔바 모양 말고 우리 금액안내 디자인 그대로)
+ *  — 위 여백·제목을 줄이고 아래 흘러가는 알약 줄은 뺀다. 버튼은 새 창으로 (앱 화면을 떠나지 않게)
+ * current = 지금 쓰는 요금제 열쇠 (free · basic · standard · biz) — 그 칸 버튼은 "지금 쓰는 요금제"
+ */
+/**
+ * allowed = 이 회원이 고를 수 있는 요금제 열쇠 (2026-10-30 사장님: 회원 구분대로) — 일반사무소 basic·standard · 중개법인 corp · 전문가 biz.
+ * 고를 수 없는 칸은 버튼 대신 "○○용" 글자만 (칸은 그대로 보인다)
+ */
+export default function StudioPriceTable({ compact = false, current, allowed }: { compact?: boolean; current?: string; allowed?: string[] } = {}) {
+  const yearly = false; // 연 구독만 — 금액은 늘 월 금액으로 보여 준다
+  // 창 안에서는 캔바처럼 칸을 눌러 고르고 아래 단추 하나로 (2026-10-30 사장님: 박스 디자인은 그대로 · 선택은 캔바처럼)
+  const ORDER = ["free", "basic", "standard", "corp", "biz"];
+  const curIdx = Math.max(0, ORDER.indexOf(current || "free"));
+  const canPick = (key: string) => compact && ORDER.indexOf(key) > curIdx && (!allowed || allowed.includes(key));
+  // 처음엔 고를 수 있는 것 중 바로 위 단계
+  const [picked, setPicked] = useState(() => ORDER.find((k) => ORDER.indexOf(k) > curIdx && (!allowed || allowed.includes(k))) || ORDER[Math.min(curIdx + 1, ORDER.length - 1)]);
+  /** 고를 수 없는 칸에 보일 말 */
+  const whoFor = (key: string) => (key === "corp" ? "중개법인용" : key === "biz" ? "세무사·법무사·변호사 등 전문가용" : key === "free" ? "" : "일반 중개사무소용");
+  const isHl = (key: string) => (compact ? key === picked : key === "standard");
+  const pickProps = (key: string) => (canPick(key) ? { onClick: () => setPicked(key), style: { cursor: "pointer" } as React.CSSProperties } : {});
+  const pickedPlan = PLANS.find((p) => p.key === picked);
+  /** 칸 색 — Studio 주황 · Business 검은 갈색 (띠 색과 같게) · 창 안 지금 쓰는 요금제는 연한 회색 (2026-10-30 사장님) */
+  const toneOf = (key: string) => (key === "biz" ? { line: "#1f1714", soft: "#f4f1ef", text: "#1f1714" } : key === "corp" ? { line: CORP, soft: "#eef3f8", text: CORP } : { line: ACCENT, soft: SOFT, text: ACCENT });
+  const cellBg = (key: string) => (compact && key === current ? "#f3f4f6" : isHl(key) ? toneOf(key).soft : "#fff");
+  /** 창 안 지금 등급 — 회색 테두리 · 위에 "지금 등급" 띠 (2026-10-30 사장님: 지금 등급도 라인으로) */
+  const isCur = (key: string) => compact && key === current;
+  const lineOf = (key: string) => (isHl(key) ? toneOf(key).line : isCur(key) ? "#9ca3af" : LINE);
   const font = "'Pretendard Variable','Pretendard',-apple-system,sans-serif";
   const cols = PLANS.length;
-  const W = 290 * cols;
+  const W = (cols > 4 ? 250 : 290) * cols; // 다섯 칸이면 칸을 조금 좁게
 
   return (
     <div style={{ fontFamily: font, color: "#111827", background: "#fff", wordBreak: "keep-all" }}>
-      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 24px 0", textAlign: "center" }}>
+      <section style={{ maxWidth: 1200, margin: "0 auto", padding: compact ? "36px 24px 0" : "80px 24px 0", textAlign: "center" }}>
         {TEMP_PRICES && <div style={{ display: "inline-block", marginBottom: 18, padding: "6px 14px", borderRadius: 999, background: "#fef3c7", color: "#92400e", fontSize: 13, fontWeight: 700 }}>임시 금액 · 요금제 금액과 항목은 아직 정해지지 않았어요</div>}
-        <h1 style={{ fontSize: "clamp(34px,4.4vw,52px)", fontWeight: 600, letterSpacing: "-0.03em", margin: "0 0 56px" }}>여러분에게 맞는 요금제를 찾아 보세요</h1>
+        <h1 style={{ fontSize: compact ? 30 : "clamp(34px,4.4vw,52px)", fontWeight: 600, letterSpacing: "-0.03em", margin: compact ? "0 0 28px" : "0 0 56px" }}>여러분에게 맞는 요금제를 찾아 보세요</h1>
 
-        {/* 월 구독 · 연 구독 */}
-        <div style={{ display: "inline-flex", padding: 6, borderRadius: 12, background: "#f3f4f6", border: `1px solid ${LINE}`, marginBottom: 40 }}>
-          {([["월 구독", false], ["연 구독", true]] as const).map(([t, y]) => (
-            <button key={t} type="button" onClick={() => setYearly(y)}
-              style={{ border: 0, cursor: "pointer", width: 180, height: 42, borderRadius: 8, fontSize: 14.5, fontWeight: yearly === y ? 700 : 500, fontFamily: font, background: yearly === y ? "#fff" : "transparent", color: yearly === y ? "#111827" : "#6b7280", boxShadow: yearly === y ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
-              {t}
-            </button>
-          ))}
-        </div>
+        {/* 연 구독만 — 월·연 고르는 칸은 없앴다 (2026-10-30) */}
+        <div style={{ fontSize: 15, color: "#4b5563", marginBottom: compact ? 28 : 40 }}>모든 요금제는 <b style={{ color: "#111827" }}>1년 단위</b>로 결제해요</div>
       </section>
 
       {/* 요금제 칸 */}
@@ -183,22 +220,45 @@ export default function StudioPriceTable() {
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
           {/* 추천 띠 */}
           {PLANS.map((p) => (
-            <div key={p.key + "tag"} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: p.tag ? (p.key === "biz" ? "#1f1714" : ACCENT) : "transparent" }}>{p.tag || ""}</div>
+            <div key={p.key + "tag"} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: isCur(p.key) ? "#9ca3af" : p.tag ? (p.key === "biz" ? "#1f1714" : p.key === "corp" ? CORP : ACCENT) : "transparent" }}>{isCur(p.key) ? "지금 등급" : p.tag || ""}</div>
           ))}
           {/* 머리 */}
           {PLANS.map((p, i) => {
             const pr = p.price(yearly);
-            const hl = p.key === "standard";
+            const hl = isHl(p.key);
             return (
-              <div key={p.key + "head"} style={{ padding: "32px 24px 24px", textAlign: "center", background: hl ? SOFT : "#fff", borderTop: `1px solid ${hl ? ACCENT : LINE}`, borderLeft: `1px solid ${hl ? ACCENT : LINE}`, borderRight: hl || i === cols - 1 ? `1px solid ${hl ? ACCENT : LINE}` : "none" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? ACCENT : "#6b7280" }}>{p.icon}{p.name}</div>
+              <div key={p.key + "head"} {...pickProps(p.key)} style={{ ...pickProps(p.key).style, position: "relative", padding: "32px 24px 24px", textAlign: "center", background: cellBg(p.key), borderTop: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || isCur(p.key) || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
+                {isCur(p.key) && i < cols - 1 && (
+                  // 오른쪽(더 높은 요금제)으로 살짝 움직이는 화살표 — 업그레이드 유도
+                  <span aria-hidden style={{ position: "absolute", right: -19, top: 118, zIndex: 2, width: 38, height: 38, borderRadius: 19, background: ACCENT, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(232,137,12,0.45)", animation: "pm-nudge 1.2s ease-in-out infinite" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                  </span>
+                )}
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? toneOf(p.key).text : "#6b7280" }}>{p.icon}{p.name}</div>
                 <div style={{ margin: "14px 0 6px", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
                   <span style={{ fontSize: 20, fontWeight: 700 }}>₩</span>
                   <span style={{ fontSize: 30, fontWeight: 700 }}>{pr.won}</span>
                   <span style={{ fontSize: 13, color: "#6b7280" }}>{pr.per}</span>
                 </div>
                 <div style={{ fontSize: 13, color: "#6b7280", minHeight: 20 }}>{pr.sub || ""}</div>
-                <Link href={p.cta.href} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
+                <div style={{ fontSize: 12, color: "#9ca3af", minHeight: 18 }}>{pr.day || ""}</div>
+                {current === p.key ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, background: "#f3f4f6", color: "#6b7280", border: `1px solid ${LINE}` }}>지금 쓰는 요금제</div>
+                ) : compact ? (
+                  // 창 안 — [선택하기] / [✓ 선택됨] (낮은 요금제는 비워 둔다)
+                  canPick(p.key) ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, background: hl ? toneOf(p.key).line : "#fff", color: hl ? "#fff" : toneOf(p.key).text, border: `1px solid ${hl ? toneOf(p.key).line : "#cbd5e1"}` }}>
+                      <span style={{ width: 16, height: 16, borderRadius: 8, border: `2px solid ${hl ? "#fff" : toneOf(p.key).text}`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{hl && <span style={{ width: 6, height: 6, borderRadius: 3, background: "#fff" }} />}</span>
+                      {hl ? "선택됨" : "선택하기"}
+                    </div>
+                  ) : (
+                    <div style={{ height: 50, marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#9ca3af" }}>
+                      {ORDER.indexOf(p.key) > curIdx && allowed && !allowed.includes(p.key) ? whoFor(p.key) : ""}
+                    </div>
+                  )
+                ) : (
+                  <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : p.key === "corp" ? CORP : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : p.key === "corp" ? CORP : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
+                )}
                 <div style={{ marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
                   {p.base.map((b) => <div key={b} style={{ fontSize: 14, color: "#374151", display: "flex", gap: 8 }}>{coin}<span><Bold t={b} /></span></div>)}
                 </div>
@@ -207,9 +267,9 @@ export default function StudioPriceTable() {
           })}
           {/* 사용 가능 항목 */}
           {PLANS.map((p, i) => {
-            const hl = p.key === "standard";
+            const hl = isHl(p.key);
             return (
-              <div key={p.key + "items"} style={{ padding: "26px 24px", textAlign: "left", background: hl ? SOFT : "#fff", borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${hl ? ACCENT : LINE}`, borderRight: hl || i === cols - 1 ? `1px solid ${hl ? ACCENT : LINE}` : "none" }}>
+              <div key={p.key + "items"} {...pickProps(p.key)} style={{ ...pickProps(p.key).style, padding: "26px 24px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || isCur(p.key) || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 4 }}>사용 가능 항목</div>
                 <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "가입만 하면 바로 써요." : "공실마케팅 앱에서 써요."}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -220,9 +280,9 @@ export default function StudioPriceTable() {
           })}
           {/* 특별한 기능 */}
           {PLANS.map((p, i) => {
-            const hl = p.key === "standard";
+            const hl = isHl(p.key);
             return (
-              <div key={p.key + "extra"} style={{ padding: "26px 24px 32px", textAlign: "left", background: hl ? SOFT : "#fff", borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${hl ? ACCENT : LINE}`, borderLeft: `1px solid ${hl ? ACCENT : LINE}`, borderRight: hl || i === cols - 1 ? `1px solid ${hl ? ACCENT : LINE}` : "none" }}>
+              <div key={p.key + "extra"} {...pickProps(p.key)} style={{ ...pickProps(p.key).style, padding: "26px 24px 32px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || isCur(p.key) || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 18 }}>{p.extraTitle}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {p.extra.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span></div>)}
@@ -239,7 +299,7 @@ export default function StudioPriceTable() {
       </section>
 
       {/* 모든 플랜에서 */}
-      <section style={{ maxWidth: 1440, margin: "0 auto", padding: "96px 0 112px", textAlign: "center" }}>
+      {!compact && <section style={{ maxWidth: 1440, margin: "0 auto", padding: "96px 0 112px", textAlign: "center" }}>
         <style>{MARQUEE_CSS}</style>
         <h2 style={{ fontSize: "clamp(24px,2.6vw,32px)", fontWeight: 600, margin: "0 0 40px" }}>
           모든 요금제에서 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden style={{ verticalAlign: "-2px" }}><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#f5b301" /></svg>AI를 포함한 다양한 기능을 경험하세요.
@@ -249,7 +309,26 @@ export default function StudioPriceTable() {
           <Marquee items={ROW1} />
           <Marquee items={ROW2} reverse />
         </div>
-      </section>
+      </section>}
+      {compact && pickedPlan && canPick(picked) && (() => {
+        const bar = picked === "biz" ? { bg: "#1f1714", fg: "#fff", btnBg: "#fff", btnFg: "#1f1714", glow: "255,255,255" }
+          : picked === "corp" ? { bg: CORP, fg: "#fff", btnBg: "#fff", btnFg: CORP, glow: "255,255,255" }
+          : picked === "standard" ? { bg: ACCENT, fg: "#fff", btnBg: "#fff", btnFg: ACCENT, glow: "255,255,255" }
+          : { bg: "#f3f4f6", fg: "#111827", btnBg: "#111827", btnFg: "#fff", glow: "17,24,39" };
+        const pr = pickedPlan.price(yearly);
+        return (
+          <div style={{ position: "sticky", bottom: 0, marginTop: 24, padding: "14px 24px", background: bar.bg, color: bar.fg, display: "flex", alignItems: "center", justifyContent: "center", gap: 18, boxShadow: "0 -4px 16px rgba(0,0,0,0.08)" }}>
+            <span style={{ fontSize: 15 }}><b>{pickedPlan.name}</b> · 월 {pr.won}원 <span style={{ opacity: 0.8 }}>(1년 {pr.year}원)</span></span>
+            <Link href={pickedPlan.cta.href} target="_blank"
+              // 살짝 커졌다 작아지며 둘레로 빛이 퍼진다 — 누르고 싶게 (2026-10-30 사장님)
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, padding: "0 30px", borderRadius: 10, fontSize: 15.5, fontWeight: 800, textDecoration: "none", background: bar.btnBg, color: bar.btnFg, ["--pm-glow" as string]: bar.glow, animation: "pm-glow 1.8s ease-in-out infinite" } as React.CSSProperties}>
+              공실마케팅 {pickedPlan.name}로 업그레이드하기
+            </Link>
+          </div>
+        );
+      })()}
+      {compact && <style>{"@keyframes pm-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}@keyframes pm-glow{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(var(--pm-glow),0.55)}50%{transform:scale(1.05);box-shadow:0 0 0 10px rgba(var(--pm-glow),0)}}@media (prefers-reduced-motion:reduce){[style*=pm-nudge],[style*=pm-glow]{animation:none!important}}"}</style>}
+
     </div>
   );
 }

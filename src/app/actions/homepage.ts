@@ -1,7 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { canUseHomepage } from "@/utils/planCheck";
+import { canUseHomepage, canOpenHomepage } from "@/utils/planCheck";
 
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'api', 'm', 'admin', 'news', 'study', 'biz', 'flyer', 'sites',
@@ -221,14 +221,6 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
 
     if (!member) return { success: false, reason: "not_found" as const, error: "회원 정보를 찾을 수 없습니다." };
 
-    // 홈페이지 권한 검사. 최고관리자가 회원별로 켜둔 칸 + 공실마케팅 Pro · Studio 이용 중일 때만 (2026-10-29),
-    // 이용 기간이 끝나는 날 같이 닫힌다.
-    const isPremium = canUseHomepage(member, member.can_homepage);
-
-    if (!isPremium) {
-      return { success: false, reason: "paused" as const, error: "일시적으로 중단된 페이지입니다." };
-    }
-
     let companyProfile: any = null;
 
     if (member.role === 'REALTOR') {
@@ -245,6 +237,12 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
         .eq('user_id', hs.owner_id)
         .single();
       companyProfile = biz || null;
+    }
+
+    // 홈페이지 권한 검사 — 서류 승인된 공실뉴스부동산이면 무료로 열린다 (2026-10-30).
+    // 집주인 접수·로고·색상은 Pro · Studio 이용 중일 때만 (화면이 canUseHomepage 로 가른다)
+    if (!canOpenHomepage(member, member.can_homepage, companyProfile?.status)) {
+      return { success: false, reason: "paused" as const, error: "일시적으로 중단된 페이지입니다." };
     }
 
     const flatSettings = {

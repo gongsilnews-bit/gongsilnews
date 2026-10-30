@@ -356,13 +356,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   flex: 1,
                   fontSize: isSmallHeader ? "15.5px" : "17px"
                 }}>
-                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
-                      <span style={{ position: "relative", zIndex: 1 }}>우리동네뉴스</span>
-                      <NavCategoryHighlightMarker categoryKey="map" active={navBubble.key === "map" && !navBubble.leaving && !isSmallHeader} />
-                    </Link>
-                    <NavHighlightBubble show={navBubble.key === "map"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="map" />
-                  </div>
                   {/* 공실뉴스 */}
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
@@ -416,7 +409,15 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
+                  {/* 우리동네뉴스는 오른쪽 공실열람 바로 앞으로 (2026-10-30 사장님) */}
                   <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
+                    <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
+                      <span style={{ position: "relative", zIndex: 1 }}>우리동네뉴스</span>
+                      <NavCategoryHighlightMarker categoryKey="map" active={navBubble.key === "map" && !navBubble.leaving && !isSmallHeader} />
+                    </Link>
+                    <NavHighlightBubble show={navBubble.key === "map"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="map" />
+                  </div>
+                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
                     <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "inline-block", position: "relative" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>공실열람</span>
                       <NavCategoryHighlightMarker categoryKey="gongsil" active={navBubble.key === "gongsil" && !navBubble.leaving && !isSmallHeader} />

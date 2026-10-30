@@ -113,7 +113,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 기사관리처럼 목록이 먼저 — [+ 새로 만들기] + 만든 작업 카드. 홈 카드·.gsn 으로 오면 바로 작업
-  const [mode, setMode] = useState<"" | "list" | "new">("list");
+  // 홈 공실 카드에서 막 눌렀으면(.auto) 목록을 거치지 않고 바로 그 작업으로 (2026-10-30 사장님: 목록이 잠깐 보인다)
+  const [mode, setMode] = useState<"" | "list" | "new">(() => {
+    try { if (typeof window !== "undefined" && JSON.parse(localStorage.getItem(LAST_KEY) || "null")?.auto) return ""; } catch {}
+    return "list";
+  });
   const [wideList, setWideList] = useState(true); // 뉴스칼럼·내 영상 홍보 목록일 때 폭을 넓힌다
   // .gsn 에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsn=<id> 로 연다.
   // 각 화면이 "이 기기에 기억한 마지막 작업"을 불러오는 길을 그대로 쓴다 — 효과(useEffect)보다 먼저, 처음 그릴 때 기억을 바꿔 둔다
@@ -191,7 +195,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   }, [loadAi]);
 
   useEffect(() => {
-    listMyStudioVacancies().then((res) => {
+    // 공실관리 표에서 광고종료 공실을 눌러 들어와도 그 공실이 골라져 있게 (2026-10-30)
+    let lastId = "";
+    try { lastId = JSON.parse(localStorage.getItem(LAST_KEY) || "null")?.vacancyId || ""; } catch {}
+    listMyStudioVacancies(lastId).then((res) => {
       if (res.success) setMine(res.data);
       else {
         setMine([]);
@@ -274,7 +281,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     b.vacancy.load(saved.vacancyId).catch(() => null).then(async (r) => {
       if (!r) {
         // 처음 작업하는 공실 — 홈 카드에서 누른 공실로 바로 분석·캡처, 끝나면 누른 채널 탭 (2026-10-29 사장님)
-        if (!saved!.auto || !saved!.picked) return;
+        if (!saved!.auto || !saved!.picked) { setMode("list"); return; }
         setPicked(saved!.picked);
         if (saved!.tab) setTab(saved!.tab);
         await analyze(saved!.picked);
@@ -286,7 +293,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       setPicked(picked);
       await applyResult(r, picked);
       if (saved!.tab) setTab(saved!.tab);
-    }).catch(() => {});
+    }).catch(() => setMode("list"));
   }, []);
   const chooseTab = (id: string) => {
     setTab(id);
@@ -376,7 +383,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
       {/* 왼쪽: 작업 메뉴 — 제목·내 AI 연결·카테고리 (메인 메뉴처럼 글자 위주로 얌전하게) */}
       <aside style={{ width: 210, flexShrink: 0, background: theme.cardBg, borderRight: `1px solid ${theme.border}`, padding: "22px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
-        <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>뉴스·SNS발행</h2>
+        <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>뉴스·SNS자동화</h2>
           {/* 연결되면 초록, 아니면 회색 — 누르면 [내 AI 연결] 창 */}
           <button onClick={() => bridge()?.openAiConnect()} title="내 AI 연결"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
@@ -538,7 +545,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             )}
             <LinkNotice darkMode={Boolean((theme as { darkMode?: boolean }).darkMode)} />
             {category === "gongsil" ? (
-              <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} showTypes addLabel="새로 만들기" onAdd={openNew}
+              // [새로 만들기] → 공실등록 화면, 등록·취소하면 이 화면으로 돌아온다 (2026-10-30 사장님)
+              <VacancyCardGrid theme={theme as unknown as React.ComponentProps<typeof VacancyCardGrid>["theme"]} memberId={memberId} showTypes addLabel="새로 만들기" onAdd={() => router.push("?menu=gongsil&action=write&back=sns", { scroll: false })}
                 onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
                 onOpen={(p, t) => void openFromCard(p, t)} />
             ) : (

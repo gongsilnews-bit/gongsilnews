@@ -14,7 +14,7 @@
   .dot.on { border-color: #fff; box-shadow: 0 0 0 2px #2563eb; background-clip: padding-box; }
   .end { margin-left: auto; background: #374151; }
   .end.go { background: #2563eb; color: #fff; }
-  .idle button.on:not(.end) { background: rgba(255,255,255,0.14); color: #e5e7eb; }
+  .idle button.on:not(.end):not(.mouse) { background: rgba(255,255,255,0.14); color: #e5e7eb; }
   .more { position: relative; }
   .more::after { content: ""; position: absolute; right: 3px; bottom: 3px; border: 3px solid transparent; border-right-color: currentColor; border-bottom-color: currentColor; opacity: .7; }
   .menu { position: absolute; bottom: 60px; display: flex; gap: 4px; padding: 5px; border-radius: 10px; background: rgba(17, 20, 28, 0.96); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
@@ -28,6 +28,7 @@
 <script>
 // 판서 도구 막대 — 녹화에 안 찍힌다. 누르면 앱(ink.js)을 거쳐 판서 판에 알린다
 const I = {
+  mouse: '<path d="M5 3l14 7-6 2-3 7z"/>',
   pen: '<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/>',
   hl: '<path d="M9 15l-4 4h5l2-2"/><path d="M8 13l7-7 4 4-7 7z"/>',
   check: '<path d="M4 12l5 5L20 6"/>',
@@ -53,6 +54,8 @@ function render() {
   b.classList.toggle("idle", !st.drawing); // 판서가 꺼져 있으면 고른 도구를 옅게
   const add = (html, cls, title, fn) => { const e = document.createElement("button"); e.innerHTML = html; if (cls) e.className = cls; e.title = title; if (fn) e.onclick = () => { closeMenu(); fn(); }; b.appendChild(e); return e; };
   const sep = () => { const s = document.createElement("span"); s.className = "sep"; b.appendChild(s); };
+  // 마우스 포인터 (맨 앞, 2026-10-30 사장님) — 판서를 잠깐 멈추고 뒤 화면을 누른다. 그린 것은 남고, 도구를 누르면 다시 판서
+  add(svg("mouse"), st.drawing ? "mouse" : "mouse on", "마우스 — 뒤 화면 누르기 (그린 것은 남아요)", () => window.ink.cmd("off"));
   for (const [k, n] of TOOLS) {
     if (k !== "shape") { add(svg(k), st.tool === k ? "on" : "", n, () => window.ink.set({ tool: k })); continue; }
     if (SHAPES.some(([s]) => s === st.tool)) shape = st.tool;

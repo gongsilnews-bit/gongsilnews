@@ -19,7 +19,7 @@ import {
 import { adminGetMemberDetail } from "@/app/admin/actions";
 import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import { getMyArticles } from "@/app/actions/article";
-import { isPermissionAlive } from "@/utils/planCheck";
+import { isPermissionAlive, canUseHomepage, canOpenHomepage } from "@/utils/planCheck";
 
 /** 관리자 상단 바와 편집기가 "사용 중" 저장값을 서로 맞추는 이벤트. detail 은 저장된 is_active */
 export const HOMEPAGE_ACTIVE_EVENT = "homepage-active-change";
@@ -218,14 +218,21 @@ export function useHomepageEditor(memberId: string) {
    * 요금제가 끝나면 1장으로 돌아오지만 저장된 2·3번 장은 지우지 않는다 —
    * 재결제하면 그대로 다시 보인다.
    */
+  /*
+   * 무료·Pro (2026-10-30 사장님) — 서류 승인된 공실뉴스부동산은 무료 홈페이지가 열린다(open).
+   * 집주인 접수·색상·로고·첫 화면 여러 장은 Pro 부터(pro). 공개 화면(SiteClient)과 같은 판정.
+   */
+  const pro = canUseHomepage(member, member?.can_homepage);
+  const open = canOpenHomepage(member, member?.can_homepage, agency?.status);
+
   const maxSlides = Math.max(
     1,
-    Math.min(MAX_HERO_SLIDES, (isPermissionAlive(member, true) ? member?.max_hero_slides : 1) || 1)
+    Math.min(MAX_HERO_SLIDES, (pro && isPermissionAlive(member, true) ? member?.max_hero_slides : 1) || 1)
   );
 
   /* 요금제가 여는 편집 기능. 잠긴 것은 입력칸 대신 안내를 보여준다. */
-  const allowLogo = isPermissionAlive(member, member?.can_site_logo);
-  const allowHeroVideo = isPermissionAlive(member, member?.can_hero_video);
+  const allowLogo = pro && isPermissionAlive(member, member?.can_site_logo);
+  const allowHeroVideo = pro && isPermissionAlive(member, member?.can_hero_video);
 
   const slides: HeroSlide[] = Array.isArray(intake.hero_slides) && intake.hero_slides.length
     ? intake.hero_slides.slice(0, maxSlides)
@@ -360,6 +367,8 @@ export function useHomepageEditor(memberId: string) {
     setIntake,
     slides,
     maxSlides,
+    pro,
+    open,
     allowLogo,
     allowHeroVideo,
     setSlide,

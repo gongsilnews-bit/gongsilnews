@@ -4,6 +4,8 @@ import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from 
 import { createClient } from "@/utils/supabase/client";
 import NotificationBell from "@/components/common/NotificationBell";
 import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
+import { agencyKind, type AgencyKind } from "@/utils/agencyKind";
+import { UpgradeModal, TIER_LABEL, type Tier } from "@/components/admin/UpgradeModal";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm, IconImage } from "@/components/admin/sections/AdminIcons";
 import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
@@ -65,9 +67,9 @@ const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "marketing", label: "보고서·홍보지", icon: <IconSend /> },
-  { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
-  { key: "video", label: "동영상제작", icon: <IconFilm /> },
-  { key: "photo", label: "이미지제작", icon: <IconImage /> },
+  { key: "sns", label: "뉴스·SNS자동화", icon: <IconSend /> },
+  { key: "photo", label: "포토studio", icon: <IconImage /> },
+  { key: "video", label: "동영상studio", icon: <IconFilm /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
 ];
 const STUDIO_MORE_KEYS = ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"];
@@ -84,7 +86,6 @@ const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.ke
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanLabel, isStudioMember, studioPlan, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
-import { canUseHomepage } from "@/utils/planCheck";
 import { SHOW_STUDY } from "@/utils/siteFlags";
 
 export default function RealtyAdminPage() {
@@ -116,10 +117,11 @@ function RealtyAdminContent() {
   }, [menuParam]);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false); // 머리줄 [업그레이드하기] → 가격표 (2026-10-30)
   // 스튜디오 메뉴의 [밝은/어두운 화면] 단추가 고른 값을 관리 화면도 따른다 (한 번 고른 적이 있을 때만 — 처음엔 지금처럼 밝게)
   useEffect(() => {
-    // 메뉴마다 따로 기억 (기본 밝게, 2026-10-23 사장님) — 동영상제작·이미지제작은 각자 gs-studio-theme · gs-photo-theme (기본 어둡게)
-    const load = () => { try { setDarkMode(localStorage.getItem(`gs-admin-theme:${activeMenu}`) === "dark"); } catch {} };
+    // 관리 메뉴(홈~뉴스·SNS자동화)는 모두 하나로 (기본 밝게, 2026-10-30 사장님) — 동영상앱·포토앱은 각자 gs-studio-theme · gs-photo-theme (기본 어둡게)
+    const load = () => { try { setDarkMode(localStorage.getItem("gs-admin-theme") === "dark"); } catch {} };
     load();
     window.addEventListener("gs-admin-theme-change", load);
     return () => window.removeEventListener("gs-admin-theme-change", load);
@@ -152,6 +154,7 @@ function RealtyAdminContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
   const [agencyStatus, setAgencyStatus] = useState<string>("");
+  const [bizKind, setBizKind] = useState<AgencyKind>("general"); // 결제 요금 구분 (2026-10-30)
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [planType, setPlanType] = useState<string>("free");
@@ -282,7 +285,8 @@ function RealtyAdminContent() {
       setStudioEndDate((member as { studio_end_date?: string | null }).studio_end_date || null);
       setUserRole(member.role || "USER");
 
-      const { data: agencyList } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).limit(1);
+      // * — biz_kind 칸(2026-10-30 SQL)이 아직 없어도 깨지지 않게
+      const { data: agencyList } = await supabase.from("agencies").select("*").eq("owner_id", member.id).limit(1);
       const agencyData = agencyList && agencyList.length > 0 ? agencyList[0] : null;
       if (agencyData && agencyData.status) {
         if (agencyData.status === "APPROVED" && !isAdminRole(member.role) && member.role !== "REALTOR") {
@@ -292,6 +296,7 @@ function RealtyAdminContent() {
         }
         setUserRole(getEffectiveMemberRole(member.role, agencyData.status));
         setAgencyStatus(agencyData.status);
+        setBizKind(agencyKind(agencyData as { biz_kind?: string | null; biz_num?: string | null })); // 일반 중개사무소 / 중개법인
         if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED' && member.role === 'REALTOR') setShowDocWarning(true);
       } else {
@@ -368,6 +373,75 @@ function RealtyAdminContent() {
     );
   }
 
+  // 지금 등급 — 무료 · 프로 · 스튜디오 · 비즈니스 (permissionCheck studioPlan 과 같은 판정)
+  // 중개법인이 Studio 를 쓰면 Studio(중개법인)
+  const myTier: Tier = userRole === 'BIZ' ? "biz" : ((p) => (p === "studio" && bizKind === "corp" ? "corp" : p || "free"))(studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }));
+  /* 이름 · 이메일 · 등급 칸 — 앱(공실마케팅 메뉴)에서는 머리줄 오른쪽, 웹 간단 화면에서는 왼쪽 */
+  const userBlock = (
+  <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
+    onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
+    onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}
+    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+    <span style={{ fontWeight: 800, fontSize: 17, color: useStudioMenu ? "#fff" : theme.textPrimary, flexShrink: 0 }}>{userName}</span>
+    <span style={{ fontSize: 14, color: useStudioMenu ? "rgba(255,255,255,0.7)" : darkMode ? "#aaa" : "#666", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{userEmail || "로딩중..."}</span>
+    {useStudioMenu ? (
+      /* 앱 머리줄 — 캔바처럼 지금 등급 + [업그레이드하기] (2026-10-30 사장님) */
+      userRole === 'ADMIN' ? (
+        <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#111827", color: "#fff" }}>최고관리자</span>
+      ) : (() => {
+        const until = formatPlanEnd(userRole === 'BIZ' ? planEndDate : studioEndDate);
+        const tone: Record<Tier, { bg: string; fg: string }> = { free: { bg: "rgba(255,255,255,0.16)", fg: "#fff" }, pro: { bg: "#2563eb", fg: "#fff" }, studio: { bg: "#e8890c", fg: "#fff" }, corp: { bg: "#1e3a5f", fg: "#fff" }, biz: { bg: "#7c3aed", fg: "#fff" } };
+        return (
+          <span title={myTier !== "free" && until ? `이용 기간 ~${until}` : undefined}
+            style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 999, marginLeft: 4, background: tone[myTier].bg, color: tone[myTier].fg }}>
+            {TIER_LABEL[myTier]}
+          </span>
+        );
+      })()
+    ) : (
+    userRole === 'ADMIN' ? (
+      <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#111827", color: "#fff" }}>최고관리자</span>
+    ) : (
+      /*
+       * 등급 이름과 만료일을 한 자리에서 보여준다. 전에는 "공실뉴스" 처럼
+       * 줄여 부르고 만료일은 오른쪽 [종료] 칸에만 있어, 자기 요금제가
+       * 언제 끝나는지 상단에서 알 수 없었다.
+       */
+      (() => {
+        // 부동산회원은 공실마케팅 이용기간 하나로 (2026-10-26) — 끝나는 날도 그 기간
+        const studioOnTag = isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
+        const paid = userRole === 'BIZ' || (userRole === 'REALTOR' && studioOnTag);
+        const endDate = userRole === 'REALTOR' ? studioEndDate : planEndDate;
+        const soon = paid && isPlanEndingSoon(endDate);
+        // 사이트 위쪽 [○○ admin >>] 버튼과 같은 회원별 색 (공실스터디부동산 녹색, 무료부동산 파랑 등)
+        const tone = soon
+          ? { bg: "#f59e0b", fg: "#fff" }
+            : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
+            ? { bg: NEWS_ADMIN_BUTTON_ORANGE, fg: "#fff" }
+            : userRole === 'BIZ'
+              ? { bg: "#7c3aed", fg: "#fff" }
+              : userRole === 'REALTOR'
+                ? { bg: "#2563eb", fg: "#fff" }
+                : { bg: "#6b7280", fg: "#fff" };
+        const until = paid ? formatPlanEnd(endDate) : "";
+        return (
+          <span
+            title={soon ? "요금제 만료가 얼마 남지 않았습니다" : undefined}
+            style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: tone.bg, color: tone.fg }}
+          >
+            {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
+          </span>
+        );
+      })()
+    )
+    )}
+    {!useStudioMenu && agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
+    {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 심사 반려 (서류보완)</span>}
+    {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 서류 검토중</span>}
+    {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
+  </div>
+  );
+
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
       {useStudioMenu ? (
@@ -427,62 +501,27 @@ function RealtyAdminContent() {
           {/* 뒤로·앞으로 (2026-10-28 사장님 — 앱엔 뒤로가기가 없다) + 이름·등급 */}
           <div style={{ display: "flex", alignItems: "center", minWidth: 0, flexShrink: 1 }}>
           {useStudioMenu && <StudioHistoryNav onHome={() => selectMenu("dashboard")} atHome={activeMenu === "dashboard" && !searchParams.get("action")} />}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
-            onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-            <span style={{ fontWeight: 800, fontSize: 17, color: useStudioMenu ? "#fff" : theme.textPrimary, flexShrink: 0 }}>{userName}</span>
-            <span style={{ fontSize: 14, color: useStudioMenu ? "rgba(255,255,255,0.7)" : darkMode ? "#aaa" : "#666", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{userEmail || "로딩중..."}</span>
-            {userRole === 'ADMIN' ? (
-              <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#111827", color: "#fff" }}>최고관리자</span>
-            ) : (
-              /*
-               * 등급 이름과 만료일을 한 자리에서 보여준다. 전에는 "공실뉴스" 처럼
-               * 줄여 부르고 만료일은 오른쪽 [종료] 칸에만 있어, 자기 요금제가
-               * 언제 끝나는지 상단에서 알 수 없었다.
-               */
-              (() => {
-                // 부동산회원은 공실마케팅 이용기간 하나로 (2026-10-26) — 끝나는 날도 그 기간
-                const studioOnTag = isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
-                const paid = userRole === 'BIZ' || (userRole === 'REALTOR' && studioOnTag);
-                const endDate = userRole === 'REALTOR' ? studioEndDate : planEndDate;
-                const soon = paid && isPlanEndingSoon(endDate);
-                // 사이트 위쪽 [○○ admin >>] 버튼과 같은 회원별 색 (공실스터디부동산 녹색, 무료부동산 파랑 등)
-                const tone = soon
-                  ? { bg: "#f59e0b", fg: "#fff" }
-                    : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
-                    ? { bg: NEWS_ADMIN_BUTTON_ORANGE, fg: "#fff" }
-                    : userRole === 'BIZ'
-                      ? { bg: "#7c3aed", fg: "#fff" }
-                      : userRole === 'REALTOR'
-                        ? { bg: "#2563eb", fg: "#fff" }
-                        : { bg: "#6b7280", fg: "#fff" };
-                const until = paid ? formatPlanEnd(endDate) : "";
-                return (
-                  <span
-                    title={soon ? "요금제 만료가 얼마 남지 않았습니다" : undefined}
-                    style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: tone.bg, color: tone.fg }}
-                  >
-                    {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
-                  </span>
-                );
-              })()
-            )}
-            {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 심사 반려 (서류보완)</span>}
-            {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 서류 검토중</span>}
-            {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
-            {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
-          </div>
-          </div>
-          {/* 웹 아이콘 메뉴(간단한 화면)에는 물건접수홈페이지 줄도 뺀다 (2026-10-29 사장님) */}
+          {/* 물건접수홈페이지 줄은 왼쪽, 사용자 칸은 오른쪽으로 (2026-10-30 사장님) · 웹 아이콘 메뉴(간단한 화면)에는 이 줄을 뺀다 (2026-10-29) */}
           {memberId && useStudioMenu && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
+          {!useStudioMenu && userBlock}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
+            {useStudioMenu && userBlock}
+            {useStudioMenu && userRole !== 'ADMIN' && myTier !== "biz" && myTier !== "corp" && ( /* 더 올라갈 요금제가 없으면 숨긴다 */
+              <button type="button" onClick={() => setUpgradeOpen(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 16px", borderRadius: 999, border: 0, background: "#fff", color: "#111827", fontSize: 13.5, fontWeight: 800, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>
+                {/* 왕관 — 우리 주황 (그림 글자 👑 대신, 2026-10-30 사장님) */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#e8890c" aria-hidden><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.8 10.5H4.8z" /><rect x="4.8" y="19.5" width="14.4" height="1.8" rx="0.9" /></svg>
+                업그레이드하기
+              </button>
+            )}
             <NotificationBell color={useStudioMenu ? "#ffffff" : darkMode ? "#e1e4e8" : "#333"} />
             {!useStudioMenu && <button onClick={() => setDarkMode(!darkMode)} style={{ background: useStudioMenu ? "rgba(255,255,255,0.08)" : darkMode ? "#2c2d31" : "none", border: `1px solid ${useStudioMenu ? "rgba(255,255,255,0.25)" : darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>}
             <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut({ scope: "local" }); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: useStudioMenu ? "1px solid rgba(255,255,255,0.25)" : "none", borderRadius: 6, background: useStudioMenu ? "rgba(255,255,255,0.12)" : darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
           </div>
         </header>
 
+        {upgradeOpen && <UpgradeModal current={myTier} kind={userRole === 'BIZ' ? "biz" : bizKind} onClose={() => setUpgradeOpen(false)} />}
         <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && useStudioMenu && <StudioHomeSection theme={theme} memberId={memberId || undefined} onMenuChange={selectMenu} />}
           {activeMenu === "dashboard" && !useStudioMenu && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
@@ -517,7 +556,7 @@ function RealtyAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} initialTab={searchParams.get("tab") === "agency" ? 1 : 0} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} allowed={canUseHomepage({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }, true)} />}
+          {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} />}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
           {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}

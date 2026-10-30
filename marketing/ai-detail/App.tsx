@@ -693,7 +693,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "flyer" })
       });
       const json = await res.json();
       if (json.success) {
@@ -767,6 +767,21 @@ function App() {
     setShowSharePopover(false);
   };
 
+
+  /* 홈 카드 메뉴 [PDF 내보내기]·[이미지 내보내기]·[인쇄] — 열리고 다 그려지면 한 번 실행 (2026-10-30, 10분 안에 누른 것만) */
+  const autoDoneRef = useRef(false);
+  useEffect(() => {
+    if (!isInitialized || autoDoneRef.current) return;
+    let job: { id?: string; action?: string; at?: number } | null = null;
+    try { job = JSON.parse(localStorage.getItem("gs-auto-action") || "null"); } catch {}
+    const id = new URLSearchParams(window.location.search).get("vacancy_id");
+    if (!job || !id || job.id !== id || Date.now() - (job.at || 0) > 10 * 60 * 1000) return;
+    autoDoneRef.current = true;
+    try { localStorage.removeItem("gs-auto-action"); } catch {}
+    const t = setTimeout(() => { if (job!.action === "image") void handleExportImage(); else if (job!.action === "print" || job!.action === "pdf") void handlePrintFlyer(); }, 1200); // 사진·글꼴이 다 그려질 때까지 잠깐
+    return () => clearTimeout(t);
+  }, [isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 자동 임시저장
   useEffect(() => {
     if (!isInitialized) return;
@@ -830,7 +845,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "flyer" })
       });
       const json = await res.json();
       if (json.success) {
@@ -865,7 +880,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "flyer" })
       });
       const json = await res.json();
       if (!json.success) {
@@ -1089,6 +1104,20 @@ function App() {
     });
   };
 
+  /** 홈 [작업 계속하기] 카드에 보일 홍보지 첫 장 (작은 JPEG, 2026-10-30) — 저장할 때. 고치던 칸은 건드리지 않는다 */
+  const captureCover = async (): Promise<string> => {
+    if (!flyerRef.current) return "";
+    const { w, h } = PAGE_SIZE[orientation];
+    const k = 360 / w;
+    const fontEmbedCSS = await buildFontEmbedCSS().catch(() => undefined);
+    const c = await toCanvas(flyerRef.current, {
+      width: w, height: h, canvasWidth: Math.round(w * k), canvasHeight: Math.round(h * k), pixelRatio: 1, backgroundColor: '#ffffff',
+      ...(fontEmbedCSS ? { fontEmbedCSS } : {}),
+      filter: (node) => !(node instanceof HTMLElement && node.dataset.noexport !== undefined),
+    });
+    return c.toDataURL('image/jpeg', 0.8);
+  };
+
   const fileBaseName = () => `유리창홍보지_${(state.info.address || '매물').replace(/[\\/:*?"<>|\s]+/g, '_')}`;
 
   // ── 이미지 내보내기: 보이는 한 장 그대로 JPG ──
@@ -1279,7 +1308,7 @@ function App() {
         const res = await fetch("/api/vacancy/save-flyer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
+          body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent, coverThumb: await captureCover().catch(() => "") }, type: "flyer" })
         });
         const json = await res.json();
         if (!json.success) {

@@ -38,6 +38,12 @@ export default function VideoStudio() {
       if (v && v.vacancyId && Date.now() - (v.at || 0) < 10 * 60 * 1000) { setSeed(v); setResume(null); setFlow("text"); }
       // 홈 [강의영상녹화] — 바로 강의/영상녹화 (2026-10-29 사장님)
       if (sessionStorage.getItem("gs-video-flow") === "record") setFlow("record");
+      // 홈에서 [강의영상녹화]로 바로 녹화한 영상 — 받아서 편집으로 이어 간다 (2026-10-30 사장님: 홈 위에서 바로 녹화)
+      const rec = JSON.parse(sessionStorage.getItem("gs-video-recorded") || "null");
+      sessionStorage.removeItem("gs-video-recorded");
+      if (rec?.item && Date.now() - (rec.at || 0) < 30 * 60 * 1000) { setRecScript(rec.script || ""); setRecorded(rec.item); setFlow("record"); }
+      // 홈 [+ 동영상 만들기] — 새로 만들기 창 (2026-10-30 사장님)
+      if (sessionStorage.getItem("gs-video-flow") === "new") setFlow("new");
       sessionStorage.removeItem("gs-video-flow");
     } catch {}
   }, []);
@@ -70,8 +76,8 @@ export default function VideoStudio() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, color: C.text, fontFamily: FONT }}>
         <div style={{ maxWidth: 520, padding: 32, textAlign: "center", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8 }}>
           <Icon name="video" size={36} />
-          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>동영상제작은 공실마케팅(PC 앱)에서 이용해요</div>
-          <div style={{ fontSize: 15, color: C.sub, marginTop: 10, lineHeight: 1.7 }}>찍은 영상을 PC에 그대로 두고 편집하기 때문에 앱이 필요해요. 앱에서 [동영상제작] 메뉴를 열어 주세요.</div>
+          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>동영상studio은 공실마케팅(PC 앱)에서 이용해요</div>
+          <div style={{ fontSize: 15, color: C.sub, marginTop: 10, lineHeight: 1.7 }}>찍은 영상을 PC에 그대로 두고 편집하기 때문에 앱이 필요해요. 앱에서 [동영상studio] 메뉴를 열어 주세요.</div>
         </div>
       </div>
     );
@@ -92,7 +98,7 @@ export default function VideoStudio() {
           <Icon name="video" size={36} />
           <div style={{ fontSize: 20, fontWeight: 800, marginTop: 14 }}>공실마케팅 업데이트가 필요해요</div>
           <div style={{ fontSize: 15, color: C.sub, marginTop: 10, lineHeight: 1.7 }}>
-            동영상제작이 새로워졌어요 (지금 앱 v{appVer} → v{MIN_APP} 이상).<br />
+            동영상studio이 새로워졌어요 (지금 앱 v{appVer} → v{MIN_APP} 이상).<br />
             {studio?.checkUpdate ? "[지금 업데이트]를 누르면 새 버전을 받아 다시 켜요." : "앱을 껐다 켜면 켤 때 자동으로 새 버전을 받아요."}
           </div>
           {studio?.checkUpdate && <div style={{ marginTop: 18 }}><Btn primary onClick={() => void studio.checkUpdate!()}>지금 업데이트</Btn></div>}

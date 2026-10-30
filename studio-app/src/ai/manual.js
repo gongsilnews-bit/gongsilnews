@@ -65,15 +65,18 @@ async function ask(id, prompt, opts = {}) {
 }
 
 /* ── 그림 — 그림 설명을 복사 → AI 창에서 그림 → 그림 오른쪽 클릭 [이미지 복사] → 앱이 가져온다 ── */
-const imgPanel = (name, files, msg = "") => `
+/* 2026-10-30 사장님: 클립보드에 들어온 그림을 바로 넣지 않는다 — 화면 캡처 등 다른 그림을 AI 그림으로 잘못 가져갔다.
+   새로 복사한 그림을 작게 보여 주고 [이 그림 쓰기] 한 번 누르면 넣는다. 다른 그림이면 다시 복사하면 바뀐다 */
+const imgPanel = (name, files, msg = "", preview = "") => `
 <div style="text-align:left;line-height:1.75;max-width:540px;margin:0 auto">
   <b>1.</b> 그림 설명을 복사해 두고 평소 브라우저에 <b>${name}</b> 창을 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br>
   ${files ? `<b>·</b> 참고 사진 ${files}장이 든 폴더도 열었어요. 사진을 ${name} 입력칸에 <b>끌어다 놓고</b> 보내세요.<br>` : ""}
-  <b>2.</b> 그림이 나오면 그림을 <b>오른쪽 클릭 › 이미지 복사</b> 하세요 — 앱이 알아서 가져와요.
+  <b>2.</b> 그림이 다 나오면 그림을 <b>오른쪽 클릭 › 이미지 복사</b> 하고 아래 <b>[이 그림 쓰기]</b>를 누르세요.
 </div>
+${preview ? `<div style="margin:12px auto 0;text-align:center"><img src="${preview}" alt="" style="max-width:320px;max-height:200px;border-radius:8px;border:2px solid #60a5fa"></div>` : ""}
 <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
   <button type="button" class="gb" data-gsm="copy">그림 설명 다시 복사하고 ${name} 열기</button>
-  <button type="button" class="gb" data-gsm="paste">복사한 그림 가져오기</button>
+  ${preview ? `<button type="button" class="gb" data-gsm="use" style="background:#2563eb;color:#fff;border-color:#2563eb">✓ 이 그림 쓰기</button>` : ""}
 </div>
 ${msg ? `<div style="margin-top:10px;color:#fbbf24">${msg}</div>` : ""}`;
 
@@ -94,24 +97,28 @@ async function askImage(id, prompt, opts = {}) {
   if (files.length) shell.showItemInFolder(files[0]); // 참고 사진 — 회원이 AI 창에 끌어다 놓는다
   log.info(`[AI 수동 그림] ${site.name} — 설명 ${q.length}자 복사, 창 열기${files.length ? ` · 참고 사진 ${files.length}장` : ""}`);
   busy.setSub(imgPanel(site.name, files.length));
-  const take = () => {
-    let img = null;
-    try { img = clipboard.readImage(); } catch {}
-    const k = imgKey(img);
-    return k && k !== start ? img : null;
-  };
+  let shownKey = "", shown = null;
   while (true) {
     if (busy.isStopped()) throw busy.stopError();
     await new Promise((r) => setTimeout(r, 900));
-    const img = take();
-    if (img) {
+    // 새로 복사한 그림이 생기면 작게 보여 준다 (넣지는 않는다)
+    let img = null;
+    try { img = clipboard.readImage(); } catch {}
+    const k = imgKey(img);
+    if (k && k !== start && k !== shownKey) {
+      shownKey = k;
+      shown = img;
       const sz = img.getSize();
-      log.info(`[AI 수동 그림] ${site.name} 그림 가져옴 (${sz.width}×${sz.height})`);
-      return img.toDataURL();
+      const thumb = img.resize({ width: Math.min(320, sz.width) }).toDataURL();
+      busy.setSub(imgPanel(site.name, files.length, `복사한 그림 ${sz.width}×${sz.height} — 맞으면 [이 그림 쓰기], 아니면 그림을 다시 복사하세요.`, thumb));
     }
     const act = await busy.takeAct();
-    if (act === "copy") { open(); busy.setSub(imgPanel(site.name, files.length, "그림 설명을 다시 복사했어요. 붙여 넣고 보내세요.")); }
-    if (act === "paste") busy.setSub(imgPanel(site.name, files.length, "아직 새로 복사한 그림이 없어요. 그림을 오른쪽 클릭해 [이미지 복사]를 눌러 주세요."));
+    if (act === "copy") { open(); start = shownKey || start; shownKey = ""; shown = null; busy.setSub(imgPanel(site.name, files.length, "그림 설명을 다시 복사했어요. 붙여 넣고 보내세요.")); }
+    if (act === "use" && shown) {
+      const sz = shown.getSize();
+      log.info(`[AI 수동 그림] ${site.name} 그림 가져옴 (${sz.width}×${sz.height}, [이 그림 쓰기])`);
+      return shown.toDataURL();
+    }
   }
 }
 
