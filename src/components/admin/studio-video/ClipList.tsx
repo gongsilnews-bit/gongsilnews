@@ -61,6 +61,8 @@ export type ClipActions = {
   openTransMenu?: (id: string, x: number, y: number) => void;
   /** 메인 화면 잠금 풀기·잠그기 (썸네일 위 노란 자물쇠, 2026-10-21 사장님) */
   toggleVisualLock?: (id: string) => void; // 클립 사이 화면전환 — 이 클립 앞(앞 클립에서 넘어오는) 전환 열기 · add: 없으면 새로
+  /** 클립 화면 오른쪽 클릭 — 바꾸기 · 삭제 · AI 이미지 생성하기 (2026-10-31 사장님) */
+  openVisualMenu?: (id: string, x: number, y: number) => void;
 };
 
 type Props = {
@@ -523,7 +525,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             <SingleChips list={(p.lanes.singles || []).filter((x) => x.a === it.index)} selLayer={p.selLayer} onDrag={p.onLayerDrag} thumbOf={(l) => (l.asset ? project.assets[l.asset]?.thumb || "" : "")} />
             {/* 끌어서 다른 클립으로 화면 옮기기 (2026-10-21 사장님) — 화면이 있는 클립끼리면 서로 바꾼다 */}
             <button type="button" data-drop-replace="" draggable={Boolean(thumb)} onDragStart={(e) => { e.stopPropagation(); setPeek(null); e.dataTransfer.effectAllowed = "copyMove"; e.dataTransfer.setData(DRAG_MEDIA, JSON.stringify({ fromClip: c.id })); }} onMouseEnter={(e) => thumb && asset && setPeek(e.currentTarget.getBoundingClientRect())} onMouseLeave={() => setPeek(null)}
-              onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
+              onClick={(e) => { e.stopPropagation(); setPeek(null); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위 · 오른쪽 클릭: 바꾸기·삭제·AI 이미지" : "화면 넣기 · 오른쪽 클릭: AI 이미지"}
+              onContextMenu={(e) => { if (!p.actions.openVisualMenu) return; e.preventDefault(); e.stopPropagation(); setPeek(null); p.actions.openVisualMenu(c.id, e.clientX, e.clientY); }}
               style={{ position: "relative", width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
               {/* 메인 화면 잠금 — 노란 자물쇠 = 잠김(미리보기에서 안 잡힘), 파란 = 풀림. 누르면 바꾸기 */}

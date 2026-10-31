@@ -10,7 +10,8 @@ import MotionAutoDialog, { type AutoRun } from "./MotionAutoDialog";
 import { STYLE_PACKS, outroOfIntro, packOfIntro } from "./stylePacks";
 import { SUB_PRESETS } from "./SubPresets";
 import { MUSIC_LIBRARY } from "@/lib/reels/music-catalog";
-import { DRAG_MEDIA, DRAG_STICKER, RATIO_LABEL, RATIO_SIZE, autoSubPosition, errText, fmtTime, stickerDrag, uid, videoBridge } from "./types";
+import { DRAG_MEDIA, DRAG_STICKER, RATIO_LABEL, RATIO_SIZE, autoSubPosition, errText, fmtTime, isStopped, stickerDrag, uid, videoBridge } from "./types";
+import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
 import { chainVisuals, layLeads, tailGap, layRolls, zLayers, gapOf, voiceGap, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes, layerRange, kfAt, kfUpsert, kfIndexAt, kfSort, kfAny, kfHasAt, kfSetProps, kfToggleProp, kfClearProps, kfMoveProps, cropOf, KF_PROPS, clipKeyBase, clipBaseRect, imgRect, clipDuration, sourceTimeAt } from "./timeline";
 import Timeline, { AudioMeter, type Pick, type TlTool, type TrackOp } from "./TimelineView";
 import { EffectControls, type EcGroup } from "./EffectControls";
@@ -227,6 +228,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   // 메인 화면 잠금 — 미리보기에서 기본은 안 잡힘. 이 클립 id 일 때만 옮기기·크기 (2026-10-21 사장님: 다른 요소를 고르다 자꾸 잡히고 사진 움직임이 풀림)
   const [visualOpen, setVisualOpen] = useState("");
   const [previewMenu, setPreviewMenu] = useState<{ x: number; y: number; target: string; clipId: string } | null>(null); // 미리보기 오른쪽 클릭
+  const [visMenu, setVisMenu] = useState<{ id: string; x: number; y: number } | null>(null); // 클립 화면 오른쪽 클릭 — 바꾸기 · 삭제 · AI 이미지 (2026-10-31)
   const [ratioMenu, setRatioMenu] = useState<{ x: number; y: number } | null>(null); // 위쪽 화면 비율 단추 (2026-10-21 사장님)
   const [quick, setQuick] = useState<{ kind: "sub" | "trans"; id: string; x: number; y: number } | null>(null); // 메인자막·화면전환 아이콘 메뉴 (2026-10-21)
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
@@ -974,6 +976,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setPanel("subtitle");
     },
     toggleVisualLock: (id) => { if (visualOpen === id) setVisualOpen(""); else openVisualXf(id); },
+    openVisualMenu: (id, x, y) => { setSelected([id]); setVisMenu({ id, x, y }); },
     // 메인자막 아이콘 — 메뉴는 그대로 띄우고, 오른쪽 칸도 [텍스트](이 클립 메인자막 속성)로 (2026-10-25 사장님)
     openSubMenu: (id, x, y) => { setMedia(null); actions.pickSub?.(id); setQuick({ kind: "sub", id, x, y }); },
     openTransMenu: (id, x, y) => { setMedia(null); setQuick({ kind: "trans", id, x, y }); },
@@ -2786,6 +2789,35 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       openLayer(musicTarget);
       say("음악을 바꿨어요");
     } else addLayer({ type: "music", ...m, volume: 0.5, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }, true); // 편집에서 직접 넣는 음악은 50 (BGM 자동으로 깔 때만 5 — 2026-10-23 사장님)
+  };
+
+  /* 클립 화면 → AI 이미지 (2026-10-31 사장님) — 고른 스타일로, 글 AI 가 이 클립 대사로 장면 설명 → 이미지 AI 가 그림 → 이 클립 화면으로.
+     스타일은 [사진·영상 고르기 › AI 그림] 탭과 같이 기억한다 (다음에 메뉴 맨 위 "○○ 스타일로 다시 만들기") */
+  const AI_STYLE_KEY = "gsv:aiImgStyle";
+  const lastAiStyle = () => { try { return localStorage.getItem(AI_STYLE_KEY) || ""; } catch { return ""; } };
+  const aiVisual = async (id: string, styleId: string) => {
+    const st = IMAGE_STYLES.find((x) => x.id === styleId) || IMAGE_STYLES[0];
+    try { localStorage.setItem(AI_STYLE_KEY, st.id); } catch {}
+    const f = findClip(pref.current, id);
+    const text = f ? clipText(f.clip).trim() : "";
+    if (!text) return say("대사가 없는 클립이라 그림을 만들 수 없어요");
+    if (!b.ai.imagePrompts) return say("공실마케팅을 껐다 켜 주세요 (AI 이미지 기능을 새로 연결해요)");
+    setBusy((x) => ({ ...x, [id]: "AI가 장면 설명을 쓰는 중…" }));
+    try {
+      const [prompt] = await b.ai.imagePrompts([text], { kinds: ["auto"], style: st.label, character: st.character });
+      setBusy((x) => ({ ...x, [id]: `${st.label} 그림을 그리는 중… (30초~1분)` }));
+      const it = await b.ai.image(pref.current.dir, imagePrompt(prompt || text, st), { ratio: pref.current.ratio });
+      const a = await ensureAsset(it);
+      change((p) => {
+        const c = findClip(p, id)?.clip;
+        if (c) { c.visual = { asset: a.id, s: 0 }; delete c.box; }
+      });
+      say(`${st.label} 그림으로 바꿨어요 (Ctrl+Z 로 되돌리기)`);
+    } catch (e) {
+      if (!isStopped(e)) say(`그림을 만들지 못했어요: ${errText(e)}`);
+    } finally {
+      setBusy((x) => { const y = { ...x }; delete y[id]; return y; });
+    }
   };
 
   /* ── 자료 넣기 ── */
@@ -5223,6 +5255,31 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           onLength={(T) => setClipLength(c.id, T)}
           lenMin={isVoice ? (c.voice?.duration ? c.voice.duration / speedOf(c, project.settings) + voiceGap(c, project.settings) : 0.5) : 0.3}
           lenMax={isVoice ? undefined : c.src ? (project.assets[c.src.asset]?.duration ?? c.src.e) - c.src.s : undefined} />;
+      })()}
+      {/* 클립 화면 오른쪽 클릭 — 바꾸기 · 삭제 · AI 이미지 생성하기 (2026-10-31 사장님) */}
+      {visMenu && (() => {
+        const close = () => setVisMenu(null);
+        const id = visMenu.id;
+        const it = flat.items.find((x) => x.clip.id === id);
+        const hasVis = Boolean(it?.clip.visual);
+        const last = IMAGE_STYLES.find((x) => x.id === lastAiStyle());
+        return <QuickMenu key={"vm" + id} title={`클립 ${it ? it.index + 1 : ""} 화면`} what="클립 화면" x={visMenu.x} y={visMenu.y} onClose={close} items={[
+          ...(last ? [{ icon: "ai", label: `${last.label} 스타일로 다시 만들기`, desc: "지난번에 고른 스타일로 이 클립 대사에 맞는 그림을 바로 그려요", run: () => void aiVisual(id, last.id) }] : []),
+          { icon: "swap", label: "바꾸기", desc: "오른쪽 [사진·영상 고르기]에서 이 클립 화면을 다른 사진·영상으로 바꿔요", run: () => actions.openVisual(id) },
+          { icon: "ai", label: "AI 이미지 생성하기", desc: "스타일을 고르면 이 클립 대사에 맞는 그림을 그려 화면을 바꿔요 (30초~1분)", page: () => (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, maxHeight: 340, overflowY: "auto" }}>
+              {IMAGE_STYLES.map((s) => (
+                <button key={s.id} type="button" title={s.desc} onClick={() => { close(); void aiVisual(id, s.id); }}
+                  style={{ position: "relative", height: 46, borderRadius: 6, border: 0, outline: last?.id === s.id ? `2px solid ${C.accent}` : "none", outlineOffset: -2, background: s.thumb ? `center / cover no-repeat url("${s.thumb}"), ${s.bg}` : s.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  <span style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
+                  <span style={{ position: "relative", color: "#fff", fontSize: 12.5, fontWeight: 800, fontFamily: FONT, textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          ) },
+          { icon: "gear", label: "채우기 · 반전 · 적용 범위", desc: "이 화면을 어떻게 보여 줄지 고쳐요", run: () => actions.openMedia(id, visMenu.x, visMenu.y) },
+          ...(hasVis ? [{ icon: "trash", label: "삭제", desc: "이 클립 화면만 빼요 (목소리·자막은 그대로)", danger: true, run: () => { change((p) => { const c = findClip(p, id)?.clip; if (c) { delete c.visual; delete c.box; } }); say("화면을 뺐어요 (Ctrl+Z 로 되돌리기)"); } }] : []),
+        ]} />;
       })()}
       {/* 미리보기 오른쪽 클릭 — 잠그기 · 잠긴 것 풀기 (클립 메뉴와 같은 모양, 2026-10-21 사장님) */}
       {previewMenu && (() => {
