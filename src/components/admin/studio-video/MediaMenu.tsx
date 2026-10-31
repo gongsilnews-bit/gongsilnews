@@ -69,12 +69,14 @@ type Props = {
   onAnim?: () => void; // 애니메이션 (사진 올리기만) — 오른쪽 칸
   onRemove: () => void;
   onClose: () => void;
+  /** AI 이미지 생성하기 (클립 화면, 2026-10-31 사장님) — 스타일을 고르면 이 클립 대사로 그림을 그려 바꾼다. last = 지난번 스타일 */
+  ai?: { last?: { id: string; label: string }; styles: { id: string; label: string; desc: string; thumb?: string; bg: string }[]; onPick: (id: string) => void };
 };
 
 type Item = { icon: string; label: string; desc: string; on?: boolean; off?: boolean; sub?: boolean; danger?: boolean; run: () => void };
 
 export default function MediaMenu(p: Props) {
-  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume" | "motion" | "size" | "speed">("");
+  const [page, setPage] = React.useState<"" | "fit" | "flip" | "range" | "order" | "volume" | "motion" | "size" | "speed" | "ai">("");
   const [mScope, setMScope] = React.useState<"one" | "sel" | "all">("one");
   const [hover, setHover] = React.useState<{ desc: string; top: number } | null>(null);
   const [na, setNa] = React.useState(String(p.range.a));
@@ -127,6 +129,8 @@ export default function MediaMenu(p: Props) {
       ...(p.speedCtl ? [{ icon: "play", label: `속도 · ${+p.speedCtl.value.toFixed(2)}배`, desc: "영상을 빠르게·느리게 (소리·자막도 같이). 1배가 원래 속도", sub: true, run: go("speed") }] : []),
       ...(p.sound ? [{ icon: p.sound.muted ? "mute" : "volume", label: "볼륨 조절", desc: "이 클립의 소리를 끄거나 크게·작게 해요", sub: true, run: go("volume") }] : []),
       ...(p.onReplace ? [{ icon: "swap", label: "교체", desc: `다른 ${p.what === "그래픽" ? "그래픽으" : "사진·영상으"}로 바꿔요. 자리·범위는 그대로예요`, run: done(p.onReplace) }] : []),
+      ...(p.ai?.last ? [{ icon: "ai", label: `${p.ai.last.label} 스타일로 다시 만들기`, desc: "지난번에 고른 스타일로 이 클립 대사에 맞는 그림을 바로 그려요", run: done(() => p.ai!.onPick(p.ai!.last!.id)) }] : []),
+      ...(p.ai ? [{ icon: "ai", label: "AI 이미지 생성하기", desc: "스타일을 고르면 이 클립 대사에 맞는 그림을 그려 화면을 바꿔요 (30초~1분)", sub: true, run: go("ai") }] : []),
       { icon: "range", label: "적용 범위 변경", desc: p.kind === "clip" ? "이 화면을 다른 클립에도 똑같이 써요" : `이 ${what}이(가) 몇 번 클립부터 몇 번 클립까지 나올지 정해요`, sub: true, run: go("range") },
       ...(p.kind === "layer" && p.order ? [{ icon: "layers", label: "순서", desc: "그래픽·사진·글자가 겹칠 때 어느 것을 위에 둘지 정해요", sub: true, off: !p.order.up && !p.order.down, run: go("order") }] : []),
       ...(p.extraEnd || []).map((x) => ({ ...x, run: done(x.run) })),
@@ -150,6 +154,8 @@ export default function MediaMenu(p: Props) {
       { icon: "range", label: "처음부터 현재 클립까지", desc: `클립 1번부터 ${cur}번까지`, run: done(() => p.onRange(1, cur)) },
       { icon: "range", label: "현재 클립부터 끝까지", desc: `클립 ${cur}번부터 ${total}번까지`, run: done(() => p.onRange(cur, total)) },
     ];
+  } else if (page === "ai") {
+    head = "AI 이미지 생성하기";
   } else if (page === "volume") {
     head = "볼륨 조절";
   } else if (page === "speed") {
@@ -216,6 +222,17 @@ export default function MediaMenu(p: Props) {
               <button type="button" disabled={p.motion.selCount < 2} onClick={() => setMScope("sel")} style={{ ...chipStyle(mScope === "sel"), flex: 1, opacity: p.motion.selCount < 2 ? 0.4 : 1 }}>선택 ({p.motion.selCount})</button>
               <button type="button" onClick={() => setMScope("all")} style={{ ...chipStyle(mScope === "all"), flex: 1 }}>모든 사진 ({p.motion.allCount})</button>
             </div>
+          </div>
+        )}
+        {page === "ai" && p.ai && (
+          <div style={{ padding: "6px 4px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, maxHeight: 340, overflowY: "auto" }}>
+            {p.ai.styles.map((s) => (
+              <button key={s.id} type="button" title={s.desc} onClick={done(() => p.ai!.onPick(s.id))}
+                style={{ position: "relative", height: 46, borderRadius: 6, border: 0, outline: p.ai!.last?.id === s.id ? `2px solid ${C.accent}` : "none", outlineOffset: -2, background: s.thumb ? `center / cover no-repeat url("${s.thumb}"), ${s.bg}` : s.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                <span style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
+                <span style={{ position: "relative", color: "#fff", fontSize: 12.5, fontWeight: 800, fontFamily: FONT, textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>{s.label}</span>
+              </button>
+            ))}
           </div>
         )}
         {page === "speed" && p.speedCtl && (

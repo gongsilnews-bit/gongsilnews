@@ -796,7 +796,10 @@ function register(base) {
   ipcMain.handle("video:ai-clip-prompts", (e, lines, opts) => vai.clipPrompts(lines || [], opts || {}, (t) => send(e, "video:progress", t))); // 이미지 + 동영상 프롬프트 한 번에 (0.1.12)
   ipcMain.handle("video:ai-image-prompts", (e, lines, opts) => vai.imagePrompts(lines || [], opts || {}, (t) => send(e, "video:progress", t))); // 클립별 AI 그림 — 영어 장면 설명
   ipcMain.handle("video:ai-image", async (e, dir, prompt, opts) => {
-    const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t), opts || {});
+    // 이미 받은 그림(data URL)이면 그리지 않고 그대로 저장 — 수동에서 AI 가 설명 대신 그림을 준 경우 (2026-10-31)
+    //  스타일 글이 앞뒤에 붙어 와도 그림 부분만 꺼낸다
+    const given = (/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/.exec(String(prompt || "")) || [""])[0];
+    const dataUrl = given || await vai.image(prompt, (t) => send(e, "video:progress", t), opts || {});
     const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
     if (!m) throw new Error("그림을 받지 못했습니다.");
     // 만든 AI 그림은 문서공실마케팅AI그림날짜 에 모은다 (2026-10-21 사장님: 따로 모아 볼 폴더가 없었다). 내 자료·프로젝트는 이 파일을 쓴다

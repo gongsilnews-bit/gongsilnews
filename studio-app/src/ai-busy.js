@@ -126,7 +126,10 @@ const overlay = (text, startedAt, sub) => `(() => {
     el.id = id;
     el.innerHTML = \`<style>
       #__gsAiBusy{position:fixed;inset:0;z-index:2147483647;background:rgba(10,14,20,.62);display:flex;align-items:center;justify-content:center;font-family:'Pretendard Variable','Malgun Gothic',sans-serif;cursor:wait}
-      #__gsAiBusy .c{background:#16202b;color:#fff;border-radius:14px;padding:30px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45);min-width:380px;cursor:default}
+      #__gsAiBusy .c{position:relative;background:#16202b;color:#fff;border-radius:14px;padding:30px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45);min-width:380px;cursor:default}
+      #__gsAiBusy .cx{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:#9ca3af;font-size:22px;line-height:1;font-family:inherit;cursor:pointer}
+      #__gsAiBusy .cx:hover{color:#fff;background:#dc2626}
+      #__gsAiBusy.done .cx{display:none}
       #__gsAiBusy .d{display:none} /* 동그란 로고 — 정신없어서 뺌 (2026-10-24 사장님) */
       #__gsAiBusy .d .r{position:absolute;inset:0;border-radius:50%;border:4px solid rgba(245,166,35,.18);border-top-color:#f5a623;animation:gsr 1s linear infinite}
       #__gsAiBusy .d img{position:absolute;inset:10px;width:68px;height:68px;border-radius:50%;background:#fff;animation:gsp 1.6s ease-in-out infinite}
@@ -152,13 +155,14 @@ const overlay = (text, startedAt, sub) => `(() => {
       #__gsAiBusy.done{cursor:default}
       #__gsAiBusy.done .d,#__gsAiBusy.done .t .p,#__gsAiBusy.done .s,#__gsAiBusy.done .e,#__gsAiBusy.done .k{display:none}
       #__gsAiBusy.done .ok{display:block}
-    </style><div class="c"><div class="d"><span class="r"></span><img src="/studio-cam-logo.png" alt=""></div><div class="t"><span class="w"></span><span class="p"><i>.</i><i>.</i><i>.</i></span></div><button type="button" class="ok">결과 보기</button>
+    </style><div class="c"><button type="button" class="cx" title="멈추고 닫기 (Esc)">×</button><div class="d"><span class="r"></span><img src="/studio-cam-logo.png" alt=""></div><div class="t"><span class="w"></span><span class="p"><i>.</i><i>.</i><i>.</i></span></div><button type="button" class="ok">결과 보기</button>
       <div class="s">보통 1~2분 걸려요. 오른쪽 크롬 창에서 AI가 쓰는 모습을 볼 수 있어요.<br>끝나면 저절로 가져와요 — 크롬 창은 그대로 두세요.</div><div class="e">0:00</div>
-      <div class="k">급할 때는 Esc 키로 멈춰요</div></div>\`;
+      <div class="k">급할 때는 오른쪽 위 × 나 Esc 키로 멈춰요</div></div>\`;
     // 덮개 아래로 누르기·키 입력이 가지 않게 — [중지]만 (앱이 window.__gsAiStopReq 를 읽어 간다)
     for (const ev of ["click", "mousedown", "pointerdown", "keydown", "wheel", "contextmenu"]) el.addEventListener(ev, (e) => {
-      const x = e.target && e.target.closest ? e.target.closest(".x") : null;
-      if (ev === "click" && x) { window.__gsAiStopReq = true; x.textContent = "멈추는 중…"; }
+      const x = e.target && e.target.closest ? e.target.closest(".x, .cx") : null;
+      // 오른쪽 위 × (2026-10-31 사장님) — Esc 와 같다: 멈추고 닫는다
+      if (ev === "click" && x) { window.__gsAiStopReq = true; if (x.classList.contains("cx")) x.textContent = "…"; else x.textContent = "멈추는 중…"; }
       // 수동(복사해서 쓰기) 단추 — 앱이 window.__gsManualAct 를 읽어 간다
       const gm = e.target && e.target.closest ? e.target.closest("[data-gsm]") : null;
       if (ev === "click" && gm) { window.__gsManualAct = gm.getAttribute("data-gsm"); e.stopPropagation(); e.preventDefault(); return; }

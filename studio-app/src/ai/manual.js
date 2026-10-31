@@ -15,7 +15,7 @@ const SITE = {
   claude: { name: "Claude", url: "https://claude.ai/new" },
 };
 
-const panel = (name, msg = "") => `
+const panel = (name, msg = "", preview = "") => `
 <div style="text-align:left;line-height:1.75;max-width:520px;margin:0 auto">
   <b>1.</b> 질문을 복사해 두고 평소 브라우저에 <b>${name}</b> 창을 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br>
   <b>2.</b> 답이 다 나오면 답 아래 <b>복사 단추</b>를 누르세요 — 앱이 알아서 가져와요.
@@ -23,7 +23,9 @@ const panel = (name, msg = "") => `
 <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
   <button type="button" class="gb" data-gsm="copy">질문 다시 복사하고 ${name} 열기</button>
   <button type="button" class="gb" data-gsm="paste">복사한 답 가져오기</button>
+  ${preview ? `<button type="button" class="gb" data-gsm="use" style="background:#2563eb;color:#fff;border-color:#2563eb">✓ 이 그림 쓰기</button>` : ""}
 </div>
+${preview ? `<div style="margin:12px auto 0;text-align:center"><img src="${preview}" alt="" style="max-width:320px;max-height:200px;border-radius:8px;border:2px solid #60a5fa"></div>` : ""}
 ${msg ? `<div style="margin-top:10px;color:#fbbf24">${msg}</div>` : ""}`;
 
 /** 수동으로 묻기 — 돌려줌: 회원이 복사해 온 답 글 */
@@ -42,6 +44,10 @@ async function ask(id, prompt, opts = {}) {
   };
   let start = "";
   try { start = clipboard.readText(); } catch {}
+  // opts.allowImage — 장면 설명(글)을 묻는데 AI 가 그림을 바로 그려 줬으면 그 그림을 쓴다 (2026-10-31 사장님: Gemini 가 그림을 그려 복사해도 안 들어갔다)
+  //  새로 복사한 그림을 작게 보여 주고 [이 그림 쓰기] → "data:image/png;base64,…" 를 돌려준다 (부르는 쪽이 그림으로 쓴다)
+  let imgStart = "", imgShown = "", img = null;
+  if (opts.allowImage) { try { imgStart = imgKey(clipboard.readImage()); } catch {} }
   open();
   log.info(`[AI 수동] ${site.name} — 질문 ${q.length}자 복사, 창 열기`);
   busy.setSub(panel(site.name));
@@ -50,13 +56,25 @@ async function ask(id, prompt, opts = {}) {
     await new Promise((r) => setTimeout(r, 900));
     let cur = "";
     try { cur = clipboard.readText(); } catch {}
+    if (opts.allowImage) {
+      let ci = null;
+      try { ci = clipboard.readImage(); } catch {}
+      const k = imgKey(ci);
+      if (k && k !== imgStart && k !== imgShown) {
+        imgShown = k;
+        img = ci;
+        const sz = ci.getSize();
+        busy.setSub(panel(site.name, `${site.name}가 그림을 바로 그렸네요 — 이 그림을 쓰려면 [이 그림 쓰기]를 누르세요.`, ci.resize({ width: Math.min(320, sz.width) }).toDataURL()));
+      }
+    }
     // 새로 복사한 글이고 형식이 맞으면 끝
     if (isComplete && cur !== start && cur !== q && ok(cur)) { // 형식을 알 때만 저절로 (모르면 [복사한 답 가져오기])
       log.info(`[AI 수동] ${site.name} 답 가져옴 (${cur.length}자)`);
       return cur;
     }
     const act = await busy.takeAct();
-    if (act === "copy") { open(); busy.setSub(panel(site.name, "질문을 다시 복사했어요. 붙여 넣고 보내세요.")); }
+    if (act === "use" && img) { log.info(`[AI 수동] ${site.name} 그림으로 받음 (${img.getSize().width}×${img.getSize().height})`); return img.toDataURL(); }
+    if (act === "copy") { open(); imgStart = imgShown || imgStart; imgShown = ""; img = null; busy.setSub(panel(site.name, "질문을 다시 복사했어요. 붙여 넣고 보내세요.")); }
     if (act === "paste") {
       if (ok(cur)) { log.info(`[AI 수동] ${site.name} 답 가져옴 (단추, ${cur.length}자)`); return cur; }
       busy.setSub(panel(site.name, cur.trim() === q.trim() ? "아직 질문이 복사돼 있어요. 답 아래 복사 단추를 눌러 주세요." : "복사한 글이 답 형식과 달라요. 답이 다 나온 뒤 답 아래 복사 단추를 눌러 주세요."));

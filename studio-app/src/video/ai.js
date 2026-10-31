@@ -121,6 +121,7 @@ async function imagePrompts(lines, opts = {}, onProgress = () => {}) {
       "Rewrite the prompt in English to include the user's request, keeping it professional and cinematic." + hero,
       VISUAL_RULES,
       'Answer JSON only: ["new English prompt"]',
+      "Do NOT generate or draw any image. Reply with text only.",
     ].join("\n");
   } else {
     prompt = [
@@ -134,11 +135,14 @@ async function imagePrompts(lines, opts = {}, onProgress = () => {}) {
       list.map((t, i) => `${i + 1}. (${kinds[i]}: ${KIND_FOCUS[kinds[i]]}) ${t}`).join("\n"),
       "",
       `Answer JSON only: an array of exactly ${list.length} English prompt strings in the same order.`,
+      "Do NOT generate or draw any image yourself — reply with the JSON text only.",
     ].filter((x) => x !== "").join("\n");
   }
   onProgress("글 AI가 클립마다 장면 설명을 쓰는 중…");
   const pick = opts.ai && opts.ai.provider ? { provider: opts.ai.provider, mode: opts.ai.mode === "api" ? "api" : "account" } : {}; // 쓸 AI 를 골랐으면 그것으로 (2026-10-21: 프롬프트·그림에도)
-  const text = await ai.ask(prompt, { ...pick, onProgress, busyLabel: "그림 장면 설명을 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)) });
+  // 클립 하나일 때 — 수동(내 계정)에서 AI 가 그림을 바로 그려 복사했으면 그 그림을 그대로 (data URL 을 돌려준다, 2026-10-31)
+  const text = await ai.ask(prompt, { ...pick, onProgress, busyLabel: "그림 장면 설명을 쓰고 있습니다", isComplete: (t) => Boolean(parse(t)), allowImage: list.length === 1 });
+  if (/^data:image\//.test(String(text || ""))) return [String(text)];
   const out = parse(text) || [];
   return list.map((_, i) => out[i] || "");
 }
