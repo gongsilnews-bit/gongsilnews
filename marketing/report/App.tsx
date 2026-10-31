@@ -6,7 +6,7 @@ import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { MAX_PHOTO_PAGES, photoPageCount, photoPageKeys } from './components/canvas/photoPages';
-import { pageOrder, pageNumberLabel } from './components/canvas/pageOrder';
+import { pageOrder, pageNumberLabel, HIDDEN_PAGES } from './components/canvas/pageOrder';
 import { SimKind, SimData, SIM_PAGE, SIM_LABEL } from './components/canvas/PageSim';
 import { simBridge, cleanErr } from './components/SimPanel';
 // Removed geminiService imports to prevent client-side API usage
@@ -319,7 +319,7 @@ const convertOverviewTableToArray = (tbl: any, category?: string, transactionTyp
 };
 
 const mergeStateWithDefaults = (loaded: any): FlyerState => {
-  let mergedVisiblePages = loaded?.info?.visiblePages || INITIAL_INFO.visiblePages;
+  let mergedVisiblePages = (loaded?.info?.visiblePages || INITIAL_INFO.visiblePages).filter((p: number) => !HIDDEN_PAGES.includes(p));
   if (!mergedVisiblePages.includes(0)) mergedVisiblePages = [0, ...mergedVisiblePages];
   if (!mergedVisiblePages.includes(7)) mergedVisiblePages = [...mergedVisiblePages, 7];
   mergedVisiblePages.sort((a: number, b: number) => a - b);

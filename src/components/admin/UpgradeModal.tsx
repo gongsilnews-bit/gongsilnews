@@ -8,7 +8,7 @@ import StudioPriceTable from "@/components/studio-site/StudioPriceTable";
  * 금액안내(/marketing/pricing)와 같은 부품을 그대로 써서 금액·항목·디자인이 늘 같다
  */
 export type Tier = "free" | "pro" | "studio" | "corp" | "biz";
-export const TIER_LABEL: Record<Tier, string> = { free: "무료", pro: "Pro(일반사무소)", studio: "Studio(일반사무소)", corp: "Studio(중개법인)", biz: "비즈니스" };
+export const TIER_LABEL: Record<Tier, string> = { free: "공실뉴스부동산", pro: "마케팅회원", studio: "스튜디오회원(일반)", corp: "스튜디오회원(법인)", biz: "비즈니스회원" };
 /** 금액안내 표의 요금제 열쇠 */
 const PLAN_KEY: Record<Tier, string> = { free: "free", pro: "basic", studio: "standard", corp: "corp", biz: "biz" };
 /** 회원 종류 — 일반 중개사무소 · 중개법인 · 전문가(비즈니스회원). 이것으로 고를 수 있는 칸이 정해진다 (2026-10-30) */

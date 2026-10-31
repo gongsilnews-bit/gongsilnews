@@ -428,7 +428,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {member.role === 'REALTOR' ? (member.studio_end_date ? `${member.plan_type === 'study_premium' ? 'Studio' : 'Pro'} ~${new Date(member.studio_end_date).toISOString().split('T')[0]}` : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
+                      {member.role === 'REALTOR' ? (member.studio_end_date ? `${member.plan_type === 'study_premium' ? '스튜디오' : '마케팅'} ~${new Date(member.studio_end_date).toISOString().split('T')[0]}` : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
                     </td>
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
@@ -798,7 +798,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: `2px solid ${border}` }}>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0" }}>물건접수홈페이지</h3>
         <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 18px 0" }}>
-          홈페이지는 공실마케팅 Pro · Studio 회원(비즈니스회원 포함)만 쓰고, 여기서 기능으로 등급을 나눕니다.
+          홈페이지는 마케팅회원 · 스튜디오회원(비즈니스회원 포함)만 쓰고, 여기서 기능으로 등급을 나눕니다.
           추천공실·기사 노출은 위의 공실·기사 한도를 그대로 따라가므로 따로 설정하지 않습니다.
         </p>
 

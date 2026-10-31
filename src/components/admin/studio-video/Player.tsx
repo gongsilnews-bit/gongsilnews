@@ -14,6 +14,7 @@ import { transAt, transStyle } from "./transitions";
 import { TransFx } from "./TransFx";
 import { gradCss, patternCss, subLookCss, withAlpha } from "./SubPresets";
 import { TplMotion, isMotionStyle } from "./Templates";
+import { StkMotion, isStickerMotion, type Sticker } from "./Stickers";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
 
@@ -1065,7 +1066,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           <div key={l.id} data-layer={l.id} data-rot="" onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
             style={{ position: "absolute", zIndex: 4, left, top, width: pw, height: ph, ...dragStyle(l), transform: l.rot ? `rotate(${l.rot}deg)` : undefined }}>
             <div style={{ width: "100%", height: "100%", ...lookOf(l) }}>
-              {l.stk && isMotionStyle(l.stk.style) ? (() => {
+              {l.stk && isStickerMotion(l.stk) ? (() => {
+                // 모션 스티커 — 나타난 뒤 지난 시간으로 순간마다 (굽기 AnimBake 와 같은 그림)
+                const sp = clip ? layerSpan(project, l, flat.items, clip.id, project.settings, order) : null;
+                return <div style={{ width: "100%", height: "100%", clipPath: cropLayer(l) }}><StkMotion spec={l.stk as Sticker} t={Math.max(0, local - (sp?.a ?? 0))} opacity={op} flip={flipOf(l)} /></div>;
+              })() : l.stk && isMotionStyle(l.stk.style) ? (() => {
                 // 움직이는 템플릿 — 나타난 뒤 지난 시간으로 칸마다 그린다 (굽기 AnimBake 와 같은 그림)
                 const sp = clip ? layerSpan(project, l, flat.items, clip.id, project.settings, order) : null;
                 return <div style={{ width: "100%", height: "100%", clipPath: cropLayer(l) }}><TplMotion style={l.stk!.style} text={l.stk!.text} color={l.stk!.color} t={Math.max(0, local - (sp?.a ?? 0))} opacity={op} flip={flipOf(l)} /></div>;

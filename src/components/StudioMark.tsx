@@ -10,7 +10,7 @@ export default function StudioMark({ small = false, plan }: { small?: boolean; p
     <img
       src="/new_logo.png"
       alt="공실마케팅"
-      title={plan ? `공실마케팅 ${plan === "studio" ? "Studio" : "Pro"} 이용 중` : "공실마케팅 멤버십 이용 중"}
+      title={plan ? `${plan === "studio" ? "스튜디오회원" : "마케팅회원"} 이용 중` : "공실마케팅 멤버십 이용 중"}
       width={size}
       height={size}
       style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 4, width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}

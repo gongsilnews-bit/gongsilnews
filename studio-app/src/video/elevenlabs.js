@@ -187,4 +187,170 @@ async function say(text, out, { voiceId, emotion = "normal", prev = "", next = "
   return out;
 }
 
-module.exports = { status, setKey, clear, voices, say, MODEL, TAGS, stripTags };
+/**
+ * 인기 한국어 성우 넣기 (2026-10-30 사장님: 보이스 라이브러리에서 찾기 어렵다 — 인기순 30명을 알아서)
+ *  보이스 라이브러리(공개 성우)에서 한국어를 사용량 많은 순으로 찾아, 내 목소리 목록에 없는 것만 추가한다.
+ *  요금제마다 넣을 수 있는 목소리 수가 정해져 있어서, 자리가 차면 거기서 멈추고 몇 명 넣었는지 알려 준다.
+ */
+async function addPopularKo(n = 30) {
+  const k = key();
+  if (!k) throw new Error("일레븐랩스 키를 먼저 넣어 주세요");
+  const mine = await fetchVoices(k).catch(() => []);
+  const have = new Set(mine.map((v) => String(v.id).replace(PRE, "")));
+  const haveName = new Set(mine.map((v) => String(v.name).toLowerCase()));
+  const picks = [];
+  for (let page = 0; page < 6 && picks.length < n; page++) {
+    const u = `${API}/v1/shared-voices?page_size=100&page=${page}&language=ko&sort=usage_character_count_1y`;
+    const r = await fetch(u, { headers: { "xi-api-key": k } });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? "일레븐랩스 키에 '보이스 라이브러리 보기' 권한이 없어요. 일레븐랩스 › API 키에서 이 키의 Voices 권한을 '쓰기(Write)'로 바꾼 뒤 다시 눌러 주세요." : errOf(r.status, body));
+    const list = (body && body.voices) || [];
+    for (const v of list) {
+      if (picks.length >= n) break;
+      if (have.has(v.voice_id) || haveName.has(String(v.name).toLowerCase())) continue;
+      picks.push(v);
+    }
+    if (!body || !body.has_more) break;
+  }
+  let added = 0, stop = "";
+  const names = [];
+  for (const v of picks) {
+    const r = await fetch(`${API}/v1/voices/add/${encodeURIComponent(v.public_owner_id)}/${encodeURIComponent(v.voice_id)}`, {
+      method: "POST", headers: { "xi-api-key": k, "Content-Type": "application/json" }, body: JSON.stringify({ new_name: v.name }),
+    });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) {
+      const msg = JSON.stringify(body || {});
+      stop = /limit|maximum|slots|quota/i.test(msg) ? "요금제의 목소리 자리가 다 찼어요. 안 쓰는 목소리를 일레븐랩스에서 지우면 더 넣을 수 있어요."
+        : r.status === 401 || r.status === 403 ? "일레븐랩스 키에 '목소리 추가' 권한이 없어요. 일레븐랩스 › API 키에서 이 키의 Voices 권한을 '쓰기(Write)'로 바꾼 뒤 다시 눌러 주세요."
+        : errOf(r.status, body);
+      log.warn("[일레븐랩스] 성우 추가 멈춤", v.name, r.status, msg.slice(0, 200));
+      break;
+    }
+    added++;
+    names.push(v.name);
+  }
+  if (added) await voices(true).catch(() => {});
+  return { added, found: picks.length, names, stop };
+}
+
+/**
+ * 한국어 인기 순위 50 (2026-10-30 사장님: 순위대로 보여 주고 다 넣기) — json2video.com 한국어 AI 목소리 순위(일레븐랩스 사용량 순)에서 가져옴.
+ *  [voice_id, 이름, 성별]. 순위가 바뀌면 이 목록만 고친다
+ */
+const RANK_KO = [
+  ["ZJCNdZEjYwkOElxugmW2", "Chang wook", "male"],
+  ["PDoCXqBQFGsvfO0hNkEs", "Chris", "male"],
+  ["uyVNoMrnUku1dZyVEXwD", "Anna Kim", "female"],
+  ["m3gJBS8OofDJfycyA2Ip", "Taehyung", "male"],
+  ["z6Kj0hecH20CdetSElRT", "Jennie", "female"],
+  ["jB1Cifc2UQbq1gR3wnb0", "Bin", "male"],
+  ["4JJwo477JUAx3HV0T7n7", "Yohan Koo", "male"],
+  ["1W00IGEmNmwmsDeYy7ag", "KKC", "male"],
+  ["AW5wrnG1jVizOYY7R1Oo", "JiYoung", "female"],
+  ["ksaI0TCD9BstzEzlxj4q", "Seulki", "female"],
+  ["8jHHF8rMqMlg8if2mOUe", "Han", "female"],
+  ["YBRudLRm83BV5Mazcr42", "Jason", "male"],
+  ["s07IwTCOrCDCaETjUVjx", "Hyun Bin", "male"],
+  ["WqVy7827vjE2r3jWvbnP", "Soo hyun", "male"],
+  ["CxErO97xpQgQXYmapDKX", "Theo", "male"],
+  ["8MwPLtBplylvbrksiBOC", "Chungman", "female"],
+  ["FQ3MuLxZh0jHcZmA5vW1", "Do Hyeon", "male"],
+  ["iWLjl1zCuqXRkW6494ve", "Jisoo", "female"],
+  ["4p0HBzAAGyju0nYfNntV", "Sunny", "female"],
+  ["ETPP7D0aZVdEj12Aa7ho", "Selly Han", "female"],
+  ["v1jVu1Ky28piIPEJqRrm", "KKC RADIO", "male"],
+  ["RU7aSi6lT4uQBXMLgDxK", "TeddyNote", "male"],
+  ["nbrxrAz3eYm9NgojrmFK", "Min-joon", "male"],
+  ["sf8Bpb1IU97NI9BHSMRf", "Rosa Oh", "female"],
+  ["BbsagRO6ohd8MKPS2Ob0", "Jin Geon Song", "male"],
+  ["7Nah3cbXKVmGX7gQUuwz", "Joon Park", "male"],
+  ["mYk0rAapHek2oTw18z8x", "Salang", "female"],
+  ["Lb7qkOn5hF8p7qfCDH8q", "Annie", "female"],
+  ["KlstlYt9VVf3zgie2Oht", "Sola", "female"],
+  ["pb3lVZVjdFWbkhPKlelB", "Harry Kim", "male"],
+  ["K3qo7ugXmpT87FDhLBbN", "Gale", "male"],
+  ["WzMnDIgiICcj1oXbUBO0", "샘호트만", "male"],
+  ["0mlAtfsvMzFpppUuNWkV", "승현", "male"],
+  ["QPFsEL6IBxlT15xfiD6C", "Hana Lee", "female"],
+  ["bciERhbhQhAIWwvnQA7H", "Seongmin Yoo", "male"],
+  ["Ir7oQcBXWiq4oFGROCfj", "taemin", "male"],
+  ["ZNSVYmudV9pOqphY0x8C", "Choi", "male"],
+  ["3MTvEr8xCMCC2mL9ujrI", "June", "male"],
+  ["1KNqBv4TutQtzSIACsMC", "Harry", "male"],
+  ["0oqpliV6dVSr9XomngOW", "Jini", "female"],
+  ["U1cJYS4EdbaHmfR7YzHd", "Minho", "male"],
+  ["zgDzx5jLLCqEp6Fl7Kl7", "Hanna", "female"],
+  ["ZZ4xhVcc83kZBfNIlIIz", "Man Bo", "male"],
+  ["MpbDJfQJUYUnp0i1QvOZ", "Hunmin", "male"],
+  ["tIXHSlSWOafJawXSV1g4", "Miso Choi", "female"],
+  ["fLvpMIGwcTmxzsUF4z1U", "Harry", "male"],
+  ["hWXqitL3DEOLD49pgNWR", "Ruach", "female"],
+  ["OEaq3WGNtNvFJ5co9mJE", "SangHo", "male"],
+  ["F7wT70V3u09d2rY9pNa6", "Yura", "female"],
+  ["BaW4Cx7nYOh1XNVQBrK2", "Sejoin", "male"],
+];
+const libInfo = (v) => ({ owner: v.public_owner_id, preview: v.preview_url || "", age: v.age || "" });
+/** 순위 목록 + 견본 소리 · 내 목록에 있는지 — 라이브러리에서 voice_id 로 찾아 둔다 (하루 저장) */
+async function rankedKo(refresh = false) {
+  const k = key();
+  if (!k) return [];
+  const o = read();
+  let lib = o.rankLib && !refresh && Date.now() - (o.rankAt || 0) < 24 * 3600e3 ? o.rankLib : null;
+  if (!lib) {
+    lib = {};
+    const want = new Set(RANK_KO.map((x) => x[0]));
+    try {
+      for (let page = 0; page < 4; page++) {
+        const r = await fetch(`${API}/v1/shared-voices?page_size=100&page=${page}&language=ko&sort=usage_character_count_1y`, { headers: { "xi-api-key": k } });
+        const body = await r.json().catch(() => null);
+        if (!r.ok) break;
+        for (const v of (body && body.voices) || []) if (want.has(v.voice_id)) lib[v.voice_id] = libInfo(v);
+        if (!body || !body.has_more || Object.keys(lib).length >= want.size) break;
+      }
+      // 못 찾은 것은 이름으로 한 번 더
+      for (const [id, name] of RANK_KO) {
+        if (lib[id]) continue;
+        const r = await fetch(`${API}/v1/shared-voices?page_size=30&search=${encodeURIComponent(name)}`, { headers: { "xi-api-key": k } });
+        const body = await r.json().catch(() => null);
+        const v = r.ok && body && (body.voices || []).find((x) => x.voice_id === id);
+        if (v) lib[id] = libInfo(v);
+      }
+    } catch (e) {
+      log.warn("[일레븐랩스] 순위 성우 찾기", e && e.message);
+    }
+    write({ ...read(), rankLib: lib, rankAt: Date.now() });
+  }
+  const mine = new Set((read().voices || []).map((v) => String(v.id).replace(PRE, "")));
+  return RANK_KO.map(([id, name, gender], i) => ({ rank: i + 1, id: PRE + id, name, gender, age: (lib[id] && lib[id].age) || "", preview: (lib[id] && lib[id].preview) || "", mine: mine.has(id), found: Boolean(lib[id]) }));
+}
+/** 순위 성우 넣기 — ids 를 주면 그것만, 없으면 아직 없는 것 모두 (순위 순서대로) */
+async function addRanked(ids) {
+  const k = key();
+  if (!k) throw new Error("일레븐랩스 키를 먼저 넣어 주세요");
+  const list = await rankedKo();
+  const lib = read().rankLib || {};
+  const todo = list.filter((x) => !x.mine && (!ids || ids.includes(x.id)));
+  let added = 0, stop = "";
+  for (const x of todo) {
+    const vid = x.id.replace(PRE, ""), L = lib[vid];
+    if (!L || !L.owner) continue;
+    const r = await fetch(`${API}/v1/voices/add/${encodeURIComponent(L.owner)}/${encodeURIComponent(vid)}`, {
+      method: "POST", headers: { "xi-api-key": k, "Content-Type": "application/json" }, body: JSON.stringify({ new_name: x.name }),
+    });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) {
+      const msg = JSON.stringify(body || {});
+      stop = /limit|maximum|slots|quota/i.test(msg) ? "요금제의 목소리 자리가 다 찼어요. 안 쓰는 목소리를 일레븐랩스에서 지우면 더 넣을 수 있어요."
+        : r.status === 401 || r.status === 403 ? "일레븐랩스 키에 목소리 추가 권한이 없어요. 일레븐랩스 › API 키에서 이 키의 Voices 권한을 쓰기(Write)로 바꾼 뒤 다시 눌러 주세요."
+        : errOf(r.status, body);
+      log.warn("[일레븐랩스] 순위 성우 넣기 멈춤", x.name, r.status, msg.slice(0, 200));
+      break;
+    }
+    added++;
+  }
+  if (added) await voices(true).catch(() => {});
+  return { added, todo: todo.length, stop };
+}
+
+module.exports = { status, setKey, clear, voices, say, addPopularKo, rankedKo, addRanked, MODEL, TAGS, stripTags };

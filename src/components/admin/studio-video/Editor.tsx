@@ -2592,7 +2592,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       const r0 = a0?.width && a0?.height ? a0.width / a0.height : 0;
       const r1 = a.width && a.height ? a.width / a.height : 0;
       const w = r0 && r1 ? Math.max(0.05, Math.min(1, (l.w ?? 0.35) * (r1 / r0))) : l.w;
-      updateLayer(id, { asset: a.id, name: item.name.replace(/_\d+(\.\w+)?$/, ""), stk: { style: s.style, text: s.text, icon: s.icon, color: s.color }, sticker: true, w });
+      updateLayer(id, { asset: a.id, name: item.name.replace(/_\d+(\.\w+)?$/, ""), stk: { style: s.style, text: s.text, icon: s.icon, color: s.color, ...(s.mo ? { mo: s.mo } : {}) }, sticker: true, w });
       say("그래픽 글자를 바꿨어요");
     } catch (e) {
       say(errText(e));
@@ -4050,7 +4050,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         {kind === "trans" && (() => {
           const i = flat.items.findIndex((x) => x.clip.id === transClip);
           const it = flat.items[i];
-          if (i <= 0 || !it) return null; // 전환이 없어도 칸은 그대로 — [없음] (2026-10-21 사장님)
+          // 다음 클립이 없으면 안내만 (칸은 열린다)
+          if (i <= 0 || !it) return (
+            <div style={{ padding: 18, color: C.sub, fontSize: 14, lineHeight: 1.7 }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}><b style={{ color: C.text, fontSize: 15 }}>화면전환</b>
+                <button type="button" onClick={() => setPanel("")} style={{ marginLeft: "auto", border: 0, background: "transparent", color: C.sub, fontSize: 20, cursor: "pointer" }}>×</button></div>
+              화면전환은 클립과 클립 사이에 넣어요. 클립이 두 개 이상이면 클립 사이의 ↔ 표시를 누르거나, 클립을 고른 뒤 다시 눌러 주세요.
+            </div>
+          );
           const prev = flat.items[i - 1];
           const tr = it.clip.trans || null;
           return (
@@ -4855,11 +4862,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
                 const its = flat.items;
                 const from = selected.length ? its.findIndex((x) => x.clip.id === selected[0]) : its.findIndex((x) => x.clip.id === cur?.clip.id);
                 const next = its[Math.max(0, from) + 1];
-                if (!next) return say("다음 클립이 없어요 — 화면전환은 클립과 클립 사이에 넣어요");
-                actions.openTrans(next.clip.id, true); // 없으면 기본(디졸브)을 넣고 칸을 연다 — 칸 아래 [빼기]로 지울 수 있다
+                // 누르면 칸만 연다 — 전환은 칸에서 고를 때만 들어간다 (2026-10-30 사장님: 화면전환은 안 해도 칸은 그냥 나타나야)
+                if (!next) { setTransClip(""); setPanel("trans"); return; }
+                actions.openTrans(next.clip.id, false);
               } },
               { icon: "bell", label: "효과음", on: panel === "sfx" || selL?.type === "sfx", title: "효과음 — 클립(단어) 시작에 한 번", go: () => setPanel(panel === "sfx" ? "" : "sfx") },
-              { icon: "image", txt: "썸", label: "썸네일", on: panel === "thumb", title: "썸네일 만들기 — 유튜브 썸네일 틀에 내 영상 첫 화면·제목으로", go: () => setPanel(panel === "thumb" ? "" : "thumb") },
+              // [썸] 칸은 뺐다 (2026-10-30 사장님) — 썸네일은 포토studio 에서. 칸 그리기(ThumbPanel)는 남겨 둔다
               { icon: "music", label: "배경음악", on: panel === "music" || selL?.type === "music", title: "배경 음악", go: () => (panel === "music" ? setPanel("") : openMusic("")) },
               { icon: "palette", label: "테마", on: false, off: true, title: "테마 — 영상 전체 분위기 한 번에 (준비 중)", go: () => {} },
             ];

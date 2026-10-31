@@ -127,7 +127,7 @@ async function openGsn(file) {
     } else mainWindow.loadURL(`${BASE_URL}/realty_admin?menu=sns&gsn=${encodeURIComponent(r.id)}`);
   } catch (e) {
     log.warn(`[.gsn] 열지 못함 ${file}: ${e.message}`);
-    dialog.showMessageBox(mainWindow || undefined, { type: "warning", title: "공실마케팅", message: "작업 파일을 열지 못했어요.", detail: e.message });
+    dialog.showMessageBox(mainWindow || undefined, { type: "warning", title: "공실마케팅studio", message: "작업 파일을 열지 못했어요.", detail: e.message });
   }
 }
 // 뉴스·SNS발행 [저장하기] · [불러오기] · 저장 상태 (2026-10-23 사장님)
@@ -215,7 +215,7 @@ async function createWindow() {
     show: false,
     minWidth: 1024,
     minHeight: 640,
-    title: `공실마케팅 v${app.getVersion()}`,
+    title: `공실마케팅studio v${app.getVersion()}`,
     icon: path.join(__dirname, "..", "build", "icon.png"),
     autoHideMenuBar: false, // 메뉴 막대는 아래에서 숨긴다 (Alt 로도 안 나오게 false)
     backgroundColor: "#f6f8fa",
@@ -294,7 +294,7 @@ async function createWindow() {
     // 이미지 편집에 저장 안 한 파일 — 닫을지 묻는다
     if (photoIpc.dirtyCount() > 0) {
       const r = dialog.showMessageBoxSync(mainWindow, {
-        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실마케팅",
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실마케팅studio",
         message: `이미지 편집에 저장하지 않은 파일이 ${photoIpc.dirtyCount()}개 있어요.`,
         detail: "[취소]를 누르고 이미지 편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
       });
@@ -303,7 +303,7 @@ async function createWindow() {
     }
     if (docIpc.dirtyCount() > 0) {
       const r = dialog.showMessageBoxSync(mainWindow, {
-        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실마케팅",
+        type: "question", buttons: ["저장하지 않고 닫기", "취소"], defaultId: 1, cancelId: 1, title: "공실마케팅studio",
         message: "문서편집에 저장하지 않은 문서가 있어요.",
         detail: "[취소]를 누르고 문서편집에서 저장(Ctrl+S)한 뒤 닫아 주세요.",
       });
@@ -326,7 +326,7 @@ async function createWindow() {
       buttons: ["저장하고 나가기", "저장 안 함", "취소"],
       defaultId: 0,
       cancelId: 2,
-      title: "공실마케팅",
+      title: "공실마케팅studio",
       message: "동영상제작에 저장하지 않은 내용이 있어요.",
       detail: "[저장 안 함]을 누르면 마지막으로 저장한 상태로 돌아가요.",
     });
@@ -419,12 +419,12 @@ function buildMenu() {
       submenu: [
         { label: "업데이트 확인", click: () => checkForUpdates(true) },
         {
-          label: "공실마케팅 정보",
+          label: "공실마케팅studio 정보",
           click: () =>
             dialog.showMessageBox(mainWindow, {
               type: "info",
-              title: "공실마케팅",
-              message: `공실마케팅 v${app.getVersion()}`,
+              title: "공실마케팅studio",
+              message: `공실마케팅studio v${app.getVersion()}`,
               detail: `연결 주소: ${BASE_URL}\nFFmpeg: ${ffmpegPath() ? "설치됨" : "없음"}\n로그: ${log.transports.file.getFile().path}`,
             }),
         },
@@ -475,7 +475,7 @@ async function startupUpdate() {
   log.info(`[업데이트] 켤 때 새 버전 v${ver} — 받아서 설치`);
   const win = new BrowserWindow({ width: 440, height: 160, frame: false, resizable: false, alwaysOnTop: true, backgroundColor: "#16202b", title: "공실마케팅 업데이트", icon: path.join(__dirname, "..", "build", "icon.png"), webPreferences: { sandbox: true } });
   const html = `<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 28px;box-sizing:border-box;background:#16202b;color:#fff;font-family:'Malgun Gothic',sans-serif">
-<div style="font-size:17px;font-weight:800">공실마케팅 새 버전${ver ? ` v${ver}` : ""}</div>
+<div style="font-size:17px;font-weight:800">공실마케팅studio 새 버전${ver ? ` v${ver}` : ""}</div>
 <div id="t" style="font-size:14px;color:#b6c2cf;margin-top:8px">새 버전을 받는 중… 0%</div>
 <div style="height:6px;border-radius:3px;background:#2b3644;margin-top:12px;overflow:hidden"><div id="b" style="height:100%;width:0;background:#3b82f6"></div></div></body>`;
   win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
@@ -637,6 +637,7 @@ ipcMain.handle("studio:column-open-url", (_e, url) => columnWriter.openUrl(url))
 ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
 ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
 ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));
+ipcMain.handle("studio:column-set-url", (_e, id, url) => columnWriter.setNewsUrl(id, url)); // 내 기사 → 홈페이지 주소 (2026-10-31)
 ipcMain.handle("studio:column-refetch", (_e, id) => columnWriter.refetch(id)); // [다시 가져오기]
 ipcMain.handle("studio:column-list", (_e, limit) => columnWriter.list(Number(limit) || undefined));
 // 인테리어뉴스·리모델링뉴스 시뮬레이션 (유료 전용)

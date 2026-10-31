@@ -135,7 +135,7 @@ export function isStudioMember(member: {
  */
 export type StudioPlan = 'pro' | 'studio';
 export const STUDIO_PLAN_TYPE: Record<StudioPlan, string> = { pro: 'news_premium', studio: 'study_premium' };
-export const STUDIO_PLAN_LABEL: Record<StudioPlan, string> = { pro: 'Pro', studio: 'Studio' };
+export const STUDIO_PLAN_LABEL: Record<StudioPlan, string> = { pro: '마케팅회원', studio: '스튜디오회원' };
 export function studioPlan(member: {
   role?: string | null;
   plan_type?: string | null;

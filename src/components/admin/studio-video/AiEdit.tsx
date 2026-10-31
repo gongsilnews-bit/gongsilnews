@@ -681,7 +681,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
           if (sa && sv) {
             const tall = p.ratio === "9:16" || p.ratio === "4:5";
             const k = Object.keys(stkAsset).indexOf(c.id);
-            p.layers!.push({ id: uid(), type: "image", from: c.id, to: c.id, asset: sa.id, name: sv.item.name.replace(/_\d+(\.\w+)?$/, ""), x: k % 2 ? 0.25 : 0.75, y: pl.title ? 0.45 : 0.3, w: tall ? 0.5 : 0.3, opacity: 1, anim: stickerAnim(sv.spec.style), sticker: true, stk: sv.spec } as Layer);
+            p.layers!.push({ id: uid(), type: "image", from: c.id, to: c.id, asset: sa.id, name: sv.item.name.replace(/_\d+(\.\w+)?$/, ""), x: k % 2 ? 0.25 : 0.75, y: pl.title ? 0.45 : 0.3, w: tall ? 0.5 : 0.3, opacity: 1, anim: stickerAnim(sv.spec.style, sv.spec.text), sticker: true, stk: sv.spec } as Layer);
           } else if (SX !== "none" && pl.sfx) {
             p.layers!.push({ id: uid(), type: "sfx", sfx: pl.sfx, name: SFX_LIST.find((s) => s.id === pl.sfx)?.label || pl.sfx, volume: 0.6, from: c.id, to: c.id } as Layer);
           }

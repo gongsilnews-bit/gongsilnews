@@ -12,21 +12,59 @@ import { Side } from "./Panels";
 import { loadFont } from "./Pickers";
 import { TEMPLATES, TPL_PREFIX, TemplatePanel, drawTemplate, tplFonts, type TplDef, FavStar, toggleGFav, useGFav } from "./Templates";
 
-export type StickerStyle = "burst" | "tag" | "pin" | "bubble" | "stamp" | "ribbon" | "neon" | "check" | "marker" | "badge" | "arrow" | "ticket" | "cloud" | "sign" | "circle" | "block";
-export type Sticker = { text: string; style: StickerStyle; color?: string; icon?: string };
+export type StickerStyle = "burst" | "tag" | "pin" | "bubble" | "stamp" | "ribbon" | "neon" | "check" | "marker" | "badge" | "arrow" | "ticket" | "cloud" | "sign" | "circle" | "block"
+  | "speed" | "slant" | "emoji" | "frame" | "halftone" | "comicword" | "manga" | "panel"; // 강조 효과 (2026-10-30 사장님): 집중선 · 기울어진 말딱지 · 작은 아이콘 · 테두리 틀
+export type Sticker = { text: string; style: StickerStyle; color?: string; icon?: string; mo?: number /* 1 = 모션 스티커 (순간마다 다시 그림) */ };
 
 export const STYLE_LABEL: Record<StickerStyle, string> = {
   burst: "펑!", tag: "가격표", pin: "위치 핀", bubble: "말풍선", stamp: "도장", ribbon: "리본", neon: "네온", check: "체크", marker: "형광펜", badge: "아이콘",
   arrow: "화살표", ticket: "티켓", cloud: "구름", sign: "나무 간판", circle: "동그라미", block: "입체 글자",
+  speed: "집중선", slant: "말딱지", emoji: "아이콘", frame: "테두리 틀",
+  halftone: "만화 망점", comicword: "만화 효과음", manga: "만화 기호", panel: "만화 칸",
 };
+/** 화면 전체에 까는 그래픽 — 넣을 때 화면 너비 그대로 */
+export const FULL_STYLES = new Set<StickerStyle>(["speed", "frame", "halftone", "panel"]);
 /** 기본 색 (스티커 바탕·주색) */
 const BASE: Record<StickerStyle, string> = {
   burst: "#FFD400", tag: "#E60012", pin: "#E60012", bubble: "#FFFFFF", stamp: "#D7261E", ribbon: "#1F5FD6", neon: "#FF3EA5", check: "#16A34A", marker: "#FFE600", badge: "#1A3A6B",
   arrow: "#E60012", ticket: "#FF7A00", cloud: "#FFFFFF", sign: "#8B5A2B", circle: "#E60012", block: "#FFD400",
+  speed: "#FFFFFF", slant: "#111111", emoji: "#FFD400", frame: "#FFE14D",
+  halftone: "#111111", comicword: "#FFD400", manga: "#111111", panel: "#111111",
 };
 
 /* 분류 — 공실등록 테마·옵션 (VacancyRegisterForm 테마/옵션 목록)도 모두 담았다 */
 export const CATS: { id: string; label: string; items: Sticker[] }[] = [
+  {
+    // 만화처럼 (2026-10-30 사장님: 만화와 같이 보이게) — 망점 · 의성어 효과음 글자 · 만화 기호 · 만화 칸 테두리. 모두 우리가 그린 기본 모양
+    id: "comic", label: "만화 효과", items: [
+      { text: "쾅!", style: "comicword" }, { text: "두둥!", style: "comicword", color: "#FF3B30" }, { text: "헉!", style: "comicword", color: "#7DD3FC" },
+      { text: "짜잔!", style: "comicword", color: "#F9A8D4" }, { text: "번쩍!", style: "comicword", color: "#FFE14D" }, { text: "슝~", style: "comicword", color: "#A7F3D0" },
+      { text: "띠용?!", style: "comicword", color: "#C4B5FD" }, { text: "와르르", style: "comicword", color: "#FDBA74" },
+      { text: "땀방울", style: "manga", icon: "sweat", color: "#38BDF8" }, { text: "화남", style: "manga", icon: "anger", color: "#EF4444" }, { text: "충격", style: "manga", icon: "shock" },
+      { text: "말줄임", style: "manga", icon: "dots" }, { text: "깨달음", style: "manga", icon: "bulb", color: "#FFD400" }, { text: "두근", style: "manga", icon: "beat", color: "#FF3EA5" },
+      { text: "망점 검정", style: "halftone" }, { text: "망점 빨강", style: "halftone", color: "#EF4444" }, { text: "망점 파랑", style: "halftone", color: "#3B82F6" },
+      { text: "만화 칸 테두리", style: "panel" }, { text: "만화 칸 사선", style: "panel", icon: "slash" },
+    ],
+  },
+  {
+    // 강조 효과 (2026-10-30 사장님: 썸네일·쇼츠의 집중선·말딱지·아이콘·테두리를 움직이는 그래픽으로)
+    id: "fx", label: "강조 효과", items: [
+      { text: "집중선", style: "speed" }, { text: "집중선 검정", style: "speed", color: "#111111" }, { text: "집중선 노랑", style: "speed", color: "#FFE14D" },
+      { text: "옆 흐름선", style: "speed", icon: "side" }, { text: "옆 흐름선 검정", style: "speed", icon: "side", color: "#111111" },
+      // 집중선 더 (2026-10-30 사장님: 다양하게, 효과음과 함께)
+      { text: "굵은 집중선", style: "speed", icon: "bold" }, { text: "촘촘한 집중선", style: "speed", icon: "dense", color: "#111111" },
+      { text: "빨려드는 집중선", style: "speed", icon: "zoom" }, { text: "회오리 집중선", style: "speed", icon: "spin", color: "#7DD3FC" },
+      { text: "위에서 쏟아지는 선", style: "speed", icon: "down" }, { text: "아래서 솟는 선", style: "speed", icon: "up", color: "#FFE14D" },
+      { text: "모서리 집중선", style: "speed", icon: "corner" }, { text: "번쩍 빛살", style: "speed", icon: "flash", color: "#FFE14D" },
+      { text: "빨강 긴장선", style: "speed", icon: "dense", color: "#EF4444" }, { text: "파랑 충격선", style: "speed", icon: "bold", color: "#3B82F6" },
+      { text: "N년차 중개사", style: "slant" }, { text: "현장 직접 다녀옴", style: "slant", color: "#1E9BF0" }, { text: "솔직 후기", style: "slant", color: "#E60012" },
+      { text: "오늘의 매물", style: "slant", color: "#FFD400" },
+      { text: "웃음", style: "emoji", icon: "smile" }, { text: "하트", style: "emoji", icon: "heart", color: "#FF3EA5" }, { text: "반짝", style: "emoji", icon: "sparkle", color: "#FFE14D" },
+      { text: "느낌표", style: "emoji", icon: "bang", color: "#E60012" }, { text: "물음표", style: "emoji", icon: "question", color: "#1E9BF0" }, { text: "불꽃", style: "emoji", icon: "fire", color: "#FF7A00" },
+      { text: "별", style: "emoji", icon: "star", color: "#FFD400" }, { text: "놀람", style: "emoji", icon: "wow" },
+      { text: "노랑 테두리", style: "frame" }, { text: "노랑·파랑 테두리", style: "frame", icon: "double" }, { text: "흰 테두리", style: "frame", color: "#FFFFFF" },
+    ],
+  },
   {
     id: "hot", label: "강조", items: [
       { text: "가격대비 짱!", style: "burst" }, { text: "대박!", style: "burst", color: "#FF7A00" }, { text: "강추!", style: "burst", color: "#FF3EA5" },
@@ -268,6 +306,14 @@ function make3D(flat: HTMLCanvasElement, accent: string) {
 
 export function drawSticker(s: Sticker, colorIn?: string): HTMLCanvasElement {
   const color = colorIn || s.color || BASE[s.style];
+  if (s.style === "speed") return drawSpeed(color, s.icon || "", 0);
+  if (s.style === "frame") return drawFrame(color, s.icon === "double");
+  if (s.style === "emoji") return drawEmoji(s.icon || "smile", color);
+  if (s.style === "slant") return drawSlant(s.text.trim() || " ", color);
+  if (s.style === "halftone") return drawHalftone(color);
+  if (s.style === "panel") return drawPanel(color, s.icon === "slash");
+  if (s.style === "comicword") return drawComicWord(s.text.trim() || " ", color);
+  if (s.style === "manga") return drawManga(s.icon || "sweat", color);
   return make3D(drawFlat(s, color), s.style === "neon" ? color : s.style === "burst" || s.style === "marker" ? "#FFE14D" : color);
 }
 
@@ -672,9 +718,399 @@ function drawFlat(s: Sticker, colorIn?: string): HTMLCanvasElement {
   }
 }
 
-/* 짠! — 모양마다 어울리는 등장·두근·효과음을 알아서 (사진 레이어 애니메이션 그대로 → 미리보기·완성 영상 같음) */
-export function stickerAnim(st: StickerStyle): LayerAnim {
+/* ── 강조 효과 그리기 (2026-10-30) — 모두 우리가 그린 모양 ── */
+/** 집중선 — 화면 가장자리에서 가운데로 모이는 뾰족한 선 (가운데는 비움). side = 왼쪽·오른쪽에서만 흐르는 선 */
+/** 집중선 — kind: "" 기본 · side 옆 흐름 · bold 굵게 · dense 촘촘 · zoom 빨려듦 · spin 회오리 · down/up 쏟아짐·솟음 · corner 모서리 · flash 빛살 (2026-10-30) */
+function drawSpeed(color: string, kind: string, frame = 0, t = 0) {
+  const W = 1920, H = 1080;
+  const { cv, g } = mk(W, H);
+  const cx = W / 2, cy = H / 2;
+  const side = kind === "side";
+  let seed = (side ? 7 : 3) + frame * 131; // frame 마다 다른 선 → 움직이면 만화처럼 번쩍번쩍
+  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  g.fillStyle = color;
+  const spike = (a: number, w: number, r0: number, r1: number, ox = cx, oy = cy) => {
+    g.beginPath();
+    g.moveTo(ox + Math.cos(a - w) * r1, oy + Math.sin(a - w) * r1);
+    g.lineTo(ox + Math.cos(a) * r0, oy + Math.sin(a) * r0);
+    g.lineTo(ox + Math.cos(a + w) * r1, oy + Math.sin(a + w) * r1);
+    g.closePath();
+    g.fill();
+  };
+  const R = Math.hypot(cx, cy) * 1.05;
+  if (kind === "bold" || kind === "dense") {
+    const N = kind === "bold" ? 46 : 220;
+    for (let i = 0; i < N; i++) {
+      const a = (Math.PI * 2 * i) / N + (rnd() - 0.5) * 0.05, inner = (kind === "bold" ? 0.5 : 0.62) + rnd() * 0.25;
+      spike(a, (kind === "bold" ? 0.03 + rnd() * 0.03 : 0.003 + rnd() * 0.006) * Math.PI, Math.min(cx, cy) * inner * 1.4, R);
+    }
+    return cv;
+  }
+  if (kind === "zoom" || kind === "spin") {
+    // 선이 가운데로 빨려 들어감 (짧은 선이 바깥에서 안으로 흐름) · 회오리는 돌면서
+    const N = 90, ph = (t * 1.6) % 1;
+    for (let i = 0; i < N; i++) {
+      const a = (Math.PI * 2 * i) / N + (kind === "spin" ? t * 1.2 : 0) + ((i * 7) % 5) * 0.01;
+      const off = ((i * 0.37) % 1 + ph) % 1;
+      const r1 = R * (1 - off * 0.55), r0 = r1 - R * (0.18 + ((i * 13) % 7) * 0.02);
+      if (r0 < Math.min(cx, cy) * 0.45) continue;
+      spike(a, 0.012 * Math.PI, r0, r1);
+    }
+    return cv;
+  }
+  if (kind === "down" || kind === "up") {
+    for (let i = 0; i < 70; i++) {
+      const x = rnd() * W, len = H * (0.15 + rnd() * 0.3), th = 2 + rnd() * 6, y = ((rnd() * H * 1.4 + (kind === "down" ? 1 : -1) * t * 1800) % (H * 1.4) + H * 1.4) % (H * 1.4) - H * 0.2;
+      g.globalAlpha = 0.5 + rnd() * 0.5;
+      g.beginPath();
+      if (kind === "down") { g.moveTo(x - th, y); g.lineTo(x, y + len); g.lineTo(x + th, y); }
+      else { g.moveTo(x - th, y + len); g.lineTo(x, y); g.lineTo(x + th, y + len); }
+      g.closePath();
+      g.fill();
+    }
+    g.globalAlpha = 1;
+    return cv;
+  }
+  if (kind === "corner") {
+    for (const [ox, oy] of [[0, 0], [W, 0], [0, H], [W, H]]) {
+      const base = Math.atan2(cy - oy, cx - ox);
+      for (let i = 0; i < 14; i++) {
+        const a = base + (rnd() - 0.5) * 1.3, len = Math.min(W, H) * (0.25 + rnd() * 0.25), w = 0.02 + rnd() * 0.03;
+        g.beginPath();
+        g.moveTo(ox + Math.cos(a - w) * 4, oy + Math.sin(a - w) * 4);
+        g.lineTo(ox + Math.cos(a) * len, oy + Math.sin(a) * len);
+        g.lineTo(ox + Math.cos(a + w) * 4, oy + Math.sin(a + w) * 4);
+        g.closePath();
+        g.fill();
+      }
+    }
+    return cv;
+  }
+  if (kind === "flash") {
+    // 가운데에서 바깥으로 터지는 빛살 + 가운데 빛 (두근대며)
+    const pulse = 0.75 + 0.25 * Math.abs(Math.sin(t * 6));
+    const gr = g.createRadialGradient(cx, cy, 0, cx, cy, Math.min(cx, cy) * 0.9 * pulse);
+    gr.addColorStop(0, "rgba(255,255,255,0.85)");
+    gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = color;
+    g.globalAlpha = 0.85;
+    for (let i = 0; i < 24; i++) spike((Math.PI * 2 * i) / 24 + t * 0.3, 0.035 * Math.PI, R * 1.2, Math.min(cx, cy) * 0.12, cx, cy);
+    g.globalAlpha = 1;
+    return cv;
+  }
+  if (side) {
+    for (let i = 0; i < 46; i++) {
+      const y = rnd() * H, len = W * (0.12 + rnd() * 0.22), th = 3 + rnd() * 9, left = i % 2 === 0;
+      const x0 = left ? 0 : W, x1 = left ? len : W - len;
+      g.beginPath();
+      g.moveTo(x0, y - th);
+      g.lineTo(x1, y);
+      g.lineTo(x0, y + th);
+      g.closePath();
+      g.fill();
+    }
+    return cv;
+  }
+  const N = 120;
+  for (let i = 0; i < N; i++) {
+    const a = (Math.PI * 2 * i) / N + (rnd() - 0.5) * 0.04;
+    const inner = 0.55 + rnd() * 0.3; // 가운데 빈 곳 (타원)
+    const w = (0.006 + rnd() * 0.012) * Math.PI;
+    const ix = cx + Math.cos(a) * cx * inner, iy = cy + Math.sin(a) * cy * inner;
+    g.beginPath();
+    g.moveTo(cx + Math.cos(a - w) * R, cy + Math.sin(a - w) * R);
+    g.lineTo(ix, iy);
+    g.lineTo(cx + Math.cos(a + w) * R, cy + Math.sin(a + w) * R);
+    g.closePath();
+    g.fill();
+  }
+  return cv;
+}
+/** 테두리 틀 — 화면 둘레 굵은 테두리. double = 바깥 색 + 안쪽 파랑 줄 */
+function drawFrame(color: string, double: boolean) {
+  const W = 1920, H = 1080, T = 34;
+  const { cv, g } = mk(W, H);
+  g.lineJoin = "miter";
+  g.strokeStyle = color;
+  g.lineWidth = T;
+  g.strokeRect(T / 2, T / 2, W - T, H - T);
+  if (double) {
+    g.strokeStyle = "#1E9BF0";
+    g.lineWidth = 16;
+    g.strokeRect(T + 8, T + 8, W - (T + 8) * 2, H - (T + 8) * 2);
+  }
+  return cv;
+}
+/* ── 만화 효과 (2026-10-30) ── */
+/** 망점 — 화면 가장자리는 큰 점, 가운데로 갈수록 작아져 사라짐 (만화 배경 느낌) */
+function drawHalftone(color: string) {
+  const W = 1920, H = 1080, S = 30;
+  const { cv, g } = mk(W, H);
+  g.fillStyle = color;
+  g.globalAlpha = 0.55;
+  const cx = W / 2, cy = H / 2;
+  for (let y = S / 2; y < H; y += S) for (let x = (Math.round(y / S) % 2 ? S : S / 2); x < W; x += S) {
+    const d = Math.hypot((x - cx) / cx, (y - cy) / cy) / Math.SQRT2; // 0 가운데 ~ 1 모서리
+    const r = Math.max(0, (d - 0.35) / 0.65) * S * 0.48;
+    if (r < 0.8) continue;
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+  }
+  return cv;
+}
+/** 만화 칸 — 굵은 검은 테두리 + 흰 여백. slash = 사선으로 나뉜 칸 줄 */
+function drawPanel(color: string, slash: boolean) {
+  const W = 1920, H = 1080, G = 26, B = 14;
+  const { cv, g } = mk(W, H);
+  g.fillStyle = "#FFFFFF";
+  g.fillRect(0, 0, W, G);
+  g.fillRect(0, H - G, W, G);
+  g.fillRect(0, 0, G, H);
+  g.fillRect(W - G, 0, G, H);
+  g.lineJoin = "miter";
+  g.strokeStyle = color;
+  g.lineWidth = B;
+  g.strokeRect(G + B / 2, G + B / 2, W - (G + B / 2) * 2, H - (G + B / 2) * 2);
+  if (slash) {
+    g.strokeStyle = "#FFFFFF";
+    g.lineWidth = G * 1.4;
+    g.beginPath(); g.moveTo(W * 0.68, 0); g.lineTo(W * 0.58, H); g.stroke();
+    g.strokeStyle = color;
+    g.lineWidth = B;
+    for (const o of [-G * 0.7 - B / 2, G * 0.7 + B / 2]) { g.beginPath(); g.moveTo(W * 0.68 + o, G); g.lineTo(W * 0.58 + o, H - G); g.stroke(); }
+  }
+  return cv;
+}
+/** 만화 효과음 글자 — 굵은 글자 + 검은 테두리 + 흰 바깥 테두리 + 뒤 뾰족 터짐, 비스듬히 */
+function drawComicWord(text: string, color: string) {
+  const fs = 150, font = `${fs}px ${HEAD}`;
+  const tw = measure(font, text);
+  const rx = tw / 2 + 120, ry = fs * 0.62 + 95;
+  const { cv, g } = mk(rx * 2 + 40, ry * 2 + 40);
+  const cx = cv.width / 2, cy = cv.height / 2, N = 16;
+  // 뒤 뾰족 터짐 (흰 판 + 검은 테두리, 뾰족한 길이를 들쭉날쭉)
+  g.beginPath();
+  for (let i = 0; i < N * 2; i++) {
+    const a = (Math.PI * i) / N - Math.PI / 2, k = i % 2 ? 0.7 : 0.92 + ((i * 37) % 9) / 60;
+    const x = cx + Math.cos(a) * rx * k, y = cy + Math.sin(a) * ry * k;
+    if (i) g.lineTo(x, y); else g.moveTo(x, y);
+  }
+  g.closePath();
+  g.fillStyle = "#FFFFFF";
+  g.fill();
+  g.lineWidth = 9;
+  g.strokeStyle = "#111111";
+  g.stroke();
+  g.font = font;
+  outlined(g, text, cx + 8, cy + 12, "#111111", "#111111", 30); // 그림자
+  outlined(g, text, cx, cy + 4, color, "#111111", 18);
+  return tilt(cv, -9);
+}
+/** 만화 기호 — 땀방울 · 화남(핏대) · 충격(세로줄) · 말줄임 · 깨달음(전구) · 두근(하트 둘) */
+function drawManga(kind: string, color: string) {
+  const S = 360, { cv, g } = mk(S, S), c = S / 2;
+  g.lineWidth = 14;
+  g.strokeStyle = "#111111";
+  g.fillStyle = color;
+  switch (kind) {
+    case "sweat": {
+      g.beginPath();
+      g.moveTo(c, c - 120);
+      g.bezierCurveTo(c + 30, c - 50, c + 85, c + 10, c + 70, c + 70);
+      g.arc(c, c + 60, 72, 0.05 * Math.PI, 0.95 * Math.PI);
+      g.bezierCurveTo(c - 85, c + 10, c - 30, c - 50, c, c - 120);
+      g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "rgba(255,255,255,0.8)";
+      g.beginPath(); g.ellipse(c - 28, c + 40, 12, 22, -0.4, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case "anger": {
+      g.lineWidth = 26;
+      g.strokeStyle = color;
+      for (let i = 0; i < 4; i++) {
+        g.save();
+        g.translate(c, c);
+        g.rotate((Math.PI / 2) * i + Math.PI / 4);
+        g.beginPath();
+        g.arc(70, 70, 62, Math.PI, 1.5 * Math.PI);
+        g.stroke();
+        g.restore();
+      }
+      break;
+    }
+    case "shock": {
+      g.strokeStyle = color;
+      g.lineWidth = 14;
+      for (let i = 0; i < 5; i++) { const x = c - 110 + i * 55; g.beginPath(); g.moveTo(x, c - 130 + (i % 2) * 20); g.lineTo(x, c + 100 - (i % 2) * 30); g.stroke(); }
+      break;
+    }
+    case "dots": {
+      g.fillStyle = color;
+      for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(c - 100 + i * 100, c, 30, 0, Math.PI * 2); g.fill(); }
+      break;
+    }
+    case "bulb": {
+      g.beginPath(); g.arc(c, c - 30, 95, 0.8 * Math.PI, 2.2 * Math.PI); g.lineTo(c + 40, c + 95); g.lineTo(c - 40, c + 95); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "#9CA3AF"; g.fillRect(c - 42, c + 100, 84, 40); g.strokeRect(c - 42, c + 100, 84, 40);
+      g.strokeStyle = color; g.lineWidth = 12;
+      for (let i = 0; i < 5; i++) { const a = -Math.PI * (0.15 + i * 0.175); g.beginPath(); g.moveTo(c + Math.cos(a) * 125, c - 30 + Math.sin(a) * 125); g.lineTo(c + Math.cos(a) * 165, c - 30 + Math.sin(a) * 165); g.stroke(); }
+      break;
+    }
+    case "beat": {
+      const heart = (x: number, y: number, r: number) => {
+        g.beginPath();
+        g.moveTo(x, y + r * 0.85);
+        g.bezierCurveTo(x - r * 1.3, y - r * 0.1, x - r * 0.55, y - r * 1.05, x, y - r * 0.35);
+        g.bezierCurveTo(x + r * 0.55, y - r * 1.05, x + r * 1.3, y - r * 0.1, x, y + r * 0.85);
+        g.closePath(); g.fill(); g.stroke();
+      };
+      heart(c - 50, c + 20, 95);
+      heart(c + 85, c - 70, 55);
+      break;
+    }
+  }
+  return cv;
+}
+/** 기울어진 말딱지 — 흰 판 + 검은 테두리 + 뒤에 색 그림자 판, 살짝 기울임 */
+function drawSlant(text: string, color: string) {
+  const fs = 72, font = `${fs}px ${HEAD}`;
+  const tw = measure(font, text);
+  const pw = tw + 70, ph = fs + 46, off = 14;
+  const { cv, g } = mk(pw + off + 12, ph + off + 12);
+  g.fillStyle = color === "#111111" ? "#FFD400" : color;
+  g.fillRect(6 + off, 6 + off, pw, ph);
+  g.fillStyle = "#FFFFFF";
+  g.fillRect(6, 6, pw, ph);
+  g.lineWidth = 7;
+  g.strokeStyle = "#111111";
+  g.strokeRect(6, 6, pw, ph);
+  g.font = font;
+  g.fillStyle = "#111111";
+  g.fillText(text, 6 + pw / 2, 6 + ph / 2 + 3);
+  return tilt(cv, -7);
+}
+/** 작은 아이콘 — 웃음·하트·반짝·느낌표·물음표·불꽃·별·놀람 (굵은 검은 테두리) */
+function drawEmoji(kind: string, color: string) {
+  const S = 360, { cv, g } = mk(S, S), c = S / 2, r = S * 0.4;
+  g.lineWidth = 16;
+  g.strokeStyle = "#111111";
+  g.fillStyle = color;
+  const face = () => { g.beginPath(); g.arc(c, c, r, 0, Math.PI * 2); g.fill(); g.stroke(); };
+  switch (kind) {
+    case "smile":
+    case "wow": {
+      face();
+      g.fillStyle = "#111111";
+      if (kind === "smile") {
+        g.lineWidth = 14;
+        g.beginPath(); g.arc(c - r * 0.36, c - r * 0.12, r * 0.13, Math.PI, 0); g.stroke();
+        g.beginPath(); g.arc(c + r * 0.36, c - r * 0.12, r * 0.13, Math.PI, 0); g.stroke();
+        g.beginPath(); g.arc(c, c + r * 0.05, r * 0.5, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+      } else {
+        g.beginPath(); g.ellipse(c - r * 0.34, c - r * 0.15, r * 0.1, r * 0.16, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(c + r * 0.34, c - r * 0.15, r * 0.1, r * 0.16, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(c, c + r * 0.42, r * 0.17, r * 0.22, 0, 0, Math.PI * 2); g.fill();
+      }
+      break;
+    }
+    case "heart": {
+      g.beginPath();
+      g.moveTo(c, c + r * 0.85);
+      g.bezierCurveTo(c - r * 1.3, c - r * 0.1, c - r * 0.55, c - r * 1.05, c, c - r * 0.35);
+      g.bezierCurveTo(c + r * 0.55, c - r * 1.05, c + r * 1.3, c - r * 0.1, c, c + r * 0.85);
+      g.closePath(); g.fill(); g.stroke();
+      break;
+    }
+    case "star":
+    case "sparkle": {
+      const n = kind === "star" ? 5 : 4, k = kind === "star" ? 0.45 : 0.22;
+      g.beginPath();
+      for (let i = 0; i < n * 2; i++) {
+        const a = (Math.PI * i) / n - Math.PI / 2, rr = i % 2 ? r * k : r * 1.05;
+        if (i) g.lineTo(c + Math.cos(a) * rr, c + Math.sin(a) * rr); else g.moveTo(c + Math.cos(a) * rr, c + Math.sin(a) * rr);
+      }
+      g.closePath(); g.fill(); g.stroke();
+      break;
+    }
+    case "fire": {
+      g.beginPath();
+      g.moveTo(c, c - r * 1.05);
+      g.bezierCurveTo(c + r * 0.2, c - r * 0.5, c + r * 0.95, c - r * 0.2, c + r * 0.75, c + r * 0.45);
+      g.bezierCurveTo(c + r * 0.6, c + r * 0.95, c - r * 0.6, c + r * 0.95, c - r * 0.75, c + r * 0.45);
+      g.bezierCurveTo(c - r * 0.9, c, c - r * 0.35, c - r * 0.3, c - r * 0.3, c - r * 0.65);
+      g.bezierCurveTo(c - r * 0.05, c - r * 0.35, c, c - r * 0.75, c, c - r * 1.05);
+      g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "#FFE14D";
+      g.beginPath(); g.ellipse(c, c + r * 0.45, r * 0.3, r * 0.38, 0, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case "bang":
+    case "question": {
+      g.font = `${Math.round(r * 2.1)}px ${HEAD}`;
+      outlined(g, kind === "bang" ? "!" : "?", c, c + 10, color, "#111111", 22);
+      break;
+    }
+    default: face();
+  }
+  return cv;
+}
+
+/* 그래픽마다 고유한 움직임 (2026-10-30 사장님: 다 같은 동작이라 똑같아 보인다 → 하나하나 특징대로)
+   1) 글자 뜻으로 — 도장처럼 쾅 찍히는 것, 열쇠처럼 흔들리는 것, 동전처럼 도는 것…
+   2) 뜻이 없으면 모양에 어울리는 움직임 여러 벌 중에서 글자마다 다르게 골라 (같은 모양끼리도 다르게) */
+type Mv = Pick<LayerAnim, "in" | "emph" | "sfx"> & { dur?: number };
+const MEANING: [RegExp, Mv][] = [
+  [/완료|SOLD|계약|마감|선착순|급매|도장/i, { in: "big", emph: "shake", sfx: "boom", dur: 0.3 }], // 쾅 찍힘
+  [/OPEN|NEW|네온|HOT|한강뷰|야경/i, { in: "fade", emph: "blink", sfx: "magic", dur: 0.6 }], // 간판 불 켜짐
+  [/입주|열쇠|키|비밀번호|도어락/, { in: "swing", emph: "sway", sfx: "click" }], // 열쇠 달랑
+  [/가격|억|만원|원|SALE|할인|인하|저렴|조절|무피|무권리|가성비|대출/i, { in: "spin", emph: "beat", sfx: "coin" }], // 동전처럼 핑그르
+  [/역|버스|IC|분!|분 |교통|지하철|정류장/, { in: "slideR", emph: "bounce", sfx: "whistle-up" }], // 달려옴
+  [/보러|여기|가리|문의|전화|상담|채널|구독/, { in: "slideL", emph: "wiggle", sfx: "whoosh-short" }], // 이쪽! 콕콕
+  [/대단지|세대|층|베이|구조|평|㎡|복층|판상|타워|넓은/, { in: "stretch", emph: "pulse", sfx: "pop" }], // 쭉 펼쳐짐
+  [/숲|공원|조용|힐링|채광|남향|뷰|정원|테라스/, { in: "fly", emph: "float", sfx: "glass", dur: 0.7 }], // 둥실
+  [/추천|강추|짱|BEST|최고|인기|하트|관심/i, { in: "jelly", emph: "beat", sfx: "heartbeat" }], // 말랑 두근
+  [/\?|실화|미쳤|대박|헉|놀람|느낌표/, { in: "drop", emph: "shake", sfx: "boing" }], // 툭 떨어져 덜덜
+  [/신축|NEW|리모델링|올수리|깨끗/i, { in: "zoom", emph: "blink", sfx: "glass" }], // 반짝 새것
+  [/주차|엘리베이터|옵션|에어컨|세탁|냉장고|풀옵션/, { in: "flip", emph: "bounce", sfx: "pluck" }], // 착 뒤집혀 나옴
+  [/사진|현장|촬영|다녀옴/, { in: "zoom", emph: "pulse", sfx: "shutter" }], // 찰칵
+  [/축하|감사|성공|완성|오픈/, { in: "pop", emph: "bounce", sfx: "success" }], // 짜잔
+  [/쾅|두둥|와르르/, { in: "big", emph: "shake", sfx: "boom" }],
+  [/슝|휙/, { in: "slideR", emph: "wiggle", sfx: "whistle-up" }],
+  [/띠용|물음표/, { in: "drop", emph: "wiggle", sfx: "boing" }],
+  [/땀|말줄임|충격/, { in: "drop", emph: "bounce", sfx: "whistle-down" }],
+  [/전구|깨달음|반짝|별/, { in: "pop", emph: "blink", sfx: "magic" }],
+  [/두근|화남/, { in: "pop", emph: "beat", sfx: "heartbeat" }],
+];
+const BY_STYLE: Partial<Record<StickerStyle, Mv[]>> = {
+  burst: [{ in: "big", emph: "shake", sfx: "impact-bass-1" }, { in: "pop", emph: "beat", sfx: "pop" }, { in: "spin", emph: "pulse", sfx: "whoosh" }],
+  tag: [{ in: "swing", emph: "sway", sfx: "ping" }, { in: "drop", emph: "shake", sfx: "pop" }, { in: "pop", emph: "wiggle", sfx: "ping" }],
+  pin: [{ in: "drop", emph: "bounce", sfx: "pop" }, { in: "fly", emph: "pulse", sfx: "whoosh" }, { in: "zoom", emph: "bounce", sfx: "ping" }],
+  bubble: [{ in: "pop", emph: "float", sfx: "pop" }, { in: "jelly", emph: "sway", sfx: "pop" }, { in: "zoom", emph: "wiggle", sfx: "notification" }],
+  stamp: [{ in: "big", emph: "shake", sfx: "impact-bass-1" }, { in: "zoom", emph: "pulse", sfx: "impact-bass-1" }],
+  ribbon: [{ in: "stretch", emph: "pulse", sfx: "whoosh-short" }, { in: "slideL", emph: "float", sfx: "whoosh-short" }, { in: "flip", emph: "sway", sfx: "click" }],
+  neon: [{ in: "fade", emph: "blink", sfx: "chime" }, { in: "zoom", emph: "blink", sfx: "sparkle" }],
+  check: [{ in: "pop", emph: "pulse", sfx: "ping" }, { in: "slideL", emph: "bounce", sfx: "click" }, { in: "flip", emph: "beat", sfx: "ping" }],
+  marker: [{ in: "stretch", emph: "float", sfx: "whoosh-short" }, { in: "slideR", emph: "pulse", sfx: "whoosh-short" }],
+  badge: [{ in: "spin", emph: "pulse", sfx: "ping" }, { in: "flip", emph: "bounce", sfx: "click" }, { in: "pop", emph: "beat", sfx: "pop" }, { in: "drop", emph: "float", sfx: "pop" }],
+  arrow: [{ in: "slideL", emph: "wiggle", sfx: "whoosh" }, { in: "fly", emph: "bounce", sfx: "whoosh" }],
+  ticket: [{ in: "roll", emph: "pulse", sfx: "whoosh-short" }, { in: "slideR", emph: "sway", sfx: "click" }],
+  cloud: [{ in: "zoom", emph: "float", sfx: "pop" }, { in: "fly", emph: "sway", sfx: "sparkle" }],
+  sign: [{ in: "swing", emph: "sway", sfx: "click" }, { in: "drop", emph: "sway", sfx: "pop" }],
+  circle: [{ in: "spin", emph: "pulse", sfx: "ping" }, { in: "roll", emph: "beat", sfx: "whoosh" }],
+  block: [{ in: "big", emph: "beat", sfx: "impact-bass-1" }, { in: "jelly", emph: "bounce", sfx: "pop" }, { in: "drop", emph: "shake", sfx: "impact-bass-1" }],
+};
+const hashT = (s: string) => [...s].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 17);
+/** 그래픽 하나의 움직임 — 글자(text)를 주면 그 뜻·글자마다 다르게 */
+export function stickerAnim(st: StickerStyle, text = ""): LayerAnim {
   const base = { out: "fade", dur: 0.45, sfxVol: 0.7 } as const;
+  if (text && !FULL_STYLES.has(st) && st !== "neon") {
+    const m = MEANING.find(([re]) => re.test(text));
+    const pick = m ? m[1] : (BY_STYLE[st] || [])[hashT(text) % Math.max(1, (BY_STYLE[st] || []).length)];
+    if (pick) return { ...base, ...pick } as LayerAnim;
+  }
   switch (st) {
     case "stamp": return { ...base, in: "zoom", emph: "shake", sfx: "impact-bass-1" }; // 쾅 찍히고 흔들
     case "tag": return { ...base, in: "pop", emph: "shake", sfx: "ping" }; // 가격표 달랑달랑
@@ -688,6 +1124,14 @@ export function stickerAnim(st: StickerStyle): LayerAnim {
     case "ticket": return { ...base, in: "roll", emph: "pulse", sfx: "whoosh-short" };
     case "circle": return { ...base, in: "spin", emph: "pulse", sfx: "ping" };
     case "block": return { ...base, in: "pop", emph: "pulse", sfx: "impact-bass-1" }; // 쾅 짠!
+    case "speed": return { ...base, in: "fade", emph: "blink", sfx: "whoosh" }; // 집중선 — 번쩍번쩍
+    case "comicword": return { ...base, in: "big", emph: "shake", sfx: "impact-bass-1" }; // 쾅! 두둥!
+    case "manga": return { ...base, in: "pop", emph: "bounce", sfx: "pop" };
+    case "halftone": return { ...base, in: "fade", sfx: "whoosh-short" };
+    case "panel": return { ...base, in: "zoom", sfx: "click" };
+    case "frame": return { ...base, in: "zoom", emph: "pulse", sfx: "impact-bass-1" }; // 테두리 쾅
+    case "slant": return { ...base, in: "pop", emph: "sway", sfx: "pop" }; // 말딱지 톡 · 살랑
+    case "emoji": return { ...base, in: "pop", emph: "bounce", sfx: "sparkle" }; // 아이콘 통통
     default: return { ...base, in: "pop", emph: "pulse", sfx: "sparkle" }; // 반짝 짠!
   }
 }
@@ -706,7 +1150,8 @@ export function stickerSpecOf(l: { stk?: { style: string; text: string; icon?: s
 export async function stickerPng(s: Sticker) {
   await stickerFonts();
   await stickerGlyphs([s.text]);
-  return drawSticker(s).toDataURL("image/png");
+  // 모션 스티커는 반짝이·빛살이 나갈 여백까지 같은 크기로 (움직이는 그림과 칸 크기가 같아야 한다)
+  return (s.mo ? stickerFrame(s, 99) : drawSticker(s)).toDataURL("image/png");
 }
 /** 파일 이름에 쓸 글자 */
 export const stickerFileName = (t: string) => `스티커_${t.replace(/[\\/:*?"<>|\s]+/g, "")}`;
@@ -764,7 +1209,7 @@ function small(cv: HTMLCanvasElement, h: number) {
 }
 // 글꼴 받기는 앱을 켠 동안 한 번만
 let fontsOnce: Promise<void> | null = null;
-function stickerFonts() {
+export function stickerFonts() {
   if (!fontsOnce)
     fontsOnce = Promise.all(["Black Han Sans", "Jua"].map((f) => loadFont(f).catch(() => {})))
       .then(() => stickerGlyphs(CATS.flatMap((c) => c.items.map((x) => x.text))))
@@ -814,7 +1259,8 @@ const TABS: { id: TabId; label: string; subs: Sub[] }[] = [
       { id: "adlaw", label: "부동산 표시광고", tpl: catOf("부동산 표시광고") }, // 끝 화면 중개사무소 정보 (2026-10-20)
     ],
   },
-  { id: "fun", label: "예능", subs: [{ id: "fsub", label: "예능 자막", tpl: catOf("예능 자막") }, { id: "fword", label: "예능 글자", tpl: catOf("예능 글자") }, { id: "react", label: "반응", tpl: catOf("반응") }] },
+  // 강조 효과(집중선·말딱지·아이콘·테두리)는 예능 탭 맨 앞 (2026-10-30 사장님: 집중선 어디 있어?)
+  { id: "fun", label: "예능", subs: [STK_SUB("fx"), STK_SUB("comic"), { id: "fsub", label: "예능 자막", tpl: catOf("예능 자막") }, { id: "fword", label: "예능 글자", tpl: catOf("예능 글자") }, { id: "react", label: "반응", tpl: catOf("반응") }] },
   { id: "vlog", label: "브이로그", subs: [{ id: "vlog", label: "브이로그", tpl: catOf("브이로그") }, { id: "trip", label: "여행 경로", tpl: isTrip }] },
   // 구독·좋아요 (2026-10-20 사장님: 프리미어 컴포저 Social Media 처럼 움직이는 것)
   { id: "social", label: "구독·좋아요", subs: [{ id: "subbtn", label: "구독 버튼", tpl: catOf("구독 버튼") }, { id: "likes", label: "좋아요·알림", tpl: catOf("좋아요·알림") }, { id: "follow", label: "SNS 팔로우", tpl: catOf("SNS 팔로우") }] },
@@ -956,9 +1402,10 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     e.dataTransfer.setData(DRAG_STICKER, s.text);
     e.dataTransfer.effectAllowed = "copy";
     stickerDrag.make = async () => {
-      const url = await stickerPng(s);
+      const m = { ...s, mo: 1 };
+      const url = await stickerPng(m);
       const item = await b.lib.saveImage!(project.dir, url, stickerFileName(s.text));
-      return { item, o: { anim: stickerAnim(s.style), w: sz, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color } } };
+      return { item, o: { anim: motionLayerAnim(m), w: FULL_STYLES.has(s.style) ? 1 : sz, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color, mo: 1 } } };
     };
   };
   const insert = async (s: Sticker = cur) => {
@@ -966,9 +1413,10 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     setErr("");
     setBusy(true);
     try {
-      const url = await stickerPng(s);
+      const m = { ...s, mo: 1 };
+      const url = await stickerPng(m);
       const item = await b.lib.saveImage(project.dir, url, stickerFileName(s.text));
-      await onInsert(item, { anim: stickerAnim(s.style), w: size, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color } });
+      await onInsert(item, { anim: motionLayerAnim(m), w: FULL_STYLES.has(s.style) ? 1 : size, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color, mo: 1 } });
     } catch (e) {
       setErr(errText(e));
     } finally {
@@ -1008,7 +1456,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
             <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, marginBottom: 8 }}>고른 그래픽<button type="button" title="닫기 — 보던 목록 그대로" onClick={() => setPicked(false)} style={{ width: 26, height: 26, marginLeft: "auto", border: 0, borderRadius: 4, background: "transparent", color: C.sub, fontSize: 18, lineHeight: "26px", padding: 0, cursor: "pointer" }}>×</button></div>
             <div style={{ height: 130, borderRadius: 10, background: checker, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}` }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {preview && <img src={preview} alt="" draggable onDragStart={(e) => dragStart(e, cur)} title="끌어서 클립·미리보기·타임라인에 놓으면 들어가요" style={{ maxWidth: "92%", maxHeight: 116, objectFit: "contain", cursor: "grab" }} />}
+              {preview && <div draggable onDragStart={(e) => dragStart(e, cur)} title="끌어서 클립·미리보기·타임라인에 놓으면 들어가요" style={{ width: "92%", height: 116, cursor: "grab" }}><StkMotion spec={cur} k={0.45} /></div>}
             </div>
             <div style={head}>글자 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>— 가격·역 이름 등 바꿔 쓰세요</span></div>
             <input value={text} onChange={(e) => setText(e.target.value)} maxLength={20} onKeyDown={(e) => { if (e.key === "Enter") insert(); }}
@@ -1034,7 +1482,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
             draggable onDragStart={(e) => { if (on) dragStart(e, cur); else { choose(s); dragStart(e, s); } }}
             style={{ width: "100%", height: 92, padding: 6, borderRadius: 8, border: `2px solid ${on ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {thumbs[keyOf(s)] ? <img src={thumbs[keyOf(s)]} alt={s.text} style={{ maxWidth: "100%", maxHeight: 76, objectFit: "contain" }} /> : <span style={{ color: C.text, fontSize: 13 }}>{s.text}</span>}
+            {thumbs[keyOf(s)] ? <div style={{ width: "100%", height: 80 }}><StkMotion spec={s} k={0.3} /></div> : <span style={{ color: C.text, fontSize: 13 }}>{s.text}</span>}
           </button>
           <FavStar on={favs.includes(`stk:${keyOf(s)}`)} onClick={() => toggleGFav(`stk:${keyOf(s)}`)} />
           </div>
@@ -1143,3 +1591,279 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     </Side>
   );
 }
+
+/* ════════ 모션 스티커 (2026-10-30 사장님: "모션 그래픽처럼 — 하나하나 다 다르게 나타나야") ════════
+ *  그림 한 장을 통째로 움직이던 것 → 순간마다 다시 그린다. 그래픽마다 "레시피"가 다르다:
+ *   등장(톡 · 쾅 찍힘 · 툭 떨어짐 · 핑그르 · 쓱 그려짐 · 쭉 펼침) + 뒤 빛살 + 꽃가루 + 반짝이(하나씩) + 빛 지나가기 + 머무는 동안 움직임
+ *  레시피는 글자 뜻(도장·가격·열쇠…)과 글자마다 다른 번호로 정해서, 같은 모양끼리도 다르게 나온다.
+ *  미리보기(Player) · 완성 영상(AnimBake) · 목록 칸이 모두 stickerFrame 한 곳에서 그린다 → 셋이 같다 */
+type Enter = "pop" | "stamp" | "drop" | "spin" | "wipe" | "unfold" | "zoomOut";
+type Idle = "bob" | "sway" | "beat" | "tilt" | "none";
+type Recipe = { enter: Enter; dur: number; idle: Idle; sparks: number; spark: string; shine: boolean; rays: boolean; confetti: boolean; ring: boolean };
+const PAD = 0.24; // 반짝이·빛살이 나갈 여백 (그림 크기 비율)
+const ENTERS: Enter[] = ["pop", "drop", "spin", "wipe", "unfold", "zoomOut", "stamp"];
+const IDLES: Idle[] = ["bob", "sway", "beat", "tilt"];
+const SPARKS = ["#FFFFFF", "#FFE14D", "#7DD3FC", "#F9A8D4", "#A7F3D0"];
+function recipeOf(s: Sticker): Recipe {
+  const t = s.text || "", h = hashT(`${s.style}|${t}|${s.icon || ""}`);
+  const r: Recipe = {
+    enter: ENTERS[h % ENTERS.length], dur: 0.42 + ((h >> 3) % 4) * 0.06, idle: IDLES[(h >> 5) % IDLES.length], sparks: 2 + ((h >> 7) % 4),
+    spark: SPARKS[(h >> 9) % SPARKS.length], shine: (h >> 11) % 3 !== 0, rays: (h >> 12) % 3 === 0, confetti: false, ring: (h >> 13) % 4 === 0,
+  };
+  // 모양에 어울리게
+  if (s.style === "stamp") Object.assign(r, { enter: "stamp", idle: "none", rays: false, ring: true, shine: false });
+  if (s.style === "neon") Object.assign(r, { enter: "wipe", idle: "none", shine: false, sparks: 3, spark: "#FFFFFF" });
+  if (s.style === "arrow") Object.assign(r, { enter: "wipe", idle: "tilt" });
+  if (s.style === "sign" || s.style === "tag") Object.assign(r, { enter: h % 2 ? "drop" : "spin", idle: "sway" });
+  if (s.style === "burst") Object.assign(r, { rays: true, idle: "beat" });
+  if (s.style === "ribbon" || s.style === "marker" || s.style === "ticket") Object.assign(r, { enter: h % 2 ? "unfold" : "wipe" });
+  if (s.style === "comicword") Object.assign(r, { enter: h % 2 ? "stamp" : "pop", rays: true, idle: h % 3 ? "tilt" : "beat", shine: false, sparks: 2, spark: "#FFFFFF" });
+  if (s.style === "manga") Object.assign(r, { enter: s.icon === "sweat" ? "drop" : s.icon === "dots" ? "wipe" : "pop", idle: s.icon === "anger" || s.icon === "beat" ? "beat" : s.icon === "shock" ? "tilt" : "bob", sparks: s.icon === "bulb" ? 3 : 0, shine: false, rays: s.icon === "bulb", ring: false });
+  if (s.style === "halftone" || s.style === "panel") Object.assign(r, { enter: s.style === "panel" ? "zoomOut" : "pop", idle: "none", sparks: 0, shine: false, rays: false, ring: false });
+  if (s.style === "speed" || s.style === "frame") Object.assign(r, { enter: s.style === "frame" ? "zoomOut" : "pop", idle: s.style === "frame" ? "beat" : "none", sparks: 0, shine: false, rays: false, ring: false });
+  // 글자 뜻으로
+  if (/완료|SOLD|계약|마감|선착순|급매/i.test(t)) Object.assign(r, { enter: "stamp", ring: true, idle: "none" });
+  if (/축하|감사|OPEN|오픈|NEW|신규|BEST|대박/i.test(t)) Object.assign(r, { confetti: true });
+  if (/가격|억|만원|SALE|할인|인하|조정|무피|무권리/i.test(t)) Object.assign(r, { enter: "spin", spark: "#FFE14D", sparks: 4 });
+  if (/입주|열쇠/.test(t)) Object.assign(r, { enter: "drop", idle: "sway" });
+  if (/역|버스|IC|교통|분!/.test(t)) Object.assign(r, { enter: "wipe", idle: "bob" });
+  if (/대단지|세대|베이|판상|층|평|구조|넓은/.test(t)) Object.assign(r, { enter: "unfold", idle: "beat" });
+  if (/\?|실화|미쳤|헉/.test(t)) Object.assign(r, { enter: "drop", rays: true, idle: "tilt" });
+  if (/하트|추천|강추|짱|관심|좋아요/.test(t)) Object.assign(r, { enter: "pop", idle: "beat", spark: "#F9A8D4" });
+  return r;
+}
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const easeOut = (p: number) => 1 - Math.pow(1 - p, 3);
+const backOut = (p: number) => { const c = 1.9; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+const bounceOut = (p: number) => {
+  const n = 7.5625, d = 2.75;
+  if (p < 1 / d) return n * p * p;
+  if (p < 2 / d) return n * (p -= 1.5 / d) * p + 0.75;
+  if (p < 2.5 / d) return n * (p -= 2.25 / d) * p + 0.9375;
+  return n * (p -= 2.625 / d) * p + 0.984375;
+};
+/** 반짝이 별 (네 갈래, 가운데 흰 빛) */
+function twinkle(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, a: number) {
+  if (r <= 0.5 || a <= 0.01) return;
+  g.save();
+  g.globalAlpha = a;
+  g.shadowColor = color;
+  g.shadowBlur = r * 1.2;
+  g.fillStyle = color;
+  g.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const an = (Math.PI * i) / 4 - Math.PI / 2, k = i % 2 ? 0.16 : 1;
+    const px = x + Math.cos(an) * r * k, py = y + Math.sin(an) * r * k;
+    if (i) g.lineTo(px, py); else g.moveTo(px, py);
+  }
+  g.closePath();
+  g.fill();
+  g.fillStyle = "#FFFFFF";
+  g.beginPath();
+  g.arc(x, y, r * 0.18, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+}
+const baseCache = new Map<string, HTMLCanvasElement>();
+function baseOf(s: Sticker, k: number) {
+  const key = `${s.style}|${s.text}|${s.icon || ""}|${s.color || ""}|${k}`;
+  let c = baseCache.get(key);
+  if (!c) {
+    const full = drawSticker(s);
+    if (k >= 0.999) c = full;
+    else {
+      c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(full.width * k));
+      c.height = Math.max(1, Math.round(full.height * k));
+      const g = c.getContext("2d")!;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(full, 0, 0, c.width, c.height);
+    }
+    if (baseCache.size > 300) baseCache.clear();
+    baseCache.set(key, c);
+  }
+  return c;
+}
+/** 모션 스티커 한 순간 — t: 나타난 뒤 지난 초 (큰 값이면 다 나온 모습). k: 그림 배율 (목록 칸은 작게) */
+export function stickerFrame(s: Sticker, t: number, k = 1): HTMLCanvasElement {
+  // 집중선 — 1초에 12번 선을 새로 그린다 (강조 화면이 계속 번쩍이게, 2026-10-30)
+  if (s.style === "speed" && t < 30) {
+    const src = drawSpeed(s.color || BASE.speed, s.icon || "", Math.floor(t * (s.icon === "zoom" || s.icon === "spin" || s.icon === "down" || s.icon === "up" ? 24 : 12)), t);
+    if (k >= 0.999) return src;
+    const { cv, g } = mk(src.width * k, src.height * k);
+    g.drawImage(src, 0, 0, cv.width, cv.height);
+    return cv;
+  }
+  const base = baseOf(s, k);
+  const full = FULL_STYLES.has(s.style);
+  const pad = full ? 0 : PAD;
+  const bw = base.width, bh = base.height;
+  const W = Math.round(bw * (1 + pad * 2)), H = Math.round(bh * (1 + pad * 2));
+  const { cv, g } = mk(W, H);
+  const r = recipeOf(s);
+  const cx = W / 2, cy = H / 2, p = clamp01(t / r.dur), after = Math.max(0, t - r.dur);
+  const settle = t >= 30; // 저장할 그림(다 나온 모습) — 반짝이·빛 없이 깔끔하게
+  // 1) 뒤 빛살 — 등장 끝무렵 확 퍼졌다 사라짐
+  if (r.rays && !settle) {
+    const q = clamp01((t - r.dur * 0.6) / 0.7);
+    if (q > 0 && q < 1) {
+      g.save();
+      g.globalAlpha = (1 - q) * 0.85;
+      g.fillStyle = r.spark;
+      const R0 = Math.min(bw, bh) * 0.35, R1 = Math.max(bw, bh) * (0.55 + q * 0.35);
+      for (let i = 0; i < 14; i++) {
+        const a = (Math.PI * 2 * i) / 14 + q * 0.4, w = 0.07;
+        g.beginPath();
+        g.moveTo(cx + Math.cos(a - w) * R0, cy + Math.sin(a - w) * R0);
+        g.lineTo(cx + Math.cos(a) * R1, cy + Math.sin(a) * R1);
+        g.lineTo(cx + Math.cos(a + w) * R0, cy + Math.sin(a + w) * R0);
+        g.closePath();
+        g.fill();
+      }
+      g.restore();
+    }
+  }
+  // 2) 도장 동그라미 물결 — 쾅 찍힌 순간 퍼지는 테
+  if (r.ring && !settle) {
+    const q = clamp01((t - r.dur) / 0.5);
+    if (q > 0 && q < 1) {
+      g.save();
+      g.globalAlpha = (1 - q) * 0.7;
+      g.strokeStyle = r.spark === "#FFFFFF" ? "#FFE14D" : r.spark;
+      g.lineWidth = Math.max(2, bh * 0.05 * (1 - q));
+      g.beginPath();
+      g.ellipse(cx, cy, bw * (0.42 + q * 0.25), bh * (0.42 + q * 0.3), 0, 0, Math.PI * 2);
+      g.stroke();
+      g.restore();
+    }
+  }
+  // 3) 본 그림 — 등장 + 머무는 동안 움직임
+  let sx = 1, sy = 1, rot = 0, dx = 0, dy = 0, alpha = 1, clipW = 1;
+  switch (r.enter) {
+    case "pop": sx = sy = Math.max(0, backOut(p)); alpha = clamp01(p * 3); break;
+    case "zoomOut": sx = sy = 1 + (1 - easeOut(p)) * 0.6; alpha = clamp01(p * 2); break;
+    case "stamp": sx = sy = p < 1 ? 2.3 - 1.3 * p * p : 1; alpha = clamp01(p * 2.5); break;
+    case "drop": dy = -(1 - bounceOut(p)) * H * 0.55; alpha = clamp01(p * 4); break;
+    case "spin": rot = (1 - easeOut(p)) * -220; sx = sy = easeOut(p); break;
+    case "wipe": clipW = easeOut(p); break;
+    case "unfold": sx = Math.max(0.02, backOut(p)); sy = 1 + (1 - p) * 0.25; alpha = clamp01(p * 3); break;
+  }
+  if (r.enter === "stamp" && t > r.dur && t < r.dur + 0.3) {
+    const q = (t - r.dur) / 0.3;
+    dx = Math.sin(q * Math.PI * 7) * bw * 0.02 * (1 - q);
+  }
+  if (!settle && after > 0) {
+    const w = after;
+    if (r.idle === "bob") dy += Math.sin(w * Math.PI * 1.3) * bh * 0.03;
+    if (r.idle === "sway") rot += Math.sin(w * Math.PI * 1.4) * 4;
+    if (r.idle === "tilt") rot += Math.sin(w * Math.PI * 2.2) * 2.5;
+    if (r.idle === "beat") { const b = Math.pow(Math.max(0, Math.sin(w * Math.PI * 1.8)), 6) * 0.06; sx *= 1 + b; sy *= 1 + b; }
+  }
+  if (alpha > 0.01 && sx > 0.01 && sy > 0.01 && clipW > 0.005) {
+    g.save();
+    g.globalAlpha = alpha;
+    g.translate(cx + dx, cy + dy);
+    g.rotate((rot * Math.PI) / 180);
+    g.scale(sx, sy);
+    if (clipW < 1) {
+      g.beginPath();
+      g.rect(-bw / 2, -bh / 2, bw * clipW, bh);
+      g.clip();
+    }
+    g.drawImage(base, -bw / 2, -bh / 2);
+    // 빛 지나가기 — 그림 안에서만 비스듬한 흰 빛
+    if (r.shine && !settle) {
+      const cyc = 2.8, q = (after - 0.25) % cyc;
+      if (after > 0.25 && q < 0.65) {
+        const x = -bw / 2 - bw * 0.3 + (q / 0.65) * bw * 1.6;
+        const { cv: m, g: mg } = mk(bw, bh);
+        mg.drawImage(base, 0, 0);
+        mg.globalCompositeOperation = "source-atop";
+        const gr = mg.createLinearGradient(x + bw / 2 - bw * 0.12, 0, x + bw / 2 + bw * 0.12, bh * 0.3);
+        gr.addColorStop(0, "rgba(255,255,255,0)");
+        gr.addColorStop(0.5, "rgba(255,255,255,0.65)");
+        gr.addColorStop(1, "rgba(255,255,255,0)");
+        mg.fillStyle = gr;
+        mg.fillRect(0, 0, bw, bh);
+        g.drawImage(m, -bw / 2, -bh / 2);
+      }
+    }
+    // 그려지는 끝 빛줄 (wipe)
+    if (clipW < 1) {
+      g.fillStyle = "rgba(255,255,255,0.85)";
+      g.fillRect(-bw / 2 + bw * clipW - Math.max(2, bw * 0.01), -bh / 2, Math.max(2, bw * 0.012), bh);
+    }
+    g.restore();
+  }
+  // 4) 꽃가루 — 등장 순간 위로 튀었다 떨어짐
+  if (r.confetti && !settle) {
+    const q = t - r.dur * 0.7;
+    if (q > 0 && q < 1.8) {
+      const cols = ["#FF3B30", "#FFD400", "#22C55E", "#3B82F6", "#FF3EA5", "#FFFFFF"];
+      let sd = hashT(s.text) || 1;
+      const rn = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+      g.save();
+      g.globalAlpha = clamp01(1.8 - q);
+      for (let i = 0; i < 22; i++) {
+        const a = -Math.PI / 2 + (rn() - 0.5) * 2.4, v = (0.6 + rn() * 0.8) * Math.max(bw, bh) * 0.9;
+        const x = cx + Math.cos(a) * v * q, y = cy + Math.sin(a) * v * q + 0.5 * Math.max(bw, bh) * 1.6 * q * q;
+        g.save();
+        g.translate(x, y);
+        g.rotate(q * 8 * (rn() - 0.5) * 2);
+        g.fillStyle = cols[i % cols.length];
+        const sz = Math.max(2, Math.min(bw, bh) * 0.06);
+        g.fillRect(-sz / 2, -sz / 4, sz, sz / 2);
+        g.restore();
+      }
+      g.restore();
+    }
+  }
+  // 5) 반짝이 — 등장 뒤 하나씩 나타나 저마다 다른 박자로 반짝
+  if (r.sparks && !settle) {
+    let sd = hashT(`${s.text}*`) || 3;
+    const rn = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+    for (let i = 0; i < r.sparks; i++) {
+      const a = rn() * Math.PI * 2, rr = 0.52 + rn() * 0.12;
+      const x = cx + Math.cos(a) * bw * rr, y = cy + Math.sin(a) * bh * (rr + 0.05);
+      const t0 = r.dur + 0.12 + i * 0.22, per = 0.9 + rn() * 0.8;
+      if (t < t0) continue;
+      const ph = ((t - t0) % per) / per;
+      const sc = Math.sin(ph * Math.PI);
+      twinkle(g, x, y, Math.min(bw, bh) * (0.09 + rn() * 0.06) * sc, r.spark, sc);
+    }
+  }
+  return cv;
+}
+/** 이 레이어가 모션 스티커인가 (모션으로 넣은 것만 — 예전에 넣은 스티커는 그대로) */
+export const isStickerMotion = (stk?: { style: string; mo?: number } | null) => Boolean(stk && stk.mo && stk.style in BASE);
+/** 미리보기 · 칸 — 주어진 t 로 그리기 (t 를 안 주면 혼자 되풀이: 나타나기 → 3초 머무름) */
+export function StkMotion({ spec, t, opacity = 1, flip, k = 1, loop = 3.4 }: { spec: Sticker; t?: number; opacity?: number; flip?: string; k?: number; loop?: number }) {
+  const ref = React.useRef<HTMLCanvasElement | null>(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (t !== undefined) return;
+    let raf = 0, last = 0;
+    const step = (now: number) => { if (now - last > 40) { last = now; setTick(now); } raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [t]);
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv) return;
+    const tt = t !== undefined ? t : (tick / 1000) % loop;
+    let src: HTMLCanvasElement;
+    try { src = stickerFrame(spec, tt, k); } catch { return; }
+    if (cv.width !== src.width || cv.height !== src.height) { cv.width = src.width; cv.height = src.height; }
+    const g = cv.getContext("2d")!;
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.drawImage(src, 0, 0);
+  }, [spec.style, spec.text, spec.icon, spec.color, t, tick, k, loop]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <canvas ref={ref} style={{ width: "100%", height: "100%", display: "block", objectFit: "contain", opacity, transform: flip, pointerEvents: "none" }} />;
+}
+/** 모션 스티커의 레이어 움직임 — 그림이 스스로 움직이니 레이어는 소리·사라지기만 */
+const SPEED_SFX: Record<string, string> = { "": "whoosh", side: "swish", bold: "boom", dense: "rise", zoom: "whistle-down", spin: "whistle-up", down: "whoosh-short", up: "rise", corner: "impact-bass-1", flash: "magic" };
+export const motionLayerAnim = (s: Sticker): LayerAnim => {
+  if (s.style === "speed") return { in: "fade", out: "fade", dur: 0.12, sfx: SPEED_SFX[s.icon || ""] || "whoosh", sfxVol: 0.6 }; // 집중선 종류마다 다른 소리
+  const a = stickerAnim(s.style, s.text);
+  return { in: "fade", out: "fade", dur: 0.12, sfx: a.sfx, sfxVol: a.sfxVol };
+};

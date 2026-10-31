@@ -5,6 +5,7 @@
 //  키가 있으면: 성우 카드 (이름 · 성별 · 나이 · 쓰임새 · ▶ 견본 · #타입캐스트API) + 감정(말투)
 import React, { useEffect, useRef, useState } from "react";
 import type { TypecastVoice } from "./types";
+import { AGE_KO, VoiceAvatar, koTag, koVoice } from "./voiceKo";
 import { errText, videoBridge } from "./types";
 import { addExtraVoices } from "@/lib/studio-video/voices";
 import { Btn, C, FONT, Icon, input } from "./ui";
@@ -43,7 +44,7 @@ export function FavStar({ on, onToggle }: { on: boolean; onToggle: () => void })
 
 export const EL_EMOTIONS: [string, string][] = [["normal", "보통"], ["calm", "차분하게"], ["lively", "생생하게"]];
 const GENDER: Record<string, string> = { female: "여성", male: "남성" };
-const AGE: Record<string, string> = { child: "어린이", teenager: "10대", young_adult: "청년", middle_age: "중년", elder: "노년" };
+const AGE: Record<string, string> = AGE_KO; // 일레븐랩스 young · middle_aged · old 도 (2026-10-30)
 const nice = (map: Record<string, string>, v: string) => map[String(v).toLowerCase()] || v;
 
 /** 일레븐랩스 표시 */
@@ -103,6 +104,9 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
   const [playing, setPlaying] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
   const [favs, toggleFav] = useVoiceFavs();
+  // 일레븐랩스 한국어 인기 순위 50 (2026-10-30 사장님: 순위대로 보여 주기)
+  const [rank, setRank] = useState<{ rank: number; id: string; name: string; gender: string; age: string; preview: string; mine: boolean; found: boolean }[]>([]);
+  const loadRank = async (refresh = false) => { if (provider === "el" && b?.eleven?.ranked) setRank(await b.eleven.ranked(refresh).catch(() => [])); };
 
   const load = async (refresh = false) => {
     if (!tc) return;
@@ -112,7 +116,17 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
       const v = await tc.voices(refresh);
       setList(v);
       addExtraVoices(v.map((x) => ({ id: x.id, name: x.name, kind: `${info.name} 성우` })));
+      await loadRank(refresh);
     }
+  };
+  const addRanked = async (ids?: string[]) => {
+    if (!b?.eleven?.addRanked) return;
+    setErr(""); setBusy(ids ? "내 목록에 넣는 중…" : "인기 성우를 모두 넣는 중… (1~2분)");
+    try {
+      const r = await b.eleven.addRanked(ids);
+      await load(true);
+      setErr(r.added ? `${r.added}명을 넣었어요.${r.stop ? ` ${r.stop}` : ""}` : r.stop || (r.todo ? "넣지 못했어요 (라이브러리에서 찾지 못한 성우예요)." : "순위 성우가 이미 모두 들어 있어요."));
+    } catch (e) { setErr(errText(e)); } finally { setBusy(""); }
   };
   useEffect(() => {
     load().catch((e) => setErr(errText(e)));
@@ -177,7 +191,12 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
   }
   if (!st) return <div style={{ padding: 24, color: C.sub }}>불러오는 중…</div>;
 
-  const shown = list.filter((v) => (!g || String(v.gender).toLowerCase() === g) && (!q || v.name.includes(q) || v.useCases.join(" ").toLowerCase().includes(q.toLowerCase())));
+  const rankOf = new Map(rank.map((x) => [x.id, x]));
+  const notMine: TypecastVoice[] = rank.filter((x) => !x.mine).map((x) => ({ id: x.id, name: x.name, gender: x.gender, age: x.age, useCases: [], preview: x.preview, emotions: [], type: "rank", korean: true } as unknown as TypecastVoice));
+  // 목록에서 숨긴 성우 (일레븐랩스 계정에는 그대로) — 김동현 내 목소리 복제본은 [내 목소리] 탭에서만 (2026-10-30 사장님)
+  const HIDDEN = new Set(["el_iCIBCLkAkEpasNJ527e0"]);
+  const merged = (provider === "el" && rank.length ? [...list, ...notMine].sort((a, c) => (rankOf.get(a.id)?.rank ?? 999) - (rankOf.get(c.id)?.rank ?? 999)) : list).filter((v) => !HIDDEN.has(v.id));
+  const shown = merged.filter((v) => (!g || String(v.gender).toLowerCase() === g) && (!q || v.name.includes(q) || koVoice(v.name).name.includes(q) || v.useCases.join(" ").toLowerCase().includes(q.toLowerCase())));
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", fontFamily: FONT }}>
       {/* 연결 상태 · 감정 · 거르기 */}
@@ -187,6 +206,11 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
         <Btn small onClick={() => setEditKey(true)}>키 바꾸기</Btn>
         <Btn small onClick={async () => { await tc.clear(); setList([]); await load(); }}>연결 끊기</Btn>
         <Btn small onClick={() => { setBusy("목록 새로 받는 중…"); load(true).catch((e) => setErr(errText(e))).finally(() => setBusy("")); }}>{busy || "목록 새로"}</Btn>
+        {/* 인기 순위 성우 모두 넣기 (2026-10-30 사장님: 다 보유하게) */}
+        {provider === "el" && b?.eleven?.addRanked && rank.some((x) => !x.mine) && (
+          <Btn small onClick={() => { if (window.confirm(`한국어 인기 순위 성우 중 아직 없는 ${rank.filter((x) => !x.mine).length}명을 내 일레븐랩스 목록에 모두 넣을까요?
+(요금제 자리가 차면 거기서 멈춰요)`)) void addRanked(); }}>인기 {rank.filter((x) => !x.mine).length}명 모두 넣기</Btn>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px 0", flexWrap: "wrap" }}>
         <span style={{ fontSize: 14, fontWeight: 800, marginRight: 4 }}>말투</span>
@@ -201,25 +225,28 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
       {err && <div style={{ padding: "0 16px 6px", fontSize: 14, color: C.danger }}>{err}</div>}
       <div style={{ padding: "0 16px 6px", fontSize: 14, color: C.sub }}>성우 <b style={{ color: C.text }}>{shown.length}</b>명</div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 16px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, alignContent: "start" }}>
-        {shown.map((v) => (
-          <div key={v.id} onClick={() => onPick(v.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, border: `${id === v.id ? 2 : 1}px solid ${id === v.id ? C.accent : C.line2}`, background: id === v.id ? C.accentDim : C.card, cursor: "pointer" }}>
-            <div style={{ width: 56, height: 56, borderRadius: "50%", flexShrink: 0, background: "#3b3363", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>{v.name.slice(0, 1)}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+        {shown.map((v) => { const rk = rankOf.get(v.id); const off = Boolean(rk && !rk.mine); return (
+          <div key={v.id} onClick={() => { if (!off) onPick(v.id); }} style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, border: `${id === v.id ? 2 : 1}px solid ${id === v.id ? C.accent : C.line2}`, background: id === v.id ? C.accentDim : C.card, cursor: off ? "default" : "pointer", opacity: off ? 0.72 : 1 }}>
+            {rk && <span style={{ position: "absolute", left: 6, top: 6, minWidth: 26, height: 20, padding: "0 5px", borderRadius: 10, background: rk.rank <= 3 ? "#F59E0B" : rk.rank <= 10 ? "#3B82F6" : "#4B5563", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>{rk.rank}위</span>}
+            {/* 그림 얼굴 · 한국어 이름 (2026-10-30 사장님) — 원래 영어 이름은 마우스를 올리면 */}
+            <VoiceAvatar seed={v.id} gender={v.gender} age={v.age} name={koVoice(v.name).name} />
+            <div style={{ flex: 1, minWidth: 0 }} title={v.name}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 17, fontWeight: 800 }}>{v.name}</span>
+                <span style={{ fontSize: 17, fontWeight: 800 }}>{koVoice(v.name).name}</span>
                 {v.korean && <span style={{ fontSize: 12, fontWeight: 800, color: "#6ee7b7", border: "1px solid #2f6b55", borderRadius: 4, padding: "0 5px" }}>한국어</span>}
                 {(v.gender || v.age) && <span style={{ fontSize: 12.5, fontWeight: 700, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px" }}>{[nice(GENDER, v.gender), nice(AGE, v.age)].filter(Boolean).join(" · ")}</span>}
               </div>
-              {v.useCases.length > 0 && <div style={{ fontSize: 13, color: C.sub, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.useCases.slice(0, 4).map((t) => `#${t}`).join("  ")}</div>}
+              {koVoice(v.name).desc && <div style={{ fontSize: 13.5, color: C.text, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{koVoice(v.name).desc}</div>}
+              {v.useCases.length > 0 && <div style={{ fontSize: 13, color: C.sub, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[...new Set(v.useCases.slice(0, 4).map(koTag))].map((t) => `#${t}`).join("  ")}</div>}
               <div title={`이 목소리는 내 ${info.name} API 키로 만들어요`} style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: info.color }}><Mark size={13} />{info.tag}</div>
             </div>
-            <FavStar on={favs.includes(v.id)} onToggle={() => toggleFav(v.id)} />
-            <button type="button" onClick={(e) => { e.stopPropagation(); onPick(v.id); play(v); }} title={playing === v.id ? "멈추기" : "견본 듣기"}
+            {off ? <Btn small onClick={() => void addRanked([v.id])}>넣기</Btn> : <FavStar on={favs.includes(v.id)} onToggle={() => toggleFav(v.id)} />}
+            <button type="button" onClick={(e) => { e.stopPropagation(); if (!off) onPick(v.id); play(v); }} title={playing === v.id ? "멈추기" : "견본 듣기"}
               style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "50%", border: `1px solid ${playing === v.id ? C.accent : C.line2}`, background: playing === v.id ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {playing === v.id ? <span style={{ width: 11, height: 11, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={16} />}
             </button>
           </div>
-        ))}
+        ); })}
         {!shown.length && <div style={{ fontSize: 14.5, color: C.sub, padding: "16px 0" }}>{list.length ? "맞는 성우가 없어요." : provider === "el" ? "내 일레븐랩스 목소리가 없어요. 일레븐랩스 보이스 라이브러리에서 목소리를 추가한 뒤 [목록 새로]를 눌러 보세요." : "성우 목록이 비어 있어요. [목록 새로]를 눌러 보세요."}</div>}
       </div>
     </div>

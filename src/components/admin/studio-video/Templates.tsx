@@ -11,6 +11,7 @@ import { DRAG_STICKER, errText, stickerDrag, videoBridge } from "./types";
 import { loadFont } from "./Pickers";
 import { Side } from "./Panels";
 import { Btn, C, FONT } from "./ui";
+import { tplPreviewStyles } from "./tplPreviewAnim";
 
 export const TPL_PREFIX = "tpl:";
 const SEP = "␞"; // 칸 글 사이
@@ -1042,10 +1043,47 @@ const passBy = (v: 1 | 2): Draw => (f, c, t) => {
 const T: TplDef[] = [];
 /** 나타난 뒤에도 계속 움직이게 (2026-10-20 사장님: 지금 있는 그래픽은 다 무빙) — 분류마다 어울리는 움직임. 움직이는 템플릿은 그림 자체가 움직여서 그대로 */
 const EMPH_OF: Record<string, NonNullable<LayerAnim["emph"]>> = {
-  "자막바": "float", "제목": "pulse", "말풍선·카드": "float", "브이로그": "float", "예능 글자": "beat", "예능 자막": "pulse", "검색창·화면": "float", "가리키기": "bounce", "반응": "wiggle",
+  "SNS 팔로우": "pulse", "구독 버튼": "beat", "좋아요·알림": "bounce", "자막바": "float", "제목": "pulse", "말풍선·카드": "float", "브이로그": "float", "예능 글자": "beat", "예능 자막": "pulse", "검색창·화면": "float", "가리키기": "bounce", "반응": "wiggle",
 };
-const add = (cat: string, label: string, kind: Kind, fields: Field[], color: string, w: number, anim: LayerAnim, draw: Draw, o: { y?: number; dur?: number; clicks?: number[] } = {}) =>
-  T.push({ id: `rb${String(T.length + 1).padStart(3, "0")}`, cat, label, kind, fields, color, w, anim: kind !== "motion" && !anim.emph && EMPH_OF[cat] ? { ...anim, emph: EMPH_OF[cat] } : anim, draw, ...o });
+/** 효과음이 없는 그래픽은 나타나는 모양에 맞춰 소리를 붙인다 (2026-10-30 사장님: 다 효과음과 함께 움직이게) */
+const SFX_OF: Record<string, string> = { fade: "sparkle", fly: "whoosh-short", zoom: "whoosh-short", pop: "pop", spin: "ping", flip: "whoosh-short", roll: "whoosh-short", drop: "impact-bass-1", slideL: "whoosh-short", slideR: "whoosh-short", big: "impact-bass-1", stretch: "whoosh-short", swing: "pop", jelly: "pop" };
+const withSfx = (a: LayerAnim): LayerAnim => (a.sfx ? a : { ...a, sfx: SFX_OF[a.in || "fade"] || "pop", sfxVol: 0.45 });
+/** 분류마다 어울리는 반복 움직임 여러 벌 — 같은 분류 안에서도 차례로 돌려 하나하나 다르게 (2026-10-30 사장님) */
+const EMPH_POOL: Record<string, NonNullable<LayerAnim["emph"]>[]> = {
+  "자막바": ["float", "pulse", "sway"], "제목": ["pulse", "beat", "float", "blink"], "말풍선·카드": ["float", "sway", "pulse"], "예능 글자": ["beat", "bounce", "wiggle", "shake"],
+  "예능 자막": ["pulse", "shake", "beat", "bounce", "wiggle"], "검색창·화면": ["float", "pulse"], "가리키기": ["bounce", "wiggle", "pulse"], "반응": ["wiggle", "bounce", "beat", "shake"],
+  "SNS 팔로우": ["pulse", "bounce", "beat"], "구독 버튼": ["beat", "pulse", "bounce"], "좋아요·알림": ["bounce", "shake", "beat"],
+};
+/** 그래픽마다 어울리는 효과음 — 이름으로 하나씩 (2026-10-30 사장님: 모든 그래픽에 효과음, 그래픽에 맞춰 개별로). 끄기는 [애니메이션 › 효과음 › 없음] */
+const SFX_BY_LABEL: [RegExp, string][] = [
+  [/지폐|좋아요 수/, "coin"], [/점수|슬롯/, "cash"], [/카운트/, "tick"], [/알림 종|알림 빨간 점/, "bell"], [/하트/, "heartbeat"], [/로딩바/, "rise"],
+  [/뿅망치/, "boing"], [/폭발|구독 도장/, "boom"], [/완성|짜잔/, "success"], [/별별별|빛나는|조명/, "magic"], [/지나가는|비행기/, "whistle-up"], [/질문/, "boing"],
+  [/엄지 폭죽/, "success"], [/ㅋㅋㅋ/, "bubble"], [/도형/, "pluck"], [/사이렌/, "buzz"],
+  [/명중|쾅|퍽|피 튀|박히|도장/, "impact-bass-1"],
+  [/사이렌|알림|종|채널 구독 카드|유튜브 채널/, "notification"],
+  [/검색창/, "typing"],
+  [/메모장|키네포|타이핑/, "key-press"],
+  [/마우스|클릭|구독 누르기|좋아요 · 구독|톡톡|네이버 블로그/, "click"],
+  [/지폐|점수|좋아요 수|슬롯|가격|카운트/, "ping"],
+  [/별별별|빛나는|반짝|조명/, "sparkle"],
+  [/인스타그램|축하|완성|짜잔/, "chime"],
+  [/목적지|지나가는|화살표|깃발|지시선|워프|사선|트랜지션|로딩바|홈페이지/, "whoosh"],
+  [/자막바|서브타이틀|박스 타이틀|컬러 박스|이름|인물|배지|띠|제목 템플릿|정리 판/, "whoosh-short"],
+  [/말풍선|ㅋㅋㅋ|도형|엄지|하트|틱톡|예능 글자|네모|꽃잎|원 3|지그재그|튀어나오는|질문/, "pop"],
+];
+const sfxOfLabel = (label: string) => SFX_BY_LABEL.find(([re]) => re.test(label))?.[1];
+const catCount: Record<string, number> = {};
+const add = (cat: string, label: string, kind: Kind, fields: Field[], color: string, w: number, anim: LayerAnim, draw: Draw, o: { y?: number; dur?: number; clicks?: number[] } = {}) => {
+  const i = (catCount[cat] = (catCount[cat] || 0) + 1) - 1;
+  const pool = EMPH_POOL[cat];
+  const emph = anim.emph || (pool ? pool[i % pool.length] : EMPH_OF[cat]);
+  // 효과음 — 이름에 맞는 소리가 있으면 그것, 없으면 원래 정한 소리, 그것도 없으면 나타나는 모양에 맞춰 (움직이는 템플릿도 모두)
+  // 움직이는 템플릿에 일부러 정해 둔 소리(브이로그 타자 소리 등)는 그대로
+  const named = kind === "motion" && anim.sfx ? undefined : sfxOfLabel(label);
+  const a0 = kind === "motion" ? anim : emph ? { ...anim, emph } : anim;
+  const a1 = withSfx(named ? { ...a0, sfx: named, sfxVol: a0.sfxVol ?? 0.5 } : a0);
+  T.push({ id: `rb${String(T.length + 1).padStart(3, "0")}`, cat, label, kind, fields, color, w, anim: a1, draw, ...o });
+};
 const one = (def: string, label = "글"): Field[] => [{ label, def }];
 
 // 자막바·박스
@@ -1091,9 +1129,71 @@ add("말풍선·카드", "5줄 설명 말풍선 (어두운)", "text", [{ label: 
 add("말풍선·카드", "4줄 메모장", "text", [{ label: "제목", def: "체크 포인트" }, { label: "본문 (엔터로 줄, 4줄까지)", def: "✔ 등기부등본 확인\n✔ 관리비 항목\n✔ 주차 가능 여부\n✔ 입주 날짜", multi: true }], "#FFE58A", 0.34, A.jelly, memoPad, { y: 0.42 });
 add("말풍선·카드", "8줄 정리 판", "text", [{ label: "제목", def: "매물 정리" }, { label: "본문 (엔터로 줄, 8줄까지)", def: "위치: 강남구 논현동\n가격: 전세 5억\n관리비: 10만 원\n면적: 전용 102.5㎡\n구조: 방 3 · 욕실 1\n방향: 남향\n주차: 가능\n입주: 2개월 이내", multi: true }], "#38BDF8", 0.4, A.fade, summaryPanel, { y: 0.45 });
 
-// 브이로그 감성
+/* 글씨 등장 효과 (2026-10-30 사장님: 브이로그 글씨가 디졸브되기도, 타자기처럼 나오기도 — 다양하게)
+   그린 자막 그림 한 장을 순간마다 다르게 드러낸다 → 미리보기·완성 영상 같음 (움직이는 템플릿) */
+type Reveal = "type" | "dissolve" | "slices" | "wipe" | "blur" | "center" | "rise";
+const REVEALS: Reveal[] = ["type", "dissolve", "slices", "wipe", "rise", "blur", "center"];
+const REVEAL_SFX: Record<Reveal, string> = { type: "typing", dissolve: "sparkle", slices: "pop", wipe: "whoosh-short", rise: "whoosh-short", blur: "sparkle", center: "whoosh-short" };
+const reveal = (draw: Draw, kind: Reveal, len = 1.3): Draw => (f, c, t) => {
+  const full = draw(f, c, 999);
+  const W = full.width, H = full.height;
+  const typeTail = kind === "type" ? 1.6 : 0; // 타자기 — 다 쓴 뒤 커서가 잠깐 깜빡
+  if (t >= len + typeTail + 0.05) return full;
+  const { c: cv, g } = mk(W, H);
+  const p = Math.max(0, Math.min(1, t / len)), eo = 1 - Math.pow(1 - p, 3);
+  if (kind === "dissolve" || kind === "blur") {
+    g.globalAlpha = eo;
+    g.filter = `blur(${((1 - eo) * (kind === "blur" ? 14 : 7)).toFixed(1)}px)`;
+    if (kind === "blur") { const s = 1 + (1 - eo) * 0.08; g.translate(W / 2, H / 2); g.scale(s, s); g.translate(-W / 2, -H / 2); }
+    g.drawImage(full, 0, 0);
+    return cv;
+  }
+  if (kind === "wipe") {
+    g.drawImage(full, 0, 0);
+    g.globalCompositeOperation = "destination-in";
+    const x = -W * 0.3 + p * W * 1.3;
+    const gr = g.createLinearGradient(x, 0, x + W * 0.3, 0);
+    gr.addColorStop(0, "rgba(0,0,0,1)");
+    gr.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+    return cv;
+  }
+  if (kind === "center") {
+    const w = W * eo;
+    g.save(); g.beginPath(); g.rect((W - w) / 2, 0, w, H); g.clip(); g.drawImage(full, 0, 0); g.restore();
+    return cv;
+  }
+  if (kind === "type") {
+    const n = Math.max(8, Math.round(W / 42));
+    const k = Math.min(n, Math.floor(p * n + 0.0001));
+    const w = (W * k) / n;
+    g.save(); g.beginPath(); g.rect(0, 0, w, H); g.clip(); g.drawImage(full, 0, 0); g.restore();
+    if (Math.floor(t * 2.6) % 2 === 0 || p < 1) { g.fillStyle = c || "#FFFFFF"; g.fillRect(Math.min(W - 6, w + 3), H * 0.2, Math.max(3, H * 0.04), H * 0.6); }
+    return cv;
+  }
+  // 조각마다 차례로 (글자 하나씩 나오는 느낌) — slices: 제자리에서 톡 · rise: 아래에서 올라옴
+  const n = Math.max(6, Math.round(W / 46));
+  for (let i = 0; i < n; i++) {
+    const q = Math.max(0, Math.min(1, (p - (i / n) * 0.6) / 0.4));
+    if (q <= 0) continue;
+    const x0 = Math.floor((W * i) / n), x1 = Math.ceil((W * (i + 1)) / n);
+    g.save();
+    g.globalAlpha = q;
+    const dy = kind === "rise" ? (1 - (1 - Math.pow(1 - q, 3))) * H * 0.45 : 0;
+    const s = kind === "slices" ? 0.6 + 0.4 * (1 - Math.pow(1 - q, 3)) : 1;
+    g.beginPath(); g.rect(x0, 0, x1 - x0, H); g.clip();
+    g.translate((x0 + x1) / 2, H / 2 + dy); g.scale(s, s); g.translate(-(x0 + x1) / 2, -H / 2);
+    g.drawImage(full, 0, 0);
+    g.restore();
+  }
+  return cv;
+};
+
+// 브이로그 감성 — 하나하나 다른 글씨 등장 (타자기 · 디졸브 · 조각 · 쓸어내기 · 올라오기 · 흐림 · 가운데 펼침)
 ["오늘도 좋은 하루", "햇살 가득한 거실", "동네 한 바퀴", "작은 행복", "조용한 골목", "산책하기 좋은 날", "우리 동네 이야기", "커피 한 잔의 여유", "창밖 풍경", "따뜻한 오후", "천천히 걷기", "Seoul Daily", "이 집 참 마음에 들어요"].forEach((s, i) =>
-  add("브이로그", `브이로그 감성 자막 ${i + 1}`, "text", VLOG[i].deco === "en" ? [{ label: "글", def: s }, { label: "영어 작은 글", def: "a cozy afternoon" }] : one(s), ["#FFFFFF", "#FDE68A", "#FBCFE8", "#F9A8D4", "#E5E7EB", "#A7F3D0", "#FFFFFF", "#FDE68A", "#BAE6FD", "#FDBA74", "#FFFFFF", "#E9D5FF", "#FFFFFF"][i], 0.45, A.fade, vlog(i), { y: 0.82 }));
+  add("브이로그", `브이로그 감성 자막 ${i + 1}`, "motion", VLOG[i].deco === "en" ? [{ label: "글", def: s }, { label: "영어 작은 글", def: "a cozy afternoon" }] : one(s), ["#FFFFFF", "#FDE68A", "#FBCFE8", "#F9A8D4", "#E5E7EB", "#A7F3D0", "#FFFFFF", "#FDE68A", "#BAE6FD", "#FDBA74", "#FFFFFF", "#E9D5FF", "#FFFFFF"][i], 0.45,
+    { in: "fade", out: "fade", dur: 0.05, sfx: REVEAL_SFX[REVEALS[i % REVEALS.length]], sfxVol: 0.45 }, reveal(vlog(i), REVEALS[i % REVEALS.length]), { y: 0.82 }));
 
 // 예능 글자 칸
 add("예능 글자", "네모 3글자", "text", one("역세권", "글자 (3자)"), "#FFD400", 0.4, A.jelly, tiles("square", ["#FFFFFF", "#FFD400", "#FFFFFF"]), { y: 0.3 });
@@ -1471,6 +1571,169 @@ add("SNS 팔로우", "틱톡", "motion", [{ label: "계정", def: "@gongsilnews"
 add("SNS 팔로우", "네이버 블로그", "motion", [{ label: "블로그", def: "blog.naver.com/공실뉴스" }, { label: "작은 글", def: "" }], "#FFFFFF", 0.42, A.none, snsBar("blog"), { y: 0.86 });
 add("SNS 팔로우", "홈페이지 주소", "motion", [{ label: "주소", def: "gongsilnews.com" }, { label: "작은 글", def: "매물 더 보기" }], "#1E3A8A", 0.4, A.none, snsBar("web"), { y: 0.86 });
 
+/* ── 구독·좋아요 더 (2026-10-30 사장님: 다양하게) — 모두 우리가 그린 단순한 모양, 순간마다 그림 ── */
+/** 구독 도장 — 동그란 빨간 도장이 쾅 찍히고 물결, 아래 작은 글이 쓱 */
+const subStamp: Draw = (f, c, t) => {
+  const word = f[0] || "구독", small = f[1] || "";
+  const W = 420, H = small ? 470 : 420;
+  const { c: cv, g } = mk(W, H);
+  const cx = W / 2, cy = 210, k = seg(t, 0, 0.32);
+  const s = k < 1 ? 2.4 - 1.4 * k * k : 1;
+  const shake = t > 0.32 && t < 0.6 ? Math.sin((t - 0.32) * 70) * 6 * (1 - seg(t, 0.32, 0.6)) : 0;
+  const rp = seg(t, 0.32, 0.9);
+  if (rp > 0 && rp < 1) { g.save(); g.globalAlpha = 1 - rp; g.strokeStyle = c; g.lineWidth = 10 * (1 - rp); g.beginPath(); g.arc(cx, cy, 150 + rp * 60, 0, Math.PI * 2); g.stroke(); g.restore(); }
+  g.save(); g.globalAlpha = Math.min(1, k * 2.5); g.translate(cx + shake, cy); g.rotate(-0.14); g.scale(s, s);
+  g.beginPath(); g.arc(0, 0, 150, 0, Math.PI * 2); g.fillStyle = c; g.fill();
+  g.lineWidth = 10; g.strokeStyle = "#FFFFFF"; g.beginPath(); g.arc(0, 0, 126, 0, Math.PI * 2); g.stroke();
+  txt(g, word, 0, 6, { font: `900 ${word.length > 3 ? 64 : 84}px ${F.pre}`, fill: "#FFFFFF" });
+  g.restore();
+  if (small) { const a = seg(t, 0.7, 1.1); g.save(); g.globalAlpha = a; txt(g, small, cx, 420 + (1 - a) * 20, { font: `800 40px ${F.pre}`, fill: "#FFFFFF", stroke: "#111111", lw: 8 }); g.restore(); }
+  return cv;
+};
+/** 구독 알약 반짝 — 알약 단추가 쭉 펼쳐지고, 계속 빛이 지나가며 종이 가끔 딸랑 */
+const subShine: Draw = (f, c, t) => {
+  const word = f[0] || "구독하기";
+  const font = `800 54px ${F.pre}`, bw = tw(font, word) + 190, bh = 100;
+  const W = bw + 40, H = bh + 60;
+  const { c: cv, g } = mk(W, H);
+  const x0 = 20, y0 = 30, open = eBack(seg(t, 0, 0.45));
+  g.save(); g.translate(x0 + bw / 2, y0 + bh / 2); g.scale(Math.max(0.02, open), 1); g.translate(-(x0 + bw / 2), -(y0 + bh / 2));
+  rr(g, x0, y0, bw, bh, bh / 2); g.fillStyle = c; g.fill();
+  g.save(); rr(g, x0, y0, bw, bh, bh / 2); g.clip();
+  const q = (t % 2.4) / 2.4, sx = x0 - 120 + q * (bw + 240);
+  const gr = g.createLinearGradient(sx - 60, 0, sx + 60, 0);
+  gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.5, "rgba(255,255,255,0.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = gr; g.fillRect(x0, y0, bw, bh); g.restore();
+  bellIcon(g, x0 + 62, y0 + bh / 2 + 4, 56, "#FFFFFF", Math.sin(t * 20) * 0.4 * Math.max(0, 1 - ((t % 2.4) / 0.6)));
+  txt(g, word, x0 + bw / 2 + 34, y0 + bh / 2 + 2, { font, fill: "#FFFFFF" });
+  g.restore();
+  return cv;
+};
+/** 구독 두 번 톡톡 — 손가락 화살표가 두 번 누를 때마다 단추가 눌리고 +1 이 떠오름 */
+const subDoubleTap: Draw = (f, c, t) => {
+  const word = f[0] || "구독", plus = f[1] || "+1";
+  const font = `800 56px ${F.pre}`, bw = tw(font, word) + 120, bh = 100;
+  const W = bw + 200, H = 260;
+  const { c: cv, g } = mk(W, H);
+  const x0 = 30, y0 = 120, taps = [0.8, 1.3];
+  let press = 1;
+  for (const tp of taps) press *= 1 - 0.07 * Math.sin(Math.PI * seg(t, tp - 0.06, tp + 0.12));
+  g.save(); g.translate(x0 + bw / 2, y0 + bh / 2); g.scale(press, press); g.translate(-(x0 + bw / 2), -(y0 + bh / 2));
+  rr(g, x0, y0, bw, bh, 22); g.fillStyle = c; g.fill();
+  txt(g, word, x0 + bw / 2, y0 + bh / 2 + 2, { font, fill: "#FFFFFF" });
+  g.restore();
+  taps.forEach((tp, i) => {
+    ripple(g, x0 + bw * 0.6, y0 + bh * 0.6, seg(t, tp, tp + 0.45));
+    const u = seg(t, tp, tp + 0.9);
+    if (u > 0 && u < 1) { g.save(); g.globalAlpha = 1 - u; txt(g, plus, x0 + bw * (0.55 + i * 0.25), y0 - 10 - u * 90, { font: `900 48px ${F.pre}`, fill: "#FFD400", stroke: "#111111", lw: 8 }); g.restore(); }
+  });
+  const mv = eOut(seg(t, 0.1, 0.7));
+  pointer(g, lerp(W - 20, x0 + bw * 0.6, mv), lerp(H - 10, y0 + bh * 0.6, mv), 1.4, 1 - seg(t, 1.9, 2.3));
+  return cv;
+};
+/** 구독 글자 하나씩 — "구독해 주세요" 가 한 글자씩 통통 튀어나오고 밑줄이 쭉 */
+const subLetters: Draw = (f, c, t) => {
+  const word = f[0] || "구독해 주세요";
+  const chars = [...word], font = `900 76px ${F.pre}`;
+  const ws = chars.map((ch) => tw(font, ch || " ") + 6), total = ws.reduce((a, b) => a + b, 0);
+  const W = total + 80, H = 200;
+  const { c: cv, g } = mk(W, H);
+  let x = 40;
+  chars.forEach((ch, i) => {
+    const k = eBack(seg(t, 0.08 * i, 0.08 * i + 0.35));
+    const bob = t > 1.2 ? Math.sin(t * 5 - i * 0.6) * 5 : 0;
+    if (k > 0) { g.save(); g.translate(x + ws[i] / 2, 100 + bob); g.scale(k, k); txt(g, ch, 0, 0, { font, fill: "#FFFFFF", stroke: c, lw: 14 }); g.restore(); }
+    x += ws[i];
+  });
+  const u = eOut(seg(t, 0.08 * chars.length + 0.1, 0.08 * chars.length + 0.5));
+  if (u > 0) { g.fillStyle = c; rr(g, 40, 160, total * u, 12, 6); g.fill(); }
+  return cv;
+};
+/** 하트 날아오르기 — 라이브 방송처럼 작은 하트들이 줄줄이 올라가며 흔들 */
+const heartStream: Draw = (f, c, t) => {
+  const W = 260, H = 520;
+  const { c: cv, g } = mk(W, H);
+  const cols = [c, "#FF8FB1", "#FFD400", "#FF5E7E", "#FFFFFF"];
+  for (let i = 0; i < 14; i++) {
+    const born = i * 0.28, life = 2.2, u = (t - born) / life;
+    if (u <= 0) continue;
+    const uu = u % 1, cyc = Math.floor(u);
+    const x = W / 2 + Math.sin(uu * 7 + i * 1.7 + cyc) * 46, y = H - 40 - uu * (H - 80);
+    g.save(); g.globalAlpha = Math.min(1, uu * 6) * (1 - Math.max(0, uu - 0.7) / 0.3);
+    heartIcon(g, x, y, 42 + (i % 3) * 14, cols[(i + cyc) % cols.length]);
+    g.restore();
+  }
+  // 아래 큰 하트
+  const k = eBack(seg(t, 0, 0.4)) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 8) * 0.12);
+  g.save(); g.translate(W / 2, H - 50); g.scale(k, k); heartIcon(g, 0, 0, 90, c); g.restore();
+  return cv;
+};
+/** 엄지 폭죽 — 엄지가 튀어나오면 작은 조각이 사방으로 터지고 동그라미가 퍼짐 */
+const thumbBurst: Draw = (f, c, t) => {
+  const label = f[0] || "";
+  const W = 360, H = label ? 400 : 360;
+  const { c: cv, g } = mk(W, H);
+  const cx = W / 2, cy = 180;
+  const rp = seg(t, 0.25, 0.8);
+  if (rp > 0 && rp < 1) { g.save(); g.globalAlpha = 1 - rp; g.strokeStyle = c; g.lineWidth = 8; g.beginPath(); g.arc(cx, cy, 80 + rp * 80, 0, Math.PI * 2); g.stroke(); g.restore(); }
+  const bp = seg(t, 0.25, 1.1);
+  if (bp > 0 && bp < 1) {
+    const cols = ["#FFD400", "#FF3B30", "#22C55E", "#FFFFFF", c];
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16, d = 70 + eOut(bp) * 110;
+      g.save(); g.globalAlpha = 1 - bp; g.fillStyle = cols[i % cols.length];
+      g.translate(cx + Math.cos(a) * d, cy + Math.sin(a) * d); g.rotate(a + bp * 4); g.fillRect(-7, -3, 14, 6); g.restore();
+    }
+  }
+  const k = eBack(seg(t, 0, 0.35)) * (1 + Math.pow(Math.max(0, Math.sin(t * 4)), 10) * 0.1);
+  g.save(); g.translate(cx, cy); g.scale(k, k);
+  g.beginPath(); g.arc(0, 0, 92, 0, Math.PI * 2); g.fillStyle = c; g.fill();
+  thumbUp(g, 0, 4, 104, "#FFFFFF");
+  g.restore();
+  if (label) txt(g, label, cx, 360, { font: `800 44px ${F.pre}`, fill: "#FFFFFF", stroke: "#111111", lw: 8 });
+  return cv;
+};
+/** 알림 빨간 점 — 종이 흔들리고 빨간 숫자 점이 톡 튀며 물결 */
+const bellDot: Draw = (f, c, t) => {
+  const n = f[0] || "N";
+  const W = 320, H = 320;
+  const { c: cv, g } = mk(W, H);
+  const cx = W / 2, cy = 170;
+  const k = eBack(seg(t, 0, 0.35));
+  const ang = Math.sin(t * 16) * 0.35 * (0.4 + 0.6 * Math.abs(Math.sin(t * 1.3)));
+  g.save(); g.translate(cx, cy); g.scale(k, k);
+  g.beginPath(); g.arc(0, 0, 110, 0, Math.PI * 2); g.fillStyle = c; g.fill();
+  bellIcon(g, 0, 8, 130, "#FFFFFF", ang);
+  g.restore();
+  const d = eBack(seg(t, 0.45, 0.75));
+  const rp = (t - 0.75) % 1.4 / 1.4;
+  if (t > 0.75) { g.save(); g.globalAlpha = 1 - rp; g.strokeStyle = "#FF3B30"; g.lineWidth = 6; g.beginPath(); g.arc(cx + 80, cy - 80, 40 + rp * 40, 0, Math.PI * 2); g.stroke(); g.restore(); }
+  if (d > 0) { g.save(); g.translate(cx + 80, cy - 80); g.scale(d, d); g.beginPath(); g.arc(0, 0, 42, 0, Math.PI * 2); g.fillStyle = "#FF3B30"; g.fill(); g.lineWidth = 6; g.strokeStyle = "#FFFFFF"; g.stroke(); txt(g, n, 0, 3, { font: `900 44px ${F.pre}`, fill: "#FFFFFF" }); g.restore(); }
+  return cv;
+};
+/** 좋아요·하트 번갈아 — 엄지가 휙 뒤집히면 하트, 다시 엄지 (계속) */
+const likeFlip: Draw = (f, c, t) => {
+  const W = 300, H = 300;
+  const { c: cv, g } = mk(W, H);
+  const cx = W / 2, cy = H / 2, per = 1.6, u = (t % per) / per, side = Math.floor(t / per) % 2;
+  const flip = Math.cos(Math.PI * seg(u, 0.75, 1)) ; // 1 → -1 마지막 25% 동안 뒤집힘
+  const k = eBack(seg(t, 0, 0.35));
+  g.save(); g.translate(cx, cy); g.scale(k * Math.max(0.04, Math.abs(flip)), k);
+  const heart = (side === 1) !== (flip < 0);
+  g.beginPath(); g.arc(0, 0, 110, 0, Math.PI * 2); g.fillStyle = heart ? "#FF2D55" : c; g.fill();
+  if (heart) heartIcon(g, 0, 6, 120, "#FFFFFF"); else thumbUp(g, 0, 4, 120, "#FFFFFF");
+  g.restore();
+  return cv;
+};
+add("구독 버튼", "구독 도장 쾅", "motion", [{ label: "도장 글", def: "구독" }, { label: "아래 글", def: "눌러 주세요!" }], "#E5252A", 0.24, { in: "fade", out: "fade", dur: 0.05, sfx: "impact-bass-1", sfxVol: 0.7 }, subStamp, { y: 0.7 });
+add("구독 버튼", "구독 알약 반짝", "motion", [{ label: "버튼 글", def: "구독하기" }], "#E5252A", 0.3, { in: "fade", out: "fade", dur: 0.05, sfx: "whoosh-short", sfxVol: 0.5 }, subShine, { y: 0.82 });
+add("구독 버튼", "구독 두 번 톡톡", "motion", [{ label: "버튼 글", def: "구독" }, { label: "떠오르는 글", def: "+1" }], "#E5252A", 0.3, { in: "fade", out: "fade", dur: 0.05, sfx: "click", sfxVol: 0.5 }, subDoubleTap, { y: 0.78, clicks: [0.8, 1.3] });
+add("구독 버튼", "구독 글자 하나씩", "motion", one("구독해 주세요", "글 (한 글자씩 나와요)"), "#E5252A", 0.45, { in: "fade", out: "fade", dur: 0.05, sfx: "pop", sfxVol: 0.5 }, subLetters, { y: 0.8 });
+add("좋아요·알림", "하트 날아오르기", "motion", [], "#FF2D55", 0.14, { in: "fade", out: "fade", dur: 0.05, sfx: "sparkle", sfxVol: 0.45 }, heartStream, { y: 0.6 });
+add("좋아요·알림", "엄지 폭죽", "motion", [{ label: "아래 글", def: "좋아요 꾹!" }], "#2F7CF6", 0.18, { in: "fade", out: "fade", dur: 0.05, sfx: "pop", sfxVol: 0.6 }, thumbBurst, { y: 0.5 });
+add("좋아요·알림", "알림 빨간 점", "motion", [{ label: "점 안 글", def: "N" }], "#111111", 0.15, { in: "fade", out: "fade", dur: 0.05, sfx: "notification", sfxVol: 0.5 }, bellDot, { y: 0.5 });
+add("좋아요·알림", "좋아요·하트 번갈아", "motion", [], "#2F7CF6", 0.14, { in: "fade", out: "fade", dur: 0.05, sfx: "pop", sfxVol: 0.5 }, likeFlip, { y: 0.5 });
+
 /* ════════ 12. 부동산 표시광고 — 끝 화면 중개사무소 정보 (2026-10-20 사장님: 표시·광고 기준, 상호부터 · 움직이는 디자인 10가지) ════════
  *  칸: 상호 · 대표 공인중개사 · 등록번호 · 소재지 · 연락처 · 매물 정보(엔터로 줄). 빈 칸은 그리지 않는다 (지어내지 않음)
  *  한 번 나타나고 끝 모습에서 멈춘다. 그림 크기는 글 길이로만 정한다 (t 와 상관없이 같게) */
@@ -1821,7 +2084,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
             draggable onDragStart={(e) => { if (d.id !== pick.id) choose(d); dragStart(e, d); }}
             style={{ width: "100%", height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {th ? <img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain" }} /> : null}
+            {th ? ((pa) => <span style={pa.outer}><span style={pa.inner}><img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain", display: "block" }} /></span></span>)(tplPreviewStyles(d.anim)) : null}
             <span style={{ fontSize: 11.5, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{d.label}</span>
           </button>
           <FavStar on={favs.includes(`tpl:${d.id}`)} onClick={() => toggleGFav(`tpl:${d.id}`)} />
@@ -1909,7 +2172,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
                 draggable onDragStart={(e) => { if (d.id !== pick.id) choose(d); dragStart(e, d); }}
                 style={{ width: "100%", height: 96, padding: 6, borderRadius: 8, border: `2px solid ${pick.id === d.id ? C.accent : "transparent"}`, background: checker, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {th ? <img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain" }} /> : null}
+                {th ? ((pa) => <span style={pa.outer}><span style={pa.inner}><img src={th} alt="" style={{ maxWidth: "100%", maxHeight: 62, objectFit: "contain", display: "block" }} /></span></span>)(tplPreviewStyles(d.anim)) : null}
                 <span style={{ fontSize: 11.5, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{d.label}</span>
               </button>
               <FavStar on={favs.includes(`tpl:${d.id}`)} onClick={() => toggleGFav(`tpl:${d.id}`)} />

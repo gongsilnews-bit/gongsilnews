@@ -473,7 +473,7 @@ export default function StudioVrewLanding() {
         <div className="logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/new_logo.png" alt="" />
-          <span>공실마케팅</span>
+          <span>공실마케팅studio</span>
         </div>
         <h2 className="sv-h2">부동산 AI를 가장 잘 활용할 수 있도록,</h2>
         <div className="sv-btns">
@@ -482,7 +482,7 @@ export default function StudioVrewLanding() {
           <a href={installer.ready ? installer.href : "#download"} onClick={() => installer.ready && setGuide(true)} className="sv-btn solid">무료 다운로드</a>
         </div>
         {guide && <InstallGuideModal ver={installer.ver} onClose={() => setGuide(false)} />}
-        <p className="os">공실마케팅는 윈도우 10 · 11 PC를 지원합니다.</p>
+        <p className="os">공실마케팅studio는 윈도우 10 · 11 PC를 지원합니다.</p>
         <div className="osi" aria-hidden>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.4 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z" /></svg>
         </div>

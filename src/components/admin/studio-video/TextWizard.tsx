@@ -259,7 +259,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       if (voiceId.startsWith("el_")) url = (await b.eleven?.voices())?.find((x) => x.id === voiceId)?.preview || "";
       else if (voiceId.startsWith("tc_")) url = (await b.typecast?.voices())?.find((x) => x.id === voiceId)?.preview || "";
       else if (voiceId === "me") url = (await b.myVoice?.status())?.sampleUrl || "";
-      else url = voicePhoto(voiceId).replace(/\.webp$/, ".mp3");
+      else url = voicePhoto(voiceId).replace(/\.webp(\?.*)?$/, ".mp3");
       if (!url) throw new Error("이 성우는 견본 녹음이 없어요. [내 대본으로 미리 듣기]로 들어 보세요.");
       await playUrl(url, setSmp);
     } catch (e) {

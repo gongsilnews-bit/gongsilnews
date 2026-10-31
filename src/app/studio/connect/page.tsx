@@ -50,7 +50,7 @@ export default function StudioConnectPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f8fa", padding: 24, boxSizing: "border-box", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
       <div style={{ width: "100%", maxWidth: 420, background: "#fff", border: "1px solid #e8ecf0", borderRadius: 14, padding: "40px 28px", textAlign: "center", boxShadow: "0 1px 3px rgba(16,24,40,.08)" }}>
         <img src="/new_logo.png" alt="" width={56} height={56} style={{ borderRadius: 12, marginBottom: 16 }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7684", marginBottom: 6 }}>공실마케팅</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7684", marginBottom: 6 }}>공실마케팅studio</div>
 
         {state === "loading" && <p style={{ color: "#6b7684", fontSize: 15 }}>확인하는 중…</p>}
 
@@ -63,7 +63,7 @@ export default function StudioConnectPage() {
               한 번 연결하면 앱을 켤 때마다 로그인 없이 바로 시작합니다.
             </p>
             <button onClick={connect} disabled={state === "sending"} style={{ width: "100%", padding: "15px 0", background: "#16202b", color: "#fff", border: 0, borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: "pointer", opacity: state === "sending" ? 0.6 : 1 }}>
-              {state === "sending" ? "연결하는 중…" : "공실마케팅 연결"}
+              {state === "sending" ? "연결하는 중…" : "공실마케팅studio 연결"}
             </button>
           </>
         )}
@@ -72,7 +72,7 @@ export default function StudioConnectPage() {
           <>
             <h1 style={{ fontSize: 21, fontWeight: 800, margin: "0 0 10px", color: "#16202b" }}>앱으로 돌아갑니다</h1>
             <p style={{ fontSize: 14, color: "#6b7684", margin: "0 0 22px", lineHeight: 1.7, wordBreak: "keep-all" }}>
-              크롬이 &lsquo;공실마케팅 열기&rsquo;를 물으면 <b>[열기]</b>를 눌러 주세요.<br />
+              크롬이 &lsquo;공실마케팅studio 열기&rsquo;를 물으면 <b>[열기]</b>를 눌러 주세요.<br />
               연결이 끝나면 이 창은 닫으셔도 됩니다.
             </p>
             <a href={appUrl} style={{ fontSize: 14, fontWeight: 700, color: "#16202b" }}>앱이 열리지 않으면 여기를 누르세요</a>

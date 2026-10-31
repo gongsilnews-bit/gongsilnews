@@ -959,7 +959,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             <option value="30">30회</option>
             <option value="-1">무제한</option>
           </select>
-          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 공실뉴스부동산 3회 · Studio·비즈니스 무제한 · 일반회원 0회</span>
+          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 공실뉴스부동산 3회 · 스튜디오회원·비즈니스회원 무제한 · 일반회원 0회</span>
         </label>
       </div>
     </div>
@@ -1202,8 +1202,8 @@ function gradeDefaults(p: any, role: string, planType?: string) {
               <div style={labelStyle}>공실마케팅 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select name="studio_plan" value={formData.studio_plan} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 170 }}>
-                  <option value="pro">Pro (월 3만 · 공실 20)</option>
-                  <option value="studio">Studio (월 5만 · 공실 50)</option>
+                  <option value="pro">마케팅회원 (월 3만 · 공실 20)</option>
+                  <option value="studio">스튜디오회원 (월 5만 · 공실 50)</option>
                 </select>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
@@ -1283,7 +1283,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · Studio 이용권 포함. 비우면 이용 안 함.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · 스튜디오회원 이용권 포함. 비우면 이용 안 함.</span>
               </div>
             </div>
           </>

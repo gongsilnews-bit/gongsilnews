@@ -16,6 +16,7 @@ type Bridge = {
   openInBrowser?: (u: string) => Promise<void>;
   column?: {
     create: (source: { mode: "news"; news: ColumnNews }) => Promise<{ id: string }>;
+    setUrl?: (id: string, url: string) => Promise<unknown>;
     list: (limit?: number) => Promise<{ id: string; createdAt: string; worked?: boolean; source?: { mode?: string; news?: { publisher?: string; url?: string } } }[]>;
   };
 };
@@ -125,6 +126,8 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
   const newArticle = () => (onAdd ? onAdd() : router.push("?menu=article&action=write", { scroll: false }));
   const openArticle = async (a: MyArticleCard, tab = "blog") => {
     const url = `${window.location.origin}/news/${a.no}`;
+    // 블로그·SNS 글에 넣는 기사 링크 — 내 홈페이지가 열려 있으면 홈페이지의 그 기사 (2026-10-31 사장님: 공실뉴스 기사로 가던 것)
+    const postUrl = homepage ? `${homepage}/news/${a.no}` : url;
     const g = bridge();
     // 웹에서도 앱과 같이 뉴스·SNS발행으로 — 웹의 뉴스·SNS발행은 공실마케팅 앱 안내 (2026-10-29 사장님). 기사 보기는 집 모양 칸
     if (!g?.column) {
@@ -142,6 +145,8 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
         c.source?.mode === "news" && c.source.news?.publisher === "공실뉴스" && new RegExp(`/news/${a.no}(?:[/?#]|$)`).test(String(c.source.news?.url || "")));
       const again = mine.find((c) => c.worked) || mine[0];
       let colId = again?.id || "";
+      // 예전에 공실뉴스 기사 주소로 만든 칼럼이면 주소만 홈페이지로 바꾼다 — 써 둔 글은 그대로, 새로 쓰는 글부터
+      if (again && again.source?.news?.url !== postUrl) await g.column.setUrl?.(again.id, postUrl).catch(() => null);
       if (!colId) {
         const r = await getMyArticleBody(a.id);
         if (!r.success || !r.article) throw new Error(r.error || "기사를 읽지 못했어요.");
@@ -150,7 +155,7 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
           title: r.article.title,
           publisher: "공실뉴스",
           publishedAt: Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`,
-          url,
+          url: postUrl,
           body: [r.article.subtitle, r.article.body].filter(Boolean).join("\n\n"),
         } });
         colId = col.id;

@@ -1,7 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { canUseHomepage, canOpenHomepage } from "@/utils/planCheck";
+import { canOpenHomepage } from "@/utils/planCheck";
 
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'api', 'm', 'admin', 'news', 'study', 'biz', 'flyer', 'sites',
@@ -66,18 +66,20 @@ function flattenRow(row: any) {
 
 // ── 홈페이지 설정 조회 ──
 /**
- * 글·공유에 쓸 내 홈페이지 주소 (2026-10-29 사장님) — 주소가 있고 켜져 있고 Pro · Studio 로 쓸 수 있을 때만
- * "https://{주소}.gongsilnews.com", 아니면 "" (무료 회원은 글에 홈페이지를 언급하지 않는다)
+ * 글·공유에 쓸 내 홈페이지 주소 (2026-10-29 사장님) — 주소가 있고 켜져 있고 손님에게 열려 있을 때만
+ * "https://{주소}.gongsilnews.com", 아니면 "" (홈페이지가 닫힌 회원은 글에 홈페이지를 언급하지 않는다)
+ * 열림 기준은 홈페이지 화면과 같은 canOpenHomepage — 서류 승인된 공실뉴스부동산도 무료로 열리니 글 링크도 홈페이지로 (2026-10-31 사장님)
  */
 export async function getHomepageBase(ownerId: string): Promise<string> {
   if (!ownerId) return "";
   const supabase = getAdminClient();
-  const [{ data: hp }, { data: m }] = await Promise.all([
+  const [{ data: hp }, { data: m }, { data: ag }] = await Promise.all([
     supabase.from('homepage_settings').select('subdomain, is_active').eq('owner_id', ownerId).maybeSingle(),
     supabase.from('members').select('role, plan_type, plan_end_date, studio_end_date, can_homepage').eq('id', ownerId).maybeSingle(),
+    supabase.from('agencies').select('status').eq('owner_id', ownerId).limit(1).maybeSingle(),
   ]);
   if (!hp?.subdomain || hp.is_active === false || !m) return "";
-  return canUseHomepage(m, m.can_homepage) ? `https://${hp.subdomain}.gongsilnews.com` : "";
+  return canOpenHomepage(m, m.can_homepage, ag?.status) ? `https://${hp.subdomain}.gongsilnews.com` : "";
 }
 
 export async function getHomepageSettings(ownerId: string) {

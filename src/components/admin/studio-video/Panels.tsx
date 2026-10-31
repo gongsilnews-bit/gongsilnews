@@ -1,6 +1,7 @@
 "use client";
 
 // 오른쪽 칸 — 자료 고르기(즐겨찾기·내 자료(공실 사진 포함)·오픈자료·AI 사진, 2026-10-20 사장님) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
+import { VoiceAvatar, koVoice } from "./voiceKo";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { LibTag, Asset, Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
 import { AiImagesTab } from "./AiImages";
@@ -19,10 +20,25 @@ import type { AnimBodyProps } from "./Anim";
 // 성우 얼굴 동그라미 — public/studio-voices/{id}.webp, 없으면 이름 첫 글자
 export function VoiceFace({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
   const [bad, setBad] = useState(false);
+  const [big, setBig] = useState(false); // 누르면 크게 (2026-10-30 사장님)
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.line, border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, color: C.sub }}>
-      {bad ? name.slice(0, 1) : <img src={voicePhoto(id)} alt={name} onError={() => setBad(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-    </div>
+    <>
+      <div title={bad ? undefined : "누르면 크게 보여요"} onClick={(e) => { if (bad) return; e.stopPropagation(); setBig(true); }}
+        style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.line, border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, color: C.sub, cursor: bad ? undefined : "zoom-in" }}>
+        {bad ? name.slice(0, 1) : <img src={voicePhoto(id)} alt={name} onError={() => setBad(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+      </div>
+      {big && (
+        <div onClick={(e) => { e.stopPropagation(); setBig(false); }} style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(0,0,0,0.62)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
+          <div style={{ textAlign: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={voicePhoto(id).replace("/studio-voices/", "/studio-voices/big/")} onError={(e) => { (e.currentTarget as HTMLImageElement).src = voicePhoto(id); }} alt={name}
+              style={{ width: "min(420px, 80vw)", height: "min(420px, 80vw)", borderRadius: 24, objectFit: "cover", boxShadow: "0 20px 60px rgba(0,0,0,0.5)", display: "block" }} />
+            <div style={{ marginTop: 14, color: "#fff", fontSize: 20, fontWeight: 800 }}>{name}</div>
+            <div style={{ marginTop: 6, color: "rgba(255,255,255,0.7)", fontSize: 13 }}>아무 곳이나 누르면 닫혀요</div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -795,18 +811,30 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
   const [emotion, setEmotion] = useState<string>((cur as { emotion?: string }).emotion || "smart"); // 타입캐스트 말투
   const [age, setAge] = useState("");
   const [mood, setMood] = useState("");
+  const [gq, setGq] = useState(""); // 제미나이 이름·특징 찾기 (2026-10-30)
   const [msg, setMsg] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
-  const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!age || v.age === age) && (!mood || v.mood === mood) && (!rec || v.recommended));
+  const list = STUDIO_VOICES.filter((v) => (g === "all" || v.gender === g) && (!age || v.age === age) && (!mood || v.mood === mood) && (!rec || v.recommended) && (!gq.trim() || `${v.name} ${v.kind} ${v.tags.join(" ")}`.includes(gq.trim())));
   // 미리 듣기는 미리 녹음해 둔 파일만 — 새로 만들면 공실뉴스 API 비용이 나가서 [내 대본으로 듣기]는 없앴다 (2026-10-17)
   useEffect(() => () => audio.current?.pause(), []);
   // 카드 ▷ — 미리 녹음해 둔 성우 음성 (public/studio-voices/{id}.mp3) 을 바로 튼다. 다시 누르면 멈춤
   const [playing, setPlaying] = useState("");
-  const sampleOf = (vid: string) => voicePhoto(vid).replace(/\.webp$/, ".mp3");
+  const sampleOf = (vid: string) => voicePhoto(vid).replace(/\.webp(\?.*)?$/, ".mp3");
+  // 즐겨찾기의 일레븐랩스·타입캐스트 성우 — 견본 소리·성별·나이 (앱이 받아 둔 목록에서, 2026-10-30 사장님)
+  const [extInfo, setExtInfo] = useState<Record<string, { preview: string; gender: string; age: string }>>({});
+  useEffect(() => {
+    if (!favTab) return;
+    const vb = videoBridge();
+    const take = (list: { id: string; preview: string; gender: string; age: string }[]) => setExtInfo((o) => ({ ...o, ...Object.fromEntries(list.map((x) => [x.id, { preview: x.preview, gender: x.gender, age: x.age }])) }));
+    vb?.eleven?.voices().then(take).catch(() => {});
+    vb?.typecast?.voices().then(take).catch(() => {});
+  }, [favTab]);
   const playSample = (vid: string) => {
     audio.current?.pause();
     if (playing === vid) return setPlaying("");
-    const a = new Audio(sampleOf(vid));
+    const ext = extInfo[vid]?.preview;
+    if ((isEleven(vid) || isTypecast(vid)) && !ext) return setMsg("이 목소리는 들어 볼 견본이 없어요.");
+    const a = new Audio(ext || sampleOf(vid));
     a.playbackRate = speed;
     a.volume = Math.min(1, volume);
     a.onended = () => setPlaying("");
@@ -851,7 +879,7 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
           {tcTab && <TypecastTab id={id} onPick={setId} emotion={emotion} onEmotion={setEmotion} />}
           {elTab && <ElevenTab id={id} onPick={setId} emotion={emotion} onEmotion={setEmotion} />}
           {favTab && (
-            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, alignContent: "start" }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, alignContent: "start" }}>
               {!favs.length && <div style={{ gridColumn: "1 / -1", fontSize: 15, color: C.sub, lineHeight: 1.7, padding: "10px 0" }}>아직 즐겨찾은 목소리가 없어요. 성우 카드의 ☆ 를 누르면 여기 모여요.</div>}
               {favs.map((fid) => {
                 const v = findVoice(fid);
@@ -859,16 +887,16 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
                 const stock = STUDIO_VOICES.find((x) => x.id === fid);
                 return (
                   <div key={fid} onClick={() => setId(fid)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, border: `${id === fid ? 2 : 1}px solid ${id === fid ? C.accent : C.line2}`, background: id === fid ? C.accentDim : C.card, cursor: "pointer" }}>
-                    {stock ? <VoiceFace id={fid} name={stock.name} size={56} /> : <div style={{ width: 56, height: 56, borderRadius: "50%", flexShrink: 0, background: "#3b3363", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>{(v?.name || "?").slice(0, 1)}</div>}
+                    {stock ? <VoiceFace id={fid} name={stock.name} size={56} /> : <VoiceAvatar seed={fid} gender={extInfo[fid]?.gender} age={extInfo[fid]?.age} name={v?.name ? koVoice(v.name).name : undefined} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 17, fontWeight: 800 }}>{v?.name || "목소리"}</div>
+                      <div style={{ fontSize: 17, fontWeight: 800 }} title={v?.name}>{v?.name ? koVoice(v.name).name : "목소리"}</div>
                       <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{stock ? `${stock.gender} · ${stock.age} · ${stock.kind}` : v?.kind || ""}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: tcV ? "#b4a7ff" : elV ? "#e5e7eb" : mine ? "#6ee7b7" : "#8ab4ff" }}>
                         {tcV ? <><TypecastMark size={13} />#타입캐스트API</> : elV ? <><ElevenMark size={13} />#일레븐랩스API</> : mine ? "#내목소리 (PC, 무료)" : <><GeminiMark size={13} />#제미나이API</>}
                       </div>
                     </div>
                     <FavStar on onToggle={() => toggleFav(fid)} />
-                    {stock && (
+                    {(stock || extInfo[fid]?.preview) && (
                       <button type="button" onClick={(e) => { e.stopPropagation(); setId(fid); playSample(fid); }} title={playing === fid ? "멈추기" : "목소리 들어 보기"}
                         style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "50%", border: `1px solid ${playing === fid ? C.accent : C.line2}`, background: playing === fid ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {playing === fid ? <span style={{ width: 11, height: 11, background: "#fff", borderRadius: 2 }} /> : <Icon name="play" size={16} />}
@@ -880,8 +908,8 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
             </div>
           )}
           <div style={{ flex: 1, minHeight: 0, display: meTab || tcTab || elTab || favTab ? "none" : "flex" }}>
-            {/* 왼쪽 거르기 */}
-            <div style={{ width: 200, flexShrink: 0, padding: 16, borderRight: `1px solid ${C.line2}`, overflowY: "auto" }}>
+            {/* 왼쪽 거르기 — 뺐다 (2026-10-30 사장님: 제미나이 옆 메뉴 없애기). 다시 쓰려면 display 만 되돌린다 */}
+            <div style={{ display: "none", width: 200, flexShrink: 0, padding: 16, borderRight: `1px solid ${C.line2}`, overflowY: "auto" }}>
               <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
                 <span style={{ flex: 1, fontSize: 16, fontWeight: 800 }}>거르기</span>
                 <button type="button" onClick={() => { setG("all"); setAge(""); setMood(""); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
@@ -901,6 +929,17 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
             </div>
             {/* 성우 카드 */}
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+              {/* 거르기 — 일레븐랩스처럼 위에 한 줄 (2026-10-30 사장님) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 16px 0", flexWrap: "wrap" }}>
+                {(["all", "여성", "남성"] as const).map((k) => <button key={k} type="button" onClick={() => setG(k)} style={{ ...fchip(g === k), height: 34, fontSize: 14 }}>{k === "all" ? "모두" : k}</button>)}
+                <select value={age} onChange={(e) => setAge(e.target.value)} style={{ ...input, height: 34, width: 96, fontSize: 14, marginLeft: 6 }}>
+                  {["", "20대", "30대", "40대", "50대", "60대"].map((k) => <option key={k || "all"} value={k}>{k || "나이 모두"}</option>)}
+                </select>
+                <select value={mood} onChange={(e) => setMood(e.target.value)} style={{ ...input, height: 34, width: 110, fontSize: 14 }}>
+                  {["", ...VOICE_MOODS].map((k) => <option key={k || "all"} value={k}>{k || "분위기 모두"}</option>)}
+                </select>
+                <input value={gq} onChange={(e) => setGq(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="이름·특징으로 찾기" style={{ ...input, height: 34, width: 200, marginLeft: "auto", fontSize: 14 }} />
+              </div>
               {/* 제미나이 성우는 Gemini API 로 만든다 — 이 칸에만 안내 (2026-10-19 사장님) */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 8px", fontSize: 15, color: C.sub }}>
                 <span>성우 <b style={{ color: C.text }}>{list.length}</b>명</span>
@@ -922,11 +961,12 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
                 {list.length === 0 && <div style={{ fontSize: 15, color: C.sub, padding: "20px 0" }}>맞는 성우가 없어요. 거르기를 바꿔 보세요.</div>}
                 {list.map((v) => (
                   <div key={v.id} onClick={() => setId(v.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: 14, borderRadius: 8, border: `${id === v.id ? 2 : 1}px solid ${id === v.id ? C.accent : C.line2}`, background: id === v.id ? C.accentDim : C.card, cursor: "pointer" }}>
-                    <VoiceFace id={v.id} name={v.name} size={80} />
+                    <VoiceFace id={v.id} name={v.name} size={64} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 19, fontWeight: 800 }}>{v.name}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px" }}>{v.gender} · {v.age} · {v.mood}</span>
+                      {/* 이름이 세로로 깨지지 않게 — 이름은 한 줄, 꼬리표는 넘치면 아래로 (2026-10-30) */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 19, fontWeight: 800, whiteSpace: "nowrap" }}>{v.name}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "1px 6px", whiteSpace: "nowrap" }}>{v.gender} · {v.age} · {v.mood}</span>
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 5 }}>{v.kind}</div>
                       <div style={{ fontSize: 14, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>{v.tags.map((t) => `#${t}`).join("  ")}</div>

@@ -5,6 +5,7 @@
 import type { Layer, Project, VideoBridge } from "./types";
 import { animAt, animOf, clipOrder, cropOf, flatten, imgRect, layerAtTime, layerSpan, layersAt, type FlatItem } from "./timeline";
 import { drawTemplate, isMotionStyle, tplFonts } from "./Templates";
+import { isStickerMotion, stickerFonts, stickerFrame, type Sticker } from "./Stickers";
 
 const FPS = 30;
 const RATIOS: Record<string, [number, number]> = { "16:9": [1920, 1080], "9:16": [1080, 1920], "1:1": [1080, 1080], "4:5": [1080, 1350], "4:3": [1440, 1080] };
@@ -49,11 +50,11 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
   const order = clipOrder(p);
   const out: Project = structuredClone(p);
   // 움직이는 템플릿(경로·카운트다운·슬롯머신 …)은 애니메이션이 없어도 칸마다 다시 그린다
-  const motion = (l: Layer) => Boolean(l.stk && isMotionStyle(l.stk.style));
+  const motion = (l: Layer) => Boolean(l.stk && (isMotionStyle(l.stk.style) || isStickerMotion(l.stk)));
   // 키프레임 (2026-10-20) — 자리·크기·돌림·진하기가 칸마다 바뀌어서 같이 그린다 (채우기 사진은 키프레임 없음)
   const keyed = (l: Layer) => Boolean(l.kf?.length) && l.fit !== "cover" && l.fit !== "contain";
   const layers = (out.layers || []).filter((l) => l.type === "image" && !l.off && l.asset && p.assets[l.asset]?.kind === "image" && (animOf(p, l) || motion(l) || keyed(l)));
-  if (layers.some(motion)) await tplFonts();
+  if (layers.some(motion)) { await tplFonts(); await stickerFonts(); }
   // 할 일 (레이어 × 클립)
   const jobs: { l: Layer; it: FlatItem; a: number; b: number; s0: number; s1: number }[] = [];
   for (const it of items) {
@@ -150,7 +151,7 @@ export async function bakeAnim(p: Project, o: { scope?: string; sceneId?: string
             g.clip();
             g.drawImage(img, (-img.width * kk) / 2, (-img.height * kk) / 2, img.width * kk, img.height * kk);
           } else {
-            const src: CanvasImageSource & { width: number; height: number } = mo ? drawTemplate(l.stk!.style, l.stk!.text, l.stk!.color, Math.max(0, j.s0 + k / FPS - j.a)) : img;
+            const src: CanvasImageSource & { width: number; height: number } = mo ? (isStickerMotion(l.stk) ? stickerFrame(l.stk as Sticker, Math.max(0, j.s0 + k / FPS - j.a)) : drawTemplate(l.stk!.style, l.stk!.text, l.stk!.color, Math.max(0, j.s0 + k / FPS - j.a))) : img;
             const cr = cropOf(l.crop); // 자르기 — 원본 가장자리 (미리보기 clip-path·굽기 crop 과 같은 값)
             if (cr) g.drawImage(src, src.width * cr.l, src.height * cr.t, src.width * (1 - cr.l - cr.r), src.height * (1 - cr.t - cr.b), -pw / 2 + pw * cr.l, -ph / 2 + ph * cr.t, pw * (1 - cr.l - cr.r), ph * (1 - cr.t - cr.b));
             else g.drawImage(src, -pw / 2, -ph / 2, pw, ph);

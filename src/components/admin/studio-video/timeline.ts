@@ -934,6 +934,11 @@ export const SFX_LIST: { id: string; label: string }[] = [
   { id: "whoosh", label: "쉭" }, { id: "whoosh-short", label: "휙" }, { id: "pop", label: "뽁" }, { id: "click", label: "딸깍" },
   { id: "key-press", label: "엔터" }, { id: "typing", label: "타자" }, { id: "sparkle", label: "반짝" }, { id: "chime", label: "딩동" },
   { id: "ping", label: "띵" }, { id: "notification", label: "알림" }, { id: "impact-bass-1", label: "쿵" },
+  // 직접 만든 소리 (2026-10-30 — ffmpeg 합성, public/studio-sfx/CREDITS.md)
+  { id: "coin", label: "동전" }, { id: "bell", label: "종소리" }, { id: "boing", label: "띠용" }, { id: "boom", label: "펑" }, { id: "whistle-up", label: "휘익↑" },
+  { id: "whistle-down", label: "휘익↓" }, { id: "blip", label: "삑" }, { id: "bubble", label: "뽀록" }, { id: "shutter", label: "찰칵" }, { id: "drum", label: "둥" },
+  { id: "magic", label: "마법" }, { id: "success", label: "성공" }, { id: "buzz", label: "땡" }, { id: "tick", label: "똑" }, { id: "glass", label: "쨍" },
+  { id: "rise", label: "두두둥" }, { id: "heartbeat", label: "두근" }, { id: "swish", label: "스윽" }, { id: "cash", label: "계산" }, { id: "pluck", label: "통" },
 ];
 const SFX_AUTO: Record<string, string> = { pop: "pop", fly: "whoosh", zoom: "whoosh-short", spin: "whoosh", roll: "whoosh", flip: "click", drop: "pop", slideL: "whoosh-short", slideR: "whoosh-short", big: "whoosh", stretch: "pop", swing: "whoosh-short", jelly: "pop" }; // 페이드는 조용히
 /** 이 효과(kind)에 낼 소리 — set: 고른 값 (없으면 dflt) */

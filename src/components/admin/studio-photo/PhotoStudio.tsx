@@ -323,6 +323,9 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   const [autoSel, setAutoSelS] = useState<{ on: boolean; group: boolean }>(() => { try { return { on: true, group: false, ...JSON.parse(localStorage.getItem("gsp-autosel") || "{}") }; } catch { return { on: true, group: false }; } });
   const setAutoSel = (p: Partial<{ on: boolean; group: boolean }>) => setAutoSelS((o) => { const n = { ...o, ...p }; try { localStorage.setItem("gsp-autosel", JSON.stringify(n)); } catch {} return n; });
   const [layerMenu, setLayerMenu] = useState<null | { x: number; y: number; keys: string[] }>(null); // 오른쪽 클릭 — 그 자리 레이어 목록
+  const [selMenu, setSelMenu] = useState<null | { x: number; y: number }>(null); // 선택 영역 오른쪽 클릭 — AI 에게 시키기 (2026-10-30)
+  const [selAsk, setSelAsk] = useState("");
+  const [selMenuAi, setSelMenuAi] = useState(false); // 목록 → [AI 생성형 채우기…] 를 누르면 할 일 칸
   // 페더 — 선택 윤곽·올가미로 새로 그리는 선택의 가장자리를 부드럽게 (포토샵 옵션줄처럼, 이 PC 에 기억)
   const [feather, setFeatherS] = useState(() => { try { return Math.max(0, Number(localStorage.getItem("gsp-feather")) || 0); } catch { return 0; } });
   const setFeather = (n: number) => { const v = Math.max(0, Math.min(250, Math.round(n) || 0)); setFeatherS(v); try { localStorage.setItem("gsp-feather", String(v)); } catch {} };
@@ -947,6 +950,103 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
     } finally {
       off?.();
     }
+  };
+  /* ── 선택 영역 AI 명령 — 할 일을 보고 처리 방법을 고른다 (2026-10-30 사장님: "10월 → 12월" 은 그림 AI 없이 바로)
+   *  글자 바꾸기 · 지우기(단색 바탕) · 색 보정은 앱이 바로, 나머지(물건 넣기·사진 위 지우기 등)만 ChatGPT 그림 */
+  type SelCmd = { kind: "text"; text: string } | { kind: "erase" } | { kind: "tone"; f: string; name: string } | { kind: "ai" };
+  const cmdOf = (q: string): SelCmd => {
+    const s = q.trim();
+    if (!s) return { kind: "erase" };
+    if (/지워|지우|없애|삭제/.test(s) && !/(으로|로|아니라|대신)\s*\S*$/.test(s)) return { kind: "erase" };
+    const tones: [RegExp, string, string][] = [[/흑백/, "grayscale(1)", "흑백"], [/밝게|환하게/, "brightness(1.25)", "밝게"], [/어둡게/, "brightness(0.8)", "어둡게"], [/선명/, "contrast(1.2) saturate(1.25)", "선명하게"], [/흐리게|블러/, "blur(4px)", "흐리게"]];
+    for (const [re, fl, n] of tones) if (re.test(s)) return { kind: "tone", f: fl, name: n };
+    // 끝의 "바꿔 줘 · 고쳐 주세요" 를 떼고 → "X 아니라/말고 Y" · "→ Y" · 'Y' · "(X를) Y로"
+    const s2 = s.replace(/\s*(?:바꿔|바꾸어|고쳐|변경|수정|해)\s*(?:줘|주세요|줄래요?|요)?[.!~?]*$/, "").trim();
+    const m = s2.match(/(?:아니(?:라|고)|말고|대신)\s*(.+?)(?:\s*(?:으로|로))?[.!~]*$/) || s2.match(/(?:→|->)\s*(.+)$/) || s2.match(/['"“‘](.+?)['"”’]/)
+      || s2.match(/^(?:.*?(?:을|를)\s+)?(\S.*?)\s*(?:으로|로)[.!~]*$/);
+    if (m) {
+      const tx = m[1].replace(/\s*(?:으로|로)?[.!~]*$/, "").replace(/^['"“‘]|['"”’]$/g, "").trim();
+      if (tx) return { kind: "text", text: tx };
+    }
+    return { kind: "ai" };
+  };
+  /** 선택한 곳 살피기 — 둘레(바탕) 색 · 바탕이 단색인지 · 글자(바탕과 다른 점) 색과 자리 */
+  const lookSel = (d: Doc) => {
+    const m = selOf(d), r = m ? maskBounds(m) : null;
+    if (!m || !r) return null;
+    const W = d.psd.width, H = d.psd.height, comp = composite(d);
+    const x0 = Math.max(0, r.x - 3), y0 = Math.max(0, r.y - 3), x1 = Math.min(W, r.x + r.w + 3), y1 = Math.min(H, r.y + r.h + 3);
+    const px = comp.getContext("2d", { willReadFrequently: true })!.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    const mw = x1 - x0, at = (x: number, y: number) => ((y - y0) * mw + (x - x0)) * 4;
+    const ring: number[][] = [];
+    for (let x = x0; x < x1; x++) for (const y of [y0, y1 - 1]) { const k = at(x, y); ring.push([px[k], px[k + 1], px[k + 2]]); }
+    for (let y = y0; y < y1; y++) for (const x of [x0, x1 - 1]) { const k = at(x, y); ring.push([px[k], px[k + 1], px[k + 2]]); }
+    const med = (i: number) => ring.map((c) => c[i]).sort((a, b) => a - b)[Math.floor(ring.length / 2)];
+    const bg = [med(0), med(1), med(2)];
+    const dev = ring.reduce((a, c) => a + Math.abs(c[0] - bg[0]) + Math.abs(c[1] - bg[1]) + Math.abs(c[2] - bg[2]), 0) / Math.max(1, ring.length);
+    const md = m.getContext("2d", { willReadFrequently: true })!.getImageData(r.x, r.y, r.w, r.h).data;
+    let n = 0, sr = 0, sg = 0, sb = 0, ix0 = 1e9, iy0 = 1e9, ix1 = -1, iy1 = -1;
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
+      if (md[((y - r.y) * r.w + (x - r.x)) * 4 + 3] < 128) continue;
+      const k = at(x, y), dd = Math.abs(px[k] - bg[0]) + Math.abs(px[k + 1] - bg[1]) + Math.abs(px[k + 2] - bg[2]);
+      if (dd < 90) continue;
+      n++; sr += px[k]; sg += px[k + 1]; sb += px[k + 2];
+      if (x < ix0) ix0 = x; if (x > ix1) ix1 = x; if (y < iy0) iy0 = y; if (y > iy1) iy1 = y;
+    }
+    const hex = (c: number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
+    return { m, r, bg: hex(bg), flat: dev < 24, ink: n > 8 ? { color: hex([sr / n, sg / n, sb / n]), x: ix0, y: iy0, w: ix1 - ix0 + 1, h: iy1 - iy0 + 1 } : null };
+  };
+  /** 선택 모양대로 바탕색 판 (원래 그림 위에 덮기) */
+  const patchOf = (m: HTMLCanvasElement, r: { x: number; y: number; w: number; h: number }, color: string): PLayer => {
+    const c = document.createElement("canvas");
+    c.width = r.w; c.height = r.h;
+    const g = c.getContext("2d")!;
+    g.fillStyle = color; g.fillRect(0, 0, r.w, r.h);
+    g.globalCompositeOperation = "destination-in";
+    g.drawImage(m, -r.x, -r.y);
+    return { _k: uid(), name: "지운 자리", canvas: c, left: r.x, top: r.y, right: r.x + r.w, bottom: r.y + r.h };
+  };
+  /** 원래 글자 자리에 같은 색·높이로 새 글자 레이어 (고칠 수 있는 글자) */
+  const textInto = (d: Doc, text: string, ink: { color: string; x: number; y: number; w: number; h: number }) => {
+    const l = textLayer(d, { color: ink.color, align: "left" }, text);
+    applyText(l, { ...l._look!, px: Math.max(8, Math.round(ink.h / 0.8)) });
+    // 그려진 글자 자리 → 원래 글자 왼쪽 · 가운데 높이에 맞춘다
+    const c = l.canvas!, a = c.getContext("2d", { willReadFrequently: true })!.getImageData(0, 0, c.width, c.height).data;
+    let bx0 = c.width, by0 = c.height, by1 = -1;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (a[(y * c.width + x) * 4 + 3] > 40) { if (x < bx0) bx0 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
+    if (by1 < 0) { bx0 = 0; by0 = 0; by1 = c.height; }
+    offsetLayer(l, Math.round(ink.x - ((l.left || 0) + bx0)), Math.round(ink.y + ink.h / 2 - ((l.top || 0) + (by0 + by1) / 2)));
+    l.name = text.slice(0, 20);
+    return l;
+  };
+  const selCommand = async (q: string) => {
+    if (!doc) return;
+    const d = doc, c = cmdOf(q), info = lookSel(d);
+    if (!info) return say("먼저 고칠 곳을 선택해 주세요");
+    if (c.kind === "tone") {
+      const { m, r } = info;
+      const src = composite(d), out = document.createElement("canvas");
+      out.width = r.w; out.height = r.h;
+      const g = out.getContext("2d")!;
+      g.filter = c.f; g.drawImage(src, -r.x, -r.y); g.filter = "none";
+      g.globalCompositeOperation = "destination-in"; g.drawImage(m, -r.x, -r.y);
+      insert({ _k: uid(), name: `보정: ${c.name}`, canvas: out, left: r.x, top: r.y, right: r.x + r.w, bottom: r.y + r.h });
+      return say(`선택한 곳을 ${c.name} 바꿨어요 — 새 레이어 (지우면 원래대로)`);
+    }
+    if (c.kind === "erase") {
+      if (info.flat) { insert(patchOf(info.m, info.r, info.bg)); return say("선택한 곳을 바탕색으로 지웠어요 — 새 레이어 (지우면 원래대로)"); }
+      return void runAi("fill", "");
+    }
+    if (c.kind === "text") {
+      const ink = info.ink || { color: "#111111", x: info.r.x, y: info.r.y, w: info.r.w, h: info.r.h };
+      // 바탕이 단색이 아니면(사진 위 "하늘을 노을로" 같은 일) 글자 바꾸기가 아니라 AI 그림으로
+      if (!info.flat || !info.ink) return void runAi("fill", q.trim());
+      insert(patchOf(info.m, info.r, info.bg));
+      const l = textInto(d, c.text, ink);
+      insert(l);
+      return say(`"${c.text}" 로 바꿨어요 — 글자 레이어라 두 번 눌러 고칠 수 있어요 (크기·색·위치도)`);
+    }
+    return void runAi("fill", q.trim());
   };
   const NO_TEXT = "Do not add any text, letters, logos or watermarks.";
   const runAi = async (act: AiAct, prompt: string, gen?: AiGenOpts) => {
@@ -2071,10 +2171,10 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
             bump();
           }}
           onPickColor={(hex, toBg) => setPaint(toBg ? { bg: hex } : { fg: hex })} onSay={say}
-          autoSel={autoSel.on} autoGroup={autoSel.group} onLayerMenu={(x, y, keys) => setLayerMenu({ x, y, keys })}
+          autoSel={autoSel.on} autoGroup={autoSel.group} onLayerMenu={(x, y, keys) => setLayerMenu({ x, y, keys })} onSelMenu={(x, y) => { setLayerMenu(null); setSelMenu({ x, y }); }}
           selAll={on ? allSel() : []} onAddSel={(k) => pickSel(k, null)} onMoveMany={moveMany}
           onMove={(k, dx, dy) => { const l = findLayer(kids(d.psd), k); if (l && (dx || dy)) mutate(() => offsetLayer(l, dx, dy)); }}
-          onMoveSel={(k, dx, dy) => {
+          onMoveSel={(k, dx, dy, copy) => {
             // 선택 영역 옮기기 — 그 레이어의 선택한 부분을 잘라 옮겨 붙이고, 선택 영역도 같이 옮긴다 (포토샵처럼)
             const l = findLayer(kids(d.psd), k);
             const m = selOf(d);
@@ -2082,7 +2182,8 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
             const ox = l.left || 0, oy = l.top || 0;
             const ex = extract(l.canvas, ox, oy, m);
             if (!ex) return;
-            const hole = clearInside(l.canvas, m, ox, oy);
+            // Alt+끌기 = 복사 — 원래 자리는 그대로 두고 옮긴 곳에 한 벌 더 (포토샵처럼, 2026-10-30 사장님)
+            const hole = copy ? l.canvas : clearInside(l.canvas, m, ox, oy);
             const nx = ex.x + dx, ny = ex.y + dy;
             const x0 = Math.min(ox, nx), y0 = Math.min(oy, ny), x1 = Math.max(ox + hole.width, nx + ex.c.width), y1 = Math.max(oy + hole.height, ny + ex.c.height);
             const c = document.createElement("canvas");
@@ -3109,6 +3210,52 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
           </div>
         </Modal>
       )}
+      {/* 선택 영역 오른쪽 클릭 — 포토샵처럼 작업 목록 (AI 칸은 뺐다, 2026-10-30 사장님) */}
+      {selMenu && doc && (() => {
+        const close = () => { setSelMenu(null); setSelMenuAi(false); };
+        const run = (fn: () => void) => () => { close(); fn(); };
+        const rows: ([string, string, () => void] | null)[] = [
+          ["선택 해제", "Ctrl+D", () => setSelMask(null)],
+          ["선택 반전", "Shift+Ctrl+I", () => { const m = selOf(doc); setSelMask(m ? invertMask(m) : null); }],
+          null,
+          ["복사한 레이어", "Ctrl+J", () => toNewLayer(false)],
+          ["잘라 낸 레이어", "Shift+Ctrl+J", () => toNewLayer(true)],
+          null,
+          ["전경색으로 칠하기", "Alt+Del", () => fillWith(paint.fg)],
+          ["배경색으로 칠하기", "Ctrl+Del", () => fillWith(paint.bg)],
+          ["지우기", "Delete", () => clearSel()],
+        ];
+        const item: React.CSSProperties = { display: "flex", alignItems: "center", width: "100%", height: 30, padding: "0 12px", border: 0, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, cursor: "pointer", textAlign: "left", borderRadius: 4 };
+        const hov = { onMouseEnter: (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = C.accentDim; }, onMouseLeave: (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = "transparent"; } };
+        const go = () => { const q = selAsk; close(); void selCommand(q); };
+        return (
+          <div onPointerDown={close} onContextMenu={(e) => { e.preventDefault(); close(); }} style={{ position: "fixed", inset: 0, zIndex: 3600 }}>
+            <div onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}
+              style={{ position: "fixed", left: Math.min(selMenu.x, window.innerWidth - 330), top: Math.min(selMenu.y, window.innerHeight - (selMenuAi ? 230 : 340)), width: selMenuAi ? 320 : 260, background: C.panel, border: `1px solid ${C.line}`, borderRadius: 8, boxShadow: "0 12px 32px rgba(0,0,0,0.5)", padding: 6, color: C.text, fontFamily: FONT }}>
+              {!selMenuAi ? (
+                <>
+                  {rows.map((r, i) => r ? (
+                    <button key={r[0]} type="button" onClick={run(r[2])} style={item} {...hov}>{r[0]}<span style={{ marginLeft: "auto", fontSize: 11.5, color: C.sub }}>{r[1]}</span></button>
+                  ) : <div key={`s${i}`} style={{ height: 1, background: C.line, margin: "4px 6px" }} />)}
+                </>
+              ) : (
+                <div style={{ padding: 6 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>✨ 선택한 곳에 할 일</div>
+                  <input autoFocus value={selAsk} onChange={(e) => setSelAsk(e.target.value)} placeholder="예: 12월로 · 지워 줘 · 흑백으로 · 화분 넣어 줘"
+                    onKeyDown={(e) => { if (e.key === "Enter" && !aiBusy) go(); if (e.key === "Escape") close(); }}
+                    style={{ width: "100%", height: 36, borderRadius: 6, border: `1px solid ${C.line}`, background: C.bg, color: C.text, padding: "0 10px", fontSize: 13.5, fontFamily: FONT, boxSizing: "border-box" }} />
+                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                    <button type="button" onClick={() => setSelMenuAi(false)} style={{ height: 34, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line}`, background: "transparent", color: C.sub, fontSize: 13, cursor: "pointer", fontFamily: FONT }}>‹ 목록</button>
+                    <button type="button" disabled={Boolean(aiBusy)} onClick={go}
+                      style={{ flex: 1, height: 34, borderRadius: 6, border: 0, background: C.accent, color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: FONT }}>{selAsk.trim() ? "하기" : "지우기"}</button>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: C.sub, marginTop: 8, lineHeight: 1.55 }}>글자 바꾸기("12월로")·지우기·색 보정은 바로 돼요. 물건 넣기처럼 그림이 필요한 일만 내 ChatGPT 로 그려요. 모두 새 레이어로 얹어 원본은 그대로예요.</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
       {layerMenu && doc && (
         <div onPointerDown={() => setLayerMenu(null)} onContextMenu={(e) => { e.preventDefault(); setLayerMenu(null); }} style={{ position: "fixed", inset: 0, zIndex: 3500 }}>
           <div onPointerDown={(e) => e.stopPropagation()}

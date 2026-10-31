@@ -168,7 +168,7 @@ export type Layer = {
   sfx?: string; // 효과음 이름 (public/studio-sfx · studio-app/src/video/sfx 의 파일 이름)
   clicks?: number[]; // 누르는 소리 — 나온 때부터 이 초마다 큰 딸깍 (구독·좋아요 그래픽)
   sticker?: boolean; // [삽입] → 그래픽으로 넣은 것 (사진 레이어와 같이 그리고, 이름·아이콘만 "그래픽")
-  stk?: { style: string; text: string; icon?: string; color?: string }; // 스티커 모양 — 넣은 뒤 글자를 고치면 이것으로 다시 그린다
+  stk?: { style: string; text: string; icon?: string; color?: string; mo?: number }; // 스티커 모양 — 넣은 뒤 글자를 고치면 이것으로 다시 그린다
   /** 굽기 때만 (저장 안 함) — 클립마다 애니메이션 칸 그림: dir 폴더의 00000.png… , s0(클립 안 시작 초), x·y(왼쪽 위) */
   bake?: Record<string, { dir: string; s0: number; n: number; x: number; y: number }>;
   x?: number; // 가운데 위치 0~1
@@ -443,6 +443,11 @@ export type VideoBridge = {
     voices: (refresh?: boolean) => Promise<TypecastVoice[]>;
     /** 세부 설정 들어 보기 (2026-10-20) */
     sample?: (voiceId: string, emotion: string, text?: string) => Promise<string>;
+    /** 보이스 라이브러리 인기 한국어 성우를 내 목록에 넣기 (2026-10-30) */
+    addPopular?: (n?: number) => Promise<{ added: number; found: number; names: string[]; stop: string }>;
+    /** 한국어 인기 순위 50 — mine: 내 목록에 있음 · found: 라이브러리에서 찾음 */
+    ranked?: (refresh?: boolean) => Promise<{ rank: number; id: string; name: string; gender: string; age: string; preview: string; mine: boolean; found: boolean }[]>;
+    addRanked?: (ids?: string[]) => Promise<{ added: number; todo: number; stop: string }>;
   };
   voice: (dir: string, text: string, voiceId: string, opts?: { fresh?: boolean; emotion?: string; prev?: string; next?: string }) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;

@@ -25,7 +25,7 @@ export default function StudioAppDownload() {
     <div style={{ padding: "18px 20px", borderRadius: 12, background: "#f8fafc", border: "1px solid #e2e8f0", wordBreak: "keep-all" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <a href={href} onClick={() => setGuide(true)} style={{ padding: "12px 22px", background: "#16a34a", color: "#fff", borderRadius: 8, fontSize: 15, fontWeight: 800, textDecoration: "none" }}>
-          ⬇ 공실마케팅 PC 앱 받기{ver ? ` (v${ver})` : ""}
+          ⬇ 공실마케팅studio PC 앱 받기{ver ? ` (v${ver})` : ""}
         </a>
         <span style={{ fontSize: 13, color: "#64748b" }}>윈도우 10·11 · 받은 파일을 두 번 누르면 바로 설치되고 앱이 열려요.</span>
       </div>

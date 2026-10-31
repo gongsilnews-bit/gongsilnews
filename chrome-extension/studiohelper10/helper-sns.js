@@ -209,10 +209,10 @@
     const active = dialog();
     if (active) {
       const inDialog = rankedEditor(active, names);
-      // Facebook 작성창이 떠 있으면 본문이 다시 mount될 때까지 기다린다. 뒤 페이지의 댓글·검색칸으로 떨어지면 안 된다.
-      if (inDialog || target === "facebook") return inDialog;
+      // Facebook·스레드 작성창이 떠 있으면 본문이 다시 mount될 때까지 기다린다. 뒤 페이지의 댓글·검색칸으로 떨어지면 안 된다.
+      if (inDialog || target === "facebook" || target === "threads") return inDialog;
     }
-    return rankedEditor(document, names, { requireName: target === "facebook" });
+    return rankedEditor(document, names, { requireName: target === "facebook" || target === "threads" });
   }
   function nearestEditor(node) {
     if (!(node instanceof Element) || node.closest("#gs-studio-helper")) return null;
@@ -223,7 +223,7 @@
   function usableEditor(candidate) {
     const editor = canonicalEditor(candidate);
     if (!editor || !visible(editor)) return null;
-    if (target === "facebook") {
+    if (target === "facebook" || target === "threads") {
       const active = dialog();
       if (active && !active.contains(editor)) return null;
     }
@@ -506,18 +506,20 @@
     return finish("다 채웠어요. 글·사진을 확인하고 [게시]를 직접 눌러 주세요.");
   }
 
-  /* 스레드: 새로운 소식이 있나요? → 첫 글 + 사진 → 스레드에 추가로 이어 쓰기 */
+  /* 스레드: [+](만들기) → 새로운 스레드 창 → 첫 글 + 사진 → 스레드에 추가로 이어 쓰기
+     늘 새 스레드 창을 열고 그 창 안의 칸에만 넣는다 — 화면에 보이던 홈 줄·답글 칸에 넣고 창을 안 열던 것 (2026-10-31 사장님) */
   async function threads() {
     panel.status("새 스레드를 여는 중…");
-    let box = findBox(BOX_NAMES.threads);
+    const inDialog = () => { const d = dialog(); return d ? rankedEditor(d, BOX_NAMES.threads) : null; };
+    let box = inDialog();
     if (!box) {
-      const comp = await waitFor(() => byContains(SEL.threads.composer) || firstSel(SEL.threads.create), 15000);
-      if (!comp) return warn("글쓰기 칸을 못 찾았어요. 로그인돼 있는지 보고, 새 스레드를 직접 연 뒤 상자의 [글 넣기]·[사진 넣기]를 눌러 주세요.");
+      const comp = await waitFor(() => firstSel(SEL.threads.create) || byContains(SEL.threads.composer), 15000);
+      if (!comp) return warn("[+](만들기) 단추를 못 찾았어요. 로그인돼 있는지 보고, [+]를 직접 눌러 새 스레드를 연 뒤 상자의 [글 넣기]·[사진 넣기]를 눌러 주세요.");
       click(comp);
-      box = await waitFor(() => findBox(BOX_NAMES.threads), 12000);
+      box = await waitFor(inDialog, 12000);
     }
     const list = texts();
-    if (!box) return warn("글 칸을 못 찾았어요. 글 칸을 한 번 누르고 상자의 [글 넣기]를 눌러 주세요." + boxDiag());
+    if (!box) return warn("새 스레드 창이 안 열렸어요. [+]를 직접 눌러 새 스레드를 연 뒤 상자의 [글 넣기]·[사진 넣기]를 눌러 주세요." + boxDiag());
     if (!(await putText(box, list[0], "스레드 첫"))) return;
     if (job.video || (job.photos && job.photos.length)) { await sleep(500); if (!(await addPhotos())) return; }
     for (let i = 1; i < list.length; i++) {

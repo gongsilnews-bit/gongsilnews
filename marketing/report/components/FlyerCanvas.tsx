@@ -6,7 +6,7 @@ import Page2StatusValuation from './canvas/Page2StatusValuation';
 import Page3LeaseStatus from './canvas/Page3LeaseStatus';
 import Page4Photos from './canvas/Page4Photos';
 import { photoPageCount, extraPhotoSlots } from './canvas/photoPages';
-import { pageOrder } from './canvas/pageOrder';
+import { pageOrder, HIDDEN_PAGES } from './canvas/pageOrder';
 import { Page8Cadastral, Page9Building, Page10Floors, Page11Trades } from './canvas/Page8Land';
 import Page5AreaAnalysis from './canvas/Page5AreaAnalysis';
 import Page6Roadmap from './canvas/Page6Roadmap';
@@ -30,7 +30,7 @@ interface FlyerCanvasProps {
 const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
   const { info, mainImage, agentImage, customQrImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme, layoutTheme } = data; 
 
-  const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
+  const visiblePages = (info.visiblePages || [1, 2, 3, 4, 5, 6]).filter((p) => !HIDDEN_PAGES.includes(p));
   const order = pageOrder(info);
   // 사진 쪽이 늘면(2~5쪽) 뒤 쪽 번호도 밀린다 (2026-10-24)
   const photoPages = photoPageCount(info);

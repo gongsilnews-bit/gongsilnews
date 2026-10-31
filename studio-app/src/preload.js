@@ -167,6 +167,7 @@ if (allowed) {
       grabNews: () => ipcRenderer.invoke("studio:column-grab-news"),
       create: (source) => ipcRenderer.invoke("studio:column-create", source),
       get: (id) => ipcRenderer.invoke("studio:column-get", id),
+      setUrl: (id, url) => ipcRenderer.invoke("studio:column-set-url", id, url), // 내 기사 칼럼의 기사 주소 바꾸기 (2026-10-31)
       refetch: (id) => ipcRenderer.invoke("studio:column-refetch", id), // [다시 가져오기]
       list: (limit) => ipcRenderer.invoke("studio:column-list", limit), // limit 없으면 최근 8개
       media: (id, op) => ipcRenderer.invoke("studio:column-media", id, op), // 기사 화면 정리 — 빼기·순서·AI 이미지·내 사진 (2026-10-28)
@@ -271,6 +272,9 @@ if (allowed) {
         setKey: (k) => ipcRenderer.invoke("video:el-set-key", k),
         clear: () => ipcRenderer.invoke("video:el-clear"),
         voices: (refresh) => ipcRenderer.invoke("video:el-voices", refresh),
+        addPopular: (n) => ipcRenderer.invoke("video:el-add-popular", n), // 인기 한국어 성우 넣기 (2026-10-30)
+        ranked: (refresh) => ipcRenderer.invoke("video:el-ranked", refresh), // 한국어 인기 순위 50
+        addRanked: (ids) => ipcRenderer.invoke("video:el-add-ranked", ids),
         sample: (voiceId, emotion, text) => ipcRenderer.invoke("video:el-sample", voiceId, emotion, text), // 세부 설정 들어 보기 (2026-10-20)
       },
       sttWords: { add: (pairs) => ipcRenderer.invoke("video:stt-words-add", pairs) }, // 받아쓰기 낱말장 (0.1.10부터)

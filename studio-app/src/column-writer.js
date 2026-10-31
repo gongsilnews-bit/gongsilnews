@@ -327,6 +327,21 @@ function create(source) {
   return forWeb(data);
 }
 
+/* 내 기사로 만든 칼럼의 기사 주소를 바꾼다 — 공실뉴스 기사 주소 → 내 홈페이지의 그 기사 (2026-10-31 사장님)
+   출처 줄은 쓸 때 source.news.url 로 만들어서, 바꾼 뒤 새로 쓰는 블로그·SNS 글부터 홈페이지로 간다 */
+function setNewsUrl(id, url) {
+  const data = isColumn(id) ? readJson(sourceFile(id)) : null;
+  const next = String(url || "").trim();
+  if (!data || data.source?.mode !== "news" || !data.source.news || !/^https:\/\//.test(next)) return null;
+  const old = String(data.source.news.url || "");
+  if (old === next) return forWeb(data);
+  data.source.news.url = next;
+  if (old) (data.captures || []).forEach((c) => { if (c && c.caption) c.caption = c.caption.split(old).join(next); });
+  fs.writeFileSync(sourceFile(id), JSON.stringify(data, null, 2));
+  log.info(`[뉴스칼럼] ${id} 기사 주소 → ${next}`);
+  return forWeb(data);
+}
+
 function get(id) {
   if (!isColumn(id)) return null;
   const data = readJson(sourceFile(id));
@@ -473,4 +488,4 @@ function articleOf(id) {
   } catch { return ""; }
 }
 
-module.exports = { isColumn, articleOf, fetchNews, openNews, openUrl, grabNews, create, get, refetch, list, readSource, articleOptions, writeArticle, addCover };
+module.exports = { isColumn, articleOf, fetchNews, openNews, openUrl, grabNews, create, setNewsUrl, get, refetch, list, readSource, articleOptions, writeArticle, addCover };

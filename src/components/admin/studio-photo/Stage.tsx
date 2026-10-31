@@ -25,6 +25,7 @@ type Drag = {
   gx?: number; gy?: number; // 레이어 안에서 잡은 곳 (문서 좌표) — 다른 문서로 끌어갈 때
   tap?: boolean; // 문자 도구로 글자를 누름 — 안 끌고 떼면 고치기
   piece?: { c: HTMLCanvasElement; x: number; y: number }; // 선택 영역만 옮기는 중 — 잘라 든 조각 (포토샵처럼)
+  copy?: boolean; // Alt 를 누른 채 끌기 — 선택한 부분을 복사해 옮김 (원래 자리는 그대로, 포토샵처럼 2026-10-30)
 };
 type Guide = { x?: number; y?: number };
 
@@ -119,7 +120,7 @@ const tickStep = (z: number) => {
 
 export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, onRotate, onEditText, editing, onEditDone, onEditLive, onDropFiles, fitKey, tool = "move", onTextAt, onTextBox,
   rulers = true, grid = 0, guidesOn = true, guideList = [], onGuides, paint, onPaintTarget, onPaintEnd, onPickColor, proof = false, onDropOut,
-  onSay, onPen, onPathEdit, onMoveSel, selAll = [], onAddSel, onMoveMany, autoSel = true, autoGroup = false, onLayerMenu, selMask = null, selMode = "new", onSelect, onDeselect, crop = null, onCrop, onCropApply, onShape }: {
+  onSay, onPen, onPathEdit, onMoveSel, onSelMenu, selAll = [], onAddSel, onMoveMany, autoSel = true, autoGroup = false, onLayerMenu, selMask = null, selMode = "new", onSelect, onDeselect, crop = null, onCrop, onCropApply, onShape }: {
   /** 선택 영역 (문서 크기 그림) · 옵션줄의 선택 방식 · 새 선택 · 선택 해제 */
   selMask?: HTMLCanvasElement | null;
   selMode?: SelMode;
@@ -136,7 +137,9 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
   /** 고른 패스 모양 레이어의 점을 고침 (기준점 추가·삭제·변환 · 펜 자동 추가/삭제) */
   onPathEdit?: (k: string, pts: PenPt[]) => void;
   /** 선택 영역이 있을 때 이동 도구로 끌기 — 그 레이어의 선택한 부분만 옮긴다 */
-  onMoveSel?: (k: string, dx: number, dy: number) => void;
+  onMoveSel?: (k: string, dx: number, dy: number, copy?: boolean) => void;
+  /** 선택 영역이 있을 때 오른쪽 클릭 — AI 에게 시키기 메뉴 (2026-10-30 사장님) */
+  onSelMenu?: (x: number, y: number) => void;
   /** 레이어를 끌어 손을 뗀 곳 — 다른 문서 창이면 그쪽으로 복사하고 true (이 문서에서는 안 옮김) */
   onDropOut?: (k: string, cx: number, cy: number, gx: number, gy: number) => boolean;
   /** 인쇄 색 미리보기 (CMYK 문서) — 움직이는 동안은 쉰다 */
@@ -1021,6 +1024,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
       return;
     }
     if (!d.moved && d.mode !== "pan") {
+      if (d.mode === "move" && e.altKey) d.copy = true; // 끌기 시작할 때 Alt = 복사
       // 처음 움직일 때 [아래 · 위] 그림을 만든다
       const s = split(d.k);
       d.below = s.below;
@@ -1030,7 +1034,8 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
       if (l && l.canvas && !l.children && !isText(l) && !l._shape && !l._picto && !l.protected?.position) {
         const ex = extract(l.canvas, l.left || 0, l.top || 0, selMask);
         if (ex) {
-          const hole = clearInside(l.canvas, selMask!, l.left || 0, l.top || 0);
+          // Alt = 복사 — 원래 자리를 비우지 않는다
+          const hole = d.copy ? l.canvas : clearInside(l.canvas, selMask!, l.left || 0, l.top || 0);
           const b2 = mk(W, H), bg = b2.getContext("2d")!;
           bg.drawImage(s.below, 0, 0);
           bg.globalAlpha = l.opacity ?? 1;
@@ -1166,7 +1171,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
     }
     if (d && d.moved && d.mode !== "pan") {
       if (d.mode === "move" && e && onDropOut?.(d.k, e.clientX, e.clientY, d.gx || 0, d.gy || 0)) { setDrag(null); return; }
-      if (d.mode === "move" && d.piece) onMoveSel?.(d.k, Math.round(d.box.x - d.b0.x), Math.round(d.box.y - d.b0.y));
+      if (d.mode === "move" && d.piece) onMoveSel?.(d.k, Math.round(d.box.x - d.b0.x), Math.round(d.box.y - d.b0.y), d.copy);
       else if (d.mode === "move") onMove(d.k, Math.round(d.box.x - d.b0.x), Math.round(d.box.y - d.b0.y));
       else onResize(d.k, d.box);
     }
@@ -1251,6 +1256,7 @@ export function Stage({ doc, tick, view, setView, sel, onSel, onMove, onResize, 
       onDrop={(e) => { e.preventDefault(); const f = [...e.dataTransfer.files]; if (f.length) onDropFiles(f); }}
       onContextMenu={(e) => {
         e.preventDefault();
+        if (selMask && onSelMenu && !editing) { onSelMenu(e.clientX, e.clientY); return; } // 선택 영역 + 오른쪽 클릭 = AI 메뉴 (어느 도구든)
         if (tool !== "move" || !view || editing) return;
         const p = toDoc(e.clientX, e.clientY);
         onLayerMenu?.(e.clientX, e.clientY, hitAll(doc, p.x, p.y).map((l) => l._k!));

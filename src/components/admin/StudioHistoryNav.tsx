@@ -44,7 +44,8 @@ function reload() {
 export default function StudioHistoryNav({ onHome, atHome }: { onHome?: () => void; atHome?: boolean }) {
   const [tick, setTick] = useState(0); // 0 = 아직 서버 그림 (기록은 브라우저에서만 안다)
   useEffect(() => {
-    const again = () => setTick((t) => t + 1);
+    // 주소가 바뀌는 순간(Next 가 화면을 바꾸는 중)에 바로 다시 그리면 React 가 막는다 → 한 박자 뒤에 (2026-10-30 화면 전환 막힘)
+    const again = () => { setTimeout(() => setTick((t) => t + 1), 0); };
     again();
     const n = nav();
     n?.addEventListener("currententrychange", again);

@@ -5,7 +5,9 @@ export const PAGE_NAMES: Record<number, string> = {
   0: '표지', 1: '개요', 2: '매물설명 & 시세', 3: '임대현황', 4: '사진', 5: '입지', 6: '로드맵',
   8: '지적도', 9: '건축물대장', 10: '층별 현황', 11: '실거래 이력', 12: '인테리어 전후', 13: '리모델링 전후', 7: '연락처',
 };
-export const DEFAULT_ORDER = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 7];
+// 12·13 인테리어·리모델링 전후는 일단 뺀다 (2026-10-31 사장님) — 다시 켤 때는 HIDDEN_PAGES 에서 지우고 DEFAULT_ORDER 의 7 앞에 넣는다
+export const HIDDEN_PAGES = [12, 13];
+export const DEFAULT_ORDER = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 7];
 
 /** 저장된 차례 → 빠진 쪽은 기본 자리 근처(연락처 앞)에 넣고, 표지는 맨 앞 */
 export function pageOrder(info: { pageOrder?: number[] } | undefined): number[] {

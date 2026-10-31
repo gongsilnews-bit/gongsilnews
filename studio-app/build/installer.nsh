@@ -4,7 +4,7 @@
 ;      앱은 실행 인자의 .psd 를 받아 이미지제작에서 연다 (src/main.js findPsd / openPsd).
 
 !macro customInstall
-  WriteRegStr HKCU "Software\Classes\GongsilStudio.psd" "" "포토샵 파일 (공실마케팅App 포토studio)"
+  WriteRegStr HKCU "Software\Classes\GongsilStudio.psd" "" "포토샵 파일 (공실마케팅studio 포토studio)"
   WriteRegStr HKCU "Software\Classes\GongsilStudio.psd\DefaultIcon" "" "$INSTDIR\resources\psd.ico"
   WriteRegStr HKCU "Software\Classes\GongsilStudio.psd\shell\open\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
   ; 연결 프로그램 목록에는 늘
@@ -15,9 +15,11 @@
   ${If} $0 == ""
     WriteRegStr HKCU "Software\Classes\.psd" "" "GongsilStudio.psd"
   ${EndIf}
-  ; 이름을 "공실마케팅App" 으로 바꿨다 (2026-10-30) — 예전 이름의 바로가기가 남아 두 개가 되지 않게 지운다
+  ; 이름을 "공실마케팅studio" 로 바꿨다 (2026-10-30) — 예전 이름의 바로가기가 남아 두 개가 되지 않게 지운다
   Delete "$DESKTOP\공실마케팅.lnk"
   Delete "$SMPROGRAMS\공실마케팅.lnk"
+  Delete "$DESKTOP\공실마케팅App.lnk"
+  Delete "$SMPROGRAMS\공실마케팅App.lnk"
   System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
 !macroend
 

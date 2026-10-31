@@ -708,6 +708,9 @@ function register(base) {
   ipcMain.handle("video:el-set-key", (_e, k) => eleven.setKey(k));
   ipcMain.handle("video:el-clear", () => eleven.clear());
   ipcMain.handle("video:el-voices", (_e, refresh) => eleven.voices(Boolean(refresh)));
+  ipcMain.handle("video:el-add-popular", (_e, n) => eleven.addPopularKo(Number(n) || 30)); // 인기 한국어 성우 넣기 (2026-10-30)
+  ipcMain.handle("video:el-ranked", (_e, refresh) => eleven.rankedKo(Boolean(refresh))); // 한국어 인기 순위 50
+  ipcMain.handle("video:el-add-ranked", (_e, ids) => eleven.addRanked(Array.isArray(ids) ? ids : null));
   // 세부 설정 들어 보기 — 이 설정으로 한 문장 (임시 파일)
   ipcMain.handle("video:el-sample", async (_e, voiceId, emotion, text) => {
     const dir = path.join(require("electron").app.getPath("userData"), "tmp");
