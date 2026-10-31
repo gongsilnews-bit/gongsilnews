@@ -301,14 +301,17 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   const [pickFor, setPickFor] = useState(-1); // 곡 직접 고르기 — -1 = 전체, 0~ = 그 씬
 
   // 화면 자료 — 영상·사진 첨부 · 무료 비디오 · 자동 음소거 · 채우기 · AI 이미지 (브루처럼, 2026-10-22 사장님). 아무것도 안 고르면 화면은 편집 화면에서
-  const [usePhotos, setUsePhotos] = useState(false);
-  const [useStock, setUseStock] = useState(false);
+  // 공실 사진 · 무료 비디오는 처음부터 켜 둔다 (2026-10-31 사장님)
+  const [usePhotos, setUsePhotos] = useState(true);
+  const [useStock, setUseStock] = useState(true);
+  // 공실뉴스 드론 — 이 공실 동네(동 → 구)의 드론 영상을 첫 화면부터 섞어 넣는다. 다른 동네 영상은 넣지 않는다. 처음부터 켬 (2026-10-31 사장님)
+  const [useDrone, setUseDrone] = useState(true);
   const [useAi, setUseAi] = useState(false);
   const [autoMute, setAutoMute] = useState(true);
   // 내 영상에서 고르기 — 찍어 둔 영상·사진을 AI 가 문장에 맞춰 고른다 (회의 3-19). 첨부하면 [내 자료]에도 자동으로 담긴다
   const [foot, setFoot] = useState<LibItem[]>([]);
   const footOn = foot.length > 0;
-  const visualLater = !footOn && !useStock && !useAi && !(src === "vacancy" && usePhotos) && !paraMedia.some((m) => m?.length) && !paraReq.some((r) => r?.trim());
+  const visualLater = !footOn && !useStock && !useAi && !(src === "vacancy" && (usePhotos || useDrone)) && !paraMedia.some((m) => m?.length) && !paraReq.some((r) => r?.trim());
   const [footPick, setFootPick] = useState<LibItem[] | null>(null); // [내 자료에서 고르기] 창 — 목록
   const [footSel, setFootSel] = useState<string[]>([]); // 화면은 나중에 — 목소리(·자막·음악)만 먼저 만들고 편집 화면에서 클립마다 넣기 (2026-10-18 사장님)
   const [fill, setFillS] = useState<Fill>("cover"); // 채우기 켬 = 화면을 꽉 (잘라서) · 끔 = 다 보이게
@@ -626,7 +629,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     vacInfo: [vacInfo, setVacInfo], caps: [caps, setCaps], ratio: [ratio, setRatio], projName: [projName, setProjName], subOn: [subOn, setSubOn], subPos: [subPos, setSubPos],
     subLines: [subLines, setSubLines], deco: [deco, setDeco], editReq: [editReq, setEditReq], voiceOn: [voiceOn, setVoiceOn], voiceId: [voiceId, setVoiceId], emotion: [emotion, setEmotion],
     speed: [speed, setSpeed], voiceVol: [voiceVol, setVoiceVol], musicOn: [musicOn, setMusicOn], mood: [mood, setMood], track: [track, setTrack], musicMode: [musicMode, setMusicMode],
-    sceneMusic: [sceneMusic, setSceneMusic], usePhotos: [usePhotos, setUsePhotos], useStock: [useStock, setUseStock], useAi: [useAi, setUseAi], autoMute: [autoMute, setAutoMute],
+    sceneMusic: [sceneMusic, setSceneMusic], usePhotos: [usePhotos, setUsePhotos], useStock: [useStock, setUseStock], useDrone: [useDrone, setUseDrone], useAi: [useAi, setUseAi], autoMute: [autoMute, setAutoMute],
     foot: [foot, setFoot], fill: [fill, setFillS], purpose: [purpose, setPurposeRaw], newsFrom: [newsFrom, setNewsFrom], news: [news, setNews], newsPurpose: [newsPurpose, setNewsPurposeRaw], yt: [yt, setYt],
   };
   const snapRef = useRef("");
@@ -863,6 +866,26 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           const hs = await b.ai.scenes(needHint.map((c) => c.text), { ai: aiUse });
           needHint.forEach((c, i) => (c.hint = hs[i]));
         } catch {}
+      }
+      // 공실뉴스 드론 — 이 공실 동(없으면 구)의 드론 영상을 첫 화면 · 그 뒤 다섯 문장마다 (같은 영상은 한 번만, 다른 동네는 안 넣음)
+      if (!visualLater && src === "vacancy" && useDrone && !halt()) {
+        setGen({ title: "공실뉴스 드론 영상을 찾는 중…", frac: 0.14 });
+        const vacGu = (/[가-힣]+구(?=[\s"]|$)/.exec(JSON.stringify(vacInfo?.vacancy || "")) || [""])[0];
+        let list: StockItem[] = [];
+        for (const q of [vacDong, vacGu].filter(Boolean)) {
+          list = ((await b.stock.search(q, "drone", "").catch(() => ({ success: false, items: [] as StockItem[] }))).items || []).filter((x) => !used.has(x.id));
+          if (list.length) break;
+        }
+        for (let i = 0; i < clips.length && list.length && !halt(); i += 5) {
+          const c = clips[i];
+          if (c.visual || reqOf.has(c.id)) continue;
+          const pick = list.shift()!;
+          try {
+            used.add(pick.id);
+            const it = await b.stock.get(p.dir, pick);
+            c.visual = { asset: await addAsset(it), s: 0 };
+          } catch {}
+        }
       }
       let stockOk = useStock;
       let aiLeft = useAi ? 8 : 0;
@@ -1633,6 +1656,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                 {([
                   ...(src === "vacancy" ? [["공실 사진", usePhotos, setUsePhotos, "등록한 공실 사진부터"] as const] : []),
                   ["무료 비디오", useStock, setUseStock, "문장에 맞는 무료 영상·사진"] as const,
+                  ...(src === "vacancy" ? [["공실뉴스 드론", useDrone, setUseDrone, "이 공실 동네의 공실뉴스 드론 영상 (없으면 넣지 않아요)"] as const] : []),
                 ] as const).map(([name, on, set, tip]) => (
                   <div key={name} title={tip} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ flex: 1, fontSize: 13.5 }}>{name}</span>

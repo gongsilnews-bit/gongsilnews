@@ -518,6 +518,14 @@ function RealtyAdminContent() {
                 업그레이드하기
               </button>
             )}
+            {/* 금액안내 — 등급과 상관없이 늘 (2026-10-31 사장님: 스튜디오회원은 업그레이드 단추가 없어 금액을 볼 곳이 없었다) */}
+            {useStudioMenu && (
+              <button type="button" onClick={() => setUpgradeOpen(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.35)", background: "transparent", color: "#fff", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8 9.5h8M8 13h8M12 9.5V18" /></svg>
+                금액안내
+              </button>
+            )}
             <NotificationBell color={useStudioMenu ? "#ffffff" : darkMode ? "#e1e4e8" : "#333"} />
             {!useStudioMenu && <button onClick={() => setDarkMode(!darkMode)} style={{ background: useStudioMenu ? "rgba(255,255,255,0.08)" : darkMode ? "#2c2d31" : "none", border: `1px solid ${useStudioMenu ? "rgba(255,255,255,0.25)" : darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>}
             <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut({ scope: "local" }); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: useStudioMenu ? "1px solid rgba(255,255,255,0.25)" : "none", borderRadius: 6, background: useStudioMenu ? "rgba(255,255,255,0.12)" : darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
