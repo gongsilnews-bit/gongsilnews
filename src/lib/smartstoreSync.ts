@@ -225,7 +225,7 @@ export async function grant(supabase: ReturnType<typeof db>, memberId: string, q
   const isPaid = !!member.studio_end_date || member.plan_type === PLAN_TYPE || member.plan_type === OLD_PLAN;
   // Studio 이용 중인 회원이 Pro 상품을 사면 자동으로 낮추지 않고 관리자에게 넘긴다
   if (active && member.plan_type === OLD_PLAN) {
-    return { status: "needs_review", member_id: memberId, review_reason: "스튜디오회원이 마케팅회원 상품을 결제했습니다 — 회원관리에서 기간을 직접 늘려 주세요" };
+    return { status: "needs_review", member_id: memberId, review_reason: "이미 이용 중인 회원이 다른 상품을 결제했습니다 — 회원관리에서 기간을 직접 늘려 주세요" };
   }
   const targetPlan = PLAN_TYPE;
   const startFrom = isPaid && active ? currentEnd! : now;

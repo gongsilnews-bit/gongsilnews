@@ -450,6 +450,8 @@ export type VideoBridge = {
     addRanked?: (ids?: string[]) => Promise<{ added: number; todo: number; stop: string }>;
   };
   voice: (dir: string, text: string, voiceId: string, opts?: { fresh?: boolean; emotion?: string; prev?: string; next?: string }) => Promise<{ file: string; url: string; duration: number; id: string; text: string; words: Word[] }>;
+  /** 성우 요청이 몰려 기다리는 중 — sec 0 = 다시 만드는 중 (2026-10-31). 끄는 함수를 돌려준다 */
+  onVoiceWait?: (fn: (d: { who: string; sec: number }) => void) => () => void;
   transcribe: (p: Project, assetId: string) => Promise<{ clips: Clip[] }>;
   // 무음 줄이기 — 영상별 실제 말소리 구간 (PC에서, 옛 앱에는 없음)
   speech?: (p: Project, assetIds: string[]) => Promise<Record<string, { s: number; e: number }[]>>;

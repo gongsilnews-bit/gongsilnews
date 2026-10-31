@@ -516,7 +516,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         });
       }
     };
+    // 요청이 몰려 기다리는 동안 만드는 중인 클립 표시를 바꾼다 (2026-10-31)
+    const offWait = b.onVoiceWait?.((w) => setBusy((x) => Object.fromEntries(Object.entries(x).map(([id, t]) => [id, /목소리 만드는|기다리는 중/.test(String(t)) ? (w.sec ? `몰려서 ${w.sec}초 기다리는 중…` : "목소리 만드는 중…") : t]))));
     await Promise.all([one(), one()]); // 둘씩 (셋이면 성우 API 분당 한도에 자주 걸렸다, 2026-10-23)
+    offWait?.();
   }, [b, change]);
   // 목소리 없는 클립 — 프로젝트를 열면 저절로 다시 만든다 (2026-10-23 사장님: 목소리 없음이 너무 자주). 글이 있고 끄지 않은 클립만, 열 때 한 번
   const autoVoiced = useRef("");

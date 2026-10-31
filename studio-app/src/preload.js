@@ -259,6 +259,12 @@ if (allowed) {
         exportText: (p, kind, outFile) => ipcRenderer.invoke("video:project-export-text", p, kind, outFile),
       },
       voice: (dir, text, voiceId, opts) => ipcRenderer.invoke("video:voice", dir, text, voiceId, opts), // opts.fresh = 다시 만들기 (0.1.10부터)
+      // 성우 요청이 몰려 기다리는 중 — { who, sec } (sec 0 = 다시 만드는 중). 끄는 함수를 돌려준다 (2026-10-31)
+      onVoiceWait: (fn) => {
+        const h = (_e, d) => fn(d);
+        ipcRenderer.on("studio:voice-wait", h);
+        return () => ipcRenderer.removeListener("studio:voice-wait", h);
+      },
       // 타입캐스트 성우 — 회원 자기 키 (키는 이 PC 에만, 0.1.11부터)
       typecast: {
         status: () => ipcRenderer.invoke("video:tc-status"),

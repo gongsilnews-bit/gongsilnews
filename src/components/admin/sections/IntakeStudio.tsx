@@ -151,7 +151,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
       <div style={{ fontSize: 13.5, fontWeight: 800, color: dark ? "#c7d2fe" : "#3730a3" }}>🔒 {title}</div>
       <div style={{ fontSize: 12.5, color: sub, marginTop: 5, lineHeight: 1.6 }}>{desc}</div>
       <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 10, padding: "7px 12px", borderRadius: 7, background: "#4f46e5", color: "#fff", fontSize: 12.5, fontWeight: 800, textDecoration: "none" }}>
-        마케팅회원 알아보기 →
+        스튜디오회원 알아보기 →
       </a>
     </div>
   );
@@ -192,8 +192,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
             <div style={{ marginTop: 10, padding: "11px 12px", borderRadius: 8, background: dark ? "#1e1b4b" : "#eef2ff", fontSize: 12.5, lineHeight: 1.6, color: dark ? "#c7d2fe" : "#3730a3" }}>
               <b>무료 홈페이지</b>예요. 손님은 전화·문자로만 연락해요.
               <br />
-              마케팅회원으로 바꾸면 <b>집주인이 홈페이지에서 바로 물건을 맡기고</b>, 색상·로고도 꾸밀 수 있어요.{" "}
-              <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 800 }}>마케팅회원 알아보기 →</a>
+              스튜디오회원으로 바꾸면 <b>집주인이 홈페이지에서 바로 물건을 맡기고</b>, 색상·로고도 꾸밀 수 있어요.{" "}
+              <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 800 }}>스튜디오회원 알아보기 →</a>
             </div>
           )}
           {liveUrl && (
@@ -328,8 +328,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                             <div style={{ padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
                               로고를 올리면 상호 글자 대신 내 로고가 걸립니다
                               <br />
-                              <span style={{ fontWeight: 600, fontSize: 12 }}>마케팅회원부터 열립니다</span>{" "}
-                              {!pro && <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 800, fontSize: 12 }}>마케팅회원 알아보기 →</a>}
+                              <span style={{ fontWeight: 600, fontSize: 12 }}>스튜디오회원부터 열립니다</span>{" "}
+                              {!pro && <a href={PRO_URL} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 800, fontSize: 12 }}>스튜디오회원 알아보기 →</a>}
                             </div>
                           )}
                         </div>
@@ -369,7 +369,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                                 <button
                                   key={c.id}
                                   type="button"
-                                  title={locked ? `${c.name} — 마케팅회원부터` : c.name}
+                                  title={locked ? `${c.name} — 스튜디오회원부터` : c.name}
                                   disabled={locked}
                                   onClick={() => setIntake({ ...intake, theme_color: c.id })}
                                   style={{
@@ -394,7 +394,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                               );
                             })}
                           </div>
-                          {!pro && <div style={{ marginTop: 12 }}>{proLock("색상 고르기는 마케팅회원부터", "무료 홈페이지는 기본색 하나로 보여요. Pro 에서는 다섯 가지 색 중에 고를 수 있어요.")}</div>}
+                          {!pro && <div style={{ marginTop: 12 }}>{proLock("색상 고르기는 스튜디오회원부터", "무료 홈페이지는 기본색 하나로 보여요. 스튜디오회원은 다섯 가지 색 중에 고를 수 있어요.")}</div>}
                         </div>
 
                         <div style={group}>
@@ -427,7 +427,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                       </>
                     )}
 
-                    {p.key === "fields" && !pro && proLock("집주인 접수는 마케팅회원부터", "무료 홈페이지는 이 자리에 [전화하기] · [문자 보내기] 단추가 보여요. Pro 로 바꾸면 집주인이 이름·연락처·사진·희망 금액을 남겨 바로 물건을 맡기고, 전화를 못 받을 때도 접수를 놓치지 않아요.")}
+                    {p.key === "fields" && !pro && proLock("집주인 접수는 스튜디오회원부터", "무료 홈페이지는 이 자리에 [전화하기] · [문자 보내기] 단추가 보여요. 스튜디오회원으로 바꾸면 집주인이 이름·연락처·사진·희망 금액을 남겨 바로 물건을 맡기고, 전화를 못 받을 때도 접수를 놓치지 않아요.")}
                     {p.key === "fields" && pro && (
                       <>
                         <p style={{ margin: "0 0 6px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>

@@ -129,13 +129,14 @@ export function isStudioMember(member: {
 }
 
 /**
- * 공실마케팅 이용권 종류 — Pro 월 3만(공실 20) · Studio 월 5만(공실 50) (2026-10-29 사장님, docs/2026-10-29_member_management_plan.md)
+ * 공실마케팅 이용권 종류 — 2026-10-31 사장님: 유료는 스튜디오회원 하나 (마케팅회원 없앰). 예전 값 news_premium 도 스튜디오회원으로 읽는다.
+ * (옛: Pro 월 3만 · Studio 월 5만, 2026-10-29 docs/2026-10-29_member_management_plan.md)
  * 새 칸을 만들지 않고 등급 값(plan_type)의 유료 자리 둘을 쓴다: news_premium = Pro, study_premium = Studio.
  * 비즈니스회원 · 최고관리자는 Studio 포함. 이용 기간이 끝났으면 null.
  */
 export type StudioPlan = 'pro' | 'studio';
 export const STUDIO_PLAN_TYPE: Record<StudioPlan, string> = { pro: 'news_premium', studio: 'study_premium' };
-export const STUDIO_PLAN_LABEL: Record<StudioPlan, string> = { pro: '마케팅회원', studio: '스튜디오회원' };
+export const STUDIO_PLAN_LABEL: Record<StudioPlan, string> = { pro: '스튜디오회원', studio: '스튜디오회원' };
 export function studioPlan(member: {
   role?: string | null;
   plan_type?: string | null;
@@ -145,7 +146,7 @@ export function studioPlan(member: {
   if (!isStudioMember(member)) return null;
   const role = member?.role;
   if (role === 'BIZ' || role === '비즈니스회원' || role === 'ADMIN' || role === '최고관리자') return 'studio';
-  return member?.plan_type === STUDIO_PLAN_TYPE.studio ? 'studio' : 'pro';
+  return 'studio'; // 이용 중이면 모두 스튜디오회원 (2026-10-31)
 }
 
 /** 사이트 헤더에서 관리자 화면으로 들어가는 버튼에 쓸 글자 */

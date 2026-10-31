@@ -3,14 +3,15 @@
  * 글자 [Studio] 대신 공실마케팅 앱 아이콘 (2026-10-26 사장님 "studio 대신 로고").
  * 등급(공실뉴스부동산·비즈니스회원)과 따로 붙는다. 이용 중인지는 permissionCheck isStudioMember.
  */
-export default function StudioMark({ small = false, plan }: { small?: boolean; plan?: "pro" | "studio" | null }) {
+// plan 은 예전 호출 그대로 받기만 한다 — 유료는 스튜디오회원 하나 (2026-10-31)
+export default function StudioMark({ small = false }: { small?: boolean; plan?: "pro" | "studio" | null }) {
   const size = small ? 16 : 20;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/new_logo.png"
       alt="공실마케팅"
-      title={plan ? `${plan === "studio" ? "스튜디오회원" : "마케팅회원"} 이용 중` : "공실마케팅 멤버십 이용 중"}
+      title="스튜디오회원 이용 중"
       width={size}
       height={size}
       style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 4, width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}

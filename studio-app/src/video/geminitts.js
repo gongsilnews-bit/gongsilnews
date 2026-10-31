@@ -5,11 +5,22 @@ const fs = require("fs");
 const path = require("path");
 const log = require("electron-log/main");
 const api = require("../ai/api");
+const retry = require("./voice-retry");
 
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const NEED_KEY = "제미나이 성우는 Gemini API 키가 필요해요. 앱 메뉴 [AI 설정] › Gemini 줄 [API 키로]에서 키를 넣어 주세요.";
 
 const has = () => api.status("gemini").has;
+
+/* 하루 한도인가 — Google 429 글에는 늘 "plan and billing details" 가 들어 있어 낱말로 가르면 1분 한도도 하루 한도로 읽혀
+   기다리지 않고 바로 포기했다 (2026-10-31: 대본 뒷부분 목소리가 빠지던 원인). 오류 안 QuotaFailure 의 한도 이름(…PerDay…)으로 가른다 */
+function isDaily(json) {
+  const det = (json && json.error && json.error.details) || [];
+  const ids = det.flatMap((d) => (d && Array.isArray(d.violations) ? d.violations : [])).map((v) => `${v.quotaId || ""} ${v.quotaMetric || ""}`).join(" ");
+  if (ids.trim()) return /per ?day|daily/i.test(ids);
+  const msg = String((json && json.error && json.error.message) || "");
+  return /per ?day|daily|credit/i.test(msg);
+}
 
 async function say(text, out, { voiceId } = {}) {
   const key = api.keyOf("gemini");
@@ -36,12 +47,18 @@ async function say(text, out, { voiceId } = {}) {
         json = await res.json().catch(() => ({}));
       } catch (e) {
         last = e && e.name === "TimeoutError" ? "응답 시간 초과" : "연결 실패";
-        if (attempt < TRIES - 1) await new Promise((r) => setTimeout(r, attempt ? 5000 : 2000));
+        if (attempt < TRIES - 1) await retry.wait("제미나이 성우", retry.delayOf(attempt));
         continue;
       }
       if (res.ok) {
         const part = ((json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || []).find((p) => p.inlineData);
-        if (!part) throw new Error("제미나이 성우 소리를 받지 못했어요. 다시 해 주세요.");
+        if (!part) {
+          // 가끔 오류 없이 소리만 빠진 답이 온다 — 다시 (2026-10-31)
+          last = `${model}: 소리 없는 답`;
+          log.warn(`[제미나이 성우] 소리 없는 답 (${attempt + 1}/${TRIES})`);
+          if (attempt < TRIES - 1) { await retry.wait("제미나이 성우", retry.delayOf(0)); continue; }
+          break;
+        }
         const rate = Number((String(part.inlineData.mimeType).match(/rate=(\d+)/) || [])[1] || 24000);
         const pcm = fadeEdges(trimSilence(cutEdgeNoise(Buffer.from(part.inlineData.data, "base64"))));
         fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -58,14 +75,13 @@ async function say(text, out, { voiceId } = {}) {
       last = `${model}: ${msg.slice(0, 120)}`;
       log.warn(`[제미나이 성우] 실패 ${res.status} (${attempt + 1}/${TRIES}) ${msg.slice(0, 160)}`);
       // 하루 한도·결제 문제(PerDay·billing)는 기다려도 안 풀린다
-      if (res.status === 429 && /per ?day|billing|credit/i.test(msg)) throw new Error("Gemini 성우 하루 사용 한도를 넘었어요. 내일 다시 하거나 Google AI Studio 에서 요금제를 확인해 주세요.");
+      if (res.status === 429 && isDaily(json)) throw new Error("Gemini 성우 하루 사용 한도를 넘었어요. 내일 다시 하거나 Google AI Studio 에서 요금제를 확인해 주세요.");
       if (res.status !== 429 && res.status !== 503 && res.status !== 500) break; // 혼잡이 아니면 다음 모델로
       if (attempt < TRIES - 1) {
         // Google 이 알려 준 기다릴 시간 (RetryInfo retryDelay "34s") — 없으면 5·10·20초…
         const det = (json && json.error && json.error.details) || [];
         const rd = Number((String((det.find((d) => d && d.retryDelay) || {}).retryDelay || "").match(/[\d.]+/) || [])[0]);
-        const ms = Math.min(65000, rd > 0 ? rd * 1000 + 1000 : 5000 * 2 ** attempt);
-        await new Promise((r) => setTimeout(r, ms));
+        await retry.wait("제미나이 성우", retry.delayOf(attempt, rd)); // 화면 진행 칸에 "n초 기다렸다 이어서"
       }
     }
   }

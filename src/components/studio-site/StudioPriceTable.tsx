@@ -6,16 +6,15 @@ import Link from "next/link";
 /**
  * 공실마케팅 금액안내 (/marketing/pricing) — 브루 가격 정책(vrew.ai/ko/payment/pricepolicy)과 같은 틀 (2026-10-26 사장님: "똑같이")
  *  큰 제목 → [월 구독 | 연 구독] → 요금제 칸(추천 띠 · 아이콘 · 가격 · 월 환산 · 시작하기 · 기본 제공 · 사용 가능 항목 · 특별한 기능) → 안내 → "모든 플랜에서" 알약 줄
- * 요금제는 두 개만: 공실뉴스부동산(무료) · 공실마케팅 멤버십(월 3만원 / 1년 36만원 — 연 구독 할인 없음, 할인 표시 안 함)
+ * 요금제: 공실뉴스부동산(무료) · 스튜디오회원(정가 월 5만 → 할인 월 3만 / 1년 36만) · 비즈니스회원 (2026-10-31)
  */
 const ACCENT = "#e8890c";
 const SOFT = "#fdf4e7";
-const CORP = "#1e3a5f"; // Studio 법인 — 남색 (2026-10-30)
 const LINE = "#e5e7eb";
 
 type Plan = {
   key: string; name: string; icon: React.ReactNode; tag?: string;
-  price: (y: boolean) => { won: string; per: string; sub?: string; day?: string; year?: string };
+  price: (y: boolean) => { won: string; per: string; sub?: string; day?: string; year?: string; was?: string };
   cta: { label: string; href: string; solid?: boolean };
   base: string[];
   items: string[];
@@ -29,17 +28,19 @@ const ic = (d: string) => (
 
 /**
  * 2026-10-26 사장님: Free · Basic · Standard · 법인/기업/단체/기관용 네 칸 — 금액·항목은 "일단 랜덤"(임시).
- * 2026-10-28 사장님: 월 3만 = Pro(공실 20건) · 월 5만 = Studio(공실 50건, 영상 편집·이미지 편집은 Studio부터)
- * 2026-10-29: 이용권 Pro · Studio 와 공실 한도는 실제로 들어감 (permissionCheck.ts studioPlan). 영상·이미지 편집 잠금은 아직
- * TEMP_PRICES 가 true 인 동안 화면에 "임시 금액" 표시가 붙는다. 금액을 정하면 아래 값을 고치고 false 로.
+ * 2026-10-31 사장님 확정: 유료는 스튜디오회원 하나 (마케팅회원 없앰 · 일반 사무소와 중개법인 같은 금액)
+ *  정가 월 5만 → 특별 할인 월 3만 · 1년 36만. 비즈니스회원은 그대로. 공실 등록은 무료·스튜디오 모두 제한 없음.
+ *  항목은 회의 권한표대로 (docs 없음 — 메모 studio-pricing-strategy)
  */
-export const TEMP_PRICES = true;
-/* 연 구독만 받는다 (2026-10-30 사장님) — 큰 글자는 월 금액, 작게 1년 결제 금액 · 하루 금액 (연 금액만 크면 부담스러워 보여서) */
-const mon = (m: number) => () => ({
+export const TEMP_PRICES = false;
+/* 연 구독만 받는다 (2026-10-30 사장님) — 큰 글자는 월 금액, 작게 1년 결제 금액 · 하루 금액 (연 금액만 크면 부담스러워 보여서)
+   was = 할인 전 정가 (줄 그어 보여 준다) */
+const mon = (m: number, was?: number) => () => ({
   won: m.toLocaleString(), per: "/ 월",
   sub: `1년 ${(m * 12).toLocaleString()}원 · 한 번에 결제`,
   day: `하루 약 ${(Math.round((m * 12) / 365 / 100) * 100).toLocaleString()}원`,
   year: (m * 12).toLocaleString(),
+  was: was ? was.toLocaleString() : undefined,
 });
 
 export const PLANS: Plan[] = [
@@ -48,50 +49,29 @@ export const PLANS: Plan[] = [
     icon: ic("M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"),
     price: () => ({ won: "0", per: "/ 평생", sub: "무료" }),
     cta: { label: "시작하기", href: "/newsrealty/apply" },
-    base: ["공실 3건 등록", "기사 월 4건 등록"],
-    items: ["공실뉴스 열람", "블로그 · SNS 자동 작성 3건 체험", "AI 매물보고서 3건 체험", "이미지 편집 웹에서 맛보기"],
+    base: ["공실 등록 무제한", "기사 쓰기"],
+    items: ["블로그 · SNS 자동 작성 1주일 3번", "AI 매물보고서 (등록한 공실로)", "포토studio 기본 편집 (AI 제외)", "물건접수홈페이지 기본형 (전화 · 문자 연결)", "화면캡처 · 녹화"],
     extraTitle: "특별한 기능",
     extra: ["중개사 서류 승인 후 이용", "가입비 · 이용료 없음"],
   },
   {
-    key: "basic", name: "마케팅회원",
-    icon: ic("M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18.4 5.6l-2.1 2.1M21 12h-3M8 16a4 4 0 1 1 8 0v3H8z"),
-    price: mon(30000),
-    cta: { label: "시작하기", href: "/marketing/apply" },
-    base: ["공실 20건 등록", "기사 월 4건 등록"],
-    items: ["블로그 · SNS 자동 작성 월 30건", "AI 매물보고서 월 30건", "물건홍보지 · 매물보고서 만들기", "홍보현황 · 링크 관리"],
-    extraTitle: "공실뉴스부동산의 모든 기능 포함",
-    extra: ["자료실 · 커뮤니티", "이름표 공실마케팅 로고"],
-  },
-  {
-    key: "standard", name: "스튜디오회원(일반)", tag: "추천",
+    key: "standard", name: "스튜디오회원", tag: "특별 할인",
     icon: ic("M4 6h16v12H4zM10 9l5 3-5 3z"),
-    price: mon(50000),
+    price: mon(30000, 50000),
     cta: { label: "시작하기", href: "/marketing/apply", solid: true },
-    base: ["공실 50건 등록", "기사 월 10건 등록"],
-    items: ["블로그 · SNS 자동 작성 무제한", "AI 매물보고서 무제한", "영상 편집 (동영상제작) · AI 성우 · 자동 자막", "이미지 편집 · 템플릿 전체"],
-    extraTitle: "마케팅회원의 모든 기능 포함",
-    extra: ["인테리어 · 리모델링 AI", "화면캡처 · 녹화 · 강의 녹화"],
-  },
-  {
-    // 중개법인 (2026-10-30 사장님) — 기능은 Studio 와 같고 한도만 20% 더 (공실 60 · 기사 월 12), 월 7만
-    key: "corp", name: "스튜디오회원(법인)", tag: "중개법인용",
-    icon: ic("M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"),
-    price: mon(70000),
-    cta: { label: "시작하기", href: "/marketing/apply", solid: true },
-    base: ["공실 60건 등록", "기사 월 12건 등록"],
-    items: ["스튜디오회원(일반)의 모든 기능 그대로", "블로그 · SNS 자동 작성 무제한", "AI 매물보고서 무제한", "영상 편집 (동영상studio) · 이미지 편집 (포토studio)"],
-    extraTitle: "스튜디오회원(일반)와 같은 기능",
-    extra: ["사업자등록번호로 중개법인 확인"],
+    base: ["공실 등록 무제한", "기사 쓰기"],
+    items: ["블로그 · SNS 자동 작성 무제한", "AI 매물보고서", "포토studio AI 자동 디자인 · AI 고치기", "동영상studio · AI 성우 · 자동 자막", "인테리어 · 리모델링 AI", "물건접수홈페이지 집주인 접수 · 색상 · 로고"],
+    extraTitle: "공실뉴스부동산의 모든 기능 포함",
+    extra: ["일반 중개사무소 · 중개법인 같은 금액", "이름표 공실마케팅 로고"],
   },
   {
     key: "biz", name: "비즈니스회원", tag: "세무사·법무사·변호사 등 전문가용",
     icon: ic("M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"),
     price: mon(100000),
     cta: { label: "시작하기", href: "/marketing/apply", solid: true },
-    base: ["공실 100건 등록", "기사 월 20건 등록"],
-    items: ["스튜디오회원(일반) 항목 모두 무제한", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
-    extraTitle: "스튜디오회원(일반)의 모든 기능 포함",
+    base: ["공실 등록 무제한", "기사 쓰기"],
+    items: ["스튜디오회원 항목 모두", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
+    extraTitle: "스튜디오회원의 모든 기능 포함",
     extra: ["전담 상담", "세금계산서 발행"],
   },
 ];
@@ -176,27 +156,27 @@ const coin = (
 /**
  * compact = 앱 머리줄 [업그레이드하기] 창 안에서 (2026-10-30 사장님: 캔바 모양 말고 우리 금액안내 디자인 그대로)
  *  — 위 여백·제목을 줄이고 아래 흘러가는 알약 줄은 뺀다. 버튼은 새 창으로 (앱 화면을 떠나지 않게)
- * current = 지금 쓰는 요금제 열쇠 (free · basic · standard · biz) — 그 칸 버튼은 "지금 쓰는 요금제"
+ * current = 지금 쓰는 요금제 열쇠 (free · standard · biz) — 그 칸 버튼은 "지금 쓰는 요금제"
  */
 /**
- * allowed = 이 회원이 고를 수 있는 요금제 열쇠 (2026-10-30 사장님: 회원 구분대로) — 일반사무소 basic·standard · 중개법인 corp · 전문가 biz.
+ * allowed = 이 회원이 고를 수 있는 요금제 열쇠 (2026-10-30 사장님: 회원 구분대로) — 중개사무소·중개법인 standard · 전문가 biz.
  * 고를 수 없는 칸은 버튼 대신 "○○용" 글자만 (칸은 그대로 보인다)
  */
 export default function StudioPriceTable({ compact = false, current, allowed }: { compact?: boolean; current?: string; allowed?: string[] } = {}) {
   const yearly = false; // 연 구독만 — 금액은 늘 월 금액으로 보여 준다
   // 창 안에서는 캔바처럼 칸을 눌러 고르고 아래 단추 하나로 (2026-10-30 사장님: 박스 디자인은 그대로 · 선택은 캔바처럼)
-  const ORDER = ["free", "basic", "standard", "corp", "biz"];
+  const ORDER = ["free", "standard", "biz"];
   const curIdx = Math.max(0, ORDER.indexOf(current || "free"));
   const canPick = (key: string) => compact && ORDER.indexOf(key) > curIdx && (!allowed || allowed.includes(key));
   // 처음엔 고를 수 있는 것 중 바로 위 단계
   const [picked, setPicked] = useState(() => ORDER.find((k) => ORDER.indexOf(k) > curIdx && (!allowed || allowed.includes(k))) || ORDER[Math.min(curIdx + 1, ORDER.length - 1)]);
   /** 고를 수 없는 칸에 보일 말 */
-  const whoFor = (key: string) => (key === "corp" ? "중개법인용" : key === "biz" ? "세무사·법무사·변호사 등 전문가용" : key === "free" ? "" : "일반 중개사무소용");
+  const whoFor = (key: string) => (key === "biz" ? "세무사·법무사·변호사 등 전문가용" : key === "free" ? "" : "중개사무소 · 중개법인용");
   const isHl = (key: string) => (compact ? key === picked : key === "standard");
   const pickProps = (key: string) => (canPick(key) ? { onClick: () => setPicked(key), style: { cursor: "pointer" } as React.CSSProperties } : {});
   const pickedPlan = PLANS.find((p) => p.key === picked);
   /** 칸 색 — Studio 주황 · Business 검은 갈색 (띠 색과 같게) · 창 안 지금 쓰는 요금제는 연한 회색 (2026-10-30 사장님) */
-  const toneOf = (key: string) => (key === "biz" ? { line: "#1f1714", soft: "#f4f1ef", text: "#1f1714" } : key === "corp" ? { line: CORP, soft: "#eef3f8", text: CORP } : { line: ACCENT, soft: SOFT, text: ACCENT });
+  const toneOf = (key: string) => (key === "biz" ? { line: "#1f1714", soft: "#f4f1ef", text: "#1f1714" } : { line: ACCENT, soft: SOFT, text: ACCENT });
   const cellBg = (key: string) => (compact && key === current ? "#f3f4f6" : isHl(key) ? toneOf(key).soft : "#fff");
   /** 창 안 지금 등급 — 회색 테두리 · 위에 "지금 등급" 띠 (2026-10-30 사장님: 지금 등급도 라인으로) */
   const isCur = (key: string) => compact && key === current;
@@ -220,7 +200,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
           {/* 추천 띠 */}
           {PLANS.map((p) => (
-            <div key={p.key + "tag"} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: isCur(p.key) ? "#9ca3af" : p.tag ? (p.key === "biz" ? "#1f1714" : p.key === "corp" ? CORP : ACCENT) : "transparent" }}>{isCur(p.key) ? "지금 등급" : p.tag || ""}</div>
+            <div key={p.key + "tag"} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: isCur(p.key) ? "#9ca3af" : p.tag ? (p.key === "biz" ? "#1f1714" : ACCENT) : "transparent" }}>{isCur(p.key) ? "지금 등급" : p.tag || ""}</div>
           ))}
           {/* 머리 */}
           {PLANS.map((p, i) => {
@@ -235,7 +215,9 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
                   </span>
                 )}
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? toneOf(p.key).text : "#6b7280" }}>{p.icon}{p.name}</div>
-                <div style={{ margin: "14px 0 6px", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
+                {/* 할인 전 정가 — 줄 긋기 (2026-10-31 사장님: 월 5만 → 특별 할인 월 3만) */}
+                <div style={{ marginTop: 14, minHeight: 20, fontSize: 15, color: "#9ca3af" }}>{pr.was ? <><s>₩{pr.was}</s> <b style={{ color: "#dc2626", marginLeft: 4 }}>{Math.round((1 - Number(pr.won.replace(/,/g, "")) / Number(pr.was.replace(/,/g, ""))) * 100)}% 할인</b></> : ""}</div>
+                <div style={{ margin: "2px 0 6px", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
                   <span style={{ fontSize: 20, fontWeight: 700 }}>₩</span>
                   <span style={{ fontSize: 30, fontWeight: 700 }}>{pr.won}</span>
                   <span style={{ fontSize: 13, color: "#6b7280" }}>{pr.per}</span>
@@ -257,7 +239,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
                     </div>
                   )
                 ) : (
-                  <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : p.key === "corp" ? CORP : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : p.key === "corp" ? CORP : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
+                  <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
                 )}
                 <div style={{ marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
                   {p.base.map((b) => <div key={b} style={{ fontSize: 14, color: "#374151", display: "flex", gap: 8 }}>{coin}<span><Bold t={b} /></span></div>)}
@@ -312,13 +294,12 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
       </section>}
       {compact && pickedPlan && canPick(picked) && (() => {
         const bar = picked === "biz" ? { bg: "#1f1714", fg: "#fff", btnBg: "#fff", btnFg: "#1f1714", glow: "255,255,255" }
-          : picked === "corp" ? { bg: CORP, fg: "#fff", btnBg: "#fff", btnFg: CORP, glow: "255,255,255" }
           : picked === "standard" ? { bg: ACCENT, fg: "#fff", btnBg: "#fff", btnFg: ACCENT, glow: "255,255,255" }
           : { bg: "#f3f4f6", fg: "#111827", btnBg: "#111827", btnFg: "#fff", glow: "17,24,39" };
         const pr = pickedPlan.price(yearly);
         return (
           <div style={{ position: "sticky", bottom: 0, marginTop: 24, padding: "14px 24px", background: bar.bg, color: bar.fg, display: "flex", alignItems: "center", justifyContent: "center", gap: 18, boxShadow: "0 -4px 16px rgba(0,0,0,0.08)" }}>
-            <span style={{ fontSize: 15 }}><b>{pickedPlan.name}</b> · 월 {pr.won}원 <span style={{ opacity: 0.8 }}>(1년 {pr.year}원)</span></span>
+            <span style={{ fontSize: 15 }}><b>{pickedPlan.name}</b> · {pr.was && <s style={{ opacity: 0.7, marginRight: 4 }}>월 {pr.was}원</s>}월 {pr.won}원 <span style={{ opacity: 0.8 }}>(1년 {pr.year}원)</span></span>
             <Link href={pickedPlan.cta.href} target="_blank"
               // 살짝 커졌다 작아지며 둘레로 빛이 퍼진다 — 누르고 싶게 (2026-10-30 사장님)
               style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, padding: "0 30px", borderRadius: 10, fontSize: 15.5, fontWeight: 800, textDecoration: "none", background: bar.btnBg, color: bar.btnFg, ["--pm-glow" as string]: bar.glow, animation: "pm-glow 1.8s ease-in-out infinite" } as React.CSSProperties}>

@@ -73,8 +73,9 @@ export async function createVacancy(data: {
     // 유틸리티를 통해 실제 적용 중인 플랜(만료 시 free) 판별
     const plan = getEffectivePlan(member);
     
-    // 2. 관리자가 아니면 한도 체크
-    if (plan !== 'admin') {
+    // 2. 관리자가 아니면 한도 체크 — 부동산·비즈니스회원은 무료·스튜디오회원 모두 제한 없음 (2026-10-31 사장님: 공실이 많을수록 지역 뉴스가 는다)
+    const noLimit = ['REALTOR', '부동산회원', 'BIZ', '비즈니스회원'].includes(String(member.role || ''));
+    if (plan !== 'admin' && !noLimit) {
       const { count, error: countErr } = await supabase
         .from('vacancies')
         .select('*', { count: 'exact', head: true })

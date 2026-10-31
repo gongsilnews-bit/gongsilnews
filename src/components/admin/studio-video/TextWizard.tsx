@@ -935,6 +935,10 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       if (voiceOn) {
         let done = 0;
         let k = 0;
+        // 요청이 몰려 기다리는 동안 진행 칸에 알린다 (2026-10-31 사장님: 뒷부분 목소리가 빠지던 것 — 이제 기다렸다 이어서 만든다)
+        let note = "";
+        const show = () => setGen({ title: `AI 목소리를 만드는 중… (${done}/${clips.length})`, ...(note ? { detail: note } : {}), frac: 0.6 + (done / clips.length) * 0.38 });
+        const offWait = b.onVoiceWait?.((w) => { note = w.sec ? `${w.who} 요청이 몰려 ${w.sec}초 기다렸다가 이어서 만들어요` : ""; show(); });
         const one = async () => {
           while (k < clips.length && !halt()) {
             const c = clips[k++];
@@ -944,7 +948,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
               c.words = r.words;
             } catch {}
             done++;
-            setGen({ title: `AI 목소리를 만드는 중… (${done}/${clips.length})`, frac: 0.6 + (done / clips.length) * 0.38 });
+            show();
           }
         };
         await Promise.all([one(), one()]); // 둘씩 (셋이면 성우 API 분당 한도에 자주 걸렸다, 2026-10-23)
@@ -959,6 +963,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             c.words = r.words;
           } catch {}
         }
+        offWait?.();
         clips.forEach((c) => { if (!c.voice) c.hold = estimateSeconds(c.text, speed); }); // 멈춰서 못 만든 문장 — 글 길이만큼 (나중에 [목소리 다시 만들기])
       } else {
         clips.forEach((c) => (c.hold = estimateSeconds(c.text, speed)));

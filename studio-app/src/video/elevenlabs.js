@@ -149,7 +149,8 @@ async function say(text, out, { voiceId, emotion = "normal", prev = "", next = "
   const k = key();
   if (!k) throw new Error("일레븐랩스 키가 없어요. AI 목소리 › 일레븐랩스에서 키를 넣어 주세요.");
   const id = String(voiceId).replace(/^el_/, "");
-  const r = await fetch(`${API}/v1/text-to-speech/${encodeURIComponent(id)}?output_format=wav_24000`, {
+  // 몰리면 기다렸다 다시 — 크레딧 부족·키 오류는 바로 멈춘다 (voice-retry.js, 2026-10-31)
+  const buf = await require("./voice-retry").fetchAudio("일레븐랩스", `${API}/v1/text-to-speech/${encodeURIComponent(id)}?output_format=wav_24000`, {
     method: "POST",
     headers: { "xi-api-key": k, "Content-Type": "application/json" },
     body: JSON.stringify((() => {
@@ -175,13 +176,10 @@ async function say(text, out, { voiceId, emotion = "normal", prev = "", next = "
         ...(!v3 && next ? { next_text: stripTags(next).slice(0, 1000) } : {}),
       };
     })()),
+  }, {
+    errOf,
+    fatal: (status, body) => (status === 429 || status >= 500 ? (/quota|credits/i.test(JSON.stringify(body || "")) ? errOf(402, body) : "") : errOf(status, body)),
   });
-  if (!r.ok) {
-    const body = await r.json().catch(() => null);
-    throw new Error(errOf(r.status, body));
-  }
-  const buf = Buffer.from(await r.arrayBuffer());
-  if (buf.length < 100) throw new Error("일레븐랩스에서 소리를 받지 못했어요.");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, buf);
   return out;

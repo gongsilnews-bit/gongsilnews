@@ -376,6 +376,9 @@ function RealtyAdminContent() {
   // 지금 등급 — 무료 · 프로 · 스튜디오 · 비즈니스 (permissionCheck studioPlan 과 같은 판정)
   // 중개법인이 Studio 를 쓰면 Studio(중개법인)
   const myTier: Tier = userRole === 'BIZ' ? "biz" : ((p) => (p === "studio" && bizKind === "corp" ? "corp" : p || "free"))(studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }));
+  // 스튜디오회원 기능을 쓸 수 있나 (2026-10-31 사장님 권한표) — 스튜디오회원 · 비즈니스회원 · 최고관리자. 공실뉴스부동산(무료)은 잠금 → 금액안내
+  const studioPaid = isSuperAdmin || myTier !== "free";
+  const askUpgrade = () => setUpgradeOpen(true);
   /* 이름 · 이메일 · 등급 칸 — 앱(공실마케팅 메뉴)에서는 머리줄 오른쪽, 웹 간단 화면에서는 왼쪽 */
   const userBlock = (
   <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
@@ -507,7 +510,7 @@ function RealtyAdminContent() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
             {useStudioMenu && userBlock}
-            {useStudioMenu && userRole !== 'ADMIN' && myTier !== "biz" && myTier !== "corp" && ( /* 더 올라갈 요금제가 없으면 숨긴다 */
+            {useStudioMenu && userRole !== 'ADMIN' && myTier === "free" && ( /* 유료는 스튜디오회원 하나 — 이미 유료면 더 올라갈 요금제가 없어 숨긴다 (2026-10-31) */
               <button type="button" onClick={() => setUpgradeOpen(true)}
                 style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 16px", borderRadius: 999, border: 0, background: "#fff", color: "#111827", fontSize: 13.5, fontWeight: 800, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>
                 {/* 왕관 — 우리 주황 (그림 글자 👑 대신, 2026-10-30 사장님) */}
@@ -563,8 +566,8 @@ function RealtyAdminContent() {
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
-          {activeMenu === "video" && studioApp.isApp && <VideoStudio />}
-          {activeMenu === "photo" && <PhotoStudio menu={null} />}
+          {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 스튜디오회원부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
+          {activeMenu === "photo" && <PhotoStudio menu={null} aiLock={studioPaid ? undefined : askUpgrade} />}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
           {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
@@ -608,6 +611,23 @@ function RealtyAdminContent() {
           onClose={() => setShowUpgradeModal(false)}
         />
       </main>
+    </div>
+  );
+}
+
+/** 스튜디오회원 전용 기능 잠금 화면 (2026-10-31 사장님 권한표) — 무엇이 열리는지 말하고 금액안내 창으로 */
+function StudioOnlyLock({ theme, what, detail, onUpgrade }: { theme: { cardBg: string; textPrimary: string; textSecondary: string }; what: string; detail: string; onUpgrade: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", padding: 24 }}>
+      <div style={{ maxWidth: 460, width: "100%", textAlign: "center", background: theme.cardBg, borderRadius: 16, padding: "40px 32px", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e8890c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+        <h3 style={{ margin: "14px 0 8px", fontSize: 20, fontWeight: 800, color: theme.textPrimary }}>{what}는 스튜디오회원 전용이에요</h3>
+        <p style={{ margin: "0 0 24px", fontSize: 14, lineHeight: 1.7, color: theme.textSecondary }}>{detail}</p>
+        <button type="button" onClick={onUpgrade}
+          style={{ height: 46, padding: "0 28px", borderRadius: 10, border: 0, background: "#e8890c", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+          스튜디오회원 알아보기
+        </button>
+      </div>
     </div>
   );
 }

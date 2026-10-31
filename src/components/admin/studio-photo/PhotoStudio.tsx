@@ -268,7 +268,8 @@ const BLEND_NAMES: [NonNullable<PLayer["blendMode"]>, string][] = [
 /** 다른 편집기 안에서 잠깐 여는 이미지 편집 (영상 › SNS 올리기 › 썸네일 고치기, 2026-10-22) — 문서 하나를 열고 [이 썸네일 쓰기]·Ctrl+S 로 돌려준다 */
 export type PhotoEmbed = { doc: Doc; title: string; useLabel?: string; onUse: (png: Uint8Array, psd: Uint8Array) => void | Promise<void>; onCancel: () => void };
 
-export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; embed?: PhotoEmbed }) {
+/* aiLock — 주면 AI(자동 디자인·AI 고치기)를 누를 때 이것만 부른다: 공실뉴스부동산(무료)은 스튜디오회원 안내 (2026-10-31 사장님 권한표) */
+export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.ReactNode; embed?: PhotoEmbed; aiLock?: () => void }) {
   useStudioTheme(!embed, "photo"); // 밝은/어두운 화면 — 이미지제작 따로 기억 (2026-10-23)
   const b = bridge();
   const [tick, setTick] = useState(0);
@@ -1050,6 +1051,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   };
   const NO_TEXT = "Do not add any text, letters, logos or watermarks.";
   const runAi = async (act: AiAct, prompt: string, gen?: AiGenOpts) => {
+    if (aiLock) return aiLock();
     if (!doc || aiBusy) return;
     const d = doc, W = d.psd.width, H = d.psd.height;
     const short = prompt ? `: ${prompt.slice(0, 18)}` : "";
@@ -1332,10 +1334,10 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   /* ── AI 자동 디자인 · 디자인 템플릿 · 내 템플릿 ── */
   const loadMine = () => { if (b?.tplList) b.tplList().then(setMyTpls).catch(() => setMyTpls([])); else setMyTpls([]); };
   const [designInit, setDesignInit] = useState<{ cat: Cat; size: CatSize; layout?: string } | null>(null);
-  const openDesign = () => { loadMine(); setDesignInit(null); setDesignOpen(true); };
+  const openDesign = () => { if (aiLock) return aiLock(); loadMine(); setDesignInit(null); setDesignOpen(true); };
   /** 처음 화면 샘플 — [템플릿 열기] 는 칸 이름 글 · 사진 자리로 레이어 문서를 바로, [AI로 채우기] 는 AI 자동 디자인 창을 이 틀로 */
   const openSample = async (l: Layout, size: CatSize, ai: boolean, cat: Cat) => {
-    if (ai) { loadMine(); setDesignInit({ cat, size, layout: l.id }); setDesignOpen(true); return; }
+    if (ai) { if (aiLock) return aiLock(); loadMine(); setDesignInit({ cat, size, layout: l.id }); setDesignOpen(true); return; }
     setBusy("샘플을 여는 중…");
     try {
       await Promise.all(layoutFonts(l).map((f) => loadFont(f).catch(() => {})));
@@ -1458,6 +1460,7 @@ export default function PhotoStudio({ menu, embed }: { menu: React.ReactNode; em
   const removeMine = async (t: MyTpl) => { await b?.tplRemove?.(t.file); loadMine(); };
   const useMine = (t: MyTpl, ai: boolean) => {
     if (!ai) return void openMine(t);
+    if (aiLock) return aiLock();
     // 이 디자인과 비율이 맞는 종류·크기로 창을 연다 (없으면 유튜브 썸네일)
     const fit = (Object.keys(CAT_SIZES) as Cat[]).flatMap((c) => CAT_SIZES[c].map((sz) => ({ c, sz }))).find(({ sz }) => t.w && t.h && Math.abs(t.w / t.h - sz.w / sz.h) < 0.05);
     loadMine();

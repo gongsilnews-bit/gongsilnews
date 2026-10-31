@@ -112,17 +112,12 @@ async function say(text, out, { voiceId, emotion = "smart", intensity = 1, prev 
   const prompt = emotion === "smart"
     ? { emotion_type: "smart", ...(prev ? { previous_text: String(prev).slice(0, 2000) } : {}), ...(next ? { next_text: String(next).slice(0, 2000) } : {}) }
     : { emotion_type: "preset", emotion_preset: emotion, emotion_intensity: Math.max(0, Math.min(2, Number(intensity) || 1)) };
-  const r = await fetch(`${API}/v1/text-to-speech`, {
+  // 몰리면 기다렸다 다시 — 크레딧 부족·키 오류는 바로 멈춘다 (voice-retry.js, 2026-10-31)
+  const buf = await require("./voice-retry").fetchAudio("타입캐스트", `${API}/v1/text-to-speech`, {
     method: "POST",
     headers: { "X-API-KEY": k, "Content-Type": "application/json" },
     body: JSON.stringify({ text: String(text).slice(0, 2000), model: MODEL, voice_id: voiceId, language: "kor", prompt, output: { audio_format: "wav" } }),
-  });
-  if (!r.ok) {
-    const body = await r.json().catch(() => null);
-    throw new Error(errOf(r.status, body));
-  }
-  const buf = Buffer.from(await r.arrayBuffer());
-  if (buf.length < 100) throw new Error("타입캐스트에서 소리를 받지 못했어요.");
+  }, { errOf, fatal: (status, body) => (status === 429 || status >= 500 ? "" : errOf(status, body)) });
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, buf);
   return out;

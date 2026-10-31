@@ -49,7 +49,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     plan_end_date: "",
     studio_start_date: "",
     studio_end_date: "",
-    studio_plan: "pro", // 공실마케팅 이용권 종류 pro / studio (부동산회원만, 2026-10-29)
+    studio_plan: "studio", // 공실마케팅 이용권 — 2026-10-31 부터 스튜디오회원 하나 (예전 pro / studio)
     max_vacancies: 5,
     max_articles_per_month: 0,
     max_lectures: 0,
@@ -184,7 +184,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
             memberNumber: res.member.memberNumber || "",
             plan_type: usesStudioPeriod(resolvedRole) ? planFromStudio(resolvedRole, studioEndOf(res.member, resolvedRole), res.member.plan_type === "study_premium" ? "studio" : "pro") : res.member.plan_type || "free",
-            studio_plan: res.member.plan_type === "study_premium" ? "studio" : "pro",
+            studio_plan: "studio", // 유료는 스튜디오회원 하나 (2026-10-31)
             plan_start_date: res.member.plan_start_date ? new Date(res.member.plan_start_date).toISOString().split('T')[0] : "",
             plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : "",
             studio_start_date: dayOf(res.member.studio_start_date || (useOldBizPlan(res.member, resolvedRole) ? res.member.plan_start_date : null)),
@@ -1201,14 +1201,13 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             <div style={rowStyle}>
               <div style={labelStyle}>공실마케팅 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <select name="studio_plan" value={formData.studio_plan} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 170 }}>
-                  <option value="pro">마케팅회원 (월 3만 · 공실 20)</option>
-                  <option value="studio">스튜디오회원 (월 5만 · 공실 50)</option>
+                <select name="studio_plan" value={formData.studio_plan} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 230 }}>
+                  <option value="studio">스튜디오회원 (월 3만 · 1년 36만)</option>
                 </select>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 고른 이용권 — 이름표 옆 Pro / Studio 마크.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 스튜디오회원 — 이름표 옆 공실마케팅 마크.</span>
               </div>
             </div>
 
