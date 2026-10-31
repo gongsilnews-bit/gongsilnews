@@ -46,7 +46,7 @@ const decimal = (s) => {
   const [a, b] = s.replace(/,/g, "").split(".");
   return sino(a) + (b ? " 점 " + b.split("").map((c) => DIGIT[+c]).join("") : "");
 };
-const NATIVE_UNITS = "개|명|시|살|대|채|곳|가지|마리|잔|권|군데|분께|사람|번째|가구|세대째";
+const NATIVE_UNITS = "개|명|시|살|대|채|곳|가지|마리|잔|권|군데|분께|사람|번째|가구|세대째|건(?!물|축|설|강|너)"; // 건 — 4건 → 네 건 (2026-10-31 사장님)
 const UNIT_READ = [
   [/(?:㎡|m²|m2|제곱미터)/gi, " 제곱미터"],
   [/(?:㎢|km²|km2)/gi, " 제곱킬로미터"],

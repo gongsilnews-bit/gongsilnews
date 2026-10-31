@@ -35,7 +35,39 @@ type Vac = { id: string; label: string };
 /** 뉴스 영상 에피소드 — 주제(직접 적기: 시세·정치·오락·스포츠 무엇이든) · 매물 소개(내 공실) · 공실뉴스 기사 · 뉴스 주소. ref = 공실 id / 기사 id / 주소 */
 /** 씬별 배경 음악 — 분위기 · 곡 직접 · 없음 */
 type SceneBgm = { kind: "none" } | { kind: "mood"; mood: string } | { kind: "track"; track: { kind: "lib" | "mine"; id: string; label: string } };
-type Ep = { kind: "topic" | "vacancy" | "article" | "url"; text: string; ref: string; media?: LibItem[]; chars?: number; capRef?: string };
+type Ep = { kind: "topic" | "vacancy" | "article" | "url" | "market"; text: string; ref: string; media?: LibItem[]; chars?: number; capRef?: string; pick?: number; mkt?: Mkt | null; mktErr?: string };
+
+/* ── 단지 시세 에피소드 — 국토부 아파트 실거래가 (2026-10-31 사장님: "우리 API가 있으니까 아파트 시세를 보여줄 수 있지 않을까")
+ *  뉴스메이커와 같은 /api/extension/apt-trades 를 부른다. 숫자는 서버가 계산하고 AI 는 이 숫자로 문장만 쓴다 */
+type MktTrade = { date: string; price: number; floor: number; area: number };
+type Mkt = {
+  candidates: { name: string; address: string }[]; picked: number; complexName: string; period: string;
+  target: { name: string; address: string };
+  summary: { tradeCount: number; buildYear: number; areas: { areaKey: string; pyeong: number; tradeCount: number; latest: MktTrade | null; previous: MktTrade | null; high: MktTrade | null; low: MktTrade | null; latestJeonse: { date: string; deposit: number; floor: number } | null; jeonseRatio: number | null }[] };
+};
+async function fetchMarket(q: string, pick = 0): Promise<Mkt> {
+  const r = await fetch(`/api/extension/apt-trades?mode=complex&q=${encodeURIComponent(q.trim())}&pick=${pick}`, { credentials: "include" });
+  const j = await r.json().catch(() => null);
+  if (!j?.success) throw new Error(j?.error || "실거래가 자료를 불러오지 못했어요.");
+  return j as Mkt;
+}
+/* 만원 → "24억 5,000만 원" */
+const wonText = (m: number) => { const e = Math.floor(m / 10000), r = m % 10000; return !m ? "-" : !e ? `${r.toLocaleString()}만 원` : r ? `${e}억 ${r.toLocaleString()}만 원` : `${e}억 원`; };
+const tradeText = (t: MktTrade | null) => (t ? `${t.date} ${wonText(t.price)} (${t.floor}층, 전용 ${Math.round((t.area / 3.3058) * 10) / 10}평)` : "기록 없음");
+/** AI 에게 주는 시세 표 */
+function marketText(d: Mkt) {
+  const s = d.summary;
+  const out = [`- 단지: ${d.complexName || d.target.name}`, `- 소재지: ${d.target.address}`, s.buildYear ? `- 준공: ${s.buildYear}년` : "", `- 자료 기간: ${d.period}`, `- 기간 안 매매 신고: ${s.tradeCount}건`].filter(Boolean);
+  if (!s.tradeCount) out.push("- 최근 12개월 매매 신고가 없음 — 시세 숫자를 만들지 말고 \"최근 1년 매매 신고가 없었다\"고만 쓸 것");
+  for (const a of s.areas.slice(0, 3)) {
+    out.push(`[전용 약 ${a.pyeong}평] 매매 ${a.tradeCount}건`, `- 가장 최근 매매: ${tradeText(a.latest)}`);
+    if (a.previous) out.push(`- 그 직전 매매: ${tradeText(a.previous)}`);
+    out.push(`- 기간 최고가: ${tradeText(a.high)}`, `- 기간 최저가: ${tradeText(a.low)}`);
+    if (a.latestJeonse) out.push(`- 가장 최근 전세: ${a.latestJeonse.date} 보증금 ${wonText(a.latestJeonse.deposit)} (${a.latestJeonse.floor}층)`);
+    if (a.jeonseRatio) out.push(`- 전세가율(매매가 대비 전세가 비율, 최근 6개월 가운데 값): 약 ${a.jeonseRatio}%`);
+  }
+  return out.join("\n");
+}
 
 /* 공실로 쓰기 — 용도 (2026-10-20 사장님): 고르면 글자 수·화면 비율·대본 구성이 그 용도에 맞게. 1단계 스타일보다 우선 */
 type Purpose = "shorts" | "listing" | "area" | "etc";
@@ -113,7 +145,14 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   const [newsName, setNewsName] = useState<string | null>(null); // null = 사무소 이름으로 저절로 (빌드온공인중개사 → 빌드온뉴스)
   const [episodes, setEpisodes] = useState<Ep[]>([{ kind: "topic", text: "", ref: "" }, { kind: "topic", text: "", ref: "" }, { kind: "topic", text: "", ref: "" }]);
   const setEp = (i: number, patch: Partial<Ep>) => setEpisodes((l) => l.map((x, k) => (k === i ? { ...x, ...patch } : x)));
-  const epReady = (e: Ep) => (e.kind === "topic" ? Boolean(e.text.trim()) : e.kind === "url" ? /^https?:\/\//i.test(e.ref.trim()) : Boolean(e.ref));
+  const epReady = (e: Ep) => (e.kind === "topic" ? Boolean(e.text.trim()) : e.kind === "url" ? /^https?:\/\//i.test(e.ref.trim()) : e.kind === "market" ? e.ref.trim().length >= 2 : Boolean(e.ref));
+  /** 단지 시세 찾기 — 후보가 여러 개면 pick 번째 */
+  const findMarket = async (i: number, q: string, pick = 0) => {
+    if (q.trim().length < 2) return;
+    setEp(i, { mkt: null, mktErr: "불러오는 중…", pick });
+    try { const d = await fetchMarket(q, pick); setEp(i, { mkt: d, mktErr: "", pick: d.picked }); }
+    catch (er) { setEp(i, { mkt: null, mktErr: errText(er) }); }
+  };
   const [introReq, setIntroReq] = useState("");
   const [tagline, setTagline] = useState<string | null>(null); // null = 저절로 — 오늘 날짜로 "2026년 10월 넷째주 뉴스" (회원이 고친다)
   const [outroReq, setOutroReq] = useState("");
@@ -574,6 +613,12 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           }
           eps.push(`뉴스 요약 — 「${n.title}」 (출처: ${pub}, 마지막에 출처를 밝혀요)${extra ? ` (덧붙일 말: ${extra})` : ""}`);
           epMat.push(`[에피소드 ${i + 1} 뉴스 자료] ${n.title} · ${pub}\n${String(n.body || "").slice(0, 3000)}`);
+        } else if (e.kind === "market") {
+          await step(`에피소드 ${i + 1} · 국토부 실거래가를 불러오는 중…`);
+          const d = e.mkt && e.mkt.target ? e.mkt : await fetchMarket(e.ref, e.pick || 0);
+          const nm = d.complexName || d.target.name;
+          eps.push(`단지 시세 — ${nm} 실거래가 (국토교통부 실거래가 신고 기준)${extra ? ` (덧붙일 말: ${extra})` : ""}`);
+          epMat.push(`[에피소드 ${i + 1} 단지 시세 자료 — 국토교통부 실거래가 공개 자료를 공실뉴스가 정리]\n${marketText(d)}`);
         } else eps.push(extra);
       }
       if (epList.length) { await step(`${aiName}가 대본을 쓰는 중… (1~2분)`); epUsed.current = epList; }
@@ -586,6 +631,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           ...eps.map((e, i) => `${i + 2}) 에피소드 ${i + 1} — 씬 이름 "에피소드 ${i + 1} · (짧은 소제목)". ${charMode === "each" && useChars ? `약 ${epList[i]?.chars || 200}자` : "4~6문장"}의 짧은 단락. 주제: ${e}`),
           `${eps.length + 2}) 맺음말 — 씬 이름 "맺음말". 2~3문장. 위 에피소드를 한 줄씩 묶어 돌아보고 마무리 인사.${outroReq.trim() ? ` (맺음말 요청: ${outroReq.trim()})` : ""}`,
           epMat.length ? "매물·기사·뉴스 에피소드는 위 [참고 글]의 그 에피소드 자료에 있는 사실만 써요. 기사 문장을 그대로 옮기지 말고 새로 쓰고, 매물 가격·면적은 자료 값 그대로." : "",
+          epList.some((e) => e.kind === "market") ? "단지 시세 에피소드는 그 시세 자료의 숫자(금액·평·층·건수·날짜)만 그대로 쓰고 새로 계산하지 마세요. \"국토교통부 실거래가 신고 기준\"이라고 한 번 밝히고, 최근 거래는 신고가 더 늘 수 있다고 짧게 덧붙여요. 면적은 평으로만 말하고(㎡ 쓰지 않기), 한 문장에 숫자는 두 개까지. 가격 전망·매수 권유·중개업소 인용은 쓰지 마세요." : "",
           "주제에 적힌 사실(숫자·날짜·장소·이름)만 쓰고, 적히지 않은 숫자·날짜·이름은 지어내지 마세요. 뉴스를 전하듯 또박또박, 한 문장은 짧게.",
           request.trim() ? `추가 요청: ${request.trim()}` : "",
         ].filter(Boolean).join("\n")
@@ -1399,8 +1445,8 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                           <span style={{ flexShrink: 0, width: 26, height: 26, marginTop: 4, borderRadius: 13, background: C.accent, color: "#fff", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
                           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                             <div style={{ display: "flex", gap: 4 }}>
-                              {([["topic", "주제"], ["vacancy", "매물 소개"], ["article", "공실뉴스 기사"], ["url", "뉴스 주소"]] as const).map(([k, n]) => (
-                                <button key={k} type="button" onClick={() => setEp(i, { kind: k, ref: "" })} style={{ ...chip(e.kind === k), height: 28, padding: "0 10px", fontSize: 12.5 }}>{n}</button>
+                              {([["topic", "주제"], ["vacancy", "매물 소개"], ["market", "단지 시세"], ["article", "공실뉴스 기사"], ["url", "뉴스 주소"]] as const).map(([k, n]) => (
+                                <button key={k} type="button" onClick={() => setEp(i, { kind: k, ref: "", mkt: null, mktErr: "", pick: 0 })} style={{ ...chip(e.kind === k), height: 28, padding: "0 10px", fontSize: 12.5 }}>{n}</button>
                               ))}
                             </div>
                             {e.kind === "vacancy" && (
@@ -1414,6 +1460,28 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                                 <option value="">{arts === null ? "기사 목록 불러오는 중…" : `공실뉴스 기사를 고르세요 (${arts.length}개)`}</option>
                                 {(arts || []).map((a) => <option key={a.id} value={a.id}>{a.title} · {a.date}</option>)}
                               </select>
+                            )}
+                            {e.kind === "market" && (
+                              <>
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <input value={e.ref} onChange={(ev) => setEp(i, { ref: ev.target.value, mkt: null, mktErr: "", pick: 0 })} onKeyDown={(ev) => { if (ev.key === "Enter") void findMarket(i, e.ref); }}
+                                    placeholder="아파트 단지 이름 — 예: 논현 두산위브 1차, 대치 은마" style={{ ...input, fontSize: 13.5, height: 36, flex: 1, minWidth: 0 }} />
+                                  <Btn small onClick={() => void findMarket(i, e.ref)} disabled={e.ref.trim().length < 2}><Icon name="search" size={14} />찾기</Btn>
+                                </div>
+                                {e.mkt && e.mkt.candidates.length > 1 && (
+                                  <select value={e.pick || 0} onChange={(ev) => void findMarket(i, e.ref, Number(ev.target.value))} style={{ ...input, fontSize: 13, height: 34 }}>
+                                    {e.mkt.candidates.map((c, k) => <option key={k} value={k}>{c.name} · {c.address}</option>)}
+                                  </select>
+                                )}
+                                {e.mkt ? (
+                                  <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.5 }}>
+                                    <b style={{ color: C.text }}>{e.mkt.complexName || e.mkt.target.name}</b> · 최근 12개월 매매 {e.mkt.summary.tradeCount}건
+                                    {e.mkt.summary.areas.slice(0, 2).map((a) => a.latest && <span key={a.areaKey}> · 전용 약 {a.pyeong}평 최근 {wonText(a.latest.price)} ({a.latest.date.slice(0, 7)})</span>)}
+                                    <div style={{ color: C.dim }}>국토교통부 실거래가 신고 기준 — 대본에는 이 숫자만 들어가요</div>
+                                  </div>
+                                ) : e.mktErr ? <div style={{ fontSize: 12.5, color: e.mktErr === "불러오는 중…" ? C.sub : "#dc2626" }}>{e.mktErr}</div>
+                                  : <div style={{ fontSize: 12, color: C.dim }}>[찾기]를 누르면 국토부 실거래가로 최근 매매·전세 숫자를 불러와요</div>}
+                              </>
                             )}
                             {e.kind === "url" && (
                               <input value={e.ref} onChange={(ev) => setEp(i, { ref: ev.target.value })} placeholder="뉴스 기사 주소 붙여넣기 (정치·경제·연예·스포츠 무엇이든)" style={{ ...input, fontSize: 13.5, height: 36 }} />

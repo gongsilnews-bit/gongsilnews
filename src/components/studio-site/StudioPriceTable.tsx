@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 
 /**
@@ -154,33 +154,19 @@ const coin = (
 );
 
 /**
- * compact = 앱 머리줄 [업그레이드하기] 창 안에서 (2026-10-30 사장님: 캔바 모양 말고 우리 금액안내 디자인 그대로)
- *  — 위 여백·제목을 줄이고 아래 흘러가는 알약 줄은 뺀다. 버튼은 새 창으로 (앱 화면을 떠나지 않게)
- * current = 지금 쓰는 요금제 열쇠 (free · standard · biz) — 그 칸 버튼은 "지금 쓰는 요금제"
- */
-/**
- * allowed = 이 회원이 고를 수 있는 요금제 열쇠 (2026-10-30 사장님: 회원 구분대로) — 중개사무소·중개법인 standard · 전문가 biz.
- * 고를 수 없는 칸은 버튼 대신 "○○용" 글자만 (칸은 그대로 보인다)
+ * compact = 앱 머리줄 [금액안내] 창 안에서 — 웹 금액안내(/marketing/pricing)와 똑같이 (2026-10-31 사장님: "여기 페이지 같이 그냥 신청하게")
+ *  위 여백·제목만 조금 줄이고, [시작하기]는 새 창으로 (앱 화면을 떠나지 않게). 아래 기능 알약 줄도 그대로 흘러간다
+ * current · allowed 는 예전 업그레이드 창(지금 등급 회색 · 고르기)에서 쓰던 것 — 지금은 화면에 안 쓴다
  */
 export default function StudioPriceTable({ compact = false, current, allowed }: { compact?: boolean; current?: string; allowed?: string[] } = {}) {
   const yearly = false; // 연 구독만 — 금액은 늘 월 금액으로 보여 준다
-  // 창 안에서는 캔바처럼 칸을 눌러 고르고 아래 단추 하나로 (2026-10-30 사장님: 박스 디자인은 그대로 · 선택은 캔바처럼)
-  const ORDER = ["free", "standard", "biz"];
-  const curIdx = Math.max(0, ORDER.indexOf(current || "free"));
-  const canPick = (key: string) => compact && ORDER.indexOf(key) > curIdx && (!allowed || allowed.includes(key));
-  // 처음엔 고를 수 있는 것 중 바로 위 단계
-  const [picked, setPicked] = useState(() => ORDER.find((k) => ORDER.indexOf(k) > curIdx && (!allowed || allowed.includes(k))) || ORDER[Math.min(curIdx + 1, ORDER.length - 1)]);
-  /** 고를 수 없는 칸에 보일 말 */
-  const whoFor = (key: string) => (key === "biz" ? "세무사·법무사·변호사 등 전문가용" : key === "free" ? "" : "중개사무소 · 중개법인용");
-  const isHl = (key: string) => (compact ? key === picked : key === "standard");
-  const pickProps = (key: string) => (canPick(key) ? { onClick: () => setPicked(key), style: { cursor: "pointer" } as React.CSSProperties } : {});
-  const pickedPlan = PLANS.find((p) => p.key === picked);
-  /** 칸 색 — Studio 주황 · Business 검은 갈색 (띠 색과 같게) · 창 안 지금 쓰는 요금제는 연한 회색 (2026-10-30 사장님) */
+  // 창 안도 웹 금액안내와 같은 디자인 (2026-10-31 사장님: 고르기·지금 등급 회색 칸은 촌스러움 → 원래 디자인으로)
+  //  스튜디오회원 칸만 늘 주황으로 · 버튼은 모두 [시작하기] (창 안에서는 새 창)
+  const isHl = (key: string) => key === "standard";
+  /** 칸 색 — Studio 주황 · Business 검은 갈색 (띠 색과 같게) */
   const toneOf = (key: string) => (key === "biz" ? { line: "#1f1714", soft: "#f4f1ef", text: "#1f1714" } : { line: ACCENT, soft: SOFT, text: ACCENT });
-  const cellBg = (key: string) => (compact && key === current ? "#f3f4f6" : isHl(key) ? toneOf(key).soft : "#fff");
-  /** 창 안 지금 등급 — 회색 테두리 · 위에 "지금 등급" 띠 (2026-10-30 사장님: 지금 등급도 라인으로) */
-  const isCur = (key: string) => compact && key === current;
-  const lineOf = (key: string) => (isHl(key) ? toneOf(key).line : isCur(key) ? "#9ca3af" : LINE);
+  const cellBg = (key: string) => (isHl(key) ? toneOf(key).soft : "#fff");
+  const lineOf = (key: string) => (isHl(key) ? toneOf(key).line : LINE);
   const font = "'Pretendard Variable','Pretendard',-apple-system,sans-serif";
   const cols = PLANS.length;
   const W = (cols > 4 ? 250 : 290) * cols; // 다섯 칸이면 칸을 조금 좁게
@@ -200,20 +186,14 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
           {/* 추천 띠 */}
           {PLANS.map((p) => (
-            <div key={p.key + "tag"} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: isCur(p.key) ? "#9ca3af" : p.tag ? (p.key === "biz" ? "#1f1714" : ACCENT) : "transparent" }}>{isCur(p.key) ? "지금 등급" : p.tag || ""}</div>
+            <div key={p.key + "tag"} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: p.tag ? (p.key === "biz" ? "#1f1714" : ACCENT) : "transparent" }}>{p.tag || ""}</div>
           ))}
           {/* 머리 */}
           {PLANS.map((p, i) => {
             const pr = p.price(yearly);
             const hl = isHl(p.key);
             return (
-              <div key={p.key + "head"} {...pickProps(p.key)} style={{ ...pickProps(p.key).style, position: "relative", padding: "32px 24px 24px", textAlign: "center", background: cellBg(p.key), borderTop: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || isCur(p.key) || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
-                {isCur(p.key) && i < cols - 1 && (
-                  // 오른쪽(더 높은 요금제)으로 살짝 움직이는 화살표 — 업그레이드 유도
-                  <span aria-hidden style={{ position: "absolute", right: -19, top: 118, zIndex: 2, width: 38, height: 38, borderRadius: 19, background: ACCENT, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(232,137,12,0.45)", animation: "pm-nudge 1.2s ease-in-out infinite" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                  </span>
-                )}
+              <div key={p.key + "head"} style={{ position: "relative", padding: "32px 24px 24px", textAlign: "center", background: cellBg(p.key), borderTop: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? toneOf(p.key).text : "#6b7280" }}>{p.icon}{p.name}</div>
                 {/* 할인 전 정가 — 줄 긋기 (2026-10-31 사장님: 월 5만 → 특별 할인 월 3만) */}
                 <div style={{ marginTop: 14, minHeight: 20, fontSize: 15, color: "#9ca3af" }}>{pr.was ? <><s>₩{pr.was}</s> <b style={{ color: "#dc2626", marginLeft: 4 }}>{Math.round((1 - Number(pr.won.replace(/,/g, "")) / Number(pr.was.replace(/,/g, ""))) * 100)}% 할인</b></> : ""}</div>
@@ -224,23 +204,8 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
                 </div>
                 <div style={{ fontSize: 13, color: "#6b7280", minHeight: 20 }}>{pr.sub || ""}</div>
                 <div style={{ fontSize: 12, color: "#9ca3af", minHeight: 18 }}>{pr.day || ""}</div>
-                {current === p.key ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, background: "#f3f4f6", color: "#6b7280", border: `1px solid ${LINE}` }}>지금 쓰는 요금제</div>
-                ) : compact ? (
-                  // 창 안 — [선택하기] / [✓ 선택됨] (낮은 요금제는 비워 둔다)
-                  canPick(p.key) ? (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, background: hl ? toneOf(p.key).line : "#fff", color: hl ? "#fff" : toneOf(p.key).text, border: `1px solid ${hl ? toneOf(p.key).line : "#cbd5e1"}` }}>
-                      <span style={{ width: 16, height: 16, borderRadius: 8, border: `2px solid ${hl ? "#fff" : toneOf(p.key).text}`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{hl && <span style={{ width: 6, height: 6, borderRadius: 3, background: "#fff" }} />}</span>
-                      {hl ? "선택됨" : "선택하기"}
-                    </div>
-                  ) : (
-                    <div style={{ height: 50, marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#9ca3af" }}>
-                      {ORDER.indexOf(p.key) > curIdx && allowed && !allowed.includes(p.key) ? whoFor(p.key) : ""}
-                    </div>
-                  )
-                ) : (
-                  <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
-                )}
+                {/* 창 안도 웹 금액안내처럼 모든 칸 [시작하기] — 누르면 새 창으로 신청 (2026-10-31 사장님: "여기 페이지 같이 그냥 신청하게") */}
+                <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
                 <div style={{ marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
                   {p.base.map((b) => <div key={b} style={{ fontSize: 14, color: "#374151", display: "flex", gap: 8 }}>{coin}<span><Bold t={b} /></span></div>)}
                 </div>
@@ -251,7 +216,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
           {PLANS.map((p, i) => {
             const hl = isHl(p.key);
             return (
-              <div key={p.key + "items"} {...pickProps(p.key)} style={{ ...pickProps(p.key).style, padding: "26px 24px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || isCur(p.key) || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
+              <div key={p.key + "items"} style={{ padding: "26px 24px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 4 }}>사용 가능 항목</div>
                 <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "가입만 하면 바로 써요." : "공실마케팅 앱에서 써요."}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -264,7 +229,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
           {PLANS.map((p, i) => {
             const hl = isHl(p.key);
             return (
-              <div key={p.key + "extra"} {...pickProps(p.key)} style={{ ...pickProps(p.key).style, padding: "26px 24px 32px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || isCur(p.key) || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
+              <div key={p.key + "extra"} style={{ padding: "26px 24px 32px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 18 }}>{p.extraTitle}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {p.extra.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span></div>)}
@@ -281,7 +246,8 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
       </section>
 
       {/* 모든 플랜에서 */}
-      {!compact && <section style={{ maxWidth: 1440, margin: "0 auto", padding: "96px 0 112px", textAlign: "center" }}>
+      {/* 창 안에서도 아래 기능 알약 줄이 흘러가게 (2026-10-31 사장님) */}
+      <section style={{ maxWidth: 1440, margin: "0 auto", padding: compact ? "64px 0 72px" : "96px 0 112px", textAlign: "center" }}>
         <style>{MARQUEE_CSS}</style>
         <h2 style={{ fontSize: "clamp(24px,2.6vw,32px)", fontWeight: 600, margin: "0 0 40px" }}>
           모든 요금제에서 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden style={{ verticalAlign: "-2px" }}><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#f5b301" /></svg>AI를 포함한 다양한 기능을 경험하세요.
@@ -291,24 +257,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
           <Marquee items={ROW1} />
           <Marquee items={ROW2} reverse />
         </div>
-      </section>}
-      {compact && pickedPlan && canPick(picked) && (() => {
-        const bar = picked === "biz" ? { bg: "#1f1714", fg: "#fff", btnBg: "#fff", btnFg: "#1f1714", glow: "255,255,255" }
-          : picked === "standard" ? { bg: ACCENT, fg: "#fff", btnBg: "#fff", btnFg: ACCENT, glow: "255,255,255" }
-          : { bg: "#f3f4f6", fg: "#111827", btnBg: "#111827", btnFg: "#fff", glow: "17,24,39" };
-        const pr = pickedPlan.price(yearly);
-        return (
-          <div style={{ position: "sticky", bottom: 0, marginTop: 24, padding: "14px 24px", background: bar.bg, color: bar.fg, display: "flex", alignItems: "center", justifyContent: "center", gap: 18, boxShadow: "0 -4px 16px rgba(0,0,0,0.08)" }}>
-            <span style={{ fontSize: 15 }}><b>{pickedPlan.name}</b> · {pr.was && <s style={{ opacity: 0.7, marginRight: 4 }}>월 {pr.was}원</s>}월 {pr.won}원 <span style={{ opacity: 0.8 }}>(1년 {pr.year}원)</span></span>
-            <Link href={pickedPlan.cta.href} target="_blank"
-              // 살짝 커졌다 작아지며 둘레로 빛이 퍼진다 — 누르고 싶게 (2026-10-30 사장님)
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, padding: "0 30px", borderRadius: 10, fontSize: 15.5, fontWeight: 800, textDecoration: "none", background: bar.btnBg, color: bar.btnFg, ["--pm-glow" as string]: bar.glow, animation: "pm-glow 1.8s ease-in-out infinite" } as React.CSSProperties}>
-              공실마케팅 {pickedPlan.name}로 업그레이드하기
-            </Link>
-          </div>
-        );
-      })()}
-      {compact && <style>{"@keyframes pm-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}@keyframes pm-glow{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(var(--pm-glow),0.55)}50%{transform:scale(1.05);box-shadow:0 0 0 10px rgba(var(--pm-glow),0)}}@media (prefers-reduced-motion:reduce){[style*=pm-nudge],[style*=pm-glow]{animation:none!important}}"}</style>}
+      </section>
 
     </div>
   );
