@@ -284,14 +284,14 @@ export function TextTabs({ title, kind, look, onLook, onPresetLook, basicTop, an
                 <ColorPick value={look.color || "#FFFFFF"} onChange={(c) => onLook({ color: c })} />
               </div>
               {posEl}
-              {/* 머리 딱지 — 자막 위 왼쪽 작은 글 (NEWS·속보 …), 자막과 같이 움직인다 (2026-10-22 사장님) */}
+              {/* 말머리 (옛 이름 머리 딱지, 2026-10-31 사장님) — 자막 위 왼쪽 작은 글 (NEWS·속보 …), 자막과 같이 움직인다 (2026-10-22 사장님) */}
               {(kind === "sub" || kind === "photo") && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-                  <span style={{ ...label, margin: 0, flexShrink: 0 }}>머리 딱지</span>
+                  <span style={{ ...label, margin: 0, flexShrink: 0 }}>말머리</span>
                   <Toggle on={Boolean(look.tag)} onChange={(v) => onLook({ tag: v ? "NEWS" : "", ...(v && !look.tagColor ? { tagColor: "#1D4ED8" } : {}) })} />
                   {look.tag ? <>
                     <input value={look.tag} onChange={(e) => onLook({ tag: e.target.value.slice(0, 12) || " " })} onKeyDown={(e) => e.stopPropagation()} placeholder="NEWS" style={{ ...input, flex: 1, minWidth: 0, height: 32, fontSize: 13 }} />
-                    <input type="color" value={(look.tagColor || "#1D4ED8").toLowerCase()} onChange={(e) => onLook({ tagColor: e.target.value.toUpperCase() })} title="딱지 색" style={{ width: 32, height: 30, padding: 0, border: `1px solid ${C.line2}`, background: "transparent", cursor: "pointer" }} />
+                    <input type="color" value={(look.tagColor || "#1D4ED8").toLowerCase()} onChange={(e) => onLook({ tagColor: e.target.value.toUpperCase() })} title="말머리 색" style={{ width: 32, height: 30, padding: 0, border: `1px solid ${C.line2}`, background: "transparent", cursor: "pointer" }} />
                   </> : <span style={{ fontSize: 12, color: C.dim }}>NEWS · 속보 · 단독처럼 자막 위에 붙는 글</span>}
                 </div>
               )}

@@ -922,7 +922,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
         extra: sub.tag ? sub.tag.replace(/^\{|\}$/g, "") : "" });
     };
     const events = fancySub(sa || wfx || Number(sst.rot) || (clip.subKf && clip.subKf.length) ? lines.flatMap((l, li) => subAnim(l, li)) : lines.flatMap(subEvents), sst, sub.size, W, H);
-    // 머리 딱지 (NEWS 등) — 자막 상자 위 왼쪽에 (미리보기 Player.tsx 와 같은 자리, 2026-10-22)
+    // 말머리 (옛 머리 딱지, NEWS 등) — 자막 상자 위 왼쪽에 딱 붙게 (미리보기 Player.tsx 와 같은 자리, 2026-10-22 · 틈 없앰 2026-10-31)
     if (sst.tag) {
       const ts = Math.max(10, Math.round(sub.size * 0.55));
       const tpad = Math.round(ts * 0.25);
@@ -941,7 +941,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = [], frames = 0, 
         const bw = Math.min(sub.halfW * 2, Math.max(...parts.map(wOf)));
         const cx = free ? sst.x * W : W / 2;
         const left = (sst.align === "left" ? cx - sub.halfW : sst.align === "right" ? cx + sub.halfW - bw : cx - bw / 2) - pad;
-        events.push(`Dialogue: 2,${assTime(l.s)},${assTime(l.e)},TG,,0,0,0,,{\\an1\\pos(${Math.round(left + tpad)},${Math.round(top - tpad - 2)})}${assEsc(String(sst.tag))}`);
+        events.push(`Dialogue: 2,${assTime(l.s)},${assTime(l.e)},TG,,0,0,0,,{\\an1\\pos(${Math.round(left + tpad)},${Math.round(top - tpad)})}${assEsc(String(sst.tag))}`);
       }
     }
     const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";

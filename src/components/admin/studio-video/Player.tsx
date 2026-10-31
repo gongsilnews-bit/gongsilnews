@@ -1167,7 +1167,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
             // 머리 딱지 (NEWS 등) — 자막 상자 위 왼쪽에 붙어 같이 움직인다 (굽기 render.js 와 같은 모양, 2026-10-22)
             return st.tag ? (
               <span style={{ display: "inline-block", position: "relative", maxWidth: "100%" }}>
-                <span style={{ position: "absolute", left: 0, bottom: "100%", marginBottom: fontPx * (st.bg ? 0.28 * (st.bgPad ?? 1) : 0.08), background: st.tagColor || "#1D4ED8", color: "#FFFFFF", fontWeight: 900, fontSize: fontPx * 0.55, lineHeight: 1.45, padding: `0 ${fontPx * 0.3}px`, fontFamily: "Pretendard, 'Malgun Gothic', sans-serif", whiteSpace: "nowrap", pointerEvents: "none" }}>{st.tag}</span>
+                <span style={{ position: "absolute", left: 0, bottom: "100%", marginBottom: fontPx * Math.max(0, (st.bg ? 0.12 * (st.bgPad ?? 1) : 0) - (effLeading(st) - 1.2) / 2) /* 자막 바탕(흰 띠) 위에 딱 붙게 — 바탕 위 여백에서 줄 간격 여유를 뺀다 (2026-10-31 사장님: 틈이 있었다) */, background: st.tagColor || "#1D4ED8", color: "#FFFFFF", fontWeight: 900, fontSize: fontPx * 0.55, lineHeight: 1.45, padding: `0 ${fontPx * 0.3}px`, fontFamily: "Pretendard, 'Malgun Gothic', sans-serif", whiteSpace: "nowrap", pointerEvents: "none" }}>{st.tag}</span>
                 {res}
               </span>
             ) : res;
