@@ -42,14 +42,27 @@ type Ep = { kind: "topic" | "vacancy" | "article" | "url" | "market"; text: stri
 type MktTrade = { date: string; price: number; floor: number; area: number };
 type Mkt = {
   candidates: { name: string; address: string }[]; picked: number; complexName: string; period: string;
-  target: { name: string; address: string };
+  target: { name: string; address: string; dong?: string };
   summary: { tradeCount: number; buildYear: number; areas: { areaKey: string; pyeong: number; tradeCount: number; latest: MktTrade | null; previous: MktTrade | null; high: MktTrade | null; low: MktTrade | null; latestJeonse: { date: string; deposit: number; floor: number } | null; jeonseRatio: number | null }[] };
 };
 /** 동 이름과 도로명 사이 쉼표 — 대본 글 자체에 "논현동, 언주로 604" 로 적는다.
  *  붙여 쓰면 성우가 "논현동엔 주로"로 잘못 끊어 읽어서 (2026-10-31 사장님: 자막도 그렇게 적고 그렇게 읽게) */
 const roadComma = (t: string) => t.replace(/([가-힣]+[0-9]*동)\s+([가-힣0-9]+(?:대로|로|길))(?=\s*\d)/g, "$1, $2");
-/** AI 대본 답의 문장마다 roadComma */
-const fixLines = <T extends { scenes: { lines: { text: string }[] }[] }>(r: T): T => { r.scenes.forEach((sc) => sc.lines.forEach((l) => { l.text = roadComma(l.text); })); return r; };
+/** 단지 이름 띄어 쓰기 — "아크로힐스논현" → "아크로힐스 논현". 붙여 쓰면 성우가 "아크로힐스 아이 논현"처럼 엉뚱하게 읽어서 (2026-10-31 사장님)
+ *  대본에 나온 동 이름(논현동 → 논현)이 앞 낱말(2자 이상)에 붙어 끝나면 띄운다. 신논현·논현동·논현역처럼 이어지는 말은 그대로 */
+function nameSpace(t: string, bases: string[]) {
+  for (const b of bases) t = t.replace(new RegExp(`([가-힣]{2,})(${b})(?=(?:의|에|은|는|이|가|을|를|과|와|도|에서|까지)?(?![가-힣]))`, "g"), "$1 $2");
+  return t;
+}
+/** AI 대본 답의 문장마다 roadComma · nameSpace. dongs = 단지 시세에서 불러온 동 이름도 함께 */
+const fixLines = <T extends { scenes: { lines: { text: string }[] }[] }>(r: T, dongs: string[] = []): T => {
+  const all = r.scenes.flatMap((sc) => sc.lines.map((l) => l.text)).join("\n");
+  const bases = [...new Set([...[...all.matchAll(/([가-힣]{2,3})동(?![가-힣])/g)].map((m) => m[1]), ...dongs.map((d) => d.replace(/동$/, ""))])].filter((b) => b.length >= 2);
+  r.scenes.forEach((sc) => sc.lines.forEach((l) => { l.text = nameSpace(roadComma(l.text), bases); }));
+  return r;
+};
+/** AI 에게 — 이름 쓰는 법 (성우가 잘 읽게) */
+const NAME_RULE = "아파트·건물·단지 이름은 브랜드와 동네 이름을 띄어 쓰고(예: 아크로힐스 논현, 래미안 대치팰리스), 영문 이름은 한글로 쓰세요(예: ACROHILLS → 아크로힐스).";
 
 async function fetchMarket(q: string, pick = 0): Promise<Mkt> {
   const r = await fetch(`/api/extension/apt-trades?mode=complex&q=${encodeURIComponent(q.trim())}&pick=${pick}`, { credentials: "include" });
@@ -547,7 +560,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     setWriting(`${aiName}가 고른 부분을 고치는 중…`);
     const off = b.onProgress((t) => setWriting(t));
     try {
-      const r = fixLines(await b.ai.script({ topic: "대본 일부 고쳐 쓰기", style: "", request: `[수정 요청] ${req.trim()}\n위 [참고 글]은 대본의 한 부분이에요. 이 부분만 요청대로 다시 써 주세요. 빈 줄로 나뉜 문단 수는 되도록 그대로, 앞뒤 대본과 이어지게. 없는 사실(숫자·날짜·이름)은 지어내지 마세요.`, chars: 0, source: part, ai: aiUse }));
+      const r = fixLines(await b.ai.script({ topic: "대본 일부 고쳐 쓰기", style: "", request: `[수정 요청] ${req.trim()}\n위 [참고 글]은 대본의 한 부분이에요. 이 부분만 요청대로 다시 써 주세요. 빈 줄로 나뉜 문단 수는 되도록 그대로, 앞뒤 대본과 이어지게. 없는 사실(숫자·날짜·이름)은 지어내지 마세요.\n${NAME_RULE}`, chars: 0, source: part, ai: aiUse }));
       const text = r.scenes.map((sc) => sc.lines.map((l) => { hints.current[l.text] = { desc: l.desc, keywords: l.keywords, kind: l.kind }; return l.text; }).join("\n")).join("\n\n");
       if (!text.trim()) throw new Error("AI 답이 비었어요. 다시 해 주세요.");
       pushHistory();
@@ -583,6 +596,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       // 에피소드 자료 — 매물은 등록된 공실 정보, 기사는 공실뉴스 기사 본문 (적힌 것만 쓰게)
       const epList = !revise && src === "episodes" ? episodes.filter(epReady) : [];
       const epMat: string[] = [];
+      const mktDongs: string[] = []; // 단지 이름 띄어 쓰기에 쓸 동 이름
       const eps: string[] = [];
       for (const [i, e] of epList.entries()) {
         const extra = e.text.trim();
@@ -623,6 +637,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           await step(`에피소드 ${i + 1} · 국토부 실거래가를 불러오는 중…`);
           const d = e.mkt && e.mkt.target ? e.mkt : await fetchMarket(e.ref, e.pick || 0);
           const nm = d.complexName || d.target.name;
+          if (d.target.dong) mktDongs.push(d.target.dong);
           eps.push(`단지 시세 — ${nm} 실거래가 (국토교통부 실거래가 신고 기준)${extra ? ` (덧붙일 말: ${extra})` : ""}`);
           epMat.push(`[에피소드 ${i + 1} 단지 시세 자료 — 국토교통부 실거래가 공개 자료를 공실뉴스가 정리]\n${marketText(d)}`);
         } else eps.push(extra);
@@ -642,7 +657,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           request.trim() ? `추가 요청: ${request.trim()}` : "",
         ].filter(Boolean).join("\n")
         : "";
-      const r = fixLines(await b.ai.script({ topic: src === "news" && news ? news.title : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : st, request: epReq || rq, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse }));
+      const r = fixLines(await b.ai.script({ topic: src === "news" && news ? news.title : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : st, request: `${epReq || rq}\n${NAME_RULE}`, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse }), mktDongs);
       pushHistory();
       hints.current = {};
       sceneTitles.current = {};
