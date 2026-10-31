@@ -45,6 +45,12 @@ type Mkt = {
   target: { name: string; address: string };
   summary: { tradeCount: number; buildYear: number; areas: { areaKey: string; pyeong: number; tradeCount: number; latest: MktTrade | null; previous: MktTrade | null; high: MktTrade | null; low: MktTrade | null; latestJeonse: { date: string; deposit: number; floor: number } | null; jeonseRatio: number | null }[] };
 };
+/** 동 이름과 도로명 사이 쉼표 — 대본 글 자체에 "논현동, 언주로 604" 로 적는다.
+ *  붙여 쓰면 성우가 "논현동엔 주로"로 잘못 끊어 읽어서 (2026-10-31 사장님: 자막도 그렇게 적고 그렇게 읽게) */
+const roadComma = (t: string) => t.replace(/([가-힣]+[0-9]*동)\s+([가-힣0-9]+(?:대로|로|길))(?=\s*\d)/g, "$1, $2");
+/** AI 대본 답의 문장마다 roadComma */
+const fixLines = <T extends { scenes: { lines: { text: string }[] }[] }>(r: T): T => { r.scenes.forEach((sc) => sc.lines.forEach((l) => { l.text = roadComma(l.text); })); return r; };
+
 async function fetchMarket(q: string, pick = 0): Promise<Mkt> {
   const r = await fetch(`/api/extension/apt-trades?mode=complex&q=${encodeURIComponent(q.trim())}&pick=${pick}`, { credentials: "include" });
   const j = await r.json().catch(() => null);
@@ -541,7 +547,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     setWriting(`${aiName}가 고른 부분을 고치는 중…`);
     const off = b.onProgress((t) => setWriting(t));
     try {
-      const r = await b.ai.script({ topic: "대본 일부 고쳐 쓰기", style: "", request: `[수정 요청] ${req.trim()}\n위 [참고 글]은 대본의 한 부분이에요. 이 부분만 요청대로 다시 써 주세요. 빈 줄로 나뉜 문단 수는 되도록 그대로, 앞뒤 대본과 이어지게. 없는 사실(숫자·날짜·이름)은 지어내지 마세요.`, chars: 0, source: part, ai: aiUse });
+      const r = fixLines(await b.ai.script({ topic: "대본 일부 고쳐 쓰기", style: "", request: `[수정 요청] ${req.trim()}\n위 [참고 글]은 대본의 한 부분이에요. 이 부분만 요청대로 다시 써 주세요. 빈 줄로 나뉜 문단 수는 되도록 그대로, 앞뒤 대본과 이어지게. 없는 사실(숫자·날짜·이름)은 지어내지 마세요.`, chars: 0, source: part, ai: aiUse }));
       const text = r.scenes.map((sc) => sc.lines.map((l) => { hints.current[l.text] = { desc: l.desc, keywords: l.keywords, kind: l.kind }; return l.text; }).join("\n")).join("\n\n");
       if (!text.trim()) throw new Error("AI 답이 비었어요. 다시 해 주세요.");
       pushHistory();
@@ -636,7 +642,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           request.trim() ? `추가 요청: ${request.trim()}` : "",
         ].filter(Boolean).join("\n")
         : "";
-      const r = await b.ai.script({ topic: src === "news" && news ? news.title : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : st, request: epReq || rq, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse });
+      const r = fixLines(await b.ai.script({ topic: src === "news" && news ? news.title : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : st, request: epReq || rq, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse }));
       pushHistory();
       hints.current = {};
       sceneTitles.current = {};
