@@ -5920,7 +5920,7 @@ function FormatsDialog({ project, onClose }: { project: Project; onClose: () => 
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   // 저장할 폴더·파일 이름을 먼저 고른다 (취소하면 만들지 않는다). 옛 앱은 저장 폴더 설정대로
-  const pick = async (kind: "mp3" | "wav" | "srt" | "txt"): Promise<string | undefined | null> => (b.exportPick ? b.exportPick(project, kind) : undefined);
+  const pick = async (kind: "mp3" | "wav" | "srt" | "txt" | "xml"): Promise<string | undefined | null> => (b.exportPick ? b.exportPick(project, kind) : undefined);
   const run = async (fn: () => Promise<unknown>, okMsg: string) => {
     setBusy(true);
     setMsg("");
@@ -5945,6 +5945,13 @@ function FormatsDialog({ project, onClose }: { project: Project; onClose: () => 
   return (
     <Modal title="다른 형식으로 내보내기" onClose={onClose} width={560}>
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+        {b.project.exportXml && b.exportPick && row("video", "프리미어·다빈치 (.xml)", "클립·자르기·목소리·음악을 그대로 옮겨요 — 폴더에 자막(.srt)·자료도 같이", () => run(async () => {
+          const f = await pick("xml");
+          if (!f) return null;
+          const r = await b.project.exportXml!(project, f);
+          if (r.skipped.length) alert(`프리미어·다빈치용 폴더를 만들었어요.\n\n옮기지 못한 것 (프리미어에서 다시 넣어 주세요):\n· ${r.skipped.join("\n· ")}\n\n자막은 같은 폴더의 .srt 를 프리미어로 가져오면 캡션으로 들어가요.`);
+          return r;
+        }, "프리미어·다빈치용 폴더를 만들었어요 (XML · 자막 · 자료)"))}
         {row("sub", "자막 (.srt)", "유튜브에 자막으로 올릴 수 있어요", () => run(async () => { const f = await pick("srt"); return f === null ? null : b.project.exportText(project, "srt", f); }, "자막 파일을 저장했어요"))}
         {row("file", "텍스트 (.txt)", "대본 글만", () => run(async () => { const f = await pick("txt"); return f === null ? null : b.project.exportText(project, "txt", f); }, "텍스트 파일을 저장했어요"))}
         {row("music", "소리 (.mp3)", "목소리·음악 소리만", () => run(async () => { const f = await pick("mp3"); if (f === null) return null; const r = await b.exportAudio(project, "mp3", { outFile: f }); return b.showFile(typeof r === "string" ? r : r.file); }, "소리 파일을 저장했어요"))}

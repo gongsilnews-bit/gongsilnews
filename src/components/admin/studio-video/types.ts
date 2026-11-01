@@ -416,6 +416,8 @@ export type VideoBridge = {
     purge?: (id: string | "all") => Promise<number>;
     addAsset: (libId: string) => Promise<Asset>;
     exportText: (p: Project, kind: "srt" | "txt", outFile?: string) => Promise<string>;
+    /** 프리미어·다빈치 XML — 고른 자리에 폴더(xml · srt · 자료)를 만든다. skipped = 옮기지 못한 것 (0.1.18부터) */
+    exportXml?: (p: Project, outFile: string) => Promise<{ file: string; dir: string; srt: string; skipped: string[] }>;
   };
   /** 내 목소리 성우 — 앱 0.1.10부터 (없으면 앱을 새로 받아야 함) */
   sttWords?: { add: (pairs: { wrong: string; right: string; context?: string }[]) => Promise<number> }; // 받아쓰기 낱말장 (앱 0.1.10부터)
@@ -508,7 +510,7 @@ export type VideoBridge = {
   animFrames?: (dir: string, key: string, start: number, urls: string[]) => Promise<string>;
   renderCancel: (id: string) => Promise<void>;
   /** [내보내기] 저장할 곳 고르기 — 취소하면 null (0.1.11부터) */
-  exportPick?: (p: Project, kind: "mp4" | "mp3" | "wav" | "srt" | "txt") => Promise<string | null>;
+  exportPick?: (p: Project, kind: "mp4" | "mp3" | "wav" | "srt" | "txt" | "xml") => Promise<string | null>;
   /** 대본을 .txt 로 저장 (저장 창) — 고른 파일 경로, 취소면 null */
   saveText?: (name: string, text: string) => Promise<string | null>;
   /** 목소리만 파일로 — 문장마다 AI 목소리를 만들어 쉼을 두고 이어 mp3·wav 하나 (프로젝트 없이, 2026-10-20) */

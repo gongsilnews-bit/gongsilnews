@@ -257,6 +257,7 @@ if (allowed) {
         purge: (id) => ipcRenderer.invoke("video:trash-purge", id), // 영구 삭제 (id 또는 "all")
         addAsset: (libId) => ipcRenderer.invoke("video:project-add-asset", libId),
         exportText: (p, kind, outFile) => ipcRenderer.invoke("video:project-export-text", p, kind, outFile),
+        exportXml: (p, outFile) => ipcRenderer.invoke("video:project-export-xml", p, outFile), // 프리미어·다빈치 XML (0.1.18부터)
       },
       voice: (dir, text, voiceId, opts) => ipcRenderer.invoke("video:voice", dir, text, voiceId, opts), // opts.fresh = 다시 만들기 (0.1.10부터)
       // 성우 요청이 몰려 기다리는 중 — { who, sec } (sec 0 = 다시 만드는 중). 끄는 함수를 돌려준다 (2026-10-31)

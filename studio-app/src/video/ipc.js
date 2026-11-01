@@ -437,7 +437,7 @@ function register(base) {
   ipcMain.handle("video:import", (e, target) => require("./import").importAny(target, (t) => send(e, "video:progress", t)));
   ipcMain.handle("video:import-pick", async (e) => {
     const im = require("./import");
-    const r = await dialog.showOpenDialog(winOf(e), { title: "가져올 설계도 고르기 (공실마케팅 영상 JSON · 캡컷 draft_content.json)", defaultPath: im.inboxDir(), properties: ["openFile"], filters: [{ name: "영상 설계도 (JSON)", extensions: ["json"] }] });
+    const r = await dialog.showOpenDialog(winOf(e), { title: "가져올 파일 고르기 (프리미어·다빈치 XML)", properties: ["openFile"], filters: [{ name: "편집 XML (프리미어·다빈치)", extensions: ["xml"] }, { name: "예전 설계도·캡컷 (JSON)", extensions: ["json"] }] });
     return r.canceled || !r.filePaths[0] ? "" : r.filePaths[0];
   });
   ipcMain.handle("video:import-open-inbox", () => shell.openPath(require("./import").inboxDir()));
@@ -591,6 +591,12 @@ function register(base) {
     const f = project.exportText(p, kind, outFile);
     shell.showItemInFolder(f);
     return f;
+  });
+  // 프리미어·다빈치로 (FCP7 XML + .srt + 자료 폴더, 2026-11-01)
+  ipcMain.handle("video:project-export-xml", async (e, p, outFile) => {
+    const r = await require("./xml").exportXml(p, outFile, (t, f) => send(e, "video:render-progress", t, f));
+    shell.showItemInFolder(r.file);
+    return r;
   });
 
   /* ── AI 목소리 ── */
@@ -1006,8 +1012,8 @@ function register(base) {
   ipcMain.handle("video:render-cancel", (_e, id) => jobs.set(id, true));
   // [내보내기] — 저장할 폴더·파일 이름 고르기 (브루·윈도우 저장 창처럼). 고른 폴더는 다음에도 먼저 보여 준다
   ipcMain.handle("video:export-pick", async (e, p, kind) => {
-    const ext = ["mp3", "wav", "srt", "txt"].includes(kind) ? kind : "mp4";
-    const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"] };
+    const ext = ["mp3", "wav", "srt", "txt", "xml"].includes(kind) ? kind : "mp4";
+    const NAMES = { mp4: ["영상으로 내보내기 (.mp4)", "MP4 영상"], mp3: ["소리로 내보내기 (.mp3)", "MP3 소리"], wav: ["소리로 내보내기 (.wav)", "WAV 소리 (고음질)"], srt: ["자막으로 내보내기 (.srt)", "SRT 자막"], txt: ["텍스트로 내보내기 (.txt)", "텍스트"], xml: ["프리미어·다빈치로 내보내기 (.xml)", "XML (프리미어·다빈치)"] };
     // 목소리만 저장(텍스트로 영상)은 [AI보이스] 폴더(안에서 날짜별)가 기본 (2026-10-20 · 10-23 사장님)
     const dir = p && p.voiceOnly ? (folders.ensure(), folders.byDate(folders.aiAudioDir())) : lastExportDir && fs.existsSync(lastExportDir) && !folders.inFinished(lastExportDir) ? lastExportDir : folders.exportDir(); // 완성영상이면 늘 오늘 날짜 폴더 (2026-10-23)
     const base = String((p && p.name) || "무제").replace(/[\\/:*?"<>|]/g, "_"); // "20261021 제목.mp4" — 프로젝트 이름 그대로 (2026-10-20 사장님)

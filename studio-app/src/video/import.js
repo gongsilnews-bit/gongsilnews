@@ -373,6 +373,14 @@ async function importAny(target, onProgress) {
   let f = String(target || "");
   if (!f || !fs.existsSync(f)) throw new Error("가져올 파일을 찾지 못했어요.");
   if (fs.statSync(f).isDirectory()) f = path.join(f, "draft_content.json");
+  // 프리미어·다빈치·AI 가 만든 FCP7 XML (2026-11-01 사장님)
+  if (/\.(xml|fcpxml)$/i.test(f)) {
+    if (/\.fcpxml$/i.test(f)) throw new Error("파이널컷(.fcpxml)은 아직 못 열어요. 프리미어·다빈치의 [Final Cut Pro XML(.xml)]로 내보내 주세요.");
+    onProgress("XML 을 읽는 중…");
+    const t = require("./xml").fromXml(f);
+    t.ratio = nearRatio(t.W, t.H);
+    return build(t, onProgress);
+  }
   const j = readJson(f);
   if (!j) throw new Error("파일을 읽지 못했어요 (JSON 이 아니에요).");
   onProgress("설계도를 읽는 중…");
