@@ -117,6 +117,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   useEffect(() => {
     if (aiAuto) setPanel("aiedit");
   }, [aiAuto]);
+  // 대본 → [AI 이미지·영상으로 만들기] — 열리자마자 AI 이미지·영상 제작 창 (한 번만, 2026-10-31 사장님)
+  const [aiMake] = useState(() => Boolean(initial.settings?.aiMake));
+  useEffect(() => {
+    if (!aiMake) return;
+    setPanel("aimake");
+    change((p) => { delete p.settings.aiMake; }, false);
+  }, [aiMake]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 목소리 창을 닫으면 (이름을 바꿨을 수 있어서) 다시 읽는다
     if (panel) return;

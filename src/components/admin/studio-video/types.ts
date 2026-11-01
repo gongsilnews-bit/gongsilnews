@@ -269,6 +269,8 @@ export type Settings = {
   aiAuto?: boolean;
   /** 대본 쓰고 편집 [편집 요청 사항] — 편집 화면 AI 자동 편집이 이 요청으로 한 번 (영상 꾸미기에서 고른 것은 지킨다, 2026-10-22) */
   aiAutoReq?: { request: string; keepTrans: boolean };
+  /** 대본 → [AI 이미지·영상으로 만들기] — 편집 화면이 열리면 AI 이미지·영상 제작 창을 바로 띄우고 지운다 (2026-10-31) */
+  aiMake?: boolean;
 };
 
 export type Project = {

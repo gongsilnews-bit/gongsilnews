@@ -126,7 +126,9 @@ type PicKind = NonNullable<NonNullable<Clip["aiPic"]>["kind"]>;
 const PIC_KINDS: [PicKind, string][] = [["auto", "자동"], ["background", "배경"], ["character", "인물"], ["graph", "그래프"]];
 const LISTING_LABEL = /소재지|거래|금액|가격|보증금|월세|면적|층|사용승인|준공|방향|방\s*수|방\/|욕실|입주|주차|관리비|종류|용도/;
 
-export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUndo, onClose, autoStart, mode = "auto", onSwitch }: {
+export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUndo, onClose, autoStart, mode = "auto", onSwitch, doneLabel }: {
+  /** 대본 마법사 안에서 띄울 때 — 맨 아래 [닫기] 대신 이 글의 큰 단추 (누르면 onClose → 편집 화면으로, 2026-10-31) */
+  doneLabel?: string;
   /** 두 페이지 오가기 — 자동 편집 ② [AI 이미지·영상 만들기 →] · 제작 [← AI 자동 편집으로] (2026-10-21 사장님) */
   onSwitch?: (to: "auto" | "make") => void;
   /** auto = AI 자동 영상 편집 · 초안 (내 사진·영상 + 무료 자료 + 꾸미기 한 번에) / make = AI 이미지·영상 제작 (프롬프트·이미지·동영상) — 2026-10-21 사장님 */
@@ -1359,10 +1361,11 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
         <Btn disabled={Boolean(busy)} onClick={() => void bulkPick()} title="Flow 등에서 만든 사진·동영상 여러 개 — 파일 이름 번호(clip 1)로 클립에 맞춰 넣어요"><Icon name="open" size={15} />한 번에 올리기</Btn>
         <Btn onClick={() => window.open("https://labs.google/flow", "_blank")} title="Google Flow 열기 (브라우저)">Flow 열기 ↗</Btn>
       </div>
-      <Btn onClick={onClose}>닫기</Btn>
+      {!doneLabel && <Btn onClick={onClose}>닫기</Btn>}
       {/* 아래 오른쪽 — 선택한 클립 이미지 만들기 · 동영상 만들기 (2026-10-21 사장님) */}
       <Btn primary disabled={Boolean(busy) || Boolean(picBusy) || (!emptyN && !selEmpty.length)} onClick={() => void drawAll()} style={{ height: 46, padding: "0 20px", fontSize: 15 }}><Icon name="image" size={17} />{selEmpty.length ? `선택한 클립 이미지 만들기 (${selEmpty.length})` : `빈칸 이미지 만들기 (${emptyN})`}</Btn>
       <Btn primary disabled={Boolean(busy) || Boolean(picBusy)} onClick={() => { if (gemKey === false) { setBatchAsk(false); setNoKeyFor("__all"); return; } setNoKeyFor(""); setBatchAsk(!batchAsk); }} style={{ height: 46, padding: "0 20px", fontSize: 15 }}><Icon name="video" size={17} />{selEmpty.length ? "선택한 클립" : "전체"} 동영상 만들기 ({videoTargets().length})</Btn>
+      {doneLabel && <Btn primary disabled={Boolean(busy) || Boolean(picBusy)} onClick={onClose} style={{ height: 46, padding: "0 22px", fontSize: 15.5, background: "#16a34a", borderColor: "#16a34a" }}>{doneLabel}</Btn>}
         </>
       )}
     </>
