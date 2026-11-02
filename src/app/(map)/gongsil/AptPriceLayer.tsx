@@ -97,9 +97,10 @@ function matchVacancies(complexes: Complex[], vacancies: any[]) {
   return out;
 }
 
-export default function AptPriceLayer({ autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies }: {
+export default function AptPriceLayer({ mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies }: {
   kakaoMapRef: React.MutableRefObject<any>;
   kinds?: { apt: boolean; offi: boolean };
+  mobile?: boolean; // 모바일 공실열람 — 상세 창을 아래 시트로
   autoShow?: boolean; // 처음부터 켜 둘 탭인지 ([전체] · [아파트·오피스텔])
   buttonSlot?: HTMLElement | null; // 검색 줄 [내 위치] 옆 자리 (2026-11-02 사장님) — 없으면 지도 오른쪽
   mapLoaded: boolean;
@@ -314,6 +315,7 @@ export default function AptPriceLayer({ autoShow = false, buttonSlot, kakaoMapRe
 
       {on && detail && pickedId && (
         <AptDetailPanel
+          mobile={mobile}
           detail={detail}
           onClose={close}
           vacancyCount={[...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])].length}

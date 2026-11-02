@@ -107,7 +107,7 @@ function PriceChart({ points }: { points: { d: string; v: number }[] }) {
   const ticks = [0, 1, 2, 3].map((i) => lo + ((hi - lo) * i) / 3);
   const tickLabel = (v: number) => (v >= 10000 ? `${Math.round(v / 1000) / 10}억` : `${Math.round(v / 100) * 100}만`);
   return (
-    <svg width={W} height={H + VOL + 22} style={{ display: "block" }}>
+    <svg width="100%" viewBox={`0 0 ${W} ${H + VOL + 22}`} style={{ display: "block", maxWidth: W }}>
       {ticks.map((t) => (
         <g key={t}>
           <line x1={PADL} x2={W - PADR} y1={y(t)} y2={y(t)} stroke="#f1f3f4" />
@@ -476,7 +476,7 @@ function InfoRequest({ detail, groups }: { detail: AptDetail; groups: { label: s
  *  로그인 안 함: [무료 공실등록] → 로그인 뒤 등록 화면 · 부동산 회원·관리자: 단지가 미리 채워진 등록 화면 · 일반 회원: 등록 단추 숨김
  *  조회수는 실제로 센 것만, 5번 이상일 때만 보인다 (지어내지 않는다) */
 const VIEW_SHOW_MIN = 5;
-function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void }) {
+function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, mobile = false }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void; mobile?: boolean }) {
   const auctionCount = (detail.auction_ids || []).length;
   const [viewer, setViewer] = useState<{ loggedIn: boolean; realtor: boolean; admin: boolean; weekViews: number } | null>(null);
   useEffect(() => {
@@ -488,9 +488,9 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions }
 
   const canRegister = !viewer || !viewer.loggedIn || viewer.realtor; // 불러오기 전엔 보인다
   const base = viewer?.admin ? "/admin" : "/realty_admin";
-  const target = `${base}?menu=gongsil&action=write&complex=${encodeURIComponent(detail.id)}`;
+  const target = mobile ? `/m/admin/vacancy/write?complex=${encodeURIComponent(detail.id)}` : `${base}?menu=gongsil&action=write&complex=${encodeURIComponent(detail.id)}`;
   const register = () => {
-    window.location.href = viewer?.loggedIn ? target : `/login?returnTo=${encodeURIComponent(target)}`;
+    window.location.href = viewer?.loggedIn ? target : `${mobile ? "/m/login" : "/login"}?returnTo=${encodeURIComponent(target)}`;
   };
   const hasVacancy = vacancyCount > 0 && !!onShowVacancies;
   if (!hasVacancy && !canRegister) return null;
@@ -530,8 +530,9 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions }
 }
 
 /* ── 상세 창 ── */
-export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions }: {
+export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, mobile = false }: {
   detail: AptDetail; onClose: () => void; vacancyCount?: number; onShowVacancies?: () => void; onShowAuctions?: () => void;
+  mobile?: boolean; // 모바일: 아래에서 올라오는 시트 (2026-11-02 사장님: 옆에 붙는 모양은 모바일에 좋다)
 }) {
   const groups = useMemo(() => groupsOf(detail), [detail]);
   const defaultGroup = useMemo(() => {
@@ -587,8 +588,8 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
 
   return (
     // 지도 가운데 카드 + 뒤를 어둡게 (2026-11-02 사장님: 단지 정보는 가운데에). 바깥·Esc 로 닫는다
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: 600, maxWidth: "100%", height: "100%", maxHeight: 860, borderRadius: 16, overflow: "hidden", background: "#f3f4f6", boxShadow: "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
+    <div onClick={onClose} style={{ position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
+    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile ? "100%" : 600, maxWidth: "100%", height: mobile ? "92%" : "100%", maxHeight: mobile ? undefined : 860, borderRadius: mobile ? "16px 16px 0 0" : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
       {/* 머리 */}
       <div ref={headRef} style={{ background: ACC, padding: "14px 16px 14px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff" }}>
@@ -759,7 +760,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
       </div>
 
       {/* 맨 아래 고정 — [이 단지 공실 n개 보기] [무료 공실등록] (2026-11-02 사장님: 단지가 보이면 부동산에게 공실등록 유도) */}
-      <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} />
+      <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} />
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (

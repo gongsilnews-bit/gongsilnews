@@ -434,6 +434,32 @@ function MobileVacancyWrite() {
     setRAddr(info.address + (info.address_detail ? ` ${info.address_detail}` : ""));
   };
 
+  // 공실열람 실거래가 지도 [무료 공실등록] — 그 단지 주소·이름·종류·주변 인프라를 미리 채운다 (2026-11-02 사장님: 모바일도)
+  const complexParam = searchParams.get("complex");
+  const [complexId, setComplexId] = useState("");
+  useEffect(() => {
+    if (editId || !complexParam) return;
+    (async () => {
+      const res = await fetch(`/api/apt-prices?id=${encodeURIComponent(complexParam)}`).then((r) => r.json()).catch(() => null);
+      const c = res?.success ? res.complex : null;
+      if (!c) return;
+      const { LAWD_NAMES } = await import("@/utils/aptMapShared");
+      const [sd = "", ...rest] = String(LAWD_NAMES[c.lawd_cd] || "").split(" ");
+      setPropertyType("아파트·오피스텔");
+      setSubCategory(c.kind === "offi" ? "오피스텔" : "아파트");
+      setSido(sd); setSigungu(rest.join(" ")); setDong(c.dong); setDetailAddr(c.jibun); setBuildingName(c.name);
+      setAddressSearchCompleted(true);
+      setComplexId(c.id);
+      if (c.lat && c.lng) {
+        setCoords({ lat: c.lat, lng: c.lng });
+        try {
+          const { searchNearbyInfrastructure } = await import("@/app/actions/geocode");
+          setInfrastructure(await searchNearbyInfrastructure(c.lat, c.lng));
+        } catch (e) { console.error(e); }
+      }
+    })();
+  }, [editId, complexParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 수정 모드: 데이터 로드
   useEffect(() => {
     if (!editId) return;
@@ -942,6 +968,7 @@ function MobileVacancyWrite() {
         direction: isCommercial ? undefined : direction,
 
         sido, sigungu, dong, building_name: buildingName||undefined, detail_addr: detailAddr||undefined,
+        ...(complexId ? { complex_id: complexId } : {}),
         apt_dong: aptDong||undefined, hosu: hosu||undefined, address_exposure: addressExposure,
         lat: coords?.lat, lng: coords?.lng,
         parking, move_in_date: moveInDate, description: description||undefined,

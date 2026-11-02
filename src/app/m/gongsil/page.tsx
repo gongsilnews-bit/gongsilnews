@@ -16,6 +16,7 @@ import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 import GongsilRegisterPromoOverlay from "@/app/(map)/gongsil/GongsilRegisterPromoOverlay";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
+import AptPriceLayer from "@/app/(map)/gongsil/AptPriceLayer";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 const MAX_MOBILE_MAP_LEVEL = 6;
@@ -76,6 +77,8 @@ function MobileGongsilContent() {
   const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [priceSlot, setPriceSlot] = useState<HTMLSpanElement | null>(null);
+  const [aptHiddenIds, setAptHiddenIds] = useState<Set<string>>(new Set()); // 단지 실거래가 표시에 숫자로 붙은 공실 — 지도에 따로 안 그림 // [아파트 실거래가][오피스텔 실거래가] 단추 자리 (내 위치 아래)
   const [detailLoading, setDetailLoading] = useState(false);
 
   /*
@@ -1073,7 +1076,7 @@ function MobileGongsilContent() {
     // Group vacancies by unique coordinate
     const isZoomedIn = zoomLevel <= 5;
     const coordinateGroups = new Map<string, any[]>();
-    filteredVacancies.forEach((v) => {
+    filteredVacancies.filter((v) => !aptHiddenIds.has(String(v.id))).forEach((v) => {
       const coords = getJitteredCoords(v, isZoomedIn);
       if (coords.lat && coords.lng) {
         const key = `${coords.lat.toFixed(6)}_${coords.lng.toFixed(6)}`;
@@ -1117,7 +1120,7 @@ function MobileGongsilContent() {
     });
 
     clustererRef.current.addMarkers(markersRef.current);
-  }, [filteredVacancies, mapLoaded, zoomLevel, effectiveMode]);
+  }, [filteredVacancies, mapLoaded, zoomLevel, effectiveMode, aptHiddenIds]);
 
   // 지도 범위 내 공실광고 개수 업데이트 및 지도 변화(이벤트) 연동
   useEffect(() => {
@@ -1454,6 +1457,29 @@ function MobileGongsilContent() {
           <div style={{ position: "relative", flex: 1, display: isDirectView ? "none" : "flex", flexDirection: "column", backgroundColor: "#fff" }}>
             {/* 카카오 지도 */}
             <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
+
+            {/* 아파트·오피스텔 실거래가 (PC 공실열람과 같은 것, 2026-11-02 사장님: 모바일에도) */}
+            <span ref={setPriceSlot} style={{ position: "absolute", top: 58, right: 16, zIndex: 20, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }} />
+            <AptPriceLayer
+              mobile
+              autoShow
+              buttonSlot={priceSlot}
+              kakaoMapRef={kakaoMapRef}
+              mapLoaded={mapLoaded}
+              vacancies={filteredVacancies}
+              onShowVacancies={(ids) => {
+                const list = (vacancies || []).filter((v: any) => ids.includes(String(v.id)));
+                window.history.pushState({ panel: "cluster" }, "");
+                setSelectedVacancy(null);
+                setSelectedCluster(list);
+              }}
+              onHideVacancies={(ids) => setAptHiddenIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
+              // 모바일 경매는 별도 화면 — 1건이면 그 물건, 여러 건이면 그 단지 위치로 (2026-11-02)
+              onShowAuctions={(ids) => {
+                const c = kakaoMapRef.current?.getCenter();
+                router.push(ids.length === 1 ? `/m/auction?id=${ids[0]}` : `/m/auction?lat=${c?.getLat()}&lng=${c?.getLng()}&level=3`);
+              }}
+            />
 
             {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (
