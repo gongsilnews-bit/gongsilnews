@@ -555,7 +555,8 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
     if (!mobile) return;
     if (!window.history.state?.aptDetail) window.history.pushState({ ...(window.history.state || {}), aptDetail: 1 }, "");
     // 지도 화면의 뒤로가기 처리(목록·공실 닫기)보다 먼저 받아서 단지 창만 닫는다
-    const onPop = (e: PopStateEvent) => { e.stopImmediatePropagation(); closeRef.current(); };
+    // 단, 위에 덮은 공실 목록·상세에서 돌아와 이 창의 자리에 닿은 것이면 그냥 둔다 — 목록만 닫히고 단지 정보가 남게 (2026-11-03 사장님)
+    const onPop = (e: PopStateEvent) => { if ((e.state as { aptDetail?: number } | null)?.aptDetail) return; e.stopImmediatePropagation(); closeRef.current(); };
     window.addEventListener("popstate", onPop, true);
     return () => window.removeEventListener("popstate", onPop, true);
   }, [mobile]);

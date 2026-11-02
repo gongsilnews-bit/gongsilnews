@@ -17,6 +17,7 @@ export { LAWD_NAMES, areaLabel, supplyFor };
 export type { AreaSummary, Rent, Trade };
 
 const MONTHS = 36;
+export const RECENT_MONTHS = 3; // 매일 밤은 최근 3개월만 (실거래는 계약 30일 안에 신고) — 36개월 전체는 한 달에 한 번 (2026-11-03 사장님)
 const RENT_KEEP = 100; // 전월세는 많다 — 단지마다 최근 100건만 (11-02 400건으로 넣다 DB 가 멈춤)
 const WRITE_BATCH = 10; // 한 번에 10곳씩, 사이에 쉬면서 (Nano DB 보호)
 const FP_VERSION = "v2"; // 저장 모양을 바꾸면 올린다 — 다음 갱신 때 모든 단지를 한 번 다시 쓴다
@@ -108,8 +109,9 @@ export const withAgent = (pub: Record<string, number> | null | undefined, agent:
 const fingerprint = (trades: Trade[], rents: Rent[]) =>
   [FP_VERSION, trades.length, trades[0]?.d, trades[0]?.p, rents.length, rents[0]?.d, rents[0]?.dep, rents[0]?.m].join("|");
 
-export async function syncTrades(lawd: string, kind: Kind = "apt") {
-  const months = recentMonths(MONTHS);
+type Group = { name: string; dong: string; jibun: string; buildYear: number; trades: Trade[]; rents: Rent[] };
+/** 몇 달치 매매·전월세를 받아 단지(법정동+지번)별로 묶는다 */
+async function fetchGroups(lawd: string, kind: Kind, months: string[]) {
   const k = KIND[kind];
   const head = (it: string) => ({ name: tag(it, k.nameTag), dong: tag(it, "umdNm"), jibun: tag(it, "jibun"), buildYear: num(tag(it, "buildYear")) });
   const sales = (await inBatches(months, 2, (ym) => monthItems(kind, "Trade", lawd, ym)))
@@ -120,8 +122,7 @@ export async function syncTrades(lawd: string, kind: Kind = "apt") {
     .map((it) => ({ ...head(it), r: { a: num(tag(it, "excluUseAr")), dep: num(tag(it, "deposit")), m: num(tag(it, "monthlyRent")), d: date(it), f: num(tag(it, "floor")) } as Rent }))
     .filter((x) => x.name && x.dong && x.jibun && x.r.dep > 0 && x.r.a > 0);
 
-  type G = { name: string; dong: string; jibun: string; buildYear: number; trades: Trade[]; rents: Rent[] };
-  const byId = new Map<string, G>();
+  const byId = new Map<string, Group>();
   const group = (x: ReturnType<typeof head>) => {
     const id = `${k.idPrefix}${lawd}:${x.dong}:${x.jibun}`;
     const g = byId.get(id) || { name: x.name, dong: x.dong, jibun: x.jibun, buildYear: x.buildYear, trades: [], rents: [] };
@@ -130,7 +131,12 @@ export async function syncTrades(lawd: string, kind: Kind = "apt") {
   };
   for (const x of sales) group(x).trades.push(x.t);
   for (const x of rents) group(x).rents.push(x.r);
+  return { byId, sales: sales.length, rents: rents.length };
+}
 
+/** 한 달에 한 번 — 36개월 전체를 받아 통째로 맞춘다 (36개월 밖으로 나간 단지는 시세를 비운다) */
+export async function syncTrades(lawd: string, kind: Kind = "apt") {
+  const { byId, sales, rents } = await fetchGroups(lawd, kind, recentMonths(MONTHS));
   const supabase = db();
   const { data: old, error } = await supabase.from("apt_complexes").select("id, supply_map, agent_supply, fp").eq("lawd_cd", lawd).eq("kind", kind);
   if (error) throw new Error(`DB 읽기 오류: ${error.message}`);
@@ -157,7 +163,45 @@ export async function syncTrades(lawd: string, kind: Kind = "apt") {
       .update({ trades: [], rents: [], areas: [], rep_area: null, rep_supply: null, rep_price: null, rep_date: null, trade_count: 0, fp: "gone" })
       .in("id", gone.slice(i, i + 50));
   }
-  return { kind, complexes: byId.size, written: rows.length, sales: sales.length, rents: rents.length, emptied: gone.length };
+  return { kind, complexes: byId.size, written: rows.length, sales, rents, emptied: gone.length };
+}
+
+/** 매일 밤 — 최근 몇 달만 받아, 거래가 있는 단지의 그 달 거래만 새로 바꿔 끼운다 (해제된 거래도 빠진다).
+ *  거래가 없는 단지는 건드리지 않는다. 36개월 밖으로 나간 거래는 여기서도 덜어 낸다 */
+export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MONTHS) {
+  const months = recentMonths(n);
+  const from = months.at(-1)!, keepFrom = recentMonths(MONTHS).at(-1)!;
+  const ym = (d: string) => d.replace(/-/g, "").slice(0, 6);
+  const older = <T extends { d: string }>(list: T[] | null | undefined) => (list || []).filter((x) => ym(x.d) < from && ym(x.d) >= keepFrom);
+  const { byId, sales, rents } = await fetchGroups(lawd, kind, months);
+  const supabase = db();
+  type Old = { id: string; trades: Trade[] | null; rents: Rent[] | null; supply_map: Record<string, number> | null; agent_supply: Record<string, number> | null; fp: string | null };
+  const ids = [...byId.keys()];
+  const oldById = new Map<string, Old>();
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase.from("apt_complexes").select("id, trades, rents, supply_map, agent_supply, fp").in("id", ids.slice(i, i + 100));
+    if (error) throw new Error(`DB 읽기 오류: ${error.message}`);
+    for (const row of (data || []) as Old[]) oldById.set(row.id, row);
+  }
+  let added = 0;
+  const rows = [...byId.entries()].flatMap(([id, g]) => {
+    const o = oldById.get(id);
+    const trades = byDateDesc([...older(o?.trades), ...g.trades]);
+    const kept = byDateDesc([...older(o?.rents), ...g.rents]).slice(0, RENT_KEEP);
+    const fp = fingerprint(trades, kept);
+    if (o?.fp === fp) return [];
+    if (!o) added++;
+    return [{
+      id, kind, lawd_cd: lawd, dong: g.dong, jibun: g.jibun, name: g.name, build_year: g.buildYear || null,
+      trades, rents: kept, fp, ...summarize(trades, withAgent(o?.supply_map, o?.agent_supply)), updated_at: new Date().toISOString(),
+    }];
+  });
+  for (let i = 0; i < rows.length; i += WRITE_BATCH) {
+    const { error: e } = await supabase.from("apt_complexes").upsert(rows.slice(i, i + WRITE_BATCH));
+    if (e) throw new Error(`DB 저장 오류: ${e.message}`);
+    await sleep(250);
+  }
+  return { kind, months: n, complexes: byId.size, written: rows.length, added, sales, rents };
 }
 
 /* ── 2. 위치 ── */

@@ -82,28 +82,12 @@
       "schedule": "15 * * * *"
     },
     {
-      "path": "/api/cron/apt-prices?lawd=11680",
-      "schedule": "0 19 * * *"
+      "path": "/api/cron/apt-prices/round?mode=full",
+      "schedule": "*/5 15-16 * * *"
     },
     {
-      "path": "/api/cron/apt-prices?lawd=11650",
-      "schedule": "10 19 * * *"
-    },
-    {
-      "path": "/api/cron/apt-prices?lawd=11710",
-      "schedule": "20 19 * * *"
-    },
-    {
-      "path": "/api/cron/apt-prices?lawd=11680&kind=offi",
-      "schedule": "30 19 * * *"
-    },
-    {
-      "path": "/api/cron/apt-prices?lawd=11650&kind=offi",
-      "schedule": "40 19 * * *"
-    },
-    {
-      "path": "/api/cron/apt-prices?lawd=11710&kind=offi",
-      "schedule": "50 19 * * *"
+      "path": "/api/cron/apt-prices/round?mode=recent",
+      "schedule": "*/5 17-21 * * *"
     }
   ]
 }
