@@ -173,7 +173,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
             }}
             title="공실마케팅 홈"
           >
-            공실마케팅
+            공실마케팅studio
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>

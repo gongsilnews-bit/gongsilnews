@@ -26,7 +26,7 @@ export default function StudioFooter() {
             <Link href="/marketing" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/new_logo.png" alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
-              <span style={{ fontSize: 20, fontWeight: 900 }}>공실마케팅</span>
+              <span style={{ fontSize: 20, fontWeight: 900 }}>공실마케팅studio</span>
             </Link>
             <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS · 영상까지</p>
             <Link href="/marketing#download" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>앱 받기</Link>
