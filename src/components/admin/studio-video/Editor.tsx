@@ -4886,9 +4886,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           {(() => {
             const selL = panel === "layer" ? (project.layers || []).find((x) => x.id === selLayer) : undefined;
             const el: { icon: string; label: string; on: boolean; off?: boolean; title: string; go: () => void; txt?: string }[] = [
-              { icon: "ai", label: "AI 자동 편집", on: panel === "aiedit", title: "내 사진·영상과 무료 자료로 화면을 채우고 음악·전환·그래픽·자막까지 — 완성 초안 한 번에", go: () => setPanel(panel === "aiedit" ? "" : "aiedit") },
-              // [AI] — AI 이미지·영상 제작 창 바로 열기 (이미지 편집의 [AI] 처럼, 2026-10-22 사장님)
-              { icon: "ai", txt: "AI", label: "AI 이미지·영상 제작", on: panel === "aimake", title: "클립마다 AI 이미지·동영상 만들기", go: () => setPanel(panel === "aimake" ? "" : "aimake") },
+              // [AI 자동 편집] · [AI 이미지·영상 제작] 단추는 오른쪽 줄에서 뺐다 (2026-11-02 사장님)
               { icon: "image", label: "사진·영상", on: side === "library", title: "사진·영상 고르기", go: () => { if (side === "library") { setPanel(""); setLibOpen(false); } else { setPanel(""); setLibOpen(true); } } },
               // 메인자막 + 텍스트 = [텍스트] 하나 — 칸 위 [메인자막][텍스트] 탭 (2026-10-25 사장님)
               { icon: "font", label: "텍스트", on: panel === "subtitle" || panel === "subanim" || panel === "text" || selL?.type === "text", title: "텍스트 — [메인자막] 모양·애니메이션 · [텍스트] 넣기·꾸미기",
@@ -5378,6 +5376,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           { icon: "play", label: "이 부분 보기", desc: "미리보기에서 전환 앞뒤를 틀어 봐요", run: () => { player.current?.seek(Math.max(0, it.start - Math.min(tr.a, prev.dur * 0.45) - 0.8)); setTimeout(() => player.current?.play(), 50); } },
           { icon: "copy", label: "모든 클립 사이에 똑같이", desc: "이 전환을 모든 클립 사이에 넣어요", run: () => allTrans({ ...tr }) },
           { icon: "close", label: "화면전환 없음", desc: "전환을 빼요 — 오른쪽 칸에 [없음]으로 보여요", danger: true, run: () => { change((p) => { const c = findClip(p, it.clip.id)?.clip; if (c) delete c.trans; }); setTransClip(it.clip.id); setPanel("trans"); say("화면전환 없음으로 바꿨어요"); } },
+          // 한 번에 모두 빼기 — 칩 메뉴에서 바로 (2026-11-02 사장님: [없음]+[모두 똑같이]를 찾기 어려움)
+          { icon: "close", label: "모든 화면전환 없애기", desc: "모든 클립 사이의 화면전환을 한 번에 빼요 (되돌리기 Ctrl+Z)", danger: true, run: () => allTrans(null) },
         ]} />;
       })()}
       {media && (() => {

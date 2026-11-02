@@ -1263,7 +1263,7 @@ const TABS: { id: TabId; label: string; subs: Sub[] }[] = [
   { id: "fun", label: "예능", subs: [STK_SUB("fx"), STK_SUB("comic"), { id: "fsub", label: "예능 자막", tpl: catOf("예능 자막") }, { id: "fword", label: "예능 글자", tpl: catOf("예능 글자") }, { id: "react", label: "반응", tpl: catOf("반응") }] },
   { id: "vlog", label: "브이로그", subs: [{ id: "vlog", label: "브이로그", tpl: catOf("브이로그") }, { id: "trip", label: "여행 경로", tpl: isTrip }] },
   // 구독·좋아요 (2026-10-20 사장님: 프리미어 컴포저 Social Media 처럼 움직이는 것)
-  { id: "social", label: "구독·좋아요", subs: [{ id: "subbtn", label: "구독 버튼", tpl: catOf("구독 버튼") }, { id: "likes", label: "좋아요·알림", tpl: catOf("좋아요·알림") }, { id: "follow", label: "SNS 팔로우", tpl: catOf("SNS 팔로우") }] },
+  { id: "social", label: "구독·좋아요", subs: [{ id: "subbtn", label: "구독·팔로우", tpl: catOf("구독 버튼") }, { id: "likes", label: "좋아요·알림", tpl: catOf("좋아요·알림") }, { id: "follow", label: "SNS 팔로우", tpl: catOf("SNS 팔로우") }] },
   {
     id: "etc", label: "기타", subs: [
       { id: "bar", label: "자막바", tpl: catOf("자막바") }, { id: "title", label: "제목", tpl: catOf("제목") }, { id: "card", label: "말풍선·카드", tpl: catOf("말풍선·카드") },

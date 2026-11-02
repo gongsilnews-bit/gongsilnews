@@ -48,7 +48,7 @@ function drawWith(d: TplDef, vals: string[], color: string, t: number, o?: TplOp
 }
 
 type Kind = "text" | "sticker" | "motion";
-type Field = { label: string; def: string; multi?: boolean };
+type Field = { label: string; def: string; multi?: boolean; /** 한 번 넣은 값을 기억해 다음에 저절로 채우는 열쇠 (SNS 아이디 등) */ mem?: string };
 type Draw = (f: string[], c: string, t: number) => HTMLCanvasElement;
 export type TplDef = { id: string; cat: string; label: string; kind: Kind; fields: Field[]; color: string; w: number; y?: number; anim: LayerAnim; dur?: number; draw: Draw; /** 누르는 순간 (초) — 넣으면 그때마다 큰 딸깍 */ clicks?: number[] };
 
@@ -1490,7 +1490,7 @@ const likeCount: Draw = (f, c, t) => {
 };
 
 /** SNS 팔로우 하단 바 — 로고 네모가 톡 나오고 오른쪽으로 글 띠가 펼쳐짐 (한 번) */
-type SnsKind = "youtube" | "insta" | "tiktok" | "blog" | "web";
+type SnsKind = "youtube" | "insta" | "tiktok" | "blog" | "web" | "facebook" | "threads";
 function snsLogo(g: CanvasRenderingContext2D, kind: SnsKind, x: number, y: number, s: number) {
   if (kind === "youtube") { rr(g, x, y, s, s, s * 0.24); g.fillStyle = "#FFFFFF"; g.fill(); playMark(g, x + s * 0.14, y + s * 0.26, s * 0.72, s * 0.48); return; }
   if (kind === "insta") {
@@ -1512,6 +1512,18 @@ function snsLogo(g: CanvasRenderingContext2D, kind: SnsKind, x: number, y: numbe
       g.restore();
     };
     note(-s * 0.03, -s * 0.03, "#25F4EE"); note(s * 0.03, s * 0.03, "#FE2C55"); note(0, 0, "#FFFFFF");
+    return;
+  }
+  // 페이스북 — 파란 동그라미에 흰 f (공식 로고 파일이 아니라 우리가 그린 단순한 모양)
+  if (kind === "facebook") {
+    g.beginPath(); g.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2); g.fillStyle = "#1877F2"; g.fill();
+    txt(g, "f", x + s * 0.54, y + s * 0.6, { font: `900 ${Math.round(s * 0.78)}px Arial, ${F.pre}`, fill: "#FFFFFF" });
+    return;
+  }
+  // 스레드 — 검은 둥근 네모에 흰 @
+  if (kind === "threads") {
+    rr(g, x, y, s, s, s * 0.26); g.fillStyle = "#111111"; g.fill();
+    txt(g, "@", x + s / 2, y + s * 0.53, { font: `800 ${Math.round(s * 0.66)}px Arial, ${F.pre}`, fill: "#FFFFFF" });
     return;
   }
   if (kind === "blog") { rr(g, x, y, s, s, s * 0.24); g.fillStyle = "#03C75A"; g.fill(); txt(g, "blog", x + s / 2, y + s / 2 + 2, { font: `900 ${Math.round(s * 0.32)}px ${F.pre}`, fill: "#FFFFFF" }); return; }
@@ -1851,6 +1863,62 @@ const adDraw = (theme: AdTheme): Draw => (f, c, t) => {
   return cv;
 };
 AD_THEMES.forEach((d) => add("부동산 표시광고", d.label, "motion", AD_FIELDS, d.color, 0.86, A.fade, adDraw(d.th), { y: 0.5 }));
+
+/* ── 인스타그램·페이스북·스레드 (2026-11-01 사장님: 구독 버튼처럼 SNS 도) — 로고는 우리가 그린 단순한 모양
+ *  목록 맨 뒤에 붙인다 (템플릿 id 가 차례 번호라 중간에 넣으면 저장된 프로젝트 그래픽이 바뀜) */
+/** 팔로우 누르기 카드 — 로고 · @아이디 · 작은 글 · [팔로우] → [✓ 팔로잉] (한 번, 끝 모습에서 멈춤) */
+const followCard = (kind: SnsKind, btn: string): Draw => (f, c, t) => {
+  const name = f[0] || "@아이디", sub = f[1] || "", on = f[2] || "팔로우", off = f[3] || "팔로잉";
+  const nf = `800 50px ${F.pre}`, sf = `500 32px ${F.pre}`, bf = `800 40px ${F.pre}`;
+  const bw = Math.max(tw(bf, on), tw(bf, `✓ ${off}`)) + 70;
+  const W = 40 + 130 + 30 + Math.max(tw(nf, name), tw(sf, sub)) + 40 + bw + 40, H = 210;
+  const { c: cv, g } = mk(W + 40, H + 40);
+  g.save(); g.shadowColor = "rgba(0,0,0,0.35)"; g.shadowBlur = 20; g.shadowOffsetY = 6;
+  rr(g, 20, 14, W, H, 34); g.fillStyle = "#FFFFFF"; g.fill(); g.restore();
+  const lk = eBack(seg(t, 0, 0.4));
+  if (lk > 0) { g.save(); g.translate(20 + 40 + 65, 14 + H / 2); g.scale(lk, lk); snsLogo(g, kind, -65, -65, 130); g.restore(); }
+  const tx = 20 + 40 + 130 + 30;
+  txt(g, name, tx, 14 + (sub ? H / 2 - 24 : H / 2), { font: nf, fill: "#111111", align: "left" });
+  if (sub) txt(g, sub, tx, 14 + H / 2 + 30, { font: sf, fill: "#777777", align: "left" });
+  const click = 1.3, done = t >= click;
+  const bx = 20 + W - 40 - bw, by = 14 + H / 2 - 40;
+  const press = 1 - 0.07 * Math.sin(Math.PI * seg(t, click - 0.08, click + 0.12));
+  g.save(); g.translate(bx + bw / 2, by + 40); g.scale(press, press); g.translate(-(bx + bw / 2), -(by + 40));
+  rr(g, bx, by, bw, 80, kind === "insta" ? 18 : 40); g.fillStyle = done ? "#ECECEC" : btn; g.fill();
+  txt(g, done ? `✓ ${off}` : on, bx + bw / 2, by + 42, { font: bf, fill: done ? "#333333" : ink(btn) });
+  g.restore();
+  const mv = eOut(seg(t, 0.4, click - 0.05));
+  ripple(g, bx + bw * 0.6, by + 52, seg(t, click, click + 0.45), btn);
+  pointer(g, lerp(W + 20, bx + bw * 0.6, mv), lerp(H + 30, by + 52, mv), 1.3, 1 - seg(t, click + 0.9, click + 1.3));
+  return cv;
+};
+/** SNS 한 번에 — 유튜브·인스타그램·페이스북·스레드 로고와 아이디가 한 줄씩 차례로 (빈 칸은 숨김, 엔딩용) */
+const SNS_ALL: SnsKind[] = ["youtube", "insta", "facebook", "threads"];
+const snsAll: Draw = (f, c, t) => {
+  const rows = SNS_ALL.map((k, i) => ({ k, s: (f[i] || "").trim() })).filter((r) => r.s);
+  const font = `800 48px ${F.pre}`, L = 96, rh = 120, pad = 34;
+  const W = pad * 2 + L + 28 + Math.max(240, ...rows.map((r) => tw(font, r.s))), H = pad * 2 + Math.max(1, rows.length) * rh - 24;
+  const { c: cv, g } = mk(W + 40, H + 40);
+  const bk = eOut(seg(t, 0, 0.3));
+  g.save(); g.globalAlpha = bk; g.shadowColor = "rgba(0,0,0,0.35)"; g.shadowBlur = 20; g.shadowOffsetY = 6;
+  rr(g, 20, 14, W, H, 30); g.fillStyle = c; g.fill(); g.restore();
+  const fg = ink(c);
+  rows.forEach((r, i) => {
+    const a = 0.25 + i * 0.22, k = eBack(seg(t, a, a + 0.35)), ta = seg(t, a + 0.12, a + 0.45);
+    const y = 14 + pad + i * rh, x = 20 + pad;
+    if (k > 0) { g.save(); g.translate(x + L / 2, y + L / 2); g.scale(k, k); snsLogo(g, r.k, -L / 2, -L / 2, L); g.restore(); }
+    if (ta > 0) { g.save(); g.globalAlpha = ta; txt(g, r.s, x + L + 28 + (1 - ta) * 30, y + L / 2 + 2, { font, fill: fg, align: "left" }); g.restore(); }
+  });
+  return cv;
+};
+const ID = (kind: string, label = "계정"): Field => ({ label, def: "@아이디", mem: `sns.${kind}` });
+add("SNS 팔로우", "페이스북", "motion", [ID("facebook", "페이지"), { label: "작은 글", def: "" }], "#1877F2", 0.36, A.none, snsBar("facebook"), { y: 0.86 });
+add("SNS 팔로우", "스레드", "motion", [ID("threads"), { label: "작은 글", def: "" }], "#111111", 0.36, A.none, snsBar("threads"), { y: 0.86 });
+add("SNS 팔로우", "SNS 한 번에", "motion", [ID("youtube", "유튜브"), ID("insta", "인스타그램"), ID("facebook", "페이스북"), ID("threads", "스레드")], "#FFFFFF", 0.4, A.pop, snsAll, { y: 0.5 });
+add("구독 버튼", "인스타그램 팔로우", "motion", [ID("insta"), { label: "작은 글", def: "" }, { label: "버튼 글", def: "팔로우" }, { label: "누른 뒤", def: "팔로잉" }], "#0095F6", 0.46, A.slideL, followCard("insta", "#0095F6"), { y: 0.8, clicks: [1.3] });
+add("구독 버튼", "페이스북 팔로우", "motion", [ID("facebook", "페이지"), { label: "작은 글", def: "" }, { label: "버튼 글", def: "팔로우" }, { label: "누른 뒤", def: "팔로잉" }], "#1877F2", 0.46, A.slideL, followCard("facebook", "#1877F2"), { y: 0.8, clicks: [1.3] });
+add("구독 버튼", "스레드 팔로우", "motion", [ID("threads"), { label: "작은 글", def: "" }, { label: "버튼 글", def: "팔로우" }, { label: "누른 뒤", def: "팔로잉" }], "#111111", 0.46, A.slideL, followCard("threads", "#111111"), { y: 0.8, clicks: [1.3] });
+add("구독 버튼", "SNS 한 번에", "motion", [ID("youtube", "유튜브"), ID("insta", "인스타그램"), ID("facebook", "페이스북"), ID("threads", "스레드")], "#FFFFFF", 0.4, A.pop, snsAll, { y: 0.5 });
 /** 부동산 표시광고 템플릿 목록 (AI 편집 끝 화면) */
 export const AD_LAW_LABELS = AD_THEMES.map((d) => d.label);
 
@@ -2014,9 +2082,12 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
   const cats = TPL_CATS.filter((x) => x.kind === kind);
   const [cat, setCat] = useState(cat0 || cats[0].id);
   const list = only ? T.filter(only) : T.filter((x) => x.cat === cat);
+  /** 기억해 둔 SNS 아이디 등 (Field.mem) — 한 번 넣으면 다음에 저절로 채워요 (2026-11-01 사장님) */
+  const memOf = (): Record<string, string> => { try { return JSON.parse(localStorage.getItem("studio.tplMem.v1") || "{}"); } catch { return {}; } };
+  const defsOf = (d: TplDef) => { const m = memOf(); return d.fields.map((f) => (f.mem && m[f.mem] ? m[f.mem] : f.def)); };
   const first = (init && T.find((x) => x.id === init.id)) || list[0] || T[0];
   const [pick, setPick] = useState<TplDef>(first);
-  const [vals, setVals] = useState<string[]>(() => first.fields.map((f, i) => (init ? tplFieldsOf(init.text)[i] ?? f.def : f.def)));
+  const [vals, setVals] = useState<string[]>(() => (init ? first.fields.map((f, i) => tplFieldsOf(init.text)[i] ?? f.def) : defsOf(first)));
   const [color, setColor] = useState(init?.color || first.color);
   const [opt, setOpt] = useState<TplOpts>(() => (init ? tplOptsOf(init.text) : {}));
   const [ready, setReady] = useState(false);
@@ -2032,7 +2103,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
     return () => window.clearInterval(id);
   }, [pick]);
   const [picked, setPicked] = useState(Boolean(init || noGrid)); // 스티커 칸 안: 고른 뒤에만 고치는 칸을 위에
-  const choose = (d: TplDef) => { setPick(d); setVals(d.fields.map((f) => f.def)); setColor(d.color); setPicked(true); };
+  const choose = (d: TplDef) => { setPick(d); setVals(defsOf(d)); setColor(d.color); setPicked(true); };
   const [saved, setSaved] = useState(false);
   const preview = useMemo(() => {
     if (!ready) return "";
@@ -2046,6 +2117,8 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
       await tplFonts();
       const style = TPL_PREFIX + pick.id;
       const text = tplTextOf(vals, opt);
+      // 기억할 칸(SNS 아이디 등)은 이번 값을 저장 — 비우거나 "@아이디" 그대로면 저장 안 함
+      try { const m = memOf(); pick.fields.forEach((f, i) => { const v = (vals[i] || "").trim(); if (f.mem && v && v !== f.def) m[f.mem] = v; }); localStorage.setItem("studio.tplMem.v1", JSON.stringify(m)); } catch {}
       const url = drawTemplate(style, text, color).toDataURL("image/png");
       const item = await b.lib.saveImage(project.dir, url, `템플릿_${pick.label}`);
       await onInsert(item, { anim: pick.anim, w: pick.w, y: pick.y, spec: { style, text, color }, clicks: pick.clicks });
@@ -2060,7 +2133,7 @@ export function TemplatePanel({ project, kind, onInsert, onClose, cat0, bare, on
     if (!b.lib.saveImage) return;
     const mine = d.id === pick.id;
     const style = TPL_PREFIX + d.id;
-    const text = mine ? tplTextOf(vals, opt) : tplTextOf(d.fields.map((f) => f.def));
+    const text = mine ? tplTextOf(vals, opt) : tplTextOf(defsOf(d));
     const col = mine ? color : d.color;
     e.dataTransfer.setData(DRAG_STICKER, d.label);
     e.dataTransfer.effectAllowed = "copy";

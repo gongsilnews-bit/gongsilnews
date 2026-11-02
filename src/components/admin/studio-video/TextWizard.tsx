@@ -183,10 +183,10 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
    *  AI 면 화면 자료 대신 나누는 길이 · 이미지 스타일 → [편집 초안 시작하기] 때 AI 한 번으로 클립마다 이미지·동영상 프롬프트 + 성우
    *  → step 3 = AI 이미지·영상 제작 (편집 화면의 그 창을 그대로) → [편집 시작] */
   const [aiFlow, setAiFlow] = useState(false);
+  const [aiCopied, setAiCopied] = useState(""); // 클립 프롬프트 [복사] 표시
   const [aiStyle, setAiStyle] = useState<string>(() => { try { return localStorage.getItem("gsv:aiImgStyle") || "auto"; } catch { return "auto"; } });
   const [aiLen, setAiLen] = useState<"short" | "mid" | "long">("mid");
   const [aiMBusy, setAiMBusy] = useState<Record<number, string>>({}); // 클립 그림 만드는 중
-  const [aiMenu, setAiMenu] = useState<number | null>(null); // 클립 [바꾸기 ▾]
   const [aiView, setAiView] = useState<{ item: LibItem; title: string } | null>(null); // 클립 그림·동영상 크게 보기 (2026-11-01 사장님)
   /** 초안 꾸미기 [프롬프트 만들기] 결과 — 클립마다 대사 · 이미지 · 동영상 프롬프트 (가운데에 쭉, 고칠 수 있음, 2026-10-31 사장님) */
   type AiClips = { len: string; style: string; sid: string; clips: { text: string; image: string; motion: string; media?: LibItem | null }[] };
@@ -1370,14 +1370,21 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     setAiPBusy(`${aiName}가 클립 ${aiTexts().length}개의 이미지·동영상 프롬프트를 쓰는 중… (1~2분)`);
     try { await aiPrompt(); } catch (e) { if (!isStopped(e)) setErr(errText(e)); } finally { setAiPBusy(""); }
   };
+  /** 다른 곳(ChatGPT·Gemini·Flow)에 붙여 넣을 프롬프트 — 맨 앞에 clip N, 파일 이름도 clip N 으로 (2026-11-01 사장님)
+   *  Flow 는 프롬프트 앞부분으로 파일 이름을 지어서 clip N 이 남고, [한 번에 올리기]가 번호대로 넣어요 */
+  const clipTag = (i: number, prompt: string, ext: "png" | "mp4") => `clip ${i + 1} — File name: "clip ${i + 1}.${ext}" (the file name must start with "clip ${i + 1}"; do not write it or any text inside the ${ext === "png" ? "image" : "video"}). ${prompt}`;
   /** 프롬프트 TXT — [clip N] 모양 (AI 이미지·영상 제작 창과 같은 모양) */
   const aiTxt = (what: "image" | "video") => {
     if (!aiClips) return;
     const sty = IMAGE_STYLES.find((x) => x.id === aiClips.sid);
     const lines = aiClips.clips.map((c, i) => what === "image"
-      ? `[clip ${i + 1}]\r\nNarrative: ${c.text}\r\nStyle: ${sty?.label || ""} — NO TEXT, NO WORDS, NO SPEECH BUBBLES\r\nVisual Prompt: ${sty ? imagePrompt(c.image, sty) : c.image}\r\n-----------------------------------`
-      : `[clip ${i + 1}]\r\nVideo Prompt: ${sty ? imagePrompt(c.image, sty) : c.image} Camera & motion: ${c.motion} No text, no subtitles, no logos.\r\n-----------------------------------`);
-    const header = `# 공실마케팅 — ${(projName ?? defaultName).trim()} · ${what === "image" ? "이미지" : "동영상"} 프롬프트 · ${lines.length}개 clip\r\n# 만든 파일 이름을 clip 1, clip 2 … 로 하면 [한 번에 올리기]에서 번호대로 들어가요.`;
+      ? `[clip ${i + 1}]\r\nNarrative: ${c.text}\r\nStyle: ${sty?.label || ""} — NO TEXT, NO WORDS, NO SPEECH BUBBLES\r\nVisual Prompt: ${clipTag(i, sty ? imagePrompt(c.image, sty) : c.image, "png")}\r\n-----------------------------------`
+      : `[clip ${i + 1}]\r\nVideo Prompt: ${clipTag(i, `${sty ? imagePrompt(c.image, sty) : c.image} Camera & motion: ${c.motion} No text, no subtitles, no logos.`, "mp4")}\r\n-----------------------------------`);
+    const header = `# 공실마케팅 — ${(projName ?? defaultName).trim()} · ${what === "image" ? "이미지" : "동영상"} 프롬프트 · ${lines.length}개 clip\r\n# 만든 파일 이름을 clip 1, clip 2 … 로 하면 [한 번에 올리기]에서 번호대로 들어가요.\r\n\r\n`
+      // 서두 지시 — TXT 를 통째로 붙여 넣어도 AI 가 파일 이름 앞에 clip 번호를 넣게 (2026-11-01 사장님)
+      + `INSTRUCTIONS: Make one ${what === "image" ? "image" : "video"} for each [clip N] block below, in order. `
+      + `Every file name MUST start with its clip number — "clip 1", "clip 2", "clip 3" … (for example "clip 1.${what === "image" ? "png" : "mp4"}", "clip 2.${what === "image" ? "png" : "mp4"}"). `
+      + `Never put the clip number or any other text inside the ${what === "image" ? "image" : "video"} itself.`;
     const blob = new Blob(["\ufeff" + header + "\r\n\r\n" + lines.join("\r\n\r\n") + "\r\n"], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1400,22 +1407,25 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     setAiMBusy((x) => ({ ...x, [i]: "그림을 그리는 중… (30초~1분)" }));
     try {
       const dir = await aiDirOf();
-      const it = await b.ai.image(dir, imagePrompt(c.image || c.text, aiStyleObj()), { ratio, ai: aiUse });
+      const pr = imagePrompt(c.image || c.text, aiStyleObj());
+      // 내 계정(무료)은 프롬프트를 복사해 붙여 넣는 길 — 앞에 clip N 을 붙여 파일 이름이 번호로 남게. API 는 그림에 글자가 섞일까 봐 그대로
+      const it = await b.ai.image(dir, aiUse?.mode === "api" ? pr : clipTag(i, pr, "png"), { ratio, ai: aiUse });
       aiSetMedia(i, it);
     } catch (e) { if (!isStopped(e)) setErr(`clip ${i + 1} 그림을 만들지 못했어요: ${errText(e)}`); throw e; }
     finally { setAiMBusy((x) => { const y = { ...x }; delete y[i]; return y; }); }
   };
   /** 이 클립 동영상 만들기 — 회원 Gemini API 키. 그림이 있으면 첫 장면으로 */
-  const aiVideo = async (i: number) => {
+  const aiVideo = async (i: number): Promise<boolean> => {
     const c = aiClips?.clips[i];
-    if (!c || !b.ai.video) { setErr("동영상 만들기는 공실마케팅을 새 버전으로 켜야 돼요."); return; }
+    if (!c || !b.ai.video) { setErr("동영상 만들기는 공실마케팅을 새 버전으로 켜야 돼요."); return false; }
     setAiMBusy((x) => ({ ...x, [i]: "동영상을 만드는 중… (1~3분)" }));
     try {
       const dir = await aiDirOf();
       const img = c.media?.kind === "image" ? c.media.path : undefined;
       const it = await b.ai.video(dir, `${imagePrompt(c.image || c.text, aiStyleObj())} Camera & motion: ${c.motion || "slow cinematic push-in"} No text, no subtitles, no logos.`, { ratio, ...(img ? { image: img } : {}) });
       aiSetMedia(i, it);
-    } catch (e) { if (!isStopped(e)) setErr(`clip ${i + 1} 동영상을 만들지 못했어요 — Gemini API 키(유료 등급)가 있어야 돼요: ${errText(e)}`); }
+      return true;
+    } catch (e) { if (!isStopped(e)) setErr(`clip ${i + 1} 동영상을 만들지 못했어요 — Gemini API 키(유료 등급)가 있어야 돼요: ${errText(e)}`); return false; }
     finally { setAiMBusy((x) => { const y = { ...x }; delete y[i]; return y; }); }
   };
   /** PC·내 자료에서 넣기 */
@@ -1427,9 +1437,15 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   const aiApiOn = aiUse?.mode === "api";
   const aiDrawEmpty = async () => {
     setErr("");
-    if (!aiApiOn) { setErr("빈칸 이미지 한 번에 만들기는 [쓸 AI]에서 API(유료)를 골랐을 때만 돼요. 내 계정(무료)은 클립마다 [바꾸기 ▾ › 이미지 만들기]로 한 장씩 만들거나, [이미지 TXT]를 받아 다른 곳에서 만든 뒤 [한 번에 올리기]로 넣어 주세요."); return; }
+    if (!aiApiOn) { setErr("빈칸 이미지 한 번에 만들기는 [쓸 AI]에서 API(유료)를 골랐을 때만 돼요. 내 계정(무료)은 클립마다 이미지 프롬프트 옆 [만들기]로 한 장씩 만들거나, [이미지 TXT]를 받아 다른 곳에서 만든 뒤 [한 번에 올리기]로 넣어 주세요."); return; }
     const ks = (aiClips?.clips || []).map((c, i) => (c.media ? -1 : i)).filter((i) => i >= 0);
     for (const i of ks) { try { await aiDraw(i); } catch (e) { if (isStopped(e)) break; } }
+  };
+  /** 동영상 한꺼번에 — 아직 동영상이 아닌 클립을 차례로 (그림이 있으면 첫 장면으로). 회원 Gemini API 키, 하나라도 안 되면 멈춤 */
+  const aiVideoAll = async () => {
+    setErr("");
+    const ks = (aiClips?.clips || []).map((c, i) => (c.media?.kind === "video" ? -1 : i)).filter((i) => i >= 0);
+    for (const i of ks) if (!(await aiVideo(i))) break;
   };
   /** 한 번에 올리기 — 파일 이름 속 번호(clip 1 · clip01 · 1.png)로, 번호 없으면 빈 클립에 이름순으로 */
   const aiBulk = async () => {
@@ -1487,11 +1503,45 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     </>
   );
 
+  /** 자막 칸 — 일반은 왼쪽, AI 이미지·영상은 가운데 [꾸미기] 안 (2026-11-01 사장님) */
+  const subBlock = (h: React.ReactNode) => (
+            <div style={{ ...row, flexWrap: "wrap" }}>
+              <span style={{ flex: 1 }}>{h}</span>
+              <Toggle on={subOn} onChange={setSubOn} />
+              {subOn && (
+                // 위치·줄 수 고르기 + 오른쪽에 작은 예시 화면 (2026-10-20 사장님)
+                <div style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                      {([["top", "상단"], ["middle-high", "중상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setSubPos(k)} style={{ ...chip(subPos === k), height: 32, padding: "0 10px", fontSize: 13.5 }}>{l}</button>)}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
+                      <span style={{ fontSize: 13.5, color: C.sub, marginRight: 3 }} title="자막이 이보다 길면 이 줄 수만큼씩 말하는 때에 맞춰 넘어가요">한 화면 최대</span>
+                      {([1, 2, 3] as const).map((n) => <button key={n} type="button" onClick={() => setSubLines(n)} style={{ ...chip(subLines === n), height: 32, padding: "0 10px", fontSize: 13.5 }}>{n}줄</button>)}
+                    </div>
+                  </div>
+                  {(() => {
+                    const [w, h] = ratio.split(":").map(Number);
+                    const W = w >= h ? 112 : (78 * w) / h;
+                    const H = (W * h) / w;
+                    return (
+                      <div title="예시 화면 — 자막 위치·줄 수" style={{ position: "relative", width: W, height: H, flexShrink: 0, background: "#2a2b30", border: `1px solid ${C.line2}`, borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ position: "absolute", left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, ...(subPos === "top" ? { top: H * 0.08 } : subPos === "middle-high" ? { top: H * 0.24 } : subPos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : subPos === "middle-low" ? { bottom: H * 0.24 } : { bottom: H * 0.08 }) }}>
+                          {Array.from({ length: subLines }, (_, i) => <span key={i} style={{ width: `${i === subLines - 1 && subLines > 1 ? 46 : 64}%`, height: 3, borderRadius: 2, background: "#fff", boxShadow: "0 0 0 1px #000" }} />)}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+  );
+
   /** SOUND 칸 — 초안 꾸미기 · AI 영상 초안 둘 다 (2026-10-31 사장님: AI 이미지 길은 실물용 초안 꾸미기와 따로) */
-  const soundCol = (
+  const soundCol = () => ( // 함수로 — 번호가 왼쪽부터 차례로 붙게 (그리는 때 head 를 부른다)
           <div style={{ flex: 1, minWidth: 360, padding: "8px 26px 18px", borderLeft: `1px solid ${C.line}` }}>
             <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 2, color: C.accent, padding: "14px 0 2px" }}>SOUND</div>
-            <div style={{ paddingTop: 10 }}>
+            {!aiFlow && <div style={{ paddingTop: 10 }}>
               {head(<>대본 <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 고치려면 [이전]</span></>)}
               <div style={{ maxHeight: 280, overflowY: "auto", padding: "8px 12px", border: `1px solid ${C.line}`, borderRadius: 6, background: C.field, fontSize: 13.5, lineHeight: 1.7 }}>
                 {scenes.map((ls, k) => (
@@ -1501,7 +1551,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
             <div style={{ ...row, flexWrap: "wrap" }}>
               <span style={{ flex: 1 }}>{head("AI 목소리", true)}</span>
               <Toggle on={voiceOn} onChange={setVoiceOn} />
@@ -1991,36 +2041,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
               <div style={{ width: "100%" }}>{head("화면 비율")}</div>
               {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => <button key={r} type="button" onClick={() => { setRatio(r); setSubLines(r === "9:16" ? 1 : 2); }} style={chip(ratio === r)}>{r}</button>)}
             </div>
-            <div style={{ ...row, flexWrap: "wrap" }}>
-              <span style={{ flex: 1 }}>{head("자막", true)}</span>
-              <Toggle on={subOn} onChange={setSubOn} />
-              {subOn && (
-                // 위치·줄 수 고르기 + 오른쪽에 작은 예시 화면 (2026-10-20 사장님)
-                <div style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                      {([["top", "상단"], ["middle-high", "중상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setSubPos(k)} style={{ ...chip(subPos === k), height: 32, padding: "0 10px", fontSize: 13.5 }}>{l}</button>)}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-                      <span style={{ fontSize: 13.5, color: C.sub, marginRight: 3 }} title="자막이 이보다 길면 이 줄 수만큼씩 말하는 때에 맞춰 넘어가요">한 화면 최대</span>
-                      {([1, 2, 3] as const).map((n) => <button key={n} type="button" onClick={() => setSubLines(n)} style={{ ...chip(subLines === n), height: 32, padding: "0 10px", fontSize: 13.5 }}>{n}줄</button>)}
-                    </div>
-                  </div>
-                  {(() => {
-                    const [w, h] = ratio.split(":").map(Number);
-                    const W = w >= h ? 112 : (78 * w) / h;
-                    const H = (W * h) / w;
-                    return (
-                      <div title="예시 화면 — 자막 위치·줄 수" style={{ position: "relative", width: W, height: H, flexShrink: 0, background: "#2a2b30", border: `1px solid ${C.line2}`, borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ position: "absolute", left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, ...(subPos === "top" ? { top: H * 0.08 } : subPos === "middle-high" ? { top: H * 0.24 } : subPos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : subPos === "middle-low" ? { bottom: H * 0.24 } : { bottom: H * 0.08 }) }}>
-                          {Array.from({ length: subLines }, (_, i) => <span key={i} style={{ width: `${i === subLines - 1 && subLines > 1 ? 46 : 64}%`, height: 3, borderRadius: 2, background: "#fff", boxShadow: "0 0 0 1px #000" }} />)}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
+            {!aiFlow && subBlock(head("자막", true))}
             {!aiFlow && (<>
             <div style={{ paddingTop: 18 }}>
               {head("화면 자료")}
@@ -2104,15 +2125,6 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             </>)}
             {aiFlow && (
               <div style={{ paddingTop: 18 }}>
-                {head(<>나누는 길이 <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 클립 하나 = 그림(또는 동영상) 하나</span></>)}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-                  {([["short", "짧게", "문장 하나씩"], ["mid", "보통", "2~3문장씩"], ["long", "길게", "문단 하나씩"]] as const).map(([k, n, d]) => (
-                    <button key={k} type="button" onClick={() => setAiLen(k)} style={{ ...chip(aiLen === k), height: "auto", padding: "8px 14px", textAlign: "left" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800 }}>{n} <span style={{ fontWeight: 600, fontSize: 12, opacity: 0.8 }}>· {d}</span></div>
-                      <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, opacity: 0.85 }}>클립 {aiCount(k)}개</div>
-                    </button>
-                  ))}
-                </div>
                 {head("이미지 스타일")}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 6 }}>
                   {[{ id: "auto", label: "자동 (AI가 맞춤)", desc: "대본을 읽고 AI가 골라요", bg: "linear-gradient(135deg,#334155,#0f172a)", thumb: "" }, ...IMAGE_STYLES].map((st) => (
@@ -2120,6 +2132,16 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                       style={{ padding: 0, borderRadius: 6, overflow: "hidden", border: `2px solid ${aiStyle === st.id ? C.accent : "transparent"}`, background: C.card, cursor: "pointer", textAlign: "left", fontFamily: FONT }}>
                       <div style={{ height: 52, background: st.thumb ? `center/cover no-repeat url(${st.thumb}), ${st.bg}` : st.bg, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 800 }}>{st.id === "auto" ? "AUTO" : ""}</div>
                       <div style={{ padding: "4px 6px", fontSize: 12, fontWeight: 800, color: aiStyle === st.id ? C.accent : C.text }}>{st.label}</div>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ height: 16 }} />
+                {head(<>나누는 길이 <span style={{ fontSize: 12.5, color: C.dim, fontWeight: 600 }}>· 클립 하나 = 그림(또는 동영상) 하나</span></>)}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {([["short", "짧게", "문장 하나씩"], ["mid", "보통", "2~3문장씩"], ["long", "길게", "문단 하나씩"]] as const).map(([k, n, d]) => (
+                    <button key={k} type="button" onClick={() => setAiLen(k)} style={{ ...chip(aiLen === k), height: "auto", padding: "8px 14px", textAlign: "left" }}>
+                      <div style={{ fontSize: 14, fontWeight: 800 }}>{n} <span style={{ fontWeight: 600, fontSize: 12, opacity: 0.8 }}>· {d}</span></div>
+                      {aiLen === k && <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, opacity: 0.85 }}>클립 {aiCount(k)}개</div>}
                     </button>
                   ))}
                 </div>
@@ -2212,10 +2234,11 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             {/* AI 이미지·영상 — 예시 화면 대신 클립별 프롬프트, 꾸미기는 [꾸미기 ▸]로 접어 둔다 (2026-10-31 사장님) */}
             {aiFlow && (
               <button type="button" onClick={() => setAiDecoOpen(!aiDecoOpen)} style={{ alignSelf: "stretch", height: 34, border: `1px solid ${C.line2}`, borderRadius: 6, background: "transparent", color: C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left", padding: "0 12px" }}>
-                {aiDecoOpen ? "▾" : "▸"} 꾸미기 — 자막 스타일 · 제목 · 채널명 · 화면전환 · 썸네일 · 엔딩
+                {aiDecoOpen ? "▾" : "▸"} 꾸미기 — 자막 · 자막 스타일 · 제목 · 채널명 · 화면전환 · 썸네일 · 엔딩
               </button>
             )}
             {/* 예시 화면 (왼쪽) + 1~6 항목 (오른쪽) + 아래 샘플 (2026-10-22 사장님 회의) */}
+            {aiFlow && aiDecoOpen && <div style={{ alignSelf: "stretch" }}>{subBlock(<span style={{ ...label, margin: 0 }}>자막</span>)}</div>}
             {(!aiFlow || aiDecoOpen) && <WizardDeco fill={fill} ratio={ratio} bgs={[...foot.map((x) => x.thumb), ...(src === "vacancy" && usePhotos ? (vacInfo?.photos || []).map((x) => x.thumb) : [])].filter(Boolean) as string[]} subOn={subOn} setSubOn={setSubOn} subPos={subPos} subLines={subLines} deco={deco} setDeco={setDeco} agency={agency}
               firstLine={(script.split(/(?<=[.!?。])\s+|\n+/).map((x) => x.trim()).find(Boolean) || "자막은 이 위치에 표시됩니다").slice(0, subLines === 1 ? 22 : subLines === 2 ? 44 : 66)}
               aiTitleBusy={aiTitleBusy} onAiTitle={() => {
@@ -2233,20 +2256,28 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
               const ok = aiClipsOk(aiClips);
               const empty = aiClips ? aiClips.clips.filter((c) => !c.media).length : 0;
               const busyAny = Object.keys(aiMBusy).length > 0;
+              const ACT = 136; // 클립 줄 오른쪽 단추 칸 폭 — 모든 줄이 같은 세로줄에
+              const vidLeft = aiClips ? aiClips.clips.filter((c) => c.media?.kind !== "video").length : 0;
               const tall = ratio === "9:16";
               return (
                 <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 15, fontWeight: 800 }}>화면 편집판</span>
-                    <span style={{ fontSize: 12.5, color: C.dim }}>{ok ? `클립 ${aiClips!.clips.length}개 · 빈칸 ${empty}개 · ${IMAGE_STYLES.find((x) => x.id === aiClips!.sid)?.label || ""}` : aiClips ? "길이·스타일·대본이 바뀌었어요 — 다시 만들어 주세요" : `클립 ${aiCount(aiLen)}개 — 왼쪽 [프롬프트 만들기]`}</span>
-                    <span style={{ flex: 1 }} />
-                    {aiClips && <Btn small onClick={() => aiTxt("image")}><Icon name="export" size={13} />이미지 TXT</Btn>}
-                    {aiClips && <Btn small onClick={() => aiTxt("video")}><Icon name="export" size={13} />동영상 TXT</Btn>}
-                    {aiClips && <Btn small onClick={() => void aiBulk()} title="파일 이름 번호(clip 1 · 1.png · 1.mp4)대로 클립에 넣어요"><Icon name="open" size={13} />한 번에 올리기</Btn>}
-                    {aiClips && <Btn small primary disabled={!empty || busyAny || !aiApiOn} onClick={() => void aiDrawEmpty()} title={aiApiOn ? "빈 클립을 차례로 그려요" : "[쓸 AI]에서 API(유료)를 골랐을 때만 — 내 계정(무료)은 클립마다 한 장씩 또는 TXT로"}><Icon name="image" size={13} />빈칸 이미지 만들기 ({empty}){aiApiOn ? "" : " · API만"}</Btn>}
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800 }}>클립별 프롬프트</span>
+                    <span style={{ fontSize: 12.5, color: C.dim }}>{ok ? `클립 ${aiClips!.clips.length}개 · 빈칸 ${empty}개 · ${IMAGE_STYLES.find((x) => x.id === aiClips!.sid)?.label || ""}` : aiClips ? "길이·스타일·대본이 바뀌었어요 — 왼쪽 [프롬프트 다시 만들기]" : `클립 ${aiCount(aiLen)}개 — 왼쪽 [프롬프트 만들기]를 눌러 주세요`}</span>
                   </div>
+                  {aiClips && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, padding: 8, borderRadius: 6, background: C.card, border: `1px solid ${C.line}` }}>
+                      <Btn small onClick={() => aiTxt("image")} title="이미지 프롬프트를 TXT 로 — 다른 곳에서 만들 때 (앞에 clip 번호)" style={{ justifyContent: "center" }}><Icon name="export" size={13} />이미지 TXT</Btn>
+                      <Btn small onClick={() => aiTxt("video")} title="동영상 프롬프트를 TXT 로 — 다른 곳에서 만들 때 (앞에 clip 번호)" style={{ justifyContent: "center" }}><Icon name="export" size={13} />동영상 TXT</Btn>
+                      <Btn small onClick={() => void aiBulk()} title="파일 이름 번호(clip 1 · 1.png · 1.mp4)대로 클립에 넣어요" style={{ justifyContent: "center" }}><Icon name="open" size={13} />한 번에 올리기</Btn>
+                      <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                        <Btn small primary disabled={!empty || busyAny || !aiApiOn} onClick={() => void aiDrawEmpty()} title={aiApiOn ? "빈 클립을 차례로 그려요" : "[쓸 AI]에서 API(유료)를 골랐을 때만 돼요 — 내 계정(무료)은 클립마다 [만들기] 또는 TXT로"} style={{ justifyContent: "center" }}><Icon name="image" size={13} />빈칸 이미지 만들기 (API){empty ? ` · ${empty}개` : ""}</Btn>
+                        <Btn small primary disabled={!vidLeft || busyAny} onClick={() => void aiVideoAll()} title="아직 동영상이 아닌 클립을 차례로 만들어요 — 그림이 있으면 그 그림이 첫 장면 (Gemini API 키, 유료 등급)" style={{ justifyContent: "center" }}><Icon name="video" size={13} />동영상 만들기 (API){vidLeft ? ` · ${vidLeft}개` : ""}</Btn>
+                      </div>
+                    </div>
+                  )}
                   {aiPBusy && <div style={{ fontSize: 13.5, color: C.accent, fontWeight: 700 }}>{aiPBusy}</div>}
-                  <div style={{ maxHeight: "calc(92vh - 330px)", overflowY: "auto", display: "flex", flexDirection: "column", paddingRight: 4 }}>
+                  <div style={{ maxHeight: "calc(92vh - 330px)", overflowY: "auto", display: "flex", flexDirection: "column", paddingRight: 10 }}>
                     {list.map((c, i) => (
                       <div key={i} style={{ padding: "10px 4px", borderBottom: `1px solid ${C.line}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2259,25 +2290,41 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                           <span style={{ flexShrink: 0, height: 22, padding: "0 7px", borderRadius: 4, border: `1px solid ${C.line2}`, fontSize: 11.5, fontWeight: 700, color: C.sub, display: "inline-flex", alignItems: "center" }}>{c.media ? (c.media.kind === "video" ? "동영상" : "이미지") : "빈칸"}</span>
                           <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={c.text}>{c.text}</span>
                           {aiClips && (
-                            <span style={{ position: "relative", flexShrink: 0 }}>
-                              <Btn small disabled={Boolean(aiMBusy[i])} onClick={() => setAiMenu(aiMenu === i ? null : i)}>바꾸기 ▾</Btn>
-                              {aiMenu === i && (
-                                <div style={{ position: "absolute", right: 0, top: 32, zIndex: 20, minWidth: 190, padding: 4, borderRadius: 6, background: C.card, border: `1px solid ${C.line2}`, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
-                                  {([["이미지 만들기 (AI)", () => void aiDraw(i).catch(() => {})], ["동영상 만들기 (Gemini API)", () => void aiVideo(i)], ["PC·내 자료에서 넣기", () => void aiPick(i)], ...(c.media ? [["빼기", () => aiSetMedia(i, null)] as const] : [])] as const).map(([t, fn]) => (
-                                    <button key={t} type="button" onClick={() => { setAiMenu(null); fn(); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", border: 0, borderRadius: 4, background: "transparent", color: C.text, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}>{t}</button>
-                                  ))}
-                                </div>
-                              )}
-                            </span>
+                            // 클립 할 일은 고르기 칸 하나로 — 복사·만들기·넣기·빼기 (2026-11-01 사장님: 단추가 너무 많아 복잡)
+                            <select value="" disabled={Boolean(aiMBusy[i])} title="이 클립에 할 일 고르기"
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                const sty = aiStyleObj();
+                                const copy = (t: string) => void navigator.clipboard.writeText(t).then(() => { setAiCopied(String(i)); setTimeout(() => setAiCopied(""), 1500); });
+                                if (v === "cimg") copy(clipTag(i, imagePrompt(c.image || c.text, sty), "png"));
+                                else if (v === "cvid") copy(clipTag(i, `${imagePrompt(c.image || c.text, sty)} Camera & motion: ${c.motion || "slow cinematic push-in"} No text, no subtitles, no logos.`, "mp4"));
+                                else if (v === "img") void aiDraw(i).catch(() => {});
+                                else if (v === "vid") void aiVideo(i);
+                                else if (v === "pc") void aiPick(i);
+                                else if (v === "out") aiSetMedia(i, null);
+                              }}
+                              style={{ ...input, width: ACT, flexShrink: 0, height: 32, padding: "0 8px", fontSize: 13, fontWeight: 700, cursor: "pointer", colorScheme: "dark" }}>
+                              <option value="" disabled hidden>{aiMBusy[i] ? "만드는 중…" : aiCopied === String(i) ? "복사됨 ✓" : "선택"}</option>
+                              <option value="cimg">이미지 프롬프트 복사</option>
+                              <option value="cvid">동영상 프롬프트 복사</option>
+                              <option value="img">이미지 만들기</option>
+                              <option value="vid">동영상 만들기 (API)</option>
+                              <option value="pc">{c.media ? "PC에서 바꾸기" : "PC에서 넣기"}</option>
+                              {c.media && <option value="out">빼기</option>}
+                            </select>
                           )}
                         </div>
                         {aiClips && (
                           <div style={{ marginLeft: 56, marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
                             {(["image", "motion"] as const).map((k) => (
-                              <div key={k} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
-                                <span style={{ flexShrink: 0, width: 38, fontSize: 11, fontWeight: 700, color: C.dim, paddingTop: 4 }}>▸ {k === "image" ? "이미지" : "동영상"}</span>
-                                <textarea value={c[k]} rows={1} onChange={(e) => { const v = e.target.value; setAiClips((o) => o ? { ...o, clips: o.clips.map((x, j) => (j === i ? { ...x, [k]: v } : x)) } : o); }}
-                                  style={{ ...input, flex: 1, height: "auto", minHeight: 26, padding: "3px 7px", fontSize: 11.5, lineHeight: 1.4, resize: "vertical", color: C.sub }} />
+                              <div key={k} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                <span style={{ flexShrink: 0, width: 44, fontSize: 11.5, fontWeight: 700, color: C.dim, whiteSpace: "nowrap" }}>{k === "image" ? "이미지" : "동영상"}</span>
+                                {/* 평소엔 두 줄만 깔끔하게(스크롤 화살표·크기 손잡이 없음), 누르면 글 길이만큼 펼쳐져요 (2026-11-01 사장님) */}
+                                <textarea value={c[k]} rows={2} title="눌러서 고치기" onChange={(e) => { const v = e.target.value; setAiClips((o) => o ? { ...o, clips: o.clips.map((x, j) => (j === i ? { ...x, [k]: v } : x)) } : o); }}
+                                  onFocus={(e) => { const t = e.currentTarget; t.style.height = `${t.scrollHeight + 2}px`; }}
+                                  onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = `${t.scrollHeight + 2}px`; }}
+                                  onBlur={(e) => { e.currentTarget.style.height = ""; e.currentTarget.scrollTop = 0; }}
+                                  style={{ ...input, flex: 1, minWidth: 0, height: 42, padding: "5px 9px", fontSize: 12, lineHeight: 1.5, resize: "none", overflow: "hidden", scrollbarWidth: "none", color: C.sub, borderRadius: 6 }} />
                               </div>
                             ))}
                           </div>
@@ -2297,7 +2344,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             {err && <div style={{ fontSize: 14, color: C.danger }}>{err}</div>}
           </div>
           {/* 오른쪽 — 음향: 대본 보기 · AI 목소리 · 배경 음악 (2026-10-23 사장님) — AI 영상 초안과 같은 칸 */}
-          {soundCol}
+          {soundCol()}
         </div>
       )}
 
