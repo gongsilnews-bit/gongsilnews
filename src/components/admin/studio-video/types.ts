@@ -351,7 +351,7 @@ export const RATIO_LABEL: Record<Ratio, string> = { "16:9": "유튜브", "9:16":
 export type VideoBridge = {
   lib: {
     list: (o?: { kind?: string; fav?: boolean; q?: string; source?: string }) => Promise<LibItem[]>;
-    pick: (o?: { kinds?: "media" | "audio"; source?: "sfx" }) => Promise<(LibItem & { path?: string })[]>;
+    pick: (o?: { kinds?: "media" | "audio" | "any"; source?: "sfx" }) => Promise<(LibItem & { path?: string })[]>;
     /** PC 폴더째 불러오기 — 폴더 이름과 그 안의 사진·영상 (앱 0.1.18부터) */
     pickDir?: () => Promise<{ name: string; items: LibItem[] } | null>;
     /** 윈도우 클립보드 파일 붙여넣기 · 복사 */

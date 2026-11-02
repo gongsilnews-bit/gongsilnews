@@ -316,20 +316,23 @@ function register(base) {
   /* ── 라이브러리 ── */
   ipcMain.handle("video:lib-list", (_e, opts) => library.list(opts || {}));
   ipcMain.handle("video:lib-pick", async (e, { kinds = "media", source = "" } = {}) => {
+    const AUD = ["mp3", "wav", "m4a", "aac", "ogg", "flac"], VIS = ["mp4", "mov", "m4v", "webm", "mkv", "avi", "wmv", "jpg", "jpeg", "png", "webp", "gif", "heic"];
     const filters = kinds === "audio"
-      ? [{ name: "소리", extensions: ["mp3", "wav", "m4a", "aac", "ogg", "flac"] }]
-      : [{ name: "사진·영상", extensions: ["mp4", "mov", "m4v", "webm", "mkv", "avi", "wmv", "jpg", "jpeg", "png", "webp", "gif", "heic"] }];
+      ? [{ name: "소리", extensions: AUD }]
+      : kinds === "any" // [프로젝트] 칸 가져오기 — 사진·영상·음악 모두 (2026-11-03 사장님)
+        ? [{ name: "지원되는 모든 미디어", extensions: [...VIS, ...AUD] }, { name: "사진·영상", extensions: VIS }, { name: "음악·소리", extensions: AUD }]
+        : [{ name: "사진·영상", extensions: VIS }];
     const r = await dialog.showOpenDialog(winOf(e), { title: "PC에서 불러오기", properties: ["openFile", "multiSelections"], filters });
     if (r.canceled || !r.filePaths.length) return [];
     if (kinds === "audio") return library.add(r.filePaths, { source: source === "sfx" ? "sfx" : "local", allowAudio: true }); // 내 음악(또는 내 효과음) 목록에 남긴다
-    return library.add(r.filePaths, { source: "local" });
+    return library.add(r.filePaths, { source: "local", allowAudio: kinds === "any" });
   });
   // PC 폴더째 불러오기 — 그 폴더(하위 폴더 포함)의 사진·영상을 내 자료에 넣고 폴더 이름과 함께 돌려준다. 프로젝트 폴더로 쓴다 (2026-11-02 사장님, 프리미어처럼)
   ipcMain.handle("video:lib-pick-dir", async (e) => {
     const r = await dialog.showOpenDialog(winOf(e), { title: "폴더째 불러오기", properties: ["openDirectory"] });
     if (r.canceled || !r.filePaths.length) return null;
     const root = r.filePaths[0];
-    const MEDIA = /\.(mp4|mov|m4v|webm|mkv|avi|wmv|jpg|jpeg|png|webp|gif|heic)$/i;
+    const MEDIA = /\.(mp4|mov|m4v|webm|mkv|avi|wmv|jpg|jpeg|png|webp|gif|heic|mp3|wav|m4a|aac|ogg|flac)$/i;
     const files = [];
     const walk = (d, depth) => {
       let ents = [];
@@ -341,7 +344,7 @@ function register(base) {
       }
     };
     walk(root, 0);
-    return { name: path.basename(root), items: files.length ? await library.add(files, { source: "local" }) : [] };
+    return { name: path.basename(root), items: files.length ? await library.add(files, { source: "local", allowAudio: true }) : [] };
   });
   // 붙여넣기 · 복사 — 윈도우 클립보드의 파일 (탐색기 Ctrl+C → 프로젝트 칸 Ctrl+V, 그 반대도, 2026-11-02 사장님)
   const psRun = (cmd) => new Promise((res) => require("child_process").execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", cmd], { windowsHide: true, encoding: "utf8", maxBuffer: 8e6 }, (err, out) => res(err ? "" : String(out || ""))));
@@ -349,7 +352,7 @@ function register(base) {
     const out = await psRun("[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-Clipboard -Format FileDropList | ForEach-Object { $_.FullName }");
     const MEDIA = /\.(mp4|mov|m4v|webm|mkv|avi|wmv|jpg|jpeg|png|webp|gif|heic|mp3|wav|m4a|aac|ogg|flac)$/i;
     const files = out.split(/\r?\n/).map((s) => s.trim()).filter((f) => f && MEDIA.test(f) && fs.existsSync(f)).slice(0, 500);
-    return files.length ? await library.add(files, { source: "local" }) : [];
+    return files.length ? await library.add(files, { source: "local", allowAudio: true }) : [];
   });
   ipcMain.handle("video:lib-copy", async (_e, files) => {
     const list = (files || []).map((f) => media.fileOf(f) || f).filter((f) => f && fs.existsSync(f));

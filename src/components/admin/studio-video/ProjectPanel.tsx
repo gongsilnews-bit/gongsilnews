@@ -11,7 +11,9 @@ import { C, FONT, Icon } from "./ui";
 
 type Menu = { x: number; y: number; kind: "bg" | "file" | "bin"; id?: string };
 
-export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro, onTrim, onOpenLib }: {
+export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro, onTrim, onOpenLib, onMusic }: {
+  /** 음악 파일 → 배경 음악으로 넣기 */
+  onMusic?: (m: { file: string; url: string; name: string }) => void;
   /** 다른 곳에서 가져오기 — 사진·영상 칸(공실 사진·오픈자료·드론)이나 AI 그림 칸을 연다. 거기서 고른 것은 이 프로젝트에 들어온다 */
   onOpenLib?: (what: "vacancy" | "free" | "drone" | "ai") => void;
   project: Project;
@@ -57,7 +59,7 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
 
   const load = async () => {
     if (!b) return;
-    try { setItems(await b.lib.list({ kind: "all", fav: false, q: "", source: "" })); } catch (e) { setMsg(errText(e)); setItems([]); }
+    try { const [vis, aud] = await Promise.all([b.lib.list({ kind: "all", fav: false, q: "", source: "" }), b.lib.list({ kind: "audio", fav: false, q: "", source: "" })]); setItems([...vis, ...aud]); } catch (e) { setMsg(errText(e)); setItems([]); }
   };
   useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -107,7 +109,7 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
     setMenu(null);
     if (!b) return;
     try {
-      const added = await b.lib.pick();
+      const added = await b.lib.pick({ kinds: "any" });
       if (added.length) { addProj(added.map((x) => x.id)); await load(); setSel(added.map((x) => x.id)); }
     } catch (e) { setMsg(errText(e)); }
   };
@@ -179,11 +181,12 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
   };
 
   /* ── 넣기 ── */
-  const put = async (it: LibItem, action: LibPickAction | "plus") => {
+  const put = async (it: LibItem, action: LibPickAction | "plus" | "music") => {
     setMenu(null);
     setBusy("넣는 중…");
     try {
-      if (action === "plus") await pro?.onPlus(it);
+      if (action === "music") { if (b && onMusic) onMusic(await b.musicUse(project.dir, it.id)); }
+      else if (action === "plus") await pro?.onPlus(it);
       else await onPick(it, action);
     } catch (e) { setMsg(errText(e)); }
     setBusy("");
@@ -206,6 +209,13 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
       const t = e.target as HTMLElement | null;
       if (t?.closest?.("input, textarea, [contenteditable]")) return;
       if (e.key === "Escape") setMenu(null);
+      // Ctrl+I = 가져오기 (프리미어처럼, 2026-11-03 사장님) — 이 칸이 열려 있으면 어디서나
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "i" || e.key === "I" || e.code === "KeyI")) {
+        e.preventDefault();
+        e.stopPropagation();
+        void fromPc();
+        return;
+      }
       if (hot.current && (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C" || e.key === "v" || e.key === "V")) {
         e.preventDefault();
         e.stopPropagation();
@@ -272,7 +282,7 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
     return (
       <div key={it.id} draggable onDragStart={(e) => dragStart(e, it)} onDragEnd={() => { mediaDrag.len = 0; }}
         onClick={(e) => { e.stopPropagation(); click(e, it.id); }}
-        onDoubleClick={() => (pro ? pro.onSource?.(it) : onTrim?.(it))}
+        onDoubleClick={() => (pro ? pro.onSource?.(it) : it.kind === "audio" ? void put(it, "music") : onTrim?.(it))}
         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if (!sel.includes(it.id)) setSel([it.id]); setMenu({ x: e.clientX, y: e.clientY, kind: "file", id: it.id }); }}
         title={`${nm(it)}${nm(it) !== it.name ? ` (PC 파일: ${it.name})` : ""}${usedIn(it) ? " · 영상에 쓰는 중" : ""}`}
         style={{ ...rowBase, paddingLeft: inner ? 30 : 8, background: on ? "rgba(59,130,246,0.22)" : "transparent", border: `1px solid ${on ? C.accent : "transparent"}` }}>
@@ -297,7 +307,7 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
     const on = sel.includes(it.id);
     return (
       <div key={it.id} draggable onDragStart={(e) => dragStart(e, it)} onDragEnd={() => { mediaDrag.len = 0; }}
-        onClick={(e) => { e.stopPropagation(); click(e, it.id); }} onDoubleClick={() => (pro ? pro.onSource?.(it) : onTrim?.(it))}
+        onClick={(e) => { e.stopPropagation(); click(e, it.id); }} onDoubleClick={() => (pro ? pro.onSource?.(it) : it.kind === "audio" ? void put(it, "music") : onTrim?.(it))}
         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if (!sel.includes(it.id)) setSel([it.id]); setMenu({ x: e.clientX, y: e.clientY, kind: "file", id: it.id }); }}
         title={nm(it)}
         style={{ minWidth: 0, borderRadius: 4, padding: 3, border: `1px solid ${on ? C.accent : "transparent"}`, background: on ? "rgba(59,130,246,0.22)" : "transparent", userSelect: "none" }}>
@@ -339,7 +349,7 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
         mItem("색 골라 단색 화면…", () => { setMenu(null); colorIn.current?.click(); }),
       ]),
       sep("s1"),
-      mItem("가져오기…", () => void fromPc()),
+      mItem("가져오기…  (Ctrl+I)", () => void fromPc()),
       mItem("폴더째 가져오기…", () => void fromDir(), { off: !b?.lib.pickDir }),
       sub("다른 곳에서 가져오기", [
         mItem("내 공실 사진", () => { setMenu(null); onOpenLib?.("vacancy"); }),
@@ -367,7 +377,9 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
     const vis = it.kind === "image" || it.kind === "video";
     return [
       ...(many.length > 1 ? [<div key="n" style={{ padding: "4px 18px 6px", fontSize: 12, color: C.dim }}>{many.length}개 고름</div>] : []),
-      ...(pro
+      ...(it.kind === "audio" && !pro
+        ? [mItem("배경 음악으로 넣기", () => void put(it, "music"), { off: many.length > 1 || !onMusic })]
+        : pro
         ? [mItem("타임라인에 넣기 (재생 막대 자리)", () => void put(it, "plus"), { off: many.length > 1 })]
         : [
           ...(canReplace && vis ? [mItem("고른 클립 화면 바꾸기", () => void put(it, "replace"), { off: many.length > 1 })] : []),
@@ -449,7 +461,7 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
           <button type="button" title="새 폴더" onClick={startNewBin} style={{ width: 30, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer" }}>
             <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2zM12 11v5M9.5 13.5h5" /></svg>
           </button>
-          <button type="button" title="가져오기 (PC 파일)" onClick={() => void fromPc()} style={{ width: 30, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer" }}>
+          <button type="button" title="가져오기 (Ctrl+I)" onClick={() => void fromPc()} style={{ width: 30, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: C.sub, cursor: "pointer" }}>
             <Icon name="plus" size={18} />
           </button>
         </div>
