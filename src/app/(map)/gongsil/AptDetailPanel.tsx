@@ -27,6 +27,7 @@ export type AptDetail = {
 };
 
 export const BRAND = "#1a56db";
+const TOP_RED = "#d9363e"; // "최고" — 오른 값은 빨강 (2026-11-02 사장님: 주황이 튄다)
 /** 단지 정보 줄 이름 → 부동산 보완 칸 이름 */
 const AGENT_KEY: Record<string, string> = { "전기차 충전": "evChargers", "세대수": "households", "호수": "households", "동수": "dongs", "층수": "topFloor", "주차": "parking", "구조": "hall", "난방": "heating", "시공사": "builder" };
 /** 단지 종류 색 — 카드 바깥 상자가 --apt-accent 를 정한다 (아파트 파랑 · 오피스텔 초록, 지도 표시와 같게) */
@@ -117,8 +118,8 @@ function PriceChart({ points }: { points: { d: string; v: number }[] }) {
       {inRange.map((p, i) => <circle key={i} cx={x(p.d)} cy={y(p.v)} r="2.2" style={{ fill: ACC }} opacity="0.22" />)}
       <polyline points={line.map(([a, b]) => `${a},${b}`).join(" ")} fill="none" style={{ stroke: ACC }} strokeWidth="2.2" strokeLinejoin="round" />
       {line.length > 0 && <circle cx={line[line.length - 1][0]} cy={line[line.length - 1][1]} r="4.5" style={{ fill: ACC }} stroke="#fff" strokeWidth="2" />}
-      <circle cx={x(maxP.d)} cy={y(maxP.v)} r="4" fill="#f97316" stroke="#fff" strokeWidth="1.5" />
-      <text x={x(maxP.d)} y={y(maxP.v) - 8} fontSize="10" fill="#f97316" textAnchor="middle" fontWeight="700">최고</text>
+      <circle cx={x(maxP.d)} cy={y(maxP.v)} r="4" fill={TOP_RED} stroke="#fff" strokeWidth="1.5" />
+      <text x={x(maxP.d)} y={y(maxP.v) - 8} fontSize="10" fill={TOP_RED} textAnchor="middle" fontWeight="700">최고</text>
       {minP !== maxP && <>
         <circle cx={x(minP.d)} cy={y(minP.v)} r="4" fill="#3b82f6" stroke="#fff" strokeWidth="1.5" />
         <text x={x(minP.d)} y={y(minP.v) + 16} fontSize="10" fill="#3b82f6" textAnchor="middle" fontWeight="700">최저</text>
@@ -138,7 +139,7 @@ function PriceChart({ points }: { points: { d: string; v: number }[] }) {
 }
 
 /* ── 로드뷰 ── */
-function Roadview({ lat, lng }: { lat: number; lng: number }) {
+export function Roadview({ lat, lng }: { lat: number; lng: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [none, setNone] = useState(false);
   useEffect(() => {
@@ -228,7 +229,7 @@ function NearbyInfra({ lat, lng, sectionStyle, h3 }: { lat: number; lng: number;
 }
 
 /* ── 지도 ── */
-function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
+export function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const kakao = (window as any).kakao;
@@ -476,7 +477,7 @@ function InfoRequest({ detail, groups }: { detail: AptDetail; groups: { label: s
  *  로그인 안 함: [무료 공실등록] → 로그인 뒤 등록 화면 · 부동산 회원·관리자: 단지가 미리 채워진 등록 화면 · 일반 회원: 등록 단추 숨김
  *  조회수는 실제로 센 것만, 5번 이상일 때만 보인다 (지어내지 않는다) */
 const VIEW_SHOW_MIN = 5;
-function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, mobile = false }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void; mobile?: boolean }) {
+function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, mobile = false, stack = false }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void; mobile?: boolean; stack?: boolean }) {
   const auctionCount = (detail.auction_ids || []).length;
   const [viewer, setViewer] = useState<{ loggedIn: boolean; realtor: boolean; admin: boolean; weekViews: number } | null>(null);
   useEffect(() => {
@@ -499,16 +500,16 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
   const pitch = canRegister && (hasVacancy
     ? `이 단지 실거래가를 보는 손님에게 대표님 공실도 함께 보입니다.`
     : `지금 올리면 이 단지를 보는 손님에게 대표님 공실이 먼저 보입니다.`);
-  const ORANGE = "#f97316";
   return (
     <div style={{ flexShrink: 0, padding: "12px 16px 14px", background: "#fff", borderTop: `1px solid ${LINE}` }}>
       {(views > 0 || pitch) && (
         <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 9, lineHeight: 1.5 }}>
-          {views > 0 && <b style={{ color: ORANGE }}>이번 주 이 단지 실거래가 조회 {views.toLocaleString("ko-KR")}번 · </b>}
+          {views > 0 && <b style={{ color: ACC }}>이번 주 이 단지 실거래가 조회 {views.toLocaleString("ko-KR")}번 · </b>}
           {pitch}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8 }}>
+      {stack && <style>{".apt-stack > button { flex: none !important; }"}</style>}
+      <div className={stack ? "apt-stack" : undefined} style={{ display: "flex", flexDirection: stack ? "column-reverse" : "row", gap: 8 }}>{/* 왼쪽 창은 좁아서 위아래로 — 등록 단추가 위 */}
         {hasVacancy && (
           <button onClick={onShowVacancies} style={{ flex: canRegister ? 1.3 : 1, height: 50, borderRadius: 12, border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
             이 단지 공실 {vacancyCount}개 보기
@@ -520,7 +521,7 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
           </button>
         )}
         {canRegister && (
-          <button onClick={register} style={{ flex: 1, height: 50, borderRadius: 12, border: "none", background: ORANGE, color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 3px 10px rgba(249,115,22,.35)" }}>
+          <button onClick={register} style={{ flex: 1, height: 50, borderRadius: 12, border: "none", background: ACC, color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 3px 10px rgba(0,0,0,.15)" }}>
             {/* 2026-11-02 사장님 */}
             공실무료등록하고 SNS자동홍보하기
           </button>
@@ -531,8 +532,10 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
 }
 
 /* ── 상세 창 ── */
-export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, mobile = false }: {
+export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, mobile = false, side }: {
   detail: AptDetail; onClose: () => void; vacancyCount?: number; onShowVacancies?: () => void; onShowAuctions?: () => void;
+  /** PC: 왼쪽 목록 자리에 붙인다 (2026-11-02 사장님: 호갱노노처럼 왼쪽에) — 목록의 화면 위치·크기, 숨김 */
+  side?: { left: number; top: number; height: number; hidden?: boolean };
   mobile?: boolean; // 모바일: 아래에서 올라오는 시트 (2026-11-02 사장님: 옆에 붙는 모양은 모바일에 좋다)
 }) {
   const groups = useMemo(() => groupsOf(detail), [detail]);
@@ -545,11 +548,23 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const [mode, setMode] = useState<Mode>("sale");
   const [label, setLabel] = useState(defaultGroup);
   const [sheet, setSheet] = useState(false);
+  // 모바일 뒤로가기 = 단지 창만 닫기 (2026-11-03 사장님: 뉴스 메인으로 넘어가지 않게) — 열 때 기록 한 칸, 닫을 때 그 칸을 되돌린다
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    if (!mobile) return;
+    if (!window.history.state?.aptDetail) window.history.pushState({ ...(window.history.state || {}), aptDetail: 1 }, "");
+    // 지도 화면의 뒤로가기 처리(목록·공실 닫기)보다 먼저 받아서 단지 창만 닫는다
+    const onPop = (e: PopStateEvent) => { e.stopImmediatePropagation(); closeRef.current(); };
+    window.addEventListener("popstate", onPop, true);
+    return () => window.removeEventListener("popstate", onPop, true);
+  }, [mobile]);
+  const close = mobile ? () => { if (window.history.state?.aptDetail) window.history.back(); else onClose(); } : onClose;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose]); // eslint-disable-line react-hooks/exhaustive-deps
   const headRef = useRef<HTMLDivElement>(null);
   const [headH, setHeadH] = useState(112);
   useEffect(() => { if (headRef.current) setHeadH(headRef.current.offsetHeight); }, [sheet]);
@@ -588,17 +603,18 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const h3: React.CSSProperties = { fontSize: 16, fontWeight: 800, margin: 0, padding: "18px 20px 10px" };
 
   return (
-    // 지도 가운데 카드 + 뒤를 어둡게 (2026-11-02 사장님: 단지 정보는 가운데에). 바깥·Esc 로 닫는다
-    <div onClick={onClose} style={{ position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
-    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile ? "100%" : 600, maxWidth: "100%", height: mobile ? "92%" : "100%", maxHeight: mobile ? undefined : 860, borderRadius: mobile ? "16px 16px 0 0" : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
+    // PC — 왼쪽 목록 자리에 (지도는 어둡게 하지 않는다, 2026-11-02 사장님: 호갱노노처럼) · 모바일 — 아래 시트 + 뒤를 어둡게. Esc 로 닫는다
+    <div onClick={side ? undefined : close} style={side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: side.hidden ? "none" : "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
+    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: mobile || side ? 0 : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
       {/* 머리 */}
       <div ref={headRef} style={{ background: ACC, padding: "14px 16px 14px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff" }}>
+          {side && <button onClick={onClose} aria-label="목록으로" title="공실 목록으로" style={{ border: "none", background: "none", color: "#fff", fontSize: 26, cursor: "pointer", lineHeight: 1, padding: "0 4px 0 0" }}>‹</button>}
           <div style={{ flex: 1, fontSize: 19, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {detail.kind === "offi" && <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,.22)", borderRadius: 6, padding: "2px 7px", marginRight: 8, verticalAlign: "middle" }}>오피스텔</span>}
             {detail.dong} {detail.name}
           </div>
-          <button onClick={onClose} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>
+          <button onClick={close} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 0.6fr", gap: 8, marginTop: 12 }}>
           <button style={chip} onClick={() => setMode(mode === "sale" ? "lease" : "sale")}>{mode === "sale" ? "매매" : "전월세"} <span style={{ fontSize: 11 }}>⇄</span></button>
@@ -653,7 +669,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
               <span style={{ color: "#4b5563" }}>{dot(r.d)}</span>
               <span>{g?.label}{r.kind ? <span style={{ marginLeft: 6, fontSize: 11, color: r.kind === "전세" ? ACC : "#b45309" }}>{r.kind}</span> : null}</span>
               <span style={{ textAlign: "right", position: "relative" }}>
-                {r.top && <span style={{ position: "absolute", top: -9, right: -7, fontSize: 8.5, fontWeight: 700, color: "#fff", background: "#f97316", borderRadius: 3, padding: "0 3px", lineHeight: "13px" }}>최고</span>}
+                {r.top && <span style={{ position: "absolute", top: -9, right: -7, fontSize: 8.5, fontWeight: 700, color: "#fff", background: TOP_RED, borderRadius: 3, padding: "0 3px", lineHeight: "13px" }}>최고</span>}
                 <b>{r.price}</b><div style={{ color: SUB, fontSize: 11 }}>{r.f}층</div>
               </span>
             </div>
@@ -761,7 +777,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
       </div>
 
       {/* 맨 아래 고정 — [이 단지 공실 n개 보기] [무료 공실등록] (2026-11-02 사장님: 단지가 보이면 부동산에게 공실등록 유도) */}
-      <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} />
+      <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} stack={Boolean(side)} />
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (

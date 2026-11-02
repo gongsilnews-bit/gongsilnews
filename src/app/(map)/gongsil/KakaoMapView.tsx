@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
 import AptPriceLayer from "./AptPriceLayer";
+import BldSampleLayer from "./BldSampleLayer";
 
 interface KakaoMapViewProps {
   activePills?: string[];
@@ -906,6 +907,9 @@ export default function KakaoMapView({
         </div>
 
       </div>
+
+      {/* 건물 실거래 디자인 견본 — 내 PC(localhost)에서만 (2026-11-02) */}
+      <BldSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} />
 
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
       <AptPriceLayer

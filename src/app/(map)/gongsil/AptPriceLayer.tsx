@@ -17,16 +17,20 @@ type Complex = { id: string; kind?: "apt" | "offi"; name: string; lat: number; l
 
 // 축척 제한은 없앴다 (2026-11-02 사장님: 모든 화면에서) — 복잡함은 겹치는 표시 거르기로 푼다 (draw)
 const VAC = "#4b89ff"; // 공실 묶음 동그라미와 같은 색
-const PICKED = "#f97316";
 const OFFI = "#0f766e"; // 오피스텔 — 아파트(파랑)와 구분
 
-/** 누른 단지는 주황 — 상자(0번)와 꼬리(1번)만 칠한다 (2번은 공실 동그라미) */
+/** 누른 단지는 같은 색을 진하게 + 흰 테두리 + 조금 크게 (2026-11-02 사장님: 주황이 튀고 촌스럽다) — 상자(0번)와 꼬리(1번)만 (2번은 공실 동그라미) */
+const PICKED_OF: Record<string, string> = { [OFFI]: "#134e4a" };
+const PICKED_APT = "#1e3a8a";
 const paint = (el: HTMLElement, picked: boolean) => {
-  const color = picked ? PICKED : el.dataset.color || BRAND;
+  const base = el.dataset.color || BRAND;
+  const color = picked ? PICKED_OF[base] || PICKED_APT : base;
   const box = el.children[0] as HTMLElement | undefined;
   const tip = el.children[1] as HTMLElement | undefined;
-  if (box) box.style.background = color;
+  if (box) { box.style.background = color; box.style.boxShadow = picked ? "0 0 0 2px #fff, 0 0 0 3.5px " + color : ""; }
   if (tip) tip.style.borderTopColor = color;
+  el.style.transform = picked ? "scale(1.1)" : "";
+  el.style.transformOrigin = "50% 100%";
   if (el.parentElement) el.parentElement.style.zIndex = picked ? "5" : "1";
 };
 
@@ -52,6 +56,28 @@ const vacancyKind = (v: any): "apt" | "offi" | "unknown" | null => {
 const normName = (name: string, dong: string) =>
   String(name || "").replace(/\(.*?\)/g, "").replace(/아파트|오피스텔|apt/gi, "").replace(dong.replace(/동$/, ""), "").replace(/[\s·.,\-]/g, "").toLowerCase();
 /** 2 = 이름이 같다(한쪽이 다른 쪽을 품음) · 1 = 한글 3자 이상 겹침 · 0 = 다름 */
+/* 마우스를 올리면 뜨는 카드 — 이름 · 주소 · 시세 흐름 (PC만, 2026-11-02 사장님: 호갱노노처럼) */
+type Peek = { name: string; kind: string; addr: string; series: { m: string; p: number }[] };
+const esc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch] as string);
+function sparkSvg(series: Peek["series"], color: string) {
+  if (series.length < 3) return ""; // 거래가 적으면 흐름은 빼고 이름·주소만
+  const W = 76, H = 26, ps = series.map((x) => x.p);
+  const lo = Math.min(...ps), hi = Math.max(...ps), span = hi - lo || 1;
+  const t0 = Date.parse(series[0].m + "-01"), t1 = Date.parse(series[series.length - 1].m + "-01"), ts = t1 - t0 || 1;
+  const pts = series.map((x) => [((Date.parse(x.m + "-01") - t0) / ts) * W, H - 2 - ((x.p - lo) / span) * (H - 4)]);
+  const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  // 선이 왼쪽부터 그려지고 아래 면은 뒤따라 차오른다 (2026-11-02 사장님: 애니메이션 되면서)
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="flex-shrink:0;display:block">` +
+    `<polygon points="0,${H} ${line} ${W},${H}" fill="${color}" opacity="0"><animate attributeName="opacity" from="0" to=".18" begin=".25s" dur=".45s" fill="freeze"/></polygon>` +
+    `<polyline points="${line}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" from="1" to="0" dur=".7s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".3 .7 .4 1"/></polyline></svg>`;
+}
+function peekHtml(pk: Peek, color: string) {
+  return `<div style="background:#fff;border:1px solid #d6d9de;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:10px 14px 11px;font-family:inherit;white-space:nowrap;pointer-events:none;animation:aptPeekIn .18s ease-out">` +
+    `<style>@keyframes aptPeekIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}</style>` +
+    `<div style="display:flex;align-items:center;gap:14px"><span style="font-size:15.5px;font-weight:800;color:#111">${esc(pk.name)}</span>${sparkSvg(pk.series, color)}</div>` +
+    `<div style="font-size:13px;color:#444;margin-top:3px">${esc(pk.addr)}</div></div>`;
+}
+
 function nameScore(a: string, b: string, dong: string) {
   const x = normName(a, dong), y = normName(b, dong);
   if (x.length < 2 || y.length < 2) return 0;
@@ -139,8 +165,29 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
   const elsRef = useRef<Map<string, HTMLElement>>(new Map());
   const pickedRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const peekCache = useRef<Map<string, Peek | null>>(new Map());
+  const peekOverlay = useRef<any>(null);
+  const hoverRef = useRef<string | null>(null);
+  const hidePeek = () => { hoverRef.current = null; peekOverlay.current?.setMap(null); peekOverlay.current = null; };
+  const showPeek = (c: Complex, color: string) => {
+    const pk = peekCache.current.get(c.id);
+    const map = kakaoMapRef.current, kakao = (window as any).kakao;
+    if (!pk || hoverRef.current !== c.id || !map || !kakao?.maps) return;
+    if (peekOverlay.current && peekOverlay.current.__id === c.id) return; // 이미 떠 있으면 다시 만들지 않는다
+    peekOverlay.current?.setMap(null);
+    const box = document.createElement("div");
+    // 카드가 마우스를 가로채면 가격 표시에서 마우스가 "떠난" 것으로 되어 깜빡인다 (2026-11-02 사장님: 파르르 떤다) — 카드는 마우스를 받지 않게
+    box.style.cssText = "transform:translateY(-58px);pointer-events:none";
+    box.innerHTML = peekHtml(pk, color);
+    const ov = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(c.lat, c.lng), content: box, yAnchor: 1, zIndex: 50, clickable: false });
+    ov.__id = c.id;
+    peekOverlay.current = ov;
+    ov.setMap(map);
+    if (box.parentElement) box.parentElement.style.pointerEvents = "none";
+  };
 
   const clear = () => {
+    hidePeek();
     overlaysRef.current.forEach((o) => o.setMap(null));
     overlaysRef.current = [];
     elsRef.current.clear();
@@ -168,7 +215,31 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
     else { setDetail(null); setDetailError(res?.error || "실거래가를 불러오지 못했습니다."); }
   }, [pick]);
 
-  const close = useCallback(() => { setDetail(null); setDetailError(""); pick(null); }, [pick]);
+  const close = useCallback(() => { setDetail(null); setDetailError(""); setListOpen(false); pick(null); }, [pick]);
+
+  // PC — 단지 창은 왼쪽 목록 자리에 (2026-11-02 사장님: 호갱노노처럼). 목록(aside[data-gongsil-side])의 화면 위치를 따라간다
+  const [side, setSide] = useState<{ left: number; top: number; height: number } | null>(null);
+  const [listOpen, setListOpen] = useState(false); // [이 단지 공실 보기] — 창을 잠깐 숨기고 목록 위에 [‹ 단지 정보] 줄
+  useEffect(() => {
+    if (mobile || !detail) return;
+    const measure = () => {
+      const el = document.querySelector("aside[data-gongsil-side]") as HTMLElement | null;
+      if (!el) return setSide(null);
+      const r = el.getBoundingClientRect();
+      setSide((v) => (v && v.left === r.left && v.top === r.top && v.height === r.height ? v : { left: r.left, top: r.top, height: r.height }));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [mobile, detail]);
+  // 창이 지도 왼쪽을 조금(40px) 덮는다 — 고른 단지가 가리면 지도를 옮긴다
+  useEffect(() => {
+    if (mobile || !detail || !side) return;
+    const map = kakaoMapRef.current, kakao = (window as any).kakao;
+    if (!map || !kakao?.maps || detail.lat == null) return;
+    const pt = map.getProjection().containerPointFromCoords(new kakao.maps.LatLng(detail.lat, detail.lng));
+    if (pt.x < 110) map.panBy(pt.x - 160, 0);
+  }, [detail?.id, side]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draw = useCallback(async () => {
     const map = kakaoMapRef.current;
@@ -220,7 +291,21 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
       const el = document.createElement("div");
       const color = c.kind === "offi" ? OFFI : BRAND;
       el.dataset.color = color;
-      el.title = `${c.name}${c.kind === "offi" ? " (오피스텔)" : ""} · 최근 실거래 ${c.rep_date ? c.rep_date.replace(/-/g, ".") : ""}`;
+      if (mobile) el.title = `${c.name}${c.kind === "offi" ? " (오피스텔)" : ""} · 최근 실거래 ${c.rep_date ? c.rep_date.replace(/-/g, ".") : ""}`;
+      else {
+        // 0.15초 넘게 올려 두면 그 단지만 받아 온다 (한 번 받은 것은 기억)
+        el.addEventListener("mouseenter", () => {
+          hoverRef.current = c.id;
+          if (peekCache.current.has(c.id)) { showPeek(c, color); return; }
+          setTimeout(async () => {
+            if (hoverRef.current !== c.id || peekCache.current.has(c.id)) return showPeek(c, color);
+            const r = await fetch(`/api/apt-prices?peek=${encodeURIComponent(c.id)}`).then((x) => x.json()).catch(() => null);
+            peekCache.current.set(c.id, r?.success ? { name: r.name, kind: r.kind, addr: r.addr, series: r.series || [] } : null);
+            showPeek(c, color);
+          }, 150);
+        });
+        el.addEventListener("mouseleave", (e) => { if (el.contains(e.relatedTarget as Node | null)) return; hidePeek(); });
+      }
       el.style.cssText = "position:relative;cursor:pointer;user-select:none;text-align:center;font-family:inherit;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))";
       el.innerHTML =
         `<div style="background:${color};color:#fff;border-radius:9px;padding:4px 9px 5px;min-width:52px;line-height:1.15;white-space:nowrap">` +
@@ -235,14 +320,14 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
         badge.addEventListener("click", (e) => { e.stopPropagation(); showRef.current(ids); });
         el.appendChild(badge);
       }
-      el.addEventListener("click", (e) => { e.stopPropagation(); openDetail(c.id); });
+      el.addEventListener("click", (e) => { e.stopPropagation(); hidePeek(); openDetail(c.id); });
       const overlay = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(c.lat, c.lng), content: el, yAnchor: 1, zIndex: 1, clickable: true });
       overlay.setMap(map);
       overlaysRef.current.push(overlay);
       elsRef.current.set(c.id, el);
       if (c.id === pickedRef.current) requestAnimationFrame(() => paint(el, true));
     }
-  }, [kakaoMapRef, openDetail]);
+  }, [kakaoMapRef, openDetail, mobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!on || !mapLoaded) return;
@@ -326,13 +411,22 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
       {on && detail && pickedId && (
         <AptDetailPanel
           mobile={mobile}
+          side={!mobile && side ? { ...side, hidden: listOpen } : undefined}
           detail={detail}
           onClose={close}
           vacancyCount={[...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])].length}
           // 창은 그대로 두고 왼쪽 목록만 그 단지 공실로 (2026-11-02 사장님)
-          onShowVacancies={() => onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])])}
-          onShowAuctions={onShowAuctions ? () => onShowAuctions(detail.auction_ids || []) : undefined}
+          onShowVacancies={() => { onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])]); if (!mobile && side) setListOpen(true); }}
+          onShowAuctions={onShowAuctions ? () => { onShowAuctions(detail.auction_ids || []); if (!mobile && side) setListOpen(true); } : undefined}
         />
+      )}
+      {/* 왼쪽이 그 단지 공실 목록일 때 — 목록 맨 위에 [‹ 단지 정보] */}
+      {on && detail && pickedId && !mobile && side && listOpen && (
+        <div style={{ position: "fixed", left: side.left, top: side.top, width: 380, height: 52, zIndex: 1002, background: detail.kind === "offi" ? OFFI : BRAND, color: "#fff", display: "flex", alignItems: "center", gap: 6, padding: "0 12px", boxSizing: "border-box" }}>
+          <button onClick={() => setListOpen(false)} style={{ border: "none", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 6, height: 32, padding: "0 10px", fontSize: 14, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>‹ 단지 정보</button>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detail.name} 공실</span>
+          <button onClick={close} aria-label="닫기" title="모든 공실 목록으로" style={{ border: "none", background: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>✕</button>
+        </div>
       )}
       {on && detailError && (
         <div style={{ position: "absolute", left: 16, top: 16, zIndex: 1002, background: "#fff", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,.2)", padding: "14px 18px", color: "#d93025", display: "flex", gap: 12 }}>

@@ -309,24 +309,33 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
         </span>
         <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
         <span className="wish-select" style={{ color: themeColor }} onClick={() => setActivePanel(activePanel === "search" ? null : "search")}>
-          검색 🔍
+          {/* 이모지 돋보기 대신 선 아이콘 (2026-11-02 사장님: 촌스럽다) */}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            검색
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+          </span>
         </span>
         <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
         <button
           type="button"
           onClick={moveToCurrentLocation}
+          // 흰 바탕 + 위치 아이콘 (2026-11-02 사장님: 주황이 촌스럽다)
           style={{
-            border: "none",
+            border: "1.5px solid #d1d5db",
             borderRadius: 6,
-            background: "#ff8e15",
-            color: "#fff",
+            background: "#fff",
+            color: "#374151",
             cursor: "pointer",
-            padding: "7px 10px",
+            padding: "6px 10px",
             fontSize: 14,
             fontWeight: 800,
             whiteSpace: "nowrap",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
           }}
         >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={themeColor} strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" fill={themeColor} stroke="none" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
           내 위치
         </button>
         {afterLocation}

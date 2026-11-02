@@ -3,6 +3,7 @@
 //  GET ?id=11680:대치동:1014-3              단지 하나 — 매매·전월세 거래 전부 + 평형·세대수 + 단지 정보 (상세 창이 계산)
 import { NextRequest, NextResponse } from "next/server";
 import { db, withAgent } from "@/utils/aptMap";
+import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
 
 const headers = { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" };
 
@@ -19,6 +20,29 @@ async function listingsOf(supabase: ReturnType<typeof db>, id: string) {
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const supabase = db();
+
+  // 마우스를 올린 단지 — 이름 · 주소 · 라벨 면적의 달마다 평균 매매가 (최근 36개월, 2026-11-02 사장님: 호갱노노처럼)
+  const peek = params.get("peek");
+  if (peek) {
+    const { data } = await supabase.from("apt_complexes").select("id, kind, name, dong, jibun, lawd_cd, trades, rep_area").eq("id", peek).maybeSingle();
+    if (!data) return NextResponse.json({ success: false }, { status: 404 });
+    const byMonth = new Map<string, number[]>();
+    for (const t of (data.trades || []) as Trade[]) {
+      if (data.rep_area && Math.abs(t.a - data.rep_area) > 0.5) continue;
+      const m = t.d.slice(0, 7);
+      byMonth.set(m, [...(byMonth.get(m) || []), t.p]);
+    }
+    const all = [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([m, ps]) => ({ m, p: Math.round(ps.reduce((s, x) => s + x, 0) / ps.length) }));
+    // 앞뒤 달과 30% 넘게 다른 한 달(직거래·특수 거래)은 흐름에서 뺀다 — 선이 뚝 떨어져 보이지 않게
+    const series = all.filter((x, i) => {
+      const near = all.slice(Math.max(0, i - 2), i).concat(all.slice(i + 1, i + 3)).map((y) => y.p).sort((a, b) => a - b);
+      if (near.length < 2) return true;
+      const mid = near[Math.floor(near.length / 2)];
+      return Math.abs(x.p - mid) / mid <= 0.3;
+    });
+    const addr = [LAWD_NAMES[data.lawd_cd] || "", data.dong || "", data.jibun || ""].filter(Boolean).join(" ");
+    return NextResponse.json({ success: true, name: data.name, kind: data.kind, addr, series }, { headers });
+  }
 
   const id = params.get("id");
   if (id) {

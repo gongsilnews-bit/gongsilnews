@@ -102,6 +102,7 @@ export default function GongsilSidebar({
   }, [displayVacancies, auctionSort, isAuctionMode]);
   return (
     <aside
+      data-gongsil-side // 단지 실거래가 창이 이 자리에 붙는다 (AptPriceLayer)
       style={{
         width: 380,
         minWidth: 380,
@@ -404,8 +405,8 @@ export default function GongsilSidebar({
                             style={{
                               display: "inline-block",
                               fontSize: 11,
-                              color: "#fa5252",
-                              border: "1px solid #fa5252",
+                              color: "#d9363e",
+                              border: "1px solid #d9363e",
                               padding: "1px 5px",
                               borderRadius: 4,
                               fontWeight: "bold",
@@ -436,8 +437,8 @@ export default function GongsilSidebar({
                           style={{
                             display: "inline-block",
                             fontSize: 11,
-                            color: "#fa5252",
-                            border: "1px solid #fa5252",
+                            color: "#d9363e",
+                            border: "1px solid #d9363e",
                             padding: "1px 5px",
                             borderRadius: 4,
                             fontWeight: "bold",
@@ -448,7 +449,7 @@ export default function GongsilSidebar({
                       )}
                       {!isAuctionMode && (
                         <>
-                          <span style={{ fontSize: 12, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                          <span style={{ fontSize: 12, color: "#d9363e", fontWeight: "bold" }}>{prop.vacancy_no}</span>
                           <span style={{ fontSize: 12, color: "#aaa" }}>
                             {new Date(prop.created_at)
                               .toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" })
@@ -494,14 +495,14 @@ export default function GongsilSidebar({
                     )}
                   </div>
                   {isAuctionMode && lowestBidText && (
-                    <div style={{ fontSize: 14, fontWeight: 800, color: "#fa5252", marginBottom: 4 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#d9363e", marginBottom: 4 }}>
                       최저입찰가 {lowestBidText}
                       {cardDiscountRate !== 0 && (
                         <span
                           style={{
                             fontSize: 13,
                             fontWeight: 800,
-                            color: cardDiscountRate > 0 ? "#16a34a" : "#fa5252",
+                            color: cardDiscountRate > 0 ? "#16a34a" : "#d9363e",
                             marginLeft: 8,
                           }}
                         >
