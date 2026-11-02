@@ -19,7 +19,6 @@ import GongsilDetailPanel from "./GongsilDetailPanel";
 import KakaoMapView from "./KakaoMapView";
 import GongsilFilterBar from "./GongsilFilterBar";
 import GongsilFilterPanel from "./GongsilFilterPanel";
-import GongsilRegisterPromoOverlay from "./GongsilRegisterPromoOverlay";
 import { filterVacancies } from "./filterVacancies";
 import { useGongsilFilterState } from "./useGongsilFilterState";
 import {
@@ -299,7 +298,6 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
-  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
   const detailHistoryInitializedRef = useRef(false);
 
@@ -868,21 +866,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         if (memberData) {
           const lvl = getPermissionLevel(memberData);
           setUserLevel(lvl);
-          const isSuper =
-            Boolean(
-              (lvl >= 5 || isAdminRole(memberData.role)) &&
-              memberData.role !== "REALTOR" &&
-              memberData.role !== "부동산회원" &&
-              memberData.role !== "부동산관리자"
-            ) || data.user.email === "gongsilmarketing@gmail.com";
-          if (isSuper) {
-            setShowRegisterPromoOverlay(false);
-          }
         } else {
           setUserLevel(1);
-          if (data.user.email === "gongsilmarketing@gmail.com") {
-            setShowRegisterPromoOverlay(false);
-          }
         }
       }
     }
@@ -1404,13 +1389,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   };
 
   const handleCategoryChange = (key: string) => {
-    if (activeCategory === key) {
-      // 이미 선택된 탭을 다시 눌렀을 때도 일반 공실 탭이면 안내 오버레이 다시 노출 (최고관리자는 제외)
-      if (["apart", "villa", "one", "biz", "sale"].includes(key) && !isSuperAdmin) {
-        setShowRegisterPromoOverlay(true);
-      }
-      return;
-    }
+    if (activeCategory === key) return;
     // 현재 탭의 pill 상태를 sessionStorage에 저장
     sessionStorage.setItem(`gongsil_pills_${activeCategory}`, JSON.stringify(activePills));
 
@@ -1419,12 +1398,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setIsAuctionMode(newKey === "auction");
     setActiveMode(newKey === "auction" ? "경매" : "공실");
 
-    // 아파트~신축분양 탭 선택 시 공실 등록 유도 오버레이 노출 (최고관리자는 항상 열람 가능)
-    if (["apart", "villa", "one", "biz", "sale"].includes(newKey) && !isSuperAdmin) {
-      setShowRegisterPromoOverlay(true);
-    } else {
-      setShowRegisterPromoOverlay(false);
-    }
+    // 탭을 누를 때 뜨던 '내 공동중개 물건 무료 등록' 안내 창은 없앴다 (2026-11-02 사장님) —
+    // 공실 등록 유도는 실거래가 단지 창의 [이 단지 첫 공실 무료 등록]이 맡는다
     
     // sessionStorage에서 이전 pill 상태 복원, 없으면 전체선택
     const savedPills = sessionStorage.getItem(`gongsil_pills_${newKey}`);
@@ -2795,16 +2770,6 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           </div>
         )}
 
-        {/* 일반 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 오버레이 (최고관리자는 제외) */}
-        {showRegisterPromoOverlay && !isSuperAdmin && (
-          <GongsilRegisterPromoOverlay
-            categoryName={CATEGORY_CONFIG[activeCategory]?.name || "공실"}
-            onClose={() => setShowRegisterPromoOverlay(false)}
-            onGoAuction={() => handleCategoryChange("auction")}
-            currentUser={currentUser}
-            userLevel={userLevel}
-          />
-        )}
       </main>
 
       {/* 갤러리 풀스크린 모달 */}
