@@ -129,7 +129,7 @@ function register() {
       fs.writeFileSync(tmp, toBuf(bytes));
       fs.renameSync(tmp, target); // 쓰다 멈춰도 원본이 깨지지 않게
       if (ext === "psd") addRecent(target, thumb);
-      else shell.showItemInFolder(target); // 웹용 저장·내보내기(PNG·JPG·PDF…) — 저장한 폴더를 열어 파일을 보여 준다 (2026-10-23 사장님)
+      // 웹용 저장·내보내기(PNG·JPG·PDF…)는 저장만 한다 — 폴더 창을 띄우지 않는다 (2026-11-02 사장님: 불편, 10-23 의 폴더 열기를 뺌)
       return { path: target, name: path.basename(target) };
     } catch (err) {
       return { error: String((err && err.message) || err) };

@@ -358,7 +358,7 @@ export async function kaptFor(p: Parcel, nameHint = ""): Promise<KaptInfo | null
 export async function recapAt(p: Parcel) {
   const it = (await hub("BldRgstHubService", "getBrRecapTitleInfo", p, 5).catch(() => []))[0];
   if (!it) return null;
-  return { name: s(it.bldNm), households: n(it.hhldCnt), units: n(it.hoCnt), dongs: n(it.mainBldCnt), totArea: n(it.totArea), parking: n(it.totPkngCnt), useAprDay: s(it.useAprDay), purpose: s(it.mainPurpsCdNm) };
+  return { name: s(it.bldNm), households: n(it.hhldCnt), units: n(it.hoCnt), dongs: n(it.mainBldCnt), totArea: n(it.totArea), parking: n(it.totPkngCnt), useAprDay: s(it.useAprDay), purpose: s(it.mainPurpsCdNm), bcRat: n(it.bcRat), vlRat: n(it.vlRat) };
 }
 
 /** 이 호실 — 전유·공용 면적 (호 이름 적는 방식이 건물마다 달라 마지막 숫자 묶음으로 맞춘다. 같은 번호가 여러 동이면 null) */

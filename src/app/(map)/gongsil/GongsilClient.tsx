@@ -2679,6 +2679,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         />
 
         <KakaoMapView
+          activePills={activePills}
+          onSwitchCategory={handleCategoryChange}
           kakaoMapRef={kakaoMapRef}
           mapLoaded={mapLoaded}
           mapError={mapError}

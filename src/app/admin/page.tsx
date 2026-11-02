@@ -27,6 +27,7 @@ import { getUnreadCountsByType, markAllNotificationsRead } from "@/app/actions/n
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 const SttWordsSection = lazy(() => import("@/components/admin/sections/SttWordsSection"));
+const AptReportsSection = lazy(() => import("@/components/admin/sections/AptReportsSection"));
 const StudioAdsSection = lazy(() => import("@/components/admin/sections/StudioAdsSection"));
 
 /* ── 최고관리자 메뉴 ── */
@@ -38,6 +39,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }, { key: "policy", label: "등급별 한도 설정" }, { key: "realty_menu", label: "중개사 메뉴 기본값" }] },
   { key: "newsrealty", label: "멤버십관리", icon: <IconBuilding /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
+  { key: "apt_reports", label: "단지 정보 요청", icon: <IconBuilding /> }, // 시세 지도 공급면적·단지 정보 보완 (2026-11-02)
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "inquiry", label: "문의관리", icon: <IconEdit /> },
   { key: "inquiry_board", label: "1:1문의", icon: <IconComment /> },
@@ -327,6 +329,7 @@ function AdminContent() {
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
           {activeMenu === "marketing" && <MarketingSection theme={theme} />}
           {activeMenu === "stt_words" && <SttWordsSection theme={theme} />}
+          {activeMenu === "apt_reports" && <AptReportsSection theme={theme} />}
           {activeMenu === "manual" && <AdminManual />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>

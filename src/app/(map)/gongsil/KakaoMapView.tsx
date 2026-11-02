@@ -1,9 +1,12 @@
 import { mapStart, rememberMap } from "@/utils/mapMemory";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
+import AptPriceLayer from "./AptPriceLayer";
 
 interface KakaoMapViewProps {
+  activePills?: string[];
+  onSwitchCategory?: (key: string) => void;
   kakaoMapRef: React.MutableRefObject<any>;
   mapLoaded: boolean;
   mapError: string | null;
@@ -35,6 +38,8 @@ interface KakaoMapViewProps {
 }
 
 export default function KakaoMapView({
+  activePills = [],
+  onSwitchCategory,
   kakaoMapRef,
   mapLoaded,
   mapError,
@@ -74,6 +79,10 @@ export default function KakaoMapView({
   const selectedClusterIdsRef = useRef<string[] | null>(null);
   const dbVacanciesRef = useRef<any[]>(initialVacancies);
   const lastZoomWasInRef = useRef<boolean>(false);
+  // [아파트 시세]를 켰을 때 단지 시세 표시에 숫자로 붙은 아파트 공실 — 공실 표시는 따로 그리지 않는다 (2026-11-02 사장님)
+  const [hiddenVacancyIds, setHiddenVacancyIds] = useState<Set<string>>(new Set());
+  const drawnVacanciesRef = useRef<any[]>([]);
+  const [priceButtonSlot, setPriceButtonSlot] = useState<HTMLSpanElement | null>(null); // 검색 줄 [내 위치] 옆
 
   // Sync state to refs for standard non-stale callback references inside Kakao Map events
   useEffect(() => {
@@ -121,8 +130,8 @@ export default function KakaoMapView({
     setZoomLevel(map.getLevel());
     setMapBounds(map.getBounds()); // 🚀 최초 맵 로드 시 Bounds를 즉각 주입하여 첫 화면 freeze 해결!
 
-    // 제한된 범위 지정 (3: 가장 확대된 상태, 10: 최대 줌아웃 - 광역 10km 축척 수준)
-    map.setMinLevel(3);
+    // 제한된 범위 지정 (1: 가장 확대된 상태 20m 축척 — 2026-11-02 사장님: 더 확대되게, 10: 최대 줌아웃 - 광역 10km 축척 수준)
+    map.setMinLevel(1);
     map.setMaxLevel(10);
 
     // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 및 핀치 줌 강제 활성화 (자식 target에 이벤트 위임 및 휠/클릭 시뮬레이션)
@@ -390,6 +399,8 @@ export default function KakaoMapView({
         });
       }
     }
+    if (hiddenVacancyIds.size) targetVacancies = targetVacancies.filter((v) => !hiddenVacancyIds.has(String(v.id)));
+    drawnVacanciesRef.current = targetVacancies;
     const currentLevel = kakaoMapRef.current?.getLevel() || 6;
 
     // [대표님 지침] 지도가 멀리 줌아웃된 상태(레벨 >= 9)에서는 직방처럼 지도 위에 아무런 매물/클러스터 마커도 노출하지 않고 메모리/성능을 극대화합니다.
@@ -566,7 +577,7 @@ export default function KakaoMapView({
       const ids = markers.flatMap((m: any) => {
         const pos = m.getPosition();
         const isZoom = kakaoMapRef.current ? kakaoMapRef.current.getLevel() <= 5 : true;
-        return filteredVacanciesRef.current
+        return drawnVacanciesRef.current
           .filter((v: any) => {
             const coords = getJitteredCoords(v, isZoom);
             return Math.abs(coords.lat - pos.getLat()) < 0.00001 && Math.abs(coords.lng - pos.getLng()) < 0.00001;
@@ -586,7 +597,7 @@ export default function KakaoMapView({
           const pos = m.getPosition();
           // Find the number of properties at this marker's coordinate
           const isZoom = kakaoMapRef.current ? kakaoMapRef.current.getLevel() <= 5 : true;
-          const count = filteredVacanciesRef.current.filter((v: any) => {
+          const count = drawnVacanciesRef.current.filter((v: any) => {
             const coords = getJitteredCoords(v, isZoom);
             return Math.abs(coords.lat - pos.getLat()) < 0.00001 && Math.abs(coords.lng - pos.getLng()) < 0.00001;
           }).length;
@@ -626,7 +637,7 @@ export default function KakaoMapView({
           const ids = markers.flatMap((m: any) => {
             const pos = m.getPosition();
             const isZoom = kakaoMapRef.current ? kakaoMapRef.current.getLevel() <= 5 : true;
-            return filteredVacanciesRef.current
+            return drawnVacanciesRef.current
               .filter((v: any) => {
                 const coords = getJitteredCoords(v, isZoom);
                 return Math.abs(coords.lat - pos.getLat()) < 0.00001 && Math.abs(coords.lng - pos.getLng()) < 0.00001;
@@ -742,6 +753,7 @@ export default function KakaoMapView({
     mapLoaded,
     isAuctionMode,
     zoomLevel,
+    hiddenVacancyIds,
   ]);
 
   return (
@@ -794,6 +806,7 @@ export default function KakaoMapView({
         }}
         themeColor="#1a73e8"
         isPushedDown={activeFilterDropdown !== null}
+        afterLocation={<span ref={setPriceButtonSlot} style={{ display: "inline-flex", gap: 6 }} />}
       />
 
       <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
@@ -893,6 +906,24 @@ export default function KakaoMapView({
         </div>
 
       </div>
+
+      {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
+      <AptPriceLayer
+        buttonSlot={priceButtonSlot}
+        autoShow={!isAuctionMode && (activeCategory === "all" || activeCategory === "apart")}
+        kakaoMapRef={kakaoMapRef}
+        mapLoaded={mapLoaded}
+        vacancies={isAuctionMode ? [] : filteredVacancies}
+        // 2차 카테고리(아파트·오피스텔)에 맞춰 시세도 거른다 — 아무것도 안 골랐거나 다른 카테고리면 둘 다 (2026-11-02 사장님)
+        kinds={{
+          apt: !["apart", "sale", "auction", "one"].includes(activeCategory) || (activeCategory === "one" ? !activePills.includes("오피스텔만 보기") : activePills.length === 0 || activePills.includes("아파트")),
+          offi: !["apart", "sale", "auction"].includes(activeCategory) || activePills.length === 0 || activePills.includes("오피스텔"),
+        }}
+        // 공실 보기는 공실 탭으로, 경매 보기는 경매/공매 탭으로 바꾸고 그 단지 물건만 (2026-11-02)
+        onShowVacancies={(ids) => { if (isAuctionMode) onSwitchCategory?.("all"); setSelectedClusterIds(ids); setShowDetail(false); }}
+        onShowAuctions={(ids) => { if (!isAuctionMode) onSwitchCategory?.("auction"); setSelectedClusterIds(ids); setShowDetail(false); }}
+        onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
+      />
     </div>
   );
 }

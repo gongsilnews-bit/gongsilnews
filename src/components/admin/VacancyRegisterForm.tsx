@@ -180,6 +180,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [bun, setBun] = useState("");
   const [ji, setJi] = useState("");
   const [platGbCd, setPlatGbCd] = useState("0");
+  /** 시세 지도 단지 번호 — apt_complexes.id 와 같은 규칙 (아파트 "11680:논현동:276-1", 오피스텔 "o:11680:역삼동:832-3").
+   *  아파트·오피스텔 공실이고 주소 검색으로 구 코드·지번을 받았을 때만. 화면에는 보이지 않는다 */
+  const complexIdOf = () => {
+    if (propertyType !== "아파트·오피스텔" || !["아파트", "오피스텔"].includes(subCategory)) return "";
+    if (!sigunguCd || !dong || !bun) return "";
+    const jibun = `${platGbCd === "1" ? "산" : ""}${Number(bun)}${ji && Number(ji) ? `-${Number(ji)}` : ""}`;
+    return `${subCategory === "오피스텔" ? "o:" : ""}${sigunguCd}:${dong}:${jibun}`;
+  };
   const [fetchingLedger, setFetchingLedger] = useState(false);
 
   // 인프라 기능
@@ -429,6 +437,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.landlord_memo) setLandlordMemo(editData.landlord_memo);
     if (editData.lat && editData.lng) setCoords({ lat: editData.lat, lng: editData.lng });
     if (editData.infrastructure) setInfrastructure(editData.infrastructure);
+    // 공실열람 시세 지도 [무료 공실등록]으로 단지만 채워 들어왔으면 주소 검색 때처럼 주변 인프라도 찾는다 (2026-11-02 사장님)
+    else if (!editData.id && editData.complex_id && editData.lat && editData.lng) {
+      import("@/app/actions/geocode")
+        .then(({ searchNearbyInfrastructure }) => searchNearbyInfrastructure(editData.lat, editData.lng, 2000))
+        .then((infra) => setInfrastructure((prev) => (Object.keys(prev || {}).length ? prev : infra)))
+        .catch((e) => console.error("인프라 추출 실패:", e));
+    }
     if (editData.consent !== undefined) setConsent(editData.consent);
     if (editData.vacancy_photos && editData.vacancy_photos.length > 0) {
       const sorted = [...editData.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
@@ -3004,6 +3019,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     sido, sigungu, dong,
                     detail_addr: detailAddr || null,
                     building_name: buildingName || null,
+                    // 시세 지도 단지 번호 (2026-11-02 사장님) — 주소 검색 값으로 만들 수 있을 때만 (못 만들면 넣지 않아 예전 값 유지)
+                    // 시세 지도 [무료 공실등록]으로 들어왔으면 그 단지 번호 (editData.complex_id)
+                    ...((complexIdOf() || editData?.complex_id) ? { complex_id: complexIdOf() || editData?.complex_id } : {}),
                     apt_dong: aptDong || null,
                     hosu: hosu || null,
                     address_exposure: addressExposure,

@@ -9,9 +9,10 @@ interface MapSearchBarProps {
   themeColor?: string;
   isPushedDown?: boolean;
   children?: React.ReactNode;
+  afterLocation?: React.ReactNode; // [내 위치] 바로 옆 (공실열람 [아파트 시세][오피스텔 시세], 2026-11-02)
 }
 
-export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterRegion, themeColor = "#ff8e15", isPushedDown = false, children }: MapSearchBarProps) {
+export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterRegion, themeColor = "#ff8e15", isPushedDown = false, children, afterLocation }: MapSearchBarProps) {
   const [activePanel, setActivePanel] = useState<"region" | "search" | null>(null);
   const [activeTab, setActiveTab] = useState<"sido" | "gugun" | "dong">("sido");
 
@@ -328,6 +329,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
         >
           내 위치
         </button>
+        {afterLocation}
       </div>
 
       {/* 추가 children (섹션 필터, 버튼 등) */}

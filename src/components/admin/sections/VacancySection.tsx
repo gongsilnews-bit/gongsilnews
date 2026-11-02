@@ -24,6 +24,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const action = searchParams.get("action");
   const editId = searchParams.get("id");
   const copyId = searchParams.get("copy"); // 사본 만들기 — 내용만 채우고 새로 등록 (2026-10-28)
+  const complexParam = searchParams.get("complex"); // 공실열람 시세 지도 [무료 공실등록] — 그 단지 주소·이름·종류를 미리 채움 (2026-11-02)
   // 보기 방식 (2026-10-28 사장님): 카드형(기본 — 홈 "내 공실 홍보현황"과 같은 카드) / 목록형(표 — 여러 개 골라 처리)
   // 최고관리자 화면은 전체 공실이라 표만 · 회원이 고른 보기는 이 기기에 기억
   const canCard = role !== "admin";
@@ -204,12 +205,24 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           const { id: _id, vacancy_no: _no, status: _st, created_at: _at, ...rest } = res.data as any;
           setEditingVacancy(rest);
         }
+      } else if (complexParam && action === "write") {
+        const res = await fetch(`/api/apt-prices?id=${encodeURIComponent(complexParam)}`).then((r) => r.json()).catch(() => null);
+        const c = res?.success ? res.complex : null;
+        if (c) {
+          const { LAWD_NAMES } = await import("@/utils/aptMapShared");
+          const [sido = "", ...rest] = String(LAWD_NAMES[c.lawd_cd] || "").split(" ");
+          setEditingVacancy({
+            property_type: "아파트·오피스텔", sub_category: c.kind === "offi" ? "오피스텔" : "아파트",
+            sido, sigungu: rest.join(" "), dong: c.dong, detail_addr: c.jibun, building_name: c.name,
+            lat: c.lat, lng: c.lng, complex_id: c.id,
+          });
+        } else setEditingVacancy(null);
       } else {
         setEditingVacancy(null);
       }
     };
     fetchEditData();
-  }, [editId, copyId, action]);
+  }, [editId, copyId, complexParam, action]);
 
   if (showRegisterForm) {
     // back=sns 처럼 온 곳이 있으면 등록·취소 뒤 그 메뉴로 (뉴스·SNS자동화 [새로 만들기], 2026-10-30 사장님)
