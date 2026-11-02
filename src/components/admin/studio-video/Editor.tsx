@@ -9,7 +9,7 @@ import MotionDialog from "./MotionDialog";
 import MotionAutoDialog, { type AutoRun } from "./MotionAutoDialog";
 import { STYLE_PACKS, outroOfIntro, packOfIntro } from "./stylePacks";
 import { SUB_PRESETS } from "./SubPresets";
-import { MUSIC_LIBRARY } from "@/lib/reels/music-catalog";
+import { MUSIC_PICKABLE as MUSIC_LIBRARY } from "@/lib/reels/music-catalog";
 import { DRAG_MEDIA, DRAG_STICKER, RATIO_LABEL, RATIO_SIZE, autoSubPosition, errText, fmtTime, isStopped, stickerDrag, uid, videoBridge } from "./types";
 import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
 import { chainVisuals, layLeads, tailGap, layRolls, zLayers, gapOf, voiceGap, clipOrder, clipText, flatten, isPhotoClip, layerSpan, subtitleLines, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes, layerRange, kfAt, kfUpsert, kfIndexAt, kfSort, kfAny, kfHasAt, kfSetProps, kfToggleProp, kfClearProps, kfMoveProps, cropOf, KF_PROPS, clipKeyBase, clipBaseRect, imgRect, clipDuration, sourceTimeAt } from "./timeline";
@@ -2767,7 +2767,22 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     setMusicTarget(target);
     setPanel("music");
   };
+  /** 벤사운드 곡을 넣으면 영상에 출처 글자 "Music: bensound.com"을 저절로 넣는다 (2026-11-02 사장님 — 무료 곡은 출처 표기 조건).
+   *  영상 처음부터 끝까지 오른쪽 아래 작게. 이미 있으면 다시 넣지 않는다. 회원이 지우거나 옮길 수 있다 */
+  const addMusicCredit = (m: { file: string; name: string }) => {
+    if (!/bensound/i.test(`${m.name} ${m.file}`)) return;
+    change((p) => {
+      if ((p.layers || []).some((l) => l.type === "text" && /bensound\.com/i.test(String((l as { text?: string }).text || "")))) return;
+      const its = flatten(p).items;
+      if (!its.length) return;
+      p.layers = [...(p.layers || []), {
+        id: uid(), type: "text", name: "음악 출처", from: its[0].clip.id, to: its[its.length - 1].clip.id,
+        text: "Music: bensound.com", pos: "bottom", align: "right", size: 32, color: "#FFFFFF", bold: false, box: false, outline: "#000000", outlineWidth: 2,
+      } as Layer];
+    });
+  };
   const onMusic = (m: { file: string; url: string; name: string }, range?: SrcRange | null) => {
+    addMusicCredit(m);
     if (range && !musicTarget) {
       // 쓸 부분만 (2026-10-25 사장님) — 고른 클립 처음(없으면 영상 처음)부터 구간 길이만큼, 그 구간 소리만 (반복 없이)
       const its = flatten(pref.current).items;
@@ -5437,12 +5452,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         // 음악 — 음악 바꾸기 · 소리 크기·페이드 · 적용 범위 · 삭제
         if (l.type === "music")
           return <MediaMenu key={"l" + l.id} {...common} what="음악"
-            extra={[{ icon: "music", label: "음악 설정", desc: "오른쪽 칸에서 시작 지점·반복 등을 바꿔요", run: panelOpen }]}
+            extra={[
+              // 음악 바꾸기 — 다른 곡을 고르면 이 음악 자리(범위·볼륨)는 그대로 곡만 바뀐다 (2026-11-02 사장님)
+              { icon: "music", label: "음악 바꾸기", desc: "다른 곡을 골라요 — 적용 범위·소리 크기는 그대로", run: () => { close(); openMusic(l.id); } },
+              { icon: "gear", label: "음악 설정", desc: "오른쪽 칸에서 시작 지점·반복 등을 바꿔요", run: panelOpen },
+            ]}
             sliders={[{ label: "볼륨", value: l.volume ?? 0.15, min: 0, max: 2, step: 0.01, show: `${Math.round((l.volume ?? 0.15) * 100)}%`, onChange: (v) => updateLayer(l.id, { volume: v }) }]}
             toggles={[
               { label: "페이드인 (점점 커지며 시작)", on: (l.fadeIn ?? 0) > 0, set: (v) => updateLayer(l.id, { fadeIn: v ? 2 : 0 }) },
               { label: "페이드아웃 (점점 작아지며 끝)", on: (l.fadeOut ?? 0) > 0, set: (v) => updateLayer(l.id, { fadeOut: v ? 2 : 0 }) },
               { label: "반복 (루프)", on: l.loop !== false, set: (v) => updateLayer(l.id, { loop: v }) },
+              // 음악 메뉴에서도 켜고 끈다 — 세기는 오른쪽 음악 칸에서 (2026-11-02 사장님)
+              { label: "자동 음악 조절 (목소리 나올 때 음악 줄이기)", on: (l.duck || "mid") !== "off", set: (v) => updateLayer(l.id, { duck: v ? "mid" : "off" }) },
             ]} />;
         // 효과음 — 효과음 바꾸기 · 소리 크기 · 적용 범위 · 삭제
         if (l.type === "sfx")

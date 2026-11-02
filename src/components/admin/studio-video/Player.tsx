@@ -332,8 +332,17 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clip?.id, clip?.voice?.url, visual?.id]);
 
+  /** 자동 음악 조절 — 지금 나레이션이 나오는지 (AI 목소리 클립, 목소리 길이 안). 부드럽게 줄였다 키운다 (2026-11-02 사장님) */
+  const duckNow = useRef(1);
+  const duckAt = useRef(0);
+  const speakingAt = (time: number) => flat.items.some((x) => x.clip.type === "voice" && x.clip.voice?.url && time >= x.start && time < x.start + Math.min(x.dur, Number(x.clip.voice.duration) || x.dur));
+  const DUCK: Record<string, number> = { off: 1, low: 0.6, mid: 0.35, high: 0.2 };
   /** 음악 애셋 — 구간 안에서만, 시작 지점·반복·페이드 (force: 찾아가기) */
   const syncMusic = (time: number, force: boolean) => {
+    const speaking = speakingAt(time);
+    const now = performance.now();
+    const dt = Math.min(0.5, Math.max(0, (now - duckAt.current) / 1000));
+    duckAt.current = now;
     for (const { l, s, e } of musics) {
       const a = musicEls.current[l.id];
       if (!a) continue;
@@ -358,7 +367,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       let g = 1;
       if (fi > 0 && loc < fi) g = Math.min(g, loc / fi);
       if (fo > 0 && len - loc < fo) g = Math.min(g, (len - loc) / fo);
-      setMusicVol(a, Math.max(0, Math.min(2, (l.volKf?.length ? volAt(l.volKf, loc) : l.volume ?? 0.15) * g)));
+      // 목소리가 시작되면 빨리(0.1초), 끝나면 천천히(0.5초) — 내보내기의 sidechain 과 비슷하게
+      const base = l.volume ?? 0.15;
+      const want = !speaking || l.duck === "off" ? 1 : l.duckVol != null && base > 0 ? Math.max(0, Math.min(1, l.duckVol / base)) : DUCK[l.duck || "mid"] ?? 0.35;
+      if (force) duckNow.current = want;
+      else duckNow.current += (want - duckNow.current) * Math.min(1, dt / (want < duckNow.current ? 0.1 : 0.5));
+      setMusicVol(a, Math.max(0, Math.min(2, (l.volKf?.length ? volAt(l.volKf, loc) : l.volume ?? 0.15) * g * duckNow.current)));
       a.playbackRate = previewRate;
       if (force || Math.abs(a.currentTime - target) > 0.4) {
         try {

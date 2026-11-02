@@ -3,7 +3,7 @@
 // 배경음악 고르기 창: 무료 음악(저작권 걱정 없는 CC0) · 내 음악 올리기(저작권 동의) · 음악 없음
 // + 시작 지점, 음악 크기, 유행곡은 인스타에서 붙이는 방법 안내
 import { useEffect, useRef, useState } from "react";
-import { BASIC_MUSIC, MUSIC_LIBRARY, MUSIC_MOODS, musicAsset } from "@/lib/reels/music-catalog";
+import { BASIC_MUSIC, MUSIC_LIBRARY, MUSIC_MOODS, MUSIC_PICKABLE, musicAsset } from "@/lib/reels/music-catalog";
 import st from "./reels.module.css";
 
 export type MyTrack = { id: string; title: string; duration: number | null; url: string | null };
@@ -121,7 +121,7 @@ export default function MusicPicker({ vacancyId, music, start, level, mine, onPi
     </div>
   );
 
-  const list = MUSIC_LIBRARY.filter((t) => mood === "전체" || t.mood === mood);
+  const list = MUSIC_PICKABLE.filter((t) => mood === "전체" || t.mood === mood);
   const dur = durOf(music);
 
   return (

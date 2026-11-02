@@ -1270,10 +1270,23 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
         if (musics.length) {
           fl.push(musics.length > 1 ? `${musics.map((_, i) => `[m${i}]`).join("")}amix=inputs=${musics.length}:duration=longest:normalize=0[mm]` : `[m0]anull[mm]`);
           fl.push(`[mm]apad,atrim=duration=${total.toFixed(3)}[mt]`);
-          fl.push(`[1:a]asplit=2[v1][v2]`);
-          fl.push(`[mt][v1]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=400[md]`);
-          voice = "[v2]";
-          mix.push("[md]");
+          // 자동 음악 조절 세기 — 음악 레이어 중 가장 센 것 (없으면 보통). 끄기면 줄이지 않는다 (2026-11-02 사장님)
+          // "목소리 나올 때 음악 크기"(duckVol)를 음악 크기에 대한 비율로 보고 누르는 세기를 고른다
+          const RATIO = { off: 0, low: 3, mid: 6, high: 12 };
+          const ratioOf = (l) => {
+            if (l.duck === "off") return 0;
+            const base = Number(l.volume ?? 0.15);
+            if (l.duckVol == null || !(base > 0)) return RATIO[l.duck || "mid"] ?? 6;
+            const r = Math.max(0, Math.min(1, Number(l.duckVol) / base));
+            return r >= 0.95 ? 0 : r >= 0.55 ? 3 : r >= 0.28 ? 6 : r >= 0.12 ? 12 : 20;
+          };
+          const ratio = Math.max(...musics.map(({ l }) => ratioOf(l)));
+          if (ratio > 0) {
+            fl.push(`[1:a]asplit=2[v1][v2]`);
+            fl.push(`[mt][v1]sidechaincompress=threshold=0.03:ratio=${ratio}:attack=30:release=400[md]`);
+            voice = "[v2]";
+            mix.push("[md]");
+          } else mix.push("[mt]");
         }
         sfxs.forEach((e, i) => {
           a.push("-i", sfxFile(e));

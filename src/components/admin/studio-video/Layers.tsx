@@ -784,6 +784,11 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             <Btn small onClick={onReplace}>음악 바꾸기</Btn>
           </div>
           <Slider title="음악 크기" value={layer.volume ?? 0.15} min={0} max={2} step={0.01} show={`${Math.round((layer.volume ?? 0.15) * 100)}%`} onChange={(v) => onChange({ volume: v })} />
+          {/* 자동 음악 조절 — 음악 크기 바로 아래, 단추로 세기 (2026-11-02 사장님: 막대는 필요 없음) */}
+          <Choice<"off" | "low" | "mid" | "high"> title="자동 음악 조절 (목소리 나올 때 줄이기)" value={layer.duck || "mid"}
+            options={[["off", "끄기"], ["low", "조금"], ["mid", "반쯤"], ["high", "많이"]]}
+            onChange={(v) => onChange({ duck: v, duckVol: undefined })} />
+          <div style={{ padding: "0 16px 12px" }}><Hint>목소리가 나오는 동안 음악을 얼마나 줄일지예요. 조금(약 60%) · 반쯤(약 35%) · 많이(약 20%). 말이 끝나면 다시 원래 크기로 커져요.</Hint></div>
           <Choice title="점점 커지며 시작 (페이드인)" value={layer.fadeIn ?? 0} options={FADES} onChange={(v) => onChange({ fadeIn: v })} />
           <Choice title="점점 작아지며 끝 (페이드아웃)" value={layer.fadeOut ?? 0} options={FADES} onChange={(v) => onChange({ fadeOut: v })} />
           <div style={row}>
@@ -799,7 +804,6 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             <span style={{ ...label, flex: 1 }}>음악이 짧으면 반복</span>
             <Toggle on={layer.loop !== false} onChange={(v) => onChange({ loop: v })} />
           </div>
-          <div style={{ padding: "12px 16px" }}><Hint>목소리가 나올 때는 음악이 저절로 작아져요.</Hint></div>
         </>
       )}
 

@@ -16,7 +16,7 @@ import { CATS, STYLE_LABEL, stickerAnim, stickerFileName, stickerGlyphs, sticker
 import { TRANSITIONS, type TransType } from "./transitions";
 import { AD_LAW_LABELS, TEMPLATES, TPL_PREFIX, drawTemplate, tplFonts, tplTextOf } from "./Templates";
 import { STYLE_PACKS, defaultPack, packOf, type StylePack } from "./stylePacks";
-import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
+import { MUSIC_PICKABLE as MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { IMAGE_STYLES, imagePrompt, type ImageStyle } from "@/lib/studio-video/imageStyles";
 import { useStudioImager, useStudioWriter } from "@/components/admin/sections/useStudioWriter";
 import { findStudioVacancyByNo, getStudioAgency, listMyStudioVacancies } from "@/app/actions/studio";
@@ -596,7 +596,7 @@ export function AiEditPanel({ project, selected, ensureAsset, apply, keep, onUnd
       // 3) 배경음악 — 없을 때만
       let music: { file: string; url: string; name: string } | null = null;
       if (pf.music !== false && !(project.layers || []).some((l) => l.type === "music")) {
-        const track = MUSIC_LIBRARY.find((t) => t.mood === P.music) || MUSIC_LIBRARY.find((t) => t.mood === plan.music) || MUSIC_LIBRARY.find((t) => t.mood === "잔잔한");
+        const track = MUSIC_LIBRARY.find((t) => t.mood === P.music) || MUSIC_LIBRARY.find((t) => t.mood === plan.music) || MUSIC_LIBRARY.find((t) => t.mood === "잔잔한") || MUSIC_LIBRARY[0];
         if (track) {
           setBusy(`배경음악을 넣는 중… (${track.mood})`);
           const r = await b.musicGet(project.dir, `bgm/lib/${track.id.slice(4)}.mp3`).catch(() => null);

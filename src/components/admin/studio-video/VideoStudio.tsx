@@ -47,6 +47,15 @@ export default function VideoStudio() {
       sessionStorage.removeItem("gs-video-flow");
     } catch {}
   }, []);
+  // 지금 편집 중인 프로젝트를 기억 — 새로고침해도 그 화면으로
+  const firstRun = React.useRef(true);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; if (!project?.dir) return; } // 처음 켜질 때는 지우지 않는다 — 아래에서 다시 연다
+    try {
+      if (project?.dir) sessionStorage.setItem("gs-video-current", JSON.stringify({ dir: project.dir }));
+      else sessionStorage.removeItem("gs-video-current");
+    } catch {}
+  }, [project?.dir]);
   const take = (r: Project | Recover | null) => {
     if (!r) return;
     if (isRecover(r)) setRecover(r);
@@ -67,6 +76,11 @@ export default function VideoStudio() {
       const v = JSON.parse(sessionStorage.getItem("gs-video-open") || "null");
       sessionStorage.removeItem("gs-video-open");
       if (v?.dir && Date.now() - (v.at || 0) < 60 * 1000) openFile(v.dir);
+    } catch {}
+    // 편집하다 새로고침하면 그 프로젝트 편집 화면으로 다시 (2026-11-02 사장님) — 창마다 기억(sessionStorage), 홈으로 나가면 지운다
+    try {
+      const cur = JSON.parse(sessionStorage.getItem("gs-video-current") || "null");
+      if (cur?.dir && !sessionStorage.getItem("gs-video-open")) openFile(cur.dir);
     } catch {}
     return b.project.onOpenFile?.(openFile);
   }, [b]);

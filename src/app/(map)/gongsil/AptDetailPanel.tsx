@@ -521,7 +521,8 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
         )}
         {canRegister && (
           <button onClick={register} style={{ flex: 1, height: 50, borderRadius: 12, border: "none", background: ORANGE, color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 3px 10px rgba(249,115,22,.35)" }}>
-            {hasVacancy ? "무료 공실등록 +" : "이 단지 첫 공실 무료 등록"}
+            {/* 2026-11-02 사장님 */}
+            공실무료등록하고 SNS자동홍보하기
           </button>
         )}
       </div>

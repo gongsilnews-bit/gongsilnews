@@ -9,7 +9,7 @@ import { DRAG_MEDIA, blankDragImage, mediaDrag, RATIO_LABEL, autoSubPosition, er
 import { STUDIO_VOICES, VOICE_MOODS, voicePhoto, findVoice, MY_VOICE_ID, isTypecast, isEleven } from "@/lib/studio-video/voices";
 import { ElevenMark, ElevenTab, FavStar, TypecastMark, TypecastTab, useVoiceFavs } from "./TypecastVoices";
 import { MyVoicePane } from "./MyVoice";
-import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
+import { MUSIC_MOODS, MUSIC_PICKABLE } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
@@ -1184,11 +1184,47 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
       return "lib";
     }
   });
-  const [mood, setMood] = useState<string>(MUSIC_MOODS[1]);
+  const [mood, setMood] = useState<string>(MUSIC_MOODS[0]);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const [listen, setListen] = useState("");
+  // 공실뉴스 음악 즐겨찾기 — 이 PC 에만 기억 (내 음악은 원래 있던 별표, 2026-11-02 사장님: 인스타 음악처럼)
+  const FAV_KEY = "gongsil-music-favs";
+  const [libFavs, setLibFavs] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); } catch { return []; } });
+  const toggleLibFav = (id: string) => setLibFavs((v) => {
+    const next = v.includes(id) ? v.filter((x) => x !== id) : [...v, id];
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(next)); } catch { /* 저장 안 되면 이번만 */ }
+    return next;
+  });
   const [mine, setMine] = useState<LibItem[] | null>(null);
+  const [rowSel, setRowSel] = useState(""); // 누른 줄 — 그 줄에만 [빼기]·[삭제]
+  // 원래 있던 음악(리얼티뮤직)도 내 음악에서 뺄 수 있다 — 이 PC 에서만 숨김 (2026-11-02 사장님)
+  const HIDE_KEY = "gongsil-music-hidden";
+  const [hiddenLib, setHiddenLib] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(HIDE_KEY) || "[]"); } catch { return []; } });
+  const saveHidden = (next: string[]) => { setHiddenLib(next); try { localStorage.setItem(HIDE_KEY, JSON.stringify(next)); } catch { /* 이번만 */ } };
+  // 가져온 음악 → [내 음악]의 분류로 보내기 (2026-11-02 사장님). 이 PC 에만 기억 — { 곡 id: 분류 }
+  // 분류 — 이름 바꾸기·순서·추가·빼기 (2026-11-02 사장님: 내 음악 카테고리 정리하고 수정). key 는 그대로, label 만 바뀐다
+  //  기본 분류(경쾌한…)의 key 는 공실뉴스 곡의 mood 와 같다. 빼도 곡은 남고 분류 칩만 숨는다
+  const CAT_KEY = "gongsil-music-cats";
+  type Cat = { key: string; label: string };
+  const defaultCats: Cat[] = [...MUSIC_MOODS].map((k) => ({ key: k, label: k }));
+  const [cats, setCatsState] = useState<Cat[]>(() => { try { const v = JSON.parse(localStorage.getItem(CAT_KEY) || "null"); return Array.isArray(v) && v.length ? v : defaultCats; } catch { return defaultCats; } });
+  const setCats = (next: Cat[]) => { setCatsState(next); try { localStorage.setItem(CAT_KEY, JSON.stringify(next)); } catch { /* 이번만 */ } };
+  const catLabel = (key: string) => cats.find((c) => c.key === key)?.label || key;
+  const CATS: string[] = cats.map((c) => c.key);
+  const [editCats, setEditCats] = useState(false);
+  const [newCat, setNewCat] = useState("");
+  const MY_CAT_KEY = "gongsil-music-mycat";
+  const [myCat, setMyCat] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem(MY_CAT_KEY) || "{}"); } catch { return {}; } });
+  const setCatOf = (id: string, cat: string) => setMyCat((v) => {
+    const next = { ...v };
+    if (cat) next[id] = cat; else delete next[id];
+    try { localStorage.setItem(MY_CAT_KEY, JSON.stringify(next)); } catch { /* 저장 안 되면 이번만 */ }
+    return next;
+  });
+  const [mineAll, setMineAll] = useState<LibItem[]>([]); // [내 음악] 탭에 보일 가져온 곡 (검색과 상관없이 전부)
+  const loadMineAll = async () => { try { if (b) setMineAll(await b.lib.list({ kind: "audio", q: "" })); } catch { /* 없으면 빈 목록 */ } };
+  useEffect(() => { loadMineAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [q, setQ] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
   useEffect(() => () => audio.current?.pause(), []);
@@ -1253,7 +1289,7 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
     if (added.length) {
       setQ("");
       await loadMine();
-      setMsg(`${added.length}곡을 내 음악에 넣었어요`);
+      setMsg(`${added.length}곡을 가져왔어요`);
     }
   };
   const openFolder = async () => {
@@ -1286,22 +1322,36 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
       const added = await b.lib.addDownloads([f.path]);
       setDlDone((v) => [...v, f.path]);
       await loadMine();
-      setMsg(added.length ? `"${f.name.replace(/\.[^.]+$/, "")}"을 내 음악에 넣었어요 — 아래에서 [고르기]` : "넣지 못했어요");
+      setMsg(added.length ? `"${f.name.replace(/\.[^.]+$/, "")}"을 가져왔어요 — 아래 [내 음악으로 ▾]에서 분류를 고르면 내 음악으로 옮겨져요` : "넣지 못했어요");
     } catch (e) {
       setMsg(errText(e));
     }
     setBusy("");
   };
-  const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode, dbl?: () => void) => (
-    <div key={key} onDoubleClick={(e) => { if (!dbl || (e.target as HTMLElement).closest("button")) return; dbl(); }} title={dbl ? "두 번 누르면 쓸 부분만 골라 넣어요" : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
-      {playBtn}
+  // 무료 사이트에서 받은 곡은 [넣기]를 누르지 않아도 저절로 가져온다 (2026-11-02 사장님)
+  useEffect(() => {
+    const next = dlNew.find((f) => !dlDone.includes(f.path));
+    if (next && !busy) void addDl(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dlNew, dlDone, busy]);
+  const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode, dbl?: () => void, thumb?: string) => (
+    <div key={key}
+      onClick={(e) => { if ((e.target as HTMLElement).closest("button, select, input")) return; setRowSel(rowSel === key ? "" : key); }}
+      onDoubleClick={(e) => { if (!dbl || (e.target as HTMLElement).closest("button")) return; dbl(); }} title={dbl ? "두 번 누르면 쓸 부분만 골라 넣어요" : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
+      {/* 앞에 음악 표지 — 인스타 음악처럼, 미리듣기 단추를 표지 위에 겹친다 (2026-11-02 사장님) */}
+      <span style={{ position: "relative", width: 40, height: 40, flexShrink: 0, borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.55)",
+        background: thumb ? `center / cover url(${thumb})` : on ? C.accent : "linear-gradient(135deg, #4f46e5, #0ea5e9)", boxShadow: on ? `inset 0 0 0 2px ${C.accent}` : "inset 0 0 0 1px rgba(255,255,255,.12)" }}>
+        {!thumb && <Icon name="music" size={20} />}
+        {playBtn}
+      </span>
       {body}
       {right}
     </div>
   );
   const playBtn = (id: string, url: string) => (
-    <button type="button" onClick={() => play(id, url)} title="미리듣기" style={{ width: 34, height: 34, flexShrink: 0, border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Icon name={listen === id ? "pause" : "play"} size={15} />
+    <button type="button" onClick={() => play(id, url)} title="미리듣기"
+      style={{ position: "absolute", inset: 0, border: 0, background: listen === id ? "rgba(0,0,0,.45)" : "rgba(0,0,0,.18)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Icon name={listen === id ? "pause" : "play"} size={17} />
     </button>
   );
 
@@ -1311,18 +1361,54 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
         {choose ? <>{current ? <>지금 고른 곡: <b>{current.name}</b><br /></> : null}아래에서 고르면 이 영상의 배경 음악이 돼요.</> : current ? <>지금 음악: <b>{current.name || "음악"}</b><br />아래에서 고르면 이 음악이 바뀌어요.</> : <>아래에서 고르면 <b>{rangeText}</b>에 음악이 깔려요.</>}
       </div>
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
-        <button type="button" onClick={() => switchTab("lib")} style={tabBtn(tab === "lib")}>공실뉴스 음악</button>
-        <button type="button" onClick={() => switchTab("mine")} style={tabBtn(tab === "mine")}>내 음악</button>
+        <button type="button" onClick={() => switchTab("lib")} style={tabBtn(tab === "lib")}>내 음악</button>
+        <button type="button" onClick={() => switchTab("mine")} style={tabBtn(tab === "mine")}>음악 가져오기</button>
       </div>
       {msg && <div style={{ padding: "10px 14px 0", color: msg.includes("넣었어요") ? C.sub : C.danger, fontSize: 14 }}>{msg}</div>}
 
       {tab === "lib" ? (
         <>
           <div style={{ padding: "12px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {MUSIC_MOODS.map((md) => <button key={md} type="button" onClick={() => setMood(md)} style={chip(mood === md)}>{md}</button>)}
+            <button type="button" onClick={() => setMood("즐겨찾기")} style={chip(mood === "즐겨찾기")}>★ 즐겨찾기{libFavs.length ? ` ${libFavs.length}` : ""}</button>
+            {CATS.map((md) => <button key={md} type="button" onClick={() => setMood(md)} style={chip(mood === md)}>{catLabel(md)}</button>)}
+            <button type="button" onClick={() => setEditCats(!editCats)} title="분류 이름 바꾸기 · 순서 · 추가 · 빼기" style={{ ...chip(editCats), display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="pen" size={13} />분류 편집</button>
           </div>
+          {editCats && (
+            <div style={{ margin: "10px 14px 0", padding: 10, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card, display: "flex", flexDirection: "column", gap: 6 }}>
+              {cats.map((c, i) => (
+                <div key={c.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input value={c.label} onChange={(e) => setCats(cats.map((x) => (x.key === c.key ? { ...x, label: e.target.value.slice(0, 12) } : x)))}
+                    style={{ flex: 1, minWidth: 0, height: 30, borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.text, padding: "0 8px", fontSize: 13.5, fontFamily: "inherit" }} />
+                  <button type="button" title="위로" disabled={i === 0} onClick={() => { const n = [...cats]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; setCats(n); }} style={{ width: 28, height: 28, border: 0, background: "transparent", color: i === 0 ? C.line2 : C.text, cursor: "pointer" }}>▲</button>
+                  <button type="button" title="아래로" disabled={i === cats.length - 1} onClick={() => { const n = [...cats]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; setCats(n); }} style={{ width: 28, height: 28, border: 0, background: "transparent", color: i === cats.length - 1 ? C.line2 : C.text, cursor: "pointer" }}>▼</button>
+                  <button type="button" title="분류 빼기 (곡은 지워지지 않아요)" onClick={() => {
+                    if (!window.confirm(`"${c.label}" 분류를 뺄까요? 곡은 지워지지 않아요.`)) return;
+                    setCats(cats.filter((x) => x.key !== c.key));
+                    for (const [id, k] of Object.entries(myCat)) if (k === c.key) setCatOf(id, "");
+                    if (mood === c.key) setMood(cats.find((x) => x.key !== c.key)?.key || "즐겨찾기");
+                  }} style={{ width: 28, height: 28, border: 0, background: "transparent", color: C.dim, cursor: "pointer" }}><Icon name="close" size={14} /></button>
+                </div>
+              ))}
+              <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+                <input value={newCat} onChange={(e) => setNewCat(e.target.value.slice(0, 12))} placeholder="새 분류 이름 (예: 매물 소개)"
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.currentTarget.nextSibling as HTMLButtonElement | null)?.click(); }}
+                  style={{ flex: 1, minWidth: 0, height: 30, borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.text, padding: "0 8px", fontSize: 13.5, fontFamily: "inherit" }} />
+                <Btn small onClick={() => {
+                  const label = newCat.trim();
+                  if (!label) return;
+                  const key = cats.some((c) => c.key === label) ? `${label}-${Date.now().toString(36)}` : label;
+                  setCats([...cats, { key, label }]); setNewCat(""); setMood(key);
+                }}>+ 추가</Btn>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: C.dim }}>
+                <span>이 PC 에만 저장돼요.</span>
+                <button type="button" onClick={() => { if (window.confirm("분류를 처음 상태로 되돌릴까요?")) setCats(defaultCats); }} style={{ border: 0, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>처음대로</button>
+              </div>
+            </div>
+          )}
           <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-            {MUSIC_LIBRARY.filter((t) => t.mood === mood).map((t) =>
+            {mood === "즐겨찾기" && !libFavs.length && <div style={{ color: C.sub, fontSize: 14, padding: 6 }}>아직 즐겨찾기한 음악이 없어요. 곡 옆 ☆을 누르면 여기에 모여요.</div>}
+            {MUSIC_PICKABLE.filter((t) => !hiddenLib.includes(t.id) && (mood === "즐겨찾기" ? libFavs.includes(t.id) : t.mood === mood)).map((t) =>
               row(
                 t.id,
                 current?.name === t.label,
@@ -1330,13 +1416,49 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>{t.label}</span>,
                 <>
                   <span style={{ fontSize: 13, color: C.dim }}>{fmtTime(t.duration, false)}</span>
-                  <Btn small primary={current?.name === t.label} onClick={() => pickLib(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "고름" : "고르기"}</Btn>
+                  <button type="button" title={libFavs.includes(t.id) ? "즐겨찾기 빼기" : "즐겨찾기"} onClick={() => toggleLibFav(t.id)}
+                    style={{ width: 30, height: 30, flexShrink: 0, border: 0, background: "transparent", color: libFavs.includes(t.id) ? "#facc15" : C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon name="star" size={16} stroke={libFavs.includes(t.id) ? 2.4 : 1.6} />
+                  </button>
+                  <Btn small primary={current?.name === t.label} onClick={() => pickLib(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "선택됨" : "선택"}</Btn>
+                  {rowSel === t.id && <Btn small onClick={() => { saveHidden([...hiddenLib, t.id]); setRowSel(""); }} style={{ color: C.danger }}>빼기</Btn>}
                 </>,
-                onTrim && !choose ? () => void pickLib(t.id, t.label, true) : undefined
+                onTrim && !choose ? () => void pickLib(t.id, t.label, true) : undefined,
+                t.thumb
               )
             )}
           </div>
-          <div style={{ padding: "0 14px 16px", fontSize: 12.5, color: C.dim }}>공실뉴스 무료 음악 (상업 이용 가능 · CC0)</div>
+          {(() => {
+            const sent = mineAll.filter((it) => (mood === "즐겨찾기" ? it.fav && myCat[it.id] : myCat[it.id] === mood));
+            if (!sent.length) return null;
+            return (
+              <div style={{ padding: "0 14px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 12.5, color: C.dim, padding: "2px 2px 0" }}>가져온 음악</div>
+                {sent.map((it) => {
+                  const name = it.name.replace(/\.[^.]+$/, "");
+                  const on = current?.name === name;
+                  return row(
+                    `my-${it.id}`,
+                    on,
+                    playBtn(it.id, it.url),
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={it.name}>{name}</span>,
+                    <>
+                      <span style={{ fontSize: 13, color: C.dim, flexShrink: 0 }}>{it.duration ? fmtTime(it.duration, false) : ""}</span>
+                      <Btn small primary={on} onClick={() => pickMine(it)} disabled={busy === it.id}>{busy === it.id ? "넣는 중…" : on ? "선택됨" : "선택"}</Btn>
+                      {rowSel === `my-${it.id}` && (
+                        <Btn small onClick={() => { setCatOf(it.id, ""); setRowSel(""); }} style={{ color: C.danger }}>빼기</Btn>
+                      )}
+                    </>,
+                    onTrim && !choose ? () => void pickMine(it, true) : undefined
+                  );
+                })}
+              </div>
+            );
+          })()}
+          <div style={{ padding: "0 14px 16px", fontSize: 12.5, color: C.dim, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span>리얼티뮤직 — 공실뉴스가 만든 음악 · 줄을 누르면 [빼기]가 나와요</span>
+            {hiddenLib.length > 0 && <button type="button" onClick={() => saveHidden([])} style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", fontSize: 12.5, textDecoration: "underline", padding: 0 }}>뺀 음악 {hiddenLib.length}곡 되돌리기</button>}
+          </div>
         </>
       ) : (
         <>
@@ -1348,8 +1470,10 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
               <div style={{ display: "flex", gap: 6 }}>
                 <Btn small onClick={() => openSite("https://pixabay.com/music/")} style={{ flex: 1, justifyContent: "center" }}>픽사베이 음악</Btn>
                 <Btn small onClick={() => openSite("https://studio.youtube.com/channel/UC/music")} style={{ flex: 1, justifyContent: "center" }}>유튜브 오디오 보관함</Btn>
+                {/* 벤사운드 — 회원이 직접 받아 [내 음악]에 넣는다 (곡을 쓸 때 "Music: bensound.com" 출처 표기, 2026-11-02 사장님) */}
+                <Btn small onClick={() => openSite("https://www.bensound.com/royalty-free-music")} style={{ flex: 1, justifyContent: "center" }}>벤사운드</Btn>
               </div>
-              <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6, marginTop: 8 }}>사이트에서 곡을 내려받고 이 창으로 돌아오면, 방금 받은 곡이 아래에 나와요. [넣기]를 누르면 내 음악에 들어가요.</div>
+              <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6, marginTop: 8 }}>사이트에서 곡을 내려받고 이 창으로 돌아오면, 방금 받은 곡이 아래에 나와요. [넣기]를 누르면 아래 가져온 음악에 들어가요.<br />벤사운드 무료 곡은 영상 설명에 &quot;Music: bensound.com&quot;을 적어 주세요.</div>
               {dlSince > 0 && (b?.lib.downloadsAudio ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                   {!dlNew.length && <div style={{ fontSize: 13, color: C.dim }}>받은 곡을 기다리는 중… (다운로드 폴더)</div>}
@@ -1374,10 +1498,12 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
           <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
             {mine === null ? (
               <div style={{ color: C.sub, fontSize: 14, padding: 6 }}>불러오는 중…</div>
+            ) : mine.length && !mine.some((it) => !myCat[it.id]) ? (
+              <div style={{ color: C.sub, fontSize: 14, padding: 6, lineHeight: 1.6 }}>가져온 곡은 모두 내 음악으로 옮겼어요. [내 음악] 탭에서 분류별로 볼 수 있어요.</div>
             ) : !mine.length ? (
               <div style={{ color: C.sub, fontSize: 14, padding: 6, lineHeight: 1.6 }}>{q ? "찾는 음악이 없어요." : "아직 내 음악이 없어요. 위 [PC에서 음악 불러오기]를 눌러 주세요."}</div>
             ) : (
-              mine.map((it) => {
+              mine.filter((it) => !myCat[it.id]).map((it) => {
                 const name = it.name.replace(/\.[^.]+$/, "");
                 const on = current?.name === name;
                 return row(
@@ -1391,11 +1517,16 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                       style={{ width: 30, height: 30, flexShrink: 0, border: 0, background: "transparent", color: it.fav ? C.text : C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Icon name="star" size={16} stroke={it.fav ? 2.4 : 1.6} />
                     </button>
-                    <Btn small primary={on} onClick={() => pickMine(it)} disabled={busy === it.id}>{busy === it.id ? "넣는 중…" : on ? "고름" : "고르기"}</Btn>
-                    <button type="button" title="목록에서 빼기 (PC 파일은 그대로)" onClick={async () => { await b?.lib.remove(it.id); loadMine(); }}
-                      style={{ width: 28, height: 28, flexShrink: 0, border: 0, background: "transparent", color: C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon name="close" size={15} />
-                    </button>
+                    <Btn small primary={on} onClick={() => pickMine(it)} disabled={busy === it.id}>{busy === it.id ? "넣는 중…" : on ? "선택됨" : "선택"}</Btn>
+                    {/* 내 음악의 분류로 보내기 — 고르면 [내 음악] 그 분류에 함께 나온다 */}
+                    <select value={myCat[it.id] || ""} title="내 음악으로 보내기" onChange={(e) => { setCatOf(it.id, e.target.value); setMsg(e.target.value ? `"${name}"을 내 음악 › ${catLabel(e.target.value)}에 넣었어요` : `"${name}"을 내 음악에서 뺐어요`); loadMineAll(); }}
+                      style={{ height: 30, flexShrink: 0, borderRadius: 6, border: `1px solid ${myCat[it.id] ? C.accent : C.line2}`, background: C.card, color: myCat[it.id] ? C.accent : C.text, fontSize: 12.5, fontWeight: 700, padding: "0 4px", cursor: "pointer" }}>
+                      <option value="">내 음악으로 ▾</option>
+                      {CATS.map((c) => <option key={c} value={c}>{myCat[it.id] === c ? `✓ ${catLabel(c)}` : catLabel(c)}</option>)}
+                    </select>
+                    {rowSel === it.id && (
+                      <Btn small onClick={async () => { await b?.lib.remove(it.id); setRowSel(""); loadMine(); loadMineAll(); }} style={{ color: C.danger }}>삭제</Btn>
+                    )}
                   </>,
                   onTrim && !choose ? () => void pickMine(it, true) : undefined
                 );

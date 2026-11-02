@@ -155,6 +155,8 @@ export type Layer = {
   volKf?: VolKf[]; // 볼륨 키프레임 — 레이어 처음부터 초 · 배수 (음악·효과음·올린 영상 소리, 2026-10-25)
   pair?: string; // 연결 해제한 올린 영상 ↔ 그 소리(음악 레이어) — 서로의 id. [연결]을 누르면 다시 하나로 (2026-10-25)
   name?: string;
+  duck?: "off" | "low" | "mid" | "high"; // 음악 — 목소리 나올 때 저절로 줄이기 (off 만 끄기, 2026-11-02 사장님)
+  duckVol?: number; // 음악 — 목소리 나올 때 음악 크기 (0~2, 없으면 음악 크기의 35%)
   // 음악
   file?: string;
   url?: string;

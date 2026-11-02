@@ -8,7 +8,7 @@ import { RATIO_LABEL, datedName, errText, isStopped, uid, videoBridge } from "./
 import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
 import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
 import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
-import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
+import { MUSIC_PICKABLE as MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { findStudioVacancyByNo, getStudioAgency, getStudioArticle, listMyStudioVacancies, listStudioArticles } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
