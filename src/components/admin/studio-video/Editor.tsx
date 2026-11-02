@@ -25,6 +25,7 @@ import RollDialog, { newRoll } from "./RollDialog";
 import { addExtraVoices, findVoice, setMyVoiceName } from "@/lib/studio-video/voices";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
+import { ProjectPanel } from "./ProjectPanel";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
 import { TransBin, TransPanel, type TransDrop } from "./TransPanel";
@@ -44,9 +45,9 @@ import { TRANS_DEFAULT, TRANS_MAX, TRANS_MIN, TRANSITIONS, transLabel } from "./
 import { isSticker, isVideoLayer, layerIcon, layerName, LANE_W, zCan, zReorder, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
 /** 타임라인 편집 왼쪽 자료 칸에 뜨는 칸 */
-const LIB_KINDS: string[] = ["library", "text", "sticker", "tplText", "tplSticker", "sfx", "music", "aiedit", "aimake"];
+const LIB_KINDS: string[] = ["library", "project", "text", "sticker", "tplText", "tplSticker", "sfx", "music", "aiedit", "aimake"];
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim" | "subanim" | "aiedit" | "aimake" | "sticker" | "text" | "sfx" | "tplText" | "tplSticker" | "thumb";
+type PanelKind = "" | "library" | "project" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source" | "trans" | "anim" | "subanim" | "aiedit" | "aimake" | "sticker" | "text" | "sfx" | "tplText" | "tplSticker" | "thumb";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | { node: React.ReactNode } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -4040,7 +4041,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         {kind === "sfx" && <SfxInsertPanel dir={project.dir} onAdd={addSfx} onClose={() => setPanel("")} />}
         {kind === "aiedit" && <AiEditPanel mode="auto" onSwitch={(to) => setPanel(to === "make" ? "aimake" : "aiedit")} project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} keep={(fn) => change(fn, false)} onUndo={undo} onClose={() => setPanel("")} autoStart={aiAuto && Boolean(project.settings.aiAuto)} />}
         {kind === "aimake" && <AiEditPanel mode="make" onSwitch={(to) => setPanel(to === "make" ? "aimake" : "aiedit")} project={project} selected={selected} ensureAsset={ensureAsset} apply={(fn) => change(fn)} keep={(fn) => change(fn, false)} onUndo={undo} onClose={() => setPanel("")} />}
-        {kind === "library" && <LibraryPanel key={panel ? `${libTab}${libOverlay}` : "default"} onAiMake={() => setPanel("aimake")} project={project} canReplace={selected.length > 0} onPick={onPick} pro={mode === "timeline" ? { onPlus: plusAdd, onSource: openSource } : undefined} onTrim={mode === "timeline" || (panel && libOverlay) ? undefined : (it) => void openTrim(it)} initialTab={panel ? libTab : "mine"} overlay={panel ? libOverlay : false}
+        {kind === "project" && <ProjectPanel project={project} onBins={(nb) => change((p) => { p.bins = nb; }, true)} canReplace={selected.length > 0} onPick={onPick} pro={mode === "timeline" ? { onPlus: plusAdd, onSource: openSource } : undefined} onTrim={mode === "timeline" ? undefined : (it) => void openTrim(it)} onOpenLib={(w) => (w === "ai" ? setPanel("aimake") : openLib(w))} onClose={() => setPanel("")} />}
+        {kind === "library" && <LibraryPanel only="all" key={panel ? `${libTab}${libOverlay}` : "default"} onAiMake={() => setPanel("aimake")} project={project} onBins={(nb) => change((p) => { p.bins = nb; }, true)} canReplace={selected.length > 0} onPick={onPick} pro={mode === "timeline" ? { onPlus: plusAdd, onSource: openSource } : undefined} onTrim={mode === "timeline" || (panel && libOverlay) ? undefined : (it) => void openTrim(it)} initialTab={panel ? libTab : "mine"} overlay={panel ? libOverlay : false}
           aiClips={{ selected, ensureAsset, apply: (fn) => change(fn) }}
           target={(() => {
             // 무료 자료 [교체할 이미지]·찾기 낱말 — 마지막으로 고른 클립
@@ -4698,7 +4700,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     </div>
   );
   // 템플릿은 스티커 분류 안에 (2026-10-20) · AI 자동 편집은 타임라인 편집에서 뺌, 대신 [전환] (2026-10-25 사장님)
-  const TL_LEFT: [string, string][] = [["library", "프로젝트"], ["text", "텍스트"], ["sticker", "그래픽"], ["trans", "전환"], ["sfx", "효과음"], ["music", "음악"]];
+  const TL_LEFT: [string, string][] = [["project", "프로젝트"], ["library", "사진·영상"], ["text", "텍스트"], ["sticker", "그래픽"], ["trans", "전환"], ["sfx", "효과음"], ["music", "음악"]];
   const tlRightOverride = ["anim", "subanim", "voice", "source", "ratio"].includes(panel) ? panel : "";
   const TOOLS: [TlTool, string, string][] = [["v", "선택 도구 (V)", "M5 3l13 8-6 1.5L9 19z"], ["a", "앞으로 트랙 선택 도구 (A) — 누른 곳부터 뒤에 있는 것 모두", "M4 5v14M8 12h12M15 7l5 5-5 5"], ["c", "자르기 도구 · 면도칼 (C) — 누른 자리에서 나누기", "M15.5 2.5l6 6L8.5 21.5l-6-6zM10 11.5l2.5 2.5M3 21l2.5-2.5"], ["h", "손 도구 (H) — 타임라인 끌어 보기", "M8 12V6a1.5 1.5 0 013 0v5V4.5a1.5 1.5 0 013 0V11V6a1.5 1.5 0 013 0v8c0 4-2.5 6-6 6s-5-2-7-5l-2-3a1.5 1.5 0 012.5-1.5L8 14"], ["t", "문자 도구 (T) — 누른 트랙·시각에 글자 넣기", "M5 6V4h14v2M12 4v16M9 20h6"]];
   const tlLayout = (
@@ -4902,6 +4904,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             const selL = panel === "layer" ? (project.layers || []).find((x) => x.id === selLayer) : undefined;
             const el: { icon: string; label: string; on: boolean; off?: boolean; title: string; go: () => void; txt?: string }[] = [
               // [AI 자동 편집] · [AI 이미지·영상 제작] 단추는 오른쪽 줄에서 뺐다 (2026-11-02 사장님)
+              // [프로젝트] — 이 영상에 넣은 사진·영상과 프로젝트 폴더만 따로 (프리미어 프로젝트 창처럼, 2026-11-02 사장님)
+              { icon: "folder", label: "프로젝트", on: panel === "project", title: "프로젝트 — 이 영상의 사진·영상 · 폴더", go: () => setPanel(panel === "project" ? "" : "project") },
               { icon: "image", label: "사진·영상", on: side === "library", title: "사진·영상 고르기", go: () => { if (side === "library") { setPanel(""); setLibOpen(false); } else { setPanel(""); setLibOpen(true); } } },
               // 메인자막 + 텍스트 = [텍스트] 하나 — 칸 위 [메인자막][텍스트] 탭 (2026-10-25 사장님)
               { icon: "font", label: "텍스트", on: panel === "subtitle" || panel === "subanim" || panel === "text" || selL?.type === "text", title: "텍스트 — [메인자막] 모양·애니메이션 · [텍스트] 넣기·꾸미기",

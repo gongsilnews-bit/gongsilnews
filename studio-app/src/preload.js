@@ -186,6 +186,10 @@ if (allowed) {
       lib: {
         list: (opts) => ipcRenderer.invoke("video:lib-list", opts),
         pick: (opts) => ipcRenderer.invoke("video:lib-pick", opts),
+        pickDir: () => ipcRenderer.invoke("video:lib-pick-dir"),
+        /** 윈도우 클립보드 파일 붙여넣기 · 복사 (0.1.18부터) */
+        paste: () => ipcRenderer.invoke("video:lib-paste"),
+        copy: (files) => ipcRenderer.invoke("video:lib-copy", files),
         /** 다운로드 폴더에서 since(ms) 이후 받은 소리 파일 · 그 파일들을 내 음악에 넣기 (0.1.11부터) */
         downloadsAudio: (since) => ipcRenderer.invoke("video:lib-downloads-audio", since),
         addDownloads: (files, source) => ipcRenderer.invoke("video:lib-add-downloads", files, source),

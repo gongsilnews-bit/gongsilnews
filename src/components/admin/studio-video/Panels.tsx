@@ -3,7 +3,7 @@
 // 오른쪽 칸 — 자료 고르기(즐겨찾기·내 자료(공실 사진 포함)·오픈자료·AI 사진, 2026-10-20 사장님) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
 import { VoiceAvatar, koVoice } from "./voiceKo";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { LibTag, Asset, Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
+import type { LibTag, Asset, Layer, LibItem, Project, ProjBins, Ratio, Fill, StockItem, Settings } from "./types";
 import { AiImagesTab } from "./AiImages";
 import { DRAG_MEDIA, blankDragImage, mediaDrag, RATIO_LABEL, autoSubPosition, errText, videoBridge, fmtTime } from "./types";
 import { STUDIO_VOICES, VOICE_MOODS, voicePhoto, findVoice, MY_VOICE_ID, isTypecast, isEleven } from "@/lib/studio-video/voices";
@@ -76,9 +76,9 @@ export function keywordsOf(text: string): string[] {
   return out.slice(0, 10);
 }
 
-export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips, pro, onAiMake, onTrim }: { /** 텍스트 편집 — 두 번 누르면 쓸 부분(사진은 길이) 고르는 창 (2026-10-25 사장님) */ onTrim?: (item: LibItem) => void; /** [AI 이미지·영상 제작] 열기 (2026-10-21 사장님: 사진·영상 쪽에서) */ onAiMake?: () => void; project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** 타임라인 편집 (캡컷처럼) — 썸네일 ＋ 단추로 넣기, 넣기 단추·크게 보기 없음 */ pro?: { onPlus: (item: LibItem) => void | Promise<void>; /** 두 번 누르면 소스 모니터에 열기 (2026-10-25) */ onSource?: (item: LibItem) => void }; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
+export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false, target, aiClips, pro, onAiMake, onTrim, onBins, only }: { /** 프로젝트를 따로 뺀 칸 — "proj" = [프로젝트] 칸 (폴더), "all" = 사진·영상 칸 (모든 자료). 없으면 [이 프로젝트]·[전체] 전환 (2026-11-02 사장님) */ only?: "proj" | "all"; /** 프로젝트 폴더 저장 — 있으면 [이 프로젝트]·[전체] (2026-11-02 사장님) */ onBins?: (b: ProjBins) => void; /** 텍스트 편집 — 두 번 누르면 쓸 부분(사진은 길이) 고르는 창 (2026-10-25 사장님) */ onTrim?: (item: LibItem) => void; /** [AI 이미지·영상 제작] 열기 (2026-10-21 사장님: 사진·영상 쪽에서) */ onAiMake?: () => void; project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean; /** 고른 클립 — 무료 자료에서 [교체할 이미지]·찾기 낱말 */ target?: { thumb: string; text: string } | null; /** 타임라인 편집 (캡컷처럼) — 썸네일 ＋ 단추로 넣기, 넣기 단추·크게 보기 없음 */ pro?: { onPlus: (item: LibItem) => void | Promise<void>; /** 두 번 누르면 소스 모니터에 열기 (2026-10-25) */ onSource?: (item: LibItem) => void }; /** [AI 그림] 탭 — 클립별 AI 그림 (편집 화면에서만) */ aiClips?: { selected: string[]; ensureAsset: (item: LibItem) => Promise<Asset>; apply: (fn: (p: Project) => void) => void } }) {
   const b = videoBridge();
-  const [tab, setTab] = useState(initialTab === "vacancy" || initialTab === "store" || initialTab === "ai" ? "mine" : initialTab);
+  const [tab, setTab] = useState(only === "proj" ? "mine" : initialTab === "drone" ? "free" : initialTab === "vacancy" || initialTab === "store" || initialTab === "ai" ? "mine" : initialTab);
   const [vacOn, setVacOn] = useState(initialTab === "vacancy"); // 내 자료 › [공실 사진]
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
   const [fav, setFav] = useState(false);
@@ -100,6 +100,24 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [dropTag, setDropTag] = useState("");
   const loadTags = async () => { try { if (b?.lib.tags) setTags(await b.lib.tags()); } catch {} };
   const [items, setItems] = useState<LibItem[] | null>(null);
+  // [이 프로젝트] · [전체] — 이 프로젝트에 넣은 것·영상에 쓴 것만 / 모든 자료. 폴더는 프로젝트 안에만 (프리미어의 빈처럼, 2026-11-02 사장님)
+  const [scope, setScope] = useState<"proj" | "all">(only || (onBins ? "proj" : "all"));
+  const [pf, setPf] = useState(""); // 들어가 있는 프로젝트 폴더 ("" = 이 프로젝트 전체)
+  const binsRef = useRef<ProjBins>(project.bins || { folders: [], of: {} });
+  binsRef.current = project.bins || binsRef.current;
+  const bins = binsRef.current;
+  const saveBins = (nb: ProjBins) => { binsRef.current = nb; onBins?.(nb); };
+  const normP = (x?: string) => (x || "").replace(/\\/g, "/").toLowerCase();
+  const usedPaths = useMemo(() => new Set([...Object.values(project.assets || {}).map((a) => normP(a.path)), ...(project.materials || []).map((m) => normP(m.path))].filter(Boolean)), [project.assets, project.materials]); // eslint-disable-line react-hooks/exhaustive-deps
+  const usedIn = (it: LibItem) => usedPaths.has(normP(it.path));
+  const inProj = (it: LibItem) => it.id in bins.of || usedIn(it);
+  /** 이 프로젝트에 넣기 — folder 를 주면 그 폴더로 (안 주면 폴더는 그대로, 처음이면 지금 들어가 있는 폴더) */
+  const addProj = (ids: string[], folder?: string) => {
+    if (!onBins || !ids.length) return;
+    const of = { ...binsRef.current.of };
+    for (const id of ids) of[id] = folder ?? (id in of ? of[id] : pf);
+    saveBins({ ...binsRef.current, of });
+  };
   const [picked, setPicked] = useState<LibItem | null>(null);
   const [inlineId, setInlineId] = useState(""); // 목록에서 눌러 고른 자료 — 단추를 그 바로 아래에
   const [hover, setHover] = useState<{ item: LibItem | StockItem; y: number } | null>(null);
@@ -110,7 +128,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [vac, setVac] = useState(project.vacancyId || "");
   // 무료 자료
   const [stockQ, setStockQ] = useState("");
-  const [stockType, setStockType] = useState<"all" | "photo" | "video" | "drone">("photo"); // [전체] 탭은 뺐다 (2026-10-29 사장님) — 이미지부터
+  const [stockType, setStockType] = useState<"all" | "photo" | "video" | "drone">(initialTab === "drone" ? "drone" : "photo"); // [전체] 탭은 뺐다 (2026-10-29 사장님) — 이미지부터
   // [공실뉴스 드론] 탭 (2026-10-28 사장님) — 처음 열 때 한 번 전부 받아 두고, 동·검색어로 여기서 거른다 (찍은 모양 단추는 빼기로)
   const [drones, setDrones] = useState<StockItem[] | null>(null);
   const [droneGu, setDroneGu] = useState("");
@@ -142,6 +160,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   };
   const [stock, setStock] = useState<StockItem[] | null>(null);
+  // [프로젝트] 칸 › 다른 곳에서 가져오기 › 공실뉴스 드론 — 바로 드론으로
+  useEffect(() => { if (initialTab === "drone") void openDrones(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [replaceOn, setReplaceOn] = useState(true); // [교체할 이미지] — 켜져 있으면 누르면 바로 바꾸기 (브루처럼)
   // AI 그림
   const [aiPrompt, setAiPrompt] = useState("");
@@ -182,6 +202,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     if (!b) return;
     const added = await b.lib.pick();
     if (added.length) {
+      addProj(added.map((x) => x.id)); // 불러온 것은 이 프로젝트에 (들어가 있는 폴더가 있으면 그 폴더로)
       setTab("mine");
       setVacOn(false);
       await load();
@@ -225,6 +246,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     setBusy("무료 자료를 PC로 받는 중…");
     try {
       const it = await b.stock.get(project.dir, s);
+      addProj([it.id]);
       // [교체할 이미지]가 켜져 있으면 바로 바꾼다
       if (target && replaceOn && canReplace && !overlay) {
         setBusy("화면을 바꾸는 중…");
@@ -324,6 +346,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
     setMsg("");
     try {
       const it = await b.ai.image(project.dir, aiPrompt.trim());
+      addProj([it.id]);
       setPicked(it);
       await load();
     } catch (e) {
@@ -344,6 +367,47 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   };
 
   const picking = selMode && tab === "mine"; // 고르기는 [내 자료]에서만
+  const projOn = Boolean(onBins) && scope === "proj" && tab === "mine" && !vacOn;
+  const binMode = Boolean(onBins) && tab === "mine" && !vacOn; // 폴더 = 프로젝트 폴더 (예전 모든 프로젝트 공통 폴더 대신)
+  const shown = items && projOn ? items.filter((it) => inProj(it) && (!pf || bins.of[it.id] === pf)) : items;
+  /** 이 프로젝트에서 빼기 — 영상에 쓰고 있는 것은 못 뺀다 (PC 파일·[전체] 목록은 그대로) */
+  const dropProj = (ids: string[]) => {
+    const used = (items || []).filter((it) => ids.includes(it.id) && usedIn(it));
+    const of = { ...binsRef.current.of };
+    for (const id of ids) if (!used.find((u) => u.id === id)) delete of[id];
+    saveBins({ ...binsRef.current, of });
+    setChk((v) => v.filter((x) => !ids.includes(x)));
+    if (picked && ids.includes(picked.id)) setPicked(null);
+    setHover(null);
+    setMsg(used.length ? `영상에 쓰고 있는 ${used.length}개는 이 프로젝트에서 뺄 수 없어요.` : "");
+  };
+  /** 프로젝트 폴더 */
+  const newBin = (name: string) => { const id = `b${Date.now().toString(36)}`; saveBins({ ...binsRef.current, folders: [...binsRef.current.folders, { id, name }] }); return id; };
+  const renameBin = (id: string, name: string) => saveBins({ ...binsRef.current, folders: binsRef.current.folders.map((f) => (f.id === id ? { ...f, name } : f)) });
+  const removeBin = (id: string) => {
+    const of = { ...binsRef.current.of };
+    for (const k of Object.keys(of)) if (of[k] === id) of[k] = "";
+    saveBins({ folders: binsRef.current.folders.filter((f) => f.id !== id), of });
+    if (pf === id) setPf("");
+  };
+  /** PC 폴더째 불러오기 — 그 이름으로 프로젝트 폴더를 만들고 안에 넣는다 */
+  const fromDir = async () => {
+    if (!b?.lib.pickDir) return;
+    setBusy("폴더의 사진·영상을 불러오는 중…");
+    try {
+      const r = await b.lib.pickDir();
+      if (r) {
+        if (!r.items.length) setMsg(`"${r.name}" 폴더에 사진·영상이 없어요.`);
+        else {
+          const fid = binsRef.current.folders.find((f) => f.name === r.name)?.id || newBin(r.name);
+          addProj(r.items.map((x) => x.id), fid);
+          setScope("proj"); setVacOn(false); setPf(fid); setMsg("");
+          await load();
+        }
+      }
+    } catch (e) { setMsg(errText(e)); }
+    setBusy("");
+  };
   // 목록에서 빼기 (PC 파일은 그대로) — 그림 위 ✕ · Del 키 · [고르기] 여러 개
   const drop = async (ids: string[]) => {
     if (!b || !ids.length) return;
@@ -364,7 +428,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       if (e.key !== "Delete" || t?.closest?.("input, textarea, [contenteditable]")) return;
       e.preventDefault();
       e.stopPropagation();
-      void drop([picked.id]);
+      if (projOn) dropProj([picked.id]); else void drop([picked.id]);
     };
     window.addEventListener("keydown", k, true);
     return () => window.removeEventListener("keydown", k, true);
@@ -434,6 +498,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   };
   /** 폴더 줄 — 목록 맨 위에 작게 (▸ 폴더 이름 · 개수). 누르면 들어가고, 사진·영상을 끌어다 놓으면 넣기, 오른쪽 클릭 = 이름 바꾸기·삭제 */
   const folderRows = () => {
+    if (binMode) return binRows();
     if (!FOLDERS || tab !== "mine" || vacOn || !b?.lib.tags) return null;
     const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, height: 26, padding: "0 6px", borderRadius: 4, cursor: "pointer", fontSize: 12.5, color: C.text, border: "1px solid transparent" };
     const cur = tags.find((t) => t.id === tag);
@@ -487,6 +552,62 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       </div>
     );
   };
+  /** 프로젝트 폴더 줄 — [이 프로젝트]에서만. 누르면 들어가고, 끌어다 놓으면 넣기, 오른쪽 클릭 = 이름 바꾸기·삭제 */
+  const binRows = () => {
+    if (!projOn) return null;
+    const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 6px", borderRadius: 4, cursor: "pointer", fontSize: 13, color: C.text, border: "1px solid transparent" };
+    const folderIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill={C.dim} stroke="none"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>;
+    const cur = bins.folders.find((f) => f.id === pf);
+    const count = (fid: string) => (items || []).filter((it) => bins.of[it.id] === fid).length;
+    const onDrop = (fid: string) => (e: React.DragEvent) => {
+      e.preventDefault(); setDropTag("");
+      try {
+        const d = JSON.parse(e.dataTransfer.getData(DRAG_MEDIA) || "{}");
+        const ids: string[] = d.ids || (d.lib ? [d.lib.id] : []);
+        if (!ids.length) return;
+        addProj(ids, fid);
+        const nm = bins.folders.find((f) => f.id === fid)?.name;
+        setBusy(nm ? `"${nm}" 폴더에 ${ids.length}개 넣었어요` : `폴더 밖으로 ${ids.length}개 뺐어요`); setTimeout(() => setBusy(""), 1600);
+      } catch {}
+    };
+    if (cur) {
+      return (
+        <div style={{ padding: "6px 14px 0" }}>
+          <div role="button" onClick={() => setPf("")} title="이 프로젝트 전체로 · 끌어다 놓으면 폴더 밖으로" onDragOver={(e) => { e.preventDefault(); setDropTag("up"); }} onDragLeave={() => setDropTag("")} onDrop={onDrop("")}
+            style={{ ...row, color: C.sub, ...(dropTag === "up" ? { borderColor: C.accent, background: "rgba(59,130,246,0.14)" } : {}) }}>
+            <span style={{ width: 12, fontSize: 11 }}>‹</span>{folderIcon}<b style={{ color: C.text }}>{cur.name}</b><span style={{ color: C.dim, fontSize: 11.5 }}>· 위로</span>
+          </div>
+        </div>
+      );
+    }
+    if (!bins.folders.length && !(naming && naming.id === "")) return null;
+    return (
+      <div style={{ padding: "6px 14px 0" }}>
+        {naming && naming.id === "" && (
+          <div style={row}>
+            <span style={{ width: 12 }} />{folderIcon}
+            <input autoFocus value={naming.name} onChange={(e) => setNaming({ ...naming, name: e.target.value })} placeholder="폴더 이름 (예: 외관, 내부, 드론)"
+              onBlur={() => { const nm = naming.name.trim(); setNaming(null); if (nm) newBin(nm); }}
+              onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setNaming(null); }}
+              style={{ ...input, flex: 1, height: 24, fontSize: 13, padding: "0 6px" }} />
+          </div>
+        )}
+        {bins.folders.map((f) => (
+          <div key={f.id} role="button" onClick={() => setPf(f.id)}
+            onContextMenu={(e) => { e.preventDefault(); setTagMenu({ id: f.id, x: e.clientX, y: e.clientY }); }}
+            onDragOver={(e) => { e.preventDefault(); setDropTag(f.id); }} onDragLeave={() => setDropTag("")} onDrop={onDrop(f.id)}
+            title="누르면 폴더 안 보기 · 사진·영상을 끌어다 놓으면 넣기 · 오른쪽 클릭 = 이름 바꾸기·삭제"
+            style={{ ...row, ...(dropTag === f.id ? { borderColor: C.accent, background: "rgba(59,130,246,0.14)" } : {}) }}
+            onMouseEnter={(e) => { if (dropTag !== f.id) e.currentTarget.style.background = C.cardHover; }} onMouseLeave={(e) => { if (dropTag !== f.id) e.currentTarget.style.background = "transparent"; }}>
+            <span style={{ width: 12, fontSize: 10, color: C.dim }}>▸</span>{folderIcon}
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+            <span style={{ fontSize: 11.5, color: C.dim }}>{count(f.id)}</span>
+          </div>
+        ))}
+        <div style={{ borderBottom: `1px solid ${C.line}`, margin: "4px 0 0" }} />
+      </div>
+    );
+  };
   const grid = (list: (LibItem | StockItem)[], onClick: (x: LibItem | StockItem) => void) => (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "10px 14px" }}>
       {list.map((it) => {
@@ -518,8 +639,8 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             {it.thumb ? <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 12 }}>준비 중</span>}
             {/* 마우스를 올리면 왼쪽 위 ✕ — 목록에서 빼기 */}
             {tab === "mine" && !picking && "ready" in it && hover?.item.id === it.id && (
-              <span role="button" title="목록에서 빼기 (PC 파일은 그대로)" draggable={false}
-                onClick={(e) => { e.stopPropagation(); void drop([it.id]); }}
+              <span role="button" title={projOn ? "이 프로젝트에서 빼기 ([전체]·PC 파일은 그대로)" : "목록에서 빼기 (PC 파일은 그대로)"} draggable={false}
+                onClick={(e) => { e.stopPropagation(); if (projOn) dropProj([it.id]); else void drop([it.id]); }}
                 style={{ position: "absolute", left: 4, top: 4, zIndex: 1, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", color: "#fff", cursor: "pointer" }}>
                 <Icon name="close" size={15} stroke={2.2} />
               </span>
@@ -600,27 +721,33 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   );
 
   return (
-    <Side title="사진 · 영상 고르기" onClose={onClose} footer={footer}>
+    <Side title={only === "proj" ? "프로젝트" : "사진 · 영상 고르기"} onClose={onClose} footer={footer}>
       {hovered}
-      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
+      {only !== "proj" && <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
         {/* [AI 사진] 탭은 뺐다 (2026-10-21 사장님: AI 편집 화면 편집판과 겹친다) — 만든 AI 그림은 내 자료 › AI 그림 */}
         {[["fav", "즐겨찾기"], ["mine", "내 자료"], ["free", "오픈자료"]].map(([k, l]) => (
           <button key={k} type="button" onClick={() => { setTab(k); setMsg(""); }} style={tabBtn(tab === k)}>{l}</button>
         ))}
-      </div>
+      </div>}
       {busy && <div style={{ padding: "10px 14px", fontSize: 14, color: C.sub }}>{busy}</div>}
       {/* 폴더 메뉴 (오른쪽 클릭) — 이름 바꾸기 · 삭제 (파일은 그대로) */}
       {tagMenu && (
         <div onMouseLeave={() => setTagMenu(null)} style={{ position: "fixed", left: tagMenu.x, top: tagMenu.y, zIndex: 4000, minWidth: 170, padding: "4px 0", background: C.card, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
           {naming && naming.id === tagMenu.id ? (
             <input autoFocus value={naming.name} onChange={(e) => setNaming({ ...naming, name: e.target.value })}
-              onBlur={async () => { const nm = naming.name.trim(); const id = naming.id; setNaming(null); setTagMenu(null); if (nm && b?.lib.tagRename) setTags(await b.lib.tagRename(id, nm)); }}
+              onBlur={async () => { const nm = naming.name.trim(); const id = naming.id; setNaming(null); setTagMenu(null); if (!nm) return; if (binMode) renameBin(id, nm); else if (b?.lib.tagRename) setTags(await b.lib.tagRename(id, nm)); }}
               onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setNaming(null); setTagMenu(null); } }}
               style={{ ...input, margin: 6, width: 158, height: 30, fontSize: 13 }} />
           ) : (
             <>
-              <button type="button" onClick={() => setNaming({ id: tagMenu.id, name: tags.find((t) => t.id === tagMenu.id)?.name || "" })} style={{ display: "block", width: "100%", padding: "7px 14px", border: 0, background: "transparent", color: C.text, fontSize: 13.5, fontFamily: FONT, textAlign: "left", cursor: "pointer" }}>이름 바꾸기</button>
+              <button type="button" onClick={() => setNaming({ id: tagMenu.id, name: (binMode ? bins.folders : tags).find((t) => t.id === tagMenu.id)?.name || "" })} style={{ display: "block", width: "100%", padding: "7px 14px", border: 0, background: "transparent", color: C.text, fontSize: 13.5, fontFamily: FONT, textAlign: "left", cursor: "pointer" }}>이름 바꾸기</button>
               <button type="button" onClick={async () => {
+                if (binMode) {
+                  const f = bins.folders.find((x) => x.id === tagMenu.id);
+                  setTagMenu(null);
+                  if (f && window.confirm(`"${f.name}" 폴더를 지울까요?\n안의 사진·영상은 이 프로젝트에 그대로 남아요 (PC 파일도 그대로).`)) removeBin(f.id);
+                  return;
+                }
                 const t = tags.find((x) => x.id === tagMenu.id);
                 setTagMenu(null);
                 if (!t || !b?.lib.tagRemove || !window.confirm(`"${t.name}" 폴더를 지울까요?\n폴더 안의 사진·영상 파일은 지워지지 않아요.`)) return;
@@ -634,7 +761,21 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       {/* 자료 메뉴 (오른쪽 클릭) — 폴더에 넣기 · 빼기 */}
       {itemMenu && (
         <div onMouseLeave={() => setItemMenu(null)} style={{ position: "fixed", left: Math.min(itemMenu.x, window.innerWidth - 220), top: Math.min(itemMenu.y, window.innerHeight - 300), zIndex: 4000, minWidth: 200, maxHeight: 300, overflowY: "auto", padding: "4px 0", background: C.card, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
-          <div style={{ padding: "6px 14px", fontSize: 12, color: C.dim }}>{itemMenu.ids.length}개 · 폴더에 넣기</div>
+          <div style={{ padding: "6px 14px", fontSize: 12, color: C.dim }}>{itemMenu.ids.length}개 · {binMode ? (scope === "proj" ? "폴더로 옮기기" : "이 프로젝트에 넣기") : "폴더에 넣기"}</div>
+          {binMode ? (
+            <>
+              {[{ id: "", name: scope === "proj" ? "폴더 밖으로" : "폴더 없이" }, ...bins.folders].map((f) => {
+                const all = itemMenu.ids.every((id) => id in bins.of && bins.of[id] === f.id);
+                return (
+                  <button key={f.id || "none"} type="button" onClick={() => { addProj(itemMenu.ids, f.id); setItemMenu(null); }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 14px", border: 0, background: "transparent", color: C.text, fontSize: 13.5, fontFamily: FONT, textAlign: "left", cursor: "pointer" }}>
+                    <span style={{ width: 14, color: C.accent }}>{all ? "✓" : ""}</span>{f.id ? <Icon name="folder" size={13} /> : null}{f.name}
+                  </button>
+                );
+              })}
+              {!bins.folders.length && <div style={{ padding: "6px 14px", fontSize: 12.5, color: C.sub }}>폴더는 [이 프로젝트]에서 위 폴더 단추로 만들어요</div>}
+            </>
+          ) : <>
           {!tags.length && <div style={{ padding: "6px 14px", fontSize: 13, color: C.sub }}>폴더가 없어요 — 위 [+ 새 폴더]로 만들어요</div>}
           {tags.map((t) => {
             const all = itemMenu.ids.every((id) => items?.find((x) => x.id === id)?.tags?.includes(t.id));
@@ -645,6 +786,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
               </button>
             );
           })}
+          </>}
         </div>
       )}
       {msg && <div style={{ padding: "10px 14px", fontSize: 14, color: C.danger, lineHeight: 1.5 }}>{msg}</div>}
@@ -652,16 +794,29 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       {(tab === "mine" || tab === "fav") && (
         <>
           <div style={{ padding: "12px 14px 0" }}>
-            <Btn primary onClick={fromPc} style={{ width: "100%" }}><Icon name="plus" size={18} />PC에서 불러오기</Btn>
+            {onBins && !only && tab === "mine" && (
+              <div style={{ display: "flex", marginBottom: 10, border: `1px solid ${C.line2}`, borderRadius: 8, overflow: "hidden" }}>
+                {([["proj", "이 프로젝트"], ["all", "전체"]] as const).map(([k, l]) => (
+                  <button key={k} type="button" onClick={() => { setScope(k); setPf(""); setVacOn(false); setChk([]); setMsg(""); }} title={k === "proj" ? "이 영상에 넣은 사진·영상만 (폴더로 나눠 볼 수 있어요)" : "지금까지 불러온 모든 사진·영상"}
+                    style={{ flex: 1, height: 34, border: 0, background: scope === k && !vacOn ? C.accentDim : "transparent", color: scope === k && !vacOn ? C.text : C.sub, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+                    {l}{k === "proj" && items ? ` ${items.filter(inProj).length}` : ""}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 6 }}>
+              <Btn primary onClick={fromPc} style={{ flex: 1 }}><Icon name="plus" size={18} />PC에서 불러오기</Btn>
+              {onBins && only !== "all" && tab === "mine" && b?.lib.pickDir && <Btn onClick={() => void fromDir()} title="PC 폴더를 통째로 — 그 이름으로 이 프로젝트에 폴더가 생겨요 (PC 파일은 그대로)"><Icon name="folder" size={16} />폴더째</Btn>}
+            </div>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
               {(["all", "image", "video"] as const).map((k) => <button key={k} type="button" onClick={() => { setKind(k); setVacOn(false); }} style={chip(kind === k && !vacOn)}>{k === "all" ? "전체" : k === "image" ? "사진" : "영상"}</button>)}
-              {tab === "mine" && <button type="button" onClick={() => { setVacOn(!vacOn); setRec(false); setAiOnly(false); }} style={chip(vacOn)} title="내 공실의 등록 사진 · 공실열람 검증·지도·로드뷰 화면">공실 사진</button>}
+              {tab === "mine" && only !== "proj" && <button type="button" onClick={() => { setVacOn(!vacOn); setRec(false); setAiOnly(false); }} style={chip(vacOn)} title="내 공실의 등록 사진 · 공실열람 검증·지도·로드뷰 화면">공실 사진</button>}
               {tab === "mine" && <button type="button" onClick={() => { setRec(vacOn ? true : !rec); setAiOnly(false); setVacOn(false); }} style={chip(rec && !vacOn)} title="강의·화면·카메라로 녹화한 영상만 (공실마케팅\07 녹화파일\강의영상)">녹화</button>}
               {tab === "mine" && <button type="button" onClick={() => { setAiOnly(vacOn ? true : !aiOnly); setRec(false); setVacOn(false); }} style={chip(aiOnly && !vacOn)} title="만든 AI 그림만 (문서\공실마케팅\08 AI생성물\AI이미지)">AI 그림</button>}
               <span style={{ flex: 1 }} />
               <button type="button" onClick={() => { setSelMode(!selMode); setChk([]); setPicked(null); }} style={chip(selMode)} title="여러 개 골라 목록에서 빼기">{selMode ? "선택 끝" : "선택"}</button>
-              {FOLDERS && tab === "mine" && b?.lib.tagAdd && (
-                <button type="button" title="새 폴더" onClick={() => { setTag(""); setNaming({ id: "", name: "" }); }}
+              {(binMode ? projOn : FOLDERS && tab === "mine" && b?.lib.tagAdd) && (
+                <button type="button" title={binMode ? "이 프로젝트에 새 폴더" : "새 폴더"} onClick={() => { setTag(""); setPf(""); setNaming({ id: "", name: "" }); }}
                   style={{ width: 30, height: 28, border: `1px solid ${C.line2}`, borderRadius: 6, background: "transparent", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><path d="M12 11v5M9.5 13.5h5" /></svg>
                 </button>
@@ -676,24 +831,38 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
                 ))}
               </span>
             </div>
-            {selMode && items && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "8px 10px", borderRadius: 6, background: C.card, border: `1px solid ${C.line2}` }}>
-                <button type="button" onClick={() => setChk(chk.length === items.length ? [] : items.map((x) => x.id))} style={chip(items.length > 0 && chk.length === items.length)}>
-                  {items.length > 0 && chk.length === items.length ? "모두 풀기" : "모두 선택"}
+            {selMode && shown && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "8px 10px", borderRadius: 6, background: C.card, border: `1px solid ${C.line2}`, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setChk(chk.length === shown.length ? [] : shown.map((x) => x.id))} style={chip(shown.length > 0 && chk.length === shown.length)}>
+                  {shown.length > 0 && chk.length === shown.length ? "모두 풀기" : "모두 선택"}
                 </button>
                 <span style={{ flex: 1, fontSize: 13.5, color: C.sub }}>{chk.length}개 고름</span>
-                {FOLDERS && b?.lib.tagSet && tags.length > 0 && (
+                {binMode && (
+                  <select value="" disabled={!chk.length} onChange={(e) => { const v = e.target.value; if (!v) return; addProj(chk, v === "-" ? "" : v); setChk([]); }}
+                    style={{ ...input, width: "auto", height: 30, fontSize: 13 }} title="고른 것을 이 프로젝트 폴더에 넣기">
+                    <option value="">{scope === "proj" ? "폴더로 옮기기…" : "이 프로젝트에 넣기…"}</option>
+                    <option value="-">{scope === "proj" ? "폴더 밖으로" : "폴더 없이"}</option>
+                    {bins.folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
+                )}
+                {!binMode && FOLDERS && b?.lib.tagSet && tags.length > 0 && (
                   <select value="" disabled={!chk.length} onChange={async (e) => { const t = e.target.value; if (!t || !b?.lib.tagSet) return; setTags(await b.lib.tagSet(chk, t, true)); void load(); }}
                     style={{ ...input, width: "auto", height: 30, fontSize: 13 }} title="고른 것을 폴더에 넣기">
                     <option value="">폴더에 넣기…</option>
                     {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 )}
-                {FOLDERS && tag && b?.lib.tagSet && <Btn small disabled={!chk.length} onClick={async () => { setTags(await b.lib.tagSet!(chk, tag, false)); setChk([]); void load(); }} title="이 폴더에서만 빼요 (파일은 그대로)">폴더에서 빼기</Btn>}
-                <Btn small danger disabled={!chk.length} title="창의 목록에서만 빼요. PC 파일은 지우지 않아요 (다시 불러오면 다시 보여요)"
-                  onClick={() => void drop(chk)}>
-                  <Icon name="trash" size={15} />목록에서 빼기
-                </Btn>
+                {!binMode && FOLDERS && tag && b?.lib.tagSet && <Btn small disabled={!chk.length} onClick={async () => { setTags(await b.lib.tagSet!(chk, tag, false)); setChk([]); void load(); }} title="이 폴더에서만 빼요 (파일은 그대로)">폴더에서 빼기</Btn>}
+                {projOn ? (
+                  <Btn small danger disabled={!chk.length} title="이 프로젝트에서만 빼요. [전체] 목록과 PC 파일은 그대로예요" onClick={() => dropProj(chk)}>
+                    <Icon name="trash" size={15} />프로젝트에서 빼기
+                  </Btn>
+                ) : (
+                  <Btn small danger disabled={!chk.length} title="창의 목록에서만 빼요. PC 파일은 지우지 않아요 (다시 불러오면 다시 보여요)"
+                    onClick={() => void drop(chk)}>
+                    <Icon name="trash" size={15} />목록에서 빼기
+                  </Btn>
+                )}
               </div>
             )}
             {vacOn && tab === "mine" ? (
@@ -707,12 +876,12 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
                   <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} placeholder="파일 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
                   <Btn small onClick={load}><Icon name="search" size={16} /></Btn>
                 </div>
-                <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>{tab === "fav" ? "★ 를 누른 사진·영상이 모여요 (내 자료·오픈자료·AI 사진)." : "공실마케팅로 만든 사진·영상과 불러온 파일이 자동으로 모여요."}</div>
+                <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>{tab === "fav" ? "★ 를 누른 사진·영상이 모여요 (내 자료·오픈자료·AI 사진)." : projOn ? "이 영상에 불러오거나 쓴 사진·영상만 모여요. 폴더로 나누려면 폴더 위로 끌어다 놓거나 오른쪽 클릭하세요." : onBins && tab === "mine" ? (only === "all" ? "지금까지 불러온 모든 사진·영상이에요. 오른쪽 클릭으로 [프로젝트]에 넣을 수 있어요." : "지금까지 불러온 모든 사진·영상이에요. 오른쪽 클릭으로 이 프로젝트에 넣을 수 있어요.") : "공실마케팅로 만든 사진·영상과 불러온 파일이 자동으로 모여요."}</div>
               </>
             )}
           </div>
           {folderRows()}
-          {vacOn && tab === "mine" && !vac ? null : items === null ? <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>불러오는 중…</div> : items.length ? (view === "list" ? listView(items) : grid(items, (x) => setPicked(x as LibItem))) : <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>{tab === "fav" ? "아직 즐겨찾기가 없어요. 사진·영상 오른쪽 위 ☆ 를 눌러 주세요." : "아직 자료가 없어요. [PC에서 불러오기]를 눌러 주세요."}</div>}
+          {vacOn && tab === "mine" && !vac ? null : shown === null ? <div style={{ padding: 20, color: C.sub, fontSize: 14 }}>불러오는 중…</div> : shown.length ? (view === "list" ? listView(shown) : grid(shown, (x) => setPicked(x as LibItem))) : <div style={{ padding: 20, color: C.sub, fontSize: 14, lineHeight: 1.6 }}>{tab === "fav" ? "아직 즐겨찾기가 없어요. 사진·영상 오른쪽 위 ☆ 를 눌러 주세요." : projOn && pf ? "이 폴더는 비어 있어요. 사진·영상을 폴더 이름 위로 끌어다 놓거나, 오른쪽 클릭해서 넣어 주세요." : projOn ? <>이 프로젝트에 아직 사진·영상이 없어요.<br />[PC에서 불러오기]·[폴더째]로 불러오거나, {only ? "[사진·영상]" : "[전체]"}에서 오른쪽 클릭해서 넣어 주세요.</> : "아직 자료가 없어요. [PC에서 불러오기]를 눌러 주세요."}</div>}
         </>
       )}
 

@@ -324,6 +324,39 @@ function register(base) {
     if (kinds === "audio") return library.add(r.filePaths, { source: source === "sfx" ? "sfx" : "local", allowAudio: true }); // 내 음악(또는 내 효과음) 목록에 남긴다
     return library.add(r.filePaths, { source: "local" });
   });
+  // PC 폴더째 불러오기 — 그 폴더(하위 폴더 포함)의 사진·영상을 내 자료에 넣고 폴더 이름과 함께 돌려준다. 프로젝트 폴더로 쓴다 (2026-11-02 사장님, 프리미어처럼)
+  ipcMain.handle("video:lib-pick-dir", async (e) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "폴더째 불러오기", properties: ["openDirectory"] });
+    if (r.canceled || !r.filePaths.length) return null;
+    const root = r.filePaths[0];
+    const MEDIA = /\.(mp4|mov|m4v|webm|mkv|avi|wmv|jpg|jpeg|png|webp|gif|heic)$/i;
+    const files = [];
+    const walk = (d, depth) => {
+      let ents = [];
+      try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+      for (const x of ents) {
+        if (files.length >= 500) return;
+        const f = path.join(d, x.name);
+        if (x.isDirectory()) { if (depth < 3 && !x.name.startsWith(".")) walk(f, depth + 1); } else if (MEDIA.test(x.name)) files.push(f);
+      }
+    };
+    walk(root, 0);
+    return { name: path.basename(root), items: files.length ? await library.add(files, { source: "local" }) : [] };
+  });
+  // 붙여넣기 · 복사 — 윈도우 클립보드의 파일 (탐색기 Ctrl+C → 프로젝트 칸 Ctrl+V, 그 반대도, 2026-11-02 사장님)
+  const psRun = (cmd) => new Promise((res) => require("child_process").execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", cmd], { windowsHide: true, encoding: "utf8", maxBuffer: 8e6 }, (err, out) => res(err ? "" : String(out || ""))));
+  ipcMain.handle("video:lib-paste", async () => {
+    const out = await psRun("[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-Clipboard -Format FileDropList | ForEach-Object { $_.FullName }");
+    const MEDIA = /\.(mp4|mov|m4v|webm|mkv|avi|wmv|jpg|jpeg|png|webp|gif|heic|mp3|wav|m4a|aac|ogg|flac)$/i;
+    const files = out.split(/\r?\n/).map((s) => s.trim()).filter((f) => f && MEDIA.test(f) && fs.existsSync(f)).slice(0, 500);
+    return files.length ? await library.add(files, { source: "local" }) : [];
+  });
+  ipcMain.handle("video:lib-copy", async (_e, files) => {
+    const list = (files || []).map((f) => media.fileOf(f) || f).filter((f) => f && fs.existsSync(f));
+    if (!list.length) return false;
+    await psRun(`Set-Clipboard -LiteralPath ${list.map((f) => `'${f.replace(/'/g, "''")}'`).join(",")}`);
+    return true;
+  });
   ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
   // 내 폴더 (이름표) — 2026-10-22
   ipcMain.handle("video:lib-tags", () => library.tagList());

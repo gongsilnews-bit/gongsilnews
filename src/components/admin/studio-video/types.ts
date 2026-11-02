@@ -300,6 +300,8 @@ export type Project = {
   updatedAt: string;
   settings: Settings;
   assets: Record<string, Asset>;
+  /** 이 프로젝트 자료·폴더 (프리미어의 빈처럼, 2026-11-02 사장님) — PC 파일은 그대로, 여기는 목록만 */
+  bins?: ProjBins;
   scenes: Scene[];
   layers?: Layer[];
   /** 1 = 겹치는 순서를 layers 배열 순서 그대로 (뒤→앞, 스티커·사진·화면 글자 함께). 없으면 예전대로 사진 먼저·글자 위 (회의 3-26) */
@@ -324,6 +326,8 @@ export type PostDraft = {
   threads?: { text: string; posts: string[] };
   tail: { url: string; hasListing: boolean };
 };
+/** 프로젝트 폴더 — folders: 폴더 목록 · of: 이 프로젝트에 넣은 내 자료 id → 폴더 id ("" = 폴더 없이) */
+export type ProjBins = { folders: { id: string; name: string }[]; of: Record<string, string>; /** 프로젝트 안에서 바꾼 이름 (PC 파일 이름은 그대로) */ names?: Record<string, string> };
 export type LibItem = { id: string; path?: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; /** 내 폴더 (이름표) */ tags?: string[]; addedAt?: number; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
 /** 모션그래픽 틀 고르기 (2026-10-28) */
 /** 인트로 글자 — 공실이 있으면 그 정보가 처음 값, 없으면 직접 (place 위 작은 글 · kind 큰 제목 · trade 딱지 · price 강조 · chips 꼬리표 · brand 사무소) */
@@ -348,6 +352,11 @@ export type VideoBridge = {
   lib: {
     list: (o?: { kind?: string; fav?: boolean; q?: string; source?: string }) => Promise<LibItem[]>;
     pick: (o?: { kinds?: "media" | "audio"; source?: "sfx" }) => Promise<(LibItem & { path?: string })[]>;
+    /** PC 폴더째 불러오기 — 폴더 이름과 그 안의 사진·영상 (앱 0.1.18부터) */
+    pickDir?: () => Promise<{ name: string; items: LibItem[] } | null>;
+    /** 윈도우 클립보드 파일 붙여넣기 · 복사 */
+    paste?: () => Promise<LibItem[]>;
+    copy?: (files: string[]) => Promise<boolean>;
     /** 다운로드 폴더에서 since(ms) 이후 받은 소리 파일 · 내 음악에 넣기 — 0.1.11부터 */
     downloadsAudio?: (since: number) => Promise<{ path: string; name: string; at: number; size: number }[]>;
     addDownloads?: (files: string[], source?: "sfx") => Promise<LibItem[]>;
