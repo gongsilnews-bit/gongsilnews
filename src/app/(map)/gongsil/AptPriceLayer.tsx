@@ -293,15 +293,25 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
         onClick={() => toggle(k)}
         title={k === "offi" ? "오피스텔 실거래 시세 보기" : "아파트 실거래 시세 보기"}
         style={{
-          border: `1.5px solid ${color}`, borderRadius: 6, cursor: "pointer", padding: "6px 10px", fontSize: 14, fontWeight: 800, whiteSpace: "nowrap",
+          border: `1.5px solid ${color}`, borderRadius: mobile ? 16 : 6, cursor: "pointer", padding: mobile ? "6px 11px" : "6px 10px", fontSize: mobile ? 12.5 : 14, fontWeight: 800, whiteSpace: "nowrap",
+          boxShadow: mobile ? "0 2px 8px rgba(0,0,0,0.12)" : undefined,
           background: show[k] ? color : "#fff", color: show[k] ? "#fff" : color,
         }}
       >
-        {k === "offi" ? "오피스텔 실거래가" : "아파트 실거래가"}
+        {/* 모바일은 [초기화]·[내 위치] 사이에 들어가게 짧게 */}
+        {mobile ? (k === "offi" ? "오피스텔" : "아파트") : k === "offi" ? "오피스텔 실거래가" : "아파트 실거래가"}
       </button>
     );
   };
-  const buttons = <>{btn("apt")}{btn("offi")}</>;
+  // 모바일은 "실거래가" 글자를 앞에 두고 [아파트][오피스텔] (2026-11-02 사장님)
+  const buttons = (
+    <>
+      {mobile && (
+        <span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: "#1f2937", background: "rgba(255,255,255,.92)", borderRadius: 12, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>실거래가</span>
+      )}
+      {btn("apt")}{btn("offi")}
+    </>
+  );
 
   return (
     <>

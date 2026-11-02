@@ -1459,7 +1459,8 @@ function MobileGongsilContent() {
             <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
             {/* 아파트·오피스텔 실거래가 (PC 공실열람과 같은 것, 2026-11-02 사장님: 모바일에도) */}
-            <span ref={setPriceSlot} style={{ position: "absolute", top: 58, right: 16, zIndex: 20, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }} />
+            {/* 위쪽 [초기화]와 [내 위치] 사이 가운데에 나란히 (2026-11-02 사장님) */}
+            <span ref={setPriceSlot} style={{ position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: 6, whiteSpace: "nowrap" }} />
             <AptPriceLayer
               mobile
               autoShow
