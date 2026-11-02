@@ -1198,6 +1198,7 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
   });
   const [mine, setMine] = useState<LibItem[] | null>(null);
   const [rowSel, setRowSel] = useState(""); // 누른 줄 — 그 줄에만 [빼기]·[삭제]
+  const [rowHover, setRowHover] = useState(""); // 마우스를 올린 줄 — 왼쪽 위 ✕ (사진 자료와 같게)
   // 원래 있던 음악(리얼티뮤직)도 내 음악에서 뺄 수 있다 — 이 PC 에서만 숨김 (2026-11-02 사장님)
   const HIDE_KEY = "gongsil-music-hidden";
   const [hiddenLib, setHiddenLib] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(HIDE_KEY) || "[]"); } catch { return []; } });
@@ -1337,7 +1338,8 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
   const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode, dbl?: () => void, thumb?: string) => (
     <div key={key}
       onClick={(e) => { if ((e.target as HTMLElement).closest("button, select, input")) return; setRowSel(rowSel === key ? "" : key); }}
-      onDoubleClick={(e) => { if (!dbl || (e.target as HTMLElement).closest("button")) return; dbl(); }} title={dbl ? "두 번 누르면 쓸 부분만 골라 넣어요" : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
+      onMouseEnter={() => setRowHover(key)} onMouseLeave={() => setRowHover((v) => (v === key ? "" : v))}
+      onDoubleClick={(e) => { if (!dbl || (e.target as HTMLElement).closest("button")) return; dbl(); }} title={dbl ? "두 번 누르면 쓸 부분만 골라 넣어요" : undefined} style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
       {/* 앞에 음악 표지 — 인스타 음악처럼, 미리듣기 단추를 표지 위에 겹친다 (2026-11-02 사장님) */}
       <span style={{ position: "relative", width: 40, height: 40, flexShrink: 0, borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.55)",
         background: thumb ? `center / cover url(${thumb})` : on ? C.accent : "linear-gradient(135deg, #4f46e5, #0ea5e9)", boxShadow: on ? `inset 0 0 0 2px ${C.accent}` : "inset 0 0 0 1px rgba(255,255,255,.12)" }}>
@@ -1421,7 +1423,7 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                     <Icon name="star" size={16} stroke={libFavs.includes(t.id) ? 2.4 : 1.6} />
                   </button>
                   <Btn small primary={current?.name === t.label} onClick={() => pickLib(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "선택됨" : "선택"}</Btn>
-                  {rowSel === t.id && <Btn small onClick={() => { saveHidden([...hiddenLib, t.id]); setRowSel(""); }} style={{ color: C.danger }}>빼기</Btn>}
+                  {(rowSel === t.id || rowHover === t.id) ? <button type="button" title="내 음악에서 빼기" onClick={() => { saveHidden([...hiddenLib, t.id]); setRowSel(""); }} style={{ width: 26, height: 26, flexShrink: 0, border: 0, borderRadius: 13, background: "rgba(0,0,0,0.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={15} stroke={2.2} /></button> : <span style={{ width: 26, flexShrink: 0 }} />}
                 </>,
                 onTrim && !choose ? () => void pickLib(t.id, t.label, true) : undefined,
                 t.thumb
@@ -1445,9 +1447,9 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                     <>
                       <span style={{ fontSize: 13, color: C.dim, flexShrink: 0 }}>{it.duration ? fmtTime(it.duration, false) : ""}</span>
                       <Btn small primary={on} onClick={() => pickMine(it)} disabled={busy === it.id}>{busy === it.id ? "넣는 중…" : on ? "선택됨" : "선택"}</Btn>
-                      {rowSel === `my-${it.id}` && (
-                        <Btn small onClick={() => { setCatOf(it.id, ""); setRowSel(""); }} style={{ color: C.danger }}>빼기</Btn>
-                      )}
+                      {(rowSel === `my-${it.id}` || rowHover === `my-${it.id}`) ? (
+                        <button type="button" title="내 음악에서 빼기" onClick={() => { setCatOf(it.id, ""); setRowSel(""); }} style={{ width: 26, height: 26, flexShrink: 0, border: 0, borderRadius: 13, background: "rgba(0,0,0,0.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={15} stroke={2.2} /></button>
+                    ) : <span style={{ width: 26, flexShrink: 0 }} />}
                     </>,
                     onTrim && !choose ? () => void pickMine(it, true) : undefined
                   );
@@ -1456,7 +1458,7 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
             );
           })()}
           <div style={{ padding: "0 14px 16px", fontSize: 12.5, color: C.dim, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span>리얼티뮤직 — 공실뉴스가 만든 음악 · 줄을 누르면 [빼기]가 나와요</span>
+            <span>리얼티뮤직 — 공실뉴스가 만든 음악 · 마우스를 올리면 ✕가 나와요</span>
             {hiddenLib.length > 0 && <button type="button" onClick={() => saveHidden([])} style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", fontSize: 12.5, textDecoration: "underline", padding: 0 }}>뺀 음악 {hiddenLib.length}곡 되돌리기</button>}
           </div>
         </>
@@ -1524,9 +1526,9 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                       <option value="">내 음악으로 ▾</option>
                       {CATS.map((c) => <option key={c} value={c}>{myCat[it.id] === c ? `✓ ${catLabel(c)}` : catLabel(c)}</option>)}
                     </select>
-                    {rowSel === it.id && (
-                      <Btn small onClick={async () => { await b?.lib.remove(it.id); setRowSel(""); loadMine(); loadMineAll(); }} style={{ color: C.danger }}>삭제</Btn>
-                    )}
+                    {(rowSel === it.id || rowHover === it.id) ? (
+                      <button type="button" title="목록에서 삭제 (PC 파일은 그대로)" onClick={async () => { await b?.lib.remove(it.id); setRowSel(""); loadMine(); loadMineAll(); }} style={{ width: 26, height: 26, flexShrink: 0, border: 0, borderRadius: 13, background: "rgba(0,0,0,0.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={15} stroke={2.2} /></button>
+                    ) : <span style={{ width: 26, flexShrink: 0 }} />}
                   </>,
                   onTrim && !choose ? () => void pickMine(it, true) : undefined
                 );

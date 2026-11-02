@@ -187,7 +187,8 @@ export function TransPanel({ trans: trans0, from, to, maxA, maxB, onChange, onRe
             <input type="range" min={TRANS_MIN} max={TRANS_MAX} step={0.1} value={Math.max(TRANS_MIN, total)} onPointerDown={() => (first.current = true)}
               onChange={(e) => { setTotal(Number(e.target.value)); first.current = false; }} style={{ width: "100%", accentColor: C.accent, marginTop: 6 }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-              <button type="button" onClick={() => { const n = trans.sfx ? undefined : sfxFor(trans.type); onChange({ sfx: n }, true); if (n) { try { const au = new Audio(`/studio-sfx/${n}.mp3`); au.volume = 0.6; void au.play().catch(() => {}); } catch {} } }} title="켜면 그 소리를 들려줘요" style={chip(Boolean(trans.sfx))}>{trans.sfx ? "✓ " : ""}효과음 같이</button>
+              {/* 효과음 — 한 번 누르면 켜지고 다시 누르면 꺼진다, 켜면 그 소리를 한 번 들려준다 (2026-11-02 사장님) */}
+              <button type="button" onClick={() => { const n = trans.sfx ? undefined : sfxFor(trans.type); onChange({ sfx: n }, true); if (n) { try { const au = new Audio(`/studio-sfx/${n}.mp3`); au.volume = 0.6; void au.play().catch(() => {}); } catch {} } }} title={trans.sfx ? "누르면 효과음이 꺼져요" : "누르면 효과음이 켜지고 그 소리를 들려줘요"} style={{ ...chip(Boolean(trans.sfx)), display: "inline-flex", alignItems: "center", gap: 5, ...(trans.sfx ? {} : { border: `1px solid ${C.danger}`, background: "rgba(239,68,68,0.12)", color: C.danger }) }}><Icon name={trans.sfx ? "volume" : "mute"} size={15} />{trans.sfx ? "효과음" : "효과음 무음"}</button>
               <button type="button" onClick={() => setMore(!more)} style={chip(more)}>앞뒤 나누기 {total.toFixed(1)}초</button>
               <span style={{ flex: 1 }} />
               <button type="button" onClick={saveMy} style={chip(false)}>내 설정에 저장</button>
