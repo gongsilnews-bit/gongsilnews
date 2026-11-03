@@ -1,5 +1,6 @@
 "use client";
 
+import { ADMIN_SKIN } from "@/components/admin/studioLight";
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import NotificationBell from "@/components/common/NotificationBell";
@@ -301,7 +302,7 @@ function AdminContent() {
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
             <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary }}>{adminUserName}</span>
             {adminUserEmail && <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{adminUserEmail}</span>}
-            <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: darkMode ? "#1e3a5f" : "#dbeafe", color: "#3b82f6" }}>최고관리자</span>
+            <span style={{ fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: darkMode ? "#1e3a5f" : "#eef1f7", color: darkMode ? "#93c5fd" : "#1e3a6e" }}>최고관리자</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <NotificationBell color={darkMode ? "#e1e4e8" : "#333"} />
@@ -312,7 +313,9 @@ function AdminContent() {
           </div>
         </header>
 
-        {/* 콘텐츠 영역 */}
+        {/* 콘텐츠 영역 — 밝은 화면이면 곤색 껍질 (2026-11-03 사장님: 최고관리자도 오늘 만든 디자인으로) */}
+        {!darkMode && <style>{ADMIN_SKIN}</style>}
+        <div className={darkMode ? undefined : "gs-adm"} style={{ display: "contents" }}>
         <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="admin" onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} />}
@@ -346,6 +349,7 @@ function AdminContent() {
             </div>
           )}
         </Suspense>
+        </div>
       </main>
     </div>
   );

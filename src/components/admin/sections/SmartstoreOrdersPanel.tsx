@@ -84,7 +84,7 @@ export default function SmartstoreOrdersPanel({ theme }: { theme: AdminTheme }) 
     <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 10, padding: "14px 18px", marginBottom: 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <button onClick={() => setOpen(!open)} style={{ ...btn, border: "none", padding: 0, fontSize: 15, fontWeight: 800 }}>
-          🛒 스마트스토어 결제 {open ? "▲" : "▼"}
+          스마트스토어 결제 <span style={{ fontSize: 11, color: "#9ca3af" }}>{open ? "접기" : "펼치기"}</span>
         </button>
         <span style={{ fontSize: 13, color: textSecondary }}>
           최근 {orders.length}건

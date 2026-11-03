@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiIco } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
 import { 
@@ -28,7 +29,7 @@ const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPromp
   },
   articleReview: {
     name: "기사심사 에이전트",
-    emoji: "🔍",
+    emoji: "",
     systemPrompt: `너는 공실뉴스의 기사 심사관이야.
 [최우선 원칙] 언론 기사에는 기자의 주관적인 판단, 의견, 예측이 들어가는 것이 매우 당연합니다. "객관적이지 않다"며 훈수하거나 반려하지 마세요.
 너의 진짜 목표는 '스팸 및 대놓고 광고하는 글'을 차단하는 것입니다.
@@ -41,7 +42,7 @@ const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPromp
   },
   article: {
     name: "기사작성 에이전트",
-    emoji: "📰",
+    emoji: "",
     systemPrompt: `너는 대한민국 1등 부동산·경제 전문 미디어 '공실뉴스'의 수석 편집국장이야.
 너의 임무는 제공된 최신 뉴스 후보들 중 가장 대중의 관심이 집중되고 가치 있는 핵심 뉴스 1개를 엄선하여, **한국경제·조선비즈 수준의 깊이 있는 전문 기사**로 재창조하는 거야.
 
@@ -270,7 +271,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
               fontFamily: "inherit", marginBottom: 8, textAlign: "left",
               transition: "all 0.15s",
             }}>
-              <span style={{ fontSize: 20 }}>{agent.emoji}</span>
+              <EmojiIco e={agent.emoji} size={20} />
               {agentNames[key] || agent.name}
             </button>
           ))}
@@ -281,7 +282,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-            <span style={{ fontSize: 28 }}>{current.emoji}</span>
+            <EmojiIco e={current.emoji} size={28} />
             <div>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: theme.textPrimary }}>{agentNames[selectedAgent] || current.name} 학습 설정</h3>
               <p style={{ margin: "2px 0 0", fontSize: 12, color: theme.textSecondary }}>시스템 프롬프트와 모범 사례를 수정하여 에이전트를 교육합니다.</p>
@@ -291,7 +292,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
           {/* 가동 모드 설정 */}
           <div style={{ padding: "16px", background: theme.darkMode ? "#2c2d33" : "#f1f5f9", borderRadius: 10, marginBottom: 20 }}>
             <label style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 12, display: "block" }}>
-              ⚙️ 가동 모드 설정
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>가동 모드 설정
             </label>
             <div style={{ display: "flex", gap: 16, marginBottom: currentMode.mode === "scheduled" ? 12 : 0 }}>
               <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: theme.textPrimary, cursor: "pointer" }}>
@@ -343,7 +344,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
               {cronConfig.isActive && (
                 <>
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}>🕒 실행 시간 선택 (한국시간 정각 기준)</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" /></svg>실행 시간 선택 (한국시간 정각 기준)</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {[8, 11, 14, 17, 20, 23].map(h => (
                         <label key={h} style={{ display: "flex", alignItems: "center", gap: 4, background: theme.darkMode ? "#334155" : "#fff", padding: "6px 12px", borderRadius: 20, border: `1px solid ${cronConfig.hours.includes(h) ? "#22c55e" : theme.border}`, cursor: "pointer" }}>
@@ -358,7 +359,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}>📂 수집 카테고리 선택</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></svg>수집 카테고리 선택</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {[
                         "부동산정책/정치", "세무/법률/기타", "경제/재테크/주식",
@@ -403,7 +404,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, gap: 10 }}>
             {saved && (
               <span style={{ display: "flex", alignItems: "center", fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
-                ✅ 저장되었습니다!
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 6 9 17l-5-5" /></svg>저장되었습니다!
               </span>
             )}
             <button onClick={handleSave} disabled={loading} style={{
@@ -413,7 +414,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
               cursor: loading ? "wait" : "pointer", fontFamily: "inherit",
               transition: "background 0.15s",
             }}>
-              {loading ? "💾 저장 중..." : "💾 설정 저장"}
+              {loading ? "저장 중..." : "설정 저장"}
             </button>
           </div>
         </div>

@@ -691,16 +691,16 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                 onClick={handleDownloadSample}
                 style={{ height: 34, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}
               >
-                📥 샘플 양식 받기
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 3v12M7 10l5 5 5-5M4 21h16" /></svg>샘플 양식 받기
               </button>
               <button 
                 onClick={handleDownloadExcel}
                 style={{ height: 34, padding: "0 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
               >
-                💚 엑셀 다운로드
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v8M8 12h8" /></svg>엑셀 다운로드
               </button>
               <label style={{ height: 34, padding: "0 12px", background: "#3b82f6", color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                📤 엑셀 파일 업로드
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 15V3M7 8l5-5 5 5M4 21h16" /></svg>엑셀 파일 업로드
                 <input type="file" accept=".csv, .xlsx" onChange={handleUploadExcel} style={{ display: "none" }} />
               </label>
             </div>
@@ -876,7 +876,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                 boxShadow: "0 4px 6px rgba(59, 130, 246, 0.15)"
               }}
             >
-              선택한 주소록 연락처를 [문자 발송 대상]으로 추가 🚀
+              선택한 주소록 연락처를 [문자 발송 대상]으로 추가 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 15c-1 1-2 4-2 6 2 0 5-1 6-2M9 15l-3-3c1-4 5-9 12-9 0 7-5 11-9 12zM15 9h.01" /></svg>
             </button>
           </div>
 
@@ -932,7 +932,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                     style={{ border: "none", background: "none", cursor: "pointer", fontSize: 14, color: textSecondary }}
                     title="초기화"
                   >
-                    🔄
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5" /></svg>
                   </button>
                 </div>
               </div>
@@ -995,21 +995,21 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                   onClick={() => setIsRecentModalOpen(true)}
                   style={{ flex: 1, height: 38, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 >
-                  🕒 최근발송
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" /></svg>최근발송
                 </button>
                 <button 
                   type="button"
                   onClick={() => setIsTemplateModalOpen(true)}
                   style={{ flex: 1, height: 38, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 >
-                  📁 내 문자함
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></svg>내 문자함
                 </button>
                 <button 
                   type="button"
                   onClick={handleAddTemplate}
                   style={{ flex: 1, height: 38, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 >
-                  💾 문자저장
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 3h11l3 3v15H5zM8 3v5h7M8 21v-7h8v7" /></svg>문자저장
                 </button>
               </div>
 
@@ -1311,7 +1311,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                         background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 11, outline: "none"
                       }}
                     />
-                    <span style={{ position: "absolute", right: 8, fontSize: 11, color: textSecondary }}>🔍</span>
+                    <span style={{ position: "absolute", right: 8, fontSize: 11, color: textSecondary }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3" /></svg></span>
                   </div>
                   <button 
                     onClick={() => setTemplateSearchTerm("")}
@@ -1321,7 +1321,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                     }}
                     title="새로고침"
                   >
-                    🔄
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5" /></svg>
                   </button>
                 </div>
               </div>

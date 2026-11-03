@@ -248,20 +248,20 @@ const hubPage = async (bcode: string, jibun: string, page: number) => {
   const url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${dataKey()}` +
     `&sigunguCd=${bcode.slice(0, 5)}&bjdongCd=${bcode.slice(5)}&platGbCd=${mountain ? 1 : 0}&bun=${bun}&ji=${ji}` +
     `&numOfRows=1000&pageNo=${page}&_type=json`;
-  for (let tryNo = 0; tryNo < 3; tryNo++) {
+  for (let tryNo = 0; tryNo < 6; tryNo++) {
     const txt = await fetch(url, { cache: "no-store" }).then((r) => r.text()).catch(() => "");
-    if (!txt || /LIMITED_NUMBER|HTTP_ERROR/.test(txt)) { await sleep(500 * (tryNo + 1)); continue; }
+    if (!txt || /LIMITED_NUMBER|HTTP_ERROR|초당|요청제한/.test(txt)) { await sleep(800 * (tryNo + 1)); continue; }
     try {
       const body = JSON.parse(txt)?.response?.body;
       const it = body?.items?.item;
       return { rows: (Array.isArray(it) ? it : it ? [it] : []) as Record<string, unknown>[], total: num(body?.totalCount) };
     } catch {
       // 한도를 넘으면 XML 오류가 온다 — 이번 실행은 여기서 멈춘다 (다음 실행에 이어서)
-      if (/SERVICE_KEY|LIMIT|EXCEEDS/i.test(txt)) throw new Error("건축물대장 하루 호출 한도를 넘었습니다.");
-      return { rows: [], total: 0 };
+      if (/SERVICE_KEY|EXCEEDS|LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS/i.test(txt)) throw new Error("건축물대장 하루 호출 한도를 넘었습니다.");
+      await sleep(800 * (tryNo + 1)); continue; // 잠깐 깨진 답 — 다시 (2026-11-03: 빈 줄로 보고 "끝"으로 알던 것)
     }
   }
-  return { rows: [], total: 0 };
+  return { rows: [], total: -1 }; // -1 = 못 받음 (다 받은 것으로 보지 않는다)
 };
 
 /** 주거공용만 공급면적에 — 주차·기계·관리·커뮤니티·지하는 뺀다 (publicLand.unitAt 과 같은 기준) */
@@ -281,10 +281,13 @@ export function saneSupply(map: Record<string, number> | null | undefined): Reco
 }
 
 /** 호수마다 전유 + 주거공용 → 전용㎡별로 가장 많은 공급㎡ · 세대수 (지번 하나의 대장 전체를 읽는다) */
-export async function supplyMapFor(bcode: string, jibun: string) {
+export async function supplyMapFor(bcode: string, jibun: string, deadline = Infinity) {
   const units = new Map<string, { ex: number; common: number }>();
-  for (let page = 1; page <= 60; page++) { // 5천 세대 단지는 4~5만 줄
+  // 건축물대장은 1000줄을 달라고 해도 한 번에 100줄만 준다 — 받은 줄 수로 넘긴다 (2026-11-03: 438세대 단지가 58세대로 나옴)
+  let seen = 0, complete = false;
+  for (let page = 1; page <= 500; page++) { // 5천 세대 단지는 4~5만 줄
     const { rows, total } = await hubPage(bcode, jibun, page);
+    seen += rows.length;
     for (const r of rows) {
       const key = `${r.dongNm}|${r.hoNm}`;
       const u = units.get(key) || { ex: 0, common: 0 };
@@ -293,8 +296,12 @@ export async function supplyMapFor(bcode: string, jibun: string) {
       else if (isResidentialCommon(r)) u.common += area;
       units.set(key, u);
     }
-    if (page * 1000 >= total || !rows.length) break;
+    if (total < 0 || Date.now() > deadline) break; // 못 받음·시간 끝 → 다음에 다시
+    if (seen >= total || !rows.length) { complete = total >= 0 && seen >= total; break; }
+    await sleep(150); // 초당 한도
   }
+  // 다 못 받았으면(한도·끊김) 세대수는 적지 않는다 — 틀린 숫자보다 빈칸 (공급면적은 그대로 쓴다)
+  if (!complete) return { supply: null as Record<string, number> | null, households: null as Record<string, number> | null, partial: true };
   const counts = new Map<string, Map<string, number>>(); // 전용 → (공급 → 호수)
   for (const u of units.values()) {
     if (!u.ex) continue;
@@ -311,23 +318,29 @@ export async function supplyMapFor(bcode: string, jibun: string) {
   return { supply: saneSupply(supply), households };
 }
 
+/** 건축물대장을 끝까지 읽게 고친 때 — 이 전에 센 세대수는 첫 100줄만 센 것이라 다시 센다 (2026-11-03 사장님: "아파트 세대수가 맞지 않아") */
+export const UNITS_FIXED_AT = "2026-11-03T10:02:00Z"; // 끝까지 읽기가 실제로 돈 때 (한국 19:02)
 /** 세대수(unit_map)가 아직 없는 단지 — 못 찾으면 {} 를 넣어 다시 부르지 않는다 */
-export async function syncSupply(lawd: string, deadline: number) {
+export async function syncSupply(lawd: string, deadline: number, kinds: Kind[] = ["apt", "offi"]) {
   const supabase = db();
   const { data } = await supabase.from("apt_complexes")
-    .select("id, bcode, jibun, trades, agent_supply").eq("lawd_cd", lawd).not("bcode", "is", null).is("unit_map", null) // 오피스텔도 같은 기준 (2026-11-02 사장님: 공급면적)
+    .select("id, bcode, jibun, trades, agent_supply").eq("lawd_cd", lawd).not("bcode", "is", null).in("kind", kinds) // 아파트·오피스텔 먼저 (빌라는 kind=villa 로 따로)
+    // 아직 없거나, 100줄만 읽던 때(2026-11-03 저녁 전) 센 세대수 — 다시 센다. 다 세었을 때만 덮어쓴다 (그 사이엔 예전 숫자 그대로)
+    .or(`unit_map.is.null,supply_tried_at.is.null,supply_tried_at.lt.${UNITS_FIXED_AT}`)
     .order("trade_count", { ascending: false }).limit(400);
-  let done = 0, found = 0;
+  let done = 0, found = 0, skipped = 0;
   for (const r of (data || []) as { id: string; bcode: string; jibun: string; trades: Trade[]; agent_supply: Record<string, number> | null }[]) {
     if (Date.now() > deadline) break;
-    const { supply, households } = await supplyMapFor(r.bcode, r.jibun);
+    const got = await supplyMapFor(r.bcode, r.jibun, deadline);
+    if ("partial" in got) { skipped++; continue; } // 다 못 받음 — 다음 실행에 다시
+    const { supply, households } = got;
     await supabase.from("apt_complexes")
       .update({ supply_map: supply, unit_map: households, supply_tried_at: new Date().toISOString(), ...summarize(r.trades || [], withAgent(supply, r.agent_supply)) })
       .eq("id", r.id);
     done++;
     if (supply) found++;
   }
-  return { done, found };
+  return { done, found, skipped, left: Math.max(0, (data || []).length - done) };
 }
 
 /* ── 4. 단지 정보 ── */

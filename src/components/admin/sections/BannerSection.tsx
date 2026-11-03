@@ -423,7 +423,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                     <img src={imagePreview || b?.image_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <div style={{ textAlign: "center", color: textSecondary, fontSize: 12 }}>
-                      <div style={{ fontSize: 24, marginBottom: 4 }}>📁</div>
+                      <div style={{ fontSize: 24, marginBottom: 4 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></svg></div>
                       클릭하여 업로드
                     </div>
                   )}
@@ -468,7 +468,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
 
               {(selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && (
                 <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#1a1b1e" : "#f9fafb", borderRadius: 8, border: `1px solid #3b82f6` }}>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>✅ 노출 카테고리 (중복선택 가능)</label>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 12 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 6 9 17l-5-5" /></svg>노출 카테고리 (중복선택 가능)</label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {BANNER_TARGET_CATEGORIES.map(cat => {
                       const isChecked = b?.link_target ? b.link_target.includes(cat.value) : (cat.value === "all");
@@ -487,7 +487,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                 <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#0c2a4d" : "#f0f9ff", borderRadius: 8, border: `1px solid #0ea5e9` }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <label style={{ fontSize: 13, fontWeight: 700, color: darkMode ? "#38bdf8" : "#0369a1", margin: 0 }}>
-                      📱 노출 탭 선택 (중복선택 가능)
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M7 2h10v20H7zM11 18h2" /></svg>노출 탭 선택 (중복선택 가능)
                     </label>
                     <span style={{ fontSize: 11, color: darkMode ? "#93c5fd" : "#0284c7" }}>
                       {selectedTabs.length > 0 ? `${selectedTabs.length}개 탭 선택됨` : "선택된 탭 없음"}
@@ -531,7 +531,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                 </label>
                 {b && (
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: darkMode ? "#450a0a" : "#fee2e2", padding: "3px 10px", borderRadius: 6, border: "1px solid #f87171" }}>
-                    🔒 노출 위치는 수정할 수 없습니다 (고정)
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" /></svg>노출 위치는 수정할 수 없습니다 (고정)
                   </span>
                 )}
               </div>
@@ -562,7 +562,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                     >
                       {isEdit && isSelected && (
                         <div style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "2px 6px", borderRadius: 4 }}>
-                          고정됨 🔒
+                          고정됨 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" /></svg>
                         </div>
                       )}
                       {card.icon(isSelected)}
@@ -689,16 +689,16 @@ export default function BannerSection({ theme }: AdminSectionProps) {
           >
             ← 뒤로가기
           </button>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>배너 성과 분석</h1>
         </div>
 
         {/* 요약 카드 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
           {[
-            { label: "전체 배너", value: stats.length, icon: "🖼️", color: "#3b82f6" },
-            { label: "활성 배너", value: stats.filter(s => s.is_active).length, icon: "✅", color: "#10b981" },
-            { label: "총 클릭수", value: stats.reduce((a, s) => a + (s.click_count || 0), 0).toLocaleString(), icon: "👆", color: "#f59e0b" },
-            { label: "총 노출수", value: stats.reduce((a, s) => a + (s.view_count || 0), 0).toLocaleString(), icon: "👁️", color: "#8b5cf6" },
+            { label: "전체 배너", value: stats.length, icon: "", color: "#3b82f6" },
+            { label: "활성 배너", value: stats.filter(s => s.is_active).length, icon: "", color: "#10b981" },
+            { label: "총 클릭수", value: stats.reduce((a, s) => a + (s.click_count || 0), 0).toLocaleString(), icon: "", color: "#f59e0b" },
+            { label: "총 노출수", value: stats.reduce((a, s) => a + (s.view_count || 0), 0).toLocaleString(), icon: "", color: "#8b5cf6" },
           ].map((card, i) => (
             <div key={i} style={{ background: cardBg, borderRadius: 12, padding: "20px 24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: `1px solid ${border}` }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -788,10 +788,10 @@ export default function BannerSection({ theme }: AdminSectionProps) {
           <button onClick={() => { setEditingBanner(null); router.push(`${pathname}?menu=ad&action=new`); }}
             style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", gap: 6 }}>+ 새 배너 등록</button>
           <button onClick={() => { loadStats(); router.push(`${pathname}?menu=ad&action=stats`); }}
-            style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", gap: 6 }}>📊 성과 분석</button>
+            style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>성과 분석</button>
           <button onClick={() => handleDelete(checkedIds)} disabled={checkedIds.length === 0}
             style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: checkedIds.length > 0 ? "#ef4444" : "#ccc", border: `1px solid ${checkedIds.length > 0 ? "#ef4444" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: checkedIds.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6 }}>
-            🗑 선택삭제
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>선택삭제
           </button>
         </div>
 
@@ -799,7 +799,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
         <div style={{ padding: 24 }}>
           {filtered.length === 0 ? (
             <div style={{ padding: 60, textAlign: "center", color: textSecondary }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🖼️</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 4h16v16H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01" /></svg></div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>등록된 배너가 없습니다.</div>
               <div style={{ fontSize: 13, marginTop: 4 }}>새 배너를 등록해 보세요.</div>
             </div>
@@ -860,11 +860,11 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                         </button>
                         <button onClick={() => { setEditingBanner(b); router.push(`${pathname}?menu=ad&action=edit&id=${b.id}`); }} title="수정"
                           style={{ flex: 1, height: 32, background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                          ✏️ 수정
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>수정
                         </button>
                         <button onClick={() => handleDelete([b.id])} title="삭제"
                           style={{ flex: 1, height: 32, background: "none", color: "#9ca3af", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                          🗑 삭제
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>삭제
                         </button>
                       </div>
                     </div>

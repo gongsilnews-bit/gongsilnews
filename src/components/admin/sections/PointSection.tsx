@@ -27,7 +27,8 @@ const SETTING_LABELS: Record<string, { label: string; unit: string; desc: string
 
 export default function PointSection({ theme, activeSubmenu = "members", onSubmenuChange }: PointSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
-  const [tab, setTab] = useState(activeSubmenu);
+  // 회원관리와 같이 쓰는 하위 메뉴 값("members_list" 등)이 넘어오면 첫 탭으로 (2026-11-03: 포인트 화면이 비어 보이던 것)
+  const [tab, setTab] = useState(["members", "transactions", "settings"].includes(activeSubmenu) ? activeSubmenu : "members");
 
   // ── 정책 설정 ──
   const [settings, setSettings] = useState<Record<string, number>>({});
@@ -97,9 +98,9 @@ export default function PointSection({ theme, activeSubmenu = "members", onSubme
   }
 
   const tabs = [
-    { key: "members", label: "👥 회원 현황" },
-    { key: "transactions", label: "📋 거래 내역" },
-    { key: "settings", label: "⚙️ 정책 설정" },
+    { key: "members", label: "회원 현황" },
+    { key: "transactions", label: "거래 내역" },
+    { key: "settings", label: "정책 설정" },
   ];
 
   const inputStyle: React.CSSProperties = {
@@ -110,14 +111,14 @@ export default function PointSection({ theme, activeSubmenu = "members", onSubme
 
   const roleMap: Record<string, string> = { ADMIN: "최고관리자", REALTOR: "부동산회원", USER: "일반회원" };
   const reasonMap: Record<string, string> = {
-    "가입축하": "🎁 가입축하", "공실등록보상": "🏠 공실등록보상", "자료열람": "📂 자료열람",
-    "특강구매": "🎓 특강구매", "콘텐츠수익": "💰 콘텐츠수익", "P2P전송": "📤 P2P전송",
-    "P2P수신": "📥 P2P수신", "관리자지급": "💚 관리자지급", "관리자차감": "🔴 관리자차감",
+    "가입축하": "가입축하", "공실등록보상": "공실등록보상", "자료열람": "자료열람",
+    "특강구매": "특강구매", "콘텐츠수익": "콘텐츠수익", "P2P전송": "P2P전송",
+    "P2P수신": "P2P수신", "관리자지급": "관리자지급", "관리자차감": "관리자차감",
   };
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-      <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0, marginBottom: 20 }}>💰 포인트 관리</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0, marginBottom: 20 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.5M12 6v2M12 16v2" /></svg>포인트 관리</h1>
 
       {/* 탭 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 20, gap: 24 }}>
@@ -200,9 +201,9 @@ export default function PointSection({ theme, activeSubmenu = "members", onSubme
                     <td style={{ padding: "14px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => { setAdjustModal({ id: m.id, name: m.name || m.email }); setAdjustAmount(""); }}
-                          style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💚 지급</button>
+                          style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v8M8 12h8" /></svg>지급</button>
                         <button onClick={() => { setAdjustModal({ id: m.id, name: m.name || m.email }); setAdjustAmount("-"); }}
-                          style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔴 차감</button>
+                          style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 12h14" /></svg>차감</button>
                       </div>
                     </td>
                   </tr>
@@ -220,7 +221,7 @@ export default function PointSection({ theme, activeSubmenu = "members", onSubme
             {(["ALL", "EARN", "SPEND"] as const).map(f => (
               <button key={f} onClick={() => setTxFilter(f)}
                 style={{ padding: "6px 16px", border: `1px solid ${txFilter === f ? "#3b82f6" : border}`, borderRadius: 20, background: txFilter === f ? "#3b82f6" : "transparent", color: txFilter === f ? "#fff" : textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                {f === "ALL" ? "전체" : f === "EARN" ? "✅ 적립" : "💸 사용"}
+                {f === "ALL" ? "전체" : f === "EARN" ? "적립" : "사용"}
               </button>
             ))}
           </div>
@@ -269,7 +270,7 @@ export default function PointSection({ theme, activeSubmenu = "members", onSubme
           <div style={{ background: cardBg, borderRadius: 16, padding: 32, width: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
             onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, marginBottom: 20 }}>
-              💰 포인트 {adjustAmount.startsWith("-") ? "차감" : "지급"} — {adjustModal.name}
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.5M12 6v2M12 16v2" /></svg>포인트 {adjustAmount.startsWith("-") ? "차감" : "지급"} — {adjustModal.name}
             </h3>
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: textPrimary, display: "block", marginBottom: 6 }}>금액 (P)</label>

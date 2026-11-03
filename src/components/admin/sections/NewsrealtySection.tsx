@@ -13,8 +13,8 @@ import {
 } from "@/app/actions/newsrealtyApply";
 
 const SERVICE_META = {
-  newsrealty: { label: "공실뉴스부동산", planLabel: "공실뉴스부동산", icon: "🏢", color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
-  study: { label: "부동산특강", planLabel: "공실뉴스부동산", icon: "🎓", color: "#047857", bg: "#ecfdf5", border: "#a7f3d0" },
+  newsrealty: { label: "공실뉴스부동산", planLabel: "공실뉴스부동산", icon: "", color: "#1e3a6e", bg: "#eef1f7", border: "#d6deea" },
+  study: { label: "부동산특강", planLabel: "공실뉴스부동산", icon: "", color: "#047857", bg: "#ecfdf5", border: "#cdeedd" },
 } as const;
 
 function ServiceBadge({ service }: { service?: string }) {
@@ -33,7 +33,7 @@ function ServiceBadge({ service }: { service?: string }) {
         whiteSpace: "nowrap",
       }}
     >
-      {meta.icon} {meta.label}
+      {meta.label}
     </span>
   );
 }
@@ -288,7 +288,7 @@ ${res.planMessage}`);
             gap: 8,
           }}
         >
-          <span>{actionMsg.type === "success" ? "✓" : "⚠️"}</span>
+          <span>{actionMsg.type === "success" ? "✓" : "!"}</span>
           <span>{actionMsg.text}</span>
         </div>
       )}
@@ -322,7 +322,7 @@ ${res.planMessage}`);
             boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
           }}
         >
-          <span>🔄</span> 새로고침
+          새로고침
         </button>
       </div>
 
@@ -433,8 +433,8 @@ ${res.planMessage}`);
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         {([
           { key: "전체", label: "전체", count: applications.length },
-          { key: "newsrealty", label: `${SERVICE_META.newsrealty.icon} ${SERVICE_META.newsrealty.label}`, count: applications.filter((a) => a.service !== "study").length },
-          { key: "study", label: `${SERVICE_META.study.icon} ${SERVICE_META.study.label}`, count: applications.filter((a) => a.service === "study").length },
+          { key: "newsrealty", label: SERVICE_META.newsrealty.label, count: applications.filter((a) => a.service !== "study").length },
+          { key: "study", label: SERVICE_META.study.label, count: applications.filter((a) => a.service === "study").length },
         ] as const).map((sv) => {
           const isActive = serviceTab === sv.key;
           return (
@@ -524,7 +524,7 @@ ${res.planMessage}`);
               transition: "all 0.15s ease",
             }}
           >
-            <span>🗑</span> 선택삭제 {checkedAppIds.length > 0 ? `(${checkedAppIds.length})` : ""}
+            선택삭제 {checkedAppIds.length > 0 ? `(${checkedAppIds.length})` : ""}
           </button>
         </div>
         <div style={{ fontSize: 13, color: textSecondary }}>
@@ -851,7 +851,7 @@ ${res.planMessage}`);
                   href={`tel:${selectedApp.phone}`}
                   style={{ color: "#2563eb", fontWeight: 800, textDecoration: "none", fontSize: 15, letterSpacing: "0.2px" }}
                 >
-                  📞 {selectedApp.phone} <span style={{ fontSize: 12, fontWeight: 600, color: "#2563eb" }}>(통화 연결)</span>
+                  {selectedApp.phone} <span style={{ fontSize: 12, fontWeight: 600, color: "#2563eb" }}>(통화 연결)</span>
                 </a>
               </div>
 
@@ -879,7 +879,7 @@ ${res.planMessage}`);
             {selectedApp.memo && (
               <div style={{ marginBottom: 20, padding: "16px 18px", backgroundColor: darkMode ? "#222" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: textPrimary, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>💬</span> 신청자 추가 요청사항
+                  신청자 추가 요청사항
                 </div>
                 <p style={{ fontSize: 13, color: textPrimary, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap", fontWeight: 500 }}>
                   {selectedApp.memo}
@@ -944,7 +944,7 @@ ${res.planMessage}`);
                   transition: "all 0.15s ease",
                 }}
               >
-                <span>💬</span> {resendingSms ? "문자 발송 중..." : "파트너 안내 SMS 재발송"}
+                {resendingSms ? "문자 발송 중..." : "파트너 안내 SMS 재발송"}
               </button>
             </div>}
 
@@ -1006,7 +1006,7 @@ ${res.planMessage}`);
                   cursor: "pointer",
                 }}
               >
-                🗑 이 신청서 삭제
+                이 신청서 삭제
               </button>
 
               <button

@@ -438,7 +438,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             if (checkedArticleIds.length === 0) { alert("반려할 기사를 선택하세요."); return; }
             setSelectedArticleIdsForReject(checkedArticleIds);
             setShowRejectModal(true);
-          }} style={{ height: 36, padding: "0 16px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🚫 선택 반려</button>
+          }} style={{ height: 36, padding: "0 16px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM5 5l14 14" /></svg>선택 반려</button>
           <button onClick={async () => {
             if (checkedArticleIds.length === 0) { alert("삭제할 기사를 선택하세요."); return; }
             if (confirm(`선택한 ${checkedArticleIds.length}건의 기사를 삭제하시겠습니까?`)) {
@@ -475,9 +475,9 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               transition: "all 0.15s",
             }}
           >
-            🏷️ 배너 일괄적용
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01" /></svg>배너 일괄적용
           </button>
-          <button
+          <button className="gs-al-sec"
             onClick={() => {
               if (checkedArticleIds.length === 0) {
                 alert("공실을 일괄 적용할 기사를 먼저 체크박스로 선택해주세요.");
@@ -491,7 +491,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               alignItems: "center",
               height: 36,
               padding: "0 16px",
-              background: "#2563eb",
+              background: "#2563eb", // 앱·곤색 화면에선 옆 단추와 같은 흰 단추 (gs-al-sec)
               color: "#fff",
               border: "none",
               borderRadius: 6,
@@ -502,7 +502,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               transition: "all 0.15s",
             }}
           >
-            🏢 공실 일괄적용
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 7h3M8 11h3M8 15h3" /></svg>공실 일괄적용
           </button>
           </div>
 
@@ -511,8 +511,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", width: "100%", paddingTop: 12 }}>
               <span style={{ fontSize: 13, color: textSecondary }}>기사 구분</span>
               <button onClick={() => { setPublishFilter("전체"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "전체" ? "none" : `1px solid ${border}`, background: publishFilter === "전체" ? (darkMode ? "#4b5563" : "#374151") : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "전체" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>전체 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.typeAll}</span></button>
-              <button onClick={() => { setPublishFilter("헤드라인"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "헤드라인" ? "none" : `1px solid ${border}`, background: publishFilter === "헤드라인" ? "#ef4444" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "헤드라인" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>📌 헤드라인 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.헤드라인}</span></button>
-              <button onClick={() => { setPublishFilter("중요"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "중요" ? "none" : `1px solid ${border}`, background: publishFilter === "중요" ? "#f59e0b" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "중요" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>⭐ 중요기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.중요}</span></button>
+              <button onClick={() => { setPublishFilter("헤드라인"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "헤드라인" ? "none" : `1px solid ${border}`, background: publishFilter === "헤드라인" ? "#ef4444" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "헤드라인" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /></svg>헤드라인 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.헤드라인}</span></button>
+              <button onClick={() => { setPublishFilter("중요"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "중요" ? "none" : `1px solid ${border}`, background: publishFilter === "중요" ? "#f59e0b" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "중요" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 3l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z" /></svg>중요기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.중요}</span></button>
               <button onClick={() => { setPublishFilter("일반기사"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "일반기사" ? "none" : `1px solid ${border}`, background: publishFilter === "일반기사" ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "일반기사" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>일반기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.일반기사}</span></button>
               <span style={{ fontSize: 12, color: textSecondary }}>중요·헤드라인 중복 지정 포함</span>
             </div>
@@ -580,6 +580,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                           loadData();
                         }}
                         title="중요 기사 (카테고리 상단 노출)"
+                        data-keep-fill="" // 켜진 표시는 색을 꽉 채운다 (2026-11-03 사장님: 글씨만이면 안 보임)
                         style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.is_important ? "#f59e0b" : "#fff", color: a.is_important ? "#fff" : "#888", transition: "all 0.2s" }}
                       >중</button>
                       <button 
@@ -590,6 +591,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                           loadData();
                         }}
                         title="헤드라인 기사 (메인 영역 노출)"
+                        data-keep-fill="" // 켜진 표시는 색을 꽉 채운다 (2026-11-03 사장님: 글씨만이면 안 보임)
                         style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.is_headline ? "#ef4444" : "#fff", color: a.is_headline ? "#fff" : "#888", transition: "all 0.2s" }}
                       >해</button>
                     </div>
@@ -711,7 +713,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                                   display: "block",
                                 }}
                               >
-                                👤 업체프로필 (기본)
+                                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" /></svg>업체프로필 (기본)
                               </button>
                               <button
                                 type="button"
@@ -729,7 +731,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                                   display: "block",
                                 }}
                               >
-                                🚫 배너없음
+                                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM5 5l14 14" /></svg>배너없음
                               </button>
                               {authorBanners.length > 0 && (
                                 <div style={{ borderTop: `1px solid ${border}`, margin: "4px 0" }} />
@@ -755,7 +757,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                                     textOverflow: "ellipsis",
                                   }}
                                 >
-                                  🏷️ {b.name}
+                                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01" /></svg>{b.name}
                                 </button>
                               ))}
                             </div>
@@ -913,7 +915,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: 0 }}>
-                🏷️ 기사 배너 일괄적용
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01" /></svg>기사 배너 일괄적용
               </h3>
               <button
                 onClick={() => setIsBulkAdModalOpen(false)}
@@ -950,13 +952,13 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 <optgroup label="── 등록된 배너 목록 ──">
                   {authorBanners.map((b) => (
                     <option key={b.id} value={b.id}>
-                      🏷️ {b.name} {!b.is_active ? "(중지됨)" : "(진행중)"}
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01" /></svg>{b.name} {!b.is_active ? "(중지됨)" : "(진행중)"}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="── 기본 / 특수 설정 ──">
-                  <option value="DEFAULT">👤 업체프로필 (기본 광고)</option>
-                  <option value="NONE">🚫 배너없음 (숨김)</option>
+                  <option value="DEFAULT"><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" /></svg>업체프로필 (기본 광고)</option>
+                  <option value="NONE"><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM5 5l14 14" /></svg>배너없음 (숨김)</option>
                 </optgroup>
               </select>
             </div>
@@ -1027,7 +1029,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-                🏢 기사 노출 공실 일괄 적용
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 7h3M8 11h3M8 15h3" /></svg>기사 노출 공실 일괄 적용
               </h3>
               <button
                 onClick={() => setIsBulkVacancyModalOpen(false)}
@@ -1062,7 +1064,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   cursor: "pointer",
                 }}
               >
-                <option value="NONE">🚫 공실 미노출 (연결 해제)</option>
+                <option value="NONE"><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM5 5l14 14" /></svg>공실 미노출 (연결 해제)</option>
                 {bulkVacancyOptions.rows.map(({ vacancy: v, authorName }) => {
                   const formatMoney = (tradeType: string, deposit?: number | null, rent?: number | null) => {
                     const fmt = (val?: number | null) => {
@@ -1084,14 +1086,14 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   const addr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ") || "공실";
                   return (
                     <option key={v.id} value={v.id}>
-                      🏢 {bulkVacancyOptions.authorCount > 1 && authorName ? `[${authorName}] ` : ""}{priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 7h3M8 11h3M8 15h3" /></svg>{bulkVacancyOptions.authorCount > 1 && authorName ? `[${authorName}] ` : ""}{priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
                     </option>
                   );
                 })}
               </select>
               {bulkVacancyOptions.authorCount > 1 && (
                 <div style={{ marginTop: 8, fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
-                  ⚠️ 작성자가 서로 다른 기사가 함께 선택되었습니다. 공실은 작성자 본인 매물을 연결하는 것이 정상입니다.
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 3 2 21h20zM12 10v4M12 18h.01" /></svg>작성자가 서로 다른 기사가 함께 선택되었습니다. 공실은 작성자 본인 매물을 연결하는 것이 정상입니다.
                 </div>
               )}
               {bulkVacancyOptions.rows.length === 0 && (

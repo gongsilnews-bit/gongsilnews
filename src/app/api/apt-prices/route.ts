@@ -2,7 +2,7 @@
 //  GET ?sw=37.49,127.03&ne=37.52,127.07   화면 안 단지 (거래 많은 순 400개까지)
 //  GET ?id=11680:대치동:1014-3              단지 하나 — 매매·전월세 거래 전부 + 평형·세대수 + 단지 정보 (상세 창이 계산)
 import { NextRequest, NextResponse } from "next/server";
-import { db, withAgent } from "@/utils/aptMap";
+import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
 
 const headers = { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" };
@@ -47,13 +47,15 @@ export async function GET(req: NextRequest) {
   const id = params.get("id");
   if (id) {
     const { data, error } = await supabase.from("apt_complexes")
-      .select("id, kind, name, dong, jibun, lawd_cd, build_year, lat, lng, trades, rents, supply_map, agent_supply, unit_map, info, agent_info, trade_count, updated_at")
+      .select("id, kind, name, dong, jibun, lawd_cd, build_year, lat, lng, trades, rents, supply_map, agent_supply, unit_map, supply_tried_at, info, agent_info, trade_count, updated_at")
       .eq("id", id).maybeSingle();
     if (error || !data) return NextResponse.json({ success: false, error: error?.message || "단지를 찾지 못했습니다." }, { status: 404 });
     // 부동산이 보완한 값이 공공 자료보다 우선 — 어느 칸이 부동산 값인지도 함께 (화면에 "공인중개사 제공")
-    const { agent_supply: agentSupply, agent_info: agentInfo, ...rest } = data;
+    const { agent_supply: agentSupply, agent_info: agentInfo, supply_tried_at: unitsAt, ...rest } = data;
     const complex = {
       ...rest,
+      // 고치기 전(첫 100줄만 센) 세대수는 보이지 않는다 — 다시 세면 저절로 보인다 (2026-11-03 사장님: "세대수가 다르면 안 되지")
+      unit_map: unitsAt && String(unitsAt) >= UNITS_FIXED_AT ? data.unit_map : null,
       supply_map: withAgent(data.supply_map, agentSupply),
       info: data.info || agentInfo ? { ...(data.info || {}), ...(agentInfo || {}) } : null,
       agent_fields: [...Object.keys(agentInfo || {}), ...(agentSupply && Object.keys(agentSupply).length ? ["supply"] : [])],

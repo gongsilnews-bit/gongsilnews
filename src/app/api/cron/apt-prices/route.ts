@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   try {
     if (!step || step === "trades") result.trades = await syncTrades(lawd, kind);
     if (!step || step === "geo") result.geo = await syncGeo(lawd, deadline);
-    if (!step || step === "supply") result.supply = await syncSupply(lawd, deadline);
+    if (!step || step === "supply") result.supply = await syncSupply(lawd, deadline, kind === "villa" ? ["villa"] : ["apt", "offi"]);
     if (!step || step === "info") result.info = await syncInfo(lawd, deadline);
     // 공실등록 값은 모으지 않는다 (2026-11-02 사장님: 매물등록 때는 체크하지 말고 단지 수정 요청만) — 수동으로만 step=agents
     if (step === "agents") result.agents = await harvestVacancies(lawd);

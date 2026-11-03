@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiIco } from "@/components/admin/studioLight";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
 import { 
@@ -16,17 +17,17 @@ import {
 /* ── 에이전트 정의 ── */
 const DEFAULT_AGENTS = [
   { id: "verify", emoji: "🛡️", defaultName: "회원승인 에이전트", description: "부동산 중개사 서류를 자동 검증합니다.", status: "running" as const },
-  { id: "article", emoji: "📰", defaultName: "기사작성 에이전트", description: "부동산 뉴스 기사 초안을 작성합니다.", status: "running" as const },
+  { id: "article", emoji: "", defaultName: "기사작성 에이전트", description: "부동산 뉴스 기사 초안을 작성합니다.", status: "running" as const },
   { id: "photoCuration", emoji: "📸", defaultName: "기사 동영상/사진 에이전트", description: "기사 맞춤형 동영상·실사 사진 큐레이션 및 AI 이미지를 생성합니다.", status: "running" as const },
-  { id: "remodeling", emoji: "🏢", defaultName: "건물 리모델링 AI", description: "건물 외관 리모델링 시뮬레이션 및 렌더링을 생성합니다.", status: "running" as const },
+  { id: "remodeling", emoji: "", defaultName: "건물 리모델링 AI", description: "건물 외관 리모델링 시뮬레이션 및 렌더링을 생성합니다.", status: "running" as const },
   { id: "homeInterior", emoji: "🎨", defaultName: "홈 인테리어 AI", description: "실내 인테리어 공간 시뮬레이션을 생성합니다.", status: "running" as const },
   { id: "studio", emoji: "🎬", defaultName: "AI 숏폼 스튜디오", description: "부동산 쇼츠 영상 대본 및 음성을 생성합니다.", status: "running" as const },
   { id: "marketingDraft", emoji: "✍️", defaultName: "마케팅 초안 마법사", description: "블로그/SNS/쇼츠 콘텐츠를 일괄 생성합니다.", status: "running" as const },
-  { id: "articleReview", emoji: "🔍", defaultName: "기사심사 에이전트", description: "기사 품질·홍보성 문구를 자동 검토합니다.", status: "running" as const },
+  { id: "articleReview", emoji: "", defaultName: "기사심사 에이전트", description: "기사 품질·홍보성 문구를 자동 검토합니다.", status: "running" as const },
   { id: "pressRelease", emoji: "🏛️", defaultName: "보도자료 에이전트", description: "국토부 보도자료를 분석해 기사로 작성합니다.", status: "running" as const },
-  { id: "propertyDescription", emoji: "🏠", defaultName: "매물설명 생성", description: "공실 등록 시 AI 설명글을 자동 생성합니다.", status: "running" as const },
-  { id: "imageExtract", emoji: "🖼️", defaultName: "이미지 매물 추출", description: "사진에서 매물 정보를 AI로 자동 추출합니다.", status: "running" as const },
-  { id: "onbid", emoji: "🤖", defaultName: "온비드 동기화 에이전트", description: "매일 온비드 경공매 물건을 연동하고 만료 건을 삭제합니다.", status: "running" as const },
+  { id: "propertyDescription", emoji: "", defaultName: "매물설명 생성", description: "공실 등록 시 AI 설명글을 자동 생성합니다.", status: "running" as const },
+  { id: "imageExtract", emoji: "", defaultName: "이미지 매물 추출", description: "사진에서 매물 정보를 AI로 자동 추출합니다.", status: "running" as const },
+  { id: "onbid", emoji: "", defaultName: "온비드 동기화 에이전트", description: "매일 온비드 경공매 물건을 연동하고 만료 건을 삭제합니다.", status: "running" as const },
 ];
 
 interface Props {
@@ -308,7 +309,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             }}
             title="실시간 새로고침"
           >
-            🔄 새로고침
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5" /></svg>새로고침
           </button>
           <span style={{ fontSize: 12, color: theme.textSecondary, display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#10b981" }}></span>
@@ -362,7 +363,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         {/* 상단 헤더: GCP 프로젝트 & 콘솔 바로가기 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 24 }}>☁️</span>
+            
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: textPrimary }}>
@@ -395,7 +396,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                 textDecoration: "none", transition: "all 0.15s"
               }}
             >
-              📊 AI Studio 사용량 콘솔 ↗
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>AI Studio 사용량 콘솔 ↗
             </a>
             <a
               href="https://aistudio.google.com/billing?billing=014C95-E62B99-958C3B"
@@ -409,7 +410,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                 textDecoration: "none", transition: "all 0.15s"
               }}
             >
-              💳 GCP 결제 계정 관리 ↗
+              GCP 결제 계정 관리 ↗
             </a>
             <button
               onClick={() => {
@@ -425,7 +426,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                 cursor: "pointer"
               }}
             >
-              ⚙️ 잔액 기준점 보정
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>잔액 기준점 보정
             </button>
           </div>
         </div>
@@ -437,7 +438,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             background: darkMode ? "#1a1b1e" : "#f8fafc",
             padding: "14px 18px", borderRadius: 10, border: `1px solid ${border}`
           }}>
-            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>💰 구글 크레딧 잔액</div>
+            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.5M12 6v2M12 16v2" /></svg>구글 크레딧 잔액</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#10b981", marginTop: 4 }}>
               ₩{gcpBilling?.currentCreditBalance?.toLocaleString() || "17,422"}
             </div>
@@ -451,7 +452,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             background: darkMode ? "#1a1b1e" : "#f8fafc",
             padding: "14px 18px", borderRadius: 10, border: `1px solid ${border}`
           }}>
-            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>💸 당월 GCP 총 사용액 (크레딧 차감)</div>
+            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.5M12 6v2M12 16v2" /></svg>당월 GCP 총 사용액 (크레딧 차감)</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444", marginTop: 4 }}>
               ₩{gcpBilling?.currentMonthSpend?.toLocaleString() || "7,578"}
             </div>
@@ -465,8 +466,8 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             background: darkMode ? "#1a1b1e" : "#f8fafc",
             padding: "14px 18px", borderRadius: 10, border: `1px solid ${border}`
           }}>
-            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>⚡ 실시간 추적 API 호출</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#3b82f6", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>실시간 추적 API 호출</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#1e3a6e", marginTop: 4 }}>
               {gcpBilling?.totalCalls || recentLogs.length} 건
             </div>
             <div style={{ fontSize: 11, color: textSecondary, marginTop: 4 }}>
@@ -479,8 +480,8 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             background: darkMode ? "#1a1b1e" : "#f8fafc",
             padding: "14px 18px", borderRadius: 10, border: `1px solid ${border}`
           }}>
-            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>🪙 총 소모 토큰</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#8b5cf6", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>총 소모 토큰</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#1e3a6e", marginTop: 4 }}>
               {(gcpBilling?.totalTokens || totalTokens).toLocaleString()} 토큰
             </div>
             <div style={{ fontSize: 11, color: textSecondary, marginTop: 4 }}>
@@ -491,14 +492,14 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
         {/* 2열 분석 그리드: 누가 썼는가(좌) vs 어디서 썼는가(우) */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 16 }}>
-          {/* 좌측: 👤 누가 썼는가? (회원별 점유율) */}
+          {/* 좌측: <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" /></svg>누가 썼는가? (회원별 점유율) */}
           <div style={{
             background: darkMode ? "#1e1f23" : "#f8fafc",
             padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-                👤 누가 썼는가? (회원별 비용 점유율)
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" /></svg>누가 썼는가? (회원별 비용 점유율)
               </h4>
               <span style={{ fontSize: 11, color: textSecondary }}>
                 총 {gcpBilling?.userStats?.length || 0}명 사용
@@ -534,7 +535,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   <div style={{ width: "100%", height: 6, background: darkMode ? "#2c2d33" : "#e2e8f0", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
                     <div style={{
                       width: `${Math.max(u.percentage, 2)}%`, height: "100%",
-                      background: idx === 0 ? "linear-gradient(90deg, #3b82f6, #60a5fa)" : "linear-gradient(90deg, #10b981, #34d399)",
+                      background: idx === 0 ? "#1e3a6e" : "#8a9bbd", // 곤색 하나 (2026-11-03 사장님: 통일감)
                       borderRadius: 3
                     }} />
                   </div>
@@ -548,14 +549,14 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </div>
           </div>
 
-          {/* 우측: 🏢 어디서 썼는가? (기능/채널별 점유율) */}
+          {/* 우측: <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 7h3M8 11h3M8 15h3" /></svg>어디서 썼는가? (기능/채널별 점유율) */}
           <div style={{
             background: darkMode ? "#1e1f23" : "#f8fafc",
             padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-                🏢 어디서 썼는가? (기능/채널별 비용 점유율)
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 7h3M8 11h3M8 15h3" /></svg>어디서 썼는가? (기능/채널별 비용 점유율)
               </h4>
               <span style={{ fontSize: 11, color: textSecondary }}>
                 총 {gcpBilling?.channelStats?.length || 0}개 기능
@@ -570,7 +571,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <div>
-                      <span style={{ fontSize: 14, marginRight: 4 }}>{ch.emoji}</span>
+                      <EmojiIco e={ch.emoji} size={14} />
                       <span style={{ fontWeight: 700, fontSize: 13, color: textPrimary }}>
                         {ch.channelName}
                       </span>
@@ -589,7 +590,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   <div style={{ width: "100%", height: 6, background: darkMode ? "#2c2d33" : "#e2e8f0", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
                     <div style={{
                       width: `${Math.max(ch.percentage, 2)}%`, height: "100%",
-                      background: idx === 0 ? "linear-gradient(90deg, #f59e0b, #fbbf24)" : (idx === 1 ? "linear-gradient(90deg, #3b82f6, #60a5fa)" : "linear-gradient(90deg, #8b5cf6, #a78bfa)"),
+                      background: idx === 0 ? "#1e3a6e" : "#8a9bbd", // 곤색 하나
                       borderRadius: 3
                     }} />
                   </div>
@@ -605,7 +606,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         </div>
       </div>
 
-      {/* ── ⚡ 실시간 AI 상세 호출 및 크레딧 소모 내역 (포인트 관리와 동일한 깔끔한 UI) ── */}
+      {/* ── <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>실시간 AI 상세 호출 및 크레딧 소모 내역 (포인트 관리와 동일한 깔끔한 UI) ── */}
       <div id="ai-usage-table-section" style={{
         background: cardBg,
         borderRadius: 14,
@@ -616,7 +617,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         {/* 헤더 타이틀 */}
         <div style={{ padding: "18px 24px 12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 20 }}>📋</span>
+            <span style={{ fontSize: 20 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg></span>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: textPrimary }}>
               실시간 AI 상세 호출 및 크레딧 소모 내역
             </h3>
@@ -633,7 +634,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
               cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4
             }}
           >
-            🔄 새로고침
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5" /></svg>새로고침
           </button>
         </div>
 
@@ -680,7 +681,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
           {/* 검색창 */}
           <div style={{ display: "flex", alignItems: "center", position: "relative", width: 260 }}>
-            <span style={{ position: "absolute", left: 10, fontSize: 13, color: textSecondary }}>🔍</span>
+            <span style={{ position: "absolute", left: 10, fontSize: 13, color: textSecondary }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3" /></svg></span>
             <input
               type="text"
               placeholder="회원명, 이메일, 내용 검색..."
@@ -856,7 +857,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
           </div>
         ) : (
           <div style={{ padding: "48px 24px", textAlign: "center", color: textSecondary }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+            <div style={{ fontSize: 32, marginBottom: 8 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3" /></svg></div>
             <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>검색 결과가 없습니다.</div>
             <div style={{ fontSize: 12, marginTop: 4 }}>
               {searchQuery ? `"${searchQuery}"에 일치하는 회원명이나 호출 내역을 찾을 수 없습니다.` : "해당 분류의 호출 내역이 없습니다."}
@@ -890,7 +891,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             <div key={agent.id} style={{ ...cardStyle }}>
               {/* 헤더 */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 32 }}>{agent.emoji}</span>
+                <EmojiIco e={agent.emoji} size={28} />
                 <div style={{ flex: 1 }}>
                   {editingId === agent.id ? (
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -920,7 +921,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                       <button onClick={() => { setEditingId(agent.id); setEditValue(agentNames[agent.id]); }} style={{
                         background: "none", border: "none", cursor: "pointer",
                         fontSize: 13, color: theme.textSecondary, padding: 2,
-                      }} title="이름 수정">✏️</button>
+                      }} title="이름 수정"><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{agent.description}</div>
@@ -930,20 +931,20 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   background: agent.status === "running" ? "#dcfce7" : "#fef9c3",
                   color: agent.status === "running" ? "#16a34a" : "#ca8a04",
                 }}>
-                  {agent.status === "running" ? "🟢 가동 중" : "🟡 대기 중"}
+                  {agent.status === "running" ? "● 가동 중" : "○ 대기 중"}
                 </span>
               </div>
 
               {/* 업무 처리 현황 */}
               {agentWork && (
                 <>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>📋 업무 처리 현황</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>업무 처리 현황</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
                     {agent.id === "verify" && [
-                      { label: "가입승인", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "✅" },
-                      { label: "반려", value: agentWork.rejected, prev: pAgentWork?.rejected, color: "#ef4444", icon: "❌" },
-                      { label: "대기중", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "⏳" },
-                      { label: "서류보완", value: agentWork.supplement, prev: pAgentWork?.supplement, color: "#8b5cf6", icon: "📝" },
+                      { label: "가입승인", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "" },
+                      { label: "반려", value: agentWork.rejected, prev: pAgentWork?.rejected, color: "#ef4444", icon: "" },
+                      { label: "대기중", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "" },
+                      { label: "서류보완", value: agentWork.supplement, prev: pAgentWork?.supplement, color: "#7c3aed", icon: "" },
                     ].map((stat, i) => (
                       <div key={i} style={{
                         textAlign: "center", padding: "10px 6px",
@@ -958,10 +959,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                       </div>
                     ))}
                     {(agent.id === "articleReview" || agent.id === "article" || agent.id === "pressRelease") && [
-                      { label: "승인(게시)", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "✅" },
-                      { label: "승인대기", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "⏳" },
-                      { label: "작성중", value: agentWork.draft, prev: pAgentWork?.draft, color: "#3b82f6", icon: "✍️" },
-                      { label: "반려", value: agentWork.rejected, prev: pAgentWork?.rejected, color: "#ef4444", icon: "❌" },
+                      { label: "승인(게시)", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "" },
+                      { label: "승인대기", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "" },
+                      { label: "작성중", value: agentWork.draft, prev: pAgentWork?.draft, color: "#1e3a6e", icon: "" },
+                      { label: "반려", value: agentWork.rejected, prev: pAgentWork?.rejected, color: "#ef4444", icon: "" },
                     ].map((stat, i) => (
                       <div key={i} style={{
                         textAlign: "center", padding: "10px 6px",
@@ -981,12 +982,12 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
               {agent.id === "onbid" && (
                 <>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>📋 업무 처리 현황</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>업무 처리 현황</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
                     {[
-                      { label: "전국 온비드 매물", value: onbidCount.toLocaleString() + "건", color: "#2563eb", icon: "⚖️" },
-                      { label: "오늘 신규 수집", value: onbidHistory.todayRegistered + "건", color: "#10b981", icon: "✨" },
-                      { label: "어제 만료 삭제", value: onbidHistory.yesterdayExpired + "건", color: "#ef4444", icon: "🧹" },
+                      { label: "전국 온비드 매물", value: onbidCount.toLocaleString() + "건", color: "#2563eb", icon: "" },
+                      { label: "오늘 신규 수집", value: onbidHistory.todayRegistered + "건", color: "#10b981", icon: "" },
+                      { label: "어제 만료 삭제", value: onbidHistory.yesterdayExpired + "건", color: "#ef4444", icon: "" },
                     ].map((stat, i) => (
                       <div key={i} style={{
                         textAlign: "center", padding: "10px 6px",
@@ -1004,7 +1005,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   {/* 최근 수집 이력 목록 */}
                   {onbidHistory.historyList && onbidHistory.historyList.length > 0 && (
                     <div style={{ marginTop: 8, borderTop: `1px solid ${theme.border}`, paddingTop: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>📜 최근 7일 동기화 이력</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>최근 7일 동기화 이력</div>
                       <div style={{ maxHeight: 100, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
                         {onbidHistory.historyList.slice(0, 5).map((h, i) => (
                           <div key={i} style={{
@@ -1012,7 +1013,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                             fontSize: 11, padding: "4px 8px", background: theme.darkMode ? "#1e293b" : "#f1f5f9",
                             borderRadius: 6, color: theme.textPrimary
                           }}>
-                            <span>📅 <b>{h.date} {h.time}</b> ({h.target})</span>
+                            <span><b>{h.date} {h.time}</b> ({h.target})</span>
                             <span style={{ fontWeight: 700 }}>
                               <span style={{ color: "#10b981" }}>+{h.registered}</span> / <span style={{ color: "#ef4444" }}>-{h.expired}</span>
                               {h.isManual && <span style={{ marginLeft: 6, padding: "1px 4px", fontSize: 9, background: "#3b82f6", color: "#fff", borderRadius: 4 }}>수동</span>}
@@ -1028,7 +1029,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
               {/* API 사용 통계 */}
               {agent.id !== "onbid" && (
                 <>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>💸 API 사용 통계</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.5M12 6v2M12 16v2" /></svg>API 사용 통계</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                     {[
                       { label: "대화 수", value: stats.messageCount + "건", cur: stats.messageCount, prev: pStats.messageCount, color: "#3b82f6" },
@@ -1102,7 +1103,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                       flex: 1, padding: "8px", background: "#10b981", color: "#fff",
                       border: "none", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer"
                     }}>
-                    ⚡ 실행하기
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>실행하기
                   </button>
                   </div>
                 </div>
@@ -1117,7 +1118,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   </div>
                   <div style={{ fontSize: 12, color: theme.darkMode ? "#94a3b8" : "#1e3a8a", marginBottom: 10, lineHeight: 1.4 }}>
                     • <b>동기화 방식:</b> 공공데이터포털 실시간 연동 API (온비드 v2)<br/>
-                    • <b>동기화 주기:</b> 매일 오전 1시 정각 자동 구동 (서울 ➡️ 전국 17개 시도 순차 진행)<br/>
+                    • <b>동기화 주기:</b> 매일 오전 1시 정각 자동 구동 (서울 → 전국 17개 시도 순차 진행)<br/>
                     • <b>주요 기능:</b> 공고관리번호 기준 UPSERT 및 만료 매물 자동 일괄 삭제
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
@@ -1160,9 +1161,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         // 진행률 타이머 (1초마다 경과 시간 표시)
                         const timer = setInterval(() => {
                           const elapsed = Math.round((Date.now() - startTime) / 1000);
-                          btn.innerText = `⏳ 수집 중... (${elapsed}초)`;
+                          btn.innerText = `수집 중... (${elapsed}초)`;
                         }, 1000);
-                        btn.innerText = "⏳ 수집 중... (0초)";
+                        btn.innerText = "수집 중... (0초)";
                         
                         // 4분 안전 타임아웃 (서버 5분 제한 대응)
                         const controller = new AbortController();
@@ -1217,7 +1218,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         flex: 1, padding: "8px", background: "#2563eb", color: "#fff",
                         border: "none", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer"
                       }}>
-                      ⚡ 실시간 수집 실행
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>실시간 수집 실행
                     </button>
                   </div>
                 </div>
@@ -1228,11 +1229,11 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         })}
       </div>
 
-      {/* ⚙️ 구글 AI Studio 잔액 기준점 동기화 모달 */}
+      {/* <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>구글 AI Studio 잔액 기준점 동기화 모달 */}
       {showSyncModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: darkMode ? "#1f2023" : "#fff", borderRadius: 16, maxWidth: 440, width: "100%", padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 800, color: textPrimary }}>⚙️ 구글 AI Studio 잔액 기준점 동기화</h3>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 800, color: textPrimary }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>구글 AI Studio 잔액 기준점 동기화</h3>
             <p style={{ fontSize: 13, color: textSecondary, lineHeight: 1.5, margin: "0 0 16px 0" }}>
               Google AI Studio 결제 콘솔(aistudio.google.com/billing)의 현재 실측 잔액을 입력하시면, 지금 이 순간부터 1초 단위 실시간 자동 차감이 이어집니다.
             </p>

@@ -99,14 +99,14 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
 
   /* ── KPI 카드 구성 (역할에 따라 다르게) ── */
   const kpiCards = role === "admin" ? [
-    { icon: "🏢", label: "공실 등록 물건", value: stats.vacanciesCount.toLocaleString(), sub: "중개사 등록 공실", color: "#3b82f6", menu: "gongsil" },
-    { icon: "⚖️", label: "온비드 경공매", value: stats.onbidCount.toLocaleString(), sub: "전국 온비드 매물", color: "#2563eb", menu: "gongsil" },
-    { icon: "👤", label: "전체 회원", value: stats.membersCount.toLocaleString(), sub: "전체 가입 회원", color: "#10b981", menu: "members" },
-    { icon: "📰", label: "등록 기사", value: stats.articlesCount.toLocaleString(), sub: "전체 등록 기사", color: "#f59e0b", menu: "article" },
-    { icon: "✉️", label: "접수된 문의", value: stats.commentsCount.toLocaleString(), sub: "전체 접수된 문의", color: "#ef4444", menu: "inquiry" },
+    { icon: "", label: "공실 등록 물건", value: stats.vacanciesCount.toLocaleString(), sub: "중개사 등록 공실", color: "#3b82f6", menu: "gongsil" },
+    { icon: "", label: "온비드 경공매", value: stats.onbidCount.toLocaleString(), sub: "전국 온비드 매물", color: "#2563eb", menu: "gongsil" },
+    { icon: "", label: "전체 회원", value: stats.membersCount.toLocaleString(), sub: "전체 가입 회원", color: "#10b981", menu: "members" },
+    { icon: "", label: "등록 기사", value: stats.articlesCount.toLocaleString(), sub: "전체 등록 기사", color: "#f59e0b", menu: "article" },
+    { icon: "", label: "접수된 문의", value: stats.commentsCount.toLocaleString(), sub: "전체 접수된 문의", color: "#ef4444", menu: "inquiry" },
   ] : [
-    { icon: "🏢", label: "내 공실 물건", value: stats.vacanciesCount.toLocaleString(), sub: "내가 등록한 공실", color: "#3b82f6", menu: "gongsil" },
-    { icon: "📰", label: "내 기사", value: stats.articlesCount.toLocaleString(), sub: "내가 작성한 기사", color: "#f59e0b", menu: "article" },
+    { icon: "", label: "내 공실 물건", value: stats.vacanciesCount.toLocaleString(), sub: "내가 등록한 공실", color: "#3b82f6", menu: "gongsil" },
+    { icon: "", label: "내 기사", value: stats.articlesCount.toLocaleString(), sub: "내가 작성한 기사", color: "#f59e0b", menu: "article" },
   ];
 
   const quickLinks: QuickLink[] = [
@@ -138,7 +138,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
       {role === "realtor" && agencyStatus === "REJECTED" && (
         <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 10, background: darkMode ? "#451a1a" : "#fef2f2", border: `1.5px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, color: darkMode ? "#fca5a5" : "#b91c1c" }}>
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: rejectionReason ? 12 : 0 }}>
-            <span style={{ fontSize: 20 }}>🚨</span>
+            <span style={{ fontSize: 20 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v5M12 16h.01" /></svg></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>서류 보완이 필요합니다</div>
               <div style={{ fontSize: 13, opacity: 0.9 }}>제출된 서류가 미비하여 승인이 거절되었습니다. 좌측의 <strong>[정보설정]</strong> 메뉴로 이동하여 정보를 수정한 후 재심사를 신청해 주세요.</div>
@@ -146,18 +146,18 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
           </div>
           {rejectionReason && (
             <div style={{ background: darkMode ? "rgba(0,0,0,0.2)" : "#fff", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, borderRadius: 8, padding: "12px 16px", marginTop: 4 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c", marginBottom: 4 }}>📌 반려 사유</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c", marginBottom: 4 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /></svg>반려 사유</div>
               <div style={{ fontSize: 14, color: darkMode ? "#fca5a5" : "#991b1b", lineHeight: 1.6, fontWeight: 600, whiteSpace: "pre-wrap" }}>{rejectionReason}</div>
             </div>
           )}
           <button onClick={() => navigate("settings")} style={{ marginTop: 12, height: 36, padding: "0 16px", background: darkMode ? "#7f1d1d" : "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            📋 서류 수정 및 재심사 신청하기
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>서류 수정 및 재심사 신청하기
           </button>
         </div>
       )}
       {role === "realtor" && agencyStatus === "APPROVED" && (
         <div style={{ padding: "14px 20px", marginBottom: 24, borderRadius: 10, background: darkMode ? "#064e3b" : "#ecfdf5", border: `1.5px solid ${darkMode ? "#065f46" : "#a7f3d0"}`, display: "flex", gap: 12, alignItems: "center", color: darkMode ? "#6ee7b7" : "#065f46" }}>
-          <span style={{ fontSize: 20 }}>✅</span>
+          <span style={{ fontSize: 20 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M20 6 9 17l-5-5" /></svg></span>
           <div style={{ fontWeight: 700, fontSize: 14 }}>부동산회원 정상 승인 완료 — 모든 서비스를 정상적으로 이용할 수 있습니다.</div>
         </div>
       )}
@@ -193,7 +193,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div onClick={() => navigate("gongsil")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              🏠 {role === "admin" ? "최근 등록 매물 현황" : "내 최근 공실 물건"}
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 11 12 4l9 7M5 10v10h14V10" /></svg>{role === "admin" ? "최근 등록 매물 현황" : "내 최근 공실 물건"}
             </div>
             {role === "admin" && (
               <div style={{ display: "flex", background: darkMode ? "#1a1b1e" : "#f1f5f9", borderRadius: 8, padding: 3 }}>
@@ -288,7 +288,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         {/* 최근 가입 회원 (admin) or 최근 기사 (realtor/user) */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
           <div onClick={() => navigate(role === "admin" ? "members" : "article")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            {role === "admin" ? "👥 최근 가입 회원" : "📰 내 최근 기사"}
+            {role === "admin" ? "최근 가입 회원" : "내 최근 기사"}
             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{role === "admin" ? recentMembers.length : recentArticles.length}</span>
           </div>
 
@@ -328,7 +328,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
               ) : (
                 recentArticles.map((a, i) => (
                   <li key={a.id} onClick={() => navigate("article")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", borderBottom: i < recentArticles.length - 1 ? `1px solid ${darkMode ? "#333" : "#f3f4f6"}` : "none", fontSize: 13, cursor: "pointer", borderRadius: 6, transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>📰</div>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M4 4h13v16H4zM17 8h3v10a2 2 0 0 1-2 2M7 8h7M7 12h7M7 16h4" /></svg></div>
                     <div style={{ flex: 1, overflow: "hidden" }}>
                       <div style={{ fontWeight: 600, color: textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
                       <div style={{ fontSize: 11, color: "#9ca3af" }}>조회 {a.views || 0}회</div>
@@ -346,7 +346,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
         {/* 바로가기 */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px" }}>⚡ 바로가기</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px" }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>바로가기</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
             {quickLinks.map((ql, i) => (
               <a key={i} onClick={() => navigate(ql.menu)} style={{

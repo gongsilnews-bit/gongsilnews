@@ -344,7 +344,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#2563eb", cursor: "pointer", background: darkMode ? "#1e293b" : "#eff6ff", padding: "8px 12px", borderRadius: 8, border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, height: 36, boxSizing: "border-box", whiteSpace: "nowrap" }}>
               <input type="checkbox" checked={excludeOnbid} onChange={e => { setExcludeOnbid(e.target.checked); setCurrentPage(1); }} style={{ accentColor: "#2563eb", cursor: "pointer", margin: 0 }} />
-              🤖 온비드 매물 제외
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 9h14v11H5zM12 9V5M9 14h.01M15 14h.01M2 14h3M19 14h3" /></svg>온비드 매물 제외
             </label>
           </div>
         )}
@@ -557,7 +557,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         {role === "admin" && ownerRole === "REALTOR" ? (
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                             <span style={{ height: 30, padding: "0 12px", background: "#f3f4f6", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                              🔒 열람불가
+                              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" /></svg>열람불가
                             </span>
                             <button onClick={async () => {
                               if (!confirm("이 공실을 삭제하시겠습니까?")) return;

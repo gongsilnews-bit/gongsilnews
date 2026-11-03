@@ -1,5 +1,6 @@
 "use client";
 
+import { useStudioLight, StudioListCss, C_GREEN, C_RED, C_AMBER, C_GRAY } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSectionProps } from "./types";
@@ -16,6 +17,7 @@ interface MemberSectionProps extends AdminSectionProps {
 
 export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, initialData }: MemberSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  const st = useStudioLight(darkMode); // 곤색 디자인 (2026-11-03 사장님)
   const [dbMembers, setDbMembers] = useState<any[]>(initialData || []);
   const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
   const router = useRouter();
@@ -166,7 +168,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   }
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+    <div className={st ? "gs-al" : undefined} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+      {st && <StudioListCss colors={{ approved: C_GREEN, pending: C_AMBER, rejected: C_RED, dormant: C_GRAY, 정상: C_GREEN, 승인대기: C_AMBER, 서류보완: C_RED }} />}
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원관리</h1>
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
@@ -206,6 +209,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         ].map(tab => (
           <button
             key={tab.key}
+            className={currentTab === tab.key ? "gs-al-tab on" : "gs-al-tab"}
             onClick={() => {
               setActiveFilters({ memberId: "", role: "전체", keyword: "" });
               setSearchMemberId(""); setSearchRole("전체"); setSearchKeyword("");
@@ -226,7 +230,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
           >
             {tab.label}
             {tab.count !== undefined && (
-              <span style={{
+              <span className="gs-al-cnt" data-k={tab.key} style={{
                 background: tab.key === "all" && currentTab !== "all" ? (darkMode ? "#333" : "#e5e7eb") : tab.color,
                 color: tab.key === "all" && currentTab !== "all" ? textSecondary : "#fff",
                 padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 800, transition: "all 0.2s"

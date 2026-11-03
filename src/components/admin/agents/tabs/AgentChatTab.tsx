@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiIco } from "@/components/admin/studioLight";
 import React, { useState, useRef, useEffect } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
 import { sendAgentMessage, loadAgentChats } from "@/app/actions/agentChat";
@@ -28,7 +29,7 @@ const CHANNELS = [
   {
     id: "articleReview",
     name: "기사심사팀",
-    emoji: "🔍",
+    emoji: "",
     status: "running" as const,
     systemPrompt: `너는 '공실뉴스'라는 부동산 플랫폼의 기사 심사 담당 에이전트야.
 너의 이름은 "기사심사 에이전트"이고, 관리자에게 존댓말(해요체)로 보고해.
@@ -49,7 +50,7 @@ const CHANNELS = [
   {
     id: "article",
     name: "기사작성팀",
-    emoji: "📰",
+    emoji: "",
     status: "running" as const,
     systemPrompt: `너는 '공실뉴스'라는 부동산 플랫폼의 기사 작성 담당 에이전트야.
 너의 이름은 "기사작성 에이전트"이고, 관리자에게 존댓말(해요체)로 대화해.
@@ -211,7 +212,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "agent",
-        content: "⚠️ 에이전트 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        content: "에이전트 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
         timestamp: new Date(),
       };
       setMessages(prev => ({
@@ -254,7 +255,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
               transition: "all 0.15s",
             }}
           >
-            <span style={{ fontSize: 18 }}>{ch.emoji}</span>
+            <EmojiIco e={ch.emoji} size={18} />
             <span style={{ flex: 1 }}># {agentNames[ch.id] || ch.name}</span>
             <span style={{
               width: 8, height: 8, borderRadius: "50%",
@@ -270,7 +271,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
             background: theme.darkMode ? "#2c2d33" : "#fff",
             borderRadius: 8, border: `1px solid ${theme.border}`,
           }}>
-            <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 4 }}>💸 이번 세션 비용</div>
+            <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 4 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.5M12 6v2M12 16v2" /></svg>이번 세션 비용</div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#f59e0b" }}>₩{totalCost.toFixed(2)}</div>
           </div>
         )}
@@ -284,7 +285,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
           borderBottom: `1px solid ${theme.border}`,
           display: "flex", alignItems: "center", gap: 10,
         }}>
-          <span style={{ fontSize: 22 }}>{currentChannel.emoji}</span>
+          <EmojiIco e={currentChannel.emoji} size={22} />
           <span style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>
             # {agentNames[activeChannel]}
           </span>
@@ -304,7 +305,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
           display: "flex", gap: 8, flexWrap: "wrap",
           background: theme.darkMode ? "#1e1f24" : "#fafbfc",
         }}>
-          <span style={{ fontSize: 12, color: theme.textSecondary, display: "flex", alignItems: "center", marginRight: 4 }}>⚡ 빠른 명령:</span>
+          <span style={{ fontSize: 12, color: theme.textSecondary, display: "flex", alignItems: "center", marginRight: 4 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>빠른 명령:</span>
           {quickCmds.map((cmd, i) => (
             <button key={i} onClick={() => { setInput(cmd.command); }} style={{
               padding: "5px 12px", fontSize: 12, fontWeight: 600,
@@ -321,7 +322,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
           {channelMessages.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 0", color: theme.textSecondary }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>{currentChannel.emoji}</div>
+              <div style={{ marginBottom: 12 }}><EmojiIco e={currentChannel.emoji} size={40} /></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>
                 {agentNames[activeChannel]}에 오신 것을 환영합니다!
               </div>
@@ -341,7 +342,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
                   color: msg.role === "user" ? "#fff" : theme.textPrimary,
                   fontWeight: 700,
                 }}>
-                  {msg.role === "user" ? "나" : currentChannel.emoji}
+                  {msg.role === "user" ? "나" : <EmojiIco e={currentChannel.emoji} size={16} />}
                 </div>
                 <div style={{ maxWidth: "70%" }}>
                   <div style={{
@@ -373,14 +374,14 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
                 background: theme.darkMode ? "#2c2d33" : "#f1f3f5",
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
               }}>
-                {currentChannel.emoji}
+                <EmojiIco e={currentChannel.emoji} size={16} />
               </div>
               <div style={{
                 padding: "14px 20px", borderRadius: 12,
                 background: theme.darkMode ? "#2c2d33" : "#f1f3f5",
                 color: theme.textSecondary, fontSize: 14,
               }}>
-                <span style={{ animation: "pulse 1.5s infinite" }}>💭 생각하고 있어요...</span>
+                <span style={{ animation: "pulse 1.5s infinite" }}>생각하고 있어요...</span>
               </div>
             </div>
           )}
@@ -415,7 +416,7 @@ export default function AgentChatTab({ theme, agentNames }: Props) {
             fontSize: 14, fontWeight: 700, cursor: isLoading ? "wait" : "pointer",
             fontFamily: "inherit",
           }}>
-            {isLoading ? "⏳" : "전송"}
+            {isLoading ? "…" : "전송"}
           </button>
         </div>
       </div>
