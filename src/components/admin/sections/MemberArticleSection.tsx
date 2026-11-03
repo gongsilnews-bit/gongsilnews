@@ -1,5 +1,6 @@
 "use client";
 
+import { useStudioLight, StudioListCss, Ico, ICON, C_GREEN, C_RED, C_AMBER, C_VIOLET, C_GRAY } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getMyArticles, adminUpdateArticleStatus, checkArticleWritePermission, deleteArticle } from "@/app/actions/article";
@@ -37,6 +38,8 @@ export default function MemberArticleSection({
   initialBanners,
 }: MemberArticleSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  // 앱(공실마케팅studio) 밝은 화면 — 대본 작성과 같은 모양: 흰 바탕 · 남색 하나 · 얇은 테두리 (2026-11-03 사장님 "목록도 좌측과 같은 디자인")
+  const st = useStudioLight(darkMode);
   const [articles, setArticles] = useState<any[]>(initialData || []);
   const [filter, setFilter] = useState("전체");
   const [sortBy, setSortBy] = useState("published_at");
@@ -399,6 +402,11 @@ export default function MemberArticleSection({
       DRAFT: { bg: "#9ca3af", label: "작성중" },
     };
     const s = map[status] || { bg: "#9ca3af", label: status };
+    // 앱 밝은 화면 — 흰 바탕 + 테두리·글자색만
+    if (st) {
+      const [c, b] = status === "APPROVED" ? ["#059669", "#d1fae5"] : status === "REJECTED" ? ["#dc2626", "#fee2e2"] : status === "PENDING" ? ["#d97706", "#fef3c7"] : ["#6b7280", "#f3f4f6"];
+      return <span style={{ padding: "4px 9px", background: b, color: c, borderRadius: 4, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>{s.label}</span>;
+    }
     return <span style={{ padding: "4px 8px", background: s.bg, color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>{s.label}</span>;
   };
 
@@ -476,11 +484,12 @@ export default function MemberArticleSection({
   }
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+    <div className={st ? "gs-al" : undefined} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+      {st && <StudioListCss colors={{ 승인대기: C_AMBER, 발행됨: C_GREEN, 예약됨: C_VIOLET, 작성중: C_GRAY, 반려: C_RED }} />}
       {titleRow}
 
       {/* 필터 검색 바 */}
-      <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+      <div className="gs-al-card" style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>기사번호</label>
           <input type="text" value={searchArticleNo} onChange={e => setSearchArticleNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체") setFilter("전체"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
@@ -500,13 +509,13 @@ export default function MemberArticleSection({
             <option value="created_at">작성일 최신순</option>
           </select>
         </div>
-        <button onClick={() => { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체") setFilter("전체"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", keyword: "" }); setFilter("전체"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+        <button onClick={() => { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체") setFilter("전체"); }} className="gs-al-pri" style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", keyword: "" }); setFilter("전체"); }} className="gs-al-sec" style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
 
-      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+      <div className="gs-al-card" style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
+        <div className="gs-al-tabs" style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "승인대기", "발행됨", "예약됨", "작성중", "반려"].map(tab => {
             let count = 0;
             if (tab === "전체") count = articles.length;
@@ -517,7 +526,7 @@ export default function MemberArticleSection({
             else if (tab === "반려") count = articles.filter(a => a.status === "REJECTED").length;
 
             return (
-              <button key={tab} onClick={() => { 
+              <button key={tab} className={filter === tab ? "gs-al-tab on" : "gs-al-tab"} onClick={() => { 
                 setFilter(tab); 
                 setCheckedIds([]); 
                 setActiveFilters({ articleNo: "", section: "전체", keyword: "" });
@@ -525,7 +534,7 @@ export default function MemberArticleSection({
               }}
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: filter === tab ? 800 : 600, color: filter === tab ? "#3b82f6" : textSecondary, borderBottom: filter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
-                <span style={{ 
+                <span className="gs-al-cnt" data-k={tab} style={{ 
                   background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#f59e0b" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
@@ -536,12 +545,12 @@ export default function MemberArticleSection({
 
         {/* 액션 버튼 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={async () => { if (await checkWritePermission()) router.push("?menu=article&action=write"); }} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</button>
-          <button onClick={() => { handleRequestApproval(); }}
+          <button onClick={async () => { if (await checkWritePermission()) router.push("?menu=article&action=write"); }} className="gs-al-pri" style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>{st ? <><Ico d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />새 기사 작성</> : "+ 새 기사 작성"}</button>
+          <button className="gs-al-sec" onClick={() => { handleRequestApproval(); }}
             style={{ height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            📋 승인신청
+            {st ? <Ico d="M9 4h6v3H9zM8 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2M9 14l2 2 4-4" /> : "📋 "}승인신청
           </button>
-          <button
+          <button className="gs-al-sec"
             disabled={!canBanner}
             title={canBanner ? undefined : "공실뉴스부동산 요금제에서 열립니다"}
             onClick={() => {
@@ -572,9 +581,9 @@ export default function MemberArticleSection({
               transition: "all 0.15s",
             }}
           >
-            🏷️ 배너 일괄적용{canBanner ? "" : " 🔒"}
+            {st ? <Ico d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01" /> : "🏷️ "}배너 일괄적용{canBanner ? "" : " 🔒"}
           </button>
-          <button
+          <button className="gs-al-sec"
             onClick={() => {
               if (checkedIds.length === 0) {
                 alert("공실을 일괄 적용할 기사를 먼저 체크박스로 선택해주세요.");
@@ -605,7 +614,7 @@ export default function MemberArticleSection({
             }}
             title={!isPaidRealtor ? "공실뉴스부동산 유료 회원 전용 기능입니다." : undefined}
           >
-            🏢 공실 일괄적용
+            {st ? <Ico d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 7h3M8 11h3M8 15h3" /> : "🏢 "}공실 일괄적용
           </button>
           <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
             ※ 작성중/반려 기사만 승인신청 가능
@@ -613,8 +622,8 @@ export default function MemberArticleSection({
         </div>
 
         {/* 안내 배너 */}
-        <div style={{ margin: "16px 24px 0", padding: "12px 16px", background: darkMode ? "#1e293b" : "#eff6ff", borderRadius: 8, border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>💡</span>
+        <div className="gs-al-note" style={{ margin: "16px 24px 0", padding: "12px 16px", background: darkMode ? "#1e293b" : "#eff6ff", borderRadius: 8, border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, display: "flex", alignItems: "center", gap: 8 }}>
+          {st ? <span style={{ color: "#1e3a6e", display: "flex" }}><Ico size={16} d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01" /></span> : <span style={{ fontSize: 18 }}>💡</span>}
           <span style={{ fontSize: 13, color: darkMode ? "#93c5fd" : "#1d4ed8", fontWeight: 600 }}>
             기사를 작성 후 &quot;승인신청&quot;을 하면 최고관리자 검토 후 발행됩니다. 반려된 기사는 수정 후 재신청할 수 있습니다.
           </span>
@@ -664,7 +673,7 @@ export default function MemberArticleSection({
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || "-"}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
                     <button onClick={() => router.push(`?menu=article&action=detail&id=${a.id}`)}
-                      style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>
+                      style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0, textAlign: "left", lineHeight: 1.45 }}>
                       {a.title || "(제목 없음)"}
                     </button>
                     {a.status === "REJECTED" && a.reject_reason && (
@@ -673,7 +682,7 @@ export default function MemberArticleSection({
                       </div>
                     )}
                     {a.status === "APPROVED" && a.reject_reason && a.reject_reason.includes("[AI 승인") && (
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#10b981", fontWeight: 600 }}>
+                      <div className="gs-al-fb" style={{ marginTop: 4, fontSize: 12, color: "#10b981", fontWeight: 600 }}>
                         심사 피드백: {a.reject_reason}
                       </div>
                     )}
@@ -861,16 +870,16 @@ export default function MemberArticleSection({
 
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                      <button onClick={() => window.open(`/news/${a.article_no || a.id}`, '_blank')} style={{ height: 30, padding: "0 12px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
+                      <button className="gs-al-sec" onClick={() => window.open(`/news/${a.article_no || a.id}`, '_blank')} style={{ height: 30, padding: "0 12px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         미리보기
                       </button>
-                      <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)}
+                      <button className="gs-al-pri" onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)}
                         style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         수정
                       </button>
-                      <button onClick={() => handleDelete(a.id)}
+                      <button className="gs-al-sec gs-al-del" onClick={() => handleDelete(a.id)}
                         style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         삭제
@@ -903,7 +912,7 @@ export default function MemberArticleSection({
             onClick={(e) => e.stopPropagation()}
             style={{
               background: cardBg,
-              borderRadius: 14,
+              borderRadius: st ? 10 : 14,
               padding: "24px 28px",
               maxWidth: 440,
               width: "100%",
@@ -912,8 +921,8 @@ export default function MemberArticleSection({
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: 0 }}>
-                🏷️ 기사 배너 일괄적용
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+                {st ? <span style={{ color: "#1e3a6e", display: "flex" }}><Ico size={18} d={ICON.tag} /></span> : "🏷️ "}기사 배너 일괄적용
               </h3>
               <button
                 onClick={() => setIsBulkAdModalOpen(false)}
@@ -924,7 +933,7 @@ export default function MemberArticleSection({
             </div>
 
             <p style={{ fontSize: 13, color: textSecondary, marginBottom: 18, lineHeight: 1.5 }}>
-              선택하신 <strong style={{ color: "#3b82f6" }}>{checkedIds.length}개</strong>의 기사에 일괄 적용할 배너를 선택해주세요.
+              선택하신 <strong style={{ color: st ? "#1e3a6e" : "#3b82f6" }}>{checkedIds.length}개</strong>의 기사에 일괄 적용할 배너를 선택해주세요.
             </p>
 
             <div style={{ marginBottom: 20 }}>
@@ -937,12 +946,12 @@ export default function MemberArticleSection({
                 style={{
                   width: "100%",
                   padding: "10px 14px",
-                  border: `1.5px solid #3b82f6`,
-                  borderRadius: 8,
+                  border: `1.5px solid ${st ? "#d9dde3" : "#3b82f6"}`,
+                  borderRadius: st ? 5 : 8,
                   fontSize: 14,
                   fontWeight: 700,
                   color: textPrimary,
-                  background: darkMode ? "#1e293b" : "#f8fafc",
+                  background: darkMode ? "#1e293b" : st ? "#fff" : "#f8fafc",
                   outline: "none",
                   cursor: "pointer",
                 }}
@@ -950,13 +959,13 @@ export default function MemberArticleSection({
                 <optgroup label="── 등록된 내 배너 ──">
                   {authorBanners.map((b) => (
                     <option key={b.id} value={b.id}>
-                      🏷️ {b.name} {!b.is_active ? "(중지됨)" : "(진행중)"}
+                      {st ? "" : "🏷️ "}{b.name} {!b.is_active ? "(중지됨)" : "(진행중)"}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="── 기본 / 특수 설정 ──">
-                  <option value="DEFAULT">👤 업체프로필 (기본 광고)</option>
-                  <option value="NONE">🚫 배너없음 (숨김)</option>
+                  <option value="DEFAULT">{st ? "" : "👤 "}업체프로필 (기본 광고)</option>
+                  <option value="NONE">{st ? "" : "🚫 "}배너없음 (숨김)</option>
                 </optgroup>
               </select>
             </div>
@@ -968,7 +977,7 @@ export default function MemberArticleSection({
                   padding: "9px 16px",
                   borderRadius: 6,
                   border: `1px solid ${border}`,
-                  background: darkMode ? "#2c2d31" : "#f3f4f6",
+                  background: darkMode ? "#2c2d31" : st ? "#fff" : "#f3f4f6",
                   color: textSecondary,
                   fontSize: 13,
                   fontWeight: 600,
@@ -984,7 +993,7 @@ export default function MemberArticleSection({
                   padding: "9px 20px",
                   borderRadius: 6,
                   border: "none",
-                  background: "#059669",
+                  background: st ? "#1e3a6e" : "#059669",
                   color: "#fff",
                   fontSize: 13,
                   fontWeight: 700,
@@ -1017,7 +1026,7 @@ export default function MemberArticleSection({
             style={{
               background: cardBg,
               border: `1px solid ${border}`,
-              borderRadius: 12,
+              borderRadius: st ? 10 : 12,
               padding: 24,
               maxWidth: 480,
               width: "100%",
@@ -1027,7 +1036,7 @@ export default function MemberArticleSection({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-                🏢 기사 노출 공실 일괄 적용
+                {st ? <span style={{ color: "#1e3a6e", display: "flex" }}><Ico size={18} d={ICON.building} /></span> : "🏢 "}기사 노출 공실 일괄 적용
               </h3>
               <button
                 onClick={() => setIsBulkVacancyModalOpen(false)}
@@ -1038,7 +1047,7 @@ export default function MemberArticleSection({
             </div>
 
             <p style={{ fontSize: 13, color: textSecondary, marginBottom: 18, lineHeight: 1.5 }}>
-              선택하신 <strong style={{ color: "#2563eb" }}>{checkedIds.length}개</strong>의 기사에 일괄 노출할 공실 매물을 선택해주세요.<br />
+              선택하신 <strong style={{ color: st ? "#1e3a6e" : "#2563eb" }}>{checkedIds.length}개</strong>의 기사에 일괄 노출할 공실 매물을 선택해주세요.<br />
               <span style={{ fontSize: 12, color: "#6b7280" }}>※ [부동산노출 + 일반인노출]로 등록된 활성 매물만 노출됩니다.</span>
             </p>
 
@@ -1052,17 +1061,17 @@ export default function MemberArticleSection({
                 style={{
                   width: "100%",
                   padding: "10px 14px",
-                  border: `1.5px solid #2563eb`,
-                  borderRadius: 8,
+                  border: `1.5px solid ${st ? "#d9dde3" : "#2563eb"}`,
+                  borderRadius: st ? 5 : 8,
                   fontSize: 14,
                   fontWeight: 700,
                   color: textPrimary,
-                  background: darkMode ? "#1e293b" : "#f8fafc",
+                  background: darkMode ? "#1e293b" : st ? "#fff" : "#f8fafc",
                   outline: "none",
                   cursor: "pointer",
                 }}
               >
-                <option value="NONE">🚫 공실 미노출 (연결 해제)</option>
+                <option value="NONE">{st ? "" : "🚫 "}공실 미노출 (연결 해제)</option>
                 {eligibleVacancies.map((v) => {
                   const formatMoney = (tradeType: string, deposit?: number, rent?: number) => {
                     const fmt = (val?: number) => {
@@ -1084,7 +1093,7 @@ export default function MemberArticleSection({
                   const addr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ") || "공실";
                   return (
                     <option key={v.id} value={v.id}>
-                      🏢 {priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
+                      {st ? "" : "🏢 "}{priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
                     </option>
                   );
                 })}
@@ -1098,7 +1107,7 @@ export default function MemberArticleSection({
                   padding: "9px 16px",
                   borderRadius: 6,
                   border: `1px solid ${border}`,
-                  background: darkMode ? "#2c2d31" : "#f3f4f6",
+                  background: darkMode ? "#2c2d31" : st ? "#fff" : "#f3f4f6",
                   color: textSecondary,
                   fontSize: 13,
                   fontWeight: 600,
@@ -1114,7 +1123,7 @@ export default function MemberArticleSection({
                   padding: "9px 20px",
                   borderRadius: 6,
                   border: "none",
-                  background: "#2563eb",
+                  background: st ? "#1e3a6e" : "#2563eb",
                   color: "#fff",
                   fontSize: 13,
                   fontWeight: 700,

@@ -12,6 +12,8 @@ export interface ArticlePhotoLibraryDrawerProps {
   textPrimary?: string;
   textSecondary?: string;
   textMuted?: string;
+  /** 앱 — 흰 바탕·남색 하나 (2026-11-03 사장님) */
+  studio?: boolean;
 }
 
 export default function ArticlePhotoLibraryDrawer({
@@ -23,6 +25,7 @@ export default function ArticlePhotoLibraryDrawer({
   textPrimary = "#0f172a",
   textSecondary = "#64748b",
   textMuted = "#94a3b8",
+  studio = false,
 }: ArticlePhotoLibraryDrawerProps) {
   const [photoDbTab, setPhotoDbTab] = useState<"전체사진" | "즐겨찾기">("전체사진");
   const [photoDbSearch, setPhotoDbSearch] = useState("");
@@ -97,14 +100,15 @@ export default function ArticlePhotoLibraryDrawer({
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           backdropFilter: 'blur(2px)', zIndex: 9999
         }}>
-          <div style={{
+          {studio && <style>{`.gs-st{border-radius:10px!important;box-shadow:0 18px 50px rgba(15,23,42,.22)!important;counter-reset:st}.gs-st .gs-st-head{background:#fff!important;color:#111827!important;border-bottom:1px solid #e5e7eb;border-radius:10px 10px 0 0!important;padding:16px 22px!important}.gs-st .gs-st-head *{color:#111827!important}.gs-st .gs-st-head button{color:#6b7280!important;font-size:20px!important}.gs-st .gs-st-ok{background:#1e3a6e!important;box-shadow:none!important;border-radius:6px!important}.gs-st .gs-st-ok:hover{background:#16305c!important}.gs-st .gs-st-no{border-radius:6px!important}.gs-st .gs-step{counter-increment:st;display:inline-flex;align-items:center;min-width:104px!important;white-space:nowrap}.gs-st .gs-step::before{content:counter(st);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:20px;height:20px;border-radius:50%;background:#1e3a6e;color:#fff;font-size:11.5px;font-weight:800;margin-right:7px}.gs-st .gs-st-tab-on{color:#1e3a6e!important;border-bottom-color:#1e3a6e!important}`}</style>}
+          <div className={studio ? "gs-st" : undefined} style={{
             background: '#fff', borderRadius: 16, width: 800, maxWidth: '90%', maxHeight: '90%', display: "flex", flexDirection: "column",
             boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out'
           }}>
             {/* 헤더 */}
-            <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="gs-st-head" style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 20 }}>🖼️</span>
+                {!studio && <span style={{ fontSize: 20 }}>🖼️</span>}
                 <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>포토DB</span>
               </div>
               <button type="button" onClick={() => onClose()}
@@ -117,12 +121,12 @@ export default function ArticlePhotoLibraryDrawer({
                 <input type="text" placeholder="사진 설명 또는 파일명으로 검색"
                   value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)}
                   style={{ flex: 1, padding: "12px 16px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, outline: "none" }} />
-                <button type="submit" style={{ padding: "0 24px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
+                <button type="submit" className="gs-st-ok" style={{ padding: "0 24px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
               </form>
 
               <div style={{ display: "flex", gap: 24, borderBottom: `1px solid ${border}` }}>
                 {['전체사진', '즐겨찾기'].map(tab => (
-                  <button key={tab} type="button" onClick={() => setPhotoDbTab(tab as any)}
+                  <button key={tab} type="button" className={photoDbTab === tab ? "gs-st-tab-on" : undefined} onClick={() => setPhotoDbTab(tab as any)}
                     style={{
                       background: "none", border: "none", borderBottom: photoDbTab === tab ? "3px solid #f97316" : "3px solid transparent",
                       padding: "8px 4px", fontSize: 15, fontWeight: photoDbTab === tab ? 800 : 600,

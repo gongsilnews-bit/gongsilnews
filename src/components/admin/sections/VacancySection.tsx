@@ -1,5 +1,6 @@
 "use client";
 
+import { useStudioLight, StudioListCss, Ico, ICON, C_GREEN, C_RED, C_GRAY } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
@@ -19,6 +20,8 @@ interface VacancySectionProps extends AdminSectionProps {
 
 export default function VacancySection({ theme, role, ownerId, ownerName, ownerPhone, initialData }: VacancySectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  // 앱 밝은 화면 — 남색 + 선 픽토그램 + 상태 색 (2026-11-03 사장님 "공실관리도 남색 테마에 SVG, 색상으로 포인트")
+  const st = useStudioLight(darkMode);
   const router = useRouter();
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
@@ -304,12 +307,13 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   }
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+    <div className={st ? "gs-al" : undefined} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+      {st && <StudioListCss colors={{ 광고중: C_GREEN, 광고종료: C_RED, 임시저장: C_GRAY }} />}
       {/* 타이틀 */}
       {titleRow}
 
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
-      <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+      <div className="gs-al-card" style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>공실광고 번호</label>
           <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
@@ -353,18 +357,18 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             <option value={100}>100개씩</option>
           </select>
         </div>
-        <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체"); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" }); setActiveTab("전체"); setCurrentPage(1); sessionStorage.removeItem("vacancy_search_state"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+        <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} className="gs-al-pri" style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체"); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" }); setActiveTab("전체"); setCurrentPage(1); sessionStorage.removeItem("vacancy_search_state"); }} className="gs-al-sec" style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
 
-      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+      <div className="gs-al-card" style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
+        <div className="gs-al-tabs" style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "광고중", "광고종료", "임시저장"].map(tab => {
             let count = counts[tab as keyof typeof counts] || 0;
 
             return (
-              <button key={tab} onClick={() => {
+              <button key={tab} className={activeTab === tab ? "gs-al-tab on" : "gs-al-tab"} onClick={() => {
                 setActiveTab(tab);
                 setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" });
                 setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체");
@@ -372,7 +376,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
               }}
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
-                <span style={{ 
+                <span className="gs-al-cnt" data-k={tab} style={{ 
                   background: tab === "전체" ? "#e5e7eb" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "임시저장" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
@@ -386,7 +390,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           <button onClick={() => {
             const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
             router.push(`${path}?menu=gongsil&action=write`);
-          }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실광고 등록</button>
+          }} className="gs-al-pri" style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>{st ? <><Ico d={ICON.building} />공실광고 등록</> : "+ 공실광고 등록"}</button>
 
           <button onClick={async () => {
              const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
@@ -395,7 +399,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                for (const id of checked) { await deleteVacancy(id); }
                fetchAllVacancies();
              }
-          }} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          }} className="gs-al-sec" style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             선택삭제
           </button>
@@ -485,7 +489,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle" }}>
                       {canToggleStatus ? (
                         row.status === 'DRAFT' ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
+                          <span className="gs-al-badge" data-k="임시저장" style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                             <button onClick={async () => {
@@ -494,7 +498,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                               const newStatus = isActive ? 'STOPPED' : 'ACTIVE';
                               const res = await updateVacancyStatus(row.id, newStatus);
                               if (res.success) fetchAllVacancies();
-                            }} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: isActive ? "#10b981" : "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                            }} className="gs-al-badge" data-k={isActive ? "광고중" : "광고종료"} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: isActive ? "#10b981" : "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>
                               {isActive && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>}
                               {isActive ? "광고중" : "광고종료"}
                             </button>
@@ -503,14 +507,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         )
                       ) : (
                         row.status === 'DRAFT' ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
+                          <span className="gs-al-badge" data-k="임시저장" style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : isActive ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                          <span className="gs-al-badge" data-k="광고중" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                             광고중
                           </span>
                         ) : (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고종료</span>
+                          <span className="gs-al-badge" data-k="광고종료" style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고종료</span>
                         )
                       )}
                       <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{daysSinceCreated}일</div>
@@ -603,29 +607,29 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         }}
                                         title={hasReport ? "AI 물건보고서 완성됨 (클릭하여 편집/수정)" : "AI 물건보고서 미작성 (클릭하여 제작)"}
                                       >
-                                        AI물건보고서
+                                        {st && <Ico size={13} d={ICON.report} />}AI물건보고서
                                       </button>
 
                                     {/* [유리창홍보지] 다시 (2026-10-29 사장님: 웹·앱 모두, AI물건보고서와 SNS뉴스발행 사이) — 물건홍보지 도구 */}
                                     <button
                                       onClick={() => (inApp ? openMarketingIn(row.id, "flyer") : window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, "_blank"))}
-                                      style={{ height: 30, padding: "0 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                                      style={{ height: 30, padding: "0 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
                                         background: hasFlyer ? (darkMode ? "#14532d" : "#f0fdf4") : (darkMode ? "#2a2d35" : "#f3f4f6"),
                                         color: hasFlyer ? (darkMode ? "#86efac" : "#15803d") : (darkMode ? "#7c8ba1" : "#8a94a6"),
                                         border: hasFlyer ? `1px solid ${darkMode ? "#166534" : "#bbf7d0"}` : `1px solid ${darkMode ? "#444" : "#e5e7eb"}` }}
                                       title={hasFlyer ? "유리창홍보지 완성됨 (클릭하여 편집/수정)" : "유리창홍보지 미작성 (클릭하여 제작)"}
                                     >
-                                      유리창홍보지
+                                      {st && <Ico size={13} d={ICON.poster} />}유리창홍보지
                                     </button>
 
                                     {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 공실뉴스부동산은 1주일에 3번 (2026-10-26 사장님) */}
                                     {role !== "user" && (
                                       <button
                                         onClick={() => (inApp ? openSnsIn(row) : setSnsNewsTarget({ id: row.id, title: addrText }))}
-                                        style={{ height: 30, padding: "0 10px", background: darkMode ? "#3b2412" : "#fff7ed", color: "#ea580c", border: `1px solid ${darkMode ? "#7c2d12" : "#fdba74"}`, borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                                        style={{ height: 30, padding: "0 10px", background: darkMode ? "#3b2412" : "#fff7ed", color: "#ea580c", border: `1px solid ${darkMode ? "#7c2d12" : "#fdba74"}`, borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}
                                         title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기"
                                       >
-                                        SNS뉴스발행
+                                        {st && <Ico size={13} d={ICON.send} />}SNS뉴스발행
                                       </button>
                                     )}
 
@@ -658,7 +662,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                               <button onClick={async () => {
                                 const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
                                 router.push(`${path}?menu=gongsil&action=write&id=${row.id}`);
-                              }} style={{ height: 30, padding: "0 10px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                              }} className="gs-al-pri" style={{ height: 30, padding: "0 10px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 수정
                               </button>
@@ -666,7 +670,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                 if (!confirm("이 공실을 삭제하시겠습니까?")) return;
                                 const res = await deleteVacancy(row.id);
                                 if (res.success) fetchAllVacancies();
-                              }} style={{ height: 30, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                              }} className="gs-al-sec gs-al-del" style={{ height: 30, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                 삭제
                               </button>

@@ -1,6 +1,7 @@
 "use client";
 
-import ArticleAiTool, { articleToolReady, NAVY, type ArticleDraft } from "@/components/admin/writing/ArticleAiTool";
+import ArticleAiTool, { NAVY, parseArticleDraft, type ArticleDraft } from "@/components/admin/writing/ArticleAiTool";
+import { studioSurface } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveArticle, getPhotoLibrary, togglePhotoFavorite, getArticleDetail, updateArticleMediaCaption, purgeReplacedArticlePhotos } from "@/app/actions/article";
@@ -56,6 +57,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [isReserved, setIsReserved] = useState(false);
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
+  const sectionRowRef = React.useRef<HTMLDivElement>(null);
+  const [sectionWarn, setSectionWarn] = useState("");
+  const [sectionShake, setSectionShake] = useState(0);
+  /** 섹션 칸으로 올라가 알려 준다 */
+  const warnSection = (msg: string) => {
+    setSectionWarn(msg);
+    setSectionShake((n) => n + 1);
+    sectionRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const [reporterName, setReporterName] = useState("김미숙");
   const [reporterEmail, setReporterEmail] = useState("master@gongsilnews.com");
   const [title, setTitle] = useState("");
@@ -114,7 +124,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [leftSidebarMode, setLeftSidebarMode] = useState<"tools" | "ai_chat">("tools");
   // 공실마케팅 앱 — 왼쪽은 대본 작성 모양의 "글쓰기 도구"(회원 AI 기사 초안), 화면 전체를 대본 작성 톤으로 (2026-11-03 사장님)
   const [studioMode, setStudioMode] = useState(false);
-  useEffect(() => { setStudioMode(articleToolReady()); }, []);
+  // 앱 + 웹 회원 화면 — 왼쪽 글쓰기 도구·앱 모양 (2026-11-03 사장님: 웹도 앱과 같이, 최고관리자 화면은 예전 그대로)
+  useEffect(() => { setStudioMode(studioSurface()); }, []);
   const [aiFilled, setAiFilled] = useState(false);
   const applyStudioDraft = async (d: ArticleDraft) => {
     setTitle(d.title);
@@ -122,7 +133,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     if (d.keywords.length) setKeywords(d.keywords);
     if (editorRef.current) {
       const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      // 공실뉴스 단지 화면 캡처 → 기사 사진 (시세 그래프·로드뷰·실거래, 2026-11-03 사장님) — 첫 장이 대표 사진
+      // 공실뉴스 단지 화면 캡처 → 기사 사진 (시세 그래프·로드뷰·실거래, 2026-11-03 사장님) — 첫 장이 대표 사진 (글쓰기 도구에서 고른 것)
       const photos = (await Promise.all((d.photos || []).map(async (p, i) => {
         try {
           const blob = await (await fetch(p.url)).blob();
@@ -135,7 +146,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         `<div class="inserted-photo" contenteditable="false" style="display: table; margin: 16px auto; text-align: center;">` +
         `<img src="${p.preview}" alt="${esc(p.caption)}" style="max-width: 600px; width: 100%; height: auto; border-radius: 6px; display: block;">` +
         `<p style="display: table-caption; caption-side: bottom; font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;">${esc(p.caption)}</p></div><br>`;
-      editorRef.current.innerHTML = d.paragraphs.map((p, i) => `${p.heading ? `<p><b>■ ${esc(p.heading)}</b></p>` : ""}<p>${esc(p.text).replace(/\n/g, "<br>")}</p>${photos.filter((x) => x.after === i + 1).map(figure).join("")}`).join("<p><br></p>");
+      // 대표 사진(after 0)은 본문 맨 앞 (2026-11-03 사장님 "대표사진은 기사 맨 앞에")
+      editorRef.current.innerHTML = photos.filter((x) => x.after === 0).map(figure).join("") + d.paragraphs.map((p, i) => `${p.heading ? `<p><b>■ ${esc(p.heading)}</b></p>` : ""}<p>${esc(p.text).replace(/\n/g, "<br>")}</p>${photos.filter((x) => x.after === i + 1).map(figure).join("")}`).join("<p><br></p>");
       editorRef.current.querySelectorAll<HTMLElement>(".inserted-photo").forEach((w) => createDeleteBtn(w, "photo"));
       setContent(editorRef.current.innerHTML);
     }
@@ -1764,9 +1776,21 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       return;
     }
     if (!section1) {
-      alert("1차 섹션을 선택해주세요.");
+      setStatus(status); // 단추가 먼저 바꾼 상태 표시를 되돌린다 (저장 안 됨)
+      warnSection("1차 섹션을 골라 주세요.");
       return;
     }
+    // 승인신청·발행은 2차 섹션까지 (임시저장은 1차만으로도 저장된다)
+    {
+      const ls = overrideStatus || status;
+      const draftSave = ls === "DRAFT" || ls === "작성중" || ls === "임시저장" || ls === "REJECTED";
+      if (!draftSave && !section2 && !isAdminRole(currentUserRole)) { // 최고관리자 승인·반려·수정저장은 막지 않는다
+        setStatus(status); // 단추가 먼저 바꾼 "승인 대기중" 표시를 되돌린다 (신청 안 됨)
+        warnSection("2차 섹션까지 골라야 승인신청할 수 있어요.");
+        return;
+      }
+    }
+    setSectionWarn("");
 
     // 느린 응답 중 연타로 인한 중복 저장 방지
     if (savingRef.current) return;
@@ -2403,9 +2427,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
 
             {/* ── 섹션 ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+            <div ref={sectionRowRef} key={`sec-${sectionShake}`} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: sectionWarn ? 8 : 24, flexWrap: "wrap", scrollMarginTop: 120, ...(sectionWarn ? { padding: "10px 12px", margin: "-10px -12px 8px", border: "2px solid #ef4444", borderRadius: 8, background: "#fef2f2", animation: sectionShake ? "gsSecShake .45s ease" : undefined } : {}) }}>
+              <style>{`@keyframes gsSecShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}`}</style>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>섹션</label>
-              <select value={section1} onChange={e => { setSection1(e.target.value); setSection2(""); }}
+              <select value={section1} onChange={e => { setSection1(e.target.value); setSection2(""); if (sectionWarn) setSectionWarn(e.target.value ? "2차 섹션도 골라 주세요." : sectionWarn); }}
                 style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="" disabled style={{ color: textMuted }}>1차섹션 선택</option>
                 <option value="공실뉴스">공실뉴스</option>
@@ -2413,7 +2438,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 <option value="AI마케팅">AI마케팅</option>
                 <option value="라이프·오피니언">라이프·오피니언</option>
               </select>
-              <select value={section2} onChange={e => setSection2(e.target.value)}
+              <select value={section2} onChange={e => { setSection2(e.target.value); if (e.target.value) setSectionWarn(""); }}
                 style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="" disabled style={{ color: textMuted }}>2차섹션 전체</option>
                 {(section1 === "공실뉴스" || section1 === "공실현장") && (
@@ -2449,6 +2474,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 )}
               </select>
             </div>
+            {sectionWarn && <div style={{ margin: "0 0 22px", fontSize: 13.5, fontWeight: 800, color: "#dc2626" }}>⚠ {sectionWarn}</div>}
 
             {/* ── 기자명 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
@@ -2647,6 +2673,11 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               onPaste={(e) => {
                 e.preventDefault();
                 const text = e.clipboardData.getData("text/plain");
+                // AI 창에서 복사한 기사 답(JSON)이면 제목·부제·본문·키워드 칸에 나눠 넣는다 (2026-11-03 사장님)
+                if (studioMode && /"title"\s*:/.test(text) && /"paragraphs"\s*:/.test(text) && parseArticleDraft(text)) {
+                  window.dispatchEvent(new CustomEvent("gs-article-paste", { detail: text }));
+                  return;
+                }
                 document.execCommand("insertText", false, text);
               }}
             />
@@ -3132,6 +3163,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         textPrimary={textPrimary}
         textSecondary={textSecondary}
         textMuted={textMuted}
+        studio={studioMode}
       />
 
       {/* ── ⚡ 모듈화 분리된 포토DB 검색/보관 라이브러리 모달 ── */}
@@ -3140,6 +3172,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         onClose={() => setShowPhotoDbModal(false)}
         onSelectPhoto={(file) => handlePhotoSelect([file])}
         authorId={memberAuthorId || currentUserId}
+        studio={studioMode}
         border={border}
         textPrimary={textPrimary}
         textSecondary={textSecondary}

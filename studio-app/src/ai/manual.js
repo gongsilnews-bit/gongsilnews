@@ -8,6 +8,7 @@ const { clipboard, shell } = require("electron");
 const crypto = require("crypto");
 const log = require("electron-log/main");
 const busy = require("../ai-busy");
+const float = require("./manual-float"); // 크롬이 앱을 덮어도 보이는 작은 "답 기다리는 중" 창 (2026-11-03)
 
 const SITE = {
   chatgpt: { name: "ChatGPT", url: "https://chatgpt.com/" },
@@ -15,11 +16,25 @@ const SITE = {
   claude: { name: "Claude", url: "https://claude.ai/new" },
 };
 
+/* 그림 설명 — 입력칸 Ctrl+V · 답의 코드 상자 오른쪽 위 [복사] (2026-11-03 사장님: 처음 하는 사람은 모름, 복사 단추 위치까지) */
+const pic = (name) => `
+<div style="display:flex;gap:10px;justify-content:center;margin:12px auto 0;max-width:560px;flex-wrap:wrap;text-align:left">
+  <div style="flex:1;min-width:230px;border:1px solid #334155;border-radius:12px;background:#1e293b;padding:8px 10px;display:flex;align-items:center;gap:8px">
+    <span style="flex:1;font-size:12px;color:#94a3b8">${name}에게 메시지 보내기…</span>
+    <span style="font-size:11px;font-weight:800;color:#fff;border:2px solid #f87171;border-radius:6px;padding:1px 7px">Ctrl + V</span>
+    <span style="width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">↑</span>
+  </div>
+  <div style="flex:1;min-width:230px;border:1px solid #334155;border-radius:10px;overflow:hidden;background:#0f172a">
+    <div style="display:flex;align-items:center;padding:5px 10px;background:#1e293b;font-size:11px;color:#94a3b8"><span style="flex:1">json</span><span style="color:#fff;font-weight:800;border:2px solid #f87171;border-radius:6px;padding:0 6px">⧉ 복사</span></div>
+    <div style="padding:6px 10px;font-family:Consolas,monospace;font-size:11px;color:#cbd5e1">{ "title": "…", "paragraphs": [ … ] }</div>
+  </div>
+</div>`;
 const panel = (name, msg = "", preview = "") => `
 <div style="text-align:left;line-height:1.75;max-width:520px;margin:0 auto">
-  <b>1.</b> 질문을 복사해 두고 평소 브라우저에 <b>${name}</b> 창을 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br>
-  <b>2.</b> 답이 다 나오면 답 아래 <b>복사 단추</b>를 누르세요 — 앱이 알아서 가져와요.
+  <b>1.</b> 질문을 복사해 두고 평소 브라우저에 <b>${name}</b> 창을 열었어요. <b>입력칸을 한 번 누르고 Ctrl+V</b> 하고 보내세요.<br>
+  <b>2.</b> 답이 다 나오면 답 안의 <b>코드 상자 오른쪽 위 [복사]</b>를 누르세요 (코드 상자가 없으면 답 맨 아래 복사 단추) — 앱이 알아서 가져와요.
 </div>
+${pic(name)}
 <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
   <button type="button" class="gb" data-gsm="copy">질문 다시 복사하고 ${name} 열기</button>
   <button type="button" class="gb" data-gsm="paste">복사한 답 가져오기</button>
@@ -51,7 +66,11 @@ async function ask(id, prompt, opts = {}) {
   open();
   log.info(`[AI 수동] ${site.name} — 질문 ${q.length}자 복사, 창 열기`);
   busy.setSub(panel(site.name));
+  let floatAct = "";
+  float.show(site.name, (a) => { floatAct = a; });
+  try {
   while (true) {
+    if (floatAct === "stop") { floatAct = ""; busy.stop(); }
     if (busy.isStopped()) throw busy.stopError();
     await new Promise((r) => setTimeout(r, 900));
     let cur = "";
@@ -70,16 +89,21 @@ async function ask(id, prompt, opts = {}) {
     // 새로 복사한 글이고 형식이 맞으면 끝
     if (isComplete && cur !== start && cur !== q && ok(cur)) { // 형식을 알 때만 저절로 (모르면 [복사한 답 가져오기])
       log.info(`[AI 수동] ${site.name} 답 가져옴 (${cur.length}자)`);
+      float.bringAppFront();
       return cur;
     }
-    const act = await busy.takeAct();
-    if (act === "use" && img) { log.info(`[AI 수동] ${site.name} 그림으로 받음 (${img.getSize().width}×${img.getSize().height})`); return img.toDataURL(); }
+    let act = await busy.takeAct();
+    if (!act && floatAct) { act = floatAct; floatAct = ""; }
+    if (act === "use" && img) { log.info(`[AI 수동] ${site.name} 그림으로 받음 (${img.getSize().width}×${img.getSize().height})`); float.bringAppFront(); return img.toDataURL(); }
     if (act === "copy") { open(); imgStart = imgShown || imgStart; imgShown = ""; img = null; busy.setSub(panel(site.name, "질문을 다시 복사했어요. 붙여 넣고 보내세요.")); }
     if (act === "paste") {
-      if (ok(cur)) { log.info(`[AI 수동] ${site.name} 답 가져옴 (단추, ${cur.length}자)`); return cur; }
-      busy.setSub(panel(site.name, cur.trim() === q.trim() ? "아직 질문이 복사돼 있어요. 답 아래 복사 단추를 눌러 주세요." : "복사한 글이 답 형식과 달라요. 답이 다 나온 뒤 답 아래 복사 단추를 눌러 주세요."));
+      if (ok(cur)) { log.info(`[AI 수동] ${site.name} 답 가져옴 (단추, ${cur.length}자)`); float.bringAppFront(); return cur; }
+      const why = cur.trim() === q.trim() ? "아직 질문이 복사돼 있어요. 답 아래 복사 단추를 눌러 주세요." : "복사한 글이 답 형식과 달라요. 답이 다 나온 뒤 답 아래 복사 단추를 눌러 주세요.";
+      busy.setSub(panel(site.name, why));
+      float.setMsg(site.name, why);
     }
   }
+  } finally { float.close(); }
 }
 
 /* ── 그림 — 그림 설명을 복사 → AI 창에서 그림 → 그림 오른쪽 클릭 [이미지 복사] → 앱이 가져온다 ── */
@@ -116,7 +140,11 @@ async function askImage(id, prompt, opts = {}) {
   log.info(`[AI 수동 그림] ${site.name} — 설명 ${q.length}자 복사, 창 열기${files.length ? ` · 참고 사진 ${files.length}장` : ""}`);
   busy.setSub(imgPanel(site.name, files.length));
   let shownKey = "", shown = null;
+  let floatAct = "";
+  float.show(site.name, (a) => { floatAct = a; });
+  try {
   while (true) {
+    if (floatAct === "stop") { floatAct = ""; busy.stop(); }
     if (busy.isStopped()) throw busy.stopError();
     await new Promise((r) => setTimeout(r, 900));
     // 새로 복사한 그림이 생기면 작게 보여 준다 (넣지는 않는다)
@@ -130,14 +158,17 @@ async function askImage(id, prompt, opts = {}) {
       const thumb = img.resize({ width: Math.min(320, sz.width) }).toDataURL();
       busy.setSub(imgPanel(site.name, files.length, `복사한 그림 ${sz.width}×${sz.height} — 맞으면 [이 그림 쓰기], 아니면 그림을 다시 복사하세요.`, thumb));
     }
-    const act = await busy.takeAct();
+    let act = await busy.takeAct();
+    if (!act && floatAct) { act = floatAct === "paste" ? "use" : floatAct; floatAct = ""; } // 그림은 [복사한 답 가져오기] = 이 그림 쓰기
     if (act === "copy") { open(); start = shownKey || start; shownKey = ""; shown = null; busy.setSub(imgPanel(site.name, files.length, "그림 설명을 다시 복사했어요. 붙여 넣고 보내세요.")); }
     if (act === "use" && shown) {
       const sz = shown.getSize();
       log.info(`[AI 수동 그림] ${site.name} 그림 가져옴 (${sz.width}×${sz.height}, [이 그림 쓰기])`);
+      float.bringAppFront();
       return shown.toDataURL();
     }
   }
+  } finally { float.close(); }
 }
 
 module.exports = { ask, askImage, SITE };

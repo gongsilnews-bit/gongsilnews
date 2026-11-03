@@ -905,8 +905,9 @@ function register(base) {
   ipcMain.handle("video:capture-page", async (e, url, opts = {}) => {
     const href = String(url || "").trim();
     if (!/^https?:\/\//i.test(href)) throw new Error("캡쳐할 주소가 없습니다.");
-    const mode = opts.mode === "head" ? "head" : "full";
-    const max = mode === "head" ? 1 : Math.min(6, Math.max(1, Number(opts.max) || 4));
+    // "screen" = 화면 그대로 한 장 (공실열람 지도·단지 창, 로드뷰 — 자르거나 위에 붙은 막대를 숨기지 않는다, 2026-11-03 사장님 "캡쳐가 온전하게")
+    const mode = opts.mode === "head" ? "head" : opts.mode === "screen" ? "screen" : "full";
+    const max = mode === "full" ? Math.min(6, Math.max(1, Number(opts.max) || 4)) : 1;
     const title = String(opts.title || "").trim();
     const now = new Date();
     const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
@@ -914,8 +915,11 @@ function register(base) {
     const dir = require("../studio-root").dir("rec", "캡쳐", safe);
     fs.mkdirSync(dir, { recursive: true });
     send(e, "video:progress", "기사 화면을 캡쳐하는 중…");
-    const Z = 1.5; // 1920×1080 창에 1.5배로 — 화면은 1280 너비로 그리고 캡쳐는 풀HD 로
-    const win = new BrowserWindow({ show: false, width: 1920, height: 1080, useContentSize: true, webPreferences: { partition: "column-news", sandbox: true, zoomFactor: Z } });
+    const Z = mode === "screen" ? Math.min(2, Math.max(1, Number(opts.zoom) || 1.25)) : 1.5; // 1920×1080 창에 1.5배로 — 화면은 1280 너비로 그리고 캡쳐는 풀HD 로
+    // screen — 로드뷰·지도는 숨긴 창에서 안 그려질 때가 있어, 화면 밖에 투명하게 띄워 그리게 한다 (작업 표시줄에도 안 나옴)
+    const live = mode === "screen";
+    const win = new BrowserWindow({ show: false, width: 1920, height: 1080, useContentSize: true, ...(live ? { x: -30000, y: -30000, skipTaskbar: true, focusable: false, frame: false } : {}), webPreferences: { partition: "column-news", sandbox: true, zoomFactor: Z, backgroundThrottling: false } });
+    if (live) { win.setOpacity(0); win.showInactive(); }
     const wc = win.webContents;
     wc.setAudioMuted(true);
     wc.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -929,6 +933,23 @@ function register(base) {
       ]);
       await wait(2500); // 늦게 그려지는 본문·안쪽 창
       await wc.insertCSS("::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}").catch(() => {});
+      if (mode === "screen") {
+        // 다 그려질 때까지 — waitSel(로드뷰 다 뜸 표시 등)·waitText(단지 이름) 를 최대 20초 기다린 뒤 조금 더 (지도 조각·로드뷰 사진)
+        const sel = JSON.stringify(String(opts.waitSel || "")), txt = JSON.stringify(String(opts.waitText || ""));
+        for (let i = 0; i < 40; i++) {
+          const ok = await wc.executeJavaScript(`(() => { const s = ${sel}, t = ${txt}; return (!s || !!document.querySelector(s)) && (!t || (document.body.innerText || "").includes(t)); })()`, true).catch(() => false);
+          if (ok) break;
+          await wait(500);
+        }
+        await wait(Number(opts.settle) || 2500);
+        await wc.capturePage().catch(() => null); // 첫 장은 예전 화면일 때가 있어 버린다
+        await wait(300);
+        const img = await wc.capturePage();
+        if (img.isEmpty()) throw new Error("화면을 캡쳐하지 못했습니다.");
+        const file = path.join(dir, `${safe}_01_${Date.now().toString(36)}.jpg`);
+        fs.writeFileSync(file, img.toJPEG(90));
+        return await library.add([file], { source: "capture" });
+      }
       // 위에 붙는 머리·팝업 숨기기 — 내리면 새로 생기는 머리도 있어 찍을 때마다 (출처 표시는 남긴다)
       const HIDE_FIXED = `(() => { for (const el of document.querySelectorAll("body *")) { if (el.dataset && el.dataset.gsvCredit) continue; const cs = getComputedStyle(el); if (cs.position === "fixed" || cs.position === "sticky") el.style.setProperty("display", "none", "important"); } return 1; })()`;
       // 제목 위치를 찾는다 — head 는 제목이 든 기사 칸만 16:9 로 (옆 칸 남의 사진·광고는 빼고)
@@ -989,7 +1010,8 @@ function register(base) {
         await wait(300);
         const img = await wc.capturePage({ x: Math.round(at.x * Z), y: Math.round(ry * Z), width: Math.round(at.w * Z), height: Math.round(at.h * Z) });
         if (img.isEmpty()) continue;
-        const file = path.join(dir, `${safe}_${String(k + 1).padStart(2, "0")}.jpg`);
+        // 같은 제목으로 여러 번 찍어도 덮어쓰지 않게 — 찍은 시각을 붙인다 (2026-11-03: 단지 시세 3장이 모두 같은 사진이 됨)
+        const file = path.join(dir, `${safe}_${String(k + 1).padStart(2, "0")}_${Date.now().toString(36)}.jpg`);
         fs.writeFileSync(file, img.toJPEG(90));
         files.push(file);
       }

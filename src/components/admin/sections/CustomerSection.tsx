@@ -1,5 +1,6 @@
 "use client";
 
+import { useStudioLight, StudioListCss, Ico, ICON, NAVY, C_GREEN, C_RED, C_GRAY, C_VIOLET, C_AMBER } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { AdminTheme } from "./types";
 import CustomerModal from "./customer/CustomerModal";
@@ -15,6 +16,8 @@ interface CustomerSectionProps {
 
 export default function CustomerSection({ theme, role, memberId }: CustomerSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  // 앱 밝은 화면 — 남색 + 선 픽토그램 + 상태 색 (2026-11-03 사장님 "고객관리도 남색 테마 SVG 색상")
+  const st = useStudioLight(darkMode);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -156,18 +159,19 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   };
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+    <div className={st ? "gs-al" : undefined} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+      {st && <StudioListCss colors={{ 신규: C_VIOLET, 진행중: C_AMBER, 계약완료: C_GREEN, "보류/종료": C_GRAY, 휴지통: C_RED }} />}
       {/* 타이틀 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>고객문의</h1>
-        <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>
+        <span style={{ fontSize: 13, color: st ? "#6b7280" : "#111", fontWeight: 600 }}>
           (진행중 {dbCustomers.filter(c => c.status === "진행중").length}명 / 
           전체 {dbCustomers.length}명)
         </span>
       </div>
 
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
-      <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+      <div className="gs-al-card" style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>문의 구분</span>
           {["전체", "매물내놔요", "매물구해요", "기타"].map(type => (
@@ -178,9 +182,10 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 height: 34, padding: "0 14px", borderRadius: 20, 
                 fontSize: 13, fontWeight: searchTypes.includes(type) ? 700 : 600, 
                 cursor: "pointer", transition: "all 0.2s",
-                border: `1px solid ${searchTypes.includes(type) ? "#3b82f6" : border}`,
-                background: searchTypes.includes(type) ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : (darkMode ? "#2c2d31" : "#fff"),
-                color: searchTypes.includes(type) ? "#3b82f6" : textSecondary
+                border: `1px solid ${searchTypes.includes(type) ? (st ? NAVY : "#3b82f6") : border}`,
+                background: searchTypes.includes(type) ? (darkMode ? "rgba(59, 130, 246, 0.2)" : st ? NAVY : "#eff6ff") : (darkMode ? "#2c2d31" : "#fff"),
+                color: searchTypes.includes(type) ? (st ? "#fff" : "#3b82f6") : textSecondary,
+                ...(st ? { borderRadius: 5 } : {})
               }}
             >
               {type === "전체" ? "전체" : type === "매물내놔요" ? "매물내놔요" : type === "매물구해요" ? "매물구해요" : "기타"}
@@ -203,7 +208,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             setActiveFilters({ keyword: searchKeyword, types: searchTypes }); 
             if (searchKeyword || !searchTypes.includes("전체")) setActiveTab("전체"); 
           }} 
-          style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          className="gs-al-pri" style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           검색
         </button>
         <button 
@@ -213,14 +218,14 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             setActiveFilters({ keyword: "", types: ["전체"] }); 
             setActiveTab("전체"); 
           }} 
-          style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          className="gs-al-sec" style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           초기화
         </button>
       </div>
 
-      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+      <div className="gs-al-card" style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
+        <div className="gs-al-tabs" style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "신규", "진행중", "계약완료", "보류/종료", "휴지통"].map(tab => {
             const count = tab === "전체" 
               ? dbCustomers.filter(c => c.status !== "휴지통").length 
@@ -234,7 +239,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             const badgeTextColor = tab === "전체" ? "#4b5563" : "#fff";
 
             return (
-              <button key={tab} onClick={() => {
+              <button key={tab} className={activeTab === tab ? "gs-al-tab on" : "gs-al-tab"} onClick={() => {
                   setActiveTab(tab);
                   setActiveFilters({ keyword: "", types: ["전체"] });
                   setSearchKeyword(""); setSearchTypes(["전체"]);
@@ -247,7 +252,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                   cursor: "pointer", display: "flex", alignItems: "center", gap: 6 
                 }}>
                 {tab === "신규" ? "신규접수" : tab}
-                <span style={{ background: badgeColor, color: badgeTextColor, padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                <span className="gs-al-cnt" data-k={tab} style={{ background: badgeColor, color: badgeTextColor, padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
                   {count}
                 </span>
               </button>
@@ -259,17 +264,17 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
           <button 
             onClick={() => setIsModalOpen(true)}
-            style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            + 새 고객문의 등록
+            className="gs-al-pri" style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            {st ? <><Ico d={ICON.plus} />새 고객문의 등록</> : "+ 새 고객문의 등록"}
           </button>
           
-          <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-             엑셀 다운로드
+          <button className="gs-al-sec" style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+             {st && <Ico d="M12 3v12M7 10l5 5 5-5M4 19h16" />}엑셀 다운로드
           </button>
 
           <button
             onClick={handleBulkDelete}
-            style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: checkedIds.length ? "#ef4444" : textPrimary, border: `1px solid ${checkedIds.length ? "#fca5a5" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            className={checkedIds.length ? undefined : "gs-al-sec"} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: checkedIds.length ? "#ef4444" : textPrimary, border: `1px solid ${checkedIds.length ? "#fca5a5" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             {activeTab === "휴지통" ? "선택 영구삭제" : "선택삭제"}
@@ -321,7 +326,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
 
                 return (
                   <tr key={row.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s", cursor: "pointer" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f0fdf4"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : st ? "#fafbfc" : "#f0fdf4"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     onClick={() => router.push(`?menu=customer&action=detail&id=${row.id}`)}
                   >
@@ -340,7 +345,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                       {serialNum}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                      <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: badgeColor, color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                      <span className="gs-al-badge" data-k={row.status} style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: badgeColor, color: "#fff", fontWeight: 700, fontSize: 12 }}>
                         {row.status === "신규" ? "신규접수" : row.status}
                       </span>
                     </td>
@@ -349,7 +354,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                         fontSize: 14, 
                         fontWeight: 805,
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? "#3b82f6"
+                          ? (st ? NAVY : "#3b82f6")
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? "#ef4444"
                           : "#4b5563"
@@ -402,7 +407,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                         fontSize: 14, 
                         fontWeight: 800,
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? "#3b82f6"
+                          ? (st ? NAVY : "#3b82f6")
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? "#ef4444"
                           : textSecondary
@@ -432,7 +437,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           title={`접수 사진 ${row.photo_urls.length}장`}
                           style={{ display: "inline-block", marginLeft: 6, fontSize: 12, fontWeight: 800, color: "#059669", background: darkMode ? "rgba(5,150,105,0.15)" : "#ecfdf5", border: "1px solid rgba(5,150,105,0.25)", borderRadius: 20, padding: "2px 8px", verticalAlign: "middle" }}
                         >
-                          📷 {row.photo_urls.length}
+                          {st ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Ico size={12} d="M4 7h3l2-3h6l2 3h3v13H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />{row.photo_urls.length}</span> : <>📷 {row.photo_urls.length}</>}
                         </span>
                       )}
                     </td>
@@ -468,7 +473,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                                 whiteSpace: "nowrap" 
                               }}
                             >
-                              ♻️ 복구
+                              {st ? <Ico size={12} d={ICON.refresh} /> : "♻️ "}복구
                             </button>
                             <button 
                               onClick={async (e) => {
@@ -495,7 +500,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                                 whiteSpace: "nowrap" 
                               }}
                             >
-                              💥 영구삭제
+                              {st ? <Ico size={12} d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /> : "💥 "}영구삭제
                             </button>
                           </>
                         ) : (
@@ -506,22 +511,22 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                                 setEditingCustomer(row);
                                 setIsModalOpen(true);
                               }}
-                              style={{ 
+                              className="gs-al-pri" style={{ 
                                 height: 30, padding: "0 10px", 
-                                background: "#4b5563", color: "#fff", 
+                                background: "#4b5563", color: "#fff", gap: 4, 
                                 border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, 
                                 cursor: "pointer", display: "flex", alignItems: "center",
                                 whiteSpace: "nowrap" 
                               }}
                             >
-                              수정
+                              {st && <Ico size={12} d={ICON.pen} />}수정
                             </button>
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteCustomer(row.id);
                               }}
-                              style={{ 
+                              className="gs-al-sec gs-al-del" style={{ 
                                 height: 30, padding: "0 10px", 
                                 background: darkMode ? "#1f2023" : "#fff", color: textSecondary, 
                                 border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, 
@@ -529,7 +534,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                                 whiteSpace: "nowrap" 
                               }}
                             >
-                              🗑️ 삭제
+                              {st ? <Ico size={12} d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /> : "🗑️ "}삭제
                             </button>
                           </>
                         )}
@@ -544,7 +549,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
 
         {/* 페이징 */}
         <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
-          <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
+          <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: st ? NAVY : "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
         </div>
       </div>
       

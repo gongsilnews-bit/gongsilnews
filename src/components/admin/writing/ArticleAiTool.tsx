@@ -7,14 +7,26 @@
  *  디자인은 대본 작성과 같은 톤 — 흰 바탕 · 옅은 회색 선 · 남색 하나 · 번호 단계.
  */
 import React, { useEffect, useState } from "react";
-import { writingArticleFacts, writingArticles, writingComplexFacts, writingMyVacancies, writingSearchComplexes, writingVacancyFacts } from "@/app/actions/writingFacts";
+import { createPortal } from "react-dom";
+import AiCopyGuide from "./AiCopyGuide";
+import { effectiveAi, useAiPick } from "@/components/admin/studio-video/AiPick";
+import { writingArticleFacts, writingArticles, writingComplexFacts, writingFetchNews, writingMyVacancies, writingSearchComplexes, writingVacancyFacts } from "@/app/actions/writingFacts";
 
 /** photos — 공실뉴스 단지 화면 캡처 (시세·로드뷰·실거래, 2026-11-03 사장님). url 은 앱이 저장한 사진 주소 */
 export type ArticleDraft = { title: string; subtitles: string[]; paragraphs: { heading?: string; text: string }[]; keywords: string[]; photos?: { url: string; caption: string; after: number }[] };
 type News = { title: string; body: string; publisher?: string; url?: string; publishedAt?: string };
 type Bridge = {
-  write?: { ask: (prompt: string, opts?: { json?: boolean; busyLabel?: string }) => Promise<string>; onProgress: (fn: (t: string) => void) => () => void };
-  video?: { capturePage?: (url: string, opts: { mode: "head" | "full"; title?: string; credit?: string; max?: number }) => Promise<{ url: string }[]> };
+  write?: { ask: (prompt: string, opts?: { json?: boolean; busyLabel?: string; provider?: string; mode?: string }) => Promise<string>; onProgress: (fn: (t: string) => void) => () => void };
+  video?: {
+    capturePage?: (url: string, opts: { mode: "head" | "full" | "screen"; title?: string; credit?: string; max?: number; waitSel?: string; waitText?: string; settle?: number }) => Promise<{ url: string }[]>;
+    /** 분석해 둔 공실 사진·화면을 원본 크기로 (analysis.json 순서 그대로) */
+    vacancy?: (vacancyId: string) => Promise<{ photos: { url: string }[]; shots: { url: string }[] }>;
+  };
+  /** 뉴스·SNS자동화와 같은 공실 분석 — 공실열람 상세를 열어 등록 사진 + 공실열람 검증·지도·로드뷰 칸을 잘라 찍는다 */
+  vacancy?: {
+    analyze?: (vacancyId: string) => Promise<{ media: { kind: string; caption: string }[]; failures?: string[] }>;
+    onProgress?: (fn: (t: string) => void) => () => void;
+  };
   column?: { fetchNews: (url: string) => Promise<News>; openNews?: () => Promise<unknown>; grabNews?: () => Promise<News> };
 };
 const bridge = (): Bridge | null => (typeof window === "undefined" ? null : ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null));
@@ -23,10 +35,23 @@ export const articleToolReady = () => Boolean(bridge()?.write);
 export const NAVY = "#1e3a6e";
 const LINE = "#e5e7eb", SUB = "#6b7280", DIM = "#9ca3af", TEXT = "#1f2937";
 type Src = "vacancy" | "market" | "news" | "topic" | "gongsil";
+/** 웹에서 여는 AI — 회원 본인 계정 (2026-11-03) */
+const WEB_AI = [
+  { id: "chatgpt", name: "ChatGPT", url: "https://chatgpt.com/" },
+  { id: "gemini", name: "Gemini", url: "https://gemini.google.com/app" },
+  { id: "claude", name: "Claude", url: "https://claude.ai/new" },
+];
 const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"], ["gongsil", "공실뉴스"]];
 const KINDS = [
   { id: "news", name: "뉴스기사형", prompt: "도입부터 결론까지 문단이 자연스럽게 이어지는 뉴스 기사. 매물 조건·지역·수요·확인할 점을 기사 흐름 안에서 풀어 쓴다." },
-  { id: "summary", name: "단락별 요약", prompt: "첫 문단에서 기사 전체를 요약하고, 이어서 핵심 내용을 소제목 단위로 나눠 독자가 빠르게 훑어볼 수 있게 쓴다." },
+  { id: "summary", name: "단락별 요약", prompt: "첫 문단에서 기사 전체를 요약하고, 이어서 핵심 내용을 소제목 단위로 나눠 독자가 빠르게 훑어볼 수 있게 쓴다.", heads: true },
+  // 더 다양하게 (2026-11-03 사장님 "기사 스타일을 조금 더 다양하게, 지금은 딱 2개")
+  { id: "data", name: "숫자로 보는", prompt: "재료의 숫자(가격·면적·거래 건수·기간)를 앞세운 데이터 브리핑 기사. 문단마다 핵심 숫자 하나를 중심에 두고, 숫자가 뜻하는 바를 짧게 풀어 쓴다. 재료에 없는 숫자는 쓰지 않는다.", heads: true },
+  { id: "qa", name: "질문·답변(Q&A)", prompt: "독자가 궁금해할 질문을 소제목으로 세우고(예: \"지금 시세는 얼마인가?\"), 그 아래에 재료에 근거한 답을 쓴다. 질문은 4~6개.", heads: true },
+  { id: "check", name: "체크포인트", prompt: "계약·투자 전에 확인할 점을 번호 붙은 소제목(1. 2. 3.)으로 정리하는 실용 기사. 항목마다 왜 중요한지와 재료 속 근거를 쓴다.", heads: true },
+  { id: "compare", name: "비교 분석", prompt: "면적·시기·거래 유형(매매/전세)·주변과 비교하며 차이를 짚는 분석 기사. 비교 축마다 소제목을 두고 수치 차이를 분명하게 쓴다.", heads: true },
+  { id: "column", name: "칼럼·해설", prompt: "현장 전문가가 쓰는 칼럼. 사실을 바탕으로 시장의 흐름과 의미를 해설하고, 마지막에 독자에게 줄 조언으로 맺는다. 근거 없는 전망·단정은 하지 않는다." },
+  { id: "brief", name: "짧은 단신", prompt: "핵심 사실만 담은 짧은 단신 기사. 첫 문장에 누가·어디서·무엇을·얼마에를 담고, 2~3문단으로 끝낸다." },
 ];
 const TONES = [
   { id: "report", name: "보도형", desc: "사실 중심, 건조하게", prompt: "사실을 먼저, 건조하고 정확하게. 형용사·감탄 없이." },
@@ -53,12 +78,58 @@ const RULES = [
   "단지·건물 이름은 브랜드와 동네를 띄어 쓰고, 영문 이름은 한글로.",
 ];
 
+/** AI 답(JSON) 읽기 — 웹 창에서 복사한 답도 (```json 상자 · 둥근 따옴표 · 끝 쉼표 · 문자열 속 줄바꿈 · 앞뒤 설명을 견딘다, 2026-11-03 사장님) */
+export function parseArticleDraft(raw: string): Omit<ArticleDraft, "photos"> | null {
+  let t = String(raw || "").replace(/```(?:json)?/gi, "").replace(/\uFEFF/g, "");
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a < 0 || b <= a) return null;
+  t = t.slice(a, b + 1);
+  const tries = [
+    (x: string) => x,
+    (x: string) => x.replace(/,\s*([}\]])/g, "$1"),
+    (x: string) => x.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/,\s*([}\]])/g, "$1"),
+    // 문자열 안의 진짜 줄바꿈 → \n (웹 화면에서 복사하면 생긴다)
+    (x: string) => {
+      let out = "", inStr = false, esc = false;
+      for (const ch of x.replace(/[“”]/g, '"').replace(/,\s*([}\]])/g, "$1")) {
+        if (inStr) {
+          if (esc) { esc = false; out += ch; continue; }
+          if (ch === "\\") { esc = true; out += ch; continue; }
+          if (ch === '"') { inStr = false; out += ch; continue; }
+          if (ch === "\n" || ch === "\r") { out += ch === "\n" ? "\\n" : ""; continue; }
+          out += ch;
+        } else { if (ch === '"') inStr = true; out += ch; }
+      }
+      return out;
+    },
+  ];
+  for (const f of tries) {
+    try {
+      const j = JSON.parse(f(t)) as Partial<ArticleDraft> & { paragraphs?: ({ heading?: string; text?: string } | string)[] };
+      const paragraphs = (j.paragraphs || []).map((p) => (typeof p === "string" ? { heading: "", text: p } : { heading: String(p?.heading || "").trim(), text: String(p?.text || "").trim() })).filter((p) => p.text);
+      if (!j.title || !paragraphs.length) continue;
+      return { title: String(j.title).trim(), subtitles: (j.subtitles || []).map(String).filter(Boolean).slice(0, 3), paragraphs, keywords: (j.keywords || []).map(String).filter(Boolean).slice(0, 10) };
+    } catch { /* 다음 방법 */ }
+  }
+  return null;
+}
+
 /** 작업 중 점점점 (2026-11-03 사장님: "작업시 흰색 점점점") */
 function Dots({ color = "#fff" }: { color?: string }) {
   return (
     <span style={{ display: "inline-flex", gap: 4, marginLeft: 8, verticalAlign: "middle" }} aria-hidden>
       <style>{`@keyframes gsDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}`}</style>
       {[0, 1, 2].map((i) => <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: color, animation: `gsDot 1.2s ${i * 0.18}s infinite ease-in-out` }} />)}
+    </span>
+  );
+}
+
+/** 흰 막 위의 큰 점 세 개 — 뉴스·SNS자동화의 "분석·캡처 중" 과 같은 모양 */
+function BigDots() {
+  return (
+    <span style={{ display: "inline-flex", gap: 7 }} aria-hidden>
+      <style>{`@keyframes gsBigDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.15)}}`}</style>
+      {[0, 1, 2].map((i) => <span key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: NAVY, animation: `gsBigDot 1.2s ${i * 0.18}s infinite ease-in-out` }} />)}
     </span>
   );
 }
@@ -85,9 +156,16 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   const [newsBusy, setNewsBusy] = useState(false);
   const takeNews = async (how: "url" | "grab") => {
     const c = bridge()?.column;
-    if (!c) return setErr("뉴스 가져오기는 공실마케팅 앱에서 돼요.");
     setErr(""); setNewsBusy(true);
     try {
+      // 웹 — 기사 주소를 서버가 읽어 온다 (2026-11-03 사장님: 웹도 앱과 같이)
+      if (!c) {
+        if (how === "grab") throw new Error("지금 보는 뉴스 가져오기는 앱에서 돼요. 기사 주소를 붙여 넣고 [가져오기]를 눌러 주세요.");
+        const r = await writingFetchNews(newsUrl.trim());
+        if (!r.success) throw new Error(r.error);
+        setNews(r.data); setNewsUrl(r.data.url);
+        return;
+      }
       const n = how === "grab" ? await c.grabNews!() : await c.fetchNews(newsUrl.trim());
       setNews(n);
       if (n.url) setNewsUrl(n.url);
@@ -97,7 +175,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   const [topic, setTopic] = useState("");
 
   useEffect(() => {
-    if ((src === "vacancy") && vacs === null) writingMyVacancies().then((r) => { const l = r.success ? r.data : []; setVacs(l); if (l[0] && !vacId) setVacId(l[0].id); }).catch(() => setVacs([]));
+    if ((src === "vacancy") && vacs === null) writingMyVacancies().then((r) => { const l = r.success ? r.data : []; setVacs(l); })  // 저절로 첫 공실을 고르지 않는다 — 회원이 골라야 분석 (2026-11-03 사장님).catch(() => setVacs([]));
     if (src === "gongsil" && !found.length) writingArticles("").then((r) => r.success && setFound(r.data)).catch(() => {});
     setPick(null); setErr(""); if (src !== "gongsil") setFound([]);
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -125,6 +203,15 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   /* ── ① 먼저 분석 (자료 모으기 · 공실뉴스 화면 캡처) → ② 확인 → ③ 쓰기 (2026-11-03 사장님: 한 번에 하니 버벅거림) ──
    *  공실·단지·기사를 고르면 저절로 분석한다. 분석해 둔 재료로 문체만 바꿔 여러 번 다시 쓸 수 있다 */
   type Shot = { url: string; thumb: string; caption: string };
+  /** 실제 사진 = 등록 사진 · 로드뷰 — 분석이 끝났을 때 처음 대표로 앞에 세운다 (캡처 화면도 회원이 대표로 고를 수 있다) */
+  const isReal = (x: Shot) => !x.caption.startsWith("[") || x.caption.startsWith("[현장 로드뷰]");
+  const kindOf = (x: Shot) => (!x.caption.startsWith("[") ? "등록 사진" : x.caption.startsWith("[현장 로드뷰]") ? "로드뷰" : x.caption.startsWith("[공실열람") ? "공실열람" : x.caption.startsWith("[공실뉴스 실매물") || x.caption.startsWith("[공실열람 경매") || x.caption.startsWith("[공실열람 공매") ? "공실열람 검증" : x.caption.startsWith("[위치 지도]") ? "지도" : x.caption.startsWith("[실거래가]") ? "실거래가" : "화면");
+  /** 맨 앞(대표)이 캡처 화면이면 첫 실제 사진을 앞으로 */
+  const fixFront = (l: Shot[]) => {
+    if (!l.length || isReal(l[0])) return l;
+    const k = l.findIndex(isReal);
+    return k < 0 ? l : [l[k], ...l.filter((_, j) => j !== k)];
+  };
   type Analysis = { key: string; subject: string; mats: string[]; summary: string[]; complex: { id: string; name: string } | null; shots: Shot[] };
   const [ana, setAna] = useState<Analysis | null>(null);
   const [anaBusy, setAnaBusy] = useState("");
@@ -132,20 +219,59 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? `m:${pick?.id || ""}` : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
   const errOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
   /** 공실뉴스 단지 화면 3장 — 시세 그래프 · 로드뷰 · 실거래 금액. 하나씩 차례로 (한꺼번에 찍으면 버벅거린다) */
-  const capture = async (complex: { id: string; name: string }) => {
+  const webShots = async (complex: { id: string; name: string }): Promise<Shot[]> => {
+    const out: Shot[] = [];
+    const { toJpeg } = await import("html-to-image");
+    const parts = [
+      { part: "chart", what: "시세 그래프", caption: `[시세 그래프] ${complex.name} 최근 실거래 시세 흐름 (자료: 국토교통부 실거래가)` },
+      { part: "trades", what: "실거래가", caption: `[실거래가] ${complex.name} 최근 실거래 내역 (자료: 국토교통부 실거래가)` },
+    ];
+    for (const [n, x] of parts.entries()) {
+      setAnaBusy(`${x.what} 그림을 만드는 중… (${n + 1}/${parts.length})`);
+      const f = document.createElement("iframe");
+      f.style.cssText = "position:fixed;left:-12000px;top:0;width:1040px;height:1600px;border:0;opacity:0;pointer-events:none";
+      f.src = `/apt-capture/${encodeURIComponent(complex.id)}?part=${x.part}`;
+      document.body.appendChild(f);
+      try {
+        await new Promise<void>((ok) => { f.onload = () => ok(); setTimeout(ok, 15000); });
+        const doc = f.contentDocument;
+        // 단지 자료가 그려질 때까지 (최대 12초)
+        let el: HTMLElement | null = null;
+        for (let i = 0; i < 40 && doc; i++) {
+          const m = doc.querySelector("main");
+          el = (m?.lastElementChild as HTMLElement | null) || null;
+          if (el && el.getBoundingClientRect().height > 200) break;
+          el = null;
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        if (!el) continue;
+        await new Promise((r) => setTimeout(r, 800)); // 그래프 그림
+        const url = await toJpeg(el, { quality: 0.92, pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true });
+        const blob = await (await fetch(url)).blob();
+        const obj = URL.createObjectURL(blob);
+        out.push({ url: obj, thumb: obj, caption: x.caption });
+      } catch { /* 이 한 장은 건너뛴다 */ }
+      finally { f.remove(); }
+    }
+    return out;
+  };
+  const capture = async (complex: { id: string; name: string }, only?: string[]) => {
     const cap = bridge()?.video?.capturePage;
-    if (!cap) return [] as Shot[];
+    if (!cap) return webShots(complex);
     const out: Shot[] = [];
     // 공실 기사 사진(공실열람 검증·지도·로드뷰)과 같은 모양 — 공실열람 화면 · 로드뷰 · 실거래가 (2026-11-03 사장님)
     const o = window.location.origin, id = encodeURIComponent(complex.id);
     const SH = [
-      { what: "공실열람 단지 시세 화면", url: `${o}/gongsil?apt=${id}`, caption: `[공실열람 단지 시세] 공실뉴스 공실열람에서 본 '${complex.name}' 실거래 시세 (자료: 국토교통부 실거래가)` },
-      { what: "로드뷰", url: `${o}/apt-capture/${id}?part=roadview`, caption: `[현장 로드뷰] ${complex.name} 진입로 및 가로변 전경 (자료: 로드뷰)` },
-      { what: "실거래가", url: `${o}/apt-capture/${id}?part=trades`, caption: `[실거래가] ${complex.name} 최근 실거래 내역 (자료: 국토교통부 실거래가)` },
+      { what: "공실열람 단지 시세 화면", title: complex.name, url: `${o}/gongsil?apt=${id}`, opt: { mode: "screen" as const, waitText: complex.name, settle: 3500 }, caption: `[공실열람 단지 시세] 공실뉴스 공실열람에서 본 '${complex.name}' 실거래 시세 (자료: 국토교통부 실거래가)` },
+      { what: "지도", title: `지도 · ${complex.name}`, url: `${o}/apt-capture/${id}?part=map`, opt: { mode: "screen" as const, settle: 3000 }, caption: `[위치 지도] ${complex.name} 위치 및 주변 환경 (자료: 위치정보 지도)` },
+      { what: "로드뷰", title: `로드뷰 · ${complex.name}`, url: `${o}/apt-capture/${id}?part=roadview`, opt: { mode: "screen" as const, waitSel: '[data-roadview-status="ready"]', settle: 3500 }, caption: `[현장 로드뷰] ${complex.name} 진입로 및 가로변 전경 (자료: 로드뷰)` },
+      { what: "실거래가", title: `실거래가 · ${complex.name}`, url: `${o}/apt-capture/${id}?part=trades`, opt: { mode: "head" as const }, caption: `[실거래가] ${complex.name} 최근 실거래 내역 (자료: 국토교통부 실거래가)` },
     ];
-    for (const sh of SH) {
-      setAnaBusy(`${sh.what}을 캡처하는 중… (${out.length + 1}/3)`);
-      const l = await cap(sh.url, { mode: "head", title: complex.name, credit: "" }).catch(() => []);
+    const list = only ? SH.filter((x) => only.includes(x.what)) : SH;
+    for (const [n, sh] of list.entries()) {
+      setAnaBusy(`${sh.what}을 캡처하는 중… (${n + 1}/${list.length})`);
+      // 공실열람·지도·로드뷰는 화면 그대로 한 장 (자르지 않음), 로드뷰는 다 뜰 때까지 기다린다 (2026-11-03 사장님 "캡쳐가 온전하게")
+      const l = await cap(sh.url, { ...sh.opt, title: sh.title, credit: "" }).catch(() => []);
       const it = l[0] as unknown as { url: string; thumb?: string } | undefined;
       if (it?.url) out.push({ url: it.url, thumb: it.thumb || it.url, caption: sh.caption });
     }
@@ -157,12 +283,35 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
     try {
       const mats: string[] = [], summary: string[] = [];
       let subject = "", complex: { id: string; name: string } | null = null;
+      let regPhotos: Shot[] = [];
+      let snsShots = false; // 매물 소개를 뉴스·SNS자동화 방식으로 찍었다 — 단지 화면은 실거래가만 더한다
       if (src === "vacancy") {
         const r = await writingVacancyFacts(vacId);
         if (!r.success) throw new Error(r.error);
         mats.push(r.data.text); subject = `${r.data.title} 매물 소개 기사`;
         summary.push(...r.data.text.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
         if (r.data.complexId) { const c = await writingComplexFacts(r.data.complexId); if (c.success) { mats.push(c.data.text); complex = { id: r.data.complexId, name: c.data.title }; } }
+        // 이미 등록한 공실 사진 — 기사 사진 맨 앞에 (첫 장이 대표, 2026-11-03 사장님)
+        const nm = r.data.title.replace(/^공실 \d+\s*/, "") || r.data.title;
+        regPhotos = r.data.photos.map((url, i) => ({ url, thumb: url, caption: i === 0 ? `${nm} 현장 실물 전경 (자료: 공실뉴스)` : `${nm} 현장 실물 ${i + 1} (자료: 공실뉴스)` }));
+        // 앱 — 뉴스·SNS자동화와 같은 분석: 공실열람 상세를 열어 등록 사진 + [공실열람 검증]·[지도]·[로드뷰] 칸을 잘라 찍는다
+        const b = bridge();
+        if (b?.vacancy?.analyze && b.video?.vacancy) {
+          const off = b.vacancy.onProgress?.((t) => setAnaBusy(t)) || (() => {});
+          try {
+            const an = await b.vacancy.analyze(vacId);
+            const got = await b.video.vacancy(vacId);
+            const SCREEN = ["proof", "map", "roadview"];
+            const caps = an.media.filter((m) => m.kind !== "ai");
+            const photoCaps = caps.filter((m) => !SCREEN.includes(m.kind)), shotCaps = caps.filter((m) => SCREEN.includes(m.kind));
+            const items = [
+              ...got.photos.map((x, i) => ({ url: x.url, thumb: x.url, caption: photoCaps[i]?.caption || (i === 0 ? `${nm} 현장 실물 전경 (자료: 공실뉴스)` : `${nm} 현장 실물 ${i + 1} (자료: 공실뉴스)`) })),
+              ...got.shots.map((x, i) => ({ url: x.url, thumb: x.url, caption: shotCaps[i]?.caption || nm })),
+            ];
+            if (items.length) { regPhotos = items; snsShots = true; }
+          } catch { /* 앱 분석이 안 되면 등록 사진만 */ }
+          finally { off(); }
+        }
       } else if (src === "market") {
         const c = await writingComplexFacts(pick!.id);
         if (!c.success) throw new Error(c.error);
@@ -178,17 +327,19 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
         subject = `뉴스「${n.title}」를 바탕으로 새로 쓰는 기사 (마지막 문단에 출처 ${n.publisher || "원문 기사"} 를 밝힌다)`;
         summary.push(n.title);
       } else subject = topic.trim();
-      const base: Analysis = { key, subject, mats, summary, complex, shots: [] };
+      const base: Analysis = { key, subject, mats, summary, complex, shots: regPhotos };
       setAna(base);
-      if (complex) { const shots = await capture(complex); setAna((a) => (a && a.key === key ? { ...a, shots } : a)); }
+      if (complex) { const shots = await capture(complex, snsShots ? ["실거래가"] : undefined); setAna((a) => (a && a.key === key ? { ...a, shots: fixFront([...regPhotos, ...shots]) } : a)); }
     } catch (e) { setErr(errOf(e)); setAna(null); }
     finally { setAnaBusy(""); }
   };
   const recapture = async () => {
     if (!ana?.complex) return;
     setCapBusy(true);
-    const shots = await capture(ana.complex);
-    setAna((a) => (a ? { ...a, shots } : a));
+    // 매물 소개(뉴스·SNS자동화 방식으로 찍은 것)는 단지 실거래가만 다시 — 공실 화면은 [분석] 때 찍은 그대로
+    const sns = ana.shots.some((x) => x.caption.startsWith("[공실뉴스 실매물"));
+    const shots = await capture(ana.complex, sns ? ["실거래가"] : undefined);
+    setAna((a) => (a ? { ...a, shots: fixFront([...a.shots.filter((x) => (sns ? !x.caption.startsWith("[실거래가]") : !x.caption.startsWith("["))), ...shots]) } : a)); // 등록 사진은 그대로, 캡처만 새로
     setAnaBusy(""); setCapBusy(false);
   };
   // 고르면 저절로 분석 (자유 주제는 분석할 것이 없다)
@@ -202,65 +353,226 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
 
   const ready = src === "topic" ? Boolean(topic.trim()) : Boolean(ana && ana.key === anaKey) && !anaBusy;
 
+  /* ── 쓸 AI (대본 작성과 같이 기억) · 질문 만들기 · 답 읽기 ── */
+  const [aiSel, setAiSel, aiList] = useAiPick();
+  const aiUse = effectiveAi(aiSel, aiList);
+  const AI_ORDER = ["chatgpt", "gemini", "claude"];
+  const aiOpts = aiList.filter((x) => x.canWrite && x.ready !== false).sort((x, y) => AI_ORDER.indexOf(x.id) - AI_ORDER.indexOf(y.id)).flatMap((x) => [
+    { c: { provider: x.id, mode: "account" as const }, label: x.name, ok: Boolean(x.accountOk || x.method === "manual") },
+    { c: { provider: x.id, mode: "api" as const }, label: `${x.name} API`, ok: Boolean(x.keyHas) },
+  ]).filter((o) => o.ok || o.c.mode === "account");
+  const aiDef = aiList.find((x) => x.isWriter);
+  const [webAi, setWebAiState] = useState("chatgpt");
+  useEffect(() => { try { const v = localStorage.getItem("gs-web-ai"); if (v) setWebAiState(v); } catch { /* */ } }, []);
+  const setWebAi = (v: string) => { setWebAiState(v); try { localStorage.setItem("gs-web-ai", v); } catch { /* */ } };
+  const [isApp, setIsApp] = useState(false);
+  useEffect(() => { setIsApp(Boolean(bridge()?.write)); }, []);
+  const aiCur = aiUse || (aiDef ? { provider: aiDef.id, mode: aiDef.mode === "api" ? "api" : "account" } : null);
+  const curAnalysis = (): Analysis | null => (src === "topic" ? (topic.trim() ? { key: anaKey, subject: topic.trim(), mats: [], summary: [], complex: null, shots: [] } : null) : ana && ana.key === anaKey ? ana : null);
+  const buildPrompt = (a: Analysis) => {
+    const k = KINDS.find((x) => x.id === kind)!, tn = TONES.find((x) => x.id === tone), hk = HOOKS.find((x) => x.id === hook), ln = LENGTHS.find((x) => x.id === len)!;
+    return [
+      "당신은 대한민국 부동산 전문 매체의 숙련된 기자다. 아래 자료로 기사 한 편을 쓴다.",
+      `[주제] ${a.subject}`,
+      `[기사 형식] ${k.name} — ${k.prompt}${"heads" in k && k.heads ? " (문단마다 heading 에 소제목을 넣는다)" : " (heading 은 빈 글자로 둔다)"}`,
+      tn ? `[문체] ${tn.name} — ${tn.prompt}` : "",
+      hk ? `[제목] ${hk.prompt}` : "[제목] 핵심을 담아 클릭하고 싶게, 과장 없이",
+      `[분량] 본문 ${ln.chars}`,
+      `[재료 — 사실은 여기 있는 것만]\n${a.mats.length ? a.mats.join("\n\n") : "(자료 없음 — 일반적인 정보만, 숫자·이름을 지어내지 말 것)"}`,
+      more.trim() ? `[요청 — 꼭 반영] ${more.trim()}` : "",
+      `[규칙]\n${RULES.map((r, i) => `${i + 1}. ${r}`).join("\n")}`,
+      "[쓰는 방법] 다 쓴 뒤 스스로 점검하고 고친 최종본만 낸다: 제목이 끌리는가 · 첫 문단에 핵심이 있는가 · 사실이 재료에 있는 것뿐인가 · 문장이 짧은가.",
+      '[답 형식 — 설명 없이 JSON 하나만, ```json 상자에] {"title":"제목","subtitles":["부제 1","부제 2","부제 3"],"paragraphs":[{"heading":"소제목(기사 형식이 소제목을 쓰는 형식일 때만, 아니면 빈 글자)","text":"문단"}],"keywords":["키워드1","키워드2","키워드3","키워드4","키워드5"]}',
+    ].filter(Boolean).join("\n\n");
+  };
+  /** AI 답 → 기사 칸 (사진은 분석해 둔 것) */
+  const applyRaw = (raw: string, a: Analysis | null) => {
+    const d = parseArticleDraft(raw);
+    if (!d) throw new Error("AI 답을 읽지 못했어요. AI 창에서 답을 [복사]한 뒤 [📋 AI 답 붙여넣기]로 넣어 주세요.");
+    const shots = a?.shots || [];
+    const np = d.paragraphs.length;
+    // 대표 사진(맨 앞, 실제 사진)은 본문 맨 앞에 — after 0 (2026-11-03 사장님 "대표사진은 기사 맨 앞에")
+    const cover = shots.length ? shots[0] : null;
+    const rest = cover ? shots.slice(1) : shots;
+    const photos = [
+      ...(cover ? [{ url: cover.url, caption: cover.caption, after: 0 }] : []),
+      ...rest.map((x, i) => ({ url: x.url, caption: x.caption, after: Math.min(np, Math.floor((i * np) / Math.max(1, rest.length)) + 1) })),
+    ];
+    onDraft({ ...d, photos });
+    setDone(true);
+  };
+
+  /* 웹 — 서버 AI 는 쓰지 않는다. 질문을 복사해 회원의 ChatGPT·Gemini·Claude 를 새 탭에 열고, 돌아오면 클립보드의 답을 읽는다 */
+  const [webWait, setWebWait] = useState<{ prompt: string; a: Analysis } | null>(null);
+  const webWaitRef = React.useRef(webWait);
+  webWaitRef.current = webWait;
+  const webTry = async (quiet: boolean) => {
+    const w = webWaitRef.current;
+    if (!w) return;
+    let raw = "";
+    try { raw = await navigator.clipboard.readText(); } catch { if (!quiet) setErr("클립보드를 읽지 못했어요. 브라우저가 묻는 [허용]을 누르거나 [AI 답 붙여넣기]를 눌러 주세요."); return; }
+    if (!raw.trim() || raw.trim() === w.prompt.trim()) { if (!quiet) setNote("아직 질문이 복사돼 있어요. AI 답 아래 복사 단추를 누르고 돌아오세요."); return; }
+    if (!parseArticleDraft(raw)) { if (!quiet) setNote("복사한 글이 기사 답 모양이 아니에요. 답이 다 나온 뒤 답 아래 복사 단추를 눌러 주세요."); return; }
+    setWebWait(null); setBusy(""); setNote("");
+    try { applyRaw(raw, w.a); } catch (e) { setErr(errOf(e)); }
+  };
+  useEffect(() => {
+    if (!webWait) return;
+    const on = () => { if (document.visibilityState === "visible") window.setTimeout(() => void webTry(true), 250); };
+    window.addEventListener("focus", on);
+    document.addEventListener("visibilitychange", on);
+    return () => { window.removeEventListener("focus", on); document.removeEventListener("visibilitychange", on); };
+  }, [webWait]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [guide, setGuide] = useState(false); // [? 쓰는 법]
+  const webReopen = async () => {
+    const w = webWaitRef.current;
+    if (!w) return;
+    const site = WEB_AI.find((x) => x.id === webAi) || WEB_AI[0];
+    try { await navigator.clipboard.writeText(w.prompt); } catch { /* */ }
+    window.open(site.url, "_blank", "noopener");
+    setNote("질문을 다시 복사했어요. 입력칸에 Ctrl+V 하고 보내세요.");
+  };
   const write = async () => {
     const b = bridge();
-    if (!b?.write) return setErr("공실마케팅 앱 새 버전에서 쓸 수 있어요.");
+    if (webWait) { setWebWait(null); setBusy(""); setNote(""); return; } // 그만두기
+    if (!b?.write) {
+      const a = curAnalysis();
+      if (!a) return;
+      if (hasContent() && !confirm("지금 쓴 제목·본문을 AI 초안으로 바꿀까요?")) return;
+      const prompt = buildPrompt(a);
+      const site = WEB_AI.find((x) => x.id === webAi) || WEB_AI[0];
+      try { await navigator.clipboard.writeText(prompt); } catch { return setErr("질문을 복사하지 못했어요. [질문 복사]를 눌러 주세요."); }
+      window.open(site.url, "_blank", "noopener");
+      setErr(""); setDone(false); setNote("");
+      setWebWait({ prompt, a });
+      setBusy(`${site.name} 창에 붙여 넣고(Ctrl+V) 보내세요 · 답 아래 복사 단추를 누르고 이 창으로 돌아오면 저절로 채워져요`);
+      return;
+    }
+    const a = curAnalysis();
+    if (!a) return;
     if (hasContent() && !confirm("지금 쓴 제목·본문을 AI 초안으로 바꿀까요?")) return;
-    const a: Analysis = src === "topic" ? { key: anaKey, subject: topic.trim(), mats: [], summary: [], complex: null, shots: [] } : ana!;
     setErr(""); setDone(false); setBusy("AI가 기사 초안을 쓰는 중… (1~2분)");
     const off = b.write.onProgress((t) => setBusy(t));
     try {
-      const k = KINDS.find((x) => x.id === kind)!, tn = TONES.find((x) => x.id === tone), hk = HOOKS.find((x) => x.id === hook), ln = LENGTHS.find((x) => x.id === len)!;
-      const prompt = [
-        "당신은 대한민국 부동산 전문 매체의 숙련된 기자다. 아래 자료로 기사 한 편을 쓴다.",
-        `[주제] ${a.subject}`,
-        `[기사 형식] ${k.name} — ${k.prompt}`,
-        tn ? `[문체] ${tn.name} — ${tn.prompt}` : "",
-        hk ? `[제목] ${hk.prompt}` : "[제목] 핵심을 담아 클릭하고 싶게, 과장 없이",
-        `[분량] 본문 ${ln.chars}`,
-        `[재료 — 사실은 여기 있는 것만]\n${a.mats.length ? a.mats.join("\n\n") : "(자료 없음 — 일반적인 정보만, 숫자·이름을 지어내지 말 것)"}`,
-        more.trim() ? `[요청 — 꼭 반영] ${more.trim()}` : "",
-        `[규칙]\n${RULES.map((r, i) => `${i + 1}. ${r}`).join("\n")}`,
-        "[쓰는 방법] 다 쓴 뒤 스스로 점검하고 고친 최종본만 낸다: 제목이 끌리는가 · 첫 문단에 핵심이 있는가 · 사실이 재료에 있는 것뿐인가 · 문장이 짧은가.",
-        '[답 형식 — 설명 없이 JSON 하나만] {"title":"제목","subtitles":["부제 1","부제 2","부제 3"],"paragraphs":[{"heading":"소제목(단락별 요약일 때만, 아니면 빈 글자)","text":"문단"}],"keywords":["키워드1","키워드2","키워드3","키워드4","키워드5"]}',
-      ].filter(Boolean).join("\n\n");
-      const raw = await b.write.ask(prompt, { json: true, busyLabel: "기사 초안을 쓰고 있습니다" });
-      const s = String(raw || "").replace(/```(?:json)?/gi, "");
-      const j = JSON.parse(s.slice(s.indexOf("{"), s.lastIndexOf("}") + 1)) as Partial<ArticleDraft>;
-      const paragraphs = (j.paragraphs || []).filter((p) => p && String(p.text || "").trim()).map((p) => ({ heading: String(p.heading || "").trim(), text: String(p.text).trim() }));
-      if (!j.title || !paragraphs.length) throw new Error("AI 답을 읽지 못했어요. 다시 눌러 주세요.");
-      // 자리 — 첫 사진은 첫 문단 뒤, 둘째는 둘째 문단 뒤, 셋째는 셋째 문단 뒤
-      const photos = a.shots.map((x, i) => ({ url: x.url, caption: x.caption, after: Math.min(paragraphs.length, i + 1) }));
-      onDraft({ title: String(j.title).trim(), subtitles: (j.subtitles || []).map(String).filter(Boolean).slice(0, 3), paragraphs, keywords: (j.keywords || []).map(String).filter(Boolean).slice(0, 10), photos });
-      setDone(true);
+      const raw = await b.write.ask(buildPrompt(a), { json: true, busyLabel: "기사 초안을 쓰고 있습니다", ...(aiUse ? { provider: aiUse.provider, mode: aiUse.mode } : {}) });
+      applyRaw(raw, a);
     } catch (e) {
       setErr(errOf(e));
     } finally { off(); setBusy(""); }
   };
+  /** [📋 질문 복사] — ChatGPT·Gemini 창에 직접 붙여 넣어 묻기 */
+  const copyQuestion = async () => {
+    const a = curAnalysis();
+    if (!a) return setErr("먼저 재료를 고르고 분석이 끝나야 해요.");
+    try { await navigator.clipboard.writeText(buildPrompt(a)); setErr(""); setDone(false); setNote("질문을 복사했어요. AI 창에 붙여 넣고, 답을 [복사]한 뒤 [📋 AI 답 붙여넣기]를 누르세요."); } catch { setErr("복사하지 못했어요."); }
+  };
+  /** [📋 AI 답 붙여넣기] — AI 창에서 [응답 복사]한 답을 그대로 */
+  const pasteAnswer = async () => {
+    try {
+      const raw = await navigator.clipboard.readText();
+      if (!raw.trim()) return setErr("복사한 AI 답이 없어요. AI 창에서 답을 [복사]해 주세요.");
+      if (hasContent() && !confirm("지금 쓴 제목·본문을 붙여 넣은 답으로 바꿀까요?")) return;
+      setErr(""); setNote("");
+      applyRaw(raw, curAnalysis());
+    } catch (e) { setErr(errOf(e)); }
+  };
+  const [note, setNote] = useState("");
+  // 기사 본문 칸에 AI 답을 그냥 Ctrl+V 해도 (NewsWriteForm 이 알려 준다) — 분석해 둔 사진까지 함께
+  const pasteRef = React.useRef<(raw: string) => void>(() => {});
+  pasteRef.current = (raw) => { try { setErr(""); setNote(""); applyRaw(raw, curAnalysis()); } catch (e) { setErr(errOf(e)); } };
+  useEffect(() => {
+    const on = (e: Event) => pasteRef.current(String((e as CustomEvent).detail || ""));
+    window.addEventListener("gs-article-paste", on);
+    return () => window.removeEventListener("gs-article-paste", on);
+  }, []);
 
-  /** 분석 결과 — 숫자 몇 줄 · 사진 3장 (눌러서 빼기) · [다시 캡처] */
+  /** 사진 순서 바꾸기 — 맨 앞(대표)에는 실제 사진만 */
+  const dragFrom = React.useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const moveShot = (from: number, to: number) => {
+    if (!ana || from === to) return;
+    const l = [...ana.shots];
+    const [x] = l.splice(from, 1);
+    l.splice(to, 0, x);
+    setAna({ ...ana, shots: l });
+  };
+  const working = Boolean(anaBusy) || capBusy;
+  const [zoom, setZoom] = useState<number | null>(null);
+  useEffect(() => {
+    if (zoom === null) return;
+    const n = ana?.shots.length || 0;
+    const on = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoom(null);
+      else if (e.key === "ArrowRight" && n) setZoom((z) => (z === null ? z : (z + 1) % n));
+      else if (e.key === "ArrowLeft" && n) setZoom((z) => (z === null ? z : (z - 1 + n) % n));
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, [zoom, ana?.shots.length]);
+  /** 분석 결과 — 숫자 몇 줄 · 사진 (끌어서 순서, 맨 앞이 대표) · [다시 캡처]. 작업 중엔 흰 막 + 점점점 (뉴스·SNS자동화와 같은 모양) */
   const anaBox = () => (src !== "topic") && (anaBusy || ana) ? (
-    <div style={{ marginTop: 10, border: `1px solid ${ana && !anaBusy ? NAVY : LINE}`, borderRadius: 5, background: "#f7f9fc", padding: "10px 12px" }}>
+    <div style={{ position: "relative", flexShrink: 0, marginTop: 10, border: `1px solid ${ana && !working ? NAVY : LINE}`, borderRadius: 6, background: "#f7f9fc", padding: "10px 12px", minHeight: working ? 120 : undefined }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 800, color: NAVY }}>
-        🔍 분석 {anaBusy ? <span style={{ fontWeight: 600, color: SUB }}>· {anaBusy}<Dots color={NAVY} /></span> : <span style={{ fontWeight: 600, color: "#16a34a" }}>· 끝 — 확인하고 아래에서 쓰세요</span>}
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+        분석 {working ? <span style={{ fontWeight: 600, color: SUB }}>· 하는 중</span> : <span style={{ fontWeight: 600, color: "#16a34a" }}>· 끝 — 확인하고 아래에서 쓰세요</span>}
       </div>
       {ana && ana.summary.length > 0 && <div style={{ marginTop: 6, fontSize: 12, color: SUB, lineHeight: 1.6 }}>{ana.summary.slice(0, 4).map((l, i) => <div key={i} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l}</div>)}</div>}
-      {ana?.complex && (
-        <div style={{ marginTop: 8 }}>
-          <div style={{ display: "flex", gap: 5 }}>
-            {ana.shots.map((x, i) => (
-              <div key={i} style={{ position: "relative", flex: "1 1 0", minWidth: 0 }} title={x.caption}>
-                <img src={x.thumb} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", borderRadius: 4, display: "block", border: `1px solid ${LINE}` }} />
-                <button type="button" onClick={() => setAna((a) => (a ? { ...a, shots: a.shots.filter((_, k) => k !== i) } : a))} title="이 사진 빼기"
-                  style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: "50%", border: 0, background: "rgba(0,0,0,.6)", color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: 1 }}>✕</button>
-              </div>
-            ))}
-            {!ana.shots.length && !anaBusy && <div style={{ fontSize: 12, color: DIM }}>캡처한 사진이 없어요</div>}
+      {ana && (ana.complex || ana.shots.length > 0) && (
+        <div style={{ marginTop: 9 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: TEXT }}>사진 · 화면</span>
+            <span style={{ fontSize: 11.5, color: DIM }}>기사에 들어갈 순서 · {ana.shots.length}장</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-            <span style={{ fontSize: 11.5, color: DIM, flex: 1 }}>기사에 들어갈 사진 · 공실열람 화면 · 로드뷰 · 실거래가</span>
-            <button type="button" onClick={() => void recapture()} disabled={Boolean(anaBusy) || capBusy} style={{ ...btn, height: 26, padding: "0 8px", fontSize: 12 }}>↻ 다시 캡처</button>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
+            {ana.shots.map((x, i) => {
+              const cover = i === 0;
+              return (
+                <div key={x.url} draggable
+                  onDragStart={(e) => { dragFrom.current = i; e.dataTransfer.effectAllowed = "move"; }}
+                  onDragOver={(e) => { e.preventDefault(); if (dragOver !== i) setDragOver(i); }}
+                  onDragLeave={() => setDragOver((v) => (v === i ? null : v))}
+                  onDrop={(e) => { e.preventDefault(); const f = dragFrom.current; dragFrom.current = null; setDragOver(null); if (f !== null) moveShot(f, i); }}
+                  onDragEnd={() => { dragFrom.current = null; setDragOver(null); }}
+                  title={`${x.caption}\n끌어서 순서를 바꿔요`}
+                  style={{ position: "relative", minWidth: 0, background: "#fff", borderRadius: 6, overflow: "hidden", cursor: "grab",
+                    border: `${cover || dragOver === i ? 2 : 1}px solid ${dragOver === i ? "#2563eb" : cover ? NAVY : LINE}` }}>
+                  <img src={x.thumb} alt="" draggable={false} onClick={() => setZoom(i)} title="눌러서 크게 보기" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", cursor: "pointer" }} />
+                  <span style={{ position: "absolute", left: 4, top: 4, padding: "2px 6px", borderRadius: 4, background: cover ? NAVY : "rgba(17,24,39,.72)", color: "#fff", fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap" }}>
+                    {cover ? `대표 · ${kindOf(x)}` : kindOf(x)}
+                  </span>
+                  <button type="button" onClick={() => setAna((a) => (a ? { ...a, shots: fixFront(a.shots.filter((_, k) => k !== i)) } : a))} title="이 사진 빼기"
+                    style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: "50%", border: 0, background: "rgba(0,0,0,.6)", color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: 1 }}>✕</button>
+                  <div style={{ padding: "4px 6px 5px", fontSize: 10.5, color: SUB, lineHeight: 1.35, height: 30, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{x.caption}</div>
+                  {!cover && (
+                    <button type="button" onClick={() => moveShot(i, 0)} title="이 사진을 대표 사진으로 (기사 맨 앞)"
+                      style={{ position: "absolute", right: 4, bottom: 38, height: 20, padding: "0 6px", borderRadius: 4, border: 0, background: "rgba(255,255,255,.92)", color: NAVY, fontSize: 10.5, fontWeight: 800, cursor: "pointer" }}>대표로</button>
+                  )}
+                </div>
+              );
+            })}
+            {!ana.shots.length && !working && <div style={{ fontSize: 12, color: DIM }}>캡처한 사진이 없어요</div>}
           </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7 }}>
+            <span style={{ fontSize: 11.5, color: DIM, flex: 1, lineHeight: 1.45 }}>끌어서 순서를 바꿔요 · 맨 앞이 대표 사진 · 대표 사진은 기사 맨 앞에 들어가요{!isApp && <><br /><b style={{ color: NAVY }}>공실열람·지도·로드뷰 화면은 공실마케팅 앱에서 자동으로 들어가요</b></>}</span>
+            {ana.complex && <button type="button" onClick={() => void recapture()} disabled={working} style={{ ...btn, height: 26, padding: "0 8px", fontSize: 12 }}>↻ 다시 캡처</button>}
+          </div>
+        </div>
+      )}
+      {/* 크게 보기 — ← → 로 넘기고 Esc·바깥 누르면 닫힘 */}
+      {zoom !== null && ana && ana.shots[zoom] && createPortal(
+        // 이미지만 크게 — 아무 데나 누르거나 Esc 로 닫힘 (← → 로 넘기기) (2026-11-03 사장님 "그냥 이미지만 크게")
+        <div onClick={() => setZoom(null)} style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,.82)", display: "flex", alignItems: "center", justifyContent: "center", padding: 40, cursor: "pointer" }}>
+          <img src={ana.shots[zoom].url} alt="" style={{ maxWidth: "min(60vw, 960px)", maxHeight: "65vh", objectFit: "contain", borderRadius: 6, boxShadow: "0 20px 60px rgba(0,0,0,.4)" }} />
+        </div>,
+        document.body,
+      )}
+      {/* 작업 중 — 흰 막 + 점점점 (2026-11-03 사장님: 뉴스·SNS자동화처럼) */}
+      {working && (
+        <div style={{ position: "absolute", inset: 0, borderRadius: 6, background: "rgba(255,255,255,.86)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 2 }}>
+          <BigDots />
+          <div style={{ fontSize: 14, fontWeight: 800, color: NAVY }}>분석·캡처 중…</div>
+          {anaBusy && <div style={{ fontSize: 12, color: SUB, textAlign: "center", padding: "0 12px" }}>{anaBusy}</div>}
         </div>
       )}
     </div>
@@ -298,7 +610,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
         <div>
           {src === "vacancy" && (<>{head(n++, "공실 고르기")}
             <select value={vacId} onChange={(e) => setVacId(e.target.value)} style={input}>
-              {vacs === null ? <option>불러오는 중…</option> : vacs.length ? vacs.map((v) => <option key={v.id} value={v.id}>{v.label}</option>) : <option value="">광고 중인 내 공실이 없어요</option>}
+              {vacs === null ? <option>불러오는 중…</option> : vacs.length ? <><option value="">공실을 고르세요 ({vacs.length}개)</option>{vacs.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</> : <option value="">광고 중인 내 공실이 없어요</option>}
             </select></>)}
           {src === "market" && (<>{head(n++, "단지 찾기")}
             <div style={{ display: "flex", gap: 5 }}>
@@ -316,8 +628,10 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
               <button type="button" onClick={() => void takeNews("url")} disabled={newsBusy || !/^https?:\/\//.test(newsUrl.trim())} style={btn}>가져오기</button>
             </div>
             <div style={{ display: "flex", gap: 5, marginTop: 6 }}>
-              <button type="button" onClick={() => void bridge()?.column?.openNews?.().catch(() => {})} style={{ ...btn, height: 34 }}>📂 네이버 뉴스 열기</button>
-              <button type="button" onClick={() => void takeNews("grab")} disabled={newsBusy} title="전용 크롬에서 보고 있는 기사를 가져와요" style={{ ...btn, height: 34 }}>{newsBusy ? "가져오는 중…" : "지금 보는 뉴스 가져오기"}</button>
+              <button type="button" onClick={() => (isApp ? void bridge()?.column?.openNews?.().catch(() => {}) : void window.open("https://news.naver.com/section/101", "_blank", "noopener"))} style={{ ...btn, height: 34 }}>📂 네이버 뉴스 열기</button>
+              {isApp
+                ? <button type="button" onClick={() => void takeNews("grab")} disabled={newsBusy} title="전용 크롬에서 보고 있는 기사를 가져와요" style={{ ...btn, height: 34 }}>{newsBusy ? "가져오는 중…" : "지금 보는 뉴스 가져오기"}</button>
+                : <span style={{ alignSelf: "center", fontSize: 11.5, color: DIM }}>{newsBusy ? "가져오는 중…" : "기사 주소를 복사해 위에 붙여 넣으세요"}</span>}
             </div>
             {news && (
               <div style={{ marginTop: 8, padding: "10px 12px", border: `1px solid ${NAVY}`, borderRadius: 5, background: "#f5f8fd" }}>
@@ -341,7 +655,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
         </div>
         {anaBox()}
         <div>{head(n++, "기사 스타일")}
-          <div style={{ display: "flex", gap: 5 }}>{KINDS.map((k) => <button key={k.id} type="button" onClick={() => setKind(k.id)} title={k.prompt} style={chip(kind === k.id)}>{k.name}</button>)}</div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{KINDS.map((k) => <button key={k.id} type="button" onClick={() => setKind(k.id)} title={k.prompt} style={chip(kind === k.id)}>{k.name}</button>)}</div>
         </div>
         <div>{head(n++, <>문체 {dim("(선택)")}</>)}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
@@ -365,14 +679,48 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
           <textarea value={more} onChange={(e) => setMore(e.target.value)} rows={3} placeholder="예: 신혼부부 관점으로, 역세권 강조" style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical" }} />
         </div>
       </div>
-      <div style={{ padding: "14px 18px", borderTop: `1px solid ${LINE}` }}>
-        <button type="button" onClick={() => void write()} disabled={Boolean(busy) || !ready}
+      <div style={{ padding: "12px 18px 14px", borderTop: `1px solid ${LINE}` }}>
+        {/* 쓸 AI — 대본 작성과 같은 기억 (2026-11-03 사장님: "제미나이로 만드는 것이었는데 GPT로") */}
+        {!isApp && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 9 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: SUB, marginRight: 3 }}>쓸 AI</span>
+            {WEB_AI.map((o) => (
+              <button key={o.id} type="button" onClick={() => setWebAi(o.id)} title={`내 ${o.name} 계정으로 — 새 탭에 열려요`} style={{ ...chip(webAi === o.id), height: 28, padding: "0 9px", fontSize: 12.5 }}>{o.name}</button>
+            ))}
+            <span style={{ fontSize: 11.5, color: DIM }}>내 계정 · 새 탭</span>
+          </div>
+        )}
+        {isApp && aiOpts.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 9 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: SUB, marginRight: 3 }}>쓸 AI</span>
+            {aiOpts.map((o) => {
+              const on = Boolean(aiCur && aiCur.provider === o.c.provider && aiCur.mode === o.c.mode);
+              return (
+                <button key={`${o.c.provider}-${o.c.mode}`} type="button" disabled={!o.ok} onClick={() => setAiSel(o.c)}
+                  title={o.ok ? (o.c.mode === "api" ? "넣어 둔 API 키로 — 쓴 만큼 요금" : "연결한 내 계정 웹 창으로 — 따로 돈 안 듦") : "연결 안 됨 — [AI 설정]에서 연결하세요"}
+                  style={{ ...chip(on), height: 28, padding: "0 9px", fontSize: 12.5, ...(o.ok ? {} : { borderStyle: "dashed", color: "#b0b8c4", cursor: "default" }) }}>
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <button type="button" onClick={() => void write()} disabled={!webWait && (Boolean(busy) || !ready)}
           style={{ width: "100%", height: 48, borderRadius: 6, border: 0, background: busy || anaBusy ? NAVY : !ready ? "#9aa6b8" : "#2563eb", color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: busy || !ready ? "default" : "pointer", fontFamily: "inherit" }}>
-          {busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : "✨ AI 기사 초안 작성"}
+          {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : "✨ AI 기사 초안 작성"}
         </button>
         <div style={{ marginTop: 7, fontSize: 12, textAlign: "center", color: err ? "#dc2626" : busy ? NAVY : done ? "#16a34a" : DIM, fontWeight: err || busy || done ? 700 : 500, lineHeight: 1.5 }}>
-          {err || busy || (done ? "기사 칸에 채웠어요. 고쳐서 등록하세요." : anaBusy ? "분석이 끝나면 쓸 수 있어요" : !ready && src !== "topic" ? "재료를 고르면 저절로 분석해요" : "분석한 재료로 써요 · 문체를 바꿔 여러 번 다시 써도 돼요")}
+          {err || busy || note || (done ? "기사 칸에 채웠어요. 고쳐서 등록하세요." : anaBusy ? "분석이 끝나면 쓸 수 있어요" : !ready && src !== "topic" ? "재료를 고르면 저절로 분석해요" : "분석한 재료로 써요 · 문체를 바꿔 여러 번 다시 써도 돼요")}
         </div>
+        {/* AI 창에서 직접 묻고 답을 복사해 와도 된다 (2026-11-03 사장님: "GPT로 해서 복사 붙여넣기 해도") */}
+        <div style={{ display: "flex", gap: 6, marginTop: 9 }}>
+          <button type="button" onClick={() => void copyQuestion()} disabled={!ready || Boolean(busy)} title="AI에게 줄 질문을 복사해요 — ChatGPT·Gemini 창에 붙여 넣어 물어보세요" style={{ ...btn, flex: 1, height: 32, fontSize: 12.5 }}>📋 질문 복사</button>
+          <button type="button" onClick={() => void pasteAnswer()} disabled={Boolean(busy) && !webWait} title="AI 창에서 [복사]한 답을 그대로 기사 칸에 넣어요" style={{ ...btn, flex: 1, height: 32, fontSize: 12.5 }}>📋 AI 답 붙여넣기</button>
+          <button type="button" onClick={() => setGuide(true)} title="AI 창에서 복사·붙여넣기 하는 법" style={{ ...btn, height: 32, padding: "0 10px", fontSize: 12.5 }}>? 쓰는 법</button>
+        </div>
+        {/* 웹 — AI 답을 기다리는 동안 그림 설명 창 · [? 쓰는 법] (2026-11-03 사장님: 처음 하는 사람은 복사 붙여넣기를 모름, 복사 단추 위치까지) */}
+        {webWait && <AiCopyGuide ai={webAi} waiting msg={note} onReopen={() => void webReopen()} onPaste={() => void webTry(false)} onClose={() => { setWebWait(null); setBusy(""); setNote(""); }} />}
+        {guide && !webWait && <AiCopyGuide ai={isApp ? aiCur?.provider || "chatgpt" : webAi} waiting={false} onClose={() => setGuide(false)} />}
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ const readJson = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); }
 /** 회원 AI 에게 묻기 — 웹이 만든 지시문 그대로. JSON 으로 답하라 했으면 다 받을 때까지 기다린다 */
 async function ask(prompt, opts = {}, onProgress = () => {}) {
   const ai = require("./ai");
-  const pick = opts.provider ? { provider: opts.provider, mode: opts.mode === "api" ? "api" : undefined } : {};
+  const pick = opts.provider ? { provider: opts.provider, mode: opts.mode === "api" ? "api" : opts.mode === "account" ? "account" : undefined } : {};
   return ai.ask(String(prompt || ""), {
     ...pick,
     onProgress,

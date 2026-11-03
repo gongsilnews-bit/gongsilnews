@@ -4,6 +4,8 @@ import React from "react";
 import { extractYoutubeId, getYoutubeThumbnail } from "./articleFormUtils";
 
 export interface ArticlePhotoModalsProps {
+  /** 앱(공실마케팅studio) — 흰 바탕·남색 하나·번호 단계 (2026-11-03 사장님 "내가 좋아하는 디자인") */
+  studio?: boolean;
   // Video Modal
   showVideoModal: boolean;
   setShowVideoModal: (v: boolean) => void;
@@ -144,11 +146,13 @@ export default function ArticlePhotoModals({
   textPrimary = "#0f172a",
   textSecondary = "#64748b",
   textMuted = "#94a3b8",
+  studio = false,
 }: ArticlePhotoModalsProps) {
   const accentBlue = "#3b82f6";
 
   return (
     <>
+      {studio && <style>{`.gs-st{border-radius:10px!important;box-shadow:0 18px 50px rgba(15,23,42,.22)!important;counter-reset:st}.gs-st .gs-st-head{background:#fff!important;color:#111827!important;border-bottom:1px solid #e5e7eb;border-radius:10px 10px 0 0!important;padding:16px 22px!important}.gs-st .gs-st-head *{color:#111827!important}.gs-st .gs-st-head button{color:#6b7280!important;font-size:20px!important}.gs-st .gs-st-ok{background:#1e3a6e!important;box-shadow:none!important;border-radius:6px!important}.gs-st .gs-st-ok:hover{background:#16305c!important}.gs-st .gs-st-no{border-radius:6px!important}.gs-st .gs-step{counter-increment:st;display:inline-flex;align-items:center;min-width:104px!important;white-space:nowrap}.gs-st .gs-step::before{content:counter(st);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:20px;height:20px;border-radius:50%;background:#1e3a6e;color:#fff;font-size:11.5px;font-weight:800;margin-right:7px}`}</style>}
       {/* ═══ 영상추가 모달 ═══ */}
       {showVideoModal && (
         <div style={{
@@ -156,12 +160,12 @@ export default function ArticlePhotoModals({
           background: 'rgba(0,0,0,0.45)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowVideoModal(false)}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div onClick={e => e.stopPropagation()} className={studio ? "gs-st" : undefined} style={{
             background: '#fff', borderRadius: 14, width: 540, maxHeight: '85vh', overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           }}>
             {/* 헤더 */}
-            <div style={{
+            <div className="gs-st-head" style={{
               background: '#ef4444', color: '#fff', padding: '16px 20px',
               borderTopLeftRadius: 14, borderTopRightRadius: 14,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -171,15 +175,15 @@ export default function ArticlePhotoModals({
             </div>
             {/* 본문 */}
             <div style={{ padding: '24px 30px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 16, alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>링크</span>
+              <div style={{ display: 'grid', gridTemplateColumns: studio ? '110px 1fr' : '80px 1fr', gap: 16, alignItems: 'center' }}>
+                <span className="gs-step" style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>링크</span>
                 <div>
                   <input type="text" value={modalVideoUrl} onChange={e => setModalVideoUrl(e.target.value)}
                     placeholder="YouTube 영상 링크 입력"
                     style={{ width: '100%', padding: '10px 12px', border: `1px solid ${border}`, borderRadius: 6, fontSize: 13 }} />
                 </div>
 
-                <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>크기 맞춤</span>
+                <span className="gs-step" style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>크기 맞춤</span>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
                   <input type="checkbox" checked={modalVideoShorts} onChange={e => setModalVideoShorts(e.target.checked)} style={{ accentColor: accentBlue }} />
                   쇼츠(세로) 영상으로 크기 맞춤
@@ -188,11 +192,11 @@ export default function ArticlePhotoModals({
 
               {/* 하단 버튼 */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 32 }}>
-                <button type="button" onClick={handleVideoModalConfirm}
+                <button type="button" onClick={handleVideoModalConfirm} className="gs-st-ok"
                   style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', width: 120 }}>
                   ✔ 확인
                 </button>
-                <button type="button" onClick={() => setShowVideoModal(false)}
+                <button type="button" onClick={() => setShowVideoModal(false)} className="gs-st-no"
                   style={{ background: '#fff', color: textPrimary, border: `1px solid ${border}`, padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', width: 120 }}>
                   ✕ 취소
                 </button>
@@ -209,12 +213,12 @@ export default function ArticlePhotoModals({
           background: 'rgba(0,0,0,0.45)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowPhotoModal(false)}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div onClick={e => e.stopPropagation()} className={studio ? "gs-st" : undefined} style={{
             background: '#fff', borderRadius: 14, width: 540, maxHeight: '85vh', overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           }}>
             {/* 헤더 */}
-            <div style={{
+            <div className="gs-st-head" style={{
               background: '#3b82f6', color: '#fff', padding: '16px 24px',
               borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
@@ -226,7 +230,7 @@ export default function ArticlePhotoModals({
             <div style={{ padding: '24px 28px' }}>
               {/* 선택 */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>선택</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>선택</label>
                 <div style={{ flex: 1 }}>
                   <input type="file" ref={modalFileRef} accept="image/*" hidden onChange={e => handleModalFileSelect(e.target.files)} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -268,7 +272,7 @@ export default function ArticlePhotoModals({
 
               {/* 기준크기 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>기준크기</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>기준크기</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {[180, 250, 600, 960, 1280].map(s => (
                     <button key={s} onClick={() => setModalSize(s)} style={{
@@ -284,7 +288,7 @@ export default function ArticlePhotoModals({
 
               {/* 삽입방식 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입방식</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입방식</label>
                 <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
                   {(['자동', '수동'] as const).map(m => (
                     <button key={m} onClick={() => setModalInsertMode(m)} style={{
@@ -299,7 +303,7 @@ export default function ArticlePhotoModals({
 
               {/* 삽입위치 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입위치</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입위치</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {([{ k: 'left' as const, icon: '◧' }, { k: 'center' as const, icon: '▣' }, { k: 'right' as const, icon: '◨' }]).map(({ k, icon }) => (
                     <button key={k} onClick={() => setModalAlign(k)} style={{
@@ -316,7 +320,7 @@ export default function ArticlePhotoModals({
 
               {/* 워터마크 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>워터마크</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>워터마크</label>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {Array.from({ length: 9 }, (_, i) => (
                     <button key={i} onClick={() => setModalWatermark(i)} style={{
@@ -354,7 +358,7 @@ export default function ArticlePhotoModals({
 
               {/* 설명 (캡션) */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>설명 <span style={{ fontWeight: 400, color: textMuted }}>(캡션)</span></label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>설명 <span style={{ fontWeight: 400, color: textMuted }}>(캡션)</span></label>
                 <textarea value={modalCaption} onChange={e => setModalCaption(e.target.value)}
                   placeholder="사진설명입력"
                   rows={3}
@@ -368,7 +372,7 @@ export default function ArticlePhotoModals({
 
               {/* 캡션정렬 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>캡션정렬</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>캡션정렬</label>
                 <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
                   {([{ k: 'left' as const, label: '좌측' }, { k: 'center' as const, label: '중앙' }, { k: 'right' as const, label: '우측' }]).map(({ k, label }) => (
                     <button key={k} onClick={() => setModalCaptionAlign(k)} style={{
@@ -384,7 +388,7 @@ export default function ArticlePhotoModals({
 
             {/* 푸터 버튼 */}
             <div style={{ padding: '16px 28px 24px', display: 'flex', justifyContent: 'center', gap: 12 }}>
-              <button onClick={handlePhotoModalConfirm} style={{
+              <button onClick={handlePhotoModalConfirm} className="gs-st-ok" style={{
                 padding: '12px 36px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
                 fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
                 boxShadow: '0 2px 8px rgba(59,130,246,0.3)', transition: 'background 0.15s',
@@ -392,7 +396,7 @@ export default function ArticlePhotoModals({
               onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
               onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
               >✓ 확인</button>
-              <button onClick={() => setShowPhotoModal(false)} style={{
+              <button onClick={() => setShowPhotoModal(false)} className="gs-st-no" style={{
                 padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
                 fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}>✕ 취소</button>
@@ -408,12 +412,12 @@ export default function ArticlePhotoModals({
           background: 'rgba(0,0,0,0.45)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowEditModal(false)}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div onClick={e => e.stopPropagation()} className={studio ? "gs-st" : undefined} style={{
             background: '#fff', borderRadius: 14, width: 540, maxHeight: '85vh', overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           }}>
             {/* 헤더 */}
-            <div style={{
+            <div className="gs-st-head" style={{
               background: '#374151', color: '#fff', padding: '16px 24px',
               borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
@@ -425,7 +429,7 @@ export default function ArticlePhotoModals({
             <div style={{ padding: '24px 28px' }}>
               {/* 선택 (미리보기) */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>선택</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>선택</label>
                 <div style={{ flex: 1 }}>
                   <div style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${border}`, background: '#f9fafb', textAlign: 'center', padding: 16 }}>
                     <img src={photoFiles[editPhotoIdx].preview} alt="미리보기"
@@ -439,7 +443,7 @@ export default function ArticlePhotoModals({
 
               {/* 기준크기 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>기준크기</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>기준크기</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {[180, 250, 600, 960, 1280].map(s => (
                     <button key={s} onClick={() => setEditSize(s)} style={{
@@ -455,7 +459,7 @@ export default function ArticlePhotoModals({
 
               {/* 삽입방식 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입방식</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입방식</label>
                 <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
                   {(['자동', '수동'] as const).map(m => (
                     <button key={m} onClick={() => setEditInsertMode(m)} style={{
@@ -470,7 +474,7 @@ export default function ArticlePhotoModals({
 
               {/* 삽입위치 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입위치</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입위치</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {([{ k: 'left' as const, icon: '◧' }, { k: 'center' as const, icon: '▣' }, { k: 'right' as const, icon: '◨' }]).map(({ k, icon }) => (
                     <button key={k} onClick={() => setEditAlign(k)} style={{
@@ -487,7 +491,7 @@ export default function ArticlePhotoModals({
 
               {/* 설명 (캡션) */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>설명 <span style={{ fontWeight: 400, color: textMuted }}>(캡션)</span></label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>설명 <span style={{ fontWeight: 400, color: textMuted }}>(캡션)</span></label>
                 <textarea value={editCaption} onChange={e => setEditCaption(e.target.value)}
                   placeholder="사진설명입력"
                   rows={3}
@@ -501,7 +505,7 @@ export default function ArticlePhotoModals({
 
               {/* 캡션정렬 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>캡션정렬</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>캡션정렬</label>
                 <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
                   {([{ k: 'left' as const, label: '좌측' }, { k: 'center' as const, label: '중앙' }, { k: 'right' as const, label: '우측' }]).map(({ k, label }) => (
                     <button key={k} onClick={() => setEditCaptionAlign(k)} style={{
@@ -517,7 +521,7 @@ export default function ArticlePhotoModals({
 
             {/* 푸터 버튼 */}
             <div style={{ padding: '16px 28px 24px', display: 'flex', justifyContent: 'center', gap: 12 }}>
-              <button onClick={handleEditPhotoConfirm} style={{
+              <button onClick={handleEditPhotoConfirm} className="gs-st-ok" style={{
                 padding: '12px 36px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
                 fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
                 boxShadow: '0 2px 8px rgba(59,130,246,0.3)', transition: 'background 0.15s',
@@ -525,7 +529,7 @@ export default function ArticlePhotoModals({
               onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
               onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
               >✓ 확인</button>
-              <button onClick={() => setShowEditModal(false)} style={{
+              <button onClick={() => setShowEditModal(false)} className="gs-st-no" style={{
                 padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
                 fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}>✕ 취소</button>
@@ -541,12 +545,12 @@ export default function ArticlePhotoModals({
           background: 'rgba(0,0,0,0.45)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowVideoEditModal(false)}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div onClick={e => e.stopPropagation()} className={studio ? "gs-st" : undefined} style={{
             background: '#fff', borderRadius: 14, width: 520, maxHeight: '80vh', overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           }}>
             {/* 헤더 */}
-            <div style={{
+            <div className="gs-st-head" style={{
               background: '#374151', color: '#fff', padding: '16px 24px',
               borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
@@ -558,7 +562,7 @@ export default function ArticlePhotoModals({
             <div style={{ padding: '28px 28px' }}>
               {/* 영상URL/태그 */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 90, paddingTop: 10 }}>영상URL/태그</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 90, paddingTop: 10 }}>영상URL/태그</label>
                 <textarea value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)}
                   placeholder="https://youtu.be/..."
                   rows={3}
@@ -580,7 +584,7 @@ export default function ArticlePhotoModals({
 
               {/* 캡션 */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 8 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 90, paddingTop: 10 }}>캡션</label>
+                <label className="gs-step" style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 90, paddingTop: 10 }}>캡션</label>
                 <textarea value={editVideoCaption} onChange={e => setEditVideoCaption(e.target.value)}
                   placeholder="동영상설명입력"
                   rows={3}
@@ -595,7 +599,7 @@ export default function ArticlePhotoModals({
 
             {/* 푸터 버튼 */}
             <div style={{ padding: '16px 28px 24px', display: 'flex', justifyContent: 'center', gap: 12 }}>
-              <button onClick={handleEditVideoConfirm} style={{
+              <button onClick={handleEditVideoConfirm} className="gs-st-ok" style={{
                 padding: '12px 36px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
                 fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
                 boxShadow: '0 2px 8px rgba(59,130,246,0.3)', transition: 'background 0.15s',
@@ -603,7 +607,7 @@ export default function ArticlePhotoModals({
               onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
               onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
               >✓ 확인</button>
-              <button onClick={() => setShowVideoEditModal(false)} style={{
+              <button onClick={() => setShowVideoEditModal(false)} className="gs-st-no" style={{
                 padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
                 fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}>✕ 취소</button>

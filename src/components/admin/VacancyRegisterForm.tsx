@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useFormDraft, formatDraftAge } from "@/hooks/useFormDraft";
 import AgencyQuickEditModal, { type AgencyQuickInfo } from "./AgencyQuickEditModal";
 import WatermarkPicker, { useWatermarkChoice } from "./WatermarkPicker";
+import { useStudioLight, Ico, ICON, NAVY } from "@/components/admin/studioLight";
 import { applyCenterWatermark, type WatermarkChoice } from "@/utils/centerWatermark";
 
 /* ──────────────────────────────────────────────
@@ -113,6 +114,13 @@ const COMMERCIAL_CATEGORY = "상가·사무실·건물·공장·토지";
 
 export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "", ownerId = "", editData }: VacancyRegisterFormProps) {
   const router = useRouter();
+  // 앱 밝은 화면 — 파랑을 남색으로, 주소 검색·등록 단추 녹색도 남색으로 (2026-11-03 사장님 "공실관리도 남색 테마에 SVG, 색상으로 포인트")
+  //  웹·어두운 화면은 원래 색 그대로. 체크리스트 녹색·(비공개) 주황 같은 포인트 색은 남긴다
+  const stLight = useStudioLight(darkMode);
+  const VPAL: Record<string, string> = { "#3b82f6": NAVY, "#2563eb": NAVY, "#1d4ed8": NAVY, "#1e3a8a": NAVY, "#eff6ff": "#eef1f7", "#bfdbfe": "#c9d3e3" };
+  const VPAL_G: Record<string, string> = { "#10b981": NAVY, "#059669": NAVY, "#ecfdf5": "#f7f8fa", "#a7f3d0": "#e5e7eb", "#047857": "#374151", "#f97316": NAVY };
+  const vcol = (c: string) => (stLight ? VPAL[c] || c : c);
+  const vcolG = (c: string) => (stLight ? VPAL_G[c] || c : c);
 
   // ── 상태 관리 ──
   const [mainUsage, setMainUsage] = useState("");
@@ -1055,16 +1063,21 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const inputBg = darkMode ? "#2c2d31" : "#fff";
 
   // ── 공통 입력 스타일 ──
-  const inputStyle: React.CSSProperties = {
+  const inputStyle: React.CSSProperties = stLight ? {
+    width: "100%", height: 42, padding: "0 12px",
+    border: "1px solid #d9dde3", borderRadius: 5, fontSize: 14,
+    color: "#1f2937", background: "#fff", outline: "none",
+    transition: "border-color 0.2s",
+  } : {
     width: "100%", height: 48, padding: "0 16px",
     border: `1px solid ${border}`, borderRadius: 8, fontSize: 14,
     color: textPrimary, background: inputBg, outline: "none",
     transition: "border-color 0.2s",
   };
 
-  const labelStyle: React.CSSProperties = {
-    fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 10, display: "block",
-  };
+  const labelStyle: React.CSSProperties = stLight
+    ? { fontSize: 14, fontWeight: 800, color: "#1f2937", marginBottom: 8, display: "block" }
+    : { fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 10, display: "block" };
 
   const reqMark = <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>;
   // 분류별 필수 입력 항목 (모바일 등록폼과 동일)
@@ -1106,9 +1119,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
       type="button"
       onClick={onClick}
       style={{
-        flex: flex || 1, minHeight: 48, border: selected ? "2px solid #1d4ed8" : `1px solid ${border}`,
-        borderRadius: 8, background: selected ? (darkMode ? "#1e3a5f" : "#eff6ff") : cardBg,
-        color: selected ? "#1d4ed8" : textPrimary, fontSize: 14, fontWeight: selected ? 700 : 500,
+        flex: flex || 1, minHeight: stLight ? 42 : 48, border: stLight ? `1px solid ${selected ? NAVY : "#d9dde3"}` : selected ? `2px solid ${vcol("#1d4ed8")}` : `1px solid ${border}`,
+        borderRadius: stLight ? 5 : 8, background: stLight ? (selected ? NAVY : "#fff") : selected ? (darkMode ? "#1e3a5f" : vcol("#eff6ff")) : cardBg,
+        color: stLight ? (selected ? "#fff" : "#374151") : selected ? vcol("#1d4ed8") : textPrimary, fontSize: 14, fontWeight: stLight ? 700 : selected ? 700 : 500,
         cursor: "pointer", transition: "all 0.2s",
         whiteSpace: "normal", wordBreak: "keep-all", lineHeight: 1.3, padding: "4px"
       }}
@@ -1276,7 +1289,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const progress = Math.round((doneCount / checkItems.length) * 100);
 
   return (
-    <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }} onChangeCapture={draft.markDirty} onClickCapture={draft.markDirty}>
+    <div className={stLight ? "gs-vf" : undefined} style={{ flex: 1, background: stLight ? "#f7f8fa" : bg, position: "relative", overflowY: "auto", height: "100%" }} onChangeCapture={draft.markDirty} onClickCapture={draft.markDirty}>
+      {stLight && <style>{VF_CSS}</style>}
       {/* AI 멘트 로딩 오버레이 제거됨 - 로컬 템플릿 기반 즉시 생성 */}
       {/* ── 타이틀 및 백버튼 ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
@@ -1288,13 +1302,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
       {/* ── 작성 중이던 내용 되살리기 ── */}
       {draft.pendingSavedAt && (
-        <div style={{ maxWidth: 1360, width: "calc(100% - 40px)", boxSizing: "border-box", margin: "16px auto 0", padding: "14px 20px", borderRadius: 10, background: darkMode ? "#1e3a5f" : "#eff6ff", border: `1px solid ${darkMode ? "#1d4ed8" : "#bfdbfe"}`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 18 }}>📝</span>
-          <div style={{ flex: 1, minWidth: 240, fontSize: 14, color: darkMode ? "#bfdbfe" : "#1e3a8a", lineHeight: 1.5 }}>
+        <div style={{ maxWidth: 1360, width: "calc(100% - 40px)", boxSizing: "border-box", margin: "16px auto 0", padding: "14px 20px", borderRadius: 10, background: darkMode ? "#1e3a5f" : vcol("#eff6ff"), border: `1px solid ${darkMode ? vcol("#1d4ed8") : vcol("#bfdbfe")}`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          {stLight ? <span style={{ color: NAVY, display: "flex" }}><Ico size={18} d={ICON.folder} /></span> : <span style={{ fontSize: 18 }}>📝</span>}
+          <div style={{ flex: 1, minWidth: 240, fontSize: 14, color: darkMode ? vcol("#bfdbfe") : vcol("#1e3a8a"), lineHeight: 1.5 }}>
             <strong>작성 중이던 내용이 있습니다.</strong> ({formatDraftAge(draft.pendingSavedAt)} 자동 보관)
             <div style={{ fontSize: 12, opacity: 0.85 }}>새로 고른 사진은 보관되지 않아 다시 올려 주셔야 해요.</div>
           </div>
-          <button type="button" onClick={(e) => { e.stopPropagation(); restoreDraft(); }} style={{ height: 36, padding: "0 18px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); restoreDraft(); }} style={{ height: 36, padding: "0 18px", borderRadius: 8, border: "none", background: vcol("#2563eb"), color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
           <button type="button" onClick={(e) => { e.stopPropagation(); if (confirm("보관된 내용을 지울까요?")) draft.discardPending(); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>지우기</button>
         </div>
       )}
@@ -1304,8 +1318,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
         {/* ============ 좌측 사이드바: 빠른 입력 / 도구 ============ */}
         <div style={{ width: 300, flexShrink: 0, marginRight: 20, position: "sticky", top: 24 }}>
-          <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>빠른 입력 / 도구</h2>
+          <div className="gs-vf-card" style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <h2 className="gs-vf-side" style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>빠른 입력 / 도구</h2>
 
             {/* 이전 공실광고 불러오기 */}
             <button type="button" onClick={openPrevMenuModal} style={{ width: "100%", height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 600, color: textPrimary, marginTop: 16 }}>
@@ -1333,10 +1347,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
         {/* ============ 중앙 메인 폼 ============ */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ background: cardBg, borderRadius: 14, padding: "36px 40px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+          <div className="gs-vf-card gs-vf-main" style={{ background: cardBg, borderRadius: 14, padding: "36px 40px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
 
             {/* ── 섹션 1: 분류 및 주소 ── */}
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+            <h2 className="gs-vf-sec" style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               공실 분류 및 위치 주소
             </h2>
 
@@ -1376,7 +1390,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
             {/* ── 위치/주소 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>위치/주소</h2>
+              <h2 className="gs-vf-subt" style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>위치/주소</h2>
               <button type="button" onClick={() => {
                 if (typeof window !== "undefined") {
                   const script = document.createElement("script");
@@ -1443,13 +1457,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   };
                   document.head.appendChild(script);
                 }
-              }} style={{ height: 42, padding: "0 18px", background: "#10b981", color: "#fff", border: "none", borderRadius: 7, fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 5px rgba(16,185,129,0.25)" }}>
-                🔍 주소 먼저 검색
+              }} style={{ height: 42, padding: "0 18px", background: vcolG("#10b981"), color: "#fff", border: "none", borderRadius: 7, fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 5px rgba(16,185,129,0.25)" }}>
+                {stLight ? <Ico size={16} d={ICON.search} /> : "🔍 "}주소 먼저 검색
               </button>
             </div>
 
             {!addressSearchCompleted && (
-              <div style={{ marginBottom: 16, padding: "13px 16px", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, color: "#047857", fontSize: 14, fontWeight: 700 }}>
+              <div style={{ marginBottom: 16, padding: "13px 16px", background: vcolG("#ecfdf5"), border: `1px solid ${vcolG("#a7f3d0")}`, borderRadius: 8, color: vcolG("#047857"), fontSize: 14, fontWeight: 700 }}>
                 1단계: 위의 <strong>주소 먼저 검색</strong> 버튼을 눌러 주소를 선택해주세요. 선택하면 시/도와 상세 주소가 자동으로 입력됩니다.
               </div>
             )}
@@ -1574,7 +1588,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            <div style={{ background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", marginBottom: 8, fontSize: 13, color: "#3b82f6", fontWeight: 600 }}>
+            <div style={{ background: darkMode ? "#1e3a5f" : vcol("#eff6ff"), borderRadius: 8, padding: "12px 16px", marginBottom: 8, fontSize: 13, color: vcol("#3b82f6"), fontWeight: 600 }}>
               확인 주소: {(() => {
                 if (!sido) return "주소를 입력해주세요.";
                 const parts = [sido, sigungu, dong];
@@ -1604,7 +1618,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               })()}
             </div>
             {geocoding && (
-              <div style={{ fontSize: 12, color: "#3b82f6", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ fontSize: 12, color: vcol("#3b82f6"), marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                 ⏳ 주소로부터 좌표를 추출하는 중...
               </div>
             )}
@@ -1623,7 +1637,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {coords && (
               <div style={{ marginBottom: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <label style={{ ...labelStyle, margin: 0 }}>주변 인프라 (자동 완성)</label>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>주변 인프라 (자동 완성)</label>
                   <select value={infraRadius} onChange={handleRadiusChange} style={{ padding: "4px 8px", fontSize: 12, borderRadius: 6, border: `1px solid ${border}`, background: cardBg, color: textPrimary, outline: "none", cursor: "pointer" }}>
                     <option value="500">반경 500m</option>
                     <option value="1000">반경 1km</option>
@@ -1682,7 +1696,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
             {/* ── 섹션 2: 거래 및 상세 정보 ── */}
-            <div style={{ display: "flex", alignItems: "center", margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+            <div className="gs-vf-sec" style={{ display: "flex", alignItems: "center", margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>
                 거래 및 상세 정보
               </h2>
@@ -1731,7 +1745,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <label style={{ ...labelStyle, marginBottom: 0 }}>보증금{priceReq}</label>
-                      {deposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
+                      {deposit && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <input type="number" placeholder="예: 1000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle }} />
@@ -1742,7 +1756,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                        <label style={{ ...labelStyle, marginBottom: 0 }}>월세{priceReq}</label>
-                       {monthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
+                       {monthly && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <input type="number" placeholder="예: 50" value={monthly} onChange={(e) => setMonthly(e.target.value)} style={{ ...inputStyle }} />
@@ -1757,7 +1771,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* 관리비 (토지 제외) */}
             {!isLand && (
             <>
-            <label style={labelStyle}>관리비 {maintenance && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(maintenance)}</span>}</label>
+            <label style={labelStyle}>관리비 {maintenance && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(maintenance)}</span>}</label>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, maxWidth: 400 }}>
               <input type="text" placeholder="예: 10" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} style={{ ...inputStyle }} />
               <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
@@ -2058,9 +2072,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         style={{
                           padding: "4px 10px",
                           borderRadius: 20,
-                          border: currentFloor === f ? "1px solid #3b82f6" : `1px solid ${border}`,
-                          background: currentFloor === f ? (darkMode ? "#1e3a8a" : "#eff6ff") : cardBg,
-                          color: currentFloor === f ? "#3b82f6" : textSecondary,
+                          border: currentFloor === f ? `1px solid ${vcol("#3b82f6")}` : `1px solid ${border}`,
+                          background: currentFloor === f ? (darkMode ? vcol("#1e3a8a") : vcol("#eff6ff")) : cardBg,
+                          color: currentFloor === f ? vcol("#3b82f6") : textSecondary,
                           fontSize: 12,
                           fontWeight: currentFloor === f ? 700 : 500,
                           cursor: "pointer",
@@ -2115,7 +2129,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 {tradeType !== "매매" && (
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>권리금
-                      {premiumFee && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
+                      {premiumFee && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
                     </label>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
@@ -2353,7 +2367,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{...labelStyle, marginBottom: 6}}>현재 임차인 보증금
-                      {currentRentalDeposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalDeposit)}</span>}
+                      {currentRentalDeposit && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalDeposit)}</span>}
                     </label>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input type="number" placeholder="예: 3000" value={currentRentalDeposit} onChange={(e) => setCurrentRentalDeposit(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
@@ -2362,7 +2376,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{...labelStyle, marginBottom: 6}}>현재 월세
-                      {currentRentalMonthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalMonthly)}</span>}
+                      {currentRentalMonthly && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalMonthly)}</span>}
                     </label>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input type="number" placeholder="예: 150" value={currentRentalMonthly} onChange={(e) => setCurrentRentalMonthly(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
@@ -2374,7 +2388,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{...labelStyle, marginBottom: 6}}>융자금 (선택)
-                      {loanAmount && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(loanAmount)}</span>}
+                      {loanAmount && <span style={{ color: vcol("#3b82f6"), fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(loanAmount)}</span>}
                     </label>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input type="number" placeholder="예: 40000" value={loanAmount} onChange={(e) => setLoanAmount(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
@@ -2409,7 +2423,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         const realYield = (netMonthly * 12 / realInvestment) * 100;
                         return (
                           <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e" }}>
-                            🏦 실투자 수익률: <span style={{ fontSize: 16, color: "#2563eb" }}>{realYield.toFixed(2)}%</span>
+                            🏦 실투자 수익률: <span style={{ fontSize: 16, color: vcol("#2563eb") }}>{realYield.toFixed(2)}%</span>
                             <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 8 }}>(실투자금: {formatKoreanAmount(String(realInvestment))}, 월이자: {formatKoreanAmount(String(Math.round(monthlyInterest)))})</span>
                           </div>
                         );
@@ -2421,7 +2435,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* ── 섹션 4: 상세 ── */}
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+            <h2 className="gs-vf-sec" style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               상세 (특징, 전달사항 등)
             </h2>
             {/* ── 편의시설 / 옵션 ── */}
@@ -2436,9 +2450,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       onClick={() => toggleOption(opt)}
                       style={{
                         padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
-                        border: selectedOptions.includes(opt) ? "1px solid #3b82f6" : `1px solid ${border}`,
-                        background: selectedOptions.includes(opt) ? (darkMode ? "#1e3a8a" : "#eff6ff") : cardBg,
-                        color: selectedOptions.includes(opt) ? "#3b82f6" : textSecondary,
+                        border: selectedOptions.includes(opt) ? `1px solid ${vcol("#3b82f6")}` : `1px solid ${stLight ? "#d9dde3" : border}`,
+                        background: selectedOptions.includes(opt) ? (darkMode ? vcol("#1e3a8a") : stLight ? NAVY : vcol("#eff6ff")) : cardBg,
+                        color: selectedOptions.includes(opt) ? (stLight ? "#fff" : vcol("#3b82f6")) : stLight ? "#374151" : textSecondary,
                         fontWeight: selectedOptions.includes(opt) ? 700 : 500,
                         transition: "all 0.2s"
                       }}
@@ -2449,7 +2463,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
                     <input type="text" placeholder="+ 옵션 직접 입력" value={customOptionInput} onChange={e => setCustomOptionInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomOption())}
                       style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${border}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
-                    <button type="button" onClick={addCustomOption} style={{ marginLeft: 8, padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
+                    <button type="button" onClick={addCustomOption} style={{ marginLeft: 8, padding: "6px 12px", background: vcol("#3b82f6"), color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
                   </div>
                 </div>
               </div>
@@ -2461,7 +2475,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
                   테마 (해시태그) <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>홈페이지 및 목록에 노출됩니다</span>
                 </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : "#f0fdf4", padding: 16, borderRadius: 8, border: `1px solid ${darkMode ? "#333" : "#bbf7d0"}` }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : stLight ? "#f7f8fa" : "#f0fdf4", padding: 16, borderRadius: 8, border: `1px solid ${darkMode ? "#333" : stLight ? "#e5e7eb" : "#bbf7d0"}` }}>
                   {currentThemeList.map(theme => (
                     <button
                       key={theme}
@@ -2469,9 +2483,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       onClick={() => toggleTheme(theme)}
                       style={{
                         padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
-                        border: selectedThemes.includes(theme) ? "1px solid #10b981" : `1px solid ${border}`,
-                        background: selectedThemes.includes(theme) ? (darkMode ? "#064e3b" : "#d1fae5") : cardBg,
-                        color: selectedThemes.includes(theme) ? "#10b981" : textSecondary,
+                        border: selectedThemes.includes(theme) ? `1px solid ${stLight ? NAVY : "#10b981"}` : `1px solid ${stLight ? "#d9dde3" : border}`,
+                        background: selectedThemes.includes(theme) ? (darkMode ? "#064e3b" : stLight ? NAVY : "#d1fae5") : cardBg,
+                        color: selectedThemes.includes(theme) ? (stLight ? "#fff" : "#10b981") : stLight ? "#374151" : textSecondary,
                         fontWeight: selectedThemes.includes(theme) ? 700 : 500,
                         transition: "all 0.2s"
                       }}
@@ -2481,8 +2495,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   ))}
                   <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
                     <input type="text" placeholder="+ 테마 직접 입력" value={customThemeInput} onChange={e => setCustomThemeInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomTheme())}
-                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${darkMode ? "#444" : "#86efac"}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
-                    <button type="button" onClick={addCustomTheme} style={{ marginLeft: 8, padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
+                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${darkMode ? "#444" : stLight ? "#d9dde3" : "#86efac"}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
+                    <button type="button" onClick={addCustomTheme} style={{ marginLeft: 8, padding: "6px 12px", background: stLight ? NAVY : "#10b981", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
                   </div>
                 </div>
               </div>
@@ -2526,7 +2540,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               @keyframes aiDraftIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
             `}</style>
             {aiWriting ? (
-              <div style={{ ...inputStyle, height: 162, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 15, fontWeight: 700, color: "#d97706", background: darkMode ? "#2a2418" : "#fffbeb", borderColor: "#fcd34d" }}>
+              <div style={{ ...inputStyle, height: 162, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 15, fontWeight: 700, color: "#d97706", background: darkMode ? "#2a2418" : "#fffbeb", border: "1px solid #fcd34d" }}>
                 ✨ AI가 전달사항 초안을 작성 중입니다
                 {[0, 1, 2].map(i => (
                   <span key={i} style={{ animation: `aiDraftDot 1s ${i * 0.2}s infinite`, marginLeft: i === 0 ? 4 : 0 }}>·</span>
@@ -2549,7 +2563,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* ── 섹션 3: 사진 ── */}
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+            <h2 className="gs-vf-sec" style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               사진 (최대 5장)
             </h2>
             <WatermarkPicker choice={wmChoice} onChange={setWmChoice} companyName={userRole === "realtor" ? rCompany : ""} darkMode={darkMode} locked={wmLocked} />
@@ -2565,7 +2579,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
                     transition: "border-color 0.2s, background 0.2s", boxSizing: "border-box"
                   }}
-                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = darkMode ? "#1e3a5f" : "#eff6ff"; }}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = vcol("#3b82f6"); e.currentTarget.style.background = darkMode ? "#1e3a5f" : vcol("#eff6ff"); }}
                   onDragLeave={(e) => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; }}
                   onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/")); addPhotos(files); }}
                   onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.multiple = true; input.onchange = (e: any) => { const files = Array.from(e.target.files || []) as File[]; addPhotos(files); }; input.click(); }}
@@ -2593,7 +2607,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {photoList.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>등록된 사진 ({photoList.length}/5) <span style={{ color: "#2563eb", fontWeight: 700 }}>★ 첫 번째 사진이 공실열람 및 목록의 대표사진으로 노출됩니다.</span></span>
+                  <span>등록된 사진 ({photoList.length}/5) <span style={{ color: vcol("#2563eb"), fontWeight: 700 }}>★ 첫 번째 사진이 공실열람 및 목록의 대표사진으로 노출됩니다.</span></span>
                 </div>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   {photoList.map((item, i) => {
@@ -2606,7 +2620,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                           borderRadius: 10,
                           overflow: "hidden",
                           position: "relative",
-                          border: isMain ? "2px solid #2563eb" : `1px solid ${border}`,
+                          border: isMain ? `2px solid ${vcol("#2563eb")}` : `1px solid ${border}`,
                           background: cardBg,
                           boxShadow: isMain ? "0 2px 8px rgba(37,99,235,0.2)" : "0 1px 3px rgba(0,0,0,0.05)",
                           display: "flex",
@@ -2627,7 +2641,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                               position: "absolute",
                               top: 4,
                               left: 4,
-                              background: "#2563eb",
+                              background: vcol("#2563eb"),
                               color: "#fff",
                               fontSize: 10,
                               fontWeight: 800,
@@ -2686,9 +2700,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                                 padding: "4px 0",
                                 fontSize: 11,
                                 fontWeight: 700,
-                                color: "#2563eb",
-                                background: darkMode ? "#1e3a5f" : "#eff6ff",
-                                border: "1px solid #bfdbfe",
+                                color: vcol("#2563eb"),
+                                background: darkMode ? "#1e3a5f" : vcol("#eff6ff"),
+                                border: `1px solid ${vcol("#bfdbfe")}`,
                                 borderRadius: 4,
                                 cursor: "pointer",
                                 textAlign: "center"
@@ -2702,7 +2716,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                               padding: "4px 0",
                               fontSize: 11,
                               fontWeight: 800,
-                              color: "#2563eb",
+                              color: vcol("#2563eb"),
                               textAlign: "center"
                             }}>
                               대표사진
@@ -2779,14 +2793,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "default", fontSize: 14, fontWeight: 600, color: textPrimary, flexShrink: 0 }}>
                         {/* 일반회원은 법정수수료 고정 */}
-                        <input type="radio" checked readOnly style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
+                        <input type="radio" checked readOnly style={{ accentColor: vcol("#3b82f6"), width: 18, height: 18 }} />
                         법정수수료 지급
                       </label>
                       <input type="text" placeholder="예: 추가사항 입력 (선택)" value={commissionEtc} onChange={(e) => setCommissionEtc(e.target.value)}
                         style={{ ...inputStyle, flex: 1, height: 36, padding: "0 12px", background: darkMode ? "#1a1b1e" : "#f9fafb" }} />
                     </div>
                   </div>
-                  <div style={{ marginTop: 16, background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", fontSize: 12, color: "#3b82f6", lineHeight: 1.6 }}>
+                  <div style={{ marginTop: 16, background: darkMode ? "#1e3a5f" : vcol("#eff6ff"), borderRadius: 8, padding: "12px 16px", fontSize: 12, color: vcol("#3b82f6"), lineHeight: 1.6 }}>
                     ⓘ 공실광고의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 공실광고 등록에 제한이 될 수 있음을 확인합니다.
                   </div>
                 </div>
@@ -2795,7 +2809,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
                 {/* ── 섹션 4: 의뢰인 정보 ── */}
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px" }}>의뢰인 정보</h2>
+                <h2 className="gs-vf-sec" style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px" }}>의뢰인 정보</h2>
 
                 <label style={labelStyle}>의뢰인명 {reqMark}</label>
                 <input type="text" placeholder="의뢰인 이름" value={clientName} onChange={(e) => setClientName(e.target.value)} style={{ ...inputStyle, marginBottom: 20 }} />
@@ -2824,9 +2838,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         key={opt} type="button" onClick={() => setRealtorCommission(opt)}
                         style={{
                           flex: 1, padding: "10px 0", borderRadius: 8, fontSize: 13, cursor: "pointer",
-                          border: realtorCommission === opt ? "1px solid #1d4ed8" : `1px solid ${border}`,
-                          background: realtorCommission === opt ? (darkMode ? "#1e3a5f" : "#eff6ff") : cardBg,
-                          color: realtorCommission === opt ? "#1d4ed8" : textSecondary,
+                          border: realtorCommission === opt ? `1px solid ${vcol("#1d4ed8")}` : `1px solid ${border}`,
+                          background: realtorCommission === opt ? (darkMode ? "#1e3a5f" : vcol("#eff6ff")) : cardBg,
+                          color: realtorCommission === opt ? vcol("#1d4ed8") : textSecondary,
                           fontWeight: realtorCommission === opt ? 700 : 500, transition: "all 0.2s"
                         }}
                       >{opt}</button>
@@ -2839,12 +2853,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       onClick={() => setExposureType("부동산노출")}
                       style={{
                         flex: 1, padding: "16px", borderRadius: 8, cursor: "pointer",
-                        border: exposureType === "부동산노출" ? "2px solid #3b82f6" : `1px solid ${border}`,
-                        background: exposureType === "부동산노출" ? (darkMode ? "#1e3a8a" : "#ebf5ff") : cardBg,
+                        border: exposureType === "부동산노출" ? `2px solid ${vcol("#3b82f6")}` : `1px solid ${border}`,
+                        background: exposureType === "부동산노출" ? (darkMode ? vcol("#1e3a8a") : "#ebf5ff") : cardBg,
                       }}
                     >
-                      <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출" ? "#2563eb" : textPrimary, marginBottom: 6 }}>부동산노출</div>
-                      <div style={{ fontSize: 12, color: exposureType === "부동산노출" ? "#3b82f6" : textSecondary, lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출" ? vcol("#2563eb") : textPrimary, marginBottom: 6 }}>부동산노출</div>
+                      <div style={{ fontSize: 12, color: exposureType === "부동산노출" ? vcol("#3b82f6") : textSecondary, lineHeight: 1.5 }}>
                         비로그인, 일반인로그인시 공실광고상세보기는 부동산엔 열람가능하고<br/>
                         비회원 일반인에게는 비공개
                       </div>
@@ -2853,12 +2867,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       onClick={() => setExposureType("부동산노출 + 일반인노출")}
                       style={{
                         flex: 1, padding: "16px", borderRadius: 8, cursor: "pointer",
-                        border: exposureType === "부동산노출 + 일반인노출" ? "2px solid #3b82f6" : `1px solid ${border}`,
-                        background: exposureType === "부동산노출 + 일반인노출" ? (darkMode ? "#1e3a8a" : "#ebf5ff") : cardBg,
+                        border: exposureType === "부동산노출 + 일반인노출" ? `2px solid ${vcol("#3b82f6")}` : `1px solid ${border}`,
+                        background: exposureType === "부동산노출 + 일반인노출" ? (darkMode ? vcol("#1e3a8a") : "#ebf5ff") : cardBg,
                       }}
                     >
-                      <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출 + 일반인노출" ? "#2563eb" : textPrimary, marginBottom: 6 }}>부동산노출 + 일반인노출</div>
-                      <div style={{ fontSize: 12, color: exposureType === "부동산노출 + 일반인노출" ? "#3b82f6" : textSecondary }}>모두에게 노출</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출 + 일반인노출" ? vcol("#2563eb") : textPrimary, marginBottom: 6 }}>부동산노출 + 일반인노출</div>
+                      <div style={{ fontSize: 12, color: exposureType === "부동산노출 + 일반인노출" ? vcol("#3b82f6") : textSecondary }}>모두에게 노출</div>
                     </div>
                   </div>
                 </div>
@@ -2927,7 +2941,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {userRole !== "realtor" && (
               <div style={{ display: "flex", gap: 12, padding: "20px", border: `1px solid ${border}`, borderRadius: 10, marginBottom: 24, alignItems: "flex-start" }}>
                 <input type="checkbox" id="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)}
-                  style={{ marginTop: 3, accentColor: "#3b82f6", width: 18, height: 18, flexShrink: 0, cursor: "pointer" }} />
+                  style={{ marginTop: 3, accentColor: vcol("#3b82f6"), width: 18, height: 18, flexShrink: 0, cursor: "pointer" }} />
                 <label htmlFor="consent" style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6, cursor: "pointer" }}>
                   <strong style={{ color: textPrimary }}>공실광고 광고 진행에 동의합니다.</strong><br />
                   공실뉴스 부동산이 빠른 계약을 위해 네이버부동산, 유튜브, 블로그 등 다양한 광고를 진행하는 것에 동의합니다.
@@ -2944,8 +2958,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   @keyframes save-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                 `}</style>
                 <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", width: "100%", maxWidth: 340, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
-                  <div style={{ width: 44, height: 44, margin: "0 auto 18px", border: "4px solid #dbeafe", borderTop: "4px solid #2563eb", borderRadius: "50%", animation: "save-spin 1s linear infinite" }} />
-                  <div style={{ color: "#1d4ed8", fontSize: 17, fontWeight: 800 }}>{submittingLabel}</div>
+                  <div style={{ width: 44, height: 44, margin: "0 auto 18px", border: "4px solid #dbeafe", borderTop: `4px solid ${vcol("#2563eb")}`, borderRadius: "50%", animation: "save-spin 1s linear infinite" }} />
+                  <div style={{ color: vcol("#1d4ed8"), fontSize: 17, fontWeight: 800 }}>{submittingLabel}</div>
                   <div style={{ color: "#6b7280", fontSize: 14, marginTop: 6 }}>잠시만 기다려주세요!</div>
                   <div style={{ color: "#9ca3af", fontSize: 12, marginTop: 10 }}>사진이 많으면 시간이 조금 걸릴 수 있어요</div>
                 </div>
@@ -3141,7 +3155,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 return (
                   <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
                     <button type="button" disabled={submitting} onClick={() => handleSubmit("ACTIVE")}
-                      style={{ flex: 1, height: 56, background: "#10b981", color: "#fff", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer" }}>
+                      style={{ flex: 1, height: 56, background: vcolG("#10b981"), color: "#fff", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer" }}>
                       ✔ 승인 (바로 발행)
                     </button>
                     <button type="button" disabled={submitting} onClick={() => handleSubmit("REJECTED")}
@@ -3178,7 +3192,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       onClick={() => handleSubmit("ACTIVE")}
                       style={{
                         flex: 1, height: 56, border: "none", borderRadius: 10,
-                        background: submitting ? "#9ca3af" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        background: submitting ? "#9ca3af" : `linear-gradient(135deg, ${vcolG("#10b981")} 0%, ${vcolG("#059669")} 100%)`,
                         color: "#fff", fontSize: 18, fontWeight: 800,
                         cursor: submitting ? "not-allowed" : "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8
@@ -3214,7 +3228,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       onClick={() => handleSubmit("ACTIVE")}
                       style={{
                         flex: 1, height: 56, border: "none", borderRadius: 10,
-                        background: submitting ? "#9ca3af" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                        background: submitting ? "#9ca3af" : `linear-gradient(135deg, ${vcol("#3b82f6")} 0%, ${vcol("#2563eb")} 100%)`,
                         color: "#fff", fontSize: 18, fontWeight: 800,
                         cursor: submitting ? "not-allowed" : "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8
@@ -3250,7 +3264,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     onClick={() => handleSubmit("ACTIVE")}
                     style={{
                       flex: 1, padding: "18px 0", borderRadius: 10, border: "none",
-                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff",
+                      background: `linear-gradient(135deg, ${vcolG("#10b981")} 0%, ${vcolG("#059669")} 100%)`, color: "#fff",
                       fontSize: 16, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
                       boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                     }}
@@ -3272,8 +3286,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           {/* 사진 기능이 중앙 메인 폼으로 이동됨 */}
 
           {/* 작성 체크리스트 */}
-          <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 16px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>작성 체크리스트</h2>
+          <div className="gs-vf-card" style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <h2 className="gs-vf-side" style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 16px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>작성 체크리스트</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {checkItems.map((item, i) => {
                 return (
@@ -3309,7 +3323,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out'
           }}>
             {/* 헤더 */}
-            <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: vcol("#3b82f6"), padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 20 }}>🖼️</span>
                 <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>포토DB</span>
@@ -3331,9 +3345,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 {['전체사진', '즐겨찾기'].map(tab => (
                   <button key={tab} type="button" onClick={() => setPhotoDbTab(tab as any)}
                     style={{
-                      background: "none", border: "none", borderBottom: photoDbTab === tab ? "3px solid #f97316" : "3px solid transparent",
+                      background: "none", border: "none", borderBottom: photoDbTab === tab ? `3px solid ${vcolG("#f97316")}` : "3px solid transparent",
                       padding: "8px 4px", fontSize: 15, fontWeight: photoDbTab === tab ? 800 : 600,
-                      color: photoDbTab === tab ? "#f97316" : textSecondary, cursor: "pointer", transition: "all 0.2s"
+                      color: photoDbTab === tab ? vcolG("#f97316") : textSecondary, cursor: "pointer", transition: "all 0.2s"
                     }}>
                     {tab === '즐겨찾기' && <span style={{ color: '#f59e0b', marginRight: 4 }}>⭐</span>}
                     {tab}
@@ -3406,7 +3420,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out'
           }}>
             {/* 헤더 */}
-            <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: vcol("#3b82f6"), padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 20 }}>↻</span>
                 <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>이전 공실광고 불러오기</span>
@@ -3440,7 +3454,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                           {v.sido} {v.sigungu} {v.dong} {v.detail_addr}
                         </div>
                       </div>
-                      <button style={{ padding: "8px 16px", background: "#f97316", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                      <button style={{ padding: "8px 16px", background: vcolG("#f97316"), color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                         불러오기
                       </button>
                     </div>
@@ -3465,3 +3479,18 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     </div>
   );
 }
+
+/** 앱 밝은 화면 — 대본 작성과 같은 모양 (흰 칸·얇은 테두리·번호 동그라미 제목·각진 단추, 2026-11-03 사장님) */
+const VF_CSS = [
+  ".gs-vf .gs-vf-card{border-radius:8px!important;box-shadow:none!important;border:1px solid #e5e7eb}",
+  ".gs-vf .gs-vf-main{counter-reset:vfsec;padding:30px 34px!important}",
+  ".gs-vf .gs-vf-sec{counter-increment:vfsec;display:flex!important;align-items:center;gap:9px;font-size:17px!important;color:#111827!important;border-bottom:1px solid #e5e7eb!important;padding-bottom:12px!important}",
+  ".gs-vf .gs-vf-sec h2{font-size:17px!important;color:#111827!important}",
+  ".gs-vf .gs-vf-sec::before{content:counter(vfsec);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:24px;height:24px;border-radius:50%;background:#1e3a6e;color:#fff;font-size:13px;font-weight:800}",
+  ".gs-vf .gs-vf-subt{font-size:15.5px!important;color:#111827!important}",
+  ".gs-vf .gs-vf-side{font-size:15.5px!important;border-bottom:1px solid #e5e7eb!important;padding-bottom:10px!important}",
+  ".gs-vf select,.gs-vf textarea{border-radius:5px!important;border-color:#d9dde3!important}",
+  ".gs-vf input:focus,.gs-vf select:focus,.gs-vf textarea:focus{border-color:#1e3a6e!important;outline:none}",
+  ".gs-vf button[style*='border-radius: 20px'],.gs-vf input[style*='border-radius: 20px']{border-radius:5px!important}",
+  ".gs-vf input[type=checkbox],.gs-vf input[type=radio]{accent-color:#1e3a6e}",
+].join("");

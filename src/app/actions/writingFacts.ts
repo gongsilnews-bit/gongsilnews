@@ -42,10 +42,11 @@ export async function writingMyVacancies(): Promise<Out<{ id: string; label: str
   return { success: true, data: (data || []).map((v) => ({ id: v.id, label: `${v.vacancy_no} · ${v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ")} · ${v.trade_type || ""} ${v.trade_type === "월세" ? `${won(v.deposit)}/${won(v.monthly_rent)}` : won(v.deposit)}`.trim() })) };
 }
 
-export async function writingVacancyFacts(id: string): Promise<Out<{ title: string; text: string; complexId: string | null }>> {
+/** photos — 공실에 등록한 사진 (순서대로, 2026-11-03 사장님: 이미 첨부한 사진도 기사에) */
+export async function writingVacancyFacts(id: string): Promise<Out<{ title: string; text: string; complexId: string | null; photos: string[] }>> {
   const user = await me();
   if (!user) return { success: false, error: "로그인이 필요합니다." };
-  const { data: v, error } = await admin().from("vacancies").select("vacancy_no, property_type, sub_category, trade_type, deposit, monthly_rent, maintenance_fee, supply_m2, supply_py, exclusive_m2, exclusive_py, room_count, bath_count, direction, current_floor, total_floor, parking, move_in_date, options, sido, sigungu, dong, building_name, address_exposure, description, infrastructure, themes, complex_id")
+  const { data: v, error } = await admin().from("vacancies").select("vacancy_no, property_type, sub_category, trade_type, deposit, monthly_rent, maintenance_fee, supply_m2, supply_py, exclusive_m2, exclusive_py, room_count, bath_count, direction, current_floor, total_floor, parking, move_in_date, options, sido, sigungu, dong, building_name, address_exposure, description, infrastructure, themes, complex_id, vacancy_photos(url, sort_order)")
     .eq("id", id).eq("owner_id", user.id).maybeSingle();
   if (error || !v) return { success: false, error: error?.message || "공실을 찾지 못했습니다." };
   const price = v.trade_type === "월세" ? `보증금 ${won(v.deposit)} / 월세 ${won(v.monthly_rent)}` : `${v.trade_type || ""} ${won(v.deposit)}`;
@@ -58,7 +59,8 @@ export async function writingVacancyFacts(id: string): Promise<Out<{ title: stri
     ["주변", typeof v.infrastructure === "string" ? v.infrastructure : v.infrastructure ? JSON.stringify(v.infrastructure).slice(0, 400) : ""], ["설명", String(v.description || "").slice(0, 800)],
   ];
   const text = rows.filter(([, x]) => x !== null && x !== undefined && String(x).trim()).map(([k, x]) => `- ${k}: ${String(x).trim()}`).join("\n");
-  return { success: true, data: { title: `공실 ${v.vacancy_no} ${v.building_name || v.dong || ""}`.trim(), text: `[내 공실 — 공실뉴스 등록 정보]\n${text}`, complexId: v.complex_id || null } };
+  const photos = ((v as { vacancy_photos?: { url: string; sort_order: number | null }[] }).vacancy_photos || []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((x) => x.url).filter(Boolean);
+  return { success: true, data: { title: `공실 ${v.vacancy_no} ${v.building_name || v.dong || ""}`.trim(), text: `[내 공실 — 공실뉴스 등록 정보]\n${text}`, complexId: v.complex_id || null, photos } };
 }
 
 /* ── 단지 시세 ── */
@@ -163,4 +165,53 @@ export async function writingArticleFacts(id: string): Promise<Out<{ title: stri
   if (error || !a) return { success: false, error: error?.message || "기사를 찾지 못했습니다." };
   const body = String(a.content || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim().slice(0, 3500);
   return { success: true, data: { title: a.title, text: `[공실뉴스 기사 — 기사 ${a.article_no}${a.published_at ? `, ${String(a.published_at).slice(0, 10)}` : ""}]\n- 제목: ${a.title}${a.subtitle ? `\n- 부제: ${String(a.subtitle).replace(/<[^>]+>/g, " ").slice(0, 300)}` : ""}\n- 본문: ${body}` } };
+}
+
+/** 웹 [뉴스 기사] — 기사 주소를 붙여 넣으면 서버가 본문을 읽어 온다 (앱은 안 보이는 창으로 읽는다, 2026-11-03 사장님: 웹도 앱과 같이)
+ *  로그인한 회원만 · 공개 주소(http/https)만 · 사내망·내 PC 주소는 읽지 않는다. 원문 문장은 AI 가 옮기지 않고 사실만 살려 새로 쓴다 */
+export async function writingFetchNews(url: string): Promise<Out<{ title: string; publisher: string; publishedAt: string; url: string; body: string }>> {
+  if (!(await me())) return { success: false, error: "로그인이 필요합니다." };
+  let u: URL;
+  try { u = new URL(String(url || "").trim()); } catch { return { success: false, error: "뉴스 주소(https://…)를 붙여 넣어 주세요." }; }
+  if (!/^https?:$/.test(u.protocol)) return { success: false, error: "뉴스 주소(https://…)를 붙여 넣어 주세요." };
+  if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(u.hostname) || !u.hostname.includes(".")) return { success: false, error: "읽을 수 없는 주소예요." };
+  let html = "";
+  try {
+    const res = await fetch(u.toString(), {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36", Accept: "text/html,*/*", "Accept-Language": "ko-KR,ko;q=0.9" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return { success: false, error: `뉴스 페이지를 열지 못했어요 (${res.status}). 주소를 확인해 주세요.` };
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength > 5_000_000) return { success: false, error: "페이지가 너무 커서 읽지 못했어요." };
+    const ct = res.headers.get("content-type") || "";
+    const cs = /charset=([\w-]+)/i.exec(ct)?.[1] || /<meta[^>]+charset=["']?([\w-]+)/i.exec(new TextDecoder("latin1").decode(buf.slice(0, 4000)))?.[1] || "utf-8";
+    try { html = new TextDecoder(cs.toLowerCase() === "ks_c_5601-1987" ? "euc-kr" : cs).decode(buf); } catch { html = new TextDecoder("utf-8").decode(buf); }
+  } catch { return { success: false, error: "뉴스 페이지를 열지 못했어요. 주소를 확인해 주세요." }; }
+  const cheerio = await import("cheerio");
+  const $ = cheerio.load(html);
+  const clean = (t: string) => t.replace(/ /g, " ").replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
+  const meta = (p: string) => $(`meta[property="${p}"], meta[name="${p}"]`).attr("content") || "";
+  $("script, style, noscript, iframe, nav, header, footer, aside, form, figure figcaption, .reporter_area, .copyright, .byline, .media_end_head_journalist").remove();
+  // 언론사·네이버 뉴스 본문 칸 → 없으면 문단 글이 가장 많이 모인 칸
+  let body = "";
+  for (const sel of ["#dic_area", "#newsct_article", "#articleBodyContents", "#articeBody", ".article_body", "#article-view-content-div", ".news_cnt_detail_wrap", "[itemprop=articleBody]", ".view_cont", "article"]) {
+    const t = clean($(sel).first().text());
+    if (t.length >= 200) { body = t; break; }
+  }
+  if (!body) {
+    let best = "", top = 0;
+    $("div, section").each((_, el) => {
+      const ps = $(el).children("p");
+      const t = clean(ps.map((__, p) => $(p).text()).get().join("\n"));
+      if (t.length > top) { top = t.length; best = t; }
+    });
+    body = best;
+  }
+  if (body.length < 200) return { success: false, error: "이 주소에서 기사 본문을 찾지 못했어요. 기사 한 건이 열린 주소인지 확인해 주세요." };
+  const title = clean(meta("og:title") || $("h2#title_area, .media_end_head_headline, h1").first().text() || $("title").text()).slice(0, 200);
+  const publisher = clean(meta("og:article:author") || meta("og:site_name") || $(".media_end_head_top_logo img").attr("alt") || u.hostname).slice(0, 40);
+  const publishedAt = clean($(".media_end_head_info_datestamp_time").first().attr("data-date-time") || meta("article:published_time") || "").slice(0, 16).replace("T", " ");
+  return { success: true, data: { title, publisher, publishedAt, url: u.toString(), body: body.slice(0, 9000) } };
 }
