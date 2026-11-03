@@ -164,7 +164,8 @@ const siteName = (url: string) => {
 };
 const columnBridge = () => (window as unknown as { gongsilStudio?: { column?: ColumnBridge } }).gongsilStudio?.column;
 
-export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, scriptOnly = false, onContinue }: { onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void;
+export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, scriptOnly = false, onContinue, onLoad, onNew }: {
+  /** [대본 작성] 아래 단추 줄 — [불러오기] · [새 대본] (2026-11-03 사장님: 저장 옆에) */ onLoad?: () => void; onNew?: () => void; onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void;
   /** [대본 작성] 메뉴 (2026-11-03 사장님) — ①~⑧ 대본만 쓰고 멈춘다. 영상은 [동영상studio에서 이어서]로 (그 초안 .gss 를 넘긴다) */ scriptOnly?: boolean; onContinue?: (file: string) => void; /** 작성 중 초안(.gss)을 열었으면 — 그 단계에서 이어서 */ resume?: Project;
   /** 뉴스·SNS발행 › 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 그 대본으로 시작 (2026-10-23 사장님) · col-… 이면 뉴스 기사로 */ seed?: { vacancyId: string; script: string } }) {
   const b = videoBridge()!;
@@ -1555,6 +1556,8 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
       {step > 0 && step < 3 && (
         <>
           {savedAt && <span style={{ fontSize: 12.5, color: C.dim, whiteSpace: "nowrap" }}>저장됨 · {savedAt.toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" })}</span>}
+          {onNew && <Btn onClick={onNew} title="빈 화면에서 새 대본을 써요">+ 새 대본</Btn>}
+          {onLoad && <Btn onClick={onLoad} title="저장해 둔 대본을 다시 열어요"><Icon name="folder" size={15} />불러오기</Btn>}
           <Btn onClick={() => void saveNow()} title="지금 바로 저장 — 4초마다 저절로도 저장돼요. [내 프로젝트]에서 이어서 열 수 있어요"><Icon name="save" size={15} />저장</Btn>
         </>
       )}
