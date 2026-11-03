@@ -381,11 +381,15 @@ async function fillByHelper({ vacancyId, channel }, onProgress = () => {}) {
   return { ...done, folder: r.folder };
 }
 
-/** 채널 하나만 쓰기 (2026-10-28 사장님) — 새로 받은 글 중 그 채널만 바꾸고 나머지 채널 글은 그대로 둔다 */
+/** 채널 하나만 쓰기 (2026-10-28 사장님) — 새로 받은 글 중 그 채널만 바꾸고 나머지 채널 글은 그대로 둔다.
+ *  only 는 채널 하나 또는 채널 목록 (2026-11-03 사장님: 인스타·스레드·페북 따로) */
 function keepOthers(vacancyId, posts, only) {
-  if (!only || !posts || !posts[only]) return posts;
+  const list = (Array.isArray(only) ? only : only ? [only] : []).filter((c) => posts && posts[c]);
+  if (!list.length || !posts) return posts;
   const prev = (readJson(snsFile(vacancyId)) || {}).posts || {};
-  return { ...prev, [only]: posts[only] };
+  const out = { ...prev };
+  for (const c of list) out[c] = posts[c];
+  return out;
 }
 
 /** 한 번에 모두 쓰기(all-writer.js)가 받은 SNS 글을 따로 쓴 것과 같은 자리에 저장 */

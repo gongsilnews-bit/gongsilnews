@@ -3,6 +3,7 @@
 // 공실마케팅 [이미지 편집] (포토랩) — PSD 를 열고 고치고 PSD 로 저장 (포토샵과 주고받기). 회의: docs/2026-10-19_photolab_meeting.md
 //  - 모든 일은 이 PC 안에서 (서버 없음) — 열기·그리기·저장이 바로바로
 //  - 화면: 처음 화면(새 파일·열기·최근 파일) → 문서 탭 · 그림판 · 오른쪽 속성 칸 · 레이어 목록
+import { useInnerHistory } from "@/utils/useInnerHistory";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Btn, C, FONT, Icon, Modal, input, useStudioTheme } from "@/components/admin/studio-video/ui";
 import { loadFont } from "@/components/admin/studio-video/Pickers";
@@ -374,6 +375,8 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
   }, [hasDoc]);
   useEffect(() => () => { window.dispatchEvent(new CustomEvent("studio:editor", { detail: false })); }, []);
   const setSel = (k: string | null) => { if (k !== sel) setMaskEditS(false); setSelS(k); setSide(""); };
+  // 뒤로가기 = 편집 화면 → 최근 파일(처음 화면), 앞으로가기 = 다시 편집 (문서는 닫지 않는다, 2026-11-03 사장님)
+  useInnerHistory("photo-edit", hasDoc, () => { store.home = true; setSel(null); bump(); }, () => { if (store.docs.length) { store.home = false; bump(); } });
   // 그림 레이어를 고르면 투명한 가장자리를 정리 — 파란 선택 틀이 보이는 그림에 딱 맞게 (포토샵처럼, 2026-10-30 사장님)
   // 보이는 모습은 그대로라 되돌리기 기록에 남기지 않는다
   useEffect(() => {

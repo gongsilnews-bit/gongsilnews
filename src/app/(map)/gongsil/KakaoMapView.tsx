@@ -915,8 +915,8 @@ export default function KakaoMapView({
 
       {/* 건물 실거래 디자인 견본 — 내 PC(localhost)에서만 (2026-11-02) */}
       <BldSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} />
-      {/* 빌라 실거래 견본 — 내 PC·[빌라·주택] 탭에서만 (2026-11-03) */}
-      <VillaSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} show={activeCategory === "villa" && !isAuctionMode} />
+      {/* 빌라 실거래 견본 — 내 PC·[전체]·[빌라·주택] 탭에서만 (2026-11-03) */}
+      <VillaSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceButtonSlot} tab={!isAuctionMode && (activeCategory === "villa" || activeCategory === "all")} />
 
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
       <AptPriceLayer

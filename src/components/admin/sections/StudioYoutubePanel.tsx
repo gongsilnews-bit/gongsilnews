@@ -48,7 +48,9 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 const secondsOf = (text: string) => Math.round(text.replace(/\s/g, "").length / 5.5);
 const clock = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`);
 
-export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick, writeBtn }: {
+export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick, writeBtn, view }: {
+  /** 작업대 화면 (2026-11-03 사장님 시안 A3): "settings" = 왼쪽 "쓸 글" 칸에 설정만 · "result" = 가운데에 결과만. 없으면 예전 그대로 */
+  view?: "settings" | "result";
   theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void;
   /** 한 번에 쓰기 — 이 탭은 형식·길이·말투·숫자만 고르고(이 PC 에 기억), 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   oneShot?: boolean; remembered?: Record<string, unknown>; onPick?: (p: Record<string, string>) => void;
@@ -205,15 +207,22 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
   const descText = script ? `${script.description.text}${script.description.tags.length ? `\n\n${script.description.tags.join(" ")}` : ""}` : "";
   const target = opts?.durations.find((d) => d.id === (script?.settings?.duration || pick.duration));
 
-  return (
-    <div>
-      <div style={card}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 14 }}>{oneShot ? "유튜브 대본 스타일" : "유튜브 대본 쓰기"}</div>
+  const rows = (<>
         {row("영상 형식", "videoType", opts?.videoTypes)}
         {row("길이", "duration", opts?.durations)}
         {row("말투", "tone", opts?.tones)}
         {row("숫자", "number", opts?.numbers)}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
+  </>);
+  if (view === "settings") return <div>{rows}</div>;
+  const result = view === "result";
+
+  return (
+    <div>
+      <div style={card}>
+        {!result && <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 14 }}>{oneShot ? "유튜브 대본 스타일" : "유튜브 대본 쓰기"}</div>}
+        {!result && rows}
+        {result && !script && <div style={{ fontSize: 14, color: theme.textSecondary, lineHeight: 1.7 }}>아직 대본을 쓰지 않았어요. 왼쪽에서 형식·길이·말투를 고르고 <b>[✨ 한 번에 쓰기]</b>, 또는 아래 <b>[이 대본만 쓰기]</b>를 누르세요.</div>}
+        {!result && <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
           <div style={{ flex: 1, minWidth: 260, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
             {oneShot ? "고르고 아래 [이 대본만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}기사(없으면 블로그)를 바탕으로 <b>읽을 원고만</b> 씁니다. 장면·이미지 스크립트는 없습니다. 숫자 &quot;한글 읽기&quot;는 AI 성우가 그대로 읽기 좋게 씁니다.
           </div>
@@ -223,7 +232,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
               {writing ? `${aiName}가 쓰는 중…` : script ? "다시 쓰기" : `${aiName}로 대본 쓰기`}
             </button>
           )}
-        </div>
+        </div>}
         {!script && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}

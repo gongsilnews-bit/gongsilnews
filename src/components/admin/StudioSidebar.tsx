@@ -205,7 +205,11 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
             <img src="/new_logo.png" alt="공실뉴스" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
             <div style={{ lineHeight: 1.2 }}>
               {/* 로고 (2026-10-29 사장님): 동그란 재생 단추는 그대로, 이름은 앱 이름 공실마케팅 + 작게 공실뉴스 (by 없이) */}
-              <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px" }}>공실마케팅studio</div>
+              {/* "studio"는 글자 말고 주황 꼬리표로 — 공실마케팅 사이트 로고와 같게 (2026-11-03 사장님) */}
+              <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>
+                공실마케팅
+                <span style={{ display: "inline-block", marginLeft: 5, verticalAlign: "bottom", background: "#ea8a0c", color: "#fff", fontSize: 9.5, fontWeight: 800, letterSpacing: 0, lineHeight: 1, padding: "2px 4px 3px", borderRadius: 2 }}>studio</span>
+              </div>
             </div>
           </div>
         )}

@@ -37,7 +37,10 @@ async function writeAll({ baseUrl, vacancyId, article = {}, blog = {}, sns: snsO
   const analysis = col || sim ? null : blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));
   if (!col && !sim && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   const v = sim ? simRes.vacancy : col ? null : analysis.vacancy;
-  const snsOnly = ["instagram", "threads", "facebook"].includes(snsOpt.only) ? snsOpt.only : ""; // 채널 하나만 (나머지 채널 글은 그대로)
+  // 채널 하나만 · 또는 몇 채널만 (나머지 채널 글은 그대로) — 2026-11-03 사장님: 인스타·스레드·페북을 따로 켜고 끈다
+  const SNS_CH = ["instagram", "threads", "facebook"];
+  const snsList = (Array.isArray(snsOpt.only) ? snsOpt.only : [snsOpt.only]).filter((c) => SNS_CH.includes(c));
+  const snsOnly = snsList.length && snsList.length < SNS_CH.length ? (snsList.length === 1 ? snsList[0] : snsList) : "";
   const keep = (posts) => require("./sns-writer").keepOthers(vacancyId, posts, snsOnly);
   const want = { article: article.on !== false, blog: blog.on !== false, sns: snsOpt.on !== false, youtube: youtube.on === true };
   if (!want.article && !want.blog && !want.sns && !want.youtube) throw new Error("쓸 글을 하나 이상 골라 주세요.");

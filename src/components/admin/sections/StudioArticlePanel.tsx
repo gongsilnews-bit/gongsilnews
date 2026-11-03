@@ -29,7 +29,9 @@ const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).re
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
 
-export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false, oneShot = false, pick, onPick, autoCover: autoCoverP, onAutoCover, writeBtn }: {
+export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false, oneShot = false, pick, onPick, autoCover: autoCoverP, onAutoCover, writeBtn, view }: {
+  /** 작업대 화면 (2026-11-03 사장님 시안 A3): "settings" = 왼쪽 "쓸 글" 칸에 설정만 · "result" = 가운데에 결과만. 없으면 예전 그대로 */
+  view?: "settings" | "result";
   theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void; column?: boolean;
   /** 한 번에 쓰기 — 이 탭은 스타일만 고르고, 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   oneShot?: boolean; pick?: { kind: string; length: string }; onPick?: (kind: string, length: string) => void;
@@ -89,46 +91,56 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
     border: `1px solid ${on ? "#1a3a6b" : theme.border}`, background: on ? "rgba(26,58,107,0.08)" : "transparent",
   });
 
-  return (
-    <div>
-      <div style={card}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 12 }}>{oneShot ? "공실뉴스 기사 스타일" : "공실뉴스 기사 쓰기"}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>기사 스타일</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8, marginBottom: 14 }}>
+  const narrow = view === "settings";
+  const controls = (<>
+        <div style={{ fontSize: narrow ? 12 : 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>기사 스타일</div>
+        <div style={{ display: "grid", gridTemplateColumns: narrow ? "1fr 1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 8, marginBottom: 14 }}>
           {(opts?.kinds || []).map((k) => (
-            <button key={k.id} onClick={() => setKind(k.id)} style={chip(kind === k.id)}>
-              <div style={{ fontSize: 14, fontWeight: 800 }}>{k.label}</div>
-              {k.brief && <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 3, lineHeight: 1.5 }}>{k.brief}</div>}
+            <button key={k.id} onClick={() => setKind(k.id)} style={chip(kind === k.id)} title={narrow ? k.brief : undefined}>
+              <div style={{ fontSize: narrow ? 13 : 14, fontWeight: 800 }}>{k.label}</div>
+              {k.brief && !narrow && <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 3, lineHeight: 1.5 }}>{k.brief}</div>}
             </button>
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginRight: 4 }}>분량</span>
+          <span style={{ fontSize: narrow ? 12 : 13, fontWeight: 700, color: theme.textSecondary, marginRight: 4 }}>분량</span>
           {(opts?.lengths || []).map((l) => (
-            <button key={l.id} onClick={() => setLength(l.id)}
-              style={{ padding: "7px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700,
+            <button key={l.id} onClick={() => setLength(l.id)} title={narrow ? l.chars : undefined}
+              style={{ padding: narrow ? "4px 11px" : "7px 12px", borderRadius: 999, cursor: "pointer", fontSize: narrow ? 12 : 13, fontWeight: 700,
                 border: `1px solid ${length === l.id ? "#1a3a6b" : theme.border}`, background: length === l.id ? "#1a3a6b" : "transparent", color: length === l.id ? "#fff" : theme.textPrimary }}>
-              {l.label} · {l.chars}
+              {narrow ? l.label : `${l.label} · ${l.chars}`}
             </button>
           ))}
-          {oneShot ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
+          {oneShot || view ? null : ( /* [이 글만 다시 쓰기]는 뺐다 — 위 ☑ + [한 번에 쓰기]로 (2026-10-24 사장님) */
             <button onClick={write} disabled={writing}
               style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
               {writing ? `${aiName}가 쓰는 중…` : article ? "다시 쓰기" : `${aiName}로 기사 쓰기`}
             </button>
           )}
         </div>
+        {/* 좁은 칸 — 단추는 작게, 글자 수는 아래 설명으로 (2026-11-03 사장님) */}
+        {narrow && opts?.lengths.find((l) => l.id === length)?.chars && <div style={{ marginTop: 6, fontSize: 12, color: theme.textSecondary }}>{opts.lengths.find((l) => l.id === length)!.label} · {opts.lengths.find((l) => l.id === length)!.chars}</div>}
         {column && (
-          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13.5, color: theme.textPrimary, cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13.5, color: theme.textPrimary, cursor: "pointer", flexWrap: "wrap" }}>
             <input type="checkbox" checked={autoCover} onChange={(e) => setAutoCover(e.target.checked)} />
             다 쓰면 기사에 맞는 <b>AI 대표 이미지</b>도 만들기
             <span title="공실뉴스부동산 전용" style={{ padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.4 }}>Membership</span>
             <span style={{ color: theme.textSecondary }}>(1~2분 더 · AI 이미지 하루 한도에서 1장)</span>
           </label>
         )}
-        <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
+  </>);
+  if (view === "settings") return <div>{controls}</div>;
+  const result = view === "result";
+
+  return (
+    <div>
+      <div style={card}>
+        {!result && <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 12 }}>{oneShot ? "공실뉴스 기사 스타일" : "공실뉴스 기사 쓰기"}</div>}
+        {!result && controls}
+        {result && !article && <div style={{ fontSize: 14, color: theme.textSecondary, lineHeight: 1.7 }}>아직 기사를 쓰지 않았어요. 왼쪽에서 스타일·분량을 고르고 <b>[✨ 한 번에 쓰기]</b>, 또는 아래 <b>[이 기사만 쓰기]</b>를 누르세요. 기사 한도는 기사 등록할 때 셉니다.</div>}
+        {!result && <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
           {oneShot ? "스타일·분량을 고르고 아래 [이 기사만 쓰기], 또는 ☑ 한 글을 함께 [한 번에 쓰기]를 누르세요. " : ""}{column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. 기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. " : ""}기사 한도는 기사 등록할 때 셉니다.
-        </div>
+        </div>}
         {!article && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}

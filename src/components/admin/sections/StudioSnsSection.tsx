@@ -1,5 +1,6 @@
 "use client";
 
+import { useInnerHistory } from "@/utils/useInnerHistory";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import StudioMyVideoPanel from "./StudioMyVideoPanel";
 import VacancyCardGrid from "./VacancyCardGrid";
@@ -7,7 +8,7 @@ import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
-import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
+import StudioChannelTabs, { StepLine } from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
 import { BusyDots, LoadingCover } from "./StudioLoading";
@@ -311,9 +312,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     const off = b.vacancy.onProgress(setProgress);
     try {
       const r = await b.vacancy.analyze(v.id);
-      const again = result?.vacancyId === v.id; // [다시 분석·캡처] — 끝나면 모은 사진을 바로 펼쳐 보여 준다
+      const again = result?.vacancyId === v.id; // [다시 분석·캡처] — 끝나면 [분석 내용] 탭으로 모은 사진을 바로 보여 준다
       await applyResult(r, v);
-      if (again) setShowMedia(true);
+      if (again) { setShowMedia(true); chooseTab("source"); }
     } catch (e) {
       setError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     } finally {
@@ -379,6 +380,83 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const vacancyLabel = (v: VacancyRow) => `${v.vacancy_no} · ${v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ") || "이름 없음"}${v.trade_type ? ` · ${v.trade_type}` : ""}`;
   const connectedAi = ai.filter((a) => a.ok);
 
+  const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
+  const desk = (category === "gongsil" || category === "auction") && Boolean(result) && mode === "";
+  // 뒤로가기 = 작업대 → 공실 목록, 앞으로가기 = 그 작업대로 다시 (2026-11-03 사장님)
+  useInnerHistory("sns-desk", desk, () => openList(), () => {
+    if (result) return setMode("");
+    // 다른 메뉴에 갔다 와서 화면이 새로 그려졌다 — 마지막에 작업한 공실을 다시 연다 (분석·캡처는 다시 하지 않는다)
+    try { const id = JSON.parse(localStorage.getItem(LAST_KEY) || "null")?.vacancyId; if (id) void openWork(id); } catch {}
+  });
+  const soft = theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  /* 작업대 왼쪽 맨 위 — 이 공실 (2026-11-03 사장님 시안 A3) */
+  const head = result && (
+    <div>
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 8 }}>{category === "auction" ? "이 물건으로 씁니다" : "이 공실로 씁니다"}</div>
+      <div style={{ position: "relative", border: `1px solid ${theme.border}`, borderRadius: 12, padding: 12, minHeight: busy ? 150 : undefined }}>
+        {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: theme.darkMode ? "#374151" : "#e5e7eb", flexShrink: 0 }}>
+            {result.media[0]?.thumb && <img src={result.media[0].thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+              {result.vacancy.saleKind && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>}
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{picked ? vacancyLabel(picked) : result.vacancy.title}</span>
+            </div>
+            <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
+              {[result.vacancy.title, result.vacancy.priceText].filter(Boolean).join(" · ")}<br />사진 {result.media.length}장 분석·캡처 완료
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+          <button onClick={() => chooseTab("source")} style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>📋 분석 내용</button>
+          <button onClick={() => void analyze(picked)} disabled={busy} title="같은 공실의 사진·화면을 새로 받습니다"
+            style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: busy ? navy : soft, color: busy ? "#fff" : theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
+            {busy ? <>분석 중<BusyDots /></> : "↻ 다시 분석"}
+          </button>
+          <button onClick={openList} title="다른 공실 고르기" style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: 0, background: navy, color: "#fff", fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>← 목록</button>
+        </div>
+        {error && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c53030" }}>{error}</div>}
+      </div>
+    </div>
+  );
+  /* 작업대 가운데 [📋 분석 내용] — 기사·블로그·SNS 가 이 내용만 보고 쓴다 */
+  const analysisView = result && (
+    <div style={{ background: theme.cardBg, borderRadius: 14, border: `1px solid ${theme.border}`, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderBottom: `1px solid ${theme.border}`, fontSize: 12.5, color: theme.textSecondary, flexWrap: "wrap" }}>
+        <span style={{ flex: 1, minWidth: 260 }}>AI가 이 내용만 보고 기사·블로그·SNS를 씁니다. 사진은 끌어서 순서를 바꾸고 빼거나 더할 수 있어요.</span>
+        <span>사진 {result.media.length}장 분석·캡처 완료</span>
+        <button onClick={() => void analyze(picked)} disabled={busy} style={{ border: 0, background: "transparent", color: theme.darkMode ? "#93c5fd" : "#2563eb", fontSize: 12.5, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>{busy ? "분석 중…" : "↻ 다시 분석·캡처"}</button>
+      </div>
+      <div style={{ padding: "18px 22px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{category === "auction" ? "물건 정보" : "공실 정보"} <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>상세 항목 {result.vacancy.fields?.length || 0}개</span></div>
+          <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", rowGap: 7, columnGap: 10, fontSize: 13.5 }}>
+            {(result.vacancy.fields || []).map((f, i) => (
+              <React.Fragment key={i}><span style={{ color: theme.textSecondary }}>{f.label}</span><b style={{ fontWeight: 600, color: theme.textPrimary, wordBreak: "break-all" }}>{f.value}</b></React.Fragment>
+            ))}
+          </div>
+          {!result.vacancy.fields?.length && <div style={{ fontSize: 13, color: theme.textSecondary }}>읽은 항목이 없습니다. [↻ 다시 분석·캡처]를 눌러 주세요.</div>}
+        </div>
+        <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>주변 환경 · 특징</div>
+          <div style={{ fontSize: 13.5, color: theme.textPrimary, lineHeight: 1.7 }}>{result.vacancy.infra || <span style={{ color: theme.textSecondary }}>주변 환경 정보가 없습니다.</span>}</div>
+          {!!result.vacancy.themes?.length && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+              {result.vacancy.themes.map((t) => <span key={t} style={{ padding: "4px 10px", borderRadius: 14, background: soft, border: `1px solid ${theme.border}`, fontSize: 12.5, fontWeight: 600, color: theme.textPrimary }}>{t}</span>)}
+            </div>
+          )}
+        </div>
+        <div style={{ gridColumn: "1 / -1", border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 4 }}>사진 · 화면 <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>글에 들어갈 순서</span></div>
+          <MediaEditGrid theme={theme} items={result.media} hiddenCount={result.hiddenCount || 0} styleKey={result.vacancyId} ideas={aiIdeas(result)} seed={aiSeed(result)} onOp={mediaOp} />
+          {result.failures.length > 0 && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309", background: theme.darkMode ? "rgba(180,83,9,0.12)" : "#fffbeb", borderRadius: 8, padding: "8px 10px" }}>못 가져온 것: {result.failures.join(" / ")}</div>}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
       {/* 왼쪽: 작업 메뉴 — 제목·내 AI 연결·카테고리 (메인 메뉴처럼 글자 위주로 얌전하게) */}
@@ -410,15 +488,45 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         </nav>
       </aside>
 
-      {/* 오른쪽: 작업 공간 */}
+      {/* 오른쪽 — 위 줄(제목 · 이용 횟수 · [파일 ▾]) + 작업 공간 (2026-11-03 사장님: 메뉴는 원래대로 왼쪽에) */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+      <div style={{ height: 56, flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 24px", background: theme.cardBg, borderBottom: `1px solid ${theme.border}` }}>
+        <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: theme.textPrimary, whiteSpace: "nowrap" }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "nowrap" }}>
+          {(() => {
+            const t = category === "column" ? columnTab : category === "gongsil" || category === "auction" ? tab : simTabs[category];
+            if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
+            const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
+            const name = t === "blog" ? "블로그" : t === "youtube" ? "유튜브" : "SNS";
+            if (!u) return null;
+            return u.monthRemaining === null ? (
+              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#ecfdf5", color: "#047857" }}>
+                {name} 무제한{u.dailyLimit !== null ? ` · 오늘 ${u.todayUsed}/${u.dailyLimit}건` : ""}
+              </span>
+            ) : u.monthRemaining > 0 ? (
+              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
+                이번 주 {name} {u.monthRemaining} / {u.monthLimit}번 남음
+              </span>
+            ) : (
+              <a href="/marketing/pricing" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
+                {u.monthLimit === 0 ? `${name}는 공실뉴스부동산 회원 기능입니다` : `이번 주 ${u.monthLimit}번을 모두 사용했습니다 · 공실마케팅에서 무제한 →`}
+              </a>
+            );
+          })()}
+          {/* 작업 파일 — 자동 저장 · [파일 ▾] (WorkFileBar 가 이 자리에 그린다) */}
+          <div id="gs-workfile-slot" />
+        </div>
+      </div>
+
+      {desk && result ? (<>
+        <StepLine theme={theme} tab={tab} onTab={chooseTab} onFirst={() => chooseTab("source")} first={category === "auction" ? "물건 고르기" : "공실 고르기"} />
+        <StudioChannelTabs key={result.vacancyId} layout="desk" head={head} analysis={analysisView} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />
+      </>) : (
       <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
       {/* 목록(공실 카드)일 때는 폭 제한 없이 왼쪽부터 — 공실관리와 같이 (2026-10-29 사장님) */}
       <div style={((category === "gongsil" || category === "auction") && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
-            {/* [☰ 공실등록형] [▦ SNS홍보형] — 공실관리 제목 옆과 똑같이 (2026-10-29 사장님). 여기는 SNS홍보형, 공실등록형은 공실관리 표로 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
             {((category === "gongsil" && mode === "list") || (category === "column" && wideList)) && (
               <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: theme.darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
                 {/* 뉴스·SNS발행에서는 SNS홍보형만 (2026-10-29 사장님) — 등록형은 공실관리·기사관리에서 */}
@@ -441,33 +549,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 })}
               </div>
             )}
-            </div>
-            <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {/* 작업 파일 줄(저장·불러오기)이 여기로 올라온다 — WorkFileBar 가 이 자리에 그린다 (2026-10-28 사장님) */}
-          <div id="gs-workfile-slot" />
-          {(() => {
-            const t = category === "column" ? columnTab : category === "gongsil" || category === "auction" ? tab : simTabs[category];
-            if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
-            const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
-            const name = t === "blog" ? "블로그" : t === "youtube" ? "유튜브" : "SNS";
-            if (!u) return null;
-            return u.monthRemaining === null ? (
-              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#ecfdf5", color: "#047857" }}>
-                {name} 무제한{u.dailyLimit !== null ? ` · 오늘 ${u.todayUsed}/${u.dailyLimit}건` : ""}
-              </span>
-            ) : u.monthRemaining > 0 ? (
-              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
-                이번 주 {name} {u.monthRemaining} / {u.monthLimit}번 남음
-              </span>
-            ) : (
-              <a href="/marketing/pricing" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {u.monthLimit === 0 ? `${name}는 공실뉴스부동산 회원 기능입니다` : `이번 주 ${u.monthLimit}번을 모두 사용했습니다 · 공실마케팅에서 무제한 →`}
-              </a>
-            );
-          })()}
-          </div>
+          <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
         </div>
 
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} />}
@@ -482,57 +564,6 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         )}
 
         {(category === "gongsil" || category === "auction") && (<>
-        {/* 지금 작업 — 한 줄 요약. [공실 바꾸기] = 작업 목록 · [다시 분석·캡처] = 같은 공실 사진을 새로 */}
-        {result && mode === "" && (<>
-          {/* 1단계 표시 — 여기서부터 시작인 걸 알게 (2026-10-28 사장님: 밋밋해서 인지가 안 됨) */}
-          <div id="gs-step-1" style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px 2px", scrollMarginTop: 16 }}>
-            <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>이 공실로 씁니다</span>
-            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 공실은 [← 목록]</span>
-          </div>
-          <div style={{ ...card, padding: "16px 20px", position: "relative", minHeight: busy ? 200 : undefined, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.darkMode ? "rgba(91,141,239,0.10)" : "#f3f7ff" }}>
-            {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", gap: 5 }}>
-                {result.media.slice(0, 4).map((m, i) => (
-                  <div key={i} style={{ width: 58, height: 58, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
-                    {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-                  </div>
-                ))}
-              </div>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ fontSize: 17, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
-                  {result.vacancy.saleKind && (
-                    <span style={{ fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>
-                  )}
-                  {picked ? vacancyLabel(picked) : result.vacancy.title}
-                </div>
-                <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
-                  {result.vacancy.title} · {result.vacancy.priceText} · 사진 {result.media.length}장 분석·캡처 완료
-                  {/* 펼침·접기 — 눈에 띄게 테두리 단추로 (2026-10-24 사장님) */}
-                  <button onClick={() => setShowMedia((x) => !x)}
-                    style={{ marginLeft: 8, padding: "3px 10px", borderRadius: 6, border: `1px solid ${theme.darkMode ? "#ffffff" : "#1a3a6b"}`, background: showMedia ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : "transparent", color: showMedia ? (theme.darkMode ? "#1a3a6b" : "#ffffff") : (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontSize: 12.5, fontWeight: 800, cursor: "pointer", verticalAlign: "middle" }}>
-                    {showMedia ? "접기 ▲" : "분석 내용 보기 ▼"}
-                  </button>
-                </div>
-              </div>
-              {/* 분석·캡처 중에는 곤색 단추로 눈에 띄게 (2026-10-24 사장님) */}
-              <button onClick={() => void analyze(picked)} disabled={busy} title="같은 공실의 사진·화면을 새로 받습니다"
-                style={busy
-                  ? { padding: "8px 14px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "default" }
-                  : { padding: "8px 14px", borderRadius: 8, border: `2px solid ${theme.darkMode ? "#5b8def" : "#1a3a6b"}`, background: theme.darkMode ? "transparent" : "#ffffff", color: theme.darkMode ? "#ffffff" : "#1a3a6b", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-                {busy ? <>분석·캡처 중<BusyDots /></> : "↻ 다시 분석·캡처"}
-              </button>
-              <button onClick={openList}
-                style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-                ← 목록
-              </button>
-            </div>
-            {error && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
-            {showMedia && <div style={{ marginTop: 6 }}>{mediaGrid(result)}</div>}
-          </div>
-        </>)}
-
         {/* 작업 목록 — 처음 화면 (2026-10-29 사장님: 기사관리처럼, 카드는 공실관리 SNS홍보형 그대로)
             맨 앞 [+ 새로 만들기] → 공실 고르기 · 카드/채널을 누르면 이 자리에서 그 공실 작업 */}
         {mode === "list" && (
@@ -635,11 +666,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         </div>
         </>)}
 
-        {/* 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 (고르는 동안은 숨긴다) */}
-        {result && mode === "" && <StepNav theme={theme} tab={tab} onTab={chooseTab} onOpen1={() => setShowMedia(true)} />}
-        {result && mode === "" && <StudioChannelTabs key={result.vacancyId} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />}
         </>)}
       </div>
+      </div>
+      )}
       </div>
     </div>
   );

@@ -173,7 +173,9 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
             }}
             title="공실마케팅 홈"
           >
-            공실마케팅studio
+            공실마케팅
+            {/* "studio"는 글자 말고 주황 꼬리표로 (2026-11-03 사장님: 로고처럼) */}
+            <span style={{ display: "inline-block", marginLeft: 6, verticalAlign: "bottom", background: "#ea8a0c", color: "#fff", fontSize: stuck ? 11 : 13, fontWeight: 800, letterSpacing: 0, lineHeight: 1, padding: stuck ? "3px 5px 4px" : "3px 6px 4px", borderRadius: 2 }}>studio</span>
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>

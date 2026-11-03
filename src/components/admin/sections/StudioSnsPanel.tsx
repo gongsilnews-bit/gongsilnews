@@ -50,7 +50,9 @@ export const SNS_TONES = [
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
-export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone, writeBtn }: {
+export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone, writeBtn, view }: {
+  /** 작업대 화면 (2026-11-03 사장님 시안 A3): "settings" = 왼쪽 "쓸 글" 칸에 설정만 · "result" = 가운데에 결과만. 없으면 예전 그대로 */
+  view?: "settings" | "result";
   theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
   /** 한 번에 쓰기 — 이 탭은 문체만 고르고, 다시 쓰기도 [한 번에 쓰기]로 (탭 ☑ 하나만 남기면 그 글만) */
   /** 채널마다 문체 { instagram, threads, facebook } — 이 탭에서는 이 채널 것만 고른다 */
@@ -224,10 +226,28 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
   const rest = (data?.pool || []).filter((m) => !mediaIds.includes(m.id));
   const bodyLen = channel === "threads" ? 0 : (ch?.composed.text || "").length;
 
+  const narrow = view === "settings";
+  const toneGrid = (
+        <div style={{ display: "grid", gridTemplateColumns: narrow ? "1fr 1fr" : "repeat(auto-fill, minmax(160px, 1fr))", gap: narrow ? 6 : 8, marginTop: narrow ? 0 : 14 }}>
+          {SNS_TONES.map((t) => (
+            <button key={t.id} type="button" onClick={() => onTone?.(t.id)} disabled={!onTone}
+              style={{ textAlign: "left", padding: narrow ? "7px 9px" : "9px 12px", borderRadius: 8, cursor: onTone ? "pointer" : "default", color: theme.textPrimary,
+                border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>
+              <div style={{ fontSize: narrow ? 13 : 14, fontWeight: 800 }}>{t.label}{tone === t.id ? " ✓" : ""}</div>
+              <div style={{ fontSize: narrow ? 11 : 12, color: theme.textSecondary, marginTop: 2 }}>{t.brief}</div>
+            </button>
+          ))}
+        </div>
+  );
+  if (view === "settings") return toneGrid;
+  const result = view === "result";
+  const hasPost = Boolean(ch && ch.post);
+
   return (
     <div>
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      {(!result || (!hasPost && writeBtn) || progress || error || !hasPost) && <div style={card}>
+        {result && !hasPost && <div style={{ fontSize: 14, color: theme.textSecondary, lineHeight: 1.7 }}>아직 {info.label} 글을 쓰지 않았어요. 왼쪽에서 문체를 고르고 <b>[✨ 한 번에 쓰기]</b>, 또는 아래 <b>[이 {info.label} 글만 쓰기]</b>를 누르세요.</div>}
+        {!result && <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{oneShot ? `${info.label} 스타일` : `${info.label} 글 쓰기`}</div>
             <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4, lineHeight: 1.6 }}>
@@ -239,21 +259,12 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
               {writing ? `${aiName}가 쓰는 중…` : data ? "세 채널 다시 쓰기" : `${aiName}로 SNS 글 쓰기`}
             </button>
           )}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginTop: 14 }}>
-          {SNS_TONES.map((t) => (
-            <button key={t.id} type="button" onClick={() => onTone?.(t.id)} disabled={!onTone}
-              style={{ textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: onTone ? "pointer" : "default", color: theme.textPrimary,
-                border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>
-              <div style={{ fontSize: 14, fontWeight: 800 }}>{t.label}{tone === t.id ? " ✓" : ""}</div>
-              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{t.brief}</div>
-            </button>
-          ))}
-        </div>
+        </div>}
+        {!result && toneGrid}
         {!(ch && ch.post) && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
-      </div>
+      </div>}
 
       {ch && ch.post && (
         <div id="gs-step-3" style={{ ...card, scrollMarginTop: 16 }}>

@@ -2,6 +2,7 @@
 
 // 공실마케팅 [동영상제작] — 브루식 영상 편집기 (원본은 회원 PC, 편집·미리보기·굽기도 PC)
 // 계획서: docs/2026-10-15_studio_video_editor_plan.md
+import { useInnerHistory } from "@/utils/useInnerHistory";
 import React, { useEffect, useState } from "react";
 import type { LibItem, Method, Project, Recover } from "./types";
 import { errText, isRecover, videoBridge } from "./types";
@@ -16,10 +17,17 @@ import { AiVoiceStudio } from "./AiVoiceStudio";
 /** 동영상제작을 쓸 수 있는 가장 낮은 스튜디오 앱 버전 (.gss 저장 방식 — 0.1.4) */
 const MIN_APP = "0.1.4";
 
+/** 뒤로가기로 닫은 프로젝트 — 앞으로가기로 다시 연다 */
+let lastProject: Project | null = null;
+
 export default function VideoStudio() {
   useStudioTheme(); // 밝은/어두운 화면 (2026-10-23)
   const b = videoBridge();
   const [project, setProject] = useState<Project | null>(null);
+  // 뒤로가기 = 편집 화면 → 처음 화면, 앞으로가기 = 그 프로젝트 다시 열기 (저장 안 한 내용은 먼저 묻는다, 2026-11-03 사장님)
+  if (project) lastProject = project;
+  useInnerHistory("video-edit", Boolean(project), () => setProject(null), () => { if (lastProject) setProject(lastProject); },
+    () => (window as unknown as { __gsvGuard?: (next: () => void) => void }).__gsvGuard);
   const [flow, setFlow] = useState<"" | "new" | Method>("");
   const [recorded, setRecorded] = useState<LibItem | null>(null);
   const [recScript, setRecScript] = useState(""); // 녹화할 때 프롬프터로 읽은 대본 → 자막
