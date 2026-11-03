@@ -76,6 +76,7 @@ const RULES = [
   "한 문장은 짧게, 쉬운 말로. 같은 말을 되풀이하지 않는다.",
   "개인정보(연락처·동호수·실명)를 넣지 않는다. 남의 기사 문장을 그대로 옮기지 않고 사실만 살려 새로 쓴다.",
   "단지·건물 이름은 브랜드와 동네를 띄어 쓰고, 영문 이름은 한글로.",
+  "기사 끝에 '본 기사(칼럼)는 ○○ 보도·자료를 바탕으로 작성했다' 같은 작성 경위 문장, 원문 언론사·포털 이름, 원문 게재 날짜·시각을 쓰지 않는다. 기사는 마지막 내용 문단으로 끝낸다.",
 ];
 
 /** AI 답(JSON) 읽기 — 웹 창에서 복사한 답도 (```json 상자 · 둥근 따옴표 · 끝 쉼표 · 문자열 속 줄바꿈 · 앞뒤 설명을 견딘다, 2026-11-03 사장님) */
@@ -121,6 +122,38 @@ function Dots({ color = "#fff" }: { color?: string }) {
       <style>{`@keyframes gsDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}`}</style>
       {[0, 1, 2].map((i) => <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: color, animation: `gsDot 1.2s ${i * 0.18}s infinite ease-in-out` }} />)}
     </span>
+  );
+}
+
+/** 웹 — 앱의 "내 계정(무료·수동)" 안내 창과 같은 모양 (어두운 창 · 1·2 설명 · 단추 둘 · 걸린 시간 · Esc 로 멈춤) */
+function WebAiOverlay({ name, msg, onReopen, onPaste, onStop }: { name: string; msg?: string; onReopen: () => void; onPaste: () => void; onStop: () => void }) {
+  const [sec, setSec] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setSec((x) => x + 1), 1000);
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onStop(); };
+    window.addEventListener("keydown", k);
+    return () => { window.clearInterval(t); window.removeEventListener("keydown", k); };
+  }, [onStop]);
+  const gb: React.CSSProperties = { height: 34, padding: "0 12px", borderRadius: 6, border: "1px solid #475569", background: "#1e293b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+  return createPortal(
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,14,20,.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ position: "relative", width: 600, maxWidth: "100%", background: "#16202b", color: "#e5e7eb", borderRadius: 14, padding: "26px 30px 20px", boxShadow: "0 20px 60px rgba(0,0,0,.35)", textAlign: "center" }}>
+        <button type="button" onClick={onStop} title="멈추기 (Esc)" style={{ position: "absolute", top: 12, right: 14, border: 0, background: "none", color: "#cbd5e1", fontSize: 20, cursor: "pointer" }}>×</button>
+        <div style={{ fontSize: 18.5, fontWeight: 800, color: "#fff", marginBottom: 14 }}>{name} 내 계정(무료·수동)으로 기사 초안을 쓰고 있습니다<Dots /></div>
+        <div style={{ textAlign: "left", lineHeight: 1.75, fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
+          <b>1.</b> 질문을 복사해 두고 새 탭에 <b>{name}</b> 창을 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br />
+          <b>2.</b> 답이 다 나오면 답 안의 <b>코드 상자 오른쪽 위 [복사]</b>를 누르고 이 창으로 돌아오세요 — 알아서 가져와요.
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14, flexWrap: "wrap" }}>
+          <button type="button" onClick={onReopen} style={gb}>질문 다시 복사하고 {name} 열기</button>
+          <button type="button" onClick={onPaste} style={gb}>복사한 답 가져오기</button>
+        </div>
+        {msg && <div style={{ marginTop: 10, color: "#fbbf24", fontSize: 13 }}>{msg}</div>}
+        <div style={{ marginTop: 12, fontSize: 24, fontWeight: 800, color: "#60a5fa" }}>{Math.floor(sec / 60)}:{String(sec % 60).padStart(2, "0")}</div>
+        <div style={{ marginTop: 6, fontSize: 12, color: "#94a3b8" }}>급할 때는 오른쪽 위 × 나 Esc 키로 멈춰요</div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -324,7 +357,8 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
       } else if (src === "news") {
         const n = news!;
         mats.push(`[원문 뉴스 — ${n.publisher || "원문 기사"}${n.publishedAt ? `, ${n.publishedAt}` : ""}]\n- 제목: ${n.title}\n- 본문: ${String(n.body || "").slice(0, 4000)}`);
-        subject = `뉴스「${n.title}」를 바탕으로 새로 쓰는 기사 (마지막 문단에 출처 ${n.publisher || "원문 기사"} 를 밝힌다)`;
+        // 출처·언론사·게재 시각 문장은 쓰지 않는다 (2026-11-03 사장님: "본 칼럼은 ○○에 ○시 게재된 … 바탕으로 작성했다" 같은 문장 나오면 안 됨)
+        subject = `뉴스「${n.title}」의 사실을 바탕으로 새로 쓰는 기사. 원문 문장을 옮기지 않는다. "이 기사는 ○○ 보도를 바탕으로 작성했다", "○○에 따르면 ○일 ○시 게재" 처럼 원문 언론사·포털·게재 시각·작성 경위를 밝히는 문장은 절대 쓰지 않는다`;
         summary.push(n.title);
       } else subject = topic.trim();
       const base: Analysis = { key, subject, mats, summary, complex, shots: regPhotos };
@@ -446,7 +480,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
       window.open(site.url, "_blank", "noopener");
       setErr(""); setDone(false); setNote("");
       setWebWait({ prompt, a });
-      setBusy(`${site.name} 창에 붙여 넣고(Ctrl+V) 보내세요 · 답 아래 복사 단추를 누르고 이 창으로 돌아오면 저절로 채워져요`);
+      setBusy(`${site.name} 답을 기다리는 중`);
       return;
     }
     const a = curAnalysis();
@@ -639,7 +673,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
                 <div style={{ fontSize: 12, color: SUB, marginTop: 4 }}>{[news.publisher, news.publishedAt].filter(Boolean).join(" · ")} · 본문 {String(news.body || "").length.toLocaleString()}자</div>
               </div>
             )}
-            <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>원문 문장은 옮기지 않고 사실만 살려 새로 쓰고, 출처를 밝혀요</div>
+            <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>원문 문장은 옮기지 않고 사실만 살려 새로 써요</div>
           </>)}
           {src === "topic" && (<>{head(n++, "주제")}
             <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="예: 전세 계약 전 꼭 확인할 것" style={input} />
@@ -705,6 +739,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
             })}
           </div>
         )}
+        {webWait && <WebAiOverlay name={(WEB_AI.find((x) => x.id === webAi) || WEB_AI[0]).name} msg={note} onReopen={() => void webReopen()} onPaste={() => void webTry(false)} onStop={() => { setWebWait(null); setBusy(""); setNote(""); }} />}
         <button type="button" onClick={() => void write()} disabled={!webWait && (Boolean(busy) || !ready)}
           style={{ width: "100%", height: 48, borderRadius: 6, border: 0, background: busy || anaBusy ? NAVY : !ready ? "#9aa6b8" : "#2563eb", color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: busy || !ready ? "default" : "pointer", fontFamily: "inherit" }}>
           {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : "✨ AI 기사 초안 작성"}
@@ -719,8 +754,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
           <button type="button" onClick={() => setGuide(true)} title="AI 창에서 복사·붙여넣기 하는 법" style={{ ...btn, height: 32, padding: "0 10px", fontSize: 12.5 }}>? 쓰는 법</button>
         </div>
         {/* 웹 — AI 답을 기다리는 동안 그림 설명 창 · [? 쓰는 법] (2026-11-03 사장님: 처음 하는 사람은 복사 붙여넣기를 모름, 복사 단추 위치까지) */}
-        {webWait && <AiCopyGuide ai={webAi} waiting msg={note} onReopen={() => void webReopen()} onPaste={() => void webTry(false)} onClose={() => { setWebWait(null); setBusy(""); setNote(""); }} />}
-        {guide && !webWait && <AiCopyGuide ai={isApp ? aiCur?.provider || "chatgpt" : webAi} waiting={false} onClose={() => setGuide(false)} />}
+        {guide && <AiCopyGuide ai={isApp ? aiCur?.provider || "chatgpt" : webAi} waiting={false} onClose={() => setGuide(false)} />}
       </div>
     </div>
   );

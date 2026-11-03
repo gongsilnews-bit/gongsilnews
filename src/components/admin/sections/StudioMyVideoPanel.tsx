@@ -33,12 +33,12 @@ const fileKey = (f: string) => f.replace(/\\/g, "/").toLowerCase(); // 앱 sns-u
 const VIDEO_CH: [PromoChannel, string][] = [["youtube", "유튜브"], ["instagram", "인스타그램 릴스"], ["threads", "스레드"], ["facebook", "페이스북"]];
 const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
-export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme; onListView?: (on: boolean) => void }) {
+export default function StudioMyVideoPanel({ theme, onListView, onDesk }: { theme: Theme; onListView?: (on: boolean) => void; /** 작업대(꽉 채움) 화면인지 */ onDesk?: (on: boolean) => void }) {
   const b = videoBridge();
   const [item, setItem] = useState<(LibItem & { path?: string }) | null>(null);
   // 처음 화면은 목록 (2026-10-29 사장님: 공실뉴스와 같이) — 맨 앞 [+ 새로 만들기] = PC에서 영상 고르기, 이어서 내 자료의 영상 카드
   const [view, setView] = useState<"list" | "work">("list");
-  useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { onListView?.(view === "list"); onDesk?.(view === "work"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const [videos, setVideos] = useState<(LibItem & { path?: string })[] | null>(null);
   // 내가 올린 영상만 (2026-10-29 사장님) — 이 화면에서 [크롬에서 채우기]한 영상만 따로 기억 (편집기 기록·시험 영상은 넣지 않는다). 사진·길이는 내 자료에서
   const [posted, setPosted] = useState<Record<string, { at: number; done: Record<string, boolean> }>>({});
@@ -189,74 +189,106 @@ export default function StudioMyVideoPanel({ theme, onListView }: { theme: Theme
     );
   }
 
+  /* 작업대 — 공실뉴스와 같은 모양 (2026-11-03 사장님): 왼쪽 [이 영상 · 어느 공실 · 문체 · 한 번에 쓰기] · 가운데 [영상 · 채널마다 올리기] */
+  const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
+  const soft = theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  const small: React.CSSProperties = { flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" };
+  const lab = (t: string) => <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, margin: "18px 0 8px" }}>{t}</div>;
+  const vertical = ratio === "9:16" || ratio === "1:1" || ratio === "4:5";
+  const done = (item && posted[item.id]?.done) || {};
+  const ICON: Record<string, [string, string]> = { youtube: ["▶", "#ff0000"], instagram: ["◎", "linear-gradient(45deg,#f58529,#dd2a7b,#8134af)"], threads: ["@", "#111"], facebook: ["f", "#1877f2"] };
   return (
-    <div>
-      <div style={{ marginBottom: 12 }}>
-        <button onClick={() => setView("list")}
-          style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>← 목록</button>
-      </div>
-      {step(1, "올릴 영상 고르기")}
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          {item?.thumb && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.thumb} alt="" style={{ width: ratio === "16:9" ? 160 : 72, height: ratio === "16:9" ? 90 : 128, objectFit: "cover", borderRadius: 8, background: "#000" }} />
-          )}
-          <div style={{ flex: 1, minWidth: 220 }}>
-            {item ? (
-              <>
-                <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, wordBreak: "break-all" }}>{item.name}</div>
-                <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4 }}>
-                  {clock(item.duration || 0)} · {ratio === "9:16" || ratio === "1:1" || ratio === "4:5" ? "세로 영상 → 유튜브 쇼츠 · 인스타 릴스" : "가로 영상 → 유튜브 일반 영상"}
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 14, color: theme.textSecondary, lineHeight: 1.6 }}>
-                편집이 끝난 영상을 <b>다시 굽지 않고 그대로</b> 올립니다. 공실마케팅에서 만든 영상은 <b>06 완성영상</b> 폴더에 있어요.
+    <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+      <aside style={{ width: 372, flexShrink: 0, display: "flex", flexDirection: "column", background: theme.cardBg, borderRight: `1px solid ${theme.border}` }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 8px" }}>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 8 }}>이 영상을 올립니다</div>
+          <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: 12 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: "#000", flexShrink: 0 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {item?.thumb && <img src={item.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
               </div>
-            )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item ? name : "영상을 골라 주세요"}</div>
+                <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
+                  {item ? <>{clock(item.duration || 0)} · {vertical ? "세로" : "가로"} 영상<br />{vertical ? "유튜브 쇼츠 · 인스타 릴스" : "유튜브 일반 영상"}</> : "06 완성영상 폴더의 영상을 다시 굽지 않고 그대로"}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+              <button onClick={() => void pick()} style={small}>🎬 다른 영상</button>
+              <button onClick={() => setView("list")} title="목록으로" style={{ ...small, border: 0, background: navy, color: "#fff", fontWeight: 800 }}>← 목록</button>
+            </div>
+            {err && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c53030" }}>{err}</div>}
           </div>
-          <button onClick={() => void pick()}
-            style={{ padding: "10px 18px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-            {item ? "다른 영상 고르기" : "PC에서 영상 고르기"}
+
+          {lab("어느 공실 영상인가요?")}
+          <select value={vacId} onChange={(e) => setVacId(e.target.value)} disabled={!item}
+            style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13.5 }}>
+            <option value="">공실 없음 · 기사 영상</option>
+            {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+          </select>
+          <div style={{ marginTop: 6, fontSize: 12, color: theme.textSecondary, lineHeight: 1.5 }}>공실을 고르면 글 끝에 물건 링크·법정 표시가 붙고, 올린 주소가 홍보현황에 ✓ 로 남아요.</div>
+
+          {lab("문체 — 네 채널 같이")}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {SNS_TONES.map((t) => {
+              const on = tone === t.id;
+              return (
+                <button key={t.id} type="button" onClick={() => pickTone(t.id)}
+                  style={{ textAlign: "left", padding: "7px 9px", borderRadius: 8, cursor: "pointer", color: theme.textPrimary, border: `1px solid ${on ? "#2563eb" : theme.border}`, background: on ? (theme.darkMode ? "rgba(37,99,235,0.18)" : "#eff5ff") : "transparent" }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: on ? (theme.darkMode ? "#93c5fd" : "#1d4ed8") : undefined }}>{t.label}</div>
+                  <div style={{ fontSize: 11, color: theme.textSecondary, marginTop: 1 }}>{t.brief}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div style={{ padding: "14px 18px 18px", borderTop: `1px solid ${theme.border}` }}>
+          <button type="button" disabled={!item} onClick={() => setCh("youtube")}
+            style={{ width: "100%", height: 50, borderRadius: 12, border: 0, background: item ? "#2563eb" : "#94a3b8", color: "#fff", fontSize: 16, fontWeight: 800, cursor: item ? "pointer" : "default" }}>
+            ✨ 4개 채널 글 한 번에 쓰기
           </button>
+          <div style={{ marginTop: 8, fontSize: 12.5, lineHeight: 1.5, textAlign: "center", color: theme.textSecondary }}>유튜브 · 인스타 릴스 · 스레드 · 페이스북 · [게시]는 직접 눌러요</div>
         </div>
-        {err && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{err}</div>}
-      </div>
+      </aside>
 
-      {step(2, "어느 공실 영상인가요?")}
-      <div style={{ ...card, opacity: item ? 1 : 0.55 }}>
-        <select value={vacId} onChange={(e) => setVacId(e.target.value)} disabled={!item}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 14 }}>
-          <option value="">공실 없음 · 기사 영상 (다음 창에서 기사를 고를 수 있어요)</option>
-          {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-        </select>
-        <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
-          공실을 고르면 글 끝에 물건 상세 링크와 법에 필요한 표시가 붙고, 올린 주소가 그 공실 홍보현황에 ✓ 로 남아요.
-        </div>
-      </div>
-
-      {step(3, "SNS 글 한 번에 쓰기")}
-      <div style={{ ...card, opacity: item ? 1 : 0.55 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>문체 — 네 채널 같이</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, marginBottom: 16 }}>
-          {SNS_TONES.map((t) => (
-            <button key={t.id} type="button" onClick={() => pickTone(t.id)}
-              style={{ textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: "pointer", color: theme.textPrimary,
-                border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>
-              <div style={{ fontSize: 14, fontWeight: 800 }}>{t.label}{tone === t.id ? " ✓" : ""}</div>
-              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{t.brief}</div>
+      <main style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "16px 28px 28px", background: theme.darkMode ? undefined : "#f4f6f9" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+          {VIDEO_CH.map(([id, label]) => (
+            <button key={id} type="button" disabled={!item} onClick={() => setCh(id as PostChannel)} title={`${label}에 올리기`}
+              style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 18, cursor: item ? "pointer" : "default", fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textSecondary }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: done[id] ? "#10b981" : theme.darkMode ? "#4b5563" : "#d1d5db" }} />
+              {label}
             </button>
           ))}
         </div>
-        <button disabled={!item} onClick={() => setCh("youtube")}
-          style={{ padding: "12px 22px", borderRadius: 10, border: 0, background: item ? "#16a34a" : "#94a3b8", color: "#fff", fontSize: 15, fontWeight: 800, cursor: item ? "pointer" : "default" }}>
-          유튜브 · 인스타 릴스 · 스레드 · 페이스북 글 한 번에 쓰기
-        </button>
-        <div style={{ marginTop: 12, fontSize: 13, color: theme.textSecondary, lineHeight: 1.7 }}>
-          AI가 네 채널 글을 <b>한 번에</b> 씁니다. 열린 창 위쪽 탭으로 채널을 옮겨 다니며 고치고, [크롬에서 채우기]로 평소 크롬에 영상과 글을 넣어요. 마지막 [게시]는 직접 눌러요.
+        <div style={{ background: theme.cardBg, borderRadius: 14, border: `1px solid ${theme.border}`, padding: "22px 24px" }}>
+          <div style={{ display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div style={{ width: vertical ? 220 : 420, maxWidth: "100%", aspectRatio: vertical ? "9 / 16" : "16 / 9", borderRadius: 10, overflow: "hidden", background: "#000", flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {item?.thumb && <img src={item.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+            </div>
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, wordBreak: "break-all" }}>{item?.name}</div>
+              <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4 }}>{item ? `${clock(item.duration || 0)} · ${vertical ? "세로 영상 → 유튜브 쇼츠 · 인스타 릴스" : "가로 영상 → 유튜브 일반 영상"}` : ""}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+                {VIDEO_CH.map(([id, label]) => (
+                  <div key={id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, background: soft }}>
+                    <em style={{ fontStyle: "normal", width: 22, height: 22, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 800, background: ICON[id]?.[1] }}>{ICON[id]?.[0]}</em>
+                    <b style={{ flex: 1, fontSize: 14, color: theme.textPrimary }}>{label}</b>
+                    {done[id] ? <span style={{ fontSize: 12.5, fontWeight: 800, color: "#059669" }}>✓ 올림</span> : <span style={{ fontSize: 12.5, color: theme.textSecondary }}>아직</span>}
+                    <button type="button" disabled={!item} onClick={() => setCh(id as PostChannel)} style={{ height: 30, padding: "0 12px", borderRadius: 6, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: item ? "pointer" : "default" }}>올리기</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 14, fontSize: 13, color: theme.textSecondary, lineHeight: 1.7 }}>
+                AI가 네 채널 글을 <b>한 번에</b> 씁니다. 열린 창 위쪽 탭으로 채널을 옮겨 다니며 고치고, [크롬에서 채우기]로 평소 크롬에 영상과 글을 넣어요. 마지막 [게시]는 직접 눌러요.
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
 
       {project && item?.path && ch && (
         <PostDialog project={project} file={item.path} seconds={item.duration || 0} channel={ch} lines={[]} tone={tone} onClose={() => { setCh(""); loadPosted(); loadUrls(); }}

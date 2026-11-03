@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import ArticleCardGrid from "./ArticleCardGrid";
 import { useRouter } from "next/navigation";
 import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
-import StudioChannelTabs, { StepNav } from "./StudioChannelTabs";
+import StudioChannelTabs, { StepLine } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 
@@ -59,7 +59,7 @@ function shortDate(v: string) {
 /* 보도일은 "2026.10.15" 처럼 짧게 보여 주고 고칠 수 있게 */
 const tidy = (n: News): News => ({ ...n, publishedAt: n.publishedAt ? shortDate(n.publishedAt) : "" });
 
-export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView, memberId }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void; memberId?: string }) {
+export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView, onDesk, memberId }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void; /** 작업대 화면인지 — 위에서 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로) */ onDesk?: (on: boolean) => void; memberId?: string }) {
   const router = useRouter();
   const [column, setColumn] = useState<Column | null>(null);
   // "" = 지금 칼럼(한 줄 요약) · list = [소재 바꾸기] 칼럼 목록 · new = [+ 새로 작성] ① 소재 고르기 (공실뉴스와 같다, 2026-10-24 사장님)
@@ -189,101 +189,92 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
     setUrl(""); setNews(null); setTopic(EMPTY_TOPIC); setAngle(""); setHint(""); setError("");
   };
   const ready = mode === "news" ? Boolean(news && news.title.trim() && news.body.trim()) : Boolean(topic.subject.trim());
+  const deskOn = Boolean(column) && view === "";
+  useEffect(() => { onDesk?.(deskOn); }, [deskOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
-      {/* ① 접힌 요약 */}
-      {column && view === "" && (() => {
+      {/* ① 작업대 — 왼쪽 [이 소재 + 쓸 글·글마다 설정 + 한 번에 쓰기] · 가운데 [원문·글의 재료 | 글마다 결과] (공실뉴스와 같은 모양, 2026-11-03 사장님) */}
+      {deskOn && column && (() => {
         const n = column.source.news;
         const t = column.source.topic;
         const caps = column.captures || [];
         const isNews = column.source.mode === "news";
-        const NAVY = "#1a3a6b";
-        return (<>
-          {/* 1단계 표시 + 오른쪽 단계 막대 — 공실뉴스와 같게 (2026-10-28 사장님) */}
-          <StepNav theme={theme} tab={tab} onTab={onTab} onOpen1={() => setShowSource(true)} first="소재 선택 및 분석" />
-          <div id="gs-step-1" style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px 2px", scrollMarginTop: 16 }}>
-            <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>이 소재로 씁니다</span>
-            <span style={{ fontSize: 12.5, color: theme.textSecondary }}>다른 소재는 [← 목록]</span>
-          </div>
-          <div style={{ ...card, padding: "16px 20px", position: "relative", minHeight: refetching ? 200 : undefined, border: `2px solid ${theme.darkMode ? "#5b8def" : NAVY}`, background: theme.darkMode ? "rgba(91,141,239,0.10)" : "#f3f7ff" }}>
-            {refetching && <LoadingCover theme={theme} title="다시 가져오는 중" detail="같은 기사 주소로 본문·기사 화면을 새로 받아요 (5~15초)" />}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              {/* 왼쪽 — 기사 화면 썸네일 (공실뉴스의 사진 자리) */}
-              {isNews && caps.length > 0 ? (
-                <div style={{ display: "flex", gap: 4 }}>
-                  {caps.slice(0, 3).map((c, i) => (
-                    <div key={i} style={{ width: 58, height: 58, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
-                      {c.thumb && <img src={c.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />}
-                    </div>
-                  ))}
+        const NAVY = theme.darkMode ? "#5b8def" : "#1a3a6b";
+        const soft = theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc";
+        const small: React.CSSProperties = { flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" };
+        const head = (
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 8 }}>이 소재로 씁니다</div>
+            <div style={{ position: "relative", border: `1px solid ${theme.border}`, borderRadius: 12, padding: 12, minHeight: refetching ? 150 : undefined }}>
+              {refetching && <LoadingCover theme={theme} title="다시 가져오는 중" detail="같은 기사 주소로 본문·기사 화면을 새로 받아요" />}
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: theme.darkMode ? "#374151" : "#e5e7eb", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {caps[0]?.thumb ? <img src={caps[0].thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+                    : <span style={{ fontSize: 11.5, fontWeight: 800, color: isNews ? "#1d4ed8" : "#6d28d9" }}>{isNews ? "뉴스" : "주제"}</span>}
                 </div>
-              ) : (
-                <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: isNews ? "#eff6ff" : "#f5f3ff", color: isNews ? "#1d4ed8" : "#6d28d9" }}>{isNews ? "뉴스" : "주제"}</span>
-              )}
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ fontSize: 17, fontWeight: 800, color: theme.textPrimary }}>{column.label}</div>
-                <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
-                  {isNews ? [n?.publisher, n?.publishedAt, caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음"].filter(Boolean).join(" · ") : "주제 직접입력"}
-                  <button onClick={() => setShowSource((x) => !x)}
-                    style={{ marginLeft: 8, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NAVY}`, background: showSource ? NAVY : "transparent", color: showSource ? "#ffffff" : NAVY, fontSize: 12.5, fontWeight: 800, cursor: "pointer", verticalAlign: "middle" }}>
-                    {showSource ? "접기 ▲" : isNews ? "원문 보기 ▼" : "주제 보기 ▼"}
-                  </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{column.label}</div>
+                  <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
+                    {isNews ? [n?.publisher, n?.publishedAt].filter(Boolean).join(" · ") || "뉴스" : "주제 직접입력"}<br />{isNews ? (caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음") : `본론 ${(t?.points || []).filter(Boolean).length}개`}
+                  </div>
                 </div>
               </div>
-              {isNews && bridge()?.column.refetch && (
-                <button onClick={() => void refetch()} disabled={refetching} title="같은 기사 주소로 본문·기사 화면을 새로 받습니다"
-                  style={{ ...plainBtn, border: `2px solid ${theme.darkMode ? "#5b8def" : NAVY}`, background: theme.darkMode ? "transparent" : "#ffffff", color: theme.darkMode ? "#ffffff" : NAVY, fontWeight: 800 }}>↻ 다시 가져오기·캡처</button>
-              )}
-              <button onClick={openList} style={{ ...plainBtn, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>← 목록</button>
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <button onClick={() => onTab("source")} style={small}>📋 원문·재료</button>
+                {isNews && bridge()?.column.refetch && <button onClick={() => void refetch()} disabled={refetching} title="같은 기사 주소로 본문·기사 화면을 새로 받습니다" style={small}>{refetching ? "받는 중…" : "↻ 다시 가져오기"}</button>}
+                <button onClick={openList} title="다른 소재 고르기" style={{ ...small, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>← 목록</button>
+              </div>
+              {error && !refetching && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c53030" }}>{error}</div>}
             </div>
-            {error && !refetching && <div style={{ marginTop: 10, fontSize: 13.5, color: "#c53030" }}>{error}</div>}
-            {/* [원문 보기] — 기사 화면 크게 + 가져온 원문 (읽기만, 고치려면 새로 작성) */}
-            {showSource && (
-              <div style={{ marginTop: 14 }}>
-                {/* 사진 정리 — 공실뉴스와 같게: 빼기·순서·AI 이미지·내 사진 (2026-10-28 사장님) */}
-                {bridge()?.column.media ? (
-                  <div style={{ marginBottom: 14 }}>
+          </div>
+        );
+        const analysis = (
+          <div style={{ background: theme.cardBg, borderRadius: 14, border: `1px solid ${theme.border}`, overflow: "hidden" }}>
+            <div style={{ padding: "12px 18px", borderBottom: `1px solid ${theme.border}`, fontSize: 12.5, color: theme.textSecondary }}>
+              AI가 이 내용만 보고 기사·블로그·SNS를 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 써요.
+            </div>
+            <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px", fontSize: 13.5, color: theme.textPrimary, lineHeight: 1.75 }}>
+                {isNews ? (<>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 2 }}>{n?.title}</div>
+                  <div style={{ fontSize: 12.5, color: theme.textSecondary, marginBottom: 8, wordBreak: "break-all" }}>{[n?.publisher, n?.publishedAt].filter(Boolean).join(" · ")}{n?.url ? ` · ${n.url}` : ""}</div>
+                  <div style={{ whiteSpace: "pre-wrap", maxHeight: 420, overflowY: "auto" }}>{n?.body}</div>
+                </>) : (<>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 6 }}>{t?.subject}</div>
+                  {t?.intro && <div><b>서론</b> {t.intro}</div>}
+                  {(t?.points || []).filter(Boolean).map((x, i) => <div key={i}><b>본론 {i + 1}</b> {x}</div>)}
+                  {t?.outro && <div><b>결론</b> {t.outro}</div>}
+                  {t?.memo && <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}><b>참고 메모</b> {t.memo}</div>}
+                </>)}
+                {column.source.angle && <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary }}><b>추가 요청</b> {column.source.angle}</div>}
+              </div>
+              {(caps.length > 0 || bridge()?.column.media) && (
+                <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 4 }}>사진 · 화면 <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>글에 들어갈 순서</span></div>
+                  {bridge()?.column.media ? (
                     <MediaEditGrid theme={theme} items={caps.map((c) => ({ kind: c.kind || "capture", caption: c.caption, thumb: c.thumb }))} hiddenCount={column.hiddenCount || 0} styleKey={column.id}
                       ideas={columnIdeas(column)} seed={columnIdeas(column)[0] || column.label}
                       note="끌어서 순서를 바꿔요 · 맨 앞이 대표 사진 · 정리한 사진은 기사·블로그·SNS·영상에 바로 들어가요"
                       onOp={async (op) => { const c = await bridge()!.column.media!(column.id, op); if (c) setColumn(c); }} />
-                  </div>
-                ) : isNews && caps.length > 0 && (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
-                    {caps.map((c, i) => (
-                      <figure key={i} style={{ margin: 0, border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.bg || "#f6f8fa" }}>
-                        <div style={{ position: "relative", aspectRatio: "4 / 3", background: "#e5e7eb" }}>
-                          {c.thumb && <img src={c.thumb} alt={c.caption} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />}
-                          <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: NAVY, color: "#fff" }}>기사 화면</span>
-                        </div>
-                        <figcaption style={{ padding: "8px 10px", fontSize: 12, lineHeight: 1.5, color: theme.textSecondary }}>{c.caption}</figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                )}
-                <div style={{ padding: "14px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", border: `1px solid ${theme.border}`, fontSize: 13.5, color: theme.textPrimary, lineHeight: 1.75 }}>
-                  {isNews ? (
-                    <>
-                      <div style={{ fontWeight: 800, marginBottom: 2 }}>{n?.title}</div>
-                      <div style={{ fontSize: 12.5, color: theme.textSecondary, marginBottom: 8, wordBreak: "break-all" }}>{[n?.publisher, n?.publishedAt].filter(Boolean).join(" · ")}{n?.url ? ` · ${n.url}` : ""}</div>
-                      <div style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflowY: "auto" }}>{n?.body}</div>
-                    </>
                   ) : (
-                    <>
-                      <div style={{ fontWeight: 800, marginBottom: 6 }}>{t?.subject}</div>
-                      {t?.intro && <div><b>서론</b> {t.intro}</div>}
-                      {(t?.points || []).filter(Boolean).map((p, i) => <div key={i}><b>본론 {i + 1}</b> {p}</div>)}
-                      {t?.outro && <div><b>결론</b> {t.outro}</div>}
-                      {t?.memo && <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}><b>참고 메모</b> {t.memo}</div>}
-                    </>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+                      {caps.map((c, i) => (
+                        <figure key={i} style={{ margin: 0, border: `1px solid ${theme.border}`, borderRadius: 10, overflow: "hidden" }}>
+                          <div style={{ aspectRatio: "4 / 3", background: "#e5e7eb" }}>{c.thumb && <img src={c.thumb} alt={c.caption} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />}</div>
+                          <figcaption style={{ padding: "8px 10px", fontSize: 12, lineHeight: 1.5, color: theme.textSecondary }}>{c.caption}</figcaption>
+                        </figure>
+                      ))}
+                    </div>
                   )}
-                  {column.source.angle && <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary }}><b>추가 요청</b> {column.source.angle}</div>}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+        );
+        return (<>
+          <StepLine theme={theme} tab={tab} onTab={onTab} onFirst={() => onTab("source")} first="소재 고르기" />
+          <StudioChannelTabs key={column.id} layout="desk" head={head} analysis={analysis} theme={theme} workId={column.id} kind="column" tab={tab} onTab={onTab} onUsed={onUsed} />
         </>);
       })()}
 
@@ -361,7 +352,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
                 <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 12, background: theme.bg || "#f6f8fa", border: `1px solid ${theme.border}` }}>
                   <div style={{ fontSize: 13.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 2 }}>가져온 원문 — 고칠 수 있어요</div>
                   <div style={{ fontSize: 12.5, color: theme.textSecondary, lineHeight: 1.6 }}>
-                    AI는 이 원문의 <b>사실만</b> 뽑아 새 문장으로 씁니다. 원문 사진은 쓰지 않고, 기사에 출처를 밝힙니다.
+                    AI는 이 원문의 <b>사실만</b> 뽑아 새 문장으로 씁니다. 원문 사진은 쓰지 않아요.
                   </div>
                   {/* 가져올 때 찍은 기사 화면 — 기사·블로그·SNS 사진으로 들어가고 사진마다 출처가 붙는다 (2026-10-23) */}
                   {Boolean(news.shots?.length) && (
@@ -428,7 +419,6 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
         </div>
       )}
 
-      {column && view === "" && <StudioChannelTabs key={column.id} theme={theme} workId={column.id} kind="column" tab={tab} onTab={onTab} onUsed={onUsed} />}
     </>
   );
 }

@@ -16,25 +16,11 @@ const SITE = {
   claude: { name: "Claude", url: "https://claude.ai/new" },
 };
 
-/* 그림 설명 — 입력칸 Ctrl+V · 답의 코드 상자 오른쪽 위 [복사] (2026-11-03 사장님: 처음 하는 사람은 모름, 복사 단추 위치까지) */
-const pic = (name) => `
-<div style="display:flex;gap:10px;justify-content:center;margin:12px auto 0;max-width:560px;flex-wrap:wrap;text-align:left">
-  <div style="flex:1;min-width:230px;border:1px solid #334155;border-radius:12px;background:#1e293b;padding:8px 10px;display:flex;align-items:center;gap:8px">
-    <span style="flex:1;font-size:12px;color:#94a3b8">${name}에게 메시지 보내기…</span>
-    <span style="font-size:11px;font-weight:800;color:#fff;border:2px solid #f87171;border-radius:6px;padding:1px 7px">Ctrl + V</span>
-    <span style="width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">↑</span>
-  </div>
-  <div style="flex:1;min-width:230px;border:1px solid #334155;border-radius:10px;overflow:hidden;background:#0f172a">
-    <div style="display:flex;align-items:center;padding:5px 10px;background:#1e293b;font-size:11px;color:#94a3b8"><span style="flex:1">json</span><span style="color:#fff;font-weight:800;border:2px solid #f87171;border-radius:6px;padding:0 6px">⧉ 복사</span></div>
-    <div style="padding:6px 10px;font-family:Consolas,monospace;font-size:11px;color:#cbd5e1">{ "title": "…", "paragraphs": [ … ] }</div>
-  </div>
-</div>`;
 const panel = (name, msg = "", preview = "") => `
 <div style="text-align:left;line-height:1.75;max-width:520px;margin:0 auto">
   <b>1.</b> 질문을 복사해 두고 평소 브라우저에 <b>${name}</b> 창을 열었어요. <b>입력칸을 한 번 누르고 Ctrl+V</b> 하고 보내세요.<br>
   <b>2.</b> 답이 다 나오면 답 안의 <b>코드 상자 오른쪽 위 [복사]</b>를 누르세요 (코드 상자가 없으면 답 맨 아래 복사 단추) — 앱이 알아서 가져와요.
 </div>
-${pic(name)}
 <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
   <button type="button" class="gb" data-gsm="copy">질문 다시 복사하고 ${name} 열기</button>
   <button type="button" class="gb" data-gsm="paste">복사한 답 가져오기</button>

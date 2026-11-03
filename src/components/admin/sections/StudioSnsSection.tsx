@@ -78,7 +78,7 @@ const HIDDEN_CATEGORIES = ["interior", "remodel"];
 /* 뉴스 카테고리 (2026-10-15 회의: 구성만 먼저, 공실뉴스부터) */
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
-  { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
+  { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 씁니다." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
   { id: "myvideo", label: "내 영상 홍보", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
   // 경매·공매는 내 공실과 섞지 않고 따로 (2026-10-29 사장님) — 작업 화면은 공실뉴스와 같다
@@ -382,6 +382,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
   const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
   const desk = (category === "gongsil" || category === "auction") && Boolean(result) && mode === "";
+  // 뉴스칼럼·내 영상 홍보도 작업대 모양일 때는 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로)
+  const [subDesk, setSubDesk] = useState(false);
+  const fullDesk = subDesk && (category === "column" || category === "myvideo");
   // 뒤로가기 = 작업대 → 공실 목록, 앞으로가기 = 그 작업대로 다시 (2026-11-03 사장님)
   useInnerHistory("sns-desk", desk, () => openList(), () => {
     if (result) return setMode("");
@@ -523,10 +526,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         <StepLine theme={theme} tab={tab} onTab={chooseTab} onFirst={() => chooseTab("source")} first={category === "auction" ? "물건 고르기" : "공실 고르기"} />
         <StudioChannelTabs key={result.vacancyId} layout="desk" head={head} analysis={analysisView} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />
       </>) : (
-      <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+      <div style={fullDesk ? { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 } : { flex: 1, overflowY: "auto", padding: 24 }}>
       {/* 목록(공실 카드)일 때는 폭 제한 없이 왼쪽부터 — 공실관리와 같이 (2026-10-29 사장님) */}
-      <div style={((category === "gongsil" || category === "auction") && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+      <div style={fullDesk ? { flex: 1, display: "flex", flexDirection: "column", minHeight: 0 } : ((category === "gongsil" || category === "auction") && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
+        <div style={{ display: fullDesk ? "none" : "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
             {((category === "gongsil" && mode === "list") || (category === "column" && wideList)) && (
               <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: theme.darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
                 {/* 뉴스·SNS발행에서는 SNS홍보형만 (2026-10-29 사장님) — 등록형은 공실관리·기사관리에서 */}
@@ -552,10 +555,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
         </div>
 
-        {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} />}
+        {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} onDesk={setSubDesk} />}
 
         {category === "column" && (
-          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} memberId={memberId} />
+          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
         )}
 
         {(category === "interior" || category === "remodel") && (
