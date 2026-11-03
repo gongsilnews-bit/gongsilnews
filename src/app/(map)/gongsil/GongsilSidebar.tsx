@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useMapFields } from "@/utils/useMapFields";
 import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount, formatAreaWithPy } from "./gongsilHelpers";
 
@@ -60,6 +60,13 @@ export default function GongsilSidebar({
   setShowCategoryModal,
 }: GongsilSidebarProps) {
   const [auctionSort, setAuctionSort] = useState<AuctionSortKey>("latest");
+  // 단지 창에서 [이 단지 공실 보기]로 온 목록 — 제목 앞 [‹] = 뒤로가기 = 보던 단지 정보 (AptPriceLayer, 2026-11-03 사장님)
+  const [fromApt, setFromApt] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setFromApt(Boolean((e as CustomEvent).detail));
+    window.addEventListener("gongsil-apt-list", on);
+    return () => window.removeEventListener("gongsil-apt-list", on);
+  }, []);
   useMapFields("pc-gongsil-sort", { auctionSort }, { auctionSort: setAuctionSort });
 
   const sortedVacancies = useMemo(() => {
@@ -260,7 +267,10 @@ export default function GongsilSidebar({
             background: isAuctionMode ? "#e3ecf5" : "#fff",
           }}
         >
-          <span>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {fromApt && (
+              <button onClick={() => window.history.back()} title="단지 정보로" aria-label="단지 정보로" style={{ border: "none", background: "none", padding: "0 6px 0 0", fontSize: 20, lineHeight: 1, fontWeight: 700, color: "#333", cursor: "pointer" }}>‹</button>
+            )}
             {zoomLevel >= 9 ? (
               "지도를 더 확대해 주세요"
             ) : (

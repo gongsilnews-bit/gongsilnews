@@ -123,7 +123,9 @@ function matchVacancies(complexes: Complex[], vacancies: any[]) {
   return out;
 }
 
-export default function AptPriceLayer({ mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies }: {
+export default function AptPriceLayer({ mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies, mapPick }: {
+  /** 지도에서 공실 표시를 누름 (PC) — 그 단지 공실이면 창을 접고 [‹ 단지 정보], 다른 공실이면 창을 닫는다 */
+  mapPick?: { ids: string[]; n: number } | null;
   kakaoMapRef: React.MutableRefObject<any>;
   kinds?: { apt: boolean; offi: boolean };
   mobile?: boolean; // 모바일 공실열람 — 상세 창을 아래 시트로
@@ -220,6 +222,64 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
   // PC — 단지 창은 왼쪽 목록 자리에 (2026-11-02 사장님: 호갱노노처럼). 목록(aside[data-gongsil-side])의 화면 위치를 따라간다
   const [side, setSide] = useState<{ left: number; top: number; height: number } | null>(null);
   const [listOpen, setListOpen] = useState(false); // [이 단지 공실 보기] — 창을 잠깐 숨기고 목록 위에 [‹ 단지 정보] 줄
+  // PC — 그 단지 공실을 보는 동안은 뒤로가기 한 칸을 만든다. 뒤로가기 = 보던 단지 정보 (2026-11-03 사장님: 위 [‹ 단지 정보] 줄은 없앰)
+  //  목록 제목 앞 [‹](GongsilSidebar)도 뒤로가기와 같다 — "gongsil-apt-list" 알림으로 켜고 끈다
+  const listPushed = useRef(false);
+  const ignorePop = useRef(0);
+  const listOpenRef = useRef(listOpen);
+  listOpenRef.current = listOpen;
+  useEffect(() => {
+    if (mobile) return;
+    if (listOpen && !listPushed.current) {
+      window.history.pushState({ ...(window.history.state || {}), aptList: 1 }, "");
+      listPushed.current = true;
+    } else if (!listOpen && listPushed.current) {
+      listPushed.current = false; // 지도를 움직였거나 다른 공실을 눌러 끝남 — 만든 한 칸을 조용히 되돌린다
+      if (window.history.state?.aptList) { ignorePop.current++; window.history.back(); }
+    }
+    window.dispatchEvent(new CustomEvent("gongsil-apt-list", { detail: listOpen }));
+  }, [listOpen, mobile]);
+  useEffect(() => {
+    if (mobile) return;
+    const onPop = (e: PopStateEvent) => {
+      if (ignorePop.current) { ignorePop.current--; e.stopImmediatePropagation(); return; }
+      if (listPushed.current && !(e.state as { aptList?: number } | null)?.aptList) {
+        e.stopImmediatePropagation();
+        listPushed.current = false;
+        setListOpen(false);
+      }
+    };
+    window.addEventListener("popstate", onPop, true);
+    return () => window.removeEventListener("popstate", onPop, true);
+  }, [mobile]);
+  // 그 단지 공실을 보다가 지도를 끌거나 확대·축소하면 단지 보기를 끝낸다 — 목록은 그 지역 공실로 (KakaoMapView)
+  useEffect(() => {
+    if (mobile || !listOpen) return;
+    let map: any = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const end = () => { if (listOpenRef.current) close(); };
+    const attach = () => {
+      const kakao = (window as any).kakao;
+      if (!kakaoMapRef.current || !kakao?.maps) { timer = setTimeout(attach, 200); return; }
+      map = kakaoMapRef.current;
+      kakao.maps.event.addListener(map, "dragstart", end);
+      kakao.maps.event.addListener(map, "zoom_start", end);
+    };
+    attach();
+    return () => {
+      if (timer) clearTimeout(timer);
+      const kakao = (window as any).kakao;
+      if (map && kakao?.maps) { kakao.maps.event.removeListener(map, "dragstart", end); kakao.maps.event.removeListener(map, "zoom_start", end); }
+    };
+  }, [mobile, listOpen, kakaoMapRef, close]);
+  // 지도에서 공실을 누르면 단지 창이 비켜 준다 (2026-11-03 사장님: 물건이 안 보임)
+  useEffect(() => {
+    if (!mapPick || mobile || !detail) return;
+    const mine = new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])].map(String));
+    if (mapPick.ids.some((id) => mine.has(String(id)))) setListOpen(true);
+    else close();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapPick?.n]);
   useEffect(() => {
     if (mobile || !detail) return;
     const measure = () => {
@@ -419,14 +479,6 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
           onShowVacancies={() => { onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])]); if (!mobile && side) setListOpen(true); }}
           onShowAuctions={onShowAuctions ? () => { onShowAuctions(detail.auction_ids || []); if (!mobile && side) setListOpen(true); } : undefined}
         />
-      )}
-      {/* 왼쪽이 그 단지 공실 목록일 때 — 목록 맨 위에 [‹ 단지 정보] */}
-      {on && detail && pickedId && !mobile && side && listOpen && (
-        <div style={{ position: "fixed", left: side.left, top: side.top, width: 380, height: 52, zIndex: 1002, background: detail.kind === "offi" ? OFFI : BRAND, color: "#fff", display: "flex", alignItems: "center", gap: 6, padding: "0 12px", boxSizing: "border-box" }}>
-          <button onClick={() => setListOpen(false)} style={{ border: "none", background: "rgba(255,255,255,.18)", color: "#fff", borderRadius: 6, height: 32, padding: "0 10px", fontSize: 14, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>‹ 단지 정보</button>
-          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detail.name} 공실</span>
-          <button onClick={close} aria-label="닫기" title="모든 공실 목록으로" style={{ border: "none", background: "none", color: "#fff", fontSize: 20, cursor: "pointer" }}>✕</button>
-        </div>
       )}
       {on && detailError && (
         <div style={{ position: "absolute", left: 16, top: 16, zIndex: 1002, background: "#fff", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,.2)", padding: "14px 18px", color: "#d93025", display: "flex", gap: 12 }}>

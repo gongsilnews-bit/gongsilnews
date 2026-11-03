@@ -80,6 +80,7 @@ async function monthItems(kind: Kind, service: "Trade" | "Rent", lawd: string, y
     let xml = "";
     for (let tryNo = 0; tryNo < 6; tryNo++) { // 초당 한도는 몇 초 쉬면 풀린다 — 넉넉히 다시
       xml = await fetch(url, { cache: "no-store" }).then((r) => r.text()).catch(() => "");
+      await sleep(300); // 몰아서 물으면 "초당 요청 초과"로 막힌다 — 한 번 묻고 조금 쉰다 (2026-11-03)
       // 초당 한도에 걸리면 쉬었다가 다시 (2026-11-02 "초당 서비스 요청제한 횟수 초과"로 도봉구를 건너뛴 일)
       if (xml && !/LIMITED_NUMBER|HTTP_ERROR|초당|요청제한/.test(xml)) break;
       await sleep(1500 * (tryNo + 1));
@@ -94,7 +95,7 @@ async function monthItems(kind: Kind, service: "Trade" | "Rent", lawd: string, y
 
 const date = (it: string) => `${tag(it, "dealYear")}-${pad(tag(it, "dealMonth"))}-${pad(tag(it, "dealDay"))}`;
 
-/** 여러 달을 몇 개씩만 동시에 (공공데이터 초당 한도) */
+/** 여러 달을 몇 개씩만 동시에 (공공데이터 초당 한도) — 지금은 한 달씩 차례로 (2026-11-03 사장님: 막히지 않게) */
 async function inBatches<T>(list: string[], size: number, run: (x: string) => Promise<T[]>) {
   const out: T[] = [];
   for (let i = 0; i < list.length; i += size) out.push(...(await Promise.all(list.slice(i, i + size).map(run))).flat());
@@ -114,11 +115,11 @@ type Group = { name: string; dong: string; jibun: string; buildYear: number; tra
 async function fetchGroups(lawd: string, kind: Kind, months: string[]) {
   const k = KIND[kind];
   const head = (it: string) => ({ name: tag(it, k.nameTag), dong: tag(it, "umdNm"), jibun: tag(it, "jibun"), buildYear: num(tag(it, "buildYear")) });
-  const sales = (await inBatches(months, 2, (ym) => monthItems(kind, "Trade", lawd, ym)))
+  const sales = (await inBatches(months, 1, (ym) => monthItems(kind, "Trade", lawd, ym)))
     .filter((it) => tag(it, "cdealType") !== "O") // 해제된 거래 빼기
     .map((it) => ({ ...head(it), t: { a: num(tag(it, "excluUseAr")), p: num(tag(it, "dealAmount")), d: date(it), f: num(tag(it, "floor")) } as Trade }))
     .filter((x) => x.name && x.dong && x.jibun && x.t.p > 0 && x.t.a > 0);
-  const rents = (await inBatches(months, 2, (ym) => monthItems(kind, "Rent", lawd, ym)))
+  const rents = (await inBatches(months, 1, (ym) => monthItems(kind, "Rent", lawd, ym)))
     .map((it) => ({ ...head(it), r: { a: num(tag(it, "excluUseAr")), dep: num(tag(it, "deposit")), m: num(tag(it, "monthlyRent")), d: date(it), f: num(tag(it, "floor")) } as Rent }))
     .filter((x) => x.name && x.dong && x.jibun && x.r.dep > 0 && x.r.a > 0);
 

@@ -2,6 +2,7 @@
 
 // 이미지 편집 — 색상 피커 (포토샵처럼): 큰 색 판(채도·밝기) + 색조 막대 · 새로운 색/현재 색 · H S B · R G B · # · C M Y K
 // 전경색·배경색 칸을 누르면 열린다. [확인] 을 눌러야 바뀐다 (포토샵과 같이)
+// [스포이트] — 화면 어디서나 색 찍기 (앱 밖 다른 창·바탕화면도, 크롬·앱의 EyeDropper) (2026-11-03 사장님)
 import React, { useEffect, useRef, useState } from "react";
 import { Btn, C, FONT } from "@/components/admin/studio-video/ui";
 import { cmykToRgb, outOfGamut, rgbToCmyk } from "./cmyk";
@@ -63,10 +64,23 @@ export function ColorPicker({ value, title, onOk, onClose }: { value: string; ti
     const r = cmykToRgb({ c: n.c / 100, m: n.m / 100, y: n.y / 100, k: n.k / 100 });
     setHsb(rgbToHsb(r.r, r.g, r.b));
   };
+  const canDrop = typeof window !== "undefined" && "EyeDropper" in window;
+  const [dropping, setDropping] = useState(false);
+  const drop = async () => {
+    const ED = (window as unknown as { EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+    if (!ED) return;
+    setDropping(true);
+    try {
+      const { sRGBHex } = await new ED().open();
+      const c = /^#/.test(sRGBHex) ? rgbOf(sRGBHex) : (() => { const m = sRGBHex.match(/\d+/g) || []; return { r: Number(m[0] ?? 0), g: Number(m[1] ?? 0), b: Number(m[2] ?? 0) }; })();
+      setHsb(rgbToHsb(c.r, c.g, c.b));
+    } catch { /* Esc 로 그만둠 */ }
+    setDropping(false);
+  };
   const pure = hsbToRgb({ h: hsb.h, s: 100, b: 100 });
   const warn = outOfGamut(rgb.r, rgb.g, rgb.b);
   return (
-    <div onPointerDown={(e) => e.stopPropagation()} style={{ position: "fixed", inset: 0, zIndex: 4000, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div onPointerDown={(e) => e.stopPropagation()} style={{ position: "fixed", inset: 0, zIndex: 4000, background: dropping ? "transparent" : "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ width: 600, background: "#535353", border: "1px solid #2b2b2b", borderRadius: 6, boxShadow: "0 16px 50px rgba(0,0,0,0.6)", fontFamily: FONT, color: "#e5e5e5" }}>
         <div style={{ display: "flex", alignItems: "center", height: 34, padding: "0 12px", background: "#3c3c3c", borderBottom: "1px solid #2b2b2b", fontSize: 13.5 }}>
           <span style={{ flex: 1 }}>색상 피커 ({title})</span>
@@ -96,6 +110,13 @@ export function ColorPicker({ value, title, onOk, onClose }: { value: string; ti
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginLeft: "auto" }}>
                 <Btn small primary onClick={() => onOk(hex)}>확인</Btn>
                 <Btn small onClick={onClose}>취소</Btn>
+                {canDrop && (
+                  <button type="button" onClick={drop} title="스포이트 — 화면 어디서나 색 찍기 (다른 창·바탕화면도) · Esc 로 그만두기"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, height: 28, borderRadius: 4, border: "1px solid #2b2b2b", background: dropping ? "#2563eb" : "#3c3c3c", color: "#fff", fontSize: 12.5, cursor: "pointer", fontFamily: FONT }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m2 22 1-1h3l9-9" /><path d="M3 21v-3l9-9" /><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z" /></svg>
+                    스포이트
+                  </button>
+                )}
                 {warn && <span title="인쇄(CMYK)로는 이 색이 그대로 안 나와요" style={{ fontSize: 12, color: "#fbbf24" }}>⚠ 인쇄 색 범위 밖</span>}
               </div>
             </div>

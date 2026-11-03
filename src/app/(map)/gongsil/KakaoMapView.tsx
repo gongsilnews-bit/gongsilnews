@@ -4,6 +4,7 @@ import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
 import AptPriceLayer from "./AptPriceLayer";
 import BldSampleLayer from "./BldSampleLayer";
+import VillaSampleLayer from "./VillaSampleLayer";
 
 interface KakaoMapViewProps {
   activePills?: string[];
@@ -82,6 +83,8 @@ export default function KakaoMapView({
   const lastZoomWasInRef = useRef<boolean>(false);
   // [아파트 시세]를 켰을 때 단지 시세 표시에 숫자로 붙은 아파트 공실 — 공실 표시는 따로 그리지 않는다 (2026-11-02 사장님)
   const [hiddenVacancyIds, setHiddenVacancyIds] = useState<Set<string>>(new Set());
+  // 지도에서 공실 표시를 눌렀다 — 단지 창이 비켜 준다 (2026-11-03 사장님)
+  const [mapPick, setMapPick] = useState<{ ids: string[]; n: number } | null>(null);
   const drawnVacanciesRef = useRef<any[]>([]);
   const [priceButtonSlot, setPriceButtonSlot] = useState<HTMLSpanElement | null>(null); // 검색 줄 [내 위치] 옆
 
@@ -587,6 +590,7 @@ export default function KakaoMapView({
       });
       setSelectedClusterIds(Array.from(new Set(ids)));
       setShowDetail(false);
+      setMapPick((b) => ({ ids: Array.from(new Set(ids)) as string[], n: (b?.n || 0) + 1 }));
     });
 
     kakao.maps.event.addListener(clustererRef.current, "clustered", (clusters: any[]) => {
@@ -737,6 +741,7 @@ export default function KakaoMapView({
       kakao.maps.event.addListener(marker, "click", () => {
         setSelectedClusterIds(group.map((v) => String(v.id)));
         setShowDetail(false);
+        setMapPick((b) => ({ ids: group.map((v) => String(v.id)), n: (b?.n || 0) + 1 }));
       });
 
       newMarkers.push(marker);
@@ -910,6 +915,8 @@ export default function KakaoMapView({
 
       {/* 건물 실거래 디자인 견본 — 내 PC(localhost)에서만 (2026-11-02) */}
       <BldSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} />
+      {/* 빌라 실거래 견본 — 내 PC·[빌라·주택] 탭에서만 (2026-11-03) */}
+      <VillaSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} show={activeCategory === "villa" && !isAuctionMode} />
 
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
       <AptPriceLayer
@@ -926,6 +933,7 @@ export default function KakaoMapView({
         // 공실 보기는 공실 탭으로, 경매 보기는 경매/공매 탭으로 바꾸고 그 단지 물건만 (2026-11-02)
         onShowVacancies={(ids) => { if (isAuctionMode) onSwitchCategory?.("all"); setSelectedClusterIds(ids); setShowDetail(false); }}
         onShowAuctions={(ids) => { if (!isAuctionMode) onSwitchCategory?.("auction"); setSelectedClusterIds(ids); setShowDetail(false); }}
+        mapPick={mapPick}
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
       />
     </div>

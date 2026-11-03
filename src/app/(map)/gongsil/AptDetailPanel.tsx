@@ -7,11 +7,12 @@
  * 숫자는 국토부 실거래·건축물대장·공동주택 기본정보 그대로. 없는 값은 "-" (지어내지 않는다).
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import { aptViewerInfo, submitAptInfoCapture, submitAptInfoRequest } from "@/app/actions/aptReports";
 import { LAWD_NAMES, areaLabel, brokerFee, fullPrice, supplyFor, type Rent, type Trade } from "@/utils/aptMapShared";
 
 export type AptDetail = {
-  id: string; kind?: "apt" | "offi"; name: string; dong: string; jibun: string; lawd_cd: string; build_year: number | null; lat: number; lng: number;
+  id: string; kind?: "apt" | "offi" | "villa"; house_type?: string; name: string; dong: string; jibun: string; lawd_cd: string; build_year: number | null; lat: number; lng: number;
   trades: Trade[]; rents: Rent[]; supply_map: Record<string, number> | null; unit_map: Record<string, number> | null;
   info: {
     households: number | null; dongs: number | null; useAprDay: string; vlRat: number | null; bcRat: number | null;
@@ -34,6 +35,7 @@ const AGENT_KEY: Record<string, string> = { "전기차 충전": "evChargers", "�
 const ACC = "var(--apt-accent, #1a56db)";
 const ACC_SOFT = "var(--apt-soft, #eef3ff)";
 const OFFI_GREEN = "#0f766e";
+export const VILLA_ROSE = "#be185d"; // 빌라(연립·다세대) — 견본 (2026-11-03 사장님: 개발 PC에서만 먼저)
 const LINE = "#e8eaed";
 const SUB = "#6b7280";
 const DAY = 86400000;
@@ -141,30 +143,35 @@ function PriceChart({ points }: { points: { d: string; v: number }[] }) {
 /* ── 로드뷰 ── */
 export function Roadview({ lat, lng }: { lat: number; lng: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [none, setNone] = useState(false);
   useEffect(() => {
     const kakao = (window as any).kakao;
-    if (!kakao?.maps || !ref.current) return;
-    const pos = new kakao.maps.LatLng(lat, lng);
-    setNone(false);
-    const rv = new kakao.maps.Roadview(ref.current);
-    // 큰 단지는 단지 대표 위치(지번 가운데)가 도로에서 멀다 — 150m 에 없으면 300m · 600m 까지 넓혀 찾는다 (2026-11-02 한남더힐)
-    const client = new kakao.maps.RoadviewClient();
-    const find = (radius: number) =>
-      client.getNearestPanoId(pos, radius, (panoId: number | null) => {
-        if (panoId) rv.setPanoId(panoId, pos);
-        else if (radius < 600) find(radius * 2);
-        else setNone(true);
-      });
-    find(150);
+    const box = ref.current;
+    if (!kakao?.maps || !box) return;
+    // 회색만 남으면 주변으로 살짝 옮겨 다른 로드뷰를 다시 잡는다 — 공실 상세와 같은 방식 (2026-11-03 사장님)
+    const NONE = "이 단지 근처에 로드뷰가 없습니다";
+    let stop = mountKakaoRoadview({ kakao, container: box, lat, lng, maxAttempts: 4, background: "#e8eaed", loadingMessage: "로드뷰를 불러오는 중…", failureMessage: NONE });
+    // 그래도 없으면 큰 단지 — 단지 대표 위치가 도로에서 멀다. 300m · 600m 까지 넓혀 찾는다 (2026-11-02 한남더힐)
+    let done = false;
+    const wide = () => {
+      if (done || box.dataset.roadviewStatus !== "failed") return;
+      done = true;
+      const client = new kakao.maps.RoadviewClient();
+      const pos = new kakao.maps.LatLng(lat, lng);
+      const find = (radius: number) =>
+        client.getNearestPanoId(pos, radius, (panoId: number | null) => {
+          if (stop === noop) return;
+          if (panoId) { stop(); stop = noop; box.replaceChildren(); new kakao.maps.Roadview(box).setPanoId(panoId, pos); }
+          else if (radius < 600) find(radius * 2);
+        });
+      find(300);
+    };
+    const watch = new MutationObserver(wide);
+    watch.observe(box, { attributes: true, attributeFilter: ["data-roadview-status"] });
+    return () => { watch.disconnect(); stop(); stop = noop; };
   }, [lat, lng]);
-  return (
-    <div style={{ position: "relative", height: 240, background: "#e8eaed" }}>
-      <div ref={ref} style={{ width: "100%", height: "100%" }} />
-      {none && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: SUB }}>이 단지 근처에 로드뷰가 없습니다</div>}
-    </div>
-  );
+  return <div ref={ref} style={{ position: "relative", height: 240, background: "#e8eaed" }} />;
 }
+const noop = () => {};
 
 /* ── 주변 인프라 픽토그램 — 단색 SVG (2026-11-02 사장님) ── */
 const INFRA_ICON: Record<string, React.ReactNode> = {
@@ -570,7 +577,12 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const [headH, setHeadH] = useState(112);
   useEffect(() => { if (headRef.current) setHeadH(headRef.current.offsetHeight); }, [sheet]);
   const [more, setMore] = useState(false);
-  useEffect(() => { setLabel(defaultGroup); setMode("sale"); setMore(false); setSheet(false); }, [detail.id, defaultGroup]);
+  useEffect(() => {
+    setLabel(defaultGroup);
+    setMode(detail.kind === "villa" && !groups.find((x) => x.label === defaultGroup)?.sales.length ? "lease" : "sale");
+    setMore(false); setSheet(false);
+  }, [detail.id, defaultGroup]); // eslint-disable-line react-hooks/exhaustive-deps
+  const villa = detail.kind === "villa";
 
   const g = groups.find((x) => x.label === label) || groups[0];
   const salePoints = (g?.sales || []).map((t) => ({ d: t.d, v: t.p }));
@@ -587,6 +599,15 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
     ? (g?.sales || []).map((t) => ({ d: t.d, f: t.f, price: fullPrice(t.p), kind: "", top: markTop(t.p === topSale) }))
     : (g?.rents || []).map((r) => ({ d: r.d, f: r.f, price: leasePrice(r), kind: r.m ? "월세" : "전세", top: markTop(!r.m && r.dep === topJeonse) }));
 
+  // 빌라 전세가율 — 같은 평형, 최근 1년 (둘 다 있을 때만. 없으면 보이지 않는다)
+  const jeonseRate = useMemo(() => {
+    if (!villa || !g) return null;
+    const yearAgo = new Date(Date.now() - 365 * DAY).toISOString().slice(0, 10);
+    const s1 = g.sales.filter((t) => t.d >= yearAgo).map((t) => t.p), l1 = g.rents.filter((x) => !x.m && x.d >= yearAgo).map((x) => x.dep);
+    if (!s1.length || !l1.length) return null;
+    const sale = Math.round(s1.reduce((a, b) => a + b, 0) / s1.length), lease = Math.round(l1.reduce((a, b) => a + b, 0) / l1.length);
+    return { sale, lease, rate: Math.round((lease / sale) * 100) };
+  }, [villa, g]);
   const [guess, setGuess] = useState<number | null>(null);
   useEffect(() => { setGuess(null); }, [detail.id, label, mode]);
   const expected = guess ?? avg?.avg ?? 0;
@@ -606,13 +627,13 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   return (
     // PC — 왼쪽 목록 자리에 (지도는 어둡게 하지 않는다, 2026-11-02 사장님: 호갱노노처럼) · 모바일 — 아래 시트 + 뒤를 어둡게. Esc 로 닫는다
     <div onClick={side ? undefined : close} style={side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: side.hidden ? "none" : "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
-    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: mobile || side ? 0 : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
+    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: villa ? VILLA_ROSE : detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: villa ? "#fdf2f8" : detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: mobile || side ? 0 : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
       {/* 머리 */}
       <div ref={headRef} style={{ background: ACC, padding: "14px 16px 14px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff" }}>
           {side && <button onClick={onClose} aria-label="목록으로" title="공실 목록으로" style={{ border: "none", background: "none", color: "#fff", fontSize: 26, cursor: "pointer", lineHeight: 1, padding: "0 4px 0 0" }}>‹</button>}
           <div style={{ flex: 1, fontSize: 19, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {detail.kind === "offi" && <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,.22)", borderRadius: 6, padding: "2px 7px", marginRight: 8, verticalAlign: "middle" }}>오피스텔</span>}
+            {(detail.kind === "offi" || villa) && <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,.22)", borderRadius: 6, padding: "2px 7px", marginRight: 8, verticalAlign: "middle" }}>{villa ? detail.house_type || "빌라" : "오피스텔"}</span>}
             {detail.dong} {detail.name}
           </div>
           <button onClick={close} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>
@@ -628,12 +649,16 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         {/* 단지 한 줄 */}
         <div style={{ ...sectionStyle, padding: "16px 20px" }}>
           <div style={{ fontSize: 16, fontWeight: 800 }}>{address}</div>
+          {villa ? (
+            <div style={{ color: "#4b5563", marginTop: 6 }}>{detail.house_type || "연립·다세대"} <span style={{ color: "#d1d5db" }}>|</span> {builtText}</div>
+          ) : (<>
           <div style={{ color: "#4b5563", marginTop: 6 }}>
             {info?.households ? `${info.households.toLocaleString("ko-KR")}${detail.kind === "offi" ? "호" : "세대"}` : detail.kind === "offi" ? "호수 -" : "세대수 -"} <span style={{ color: "#d1d5db" }}>|</span> {builtText}
           </div>
           <div style={{ color: "#4b5563", marginTop: 2 }}>
             용적률 {info?.vlRat ? `${Math.round(info.vlRat)}%` : "-"} <span style={{ color: "#d1d5db" }}>|</span> 건폐율 {info?.bcRat ? `${Math.round(info.bcRat)}%` : "-"}
           </div>
+          </>)}
         </div>
 
         {/* 시세 */}
@@ -654,6 +679,12 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             {avg ? fullPrice(avg.avg) : "거래 없음"}
           </div>
           {avg && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>{dot(avg.last)} 기준 · {avg.count}건 평균</div>}
+          {villa && jeonseRate && (
+            <div style={{ margin: "10px 20px 0", padding: "10px 12px", borderRadius: 8, background: ACC_SOFT, display: "flex", alignItems: "center", gap: 8 }}>
+              <b style={{ color: ACC }}>전세가율 {jeonseRate.rate}%</b>
+              <span style={{ color: SUB, fontSize: 12 }}>최근 1년 이 평형 매매 평균 {fullPrice(jeonseRate.sale)} · 전세 평균 {fullPrice(jeonseRate.lease)}</span>
+            </div>
+          )}
           {latestMonthly && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>최근 월세 {dot(latestMonthly.d)} · 보증금/월세 {leasePrice(latestMonthly)}</div>}
           <div style={{ padding: "14px 20px 4px", fontWeight: 700 }}>최근 3년</div>
           <div style={{ padding: "0 20px 16px" }}><PriceChart points={points} /></div>
@@ -693,7 +724,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         {Number.isFinite(detail.lat) && <NearbyInfra lat={detail.lat} lng={detail.lng} sectionStyle={sectionStyle} h3={h3} />}
 
         {/* 단지 정보 (공동주택 기본·상세정보는 의무관리 단지만 있다 — 없는 칸은 줄을 뺀다) */}
-        <div style={sectionStyle}>
+        {!villa && <div style={sectionStyle}>
           <h3 style={h3}>단지 정보</h3>
           <div style={{ padding: "0 20px 6px" }}>
             {([
@@ -743,7 +774,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           {!info && <div style={{ padding: "0 20px 16px", color: SUB }}>단지 정보를 모으는 중입니다.</div>}
           <InfoRequest detail={detail} groups={groups} />
           <div style={{ height: 10 }} />
-        </div>
+        </div>}
 
         {/* 지도 (2026-11-02 사장님: 로드뷰와 나눠 맨 아래에) */}
         <div style={sectionStyle}>
@@ -772,13 +803,13 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         </div>
 
         <div style={{ padding: "4px 20px 24px", color: "#9ca3af", fontSize: 11, lineHeight: 1.6 }}>
-          국토교통부 아파트·오피스텔 매매·전월세 실거래가(최근 3년, 해제 거래 제외) · 건축물대장 · 공동주택 기본정보 기준. "공인중개사 제공"은 부동산 회원이 알려 주고 공실뉴스가 확인한 값입니다.
+          {villa ? "국토교통부 연립다세대" : "국토교통부 아파트·오피스텔"} 매매·전월세 실거래가(최근 3년, 해제 거래 제외) · 건축물대장 · 공동주택 기본정보 기준. "공인중개사 제공"은 부동산 회원이 알려 주고 공실뉴스가 확인한 값입니다.
           면적은 국토부 신고 전용면적 그대로입니다. 공급면적은 건축물대장(전유+주거공용)으로 확인된 것만 참고로 적습니다. 실거래는 계약 후 30일 안에 신고되어 최근 거래가 늦게 잡힐 수 있습니다.
         </div>
       </div>
 
       {/* 맨 아래 고정 — [이 단지 공실 n개 보기] [무료 공실등록] (2026-11-02 사장님: 단지가 보이면 부동산에게 공실등록 유도) */}
-      <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} stack={Boolean(side)} />
+      {!villa && <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} stack={Boolean(side)} />}
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (
