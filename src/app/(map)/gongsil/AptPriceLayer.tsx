@@ -219,6 +219,26 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
 
   const close = useCallback(() => { setDetail(null); setDetailError(""); setListOpen(false); pick(null); }, [pick]);
 
+  // 주소 ?apt=<단지 id> — 그 단지로 지도를 옮기고 단지 창을 연다 (대본·기사 글쓰기의 "공실열람 단지 시세" 캡처, 2026-11-03 사장님)
+  const aptParamDone = useRef(false);
+  useEffect(() => {
+    if (aptParamDone.current || !mapLoaded || mobile) return;
+    const id = new URLSearchParams(window.location.search).get("apt");
+    if (!id) return;
+    if (!on) { setShow({ apt: true, offi: true }); return; } // 어느 탭이든 실거래가를 켜고 다시
+    aptParamDone.current = true;
+    (async () => {
+      const res = await fetch(`/api/apt-prices?id=${encodeURIComponent(id)}`).then((r) => r.json()).catch(() => null);
+      const c = res?.success ? res.complex : null;
+      const kakao = (window as any).kakao;
+      if (c && Number.isFinite(c.lat) && kakaoMapRef.current && kakao?.maps) {
+        kakaoMapRef.current.setLevel(3);
+        kakaoMapRef.current.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+      }
+      void openDetail(id);
+    })();
+  }, [mapLoaded, on, mobile, openDetail, kakaoMapRef]);
+
   // PC — 단지 창은 왼쪽 목록 자리에 (2026-11-02 사장님: 호갱노노처럼). 목록(aside[data-gongsil-side])의 화면 위치를 따라간다
   const [side, setSide] = useState<{ left: number; top: number; height: number } | null>(null);
   const [listOpen, setListOpen] = useState(false); // [이 단지 공실 보기] — 창을 잠깐 숨기고 목록 위에 [‹ 단지 정보] 줄

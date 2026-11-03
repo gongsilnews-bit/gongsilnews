@@ -494,6 +494,21 @@ if (allowed) {
       printers: () => ipcRenderer.invoke("photo:printers"),
       print: (o) => ipcRenderer.invoke("photo:print", o),
     },
+    // 글쓰기 (2026-11-03) — 회원 AI 초안·다듬기, 쓴 글은 내 PC 문서/공실마케팅/10 글쓰기
+    write: {
+      ask: (prompt, opts) => ipcRenderer.invoke("write:ask", prompt, opts),
+      onProgress: (fn) => {
+        const h = (_e, t) => fn(t);
+        ipcRenderer.on("write:progress", h);
+        return () => ipcRenderer.removeListener("write:progress", h);
+      },
+      save: (doc) => ipcRenderer.invoke("write:save", doc),
+      list: (o) => ipcRenderer.invoke("write:list", o),
+      load: (file) => ipcRenderer.invoke("write:load", file),
+      remove: (file) => ipcRenderer.invoke("write:remove", file),
+      exportFile: (o) => ipcRenderer.invoke("write:export", o),
+      openFolder: () => ipcRenderer.invoke("write:folder"),
+    },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),
       // 쓰는 순서 — free(무료 먼저) · paid(유료 먼저) · freeOnly(무료만)

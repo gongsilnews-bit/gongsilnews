@@ -24,6 +24,8 @@ export const IconComment = (props: any) => <SvgIcon {...props}><path d="M21 11.5
 export const IconPoint = (props: any) => <SvgIcon {...props}><circle cx="12" cy="12" r="10"/><path d="M12 6v12M9 9h4.5a2.5 2.5 0 0 1 0 5H9"/></SvgIcon>;
 export const IconHomepage = (props: any) => <SvgIcon {...props}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></SvgIcon>;
 export const IconRobot = (props: any) => <SvgIcon {...props}><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></SvgIcon>;
+// 글쓰기 — 펜 (2026-11-03)
+export const IconPen = (props: any) => <SvgIcon {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></SvgIcon>;
 export const IconSend = (props: any) => <SvgIcon {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></SvgIcon>;
 export const IconMegaphone = (props: any) => <SvgIcon {...props}><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M19 5a9 9 0 0 1 0 14"/></SvgIcon>;
 export const IconImage = (props: any) => <SvgIcon {...props}><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></SvgIcon>;

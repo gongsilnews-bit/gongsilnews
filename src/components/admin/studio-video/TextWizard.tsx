@@ -9,6 +9,7 @@ import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
 import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
 import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
 import { MUSIC_PICKABLE as MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
+import { writingSearchComplexes } from "@/app/actions/writingFacts";
 import { findStudioVacancyByNo, getStudioAgency, getStudioArticle, listMyStudioVacancies, listStudioArticles } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
@@ -23,7 +24,7 @@ import { lastVoice, saveLastVoice } from "./voiceMemory";
 export type VideoStyle = { id: string; name: string; desc: string; icon: string; prompt: string; voice: string; speed: number; music: string; ratio?: Ratio; subtitle?: "long" | "short"; chars: number };
 
 export const STYLES: VideoStyle[] = [
-  { id: "listing", name: "매물 소개", desc: "공실 사진과 함께 매물을 차분히 소개해요", icon: "image", prompt: "부동산 매물 소개 영상. 첫 문장에 위치와 물건 종류, 이어서 장점과 조건, 마지막에 공실뉴스에서 자세히 볼 수 있다는 안내", voice: "Charon", speed: 1, music: "잔잔한", chars: 500 },
+  { id: "listing", name: "매물 소개", desc: "공실 사진과 함께 매물을 차분히 소개해요", icon: "image", prompt: "부동산 매물 소개 영상. 첫 문장에 위치와 물건 종류, 이어서 장점과 조건, 마지막에 이 영상을 올리는 부동산 이름으로 짧게 마무리", voice: "Charon", speed: 1, music: "잔잔한", chars: 500 },
   { id: "news", name: "부동산 뉴스 해설", desc: "뉴스처럼 또박또박 설명해요", icon: "file", prompt: "부동산 뉴스 해설 영상. 사실을 먼저, 의미와 영향은 차분하게. 단정·과장 금지", voice: "Kore", speed: 1, music: "고급스러운", chars: 800 },
   { id: "auction", name: "경매·공매 브리핑", desc: "감정가·최저가·일정을 정리해요", icon: "template", prompt: "경매·공매 물건 브리핑 영상. 감정가, 최저입찰가, 유찰 횟수, 입찰 일정을 정확히. 입찰 전 확인할 점으로 마무리. 투자 권유 금지", voice: "Sadaltager", speed: 1, music: "잔잔한", chars: 700 },
   { id: "area", name: "동네·상권 소개", desc: "교통·학군·상권을 소개해요", icon: "bg", prompt: "동네·상권 소개 영상. 교통, 생활 편의, 학군, 상권 분위기를 친근하게", voice: "Sulafat", speed: 1, music: "경쾌한", chars: 700 },
@@ -63,7 +64,19 @@ const fixLines = <T extends { scenes: { lines: { text: string }[] }[] }>(r: T, d
   return r;
 };
 /** AI 에게 — 이름 쓰는 법 (성우가 잘 읽게) */
-const NAME_RULE = "아파트·건물·단지 이름은 브랜드와 동네 이름을 띄어 쓰고(예: 아크로힐스 논현, 래미안 대치팰리스), 영문 이름은 한글로 쓰세요(예: ACROHILLS → 아크로힐스).";
+/** AI 성우(일레븐랩스·타입캐스트·Gemini)가 그대로 읽어도 틀리지 않게 — 읽는 대로 적기 (2026-11-03 사장님). 다른 표기 규칙과 부딪히면 이 규칙이 우선 */
+const TTS_RULE = [
+  "[성우 읽기 표기 — AI 성우가 그대로 읽는 원고이므로 반드시 지키고, 위 다른 표기 규칙과 부딪히면 이 규칙을 따르세요]",
+  "- 금액은 읽는 말로: 30억 8,500만 원 → 30억 8천5백만 원, 1,200만 원 → 1천2백만 원, 보증금/월세는 '보증금 5백만 원에 월세 55만 원'.",
+  "- 면적은 평으로만 말하고 ㎡·m²·괄호 표기는 쓰지 마세요 (예: 약 25평). 소수점은 '25.5평 → 25점5평'.",
+  "- 날짜·시간은 읽는 말로: 2026.10.02 → 2026년 10월 2일, 26.07 → 2026년 7월, 15:30 → 오후 3시 30분.",
+  "- 기호를 쓰지 말고 말로 풀어 쓰세요: % → 퍼센트, ~ → 에서, · / → 와 또는 쉼표, & → 앤, + → 플러스, → → 쓰지 않기. 괄호(), 따옴표, 대괄호[], 이모지, 해시태그, 별표도 쓰지 마세요.",
+  "- 층·동·호·역은 숫자 그대로 두되 읽기 쉽게: 23층, 101동, 2호선 신논현역.",
+  "- 영어 약어·영문은 한글 읽는 소리로: LH → 엘에이치, KB → 케이비, GTX → 지티엑스, APT → 아파트.",
+  "- 전화번호·주소 번지·연락처는 쓰지 마세요.",
+  "- 쉼표는 숨 쉬는 자리에만, 한 문장은 짧게. 문장 끝은 마침표·물음표·느낌표로 분명히.",
+].join("\n");
+const NAME_RULE = "아파트·건물·단지 이름은 브랜드와 동네 이름을 띄어 쓰고(예: 아크로힐스 논현, 래미안 대치팰리스), 영문 이름은 한글로 쓰세요(예: ACROHILLS → 아크로힐스).\n" + TTS_RULE;
 
 async function fetchMarket(q: string, pick = 0): Promise<Mkt> {
   const r = await fetch(`/api/extension/apt-trades?mode=complex&q=${encodeURIComponent(q.trim())}&pick=${pick}`, { credentials: "include" });
@@ -93,9 +106,9 @@ function marketText(d: Mkt) {
 type Purpose = "shorts" | "listing" | "area" | "etc";
 const PURPOSES: { id: Purpose; name: string; chars?: number; ratio?: Ratio; prompt: string; hint: string }[] = [
   { id: "shorts", name: "릴스·쇼츠", chars: 250, ratio: "9:16", hint: "30~45초 세로 · 첫 문장에 궁금증",
-    prompt: "릴스·쇼츠용 30~45초 세로 영상. 첫 문장은 손가락을 멈추게 하는 궁금증 한마디, 이어서 이 매물의 핵심 장점 3가지를 아주 짧은 문장으로, 마지막은 공실뉴스에서 자세히 볼 수 있다는 한 줄. 문장은 15~25자 안팎으로 짧게" },
+    prompt: "릴스·쇼츠용 30~45초 세로 영상. 첫 문장은 손가락을 멈추게 하는 궁금증 한마디, 이어서 이 매물의 핵심 장점 3가지를 아주 짧은 문장으로, 마지막은 이 영상을 올리는 부동산 이름으로 마무리하는 한 줄. 문장은 15~25자 안팎으로 짧게" },
   { id: "listing", name: "매물 설명", chars: 600, ratio: "16:9", hint: "1~2분 · 매물을 차근차근",
-    prompt: "매물 설명 영상. 위치와 매물 종류로 시작해 가격·면적·구조, 옵션과 장점, 계약 전에 확인할 점 순서로 차분하게 설명하고, 마지막에 공실뉴스에서 자세히 보고 문의할 수 있다는 안내" },
+    prompt: "매물 설명 영상. 위치와 매물 종류로 시작해 가격·면적·구조, 옵션과 장점, 계약 전에 확인할 점 순서로 차분하게 설명하고, 마지막에 이 영상을 올리는 부동산 이름으로 마무리하는 안내" },
   { id: "area", name: "단지·지역 소개", chars: 700, ratio: "16:9", hint: "1~2분 · 교통·생활·상권 위주",
     prompt: "단지·지역 소개 영상. 이 매물이 있는 단지·동네를 중심으로 교통, 생활 편의시설, 학군, 상권과 분위기를 소개하고, 마지막에 이 동네의 이 매물을 한 줄로 소개. 확인되지 않은 시설 이름·거리는 지어내지 말 것" },
   { id: "etc", name: "기타", hint: "[대본 요청]에 적은 대로", prompt: "" },
@@ -151,7 +164,8 @@ const siteName = (url: string) => {
 };
 const columnBridge = () => (window as unknown as { gongsilStudio?: { column?: ColumnBridge } }).gongsilStudio?.column;
 
-export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }: { onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void; /** 작성 중 초안(.gss)을 열었으면 — 그 단계에서 이어서 */ resume?: Project;
+export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, scriptOnly = false, onContinue }: { onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void;
+  /** [대본 작성] 메뉴 (2026-11-03 사장님) — ①~⑧ 대본만 쓰고 멈춘다. 영상은 [동영상studio에서 이어서]로 (그 초안 .gss 를 넘긴다) */ scriptOnly?: boolean; onContinue?: (file: string) => void; /** 작성 중 초안(.gss)을 열었으면 — 그 단계에서 이어서 */ resume?: Project;
   /** 뉴스·SNS발행 › 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 그 대본으로 시작 (2026-10-23 사장님) · col-… 이면 뉴스 기사로 */ seed?: { vacancyId: string; script: string } }) {
   const b = videoBridge()!;
   const writer = useStudioWriter();
@@ -160,7 +174,48 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   const [style, setStyle] = useState<VideoStyle | null>(null);
   // ② 대본
   // 대본 갈래 (2026-10-20 사장님) — 매물 소개 / 뉴스 기사 / 자유 주제 (대본이 있으면 오른쪽 칸에 바로 붙여 넣어도 된다)
-  const [src, setSrc] = useState<"vacancy" | "news" | "topic" | "episodes">("vacancy");
+  const [src, setSrc] = useState<"vacancy" | "news" | "topic" | "episodes" | "market">("vacancy");
+  // ① [단지/시세] — 국토부 실거래가로 단지 시세 대본 (2026-11-03 사장님)
+  const [mktQ, setMktQ] = useState("");
+  const [mkt, setMkt] = useState<{ d: Mkt | null; err: string; pick: number }>({ d: null, err: "", pick: 0 });
+  // [공실열람에서 고르기] — 공실열람을 새 창으로 열고, 단지 창의 [이 단지로 대본 쓰기]로 돌아온 단지를 받는다 (2026-11-03 사장님)
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.data?.type !== "gs-apt-pick") return;
+      const name = String(e.data.name || "").trim();
+      if (!name) return;
+      setSrc("market");
+      setMktQ(name);
+      void findMkt(name, 0, String(e.data.id || "") || undefined);
+    };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const openAptPick = () => {
+    const w = window.open(`${window.location.origin}/gongsil?aptPick=1`, "gs-apt-pick", "width=1400,height=900");
+    if (!w) setErr("공실열람 창을 열지 못했어요.");
+  };
+  // 단지 시세 화면 캡처 3~5장 (2026-11-03 사장님) — 공실열람 단지 창과 같은 화면(/apt-capture)을 위에서부터. 영상 만들 때 화면 자료로
+  const [mktCaps, setMktCaps] = useState<LibItem[]>([]);
+  const [mktCapping, setMktCapping] = useState(false);
+  const capMkt = async (name: string, id?: string) => {
+    if (!b.capturePage) return;
+    setMktCaps([]);
+    let cid = id || "";
+    if (!cid) { const r = await writingSearchComplexes(name.replace(/\s+/g, "")).catch(() => null); cid = r && r.success ? r.data[0]?.id || "" : ""; }
+    if (!cid) return;
+    setMktCapping(true);
+    b.capturePage(`${window.location.origin}/apt-capture/${encodeURIComponent(cid)}`, { mode: "full", max: 5, withTitle: true, title: name, credit: "자료: 국토교통부 실거래가" })
+      .then(setMktCaps).catch(() => setMktCaps([])).finally(() => setMktCapping(false));
+  };
+  const findMkt = async (q: string, pick = 0, id?: string) => {
+    if (q.trim().length < 2) return;
+    setMkt({ d: null, err: "불러오는 중…", pick });
+    try { const d = await fetchMarket(q, pick); setMkt({ d, err: "", pick: d.picked }); void capMkt(d.complexName || d.target.name || q, id); } catch (er) { setMkt({ d: null, err: errText(er), pick }); }
+  };
+  // 전문 문체 · 첫 3초 (2026-11-03 사장님: "문체 글자수 이런것은 좀 전문적으로")
+  const [tone, setTone] = useState("");
+  const [hook, setHook] = useState("");
   // 뉴스 영상 (2026-10-23 사장님) — 서론 · 에피소드 1·2·3 (+ 더) · 맺음말. 에피소드마다 주제만 적으면 AI 가 짧은 단락으로 쓴다
   const [newsName, setNewsName] = useState<string | null>(null); // null = 사무소 이름으로 저절로 (빌드온공인중개사 → 빌드온뉴스)
   const [episodes, setEpisodes] = useState<Ep[]>([{ kind: "topic", text: "", ref: "" }, { kind: "topic", text: "", ref: "" }, { kind: "topic", text: "", ref: "" }]);
@@ -522,7 +577,9 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         const from = how === "article" || /gongsilnews\.com/i.test(n.url) ? "gongsil" : newsFrom;
         setCapping(true);
         b.capturePage(n.url, {
-          mode: from === "naver" ? "head" : "full",
+          // 네이버 뉴스도 제목부터 본문까지 3~5장 (2026-11-03 사장님 — 예전엔 제목 1장). 기사가 짧으면 끝에서 멈춘다
+          mode: "full",
+          ...(from === "naver" ? { max: 5, withTitle: true } : {}),
           title: n.title,
           credit: from === "gongsil" ? "" : `출처: ${n.publisher || (from === "press" ? "보도자료" : "원문 기사")}`,
         }).then(setCaps).catch(() => setCaps([])).finally(() => setCapping(false));
@@ -654,12 +711,20 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           const nm = d.complexName || d.target.name;
           if (d.target.dong) mktDongs.push(d.target.dong);
           eps.push(`단지 시세 — ${nm} 실거래가 (국토교통부 실거래가 신고 기준)${extra ? ` (덧붙일 말: ${extra})` : ""}`);
-          epMat.push(`[에피소드 ${i + 1} 단지 시세 자료 — 국토교통부 실거래가 공개 자료를 공실뉴스가 정리]\n${marketText(d)}`);
+          epMat.push(`[에피소드 ${i + 1} 단지 시세 자료 — 국토교통부 실거래가 공개 자료 정리]\n${marketText(d)}`);
         } else eps.push(extra);
       }
       if (epList.length) { await step(`${aiName}가 대본을 쓰는 중… (1~2분)`); epUsed.current = epList; }
       const epChars = src === "episodes" && charMode === "each" ? epList.reduce((n, e) => n + (e.chars || 200), 0) + 250 : 0;
-      const source = revise ? script : epMat.length ? epMat.join("\n\n") : fromNews ? `${news.title}\n\n${news.body}` : fromYt && yt ? yt.narration.join("\n\n") : undefined;
+      // [단지/시세] — 시세 자료를 불러와 참고 글로 (숫자는 서버가 계산한 것만)
+      let mktSrc = "";
+      if (!revise && src === "market") {
+        await step("국토부 실거래가를 불러오는 중…");
+        const d = mkt.d && mkt.d.target ? mkt.d : await fetchMarket(mktQ, mkt.pick || 0);
+        if (d.target.dong) mktDongs.push(d.target.dong);
+        mktSrc = `[단지 시세 자료 — 국토교통부 실거래가 공개 자료 정리]\n${marketText(d)}`;
+      }
+      const source = revise ? script : mktSrc || (epMat.length ? epMat.join("\n\n") : fromNews ? `${news.title}\n\n${news.body}` : fromYt && yt ? yt.narration.join("\n\n") : undefined);
       const epReq = !revise && src === "episodes"
         ? [
           `「${newsNameNow}」 소식을 전하는 짧은 뉴스 영상 대본이에요. 아래 순서대로 씬을 나눠 주세요 (씬 하나 = 단락 하나).`,
@@ -672,7 +737,15 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
           request.trim() ? `추가 요청: ${request.trim()}` : "",
         ].filter(Boolean).join("\n")
         : "";
-      const r = fixLines(await b.ai.script({ topic: src === "news" && news ? news.title : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : st, request: `${epReq || rq}\n${NAME_RULE}`, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse }), mktDongs);
+      const mktRule = src === "market" && !revise ? "위 [참고 글]의 단지 시세 자료에 있는 숫자(금액·평·층·건수·날짜)만 그대로 쓰고 새로 계산하지 마세요. \"국토교통부 실거래가 신고 기준\"이라고 한 번 밝히고, 최근 거래는 신고가 더 늘 수 있다고 짧게 덧붙여요. 면적은 평으로만 말하고(㎡ 쓰지 않기), 한 문장에 숫자는 두 개까지. 가격 전망·매수 권유·중개업소 인용은 쓰지 마세요." : "";
+      // 매물 소개·단지/시세·공실뉴스(정기 뉴스)는 회원이 자기 채널에 올리는 영상 — 마지막은 그 부동산 (2026-11-03 사장님: "왜 공실뉴스가 나오나")
+      const office = (agency?.name || "").trim();
+      const ownLine = !revise && (src === "vacancy" || src === "market" || src === "episodes")
+        ? `[마무리 — 꼭 지키세요] 이 영상은 부동산 회원이 자기 채널에 올리는 영상입니다. "공실뉴스"라는 말은 대본 어디에도 쓰지 마세요 (앞 지시에 공실뉴스가 있어도 쓰지 않습니다). ${office ? `마지막 문장은 "${office}"(이 영상을 올리는 부동산) 이름으로 짧게 마무리하세요 — 예: "${office}였습니다." 또는 "더 궁금하신 점은 ${office}에서 알려 드립니다." 앞 지시에 사무소 이름을 쓰지 말라는 말이 있어도 이 마지막 한 문장에는 씁니다. 전화번호는 쓰지 마세요.` : "마지막 문장은 이 영상을 올리는 부동산을 주어로 짧게 마무리하세요. 이름은 지어내지 마세요."}`
+        : "";
+      const tn = TONES.find((t) => t.id === tone), hk = HOOKS.find((h) => h.id === hook);
+      const toneLine = [tn ? `[문체] ${tn.name} — ${tn.prompt}` : "", hk ? `[첫 3초] ${hk.name} — ${hk.prompt}` : ""].filter(Boolean).join("\n");
+      const r = fixLines(await b.ai.script({ topic: src === "news" && news ? news.title : src === "market" && !revise ? `${mkt.d?.complexName || mkt.d?.target.name || mktQ} 실거래 시세` : src === "episodes" && !revise ? `${newsNameNow} — ${eps.join(" / ")}` : topic, style: src === "episodes" && !revise ? "뉴스 영상 — 서론 · 에피소드 · 맺음말, 짧은 단락으로 소식을 전하는 정기 뉴스" : src === "market" && !revise ? "단지 시세 소개 영상 — 첫 문장에 단지와 가장 눈에 띄는 숫자, 평형별 최근 거래·전세, 흐름 한 줄로 정리" : st, request: `${[epReq || rq, mktRule, toneLine, ownLine].filter(Boolean).join("\n")}\n${NAME_RULE}`, chars: useChars ? epChars || chars : 0, vacancy: src === "vacancy" ? vacInfo?.vacancy : null, ...(source ? { source } : {}), ai: aiUse }), mktDongs);
       pushHistory();
       hints.current = {};
       sceneTitles.current = {};
@@ -713,7 +786,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
     subLines: [subLines, setSubLines], deco: [deco, setDeco], editReq: [editReq, setEditReq], voiceOn: [voiceOn, setVoiceOn], voiceId: [voiceId, setVoiceId], emotion: [emotion, setEmotion],
     speed: [speed, setSpeed], voiceVol: [voiceVol, setVoiceVol], musicOn: [musicOn, setMusicOn], mood: [mood, setMood], track: [track, setTrack], musicMode: [musicMode, setMusicMode],
     sceneMusic: [sceneMusic, setSceneMusic], usePhotos: [usePhotos, setUsePhotos], useStock: [useStock, setUseStock], useDrone: [useDrone, setUseDrone], useAi: [useAi, setUseAi], autoMute: [autoMute, setAutoMute],
-    foot: [foot, setFoot], fill: [fill, setFillS], aiFlow: [aiFlow, setAiFlow], aiStyle: [aiStyle, setAiStyle], aiLen: [aiLen, setAiLen], aiClips: [aiClips, setAiClips], purpose: [purpose, setPurposeRaw], newsFrom: [newsFrom, setNewsFrom], news: [news, setNews], newsPurpose: [newsPurpose, setNewsPurposeRaw], yt: [yt, setYt],
+    foot: [foot, setFoot], fill: [fill, setFillS], aiFlow: [aiFlow, setAiFlow], aiStyle: [aiStyle, setAiStyle], aiLen: [aiLen, setAiLen], aiClips: [aiClips, setAiClips], purpose: [purpose, setPurposeRaw], newsFrom: [newsFrom, setNewsFrom], news: [news, setNews], newsPurpose: [newsPurpose, setNewsPurposeRaw], yt: [yt, setYt], mktQ: [mktQ, setMktQ], mkt: [mkt, setMkt], mktCaps: [mktCaps, setMktCaps], tone: [tone, setTone], hook: [hook, setHook],
   };
   const snapRef = useRef("");
   snapRef.current = JSON.stringify({ v: 1, ...Object.fromEntries(Object.entries(keep).map(([k, [v]]) => [k, v])), hints: hints.current, sceneTitles: sceneTitles.current, epUsed: epUsed.current });
@@ -814,8 +887,8 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
         made = p;
       }
       // 영상 종류 · 이 영상 자료 — 편집 화면 [AI 편집]이 처음부터 알고 쓴다 (2026-10-20 사장님)
-      p.kind = src === "episodes" ? "topic" : src;
-      p.materials = src === "vacancy" ? [...(vacInfo?.photos || []), ...(vacInfo?.shots || [])] : src === "news" ? caps : [];
+      p.kind = src === "episodes" || src === "market" ? "topic" : src;
+      p.materials = src === "vacancy" ? [...(vacInfo?.photos || []), ...(vacInfo?.shots || [])] : src === "news" ? caps : src === "market" ? mktCaps : [];
       p.settings.fill = fill;
       const nsub = newsSubOf(deco.sub); // 뉴스 자막 바 — 왼쪽 정렬
       p.settings.subtitle = { ...p.settings.subtitle, ...(subLookOf(deco.sub) || {}), ...(nsub ? { align: "left" as const, bgPad: 1.3 } : {}), on: subOn, position: subPos, length: subLines === 1 ? "short" : "long", maxLines: subLines };
@@ -1322,7 +1395,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
 
   const chip = (on: boolean): React.CSSProperties => ({ height: 36, padding: "0 14px", borderRadius: 5, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.selText : C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: `1px solid ${C.line}` };
-  const steps = ["대본 작성", "초안 꾸미기"];
+  const steps = scriptOnly ? ["대본 작성"] : ["대본 작성", "초안 꾸미기"];
   const stepIdx = step - 1;
 
   /* ── AI 이미지·영상 — 준비 ── */
@@ -1493,12 +1566,21 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
       )}
       {step === 0 && <Btn primary onClick={() => setStep(1)}>다음 <Icon name="chevron" size={16} /></Btn>}
       {/* 대본을 다 쓰면 만드는 방식을 고른다 (2026-10-20 사장님) — 내가 직접 녹화·녹음 / AI 보이스 */}
-      {step === 1 && onRecord && (
+      {/* [대본 작성] 메뉴 — 대본만. 영상은 동영상studio 로 넘겨 이어서 (2026-11-03 사장님) */}
+      {scriptOnly && step === 1 && (<>
+        <Btn onClick={async () => { try { await navigator.clipboard.writeText(script); setErr(""); setTextSaved("복사했어요"); } catch { setErr("복사하지 못했어요."); } }} disabled={!script.trim()}><Icon name="copy" size={15} />복사</Btn>
+        <Btn primary disabled={!script.trim()} title="이 대본을 동영상studio에서 열어 AI 보이스로 만들거나 직접 녹화해요"
+          onClick={async () => { await saveNow(); const f = (draftRef.current as unknown as { file?: string } | null)?.file; if (f && onContinue) onContinue(f); else setErr("먼저 저장이 되어야 해요. 잠시 뒤 다시 눌러 주세요."); }}
+          style={{ height: 46, padding: "0 22px", fontSize: 15.5 }}>
+          <Icon name="video" size={17} />동영상studio에서 이어서 (AI 보이스·녹화) <Icon name="chevron" size={16} />
+        </Btn>
+      </>)}
+      {!scriptOnly && step === 1 && onRecord && (
         <Btn onClick={() => onRecord(script.trim())} disabled={!script.trim()} title="이 대본을 프롬프터에 띄우고 내가 직접 읽으며 녹화해요. 녹화가 끝나면 편집 화면으로 가요">
           <Icon name="record" size={16} />직접 녹화·녹음하고 편집
         </Btn>
       )}
-      {step === 1 && <Btn primary onClick={() => setStep(2)} disabled={!script.trim()} title="AI 성우가 대본을 읽고 사진·영상·자막을 붙여요"><Icon name="mic" size={16} />AI 보이스로 만들고 편집 <Icon name="chevron" size={16} /></Btn>}
+      {!scriptOnly && step === 1 && <Btn primary onClick={() => setStep(2)} disabled={!script.trim()} title="AI 성우가 대본을 읽고 사진·영상·자막을 붙여요"><Icon name="mic" size={16} />AI 보이스로 만들고 편집 <Icon name="chevron" size={16} /></Btn>}
 
     </>
   );
@@ -1657,7 +1739,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
   );
 
   return (
-    <Modal steps={steps} step={stepIdx} onClose={onCancel} width={1440} footer={footer}>
+    <Modal steps={steps} step={stepIdx} onClose={scriptOnly ? undefined : onCancel} width={1440} footer={footer}>
       {step === 0 && (
         <div style={{ padding: "22px 28px" }}>
           <div style={{ fontSize: 20, fontWeight: 800, textAlign: "center", marginBottom: 18 }}>원하는 영상 스타일을 고르세요</div>
@@ -1688,6 +1770,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             {head("무엇으로 쓸까요")}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button type="button" onClick={() => { setSrc("vacancy"); loadVacs(); setPurpose(purpose); }} style={chip(src === "vacancy")}>매물 소개</button>
+              <button type="button" onClick={() => setSrc("market")} style={chip(src === "market")} title="국토부 실거래가로 단지 시세 대본">단지/시세</button>
               <button type="button" onClick={() => { setSrc("news"); setNewsPurpose(newsPurpose); if (!arts) void loadArts(""); }} style={chip(src === "news")}>뉴스 기사</button>
               <button type="button" onClick={() => setSrc("topic")} style={chip(src === "topic")}>자유 주제</button>
               {/* [공실뉴스] — 인사말 · 에피소드 1·2 (+ 추가) · 맺음말로 쓰는 정기 뉴스 (2026-10-23 사장님) */}
@@ -1906,6 +1989,33 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                     <input value={outroReq} onChange={(e) => setOutroReq(e.target.value)} placeholder="예: 문의는 언제든 사무소로" style={input} />
                   </div>
                 )}
+                {src === "market" && (
+                  <div>
+                    {head("단지 찾기")}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <input value={mktQ} onChange={(e) => { setMktQ(e.target.value); setMkt({ d: null, err: "", pick: 0 }); }} onKeyDown={(e) => { if (e.key === "Enter") void findMkt(mktQ); }}
+                        placeholder="아파트·오피스텔 단지 이름 — 예: 아크로힐스논현, 대치 은마" style={{ ...input, flex: 1, minWidth: 0 }} />
+                      <Btn onClick={() => void findMkt(mktQ)} disabled={mktQ.trim().length < 2}><Icon name="search" size={15} />찾기</Btn>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                      <Btn small onClick={openAptPick} title="공실열람 지도를 새 창으로 열어요 — 단지를 누르고 [이 단지로 대본 쓰기]를 누르면 여기로 와요"><Icon name="open" size={14} />공실열람에서 단지 고르기</Btn>
+                    </div>
+                    {mkt.d && mkt.d.candidates.length > 1 && (
+                      <select value={mkt.pick || 0} onChange={(e) => void findMkt(mktQ, Number(e.target.value))} style={{ ...input, marginTop: 6 }}>
+                        {mkt.d.candidates.map((c, k) => <option key={k} value={k}>{c.name} · {c.address}</option>)}
+                      </select>
+                    )}
+                    {mkt.d ? (
+                      <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.55, marginTop: 6 }}>
+                        <b style={{ color: C.text }}>{mkt.d.complexName || mkt.d.target.name}</b> · 최근 12개월 매매 {mkt.d.summary.tradeCount}건
+                        {mkt.d.summary.areas.slice(0, 3).map((a) => a.latest && <span key={a.areaKey}> · 전용 약 {a.pyeong}평 최근 {wonText(a.latest.price)} ({a.latest.date.slice(0, 7)})</span>)}
+                        <div style={{ color: C.dim }}>국토교통부 실거래가 신고 기준 — 대본에는 이 숫자만 들어가요</div>
+                        {(mktCapping || mktCaps.length > 0) && <div style={{ marginTop: 8 }}><CapStrip items={mktCaps} busy={mktCapping} label="단지 시세 화면" /></div>}
+                      </div>
+                    ) : mkt.err ? <div style={{ fontSize: 13, marginTop: 6, color: mkt.err === "불러오는 중…" ? C.sub : C.danger }}>{mkt.err}</div>
+                      : <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>[찾기]를 누르면 국토부 실거래가로 최근 매매·전세 숫자를 불러와요</div>}
+                  </div>
+                )}
                 {src === "topic" && (
                   <div>
                     {head("주제")}
@@ -1913,11 +2023,26 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                   </div>
                 )}
                 <div>
+                  {head(<>문체 <span style={{ color: C.dim, fontWeight: 600 }}>(선택 — 안 고르면 용도에 맞게)</span></>)}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {TONES.map((t) => (
+                      <button key={t.id} type="button" onClick={() => setTone(tone === t.id ? "" : t.id)} title={t.prompt}
+                        style={{ ...chip(tone === t.id), height: "auto", padding: "8px 10px", textAlign: "left", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                        <span>{t.name}</span><span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.75, lineHeight: 1.35 }}>{t.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, marginRight: 2 }}>첫 3초</span>
+                    {HOOKS.map((h) => <button key={h.id} type="button" onClick={() => setHook(hook === h.id ? "" : h.id)} title={h.prompt} style={{ ...chip(hook === h.id), height: 30, padding: "0 10px", fontSize: 12.5 }}>{h.name}</button>)}
+                  </div>
+                </div>
+                <div>
                   {head(<>대본 요청 <span style={{ color: C.dim, fontWeight: 600 }}>(선택)</span></>)}
                   <textarea value={request} onChange={(e) => setRequest(e.target.value)} rows={3} placeholder="말투·보는 사람·꼭 넣을 내용 (예: 신혼부부에게, 친근하게)" style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical" }} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ flex: 1 }}>{head("글자 수 정하기", true)}</span>
+                  <span style={{ flex: 1 }}>{head("영상 길이 · 글자 수", true)}</span>
                   {src === "episodes" && (["total", "each"] as const).map((k) => (
                     <button key={k} type="button" onClick={() => setCharMode(k)} disabled={!useChars} style={{ ...chip(charMode === k), height: 30, padding: "0 10px", fontSize: 12.5 }}>{k === "total" ? "전체" : "에피소드별"}</button>
                   ))}
@@ -1931,17 +2056,17 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
                 </div>
                 {/* 길이로 고르기 — 짧게·중간·길게 (2026-10-23 사장님). 성우가 1초에 약 5자(띄어쓰기 빼고) 읽는 것으로 글자 수를 정한다 */}
                 {useChars && !(src === "episodes" && charMode === "each") && (
-                  <div style={{ display: "flex", gap: 6, marginTop: -8 }}>
-                    {LENGTHS.map((x) => {
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 5, marginTop: -8 }}>
+                    {DURATIONS.map((x) => {
                       const on = chars === x.chars;
-                      return <button key={x.id} type="button" onClick={() => setChars(x.chars)} style={{ ...chip(on), flex: 1, height: 44, padding: "0 6px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}><span>{x.name}</span><span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.8 }}>{x.time} · {x.chars}자</span></button>;
+                      return <button key={x.sec} type="button" onClick={() => setChars(x.chars)} title={`${x.use} · 약 ${x.chars}자`} style={{ ...chip(on), height: 34, padding: "0 4px", fontSize: 13 }}>{x.name}</button>;
                     })}
                   </div>
                 )}
-                {useChars && <div style={{ fontSize: 12.5, color: C.dim, marginTop: -4 }}>지금 {chars}자 ≈ 영상 약 {chars >= 300 ? `${Math.floor(chars / 300)}분 ${Math.round((chars % 300) / 5) ? Math.round((chars % 300) / 5) + "초" : ""}` : `${Math.round(chars / 5)}초`} (띄어쓰기 빼고 1초에 약 5자)</div>}
+                {useChars && <div style={{ fontSize: 12.5, color: C.dim, marginTop: -4, lineHeight: 1.5 }}>{chars}자 ≈ 영상 약 {chars >= 300 ? `${Math.floor(chars / 300)}분 ${Math.round((chars % 300) / 5) ? Math.round((chars % 300) / 5) + "초" : ""}` : `${Math.round(chars / 5)}초`} · {DURATIONS.find((x) => x.chars === chars)?.use || "직접 정한 길이"} <span style={{ opacity: 0.8 }}>(성우 기준 띄어쓰기 빼고 1초에 약 5자)</span></div>}
                 <div>{head("쓸 AI")}<AiPick value={aiSel} onChange={setAiSel} list={aiList} noTitle /></div>
                 <div>{head("대본 쓰기")}
-                <Btn primary onClick={() => void write()} disabled={Boolean(writing) || (src === "topic" && !topic.trim()) || (src === "episodes" && (!episodes.some(epReady) || !newsNameNow.trim())) || (src === "vacancy" && !vacInfo) || (src === "news" && !news)} style={{ height: 52, fontSize: 16.5, width: "100%" }}>
+                <Btn primary onClick={() => void write()} disabled={Boolean(writing) || (src === "topic" && !topic.trim()) || (src === "episodes" && (!episodes.some(epReady) || !newsNameNow.trim())) || (src === "vacancy" && !vacInfo) || (src === "news" && !news) || (src === "market" && mktQ.trim().length < 2)} style={{ height: 52, fontSize: 16.5, width: "100%" }}>
                   <Icon name="pen" size={18} />{aiName}로 대본 쓰기
                 </Btn>
                 </div>
@@ -1952,7 +2077,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed }:
             {err && <div style={{ fontSize: 14, color: C.danger, lineHeight: 1.5 }}>{err}</div>}
           </div>
           <div style={{ flex: 1, padding: "22px 26px", display: "flex", flexDirection: "column" }}>
-            {head("대본 확인·고치기 — 다 되면 아래에서 만드는 방식을 고르세요")}
+            {head(scriptOnly ? "대본 확인·고치기 — 고르고 오른쪽 클릭하면 그 부분만 다시 써요" : "대본 확인·고치기 — 다 되면 아래에서 만드는 방식을 고르세요")}
             <textarea value={script} onChange={(e) => setScript(e.target.value)}
               onPaste={(e) => {
                 // ChatGPT·Gemini 창의 대본 답(JSON — {"scenes":[{"title","lines":[{"text"}]}]})을 그대로 붙여 넣으면 대본으로 바꾼다
@@ -2473,6 +2598,38 @@ function scriptFromJson(raw: string): { title: string; lines: { text: string; de
 }
 
 /** 영상 길이로 글자 수 고르기 — 1초에 약 5자 (띄어쓰기 빼고, timeline.estimateSeconds 와 같은 셈) */
+/** 전문 문체 — 영상 업계에서 쓰는 말투 (2026-11-03 사장님) */
+const TONES = [
+  { id: "anchor", name: "뉴스 앵커형", desc: "정확하고 또렷하게", prompt: "뉴스 앵커처럼 정확하고 또렷하게. 사실을 먼저, 의미는 짧게. 단정·과장 없이" },
+  { id: "docu", name: "다큐 내레이션", desc: "차분하고 깊이 있게", prompt: "다큐멘터리 내레이션처럼 차분하고 깊이 있게. 장면을 그리듯 묘사하고 여운을 남긴다" },
+  { id: "talk", name: "유튜버 토크형", desc: "친구에게 말하듯 리듬 있게", prompt: "유튜버가 말하듯 친근하고 리듬감 있게. 짧은 문장, 질문과 맞장구, 구어체 (반말은 쓰지 않음)" },
+  { id: "expert", name: "전문가 해설", desc: "근거로 차분히 분석", prompt: "부동산 전문가가 근거(숫자·자료)를 들어 차분히 분석. 쉬운 말로 풀되 신뢰감 있게" },
+  { id: "field", name: "현장 리포트", desc: "와 있는 듯 생생하게", prompt: "현장에 와 있는 리포터처럼 생생하게. 보이는 것·걷는 동선·분위기 중심" },
+  { id: "story", name: "스토리텔링", desc: "한 사람 이야기로 공감", prompt: "한 사람(예: 첫 집을 찾는 신혼부부)의 이야기로 풀어 공감을 끌어낸다. 사실은 자료 그대로" },
+  { id: "shorts", name: "쇼츠 후킹형", desc: "빠른 템포, 짧은 문장", prompt: "쇼츠용 빠른 템포. 한 문장 10~20자, 군더더기 없이 핵심만, 마지막에 다음 행동 한마디" },
+  { id: "summary", name: "정보 요약형", desc: "핵심을 번호로 정리", prompt: "핵심을 첫째·둘째·셋째로 번호 붙여 정리. 문장마다 정보 하나" },
+];
+/** 첫 3초 — 시작 방식 */
+const HOOKS = [
+  { id: "q", name: "질문", prompt: "첫 문장은 보는 사람이 답하고 싶어지는 질문" },
+  { id: "num", name: "숫자", prompt: "첫 문장에 가장 눈에 띄는 숫자 하나 (자료에 있는 숫자만)" },
+  { id: "twist", name: "반전", prompt: "첫 문장은 예상을 뒤집는 한마디" },
+  { id: "empathy", name: "공감", prompt: "첫 문장은 보는 사람의 고민을 짚는 공감 한마디" },
+  { id: "warn", name: "경고", prompt: "첫 문장은 놓치면 손해 보는 것을 알려 주는 경고" },
+];
+/** 영상 길이로 고르기 — 성우가 1초에 약 5자(띄어쓰기 빼고) 읽는 것으로 글자 수 (2026-11-03 사장님: 전문적으로) */
+const DURATIONS = [
+  { sec: 30, name: "30초", chars: 150, use: "쇼츠·릴스 짧게" },
+  { sec: 45, name: "45초", chars: 220, use: "쇼츠·릴스" },
+  { sec: 60, name: "60초", chars: 300, use: "쇼츠 최대 길이" },
+  { sec: 90, name: "1분 30초", chars: 450, use: "짧은 소개 영상" },
+  { sec: 120, name: "2분", chars: 600, use: "매물·단지 소개" },
+  { sec: 180, name: "3분", chars: 900, use: "시세·정보 영상" },
+  { sec: 300, name: "5분", chars: 1500, use: "해설·분석 영상" },
+  { sec: 480, name: "8분", chars: 2400, use: "깊이 있는 해설" },
+  { sec: 600, name: "10분", chars: 3000, use: "롱폼" },
+  { sec: 900, name: "15분", chars: 4500, use: "롱폼·강의" },
+];
 const LENGTHS = [
   { id: "short", name: "짧게", time: "약 1분", chars: 300 },
   { id: "mid", name: "중간", time: "약 3~5분", chars: 1200 },

@@ -1,5 +1,6 @@
 "use client";
 
+import ArticleAiTool, { articleToolReady, NAVY, type ArticleDraft } from "@/components/admin/writing/ArticleAiTool";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveArticle, getPhotoLibrary, togglePhotoFavorite, getArticleDetail, updateArticleMediaCaption, purgeReplacedArticlePhotos } from "@/app/actions/article";
@@ -111,6 +112,36 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   /* ═══ ✨ 좌측 패널 모드: 기본 글쓰기도구 vs AI 공실뉴스초안작성 ═══ */
   const [leftSidebarMode, setLeftSidebarMode] = useState<"tools" | "ai_chat">("tools");
+  // 공실마케팅 앱 — 왼쪽은 대본 작성 모양의 "글쓰기 도구"(회원 AI 기사 초안), 화면 전체를 대본 작성 톤으로 (2026-11-03 사장님)
+  const [studioMode, setStudioMode] = useState(false);
+  useEffect(() => { setStudioMode(articleToolReady()); }, []);
+  const [aiFilled, setAiFilled] = useState(false);
+  const applyStudioDraft = async (d: ArticleDraft) => {
+    setTitle(d.title);
+    setSubtitle(d.subtitles.join("\n"));
+    if (d.keywords.length) setKeywords(d.keywords);
+    if (editorRef.current) {
+      const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      // 공실뉴스 단지 화면 캡처 → 기사 사진 (시세 그래프·로드뷰·실거래, 2026-11-03 사장님) — 첫 장이 대표 사진
+      const photos = (await Promise.all((d.photos || []).map(async (p, i) => {
+        try {
+          const blob = await (await fetch(p.url)).blob();
+          const file = await compressToWebP(new File([blob], `gongsil-price-${i + 1}.jpg`, { type: blob.type || "image/jpeg" }));
+          return { ...p, file, preview: URL.createObjectURL(file) };
+        } catch { return null; }
+      }))).filter((x): x is NonNullable<typeof x> => Boolean(x));
+      if (photos.length) setPhotoFiles((prev) => [...prev.map((x) => ({ ...x, isCover: prev.length ? x.isCover : false })), ...photos.map((p, i) => ({ file: p.file, preview: p.preview, caption: p.caption, isCover: !prev.length && i === 0, size: 600, align: "center", captionAlign: "center" }))] as typeof prev);
+      const figure = (p: { preview: string; caption: string }) =>
+        `<div class="inserted-photo" contenteditable="false" style="display: table; margin: 16px auto; text-align: center;">` +
+        `<img src="${p.preview}" alt="${esc(p.caption)}" style="max-width: 600px; width: 100%; height: auto; border-radius: 6px; display: block;">` +
+        `<p style="display: table-caption; caption-side: bottom; font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;">${esc(p.caption)}</p></div><br>`;
+      editorRef.current.innerHTML = d.paragraphs.map((p, i) => `${p.heading ? `<p><b>■ ${esc(p.heading)}</b></p>` : ""}<p>${esc(p.text).replace(/\n/g, "<br>")}</p>${photos.filter((x) => x.after === i + 1).map(figure).join("")}`).join("<p><br></p>");
+      editorRef.current.querySelectorAll<HTMLElement>(".inserted-photo").forEach((w) => createDeleteBtn(w, "photo"));
+      setContent(editorRef.current.innerHTML);
+    }
+    setAiFilled(true);
+    setTimeout(() => setAiFilled(false), 6000);
+  };
   
   // ── 공실뉴스 매물 기사 초안 옵션 (스타일 · 분량) ──
   const [articleStyle, setArticleStyle] = useState<ArticleStyle>("news");
@@ -2004,10 +2035,17 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   // 폼이 ArticleSection 안에서 렌더링되므로, 기존의 사이드바/상단헤더/전체화면높이 스타일은 제거하고 내부 컨텐츠 래퍼만 반환합니다.
   return (
     <div style={{ flex: 1, overflowY: "auto", height: "100%", background: pageBg }}>
-      <div style={{ maxWidth: leftSidebarMode === "ai_chat" ? 1760 : 1400, margin: "0 auto", padding: "10px 24px 24px 24px", display: "flex", gap: 20, alignItems: "flex-start", width: "100%", transition: "max-width 0.25s ease" }}>
+      <div style={{ maxWidth: studioMode ? 1880 : leftSidebarMode === "ai_chat" ? 1760 : 1400, margin: "0 auto", padding: studioMode ? "14px 16px 20px" : "10px 24px 24px 24px", display: "flex", gap: studioMode ? 14 : 20, alignItems: "flex-start", width: "100%", transition: "max-width 0.25s ease" }}>
+
+        {/* 앱 — 왼쪽 글쓰기 도구 (대본 작성 모양) */}
+        {studioMode && (
+          <aside style={{ width: 400, minWidth: 400, position: "sticky", top: 8, height: "calc(100vh - 120px)", flexShrink: 0, border: `1px solid ${border}`, borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+            <ArticleAiTool onDraft={applyStudioDraft} hasContent={() => Boolean(title.trim() || (editorRef.current?.innerText || "").trim())} />
+          </aside>
+        )}
 
         {/* ═══ 좌측 사이드바: 글쓰기도구 <-> AI 공실뉴스초안작성 패널 (확장 전환) ═══ */}
-        <aside style={{
+        {!studioMode && <aside style={{
           width: leftSidebarMode === "ai_chat" ? 400 : 220,
           minWidth: leftSidebarMode === "ai_chat" ? 400 : 220,
           position: "sticky",
@@ -2296,11 +2334,16 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               </div>
             </div>
           )}
-        </aside>
+        </aside>}
 
         {/* ═══ 중앙 메인 폼: 기사쓰기 ═══ */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "32px 36px" }}>
+          <div className={studioMode ? "gs-studio-form" : undefined} style={{ background: cardBg, borderRadius: studioMode ? 6 : 12, border: `1px solid ${border}`, padding: studioMode ? "22px 28px" : "32px 36px" }}>
+            {studioMode && <style>{`
+              .gs-studio-form input:not([type=checkbox]):not([type=radio]), .gs-studio-form select, .gs-studio-form textarea { border-radius: 5px !important; border-color: #d9dde3 !important; background: #fff !important; }
+              .gs-studio-form input:focus, .gs-studio-form select:focus, .gs-studio-form textarea:focus { border-color: ${NAVY} !important; outline: none; }
+              .gs-studio-form .gs-ai-filled, .gs-studio-form input.gs-ai-filled:not([type=checkbox]), .gs-studio-form textarea.gs-ai-filled { background: #f0f6ff !important; border-color: #bcd2fb !important; transition: background .6s; }
+            `}</style>}
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
               <button type="button" onClick={() => router.push(memberReturnPath)} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid #d1d5db`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
                 ← 목록으로
@@ -2474,14 +2517,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             {/* ── 제목 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>제목</label>
-              <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="제목을 입력하세요"
+              <input type="text" className={aiFilled ? "gs-ai-filled" : undefined} value={title} onChange={e => setTitle(e.target.value)} placeholder="제목을 입력하세요"
                 style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
             </div>
 
             {/* ── 부제목 ── */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 10 }}>부제목</label>
-              <textarea value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="부제목을 입력하세요(여러 줄 입력도 가능합니다.)" rows={3}
+              <textarea className={aiFilled ? "gs-ai-filled" : undefined} value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="부제목을 입력하세요(여러 줄 입력도 가능합니다.)" rows={3}
                 style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.6 }} />
             </div>
 
@@ -2576,7 +2619,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              className={isGeneratingAi ? "ai-drafting" : aiDraftDone ? "ai-drafted" : undefined}
+              className={aiFilled ? "gs-ai-filled ai-drafted" : isGeneratingAi ? "ai-drafting" : aiDraftDone ? "ai-drafted" : undefined}
               style={{
                 minHeight: 360, padding: "20px 16px", border: `1px solid ${border}`, borderTop: "none",
                 fontSize: 15, lineHeight: 1.8, color: textPrimary, outline: "none", background: cardBg,
@@ -2785,11 +2828,22 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         </main>
 
         {/* ═══ 우측 사이드바 ═══ */}
-        <aside style={{ width: 280, minWidth: 280, position: "sticky", top: 80, flexShrink: 0 }}>
-          <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "20px 18px" }}>
+        <aside style={{ width: 280, minWidth: 280, position: "sticky", top: studioMode ? 8 : 80, flexShrink: 0 }}>
+          <div style={{ background: cardBg, borderRadius: studioMode ? 6 : 12, border: `1px solid ${border}`, padding: "20px 18px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: textPrimary, margin: 0 }}>라이브러리</h3>
             </div>
+            {/* 앱 — 사진·영상·포토DB 를 라이브러리 위로 (2026-11-03 사장님) */}
+            {studioMode && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 16 }}>
+                {([["사진", openPhotoModal, "M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21"], ["영상", openVideoModal, "M2 4h20v16H2zM10 8l6 4-6 4z"], ["포토DB", openPhotoDbModal, "M2 2h20v20H2zM2 12h20M12 2v20"]] as const).map(([l, fn, d]) => (
+                  <button key={l} type="button" onClick={fn}
+                    style={{ height: 58, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, border: "1px solid #d9dde3", borderRadius: 5, background: "#fff", color: NAVY, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>{l}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* 포토DB 간편검색 */}
             <form onSubmit={handlePhotoDbSearch} style={{ position: "relative", marginBottom: 20 }}>

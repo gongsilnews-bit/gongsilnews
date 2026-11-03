@@ -562,6 +562,8 @@ ipcMain.handle("studio:open-external", (_e, url) => {
   }
 });
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
+// 글쓰기 — 회원 AI 초안·다듬기 · 내 PC 저장·내보내기 (2026-11-03)
+require("./writing").register(ipcMain);
 // 기본 글쓰기 AI — 고르기 · 지금 쓸 AI 이름 (쓰기 단추에 "Gemini로 …" 처럼 보인다)
 ipcMain.handle("studio:ai-set-writer", (_e, id) => {
   aiConnect.setWriter(id);

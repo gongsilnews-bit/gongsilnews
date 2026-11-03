@@ -10,7 +10,7 @@ import StudioAppDownload from "./StudioAppDownload";
  */
 type Props = {
   theme: { cardBg: string; textPrimary: string; textSecondary: string; border: string };
-  kind: "sns" | "video";
+  kind: "sns" | "video" | "write";
   isApp: boolean;
   onGoGongsil: () => void;
 };
@@ -21,6 +21,12 @@ const COPY = {
     title: "뉴스·SNS자동화",
     lead: "공실을 고르면 공실뉴스 기사·네이버 블로그·인스타그램·페이스북·스레드 글을 AI가 써서 채워 드립니다.",
     points: ["공실 하나 고르고 버튼 한 번", "블로그·SNS 글과 사진을 자동으로 채움", "마지막 [발행]만 소장님이 누름 (계정 안전)"],
+  },
+  write: {
+    icon: "✍",
+    title: "대본 작성",
+    lead: "매물·단지 시세·뉴스·자유 주제로 유튜브 대본을 AI가 써 드립니다. 공실뉴스 실거래 시세를 재료로 씁니다.",
+    points: ["전문 문체 · 첫 3초 · 영상 길이로 맞춤", "고른 부분만 다시 쓰고 직접 고치기", "동영상studio로 바로 이어서 영상 만들기"],
   },
   video: {
     icon: "🎬",

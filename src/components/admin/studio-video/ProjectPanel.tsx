@@ -267,9 +267,11 @@ export function ProjectPanel({ project, onBins, onPick, canReplace, onClose, pro
 
   const binRow = (f: { id: string; name: string }) => (
     <div key={f.id} {...dropZone(f.id)}
-      onClick={(e) => { e.stopPropagation(); setSel([]); toggleB(f.id); }}
+      onClick={(e) => { e.stopPropagation(); setSel([]); if (e.detail < 2) toggleB(f.id); }}
+      // 두 번 누르면 이름 바꾸기 (2026-11-03 사장님) — 두 번째 누름은 펼치기·접기를 하지 않는다
+      onDoubleClick={(e) => { e.stopPropagation(); toggleB(f.id); setNaming({ id: f.id, name: f.name }); }}
       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: e.clientX, y: e.clientY, kind: "bin", id: f.id }); }}
-      title="누르면 펼치고 접어요 · 사진·영상을 끌어다 놓으면 이 폴더로"
+      title="누르면 펼치고 접어요 · 두 번 누르면 이름 바꾸기 · 사진·영상을 끌어다 놓으면 이 폴더로"
       style={{ ...rowBase, background: dropOn === f.id ? "rgba(59,130,246,0.22)" : "transparent", border: `1px solid ${dropOn === f.id ? C.accent : "transparent"}` }}>
       <span style={{ width: 12, color: C.sub, fontSize: 11, flexShrink: 0, display: "inline-block", transform: openB.includes(f.id) ? "rotate(90deg)" : "none", transition: "transform .12s" }}>▶</span>
       {folderSvg()}

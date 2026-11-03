@@ -50,6 +50,10 @@ export default function VideoStudio() {
       const rec = JSON.parse(sessionStorage.getItem("gs-video-recorded") || "null");
       sessionStorage.removeItem("gs-video-recorded");
       if (rec?.item && Date.now() - (rec.at || 0) < 30 * 60 * 1000) { setRecScript(rec.script || ""); setRecorded(rec.item); setFlow("record"); }
+      // [대본 작성] 메뉴의 [동영상studio에서 이어서] — 그 대본 초안(.gss)을 연다 (2026-11-03 사장님)
+      const op = JSON.parse(sessionStorage.getItem("gs-video-open") || "null");
+      sessionStorage.removeItem("gs-video-open");
+      if (op?.file && Date.now() - (op.at || 0) < 10 * 60 * 1000 && b) b.project.open(op.file).then(take).catch((e) => setErr(errText(e)));
       // 홈 [+ 동영상 만들기] — 새로 만들기 창 (2026-10-30 사장님)
       if (sessionStorage.getItem("gs-video-flow") === "new") setFlow("new");
       sessionStorage.removeItem("gs-video-flow");

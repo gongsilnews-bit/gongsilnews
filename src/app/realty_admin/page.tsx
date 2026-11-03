@@ -34,6 +34,7 @@ const InquiryBoardSection = lazy(() => import("@/components/admin/sections/Inqui
 const StudySection = lazy(() => import("@/components/admin/sections/StudySection"));
 const ManualFrame = lazy(() => import("@/components/admin/sections/ManualFrame"));
 const StudioComingSoon = lazy(() => import("@/components/admin/sections/StudioComingSoon"));
+const ScriptSection = lazy(() => import("@/components/admin/writing/ScriptSection"));
 const StudioMarketingSection = lazy(() => import("@/components/admin/sections/StudioMarketingSection"));
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
 const VideoStudio = lazy(() => import("@/components/admin/studio-video/VideoStudio"));
@@ -82,7 +83,7 @@ const HIDDEN_IN_APP: string[] = []; // 공실마케팅 공개 (2026-10-23 사장
 // 메뉴 옆 파일 표시(GSM·GSN·GSS·PSD)는 뺐다 (2026-10-27 사장님)
 const STUDIO_BADGES: Record<string, string> = {};
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
-const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "photo" || key === "marketing" || key === "customer" || key === "article_ad");
+const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "write" || key === "video" || key === "photo" || key === "marketing" || key === "customer" || key === "article_ad");
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanLabel, isStudioMember, studioPlan, formatPlanEnd, isPlanEndingSoon, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
@@ -573,11 +574,13 @@ function RealtyAdminContent() {
           {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
+          {/* 대본 작성 — 앱 전용 (회원 AI · 내 PC 저장, 2026-11-03) */}
+          {activeMenu === "write" && studioApp.isApp && memberId && <ScriptSection />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
           {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 스튜디오회원부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
           {activeMenu === "photo" && <PhotoStudio menu={null} aiLock={studioPaid ? undefined : askUpgrade} />}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
-          {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
+          {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "write" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>

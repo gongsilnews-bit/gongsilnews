@@ -504,7 +504,7 @@ export type VideoBridge = {
   };
   vacancy: (id: string) => Promise<{ vacancy: { title?: string; fields?: { label: string; value: string }[] }; photos: LibItem[]; /** 공실열람 검증·지도·로드뷰 화면 */ shots?: LibItem[] }>;
   /** 기사·보도자료 화면 캡쳐 — head: 제목 부분 1장, full: 제목부터 몇 장 (2026-10-20) */
-  capturePage?: (url: string, opts: { mode: "head" | "full"; title?: string; credit?: string; max?: number }) => Promise<LibItem[]>;
+  capturePage?: (url: string, opts: { mode: "head" | "full"; title?: string; credit?: string; max?: number; /** 첫 장은 제목부터 (0.1.18부터) */ withTitle?: boolean }) => Promise<LibItem[]>;
   stock: {
     search: (q: string, type: "photo" | "video" | "drone", orientation: string, page?: number) => Promise<{ success: boolean; items?: StockItem[]; error?: string; needKey?: boolean }>;
     get: (dir: string, item: StockItem) => Promise<LibItem>;

@@ -2,7 +2,7 @@
 /**
  * 공실열람 지도 [아파트 시세] — 단지 상세 창 (2026-11-02 사장님: 호갱노노 구성처럼 크게, 로드뷰·지도도)
  *  위: 매매/전월세 · 평형 고르기
- *  1개월 평균 · 3년 그래프(월 평균 선 + 거래 점 + 거래량 막대) · 거래 목록
+ *  3개월 평균 · 3년 그래프(월 평균 선 + 거래 점 + 거래량 막대) · 거래 목록
  *  거래비용(법정 중개보수 상한) · 로드뷰 · 지도 · 단지 정보
  * 숫자는 국토부 실거래·건축물대장·공동주택 기본정보 그대로. 없는 값은 "-" (지어내지 않는다).
  */
@@ -69,11 +69,11 @@ function groupsOf(c: AptDetail): Group[] {
   return [...map.values()].sort((x, y) => x.lo - y.lo);
 }
 
-/** 최근 실거래 기준 1개월 평균 — 가장 최근 거래일부터 30일 안 */
+/** 최근 실거래 기준 3개월 평균 — 가장 최근 거래일부터 90일 안 (2026-11-03 사장님: 1개월이 아니라 3개월) */
 function monthAvg(list: { d: string; v: number }[]) {
   if (!list.length) return null;
   const last = list.reduce((m, x) => (x.d > m ? x.d : m), list[0].d);
-  const from = new Date(new Date(last).getTime() - 30 * DAY).toISOString().slice(0, 10);
+  const from = new Date(new Date(last).getTime() - 90 * DAY).toISOString().slice(0, 10);
   const recent = list.filter((x) => x.d >= from);
   return { avg: Math.round(recent.reduce((t, x) => t + x.v, 0) / recent.length), count: recent.length, last };
 }
@@ -539,7 +539,33 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
 }
 
 /* ── 상세 창 ── */
-export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, mobile = false, side }: {
+/** 대본 작성에서 연 공실열람 창(?aptPick=1)이면 단지 창 맨 위에 [✍ 이 단지로 대본 쓰기] — 앱의 대본 작성 화면으로 단지를 보내고 창을 닫는다 */
+function ScriptPickBar({ detail }: { detail: AptDetail }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("aptPick") === "1") sessionStorage.setItem("gs-apt-pick", "1");
+      setOn(sessionStorage.getItem("gs-apt-pick") === "1" && Boolean(window.opener));
+    } catch {}
+  }, []);
+  if (!on) return null;
+  const send = () => {
+    try { window.opener?.postMessage({ type: "gs-apt-pick", id: detail.id, name: detail.name, dong: detail.dong, kind: detail.kind || "apt" }, window.location.origin); } catch {}
+    window.close();
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#eef3ff", borderBottom: "1px solid #c7d7fe" }}>
+      <span style={{ flex: 1, fontSize: 13, color: "#1e3a8a", lineHeight: 1.45 }}>이 단지의 실거래 시세로 대본을 써요</span>
+      <button onClick={send} style={{ border: 0, borderRadius: 8, background: "#2563eb", color: "#fff", fontSize: 14, fontWeight: 800, padding: "9px 14px", cursor: "pointer", whiteSpace: "nowrap" }}>✍ 이 단지로 대본 쓰기</button>
+    </div>
+  );
+}
+
+export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, mobile = false, side, flat = false, part }: {
+  /** 캡처 한 장 — chart: 시세·그래프만 · trades: 실거래 내역만 (flat 일 때) */
+  part?: "chart" | "trades";
+  /** 캡처용 — 창 없이 페이지에 펼쳐 그린다 (대본 작성 › 단지/시세 화면 캡처, /apt-capture). 로드뷰·지도·거래비용·아래 단추는 뺀다 */
+  flat?: boolean;
   detail: AptDetail; onClose: () => void; vacancyCount?: number; onShowVacancies?: () => void; onShowAuctions?: () => void;
   /** PC: 왼쪽 목록 자리에 붙인다 (2026-11-02 사장님: 호갱노노처럼 왼쪽에) — 목록의 화면 위치·크기, 숨김 */
   side?: { left: number; top: number; height: number; hidden?: boolean };
@@ -626,8 +652,8 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
 
   return (
     // PC — 왼쪽 목록 자리에 (지도는 어둡게 하지 않는다, 2026-11-02 사장님: 호갱노노처럼) · 모바일 — 아래 시트 + 뒤를 어둡게. Esc 로 닫는다
-    <div onClick={side ? undefined : close} style={side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: side.hidden ? "none" : "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
-    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: villa ? VILLA_ROSE : detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: villa ? "#fdf2f8" : detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: mobile || side ? 0 : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
+    <div onClick={side || flat ? undefined : close} style={flat ? { display: "flex", justifyContent: "center" } : side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: side.hidden ? "none" : "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
+    <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: villa ? VILLA_ROSE : detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: villa ? "#fdf2f8" : detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile || side ? "100%" : flat ? 1000 : 600, maxWidth: "100%", height: flat ? "auto" : "100%", maxHeight: mobile || side || flat ? undefined : 860, borderRadius: mobile || side ? 0 : 16, overflow: flat ? "visible" : "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
       {/* 머리 */}
       <div ref={headRef} style={{ background: ACC, padding: "14px 16px 14px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff" }}>
@@ -636,7 +662,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             {(detail.kind === "offi" || villa) && <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,.22)", borderRadius: 6, padding: "2px 7px", marginRight: 8, verticalAlign: "middle" }}>{villa ? detail.house_type || "빌라" : "오피스텔"}</span>}
             {detail.dong} {detail.name}
           </div>
-          <button onClick={close} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>
+{!flat && <button onClick={close} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 0.6fr", gap: 8, marginTop: 12 }}>
           <button style={chip} onClick={() => setMode(mode === "sale" ? "lease" : "sale")}>{mode === "sale" ? "매매" : "전월세"} <span style={{ fontSize: 11 }}>⇄</span></button>
@@ -645,7 +671,9 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={flat ? {} : { flex: 1, overflowY: "auto" }}>
+        {/* 대본 작성 › 단지/시세 [공실열람에서 고르기]로 연 창이면 — 이 단지를 골라 보낸다 (2026-11-03 사장님) */}
+        <ScriptPickBar detail={detail} />
         {/* 단지 한 줄 */}
         <div style={{ ...sectionStyle, padding: "16px 20px" }}>
           <div style={{ fontSize: 16, fontWeight: 800 }}>{address}</div>
@@ -662,7 +690,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         </div>
 
         {/* 시세 */}
-        <div style={sectionStyle}>
+        {part !== "trades" && <div style={sectionStyle}>
           <div style={{ display: "flex", alignItems: "center", padding: "16px 20px 0" }}>
             <div style={{ display: "flex", background: "#f3f4f6", borderRadius: 8, padding: 3 }}>
               {(["sale", "lease"] as Mode[]).map((m) => (
@@ -674,7 +702,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             <div style={{ flex: 1 }} />
             <button onClick={() => setSheet(true)} style={{ border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, borderRadius: 6, padding: "6px 12px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>{g?.label} ▾</button>
           </div>
-          <div style={{ padding: "16px 20px 4px", color: ACC, fontWeight: 600 }}>최근 실거래 기준 1개월 평균{mode === "lease" ? " (전세)" : ""}</div>
+          <div style={{ padding: "16px 20px 4px", color: ACC, fontWeight: 600 }}>최근 실거래 기준 3개월 평균{mode === "lease" ? " (전세)" : ""}</div>
           <div style={{ padding: "0 20px", fontSize: 30, fontWeight: 900, color: ACC, letterSpacing: "-0.5px" }}>
             {avg ? fullPrice(avg.avg) : "거래 없음"}
           </div>
@@ -688,10 +716,10 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           {latestMonthly && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>최근 월세 {dot(latestMonthly.d)} · 보증금/월세 {leasePrice(latestMonthly)}</div>}
           <div style={{ padding: "14px 20px 4px", fontWeight: 700 }}>최근 3년</div>
           <div style={{ padding: "0 20px 16px" }}><PriceChart points={points} /></div>
-        </div>
+        </div>}
 
         {/* 거래 목록 */}
-        <div style={sectionStyle}>
+        {part !== "chart" && <div style={sectionStyle}>
           <h3 style={h3}>실거래 내역</h3>
           <div style={{ display: "grid", gridTemplateColumns: "80px 1fr auto", gap: 10, padding: "8px 20px", color: SUB, fontSize: 12, borderBottom: `1px solid ${LINE}` }}>
             <span>계약일</span><span>전용면적</span><span style={{ textAlign: "right" }}>가격</span>
@@ -712,19 +740,19 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
               {more ? "접기" : `더보기 (${Math.min(rows.length, 60) - 12}건)`}
             </button>
           )}
-        </div>
+        </div>}
 
         {/* 로드뷰 */}
-        <div style={sectionStyle}>
+        {!flat && <div style={sectionStyle}>
           <h3 style={h3}>로드뷰</h3>
           {Number.isFinite(detail.lat) && <Roadview lat={detail.lat} lng={detail.lng} />}
-        </div>
+        </div>}
 
         {/* 주변 인프라 — 공실등록 화면과 같은 카카오 검색 (2026-11-02 사장님) */}
-        {Number.isFinite(detail.lat) && <NearbyInfra lat={detail.lat} lng={detail.lng} sectionStyle={sectionStyle} h3={h3} />}
+        {!flat && Number.isFinite(detail.lat) && <NearbyInfra lat={detail.lat} lng={detail.lng} sectionStyle={sectionStyle} h3={h3} />}
 
         {/* 단지 정보 (공동주택 기본·상세정보는 의무관리 단지만 있다 — 없는 칸은 줄을 뺀다) */}
-        {!villa && <div style={sectionStyle}>
+        {!villa && !part && <div style={sectionStyle}>
           <h3 style={h3}>단지 정보</h3>
           <div style={{ padding: "0 20px 6px" }}>
             {([
@@ -777,13 +805,13 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         </div>}
 
         {/* 지도 (2026-11-02 사장님: 로드뷰와 나눠 맨 아래에) */}
-        <div style={sectionStyle}>
+        {!flat && <div style={sectionStyle}>
           <h3 style={h3}>지도</h3>
           {Number.isFinite(detail.lat) && <MiniMap lat={detail.lat} lng={detail.lng} name={detail.name} />}
-        </div>
+        </div>}
 
         {/* 거래비용 — 맨 아래 (2026-11-02 사장님) */}
-        <div style={sectionStyle}>
+        {!flat && <div style={sectionStyle}>
           <h3 style={h3}>거래비용</h3>
           <div style={{ padding: "0 20px 18px" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
@@ -800,16 +828,16 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             </div>
             <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 6 }}>주택 법정 상한 요율 기준 · 부가세 별도{fee?.cap ? ` · 한도 ${fee.cap}만 원` : ""}</div>
           </div>
-        </div>
+        </div>}
 
-        <div style={{ padding: "4px 20px 24px", color: "#9ca3af", fontSize: 11, lineHeight: 1.6 }}>
+        {!part && <div style={{ padding: "4px 20px 24px", color: "#9ca3af", fontSize: 11, lineHeight: 1.6 }}>
           {villa ? "국토교통부 연립다세대" : "국토교통부 아파트·오피스텔"} 매매·전월세 실거래가(최근 3년, 해제 거래 제외) · 건축물대장 · 공동주택 기본정보 기준. "공인중개사 제공"은 부동산 회원이 알려 주고 공실뉴스가 확인한 값입니다.
           면적은 국토부 신고 전용면적 그대로입니다. 공급면적은 건축물대장(전유+주거공용)으로 확인된 것만 참고로 적습니다. 실거래는 계약 후 30일 안에 신고되어 최근 거래가 늦게 잡힐 수 있습니다.
-        </div>
+        </div>}
       </div>
 
       {/* 맨 아래 고정 — [이 단지 공실 n개 보기] [무료 공실등록] (2026-11-02 사장님: 단지가 보이면 부동산에게 공실등록 유도) */}
-      {!villa && <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} stack={Boolean(side)} />}
+      {!villa && !flat && <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} stack={Boolean(side)} />}
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (

@@ -54,7 +54,7 @@ const DARK = {
   psDdd: "#ddd",
   psHi: "#1473e6",
 };
-const LIGHT: typeof DARK = {
+export const LIGHT: typeof DARK = {
   // 흰색·회색 나누기 (2026-10-23 사장님) — 작업 바탕은 회색, 칸·상자(card)는 흰색, 고른 것은 cardHover(연회색)
   // 관리 화면(뉴스·SNS발행)과 같은 색 (2026-10-23 사장님: 일관성) — 바탕 연회색 · 칸 흰색 · 강조 공실뉴스 남색
   bg: "#f4f5f7",

@@ -33,6 +33,7 @@ const F = {
   rec: "07 녹화파일",
   ai: "08 AI생성물",
   asset: "09 받은자료",
+  write: "10 글쓰기", // 2026-11-03 사장님 — 글쓰기 메뉴 (내 글 .gsw · 자주 쓰는 글)
 };
 /** 큰 폴더(F 열쇠) 아래 경로 — 만들지는 않는다. 예: dir("ai", "AI이미지") */
 const dir = (key, ...subs) => path.join(root(), F[key], ...subs);

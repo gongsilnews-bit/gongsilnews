@@ -973,7 +973,9 @@ function register(base) {
       const step = Math.max(200, at.h - 40); // 아래로 몇 장 — 조금씩 겹치게
       for (let k = 0; k < max && !win.isDestroyed(); k++) {
         // head: 제목 칸이 첫 화면 안에 다 보이면 내리지 않는다 (내리면 붙는 머리가 생기는 곳이 있어서)
-        const want = mode === "head" ? (at.top + at.h <= at.vh ? 0 : at.top) : (at.body >= 0 ? at.body : at.top) + k * step;
+        // withTitle — 첫 장은 제목부터, 그다음 본문을 아래로 (네이버 뉴스 3~5장, 2026-11-03 사장님)
+        const bodyAt = at.body >= 0 ? at.body : at.top;
+        const want = mode === "head" ? (at.top + at.h <= at.vh ? 0 : at.top) : opts.withTitle ? (k === 0 ? at.top : Math.max(at.top + step, bodyAt + (k - 1) * step)) : bodyAt + k * step;
         const y = await wc.executeJavaScript(`window.scrollTo(0, ${want}); window.scrollY`, true).catch(() => -1);
         if (y < 0 || y === last) break; // 끝까지 내려갔다
         last = y;

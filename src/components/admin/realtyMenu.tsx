@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm, IconImage, IconMegaphone } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm, IconImage, IconMegaphone, IconPen } from "@/components/admin/sections/AdminIcons";
 import { SHOW_STUDY } from "@/utils/siteFlags";
 
 /**
@@ -19,6 +19,8 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "marketing", label: "보고서·홍보지", icon: <IconMegaphone /> },
+  // 대본 작성 — 유튜브 대본만 쓰는 곳 (2026-11-03 사장님). 뉴스·SNS자동화 바로 위
+  { key: "write", label: "대본 작성", icon: <IconPen /> },
   { key: "sns", label: "뉴스·SNS자동화", icon: <IconSend /> },
   { key: "photo", label: "포토studio", icon: <IconImage /> },
   { key: "video", label: "동영상studio", icon: <IconFilm /> },
@@ -36,7 +38,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
 // 목록에 없는 메뉴(예: SHOW_STUDY 가 꺼져 숨긴 특강관리)는 뺀다 — 빈 칸이 생기면 메뉴가 깨진다 (2026-10-26)
 const inCatalog = (k: string) => REALTY_MENU_CATALOG.some((m) => m.key === k);
 export const FACTORY_LAYOUT: MenuLayout = {
-  main: ["dashboard", "gongsil", "article", "marketing", "sns", "photo", "video", "customer"].filter(inCatalog),
+  main: ["dashboard", "gongsil", "article", "marketing", "write", "sns", "photo", "video", "customer"].filter(inCatalog),
   more: ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"].filter(inCatalog),
 };
 
