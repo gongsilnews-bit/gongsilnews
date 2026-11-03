@@ -1,5 +1,6 @@
 "use client";
 
+import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -97,7 +98,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [ytVer, setYtVer] = useState(0);
   // 한 번에 쓰기로 대본을 새로 받으면 유튜브 탭을 다시 그린다
   // SNS 문체 — 채널마다 (전에 세 채널 같이 고른 값이 있으면 그것으로 시작)
-  const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => [ch, all.sns.tones?.[ch] || all.sns.tone || "polite"]));
+  const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => [ch, all.sns.tones?.[ch] || (ch === "threads" ? "thread" : all.sns.tone || "polite")]));
   const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
   // only — 이 탭 글만 쓰기 (2026-10-28 사장님: 한 번에 쓰기와 함께 각각 쓰기도). ☑ 기억은 바꾸지 않는다
   // SNS 는 채널 하나만도 (instagram · threads · facebook — 나머지 채널 글은 그대로, 2026-10-28 사장님)
@@ -139,6 +140,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     bridge()?.youtube.options?.(workId).then(setYtOpts).catch(() => {});
   }, [layout, workId]);
   const [openRow, setOpenRow] = useState<string>(""); // 작업대 왼쪽 — 펼친 글 (하나만)
+  // 가운데 탭이 어떤 길로든 바뀌면 왼쪽도 그 글 설정을 펼친다 (2026-11-03 사장님: 좌우가 함께) — 분석 내용 탭은 그대로
+  useEffect(() => { if (layout === "desk" && tab && tab !== "source") setOpenRow(tab); }, [tab, layout]);
   const [designs, setDesigns] = useState<{ id: string; label: string; hint: string }[]>([]);
   const [design, setDesign] = useState("");
   const [filling, setFilling] = useState(false);
@@ -359,7 +362,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>복사·사진 폴더로 직접 붙여 넣기</button>
               <button onClick={() => void fillNaver("")} disabled={filling} title="예전 방식 — 앱이 따로 띄운 크롬에서 채워요 (네이버 로그인을 그 창에서 한 번 해야 해요)"
                 style={{ padding: "10px 16px", background: "transparent", color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>전용 크롬으로 채우기</button>
-              <span style={{ fontSize: 12.5, color: theme.textSecondary }}>도우미 설치: 크롬 › 확장 프로그램 › &quot;공실마케팅 도우미&quot;</span>
+              <button onClick={openHelperStore} title="평소 크롬에 공실마케팅 도우미를 설치해요"
+                style={{ padding: "10px 16px", background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>크롬 도우미 설치하기</button>
             </div>
           )}
           {naverLogin === "need" && (
@@ -504,7 +508,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 const open = openRow === row.id;
                 return (
                   <div key={row.id} style={{ borderRadius: 10, background: open ? theme.cardBg : soft, border: `1px solid ${open ? (theme.darkMode ? "#5b8def" : "#c7d7fe") : "transparent"}`, boxShadow: open ? "0 2px 10px rgba(37,99,235,0.08)" : "none" }}>
-                    <div role="button" tabIndex={0} onClick={() => setOpenRow(open ? "" : row.id)} onKeyDown={(e) => e.key === "Enter" && setOpenRow(open ? "" : row.id)}
+                    <div role="button" tabIndex={0} onClick={() => { setOpenRow(open ? "" : row.id); if (!open) onTab(row.id); }} onKeyDown={(e) => { if (e.key === "Enter") { setOpenRow(open ? "" : row.id); if (!open) onTab(row.id); } }}
                       style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 50, padding: "6px 12px", cursor: "pointer", userSelect: "none" }}>
                       {icon(row.id)}
                       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
@@ -539,7 +543,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               const on = cur === t.id;
               const src = t.id === "source";
               return (
-                <button key={t.id} type="button" onClick={() => onTab(t.id)}
+                <button key={t.id} type="button" onClick={() => { onTab(t.id); if (rows.some((r) => r.id === t.id)) setOpenRow(t.id); }}
                   style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 18, cursor: "pointer", fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap",
                     border: `1px solid ${on ? (src ? "#9a3412" : theme.darkMode ? "#fff" : "#111827") : src ? "#fdba74" : theme.border}`,
                     background: on ? (src ? "#9a3412" : theme.darkMode ? "#fff" : "#111827") : src ? (theme.darkMode ? "rgba(253,186,116,0.12)" : "#fff7ed") : theme.cardBg,

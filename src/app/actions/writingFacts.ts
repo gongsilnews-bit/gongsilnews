@@ -151,8 +151,11 @@ export async function writingAreaFacts(lawd: string, dong: string, kinds: string
 }
 
 /* ── 공실뉴스 기사 ── */
+/** 공실뉴스 기사 고르기 — 내가 쓴 발행 기사만 (2026-11-03 사장님: 기사 고르기에 자기 기사만) */
 export async function writingArticles(q: string): Promise<Out<{ id: string; label: string }[]>> {
-  let query = admin().from("articles").select("id, article_no, title, published_at").eq("status", "APPROVED").eq("is_deleted", false).order("published_at", { ascending: false }).limit(30);
+  const user = await me();
+  if (!user) return { success: false, error: "로그인이 필요합니다." };
+  let query = admin().from("articles").select("id, article_no, title, published_at").eq("author_id", user.id).eq("status", "APPROVED").eq("is_deleted", false).order("published_at", { ascending: false }).limit(50);
   const t = String(q || "").trim();
   if (t) query = query.ilike("title", `%${t.replace(/[%_]/g, "")}%`);
   const { data, error } = await query;
@@ -161,7 +164,9 @@ export async function writingArticles(q: string): Promise<Out<{ id: string; labe
 }
 
 export async function writingArticleFacts(id: string): Promise<Out<{ title: string; text: string }>> {
-  const { data: a, error } = await admin().from("articles").select("article_no, title, subtitle, content, published_at").eq("id", id).maybeSingle();
+  const user = await me();
+  if (!user) return { success: false, error: "로그인이 필요합니다." };
+  const { data: a, error } = await admin().from("articles").select("article_no, title, subtitle, content, published_at").eq("id", id).eq("author_id", user.id).maybeSingle();
   if (error || !a) return { success: false, error: error?.message || "기사를 찾지 못했습니다." };
   const body = String(a.content || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim().slice(0, 3500);
   return { success: true, data: { title: a.title, text: `[공실뉴스 기사 — 기사 ${a.article_no}${a.published_at ? `, ${String(a.published_at).slice(0, 10)}` : ""}]\n- 제목: ${a.title}${a.subtitle ? `\n- 부제: ${String(a.subtitle).replace(/<[^>]+>/g, " ").slice(0, 300)}` : ""}\n- 본문: ${body}` } };

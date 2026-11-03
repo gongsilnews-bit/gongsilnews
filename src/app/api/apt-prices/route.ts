@@ -68,12 +68,26 @@ export async function GET(req: NextRequest) {
   if (![swLat, swLng, neLat, neLng].every(Number.isFinite)) {
     return NextResponse.json({ success: false, error: "지도 범위(sw, ne)가 필요합니다." }, { status: 400 });
   }
-  const { data, error } = await supabase.from("apt_complexes")
+  // kinds=apt,offi,villa — 켠 것만. 빌라는 수가 많아 따로 400곳 (아파트·오피스텔 자리를 밀어내지 않게, 2026-11-03)
+  const want = String(params.get("kinds") || "apt,offi").split(",").filter((k) => ["apt", "offi", "villa"].includes(k));
+  const box = () => supabase.from("apt_complexes")
     .select("id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count")
     .gte("lat", swLat).lte("lat", neLat).gte("lng", swLng).lte("lng", neLng)
     .gt("trade_count", 0)
     .order("trade_count", { ascending: false })
     .limit(400);
+  const main = want.filter((k) => k !== "villa");
+  const [a, v] = await Promise.all([
+    main.length ? box().in("kind", main) : Promise.resolve({ data: [], error: null }),
+    // 빌라는 전월세만 있는 건물이 많다 — 매매가 없어도 최근 전월세 한 건(rent0)으로 표시 (2026-11-03)
+    want.includes("villa") ? supabase.from("apt_complexes")
+      .select("id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count, rent0:rents->0")
+      .gte("lat", swLat).lte("lat", neLat).gte("lng", swLng).lte("lng", neLng)
+      .eq("kind", "villa").neq("rents", "[]")
+      .order("trade_count", { ascending: false })
+      .limit(400) : Promise.resolve({ data: [], error: null }),
+  ]);
+  const error = a.error || v.error;
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true, complexes: data || [] }, { headers });
+  return NextResponse.json({ success: true, complexes: [...(a.data || []), ...(v.data || [])] }, { headers });
 }

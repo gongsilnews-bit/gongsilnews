@@ -76,6 +76,18 @@
     return el ? el.closest("[role='button'],button,a,[role='link'],[role='menuitem']") || el : null;
   }
   /** 글자가 들어 있는 것 (자리표시 글 "무슨 생각을 하고 계신가요?" 같은) */
+  /* 스레드 왼쪽 메뉴의 [+ 새로운 스레드] — 화면 왼쪽(400px 안)에 있는 그 글자 단추 */
+  function navNewThread() {
+    const want = ["새로운 스레드", "New thread"];
+    const el = Array.from(document.querySelectorAll("span,div,a")).find((x) => {
+      if (!visible(x) || x.children.length > 1) return false;
+      const t = norm(x.textContent);
+      if (!want.includes(t)) return false;
+      const r = x.getBoundingClientRect();
+      return r.left < 400 && r.top < 500;
+    });
+    return el ? el.closest("a,[role='link'],[role='button'],button") || el : null;
+  }
   function byContains(texts, scope = document, sel = "span,div") {
     const el = Array.from(scope.querySelectorAll(sel)).find((x) => visible(x) && x.children.length === 0 && texts.some((t) => norm(x.textContent).includes(t)));
     return el ? el.closest("[role='button'],button,a,[role='link']") || el : null;
@@ -352,7 +364,10 @@
   let lastWarn = "";
   let lastEditor = null;
   let stopTextRecovery = null;
-  const warn = (t) => { warned = true; lastWarn = t; panel.status(t, "warn"); };
+  const warn = (t) => {
+    warned = true; lastWarn = t; panel.status(t, "warn");
+    try { chrome.runtime.sendMessage({ type: "GS_LOG", text: `${target} 막힘: ${String(t).slice(0, 900)}` }, () => void chrome.runtime.lastError); } catch {}
+  };
   const finish = (t) => (warned ? panel.status(lastWarn, "warn") : panel.status(t, "ok"));
 
   document.addEventListener("focusin", (event) => {
@@ -511,15 +526,25 @@
   async function threads() {
     panel.status("새 스레드를 여는 중…");
     const inDialog = () => { const d = dialog(); return d ? rankedEditor(d, BOX_NAMES.threads) : null; };
+    // 새로 생긴 글 칸 — 스레드 작성 창에 "대화 상자" 표시가 없을 때도 (2026-11-03: 창은 열리는데 못 알아봄)
+    //  누르기 전부터 있던 칸(홈 맨 위 "새로운 소식을 공유해보세요"·답글 칸)은 뺀다
+    const before = new Set(textbox(document));
+    const fresh = () => inDialog() || textbox(document).find((el) => !before.has(el) && visible(el)) || null;
     let box = inDialog();
     if (!box) {
-      const comp = await waitFor(() => firstSel(SEL.threads.create) || byContains(SEL.threads.composer), 15000);
-      if (!comp) return warn("[+](만들기) 단추를 못 찾았어요. 로그인돼 있는지 보고, [+]를 직접 눌러 새 스레드를 연 뒤 상자의 [글 넣기]·[사진 넣기]를 눌러 주세요.");
-      click(comp);
-      box = await waitFor(inDialog, 12000);
+      // ① 왼쪽 메뉴 [+ 새로운 스레드]를 한 번 눌러 본다 — 스레드가 프로그램 클릭을 무시할 때가 많다
+      //    오른쪽 아래 둥근 [+]는 누르지 않는다: 글이 안 들어가는 작은 창이 열린다 (2026-11-03 사장님이 찾음)
+      const nav = await waitFor(navNewThread, 5000);
+      if (nav) { nav.click(); box = await waitFor(fresh, 3500); }
+      // ③ 그래도 안 열리면 회원이 한 번 누르게 — 열리는 순간 저절로 이어서 채운다 (2026-11-03 사장님: "좌측 +를 한 번 눌러줘야 되네")
+      if (!box) {
+        panel.status("👆 왼쪽 위 [+ 새로운 스레드]를 한 번 눌러 주세요 — 창이 열리면 글·사진을 저절로 넣어요", "warn");
+        box = await waitFor(fresh, 120000, 400);
+        if (box) panel.status("새 스레드 창이 열렸어요 — 채우는 중…");
+      }
     }
     const list = texts();
-    if (!box) return warn("새 스레드 창이 안 열렸어요. [+]를 직접 눌러 새 스레드를 연 뒤 상자의 [글 넣기]·[사진 넣기]를 눌러 주세요." + boxDiag());
+    if (!box) return warn("2분 동안 새 스레드 창이 열리지 않았어요. 왼쪽 위 [+ 새로운 스레드]를 눌러 연 뒤 상자의 [글 넣기]·[사진 넣기]를 눌러 주세요." + boxDiag() + ` (메뉴 단추 ${navNewThread() ? "찾음" : "못 찾음"} · 대화 상자 ${visibleDialogs().length}개 · 누르기 전 칸 ${before.size}개)`);
     if (!(await putText(box, list[0], "스레드 첫"))) return;
     if (job.video || (job.photos && job.photos.length)) { await sleep(500); if (!(await addPhotos())) return; }
     for (let i = 1; i < list.length; i++) {

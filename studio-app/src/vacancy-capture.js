@@ -20,6 +20,14 @@ const SHOTS = [
 const MAX_WIDTH = 1280;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* 쓸 파일 자리 — 예전 파일을 다른 곳(글쓰기 도구·영상 라이브러리)이 열어 두어 지우지 못하면(EBUSY) 새 이름으로 (2026-11-03 사장님 화면 오류) */
+function freePath(file) {
+  if (!fs.existsSync(file)) return file;
+  try { fs.rmSync(file, { force: true }); return file; } catch {}
+  const ext = path.extname(file);
+  return `${file.slice(0, -ext.length)}-${Date.now().toString(36)}${ext}`;
+}
+
 function field(v, ...labels) {
   for (const want of labels) {
     const hit = (v.fields || []).find((f) => f.label === want);
@@ -107,10 +115,10 @@ async function downloadPhoto(url, fileBase) {
   if (!res || !res.ok) throw new Error(`사진 내려받기 실패 ${res ? res.status : ""}`.trim());
   const buf = Buffer.from(await res.arrayBuffer());
   const ext = extOf(res.headers.get("content-type") || "", url);
-  const file = `${fileBase}.${ext}`;
+  const file = freePath(`${fileBase}.${ext}`);
   fs.writeFileSync(file, buf);
   if (ext === "jpg" || ext === "png") return file;
-  return toJpeg(file, `${fileBase}.jpg`);
+  return toJpeg(file, freePath(`${fileBase}.jpg`));
 }
 
 /* webp 등은 앱 이미지 도구·네이버 붙여넣기에서 안전한 jpg 로 바꿔 둔다 (앱에 넣은 FFmpeg) */
@@ -120,7 +128,7 @@ function toJpeg(src, dest) {
   return new Promise((resolve) => {
     execFile(ff, ["-y", "-loglevel", "error", "-i", src, "-q:v", "2", dest], (err) => {
       if (err || !fs.existsSync(dest)) return resolve(src);
-      fs.rmSync(src, { force: true });
+      try { fs.rmSync(src, { force: true }); } catch {} // 열려 있으면 남겨 둔다 (다음 분석 때 지운다)
       resolve(dest);
     });
   });
@@ -148,7 +156,8 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
   let prev = null;
   try { prev = JSON.parse(fs.readFileSync(path.join(dir, "analysis.json"), "utf8")); } catch {}
   for (const f of fs.readdirSync(dir)) {
-    if (/^(photo-\d+|proof|map|roadview)\.(jpe?g|png|webp|gif)$/i.test(f)) fs.rmSync(path.join(dir, f), { force: true });
+    // 지난 분석 파일 지우기 — 다른 곳이 열어 두어 못 지우면 넘어간다 (새 파일은 freePath 가 새 이름으로)
+    if (/^(photo-\d+|proof|map|roadview)(-[a-z0-9]+)?\.(jpe?g|png|webp|gif)$/i.test(f)) { try { fs.rmSync(path.join(dir, f), { force: true }); } catch {} }
   }
 
   const win = new BrowserWindow({
@@ -199,7 +208,7 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
         let image = await win.webContents.capturePage(prep.rect);
         if (image.isEmpty()) throw new Error("빈 화면이 찍혔습니다.");
         if (image.getSize().width > MAX_WIDTH) image = image.resize({ width: MAX_WIDTH, quality: "best" });
-        const file = path.join(dir, `${shot.target}.jpg`);
+        const file = freePath(path.join(dir, `${shot.target}.jpg`));
         fs.writeFileSync(file, image.toJPEG(90));
         media.push({ kind: shot.target, file, caption: captionFor(shot.target, vacancy), real: true });
       } catch (e) {

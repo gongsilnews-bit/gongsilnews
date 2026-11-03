@@ -20,8 +20,8 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "marketing", label: "보고서·홍보지", icon: <IconMegaphone /> },
   // 대본 작성 — 유튜브 대본만 쓰는 곳 (2026-11-03 사장님). 뉴스·SNS자동화 바로 위
-  { key: "write", label: "대본 작성", icon: <IconPen /> },
   { key: "sns", label: "뉴스·SNS자동화", icon: <IconSend /> },
+  { key: "write", label: "대본 작성", icon: <IconPen /> }, // 뉴스·SNS자동화 다음 (2026-11-03 사장님)
   { key: "photo", label: "포토studio", icon: <IconImage /> },
   { key: "video", label: "동영상studio", icon: <IconFilm /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },

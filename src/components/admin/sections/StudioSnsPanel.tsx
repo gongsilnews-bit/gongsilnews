@@ -1,5 +1,6 @@
 "use client";
 
+import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useEffect, useRef, useState } from "react";
 import ChannelButton from "./ChannelButton";
 import StudioReviseBar from "./StudioReviseBar";
@@ -40,6 +41,7 @@ const RATIO: Record<string, string> = { instagram: "4 / 5", facebook: "1 / 1", t
 
 /** SNS 문체 — 세 채널 같이 (2026-10-23 사장님 회의). 앱 sns-writer.js TONES 와 같은 id */
 export const SNS_TONES = [
+  { id: "thread", label: "스레드 감성", brief: "툭 던지는 혼잣말 · 숫자 · 질문으로 끝" },
   { id: "polite", label: "공손체", brief: "존댓말로 차분하게 안내" },
   { id: "casual", label: "반말체", brief: "친구에게 말하듯 편하게" },
   { id: "hook", label: "후킹체", brief: "첫 줄에서 궁금하게, 짧게 끊어서" },
@@ -47,6 +49,8 @@ export const SNS_TONES = [
   { id: "story", label: "스토리체", brief: "현장을 다녀온 듯 이야기로" },
   { id: "short", label: "요약체", brief: "핵심만 3~5줄" },
 ];
+/** 채널마다 처음 문체 — 스레드는 스레드 감성 (2026-11-03 사장님) */
+export const defaultTone = (ch: string) => (ch === "threads" ? "thread" : "polite");
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
@@ -60,7 +64,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
   /** [이 ○○만 쓰기] — 아래 버튼 줄 맨 앞에 (StudioChannelTabs 가 만든다, 2026-10-29) */
   writeBtn?: React.ReactNode;
 }) {
-  const tone = tones[channel] || "polite";
+  const tone = tones[channel] || defaultTone(channel);
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
@@ -373,6 +377,9 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             )}
           </div>
           {helpMsg && <div style={{ marginTop: 10, fontSize: 13, color: /못|없|응답/.test(helpMsg) ? "#c2410c" : (theme.darkMode ? "#93c5fd" : "#1a3a6b"), fontWeight: 600, lineHeight: 1.6 }}>{helpMsg}</div>}
+          {helpMsg && /도우미/.test(helpMsg) && /응답|설치/.test(helpMsg) && (
+            <button onClick={openHelperStore} style={{ marginTop: 8, padding: "8px 14px", background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>크롬 도우미 설치하기</button>
+          )}
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
           <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>
             [도우미로 채우기]는 평소 크롬에 {info.label}을(를) 열고 사진·글을 넣어요 ([공유하기]·[게시]는 직접). 도우미가 없으면 [글 복사]·[사진·글 폴더로 저장]으로 직접 올리세요.

@@ -9,6 +9,7 @@ if (allowed) {
   contextBridge.exposeInMainWorld("gongsilStudio", {
     openConnect: () => ipcRenderer.invoke("studio:open-connect"),
     info: () => ipcRenderer.invoke("studio:info"),
+    helperStatus: () => ipcRenderer.invoke("studio:helper-status"), // 크롬 도우미 연결 상태 { seenAgo } (2026-11-03)
     checkUpdate: () => ipcRenderer.invoke("studio:check-update"), // 새 버전 받기 → 준비되면 [지금 다시 시작]
     openAiConnect: () => ipcRenderer.invoke("studio:open-ai-window"),
     openInBrowser: (url) => ipcRenderer.invoke("studio:open-external", url),

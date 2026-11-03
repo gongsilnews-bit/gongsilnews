@@ -22,12 +22,14 @@ const RENT_KEEP = 100; // 전월세는 많다 — 단지마다 최근 100건만 
 const WRITE_BATCH = 10; // 한 번에 10곳씩, 사이에 쉬면서 (Nano DB 보호)
 const FP_VERSION = "v2"; // 저장 모양을 바꾸면 올린다 — 다음 갱신 때 모든 단지를 한 번 다시 쓴다
 
-/** 아파트 · 오피스텔 — 국토부 창구와 이름 칸이 다르다 */
-export type Kind = "apt" | "offi";
-const KIND = {
+/** 아파트 · 오피스텔 · 빌라(연립·다세대) — 국토부 창구와 이름 칸이 다르다
+ *  빌라 매매 창구는 RHTrade2 (운영계정, 2026-11-03), 전월세는 RHRent. 건물명이 비면 "동 지번"으로 */
+export type Kind = "apt" | "offi" | "villa";
+const KIND: Record<Kind, { service: string; nameTag: string; idPrefix: string; trade?: string }> = {
   apt: { service: "Apt", nameTag: "aptNm", idPrefix: "" },
   offi: { service: "Offi", nameTag: "offiNm", idPrefix: "o:" },
-} as const;
+  villa: { service: "RH", nameTag: "mhouseNm", idPrefix: "v:", trade: "RHTrade2" },
+};
 
 
 export const db = (): SupabaseClient =>
@@ -73,7 +75,7 @@ export function summarize(trades: Trade[], supplyMap: Record<string, number> | n
 
 /* ── 1. 실거래 (매매·전월세) ── */
 async function monthItems(kind: Kind, service: "Trade" | "Rent", lawd: string, ym: string) {
-  const svc = `${KIND[kind].service}${service}`;
+  const svc = service === "Trade" && KIND[kind].trade ? KIND[kind].trade! : `${KIND[kind].service}${service}`;
   const items: string[] = [];
   for (let page = 1; page <= 10; page++) {
     const url = `https://apis.data.go.kr/1613000/RTMSDataSvc${svc}/getRTMSDataSvc${svc}?serviceKey=${dataKey()}&LAWD_CD=${lawd}&DEAL_YMD=${ym}&pageNo=${page}&numOfRows=1000`;
@@ -114,7 +116,13 @@ type Group = { name: string; dong: string; jibun: string; buildYear: number; tra
 /** 몇 달치 매매·전월세를 받아 단지(법정동+지번)별로 묶는다 */
 async function fetchGroups(lawd: string, kind: Kind, months: string[]) {
   const k = KIND[kind];
-  const head = (it: string) => ({ name: tag(it, k.nameTag), dong: tag(it, "umdNm"), jibun: tag(it, "jibun"), buildYear: num(tag(it, "buildYear")) });
+  const head = (it: string) => {
+    const dong = tag(it, "umdNm"), jibun = tag(it, "jibun");
+    const nm = tag(it, k.nameTag);
+    // 빌라는 건물명이 비거나 "(242-4)"처럼 지번만 오는 때가 많다 — 그러면 "논현동 242-4"
+    const name = kind === "villa" && (!nm || /^\(?[\d-]+\)?$/.test(nm)) ? `${dong} ${jibun}` : nm;
+    return { name, dong, jibun, buildYear: num(tag(it, "buildYear")) };
+  };
   const sales = (await inBatches(months, 1, (ym) => monthItems(kind, "Trade", lawd, ym)))
     .filter((it) => tag(it, "cdealType") !== "O") // 해제된 거래 빼기
     .map((it) => ({ ...head(it), t: { a: num(tag(it, "excluUseAr")), p: num(tag(it, "dealAmount")), d: date(it), f: num(tag(it, "floor")) } as Trade }))

@@ -11,9 +11,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { areaLabel, shortPrice } from "@/utils/aptMapShared";
-import AptDetailPanel, { BRAND, type AptDetail } from "./AptDetailPanel";
+import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
-type Complex = { id: string; kind?: "apt" | "offi"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
+type Complex = { rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
 
 // 축척 제한은 없앴다 (2026-11-02 사장님: 모든 화면에서) — 복잡함은 겹치는 표시 거르기로 푼다 (draw)
 const VAC = "#4b89ff"; // 공실 묶음 동그라미와 같은 색
@@ -23,6 +23,15 @@ const OFFI = "#0f766e"; // 오피스텔 — 아파트(파랑)와 구분
 const PICKED_OF: Record<string, string> = { [OFFI]: "#134e4a" };
 const PICKED_APT = "#1e3a8a";
 const paint = (el: HTMLElement, picked: boolean) => {
+  if (el.dataset.villa) {
+    const box = el.children[0] as HTMLElement | undefined, price = box?.lastElementChild as HTMLElement | undefined;
+    if (box) { box.style.background = picked ? VILLA_ROSE : "#fff"; box.style.color = picked ? "#fff" : VILLA_ROSE; }
+    if (price) price.style.color = picked ? "#fff" : el.dataset.sale ? VILLA_ROSE : "#4b5563";
+    el.style.transform = picked ? "scale(1.1)" : "";
+    el.style.transformOrigin = "50% 100%";
+    if (el.parentElement) el.parentElement.style.zIndex = picked ? "5" : "1";
+    return;
+  }
   const base = el.dataset.color || BRAND;
   const color = picked ? PICKED_OF[base] || PICKED_APT : base;
   const box = el.children[0] as HTMLElement | undefined;
@@ -123,11 +132,13 @@ function matchVacancies(complexes: Complex[], vacancies: any[]) {
   return out;
 }
 
-export default function AptPriceLayer({ mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies, mapPick }: {
+export default function AptPriceLayer({ villaTab = false, mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies, mapPick }: {
   /** 지도에서 공실 표시를 누름 (PC) — 그 단지 공실이면 창을 접고 [‹ 단지 정보], 다른 공실이면 창을 닫는다 */
   mapPick?: { ids: string[]; n: number } | null;
   kakaoMapRef: React.MutableRefObject<any>;
   kinds?: { apt: boolean; offi: boolean };
+  /** [빌라·주택] 탭 — 빌라(연립·다세대) 실거래가를 처음부터 켠다 (2026-11-03 사장님: 같은 지도에) */
+  villaTab?: boolean;
   mobile?: boolean; // 모바일 공실열람 — 상세 창을 아래 시트로
   autoShow?: boolean; // 처음부터 켜 둘 탭인지 ([전체] · [아파트·오피스텔])
   buttonSlot?: HTMLElement | null; // 검색 줄 [내 위치] 옆 자리 (2026-11-02 사장님) — 없으면 지도 오른쪽
@@ -139,17 +150,17 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
 }) {
   // [아파트 시세] · [오피스텔 시세] 단추를 따로 (2026-11-02 사장님). 처음엔 둘 다 꺼 둔다.
   // 2차 카테고리를 바꾸면 그에 맞게 단추가 켜진다 — 그 뒤 단추로 따로 끄고 켤 수 있다
-  const [show, setShow] = useState({ apt: false, offi: false });
+  const [show, setShow] = useState({ apt: false, offi: false, villa: false });
   const kindsRef = useRef(show);
   kindsRef.current = show;
-  const on = show.apt || show.offi;
+  const on = show.apt || show.offi || show.villa;
   // [전체] · [아파트·오피스텔] 탭은 처음부터 실거래가를 켠다 (2026-11-02 사장님: 꼭 같이 떠 있어야 함).
   // 다른 탭(빌라·상가 등)으로 가면 끈다 — 그 탭에서도 단추로 켤 수 있다. 2차 카테고리를 바꾸면 그에 맞게
   useEffect(() => {
     // 단지 창을 연 채로 탭을 바꾼 경우(경매 보기 등)는 끄지 않는다
     if (!autoShow && pickedRef.current) return;
-    setShow(autoShow ? { apt: kinds.apt, offi: kinds.offi } : { apt: false, offi: false });
-  }, [autoShow, kinds.apt, kinds.offi]);
+    setShow(autoShow ? { apt: kinds.apt, offi: kinds.offi, villa: false } : { apt: false, offi: false, villa: villaTab });
+  }, [autoShow, kinds.apt, kinds.offi, villaTab]);
   const vacanciesRef = useRef(vacancies);
   vacanciesRef.current = vacancies;
   const showRef = useRef(onShowVacancies);
@@ -225,7 +236,7 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
     if (aptParamDone.current || !mapLoaded || mobile) return;
     const id = new URLSearchParams(window.location.search).get("apt");
     if (!id) return;
-    if (!on) { setShow({ apt: true, offi: true }); return; } // 어느 탭이든 실거래가를 켜고 다시
+    if (!on) { setShow({ apt: true, offi: true, villa: true }); return; } // 어느 탭이든 실거래가를 켜고 다시
     aptParamDone.current = true;
     (async () => {
       const res = await fetch(`/api/apt-prices?id=${encodeURIComponent(id)}`).then((r) => r.json()).catch(() => null);
@@ -326,7 +337,7 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
     const kakao = (window as any).kakao;
     if (!map || !kakao?.maps) return;
     // 모든 축척에서 보인다 (2026-11-02 사장님) — 겹치는 표시는 아래에서 거래 많은 단지만 남긴다
-    if (!kindsRef.current.apt && !kindsRef.current.offi) {
+    if (!kindsRef.current.apt && !kindsRef.current.offi && !kindsRef.current.villa) {
       clear();
       setTooFar(true);
       setVacancyMap(new Map());
@@ -340,7 +351,8 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
     const ac = new AbortController();
     abortRef.current = ac;
     setLoading(true);
-    const res = await fetch(`/api/apt-prices?sw=${sw.getLat()},${sw.getLng()}&ne=${ne.getLat()},${ne.getLng()}`, { signal: ac.signal })
+    const want = (["apt", "offi", "villa"] as const).filter((k) => kindsRef.current[k]).join(",");
+    const res = await fetch(`/api/apt-prices?sw=${sw.getLat()},${sw.getLng()}&ne=${ne.getLat()},${ne.getLng()}&kinds=${want}`, { signal: ac.signal })
       .then((r) => r.json()).catch(() => null);
     if (ac.signal.aborted) return;
     setLoading(false);
@@ -353,8 +365,11 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
     const proj = map.getProjection();
     const taken: { x: number; y: number }[] = [];
     const BOX_W = 74, BOX_H = 44;
+    // 빌라 — 매매가 없으면 최근 전월세로 (전세 "전세 2.3억" · 월세 "2,000/100")
+    const priceOf = (c: Complex) => (c.rep_price && c.rep_area ? { a: c.rep_area, label: shortPrice(c.rep_price) }
+      : c.kind === "villa" && c.rent0 && c.rent0.a ? { a: c.rent0.a, label: c.rent0.m ? `월세 ${c.rent0.m.toLocaleString("ko-KR")}` : `전세 ${shortPrice(c.rent0.dep)}` } : null);
     const shown = ((res?.complexes || []) as Complex[])
-      .filter((c) => c.rep_price && c.rep_area && kindsRef.current[c.kind === "offi" ? "offi" : "apt"])
+      .filter((c) => priceOf(c) && kindsRef.current[c.kind === "offi" ? "offi" : c.kind === "villa" ? "villa" : "apt"])
       .sort((a, b) => b.trade_count - a.trade_count)
       .filter((c) => {
         const pt = proj.containerPointFromCoords(new kakao.maps.LatLng(c.lat, c.lng));
@@ -366,12 +381,13 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
     setVacancyMap(matched);
     hideRef.current(new Set([...matched.values()].flat()));
     for (const c of shown) {
-      if (!c.rep_price || !c.rep_area) continue;
+      const pr = priceOf(c);
+      if (!pr) continue;
       const ids = matched.get(c.id) || [];
       const el = document.createElement("div");
-      const color = c.kind === "offi" ? OFFI : BRAND;
+      const color = c.kind === "offi" ? OFFI : c.kind === "villa" ? VILLA_ROSE : BRAND;
       el.dataset.color = color;
-      if (mobile) el.title = `${c.name}${c.kind === "offi" ? " (오피스텔)" : ""} · 최근 실거래 ${c.rep_date ? c.rep_date.replace(/-/g, ".") : ""}`;
+      if (mobile) el.title = `${c.name}${c.kind === "offi" ? " (오피스텔)" : c.kind === "villa" ? " (빌라)" : ""} · 최근 실거래 ${c.rep_date ? c.rep_date.replace(/-/g, ".") : ""}`;
       else {
         // 0.15초 넘게 올려 두면 그 단지만 받아 온다 (한 번 받은 것은 기억)
         el.addEventListener("mouseenter", () => {
@@ -387,10 +403,20 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
         el.addEventListener("mouseleave", (e) => { if (el.contains(e.relatedTarget as Node | null)) return; hidePeek(); });
       }
       el.style.cssText = "position:relative;cursor:pointer;user-select:none;text-align:center;font-family:inherit;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))";
-      el.innerHTML =
+      if (c.kind === "villa") {
+        // 빌라 — 흰 바탕 + 자주 테두리 · 매매는 자주 굵은 가격, 전월세만 있는 건물은 회색 "전세·월세" (견본 때 정한 모양)
+        const sale = Boolean(c.rep_price && c.rep_area);
+        el.dataset.villa = "1";
+        if (sale) el.dataset.sale = "1";
+        el.innerHTML =
+          `<div style="background:#fff;color:${VILLA_ROSE};border:1.5px solid ${VILLA_ROSE};border-radius:9px;padding:3px 8px 4px;min-width:48px;line-height:1.15;white-space:nowrap">` +
+          `<div style="font-size:10.5px;opacity:.85">${areaLabel(pr.a)}</div>` +
+          `<div style="font-size:${sale ? 14 : 12.5}px;font-weight:800;letter-spacing:-.3px;color:${sale ? VILLA_ROSE : "#4b5563"}">${pr.label}</div></div>` +
+          `<div style="width:0;height:0;margin:-1px auto 0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid ${VILLA_ROSE}"></div>`;
+      } else el.innerHTML =
         `<div style="background:${color};color:#fff;border-radius:9px;padding:4px 9px 5px;min-width:52px;line-height:1.15;white-space:nowrap">` +
-        `<div style="font-size:11px;opacity:.85">${areaLabel(c.rep_area)}</div>` +
-        `<div style="font-size:15px;font-weight:800;letter-spacing:-.3px">${shortPrice(c.rep_price)}</div></div>` +
+        `<div style="font-size:11px;opacity:.85">${areaLabel(pr.a)}</div>` +
+        `<div style="font-size:${pr.label.length > 7 ? 13 : 15}px;font-weight:800;letter-spacing:-.3px">${pr.label}</div></div>` +
         `<div style="width:0;height:0;margin:-1px auto 0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color}"></div>`;
       if (ids.length) {
         const badge = document.createElement("div");
@@ -444,19 +470,19 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
   // 단추·2차 카테고리를 바꾸면 바로 다시 그린다 — 지도를 움직이기 전까지 그대로이던 것 (11-02)
   useEffect(() => {
     if (on && mapLoaded) draw();
-  }, [show.apt, show.offi]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [show.apt, show.offi, show.villa]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggle = (k: "apt" | "offi") => {
+  const toggle = (k: "apt" | "offi" | "villa") => {
     setShow((v) => ({ ...v, [k]: !v[k] }));
     close();
   };
-  const btn = (k: "apt" | "offi") => {
-    const color = k === "offi" ? OFFI : BRAND;
+  const btn = (k: "apt" | "offi" | "villa") => {
+    const color = k === "offi" ? OFFI : k === "villa" ? VILLA_ROSE : BRAND;
     return (
       <button
         type="button"
         onClick={() => toggle(k)}
-        title={k === "offi" ? "오피스텔 실거래 시세 보기" : "아파트 실거래 시세 보기"}
+        title={k === "offi" ? "오피스텔 실거래 시세 보기" : k === "villa" ? "빌라(연립·다세대) 실거래 시세 보기" : "아파트 실거래 시세 보기"}
         style={{
           border: `1.5px solid ${color}`, borderRadius: mobile ? 16 : 6, cursor: "pointer", padding: mobile ? "6px 11px" : "6px 10px", fontSize: mobile ? 12.5 : 14, fontWeight: 800, whiteSpace: "nowrap",
           boxShadow: mobile ? "0 2px 8px rgba(0,0,0,0.12)" : undefined,
@@ -464,7 +490,7 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
         }}
       >
         {/* 모바일은 [초기화]·[내 위치] 사이에 들어가게 짧게 */}
-        {mobile ? (k === "offi" ? "오피스텔" : "아파트") : k === "offi" ? "오피스텔 실거래가" : "아파트 실거래가"}
+        {mobile ? (k === "offi" ? "오피스텔" : k === "villa" ? "빌라" : "아파트") : k === "offi" ? "오피스텔 실거래가" : k === "villa" ? "빌라 실거래가" : "아파트 실거래가"}
       </button>
     );
   };
@@ -474,7 +500,7 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
       {mobile && (
         <span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: "#1f2937", background: "rgba(255,255,255,.92)", borderRadius: 12, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>실거래가</span>
       )}
-      {btn("apt")}{btn("offi")}
+      {btn("apt")}{btn("offi")}{btn("villa")}
     </>
   );
 
@@ -484,7 +510,7 @@ export default function AptPriceLayer({ mobile = false, autoShow = false, button
 
       {on && (tooFar || loading || loadError) && (
         <div style={{ position: "absolute", left: "50%", bottom: 28, transform: "translateX(-50%)", zIndex: 1000, background: "rgba(17,24,39,.88)", color: "#fff", fontSize: 14, fontWeight: 600, padding: "10px 18px", borderRadius: 20, pointerEvents: "none" }}>
-          {tooFar ? `지도를 더 확대하면 ${show.apt ? "아파트" : "오피스텔"} 실거래가가 보여요` : loading ? "실거래가 불러오는 중…" : loadError}
+          {tooFar ? `지도를 더 확대하면 ${show.apt ? "아파트" : show.offi ? "오피스텔" : "빌라"} 실거래가가 보여요` : loading ? "실거래가 불러오는 중…" : loadError}
         </div>
       )}
 

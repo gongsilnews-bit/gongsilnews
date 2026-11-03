@@ -33,7 +33,7 @@ const BASE_ORIGIN = new URL(BASE_URL).origin;
 const ext = require("./ext");
 ext.configure(BASE_URL);
 const NO_EXT = new Set([
-  "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
+  "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:helper-status", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-open", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:ai-set-mode", "studio:ai-get-order", "studio:ai-set-order", "studio:ai-get-method", "studio:ai-set-method", "studio:ai-set-key", "studio:ai-test-key", "studio:ai-clear-key", "studio:ai-usage", "studio:ai-usage-limit", "studio:ai-usage-csv",
   "studio:vacancy-load", "studio:vacancy-list", "studio:vacancy-captures", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news", "studio:column-open-url",
@@ -832,6 +832,7 @@ ipcMain.handle("studio:busy-release", () => aiBusy.release());
 ipcMain.handle("studio:storage-get", () => require("./storage-place").info());
 ipcMain.handle("studio:storage-choose", (e) => require("./storage-place").choose(BrowserWindow.fromWebContents(e.sender)));
 ipcMain.handle("studio:storage-open", () => require("./storage-place").openFolder());
+ipcMain.handle("studio:helper-status", () => ({ seenAgo: require("./helper-server").seenAgo() })); // 크롬 도우미 연결 상태 (2026-11-03)
 ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_URL, ffmpeg: Boolean(ffmpegPath()) }));
 
 // 웹 화면이 "스튜디오 앱"임을 알아보도록 브라우저 정보 끝에 영어 이름을 붙인다

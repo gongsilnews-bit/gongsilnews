@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
   const lawd = String(params.get("lawd") || "");
   const step = params.get("step");
-  const kind = params.get("kind") === "offi" ? "offi" : "apt";
+  const kind = params.get("kind") === "offi" ? "offi" : params.get("kind") === "villa" ? "villa" : "apt"; // villa = 연립·다세대 (2026-11-03)
   if (!LAWD_NAMES[lawd]) return NextResponse.json({ error: `모르는 시군구 코드입니다: ${lawd}` }, { status: 400 });
 
   const deadline = Date.now() + 270_000;

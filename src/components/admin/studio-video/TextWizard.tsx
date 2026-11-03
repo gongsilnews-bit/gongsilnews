@@ -10,7 +10,7 @@ import { splitScript, estimateSeconds, mergeSingleScenes } from "./timeline";
 import { findVoice, voicePhoto } from "@/lib/studio-video/voices";
 import { MUSIC_PICKABLE as MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { writingSearchComplexes } from "@/app/actions/writingFacts";
-import { findStudioVacancyByNo, getStudioAgency, getStudioArticle, listMyStudioVacancies, listStudioArticles } from "@/app/actions/studio";
+import { findStudioVacancyByNo, getStudioAgency, getStudioArticle, listMyStudioArticles, listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioWriter, useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
 import { MusicPanel, VoiceFace, VoicePanel } from "./Panels";
@@ -546,7 +546,8 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
     if (pp.ratio) setRatio(pp.ratio);
   };
   const loadArts = async (q = artQ) => {
-    const r = await listStudioArticles(q).catch((e) => ({ success: false as const, error: errText(e) }));
+    // 내가 쓴 기사만 (2026-11-03 사장님: 기사 고르기에 자기 기사만)
+    const r = await listMyStudioArticles(q).catch((e) => ({ success: false as const, error: errText(e) }));
     if (!r.success) { setErr(r.error); setArts([]); return; }
     setArts(r.data);
   };

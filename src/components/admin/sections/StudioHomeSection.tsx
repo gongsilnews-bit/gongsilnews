@@ -2,6 +2,7 @@
 
 // 공실마케팅 첫 화면 (2026-10-27 사장님 — 캔바식 뼈대 + "내 공실" 진행판)
 // 위에서 아래로: 인사말·찾기 → 만들기 아이콘 한 줄 → 작업 계속하기(PC 최근 파일) → 내 공실(무엇을 만들었나)
+import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminSectionProps } from "./types";
@@ -21,6 +22,7 @@ type Bridge = {
   snap?: { open: () => Promise<unknown> };
   ai?: { list: () => Promise<{ name: string; ok: boolean }[]> };
   openAiConnect?: () => Promise<void>;
+  helperStatus?: () => Promise<{ seenAgo: number | null }>;
 };
 const bridge = () => (typeof window === "undefined" ? undefined : (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio);
 
@@ -53,6 +55,17 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
   const [q, setQ] = useState("");
   // 내 AI 연결 상태 — 뉴스·SNS발행 위쪽과 같은 초록 칸 (2026-10-29 사장님: 홈 왼쪽 위). 누르면 AI 설정
   const [aiOn, setAiOn] = useState<string[] | null>(null);
+  // 크롬 도우미 — 확장이 1분마다 앱을 부른다. 3분 안에 불렀으면 연결됨 (2026-11-03 사장님: AI 설정 옆에)
+  const [helperOn, setHelperOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    const h = bridge()?.helperStatus;
+    if (!h) return;
+    const tick = () => { h().then((r) => setHelperOn(r.seenAgo !== null && r.seenAgo < 180000)).catch(() => {}); };
+    tick();
+    const t = window.setInterval(tick, 30000);
+    window.addEventListener("focus", tick);
+    return () => { window.clearInterval(t); window.removeEventListener("focus", tick); };
+  }, []);
   useEffect(() => {
     const load = () => { bridge()?.ai?.list().then((l) => setAiOn(l.filter((a) => a.ok).map((a) => a.name))).catch(() => {}); };
     load();
@@ -196,14 +209,26 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
       {/* 인사말·찾기 */}
       <div style={{ position: "relative", borderRadius: 18, padding: "40px 24px 30px", textAlign: "center",
         background: darkMode ? "linear-gradient(135deg,#2b2320,#3a2a22)" : "linear-gradient(135deg,#fff4e6 0%,#ffe8cc 45%,#f3d9c4 100%)" }}>
+        <div style={{ position: "absolute", top: 18, left: 18, display: "flex", gap: 8, flexWrap: "wrap", maxWidth: "calc(100% - 36px)" }}>
         {b?.openAiConnect && aiOn && (
           <button onClick={() => void b.openAiConnect?.()} title="AI 설정 (내 AI 연결)"
-            style={{ position: "absolute", top: 18, left: 18, display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
               background: aiOn.length ? (darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5") : cardBg, border: `1px solid ${aiOn.length ? (darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7") : border}`, color: aiOn.length ? (darkMode ? "#6ee7b7" : "#047857") : textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: aiOn.length ? "#22c55e" : "#cbd5e1", boxShadow: aiOn.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
             {aiOn.length ? `AI 설정 · ${aiOn.join(", ")}` : "AI 설정"}
           </button>
         )}
+        {helperOn !== null && (
+          <button onClick={() => (helperOn ? undefined : openHelperStore())} title={helperOn ? "평소 크롬의 공실마케팅 도우미가 연결돼 있어요 — 블로그·SNS 채우기에 써요" : "평소 크롬에 공실마케팅 도우미를 설치해요 (블로그·SNS 채우기·홍보현황)"}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: helperOn ? "default" : "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+              ...(helperOn
+                ? { background: darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5", border: `1px solid ${darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7"}`, color: darkMode ? "#6ee7b7" : "#047857" }
+                : { background: darkMode ? "rgba(249,115,22,0.14)" : "#fff7ed", border: "1px solid #fdba74", color: "#c2410c" }) }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: helperOn ? "#22c55e" : "#f97316", boxShadow: helperOn ? "0 0 0 3px rgba(34,197,94,0.2)" : "0 0 0 3px rgba(249,115,22,0.2)" }} />
+            {helperOn ? "크롬 도우미 · 연결됨" : "크롬 도우미 설치하기"}
+          </button>
+        )}
+        </div>
         <h1 style={{ margin: 0, fontSize: 32, fontWeight: 900, color: darkMode ? "#ffd8a8" : "#5c3b2e", letterSpacing: -0.5 }}>오늘은 어떤 공실을 SNS로 마케팅 할까요?</h1>
         <div style={{ maxWidth: 640, margin: "22px auto 0", display: "flex", alignItems: "center", gap: 10, padding: "0 18px", height: 52,
           background: cardBg, border: `1px solid ${border}`, borderRadius: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>

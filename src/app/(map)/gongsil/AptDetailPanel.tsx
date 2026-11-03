@@ -69,11 +69,11 @@ function groupsOf(c: AptDetail): Group[] {
   return [...map.values()].sort((x, y) => x.lo - y.lo);
 }
 
-/** 최근 실거래 기준 3개월 평균 — 가장 최근 거래일부터 90일 안 (2026-11-03 사장님: 1개월이 아니라 3개월) */
-function monthAvg(list: { d: string; v: number }[]) {
+/** 최근 실거래 기준 N개월 평균 — 가장 최근 거래일부터 N개월 안 (3·6·12개월 고르기, 2026-11-03 사장님) */
+function monthAvg(list: { d: string; v: number }[], months = 3) {
   if (!list.length) return null;
   const last = list.reduce((m, x) => (x.d > m ? x.d : m), list[0].d);
-  const from = new Date(new Date(last).getTime() - 90 * DAY).toISOString().slice(0, 10);
+  const from = new Date(new Date(last).getTime() - Math.round(months * 30.4) * DAY).toISOString().slice(0, 10);
   const recent = list.filter((x) => x.d >= from);
   return { avg: Math.round(recent.reduce((t, x) => t + x.v, 0) / recent.length), count: recent.length, last };
 }
@@ -614,7 +614,11 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const salePoints = (g?.sales || []).map((t) => ({ d: t.d, v: t.p }));
   const jeonsePoints = (g?.rents || []).filter((r) => !r.m).map((r) => ({ d: r.d, v: r.dep }));
   const points = mode === "sale" ? salePoints : jeonsePoints;
-  const avg = monthAvg(points);
+  // 평균 기간 — 3·6·12개월, 고른 것은 기억한다 (다른 단지를 열어도 같게)
+  const [avgMonths, setAvgMonthsState] = useState(3);
+  useEffect(() => { try { const v = Number(localStorage.getItem("gs-apt-avg-months")); if ([3, 6, 12].includes(v)) setAvgMonthsState(v); } catch { /* */ } }, []);
+  const setAvgMonths = (v: number) => { setAvgMonthsState(v); try { localStorage.setItem("gs-apt-avg-months", String(v)); } catch { /* */ } };
+  const avg = monthAvg(points, avgMonths);
   const latestMonthly = mode === "lease" ? (g?.rents || []).find((r) => r.m) : undefined;
   // 최고가 거래 한 건에 [최고] 표시 (2026-11-02 사장님) — 매매는 거래가, 전월세는 전세 보증금 기준
   const topSale = Math.max(0, ...(g?.sales || []).map((t) => t.p));
@@ -702,7 +706,17 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             <div style={{ flex: 1 }} />
             <button onClick={() => setSheet(true)} style={{ border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, borderRadius: 6, padding: "6px 12px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>{g?.label} ▾</button>
           </div>
-          <div style={{ padding: "16px 20px 4px", color: ACC, fontWeight: 600 }}>최근 실거래 기준 3개월 평균{mode === "lease" ? " (전세)" : ""}</div>
+          <div style={{ padding: "16px 20px 4px", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ flex: 1, color: ACC, fontWeight: 600 }}>최근 실거래 기준 {avgMonths === 12 ? "1년" : `${avgMonths}개월`} 평균{mode === "lease" ? " (전세)" : ""}</span>
+            <span style={{ display: "inline-flex", border: `1px solid ${ACC}`, borderRadius: 6, overflow: "hidden" }}>
+              {[3, 6, 12].map((m) => (
+                <button key={m} type="button" onClick={() => setAvgMonths(m)} aria-pressed={avgMonths === m}
+                  style={{ border: 0, padding: "3px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer", background: avgMonths === m ? ACC : "#fff", color: avgMonths === m ? "#fff" : ACC }}>
+                  {m === 12 ? "1년" : `${m}개월`}
+                </button>
+              ))}
+            </span>
+          </div>
           <div style={{ padding: "0 20px", fontSize: 30, fontWeight: 900, color: ACC, letterSpacing: "-0.5px" }}>
             {avg ? fullPrice(avg.avg) : "거래 없음"}
           </div>

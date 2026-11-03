@@ -4,7 +4,6 @@ import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
 import AptPriceLayer from "./AptPriceLayer";
 import BldSampleLayer from "./BldSampleLayer";
-import VillaSampleLayer from "./VillaSampleLayer";
 
 interface KakaoMapViewProps {
   activePills?: string[];
@@ -915,13 +914,13 @@ export default function KakaoMapView({
 
       {/* 건물 실거래 디자인 견본 — 내 PC(localhost)에서만 (2026-11-02) */}
       <BldSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} />
-      {/* 빌라 실거래 견본 — 내 PC·[전체]·[빌라·주택] 탭에서만 (2026-11-03) */}
-      <VillaSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceButtonSlot} tab={!isAuctionMode && (activeCategory === "villa" || activeCategory === "all")} />
+      {/* 빌라 실거래 견본(논현동)은 내렸다 — 실제 자료가 [빌라 실거래가] 단추로 같은 지도에 (2026-11-03 사장님) */}
 
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
       <AptPriceLayer
         buttonSlot={priceButtonSlot}
         autoShow={!isAuctionMode && (activeCategory === "all" || activeCategory === "apart")}
+        villaTab={!isAuctionMode && activeCategory === "villa"}
         kakaoMapRef={kakaoMapRef}
         mapLoaded={mapLoaded}
         vacancies={isAuctionMode ? [] : filteredVacancies}

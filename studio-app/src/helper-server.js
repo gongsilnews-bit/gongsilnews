@@ -61,6 +61,7 @@ function handle(req, res) {
     return send(res, 403, { ok: false });
   }
   const url = new URL(req.url, "http://127.0.0.1");
+  lastSeen = Date.now(); // 도우미가 살아 있다 — 홈 "크롬 도우미 · 연결됨" (확장은 1분마다 verify-wanted 를 부른다, 2026-11-03)
   sweep();
   if (url.pathname === "/gs-helper/ping") return send(res, 200, { ok: true, app: "공실마케팅" });
   // 영상·썸네일 파일 — 앱이 addFile 로 내준 것만 (번호표 모르면 못 받는다)
@@ -253,4 +254,7 @@ const published = (meta, url) => {
   for (const fn of pubListeners) Promise.resolve(fn({ ...meta, url: String(url) })).catch((e) => log.warn(`[홍보현황] 발행 기록 못함: ${e.message}`));
 };
 
-module.exports = { start, addJob, addFile, wait, cancel, onPublished, published, setVerifier, requestVerify, port: () => port };
+let lastSeen = 0;
+/** 도우미가 마지막으로 부른 뒤 지난 시간(ms) — 한 번도 안 불렀으면 null */
+const seenAgo = () => (lastSeen ? Date.now() - lastSeen : null);
+module.exports = { seenAgo, start, addJob, addFile, wait, cancel, onPublished, published, setVerifier, requestVerify, port: () => port };
