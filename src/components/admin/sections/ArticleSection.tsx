@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import React, { useState, useEffect, useRef } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback, getArticleTabCounts } from "@/app/actions/article";
@@ -50,7 +51,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [isBulkVacancyApplying, setIsBulkVacancyApplying] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const action = searchParams.get("action");
+  const action = actionFor(searchParams, "article"); // 다른 메뉴 주소에 남은 action 은 따르지 않는다
   const editId = searchParams.get("id");
   const showWriteForm = action === "write";
 

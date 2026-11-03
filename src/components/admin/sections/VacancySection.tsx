@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import { useStudioLight, StudioListCss, Ico, ICON, C_GREEN, C_RED, C_GRAY } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
@@ -24,7 +25,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const st = useStudioLight(darkMode);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const action = searchParams.get("action");
+  const action = actionFor(searchParams, "gongsil"); // 다른 메뉴 주소에 남은 action 은 따르지 않는다
   const editId = searchParams.get("id");
   const copyId = searchParams.get("copy"); // 사본 만들기 — 내용만 채우고 새로 등록 (2026-10-28)
   const complexParam = searchParams.get("complex"); // 공실열람 시세 지도 [무료 공실등록] — 그 단지 주소·이름·종류를 미리 채움 (2026-11-02)

@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getBoards, deleteBoard } from "@/app/actions/board";
@@ -12,7 +13,7 @@ export default function BoardSection({ theme }: AdminSectionProps) {
   const searchParams = useSearchParams();
   const [dbBoards, setDbBoards] = useState<any[]>([]);
 
-  const action = searchParams.get("action");
+  const action = actionFor(searchParams, "board"); // 다른 메뉴 주소에 남은 action 은 따르지 않는다
   const editId = searchParams.get("edit_id");
 
   const showBoardRegister = action === "create" || action === "edit";

@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import { useStudioLight, StudioListCss, Ico, ICON, C_GREEN, C_RED, C_AMBER, C_VIOLET, C_GRAY } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
@@ -79,7 +80,7 @@ export default function MemberArticleSection({
     setView(v);
   };
   const searchParams = useSearchParams();
-  const action = searchParams.get("action");
+  const action = actionFor(searchParams, "article"); // 다른 메뉴 주소에 남은 action 은 따르지 않는다
   const editId = searchParams.get("id");
   const showWriteForm = action === "write";
   const showDetail = action === "detail" && editId;

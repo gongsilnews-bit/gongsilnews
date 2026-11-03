@@ -34,13 +34,10 @@ export default function AptCapturePage({ params }: { params: Promise<{ id: strin
   }, [part]);
 
   if (!detail) return <main style={{ textAlign: "center", padding: 80, color: "#6b7280" }}>{err || "불러오는 중…"}</main>;
-  const pill = (t: string) => <span style={{ position: "absolute", left: 14, top: 14, zIndex: 5, padding: "5px 11px", borderRadius: 14, background: "rgba(55,65,81,.85)", color: "#fff", fontSize: 14, fontWeight: 800 }}>{t}</span>;
   if (part === "map") {
     return (
       <main style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: "#fff" }}>
-        <h1 style={{ margin: 0, padding: "14px 22px", fontSize: 22, fontWeight: 800, color: "#fff", background: "#1e3a6e" }}>지도 · {detail.name} ({detail.dong})</h1>
         <div style={{ flex: 1, position: "relative" }} className="gs-rv-big">
-          {pill("지도")}
           <style>{`.gs-rv-big > div { height: 100% !important; }`}</style>
           {kakao && Number.isFinite(detail.lat) && <MiniMap lat={detail.lat} lng={detail.lng} name={detail.name} />}
         </div>
@@ -50,9 +47,7 @@ export default function AptCapturePage({ params }: { params: Promise<{ id: strin
   if (part === "roadview") {
     return (
       <main style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", background: "#111" }}>
-        <h1 style={{ margin: 0, padding: "14px 22px", fontSize: 22, fontWeight: 800, color: "#fff", background: "#1e3a6e" }}>로드뷰 · {detail.name} ({detail.dong})</h1>
         <div style={{ flex: 1, position: "relative" }} className="gs-rv-big">
-          {pill("로드뷰")}
           <style>{`.gs-rv-big > div { height: 100% !important; }`}</style>
           {kakao && Number.isFinite(detail.lat) && <Roadview lat={detail.lat} lng={detail.lng} />}
         </div>

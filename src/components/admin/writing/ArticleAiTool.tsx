@@ -9,6 +9,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import AiCopyGuide from "./AiCopyGuide";
+import { InstallGuideModal, useStudioInstaller } from "@/components/admin/sections/StudioInstallGuide";
 import { effectiveAi, useAiPick } from "@/components/admin/studio-video/AiPick";
 import { writingArticleFacts, writingArticles, writingComplexFacts, writingFetchNews, writingMyVacancies, writingSearchComplexes, writingVacancyFacts } from "@/app/actions/writingFacts";
 
@@ -18,7 +19,7 @@ type News = { title: string; body: string; publisher?: string; url?: string; pub
 type Bridge = {
   write?: { ask: (prompt: string, opts?: { json?: boolean; busyLabel?: string; provider?: string; mode?: string }) => Promise<string>; onProgress: (fn: (t: string) => void) => () => void };
   video?: {
-    capturePage?: (url: string, opts: { mode: "head" | "full" | "screen"; title?: string; credit?: string; max?: number; waitSel?: string; waitText?: string; settle?: number }) => Promise<{ url: string }[]>;
+    capturePage?: (url: string, opts: { mode: "head" | "full" | "screen"; title?: string; credit?: string; max?: number; waitSel?: string; waitText?: string; settle?: number; crop?: string }) => Promise<{ url: string }[]>;
     /** 분석해 둔 공실 사진·화면을 원본 크기로 (analysis.json 순서 그대로) */
     vacancy?: (vacancyId: string) => Promise<{ photos: { url: string }[]; shots: { url: string }[] }>;
   };
@@ -295,7 +296,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
     // 공실 기사 사진(공실열람 검증·지도·로드뷰)과 같은 모양 — 공실열람 화면 · 로드뷰 · 실거래가 (2026-11-03 사장님)
     const o = window.location.origin, id = encodeURIComponent(complex.id);
     const SH = [
-      { what: "공실열람 단지 시세 화면", title: complex.name, url: `${o}/gongsil?apt=${id}`, opt: { mode: "screen" as const, waitText: complex.name, settle: 3500 }, caption: `[공실열람 단지 시세] 공실뉴스 공실열람에서 본 '${complex.name}' 실거래 시세 (자료: 국토교통부 실거래가)` },
+      { what: "공실열람 단지 시세 화면", title: complex.name, url: `${o}/gongsil?apt=${id}`, opt: { mode: "screen" as const, waitText: complex.name, settle: 3500, crop: "aptPanel" }, caption: `[공실열람 단지 시세] 공실뉴스 공실열람에서 본 '${complex.name}' 실거래 시세 (자료: 국토교통부 실거래가)` },
       { what: "지도", title: `지도 · ${complex.name}`, url: `${o}/apt-capture/${id}?part=map`, opt: { mode: "screen" as const, settle: 3000 }, caption: `[위치 지도] ${complex.name} 위치 및 주변 환경 (자료: 위치정보 지도)` },
       { what: "로드뷰", title: `로드뷰 · ${complex.name}`, url: `${o}/apt-capture/${id}?part=roadview`, opt: { mode: "screen" as const, waitSel: '[data-roadview-status="ready"]', settle: 3500 }, caption: `[현장 로드뷰] ${complex.name} 진입로 및 가로변 전경 (자료: 로드뷰)` },
       { what: "실거래가", title: `실거래가 · ${complex.name}`, url: `${o}/apt-capture/${id}?part=trades`, opt: { mode: "head" as const }, caption: `[실거래가] ${complex.name} 최근 실거래 내역 (자료: 국토교통부 실거래가)` },
@@ -400,6 +401,8 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   useEffect(() => { try { const v = localStorage.getItem("gs-web-ai"); if (v) setWebAiState(v); } catch { /* */ } }, []);
   const setWebAi = (v: string) => { setWebAiState(v); try { localStorage.setItem("gs-web-ai", v); } catch { /* */ } };
   const [isApp, setIsApp] = useState(false);
+  const installer = useStudioInstaller();
+  const [installGuide, setInstallGuide] = useState(false);
   useEffect(() => { setIsApp(Boolean(bridge()?.write)); }, []);
   const aiCur = aiUse || (aiDef ? { provider: aiDef.id, mode: aiDef.mode === "api" ? "api" : "account" } : null);
   const curAnalysis = (): Analysis | null => (src === "topic" ? (topic.trim() ? { key: anaKey, subject: topic.trim(), mats: [], summary: [], complex: null, shots: [] } : null) : ana && ana.key === anaKey ? ana : null);
@@ -587,8 +590,23 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
             })}
             {!ana.shots.length && !working && <div style={{ fontSize: 12, color: DIM }}>캡처한 사진이 없어요</div>}
           </div>
+          {/* 웹 — 브라우저는 화면을 찍지 못한다 → 빠진 자리를 보여 주고 앱 설치를 권한다 (2026-11-03 사장님) */}
+          {!isApp && ana.complex && (
+            <div style={{ marginTop: 8, padding: "10px 11px", border: `1px dashed ${NAVY}`, borderRadius: 6, background: "#fff" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
+                {["공실열람", "지도", "로드뷰"].map((t) => (
+                  <div key={t} style={{ aspectRatio: "4/3", borderRadius: 5, background: "#eef1f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11.5, fontWeight: 800, color: "#9aa6b8" }}>{t}</div>
+                ))}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12.5, fontWeight: 800, color: TEXT, lineHeight: 1.5 }}>공실열람 화면·지도·로드뷰 사진은 <span style={{ color: NAVY }}>공실마케팅studio 앱</span>에서만 찍을 수 있어요</div>
+              <div style={{ fontSize: 11.5, color: SUB, lineHeight: 1.5, marginTop: 2 }}>앱으로 쓰면 이 사진들이 저절로 찍혀 기사에 들어가요 · 윈도우 10·11</div>
+              {installer.ready && (
+                <a href={installer.href} onClick={() => setInstallGuide(true)} style={{ display: "block", marginTop: 8, height: 34, lineHeight: "34px", textAlign: "center", borderRadius: 5, background: NAVY, color: "#fff", fontSize: 13, fontWeight: 800, textDecoration: "none" }}>⬇ 공실마케팅studio 앱 설치하기</a>
+              )}
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7 }}>
-            <span style={{ fontSize: 11.5, color: DIM, flex: 1, lineHeight: 1.45 }}>끌어서 순서를 바꿔요 · 맨 앞이 대표 사진 · 대표 사진은 기사 맨 앞에 들어가요{!isApp && <><br /><b style={{ color: NAVY }}>공실열람·지도·로드뷰 화면은 공실마케팅 앱에서 자동으로 들어가요</b></>}</span>
+            <span style={{ fontSize: 11.5, color: DIM, flex: 1, lineHeight: 1.45 }}>끌어서 순서를 바꿔요 · 맨 앞이 대표 사진 · 대표 사진은 기사 맨 앞에 들어가요</span>
             {ana.complex && <button type="button" onClick={() => void recapture()} disabled={working} style={{ ...btn, height: 26, padding: "0 8px", fontSize: 12 }}>↻ 다시 캡처</button>}
           </div>
         </div>
@@ -754,6 +772,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
           <button type="button" onClick={() => setGuide(true)} title="AI 창에서 복사·붙여넣기 하는 법" style={{ ...btn, height: 32, padding: "0 10px", fontSize: 12.5 }}>? 쓰는 법</button>
         </div>
         {/* 웹 — AI 답을 기다리는 동안 그림 설명 창 · [? 쓰는 법] (2026-11-03 사장님: 처음 하는 사람은 복사 붙여넣기를 모름, 복사 단추 위치까지) */}
+        {installGuide && <InstallGuideModal ver={installer.ver} onClose={() => setInstallGuide(false)} />}
         {guide && <AiCopyGuide ai={isApp ? aiCur?.provider || "chatgpt" : webAi} waiting={false} onClose={() => setGuide(false)} />}
       </div>
     </div>

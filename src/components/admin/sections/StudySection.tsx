@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import React from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -18,6 +19,6 @@ const StudyWriteForm = dynamic(() => import("@/components/admin/StudyWriteForm")
  */
 export default function StudySection({ theme, mode = "admin" }: AdminSectionProps & { mode?: "admin" | "member" }) {
   const searchParams = useSearchParams();
-  if (searchParams.get("action") === "write") return <StudyWriteForm mode={mode} />;
+  if (actionFor(searchParams, "study") === "write") return <StudyWriteForm mode={mode} />;
   return <StudyListSection theme={theme} mode={mode} />;
 }

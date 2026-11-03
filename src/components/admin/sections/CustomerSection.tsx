@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import { useStudioLight, StudioListCss, Ico, ICON, NAVY, C_GREEN, C_RED, C_GRAY, C_VIOLET, C_AMBER } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
 import { AdminTheme } from "./types";
@@ -21,7 +22,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   
   const router = useRouter();
   const searchParams = useSearchParams();
-  const action = searchParams.get("action");
+  const action = actionFor(searchParams, "customer"); // 다른 메뉴 주소에 남은 action 은 따르지 않는다
   const urlCustomerId = searchParams.get("id");
   const showDetail = action === "detail" && urlCustomerId;
 

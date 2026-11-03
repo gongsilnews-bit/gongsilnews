@@ -1,5 +1,6 @@
 "use client";
 
+import { actionFor } from "@/utils/menuAction";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { AdminSectionProps } from "./types";
@@ -70,7 +71,7 @@ export default function MemberArticleAdSection({
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const action = searchParams.get("action");
+  const action = actionFor(searchParams, "article_ad"); // 다른 메뉴 주소에 남은 action 은 따르지 않는다
   const bannerId = searchParams.get("id");
 
   const [banners, setBanners] = useState<AuthorBanner[]>([]);

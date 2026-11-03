@@ -944,7 +944,19 @@ function register(base) {
         await wait(Number(opts.settle) || 2500);
         await wc.capturePage().catch(() => null); // 첫 장은 예전 화면일 때가 있어 버린다
         await wait(300);
-        const img = await wc.capturePage();
+        // crop "aptPanel" — 공실열람 단지 창부터 옆 지도까지 16:9 (사이트 위 메뉴는 빼고, 2026-11-03 사장님: 공실처럼 잘라 찍기)
+        let rect = null;
+        if (opts.crop === "aptPanel") {
+          rect = await wc.executeJavaScript(`(() => {
+            const el = document.querySelector("[data-gs-apt-panel]");
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            const top = Math.max(0, Math.round(r.top)), h = Math.round(Math.min(r.height, innerHeight - top));
+            const left = Math.max(0, Math.round(r.left)), w = Math.round(Math.min(innerWidth - left, (h * 16) / 9));
+            return h > 100 && w > 100 ? { x: left, y: top, width: w, height: h } : null;
+          })()`, true).catch(() => null);
+        }
+        const img = rect ? await wc.capturePage({ x: Math.round(rect.x * Z), y: Math.round(rect.y * Z), width: Math.round(rect.width * Z), height: Math.round(rect.height * Z) }) : await wc.capturePage();
         if (img.isEmpty()) throw new Error("화면을 캡쳐하지 못했습니다.");
         const file = path.join(dir, `${safe}_01_${Date.now().toString(36)}.jpg`);
         fs.writeFileSync(file, img.toJPEG(90));
