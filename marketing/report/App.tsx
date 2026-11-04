@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { WEB_LIMITED, webAllowed, askInstallApp, InstallAppModal } from './webLimit';
+import { WEB_LIMITED, IS_WEB, webAllowed, askInstallApp, InstallAppModal } from './webLimit';
 import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
@@ -1491,7 +1491,8 @@ function App() {
   };
   const studioMarketing: StudioMarketing | null = (() => {
     try {
-      return ((window.parent as any)?.gongsilStudio?.marketing || (window as any).gongsilStudio?.marketing || null) as StudioMarketing | null;
+      // 앱: gongsilStudio.marketing · 웹: 관리자 화면의 gongsilWebMarketing (회원 AI 새 탭, 2026-11-04)
+      return ((window.parent as any)?.gongsilStudio?.marketing || (window as any).gongsilStudio?.marketing || (window.parent as any)?.gongsilWebMarketing || null) as StudioMarketing | null;
     } catch {
       return null;
     }
@@ -2893,7 +2894,8 @@ ${clone.outerHTML}
 
 
           {/* Share Button (Relative Container for Popover) — 공실 없는 보고서는 공유 링크가 없다 (PDF·이미지로 보낸다) */}
-          {!getLocalId() && <div ref={sharePopoverRef} className="relative shrink-0">
+          {/* 웹에서는 공유하기 단추를 아예 안 보인다 (2026-11-04 사장님) */}
+          {!getLocalId() && !IS_WEB && <div ref={sharePopoverRef} className="relative shrink-0">
             <button 
               onClick={() => (WEB_LIMITED ? askInstallApp("공유는 공실마케팅 앱에서 할 수 있어요") : setShowSharePopover(!showSharePopover))}
               className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm whitespace-nowrap"

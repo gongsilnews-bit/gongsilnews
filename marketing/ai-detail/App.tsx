@@ -9,7 +9,7 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { buildFlyerRows } from './flyerRows';
 import { toCanvas } from 'html-to-image';
-import { WebLockCover, InstallAppModal, askInstallApp, webLayoutAllowed, WEB_LIMITED } from './webLimit';
+import { WebLockCover, InstallAppModal, askInstallApp, webLayoutAllowed, WEB_LIMITED, IS_WEB } from './webLimit';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -705,7 +705,7 @@ function App() {
   };
 
   const handleKakaoShare = async () => {
-    if (WEB_LIMITED) { askInstallApp('공유는 공실마케팅 앱에서 해요'); return; } // 웹은 공유 막음 (2026-10-29 사장님)
+    if (IS_WEB) return; // 웹은 공유 없음 (2026-11-04 사장님)
     const Kakao = (window as any).Kakao;
     if (!Kakao || !Kakao.isInitialized()) {
       alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
@@ -736,7 +736,7 @@ function App() {
   };
 
   const handleCopyUrl = async () => {
-    if (WEB_LIMITED) { askInstallApp('공유는 공실마케팅 앱에서 해요'); return; } // 웹은 공유 막음 (2026-10-29 사장님)
+    if (IS_WEB) return; // 웹은 공유 없음 (2026-11-04 사장님)
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) {
@@ -926,7 +926,8 @@ function App() {
   };
   const studioMarketing: StudioMarketing | null = (() => {
     try {
-      return ((window.parent as any)?.gongsilStudio?.marketing || (window as any).gongsilStudio?.marketing || null) as StudioMarketing | null;
+      // 앱: gongsilStudio.marketing · 웹: 관리자 화면의 gongsilWebMarketing (회원 AI 새 탭, 2026-11-04)
+      return ((window.parent as any)?.gongsilStudio?.marketing || (window as any).gongsilStudio?.marketing || (window.parent as any)?.gongsilWebMarketing || null) as StudioMarketing | null;
     } catch {
       return null;
     }
@@ -1654,8 +1655,8 @@ function App() {
         </button>
 
 
-        {/* Share Button (Relative Container for Popover) */}
-        <div ref={sharePopoverRef} className="relative">
+        {/* Share Button (Relative Container for Popover) — 웹에서는 안 보인다 (2026-11-04 사장님) */}
+        {!IS_WEB && <div ref={sharePopoverRef} className="relative">
           <button 
             onClick={() => (WEB_LIMITED ? askInstallApp('공유는 공실마케팅 앱에서 해요') : setShowSharePopover(!showSharePopover))}
             className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
@@ -1694,7 +1695,7 @@ function App() {
               </button>
             </div>
           )}
-        </div>
+        </div>}
       </div>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }

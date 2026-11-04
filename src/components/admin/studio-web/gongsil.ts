@@ -1,10 +1,12 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { chooseWebAi, webAi, webAsk } from "./webAiAsk";
+import { chooseWebAi, webAi, webAsk } from "./ai-ask";
+import { NO_HELPER, api, download, getMember, helper, helperJob, helperOn, helperWait, newId, now, onProgress, options, pickFiles, readFile, safeName, say, sleep, toJpeg, tx, useQuota, ymd, zipDownload } from "./core";
+import { getMyArticlePhotos } from "@/app/actions/studioWebColumn";
 
 /**
- * 웹 뉴스·SNS자동화 — 앱(window.gongsilStudio)의 대역 (2026-11-03 사장님: 앱의 공실뉴스 부분을 웹에서도 똑같이)
+ * 웹 뉴스·SNS자동화 [공실뉴스] — 앱(window.gongsilStudio)의 대역 (공통은 core.ts) (2026-11-03 사장님: 앱의 공실뉴스 부분을 웹에서도 똑같이)
  *
  * 화면(StudioSnsSection · StudioChannelTabs · 각 패널)은 앱과 같은 코드를 쓰고, 앱이 PC 에서 하던 일만 여기서 웹 방식으로 한다.
  *  - 분석: 숨은 창(iframe)에 공실열람 상세를 열고 앱과 같은 읽기 코드(inject/gongsil-page.js)로 매물 정보·등록 사진을 읽는다.
@@ -19,134 +21,38 @@ import { chooseWebAi, webAi, webAsk } from "./webAiAsk";
 type Src = { key: string; kind: string; src: string; caption: string; real: boolean; addedAt: number };
 type Analysis = { vacancyId: string; vacancy: any; media: Src[]; hidden: Src[]; failures: string[]; analyzedAt: string };
 type DocMedia = { id: string; kind: string; file: string; src?: string; caption: string; isCover: boolean; insertAfterParagraph?: number | null };
-type Doc = { vacancyId: string; style: string; length: string; title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; media: DocMedia[]; seenFiles?: string[]; writtenAt: string; revisedAt?: string; editedAt?: string };
+type Doc = { vacancyId: string; style: string; length: string; section1?: string; section2?: string; title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; media: DocMedia[]; seenFiles?: string[]; writtenAt: string; revisedAt?: string; editedAt?: string };
 type Sns = { vacancyId: string; noun: string; listing: any; posts: Record<string, any>; pool: DocMedia[]; media: Record<string, string[]>; seenFiles?: string[]; tone?: unknown; writtenAt: string };
 type Yt = { title: string; titles: string[]; narration: string[]; settings: Record<string, string>; detailUrl: string; listing: any; writtenAt: string; revisedAt?: string; editedAt?: string };
-type Work = { key: string; memberId: string; vacancyId: string; analysis: Analysis; article?: Doc; blog?: Doc; sns?: Sns; youtube?: Yt; updatedAt: string };
+// column — 뉴스칼럼(번호 "col-…", 2026-11-04 웹): 소재는 회원 본인 기사. 사진은 analysis.media 에 (공실과 같은 길을 탄다)
+type Column = { source: any; createdAt: string; articleNo: string };
+type Work = { key: string; memberId: string; vacancyId: string; analysis: Analysis; column?: Column; article?: Doc; blog?: Doc; sns?: Sns; youtube?: Yt; updatedAt: string };
 
 const CHANNELS = ["instagram", "threads", "facebook"];
 const HOME: Record<string, string> = { instagram: "https://www.instagram.com/", threads: "https://www.threads.com/", facebook: "https://www.facebook.com/" };
 const BLOG_HOME_URL = "https://section.blog.naver.com/BlogHome.naver?directoryNo=0&currentPage=1&groupId=0";
 const FIT_KINDS = new Set(["proof", "map", "roadview", "capture"]); // 화면 캡처는 자르지 않고 흰 여백으로
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const newId = () => Math.random().toString(16).slice(2, 14).padEnd(12, "0");
-const now = () => new Date().toISOString();
 
-/* ── 이 브라우저 저장 (IndexedDB) ── */
-let memberId = "";
-export const setStudioWebMember = (id: string) => { memberId = id; };
-const DB_NAME = "gs-studio-web";
-let dbp: Promise<IDBDatabase> | null = null;
-function db() {
-  if (!dbp) dbp = new Promise((resolve, reject) => {
-    const r = indexedDB.open(DB_NAME, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore("works", { keyPath: "key" });
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
-  return dbp;
-}
-async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const d = await db();
-  return new Promise((resolve, reject) => {
-    const q = fn(d.transaction("works", mode).objectStore("works"));
-    q.onsuccess = () => resolve(q.result);
-    q.onerror = () => reject(q.error);
-  });
-}
-const keyOf = (vacancyId: string) => `${memberId}:${vacancyId}`;
+const keyOf = (vacancyId: string) => `${getMember()}:${vacancyId}`;
 const getWork = (vacancyId: string) => tx<Work | undefined>("readonly", (s) => s.get(keyOf(vacancyId))).then((w) => w || null).catch(() => null);
 const putWork = (w: Work) => tx("readwrite", (s) => s.put({ ...w, updatedAt: now() }));
-const allWorks = () => tx<Work[]>("readonly", (s) => s.getAll()).then((l) => (l || []).filter((w) => w.memberId === memberId)).catch(() => [] as Work[]);
+const allWorks = () => tx<Work[]>("readonly", (s) => s.getAll()).then((l) => (l || []).filter((w) => w.memberId === getMember())).catch(() => [] as Work[]);
 async function need(vacancyId: string) {
   const w = await getWork(vacancyId);
   if (!w) throw new Error("먼저 [분석]을 해 주세요.");
   return w;
 }
 
-/* ── 서버 ── */
-async function api(op: string, body: Record<string, unknown> = {}) {
-  const r = await fetch("/api/studio/web", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ op, ...body }) });
-  const d = await r.json().catch(() => null);
-  if (!d || !d.success) throw new Error((d && d.error) || "공실뉴스 서버에 묻지 못했어요. 잠시 뒤 다시 해 주세요.");
-  return d;
-}
-const optCache = new Map<string, Promise<any>>();
-const options = (vacancy?: any) => {
-  const k = vacancy && vacancy.saleKind ? `a:${vacancy.saleKind}` : "g";
-  if (!optCache.has(k)) optCache.set(k, api("options", { vacancy: vacancy || null }).catch((e) => { optCache.delete(k); throw e; }));
-  return optCache.get(k)!;
-};
-async function useQuota(kind: string, vacancyId: string) {
-  const r = await fetch("/api/studio/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, vacancyId }) });
-  const d = await r.json().catch(() => ({}));
-  if (!d || !d.success) throw new Error((d && d.error) || "이용 횟수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.");
-}
+const workName = (w: Work) => w.column ? safeName(`뉴스칼럼_${w.column.source?.news?.title || ""}`.slice(0, 60)) : safeName(`${w.analysis.vacancy?.title || "공실"}_${fieldOf(w.analysis.vacancy, "공실광고번호") || ""}`);
 
-/* ── 진행 글 ── */
-const listeners: Record<string, Set<(t: string) => void>> = {};
-const onProgress = (ch: string) => (fn: (t: string) => void) => {
-  (listeners[ch] ||= new Set()).add(fn);
-  return () => { listeners[ch].delete(fn); };
-};
-const say = (ch: string, t: string) => listeners[ch]?.forEach((f) => f(t));
-
-/* ── 그림 ── */
-function loadImage(src: string): Promise<HTMLImageElement> {
-  const viaProxy = /^https?:/i.test(src) && !src.startsWith(location.origin);
-  const tryLoad = (u: string, cors: boolean) => new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    if (cors) img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("사진을 불러오지 못했어요."));
-    img.src = u;
-  });
-  if (!viaProxy) return tryLoad(src, false);
-  return tryLoad(src, true).catch(() => tryLoad(`/api/proxy-image?url=${encodeURIComponent(src)}`, true));
-}
-/** mode: max = 긴 변 w 까지 줄이기 · cover = w×h 가운데 자르기 · fit = w×h 안에 넣고 흰 여백 */
-async function toJpeg(src: string, w: number, h = w, mode: "max" | "cover" | "fit" = "max", q = 0.88) {
-  const img = await loadImage(src);
-  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
-  const c = document.createElement("canvas");
-  const g = c.getContext("2d")!;
-  if (mode === "max") {
-    const s = Math.min(1, w / Math.max(iw, ih));
-    c.width = Math.round(iw * s); c.height = Math.round(ih * s);
-    g.drawImage(img, 0, 0, c.width, c.height);
-  } else {
-    c.width = w; c.height = h;
-    g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
-    const s = mode === "cover" ? Math.max(w / iw, h / ih) : Math.min(w / iw, h / ih);
-    const dw = iw * s, dh = ih * s;
-    g.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
-  }
-  return c.toDataURL("image/jpeg", q);
-}
-const readFile = (f: File) => new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = () => reject(r.error); r.readAsDataURL(f); });
-function pickFiles(multiple: boolean): Promise<File[]> {
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.multiple = multiple;
-    input.onchange = () => resolve(Array.from(input.files || []));
-    window.addEventListener("focus", () => setTimeout(() => resolve(Array.from(input.files || [])), 800), { once: true }); // 취소
-    input.click();
-  });
-}
-function download(name: string, blob: Blob) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-}
-const safeName = (s: string) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
-const ymd = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; };
-const workName = (w: Work) => safeName(`${w.analysis.vacancy?.title || "공실"}_${fieldOf(w.analysis.vacancy, "공실광고번호") || ""}`);
+/* ── 뉴스칼럼 (앱 column-writer.js) — 웹은 본인이 쓴 공실뉴스 기사만 소재로 (2026-11-04 사장님) ── */
+const isCol = (id: string) => /^col-[a-f0-9]+$/.test(String(id || ""));
+let colOpt: Promise<any> | null = null;
+const colOptions = () => (colOpt ||= api("options", { column: true }).catch((e) => { colOpt = null; throw e; }));
+/** 이 작업의 선택지 — 칼럼이면 뉴스메이커 것 */
+const optionsOf = (w: Work | null) => (w?.column ? colOptions() : options(w?.analysis.vacancy));
+/** 서버에 함께 보낼 칼럼 소재 (공실이면 없음) */
+const colBody = (w: Work) => (w.column ? { source: w.column.source, column: true } : {});
 
 /* ── 사진 설명 (앱 vacancy-capture.js captionFor 와 같은 문구) ── */
 function fieldOf(v: any, ...labels: string[]) {
@@ -248,7 +154,7 @@ async function analyze(vacancyId: string) {
       } else if (listing?.owner?.type === "general" && listing.owner.name) vacancy.landlord = listing.owner.name;
     }
     const analysis: Analysis = { vacancyId, vacancy, media, hidden, failures, analyzedAt: now() };
-    const work: Work = prev ? { ...prev, analysis } : { key: keyOf(vacancyId), memberId, vacancyId, analysis, updatedAt: now() };
+    const work: Work = prev ? { ...prev, analysis } : { key: keyOf(vacancyId), memberId: getMember(), vacancyId, analysis, updatedAt: now() };
     syncAnalysisMedia(work);
     await putWork(work);
     return analysisForWeb(analysis);
@@ -335,17 +241,17 @@ function docForWeb(w: Work, doc: "article" | "blog") {
   const map = srcMap(w);
   return {
     doc, vacancyId: w.vacancyId, style: d.style, length: d.length, title: d.title, subtitles: d.subtitles || [], paragraphs: d.paragraphs, keywords: d.keywords,
-    section1: "", section2: "",
+    section1: d.section1 || "", section2: d.section2 || "",
     version: [d.writtenAt, d.revisedAt, d.editedAt].map((v) => v || "").join("|"),
     media: (d.media || []).map((m) => ({ id: m.id, kind: m.kind, caption: m.caption, isCover: Boolean(m.isCover), insertAfterParagraph: Number.isInteger(m.insertAfterParagraph) ? m.insertAfterParagraph : null, thumb: thumbOf(w, m, map) })),
   };
 }
 const referenceArticle = (w: Work) => (w.article ? { title: w.article.title, subtitles: w.article.subtitles || [], body: w.article.paragraphs.join("\n\n") } : null);
-async function saveWritten(w: Work, doc: "article" | "blog", parsed: { title: string; subtitles: string[]; paragraphs: string[]; keywords: string[] }, extra: { style: string; length: string }) {
+async function saveWritten(w: Work, doc: "article" | "blog", parsed: { title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; section1?: string; section2?: string }, extra: { style: string; length: string }) {
   const prev = w[doc];
   const media = prev && prev.media && prev.media.length ? prev.media.map((m) => ({ ...m, insertAfterParagraph: m.isCover ? null : undefined })) : seedMedia(w);
   const laid = (await api("layout", { media, paragraphCount: parsed.paragraphs.length })).media as DocMedia[];
-  w[doc] = { vacancyId: w.vacancyId, ...extra, title: parsed.title, subtitles: parsed.subtitles || [], paragraphs: parsed.paragraphs, keywords: parsed.keywords || [], media: laid, ...(prev && Array.isArray(prev.seenFiles) ? { seenFiles: prev.seenFiles } : {}), writtenAt: now() };
+  w[doc] = { vacancyId: w.vacancyId, ...extra, ...(parsed.section1 ? { section1: parsed.section1, section2: parsed.section2 || "" } : {}), title: parsed.title, subtitles: parsed.subtitles || [], paragraphs: parsed.paragraphs, keywords: parsed.keywords || [], media: laid, ...(prev && Array.isArray(prev.seenFiles) ? { seenFiles: prev.seenFiles } : {}), writtenAt: now() };
   if (prev) syncAnalysisMedia(w);
 }
 async function blogGet(vacancyId: string, doc: "article" | "blog" = "blog") {
@@ -380,15 +286,16 @@ async function blogRevise({ vacancyId, doc = "blog", request }: { vacancyId: str
   const which = doc === "article" ? "article" : "blog";
   const d = w[which];
   if (!d) throw new Error(`먼저 ${which === "article" ? "기사" : "블로그"}를 써 주세요.`);
-  const { prompt } = await api("revisePrompt", { doc: which, request, vacancy: w.analysis.vacancy, draft: d, ref: which === "blog" ? referenceArticle(w) : null });
+  const { prompt } = await api("revisePrompt", { doc: which, request, vacancy: w.analysis.vacancy, draft: d, ref: which === "blog" ? referenceArticle(w) : null, ...colBody(w) });
   const r = await webAsk(prompt, `${which === "article" ? "기사" : "블로그"}를 고치고 있습니다`, async (text) => {
-    const x = await api("reviseParse", { doc: which, text });
+    const x = await api("reviseParse", { doc: which, text, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x.doc;
   });
   say("blog", "고친 글을 정리하는 중…");
   d.title = r.title || d.title;
   if (which === "article" && Array.isArray(r.subtitles) && r.subtitles.length) d.subtitles = r.subtitles;
+  if (which === "article" && r.section1) { d.section1 = r.section1; d.section2 = r.section2 || ""; }
   d.paragraphs = r.paragraphs;
   if (Array.isArray(r.keywords) && r.keywords.length) d.keywords = r.keywords;
   d.media.forEach((m) => { if (Number.isInteger(m.insertAfterParagraph)) m.insertAfterParagraph = Math.min(m.insertAfterParagraph as number, d.paragraphs.length); });
@@ -456,7 +363,7 @@ async function snsForWeb(w: Work) {
   const map = srcMap(w);
   const byId = new Map((data.pool || []).map((m) => [m.id, m]));
   const per: Record<string, DocMedia[]> = Object.fromEntries(CHANNELS.map((ch) => [ch, (data.media?.[ch] || []).map((id) => byId.get(id)).filter(Boolean) as DocMedia[]]));
-  const c = await api("snsCompose", { posts: data.posts, noun: data.noun, listing: data.listing, ai: Object.fromEntries(CHANNELS.map((ch) => [ch, per[ch].map((m) => m.kind === "ai")])) });
+  const c = await api("snsCompose", { ...colBody(w), posts: data.posts, noun: data.noun, listing: data.listing, ai: Object.fromEntries(CHANNELS.map((ch) => [ch, per[ch].map((m) => m.kind === "ai")])) });
   const thumb = (m: DocMedia) => thumbOf(w, m, map);
   const channels: Record<string, unknown> = {};
   for (const ch of CHANNELS) {
@@ -491,9 +398,9 @@ async function snsSave({ vacancyId, channel, post, mediaIds }: any) {
 async function snsRevise({ vacancyId, channel, request }: any) {
   const w = await need(vacancyId);
   if (!w.sns) throw new Error("먼저 SNS 글을 써 주세요.");
-  const { prompt } = await api("revisePrompt", { doc: "sns", channel, request, vacancy: w.analysis.vacancy, posts: w.sns.posts });
+  const { prompt } = await api("revisePrompt", { doc: "sns", channel, request, vacancy: w.analysis.vacancy, posts: w.sns.posts, ref: referenceArticle(w), tone: w.sns.tone, ...colBody(w) });
   const post = await webAsk(prompt, "SNS 글을 고치고 있습니다", async (text) => {
-    const x = await api("reviseParse", { doc: "sns", channel, text });
+    const x = await api("reviseParse", { doc: "sns", channel, text, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x.post;
   });
@@ -524,15 +431,6 @@ async function channelFiles(vacancyId: string, channel: string) {
   }
   return { w, info, text: view.composed.text as string, posts: (view.composed.posts || []) as string[], photos, total: list.length };
 }
-async function zipDownload(name: string, files: { name: string; data: string | Blob }[]) {
-  const JSZip = (await import("jszip")).default;
-  const zip = new JSZip();
-  for (const f of files) {
-    if (typeof f.data === "string" && f.data.startsWith("data:")) zip.file(f.name, f.data.split(",")[1], { base64: true });
-    else zip.file(f.name, f.data);
-  }
-  download(name, await zip.generateAsync({ type: "blob" }));
-}
 async function snsExport({ vacancyId, channel }: any) {
   const r = await channelFiles(vacancyId, channel);
   const label = r.info?.label || channel;
@@ -542,73 +440,6 @@ async function snsExport({ vacancyId, channel }: any) {
   return { folder: `내려받기 폴더의 ${name}`, saved: r.photos.length, total: r.total };
 }
 
-/* ── 공실마케팅 도우미 (크롬 확장 web-bridge.js) ── */
-/* 도우미가 깔려 있나 — web-bridge.js 가 바로 대답한다 (한 번 대답하면 기억) */
-let helperSeen = false;
-async function helperOn() {
-  if (helperSeen) return true;
-  const r = await helper({ op: "ping" }, 1200);
-  helperSeen = Boolean(r && r.ok);
-  return helperSeen;
-}
-function helper(msg: Record<string, unknown>, ms = 8000): Promise<any> {
-  return new Promise((resolve) => {
-    const id = `${Date.now()}-${Math.random()}`;
-    const t = setTimeout(() => { window.removeEventListener("message", on); resolve(null); }, ms);
-    const on = (e: MessageEvent) => {
-      if (e.source !== window || !e.data || e.data.gsHelperRes !== true || e.data.id !== id) return;
-      clearTimeout(t);
-      window.removeEventListener("message", on);
-      resolve(e.data.res);
-    };
-    window.addEventListener("message", on);
-    window.postMessage({ gsHelperReq: true, id, msg }, location.origin);
-  });
-}
-async function helperWait(id: string, what: "taken" | "done", ms: number) {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    const s = await helper({ op: "status", id });
-    if (s && s.ok && (what === "taken" ? s.taken || s.done : s.done)) return what === "done" ? s.done : true;
-    await sleep(1200);
-  }
-  return null;
-}
-const NO_HELPER = "HELPER_NONE: 공실마케팅 도우미(크롬 확장)가 응답하지 않았어요. 도우미(1.0.39 이상)를 설치하거나 새로 고친 뒤에는 이 화면을 한 번 새로고침(F5)하고 다시 눌러 주세요. 아니면 아래 직접 붙여 넣기로 올려 주세요.";
-/* 발행한 글 주소 → 홍보현황 (앱은 helper-server onPublished). 웹은 이 화면이 열려 있는 동안 도우미에게 묻는다 */
-const PUB_KEY = "gs-web-helper-pubs";
-type Pub = { id: string; vacancyId: string; channel: string; at: number };
-const pubs = (): Pub[] => { try { return (JSON.parse(localStorage.getItem(PUB_KEY) || "[]") as Pub[]).filter((p) => Date.now() - p.at < 3 * 60 * 60 * 1000); } catch { return []; } };
-const setPubs = (l: Pub[]) => { try { localStorage.setItem(PUB_KEY, JSON.stringify(l.slice(-20))); } catch { /* */ } };
-let pubTimer = 0;
-export function watchPublished() {
-  if (pubTimer || typeof window === "undefined") return;
-  pubTimer = window.setInterval(async () => {
-    const list = pubs();
-    if (!list.length || !(await helperOn())) return;
-    for (const p of list) {
-      const s = await helper({ op: "status", id: p.id });
-      if (!s || !s.ok) { if (s && !s.ok) setPubs(pubs().filter((x) => x.id !== p.id)); continue; }
-      if (s.published) {
-        const r = await fetch("/api/studio/promo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ vacancyId: p.vacancyId, channel: p.channel, url: s.published }) }).then((x) => x.json()).catch(() => null);
-        if (r && r.success) { setPubs(pubs().filter((x) => x.id !== p.id)); void helper({ op: "forget", id: p.id }); window.dispatchEvent(new CustomEvent("gs-promo-saved", { detail: { vacancyId: p.vacancyId, channel: p.channel } })); }
-      }
-    }
-  }, 15000);
-}
-async function helperJob(target: string, payload: Record<string, unknown>, openUrl: string, vacancyId: string, channel: string, progressCh: string, label: string) {
-  if (!(await helperOn())) throw new Error(NO_HELPER);
-  const r = await helper({ op: "job", target, payload });
-  if (!r || !r.ok || !r.id) throw new Error(NO_HELPER);
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vacancyId)) setPubs([...pubs(), { id: r.id, vacancyId, channel, at: Date.now() }]);
-  window.open(openUrl, "_blank");
-  say(progressCh, `새 탭에 ${label}을(를) 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…`);
-  if (!(await helperWait(r.id, "taken", 45000))) {
-    void helper({ op: "forget", id: r.id });
-    throw new Error(`HELPER_NONE: 도우미가 ${label} 화면에서 일감을 받아 가지 않았어요. 새 탭에 ${label}이(가) 로그인된 채로 열렸는지 확인하고 다시 눌러 주세요.`);
-  }
-  return r.id as string;
-}
 async function snsFill({ vacancyId, channel }: any) {
   if (!HOME[channel]) throw new Error("알 수 없는 채널입니다.");
   if (!(await helperOn())) throw new Error(NO_HELPER);
@@ -628,12 +459,12 @@ async function naverFill({ vacancyId, design, via = "helper" }: any) {
   syncAnalysisMedia(w);
   if (!w.blog) throw new Error("먼저 블로그 글을 써 주세요.");
   if (via !== "manual" && !(await helperOn())) throw new Error(NO_HELPER);
-  say("naver", "매물 출처 정보(중개사무소)를 확인하는 중…");
-  const v = w.analysis.vacancy;
-  const listing = await fetchListing(vacancyId, v.saleKind || "");
+  const v = w.analysis.vacancy || {};
+  if (!w.column) say("naver", "매물 출처 정보(중개사무소)를 확인하는 중…");
+  const listing = w.column ? null : await fetchListing(vacancyId, v.saleKind || ""); // 뉴스칼럼은 글 끝 [참고 자료](내 기사 주소)
   const media = w.blog.media.length ? w.blog.media : seedMedia(w);
   const map = srcMap(w);
-  const nb = await api("naverBlocks", { vacancyId, vacancy: v, listing, design, blog: { title: w.blog.title, paragraphs: w.blog.paragraphs, keywords: w.blog.keywords, style: w.blog.style }, media: media.map((m) => ({ kind: m.kind, caption: m.caption, isCover: m.isCover, insertAfterParagraph: m.insertAfterParagraph })) });
+  const nb = await api("naverBlocks", { ...colBody(w), vacancyId, vacancy: v, listing, design, blog: { title: w.blog.title, paragraphs: w.blog.paragraphs, keywords: w.blog.keywords, style: w.blog.style }, media: media.map((m) => ({ kind: m.kind, caption: m.caption, isCover: m.isCover, insertAfterParagraph: m.insertAfterParagraph })) });
   say("naver", "사진을 준비하는 중…");
   const blocks: any[] = [];
   for (const b of nb.blocks as any[]) {
@@ -674,7 +505,7 @@ async function ytForWeb(w: Work) {
   const d = w.youtube;
   if (!d) return null;
   const article = w.article || w.blog || null;
-  const v = await api("ytView", { script: d, listing: d.listing, detailUrl: d.detailUrl, article: article ? { subtitles: article.subtitles, paragraphs: article.paragraphs, keywords: article.keywords } : null });
+  const v = await api("ytView", { ...colBody(w), script: d, listing: d.listing, detailUrl: d.detailUrl, article: article ? { subtitles: article.subtitles, paragraphs: article.paragraphs, keywords: article.keywords } : null });
   return { vacancyId: w.vacancyId, settings: d.settings, title: d.title, titles: d.titles || [], narration: d.narration, seconds: v.seconds, chars: v.chars, description: v.description, version: [d.writtenAt, d.revisedAt, d.editedAt].map((x) => x || "").join("|") };
 }
 async function ytGet(vacancyId: string) {
@@ -694,9 +525,9 @@ async function ytRevise({ vacancyId, request }: any) {
   const w = await need(vacancyId);
   if (!w.youtube) throw new Error("먼저 대본을 써 주세요.");
   const ref = referenceArticle(w) || (w.blog ? { title: w.blog.title, subtitles: [], body: w.blog.paragraphs.join("\n\n") } : null);
-  const { prompt } = await api("revisePrompt", { doc: "youtube", request, vacancy: w.analysis.vacancy, draft: w.youtube, ref });
+  const { prompt } = await api("revisePrompt", { doc: "youtube", request, vacancy: w.analysis.vacancy, draft: w.youtube, ref, ...colBody(w) });
   const s = await webAsk(prompt, "유튜브 대본을 고치고 있습니다", async (text) => {
-    const x = await api("reviseParse", { doc: "youtube", text });
+    const x = await api("reviseParse", { doc: "youtube", text, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x.script;
   });
@@ -734,10 +565,10 @@ async function writeAll(o: any) {
   if (want.sns) await useQuota("sns", o.vacancyId);
   if (want.youtube) await useQuota("youtube", o.vacancyId);
   say("blog", "질문을 만드는 중…");
-  const P = await api("allPrompt", { vacancy: v, want, article: o.article, blog: o.blog, tone: o.sns?.tone, youtube: o.youtube, ref: want.article ? null : referenceArticle(w) });
+  const P = await api("allPrompt", { vacancy: v, want, article: o.article, blog: o.blog, tone: o.sns?.tone, youtube: o.youtube, ref: want.article ? null : referenceArticle(w), ...colBody(w) });
   say("blog", `${webAi().name} 답을 기다리는 중…`);
   const r = await webAsk(P.prompt, `${P.keys.length}가지 글을 한 번에 쓰고 있습니다`, async (text) => {
-    const x = await api("allParse", { text, keys: P.keys });
+    const x = await api("allParse", { text, keys: P.keys, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x;
   });
@@ -746,17 +577,17 @@ async function writeAll(o: any) {
   const fresh = await getWork(o.vacancyId) || w; // 기다리는 동안 고친 것
   if (r.article) await saveWritten(fresh, "article", r.article, { style: P.settings.artKind, length: P.settings.artLen });
   if (r.blog) await saveWritten(fresh, "blog", r.blog, { style: P.settings.blogSt, length: P.settings.blogLen });
-  const needListing = r.sns || r.youtube;
-  const listing = needListing ? await fetchListing(o.vacancyId, v.saleKind || "").catch(() => null) : null;
+  const needListing = !w.column && (r.sns || r.youtube); // 뉴스칼럼은 중개사무소 출처 대신 소재 출처(내 기사 주소)
+  const listing = needListing ? await fetchListing(o.vacancyId, v?.saleKind || "").catch(() => null) : null;
   if (r.sns) {
-    say("blog", "매물 정보 출처(중개사무소)를 확인하는 중…");
+    if (!w.column) say("blog", "매물 정보 출처(중개사무소)를 확인하는 중…");
     let posts = r.sns as Record<string, any>;
     if (snsOnly.length && fresh.sns) { const keep = { ...fresh.sns.posts }; for (const c of snsOnly) if (posts[c]) keep[c] = posts[c]; posts = keep; }
     const { pool, media } = await pickMedia(fresh);
-    fresh.sns = { vacancyId: o.vacancyId, noun: v.saleKind ? "물건" : "매물", listing, posts, pool, media, ...(fresh.sns && Array.isArray(fresh.sns.seenFiles) ? { seenFiles: fresh.sns.seenFiles } : {}), writtenAt: now() };
+    fresh.sns = { vacancyId: o.vacancyId, noun: v?.saleKind ? "물건" : "매물", listing, posts, pool, media, tone: o.sns?.tone, ...(fresh.sns && Array.isArray(fresh.sns.seenFiles) ? { seenFiles: fresh.sns.seenFiles } : {}), writtenAt: now() };
     await syncNewMedia(fresh);
   }
-  if (r.youtube) fresh.youtube = { ...r.youtube, settings: P.settings.ytSet, detailUrl: (listing && listing.detailUrl) || "", listing, writtenAt: now() };
+  if (r.youtube) fresh.youtube = { ...r.youtube, settings: P.settings.ytSet, detailUrl: (listing && listing.detailUrl) || (w.column?.source?.news?.url || ""), listing, writtenAt: now() };
   await putWork(fresh);
   if (r.article) out.article = docForWeb(fresh, "article");
   if (r.blog) out.blog = docForWeb(fresh, "blog");
@@ -781,7 +612,7 @@ export async function prepareWebArticleDraft(vacancyId: string) {
 
 /* ── 작업 목록 (앱 studio:vacancy-list) ── */
 async function list() {
-  const works = await allWorks();
+  const works = (await allWorks()).filter((w) => !w.column);
   return works.map((w) => {
     const first = (w.analysis.media || []).find((m) => m.kind === "photo") || w.analysis.media?.[0];
     return {
@@ -790,6 +621,59 @@ async function list() {
       done: { article: Boolean(w.article), blog: Boolean(w.blog), instagram: Boolean(w.sns?.posts?.instagram), threads: Boolean(w.sns?.posts?.threads), facebook: Boolean(w.sns?.posts?.facebook), youtube: Boolean(w.youtube) },
     };
   }).sort((x, y) => (x.updatedAt < y.updatedAt ? 1 : -1));
+}
+
+/* ── 뉴스칼럼 저장·목록 (앱 column-writer create · get · list · setNewsUrl) ── */
+const hex = (n: number) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
+const articleNoOf = (url: string) => /\/news\/(\d+)(?:[/?#]|$)/.exec(String(url || ""))?.[1] || "";
+function colForWeb(w: Work) {
+  const c = w.column!;
+  const n = c.source?.news || {};
+  const media = w.analysis.media || [];
+  return {
+    id: w.vacancyId, source: c.source, label: n.title || c.source?.topic?.subject || "뉴스칼럼", createdAt: c.createdAt,
+    articleTitle: w.article?.title || "",
+    captures: media.map((m) => ({ thumb: m.src, caption: m.caption, kind: m.kind })), hiddenCount: (w.analysis.hidden || []).length,
+    thumb: media[0]?.src || null,
+    worked: Boolean(w.article || w.blog || w.sns || w.youtube),
+    done: { article: Boolean(w.article), blog: Boolean(w.blog), instagram: Boolean(w.sns?.posts?.instagram), threads: Boolean(w.sns?.posts?.threads), facebook: Boolean(w.sns?.posts?.facebook), youtube: Boolean(w.youtube) },
+    updatedAt: w.updatedAt,
+  };
+}
+async function colCreate(source: any) {
+  const n = source?.news;
+  // 웹은 내 공실뉴스 기사로만 (2026-11-04 사장님: 본인이 작성한 기사만) — 기사관리 카드에서 연다
+  if (!source || source.mode !== "news" || !n || n.publisher !== "공실뉴스") throw new Error("웹 뉴스칼럼은 내가 쓴 공실뉴스 기사로 만들 수 있어요. 아래 기사 카드를 눌러 주세요.");
+  if (!String(n.title || "").trim() || !String(n.body || "").trim()) throw new Error("기사 제목과 본문이 필요합니다.");
+  const id = `col-${Date.now().toString(16)}${hex(3)}`;
+  const articleNo = articleNoOf(n.url);
+  // 칼럼 사진 = 내 기사에 넣은 사진 (기사에 적힌 설명 그대로)
+  const got = articleNo ? await getMyArticlePhotos(articleNo).catch(() => null) : null;
+  const t0 = Date.now();
+  const media: Src[] = (got?.photos || []).map((p, i) => ({ key: `photo:${p.url}`, kind: "photo", src: p.url, caption: p.caption, real: true, addedAt: t0 + i }));
+  const source2 = { mode: "news", angle: String(source.angle || ""), news: { title: String(n.title).trim(), publisher: "공실뉴스", publishedAt: String(n.publishedAt || ""), url: String(n.url || ""), body: String(n.body).trim() } };
+  const w: Work = { key: keyOf(id), memberId: getMember(), vacancyId: id, analysis: { vacancyId: id, vacancy: null, media, hidden: [], failures: [], analyzedAt: now() }, column: { source: source2, createdAt: now(), articleNo }, updatedAt: now() };
+  await putWork(w);
+  return colForWeb(w);
+}
+async function colGet(id: string) {
+  const w = isCol(id) ? await getWork(id) : null;
+  return w?.column ? colForWeb(w) : null;
+}
+async function colList(limit = 200) {
+  return (await allWorks()).filter((w) => w.column).sort((a, b) => (a.column!.createdAt < b.column!.createdAt ? 1 : -1)).slice(0, limit).map(colForWeb);
+}
+/* 기사 주소를 내 물건접수 홈페이지의 그 기사로 (앱 setNewsUrl) — 새로 쓰는 블로그·SNS 글부터 */
+async function colSetUrl(id: string, url: string) {
+  const w = isCol(id) ? await getWork(id) : null;
+  const next = String(url || "").trim();
+  if (!w?.column || !/^https:\/\//.test(next)) return null;
+  if (w.column.source.news.url !== next) { w.column.source.news.url = next; await putWork(w); }
+  return colForWeb(w);
+}
+async function colMedia(id: string, op: any) {
+  await mediaOp(id, op);
+  return colGet(id);
 }
 
 /* ── 대역 ── */
@@ -809,11 +693,11 @@ const web = {
     list, media: mediaOp, onProgress: onProgress("vacancy"),
   },
   article: {
-    options: async (id: string) => { const w = await getWork(id); return (await options(w?.analysis.vacancy)).article; },
+    options: async (id: string) => { const w = await getWork(id); return (await optionsOf(w)).article; },
     write: async (o: any) => writeAll({ vacancyId: o.vacancyId, article: { on: true, kind: o.kind, length: o.length }, blog: { on: false }, sns: { on: false }, youtube: { on: false } }).then((r: any) => r.article),
   },
   blog: {
-    styles: async (id?: string) => { const w = id ? await getWork(id) : null; return (await options(w?.analysis.vacancy)).blog; },
+    styles: async (id?: string) => { const w = id ? await getWork(id) : null; return (await optionsOf(w)).blog; },
     get: blogGet, save: blogSave, revise: blogRevise, addPhoto: blogAddPhoto,
     write: async (o: any) => writeAll({ vacancyId: o.vacancyId, article: { on: false }, blog: { on: true, style: o.style, length: o.length }, sns: { on: false }, youtube: { on: false } }).then((r: any) => r.blog),
     imageStyles: async () => (await options()).imageStyles,
@@ -826,14 +710,19 @@ const web = {
     write: async (o: any) => writeAll({ vacancyId: o.vacancyId, article: { on: false }, blog: { on: false }, sns: { on: true, tone: o.tone }, youtube: { on: false } }).then((r: any) => r.sns),
     onProgress: onProgress("sns"),
   },
+  column: {
+    create: colCreate, get: colGet, list: colList, setUrl: colSetUrl, media: colMedia,
+    // 다른 뉴스 가져오기는 앱에서 (웹은 내 기사만, 2026-11-04 사장님)
+    fetchNews: notInWeb("다른 뉴스 가져오기"), openNews: notInWeb("다른 뉴스 가져오기"), grabNews: notInWeb("다른 뉴스 가져오기"),
+  },
   naver: {
-    designs: async () => (await options()).designs,
+    designs: async (id?: string) => (await optionsOf(id ? await getWork(id) : null)).designs,
     fill: naverFill,
     openMyBlog: async () => { window.open(BLOG_HOME_URL, "_blank", "noopener"); return { ok: true }; },
     onProgress: onProgress("naver"),
   },
   youtube: {
-    options: async (id: string) => { const w = await getWork(id); return (await options(w?.analysis.vacancy)).youtube; },
+    options: async (id: string) => { const w = await getWork(id); return (await optionsOf(w)).youtube; },
     get: ytGet, save: ytSave, revise: ytRevise, exportText: ytExport,
     write: async (o: any) => writeAll({ vacancyId: o.vacancyId, article: { on: false }, blog: { on: false }, sns: { on: false }, youtube: { on: true, ...o } }).then((r: any) => r.youtube),
     onProgress: onProgress("youtube"),

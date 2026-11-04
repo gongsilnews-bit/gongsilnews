@@ -6,6 +6,7 @@
  *  최근 본 기사·부동산·단지 = 이 기기(stars.getRecent). 부동산·단지 카드에는 1주일 안 새 소식. ★ = 찜 해제
  */
 import { useEffect, useRef, useState } from "react";
+import { CommentCount } from "./useCommentCounts";
 import { getMyBoard, type BoardAgency, type BoardArticle, type BoardComplex } from "@/app/actions/mapStars";
 import { agencyArticles, listMapAgencies, type MapAgency } from "@/app/actions/mapAgencies";
 import SnsIconLink from "./SnsIconLink";
@@ -17,7 +18,7 @@ import { getRecent, starSvg, useStars, type StarKind } from "./stars";
 import NewsArticlePanel from "./NewsArticlePanel";
 import AptDetailPanel, { type AptDetail } from "./AptDetailPanel";
 
-type Tab = "vac" | "art" | "ag" | "apt";
+type Tab = "vac" | "auc" | "art" | "ag" | "apt"; // auc = 찜한 경매·공매 (11-04 사장님: 경매는 따로)
 type Side = { kind: "art"; id: string } | { kind: "ag"; item: BoardAgency } | { kind: "apt"; id: string } | null;
 const KIND: Record<string, string> = { apt: "아파트", offi: "오피스텔", villa: "빌라" };
 const FOLDER_TYPE: Record<"art" | "ag" | "apt", "ARTICLE" | "AGENCY" | "COMPLEX"> = { art: "ARTICLE", ag: "AGENCY", apt: "COMPLEX" };
@@ -86,9 +87,11 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
   const arts = pick("art", board?.articles || [], "art");
   const ags = pick("ag", board?.agencies || [], "ag");
   const cxs = pick("apt", board?.complexes || [], "apt");
-  const counts: Record<Tab, number> = { vac: vacancies.length, art: arts.length, ag: ags.length, apt: cxs.length };
-  const label = (k: Tab, l: string) => (k === "vac" ? (wishTab === "recent" ? `최근 본 ${l}` : `찜한 ${l}`) : src === "recent" ? `최근 본 ${l}` : `찜한 ${l}`);
-  const TABS: [Tab, string][] = [["vac", "공실"], ["art", "기사"], ["ag", "부동산"], ["apt", "단지"]];
+  const isAuc = (p: { trade_type?: string }) => p.trade_type === "경매" || p.trade_type === "공매";
+  const vacs = vacancies.filter((p) => !isAuc(p)), aucs = vacancies.filter(isAuc);
+  const counts: Record<Tab, number> = { vac: vacs.length, auc: aucs.length, art: arts.length, ag: ags.length, apt: cxs.length };
+  const label = (k: Tab, l: string) => (k === "vac" || k === "auc" ? (wishTab === "recent" ? `최근 본 ${l}` : `찜한 ${l}`) : src === "recent" ? `최근 본 ${l}` : `찜한 ${l}`);
+  const TABS: [Tab, string][] = [["vac", "공실"], ["auc", "경매"], ["art", "기사"], ["ag", "부동산"], ["apt", "단지"]];
 
   const Star = ({ k, id, top = 8, right = 10 }: { k: StarKind; id: string; top?: number; right?: number }) => (
     <span role="button" title={isStar(k, id) ? "찜 해제" : "찜하기"} onClick={(e) => { e.preventDefault(); e.stopPropagation(); void toggleStar(k, id); }}
@@ -156,11 +159,14 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
           </div>
           {a.thumbnail_url && <img src={a.thumbnail_url} alt="" style={{ width: 84, height: 64, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "#f3f4f6" }} />}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, fontSize: 12 }}>
           <span style={{ color: "#a1a1aa" }}>{String(a.published_at || "").slice(0, 10).replace(/-/g, ". ")} · {a.author_name || "공실뉴스"}</span>
           <span style={{ marginLeft: "auto" }} />
           {folder && <FolderBtn k="art" id={String(a.id)} />}
-          <span style={{ color: on ? "#d32f2f" : ORANGE, fontWeight: 700 }}>{on ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
+          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            <span style={{ color: on ? "#d32f2f" : ORANGE, fontWeight: 700 }}>{on ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
+            <CommentCount id={a.id} />
+          </span>
         </div>
       </a>
     );
@@ -223,7 +229,7 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
               <span key={k} style={{ display: "inline-flex", alignItems: "center" }}>
                 {i > 0 && <span style={{ color: "#d1d5db", margin: "0 10px 0 0" }}>|</span>}
                 <button type="button" onClick={() => setTab(k)} style={{ border: "none", background: "none", padding: 0, font: "inherit", cursor: "pointer", color: tab === k ? "#111" : "#9ca3af" }}>
-                  {tab === k ? label(k, l) : l} <span style={{ color: tab === k ? (k === "art" ? ORANGE : k === "ag" ? NAVY : BLUE) : "#9ca3af" }}>{counts[k]}</span>개
+                  {tab === k ? label(k, l) : l} <span style={{ color: tab === k ? (k === "art" ? ORANGE : k === "ag" ? NAVY : k === "auc" ? "#dc2626" : BLUE) : "#9ca3af" }}>{counts[k]}</span>개
                 </button>
               </span>
             ))}
@@ -232,8 +238,8 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
 
           {/* 찜한 / 최근 본 + 폴더 */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", margin: "12px 0 0" }}>
-            {tab === "vac" ? <>
-              {(["wish", "recent"] as const).map((t) => <button key={t} onClick={() => setWishTab(t)} style={chip(wishTab === t, true)}>{t === "wish" ? "찜한 공실" : "최근 본 공실"}</button>)}
+            {tab === "vac" || tab === "auc" ? <>
+              {(["wish", "recent"] as const).map((t) => <button key={t} onClick={() => setWishTab(t)} style={chip(wishTab === t, true)}>{t === "wish" ? "찜한" : "최근 본"} {tab === "auc" ? "경매" : "공실"}</button>)}
               {wishTab === "wish" && <>
                 <span style={{ width: 1, height: 16, background: "#e5e7eb", margin: "0 6px" }} />
                 {[{ id: "ALL", name: "전체" }, ...categories].map((c) => <button key={c.id} onClick={() => setSelectedCategoryId(c.id as string)} style={chip(selectedCategoryId === c.id)}>{c.name}</button>)}
@@ -250,8 +256,9 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: narrow ? "1fr" : "repeat(auto-fill, minmax(360px, 1fr))", gap: 10, marginTop: 12 }}>
-            {!board && tab !== "vac" && src === "star" && empty("불러오는 중…")}
-            {tab === "vac" && (vacancies.length ? vacancies.map(vacCard) : empty(wishTab === "wish" ? "찜한 공실이 없어요. 공실 카드의 ☆을 눌러 찜해 보세요." : "최근 본 공실이 없어요."))}
+            {!board && tab !== "vac" && tab !== "auc" && src === "star" && empty("불러오는 중…")}
+            {tab === "vac" && (vacs.length ? vacs.map(vacCard) : empty(wishTab === "wish" ? "찜한 공실이 없어요. 공실 카드의 ☆을 눌러 찜해 보세요." : "최근 본 공실이 없어요."))}
+            {tab === "auc" && (aucs.length ? aucs.map(vacCard) : empty(wishTab === "wish" ? "찜한 경매가 없어요. 경매/공매 카드의 ☆을 눌러 찜해 보세요." : "최근 본 경매가 없어요."))}
             {tab === "art" && (board || src === "recent") && (arts.length ? arts.map((a) => artCard(a)) : empty(src === "recent" ? "최근 본 기사가 없어요." : "찜한 기사가 없어요. 기사 옆 ☆을 눌러 찜해 보세요."))}
             {tab === "ag" && (board || src === "recent") && (ags.length ? ags.map(agCard) : empty(src === "recent" ? "최근 본 부동산이 없어요." : "찜한 부동산이 없어요. 지도의 [부동산]에서 ☆을 눌러 찜해 보세요."))}
             {tab === "apt" && (board || src === "recent") && (cxs.length ? cxs.map(aptCard) : empty(src === "recent" ? "최근 본 단지가 없어요." : "찜한 단지가 없어요. 단지 창 위쪽 ☆을 눌러 찜해 보세요."))}
@@ -290,7 +297,7 @@ function AgencySide({ a, vacancies, vacCard, artCard, onClose }: { a: BoardAgenc
   const [arts, setArts] = useState<BoardArticle[] | null>(null);
   const [full, setFull] = useState<MapAgency | null>(null);
   const [introOpen, setIntroOpen] = useState(false);
-  useEffect(() => { setFull(null); listMapAgencies().then((l) => setFull(l.find((x) => x.id === a.id) || null)).catch(() => {}); }, [a.id]);
+  useEffect(() => { setFull(null); listMapAgencies(null, a.id).then((l) => setFull(l[0] || null)).catch(() => {}); }, [a.id]);
   useEffect(() => { setArts(null); agencyArticles(a.ownerId).then((l) => setArts(l as unknown as BoardArticle[])).catch(() => setArts([])); }, [a.ownerId]);
   const vs = vacancies.filter((v) => v.owner_id === a.ownerId);
   const restored = useRef(false);

@@ -132,7 +132,7 @@ export async function createVacancy(data: {
     }
 
     // 이 사무소·단지를 찜한 사람에게 🔔 새 공실 (2026-11-04)
-    if (status === "ACTIVE") await import("@/utils/starAlerts").then((m) => m.sweepStarAlerts(1)).catch(() => {});
+    if (status === "ACTIVE") await import("@/utils/starAlerts").then((m) => m.alertVacancy(String(result.id))).catch(() => {});
 
     return { success: true, id: result.id, vacancy_no: result.vacancy_no };
   } catch (error: any) {

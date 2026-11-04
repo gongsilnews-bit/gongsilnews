@@ -13,10 +13,18 @@ export type MapAgency = {
   vacancies: number; articles: number;
 };
 
-export async function listMapAgencies(): Promise<MapAgency[]> {
+/** box = 지금 보이는 지도 범위 [[남,서],[북,동]] — 그 안의 사무소만, 최대 300 (2026-11-04: 회원 10만 명이어도 가볍게). id = 한 곳만 */
+export async function listMapAgencies(box?: [[number, number], [number, number]] | null, id?: string): Promise<MapAgency[]> {
   const db = admin();
-  const { data: ags } = await db.from("agencies").select("id, owner_id, name, ceo_name, reg_num, phone, cell, address, address_detail, lat, lng, intro")
-    .eq("status", "APPROVED").not("lat", "is", null).limit(5000);
+  let q = db.from("agencies").select("id, owner_id, name, ceo_name, reg_num, phone, cell, address, address_detail, lat, lng, intro")
+    .eq("status", "APPROVED").not("lat", "is", null);
+  if (id) q = q.eq("id", id);
+  else if (box) {
+    const [[s, w], [n, e]] = box;
+    if (n - s > 3 || e - w > 3) return [];
+    q = q.gte("lat", s).lte("lat", n).gte("lng", w).lte("lng", e);
+  }
+  const { data: ags } = await q.limit(300);
   const list = (ags || []).filter((a) => a.owner_id && a.lat && a.lng);
   if (!list.length) return [];
   const owners = [...new Set(list.map((a) => a.owner_id as string))];

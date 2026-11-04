@@ -2,6 +2,7 @@
 
 import React, { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { listMyStudioVacancies } from "@/app/actions/studio";
+import { installWebMarketing } from "../studio-web/marketing";
 
 const DocStudio = lazy(() => import("@/components/admin/studio-doc/DocStudio"));
 const SimReportSection = lazy(() => import("@/components/admin/studio-sim/SimReportSection"));
@@ -68,6 +69,8 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 const WIP = new Set(["doc", "interior_sim", "remodel_sim"]);
 
 export default function StudioMarketingSection({ theme, dev = false }: { theme: Theme; dev?: boolean }) {
+  // 웹 — 보고서·홍보지 [AI 새로 생성]을 회원 AI(새 탭)로 (2026-11-04 사장님: 웹에서 다 되게). 앱이면 아무것도 안 한다
+  useEffect(() => { installWebMarketing(); }, []);
   // .gsm(공실마케팅 작업 파일)에서 연 작업 (2026-10-23, docs/2026-10-23_gsn_plan.md) — 앱이 주소 ?gsm=<id>&cat=<report|interior_sim|remodel_sim> 로 연다.
   // 아래 "이 기기 기억"을 먼저 바꿔 두면 각 화면이 그 작업을 고른 채 시작한다 (처음 그릴 때 한 번)
   useState(() => {

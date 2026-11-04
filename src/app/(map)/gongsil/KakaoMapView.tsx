@@ -939,7 +939,7 @@ export default function KakaoMapView({
           offi: !["apart", "sale", "auction"].includes(activeCategory) || activePills.length === 0 || activePills.includes("오피스텔"),
         }}
         // 공실 보기는 공실 탭으로, 경매 보기는 경매/공매 탭으로 바꾸고 그 단지 물건만 (2026-11-02)
-        onShowVacancies={(ids) => { if (isAuctionMode) onSwitchCategory?.("all"); setSelectedClusterIds(ids); setShowDetail(false); }}
+        onShowVacancies={(ids) => { window.dispatchEvent(new CustomEvent("gs-vacancy-list")); if (isAuctionMode) onSwitchCategory?.("all"); setSelectedClusterIds(ids); setShowDetail(false); }}
         onShowAuctions={(ids) => { if (!isAuctionMode) onSwitchCategory?.("auction"); setSelectedClusterIds(ids); setShowDetail(false); }}
         mapPick={mapPick}
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}

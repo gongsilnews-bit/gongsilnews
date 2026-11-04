@@ -1,7 +1,7 @@
 "use client";
 // 사진 정리 칸 (2026-10-28 사장님) — 공실뉴스 분석 사진 · 뉴스칼럼 기사 화면 같이 쓴다
 //  [×] 빼기 · 끌어서 순서 · [+ AI 이미지 만들기](스타일·그릴 내용 추천) · [+ 내 사진 올리기] · 뺀 사진 되살리기. 맨 앞 = 대표 사진
-import { studioBridge } from "./studioWebBridge";
+import { studioBridge } from "../studio-web";
 import React, { useEffect, useState } from "react";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 

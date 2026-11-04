@@ -1,6 +1,6 @@
 "use client";
 
-import { isWebStudio, setStudioWebMember, studioBridge, watchPublished } from "./studioWebBridge";
+import { isWebStudio, setStudioWebMember, studioBridge, watchPublished } from "../studio-web";
 import { useInnerHistory } from "@/utils/useInnerHistory";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import StudioMyVideoPanel from "./StudioMyVideoPanel";
@@ -88,6 +88,9 @@ const NEWS_CATEGORIES = [
   { id: "interior", label: "인테리어뉴스", lead: "실내 사진 한 장으로 인테리어 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
+// 웹에서 보이는 카테고리 — 공실뉴스 · 뉴스칼럼(내 기사로, 2026-11-04 사장님: 공실뉴스 하단에)
+const WEB_CATEGORIES = ["gongsil", "column"];
+const WEB_LEAD: Record<string, string> = { column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진" };
@@ -102,7 +105,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   useEffect(() => {
     if (!isWebStudio()) return;
     setWeb(true);
-    setCategoryState("gongsil");
+    // 기사 카드에서 왔으면 뉴스칼럼 — 아니면 공실뉴스
+    let saved = "";
+    try { saved = localStorage.getItem(CATEGORY_KEY) || ""; } catch {}
+    setCategoryState(WEB_CATEGORIES.includes(saved) ? saved : "gongsil");
     watchPublished(); // 도우미로 올린 글 주소 → 홍보현황
   }, []);
   const [ai, setAi] = useState<AiItem[]>([]);
@@ -483,7 +489,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             {connectedAi.length ? `AI 설정 · ${connectedAi.map((a) => a.name).join(", ")}` : "AI 설정"}
           </button>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
-          {NEWS_CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.includes(c.id) && (!web || c.id === "gongsil")).map((c) => {
+          {NEWS_CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.includes(c.id) && (!web || WEB_CATEGORIES.includes(c.id))).map((c) => {
             const on = category === c.id;
             return (
               <button key={c.id} onClick={() => setCategory(c.id)}
@@ -499,13 +505,6 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             );
           })}
         </nav>
-        {/* 웹은 공실뉴스만 — 나머지는 앱에서 (2026-11-03 사장님) */}
-        {web && (
-          <div style={{ margin: "4px 4px 0", fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>
-            뉴스칼럼 · 내 영상 홍보 · 경매·공매와 지도·로드뷰 화면 캡처는 <b style={{ color: theme.textPrimary }}>공실마케팅studio 앱</b>에서 할 수 있어요.
-            <a href="/studio" target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 6, fontWeight: 800, color: navy, textDecoration: "none" }}>앱 알아보기 →</a>
-          </div>
-        )}
       </aside>
 
       {/* 오른쪽 — 위 줄(제목 · 이용 횟수 · [파일 ▾]) + 작업 공간 (2026-11-03 사장님: 메뉴는 원래대로 왼쪽에) */}
@@ -569,7 +568,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 })}
               </div>
             )}
-          <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
+          <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{(web && WEB_LEAD[category]) || NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
         </div>
 
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} onDesk={setSubDesk} />}

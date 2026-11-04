@@ -1,6 +1,6 @@
 "use client";
 
-import { studioBridge } from "./studioWebBridge";
+import { studioBridge } from "../studio-web";
 import React, { useEffect, useRef, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
 import StudioWorking from "./StudioWorking";

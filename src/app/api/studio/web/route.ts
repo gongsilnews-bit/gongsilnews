@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getExtensionMember } from "@/utils/extensionMember";
-import { studioWebOp } from "@/utils/studioWebWriter";
+import { studioWebOp } from "@/utils/studio-web/writer";
 
 /**
  * 웹 뉴스·SNS자동화 (2026-11-03 사장님: 앱의 공실뉴스 부분을 웹에서도 똑같이)
- * 프롬프트 만들기 · AI 답 나누기 · SNS 글 끝 · 네이버 블록 — 계산은 utils/studioWebWriter.ts. 로그인 회원만.
+ * 프롬프트 만들기 · AI 답 나누기 · SNS 글 끝 · 네이버 블록 — 계산은 utils/studio-web/writer.ts. 로그인 회원만.
  */
 export const runtime = "nodejs";
 

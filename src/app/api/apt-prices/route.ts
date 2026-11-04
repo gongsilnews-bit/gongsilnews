@@ -37,6 +37,29 @@ async function newsOf(supabase: ReturnType<typeof db>, c: { name: string; lat: n
   return [...byId.values()].sort((p, q) => String(q.published_at || q.created_at || "").localeCompare(String(p.published_at || p.created_at || "")));
 }
 
+/** 지도 단지 표시 오른쪽 아래 주황 뉴스 수 (2026-11-04 사장님) — 단지 창 [뉴스 N](newsOf)과 같은 규칙.
+ *  단지마다 묻지 않고, 화면(+약 2km) 안 기사를 한 번만 읽어 나눈다 (회원 10만 명이어도 가볍게) */
+async function countNews(supabase: ReturnType<typeof db>, list: { name: string; lat: number | null; lng: number | null; news?: number }[], [s, w, n, e]: number[]) {
+  if (!list.length || n - s > 0.5 || e - w > 0.5) return; // 너무 넓게 보면 세지 않는다
+  const d = 0.02;
+  const { data } = await supabase.from("articles").select("id, title, lat, lng")
+    .eq("status", "APPROVED").eq("is_deleted", false).lte("published_at", new Date().toISOString())
+    .gte("lat", s - d).lte("lat", n + d).gte("lng", w - d * 1.25).lte("lng", e + d * 1.25).limit(2000);
+  const arts = (data || []).filter((x) => x.lat && x.lng) as { id: string; title: string | null; lat: number; lng: number }[];
+  if (!arts.length) return;
+  for (const c of list) {
+    if (!c.lat || !c.lng) continue;
+    const bare = String(c.name || "").replace(/\(.*?\)|아파트|오피스텔|\s/g, "");
+    let k = 0;
+    for (const x of arts) {
+      const dLat = Math.abs(x.lat - c.lat), dLng = Math.abs(x.lng - c.lng);
+      if (dLat > d || dLng > d * 1.25) continue;
+      if (Math.hypot(dLat * 111_000, dLng * 88_000) <= 50 || (bare.length >= 3 && String(x.title || "").includes(bare))) k++;
+    }
+    if (k) c.news = k;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const supabase = db();
@@ -115,5 +138,7 @@ export async function GET(req: NextRequest) {
   const [a, v] = await read();
   const error = a.error || v.error;
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true, complexes: [...(a.data || []), ...(v.data || [])] }, { headers });
+  const complexes = [...(a.data || []), ...(v.data || [])] as { id: string; name: string; lat: number | null; lng: number | null; news?: number }[];
+  await countNews(supabase, complexes, [swLat, swLng, neLat, neLng]).catch(() => {});
+  return NextResponse.json({ success: true, complexes }, { headers });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { studioBridge } from "./studioWebBridge";
+import { studioBridge } from "../studio-web";
 import React, { useEffect, useState } from "react";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 import { useStudioWriter } from "./useStudioWriter";

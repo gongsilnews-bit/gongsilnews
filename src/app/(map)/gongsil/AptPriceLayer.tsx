@@ -14,10 +14,11 @@ import { LAWD_NAMES, areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShar
 import { addRecent } from "./stars";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
-type Complex = { t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
+type Complex = { news?: number; t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
 
 // 축척 제한은 없앴다 (2026-11-02 사장님: 모든 화면에서) — 복잡함은 겹치는 표시 거르기로 푼다 (draw)
 const VAC = "#4b89ff"; // 공실 묶음 동그라미와 같은 색
+const NEWS_ORANGE = "#ff8e15"; // 우리동네뉴스(NewsLayer) 주황
 const OFFI = "#0f766e"; // 오피스텔 — 아파트(파랑)와 구분
 
 /** 누른 단지는 같은 색을 진하게 + 흰 테두리 + 조금 크게 (2026-11-02 사장님: 주황이 튀고 촌스럽다) — 상자(0번)와 꼬리(1번)만 (2번은 공실 동그라미) */
@@ -218,6 +219,11 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
   }, []);
 
   const openDetail = useCallback(async (id: string) => {
+    // 그 단지 공실 목록을 보는 중이면 — 단지를 누르면 단지 정보를 다시 (닫지 않는다, 11-04 사장님)
+    if (listOpenRef.current) {
+      setListOpen(false);
+      if (pickedRef.current === id) return;
+    }
     if (pickedRef.current === id) { // 한 번 더 누르면 닫는다 (2026-11-02 사장님)
       setDetail(null); setDetailError(""); pick(null);
       return;
@@ -231,6 +237,8 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
   }, [pick]);
 
   const close = useCallback(() => { setDetail(null); setDetailError(""); setListOpen(false); pick(null); }, [pick]);
+  const closeRef = useRef(close);
+  closeRef.current = close;
   // 단지 창이 열리면 — MY관심 [최근 본 단지]에 (이 기기, stars.addRecent)
   useEffect(() => {
     if (!detail) return;
@@ -449,8 +457,29 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
         badge.textContent = String(ids.length);
         badge.title = `이 단지 공실 ${ids.length}개 보기`;
         badge.style.cssText = `position:absolute;top:-11px;right:-13px;min-width:26px;height:26px;padding:0 5px;box-sizing:border-box;border-radius:13px;background:#fff;border:2px solid ${VAC};color:${VAC};font-size:13px;font-weight:900;line-height:22px;text-align:center`;
-        badge.addEventListener("click", (e) => { e.stopPropagation(); showRef.current(ids); });
+        badge.addEventListener("click", (e) => {
+          // 공실 수를 누르면 — 단지 창을 닫고 이 단지 공실만 (11-04 사장님)
+          e.stopPropagation(); hidePeek(); closeRef.current();
+          window.dispatchEvent(new CustomEvent("gs-vacancy-list"));
+          showRef.current(ids);
+        });
         el.appendChild(badge);
+      }
+      // 이 단지 뉴스 수 — 오른쪽 아래 주황 동그라미 (11-04 사장님). 누르면 왼쪽 목록에 그 뉴스 (단지 창 [뉴스]와 같다)
+      if (c.news) {
+        const nb2 = document.createElement("div");
+        nb2.textContent = String(c.news);
+        nb2.title = `이 단지 뉴스 ${c.news}개 보기`;
+        nb2.style.cssText = `position:absolute;bottom:-4px;right:-13px;min-width:22px;height:22px;padding:0 4px;box-sizing:border-box;border-radius:11px;background:#fff;border:2px solid ${NEWS_ORANGE};color:${NEWS_ORANGE};font-size:12px;font-weight:900;line-height:18px;text-align:center`;
+        nb2.addEventListener("click", async (e) => {
+          // 바로 왼쪽 목록에 이 단지 뉴스 (단지 창을 거치지 않는다, 11-04 사장님 — 파란 공실 수와 같이)
+          e.stopPropagation(); hidePeek(); closeRef.current();
+          const r = await fetch(`/api/apt-prices?id=${encodeURIComponent(c.id)}`).then((x) => x.json()).catch(() => null);
+          const list = r?.success ? r.complex?.news || [] : [];
+          if (list.length) window.dispatchEvent(new CustomEvent("gs-news-select", { detail: list }));
+          else openDetail(c.id);
+        });
+        el.appendChild(nb2);
       }
       el.addEventListener("click", (e) => { e.stopPropagation(); hidePeek(); openDetail(c.id); });
       const overlay = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(c.lat, c.lng), content: el, yAnchor: 1, zIndex: 1, clickable: true });
@@ -548,7 +577,7 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
           onClose={close}
           vacancyCount={[...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])].length}
           // 창은 그대로 두고 왼쪽 목록만 그 단지 공실로 (2026-11-02 사장님)
-          onShowVacancies={() => { onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])]); if (!mobile && side) setListOpen(true); }}
+          onShowVacancies={() => { window.dispatchEvent(new CustomEvent("gs-vacancy-list")); onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])]); if (!mobile && side) setListOpen(true); }}
           onShowAuctions={onShowAuctions ? () => { onShowAuctions(detail.auction_ids || []); if (!mobile && side) setListOpen(true); } : undefined}
           // [뉴스 N] — 왼쪽 목록에 이 단지 기사 (GongsilSidebar 가 받는다)
           onShowNews={() => { window.dispatchEvent(new CustomEvent("gs-news-select", { detail: detail.news || [] })); if (!mobile && side) setListOpen(true); }}

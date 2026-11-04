@@ -47,14 +47,19 @@ const REALTY_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
+  { key: "homepage", label: "물건접수홈페이지", icon: <IconHomepage /> },
+  // 보고서·홍보지(매물보고서·홍보지) — 웹에서도 (2026-11-04 사장님)
+  { key: "marketing", label: "보고서·홍보지", icon: <IconSend /> },
   // 뉴스·SNS자동화 — 앱의 공실뉴스 부분을 웹에서도 (2026-11-03 사장님: 기사관리 아래). 회원 AI 복사·붙여넣기 · 작업은 이 브라우저에
   { key: "sns", label: "뉴스·SNS자동화", icon: <IconSend /> },
-  // 광고관리 · 고객관리는 공실마케팅 멤버 기능 — 스튜디오 메뉴에만 (2026-10-26 사장님)
+  // 포토studio — 웹에서도 (2026-11-04 사장님). 앱과 같은 화면, 메뉴를 열 때만 불러온다(lazy). AI·PC 저장·전용 글꼴은 앱
+  { key: "photo", label: "포토studio", icon: <IconImage /> },
+  // 고객관리 — 웹에서도 (2026-11-04 사장님). 광고관리는 아직 스튜디오 메뉴에만 (2026-10-26)
+  { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   // 부동산특강은 아직 안 쓴다 (2026-10-26 사장님) — siteFlags SHOW_STUDY 를 켜면 다시 보인다
   ...(SHOW_STUDY ? [{ key: "study", label: "특강관리", icon: <IconStudy /> }] : []),
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
-  { key: "homepage", label: "물건접수홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   // 공실마케팅 소개 메뉴는 뺐다 (2026-10-26 사장님) — 소개는 위쪽 [공실마케팅] 버튼 → /studio
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
@@ -77,7 +82,8 @@ const STUDIO_MAIN_MENU: MenuItem[] = [
 ];
 const STUDIO_MORE_KEYS = ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"];
 const STUDIO_ONLY_MENU: MenuItem[] = [{ key: "article_ad", label: "광고관리", icon: <IconAd /> }];
-const STUDIO_MORE_MENU = [...STUDIO_ONLY_MENU, ...REALTY_MENU].filter((m) => STUDIO_MORE_KEYS.includes(m.key));
+// 순서는 STUDIO_MORE_KEYS 대로 — 웹 메뉴 순서를 바꿔도 앱 [더보기]는 그대로 (2026-11-04)
+const STUDIO_MORE_MENU = STUDIO_MORE_KEYS.map((k) => [...STUDIO_ONLY_MENU, ...REALTY_MENU].find((m) => m.key === k)).filter((m): m is MenuItem => Boolean(m));
 const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
 // 메뉴 오른쪽 파일 표시 — 그 메뉴가 만드는 파일 (.gsn·.gsm·.gss·.psd, 글자 + 동그라미 픽토그램 — StudioSidebar FileBadge) — 2026-10-23 사장님: NEW 대신
 // 앱에서만 잠시 숨기는 메뉴 — 공실마케팅은 미완성이라 앱 배포에서 뺀다 (2026-10-23 사장님). 다시 보이려면 [] 로 (코드·작업은 그대로)
@@ -475,8 +481,8 @@ function RealtyAdminContent() {
           <img src="/new_logo.png" alt="공실뉴스 로고" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", cursor: "pointer" }} onClick={() => window.location.href = "/"} />
         </div>
         <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflowY: "auto", scrollbarWidth: "none" as const }}>
-          {/* 물건접수홈페이지는 공실마케팅 Pro · Studio 메뉴에만 — 웹 아이콘 메뉴(공실뉴스 관리자)에서는 뺀다 (2026-10-29 사장님) */}
-          {REALTY_MENU.filter((item) => item.key !== "homepage").map((item) => (
+          {/* 물건접수홈페이지 — 웹 아이콘 메뉴에도 보인다 (2026-11-04 사장님. 10-29 에는 앱 메뉴에만 두었다) */}
+          {REALTY_MENU.map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.separated ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" } : {}) }}
               onMouseEnter={() => handleMenuHover(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
               <button onClick={() => selectMenu(item.key)}

@@ -11,7 +11,10 @@ export const inStudioApp = (): boolean => {
     return false;
   }
 };
-export const WEB_LIMITED = typeof window !== 'undefined' && !inStudioApp();
+/** 웹(크롬)에서 열었는지 — 공유하기만 웹에서 숨긴다 (2026-11-04 사장님: 보고서·홍보지는 이미지로 보낸다) */
+export const IS_WEB = typeof window !== 'undefined' && !inStudioApp();
+/** 웹 잠금 — 2026-11-04 사장님: "그냥 웹에서 다 해결되도록 · 앱으로 가는 일은 없애" → 끔. 모든 쪽·디자인을 웹에서도 */
+export const WEB_LIMITED = false;
 /** 웹에서 쓸 수 있는 쪽 (data-export-id) */
 export const WEB_PAGE_IDS = ['page-0', 'page-1'];
 export const WEB_PAGE_NUMS = [0, 1];

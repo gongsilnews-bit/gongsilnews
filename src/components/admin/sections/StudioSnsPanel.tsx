@@ -1,6 +1,6 @@
 "use client";
 
-import { isWebStudio, studioBridge } from "./studioWebBridge";
+import { isWebStudio, studioBridge } from "../studio-web";
 import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useEffect, useRef, useState } from "react";
 import ChannelButton from "./ChannelButton";

@@ -298,7 +298,7 @@ export async function saveArticle(data: {
     }
 
     // 발행되면 — 이 기자(사무소)·단지를 찜한 사람에게 🔔 새 기사 (2026-11-04)
-    if (articleId && articleData.status === "APPROVED") await import("@/utils/starAlerts").then((m) => m.sweepStarAlerts(2)).catch(() => {});
+    if (articleId && articleData.status === "APPROVED") await import("@/utils/starAlerts").then((m) => m.alertArticles([String(articleId)])).catch(() => {});
 
     // 키워드 처리: 기존 삭제 후 새로 INSERT
     if (articleId && data.keywords.length > 0) {
@@ -931,7 +931,7 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
       .update(updateData)
       .in("id", articleIds);
     // 승인되면 — 찜한 사람에게 🔔 새 기사 (2026-11-04)
-    if (!error && status === "APPROVED") await import("@/utils/starAlerts").then((m) => m.sweepStarAlerts(2)).catch(() => {});
+    if (!error && status === "APPROVED") await import("@/utils/starAlerts").then((m) => m.alertArticles(articleIds.map(String))).catch(() => {});
       
     if (error) {
       if (error.message.includes("reject_reason")) {

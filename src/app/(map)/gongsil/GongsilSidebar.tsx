@@ -3,6 +3,7 @@ import SnsIconLink from "./SnsIconLink";
 import { addRecent, starSvg, useStars, type StarKind } from "./stars";
 import React, { useEffect, useState, useMemo } from "react";
 import { useMapFields } from "@/utils/useMapFields";
+import { CommentCount } from "./useCommentCounts";
 import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount, formatAreaWithPy } from "./gongsilHelpers";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
@@ -87,6 +88,12 @@ export default function GongsilSidebar({
     };
     window.addEventListener("gs-news-select", on);
     return () => window.removeEventListener("gs-news-select", on);
+  }, []);
+  // 공실 보기를 누르면(단지 창 [공실] 등) — 전에 보던 뉴스·부동산 목록이 아니라 공실 목록으로 (11-04 사장님)
+  useEffect(() => {
+    const on = () => { setNewsMode(false); setNewsPicked(null); setAgListMode(false); };
+    window.addEventListener("gs-vacancy-list", on);
+    return () => window.removeEventListener("gs-vacancy-list", on);
   }, []);
   useEffect(() => {
     const on = (e: Event) => { const l = (e as CustomEvent).detail as News[] | null; setNews(l); if (!l) setNewsMode(false); };
@@ -510,9 +517,12 @@ export default function GongsilSidebar({
                 </div>
                 {a.thumbnail_url && <img src={a.thumbnail_url} alt="" style={{ width: 84, height: 64, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "#f3f4f6" }} />}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10, fontSize: 12 }}>
                 <span style={{ color: "#a1a1aa" }}>{String(a.published_at || a.created_at || "").slice(0, 10).replace(/-/g, ". ")} · {a.author_name || "공실뉴스"}</span>
-                <span style={{ color: newsReading === a.id ? "#d32f2f" : "#ff8e15", fontWeight: 700 }}>{newsReading === a.id ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
+                <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                  <span style={{ color: newsReading === a.id ? "#d32f2f" : "#ff8e15", fontWeight: 700 }}>{newsReading === a.id ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
+                  <CommentCount id={a.id} />
+                </span>
               </div>
             </div>
           ))}

@@ -36,7 +36,31 @@ const lib = {
   sns: () => run(["gongsil/blog-prompt.js", "gongsil/naver-blog.js", "gongsil/youtube-json.js", "gongsil/sns-prompt.js"], ["GW_SNS_CHANNELS", "GW_SNS_ORDER", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsPickMedia", "gwSnsAiLabelNote"]),
   yt: () => run(["gongsil/prompt.js", "gongsil/youtube-json.js", "gongsil/youtube-prompt.js"], [...YT_COMMON, "GW_YT_AUCTION_VIDEO_TYPE", "gwYtVideoTypes"]),
   ytCol: () => run(["newsmaker/youtube-json.js", "newsmaker/youtube-prompt.js"], [...YT_COMMON, "GW_YT_NUMBER"]),
+  // 뉴스칼럼 (앱 ext-newsmaker.js 와 같은 파일·이름) — 2026-11-04 웹 뉴스칼럼
+  nm: () => run(["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "naver-blog.js", "youtube-json.js", "article-json.js", "sns-prompt.js"].map((f) => `newsmaker/${f}`), [
+    "GW_LENGTH", "GW_KIND", "GW_IMAGE_STYLE", "gwSourceReady", "gwSourceLabel", "gwBuildPrompt", "gwBuildRevisePrompt", "gwNormalizeSection",
+    "GW_BLOG_LENGTH", "GW_BLOG_STYLE", "gwBuildBlogPrompt", "gwBuildBlogRevisePrompt",
+    "GW_SNS_CHANNELS", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsCredit", "gwSnsAiLabelNote",
+    "GWNaverBlog", "GWArticleJson",
+  ]),
 };
+/* 보고서·홍보지 AI 채우기 (앱 marketing-writer.js 와 같은 프롬프트, 2026-11-04 사장님: 웹에서 다 되게) */
+const mk = () => run(["marketing/marketing-prompt.js"]);
+function marketingPrompt(b: any) {
+  const kind = b.kind === "flyer" ? "flyer" : b.kind === "report" ? "report" : "";
+  if (!kind) throw new Error("알 수 없는 도구입니다.");
+  const fields = b.fields && typeof b.fields === "object" ? b.fields : null;
+  if (!fields || !Object.keys(fields).length) throw new Error("채울 칸이 없습니다.");
+  const pub = typeof b.publicFacts === "string" ? b.publicFacts.slice(0, 3500) : "";
+  const req = typeof b.request === "string" ? b.request.trim().slice(0, 500) : "";
+  return { prompt: mk().gwBuildMarketingPrompt(kind, b.vacancy || {}, fields, pub, req) };
+}
+function marketingParse(b: any) {
+  const r = mk().gwParseMarketing(String(b.text || ""), b.fields || {});
+  return r.ok ? { ok: true, fields: r.fields } : { ok: false, error: r.reason || "AI 답을 읽지 못했어요." };
+}
+/* 뉴스칼럼인지 — 화면이 칼럼 소재(source)를 함께 보낸다 */
+const colOf = (b: any) => (b && b.source && typeof b.source === "object" ? b.source : null);
 
 const CHANNELS = ["instagram", "threads", "facebook"];
 const fence = (o: unknown) => "```json\n" + JSON.stringify(o) + "\n```";
@@ -87,6 +111,57 @@ function ytSettings(vacancy: any, pick: Record<string, string> = {}) {
   const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number) };
   return { ...o.defaults, ...Object.fromEntries(Object.entries(want).filter(([, v]) => v)) } as Record<string, string>;
 }
+/* 뉴스칼럼 선택지 (앱 blog-writer styles · column-writer articleOptions · youtube-writer options 의 칼럼 부분) */
+function colOptions() {
+  const M = lib.nm(), Y = lib.ytCol(), S = lib.sns();
+  const table = (t: Record<string, any>, extra: (v: any) => object = () => ({})) => Object.entries(t).map(([id, v]) => ({ id, label: v.label, ...extra(v) }));
+  return {
+    blog: { saleKind: "", styles: Object.entries(M.GW_BLOG_STYLE as Record<string, any>).map(([id, s]) => ({ id, label: s.label, fit: s.fit, titleExample: s.titleExample, design: s.design })), lengths: table(M.GW_BLOG_LENGTH, (l) => ({ chars: l.chars })) },
+    article: { kinds: table(M.GW_KIND, (k) => ({ brief: k.brief })), lengths: table(M.GW_LENGTH, (l) => ({ chars: l.chars })), autoCover: false },
+    channels: CHANNELS.map((id) => {
+      const c = S.GW_SNS_CHANNELS[id];
+      return { id, label: c.label, homeUrl: c.homeUrl, ratioText: c.ratioText, maxChars: c.maxChars, maxMedia: c.maxMedia, maxTags: c.maxTags, size: c.size, ratio: c.ratio || null };
+    }),
+    designs: Object.entries(M.GWNaverBlog.DESIGNS as Record<string, any>).map(([id, d]) => ({ id, label: d.label, hint: d.hint })),
+    imageStyles: table(M.GW_IMAGE_STYLE),
+    youtube: {
+      videoTypes: table(Y.GW_YT_VIDEO_TYPE, (v) => ({ structure: v.structure })),
+      durations: table(Y.GW_YT_DURATION, (v) => ({ chars: v.chars, seconds: v.seconds })),
+      tones: table(Y.GW_YT_TONE),
+      numbers: table(Y.GW_YT_NUMBER),
+      defaults: { ...YT_DEFAULTS, videoType: Object.keys(Y.GW_YT_VIDEO_TYPE)[0] },
+    },
+    writeUrl: lib.naver().WRITE_URL,
+    siteUrl: lib.naver().SITE_URL,
+  };
+}
+function colYtSettings(pick: Record<string, string> = {}) {
+  const o = colOptions().youtube;
+  const ok = (list: { id: string }[], v?: string) => (v && list.some((x) => x.id === v) ? v : "");
+  const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number) };
+  return { ...o.defaults, ...Object.fromEntries(Object.entries(want).filter(([, v]) => v)) } as Record<string, string>;
+}
+/* 내 기사 링크 줄 — 웹 뉴스칼럼은 내 기사만 소재라, 글 끝에 내 물건접수 홈페이지의 그 기사 주소 (2026-11-04 사장님: 링크는 모두 내 홈페이지로)
+   뉴스메이커 프롬프트(앱과 같이 씀)는 링크를 안 붙이므로 웹에서만 붙인다 */
+const colLink = (source: any) => {
+  const u = String(source?.news?.url || "");
+  return source?.news?.publisher === "공실뉴스" && /^https:\/\//.test(u) ? `▶ 기사 전문 보기\n${u}` : "";
+};
+function withColLink(ch: string, post: any, source: any) {
+  const link = colLink(source);
+  if (!post || !link) return post;
+  if (ch === "threads") {
+    const posts = [...(post.posts || [])];
+    if (!posts.length) return post;
+    const max = lib.nm().GW_SNS_CHANNELS.threads.maxChars || 500;
+    const last = posts.length - 1;
+    if (String(posts[last]).length + link.length + 2 <= max) posts[last] = `${posts[last]}\n\n${link}`;
+    else posts.push(link);
+    return { ...post, posts };
+  }
+  return post.body ? { ...post, body: `${post.body}\n\n${link}` } : post;
+}
+const colRef = (b: any, source: any) => b.ref || { title: source.news?.title || "(참조 기사)", subtitles: [], body: source.news?.body || "" };
 function options(vacancy: any) {
   const B = lib.blog(), P = lib.prompt(), S = lib.sns(), N = lib.naver();
   const auction = Boolean(vacancy && vacancy.saleKind);
@@ -113,7 +188,40 @@ function options(vacancy: any) {
 }
 
 /* ── 한 번에 쓰기 프롬프트 (앱 all-writer.js 공실뉴스 부분과 같다) ── */
+/* 뉴스칼럼 한 번에 쓰기 (앱 all-writer.js 의 col 부분과 같다) — 기사를 안 쓰면 소재인 내 기사(ref)가 참조 기사 */
+function colAllPrompt(b: any, source: any) {
+  const want = { article: b.want?.article === true, blog: b.want?.blog === true, sns: b.want?.sns === true, youtube: b.want?.youtube === true };
+  if (!want.article && !want.blog && !want.sns && !want.youtube) throw new Error("쓸 글을 하나 이상 골라 주세요.");
+  const M = lib.nm(), Y = lib.ytCol();
+  if (!M.gwSourceReady(source)) throw new Error("칼럼 소재(기사 제목·본문)가 비어 있어요. 목록에서 기사를 다시 골라 주세요.");
+  const REF = want.article
+    ? { title: "(이 답의 [작업 1] 공실뉴스 기사)", subtitles: [], body: "이 요청의 [작업 1]에서 쓴 공실뉴스 기사를 참조 기사로 삼으십시오. 사실은 원문 소재에 있는 것만 쓰십시오." }
+    : colRef(b, source);
+  const artKind = M.GW_KIND[b.article?.kind] ? b.article.kind : Object.keys(M.GW_KIND)[0];
+  const artLen = M.GW_LENGTH[b.article?.length] ? b.article.length : "normal";
+  const blogSt = M.GW_BLOG_STYLE[b.blog?.style] ? b.blog.style : "info", blogLen = b.blog?.length || "normal";
+  const parts: [string, string, string][] = [];
+  if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen })]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen })]);
+  if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone)]);
+  const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
+  if (want.youtube) parts.push(["youtube", "유튜브 대본", Y.gwBuildYtScriptPrompt({ article: REF, source }, ytSet)]);
+  return bundle(parts, { artKind, artLen, blogSt, blogLen, ytSet });
+}
+function bundle(parts: [string, string, string][], settings: Record<string, unknown>) {
+  const keys = parts.map((p) => p[0]);
+  const prompt = [
+    `여러 글을 한 번에 씁니다. 아래 [작업 ${parts.map((_, i) => i + 1).join("·")}]을 모두 하십시오.`,
+    "각 작업의 지시·규칙·문체·분량은 그 작업에 적힌 그대로 지키고, 각 작업이 요구하는 출력 JSON 을 만드십시오.",
+    `그다음 그 JSON 들을 아래처럼 하나로 묶어, 설명 없이 JSON 하나만 답하십시오 (각 작업의 "JSON 하나만 답하라"는 지시는 이 묶음 안의 값으로 지킵니다).`,
+    "{" + keys.map((k) => `"${k}": { …[${k}] 작업의 JSON… }`).join(", ") + "}",
+    "",
+    ...parts.map((p, i) => `===== [작업 ${i + 1}] ${p[1]} — 결과는 "${p[0]}" 키에 =====\n${p[2]}`),
+  ].join("\n");
+  return { prompt, keys, settings };
+}
 function allPrompt(b: any) {
+  if (colOf(b)) return colAllPrompt(b, colOf(b));
   const v = b.vacancy || {};
   const want = { article: b.want?.article === true, blog: b.want?.blog === true, sns: b.want?.sns === true, youtube: b.want?.youtube === true };
   if (!want.article && !want.blog && !want.sns && !want.youtube) throw new Error("쓸 글을 하나 이상 골라 주세요.");
@@ -146,12 +254,13 @@ function ytPrompt(vacancy: any, settings: Record<string, string>, article: any) 
 }
 
 /* 기사·블로그 답 → 제목·부제·문단·키워드 */
-function docOf(parsed: any) {
+function docOf(parsed: any, col = false) {
   const a = parsed.article;
-  return { title: a.title, subtitles: a.subtitles || [], paragraphs: lib.naver().splitParagraphs(a.body), keywords: a.keywords || [] };
+  const sec = col ? lib.nm().gwNormalizeSection(a.section1, a.section2) || {} : {};
+  return { title: a.title, subtitles: a.subtitles || [], paragraphs: lib.naver().splitParagraphs(a.body), keywords: a.keywords || [], ...(col ? { section1: sec.section1 || "", section2: sec.section2 || "" } : {}) };
 }
-function ytOf(text: string) {
-  const r = lib.yt().GWYoutubeJson.parseObject(text);
+function ytOf(text: string, col = false) {
+  const r = (col ? lib.ytCol() : lib.yt()).GWYoutubeJson.parseObject(text);
   if (!r.ok) throw new Error(r.reason || "대본을 읽지 못했습니다.");
   const d = r.data || {};
   const list = Array.isArray(d.narration || d.script || d.text) ? d.narration || d.script || d.text : String(d.narration || d.script || d.text || "").split(/\n{2,}/);
@@ -164,13 +273,14 @@ function allParse(b: any) {
   if (!o) return { ok: false, error: "AI 답을 읽지 못했어요. 답이 다 나온 뒤 코드 상자의 [복사]를 눌러 주세요." };
   const keys: string[] = Array.isArray(b.keys) ? b.keys : [];
   if (!keys.every((k) => o[k] && typeof o[k] === "object")) return { ok: false, error: `답에 ${keys.filter((k) => !(o[k] && typeof o[k] === "object")).map((k) => ({ article: "기사", blog: "블로그", sns: "SNS", youtube: "대본" } as Record<string, string>)[k] || k).join("·")} 글이 없어요. 답이 다 나온 뒤 복사해 주세요.` };
-  const AJ = lib.aj();
+  const col = b.column === true;
+  const AJ = col ? lib.nm().GWArticleJson : lib.aj();
   const out: Record<string, unknown> = {};
   const miss: string[] = [];
-  if (keys.includes("article")) { const p = AJ.parse(fence(o.article)); if (p.ok) out.article = docOf(p); else miss.push("기사"); }
+  if (keys.includes("article")) { const p = AJ.parse(fence(o.article)); if (p.ok) out.article = docOf(p, col); else miss.push("기사"); }
   if (keys.includes("blog")) { const p = AJ.parse(fence(o.blog)); if (p.ok) out.blog = docOf(p); else miss.push("블로그"); }
-  if (keys.includes("sns")) { const p = lib.sns().gwSnsParse(fence(o.sns)); if (p.ok) out.sns = p.posts; else miss.push("SNS"); }
-  if (keys.includes("youtube")) { try { out.youtube = ytOf(fence(o.youtube)); } catch { miss.push("유튜브 대본"); } }
+  if (keys.includes("sns")) { const p = (col ? lib.nm() : lib.sns()).gwSnsParse(fence(o.sns)); if (p.ok) out.sns = p.posts; else miss.push("SNS"); }
+  if (keys.includes("youtube")) { try { out.youtube = ytOf(fence(o.youtube), col); } catch { miss.push("유튜브 대본"); } }
   return { ok: true, ...out, miss };
 }
 
@@ -193,10 +303,34 @@ function draftJson(d: any, doc: string) {
   o.keywords = d.keywords || [];
   return "```json\n" + JSON.stringify(o, null, 2) + "\n```";
 }
+/* 뉴스칼럼 수정 (앱 blog-writer originalPrompt·revisePrompt · sns-writer revise · youtube-writer revise 의 칼럼 부분) */
+function colRevisePrompt(b: any, source: any, req: string) {
+  const M = lib.nm(), Y = lib.ytCol();
+  const d = b.draft || {};
+  const ref = colRef(b, source);
+  if (b.doc === "article" || b.doc === "blog") {
+    const original = b.doc === "article"
+      ? M.gwBuildPrompt(source, { kind: M.GW_KIND[d.style] ? d.style : Object.keys(M.GW_KIND)[0], length: d.length || "normal" })
+      : M.gwBuildBlogPrompt({ article: ref, source }, { style: M.GW_BLOG_STYLE[d.style] ? d.style : "info", length: d.length || "normal" });
+    const ask = b.doc === "article" ? M.gwBuildRevisePrompt(req, source) : M.gwBuildBlogRevisePrompt(req);
+    return `${original}\n\n[앞서 작성한 ${b.doc === "article" ? "기사" : "블로그"} — 미리보기에서 고친 내용 포함]\n${draftJson(d, b.doc)}\n\n${ask}`;
+  }
+  if (b.doc === "sns") {
+    if (!CHANNELS.includes(b.channel)) throw new Error("알 수 없는 채널입니다.");
+    const now = "```json\n" + JSON.stringify(b.posts || {}, null, 2) + "\n```";
+    return `${M.gwBuildSnsPrompt({ article: ref, source })}${toneLine(b.tone)}\n\n[앞서 작성한 SNS 글 — 고친 내용 포함]\n${now}\n\n${M.gwBuildSnsRevisePrompt(b.channel, req)}`;
+  }
+  if (b.doc === "youtube") {
+    const full = { title: d.title, text: (d.narration || []).join("\n\n") };
+    return `${Y.gwBuildYtScriptPrompt({ article: ref, source }, colYtSettings(d.settings || {}))}\n\n${Y.gwBuildYtRevisePrompt(full, req)}`;
+  }
+  throw new Error("알 수 없는 글입니다.");
+}
 function revisePrompt(b: any) {
   const v = b.vacancy || {};
   const req = String(b.request || "").trim();
   if (!req) throw new Error("어떻게 고칠지 적어 주세요.");
+  if (colOf(b)) return colRevisePrompt(b, colOf(b), req);
   const d = b.draft || {};
   if (b.doc === "article" || b.doc === "blog") {
     const P = lib.prompt(), B = lib.blog();
@@ -221,31 +355,34 @@ function revisePrompt(b: any) {
   throw new Error("알 수 없는 글입니다.");
 }
 function reviseParse(b: any) {
+  const col = b.column === true;
   if (b.doc === "article" || b.doc === "blog") {
-    const p = lib.aj().parse(b.text);
+    const p = (col ? lib.nm().GWArticleJson : lib.aj()).parse(b.text);
     if (!p.ok) return { ok: false, error: p.reason || "AI 답변을 읽지 못했습니다." };
-    return { ok: true, doc: docOf(p) };
+    return { ok: true, doc: docOf(p, col && b.doc === "article") };
   }
   if (b.doc === "sns") {
-    const p = lib.sns().gwSnsParse(b.text);
+    const p = (col ? lib.nm() : lib.sns()).gwSnsParse(b.text);
     if (!p.ok || !p.posts[b.channel]) return { ok: false, error: (p && p.reason) || "고친 글을 읽지 못했습니다." };
     return { ok: true, post: p.posts[b.channel] };
   }
   if (b.doc === "youtube") {
-    try { return { ok: true, script: ytOf(b.text) }; } catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
+    try { return { ok: true, script: ytOf(b.text, col) }; } catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
   }
   return { ok: false, error: "알 수 없는 글입니다." };
 }
 
 /* ── SNS 글 끝(링크·매물 정보 출처·해시태그) · 사진 고르기 (앱 sns-writer forWeb · pickMedia) ── */
 function snsCompose(b: any) {
-  const S = lib.sns();
-  const ctx = { noun: b.noun || "매물", url: (b.listing && b.listing.detailUrl) || "", listing: b.listing || null };
+  const col = colOf(b);
+  // 뉴스칼럼 — 중개사무소 출처 대신 소재 출처 줄 (내 기사면 내 물건접수 홈페이지의 그 기사 주소, 2026-11-04 사장님)
+  const S = col ? lib.nm() : lib.sns();
+  const ctx = col ? { credit: S.gwSnsCredit(col) } : { noun: b.noun || "매물", url: (b.listing && b.listing.detailUrl) || "", listing: b.listing || null };
   const out: Record<string, unknown> = {};
   for (const ch of CHANNELS) {
     const post = b.posts?.[ch] || null;
     const ai = (b.ai?.[ch] || []).map((x: boolean) => ({ ai: Boolean(x) }));
-    out[ch] = { composed: post ? S.gwSnsCompose(ch, post, ctx) : { posts: [], text: "" }, aiNote: S.gwSnsAiLabelNote(ch, ai) };
+    out[ch] = { composed: post ? S.gwSnsCompose(ch, col ? withColLink(ch, post, col) : post, ctx) : { posts: [], text: "" }, aiNote: S.gwSnsAiLabelNote(ch, ai) };
   }
   return out;
 }
@@ -261,7 +398,16 @@ function snsPick(b: any) {
 }
 
 /* ── 네이버 블로그 블록 (앱 naver-write fillNaver) — 사진 블록은 mediaIndex 만, 그림은 화면이 넣는다 ── */
+function colNaverBlocks(b: any, source: any) {
+  const M = lib.nm(), nb = M.GWNaverBlog;
+  const blog = b.blog || {};
+  const design = nb.DESIGNS[b.design] ? b.design : (M.GW_BLOG_STYLE[blog.style] || {}).design || "basic";
+  const media = Array.isArray(b.media) ? b.media : [];
+  const blocks = nb.buildNaverBlocks((blog.paragraphs || []).join("\n\n"), media, { design, title: blog.title, source });
+  return { blocks, tags: nb.normalizeTags(blog.keywords || []), design };
+}
 function naverBlocks(b: any) {
+  if (colOf(b)) return colNaverBlocks(b, colOf(b));
   const N = lib.naver(), B = lib.blog();
   const saleKind = (b.vacancy && b.vacancy.saleKind) || "";
   const problems = N.listingProblems(b.listing, Boolean(saleKind));
@@ -285,21 +431,25 @@ function ytView(b: any) {
   const article = b.article || {};
   const summary = (article.subtitles && article.subtitles.length ? article.subtitles : (article.paragraphs || []).slice(0, 1)).join("\n");
   const lines = [summary];
-  if (b.listing) {
+  const col = colOf(b);
+  if (col) lines.push(colLink(col)); // 뉴스칼럼 — 내 홈페이지의 그 기사
+  else if (b.listing) {
     const tail = lib.sns().gwSnsCompose("facebook", { body: "-" }, { noun: "매물", url: b.listing.detailUrl, listing: b.listing }).text || "";
     lines.push(tail.replace(/^-\n\n/, ""));
   } else lines.push(`▶ 매물 자세히 보기\n${b.detailUrl || "https://www.gongsilnews.com"}`);
-  const tags = (article.keywords || []).map((k: string) => `#${String(k).replace(/^#+/, "").replace(/\s+/g, "")}`).filter((t: string) => t.length > 1).slice(0, 10);
+  const tags = (article.keywords || []).map((k: string) => `#${String(k).replace(/^#+/, "").replace(/\s+/g, "")}`).filter((t: string) => t.length > 1 && !(col && /공실뉴스/.test(t))).slice(0, 10);
   return { seconds: L.gwYtSpeechSeconds(all), chars: L.gwYtCharCount(all), description: { text: lines.filter(Boolean).join("\n\n"), tags } };
 }
 
 /** 요청 하나 — op 에 따라 */
 export function studioWebOp(op: string, b: any): Record<string, unknown> {
   switch (op) {
-    case "options": return options(b.vacancy);
+    case "options": return b.column === true ? colOptions() : options(b.vacancy);
     // 공실열람 상세 읽기 (앱 inject/gongsil-page.js) — 화면이 숨은 창(iframe)에 넣어 매물 정보를 읽는다
     case "pageScript": return { script: STUDIO_EXT_FILES["studio/gongsil-page.js"] || "" };
     case "allPrompt": return allPrompt(b);
+    case "marketingPrompt": return marketingPrompt(b);
+    case "marketingParse": return marketingParse(b);
     case "allParse": return allParse(b);
     case "layout": return { media: layout(Array.isArray(b.media) ? b.media : [], Number(b.paragraphCount) || 0) };
     case "revisePrompt": return { prompt: revisePrompt(b) };

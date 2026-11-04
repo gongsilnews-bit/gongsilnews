@@ -1,6 +1,6 @@
 "use client";
 
-import { isWebStudio, prepareWebArticleDraft, studioBridge } from "./studioWebBridge";
+import { isWebStudio, prepareWebArticleDraft, studioBridge } from "../studio-web";
 import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";

@@ -40,10 +40,33 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
   useEffect(() => { try { localStorage.removeItem(KEY); } catch { /* */ } }, []);
   const toggle = () => setOn((v) => !v);
 
+  // 지금 보이는 지도 범위의 사무소만 서버에서 (11-04: 회원 10만 명이어도 가볍게) — 지도를 멈추면 0.3초 뒤, 같은 범위는 다시 안 받는다
+  const boxKey = useRef("");
   useEffect(() => {
-    if (!on || list) return;
-    listMapAgencies().then(setList).catch(() => setList([]));
-  }, [on, list]);
+    if (!on || !mapLoaded) { boxKey.current = ""; return; }
+    let t: ReturnType<typeof setTimeout> | undefined, map: any = null, stopped = false;
+    // 처음 켜진 채로 들어오면 지도가 아직 안 만들어졌을 수 있다 — 생길 때까지 기다렸다 붙는다
+    const attach = () => {
+      const kakao = (window as any).kakao;
+      if (stopped) return;
+      if (!kakaoMapRef.current || !kakao?.maps) { t = setTimeout(attach, 200); return; }
+      map = kakaoMapRef.current;
+      kakao.maps.event.addListener(map, "idle", idle);
+      load();
+    };
+    const load = () => {
+      const b = map.getBounds(), sw = b.getSouthWest(), ne = b.getNorthEast();
+      const pad = (ne.getLat() - sw.getLat()) * 0.15;
+      const box: [[number, number], [number, number]] = [[sw.getLat() - pad, sw.getLng() - pad], [ne.getLat() + pad, ne.getLng() + pad]];
+      const key = box.flat().map((v) => v.toFixed(3)).join(",");
+      if (key === boxKey.current) return;
+      boxKey.current = key;
+      listMapAgencies(box).then((l) => { if (boxKey.current === key) setList(l); }).catch(() => {});
+    };
+    const idle = () => { if (t) clearTimeout(t); t = setTimeout(load, 300); };
+    attach();
+    return () => { stopped = true; if (t) clearTimeout(t); const kakao = (window as any).kakao; if (map && kakao?.maps) kakao.maps.event.removeListener(map, "idle", idle); };
+  }, [on, mapLoaded, kakaoMapRef]);
 
   // 목록에서 [‹]·[✕]로 닫으면 진하게 칠한 것도 푼다
   useEffect(() => {

@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getArticles } from "@/app/actions/article";
+import { mapNewsInBox } from "@/app/actions/mapNews";
 import NewsArticlePanel from "./NewsArticlePanel";
 import { starHtml, useStars } from "./stars";
 
@@ -73,19 +73,30 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
   useEffect(() => { try { localStorage.removeItem(KEY); } catch { /* */ } }, []);
   const toggle = () => setOn((v) => !v);
 
-  // 켰을 때 한 번만 받는다 — 발행된 기사 중 위치가 있는 것 (예약 기사는 뺀다)
-  useEffect(() => {
-    if (!on || arts) return;
+  // 지금 보이는 지도 범위만 서버에서 (회원이 많아도 가볍게, 11-04) — 지도를 멈출 때마다 0.3초 기다렸다가, 같은 범위는 다시 안 받는다
+  const boxKey = useRef("");
+  const fetchBox = useCallback(() => {
+    const kakao = (window as any).kakao, map = kakaoMapRef.current;
+    if (!on || !map || !kakao?.maps) return;
+    const b = map.getBounds(), sw = b.getSouthWest(), ne = b.getNorthEast();
+    // 범위를 조금 넓혀(가장자리 동그라미가 끊기지 않게) 소수 셋째 자리로 맞춘 키
+    const pad = (ne.getLat() - sw.getLat()) * 0.15;
+    const box: [[number, number], [number, number]] = [[sw.getLat() - pad, sw.getLng() - pad], [ne.getLat() + pad, ne.getLng() + pad]];
+    const key = box.flat().map((v) => v.toFixed(3)).join(",");
+    if (key === boxKey.current) return;
+    boxKey.current = key;
     setBusy(true);
-    getArticles({ status: "APPROVED" })
-      .then((r) => {
-        const now = new Date().toISOString();
-        const list = ((r.success ? r.data : []) as Art[]).filter((a) => a.lat && a.lng && (!a.published_at || a.published_at <= now));
-        setArts(list);
-      })
-      .catch(() => setArts([]))
-      .finally(() => setBusy(false));
-  }, [on, arts]);
+    mapNewsInBox(box[0], box[1]).then((l) => { if (boxKey.current === key) setArts(l as Art[]); }).catch(() => {}).finally(() => setBusy(false));
+  }, [on, kakaoMapRef]);
+  useEffect(() => {
+    const kakao = (window as any).kakao, map = kakaoMapRef.current;
+    if (!on || !mapLoaded || !map || !kakao?.maps) { boxKey.current = ""; return; }
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const idle = () => { if (t) clearTimeout(t); t = setTimeout(fetchBox, 300); };
+    fetchBox();
+    kakao.maps.event.addListener(map, "idle", idle);
+    return () => { if (t) clearTimeout(t); kakao.maps.event.removeListener(map, "idle", idle); };
+  }, [on, mapLoaded, fetchBox, kakaoMapRef]);
 
   const closePopup = (quiet = false) => {
     if (popup.current && !quiet) window.dispatchEvent(new CustomEvent("gs-news-select", { detail: null })); // 왼쪽 목록도 지도 화면 뉴스로

@@ -1,6 +1,6 @@
 "use client";
 
-import { isWebStudio, studioBridge } from "./studioWebBridge";
+import { isWebStudio, studioBridge } from "../studio-web";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StudioReviseBar from "./StudioReviseBar";

@@ -7,6 +7,7 @@ import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import StudioChannelTabs, { StepLine } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
+import { isWebStudio, studioBridge } from "../studio-web";
 
 /**
  * 뉴스·SNS발행 > 뉴스칼럼 (크롬 확장 뉴스메이커를 앱으로 옮긴 것)
@@ -37,7 +38,8 @@ type Bridge = {
     list: (limit?: number) => Promise<Column[]>;
   };
 };
-const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
+// 앱이면 앱, 웹이면 웹 뉴스칼럼 (studio-web — 내 기사로만, 2026-11-04 사장님)
+const bridge = (): Bridge | null => studioBridge<Bridge>();
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 const LAST_COLUMN_KEY = "studio_last_column"; // 마지막으로 연 칼럼 (이 기기)
@@ -292,7 +294,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
             onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
             onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
           {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}
-          {recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
+          {!isWebStudio() && recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
             <div style={{ marginTop: 28 }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>다른 뉴스·주제로 만든 칼럼</div>
               <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}

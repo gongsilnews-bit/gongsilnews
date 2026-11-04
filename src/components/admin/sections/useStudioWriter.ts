@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { webAi } from "./webAiAsk";
+import { webAi } from "../studio-web";
 
 /* 지금 새 글을 쓸 AI 이름 ("ChatGPT" · "Gemini") — [내 AI 연결]에서 고른 기본 글쓰기 AI.
    쓰기 단추에 "Gemini로 기사 쓰기"처럼 보인다. 앱 밖(웹)에서는 웹에서 고른 AI. */

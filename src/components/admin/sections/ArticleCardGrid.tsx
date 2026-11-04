@@ -10,6 +10,7 @@ import { IconArticle, IconSend } from "./AdminIcons";
 import { checkMyPromoLinks } from "@/app/actions/vacancyPromos";
 import { BG, G, SITE, kakaoShare, verifyByHelper, RefreshGlyph, useHomepageBase, LinkPopover, LinksPanel, CardTools, CardHoverStyle, CardMenu, LoadingDots, IconOut, IconPen, IconStar, IconLink, IconTrash, type MenuItem } from "./VacancyCardGrid";
 import { deleteMyArticle, getMyArticleBody, getMyArticleCards, saveMyArticlePromo, type MyArticleCard } from "@/app/actions/myArticles";
+import { isWebStudio, studioBridge } from "../studio-web";
 
 type ColumnNews = { title: string; publisher: string; publishedAt: string; url: string; body: string };
 type Bridge = {
@@ -20,7 +21,8 @@ type Bridge = {
     list: (limit?: number) => Promise<{ id: string; createdAt: string; worked?: boolean; source?: { mode?: string; news?: { publisher?: string; url?: string } } }[]>;
   };
 };
-const bridge = () => (typeof window === "undefined" ? undefined : (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio);
+// 앱이면 앱, 웹이면 웹 뉴스칼럼(내 기사로, 2026-11-04 사장님) — studio-web
+const bridge = () => studioBridge<Bridge>() ?? undefined;
 
 // 한 번 읽은 것은 기억해 두고 바로 그린다 (화면을 옮겨 다시 와도 "불러오는 중"이 안 뜨게)
 const articleMemo: { member?: string; list?: MyArticleCard[] } = {};
@@ -130,7 +132,8 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
     const postUrl = homepage ? `${homepage}/news/${a.no}` : url;
     const g = bridge();
     // 웹에서도 앱과 같이 뉴스·SNS발행으로 — 웹의 뉴스·SNS발행은 공실마케팅 앱 안내 (2026-10-29 사장님). 기사 보기는 집 모양 칸
-    if (!g?.column) {
+    // 웹에서 뉴스·SNS자동화가 없는 화면(일반회원 등)은 예전처럼 기사 보기
+    if (!g?.column || (isWebStudio() && !onOpenColumn && !window.location.pathname.startsWith("/realty_admin"))) {
       try { localStorage.setItem("studio_news_category", "column"); } catch {}
       // 일반회원(user_admin)에는 뉴스·SNS발행이 없다 — 기사 화면
       if (onOpenColumn || !window.location.pathname.startsWith("/realty_admin")) window.open(url, "_blank", "noopener"); else onMenuChange("sns");
