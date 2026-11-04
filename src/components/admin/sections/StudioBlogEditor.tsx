@@ -1,5 +1,6 @@
 "use client";
 
+import { studioBridge } from "./studioWebBridge";
 import React, { useEffect, useRef, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
 import StudioWorking from "./StudioWorking";
@@ -33,7 +34,7 @@ type Bridge = {
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
-const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
+const bridge = () => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지", capture: "기사 화면" };
 const isHeading = (p: string) => p.startsWith("■");

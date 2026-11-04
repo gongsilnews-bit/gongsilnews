@@ -2,6 +2,6 @@
 chrome.runtime.sendMessage({ type: "GS_PING" }, (r) => {
   const st = document.getElementById("st");
   const ok = !chrome.runtime.lastError && r && r.ok;
-  st.textContent = ok ? "● 공실마케팅 앱과 연결됐어요" : "공실마케팅 앱이 꺼져 있어요. 앱을 켜 주세요.";
+  st.textContent = ok ? "● 공실마케팅 앱과 연결됐어요" : "앱은 꺼져 있어요. 공실뉴스 웹에서는 그대로 쓸 수 있어요.";
   st.className = "st " + (ok ? "ok" : "no");
 });

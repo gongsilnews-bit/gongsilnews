@@ -1,4 +1,4 @@
-/* 공실마케팅 도우미 — 앱(PC 안 창구 127.0.0.1)과 이야기한다
+/* 공실마케팅 도우미 — 앱(PC 안 창구 127.0.0.1)과 이야기한다. 공실뉴스 웹에서 올린 일감은 크롬 안에 둔다 (webMessage)
    글쓰기 화면의 content script 는 https 페이지 안이라 http://127.0.0.1 을 직접 부를 수 없어서 여기서 대신 부른다.
    앱 helper-server.js 와 같은 번호 목록을 차례로 두드린다. */
 const PORTS = [47615, 47616, 47617, 47618, 47619];
@@ -79,7 +79,55 @@ chrome.alarms.onAlarm.addListener(async (a) => {
   }
 });
 
+/* ── 공실뉴스 웹에서 올린 일감 (2026-11-03 사장님: 웹 뉴스·SNS자동화) ──
+   web-bridge.js 가 웹페이지의 부탁을 GS_WEB 로 건넨다. 앱 창구(127.0.0.1) 대신 여기(크롬 안)에 일감을 둔다.
+   크롬이 확장을 잠재워도 남게 storage.session 에 (크롬을 끄면 사라진다). 5분 안에 안 받아 가면 버린다 */
+const WEB_TTL = 5 * 60 * 1000;
+const WEB_KEEP = 3 * 60 * 60 * 1000; // 발행 주소를 웹이 가져갈 때까지
+const isWebId = (id) => typeof id === "string" && id.startsWith("web-");
+async function webJobs() {
+  try { const { gsWebJobs = {} } = await chrome.storage.session.get("gsWebJobs"); return gsWebJobs; } catch (_) { return {}; }
+}
+async function saveWebJobs(jobs) {
+  const now = Date.now();
+  for (const [id, j] of Object.entries(jobs)) {
+    if ((!j.taken && now - j.at > WEB_TTL) || now - j.at > WEB_KEEP) delete jobs[id];
+    else if (j.taken && j.payload) delete j.payload; // 받아 간 사진은 비운다 (자리 아끼기)
+  }
+  await chrome.storage.session.set({ gsWebJobs: jobs });
+}
+async function webMessage(msg) {
+  const jobs = await webJobs();
+  if (msg.op === "ping") return { ok: true, version: chrome.runtime.getManifest().version };
+  if (msg.op === "job") {
+    const target = String(msg.target || "");
+    if (!["naver", "instagram", "threads", "facebook"].includes(target)) return { ok: false, error: "알 수 없는 채널" };
+    for (const [id, j] of Object.entries(jobs)) if (j.target === target && !j.taken) delete jobs[id]; // 같은 곳의 옛 일감은 버린다
+    const id = `web-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    jobs[id] = { id, target, payload: msg.payload || {}, at: Date.now(), taken: 0, done: null, published: "" };
+    await saveWebJobs(jobs);
+    return { ok: true, id };
+  }
+  if (msg.op === "status") {
+    const j = jobs[msg.id];
+    return j ? { ok: true, taken: Boolean(j.taken), done: j.done, published: j.published || "" } : { ok: false };
+  }
+  if (msg.op === "forget") { delete jobs[msg.id]; await saveWebJobs(jobs); return { ok: true }; }
+  return { ok: false };
+}
+/* 채울 화면이 일감을 찾을 때 — 웹에서 올린 것 먼저 (가장 최근 것) */
+async function claimWeb(target) {
+  const jobs = await webJobs();
+  const j = Object.values(jobs).filter((x) => x.target === target && !x.taken && x.payload && Date.now() - x.at < WEB_TTL).sort((a, b) => b.at - a.at)[0];
+  if (!j) return null;
+  const job = { id: j.id, target, ...j.payload };
+  j.taken = Date.now();
+  await saveWebJobs(jobs);
+  return job;
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "GS_WEB") { webMessage(msg.msg || {}).then(sendResponse, () => sendResponse({ ok: false })); return true; }
   if (msg?.type === "GS_VERIFY") {
     const id = sender && sender.tab && sender.tab.id;
     const done = waiting.get(id);
@@ -107,7 +155,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
   if (msg?.type === "GS_CLAIM") {
-    call(`/gs-helper/claim?target=${encodeURIComponent(msg.target || "")}`).then((j) => sendResponse({ job: (j && j.job) || null }));
+    claimWeb(msg.target || "").then(async (web) => {
+      if (web) return sendResponse({ job: web });
+      const j = await call(`/gs-helper/claim?target=${encodeURIComponent(msg.target || "")}`);
+      sendResponse({ job: (j && j.job) || null });
+    });
+    return true;
+  }
+  if (msg?.type === "GS_DONE" && isWebId(msg.id)) {
+    webJobs().then(async (jobs) => { if (jobs[msg.id]) { jobs[msg.id].done = msg.result || { ok: false }; await saveWebJobs(jobs); } sendResponse({ ok: true }); });
+    return true;
+  }
+  if (msg?.type === "GS_PUBLISHED" && isWebId(msg.id)) {
+    webJobs().then(async (jobs) => {
+      const ok = Boolean(jobs[msg.id] && /^https:\/\//.test(String(msg.url || "")));
+      if (ok) { jobs[msg.id].published = String(msg.url); await saveWebJobs(jobs); }
+      sendResponse({ ok });
+    });
     return true;
   }
   if (msg?.type === "GS_DONE") {

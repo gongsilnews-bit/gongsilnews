@@ -11,7 +11,8 @@ import { createPortal } from "react-dom";
 import AiCopyGuide from "./AiCopyGuide";
 import { InstallGuideModal, useStudioInstaller } from "@/components/admin/sections/StudioInstallGuide";
 import { effectiveAi, useAiPick } from "@/components/admin/studio-video/AiPick";
-import { writingArticleFacts, writingArticles, writingComplexFacts, writingFetchNews, writingMyVacancies, writingSearchComplexes, writingVacancyFacts } from "@/app/actions/writingFacts";
+import { writingAreaDongs, writingAreaFacts, writingArticleFacts, writingArticles, writingComplexFacts, writingFetchNews, writingMyVacancies, writingSearchComplexes, writingVacancyFacts } from "@/app/actions/writingFacts";
+import { LAWD_NAMES } from "@/utils/aptMapShared";
 
 /** photos — 공실뉴스 단지 화면 캡처 (시세·로드뷰·실거래, 2026-11-03 사장님). url 은 앱이 저장한 사진 주소 */
 export type ArticleDraft = { title: string; subtitles: string[]; paragraphs: { heading?: string; text: string }[]; keywords: string[]; photos?: { url: string; caption: string; after: number }[] };
@@ -42,7 +43,8 @@ const WEB_AI = [
   { id: "gemini", name: "Gemini", url: "https://gemini.google.com/app" },
   { id: "claude", name: "Claude", url: "https://claude.ai/new" },
 ];
-const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"], ["gongsil", "공실뉴스"]];
+// 단지/지역/시세 — 공실 홍보(공실뉴스)와 다른 실거래 시장 기사. 단지 하나 또는 지역(구·동) (2026-11-04 사장님)
+const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/지역/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"], ["gongsil", "공실뉴스"]];
 const KINDS = [
   { id: "news", name: "뉴스기사형", prompt: "도입부터 결론까지 문단이 자연스럽게 이어지는 뉴스 기사. 매물 조건·지역·수요·확인할 점을 기사 흐름 안에서 풀어 쓴다." },
   { id: "summary", name: "단락별 요약", prompt: "첫 문단에서 기사 전체를 요약하고, 이어서 핵심 내용을 소제목 단위로 나눠 독자가 빠르게 훑어볼 수 있게 쓴다.", heads: true },
@@ -207,6 +209,24 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
     finally { setNewsBusy(false); }
   };
   const [topic, setTopic] = useState("");
+  // 지역 시세 — 시군구·동·종류·기간 (고른 것은 기억)
+  const [mkt, setMkt] = useState<"complex" | "area">("complex");
+  const [lawd, setLawd] = useState("");
+  const [dong, setDong] = useState("");
+  const [dongs, setDongs] = useState<string[]>([]);
+  const [kinds, setKinds] = useState<string[]>(["apt"]);
+  const [months, setMonths] = useState(1);
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("gs-area-pick") || "null");
+      if (v?.lawd && LAWD_NAMES[v.lawd]) { setLawd(v.lawd); setDong(v.dong || ""); writingAreaDongs(v.lawd).then((r) => r.success && setDongs(r.data)).catch(() => {}); }
+      if (Array.isArray(v?.kinds) && v.kinds.length) setKinds(v.kinds);
+      if ([1, 3, 6, 12].includes(v?.months)) setMonths(v.months);
+      if (v?.mkt === "area") setMkt("area");
+    } catch { /* */ }
+  }, []);
+  useEffect(() => { try { localStorage.setItem("gs-area-pick", JSON.stringify({ mkt, lawd, dong, kinds, months })); } catch { /* */ } }, [mkt, lawd, dong, kinds, months]);
+  const lawds = Object.entries(LAWD_NAMES).sort((a, b) => a[1].localeCompare(b[1], "ko"));
 
   useEffect(() => {
     if ((src === "vacancy") && vacs === null) writingMyVacancies().then((r) => { const l = r.success ? r.data : []; setVacs(l); })  // 저절로 첫 공실을 고르지 않는다 — 회원이 골라야 분석 (2026-11-03 사장님).catch(() => setVacs([]));
@@ -250,7 +270,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   const [ana, setAna] = useState<Analysis | null>(null);
   const [anaBusy, setAnaBusy] = useState("");
   const [capBusy, setCapBusy] = useState(false);
-  const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? `m:${pick?.id || ""}` : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
+  const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}` : `m:${pick?.id || ""}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
   const errOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
   /** 공실뉴스 단지 화면 3장 — 시세 그래프 · 로드뷰 · 실거래 금액. 하나씩 차례로 (한꺼번에 찍으면 버벅거린다) */
   const webShots = async (complex: { id: string; name: string }): Promise<Shot[]> => {
@@ -346,6 +366,13 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
           } catch { /* 앱 분석이 안 되면 등록 사진만 */ }
           finally { off(); }
         }
+      } else if (src === "market" && mkt === "area") {
+        setAnaBusy("이 지역 실거래를 모으는 중… (빌라가 많으면 20초쯤)");
+        const r = await writingAreaFacts(lawd, dong, kinds, months);
+        if (!r.success) throw new Error(r.error);
+        mats.push(r.data.text); complex = r.data.complex;
+        subject = `${r.data.title.replace(/ 실거래 현황$/, "")} 부동산 실거래 시장 기사 (최근 ${months === 12 ? "1년" : `${months}개월`} 흐름 · 앞 기간 비교 · 신고가 · 전세가율). 공실 매물 홍보 기사가 아니다`;
+        summary.push(...r.data.text.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
       } else if (src === "market") {
         const c = await writingComplexFacts(pick!.id);
         if (!c.success) throw new Error(c.error);
@@ -380,7 +407,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   // 고르면 저절로 분석 (자유 주제는 분석할 것이 없다)
   useEffect(() => {
     if (src === "topic") { setAna(null); return; }
-    const can = src === "vacancy" ? Boolean(vacId) : src === "news" ? Boolean(news) : Boolean(pick);
+    const can = src === "vacancy" ? Boolean(vacId) : src === "news" ? Boolean(news) : src === "market" && mkt === "area" ? Boolean(lawd && kinds.length) : Boolean(pick);
     if (!can) { setAna(null); return; }
     if (ana?.key === anaKey) return;
     void analyze();
@@ -664,7 +691,32 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
             <select value={vacId} onChange={(e) => setVacId(e.target.value)} style={input}>
               {vacs === null ? <option>불러오는 중…</option> : vacs.length ? <><option value="">공실을 고르세요 ({vacs.length}개)</option>{vacs.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</> : <option value="">광고 중인 내 공실이 없어요</option>}
             </select></>)}
-          {src === "market" && (<>{head(n++, "단지 찾기")}
+          {src === "market" && (<>{head(n++, "단지 또는 지역")}
+            <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
+              {([["complex", "단지 하나"], ["area", "지역 (구·동)"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setMkt(k)} style={chip(mkt === k)}>{l}</button>)}
+            </div>
+          </>)}
+          {src === "market" && mkt === "area" && (<>
+            <select value={lawd} onChange={async (e) => { setLawd(e.target.value); setDong(""); setDongs([]); const r = await writingAreaDongs(e.target.value); if (r.success) setDongs(r.data); }} style={input}>
+              <option value="">시·군·구 고르기</option>
+              {lawds.map(([k, nm]) => <option key={k} value={k}>{nm}</option>)}
+            </select>
+            <select value={dong} onChange={(e) => setDong(e.target.value)} disabled={!lawd} style={{ ...input, marginTop: 6 }}>
+              <option value="">동 전체</option>
+              {dongs.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <div style={{ display: "flex", gap: 5, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
+              {([["apt", "아파트"], ["offi", "오피스텔"], ["villa", "빌라"]] as const).map(([k, l]) => (
+                <button key={k} type="button" onClick={() => setKinds((v) => (v.includes(k) ? (v.length > 1 ? v.filter((x) => x !== k) : v) : [...v, k]))} style={chip(kinds.includes(k))}>{l}</button>
+              ))}
+              <span style={{ flex: 1 }} />
+              <select value={months} onChange={(e) => setMonths(Number(e.target.value))} style={{ ...input, width: 118, height: 34 }}>
+                {[1, 3, 6, 12].map((m) => <option key={m} value={m}>{m === 12 ? "최근 1년" : `최근 ${m}개월`}</option>)}
+              </select>
+            </div>
+            <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>국토교통부 실거래가 — 거래 건수·앞 기간 비교·신고가·전세가율·대표 단지 주변 시설이 재료로 들어가요</div>
+          </>)}
+          {src === "market" && mkt === "complex" && (<>
             <div style={{ display: "flex", gap: 5 }}>
               <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void search(); }} placeholder="단지 이름 — 예: 아크로힐스논현" style={{ ...input, flex: 1 }} />
               <button type="button" onClick={() => void search()} disabled={q.trim().length < 2} style={btn}>찾기</button>

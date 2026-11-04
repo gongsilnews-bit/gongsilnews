@@ -1,6 +1,7 @@
 "use client";
 // 사진 정리 칸 (2026-10-28 사장님) — 공실뉴스 분석 사진 · 뉴스칼럼 기사 화면 같이 쓴다
 //  [×] 빼기 · 끌어서 순서 · [+ AI 이미지 만들기](스타일·그릴 내용 추천) · [+ 내 사진 올리기] · 뺀 사진 되살리기. 맨 앞 = 대표 사진
+import { studioBridge } from "./studioWebBridge";
 import React, { useEffect, useState } from "react";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 
@@ -8,7 +9,7 @@ export type MediaOp = { type: "order"; order: number[] } | { type: "remove"; ind
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Item = { kind: string; caption: string; thumb: string | null };
 type Bridge = { blog?: { imageStyles?: (id?: string) => Promise<{ id: string; label: string }[]> }; vacancy?: { onProgress: (fn: (t: string) => void) => () => void } };
-const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
+const bridge = (): Bridge | null => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진", capture: "기사 화면" };
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");

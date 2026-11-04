@@ -1674,7 +1674,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
         searchByPlaceName();
       } else {
-        alert("주소 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        // 주소 검색이 막혀도(카카오 하루 한도 등) 장소 검색으로 한 번 더 — 장소 검색은 한도가 따로다 (2026-11-04)
+        searchByPlaceName();
       }
     });
   };

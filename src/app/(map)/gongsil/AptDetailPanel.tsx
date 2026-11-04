@@ -9,11 +9,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import { aptViewerInfo, submitAptInfoCapture, submitAptInfoRequest } from "@/app/actions/aptReports";
-import { LAWD_NAMES, areaLabel, brokerFee, fullPrice, supplyFor, type Rent, type Trade } from "@/utils/aptMapShared";
+import { LAWD_NAMES, areaLabel, brokerFee, fullPrice, isNewDeal, supplyFor, type Rent, type Trade } from "@/utils/aptMapShared";
 
 export type AptDetail = {
   id: string; kind?: "apt" | "offi" | "villa"; house_type?: string; name: string; dong: string; jibun: string; lawd_cd: string; build_year: number | null; lat: number; lng: number;
-  trades: Trade[]; rents: Rent[]; supply_map: Record<string, number> | null; unit_map: Record<string, number> | null;
+  trades: Trade[]; rents: Rent[]; new_at?: string | null; supply_map: Record<string, number> | null; unit_map: Record<string, number> | null;
   info: {
     households: number | null; dongs: number | null; useAprDay: string; vlRat: number | null; bcRat: number | null;
     topFloor: number | null; heating: string; hall: string; parking: number | null; builder: string;
@@ -28,6 +28,8 @@ export type AptDetail = {
 };
 
 export const BRAND = "#1a56db";
+/** NEW — 지도 배지와 같은 빨간 작은 표 */
+const NewTag = () => <span style={{ marginLeft: 6, verticalAlign: 2, fontSize: 9.5, fontWeight: 900, color: "#fff", background: "#ef4444", borderRadius: 8, padding: "0 4px", lineHeight: "15px", display: "inline-block" }}>NEW</span>;
 const TOP_RED = "#d9363e"; // "최고" — 오른 값은 빨강 (2026-11-02 사장님: 주황이 튄다)
 /** 단지 정보 줄 이름 → 부동산 보완 칸 이름 */
 const AGENT_KEY: Record<string, string> = { "전기차 충전": "evChargers", "세대수": "households", "호수": "households", "동수": "dongs", "층수": "topFloor", "주차": "parking", "구조": "hall", "난방": "heating", "시공사": "builder" };
@@ -625,9 +627,12 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const topJeonse = Math.max(0, ...(g?.rents || []).filter((r) => !r.m).map((r) => r.dep));
   let topMarked = false;
   const markTop = (isTop: boolean) => (isTop && !topMarked ? (topMarked = true) : false);
+  // NEW — 1주일 안에 새로 들어온 거래 (s 가 없던 때 것은 단지 new_at 으로 어림, aptMapShared.isNewDeal)
+  const legacyNewAt = (detail.trades || []).some((t) => t.s) || (detail.rents || []).some((r) => r.s) ? null : detail.new_at;
+  const isNew = (x: { d: string; s?: string }) => isNewDeal(x, legacyNewAt);
   const rows = mode === "sale"
-    ? (g?.sales || []).map((t) => ({ d: t.d, f: t.f, price: fullPrice(t.p), kind: "", top: markTop(t.p === topSale) }))
-    : (g?.rents || []).map((r) => ({ d: r.d, f: r.f, price: leasePrice(r), kind: r.m ? "월세" : "전세", top: markTop(!r.m && r.dep === topJeonse) }));
+    ? (g?.sales || []).map((t) => ({ d: t.d, f: t.f, price: fullPrice(t.p), kind: "", top: markTop(t.p === topSale), fresh: isNew(t) }))
+    : (g?.rents || []).map((r) => ({ d: r.d, f: r.f, price: leasePrice(r), kind: r.m ? "월세" : "전세", top: markTop(!r.m && r.dep === topJeonse), fresh: isNew(r) }));
 
   // 빌라 전세가율 — 같은 평형, 최근 1년 (둘 다 있을 때만. 없으면 보이지 않는다)
   const jeonseRate = useMemo(() => {
@@ -740,7 +745,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           </div>
           {rows.slice(0, more ? 60 : 12).map((r, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "80px 1fr auto", gap: 10, padding: "13px 20px", borderBottom: `1px solid #f3f4f6`, alignItems: "center" }}>
-              <span style={{ color: "#4b5563" }}>{dot(r.d)}</span>
+              <span style={{ color: "#4b5563" }}>{dot(r.d)}{r.fresh && <NewTag />}</span>
               <span>{g?.label}{r.kind ? <span style={{ marginLeft: 6, fontSize: 11, color: r.kind === "전세" ? ACC : "#b45309" }}>{r.kind}</span> : null}</span>
               <span style={{ textAlign: "right", position: "relative" }}>
                 {r.top && <span style={{ position: "absolute", top: -9, right: -7, fontSize: 8.5, fontWeight: 700, color: "#fff", background: TOP_RED, borderRadius: 3, padding: "0 3px", lineHeight: "13px" }}>최고</span>}
@@ -865,6 +870,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
                   style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 20, width: "100%", textAlign: "left", border: "none", borderTop: `1px solid ${LINE}`, background: on ? ACC_SOFT : "#fff", padding: "18px 24px", cursor: "pointer", alignItems: "center" }}>
                   <span>
                     <b style={{ fontSize: 16, color: on ? ACC : "#111827", whiteSpace: "nowrap" }}>{x.label}</b>
+                    {(mode === "sale" ? x.sales : x.rents).some(isNew) && <NewTag />}
                     <div style={{ fontSize: 11, color: SUB }}>{x.units ? `${x.units}${detail.kind === "offi" ? "호" : "세대"}` : ""}</div>
                   </span>
                   <span style={{ fontSize: 12, color: on ? ACC : "#4b5563", lineHeight: 1.6 }}>

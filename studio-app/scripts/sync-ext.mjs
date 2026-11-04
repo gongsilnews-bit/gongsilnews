@@ -44,6 +44,8 @@ const GROUPS = {
   },
 };
 
+// studio/… : 공실열람 상세 화면 읽기 (앱 inject/gongsil-page.js) — 웹 뉴스·SNS자동화도 같은 코드로 매물 정보를 읽는다 (2026-11-03)
+GROUPS.studio = { dir: join(root, "src", "inject"), files: ["gongsil-page.js"] };
 // ai/… : AI 사이트에서 글 넣기·보내기·답 읽기 (기사작성기와 같은 코드를 앱이 페이지 안 전용 공간에서 돌린다)
 GROUPS.ai = { dir: join(extRoot, "gongsilwriter30", "shared"), files: ["config.js", "ui.js", "article-json.js", "ai-common.js"] };
 

@@ -47,6 +47,8 @@ const REALTY_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
+  // 뉴스·SNS자동화 — 앱의 공실뉴스 부분을 웹에서도 (2026-11-03 사장님: 기사관리 아래). 회원 AI 복사·붙여넣기 · 작업은 이 브라우저에
+  { key: "sns", label: "뉴스·SNS자동화", icon: <IconSend /> },
   // 광고관리 · 고객관리는 공실마케팅 멤버 기능 — 스튜디오 메뉴에만 (2026-10-26 사장님)
   // 부동산특강은 아직 안 쓴다 (2026-10-26 사장님) — siteFlags SHOW_STUDY 를 켜면 다시 보인다
   ...(SHOW_STUDY ? [{ key: "study", label: "특강관리", icon: <IconStudy /> }] : []),
@@ -573,14 +575,15 @@ function RealtyAdminContent() {
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
           {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
-          {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
+          {/* 뉴스·SNS자동화 — 웹도 (2026-11-03 사장님: 앱의 공실뉴스 부분, 회원 AI 복사·붙여넣기 · 도우미로 채우기) */}
+          {activeMenu === "sns" && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
           {/* 대본 작성 — 앱 전용 (회원 AI · 내 PC 저장, 2026-11-03) */}
           {activeMenu === "write" && studioApp.isApp && memberId && <ScriptSection />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
           {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 스튜디오회원부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
           {activeMenu === "photo" && <PhotoStudio menu={null} aiLock={studioPaid ? undefined : askUpgrade} />}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
-          {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "write" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
+          {((activeMenu === "write" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>

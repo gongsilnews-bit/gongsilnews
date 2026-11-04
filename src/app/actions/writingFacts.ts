@@ -63,6 +63,39 @@ export async function writingVacancyFacts(id: string): Promise<Out<{ title: stri
   return { success: true, data: { title: `공실 ${v.vacancy_no} ${v.building_name || v.dong || ""}`.trim(), text: `[내 공실 — 공실뉴스 등록 정보]\n${text}`, complexId: v.complex_id || null, photos } };
 }
 
+/* ── 주변 시설 — 카카오 지도에서 실제로 찾은 곳과 직선거리만 (2026-11-04 사장님: 기사에 주변까지) ── */
+type Place = { place_name: string; distance: string };
+async function nearbyLines(lat: number | null, lng: number | null, label = "주변 시설"): Promise<string[]> {
+  const key = process.env.KAKAO_REST_API_KEY;
+  if (!key || !lat || !lng) return [];
+  const get = (code: string, size = 15, radius = 1500) =>
+    fetch(`https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${code}&x=${lng}&y=${lat}&radius=${radius}&sort=distance&size=${size}`, { headers: { Authorization: `KakaoAK ${key}` }, cache: "no-store" })
+      .then((r) => r.json()).then((j) => (Array.isArray(j?.documents) ? (j.documents as Place[]) : [])).catch(() => [] as Place[]);
+  const [sw, sc, ps, mt] = await Promise.all([get("SW8", 6), get("SC4"), get("PS3", 3, 1000), get("MT1", 3)]);
+  const m = (x: Place) => `${x.place_name} ${Number(x.distance).toLocaleString("ko-KR")}m`;
+  const schools = ["초등학교", "중학교", "고등학교"].map((t) => sc.find((x) => x.place_name.endsWith(t))).filter(Boolean) as Place[];
+  const out: string[] = [];
+  if (sw.length) out.push(`지하철역: ${sw.map(m).join(", ")}`);
+  if (schools.length) out.push(`학교: ${schools.map(m).join(", ")}`);
+  if (ps.length) out.push(`어린이집·유치원: ${ps.map(m).join(", ")}`);
+  if (mt.length) out.push(`대형마트·슈퍼: ${mt.map(m).join(", ")}`);
+  return out.length ? [`- ${label} (카카오 지도 검색, 단지에서 직선거리 · 여기 없는 노선·시설은 쓰지 않는다): ${out.join(" / ")}`] : [];
+}
+
+/** 신고가 — 같은 단지·같은 전용(±0.5㎡)의 앞선 3년 최고가보다 1% 넘게 오른 거래 (앞선 거래 3건 이상일 때만, 2026-11-04 사장님) */
+function newHighs(trades: Trade[], from: string) {
+  const out: { t: Trade; prev: Trade; prevN: number; rise: number }[] = [];
+  for (const t of trades) {
+    if (t.d < from) continue;
+    const prev = trades.filter((x) => x !== t && Math.abs(x.a - t.a) <= 0.5 && x.d < t.d);
+    if (prev.length < 3) continue;
+    const top = prev.reduce((a, x) => (x.p > a.p ? x : a), prev[0]);
+    const rise = (t.p / top.p - 1) * 100;
+    if (rise >= 1) out.push({ t, prev: top, prevN: prev.length, rise: Math.round(rise * 10) / 10 });
+  }
+  return out;
+}
+
 /* ── 단지 시세 ── */
 export async function writingSearchComplexes(q: string): Promise<Out<{ id: string; label: string }[]>> {
   const t = String(q || "").trim();
@@ -73,7 +106,7 @@ export async function writingSearchComplexes(q: string): Promise<Out<{ id: strin
 }
 
 export async function writingComplexFacts(id: string): Promise<Out<{ title: string; text: string }>> {
-  const { data: c, error } = await admin().from("apt_complexes").select("id, kind, name, lawd_cd, dong, jibun, build_year, trades, rents, supply_map, info").eq("id", id).maybeSingle();
+  const { data: c, error } = await admin().from("apt_complexes").select("id, kind, name, lawd_cd, dong, jibun, build_year, lat, lng, trades, rents, supply_map, info").eq("id", id).maybeSingle();
   if (error || !c) return { success: false, error: error?.message || "단지를 찾지 못했습니다." };
   const trades = (c.trades || []) as Trade[], rents = (c.rents || []) as Rent[];
   const yearAgo = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
@@ -86,7 +119,12 @@ export async function writingComplexFacts(id: string): Promise<Out<{ title: stri
   lines.push(`- 단지: ${c.name} (${KIND_KO[c.kind] || c.kind}) · ${LAWD_NAMES[c.lawd_cd] || ""} ${c.dong} ${c.jibun}`);
   const built = info.useAprDay ? String(info.useAprDay).slice(0, 4) : c.build_year;
   const meta = [info.households ? `${info.households}세대` : "", built ? `${built}년 준공` : "", info.dongs ? `${info.dongs}개동` : "", info.topFloor ? `최고 ${info.topFloor}층` : "", info.parking ? `주차 ${info.parking}대` : "", info.subway ? `지하철 ${info.subway}${info.subwayTime ? ` 도보 ${info.subwayTime}` : ""}` : ""].filter(Boolean);
-  if (meta.length) lines.push(`- 단지 정보: ${meta.join(" · ")}`);
+  if (info.vlRat || info.bcRat) meta.push([info.vlRat ? `용적률 ${info.vlRat}%` : "", info.bcRat ? `건폐율 ${info.bcRat}%` : ""].filter(Boolean).join(" · "));
+  if (info.parking && info.households) meta.push(`세대당 주차 ${Math.round((info.parking / info.households) * 10) / 10}대`);
+  if (meta.length) lines.push(`- 단지 정보 (공동주택 기본정보): ${meta.join(" · ")}`);
+  // 최근 3개월 신고가 (2026-11-04)
+  const highs = newHighs(trades, new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10)).sort((p, q) => q.t.d.localeCompare(p.t.d));
+  if (highs.length) lines.push(`- 신고가 (최근 3개월, 같은 면적 앞선 3년 최고가보다 1% 넘게): ${highs.slice(0, 5).map((h) => `${dot(h.t.d)} ${areaLabel(h.t.a, supplyFor(c.supply_map, h.t.a))} ${fullPrice(h.t.p)} ${h.t.f}층 — 종전 최고 ${fullPrice(h.prev.p)}(${dot(h.prev.d)})보다 ${h.rise}% 높음, 앞선 거래 ${h.prevN}건`).join(" | ")}`);
   for (const [label, x] of [...groups.entries()].sort((p, q) => p[1].a - q[1].a)) {
     const s = [...x.sales].sort((p, q) => q.d.localeCompare(p.d));
     const j = x.leases.filter((r) => !r.m).sort((p, q) => q.d.localeCompare(p.d));
@@ -100,6 +138,7 @@ export async function writingComplexFacts(id: string): Promise<Out<{ title: stri
   // 최근 거래 10건
   const recent = [...trades].sort((p, q) => q.d.localeCompare(p.d)).slice(0, 10);
   if (recent.length) lines.push(`- 최근 매매 거래: ${recent.map((t) => `${dot(t.d)} ${areaLabel(t.a, supplyFor(c.supply_map, t.a))} ${fullPrice(t.p)} ${t.f}층`).join(" | ")}`);
+  lines.push(...(await nearbyLines(c.lat, c.lng)));
   return { success: true, data: { title: c.name, text: `[단지 시세 — 국토교통부 실거래가, ${today()} 기준 · 최근 3년 · 해제 거래 제외]\n${lines.join("\n")}` } };
 }
 
@@ -111,43 +150,77 @@ export async function writingAreaDongs(lawd: string): Promise<Out<string[]>> {
   return { success: true, data: [...new Set((data || []).map((r) => r.dong as string))].sort((a, b) => a.localeCompare(b, "ko")) };
 }
 
-export async function writingAreaFacts(lawd: string, dong: string, kinds: string[], months = 3): Promise<Out<{ title: string; text: string }>> {
+/** 지역 시세 — 앞 기간과 비교 · 신고가 · 전세가율 · 대표 단지(사진·주변 시설) (2026-11-04 사장님: 단지/지역/시세 뉴스, 빌라도) */
+export async function writingAreaFacts(lawd: string, dong: string, kinds: string[], months = 3): Promise<Out<{ title: string; text: string; complex: { id: string; name: string } | null }>> {
   if (!LAWD_NAMES[lawd]) return { success: false, error: "지역을 골라 주세요." };
-  const ks = (kinds || []).filter((k) => ["apt", "offi"].includes(k));
-  let q = admin().from("apt_complexes").select("name, kind, dong, trades, rents, supply_map").eq("lawd_cd", lawd).in("kind", ks.length ? ks : ["apt", "offi"]);
-  if (dong) q = q.eq("dong", dong);
-  const { data, error } = await q.limit(3000);
-  if (error) return { success: false, error: error.message };
-  const win = monthsBack(Math.max(1, Math.min(12, months)));
-  const from = `${win[win.length - 1]}-01`;
-  const six = monthsBack(6).reverse();
-  const place = `${LAWD_NAMES[lawd]}${dong ? ` ${dong}` : ""}`;
-  type D = { name: string; kind: string; dong: string; t: Trade; s: number | null };
-  const deals: D[] = [];
-  const jeonse: number[] = [];
-  const byMonth = new Map<string, { n: number; p: number; a: number }>();
-  for (const c of data || []) {
-    for (const t of (c.trades || []) as Trade[]) {
-      const m = ym(t.d);
-      if (six.includes(m)) { const x = byMonth.get(m) || { n: 0, p: 0, a: 0 }; x.n++; x.p += t.p; x.a += t.a; byMonth.set(m, x); }
-      if (t.d >= from) deals.push({ name: c.name, kind: c.kind, dong: c.dong, t, s: supplyFor(c.supply_map, t.a) });
-    }
-    for (const r of (c.rents || []) as Rent[]) if (!r.m && r.d >= from) jeonse.push(r.dep);
+  const ks = (kinds || []).filter((k) => ["apt", "offi", "villa"].includes(k));
+  const use = ks.length ? ks : ["apt", "offi"];
+  type Row = { id: string; name: string; kind: string; dong: string; trades: Trade[] | null; rents: Rent[] | null; supply_map: Record<string, number> | null };
+  const rows: Row[] = [];
+  for (let at = 0; at < 20000; at += 1000) { // 빌라는 한 구에 수천 곳 — 나눠 읽는다
+    let q = admin().from("apt_complexes").select("id, name, kind, dong, trades, rents, supply_map").eq("lawd_cd", lawd).in("kind", use).neq("fp", "gone");
+    if (dong) q = q.eq("dong", dong);
+    const { data, error } = await q.order("id").range(at, at + 999);
+    if (error) return { success: false, error: error.message };
+    rows.push(...((data || []) as Row[]));
+    if ((data || []).length < 1000) break;
   }
-  if (!deals.length && ![...byMonth.values()].some((x) => x.n)) return { success: false, error: `${place}에는 기간 안의 실거래 자료가 아직 없습니다.` };
+  const n = Math.max(1, Math.min(12, months));
+  // 이번 달은 빼고 지난달까지 n개월 — 이번 달은 며칠치뿐이라 비교가 틀어진다 (11-04 시험: 강남 11월 1건 vs 10월 90건 "-98.9%")
+  const win = monthsBack(n + 1).slice(1), prevWin = monthsBack(n * 2 + 1).slice(n + 1);
+  const to = `${monthsBack(1)[0]}-01`;
+  const from = `${win[win.length - 1]}-01`, prevFrom = `${prevWin[prevWin.length - 1]}-01`;
+  const six = monthsBack(7).slice(1).reverse();
+  const place = `${LAWD_NAMES[lawd]}${dong ? ` ${dong}` : ""}`;
+  type D = { id: string; name: string; dong: string; t: Trade; s: number | null };
+  const deals: D[] = [];
+  const stat = () => ({ n: 0, p: 0, a: 0 });
+  const cur = stat(), prev = stat(), jeonse = stat();
+  let monthly = 0;
+  const byMonth = new Map<string, { n: number; p: number; a: number }>();
+  const highs: (ReturnType<typeof newHighs>[number] & { id: string; name: string; dong: string; s: number | null })[] = [];
+  for (const c of rows) {
+    const ts = (c.trades || []) as Trade[];
+    for (const t of ts) {
+      const m = ym(t.d);
+      if (six.includes(m)) { const x = byMonth.get(m) || stat(); x.n++; x.p += t.p; x.a += t.a; byMonth.set(m, x); }
+      if (t.d >= to) continue;
+      if (t.d >= from) { deals.push({ id: c.id, name: c.name, dong: c.dong, t, s: supplyFor(c.supply_map, t.a) }); cur.n++; cur.p += t.p; cur.a += t.a; }
+      else if (t.d >= prevFrom) { prev.n++; prev.p += t.p; prev.a += t.a; }
+    }
+    for (const h of newHighs(ts, from).filter((h) => h.t.d < to)) highs.push({ ...h, id: c.id, name: c.name, dong: c.dong, s: supplyFor(c.supply_map, h.t.a) });
+    for (const r of (c.rents || []) as Rent[]) {
+      if (r.d < from || r.d >= to) continue;
+      if (r.m) monthly++;
+      else { jeonse.n++; jeonse.p += r.dep; jeonse.a += r.a; }
+    }
+  }
+  if (!deals.length && !jeonse.n && ![...byMonth.values()].some((x) => x.n)) return { success: false, error: `${place}에는 기간 안의 실거래 자료가 아직 없습니다.` };
+  const per = (x: { p: number; a: number }) => (x.a ? Math.round(x.p / x.a) : 0); // 전용 ㎡당 만원
+  const pct = (a: number, b: number) => (b ? `${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 1000) / 10}%` : "");
   const lines: string[] = [];
-  lines.push(`- 지역: ${place} · ${(ks.length ? ks : ["apt", "offi"]).map((k) => KIND_KO[k]).join("·")} · 단지 ${(data || []).length}곳`);
-  lines.push(`- 기간: ${win[win.length - 1]} ~ ${win[0]} (최근 ${win.length}개월) 매매 ${deals.length}건${jeonse.length ? ` · 전세 ${jeonse.length}건` : ""}`);
-  lines.push(`- 달마다 매매 건수·전용 ㎡당 평균: ${six.map((m) => { const x = byMonth.get(m); return `${m} ${x?.n || 0}건${x && x.a ? ` (㎡당 ${Math.round(x.p / x.a).toLocaleString("ko-KR")}만원)` : ""}`; }).join(" | ")}`);
+  lines.push(`- 지역: ${place} · ${use.map((k) => KIND_KO[k]).join("·")} · 단지(건물) ${rows.length.toLocaleString("ko-KR")}곳`);
+  lines.push(`- 기간: ${win[win.length - 1]} ~ ${win[0]} (지난달까지 ${win.length}개월 · 신고는 계약 뒤 30일 안이라 마지막 달 건수는 더 늘 수 있음) · 매매 ${cur.n}건${jeonse.n ? ` · 전세 ${jeonse.n}건` : ""}${monthly ? ` · 월세 ${monthly}건` : ""}`);
+  if (prev.n) lines.push(`- 바로 앞 같은 기간(${prevWin[prevWin.length - 1]} ~ ${prevWin[0]})과 비교: 매매 ${prev.n}건 → ${cur.n}건 (${pct(cur.n, prev.n)}) · 전용 ㎡당 평균 ${per(prev).toLocaleString("ko-KR")}만원 → ${per(cur).toLocaleString("ko-KR")}만원 (${pct(per(cur), per(prev))})`);
+  lines.push(`- 달마다 매매 건수·전용 ㎡당 평균: ${six.map((m) => { const x = byMonth.get(m); return `${m} ${x?.n || 0}건${x && x.a ? ` (㎡당 ${per(x).toLocaleString("ko-KR")}만원)` : ""}`; }).join(" | ")}`);
+  if (jeonse.n && cur.a) lines.push(`- 전세가율 (기간 안 전세 ㎡당 평균 ÷ 매매 ㎡당 평균): ${Math.round((per(jeonse) / per(cur)) * 100)}% · 전세 ㎡당 평균 ${per(jeonse).toLocaleString("ko-KR")}만원`);
+  highs.sort((a, b) => b.t.p - a.t.p);
+  if (highs.length) lines.push(`- 신고가 ${highs.length}건 (같은 단지·같은 면적 앞선 3년 최고가보다 1% 넘게), 높은 순: ${highs.slice(0, 6).map((h, i) => `${i + 1}) ${h.name}${dong ? "" : `(${h.dong})`} ${areaLabel(h.t.a, h.s)} ${fullPrice(h.t.p)} ${dot(h.t.d)} ${h.t.f}층 — 종전 최고 ${fullPrice(h.prev.p)}(${dot(h.prev.d)})보다 ${h.rise}% 높음`).join(" | ")}`);
   const top = [...deals].sort((a, b) => b.t.p - a.t.p).slice(0, 5);
   if (top.length) lines.push(`- 최고가 거래 TOP ${top.length}: ${top.map((x, i) => `${i + 1}) ${x.name}${dong ? "" : `(${x.dong})`} ${areaLabel(x.t.a, x.s)} ${fullPrice(x.t.p)} ${dot(x.t.d)} ${x.t.f}층`).join(" | ")}`);
-  const cnt = new Map<string, number>();
-  deals.forEach((x) => cnt.set(x.name, (cnt.get(x.name) || 0) + 1));
-  const most = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  if (most.length) lines.push(`- 거래 많은 단지: ${most.map(([n, k]) => `${n} ${k}건`).join(" | ")}`);
+  const cnt = new Map<string, { n: number; id: string; name: string }>();
+  deals.forEach((x) => { const v = cnt.get(x.id) || { n: 0, id: x.id, name: x.name }; v.n++; cnt.set(x.id, v); });
+  const most = [...cnt.values()].sort((a, b) => b.n - a.n).slice(0, 5);
+  if (most.length) lines.push(`- 거래 많은 단지: ${most.map((x) => `${x.name} ${x.n}건`).join(" | ")}`);
   const latest = [...deals].sort((a, b) => b.t.d.localeCompare(a.t.d)).slice(0, 8);
   if (latest.length) lines.push(`- 최근 거래: ${latest.map((x) => `${dot(x.t.d)} ${x.name} ${areaLabel(x.t.a, x.s)} ${fullPrice(x.t.p)}`).join(" | ")}`);
-  return { success: true, data: { title: `${place} 실거래 현황`, text: `[지역별 현황 — 국토교통부 실거래가, ${today()} 기준 · 해제 거래 제외 · 최근 거래는 늦게 신고될 수 있음]\n${lines.join("\n")}` } };
+  // 사진·주변 시설은 대표 단지 하나로 — 가장 비싼 신고가 단지, 없으면 거래 많은 단지
+  const lead = highs[0] ? { id: highs[0].id, name: highs[0].name } : most[0] ? { id: most[0].id, name: most[0].name } : null;
+  if (lead) {
+    const { data: lc } = await admin().from("apt_complexes").select("lat, lng").eq("id", lead.id).maybeSingle();
+    lines.push(...(await nearbyLines(lc?.lat ?? null, lc?.lng ?? null, `대표 단지 '${lead.name}' 주변 시설`)));
+  }
+  return { success: true, data: { title: `${place} 실거래 현황`, text: `[지역별 현황 — 국토교통부 실거래가, ${today()} 기준 · 해제 거래 제외 · 최근 거래는 늦게 신고될 수 있음]\n${lines.join("\n")}`, complex: lead } };
 }
 
 /* ── 공실뉴스 기사 ── */

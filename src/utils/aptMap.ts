@@ -112,6 +112,37 @@ export const withAgent = (pub: Record<string, number> | null | undefined, agent:
 const fingerprint = (trades: Trade[], rents: Rent[]) =>
   [FP_VERSION, trades.length, trades[0]?.d, trades[0]?.p, rents.length, rents[0]?.d, rents[0]?.dep, rents[0]?.m].join("|");
 
+/** 새로 신고된 거래가 들어왔나 — 지도 NEW 배지(1주일). 매매가 있는 단지는 매매로, 전월세만 있는 단지는 전월세로 본다 (2026-11-04 사장님) */
+const tradeKey = (t: Trade) => `${t.d}|${t.p}|${t.a}|${t.f}`;
+const rentKey = (r: Rent) => `${r.d}|${r.dep}|${r.m}|${r.a}|${r.f}`;
+function hasNew(trades: Trade[], rents: Rent[], old: { trades?: Trade[] | null; rents?: Rent[] | null } | undefined) {
+  if (!old) return true; // 처음 보는 단지 — 새 거래로 생겼다
+  const ot = new Set((old.trades || []).map(tradeKey));
+  if (trades.length) return trades.some((t) => !ot.has(tradeKey(t)));
+  const or = new Set((old.rents || []).map(rentKey));
+  return rents.some((r) => !or.has(rentKey(r)));
+}
+// DB 에 new_at 칸이 있나 (supabase/migrations/20261104_apt_complexes_new_at.sql) — 없으면 10분 뒤 다시 본다 (칸을 만든 뒤 저절로 쓰게)
+let NEW_AT_OK = true, newAtCheckedAt = 0;
+/** 거래마다 들어온 날(s) — 전에 있던 거래는 그 날 그대로, 처음 보는 거래는 오늘 (처음 받는 시군구는 적지 않는다) */
+function stampSeen(trades: Trade[], rents: Rent[], old: { trades?: Trade[] | null; rents?: Rent[] | null } | undefined, mark: boolean) {
+  const today = new Date().toISOString();
+  const ot = new Map((old?.trades || []).map((t) => [tradeKey(t), t.s]));
+  const or = new Map((old?.rents || []).map((r) => [rentKey(r), r.s]));
+  for (const t of trades) { const k = tradeKey(t); const s = ot.has(k) ? ot.get(k) : mark ? today : undefined; if (s) t.s = s; else delete t.s; }
+  for (const r of rents) { const k = rentKey(r); const s = or.has(k) ? or.get(k) : mark ? today : undefined; if (s) r.s = s; else delete r.s; }
+}
+const oldCols = async (q: (cols: string) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>, cols: string) => {
+  if (!NEW_AT_OK && Date.now() - newAtCheckedAt > 600_000) NEW_AT_OK = true;
+  if (NEW_AT_OK) {
+    const r = await q(`${cols}, new_at`);
+    if (!r.error || !/new_at/.test(r.error.message)) return r;
+    NEW_AT_OK = false;
+    newAtCheckedAt = Date.now();
+  }
+  return q(cols);
+};
+
 type Group = { name: string; dong: string; jibun: string; buildYear: number; trades: Trade[]; rents: Rent[] };
 /** 몇 달치 매매·전월세를 받아 단지(법정동+지번)별로 묶는다 */
 async function fetchGroups(lawd: string, kind: Kind, months: string[]) {
@@ -147,17 +178,23 @@ async function fetchGroups(lawd: string, kind: Kind, months: string[]) {
 export async function syncTrades(lawd: string, kind: Kind = "apt") {
   const { byId, sales, rents } = await fetchGroups(lawd, kind, recentMonths(MONTHS));
   const supabase = db();
-  const { data: old, error } = await supabase.from("apt_complexes").select("id, supply_map, agent_supply, fp").eq("lawd_cd", lawd).eq("kind", kind);
+  const { data: old, error } = await oldCols((c) => supabase.from("apt_complexes").select(c).eq("lawd_cd", lawd).eq("kind", kind), "id, supply_map, agent_supply, fp, trades, rents");
   if (error) throw new Error(`DB 읽기 오류: ${error.message}`);
-  const oldById = new Map((old || []).map((r) => [r.id as string, r as { supply_map: Record<string, number> | null; agent_supply: Record<string, number> | null; fp: string | null }]));
+  type Old = { supply_map: Record<string, number> | null; agent_supply: Record<string, number> | null; fp: string | null; trades: Trade[] | null; rents: Rent[] | null; new_at?: string | null };
+  const oldById = new Map(((old || []) as (Old & { id: string })[]).map((r) => [r.id, r]));
+  const firstLoad = oldById.size === 0; // 이 시군구를 처음 받는 날은 전부 "새 거래"가 아니다
 
   const rows = [...byId.entries()].flatMap(([id, g]) => {
     const trades = byDateDesc(g.trades), kept = byDateDesc(g.rents).slice(0, RENT_KEEP);
     const fp = fingerprint(trades, kept);
-    if (oldById.get(id)?.fp === fp) return []; // 바뀐 것 없음
+    const o = oldById.get(id);
+    if (o?.fp === fp) return []; // 바뀐 것 없음
+    const fresh = !firstLoad && hasNew(trades, kept, o);
+    stampSeen(trades, kept, o, !firstLoad);
     return [{
       id, kind, lawd_cd: lawd, dong: g.dong, jibun: g.jibun, name: g.name, build_year: g.buildYear || null,
-      trades, rents: kept, fp, ...summarize(trades, withAgent(oldById.get(id)?.supply_map, oldById.get(id)?.agent_supply)), updated_at: new Date().toISOString(),
+      trades, rents: kept, fp, ...summarize(trades, withAgent(o?.supply_map, o?.agent_supply)), updated_at: new Date().toISOString(),
+      ...(NEW_AT_OK ? { new_at: fresh ? new Date().toISOString() : o?.new_at ?? null } : {}),
     }];
   });
   for (let i = 0; i < rows.length; i += WRITE_BATCH) {
@@ -184,11 +221,11 @@ export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MO
   const older = <T extends { d: string }>(list: T[] | null | undefined) => (list || []).filter((x) => ym(x.d) < from && ym(x.d) >= keepFrom);
   const { byId, sales, rents } = await fetchGroups(lawd, kind, months);
   const supabase = db();
-  type Old = { id: string; trades: Trade[] | null; rents: Rent[] | null; supply_map: Record<string, number> | null; agent_supply: Record<string, number> | null; fp: string | null };
+  type Old = { id: string; trades: Trade[] | null; rents: Rent[] | null; supply_map: Record<string, number> | null; agent_supply: Record<string, number> | null; fp: string | null; new_at?: string | null };
   const ids = [...byId.keys()];
   const oldById = new Map<string, Old>();
   for (let i = 0; i < ids.length; i += 100) {
-    const { data, error } = await supabase.from("apt_complexes").select("id, trades, rents, supply_map, agent_supply, fp").in("id", ids.slice(i, i + 100));
+    const { data, error } = await oldCols((c) => supabase.from("apt_complexes").select(c).in("id", ids.slice(i, i + 100)), "id, trades, rents, supply_map, agent_supply, fp");
     if (error) throw new Error(`DB 읽기 오류: ${error.message}`);
     for (const row of (data || []) as Old[]) oldById.set(row.id, row);
   }
@@ -200,9 +237,12 @@ export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MO
     const fp = fingerprint(trades, kept);
     if (o?.fp === fp) return [];
     if (!o) added++;
+    const fresh = hasNew(trades, kept, o);
+    stampSeen(trades, kept, o, true);
     return [{
       id, kind, lawd_cd: lawd, dong: g.dong, jibun: g.jibun, name: g.name, build_year: g.buildYear || null,
       trades, rents: kept, fp, ...summarize(trades, withAgent(o?.supply_map, o?.agent_supply)), updated_at: new Date().toISOString(),
+      ...(NEW_AT_OK ? { new_at: fresh ? new Date().toISOString() : o?.new_at ?? null } : {}),
     }];
   });
   for (let i = 0; i < rows.length; i += WRITE_BATCH) {
@@ -214,27 +254,66 @@ export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MO
 }
 
 /* ── 2. 위치 ── */
+const kakaoGet = (path: string, query: string) =>
+  fetch(`https://dapi.kakao.com/v2/local/search/${path}.json?query=${encodeURIComponent(query)}&size=5`, {
+    headers: { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}` }, cache: "no-store",
+  }).then((x) => x.json()).catch(() => null);
+const bare = (v: string) => v.replace(/\s|아파트|오피스텔|\(.*?\)/g, "").toLowerCase();
+
+/** 지번으로 못 찾을 때 — 단지 이름으로 카카오 장소 검색 (2026-11-04 사장님: 아크로삼성이 지도에 없음.
+ *  재건축·택지 단지는 새 지번이 카카오 주소에 아직 없거나 법정동이 바뀌었다. 아파트 237곳)
+ *  주거시설이고, 같은 시군구이고, 이름이 서로 들어 있거나 지번이 같을 때만 쓴다 — 비슷한 딴 건물로 찍지 않게 */
+async function geoByName(prefix: string, name: string, jibun: string) {
+  if (!name || /^[\d-]+$/.test(name) || /^\S+동 [\d-]+$/.test(name)) return null; // 이름 없이 지번만인 곳은 못 찾는다
+  const res = await kakaoGet("keyword", `${prefix} ${name}`);
+  if (!res || !Array.isArray(res.documents)) return res && /limit/i.test(String(res.message || res.msg || "")) ? "limited" : null;
+  const sigungu = prefix.split(" ").slice(1).join(" ").replace(/특별시|광역시|특별자치시|특별자치도/g, "");
+  const want = bare(name);
+  const doc = (res.documents as { place_name: string; category_name: string; address_name: string; x: string; y: string }[]).find((d) => {
+    if (!/주거시설/.test(d.category_name) || (sigungu && !d.address_name.includes(sigungu))) return false;
+    const got = bare(d.place_name);
+    return (want.length >= 3 && got.length >= 3 && (got.includes(want) || want.includes(got))) || d.address_name.endsWith(` ${jibun}`);
+  });
+  if (!doc) return null;
+  // 법정동 코드 — 좌표로 받는다 (주소 검색은 지번 검색과 한도를 같이 써서 먼저 바닥난다)
+  const reg = await fetch(`https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x=${doc.x}&y=${doc.y}`, {
+    headers: { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}` }, cache: "no-store",
+  }).then((x) => x.json()).catch(() => null);
+  const bcode = String((reg?.documents || []).find((d: { region_type: string }) => d.region_type === "B")?.code || "");
+  return { lat: Number(doc.y), lng: Number(doc.x), bcode: bcode.length === 10 ? bcode : null };
+}
+
 export async function syncGeo(lawd: string, deadline: number) {
   const prefix = LAWD_NAMES[lawd];
   if (!prefix) throw new Error(`주소 이름이 없는 시군구 코드입니다: ${lawd} (src/utils/aptMap.ts LAWD_NAMES)`);
   const supabase = db();
-  const { data } = await supabase.from("apt_complexes").select("id, dong, jibun").eq("lawd_cd", lawd).is("geo_tried_at", null).limit(500);
-  let found = 0, missed = 0;
+  const { data } = await supabase.from("apt_complexes").select("id, kind, name, dong, jibun").eq("lawd_cd", lawd).is("geo_tried_at", null).limit(500);
+  let found = 0, missed = 0, limited = false;
   for (const r of data || []) {
     if (Date.now() > deadline) break;
     const q = `${prefix} ${r.dong} ${r.jibun}`;
     const res = await fetch(`https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(q)}&size=1`, {
       headers: { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}` }, cache: "no-store",
     }).then((x) => x.json()).catch(() => null);
-    const doc = res?.documents?.[0];
+    // 카카오 하루 한도·잠깐 오류면 "찾아봄"으로 적지 않고 멈춘다 — 다음 실행에 이어서 (2026-11-03: 송파·강동 빌라 1만 4천 곳이 한도 초과로 "못 찾음"이 됨)
+    const addrLimited = Boolean(res && !Array.isArray(res.documents) && /limit/i.test(String(res.message || res.msg || "")));
+    if (addrLimited && r.kind === "villa") { limited = true; break; }
+    if (!res || (!Array.isArray(res.documents) && !addrLimited)) continue;
+    const doc = addrLimited ? null : res?.documents?.[0];
     const bcode = String(doc?.address?.b_code || "");
-    const patch = doc && bcode.length === 10
+    let patch: Record<string, unknown> = doc && bcode.length === 10
       ? { lat: Number(doc.y), lng: Number(doc.x), bcode, geo_tried_at: new Date().toISOString() }
       : { geo_tried_at: new Date().toISOString() };
+    if (!("lat" in patch) && r.kind !== "villa") { // 빌라는 이름이 흔해(○○빌라) 이름 검색으로 찍지 않는다
+      const byName = await geoByName(prefix, String(r.name || ""), String(r.jibun || ""));
+      if (byName === "limited") { limited = true; break; }
+      if (byName) patch = { lat: byName.lat, lng: byName.lng, ...(byName.bcode ? { bcode: byName.bcode } : {}), geo_tried_at: new Date().toISOString() };
+      else if (addrLimited) { limited = true; continue; } // 지번은 한도로 못 물어봤다 — "못 찾음"으로 적지 않고 다음에 다시
+    }
     if ("lat" in patch) found++; else missed++;
     await supabase.from("apt_complexes").update(patch).eq("id", r.id);
   }
-  return { found, missed };
+  return limited ? { found, missed, limited } : { found, missed }; // limited — 카카오 하루 한도 (자정에 풀린다)
 }
 
 /* ── 3. 평형·세대수 (건축물대장 전유공용면적) ── */

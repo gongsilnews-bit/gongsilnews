@@ -10,10 +10,10 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { areaLabel, shortPrice } from "@/utils/aptMapShared";
+import { NEW_DAYS, areaLabel, shortPrice } from "@/utils/aptMapShared";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
-type Complex = { rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
+type Complex = { new_at?: string | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
 
 // 축척 제한은 없앴다 (2026-11-02 사장님: 모든 화면에서) — 복잡함은 겹치는 표시 거르기로 푼다 (draw)
 const VAC = "#4b89ff"; // 공실 묶음 동그라미와 같은 색
@@ -23,10 +23,11 @@ const OFFI = "#0f766e"; // 오피스텔 — 아파트(파랑)와 구분
 const PICKED_OF: Record<string, string> = { [OFFI]: "#134e4a" };
 const PICKED_APT = "#1e3a8a";
 const paint = (el: HTMLElement, picked: boolean) => {
-  if (el.dataset.villa) {
+  if (el.dataset.outline) { // 흰 바탕 상자 — 빌라, 전월세만 있는 아파트·오피스텔
+    const line = el.dataset.color || VILLA_ROSE;
     const box = el.children[0] as HTMLElement | undefined, price = box?.lastElementChild as HTMLElement | undefined;
-    if (box) { box.style.background = picked ? VILLA_ROSE : "#fff"; box.style.color = picked ? "#fff" : VILLA_ROSE; }
-    if (price) price.style.color = picked ? "#fff" : el.dataset.sale ? VILLA_ROSE : "#4b5563";
+    if (box) { box.style.background = picked ? line : "#fff"; box.style.color = picked ? "#fff" : line; }
+    if (price) price.style.color = picked ? "#fff" : el.dataset.sale ? line : "#4b5563";
     el.style.transform = picked ? "scale(1.1)" : "";
     el.style.transformOrigin = "50% 100%";
     if (el.parentElement) el.parentElement.style.zIndex = picked ? "5" : "1";
@@ -365,9 +366,9 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
     const proj = map.getProjection();
     const taken: { x: number; y: number }[] = [];
     const BOX_W = 74, BOX_H = 44;
-    // 빌라 — 매매가 없으면 최근 전월세로 (전세 "전세 2.3억" · 월세 "2,000/100")
+    // 매매가 없으면 최근 전월세로 (전세 "전세 2.3억" · 월세 "월세 100") — 빌라, 그리고 분양권으로만 팔린 새 아파트 (11-04, 모양은 매매와 똑같이)
     const priceOf = (c: Complex) => (c.rep_price && c.rep_area ? { a: c.rep_area, label: shortPrice(c.rep_price) }
-      : c.kind === "villa" && c.rent0 && c.rent0.a ? { a: c.rent0.a, label: c.rent0.m ? `월세 ${c.rent0.m.toLocaleString("ko-KR")}` : `전세 ${shortPrice(c.rent0.dep)}` } : null);
+      : c.rent0 && c.rent0.a ? { a: c.rent0.a, label: c.rent0.m ? `월세 ${c.rent0.m.toLocaleString("ko-KR")}` : `전세 ${shortPrice(c.rent0.dep)}` } : null);
     const shown = ((res?.complexes || []) as Complex[])
       .filter((c) => priceOf(c) && kindsRef.current[c.kind === "offi" ? "offi" : c.kind === "villa" ? "villa" : "apt"])
       .sort((a, b) => b.trade_count - a.trade_count)
@@ -406,7 +407,7 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
       if (c.kind === "villa") {
         // 빌라 — 흰 바탕 + 자주 테두리 · 매매는 자주 굵은 가격, 전월세만 있는 건물은 회색 "전세·월세" (견본 때 정한 모양)
         const sale = Boolean(c.rep_price && c.rep_area);
-        el.dataset.villa = "1";
+        el.dataset.outline = "1";
         if (sale) el.dataset.sale = "1";
         el.innerHTML =
           `<div style="background:#fff;color:${VILLA_ROSE};border:1.5px solid ${VILLA_ROSE};border-radius:9px;padding:3px 8px 4px;min-width:48px;line-height:1.15;white-space:nowrap">` +
@@ -418,6 +419,14 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
         `<div style="font-size:11px;opacity:.85">${areaLabel(pr.a)}</div>` +
         `<div style="font-size:${pr.label.length > 7 ? 13 : 15}px;font-weight:800;letter-spacing:-.3px">${pr.label}</div></div>` +
         `<div style="width:0;height:0;margin:-1px auto 0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color}"></div>`;
+      // 새로 신고된 거래가 들어온 단지 — 1주일 동안 오른쪽 위에 NEW (2026-11-04 사장님). 공실 수 동그라미가 있으면 그 왼쪽
+      if (c.new_at && Date.now() - Date.parse(c.new_at) < NEW_DAYS * 86400_000) {
+        const nb = document.createElement("div");
+        nb.textContent = "NEW";
+        nb.title = `새 실거래 신고 ${c.new_at.slice(0, 10).replace(/-/g, ".")}`;
+        nb.style.cssText = `position:absolute;top:-9px;right:${ids.length ? 15 : -8}px;padding:0 4px;height:15px;border-radius:8px;background:#ef4444;color:#fff;font-size:9.5px;font-weight:900;line-height:15px;letter-spacing:.2px;pointer-events:none`;
+        el.appendChild(nb);
+      }
       if (ids.length) {
         const badge = document.createElement("div");
         badge.textContent = String(ids.length);

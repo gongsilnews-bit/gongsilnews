@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "공실마케팅 도우미",
-  "version": "1.0.38",
-  "description": "공실마케팅 앱에서 쓴 글·사진·영상을 평소 쓰는 크롬의 네이버 블로그·인스타그램·스레드·페이스북·유튜브 화면에 채워 줍니다. 발행·공유·게시는 직접 누릅니다.",
+  "version": "1.0.39",
+  "description": "공실마케팅 앱·공실뉴스 웹에서 쓴 글·사진·영상을 평소 쓰는 크롬의 네이버 블로그·인스타그램·스레드·페이스북·유튜브 화면에 채워 줍니다. 발행·공유·게시는 직접 누릅니다.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -64,6 +64,17 @@
         "helper-youtube.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gongsilnews.com/*",
+        "https://www.gongsilnews.com/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "web-bridge.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [

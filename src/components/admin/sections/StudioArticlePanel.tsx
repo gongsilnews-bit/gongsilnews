@@ -1,5 +1,6 @@
 "use client";
 
+import { studioBridge } from "./studioWebBridge";
 import React, { useEffect, useState } from "react";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 import { useStudioWriter } from "./useStudioWriter";
@@ -24,7 +25,7 @@ type Bridge = {
   };
   blog: { onProgress: (fn: (t: string) => void) => () => void };
 };
-const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
+const bridge = () => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };

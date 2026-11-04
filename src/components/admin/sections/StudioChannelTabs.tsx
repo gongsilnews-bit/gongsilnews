@@ -1,5 +1,6 @@
 "use client";
 
+import { isWebStudio, prepareWebArticleDraft, studioBridge } from "./studioWebBridge";
 import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -50,7 +51,7 @@ const loadAll = (kind: string): AllOpts => {
   const d: AllOpts = { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
   try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); return v ? { article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } } : d; } catch { return d; }
 };
-const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
+const bridge = (): Bridge | null => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 /** 작업 파일(.gsn) 저장 상태 — file 이 비면 아직 파일이 없다 */
@@ -77,6 +78,11 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
 }) {
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const router = useRouter();
+  // [기사쓰기 화면으로 보내기] — 웹은 이 브라우저에 둔 기사를 기사쓰기 화면이 읽는 자리에 먼저 놓는다 (2026-11-03)
+  const sendArticle = async () => {
+    if (isWebStudio()) await prepareWebArticleDraft(workId);
+    router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`);
+  };
   const column = kind === "column";
   const [article, setArticle] = useState<BlogDraft | null>(null);
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
@@ -360,8 +366,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
             <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <button onClick={() => void fillNaver("manual")} disabled={filling}
                 style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>복사·사진 폴더로 직접 붙여 넣기</button>
-              <button onClick={() => void fillNaver("")} disabled={filling} title="예전 방식 — 앱이 따로 띄운 크롬에서 채워요 (네이버 로그인을 그 창에서 한 번 해야 해요)"
-                style={{ padding: "10px 16px", background: "transparent", color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>전용 크롬으로 채우기</button>
+              {!isWebStudio() && <button onClick={() => void fillNaver("")} disabled={filling} title="예전 방식 — 앱이 따로 띄운 크롬에서 채워요 (네이버 로그인을 그 창에서 한 번 해야 해요)"
+                style={{ padding: "10px 16px", background: "transparent", color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>전용 크롬으로 채우기</button>}
               <button onClick={openHelperStore} title="평소 크롬에 공실마케팅 도우미를 설치해요"
                 style={{ padding: "10px 16px", background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>크롬 도우미 설치하기</button>
             </div>
@@ -385,11 +391,11 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           )}
           {naverDone?.via === "manual" && naverDone.copy && (
             <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 10, background: theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc", border: `1px solid ${theme.border}`, fontSize: 14, color: theme.textPrimary, lineHeight: 1.7 }}>
-              평소 크롬에 네이버 글쓰기를 열고, 사진 {naverDone.photos || 0}장을 글 순서대로 번호 붙여 폴더에 저장했어요.
+              {isWebStudio() ? <>새 탭에 네이버 글쓰기를 열고, 사진 {naverDone.photos || 0}장을 글 순서대로 번호 붙여 압축 파일(zip)로 내려받았어요.</> : <>평소 크롬에 네이버 글쓰기를 열고, 사진 {naverDone.photos || 0}장을 글 순서대로 번호 붙여 폴더에 저장했어요.</>}
               <ol style={{ margin: "8px 0", paddingLeft: 20 }}>
                 <li>[제목 복사] → 네이버 제목 칸에 붙여 넣기</li>
                 <li>[본문 복사] → 본문 칸에 붙여 넣기 (디자인 그대로, 사진 자리는 <b>[사진 1]</b>처럼 표시)</li>
-                <li>폴더의 사진을 [사진 N] 자리에 끌어다 놓고 그 표시는 지우기</li>
+                <li>{isWebStudio() ? "압축을 푼 사진" : "폴더의 사진"}을 [사진 N] 자리에 끌어다 놓고 그 표시는 지우기</li>
                 <li>[발행]을 누를 때 태그 칸에 [태그 복사]</li>
               </ol>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -400,7 +406,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                   </button>
                 ))}
               </div>
-              {naverDone.folder && <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary, wordBreak: "break-all" }}>사진 폴더: {naverDone.folder}</div>}
+              {naverDone.folder && <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary, wordBreak: "break-all" }}>사진: {naverDone.folder}</div>}
             </div>
           )}
           {naverDone && naverDone.via !== "manual" && (
@@ -560,7 +566,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
             <StudioArticlePanel view="result" theme={theme} vacancyId={workId} article={article} onArticle={setArticle} column={column}
               oneShot pick={all.article} onPick={(k, l) => keepAll({ ...all, article: { ...all.article, kind: k, length: l } })}
               autoCover={all.article.autoCover === true} onAutoCover={(v) => keepAll({ ...all, article: { ...all.article, autoCover: v } })}
-              onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} writeBtn={writeBtn} />
+              onSend={() => void sendArticle()} writeBtn={writeBtn} />
           )}
           {cur === "youtube" && (
             <StudioYoutubePanel view="result" key={ytVer} theme={theme} vacancyId={workId} onUsed={onUsed} onScript={setHasYoutube}
@@ -636,7 +642,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         <StudioArticlePanel theme={theme} vacancyId={workId} article={article} onArticle={setArticle} column={column}
           oneShot={oneShot} pick={all.article} onPick={(k, l) => keepAll({ ...all, article: { ...all.article, kind: k, length: l } })}
           autoCover={all.article.autoCover === true} onAutoCover={(v) => keepAll({ ...all, article: { ...all.article, autoCover: v } })}
-          onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} writeBtn={writeBtn} />
+          onSend={() => void sendArticle()} writeBtn={writeBtn} />
       )}
 
       {tab === "youtube" && (needArticle

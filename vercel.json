@@ -87,7 +87,7 @@
     },
     {
       "path": "/api/cron/apt-prices/round?mode=recent",
-      "schedule": "*/5 17-21 * * *"
+      "schedule": "*/5 17-23,0-2 * * *"
     }
   ]
 }

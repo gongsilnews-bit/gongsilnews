@@ -1,5 +1,6 @@
 "use client";
 
+import { isWebStudio, setStudioWebMember, studioBridge, watchPublished } from "./studioWebBridge";
 import { useInnerHistory } from "@/utils/useInnerHistory";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import StudioMyVideoPanel from "./StudioMyVideoPanel";
@@ -72,7 +73,7 @@ function priceText(v: MyVacancy) {
   return `${v.trade_type || ""} ${won(v.deposit)}`.trim();
 }
 
-const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: StudioBridge }).gongsilStudio ?? null) : null);
+const bridge = (): StudioBridge | null => studioBridge<StudioBridge>(); // 웹이면 웹 대역 (2026-11-03)
 
 const HIDDEN_CATEGORIES = ["interior", "remodel"];
 /* 뉴스 카테고리 (2026-10-15 회의: 구성만 먼저, 공실뉴스부터) */
@@ -95,6 +96,15 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 
 export default function StudioSnsSection({ theme, memberId }: { theme: Theme; memberId: string }) {
   const router = useRouter();
+  // 웹 (2026-11-03 사장님: 앱의 공실뉴스 부분을 웹에서도) — 작업은 이 브라우저에, 공실뉴스 카테고리만
+  setStudioWebMember(memberId);
+  const [web, setWeb] = useState(false);
+  useEffect(() => {
+    if (!isWebStudio()) return;
+    setWeb(true);
+    setCategoryState("gongsil");
+    watchPublished(); // 도우미로 올린 글 주소 → 홍보현황
+  }, []);
   const [ai, setAi] = useState<AiItem[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
@@ -148,7 +158,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   useEffect(() => {
     try {
       const saved = localStorage.getItem(CATEGORY_KEY);
-      if (saved && NEWS_CATEGORIES.some((c) => c.id === saved) && !HIDDEN_CATEGORIES.includes(saved)) setCategoryState(saved);
+      if (saved && NEWS_CATEGORIES.some((c) => c.id === saved) && !HIDDEN_CATEGORIES.includes(saved) && !isWebStudio()) setCategoryState(saved);
     } catch {}
   }, []);
   const loadUsage = useCallback(() => {
@@ -473,7 +483,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             {connectedAi.length ? `AI 설정 · ${connectedAi.map((a) => a.name).join(", ")}` : "AI 설정"}
           </button>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
-          {NEWS_CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.includes(c.id)).map((c) => {
+          {NEWS_CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.includes(c.id) && (!web || c.id === "gongsil")).map((c) => {
             const on = category === c.id;
             return (
               <button key={c.id} onClick={() => setCategory(c.id)}
@@ -489,6 +499,13 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             );
           })}
         </nav>
+        {/* 웹은 공실뉴스만 — 나머지는 앱에서 (2026-11-03 사장님) */}
+        {web && (
+          <div style={{ margin: "4px 4px 0", fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>
+            뉴스칼럼 · 내 영상 홍보 · 경매·공매와 지도·로드뷰 화면 캡처는 <b style={{ color: theme.textPrimary }}>공실마케팅studio 앱</b>에서 할 수 있어요.
+            <a href="/studio" target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 6, fontWeight: 800, color: navy, textDecoration: "none" }}>앱 알아보기 →</a>
+          </div>
+        )}
       </aside>
 
       {/* 오른쪽 — 위 줄(제목 · 이용 횟수 · [파일 ▾]) + 작업 공간 (2026-11-03 사장님: 메뉴는 원래대로 왼쪽에) */}
@@ -661,7 +678,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   </button>
                 )}
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{web ? "등록 사진 전부를 모읍니다. 10초쯤 걸립니다. (공실열람 검증·지도·로드뷰 화면 캡처는 공실마케팅studio 앱에서)" : "등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다."}</div>
             </>
           )}
           {progress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{progress}</div>}

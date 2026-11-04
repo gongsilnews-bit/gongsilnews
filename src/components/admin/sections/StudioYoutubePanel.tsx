@@ -1,5 +1,6 @@
 "use client";
 
+import { isWebStudio, studioBridge } from "./studioWebBridge";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StudioReviseBar from "./StudioReviseBar";
@@ -39,7 +40,7 @@ type Bridge = {
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
-const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
+const bridge = () => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
@@ -162,7 +163,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
     try {
       await persist({ title, narration: paragraphs() });
       const r = await b.youtube.exportText(vacancyId);
-      setNote(`대본을 저장하고 폴더를 열었습니다: ${r.folder}`);
+      setNote(isWebStudio() ? `대본을 텍스트 파일(${r.file})로 내려받았어요.` : `대본을 저장하고 폴더를 열었습니다: ${r.folder}`);
     } catch (e) {
       setError(cleanErr(e));
     }
@@ -287,7 +288,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
             {writeBtn /* [이 대본만 쓰기] — [원고 복사] 앞 (2026-10-29 사장님) */}
             <button onClick={() => copy(paragraphs().join("\n\n"), "원고를 복사했습니다.", "narration")} style={btn(true)}>원고 복사</button>
             <button onClick={() => copy(descText, "설명란을 복사했습니다.", "desc")} style={btn()}>설명란 복사</button>
-            <button onClick={exportText} style={btn()}>텍스트로 저장</button>
+            <button onClick={exportText} style={btn()}>{isWebStudio() ? "텍스트로 내려받기" : "텍스트로 저장"}</button>
             <button onClick={() => void toVideo()} title="동영상제작 › 대본 작성으로 — 이 공실이 골라지고 대본이 칸에 들어가요"
               style={{ ...btn(), marginLeft: "auto", border: 0, background: "#16a34a", color: "#fff" }}>▶ 이 대본으로 동영상 만들기</button>
           </div>

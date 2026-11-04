@@ -1,5 +1,6 @@
 "use client";
 
+import { isWebStudio, studioBridge } from "./studioWebBridge";
 import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useEffect, useRef, useState } from "react";
 import ChannelButton from "./ChannelButton";
@@ -33,7 +34,7 @@ type Bridge = {
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
-const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
+const bridge = () => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지", capture: "기사 화면" };
@@ -164,7 +165,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
     setNote("사진을 채널 비율로 맞추는 중…");
     try {
       const r = await b.sns.exportChannel({ vacancyId, channel });
-      setNote(`사진 ${r.saved}장과 글을 저장하고 폴더를 열었습니다: ${r.folder}`);
+      setNote(isWebStudio() ? `사진 ${r.saved}장과 글을 압축 파일로 내려받았어요: ${r.folder}` : `사진 ${r.saved}장과 글을 저장하고 폴더를 열었습니다: ${r.folder}`);
     } catch (e) {
       setNote("");
       setError(cleanErr(e));
@@ -368,7 +369,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
             {writeBtn /* [이 ○○ 글만 쓰기] — [글 복사] 앞 (2026-10-29 사장님) */}
             <button onClick={copy} style={btn()}>글 복사</button>
-            <button onClick={exportFolder} style={btn()}>사진·글 폴더로 저장</button>
+            <button onClick={exportFolder} style={btn()}>{isWebStudio() ? "사진·글 내려받기" : "사진·글 폴더로 저장"}</button>
             <ChannelButton channel={channel} label={`${info.label} 열기`} onClick={openChannel} />
             {/* [채널 열기] 바로 옆 · 블로그 [네이버 블로그에 채우기]와 같은 남색 (2026-10-23 사장님) */}
             {bridge()?.sns.fillByHelper && (
@@ -382,7 +383,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
           )}
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
           <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>
-            [도우미로 채우기]는 평소 크롬에 {info.label}을(를) 열고 사진·글을 넣어요 ([공유하기]·[게시]는 직접). 도우미가 없으면 [글 복사]·[사진·글 폴더로 저장]으로 직접 올리세요.
+            [도우미로 채우기]는 {isWebStudio() ? "새 탭" : "평소 크롬"}에 {info.label}을(를) 열고 사진·글을 넣어요 ([공유하기]·[게시]는 직접). 도우미가 없으면 [글 복사]·[{isWebStudio() ? "사진·글 내려받기" : "사진·글 폴더로 저장"}]로 직접 올리세요.
           </div>
         </div>
       )}
