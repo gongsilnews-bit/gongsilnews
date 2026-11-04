@@ -281,11 +281,17 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   useEffect(() => { if (activeCategory === "wish") { setWishDetailOn(false); setShowDetail(false); } }, [activeCategory]); // eslint-disable-line react-hooks/exhaustive-deps
   const dbVacanciesRef = useRef<any[]>([]);
   dbVacanciesRef.current = dbVacancies;
+  // 사무소를 누르면 — 위에서 고른 종류(빌라·주택 등)·지도 범위와 상관없이 그 부동산이 올린 공실 전부 (2026-11-05 사장님: "부동산이 올린 건 다 볼 수 있게")
+  const [agencyVacs, setAgencyVacs] = useState<any[] | null>(null);
   useEffect(() => {
     const on = (e: Event) => {
       const a = (e as CustomEvent).detail as { ownerId: string } | null;
-      if (!a) { setSelectedClusterIds(null); return; }
+      if (!a) { setSelectedClusterIds(null); setAgencyVacs(null); return; }
       setSelectedClusterIds(dbVacanciesRef.current.filter((v) => v.owner_id === a.ownerId).map((v) => String(v.id)));
+      setAgencyVacs(dbVacanciesRef.current.filter((v) => v.owner_id === a.ownerId)); // 먼저 가진 것으로, 아래에서 전부 받아 바꾼다
+      void getVacanciesForMap({ ownerId: String(a.ownerId), is_auction: false }).then((res) => {
+        if (res.success && Array.isArray(res.data)) setAgencyVacs(res.data);
+      }).catch(() => {});
       setShowDetail(false);
     };
     window.addEventListener("gs-agency-open", on);
@@ -606,6 +612,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     if (activeCategory === "wish") {
       return filtered;
     }
+    // 사무소 공실 보기 — 종류·지역·지도 범위와 상관없이 그 부동산 공실 전부
+    if (agencyVacs) return agencyVacs;
 
     if (selectedRegion) {
       filtered = filtered.filter((v) => {
@@ -640,7 +648,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       });
     }
     return filtered;
-  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion, zoomLevel]);
+  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion, zoomLevel, agencyVacs]);
 
   const showArticleOnMap = useCallback((prop: any) => {
     // 대표님 지침: 리스트/매물 선택 시 지도가 강제로 움직이지 않도록 완전 고정
