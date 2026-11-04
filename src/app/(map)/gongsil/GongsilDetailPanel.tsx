@@ -211,11 +211,11 @@ export default function GongsilDetailPanel({
             }
       }
     >
-      {/* 닫기 버튼 — 기사 창(NewsArticlePanel)과 같은 크고 가는 ✕ (2026-11-04 사장님: 작아서) */}
+      {/* 닫기 버튼 — 기사 창(NewsArticlePanel)과 같은 크고 가는 ✕ (2026-11-04 사장님: 작아서) · 사진 위라 흰색 + 옅은 그림자 (11-04 사장님: "X표시 흰색으로") */}
       <button
         onClick={onBack}
         title="닫기"
-        style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 32, color: "#999", cursor: "pointer", padding: 10, lineHeight: 1, zIndex: 100 }}
+        style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 32, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.55)", cursor: "pointer", padding: 10, lineHeight: 1, zIndex: 100 }}
       >
         ✕
       </button>

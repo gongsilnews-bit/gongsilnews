@@ -15,7 +15,7 @@ export default function StudioBenefitsClient() {
     if (typeof window !== "undefined") {
       localStorage.setItem("signup_member_type", "broker");
     }
-    router.push("/marketing/apply");
+    router.push("/newsrealty/pro-apply");
   };
 
   return (

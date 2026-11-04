@@ -20,7 +20,8 @@ export async function getHomeVacancies(category = "") {
     }
     let query = admin.from("vacancies")
       .select("id, trade_type, property_type, deposit, monthly_rent, dong, building_name, hosu, exposure_type, direction, exclusive_m2, room_count, bath_count, realtor_commission, commission_type, created_at, metadata, vacancy_photos(url, sort_order)")
-      .eq("status", "ACTIVE");
+      .eq("status", "ACTIVE")
+      .or("exposure_type.is.null,exposure_type.neq.홈페이지전용"); // 내 홈페이지 전용 공실은 공실뉴스 첫 화면에 안 보인다 (2026-11-04)
     if (category === "경매") query = query.eq("trade_type", "경매");
     else if (categories.includes(category)) query = query.eq("property_type", category).neq("trade_type", "경매");
     const [{ data, error }, auctionResult] = await Promise.all([

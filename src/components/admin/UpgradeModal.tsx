@@ -5,7 +5,7 @@ import StudioPriceTable from "@/components/studio-site/StudioPriceTable";
 
 /**
  * 머리줄 [업그레이드하기] → 우리 금액안내 표를 창으로 (2026-10-30 사장님: 캔바 디자인 말고 우리 디자인으로)
- * 금액안내(/marketing/pricing)와 같은 부품을 그대로 써서 금액·항목·디자인이 늘 같다
+ * 금액안내(/newsrealty/pricing)와 같은 부품을 그대로 써서 금액·항목·디자인이 늘 같다
  */
 export type Tier = "free" | "pro" | "studio" | "corp" | "biz";
 // 유료는 스튜디오회원 하나 (2026-10-31 사장님) — 예전 pro(마케팅회원)·corp(법인) 값이 와도 스튜디오회원으로 읽는다

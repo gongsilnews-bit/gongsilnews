@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import ArticleCardGrid from "./ArticleCardGrid";
 import { useRouter } from "next/navigation";
 import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
-import StudioChannelTabs, { StepLine } from "./StudioChannelTabs";
+import StudioChannelTabs, { StepLine, StepTitle } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import { isWebStudio, studioBridge } from "../studio-web";
@@ -207,7 +207,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
         const small: React.CSSProperties = { flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" };
         const head = (
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 8 }}>이 소재로 씁니다</div>
+            <StepTitle theme={theme} n={1} label="소재" state="done" />
             <div style={{ position: "relative", border: `1px solid ${theme.border}`, borderRadius: 12, padding: 12, minHeight: refetching ? 150 : undefined }}>
               {refetching && <LoadingCover theme={theme} title="다시 가져오는 중" detail="같은 기사 주소로 본문·기사 화면을 새로 받아요" />}
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -224,8 +224,8 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                 <button onClick={() => onTab("source")} style={small}>📋 원문·재료</button>
-                {isNews && bridge()?.column.refetch && <button onClick={() => void refetch()} disabled={refetching} title="같은 기사 주소로 본문·기사 화면을 새로 받습니다" style={small}>{refetching ? "받는 중…" : "↻ 다시 가져오기"}</button>}
-                <button onClick={openList} title="다른 소재 고르기" style={{ ...small, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>← 목록</button>
+                {isNews && bridge()?.column.refetch && <button onClick={() => void refetch()} disabled={refetching} title="같은 기사 주소로 본문·기사 화면을 새로 받습니다" style={{ ...small, border: 0, background: NAVY, color: "#fff", fontWeight: 800 }}>{refetching ? "받는 중…" : "↻ 다시 가져오기"}</button>}
+                <button onClick={openList} title="다른 소재 고르기" style={{ ...small, flex: 1.5, whiteSpace: "nowrap" }}>다른 소재 고르기</button>
               </div>
               {error && !refetching && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c53030" }}>{error}</div>}
             </div>

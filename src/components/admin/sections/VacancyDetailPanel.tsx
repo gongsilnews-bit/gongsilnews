@@ -716,11 +716,22 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <button className="gdv-btn-toolbar" onClick={onBack}>➖ 목록</button>
               <button className="gdv-btn-toolbar" onClick={onEdit}>✏️ 수정</button>
               <button className="gdv-btn-toolbar" onClick={async () => { if(confirm('이 공실을 삭제하시겠습니까?')) { await deleteVacancy(vacancyId); onBack(); } }}>🗑️ 삭제</button>
-              <button className="gdv-btn-toolbar" onClick={() => window.open(`/marketing/report?vacancy_id=${vacancyId}`, '_blank')} title="AI 물건보고서">
+              <button className="gdv-btn-toolbar" onClick={() => {
+                // 보고서·홍보지 메뉴로 — 이 공실을 고른 채로 (2026-11-04 사장님: 새 창 대신 그 페이지로)
+                try { localStorage.setItem("studio_marketing_category", "report"); localStorage.setItem("studio_marketing_vacancy", vacancyId); } catch { /* */ }
+                window.location.href = "/realty_admin?menu=marketing";
+              }} title="AI 물건보고서">
                 AI물건보고서
               </button>
               {/* [SNS뉴스발행] — 기사 초안 + SNS 글 (2026-10-26 사장님) */}
-              <button className="gdv-btn-toolbar" onClick={() => setSnsNewsOpen(true)} title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기" style={{ color: "#ea580c", fontWeight: 700 }}>
+              <button className="gdv-btn-toolbar" onClick={() => {
+                // 웹도 뉴스·SNS자동화로 바로 — 이 공실을 고른 채로 (2026-11-04 사장님: 앱 받기 창 대신 그 페이지로)
+                try {
+                  localStorage.setItem("studio_news_category", "gongsil");
+                  localStorage.setItem("studio_last_vacancy", JSON.stringify({ vacancyId, picked: { id: vacancyId, vacancy_no: Number(vacancy?.vacancy_no) || 0, building_name: vacancy?.building_name || null }, tab: "article", auto: true }));
+                } catch { /* */ }
+                window.location.href = "/realty_admin?menu=sns";
+              }} title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기" style={{ color: "#ea580c", fontWeight: 700 }}>
                 SNS뉴스발행
               </button>
               <button className="gdv-btn-toolbar" onClick={copyShareLink}>🔗 주소복사</button>

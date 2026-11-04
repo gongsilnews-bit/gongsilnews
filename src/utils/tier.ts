@@ -42,3 +42,14 @@ export const PRO_ORANGE = "#ea8a0c";
 export const TIER_NAME: Record<Tier, string> = { user: "일반회원", free: "공실뉴스부동산", pro: "공실뉴스부동산", biz: "비즈니스회원", admin: "최고관리자" };
 /** PRO 기능을 무료 회원이 눌렀을 때 */
 export const PRO_ONLY = "공실뉴스부동산 PRO에서 쓸 수 있어요.";
+
+/**
+ * 내 홈페이지 전용 공실 (2026-11-04 사장님: "기능 만들자") — 노출 칸 세 번째 값
+ *  DB 값은 띄어쓰기 없이 "홈페이지전용" (화면 이름은 "내 홈페이지만"). PRO 만 고른다.
+ *  공실뉴스 지도·목록·다른 부동산에는 안 보이고 내 물건접수홈페이지에만. 한도는 공실뉴스 20건과 따로 20건
+ */
+export const HOMEPAGE_ONLY = "홈페이지전용";
+export const HOMEPAGE_ONLY_LABEL = "내 홈페이지만";
+export const isHomepageOnly = (v: { exposure_type?: string | null } | null | undefined) => String(v?.exposure_type || "").replace(/\s/g, "") === HOMEPAGE_ONLY;
+/** 내 홈페이지 전용 공실 한도 (PRO) */
+export const HOMEPAGE_ONLY_LIMIT = 20;

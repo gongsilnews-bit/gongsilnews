@@ -21,11 +21,25 @@ import { getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from 
 import { SHOW_STUDY } from "@/utils/siteFlags";
 import LoginJoinButton from "@/components/LoginJoinButton";
 import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
+/** 우리동네부동산 위 말풍선 차례 (2026-11-04 사장님: 색상별로 텍스트가 계속 뜨게) */
+const GONGSIL_BUBBLES: { text: (auction: number) => string; icon: "gongsil" | "map" | "apt" | "officetel" }[] = [
+  { text: (n) => `실시간 경공매 ${n.toLocaleString("ko-KR")}건`, icon: "gongsil" },
+  { text: () => "우리동네뉴스", icon: "map" },
+  { text: () => "전국 아파트 실거래가", icon: "apt" },
+  { text: () => "전국 오피스텔 실거래가", icon: "officetel" },
+];
+
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
   const pathname = usePathname();
   const studioBoard = useStudioBoardPage(); // 공실마케팅 게시판 글 읽기·쓰기 (2026-10-26)
   // 핵심 메뉴(공실열람·공실스터디) 위에 가끔 떠오르는 말풍선
   const navBubble = useNavHighlightBubbles(navCounts);
+  // 우리동네부동산 말풍선 — 3초마다 다음 글·색으로 (2026-11-04 사장님)
+  const [gsBubble, setGsBubble] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setGsBubble((n) => n + 1), 3000);
+    return () => window.clearInterval(t);
+  }, []);
   const router = useRouter();
   const headerRef = useRef<HTMLElement>(null);
   const txtDropdownRef = useRef<HTMLDivElement>(null);
@@ -421,9 +435,14 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
                     <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "inline-block", position: "relative" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>우리동네부동산</span>
-                      <NavCategoryHighlightMarker categoryKey="gongsil" active={navBubble.key === "gongsil" && !navBubble.leaving && !isSmallHeader} />
+                      {/* 우리동네부동산은 강조·말풍선을 늘 켜 둔다 (2026-11-04 사장님: "계속 이렇게 헤드라인 — 그래야 클릭하고 싶다"). 말풍선은 "실시간 경공매 N건" 하나로 */}
+                      <NavCategoryHighlightMarker categoryKey="gongsil" active={!isSmallHeader} />
                     </Link>
-                    <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
+                    {/* 늘 떠 있고, 글·색이 차례로 바뀐다 — 경공매(파랑) · 우리동네뉴스(주황) · 전국 아파트 실거래가(초록) · 전국 오피스텔 실거래가(보라) (2026-11-04 사장님: "계속 보게") */}
+                    {(() => {
+                      const b = GONGSIL_BUBBLES[gsBubble % GONGSIL_BUBBLES.length];
+                      return <NavHighlightBubble key={gsBubble} show={!!navCounts} text={b.text(navCounts?.auction ?? 0)} leaving={false} disabled={isSmallHeader} icon={b.icon} />;
+                    })()}
                   </div>
                   {SHOW_STUDY && (<div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                     <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>

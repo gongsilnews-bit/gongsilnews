@@ -13,7 +13,8 @@ let loggedIn = false, loaded = false;
 const subs = new Set<() => void>();
 const changed = () => { subs.forEach((f) => f()); paintAll(); };
 
-const STAR = "M12 2.8l2.8 5.7 6.3.9-4.55 4.43 1.07 6.27L12 17.15 6.38 20.1l1.07-6.27L2.9 9.4l6.3-.9z";
+// 찜 모양 — 별(★) 대신 책갈피 (2026-11-04 사장님: "별표가 아니라 책갈피로", 공실 상세의 저장 단추와 같은 모양). 누르면 노란색은 그대로
+const STAR = "M6.5 3.5h11a1 1 0 0 1 1 1v16.2l-6.5-4.3-6.5 4.3V4.5a1 1 0 0 1 1-1z";
 export const starSvg = (on: boolean, size = 20) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="${STAR}" fill="${on ? "#facc15" : "none"}" stroke="${on ? "#eab308" : "#9ca3af"}" stroke-width="1.7" stroke-linejoin="round"/></svg>`;
 export const isStar = (k: StarKind, id: string) => sets[k].has(String(id));

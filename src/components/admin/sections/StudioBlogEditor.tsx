@@ -6,6 +6,7 @@ import StudioReviseBar from "./StudioReviseBar";
 import StudioWorking from "./StudioWorking";
 import { useStudioImager } from "./useStudioWriter";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
+import { ProTag } from "@/components/admin/ProBadge";
 
 /**
  * 블로그 미리보기 편집기 (공실마케팅 SNS뉴스발행 3단계)
@@ -78,11 +79,10 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   useEffect(() => {
     fetch("/api/studio/usage", { cache: "no-store" }).then((r) => r.json()).then((d) => setPaid(d.success ? d.simAllowed === true : null)).catch(() => {});
   }, []);
-  const openStudy = () => {
-    const url = `${window.location.origin}/study`;
-    const studio = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<void> } }).gongsilStudio;
-    if (studio?.openInBrowser) void studio.openInBrowser(url);
-    else window.open(url, "_blank", "noopener");
+  /** AI 이미지는 PRO 전용 (2026-11-04 사장님) — 무료는 누르면 금액안내 창 */
+  const askUpgrade = () => {
+    const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade;
+    if (f) f(); else window.open("/newsrealty/pricing", "_blank", "noopener");
   };
 
   useEffect(() => {
@@ -273,8 +273,8 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
 
   const aiPanel = (target: { slot?: number; replaceId?: string }, heading: string, onClose: () => void) => paid === false ? (
     <div style={{ padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: theme.textPrimary }}><b>AI 이미지</b>는 공실뉴스부동산 전용 기능이에요.</span>
-      <button onClick={openStudy} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>공실뉴스부동산 보기 →</button>
+      <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: theme.textPrimary }}><b>AI 이미지</b>는 공실뉴스부동산 PRO 전용 기능이에요.</span>
+      <button onClick={askUpgrade} style={{ padding: "8px 14px", borderRadius: 8, border: 0, background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>금액안내 보기 →</button>
       <button onClick={onClose} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
     </div>
   ) : (
@@ -307,7 +307,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
           style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: aiBusy ? "default" : "pointer", opacity: aiBusy ? 0.6 : 1 }}>
           {aiBusy ? "그리는 중…" : `${imgAi}로 그리기`}
         </button>
-        {!aiBusy && <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>}
+        {!aiBusy && <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || (isWebStudio() ? "내 ChatGPT·Gemini 옆 창에서 그려 가져와요. 1~2분 걸리고, 설명에 (AI 생성 이미지)가 붙어요." : "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다.")}</span>}
       </div>
       {/* 그리는 동안: 점점점 + 쉬운 말 + 걸린 시간 */}
       {aiBusy && <StudioWorking title="AI가 이미지를 만들고 있어요" detail={aiMsg} />}
@@ -334,8 +334,8 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setEditId(null); pickReplace(m.id); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진으로 바꾸기
             </button>
-            {!isWebStudio() && <button onClick={() => { setEditId(null); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
-              <Ico d={SPARK} /> AI 이미지로 바꾸기 <span title="공실뉴스부동산(유료 회원) 전용" style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.4 }}>Membership</span>
+            {<button onClick={() => { setEditId(null); if (paid === false) return askUpgrade(); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
+              <Ico d={SPARK} /> AI 이미지로 바꾸기 <ProTag style={{ marginLeft: 4 }} />
             </button>}
             <button className="sbe-menu-x" onClick={() => setEditId(null)} title="닫기">✕</button>
           </div>
@@ -356,8 +356,8 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setOpenSlot(null); pickPhotos(slot); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
             </button>
-            {!isWebStudio() && <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
-              <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지 <span title="공실뉴스부동산(유료 회원) 전용" style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.4 }}>Membership</span>{/* 유료 전용 표시 — 왼쪽 메뉴와 같은 주황 (2026-10-24 사장님) */}
+            {<button onClick={() => { setOpenSlot(null); if (paid === false) return askUpgrade(); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
+              <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지 <ProTag style={{ marginLeft: 4 }} />
             </button>}
             <button className="sbe-menu-x" onClick={() => setOpenSlot(null)} title="닫기">✕</button>
           </div>

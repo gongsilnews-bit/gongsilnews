@@ -211,7 +211,7 @@ export default function StudyCommunityClient({
             목록 보기 레벨: <strong>{activeBoardData?.perm_list ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)
           </p>
           <button
-            onClick={() => router.push("/marketing")}
+            onClick={() => router.push("/newsrealty")}
             style={{
               marginTop: 24,
               padding: "10px 24px",

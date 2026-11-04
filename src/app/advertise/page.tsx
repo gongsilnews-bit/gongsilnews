@@ -235,7 +235,7 @@ export default function MarketingPage() {
         </Link>
         <div className="header-links">
           <Link href="/about" className="header-link">회사소개</Link>
-          <Link href="/marketing" className="header-link active">광고안내</Link>
+          <Link href="/newsrealty" className="header-link active">광고안내</Link>
           <Link href="/partnership" className="header-link">제휴문의</Link>
         </div>
       </header>

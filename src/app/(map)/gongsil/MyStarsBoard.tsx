@@ -160,13 +160,10 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
           {a.thumbnail_url && <img src={a.thumbnail_url} alt="" style={{ width: 84, height: 64, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "#f3f4f6" }} />}
         </div>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 10, fontSize: 12 }}>
-          <span style={{ color: "#a1a1aa" }}>{String(a.published_at || "").slice(0, 10).replace(/-/g, ". ")} · {a.author_name || "공실뉴스"}</span>
+          <span style={{ color: "#a1a1aa" }}>{String(a.published_at || "").slice(0, 10).replace(/-/g, ". ")} · {a.author_name || "공실뉴스"}<CommentCount id={a.id} /></span>
           <span style={{ marginLeft: "auto" }} />
           {folder && <FolderBtn k="art" id={String(a.id)} />}
-          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            <span style={{ color: on ? "#d32f2f" : ORANGE, fontWeight: 700 }}>{on ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
-            <CommentCount id={a.id} />
-          </span>
+          <span style={{ color: on ? "#d32f2f" : ORANGE, fontWeight: 700 }}>{on ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
         </div>
       </a>
     );

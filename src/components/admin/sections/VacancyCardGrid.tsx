@@ -12,6 +12,7 @@ import { getCleanAddrText, getPriceText, formatAreaWithPy } from "@/app/(map)/go
 import { checkMyPromoLinks, getVacancyCardsByIds, getMyVacancyCards, getMyVacancyPromos, saveVacancyPromo, setVacancyDealClosed, type VacancyPromo } from "@/app/actions/vacancyPromos";
 import type { PromoChannel } from "@/utils/vacancyPromos";
 import { getHomepageBase } from "@/app/actions/homepage";
+import { isHomepageOnly } from "@/utils/tier";
 
 type Done = Record<string, boolean>;
 type LocalWork = { vacancyId: string; thumb: string | null; updatedAt: string; done: Done };
@@ -35,6 +36,8 @@ type VacancyCard = {
   commission: string; date: string; spec: string[]; rooms: string; type: string;
   closed: boolean; // 거래 완료 (광고 내리기 › 거래 완료, metadata.deal_closed_at)
   status: string; // ACTIVE 광고중 · STOPPED 광고종료 · DRAFT 임시저장
+  /** 내 홈페이지 전용 공실 (2026-11-04) */
+  home?: boolean;
 };
 
 // 광고 상태 나눔 — 목록형과 같은 탭 (2026-10-28 사장님: 카드형에서도)
@@ -42,8 +45,12 @@ const STATUS_TABS: { label: string; st: string; color: string }[] = [
   { label: "전체", st: "", color: "#e5e7eb" },
   { label: "광고중", st: "ACTIVE", color: "#10b981" },
   { label: "광고종료", st: "STOPPED", color: "#ef4444" },
+  { label: "홈페이지만", st: "HOME", color: "#1a3a6b" }, // 광고 중인 내 홈페이지 전용 (2026-11-04 사장님) — 광고중 탭에서는 뺀다
   { label: "임시저장", st: "DRAFT", color: "#9ca3af" },
 ];
+/** 탭에 맞나 — 광고중 = 공실뉴스에 거는 공실, HOME = 내 홈페이지 전용 */
+const inTab = (v: { status: string; home?: boolean }, st: string) =>
+  st === "HOME" ? v.status === "ACTIVE" && Boolean(v.home) : st === "ACTIVE" ? v.status === "ACTIVE" && !v.home : v.status === st;
 
 // 매물별 찾기 (2026-10-28 사장님) — 공실열람 위 메뉴와 같은 나눔 (property_type 그대로, CATEGORY_TO_PROPERTY_TYPE)
 const TYPE_TABS: { label: string; type: string }[] = [
@@ -190,7 +197,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
           title: getCleanAddrText(v) || "공실 매물", // 공실열람과 같은 제목 (동 + 종류 + 건물명) — 내 공실이라 가리지 않는다
           building: v.building_name || "",
           price: getPriceText(v), // "매매 13억"처럼 거래 종류까지 들어 있다
-          commission: v.realtor_commission || "",
+          commission: isHomepageOnly(v) ? "내 홈페이지 전용" : v.realtor_commission || "", // 내 홈페이지 전용 공실은 공동중개 대신 이 표시 (2026-11-04)
           date: v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "") : "",
           spec: [v.property_type, v.direction || "방향없음", v.exclusive_m2 ? formatAreaWithPy(v.exclusive_m2) : "면적미상"].filter(Boolean),
           rooms: [`룸 ${v.room_count || 0}개`, `욕실 ${v.bath_count || 0}개`, ...(v.options || [])].filter(Boolean).join(", "),
@@ -198,6 +205,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
           done: w?.done || {},
           at: Math.max(Date.parse(w?.updatedAt || "") || 0, Date.parse(v.created_at) || 0),
           active: v.status === "ACTIVE",
+          home: isHomepageOnly(v),
           status: String(v.status || ""),
           type: v.property_type || "",
           closed: Boolean(v.metadata && v.metadata.deal_closed_at),
@@ -365,7 +373,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
   const [pickType, setPickType] = useState(""); // "" = 전체
   const [pickStatus, setPickStatus] = useState(""); // "" = 전체
   const shownVac = useMemo(() => {
-    const list = (vacancies || []).filter((v) => (!pickType || v.type === pickType) && (!pickStatus || v.status === pickStatus) && (!kw || `${v.title} ${v.building} ${v.no} ${v.price}`.toLowerCase().includes(kw)));
+    const list = (vacancies || []).filter((v) => (!pickType || v.type === pickType) && (!pickStatus || inTab(v, pickStatus)) && (!kw || `${v.title} ${v.building} ${v.no} ${v.price}`.toLowerCase().includes(kw)));
     return list.sort((a, z) => Number(favs.includes(z.id)) - Number(favs.includes(a.id)));
   }, [vacancies, kw, favs, pickType, pickStatus]);
   // 내 공실이 있는 나눔만 (몇 개인지 함께)
@@ -383,7 +391,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 14 }}>
           {STATUS_TABS.map((t) => {
             const on = pickStatus === t.st;
-            const n = t.st ? vacancies.filter((v) => v.status === t.st).length : vacancies.length;
+            const n = t.st ? vacancies.filter((v) => inTab(v, t.st)).length : vacancies.length;
             return (
               <button key={t.label} onClick={() => setPickStatus(t.st)} aria-pressed={on}
                 style={{ border: "none", background: "none", padding: "12px 18px", fontSize: 14, fontWeight: on ? 800 : 600, color: on ? "#3b82f6" : textSecondary, borderBottom: `3px solid ${on ? "#3b82f6" : "transparent"}`, marginBottom: -1, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
@@ -428,7 +436,7 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
               <div role="button" title="뉴스·SNS자동화에서 이 공실 열기" onClick={() => openStep(v, "article")} style={{ display: "flex", gap: 10, cursor: "pointer" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                    {v.commission && <span style={{ fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: 700, whiteSpace: "nowrap" }}>{v.commission}</span>}
+                    {v.commission && <span style={{ fontSize: 11, color: v.home ? "#fff" : "#fa5252", background: v.home ? "#1a3a6b" : "transparent", border: `1px solid ${v.home ? "#1a3a6b" : "#fa5252"}`, padding: "1px 5px", borderRadius: 4, fontWeight: 700, whiteSpace: "nowrap" }}>{v.commission}</span>}
                     {v.no && <span style={{ fontSize: 12, color: "#fa5252", fontWeight: 700 }}>{v.no}</span>}
                     {v.date && <span style={{ fontSize: 12, color: "#aaa" }}>{v.date}</span>}
                     {v.closed ? <span style={{ fontSize: 11, fontWeight: 800, padding: "1px 6px", borderRadius: 4, background: "#495057", color: "#fff", whiteSpace: "nowrap" }}>거래 완료</span>

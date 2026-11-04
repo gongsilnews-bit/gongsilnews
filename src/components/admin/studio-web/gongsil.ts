@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { chooseWebAi, webAi, webAsk } from "./ai-ask";
+import { chooseWebAi, openDocked, webAi, webAsk, webAskImage } from "./ai-ask";
 import { NO_HELPER, api, download, getMember, helper, helperJob, helperOn, helperWait, newId, now, onProgress, options, pickFiles, readFile, safeName, say, sleep, toJpeg, tx, useQuota, ymd, zipDownload } from "./core";
 import { getMyArticlePhotos } from "@/app/actions/studioWebColumn";
 import { listFolder, markRestored, restored, saveToFolder } from "./folder";
@@ -216,7 +216,7 @@ const analysisForWeb = (a: Analysis) => ({
   hiddenCount: (a.hidden || []).length,
 });
 
-/* 분석 사진 정리 — 순서·빼기·되살리기·내 사진 (앱 main.js mediaOp). AI 그림은 앱에서 */
+/* 분석 사진 정리 — 순서·빼기·되살리기·내 사진·AI 이미지 (앱 main.js mediaOp) */
 async function mediaOp(vacancyId: string, op: any) {
   // 내 사진 고르기 창은 누른 순간에 열어야 한다 (브라우저가 막지 않게) — 기다리기 전에
   const files = op?.type === "upload" ? pickFiles(true) : null;
@@ -240,7 +240,16 @@ async function mediaOp(vacancyId: string, op: any) {
       a.media.push({ key: `upload:${newId()}`, kind: "upload", src, caption: `${f.name.replace(/\.[^.]+$/, "")} (직접 올린 사진)`, real: true, addedAt: Date.now() });
     }
   } else if (op.type === "ai") {
-    throw new Error("웹에서는 [내 사진 올리기]로 넣어 주세요.");
+    // AI 이미지 만들기 (2026-11-04 사장님: 웹도 내 사진 + AI 이미지, 스타일 20여 가지) — 앱 main.js mediaOp 와 같은 질문을
+    // 회원 본인 ChatGPT·Gemini 옆 창에서 그려 가져온다 ([AI 설정] 이미지 칸). 서버 AI 는 쓰지 않는다
+    const prompt = String(op.prompt || "").trim();
+    if (!prompt) throw new Error("무엇을 그릴지 적어 주세요.");
+    let style = String(op.stylePrompt || "").slice(0, 1200);
+    if (!style && op.style) { try { style = (await api("imageStyleText", { style: op.style, ...colBody(w) })).text || ""; } catch { /* 이름만 */ } }
+    const ask = [prompt, style || op.styleLabel ? `[화풍·스타일] ${op.styleLabel || ""}${style ? "\n" + style : ""}` : "부동산 매물 소개에 쓸 실사 느낌 사진", "가로 4:3 비율", "이미지 안에 글자·숫자·로고·사람 얼굴 없이"].join("\n\n");
+    const src = await toJpeg(await webAskImage(ask), 1600);
+    await useQuota("ai_image", vacancyId);
+    a.media.push({ key: `ai:${newId()}`, kind: "ai", src, caption: `AI 생성 이미지${op.styleLabel ? `(${op.styleLabel})` : ""} — ${prompt.slice(0, 40)} (실제 매물 사진 아님)`, real: false, addedAt: Date.now() });
   } else throw new Error("알 수 없는 작업이에요.");
   // 대표(맨 앞)는 실제 사진
   const isReal = (m: Src) => m && m.kind !== "ai" && m.real !== false;
@@ -349,7 +358,7 @@ async function blogRevise({ vacancyId, doc = "blog", request }: { vacancyId: str
   await putWork(w);
   return docForWeb(w, which);
 }
-async function blogAddPhoto({ vacancyId, doc = "blog", dataUrl, slot, replaceId }: any) {
+async function blogAddPhoto({ vacancyId, doc = "blog", dataUrl, slot, replaceId, kind = "upload", caption = "" }: any) {
   const w = await need(vacancyId);
   const which = doc === "article" ? "article" : "blog";
   const d = w[which];
@@ -358,15 +367,27 @@ async function blogAddPhoto({ vacancyId, doc = "blog", dataUrl, slot, replaceId 
   if (replaceId) {
     const item = d.media.find((m) => m.id === replaceId);
     if (!item) throw new Error("바꿀 사진을 찾지 못했습니다.");
-    Object.assign(item, { src, kind: "upload", file: `doc:${newId()}` });
+    Object.assign(item, { src, kind, file: `doc:${newId()}`, ...(caption ? { caption } : {}) });
     await putWork(w);
     return { id: item.id, kind: item.kind, caption: item.caption, isCover: Boolean(item.isCover), insertAfterParagraph: Number.isInteger(item.insertAfterParagraph) ? item.insertAfterParagraph : null, thumb: src };
   }
   const id = newId();
-  const item: DocMedia = { id, kind: "upload", file: `doc:${id}`, src, caption: "", isCover: false, insertAfterParagraph: Number.isInteger(slot) ? Math.min(slot, d.paragraphs.length) : d.paragraphs.length };
+  const item: DocMedia = { id, kind, file: `doc:${id}`, src, caption, isCover: false, insertAfterParagraph: Number.isInteger(slot) ? Math.min(slot, d.paragraphs.length) : d.paragraphs.length };
   d.media.push(item);
   await putWork(w);
-  return { id, kind: "upload", caption: "", isCover: false, insertAfterParagraph: item.insertAfterParagraph, thumb: src };
+  return { id, kind, caption, isCover: false, insertAfterParagraph: item.insertAfterParagraph, thumb: src };
+}
+
+/* AI 사진 만들기 (2026-11-04 사장님: 내 사진뿐 아니라 AI 사진도) — 앱 blog-writer.js makeImage 와 같은 질문(서버 imagePrompt)을
+   회원 본인 ChatGPT·Gemini 옆 창에서 그려 가져온다. 서버 AI 는 쓰지 않는다. 설명에는 "(AI 생성 이미지)"가 붙는다 */
+async function blogMakeImage({ vacancyId, doc = "blog", style, request, slot, replaceId, styleLabel, stylePrompt }: any) {
+  const w = await need(vacancyId);
+  const d = w[doc === "article" ? "article" : "blog"];
+  if (!d) throw new Error("먼저 글을 써 주세요.");
+  const { prompt, caption } = await api("imagePrompt", { vacancy: w.analysis?.vacancy, title: d.title, body: d.paragraphs.join("\n\n"), style, request, styleLabel, stylePrompt, ...colBody(w) });
+  const dataUrl = await webAskImage(prompt);
+  await useQuota("ai_image", vacancyId);
+  return blogAddPhoto({ vacancyId, doc, dataUrl, slot, replaceId, kind: "ai", caption });
 }
 
 /* ── SNS (앱 sns-writer.js) ── */
@@ -535,7 +556,7 @@ async function naverFill({ vacancyId, design, via = "helper" }: any) {
     const tagLine = (nb.tags || []).map((t: string) => "#" + t).join(" ");
     const name = `${ymd()}_네이버블로그_${workName(w)}.zip`;
     await zipDownload(name, [...files, { name: "블로그_글.txt", data: [w.blog.title, "", text.join("\n\n"), "", tagLine].join("\n") }]);
-    window.open(writeUrl, "_blank");
+    openDocked(writeUrl); // AI 창과 같은 자리에 작은 창으로 (2026-11-04)
     return { ok: true, imagesInserted: 0, imagesTotal: total, design: nb.design, tags: nb.tags, via: "manual", folder: `내려받기 폴더의 ${name}`, copy: { title: w.blog.title, html: html.join(""), text: text.join("\n\n"), tags: tagLine }, photos: n };
   }
   const id = await helperJob("naver", { title: w.blog.title, blocks, tags: nb.tags }, writeUrl, vacancyId, "blog", "naver", "네이버 블로그 글쓰기");
@@ -597,6 +618,17 @@ async function ytExport(vacancyId: string) {
   return { folder: "내려받기 폴더", file: name };
 }
 
+/** 쓰기 전에 — 이번 달 남은 횟수가 없으면 막는다 (센 것은 글을 받은 뒤 useQuota) */
+async function writeRoom(vacancyId: string) {
+  const d = await fetch("/api/studio/usage", { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+  if (!d || !d.success) return; // 모르면 막지 않는다 (받은 뒤 서버가 한 번 더 본다)
+  if (/^col-/.test(vacancyId) && !d.pro) throw new Error("뉴스칼럼은 공실뉴스부동산 PRO에서 쓸 수 있어요.");
+  const u = d.usage;
+  if (u && u.monthRemaining !== null && u.monthRemaining <= 0) {
+    throw new Error(u.monthLimit === 0 ? "글쓰기는 공실뉴스부동산 회원 기능이에요." : `이번 달 쓰기 ${u.monthLimit}번을 모두 썼어요. 공실뉴스부동산 PRO에서는 제한 없이 쓸 수 있어요.`);
+  }
+}
+
 /* ── 한 번에 쓰기 (앱 all-writer.js) ── */
 async function writeAll(o: any) {
   const w = await need(o.vacancyId);
@@ -606,10 +638,11 @@ async function writeAll(o: any) {
   const snsOnly: string[] = snsList.length && snsList.length < SNS_CH.length ? snsList : [];
   const want = { article: o.article?.on !== false, blog: o.blog?.on !== false, sns: o.sns?.on !== false, youtube: o.youtube?.on === true };
   if (!want.article && !want.blog && !want.sns && !want.youtube) throw new Error("쓸 글을 하나 이상 골라 주세요.");
+  // 이용 횟수 (2026-11-04 사장님): 무료 공실뉴스부동산은 한 달에 쓰기 3번 — [한 번에 쓰기]·[이 글만 쓰기] 한 번 = 1번, [수정 요청]은 안 셈 · PRO 무제한
+  //  쓰기 전에 남았는지만 보고, 글을 다 받은 뒤에 1번을 센다 (중간에 멈추면 안 셈)
   say("blog", "이용 횟수를 확인하는 중…");
-  if (want.blog) await useQuota("blog", o.vacancyId);
-  if (want.sns) await useQuota("sns", o.vacancyId);
-  if (want.youtube) await useQuota("youtube", o.vacancyId);
+  await writeRoom(o.vacancyId);
+  const skipped: string[] = [];
   say("blog", "질문을 만드는 중…");
   const P = await api("allPrompt", { vacancy: v, want, article: o.article, blog: o.blog, tone: o.sns?.tone, youtube: o.youtube, ref: want.article ? null : referenceArticle(w), ...colBody(w) });
   say("blog", `${webAi().name} 답을 기다리는 중…`);
@@ -618,6 +651,7 @@ async function writeAll(o: any) {
     if (!x.ok) throw new Error(x.error);
     return x;
   });
+  await useQuota("blog", o.vacancyId); // 쓰기 1번
   say("blog", "받은 글을 나누는 중…");
   const out: Record<string, unknown> = {};
   const fresh = await getWork(o.vacancyId) || w; // 기다리는 동안 고친 것
@@ -639,7 +673,7 @@ async function writeAll(o: any) {
   if (r.blog) out.blog = docForWeb(fresh, "blog");
   if (r.sns) out.sns = await snsForWeb(fresh);
   if (r.youtube) out.youtube = await ytForWeb(fresh);
-  return { ...out, miss: r.miss || [] };
+  return { ...out, miss: r.miss || [], skipped };
 }
 
 /* ── [기사쓰기 화면으로 보내기] — 기사쓰기 화면이 읽는 웹 초안 자리 (NewsWriteForm gsn-web-draft:) ── */
@@ -746,8 +780,8 @@ const web = {
     styles: async (id?: string) => { const w = id ? await getWork(id) : null; return (await optionsOf(w)).blog; },
     get: blogGet, save: blogSave, revise: blogRevise, addPhoto: blogAddPhoto,
     write: async (o: any) => writeAll({ vacancyId: o.vacancyId, article: { on: false }, blog: { on: true, style: o.style, length: o.length }, sns: { on: false }, youtube: { on: false } }).then((r: any) => r.blog),
-    imageStyles: async () => (await options()).imageStyles,
-    makeImage: notInWeb("AI 이미지 만들기"),
+    imageStyles: async (id?: string) => { const w = id ? await getWork(id) : null; return (await optionsOf(w)).imageStyles || (await options()).imageStyles; },
+    makeImage: blogMakeImage,
     onProgress: onProgress("blog"),
   },
   sns: {

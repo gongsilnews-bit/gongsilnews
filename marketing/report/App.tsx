@@ -15,6 +15,7 @@ import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildI
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 import { fillFieldDefaults, roadmapItems } from './reportFields';
 import { scrubSampleInfo, buildLeaseTable, buildLeaseRight, LEASE_NOTICE, floorText } from './realData';
+import { saveToWebFolder } from './webFolder';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -1501,7 +1502,7 @@ function App() {
      웹에서는 false — 예전처럼 브라우저 다운로드. */
   const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
     const id = new URLSearchParams(window.location.search).get("vacancy_id") || getLocalId();
-    if (!id || !studioMarketing?.saveFile) return false;
+    if (!id || !studioMarketing?.saveFile) return saveToWebFolder(fileName, dataUrl); // 웹 — 저장 폴더(공실뉴스\02 보고서홍보지)
     try {
       await studioMarketing.saveFile({ id, sub: '매물보고서', fileName, dataUrl, hint: vacancyMetaRef.current });
       return true;

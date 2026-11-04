@@ -34,7 +34,7 @@ interface Props {
 }
 
 /** Pro 안내로 — 금액안내 (2026-10-30 무료 홈페이지 → Pro 유도) */
-const PRO_URL = "/marketing/pricing";
+const PRO_URL = "/newsrealty/pricing";
 
 type PanelKey = "basic" | "design" | "sections" | "fields" | "company";
 

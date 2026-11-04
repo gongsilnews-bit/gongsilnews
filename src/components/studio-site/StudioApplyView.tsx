@@ -6,7 +6,7 @@ import Link from "next/link";
 /** 스마트스토어 "공실뉴스 1년 수강권" — 결제되면 공실마케팅 1년이 자동으로 켜진다 (src/lib/smartstoreSync.ts) */
 const NAVER_PAY_URL = "https://smartstore.naver.com/mygongsil/products/13805832960";
 
-// 공실마케팅 신청하기(/marketing/apply) 화면. 소개·혜택·금액안내와 같은 톤(미색 띠, 차분한 주황, Pretendard 700).
+// 공실뉴스부동산 PRO 신청하기(/newsrealty/pro-apply) 화면. 소개·혜택·금액안내와 같은 톤(미색 띠, 차분한 주황, Pretendard 700).
 // 로그인·신청서 제출 같은 동작은 PC·모바일 page.tsx 에 그대로 있고, 여기는 겉모양만 맡는다.
 
 export type ApplyStage = "loading" | "login" | "existing" | "submitted" | "form";
@@ -95,7 +95,7 @@ const CSS = `
 `;
 
 const BULLETS: React.ReactNode[] = [
-  <>공실마케팅회원만 신청하실 수 있습니다. <strong style={{ color: "var(--accent-700)" }}>(무료)</strong></>,
+  <>공실뉴스부동산 PRO 회원만 신청하실 수 있습니다. <strong style={{ color: "var(--accent-700)" }}>(무료)</strong></>,
   <>가입신청 후, 네이버쇼핑몰에서 결제하셔요. <strong style={{ color: "var(--accent-700)" }}>(12개월 무이자)</strong></>,
   <>문의는 1:1 게시판을 이용해주세요.</>,
 ];
@@ -132,7 +132,7 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 480 }}>
       {part !== "rest" && (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--accent-700)" }}>공실마케팅 신청</span>
+        <span style={{ fontSize: 13, color: "var(--accent-700)" }}>공실뉴스부동산 PRO 신청</span>
         <h1 style={{ fontSize: mobile ? 26 : "clamp(28px,3.4vw,38px)", lineHeight: 1.3, letterSpacing: "-0.025em", margin: 0 }}>
           내 지역/단지<br />공실을 SNS/뉴스로 전달하세요!
         </h1>
@@ -181,7 +181,7 @@ function GuideModal({ onClose, mobile }: { onClose: () => void; mobile?: boolean
       >
         <button type="button" onClick={onClose} aria-label="닫기" style={{ position: "absolute", top: 18, right: 18, background: "none", border: "none", fontSize: 22, color: "var(--n500)", cursor: "pointer", lineHeight: 1 }}>✕</button>
         <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 13, color: "var(--accent-700)" }}>공실마케팅 입점 안내</span>
+          <span style={{ fontSize: 13, color: "var(--accent-700)" }}>공실뉴스부동산 PRO 안내</span>
           <h3 style={{ fontSize: mobile ? 20 : 24, margin: 0, letterSpacing: "-0.02em" }}>회원가입 및 이용 절차 안내</h3>
           <p style={{ fontSize: 14, color: "var(--n400)", margin: 0 }}>회원가입하고 네이버쇼핑몰에서 결제하시면 바로 승인됩니다.</p>
         </div>
@@ -253,7 +253,7 @@ export default function StudioApplyView(p: NewsrealtyApplyViewProps) {
           {isApproved ? "정식 승인 파트너" : `신청 접수 완료 · ${app.status || "심사 진행 중"}`}
         </span>
         <h1 style={{ fontSize: mobile ? 21 : 24, lineHeight: 1.35, margin: "0 0 12px", letterSpacing: "-0.02em" }}>
-          {isApproved ? "이미 공실마케팅 정식 파트너로 승인되었습니다" : "이미 파트너 입점 신청서가 접수되었습니다"}
+          {isApproved ? "이미 공실뉴스부동산 PRO로 승인되었습니다" : "이미 파트너 입점 신청서가 접수되었습니다"}
         </h1>
         <p style={{ fontSize: 14.5, color: "var(--n300)", lineHeight: 1.7, margin: "0 0 24px" }}>
           {isApproved ? (
@@ -277,7 +277,7 @@ export default function StudioApplyView(p: NewsrealtyApplyViewProps) {
         <div style={{ display: "flex", gap: 10 }}>
           <Link href={links.home} className="nra-btn nra-btn-ghost" style={{ flex: 1 }}>메인 홈으로</Link>
           <Link href={isApproved ? links.approvedAdmin : links.intro} className="nra-btn nra-btn-solid" style={{ flex: 1 }}>
-            {isApproved ? "관리자/공실 등록 >" : "공실마케팅 소개 >"}
+            {isApproved ? "관리자/공실 등록 >" : "공실뉴스부동산 소개 >"}
           </Link>
         </div>
       </StatusCard>
@@ -410,7 +410,7 @@ export default function StudioApplyView(p: NewsrealtyApplyViewProps) {
             </div>
           )}
           <button type="submit" disabled={p.submitting} className="nra-btn nra-btn-solid" style={{ width: "100%", height: 54, fontSize: 16 }}>
-            {p.submitting ? "신청 처리 중..." : "공실마케팅 신청하기"}
+            {p.submitting ? "신청 처리 중..." : "공실뉴스부동산 PRO 신청하기"}
           </button>
         </form>
       );

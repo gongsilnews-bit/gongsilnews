@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { webAi } from "../studio-web";
+import { webImgAi } from "../studio-web/ai-ask";
 
 /* 지금 새 글을 쓸 AI 이름 ("ChatGPT" · "Gemini") — [내 AI 연결]에서 고른 기본 글쓰기 AI.
    쓰기 단추에 "Gemini로 기사 쓰기"처럼 보인다. 앱 밖(웹)에서는 웹에서 고른 AI. */
@@ -14,7 +15,7 @@ export function useStudioWriter(kind: "writer" | "imager" = "writer") {
     const ai = bridge();
     // 웹 — 웹 기사쓰기·뉴스·SNS자동화에서 고른 AI (내 계정 · 새 탭, 2026-11-03)
     if (!ai) {
-      const load = () => setName(webAi().name);
+      const load = () => setName(kind === "imager" ? webImgAi().name : webAi().name); // 이미지는 [AI 설정] 이미지 칸
       load();
       window.addEventListener("gs-web-ai", load);
       return () => window.removeEventListener("gs-web-ai", load);

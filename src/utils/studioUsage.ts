@@ -22,6 +22,10 @@ import { isAdminRole } from "@/utils/permissionCheck";
 
 /* 2026-11-04 사장님 등급 회의 (docs/2026-11-04_member_tiers_plan.md) — 위 규칙을 이렇게 바꿈:
  *  공실뉴스부동산(무료): 공실로 블로그 **한 달에 3건** (같은 공실 고쳐 쓰기는 안 셈) · SNS·유튜브·뉴스칼럼은 안 됨 (PRO)
+ *  → 같은 날 바꿈 (사장님: "3건 주는 거니까 블로그만 말고 3개 다 되게"): 무료도 공실로 블로그·SNS·유튜브 대본 모두,
+ *    셋을 묶어 **공실 하나 = 1건, 한 달 3건** (한 공실로 셋 다 써도 1건). 뉴스칼럼은 그대로 PRO
+ *  → 또 바꿈 (사장님: "1달에 3번만 작성 · Pro는 무제한"): 무료는 **쓰기 한 번 = 1번, 한 달 3번** — 같은 공실을 다시 써도 센다.
+ *    [수정 요청]은 세지 않는다 (웹은 글을 받은 뒤 한 번만 부른다). PRO·비즈니스·최고관리자 무제한
  *  공실뉴스부동산 PRO(이용 기간 안)·비즈니스회원·최고관리자: 무제한
  *  회원마다 따로: members.studio_blog_limit (NULL=등급 기본, -1=무제한, n=한 달 n회 — 블로그·SNS·유튜브 모두)
  *  이름 monthLimit 등은 예전 그대로 (한 달로 돌아왔다) */
@@ -47,12 +51,15 @@ function kstTodayStart(now = new Date()) {
 
 /** PRO 기능을 쓰나 — PRO(이용 기간 안)·비즈니스회원·최고관리자 */
 export const proMember = (member: ExtensionMember) => isAdminRole(member.role) || member.canBlog || member.role === "BIZ";
-/** 등급 기본 한 달 횟수 — 무료는 블로그만 3, SNS·유튜브는 0 (PRO) */
+/** 등급 기본 한 달 횟수 — 무료는 블로그·SNS·유튜브를 묶어 공실 3건 (2026-11-04) */
 export function gradeBlogLimit(member: ExtensionMember, feature: StudioFeature = "blog"): number {
+  void feature;
   if (proMember(member)) return UNLIMITED;
-  if (member.role === "REALTOR") return feature === "blog" ? 3 : 0;
+  if (member.role === "REALTOR") return 3;
   return 0;
 }
+/** 묶어 세는 글 — 공실 하나로 블로그·SNS·유튜브를 써도 1건 */
+const WRITE_FEATURES: StudioFeature[] = ["blog", "sns", "youtube"];
 
 async function memberOverride(memberId: string): Promise<number | null> {
   // 칸이 아직 없으면(DB 변경 전) 등급 기본으로 본다
@@ -86,17 +93,17 @@ export async function getStudioUsage(member: ExtensionMember, feature: StudioFea
 
   const week = kstMonthStart(); // 이름은 예전 그대로 — 이번 달 1일부터
   let rows: { vacancy_id?: string | null; created_at: string; feature: string }[] = [];
-  const withVacancy = await db.from("extension_trial_usage").select("vacancy_id, created_at, feature").eq("member_id", member.id).gte("created_at", week).in("feature", [feature, "ai_image"]);
+  const withVacancy = await db.from("extension_trial_usage").select("vacancy_id, created_at, feature").eq("member_id", member.id).gte("created_at", week).in("feature", [...WRITE_FEATURES, "ai_image"]);
   if (withVacancy.error) {
-    const plain = await db.from("extension_trial_usage").select("created_at, feature").eq("member_id", member.id).gte("created_at", week).eq("feature", feature);
+    const plain = await db.from("extension_trial_usage").select("created_at, feature").eq("member_id", member.id).gte("created_at", week).in("feature", WRITE_FEATURES);
     rows = plain.data || [];
   } else {
     rows = withVacancy.data || [];
   }
 
-  const blogRows = rows.filter((r) => r.feature === feature);
+  const blogRows = rows.filter((r) => (WRITE_FEATURES as string[]).includes(r.feature)); // 셋을 묶어 센다
   const vacancyIds = Array.from(new Set(blogRows.map((r) => r.vacancy_id).filter((v): v is string => Boolean(v))));
-  const monthUsed = blogRows.filter((r) => !r.vacancy_id).length + vacancyIds.length;
+  const monthUsed = blogRows.length; // 쓰기 한 번 = 1번 (2026-11-04 — 공실이 같아도 센다)
   const today = kstTodayStart();
   const todayUsed = blogRows.filter((r) => r.created_at >= today).length;
   const aiImageToday = rows.filter((r) => r.feature === "ai_image" && r.created_at >= today).length;
@@ -149,15 +156,15 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
   if (/^col-/.test(vacancyId) && !proMember(member) && !usage.custom) {
     return { ok: false, reason: "뉴스칼럼은 공실뉴스부동산 PRO에서 쓸 수 있어요.", usage };
   }
-  // 이번 주 이미 쓴 공실이면 깎지 않는다
-  if (usage.vacancyIds.includes(vacancyId)) return { ok: true, charged: false, usage };
+  // 무제한(PRO 등)은 같은 공실을 다시 써도 기록을 늘리지 않는다 — 무료는 쓰기마다 센다 (2026-11-04)
+  if (usage.monthLimit === UNLIMITED && usage.vacancyIds.includes(vacancyId)) return { ok: true, charged: false, usage };
 
   if (usage.monthLimit === 0) {
     if (member.role === "REALTOR") return { ok: false, reason: `${name}는 공실뉴스부동산 PRO에서 쓸 수 있어요.`, usage };
     return { ok: false, reason: `${name} 쓰기는 공실뉴스부동산(중개사) 회원 기능입니다.`, usage };
   }
   if (usage.monthRemaining !== null && usage.monthRemaining <= 0) {
-    return { ok: false, reason: `이번 달 ${name} ${usage.monthLimit}건을 모두 썼어요. 공실뉴스부동산 PRO에서는 제한 없이 쓸 수 있어요.`, usage };
+    return { ok: false, reason: `이번 달 쓰기 ${usage.monthLimit}번을 모두 썼어요. 공실뉴스부동산 PRO에서는 제한 없이 쓸 수 있어요.`, usage };
   }
   if (usage.dailyLimit !== null && usage.todayUsed >= usage.dailyLimit) {
     return { ok: false, reason: `계정 보호를 위해 ${name}는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };

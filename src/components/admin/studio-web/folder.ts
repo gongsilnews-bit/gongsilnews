@@ -5,13 +5,14 @@
  *  회원이 [저장 폴더 정하기]로 문서\공실뉴스 를 한 번 고르면, 웹에서 만든 것을 그 폴더에 쓴다.
  *  - 크롬·엣지(showDirectoryPicker)만. 안 되는 브라우저는 지금처럼 다운로드 폴더로 내려받는다
  *  - 고른 폴더는 이 브라우저에 기억 (IndexedDB 에 폴더 손잡이). 크롬을 새로 켜면 처음 한 번 "허락"을 다시 묻기도 한다
- *  - 안쪽 폴더는 앱과 같은 번호 (data-server-vs-local): 01 뉴스SNS발행 · 02 공실마케팅 · 04 이미지제작 · 10 글쓰기
+ *  - 안쪽 폴더는 웹 메뉴 이름 (2026-11-04 사장님: "우리 웹과 맞춰서"): 01 뉴스SNS발행 · 02 보고서홍보지 · 04 포토studio (글쓰기 폴더는 웹에선 안 둠, 2026-11-04 사장님)
+ *    처음 저장할 때 생긴다 (빈 폴더를 미리 만들지 않는다). 보고서·홍보지(marketing/report·ai-detail 의 webFolder.ts)도 같은 이름을 쓴다
  *  - 고른 폴더 이름이 "공실뉴스"가 아니면 그 안에 "공실뉴스" 폴더를 만들어 쓴다 (문서를 골라도 문서\공실뉴스)
  *  작업(브라우저 안 IndexedDB)은 그대로 두고, 이 폴더는 백업 겸 다른 브라우저(엣지↔크롬)·다른 PC로 옮기는 길
  */
 
 export const ROOT_NAME = "공실뉴스";
-export const F = { sns: "01 뉴스SNS발행", mkt: "02 공실마케팅", photo: "04 이미지제작", write: "10 글쓰기" } as const;
+export const F = { sns: "01 뉴스SNS발행", mkt: "02 보고서홍보지", photo: "04 포토studio" } as const;
 export type FolderKey = keyof typeof F;
 
 type Dir = any; // FileSystemDirectoryHandle (브라우저마다 타입이 달라 any)
@@ -53,25 +54,20 @@ export async function folderState(): Promise<FolderState> {
 }
 if (typeof window !== "undefined") void folderState();
 
-/** 안쪽 번호 폴더를 만들어 둔다 */
-async function makeSubs(root: Dir) {
-  for (const n of Object.values(F)) await root.getDirectoryHandle(n, { create: true });
-}
 
 /** [저장 폴더 정하기] — 단추를 누른 그 순간에 불러야 한다 (브라우저 규칙) */
-export async function pickFolder(): Promise<FolderState> {
+export async function pickFolder(): Promise<FolderState & { aborted?: boolean }> {
   if (!folderSupported()) throw new Error("이 브라우저는 PC 폴더 저장을 지원하지 않아요. 크롬이나 엣지에서 써 주세요.");
   let picked: Dir;
   try {
-    // 처음 = 바탕 화면에서 열림 (2026-11-04 사장님) · [바꾸기] = 지금 쓰는 공실뉴스 폴더에서 열림 (바탕 화면 자체를 다시 골라 "이 폴더를 열 수 없음"이 뜨지 않게)
+    // 처음 = 문서 폴더에서 열림 (2026-11-04 사장님: 초기값 문서, 회원이 다른 곳으로 바꿀 수 있음) · [바꾸기] = 지금 쓰는 공실뉴스 폴더에서 열림 (문서·바탕 화면 자체를 다시 골라 "이 폴더를 열 수 없음"이 뜨지 않게)
     const cur = await stored();
-    picked = await (window as any).showDirectoryPicker({ mode: "readwrite", startIn: cur || "desktop" });
+    picked = await (window as any).showDirectoryPicker({ mode: "readwrite", startIn: cur || "documents" });
   } catch (e: any) {
-    if (e && e.name === "AbortError") return folderState(); // 회원이 닫았다
+    if (e && e.name === "AbortError") return { ...(await folderState()), aborted: true }; // 회원이 닫았다 (크롬 "이 폴더를 열 수 없음"에서 [취소]도 여기로)
     throw new Error("폴더를 고르지 못했어요. 다른 폴더를 골라 주세요.");
   }
   const root = picked.name === ROOT_NAME ? picked : await picked.getDirectoryHandle(ROOT_NAME, { create: true });
-  await makeSubs(root);
   await kv("readwrite", (s) => s.put(root, "root"));
   rootP = Promise.resolve(root);
   restored = false;
@@ -86,7 +82,7 @@ export async function allowFolder(): Promise<boolean> {
   if (!h) return false;
   try {
     const ok = (await h.requestPermission({ mode: "readwrite" })) === "granted";
-    if (ok) { await makeSubs(h); folderReady = true; changed(); }
+    if (ok) { folderReady = true; changed(); }
     return ok;
   } catch { return false; }
 }

@@ -12,7 +12,7 @@ import React, { useEffect, useRef, useState } from "react";
  * - prefers-reduced-motion 이면 애니메이션 없이 조용히 바뀐다
  */
 
-export type BubbleKey = "map" | "gongsil" | "study";
+export type BubbleKey = "map" | "gongsil" | "study" | "apt" | "officetel";
 
 type Slide = { key: BubbleKey; text: (c: NavCounts) => string };
 
@@ -56,6 +56,18 @@ export const BUBBLE_THEMES: Record<BubbleKey, {
     text: "#ffffff",
     softBg: "rgba(255, 142, 21, 0.24)",
   },
+  // 4. 전국 아파트 실거래가: 초록 (2026-11-04 사장님: 색상별로 계속 뜨게)
+  apt: {
+    bg: "#059669",
+    text: "#ffffff",
+    softBg: "rgba(16, 185, 129, 0.24)",
+  },
+  // 5. 전국 오피스텔 실거래가: 보라
+  officetel: {
+    bg: "#7c3aed",
+    text: "#ffffff",
+    softBg: "rgba(124, 58, 237, 0.22)",
+  },
 };
 
 /**
@@ -71,6 +83,23 @@ const ICONS: Record<BubbleKey, React.ReactNode> = {
       <path d="M4 21V4a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v17" />
       <path d="M13 10h6a1 1 0 0 1 1 1v10" />
       <path d="M3 21h18M8 7.5h1M8 12h1M8 16.5h1" />
+    </>
+  ),
+  // 아파트 (높은 건물 두 동)
+  apt: (
+    <>
+      <path d="M3 21h18" />
+      <path d="M5 21V6l6-3v18" />
+      <path d="M11 21V9l8 3v9" />
+      <path d="M8 9h.01M8 13h.01M8 17h.01M15 14h.01M15 17h.01" />
+    </>
+  ),
+  // 오피스텔 (네모 건물 + 창)
+  officetel: (
+    <>
+      <path d="M5 21V4h14v17" />
+      <path d="M3 21h18" />
+      <path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4" />
     </>
   ),
   // 강의 (칠판/스크린)

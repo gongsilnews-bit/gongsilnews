@@ -7,6 +7,8 @@
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { createClient as createCookie } from "@/utils/supabase/server";
 
+/** 찜 상한 — 공실·기사·부동산·단지 종류마다 (2026-11-04) */
+const STAR_LIMIT = 300;
 const admin = () => createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 async function me() {
   const c = await createCookie();
@@ -40,6 +42,9 @@ export async function toggleMapStar(kind: "art" | "ag" | "apt", id: string, on: 
   if (on) {
     const { data: had } = await db.from(table).select("id").eq("user_id", user.id).eq(col, id).maybeSingle();
     if (had) return { success: true };
+    // 종류마다 300개까지 (2026-11-04 사장님: DB 가 불어나지 않게)
+    const { count } = await db.from(table).select("id", { count: "exact", head: true }).eq("user_id", user.id);
+    if ((count || 0) >= STAR_LIMIT) return { success: false, error: `찜은 ${STAR_LIMIT}개까지 할 수 있어요. 안 보는 찜을 지운 뒤 다시 해 주세요.` };
     const { error } = await db.from(table).insert({ user_id: user.id, [col]: id });
     if (error) return { success: false, error: /agency_bookmarks|complex_bookmarks/.test(error.message) ? "찜 표가 아직 없습니다 (DB 칸 만들기 필요)." : error.message };
   } else {
@@ -120,3 +125,4 @@ export async function getMyBoard(): Promise<{ loggedIn: boolean; articles: Board
   }
   return { loggedIn: true, articles, agencies, complexes };
 }
+

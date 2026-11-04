@@ -31,7 +31,7 @@ export default function NewsrealtyJoinButton({ tone = "light", small = false, jo
   const icon = small ? 16 : 18;
   return (
     <Link
-      href="/marketing"
+      href="/newsrealty"
       title="공실마케팅"
       style={{
         display: "inline-flex", alignItems: "center", gap: 6,

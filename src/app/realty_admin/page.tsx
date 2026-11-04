@@ -478,7 +478,8 @@ function RealtyAdminContent() {
           isApp={studioApp.isApp}
           appVersion={studioApp.version}
           // 무료 회원 — PRO 전용 메뉴에 주황 PRO 딱지 (2026-11-04)
-          badges={studioPaid ? badges : { ...badges, homepage: "pro", photo: "pro", customer: "pro" }}
+          pro={myTier === "pro" || myTier === "studio" || myTier === "corp"} // PRO 회원 — 로고 옆 PRO 딱지 (2026-11-04)
+          badges={{ ...badges, article: "pro", homepage: "pro", photo: "pro", customer: "pro" }} // PRO 기능 메뉴 — 무료·PRO 모두 딱지 (2026-11-04 사장님: "프로 마크는 그냥 보여줘")
           autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
           // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
           hidden={railGone}
@@ -534,11 +535,12 @@ function RealtyAdminContent() {
                 style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 16px", borderRadius: 999, border: 0, background: "#fff", color: "#111827", fontSize: 13.5, fontWeight: 800, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>
                 {/* 왕관 — 우리 주황 (그림 글자 👑 대신, 2026-10-30 사장님) */}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="#e8890c" aria-hidden><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.8 10.5H4.8z" /><rect x="4.8" y="19.5" width="14.4" height="1.8" rx="0.9" /></svg>
-                업그레이드하기
+                금액안내{/* "업그레이드하기" → "금액안내" (2026-11-04 사장님) */}
               </button>
             )}
             {/* 금액안내 — 등급과 상관없이 늘 (2026-10-31 사장님: 스튜디오회원은 업그레이드 단추가 없어 금액을 볼 곳이 없었다) */}
-            {useStudioMenu && (
+            {/* 무료는 위 흰 [금액안내]가 있으니 이 단추는 숨긴다 — 같은 단추 두 개가 되지 않게 (2026-11-04) */}
+            {useStudioMenu && !(userRole !== 'ADMIN' && myTier === "free") && (
               <button type="button" onClick={() => setUpgradeOpen(true)}
                 style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.35)", background: "transparent", color: "#fff", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8 9.5h8M8 13h8M12 9.5V18" /></svg>

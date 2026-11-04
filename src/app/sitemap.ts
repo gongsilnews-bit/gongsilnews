@@ -23,14 +23,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 공실마케팅 소개 페이지 — 네이버·구글에서 "공실마케팅" 으로 찾히게
   const marketingPages: MetadataRoute.Sitemap = [
-    { url: `${SITE}/marketing`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE}/newsrealty`, changeFrequency: "weekly", priority: 0.9 },
     ...["pricing", "benefits", "guide", "resources", "community", "apply"].map((p) => ({
-      url: `${SITE}/marketing/${p}`,
+      url: `${SITE}/newsrealty/${p}`,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
     ...FEATURES.map((f) => ({
-      url: `${SITE}/marketing/feature/${f.slug}`,
+      url: `${SITE}/newsrealty/feature/${f.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),

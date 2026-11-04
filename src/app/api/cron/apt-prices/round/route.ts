@@ -68,6 +68,6 @@ export async function GET(req: Request) {
   }
   // 찜한 단지·부동산 새 소식 🔔 (새 실거래·공실·기사 — 같은 알림은 한 번만, utils/starAlerts)
   // 새 실거래 알림은 한 바퀴가 끝날 때만 (06:55 · 11:55 — 하루 두 번, 회원이 많아도 가볍게). 공실·기사 알림은 올라오는 그때 따로
-  const alerts = mode === "recent" && slot === RECENT_SLOTS - 1 ? await import("@/utils/starAlerts").then((m) => m.alertTrades(14)).catch(() => null) : null;
+  const alerts = mode === "recent" && slot === RECENT_SLOTS - 1 ? await import("@/utils/starAlerts").then(async (m) => ({ sent: await m.alertTrades(14), pruned: await m.pruneNotifications(90) })).catch(() => null) : null;
   return NextResponse.json({ success: true, mode, slot, jobs: jobs.length, done, alerts });
 }

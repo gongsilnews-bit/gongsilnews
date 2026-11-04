@@ -65,16 +65,19 @@ export const InstallAppModal: React.FC = () => {
   );
 };
 
-/** 웹에서 막힌 쪽 위에 덮는 흰 반투명 막 */
+/** 웹에서 막힌 쪽 위에 덮는 흰 반투명 막 — 안내 창과 같은 글을 바로 보인다 (2026-11-04 사장님: 한 번 더 누르지 않게) */
 export const WebLockCover: React.FC<{ exportId: string }> = ({ exportId }) => {
   if (webAllowed(exportId)) return null;
   return (
     <div data-web-lock className="absolute inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-[3px] print:hidden">
-      <div className="rounded-2xl bg-white/95 px-8 py-7 text-center shadow-xl ring-1 ring-gray-200">
-        <div className="text-3xl">🔒</div>
-        <div className="mt-2 text-lg font-black text-gray-900">이 쪽은 PRO에서 만들 수 있어요</div>
-        <div className="mt-1 text-sm text-gray-500">무료는 표지·개요 두 쪽만 · PRO는 모든 쪽과 전체 내보내기</div>
-        <button className="mt-4 rounded-xl bg-orange-500 px-6 py-3 text-sm font-black text-white hover:bg-orange-600" onClick={() => askInstallApp()}>
+      <div className="w-[440px] max-w-[92%] rounded-2xl bg-white p-7 text-center shadow-2xl ring-1 ring-gray-200">
+        <div className="text-[13px] font-bold tracking-wider text-orange-600">🔒 공실뉴스부동산 PRO</div>
+        <h3 className="mt-2 text-xl font-black text-gray-900">전체 보고서는 PRO에서 만들 수 있어요</h3>
+        <p className="mt-3 text-sm leading-relaxed text-gray-600">
+          무료 공실뉴스부동산은 <b>표지·개요 두 쪽</b>만 만들 수 있어요.<br />
+          공실뉴스부동산 <b>PRO</b>는 <b>모든 쪽</b>(시세·임대현황·사진·입지·로드뷰·지적도·연락처)과 <b>PDF·이미지 전체 내보내기</b>까지 쓸 수 있어요.
+        </p>
+        <button className="mt-6 w-full rounded-xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600" onClick={() => goPricing()}>
           금액안내 보기 →
         </button>
       </div>

@@ -84,7 +84,7 @@ export default async function SubdomainPage({ params }: PageProps) {
   // 홈페이지 때문에 같은 내용을 두 번 입력하게 만들면 두 곳 다 관리가 안 된다.
   // 한쪽이 실패해도 페이지는 떠야 하므로 각각 받아서 비워 둔다.
   const [vacRes, artRes] = await Promise.all([
-    getVacanciesByOwnerId(ownerId),
+    getVacanciesByOwnerId(ownerId, { includeHomepageOnly: true }), // 내 홈페이지 전용 공실도 (2026-11-04)
     getMyArticles(ownerId),
   ]);
 

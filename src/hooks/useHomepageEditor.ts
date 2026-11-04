@@ -150,7 +150,7 @@ export function useHomepageEditor(memberId: string) {
       }
 
       const [vacRes, artRes] = await Promise.all([
-        getVacanciesByOwnerId(memberId),
+        getVacanciesByOwnerId(memberId, { includeHomepageOnly: true }), // 내 홈페이지 전용 공실도 (2026-11-04)
         getMyArticles(memberId),
       ]);
       if (vacRes.success && vacRes.data) setVacancies((vacRes.data as any[]).slice(0, 12));

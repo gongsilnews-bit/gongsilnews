@@ -40,6 +40,8 @@ type Props = {
   isApp: boolean;
   appVersion: string | null;
   badges?: Record<string, string>;
+  /** 공실뉴스부동산 PRO 회원 — 로고 옆 주황 PRO 딱지 (2026-11-04 사장님) */
+  pro?: boolean;
   /** 넓은 작업 화면(공실마케팅의 매물보고서 등)일 때 잠시 아이콘만 남게 접는다 — 기억된 설정은 바꾸지 않는다 */
   autoCollapse?: boolean;
   /** 영상 편집처럼 화면을 넓게 쓸 때 — 메뉴 줄을 통째로 숨긴다 (다시 보이기는 그 화면의 [»]) */
@@ -70,7 +72,7 @@ function FileBadge({ kind }: { kind: string }) {
   );
 }
 
-export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false, hidden = false, onHide }: Props) {
+export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, pro = false, autoCollapse = false, hidden = false, onHide }: Props) {
   const [savedCollapsed, setCollapsed] = useState(false);
   // 화면 모드(밝은/어두운) — 포토앱·동영상앱은 각자 (기본 어둡게), 그 밖 메뉴(홈~뉴스·SNS자동화)는 모두 하나로 (기본 밝게) (2026-10-30 사장님)
   const [studioTheme, setStudioTheme] = useStudioTheme(false, activeMenu === "photo" ? "photo" : "video");
@@ -216,7 +218,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
             {/* 동그라미 → 공실뉴스 사이트 첫 화면 (gongsilnews.com, 2026-11-04 사장님). 글씨는 관리자 홈 */}
             <img src="/new_logo.png" alt="공실뉴스" title="공실뉴스 사이트로" onClick={(e) => { e.stopPropagation(); window.location.href = "/"; }}
               style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
-            <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px", whiteSpace: "nowrap", lineHeight: 1.2 }}>공실뉴스</div>
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px", whiteSpace: "nowrap", lineHeight: 1.2, display: "flex", alignItems: "center", gap: 6 }}>공실뉴스{pro && <ProTag size="md" />}</div>
           </div>
           ) : (
           <div onClick={() => onSelect("dashboard")} title="홈" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>

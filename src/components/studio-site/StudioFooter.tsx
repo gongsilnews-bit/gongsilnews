@@ -23,13 +23,14 @@ export default function StudioFooter() {
         <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
           {/* 브랜드 */}
           <div style={{ minWidth: 200 }}>
-            <Link href="/marketing" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
+            <Link href="/newsrealty" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/new_logo.png" alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
-              <span style={{ fontSize: 20, fontWeight: 900 }}>공실마케팅studio</span>
+              <span style={{ fontSize: 20, fontWeight: 900 }}>공실뉴스부동산</span>
+              <span style={{ background: "#ea8a0c", color: "#fff", fontSize: 12, fontWeight: 800, padding: "3px 6px 4px", borderRadius: 3, lineHeight: 1 }}>PRO</span>
             </Link>
-            <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS · 영상까지</p>
-            <Link href="/marketing#download" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>앱 받기</Link>
+            <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS까지</p>
+            <Link href="/newsrealty/apply" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>무료로 시작하기</Link>
           </div>
 
           {/* 주요 기능 */}
@@ -39,16 +40,16 @@ export default function StudioFooter() {
                 <div style={head}>{g.name}</div>
                 {g.slugs.map((sl) => {
                   const f = featureBySlug(sl);
-                  return f ? <Link key={sl} href={`/marketing/feature/${sl}`} style={link}>{f.name}</Link> : null;
+                  return f ? <Link key={sl} href={`/newsrealty/feature/${sl}`} style={link}>{f.name}</Link> : null;
                 })}
               </div>
             ))}
             <div>
               <div style={head}>고객지원</div>
-              <Link href="/marketing/guide" style={link}>사용법 배우기</Link>
-              <Link href="/marketing/pricing" style={link}>금액안내</Link>
-              <Link href="/marketing/resources" style={link}>자료실</Link>
-              <Link href="/marketing/community" style={link}>커뮤니티</Link>
+              <Link href="/newsrealty/guide" style={link}>사용법 배우기</Link>
+              <Link href="/newsrealty/pricing" style={link}>금액안내</Link>
+              <Link href="/newsrealty/resources" style={link}>자료실</Link>
+              <Link href="/newsrealty/community" style={link}>커뮤니티</Link>
               <Link href="/help" style={link}>고객센터</Link>
             </div>
           </div>

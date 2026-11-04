@@ -10,6 +10,7 @@ import QRCode from 'qrcode';
 import { buildFlyerRows } from './flyerRows';
 import { toCanvas } from 'html-to-image';
 import { WebLockCover, InstallAppModal, askInstallApp, webLayoutAllowed, WEB_LIMITED, IS_WEB } from './webLimit';
+import { saveToWebFolder } from './webFolder';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -936,7 +937,7 @@ function App() {
      웹에서는 false — 예전처럼 브라우저 다운로드. */
   const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
     const id = new URLSearchParams(window.location.search).get("vacancy_id");
-    if (!id || !studioMarketing?.saveFile) return false;
+    if (!id || !studioMarketing?.saveFile) return saveToWebFolder(fileName, dataUrl); // 웹 — 저장 폴더(공실뉴스\02 보고서홍보지)
     try {
       await studioMarketing.saveFile({ id, sub: '홍보지', fileName, dataUrl, hint: vacancyMetaRef.current });
       return true;

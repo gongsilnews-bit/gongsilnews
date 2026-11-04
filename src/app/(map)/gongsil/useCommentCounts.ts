@@ -39,5 +39,7 @@ export function CommentCount({ id, style }: { id: string | number; style?: React
     if (!memo.has(key)) ask(key); else on();
     return () => { subs.delete(on); };
   }, [key]);
-  return React.createElement("span", { style: { fontSize: 11.5, color: "#9ca3af", fontWeight: 600, whiteSpace: "nowrap", ...style } }, `💬 댓글 ${n ?? "-"}`);
+  // 날짜 줄 끝에 " · 댓글 3" 처럼 조용히 — 0이거나 아직 모르면 안 보인다 (2026-11-04 사장님: "댓글 표기 촌스러워")
+  if (!n) return null;
+  return React.createElement("span", { style: { color: "#a1a1aa", whiteSpace: "nowrap", ...style } }, ` · 댓글 ${n}`);
 }

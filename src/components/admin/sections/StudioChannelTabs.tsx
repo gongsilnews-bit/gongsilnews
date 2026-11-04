@@ -31,7 +31,7 @@ type Bridge = {
     openMyBlog: () => Promise<unknown>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
-  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null>; writeAll?: (o: Omit<AllOpts, "sns"> & { sns: { on: boolean; tone: Record<string, string>; only?: string | string[] }; vacancyId: string }) => Promise<{ article?: BlogDraft; blog?: BlogDraft; sns?: SnsData; youtube?: unknown; miss?: string[] }> };
+  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null>; writeAll?: (o: Omit<AllOpts, "sns"> & { sns: { on: boolean; tone: Record<string, string>; only?: string | string[] }; vacancyId: string }) => Promise<{ article?: BlogDraft; blog?: BlogDraft; sns?: SnsData; youtube?: unknown; miss?: string[]; skipped?: string[] }> };
   article?: { options: (vacancyId: string) => Promise<{ kinds: { id: string; label: string }[]; lengths: { id: string; label: string }[] }> };
   youtube: { get: (vacancyId: string) => Promise<unknown>; options?: (vacancyId: string) => Promise<{ videoTypes: YtOpt[]; durations: YtOpt[]; tones: YtOpt[]; numbers: YtOpt[]; defaults: Record<string, string> }> };
   work?: { save: (id: string) => Promise<WorkSaved>; saveAs?: (id: string) => Promise<WorkSaved & { canceled?: boolean }>; status: (id: string) => Promise<WorkSaved>; show: (file: string) => Promise<void>; open: () => Promise<boolean> };
@@ -129,7 +129,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       if (r.blog) { setBlog(r.blog); setNaverDone(null); setDesign(designFor(st)); }
       if (r.sns) setSnsData(r.sns);
       if (r.youtube) { setHasYoutube(true); setYtVer((n) => n + 1); }
-      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭에서 [이 글만 쓰기]를 다시 눌러 주세요.` : only ? "다 썼어요. 확인하고 고쳐 보세요." : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 그 탭에서 [이 글만 쓰기].");
+      const skip = r.skipped?.length ? ` (${r.skipped.join("·")}는 PRO에서 쓸 수 있어 빼고 썼어요)` : ""; // 무료 — 막지 않고 빼고 쓴다 (2026-11-04)
+      setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭에서 [이 글만 쓰기]를 다시 눌러 주세요.` : (only ? "다 썼어요. 확인하고 고쳐 보세요." : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 그 탭에서 [이 글만 쓰기].") + skip);
     } catch (e) {
       setAllMsg(cleanErr(e));
     } finally {
@@ -508,7 +509,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         <aside style={{ width: 372, flexShrink: 0, display: "flex", flexDirection: "column", background: theme.cardBg, borderRight: `1px solid ${theme.border}` }}>
           <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 8px" }}>
             {head}
-            <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, margin: "18px 0 8px" }} title="켜 둔 글을 [한 번에 쓰기]로 함께 씁니다. 줄을 누르면 그 글의 설정이 펼쳐집니다.">쓸 글 · 글마다 설정 ⓘ</div>
+            <StepTitle theme={theme} n={2} label="쓸 글 고르기" state={article || blog || hasYoutube || Object.values(snsData?.channels || {}).some((c) => c?.post) ? "done" : "now"} style={{ margin: "20px 0 8px" }}
+              title="켜 둔 글을 [한 번에 쓰기]로 함께 씁니다. 줄을 누르면 그 글의 설정이 펼쳐집니다." />
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {rows.map((row) => {
                 const open = openRow === row.id;
@@ -530,7 +532,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               })}
             </div>
           </div>
-          <div style={{ padding: "14px 18px 18px", borderTop: `1px solid ${theme.border}` }}>
+          <div style={{ padding: "12px 18px 18px", borderTop: `1px solid ${theme.border}` }}>
+            <StepTitle theme={theme} n={3} label="AI로 작성" state={allBusy ? "now" : (article || blog || hasYoutube || Object.values(snsData?.channels || {}).some((c) => c?.post)) ? "done" : "todo"} />
             <button type="button" onClick={() => void runAll()} disabled={Boolean(allBusy)} title="켜 둔 글을 글마다 고른 설정으로 한 번에 씁니다"
               style={{ width: "100%", height: 50, borderRadius: 12, border: 0, background: allBusy ? "#94a3b8" : "#2563eb", color: "#fff", fontSize: 16, fontWeight: 800, cursor: allBusy ? "default" : "pointer" }}>
               {allBusy ? "쓰는 중…" : `✨ ${count}개 한 번에 쓰기`}
@@ -543,7 +546,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         </aside>
 
         {/* 가운데 — [분석 내용] | 글마다 결과 */}
-        <main style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "16px 28px 28px", background: theme.darkMode ? undefined : "#f4f6f9" }}>
+        <main data-ai-dock="" style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "16px 28px 28px", background: theme.darkMode ? undefined : "#f4f6f9" }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14, position: "sticky", top: -16, zIndex: 5, padding: "8px 0", background: theme.darkMode ? theme.bg : "#f4f6f9" }}>
             {tabs.map((t) => {
               const on = cur === t.id;
@@ -829,6 +832,26 @@ export function StepNav({ theme, tab, onTab, onOpen1, first = "공실 선택 및
 }
 
 /** 위 가로 한 줄 단계 — ① 공실 고르기 ✓ ── ② 글 쓰기 ── ③ 등록·발행 (2026-11-03 사장님 시안 A3, 오른쪽 떠 있던 StepNav 대신). 누르면 그 단계로 */
+/** 왼쪽 칸 제목 — 위 단계 막대와 같은 번호·이름 (2026-11-04 사장님: 왼쪽이 몇 단계인지 안 보임)
+ *  done = 초록 ✓ · 회색 글씨 / now = 남색 번호 · 진한 글씨 / todo = 회색 번호 */
+export function StepTitle({ theme, n, label, state, style, title }: { theme: Theme; n: number; label: string; state: "done" | "now" | "todo"; style?: React.CSSProperties; title?: string }) {
+  return (
+    <div title={title} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, ...style }}>
+      <StepPill theme={theme} n={n} state={state} />
+      <span style={{ fontSize: 14, fontWeight: 800, color: state === "now" ? theme.textPrimary : theme.textSecondary }}>{label}{title ? " ⓘ" : ""}</span>
+    </div>
+  );
+}
+
+/** "Step 1" 알약 (2026-11-04 사장님: 단계는 영어로 Step 1~4) — done 초록 ✓ · now 파랑 · todo 회색 */
+function StepPill({ theme, n, state }: { theme: Theme; n: number; state: "done" | "now" | "todo" }) {
+  const navy = theme.darkMode ? "#5b8def" : "#2563eb";
+  return (
+    <span style={{ height: 22, padding: "0 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 800, letterSpacing: 0.2, flexShrink: 0, whiteSpace: "nowrap",
+      background: state === "done" ? "#10b981" : state === "now" ? navy : theme.darkMode ? "#374151" : "#e5e7eb", color: state === "todo" ? theme.textSecondary : "#fff" }}>{state === "done" ? "✓ " : ""}Step {n}</span>
+  );
+}
+
 export function StepLine({ theme, tab, onTab, onFirst, first = "공실 고르기" }: { theme: Theme; tab: string; onTab: (t: string) => void; onFirst: () => void; first?: string }) {
   const [done, setDone] = useState({ written: false, filled: false });
   useEffect(() => {
@@ -837,21 +860,23 @@ export function StepLine({ theme, tab, onTab, onFirst, first = "공실 고르기
     return () => window.removeEventListener("gs-steps", f);
   }, []);
   const third = tab === "article" ? "기사 등록" : tab === "blog" ? "블로그 채우기" : tab === "youtube" ? "동영상 만들기" : ["instagram", "threads", "facebook"].includes(tab) ? "SNS 올리기" : "등록·발행";
-  const cur = tab === "source" ? 1 : done.written ? 3 : 2;
+  // 공실(소재)을 고른 뒤에만 이 막대가 보인다 — ①은 늘 ✓, 지금 단계는 보는 탭이 아니라 진행 상태로 (2026-11-04 사장님: ①에 불이 켜져 헷갈림)
+  // 4단계 (2026-11-04 사장님): Step 1 공실 고르기 · Step 2 쓸 글 고르기 · Step 3 AI로 작성(한 번에 쓰기) · Step 4 등록·발행
+  const cur = done.written ? 4 : 2;
+  const toWrite = () => onTab(tab === "source" ? "article" : tab);
   const steps = [
     { n: 1, t: first, ok: true, go: onFirst },
-    { n: 2, t: "글 쓰기", ok: done.written, go: () => onTab(tab === "source" ? "article" : tab) },
-    { n: 3, t: third, ok: tab === "blog" && done.filled, go: () => onTab(tab === "source" ? "article" : tab) },
+    { n: 2, t: "쓸 글 고르기", ok: done.written, go: toWrite },
+    { n: 3, t: "AI로 작성", ok: done.written, go: toWrite },
+    { n: 4, t: third, ok: tab === "blog" && done.filled, go: toWrite },
   ];
-  const navy = theme.darkMode ? "#5b8def" : "#2563eb";
   return (
     <div style={{ display: "flex", alignItems: "center", height: 48, padding: "0 28px", background: theme.cardBg, borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
       {steps.map((s, i) => (
         <React.Fragment key={s.n}>
           {i > 0 && <span style={{ width: 56, height: 2, margin: "0 12px", background: steps[i - 1].ok ? "#10b981" : theme.border }} />}
           <button type="button" onClick={s.go} style={{ display: "flex", alignItems: "center", gap: 8, border: 0, background: "transparent", cursor: "pointer", padding: 0, fontSize: 14, fontWeight: cur === s.n ? 800 : 600, color: cur === s.n ? theme.textPrimary : s.ok ? theme.textPrimary : theme.textSecondary }}>
-            <span style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800,
-              background: s.ok && cur !== s.n ? "#10b981" : cur === s.n ? navy : theme.darkMode ? "#374151" : "#e5e7eb", color: s.ok || cur === s.n ? "#fff" : theme.textSecondary }}>{s.ok && cur !== s.n ? "✓" : s.n}</span>
+            <StepPill theme={theme} n={s.n} state={s.ok && cur !== s.n ? "done" : cur === s.n ? "now" : "todo"} />
             {s.t}
           </button>
         </React.Fragment>

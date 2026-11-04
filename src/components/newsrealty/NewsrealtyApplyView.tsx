@@ -158,7 +158,7 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
           회원가입 및 이용 절차가 궁금해요
         </button>
         {/* 공실뉴스부동산은 무료 — 결제는 공실마케팅 멤버십에서 (2026-10-26) */}
-        <a href="/marketing" className="nra-btn" style={{ width: "100%", background: "#1a3a6b", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <a href="/newsrealty" className="nra-btn" style={{ width: "100%", background: "#1a3a6b", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
           공실마케팅 알아보기
         </a>
       </div>

@@ -41,6 +41,8 @@ import { getStudioAgency } from "@/app/actions/studio";
 import { videoBridge } from "@/components/admin/studio-video/types";
 import { AiSettingsBox } from "@/components/admin/studio-video/VideoMenu";
 import { DocPanel, LayerPanel, PictoSide, StickerSide, TextPanel } from "./PhotoPanels";
+import { folderReady } from "@/components/admin/studio-web/folder";
+import { download as webDownload } from "@/components/admin/studio-web/core";
 
 /* ── 앱 통로 (없으면 브라우저: 파일 고르기·내려받기) ── */
 type FileRes = { path: string; name: string; bytes?: Uint8Array; error?: string };
@@ -77,7 +79,9 @@ function pickLocal(images: boolean): Promise<File[]> {
     i.click();
   });
 }
+/** 웹 — [저장 폴더]를 정했으면 공실뉴스\04 포토studio\오늘 날짜 에, 아니면 다운로드 폴더로 (2026-11-04 사장님) */
 function download(bytes: Uint8Array, name: string) {
+  if (folderReady) { webDownload(name, new Blob([bytes as BlobPart]), "photo"); return; }
   const url = URL.createObjectURL(new Blob([bytes as BlobPart]));
   const a = document.createElement("a");
   a.href = url;

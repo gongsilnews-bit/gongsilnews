@@ -5,7 +5,7 @@
  *  서버 묻기 · 이용 횟수 · 진행 글 · 이 브라우저 저장(IndexedDB) · 사진 다듬기·내려받기 · 공실뉴스 작성기(크롬 확장)
  *  소재마다 따로: gongsil.ts(공실뉴스) · 다음에 column.ts(뉴스칼럼)
  */
-import { webAi } from "./ai-ask";
+import { openDocked, webAi } from "./ai-ask";
 import { F, ROOT_NAME, folderReady, saveToFolder, type FolderKey } from "./folder";
 export { webAi };
 
@@ -115,7 +115,7 @@ export function download(name: string, blob: Blob, key: FolderKey = "sns") {
   if (folderReady) {
     const day = ymd();
     void saveToFolder(key, [day], name, blob).then((ok) => {
-      if (ok) toast(`문서\\${ROOT_NAME}\\${F[key]}\\${day} 에 저장했어요 — ${name}`);
+      if (ok) toast(`${ROOT_NAME}\\${F[key]}\\${day} 에 저장했어요 — ${name}`);
       else browserDownload(name, blob);
     });
     return;
@@ -210,8 +210,8 @@ export async function helperJob(target: string, payload: Record<string, unknown>
   const r = await helper({ op: "job", target, payload });
   if (!r || !r.ok || !r.id) throw new Error(NO_HELPER);
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vacancyId)) setPubs([...pubs(), { id: r.id, vacancyId, channel, at: Date.now() }]);
-  window.open(openUrl, "_blank");
-  say(progressCh, `새 탭에 ${label}을(를) 열었어요. 공실뉴스 작성기가 채우기를 기다리는 중…`);
+  openDocked(openUrl); // AI 창과 같은 자리에 작은 창으로 (2026-11-04)
+  say(progressCh, `오른쪽에 ${label}을(를) 열었어요. 공실뉴스 작성기가 채우기를 기다리는 중…`);
   if (!(await helperWait(r.id, "taken", 45000))) {
     void helper({ op: "forget", id: r.id });
     throw new Error(`HELPER_NONE: 도우미가 ${label} 화면에서 일감을 받아 가지 않았어요. 새 탭에 ${label}이(가) 로그인된 채로 열렸는지 확인하고 다시 눌러 주세요.`);

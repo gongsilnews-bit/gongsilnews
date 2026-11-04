@@ -210,7 +210,9 @@ export async function toggleVacancyBookmark(userId: string, vacancyId: string, c
       if (deleteError) return { success: false, error: deleteError.message };
       isBookmarked = false;
     } else {
-      // 3. 존재하지 않으면 추가 (찜)
+      // 3. 존재하지 않으면 추가 (찜) — 300개까지 (2026-11-04 사장님: DB 가 불어나지 않게)
+      const { count: had } = await supabase.from("vacancy_wishlist").select("id", { count: "exact", head: true }).eq("user_id", userId);
+      if ((had || 0) >= 300) return { success: false, error: "찜은 300개까지 할 수 있어요. 안 보는 찜을 지운 뒤 다시 해 주세요." };
       const { error: insertError } = await supabase
         .from("vacancy_wishlist")
         .insert({ user_id: userId, vacancy_id: vacancyId, category_id: categoryId || null });

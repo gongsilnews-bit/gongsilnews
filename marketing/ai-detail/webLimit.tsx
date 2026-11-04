@@ -64,16 +64,19 @@ export const InstallAppModal: React.FC = () => {
   );
 };
 
-/** 웹에서 막힌 디자인 위에 덮는 흰 막 */
+/** 웹에서 막힌 디자인 위에 덮는 흰 막 — 안내 창과 같은 글을 바로, [금액안내 보기] 한 번이면 금액안내 (2026-11-04 사장님: 한 번만 클릭) */
 export const WebLockCover: React.FC<{ layoutId: string }> = ({ layoutId }) => {
   if (webLayoutAllowed(layoutId)) return null;
   return (
     <div data-web-lock className="absolute inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-[3px] print:hidden">
-      <div className="rounded-2xl bg-white/95 px-8 py-7 text-center shadow-xl ring-1 ring-gray-200">
-        <div className="text-3xl">🔒</div>
-        <div className="mt-2 text-lg font-black text-gray-900">이 디자인은 PRO에서 만들 수 있어요</div>
-        <div className="mt-1 text-sm text-gray-500">무료는 숫자 크게 디자인만 · PRO는 모든 디자인</div>
-        <button className="mt-4 rounded-xl bg-orange-500 px-6 py-3 text-sm font-black text-white hover:bg-orange-600" onClick={() => askInstallApp()}>
+      <div className="w-[440px] max-w-[92%] rounded-2xl bg-white p-7 text-center shadow-2xl ring-1 ring-gray-200">
+        <div className="text-[13px] font-bold tracking-wider text-orange-600">🔒 공실뉴스부동산 PRO</div>
+        <h3 className="mt-2 text-xl font-black text-gray-900">이 디자인은 PRO에서 만들 수 있어요</h3>
+        <p className="mt-3 text-sm leading-relaxed text-gray-600">
+          무료 공실뉴스부동산은 <b>숫자 크게</b> 디자인만 만들 수 있어요.<br />
+          공실뉴스부동산 <b>PRO</b>는 <b>모든 디자인</b>(사진형·추천 걸이판·반반 사진·색 바탕·테두리·사진 갤러리 등)을 쓸 수 있어요.
+        </p>
+        <button className="mt-6 w-full rounded-xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600" onClick={() => goPricing()}>
           금액안내 보기 →
         </button>
       </div>

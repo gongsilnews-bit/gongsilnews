@@ -33,7 +33,7 @@ export async function listMapAgencies(box?: [[number, number], [number, number]]
   const owners = [...new Set(list.map((a) => a.owner_id as string))];
   const [mem, vac, art] = await Promise.all([
     db.from("members").select("id, profile_image_url, sns_links, is_deleted, role, studio_end_date").in("id", owners),
-    db.from("vacancies").select("owner_id").eq("status", "ACTIVE").in("owner_id", owners).limit(20000),
+    db.from("vacancies").select("owner_id").eq("status", "ACTIVE").or("exposure_type.is.null,exposure_type.neq.홈페이지전용").in("owner_id", owners).limit(20000), // 내 홈페이지 전용은 지도 공실 수에서 뺀다 (2026-11-04)
     db.from("articles").select("author_id").eq("status", "APPROVED").eq("is_deleted", false).eq("section1", "공실뉴스").in("author_id", owners).lte("published_at", new Date().toISOString()).limit(20000),
   ]);
   const count = (rows: { [k: string]: unknown }[] | null, key: string) => {

@@ -114,7 +114,7 @@ export default function NewsRealtyApplyPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/marketing/apply")}`,
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/newsrealty/pro-apply")}`,
         },
       });
       if (error) throw error;
@@ -135,7 +135,7 @@ export default function NewsRealtyApplyPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/marketing/apply")}`,
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/newsrealty/pro-apply")}`,
         },
       });
       if (error) throw error;
@@ -219,7 +219,7 @@ export default function NewsRealtyApplyPage() {
       stage={stage}
       mobile={false}
       header={<StudioSiteHeader />}
-      links={{ intro: "/marketing", home: "/", approvedAdmin: "/admin", findAccount: `/login?returnTo=${encodeURIComponent("/marketing/apply")}` }}
+      links={{ intro: "/newsrealty", home: "/", approvedAdmin: "/admin", findAccount: `/login?returnTo=${encodeURIComponent("/newsrealty/pro-apply")}` }}
       googleLoading={googleLoading}
       kakaoLoading={kakaoLoading}
       onGoogle={handleGoogleSignup}

@@ -29,7 +29,7 @@ function run(fileNames: string[], names?: string[]) {
 }
 const YT_COMMON = ["GW_YT_VIDEO_TYPE", "GW_YT_DURATION", "GW_YT_TONE", "gwBuildYtScriptPrompt", "gwBuildYtRevisePrompt", "gwYtSpeechSeconds", "gwYtCharCount", "GWYoutubeJson"];
 const lib = {
-  prompt: () => run(["gongsil/prompt.js"], ["gwBuildPrompt", "gwBuildRevisePrompt", "GW_KIND", "GW_AUCTION_KIND", "GW_LENGTH", "GW_IMAGE_STYLE"]),
+  prompt: () => run(["gongsil/prompt.js"], ["gwBuildPrompt", "gwBuildRevisePrompt", "GW_KIND", "GW_AUCTION_KIND", "GW_LENGTH", "GW_IMAGE_STYLE", "gwBuildImagePrompt"]),
   blog: () => run(["gongsil/blog-prompt.js"]),
   aj: () => run(["gongsil/article-json.js"]),
   naver: () => run(["gongsil/naver-blog.js"]),
@@ -41,7 +41,7 @@ const lib = {
     "GW_LENGTH", "GW_KIND", "GW_IMAGE_STYLE", "gwSourceReady", "gwSourceLabel", "gwBuildPrompt", "gwBuildRevisePrompt", "gwNormalizeSection",
     "GW_BLOG_LENGTH", "GW_BLOG_STYLE", "gwBuildBlogPrompt", "gwBuildBlogRevisePrompt",
     "GW_SNS_CHANNELS", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsCredit", "gwSnsAiLabelNote",
-    "GWNaverBlog", "GWArticleJson",
+    "GWNaverBlog", "GWArticleJson", "gwBuildImagePrompt", "gwAiImageCaption",
   ]),
 };
 /* 보고서·홍보지 AI 채우기 (앱 marketing-writer.js 와 같은 프롬프트, 2026-11-04 사장님: 웹에서 다 되게) */
@@ -326,6 +326,33 @@ function colRevisePrompt(b: any, source: any, req: string) {
   }
   throw new Error("알 수 없는 글입니다.");
 }
+/* AI 사진 만들기 — 앱 blog-writer.js makeImage 와 같은 프롬프트 (2026-11-04 사장님: 웹 블로그에도 AI 사진).
+   회원 본인 AI(ChatGPT·Gemini) 옆 창에 붙여 넣어 그린다 — 서버는 질문 글만 만든다 */
+function imagePrompt(b: any) {
+  const article = { title: String(b.title || ""), body: String(b.body || "") };
+  const request = String(b.request || "").slice(0, 300);
+  const label = String(b.styleLabel || "");
+  const withStyle = (prompt: string) => (!b.stylePrompt ? prompt
+    : `${prompt}
+
+[화풍·스타일 — 위 [선택한 스타일]보다 이것을 먼저 지킬 것] ${label}
+${String(b.stylePrompt).slice(0, 1200)}
+- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것`);
+  const col = colOf(b);
+  if (col) {
+    const M = lib.nm();
+    const st = M.GW_IMAGE_STYLE[b.style] ? b.style : "auto";
+    return { prompt: withStyle(M.gwBuildImagePrompt(col, article, { style: st, request })), caption: M.gwAiImageCaption(article) };
+  }
+  const P = lib.prompt();
+  const v = b.vacancy || {};
+  const st = P.GW_IMAGE_STYLE[b.style] ? b.style : "news";
+  const name = v.title || "해당 매물";
+  return {
+    prompt: withStyle(P.gwBuildImagePrompt(v, article, { style: st, request, customStyle: label })),
+    caption: `${name} ${label || (P.GW_IMAGE_STYLE[st] || {}).label || "AI 이미지"} (AI 생성 이미지)`,
+  };
+}
 function revisePrompt(b: any) {
   const v = b.vacancy || {};
   const req = String(b.request || "").trim();
@@ -453,6 +480,11 @@ export function studioWebOp(op: string, b: any): Record<string, unknown> {
     case "allParse": return allParse(b);
     case "layout": return { media: layout(Array.isArray(b.media) ? b.media : [], Number(b.paragraphCount) || 0) };
     case "revisePrompt": return { prompt: revisePrompt(b) };
+    case "imagePrompt": return imagePrompt(b);
+    case "imageStyleText": { // 기사용 그림 스타일의 조건 글 (사진 모음 [AI 이미지 만들기] — 앱 main.js mediaOp 와 같다)
+      const S = (colOf(b) || b.column === true ? lib.nm() : lib.prompt()).GW_IMAGE_STYLE || {};
+      return { text: String((S[b.style] || {}).prompt || "") };
+    }
     case "reviseParse": return reviseParse(b);
     case "snsCompose": return { channels: snsCompose(b) };
     case "snsPick": return { media: snsPick(b) };

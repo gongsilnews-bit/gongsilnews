@@ -7,6 +7,8 @@ import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
 import WebSnsNewsModal from "./WebSnsNewsModal";
+import { createPortal } from "react-dom";
+import { isHomepageOnly, HOMEPAGE_ONLY } from "@/utils/tier";
 import VacancyCardGrid from "./VacancyCardGrid";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail, getVacancyTabCounts, getVacancyFlyerStates } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -43,7 +45,31 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
   const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
   const [snsNewsTarget, setSnsNewsTarget] = useState<{ id: string; title: string } | null>(null); // [SNS뉴스발행] 창 (2026-10-26)
+  // 광고설정 고르기 — 광고중(공실뉴스) · 홈페이지만(내 홈페이지 전용, PRO) · 광고종료 (2026-11-04 사장님)
+  const [statusMenu, setStatusMenu] = useState<string | null>(null);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number }>({ x: 0, y: 0 }); // 화면 좌표 — 표 밖(body)에 띄워 잘리지 않게
+  const setAdState = async (row: any, k: "광고중" | "홈페이지만" | "광고종료") => {
+    setStatusMenu(null);
+    const home = isHomepageOnly(row);
+    const active = row.status === "ACTIVE";
+    if ((k === "광고중" && active && !home) || (k === "홈페이지만" && active && home) || (k === "광고종료" && !active)) return;
+    let res: { success: boolean; error?: string };
+    if (k === "광고종료") res = await updateVacancyStatus(row.id, "STOPPED");
+    else if (k === "홈페이지만") res = await updateVacancy(row.id, { status: "ACTIVE", exposure_type: HOMEPAGE_ONLY });
+    // 홈페이지만 → 광고중: 공실뉴스에는 처음 값(모두에게 노출)으로 건다
+    else res = home ? await updateVacancy(row.id, { status: "ACTIVE", exposure_type: "부동산노출 + 일반인노출" }) : await updateVacancyStatus(row.id, "ACTIVE");
+    if (!res.success) {
+      if (/PRO에서/.test(res.error || "")) {
+        const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade;
+        if (f) { f(); return; }
+      }
+      alert(res.error || "바꾸지 못했어요. 잠시 뒤 다시 해 주세요.");
+      return;
+    }
+    fetchAllVacancies();
+  };
   // 앱에서는 표의 [AI물건보고서]·[유리창홍보지]·[SNS뉴스발행]이 새 창 대신 앱 안의 그 메뉴로 — 그 공실을 고른 채로 (2026-10-29 사장님)
+  // [SNS뉴스발행]은 웹도 뉴스·SNS자동화로 바로 (2026-11-04 사장님: 앱 받기 창 대신 그 페이지로)
   const [inApp, setInApp] = useState(false);
   useEffect(() => { setInApp(Boolean((window as unknown as { gongsilStudio?: unknown }).gongsilStudio)); }, []);
   const goMenu = (m: string) => router.push(`?menu=${m}`, { scroll: false });
@@ -93,7 +119,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
   const [totalCount, setTotalCount] = useState(0);
-  const [counts, setCounts] = useState({ 전체: 0, 광고중: 0, 광고종료: 0, 임시저장: 0 });
+  const [counts, setCounts] = useState({ 전체: 0, 광고중: 0, 광고종료: 0, 홈페이지만: 0, 임시저장: 0 });
   const [isStateRestored, setIsStateRestored] = useState(false);
 
   useEffect(() => {
@@ -141,7 +167,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     }
 
     // Map status filter
-    if (activeTab === "광고중") params.status = "ACTIVE";
+    // 광고중 = 공실뉴스에 거는 공실 · 홈페이지만 = 내 홈페이지 전용 (2026-11-04 사장님)
+    if (activeTab === "광고중") { params.status = "ACTIVE"; params.exposure = "public"; }
+    else if (activeTab === "홈페이지만") { params.status = "ACTIVE"; params.exposure = "homepage"; }
     else if (activeTab === "광고종료") params.status = "STOPPED";
     else if (activeTab === "임시저장") params.status = "DRAFT";
 
@@ -309,7 +337,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   return (
     <div className={st ? "gs-al" : undefined} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-      {st && <StudioListCss colors={{ 광고중: C_GREEN, 광고종료: C_RED, 임시저장: C_GRAY }} />}
+      {st && <StudioListCss colors={{ 광고중: C_GREEN, 광고종료: C_RED, 홈페이지만: ["#1a3a6b", "#e0e7ff"], 임시저장: C_GRAY }} />}
       {/* 타이틀 */}
       {titleRow}
 
@@ -365,7 +393,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       <div className="gs-al-card" style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div className="gs-al-tabs" style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "광고중", "광고종료", "임시저장"].map(tab => {
+          {["전체", "광고중", "광고종료", "홈페이지만", "임시저장"].map(tab => {
             let count = counts[tab as keyof typeof counts] || 0;
 
             return (
@@ -378,7 +406,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
                 <span className="gs-al-cnt" data-k={tab} style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "임시저장" ? "#9ca3af" : "#ef4444",
+                  background: tab === "전체" ? "#e5e7eb" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "홈페이지만" ? "#1a3a6b" : tab === "임시저장" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
               </button>
@@ -492,16 +520,27 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         row.status === 'DRAFT' ? (
                           <span className="gs-al-badge" data-k="임시저장" style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : (
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                            <button onClick={async () => {
-                              const msg = isActive ? "광고를 종료하시겠습니까?" : "광고하시겠습니까?";
-                              if (!confirm(msg)) return;
-                              const newStatus = isActive ? 'STOPPED' : 'ACTIVE';
-                              const res = await updateVacancyStatus(row.id, newStatus);
-                              if (res.success) fetchAllVacancies();
-                            }} className="gs-al-badge" data-k={isActive ? "광고중" : "광고종료"} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: isActive ? "#10b981" : "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                          <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                            {/* 누르면 [광고중 · 홈페이지만 · 광고종료] 중에서 고른다 (2026-11-04 사장님: 등록은 예전 두 칸 그대로, 홈페이지만은 목록에서) */}
+                            {statusMenu === row.id && typeof document !== "undefined" && createPortal(<>
+                              <div onClick={() => setStatusMenu(null)} style={{ position: "fixed", inset: 0, zIndex: 9990 }} />
+                              <div style={{ position: "fixed", top: menuAt.y, left: menuAt.x, transform: "translateX(-50%)", zIndex: 9991, minWidth: 150, padding: 6, borderRadius: 10, background: cardBg, border: `1px solid ${border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column", gap: 4 }}>
+                                {([
+                                  { k: "광고중", c: "#10b981", d: "공실뉴스 지도·목록에 광고" },
+                                  { k: "홈페이지만", c: "#1a3a6b", d: "내 물건접수홈페이지에만 (PRO)" },
+                                  { k: "광고종료", c: "#ef4444", d: "광고를 내립니다" },
+                                ] as const).map((o) => (
+                                  <button key={o.k} type="button" onClick={() => void setAdState(row, o.k)}
+                                    style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, padding: "8px 10px", borderRadius: 8, border: 0, cursor: "pointer", background: "transparent", textAlign: "left" }}>
+                                    <span style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", background: o.c, padding: "2px 8px", borderRadius: 4 }}>{o.k}</span>
+                                    <span style={{ fontSize: 11.5, color: textSecondary }}>{o.d}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </>, document.body)}
+                            <button onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenuAt({ x: r.left + r.width / 2, y: r.bottom + 6 }); setStatusMenu(statusMenu === row.id ? null : row.id); }} className="gs-al-badge" data-k={isActive ? (isHomepageOnly(row) ? "홈페이지만" : "광고중") : "광고종료"} title={isActive && isHomepageOnly(row) ? "내 물건접수홈페이지에만 보여요 (공실뉴스 지도·목록에는 안 보임)" : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: isActive ? (isHomepageOnly(row) ? "#1a3a6b" : "#10b981") : "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>
                               {isActive && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>}
-                              {isActive ? "광고중" : "광고종료"}
+                              {isActive ? (isHomepageOnly(row) ? "홈페이지만" : "광고중") : "광고종료"}
                             </button>
                             <span style={{ fontSize: 11, color: textSecondary }}>{daysSinceCreated}일</span>
                           </div>
@@ -510,9 +549,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         row.status === 'DRAFT' ? (
                           <span className="gs-al-badge" data-k="임시저장" style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : isActive ? (
-                          <span className="gs-al-badge" data-k="광고중" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                          <span className="gs-al-badge" data-k={isHomepageOnly(row) ? "홈페이지만" : "광고중"} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: isHomepageOnly(row) ? "#1a3a6b" : "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            광고중
+                            {isHomepageOnly(row) ? "홈페이지만" : "광고중"}
                           </span>
                         ) : (
                           <span className="gs-al-badge" data-k="광고종료" style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고종료</span>
@@ -578,7 +617,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                 return (
                                   <div style={{ display: 'flex', gap: '4px' }}>
                                       <button 
-                                        onClick={() => (inApp ? openMarketingIn(row.id, "report") : window.open(`/marketing/report?vacancy_id=${row.id}`, '_blank'))}
+                                        onClick={() => openMarketingIn(row.id, "report")}
                                         style={{ 
                                           height: 30, 
                                           padding: "0 10px", 
@@ -613,7 +652,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
                                     {/* [유리창홍보지] 다시 (2026-10-29 사장님: 웹·앱 모두, AI물건보고서와 SNS뉴스발행 사이) — 물건홍보지 도구 */}
                                     <button
-                                      onClick={() => (inApp ? openMarketingIn(row.id, "flyer") : window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, "_blank"))}
+                                      onClick={() => openMarketingIn(row.id, "flyer")}
                                       style={{ height: 30, padding: "0 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
                                         background: hasFlyer ? (darkMode ? "#14532d" : "#f0fdf4") : (darkMode ? "#2a2d35" : "#f3f4f6"),
                                         color: hasFlyer ? (darkMode ? "#86efac" : "#15803d") : (darkMode ? "#7c8ba1" : "#8a94a6"),
@@ -626,7 +665,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                     {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 무료는 블로그 한 달 3건 (2026-11-04) */}
                                     {role !== "user" && (
                                       <button
-                                        onClick={() => (inApp ? openSnsIn(row) : setSnsNewsTarget({ id: row.id, title: addrText }))}
+                                        onClick={() => openSnsIn(row)}
                                         style={{ height: 30, padding: "0 10px", background: darkMode ? "#3b2412" : "#fff7ed", color: "#ea580c", border: `1px solid ${darkMode ? "#7c2d12" : "#fdba74"}`, borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}
                                         title="이 공실로 공실뉴스 기사 초안과 인스타그램·스레드·페이스북 글 만들기"
                                       >

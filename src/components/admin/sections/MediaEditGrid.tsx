@@ -4,6 +4,7 @@
 import { isWebStudio, studioBridge } from "../studio-web";
 import React, { useEffect, useState } from "react";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
+import { ProTag } from "@/components/admin/ProBadge";
 
 export type MediaOp = { type: "order"; order: number[] } | { type: "remove"; index: number } | { type: "restore" } | { type: "upload" } | { type: "ai"; prompt: string; ai?: unknown; style?: string; styleLabel?: string; stylePrompt?: string };
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
@@ -32,6 +33,19 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const [aiAsk, setAiAsk] = useState<string | null>(null);
+  // AI 이미지는 PRO 전용 (2026-11-04 사장님) — null = 아직 모름(막지 않음, 서버가 한 번 더 막는다)
+  const [pro, setPro] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/studio/usage", { cache: "no-store" }).then((r) => r.json()).then((d) => setPro(d.success ? d.simAllowed === true : null)).catch(() => {});
+  }, []);
+  const openAi = () => {
+    if (pro === false) {
+      const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade;
+      if (f) f(); else window.open("/newsrealty/pricing", "_blank", "noopener");
+      return;
+    }
+    setAiAsk(seed);
+  };
   const run = async (op: MediaOp) => {
     setErr("");
     setBusy(op.type === "ai" ? "AI가 그림을 그리는 중… (30초~1분)" : op.type === "upload" ? "사진을 넣는 중…" : "저장하는 중…");
@@ -88,14 +102,12 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
           </figure>
         ))}
         <div style={{ border: `2px dashed ${theme.border}`, borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, minHeight: 180 }}>
-          {/* 웹은 AI 이미지 단추를 안 보인다 (2026-11-04 사장님: 앱으로 보내지 않는다) */}
-          {!isWebStudio() && <>
-          <button disabled={Boolean(busy)} onClick={() => setAiAsk(seed)}
-            style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: "#7048e8", fontSize: 14, fontWeight: 800 }}>＋ AI 이미지 만들기</button>
-          <div style={{ borderTop: `1px dashed ${theme.border}` }} />
-          </>}
+          {/* 내 사진 올리기 · AI 이미지 만들기 둘 다 (2026-11-04 사장님: 웹도 — 웹은 [AI 설정] 이미지 칸의 내 ChatGPT·Gemini 옆 창에서 그린다) */}
           <button disabled={Boolean(busy)} onClick={() => void run({ type: "upload" })} title="내 PC 의 사진을 골라 넣어요 (여러 장 가능)"
             style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 내 사진 올리기</button>
+          <div style={{ borderTop: `1px dashed ${theme.border}` }} />
+          <button disabled={Boolean(busy)} onClick={openAi} title={pro === false ? "AI 이미지는 공실뉴스부동산 PRO 전용이에요" : "그림 스타일을 골라 AI로 그려 넣어요"}
+            style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: "#7048e8", fontSize: 14, fontWeight: 800 }}>＋ AI 이미지 만들기 <ProTag style={{ marginLeft: 4 }} /></button>
         </div>
       </div>
       {aiAsk !== null && (
@@ -106,7 +118,7 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
               <div style={{ fontSize: 18, fontWeight: 800, color: theme.textPrimary }}>AI 이미지 만들기</div>
               <button onClick={() => setAiAsk(null)} disabled={Boolean(busy)} aria-label="닫기" style={{ border: 0, background: "transparent", color: theme.textSecondary, fontSize: 18, cursor: "pointer" }}>✕</button>
             </div>
-            <div style={{ marginTop: 4, fontSize: 12.5, color: theme.textSecondary }}>만든 그림은 사진 모음 끝에 "AI 생성" 표시로 붙어요. 대표 사진(맨 앞)은 실제 사진만 돼요.</div>
+            <div style={{ marginTop: 4, fontSize: 12.5, color: theme.textSecondary }}>만든 그림은 사진 모음 끝에 "AI 생성" 표시로 붙어요. 대표 사진(맨 앞)은 실제 사진만 돼요.{isWebStudio() ? " [만들기]를 누르면 내 AI 창이 옆에 열려요." : ""}</div>
             <div style={{ marginTop: 16, fontSize: 13.5, fontWeight: 800, color: theme.textPrimary }}>그림 스타일</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 6, marginTop: 8 }}>
               {styleCards.map((c) => {

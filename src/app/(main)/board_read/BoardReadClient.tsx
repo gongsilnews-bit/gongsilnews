@@ -313,7 +313,7 @@ export default function BoardReadClient({
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* 브레드크럼 */}
             <div style={{ fontSize: 14, color: "#999", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-              <Link href={isStudyBoard ? "/marketing" : "/"} style={{ color: "#999", textDecoration: "none" }}>{isStudyBoard ? "공실마케팅" : "홈"}</Link>
+              <Link href={isStudyBoard ? "/newsrealty" : "/"} style={{ color: "#999", textDecoration: "none" }}>{isStudyBoard ? "공실마케팅" : "홈"}</Link>
               <span style={{ color: "#ccc" }}>›</span>
               <Link href={listUrl} style={{ color: "#999", textDecoration: "none" }}>
                 {isStudyBoard ? (["studyqa", "free"].includes(boardId) ? "커뮤니티" : "자료실") : "게시판"}

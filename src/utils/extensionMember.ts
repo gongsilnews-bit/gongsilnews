@@ -62,12 +62,15 @@ export function trialMonth(now = new Date()): string {
   return new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7);
 }
 
+/* 2026-11-04 사장님: "크롬 확장에서 한 달에 3번 · Pro는 무제한" — 무료는 블로그·SNS·유튜브를 합쳐 한 달 3번 (기능마다 3번이 아니라).
+   웹 뉴스·SNS자동화 쓰기(studioUsage, 같은 표)와도 합쳐 센다 — 웹이든 확장이든 무료는 한 달 3번 */
 async function countTrialUse(memberId: string, feature: TrialFeature, month: string): Promise<number> {
+  void feature;
   const { count, error } = await getAdminClient()
     .from("extension_trial_usage")
     .select("id", { count: "exact", head: true })
     .eq("member_id", memberId)
-    .eq("feature", feature)
+    .in("feature", ["blog", "sns", "youtube"])
     .eq("used_month", month);
   if (error) throw new Error(`무료 체험 기록을 읽지 못했습니다: ${error.message}`);
   return count || 0;
@@ -82,12 +85,8 @@ const trialStatus = (used: number): TrialStatus => ({
 /** 이번 달 블로그·SNS·유튜브 무료 체험 사용 현황 */
 export async function getTrialUsage(memberId: string): Promise<Record<TrialFeature, TrialStatus> & { month: string }> {
   const month = trialMonth();
-  const [blog, sns, youtube] = await Promise.all([
-    countTrialUse(memberId, "blog", month),
-    countTrialUse(memberId, "sns", month),
-    countTrialUse(memberId, "youtube", month),
-  ]);
-  return { month, blog: trialStatus(blog), sns: trialStatus(sns), youtube: trialStatus(youtube) };
+  const used = await countTrialUse(memberId, "blog", month); // 셋을 합친 수
+  return { month, blog: trialStatus(used), sns: trialStatus(used), youtube: trialStatus(used) };
 }
 
 /** 무료 체험 1번을 쓴다. 이번 달 3번을 다 썼으면 ok:false */
@@ -154,7 +153,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
     role,
     plan,
     planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "공실뉴스부동산" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
-    canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan),
+    canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan) || isBiz, // 비즈니스회원도 PRO 와 같이 무제한 (2026-11-04)
     canYoutubeWriter: isAdmin || (YOUTUBE_WRITER_PLANS as readonly string[]).includes(plan),
     canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan) || isBiz,
     canNewsMaker: isAdmin || (NEWSMAKER_PLANS as readonly string[]).includes(plan) || isBiz,

@@ -541,7 +541,7 @@ export function NewsrealtyPricing({ onApply }: { onApply: () => void; onGeneral?
                 </div>
                 <p style={{ fontSize: 13, color: "#64748b", margin: "6px 0 0" }}>VAT 포함 · 이름표에 공실마케팅 로고가 붙습니다</p>
               </div>
-              <a href="/marketing" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#1a3a6b", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none" }}>
+              <a href="/newsrealty" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#1a3a6b", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none" }}>
                 공실마케팅 알아보기 ➔
               </a>
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 24 }}>

@@ -4,11 +4,13 @@
  *  회원 10만 명이어도 가볍게 (11-04) — 찜 전체를 훑지 않고, 그 소식에 걸린 사무소·단지를 찜한 사람만 찾는다.
  *   alertVacancy(공실 id)   — 공실 등록 때: 그 공실을 올린 사무소 · 그 공실의 단지를 찜한 사람
  *   alertArticles(기사 id들) — 기사 발행·승인 때: 쓴 사무소 · 기사 자리 50m 안 단지 · 제목에 이름이 든 근처 단지를 찜한 사람
- *   alertTrades(시간)       — 실거래 갱신 뒤 하루 두 번: 그 시간 안에 새 거래(들어온 날 s)가 생긴 찜한 단지 (단지마다 하루 한 번)
+ *   alertTrades(시간)       — 실거래 갱신 뒤 하루 두 번: 그 시간 안에 새 거래가 생긴 찜한 단지를 사람마다 한 줄로 묶어서
+ *   pruneNotifications()  — 90일 지난 알림 지우기
  *  색인: supabase/migrations/20261104_map_scale.sql (agency_bookmarks·complex_bookmarks 의 agency_id·complex_id)
  */
 import { createClient } from "@supabase/supabase-js";
 import { createNotification } from "@/app/actions/notification";
+
 
 const db = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 const kstDay = () => new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
@@ -77,10 +79,14 @@ export async function alertArticles(ids: string[]) {
   return n;
 }
 
+/**
+ * 새 실거래 — 사람마다 한 줄로 묶어 보낸다 (2026-11-04 사장님: 찜한 단지가 많아도 알림·DB 가 불어나지 않게)
+ *  예: "찜한 단지 23곳 · 새 실거래 41건" (단지 하나면 예전처럼 단지 이름으로). 한 번 돌 때(하루 두 번) 한 사람에게 한 줄
+ */
 export async function alertTrades(hours = 14) {
   const s = db();
   const since = new Date(Date.now() - hours * 3600_000).toISOString();
-  let n = 0;
+  const per = new Map<string, { n: number; sale: number; rent: number; top: { id: string; name: string; k: number } }>();
   // 찜된 단지 id 를 1000개씩 (찜이 많아도 나눠 읽는다)
   for (let at = 0; at < 200000; at += 1000) {
     const { data, error } = await s.from("complex_bookmarks").select("complex_id").order("complex_id").range(at, at + 999);
@@ -93,10 +99,28 @@ export async function alertTrades(hours = 14) {
       const sale = (c.trades || []).filter((t: { s?: string }) => t.s && t.s >= since).length;
       const rent = (c.rents || []).filter((t: { s?: string }) => t.s && t.s >= since).length;
       if (!sale && !rent) continue;
-      const body = [sale ? `매매 ${sale}건` : "", rent ? `전월세 ${rent}건` : ""].filter(Boolean).join(" · ");
-      n += await send(fans.get(String(c.id)) || [], null, { type: "star_trade", title: `${c.name} · 새 실거래 ${sale + rent}건`, body, link: `/gongsil?apt=${encodeURIComponent(c.id)}`, sourceId: `${c.id}:${kstDay()}` });
+      for (const u of fans.get(String(c.id)) || []) {
+        const p = per.get(u) || { n: 0, sale: 0, rent: 0, top: { id: "", name: "", k: -1 } };
+        p.n++; p.sale += sale; p.rent += rent;
+        if (sale + rent > p.top.k) p.top = { id: String(c.id), name: String(c.name || ""), k: sale + rent };
+        per.set(u, p);
+      }
     }
     if (data.length < 1000) break;
   }
+  const slot = new Date(Date.now() + 9 * 3600_000).getUTCHours() < 9 ? "am" : "pm"; // 하루 두 번 도는 것을 따로
+  let n = 0;
+  for (const [u, p] of per) {
+    const body = [p.sale ? `매매 ${p.sale}건` : "", p.rent ? `전월세 ${p.rent}건` : ""].filter(Boolean).join(" · ");
+    const title = p.n === 1 ? `${p.top.name} · 새 실거래 ${p.sale + p.rent}건` : `찜한 단지 ${p.n}곳 · 새 실거래 ${p.sale + p.rent}건`;
+    n += await send([u], null, { type: "star_trade", title, body: p.n === 1 ? body : `${body} — ${p.top.name} 외 ${p.n - 1}곳`, link: `/gongsil?apt=${encodeURIComponent(p.top.id)}`, sourceId: `trades:${kstDay()}:${slot}` });
+  }
   return n;
+}
+
+/** 오래된 알림 지우기 — 90일이 지난 알림은 읽었든 안 읽었든 지운다 (2026-11-04 사장님: DB 가 불어나지 않게). 하루 두 번 실거래 알림 뒤에 */
+export async function pruneNotifications(days = 90) {
+  const before = new Date(Date.now() - days * 24 * 3600_000).toISOString();
+  const { error, count } = await db().from("notifications").delete({ count: "exact" }).lt("created_at", before);
+  return error ? -1 : count || 0;
 }

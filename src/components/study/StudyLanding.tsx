@@ -483,7 +483,7 @@ export default function StudyLanding() {
                 <div><i className="ph ph-check" />영상 제작 · AI 마케팅 · 공실마케팅 모든 프로그램</div>
                 <div><i className="ph ph-check" />강의 개설과 수익화</div>
               </div>
-              <Link href="/marketing" className="stl-plan-btn solid">공실마케팅 알아보기 &gt;</Link>
+              <Link href="/newsrealty" className="stl-plan-btn solid">공실마케팅 알아보기 &gt;</Link>
             </div>
           </div>
         </div>

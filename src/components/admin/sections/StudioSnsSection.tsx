@@ -9,7 +9,7 @@ import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
-import StudioChannelTabs, { StepLine } from "./StudioChannelTabs";
+import StudioChannelTabs, { StepLine, StepTitle } from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
 import { BusyDots, LoadingCover } from "./StudioLoading";
@@ -414,7 +414,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   /* 작업대 왼쪽 맨 위 — 이 공실 (2026-11-03 사장님 시안 A3) */
   const head = result && (
     <div>
-      <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 8 }}>{category === "auction" ? "이 물건으로 씁니다" : "이 공실로 씁니다"}</div>
+      <StepTitle theme={theme} n={1} label={category === "auction" ? "물건" : "공실"} state="done" />
       <div style={{ position: "relative", border: `1px solid ${theme.border}`, borderRadius: 12, padding: 12, minHeight: busy ? 150 : undefined }}>
         {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -434,10 +434,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
           <button onClick={() => chooseTab("source")} style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>📋 분석 내용</button>
           <button onClick={() => void analyze(picked)} disabled={busy} title="같은 공실의 사진·화면을 새로 받습니다"
-            style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: busy ? navy : soft, color: busy ? "#fff" : theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
+            style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: 0, background: navy, color: "#fff", fontSize: 12.5, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
             {busy ? <>분석 중<BusyDots /></> : "↻ 다시 분석"}
           </button>
-          <button onClick={openList} title="다른 공실 고르기" style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: 0, background: navy, color: "#fff", fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>← 목록</button>
+          <button onClick={openList} title="다른 공실 고르기" style={{ flex: 1.5, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{category === "auction" ? "다른 물건 고르기" : "다른 공실 고르기"}</button>
         </div>
         {error && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c53030" }}>{error}</div>}
       </div>
@@ -528,12 +528,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 {name} 무제한{u.dailyLimit !== null ? ` · 오늘 ${u.todayUsed}/${u.dailyLimit}건` : ""}
               </span>
             ) : u.monthRemaining > 0 ? (
-              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
-                이번 달 {name} {u.monthLimit}건 중 {u.monthRemaining}건 남음
+              <span title="[한 번에 쓰기]·[이 글만 쓰기] 한 번이 1번이에요. [수정 요청]은 세지 않아요" style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
+                이번 달 쓰기 {u.monthLimit}번 중 {u.monthRemaining}번 남음
               </span>
             ) : (
-              <a href="/marketing/pricing" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {u.monthLimit === 0 ? <>{name}는 PRO에서 쓸 수 있어요 <ProTag /></> : <>이번 달 {name} {u.monthLimit}건을 다 썼어요 · PRO는 제한 없이 <ProTag /></>}
+              <a href="/newsrealty/pricing" target="_blank" rel="noreferrer" onClick={(e) => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) { e.preventDefault(); f(); } }} style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
+                {u.monthLimit === 0 ? <>{name}는 PRO에서 쓸 수 있어요 <ProTag /></> : <>이번 달 쓰기 {u.monthLimit}번을 다 썼어요 · PRO는 제한 없이 <ProTag /></>}
               </a>
             );
           })()}
@@ -577,7 +577,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} onDesk={setSubDesk} />}
 
-        {category === "column" && pro === false && <ProLock what="뉴스칼럼" detail="내 공실뉴스 기사로 블로그·SNS·유튜브 글을 만들어요." dark={Boolean(theme.darkMode)} onUpgrade={() => window.open("/marketing/pricing", "_blank", "noopener")} />}
+        {category === "column" && pro === false && <ProLock what="뉴스칼럼" detail="내 공실뉴스 기사로 블로그·SNS·유튜브 글을 만들어요." dark={Boolean(theme.darkMode)} onUpgrade={() => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank", "noopener"); }} />}
         {category === "column" && pro !== false && (
           <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
         )}

@@ -2,18 +2,19 @@
 
 import React from "react";
 import Link from "next/link";
+import { ProTag } from "@/components/admin/ProBadge";
 
 /**
- * 공실마케팅 금액안내 (/marketing/pricing) — 브루 가격 정책(vrew.ai/ko/payment/pricepolicy)과 같은 틀 (2026-10-26 사장님: "똑같이")
+ * 공실마케팅 금액안내 (/newsrealty/pricing) — 브루 가격 정책(vrew.ai/ko/payment/pricepolicy)과 같은 틀 (2026-10-26 사장님: "똑같이")
  *  큰 제목 → [월 구독 | 연 구독] → 요금제 칸(추천 띠 · 아이콘 · 가격 · 월 환산 · 시작하기 · 기본 제공 · 사용 가능 항목 · 특별한 기능) → 안내 → "모든 플랜에서" 알약 줄
- * 요금제: 공실뉴스부동산(무료) · 스튜디오회원(정가 월 5만 → 할인 월 3만 / 1년 36만) · 비즈니스회원 (2026-10-31)
+ * 요금제: 공실뉴스부동산(무료) · 공실뉴스부동산 PRO(정가 월 5만 → 할인 월 3만 / 1년 36만, 옛 스튜디오회원) · 비즈니스회원 (2026-11-04 등급 확정)
  */
 const ACCENT = "#e8890c";
 const SOFT = "#fdf4e7";
 const LINE = "#e5e7eb";
 
 type Plan = {
-  key: string; name: string; icon: React.ReactNode; tag?: string;
+  key: string; name: string; pro?: boolean; icon: React.ReactNode; tag?: string;
   price: (y: boolean) => { won: string; per: string; sub?: string; day?: string; year?: string; was?: string };
   cta: { label: string; href: string; solid?: boolean };
   base: string[];
@@ -44,31 +45,33 @@ const mon = (m: number, was?: number) => () => ({
 });
 
 export const PLANS: Plan[] = [
+  /* 2026-11-04 사장님 등급 확정 (docs/2026-11-04_member_tiers_plan.md) — 무료 공실뉴스부동산 · 공실뉴스부동산 PRO 혜택표대로.
+     앱은 안 쓰므로 앱 전용 항목(화면캡처·동영상studio 등)은 뺐다. 금액은 10-31 회의 값 그대로 */
   {
     key: "free", name: "공실뉴스부동산",
     icon: ic("M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"),
     price: () => ({ won: "0", per: "/ 평생", sub: "무료" }),
     cta: { label: "시작하기", href: "/newsrealty/apply" },
-    base: ["공실 등록 무제한", "기사 쓰기"],
-    items: ["블로그 · SNS 자동 작성 1주일 3번", "AI 매물보고서 (등록한 공실로)", "포토studio 기본 편집 (AI 제외)", "물건접수홈페이지 기본형 (전화 · 문자 연결)", "화면캡처 · 녹화"],
+    base: ["공실 광고 3건", "블로그·SNS 쓰기 한 달 3번"],
+    items: ["공실뉴스 공실 등록 (광고 중 3건)", "블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본 쓰기 한 달 3번", "AI 매물보고서 표지 · 개요 (등록한 공실로)", "유리창홍보지 \"숫자 크게\" 디자인", "글 끝 법정 표시 자동 (사무소 정보)"],
     extraTitle: "특별한 기능",
     extra: ["중개사 서류 승인 후 이용", "가입비 · 이용료 없음"],
   },
   {
-    key: "standard", name: "스튜디오회원", tag: "특별 할인",
-    icon: ic("M4 6h16v12H4zM10 9l5 3-5 3z"),
+    key: "standard", name: "공실뉴스부동산", pro: true, tag: "특별 할인",
+    icon: ic("M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"),
     price: mon(30000, 50000),
-    cta: { label: "시작하기", href: "/marketing/apply", solid: true },
-    base: ["공실 등록 무제한", "기사 쓰기"],
-    items: ["블로그 · SNS 자동 작성 무제한", "AI 매물보고서", "포토studio AI 자동 디자인 · AI 고치기", "동영상studio · AI 성우 · 자동 자막", "인테리어 · 리모델링 AI", "물건접수홈페이지 집주인 접수 · 색상 · 로고"],
+    cta: { label: "시작하기", href: "/newsrealty/pro-apply", solid: true },
+    base: ["공실 광고 20건 + 내 홈페이지 전용 20건", "기사 쓰기 월 4건"],
+    items: ["블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본 무제한", "뉴스칼럼 (내 기사로 블로그 · SNS · 유튜브)", "AI 매물보고서 모든 쪽 · 디자인 · AI 채우기", "유리창홍보지 모든 디자인", "물건접수홈페이지 (집주인 접수 · 로고 · 색상 · 사진 · 영상)", "포토studio (AI 포함)", "고객관리", "기사 아래 광고 · 배너"],
     extraTitle: "공실뉴스부동산의 모든 기능 포함",
-    extra: ["일반 중개사무소 · 중개법인 같은 금액", "이름표 공실마케팅 로고"],
+    extra: ["주황 PRO 딱지 (지도 · 공실 카드 · 기자란)", "모든 링크는 내 물건접수홈페이지로", "일반 중개사무소 · 중개법인 같은 금액"],
   },
   {
     key: "biz", name: "비즈니스회원", tag: "세무사·법무사·변호사 등 전문가용",
     icon: ic("M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"),
     price: mon(100000),
-    cta: { label: "시작하기", href: "/marketing/apply", solid: true },
+    cta: { label: "시작하기", href: "/newsrealty/pro-apply", solid: true },
     base: ["공실 등록 무제한", "기사 쓰기"],
     items: ["스튜디오회원 항목 모두", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
     extraTitle: "스튜디오회원의 모든 기능 포함",
@@ -80,6 +83,7 @@ const NOTES = [
   "모든 금액은 부가세를 포함한 최종 결제 금액이에요.",
   "모든 요금제는 1년 단위로 결제해요. 표의 월 금액은 1년 금액을 12로 나눈 금액이에요.",
   "공실뉴스부동산은 중개사 서류가 승인되면 무료로 이용할 수 있어요.",
+  "공실 건수는 광고 중인 공실만 세요. 광고를 내리거나 거래가 끝난 공실은 빠지니, 그 자리에 새 공실을 올릴 수 있어요.",
   "그 외 궁금한 점이 있으시다면 채팅 상담을 통해 문의 주세요.",
 ];
 
@@ -154,7 +158,7 @@ const coin = (
 );
 
 /**
- * compact = 앱 머리줄 [금액안내] 창 안에서 — 웹 금액안내(/marketing/pricing)와 똑같이 (2026-10-31 사장님: "여기 페이지 같이 그냥 신청하게")
+ * compact = 앱 머리줄 [금액안내] 창 안에서 — 웹 금액안내(/newsrealty/pricing)와 똑같이 (2026-10-31 사장님: "여기 페이지 같이 그냥 신청하게")
  *  위 여백·제목만 조금 줄이고, [시작하기]는 새 창으로 (앱 화면을 떠나지 않게). 아래 기능 알약 줄도 그대로 흘러간다
  * current · allowed 는 예전 업그레이드 창(지금 등급 회색 · 고르기)에서 쓰던 것 — 지금은 화면에 안 쓴다
  */
@@ -194,7 +198,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
             const hl = isHl(p.key);
             return (
               <div key={p.key + "head"} style={{ position: "relative", padding: "32px 24px 24px", textAlign: "center", background: cellBg(p.key), borderTop: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? toneOf(p.key).text : "#6b7280" }}>{p.icon}{p.name}</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? toneOf(p.key).text : "#6b7280" }}>{p.icon}{p.name}{p.pro && <ProTag size="md" style={{ marginLeft: 2 }} />}</div>
                 {/* 할인 전 정가 — 줄 긋기 (2026-10-31 사장님: 월 5만 → 특별 할인 월 3만) */}
                 <div style={{ marginTop: 14, minHeight: 20, fontSize: 15, color: "#9ca3af" }}>{pr.was ? <><s>₩{pr.was}</s> <b style={{ color: "#dc2626", marginLeft: 4 }}>{Math.round((1 - Number(pr.won.replace(/,/g, "")) / Number(pr.was.replace(/,/g, ""))) * 100)}% 할인</b></> : ""}</div>
                 <div style={{ margin: "2px 0 6px", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
@@ -218,7 +222,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
             return (
               <div key={p.key + "items"} style={{ padding: "26px 24px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 4 }}>사용 가능 항목</div>
-                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "가입만 하면 바로 써요." : "공실마케팅 앱에서 써요."}</div>
+                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "승인만 받으면 바로 써요." : p.key === "biz" ? "공실마케팅 앱에서 써요." : "웹에서 바로 써요. 설치할 것이 없어요."}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {p.items.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span>{info}</div>)}
                 </div>

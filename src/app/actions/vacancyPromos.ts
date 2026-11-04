@@ -208,7 +208,7 @@ export async function getVacancyCardsByIds(ids: string[]): Promise<{ success: bo
   if (!clean.length) return { success: true, data: [] };
   const { data, error } = await admin()
     .from("vacancies")
-    .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
+    .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, exposure_type, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
     .in("id", clean);
   if (error) return { success: false, data: [], error: error.message };
   return { success: true, data: data || [] };
@@ -219,7 +219,7 @@ export async function getMyVacancyCards(): Promise<{ success: boolean; data: any
   if (!user) return { success: false, data: [], error: "로그인이 필요합니다." };
   const { data, error } = await admin()
     .from("vacancies")
-    .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
+    .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, exposure_type, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
     .eq("owner_id", user.id)
     .neq("status", "DELETED")
     .order("created_at", { ascending: false })

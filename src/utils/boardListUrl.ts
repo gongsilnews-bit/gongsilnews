@@ -7,16 +7,16 @@
  */
 const SECTION_BOARD_PATHS: Record<string, string> = {
   // 공실마케팅 자료실 5대 게시판 (2026-10-26 /studio 로)
-  doc: "/marketing/resources?board=doc",
-  drone: "/marketing/resources?board=drone",
-  prompt: "/marketing/resources?board=prompt",
-  sound: "/marketing/resources?board=sound",
-  app: "/marketing/resources?board=app",
+  doc: "/newsrealty/resources?board=doc",
+  drone: "/newsrealty/resources?board=drone",
+  prompt: "/newsrealty/resources?board=prompt",
+  sound: "/newsrealty/resources?board=sound",
+  app: "/newsrealty/resources?board=app",
   // 공실마케팅 커뮤니티 2대 게시판
-  studyqa: "/marketing/community?board=studyqa",
-  free: "/marketing/community?board=free",
+  studyqa: "/newsrealty/community?board=studyqa",
+  free: "/newsrealty/community?board=free",
   // 공실마케팅 사용법 배우기 (유튜브 영상, 2026-10-26)
-  studio_guide: "/marketing/guide",
+  studio_guide: "/newsrealty/guide",
   // 고객센터 자주 묻는 질문
   faq: "/help",
 };

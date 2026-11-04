@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js"
 import { getEffectivePlan } from "@/utils/planCheck"
-import { memberTier, vacancyLimit } from "@/utils/tier"
+import { memberTier, vacancyLimit, isHomepageOnly, HOMEPAGE_ONLY, HOMEPAGE_ONLY_LIMIT } from "@/utils/tier"
 import { createNotification } from "./notification"
 
 function getAdminClient() {
@@ -19,14 +19,25 @@ function getAdminClient() {
  * 회원마다 따로: [회원관리]에서 "개별 한도 사용"(use_custom_registration_limits)을 켜면 그 회원의 max_vacancies
  * 광고 중(ACTIVE)만 센다 — 광고를 내리거나 거래가 끝난 공실·임시저장은 안 센다. exceptId = 지금 광고로 바꾸려는 공실
  */
-async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId: string, exceptId?: string): Promise<string | null> {
+async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId: string, exceptId?: string, homepageOnly = false): Promise<string | null> {
   const { data: m } = await supabase.from('members').select('role, plan_type, plan_end_date, studio_end_date, max_vacancies, use_custom_registration_limits').eq('id', ownerId).maybeSingle();
   if (!m) return null;
   const tier = memberTier(m);
+  // 내 홈페이지 전용 — PRO 만, 공실뉴스 공실과 따로 20건 (2026-11-04)
+  if (homepageOnly) {
+    if (tier === 'free' || tier === 'user') return "'내 홈페이지만'은 공실뉴스부동산 PRO에서 고를 수 있어요.";
+    if (tier !== 'pro') return null; // 비즈니스·최고관리자는 한도 없음
+    let hq = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE').eq('exposure_type', HOMEPAGE_ONLY);
+    if (exceptId) hq = hq.neq('id', exceptId);
+    const { count: hc, error: he } = await hq;
+    if (he) return '광고 중인 공실 수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.';
+    return (hc || 0) < HOMEPAGE_ONLY_LIMIT ? null : `내 홈페이지 전용 공실은 ${HOMEPAGE_ONLY_LIMIT}건까지 걸 수 있어요. 다른 공실의 광고를 내린 뒤 다시 해 주세요.`;
+  }
   if (tier !== 'free' && tier !== 'pro') return null; // 일반회원은 아래 예전 규칙, 비즈니스·최고관리자는 없음
   const limit = m.use_custom_registration_limits && typeof m.max_vacancies === 'number' && m.max_vacancies > 0 ? m.max_vacancies : vacancyLimit(tier);
   if (limit === null) return null;
-  let q = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE');
+  // 공실뉴스에 거는 공실만 센다 — 내 홈페이지 전용은 따로 (값이 비어 있는 예전 공실도 공실뉴스 쪽)
+  let q = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE').or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`);
   if (exceptId) q = q.neq('id', exceptId);
   const { count, error } = await q;
   if (error) return '광고 중인 공실 수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.';
@@ -119,7 +130,7 @@ export async function createVacancy(data: {
     // 클라이언트가 보낸 status 존중 (DRAFT=임시저장, ACTIVE=바로발행)
     const status = data.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
     if (status === 'ACTIVE') {
-      const full = await vacancyRoom(supabase, data.owner_id);
+      const full = await vacancyRoom(supabase, data.owner_id, undefined, isHomepageOnly(data));
       if (full) return { success: false, error: full };
     }
 
@@ -241,7 +252,9 @@ export async function getVacancyTabCounts(options?: {
   const supabase = getAdminClient();
   try {
     let queryAll = supabase.from("vacancies").select("id", { count: "exact", head: true }).neq("status", "DELETED");
-    let queryActive = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "ACTIVE");
+    // 광고중 = 공실뉴스에 거는 공실 · 홈페이지만 = 광고 중인 내 홈페이지 전용 공실 (2026-11-04 사장님: 탭 따로)
+    let queryActive = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "ACTIVE").or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`);
+    let queryHome = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "ACTIVE").eq("exposure_type", HOMEPAGE_ONLY);
     let queryStopped = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "STOPPED");
     let queryDraft = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "DRAFT");
 
@@ -250,6 +263,7 @@ export async function getVacancyTabCounts(options?: {
       if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
         queryAll = queryAll.eq('owner_id', options.ownerId);
         queryActive = queryActive.eq('owner_id', options.ownerId);
+        queryHome = queryHome.eq('owner_id', options.ownerId);
         queryStopped = queryStopped.eq('owner_id', options.ownerId);
         queryDraft = queryDraft.eq('owner_id', options.ownerId);
       }
@@ -261,15 +275,17 @@ export async function getVacancyTabCounts(options?: {
       // 11,477행을 전수 스캔했다. 등치 조건으로 바꿔 idx_vacancies_admin_list 를 태운다.
       queryAll = queryAll.eq('is_onbid', false);
       queryActive = queryActive.eq('is_onbid', false);
+      queryHome = queryHome.eq('is_onbid', false);
       queryStopped = queryStopped.eq('is_onbid', false);
       queryDraft = queryDraft.eq('is_onbid', false);
     }
 
-    const [resAll, resActive, resStopped, resDraft] = await Promise.all([
+    const [resAll, resActive, resStopped, resDraft, resHome] = await Promise.all([
       queryAll,
       queryActive,
       queryStopped,
-      queryDraft
+      queryDraft,
+      queryHome,
     ]);
 
     return {
@@ -278,6 +294,7 @@ export async function getVacancyTabCounts(options?: {
         전체: resAll.count || 0,
         광고중: resActive.count || 0,
         광고종료: resStopped.count || 0,
+        홈페이지만: resHome.count || 0,
         임시저장: resDraft.count || 0
       }
     };
@@ -329,6 +346,8 @@ export async function getVacancies(options?: {
   subCategory?: string;
   searchKeyword?: string;
   excludeOnbid?: boolean;
+  /** public = 공실뉴스에 거는 공실만(광고중 탭) · homepage = 내 홈페이지 전용만(홈페이지만 탭) — 2026-11-04 */
+  exposure?: "public" | "homepage";
   stringify?: boolean;
   /** 관리자 목록 화면 전용. 표에 실제로 그려지는 컬럼만 조회한다.
    *  metadata(JSONB 통째), agencies(*), vacancy_photos 조인을 제외해 전송량과 조인 비용을 줄인다.
@@ -349,7 +368,7 @@ export async function getVacancies(options?: {
     // 관리자 공실목록 표가 실제로 읽는 컬럼만 담은 축소 select (VacancySection 기준)
     // detail_addr / apt_dong / hosu 는 VacancySection 이 주소 칸에 그리는데 기존 selectFields 에
     // 빠져 있어 상세주소·동·호수가 표시되지 않았다. 축소 select 에서는 포함시켜 정상 표시한다.
-    const slimSelectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, detail_addr, building_name, apt_dong, hosu, created_at, room_count, exclusive_m2, supply_m2, current_floor, client_name, client_phone, members!vacancies_owner_id_fkey(name, phone, role, agencies(name))';
+    const slimSelectFields = 'id, vacancy_no, owner_id, status, exposure_type, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, detail_addr, building_name, apt_dong, hosu, created_at, room_count, exclusive_m2, supply_m2, current_floor, client_name, client_phone, members!vacancies_owner_id_fkey(name, phone, role, agencies(name))';
 
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
     if (options?.page && options?.limit) {
@@ -374,6 +393,10 @@ export async function getVacancies(options?: {
           pageQuery = pageQuery.eq('owner_id', options.ownerId);
         }
       }
+
+      // 노출 필터 — 광고중 탭 / 홈페이지만 탭 (2026-11-04)
+      if (options?.exposure === "homepage") pageQuery = pageQuery.eq('exposure_type', HOMEPAGE_ONLY);
+      else if (options?.exposure === "public") pageQuery = pageQuery.or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`);
 
       // 상태 필터 (삭제된 것 제외)
       if (options?.status) {
@@ -501,6 +524,8 @@ export async function getVacancies(options?: {
 
     console.log(`📊 getVacancies: 총 ${allData.length}건 로드 (${page}페이지)`);
     
+    // 공개 전체 목록(all)에는 내 홈페이지 전용 공실을 넣지 않는다 (2026-11-04)
+    if (options?.all) allData = allData.filter((v) => !isHomepageOnly(v));
     const lightData = allData.map(v => {
       const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
       const lightMetadata = metadata ? {
@@ -657,9 +682,9 @@ export async function updateVacancyStatus(vacancyId: string, newStatus: string) 
   const supabase = getAdminClient();
   try {
     if (newStatus === 'ACTIVE') {
-      const { data: v } = await supabase.from('vacancies').select('owner_id, status').eq('id', vacancyId).maybeSingle();
+      const { data: v } = await supabase.from('vacancies').select('owner_id, status, exposure_type').eq('id', vacancyId).maybeSingle();
       if (v && v.status !== 'ACTIVE' && v.owner_id) {
-        const full = await vacancyRoom(supabase, v.owner_id, vacancyId);
+        const full = await vacancyRoom(supabase, v.owner_id, vacancyId, isHomepageOnly(v));
         if (full) return { success: false, error: full };
       }
     }
@@ -680,10 +705,13 @@ export async function updateVacancyStatus(vacancyId: string, newStatus: string) 
 export async function updateVacancy(vacancyId: string, updates: Record<string, any>) {
   const supabase = getAdminClient();
   try {
-    if (updates?.status === 'ACTIVE') {
-      const { data: v } = await supabase.from('vacancies').select('owner_id, status').eq('id', vacancyId).maybeSingle();
-      if (v && v.status !== 'ACTIVE' && v.owner_id) {
-        const full = await vacancyRoom(supabase, v.owner_id, vacancyId);
+    // 광고로 바꾸거나, 광고 중에 노출을 바꿔 다른 칸(공실뉴스 ↔ 내 홈페이지 전용)으로 옮길 때 한도를 본다
+    if (updates?.status === 'ACTIVE' || updates?.exposure_type !== undefined) {
+      const { data: v } = await supabase.from('vacancies').select('owner_id, status, exposure_type').eq('id', vacancyId).maybeSingle();
+      const nextStatus = updates?.status ?? v?.status;
+      const nextHome = isHomepageOnly({ exposure_type: updates?.exposure_type ?? v?.exposure_type });
+      if (v && v.owner_id && nextStatus === 'ACTIVE' && (v.status !== 'ACTIVE' || nextHome !== isHomepageOnly(v))) {
+        const full = await vacancyRoom(supabase, v.owner_id, vacancyId, nextHome);
         if (full) return { success: false, error: full };
       }
     }
@@ -861,7 +889,8 @@ export async function getVacanciesForMap(options?: {
       }
     }
 
-    const lightData = combinedData.map(v => {
+    // 공실뉴스 지도·목록에는 내 홈페이지 전용 공실을 넣지 않는다 (2026-11-04)
+    const lightData = combinedData.filter((v: any) => !isHomepageOnly(v)).map(v => {
       const { metadata, vacancy_photos, ...rest } = v;
       const lightMetadata = metadata ? {
         cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
@@ -934,7 +963,8 @@ export async function getVacancyListByKeyword(keyword: string) {
 }
 
 // ── 특정 회원의 공실 목록 조회 (기자 프로필용, role 무관하게 항상 owner_id 필터) ──
-export async function getVacanciesByOwnerId(ownerId: string) {
+/** includeHomepageOnly — 내 물건접수홈페이지(sites)·홈페이지 편집에서만 true. 기자 페이지 등 공실뉴스 화면은 빼고 (2026-11-04) */
+export async function getVacanciesByOwnerId(ownerId: string, opts?: { includeHomepageOnly?: boolean }) {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase
@@ -946,12 +976,12 @@ export async function getVacanciesByOwnerId(ownerId: string) {
 
     if (error) return { success: false, error: error.message };
 
-    const withImages = data?.map(v => ({
+    const withImages = (data || []).filter((v: any) => opts?.includeHomepageOnly || !isHomepageOnly(v)).map(v => ({
       ...v,
       images: v.vacancy_photos
         ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
         : [],
-    })) || [];
+    }));
 
     return { success: true, data: withImages };
   } catch (error: any) {
