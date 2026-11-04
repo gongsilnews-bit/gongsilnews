@@ -73,8 +73,9 @@ export function canOpenHomepage(
   granted?: boolean | null,
   agencyStatus?: string | null
 ): boolean {
-  if (canUseHomepage(member, granted)) return true;
-  return (member?.role === 'REALTOR' || member?.role === '부동산회원') && agencyStatus === 'APPROVED';
+  // 2026-11-04 사장님 등급 회의: 물건접수홈페이지는 PRO 전용 — 무료 공실뉴스부동산은 닫힌다 (10-30 "모든 부동산에게 무료"를 바꿈)
+  void agencyStatus;
+  return canUseHomepage(member, granted);
 }
 
 export function isPermissionAlive(

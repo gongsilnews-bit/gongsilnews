@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { memberTier, LIMITS } from "@/utils/tier";
 import { reviewArticleByAI, isAgentAutoMode } from "@/app/actions/agentChat";
 
 import { createClient } from "@supabase/supabase-js";
@@ -30,7 +31,7 @@ async function getArticleActor(supabase: ReturnType<typeof getAdminClient>) {
 
   const { data: member, error } = await supabase
     .from("members")
-    .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, max_articles_per_month")
+    .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, max_articles_per_month, use_custom_registration_limits")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -49,20 +50,21 @@ async function getArticleActor(supabase: ReturnType<typeof getAdminClient>) {
  */
 async function checkMonthlyArticleQuota(
   supabase: ReturnType<typeof getAdminClient>,
-  member: { role?: string; plan_type?: string; plan_end_date?: string | null; max_articles_per_month?: number | null },
+  member: { role?: string; plan_type?: string; plan_end_date?: string | null; studio_end_date?: string | null; max_articles_per_month?: number | null; use_custom_registration_limits?: boolean | null },
   authorId: string,
 ): Promise<{ allowed: true } | { allowed: false; error: string }> {
   if (isAdminRole(member.role)) return { allowed: true };
 
-  let maxArticles = member.max_articles_per_month || 0;
-  const expiredPaidPlan =
-    member.role === "REALTOR" && !!member.plan_type && member.plan_type !== "free" && getEffectivePlan(member) === "free";
-  if (expiredPaidPlan) {
-    const { data } = await supabase.from("point_settings").select("value").eq("key", "LIMIT_REALTOR_FREE_ARTICLE").maybeSingle();
-    maxArticles = Number(data?.value) || 0;
-  }
+  // 2026-11-04 사장님 등급 회의: 공실뉴스부동산(무료) 기사 작성 안 됨 · PRO 월 4건 · 비즈니스·일반회원은 회원 값
+  // 회원마다 따로: [회원관리] "개별 한도 사용"을 켜면 그 회원의 max_articles_per_month
+  const tier = memberTier(member);
+  const custom = Boolean(member.use_custom_registration_limits);
+  const maxArticles = custom ? (member.max_articles_per_month || 0)
+    : tier === "free" ? 0
+    : tier === "pro" ? LIMITS.proArticlePerMonth
+    : (member.max_articles_per_month || 0);
   if (maxArticles <= 0) {
-    return { allowed: false, error: "기사 작성 권한이 없는 회원 등급입니다. 요금제를 확인해 주세요." };
+    return { allowed: false, error: tier === "free" ? "기사 작성은 공실뉴스부동산 PRO에서 쓸 수 있어요." : "기사 작성 권한이 없는 회원 등급입니다. 요금제를 확인해 주세요." };
   }
 
   const now = new Date();
@@ -94,7 +96,7 @@ export async function checkArticleWritePermission(authorId?: string) {
 
     const { data: member, error: memberError } = await supabase
       .from("members")
-      .select("role, plan_type, plan_end_date, studio_end_date, max_articles_per_month")
+      .select("role, plan_type, plan_end_date, studio_end_date, max_articles_per_month, use_custom_registration_limits")
       .eq("id", targetAuthorId)
       .single();
     if (memberError || !member) {
@@ -166,7 +168,7 @@ export async function saveArticle(data: {
       : actor.user.id;
     const { data: authorMember, error: authorMemberError } = await supabase
       .from("members")
-      .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, max_articles_per_month")
+      .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, max_articles_per_month, use_custom_registration_limits")
       .eq("id", effectiveAuthorId)
       .maybeSingle();
 

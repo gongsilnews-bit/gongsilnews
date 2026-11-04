@@ -4,6 +4,7 @@ import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
 import { useStudioTheme } from "@/components/admin/studio-video/ui";
 import FolderBox from "@/components/admin/studio-web/FolderBox";
+import { ProTag } from "@/components/admin/ProBadge";
 
 /**
  * 공실마케팅 텍스트 메뉴 (중개사 관리자 /realty_admin)
@@ -171,7 +172,10 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
           {collapsed
             ? <span style={{ fontSize: 11, lineHeight: 1.25, textAlign: "center", wordBreak: "keep-all", overflowWrap: "anywhere" }}>{m.label}</span>
             : <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}</span>}
-          {badges[m.key] && badges[m.key].startsWith("dev:") ? (
+          {badges[m.key] === "pro" ? (
+            // PRO 전용 메뉴 (무료 회원에게만, 2026-11-04) — 접힌 메뉴에서는 작게
+            <ProTag size={collapsed ? "xs" : "sm"} style={collapsed ? { position: "absolute", top: 4, right: 6 } : undefined} />
+          ) : badges[m.key] && badges[m.key].startsWith("dev:") ? (
             // [개발중] — 최고관리자에게만 보이는 미완성 메뉴 (2026-10-23 사장님)
             !collapsed && <span style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#64748b", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.3 }}>{badges[m.key].slice(4)}</span>
           ) : badges[m.key] && badges[m.key].startsWith("file:") ? (

@@ -5,6 +5,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useMapFields } from "@/utils/useMapFields";
 import { CommentCount } from "./useCommentCounts";
 import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount, formatAreaWithPy } from "./gongsilHelpers";
+import { ProTag } from "@/components/admin/ProBadge";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
@@ -369,7 +370,7 @@ export default function GongsilSidebar({
                 ? <img src={agency.photo} alt="" style={{ width: 48, height: 48, borderRadius: 14, objectFit: "cover", border: "1.5px solid #e5e7eb", flexShrink: 0 }} />
                 : <div style={{ width: 48, height: 48, borderRadius: 14, background: "#e8eef8", color: "#1e3a6e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, flexShrink: 0 }}>{agency.name.slice(0, 1)}</div>}
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>{agency.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>{agency.name}{agency.pro && <ProTag />}</div>
                 <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2 }}>{[agency.ceo && `대표 ${agency.ceo}`, agency.regNum && `등록번호 ${agency.regNum}`].filter(Boolean).join("  |  ")}</div>
               </div>
             </div>
@@ -484,7 +485,7 @@ export default function GongsilSidebar({
                 : <div style={{ width: 52, height: 52, borderRadius: 14, background: "#e8eef8", color: "#1e3a6e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, flexShrink: 0 }}>{a.name.slice(0, 1)}</div>}
               <div style={{ minWidth: 0, flex: 1 }}>
                 <Star k="ag" id={String(a.id)} />
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 34 }}>{a.name}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 34 }}>{a.name}{a.pro && <ProTag style={{ marginLeft: 5 }} />}</div>
                 <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.address}</div>
                 <div style={{ fontSize: 12.5, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <b style={{ color: "#2563eb" }}>공실 {a.vacancies}</b>

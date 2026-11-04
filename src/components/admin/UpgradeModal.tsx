@@ -9,7 +9,8 @@ import StudioPriceTable from "@/components/studio-site/StudioPriceTable";
  */
 export type Tier = "free" | "pro" | "studio" | "corp" | "biz";
 // 유료는 스튜디오회원 하나 (2026-10-31 사장님) — 예전 pro(마케팅회원)·corp(법인) 값이 와도 스튜디오회원으로 읽는다
-export const TIER_LABEL: Record<Tier, string> = { free: "공실뉴스부동산", pro: "스튜디오회원", studio: "스튜디오회원", corp: "스튜디오회원", biz: "비즈니스회원" };
+// 2026-11-04 사장님: 유료는 공실뉴스부동산 PRO (이름 옆 주황 PRO 딱지 — ProBadge) — 예전 스튜디오회원도 PRO 로 읽는다
+export const TIER_LABEL: Record<Tier, string> = { free: "공실뉴스부동산", pro: "공실뉴스부동산", studio: "공실뉴스부동산", corp: "공실뉴스부동산", biz: "비즈니스회원" };
 /** 금액안내 표의 요금제 열쇠 */
 const PLAN_KEY: Record<Tier, string> = { free: "free", pro: "standard", studio: "standard", corp: "standard", biz: "biz" };
 /** 회원 종류 — 일반 중개사무소 · 중개법인 · 전문가(비즈니스회원). 이것으로 고를 수 있는 칸이 정해진다 (2026-10-30) */

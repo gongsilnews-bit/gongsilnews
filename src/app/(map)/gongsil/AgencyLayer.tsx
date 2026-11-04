@@ -18,7 +18,8 @@ const house = (fill: string, size: number) =>
 const FAR_LEVEL = 7; // 이만큼 축소하면 이름 없이 동그라미만 (빽빽하지 않게)
 const short = (name: string) => (name.length > 8 ? `${name.slice(0, 8)}…` : name);
 /** 이름표형 (2026-11-04 사장님: 집 그림이 마음에 안 든다 → 권고안) — 곤색 이름표 + 흰 동그라미 집 + 아래 꼬리 */
-const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, count = 1) => {
+const PRO_TAG = `<span style="display:inline-block;background:#ea8a0c;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px;line-height:1;padding:2px 4px 3px;border-radius:3px;margin-left:4px;vertical-align:middle">PRO</span>`;
+const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, count = 1, pro = false) => {
   const bg = mode === "normal" ? NAVY : NAVY_DARK;
   const ring = mode === "picked" ? "box-shadow:0 0 0 2px #fff,0 0 0 4px #0f2347,0 4px 10px rgba(15,35,71,.45);" : "box-shadow:0 3px 8px rgba(15,35,71,.35);";
   // 한 자리에 여러 사무소 — 오른쪽 위에 개수 (공실 묶음 동그라미처럼, 11-04 사장님)
@@ -26,7 +27,7 @@ const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, 
   const tail = `<div style="position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${bg}"></div>`;
   if (far) return `<div style="position:relative;width:26px;height:26px;border-radius:50%;background:${bg};border:2px solid #fff;display:flex;align-items:center;justify-content:center;${ring}">${house("#fff", 14)}${cnt}${tail}</div>`;
   return `<div style="position:relative;display:flex;align-items:center;gap:6px;background:${bg};color:#fff;border-radius:18px;padding:4px 11px 4px 4px;font-size:13px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;${ring}">` +
-    `<span style="width:22px;height:22px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${house(bg, 14)}</span>${esc(count > 1 ? `${short(name)} 외 ${count - 1}` : short(name))}${cnt}${tail}</div>`;
+    `<span style="width:22px;height:22px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${house(bg, 14)}</span>${esc(count > 1 ? `${short(name)} 외 ${count - 1}` : short(name))}${pro && count === 1 ? PRO_TAG : ""}${cnt}${tail}</div>`;
 };
 
 export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null }) {
@@ -104,7 +105,7 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
 
   const farRef = useRef(false);
   const paint = (el: HTMLElement, mode: "normal" | "hover" | "picked") => {
-    el.innerHTML = badge(el.dataset.name || "", mode, farRef.current, Number(el.dataset.count || 1));
+    el.innerHTML = badge(el.dataset.name || "", mode, farRef.current, Number(el.dataset.count || 1), el.dataset.pro === "1");
     el.style.transform = mode === "hover" ? "scale(1.08)" : "";
     el.style.transformOrigin = "50% 100%";
     if (el.parentElement) el.parentElement.style.zIndex = mode === "normal" ? "8" : "100";
@@ -129,12 +130,12 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
     const one = "white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
     const cnt = (x: MapAgency) => `<b style="color:#2563eb">공실 ${x.vacancies}</b><span style="color:#d1d5db;margin:0 6px">·</span><b style="color:#ff8e15">기사 ${x.articles}</b>`;
     box.innerHTML = g.length === 1
-      ? `<div title="${esc(a.name)}" style="font-size:15px;font-weight:800;color:#111;${one}">${esc(a.name)}</div><div title="${esc(a.address)}" style="font-size:13px;color:#374151;margin-top:1px;${one}">${esc(a.address)}</div>` +
+      ? `<div title="${esc(a.name)}" style="font-size:15px;font-weight:800;color:#111;${one}">${esc(a.name)}${a.pro ? PRO_TAG : ""}</div><div title="${esc(a.address)}" style="font-size:13px;color:#374151;margin-top:1px;${one}">${esc(a.address)}</div>` +
         `<div style="display:flex;align-items:center;gap:14px;font-size:13px;margin-top:4px;white-space:nowrap"><span>${counts}</span>` +
         `<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">${starHtml("ag", a.id, 18)}<a href="#" data-ag-open="${esc(a.id)}" style="color:${NAVY};font-weight:800;text-decoration:none">상세보기 &gt;</a></span></div>`
       // 한 자리 여러 사무소 — 줄마다 (공실·뉴스 목록처럼)
       : `<div style="font-size:12.5px;color:#6b7280;margin-bottom:4px;${one}">${esc(a.address)} · 부동산 ${g.length}곳</div>` +
-        g.map((x, i) => `<div style="${i ? "border-top:1px solid #f0f0f0;" : ""}padding:7px 0 6px"><div title="${esc(x.name)}" style="font-size:14.5px;font-weight:800;color:#111;${one}">${esc(x.name)}</div>` +
+        g.map((x, i) => `<div style="${i ? "border-top:1px solid #f0f0f0;" : ""}padding:7px 0 6px"><div title="${esc(x.name)}" style="font-size:14.5px;font-weight:800;color:#111;${one}">${esc(x.name)}${x.pro ? PRO_TAG : ""}</div>` +
           `<div style="display:flex;align-items:center;gap:14px;font-size:12.5px;margin-top:2px;white-space:nowrap"><span>${cnt(x)}</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">${starHtml("ag", x.id, 18)}<a href="#" data-ag-open="${esc(x.id)}" style="color:${NAVY};font-weight:800;text-decoration:none">상세보기 &gt;</a></span></div></div>`).join("");
     const x = document.createElement("span");
     x.textContent = "✕"; x.title = "닫기";
@@ -177,6 +178,7 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
       el.style.cssText = "cursor:pointer;line-height:1.2;padding-bottom:6px;transition:transform .12s ease;font-family:'Pretendard',inherit";
       el.dataset.name = a.name;
       el.dataset.count = String(g.length);
+      el.dataset.pro = a.pro ? "1" : "";
       paint(el, key === picked ? "picked" : "normal");
       // 마우스를 올리면 살짝 커지기만 — 정보 이름표는 누를 때 뜬다 (11-04 사장님: 뉴스·공실처럼)
       el.addEventListener("mouseenter", () => { if (key !== pickedRef.current) paint(el, "hover"); });

@@ -32,7 +32,7 @@ export default function WebSnsNewsModal({ vacancyTitle, darkMode = false, onClos
             공실을 고르면 <b>공실뉴스 기사 · 블로그 · 인스타그램 · 스레드 · 페이스북</b> 글을<br />
             소장님의 AI(ChatGPT · Gemini)가 한 번에 채워요.
           </div>
-          <div style={{ fontSize: 13.5, color: sub, marginTop: 10 }}>공실뉴스부동산 회원은 1주일에 3번 사용할 수 있습니다.</div>
+          <div style={{ fontSize: 13.5, color: sub, marginTop: 10 }}>공실뉴스부동산 회원은 블로그를 한 달에 3건 쓸 수 있어요. SNS·유튜브는 공실뉴스부동산 PRO에서 쓸 수 있어요.</div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 22, flexWrap: "wrap" }}>
             <a href="/marketing#download" style={{ height: 46, padding: "0 24px", borderRadius: 8, background: ORANGE, color: "#fff", fontSize: 15, fontWeight: 800, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>앱 받기</a>
             <a href="/marketing/feature/news" style={{ height: 46, padding: "0 20px", borderRadius: 8, border: `1px solid ${line}`, color: fg, fontSize: 15, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>자세히 보기</a>

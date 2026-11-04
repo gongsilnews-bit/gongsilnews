@@ -623,7 +623,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       {st && <Ico size={13} d={ICON.poster} />}유리창홍보지
                                     </button>
 
-                                    {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 공실뉴스부동산은 1주일에 3번 (2026-10-26 사장님) */}
+                                    {/* [SNS뉴스발행] — 기사 초안 + SNS 글, 무료는 블로그 한 달 3건 (2026-11-04) */}
                                     {role !== "user" && (
                                       <button
                                         onClick={() => (inApp ? openSnsIn(row) : setSnsNewsTarget({ id: row.id, title: addrText }))}

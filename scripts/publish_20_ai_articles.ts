@@ -33,8 +33,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "아파트/오피스텔",
-    keyword: "서울 아파트 매매 전세 실거래가 전세가율 상승세",
-    promptSeed: "서울 및 수도권 아파트 전세가격 상승세 지속과 전세가율 상승으로 인한 갭투자 재유입 및 임대차 시장 동향",
+    keyword: "강남 서초 아파트 월세 비중 최고가 전세 월세 전환",
+    promptSeed: "강남 3구와 주요 도심 고가 아파트를 중심으로 전세의 월세 전환이 가속화되며 월세 거래 비중이 60%를 넘어선 현상과 임대차 시장 재편",
     isHeadline: true,
     isImportant: true,
   },
@@ -42,8 +42,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "빌라/주택/다가구/다세대",
-    keyword: "빌라 다세대 전세보증금 반환보증 HUG 비아파트",
-    promptSeed: "HUG 전세보증금 반환보증 요건 개편 후 빌라·다세대 주택 시장의 월세화 가속 및 비아파트 주거 안정 대책",
+    keyword: "모아타운 신속통합기획 지분쪼개기 노후 빌라 정비사업",
+    promptSeed: "서울시 모아타운 및 신통기획 추진 지역 내 지분쪼개기 단속 강화와 현금청산 리스크 속 노후 빌라·다가구 매수 전략",
     isHeadline: false,
     isImportant: false,
   },
@@ -51,8 +51,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "원룸/투룸(풀옵션)",
-    keyword: "대학가 역세권 원룸 투룸 월세 임대차 청년 주거",
-    promptSeed: "주요 대학가 및 초역세권 원룸·투룸 풀옵션 월세 부담 급증과 청년 1~2인 가구의 주거 트렌드 변화",
+    keyword: "판교 여의도 오피스텔 역세권 원룸 투룸 분리형 임대",
+    promptSeed: "여의도 금융가 및 판교 IT 밸리 직주근접 배후 주거지의 1.5룸·분리형 투룸 풀옵션 수요 폭증과 임대료 상승 추이",
     isHeadline: false,
     isImportant: false,
   },
@@ -60,8 +60,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "상가/사무실/빌딩/공장/토지",
-    keyword: "지식산업센터 공실률 상가 임대료 꼬마빌딩 오피스 매매",
-    promptSeed: "수도권 지식산업센터 및 주요 상권 1층 상가 공실 장기화 속 렌트프리와 단기 임대 전환 등 임대인들의 대응 전략",
+    keyword: "강남 테헤란로 프라임 오피스 빌딩 사옥 매각 매입",
+    promptSeed: "강남 테헤란로 중심가 프라임급 대형 오피스 빌딩의 자연공실률 유지와 국내외 대기업 사옥 확보 경쟁 및 매매가 신고가 경신",
     isHeadline: false,
     isImportant: true,
   },
@@ -69,8 +69,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "신축/분양/경매",
-    keyword: "수도권 아파트 분양 청약 경쟁률 법원 경매 낙찰가율",
-    promptSeed: "분양가 상한제 단지 청약 쏠림과 외곽 미분양 속 법원 경매 낙찰가율 회복세 및 알짜 경매 매물 투자 분석",
+    keyword: "토지거래허가구역 아파트 법원 경매 낙찰가율 청약",
+    promptSeed: "토지거래허가구역 규제를 받지 않는 법원 경매 시장으로의 매수세 쏠림과 주요 학군지 아파트 경매 낙찰가율 급등 분석",
     isHeadline: false,
     isImportant: false,
   },
@@ -78,8 +78,8 @@ const TARGET_TOPICS = [
   {
     section1: "부동산·경제",
     section2: "부동산정책/정치",
-    keyword: "국토교통부 1기 신도시 노후계획도시 재건축 선도지구 이주대책",
-    promptSeed: "정부 1기 신도시(분당·일산·평촌·산본·중동) 선도지구 지정 및 대규모 이주 수요에 따른 수도권 전세 시장 영향과 종합 대책",
+    keyword: "디딤돌 대출 한도 축소 규제 보완책 수도권 아파트",
+    promptSeed: "정부의 정책대출(디딤돌·버팀목) 한도 조임 완화 및 수도권 실수요자 대상 유예 조치 발표에 따른 중저가 아파트 매매 시장 반응",
     isHeadline: true,
     isImportant: true,
   },
@@ -87,8 +87,8 @@ const TARGET_TOPICS = [
   {
     section1: "부동산·경제",
     section2: "경제/재테크/주식",
-    keyword: "한국은행 기준금리 인하 주택담보대출 금리 리츠 부동산 펀드",
-    promptSeed: "한국은행 금리 인하 국면에서 시중은행 주택담보대출 금리 추이와 배당형 공모 리츠(REITs) 자산 포트폴리오 전략",
+    keyword: "고환율 외국인 투자 서울 물류센터 데이터센터 부동산 펀드",
+    promptSeed: "원·달러 고환율 기조 속 글로벌 기관투자자들의 수도권 핵심 입지 데이터센터 및 스마트 물류센터 부동산 매입 펀드 결성 급증",
     isHeadline: false,
     isImportant: true,
   },
@@ -96,8 +96,8 @@ const TARGET_TOPICS = [
   {
     section1: "부동산·경제",
     section2: "세무/법률/기타",
-    keyword: "상가건물 임대차보호법 권리금 회수 기회 제소전 화해 세무",
-    promptSeed: "상가 임대차 계약 시 임차인의 권리금 회수 기회 보호 법리와 제소전 화해조서 강행규정 위반 무효 판례 분석",
+    keyword: "1주택 비과세 상속세 양도소득세 절세 부동산 세무",
+    promptSeed: "1가구 1주택 비과세 거주기간 요건 판단과 상속주택 보유 시 양도소득세 중과 배제 및 절세 전략 핵심 가이드",
     isHeadline: false,
     isImportant: false,
   },
@@ -105,8 +105,8 @@ const TARGET_TOPICS = [
   {
     section1: "AI마케팅",
     section2: "AI/NEWS",
-    keyword: "생성형 AI 프롭테크 3D 가상투어 시세 예측 부동산 인공지능",
-    promptSeed: "생성형 AI를 결합한 스마트폰 3D 입체 매물 투어 및 반경 500m 유동인구 소비 분석 프롭테크 솔루션 상용화 급물살",
+    keyword: "AI 에이전트 부동산 상가 권리금 임대료 산정 프롭테크",
+    promptSeed: "빅데이터와 생성형 AI가 결합하여 주변 매출과 유동인구를 실시간 역산해 상가 적정 권리금과 임대료를 도출하는 프롭테크 솔루션",
     isHeadline: false,
     isImportant: true,
   },
@@ -114,8 +114,8 @@ const TARGET_TOPICS = [
   {
     section1: "AI마케팅",
     section2: "부동산유튜브/블로그",
-    keyword: "공인중개사 유튜브 쇼츠 숏폼 릴스 매물 홍보 마케팅",
-    promptSeed: "AI 영상 제작 도구를 활용한 1인 공인중개사의 매물 브리핑 숏폼 영상 제작 및 SNS 채널 상위노출 마케팅 혁신",
+    keyword: "AI 가상인간 나레이션 공인중개사 부동산 영상 유튜브",
+    promptSeed: "생성형 AI 가상 아나운서와 자동 영상 편집 툴을 활용해 5분 만에 고품질 매물 유튜브 쇼츠를 제작하는 공인중개사 마케팅 실무",
     isHeadline: false,
     isImportant: false,
   },
@@ -123,8 +123,8 @@ const TARGET_TOPICS = [
   {
     section1: "AI마케팅",
     section2: "공실/임대관리",
-    keyword: "스마트 임대관리 공실 해결 프롭테크 렌탈 솔루션 꼬마빌딩",
-    promptSeed: "꼬마빌딩 및 상가 소유주를 위한 IoT·빅데이터 기반 실시간 공실 관리 및 자동 계약 갱신 스마트 솔루션 확산",
+    keyword: "스마트 임대관리 건물관리 월세 수납 앱 프롭테크",
+    promptSeed: "스마트폰 하나로 임대차 계약서 작성부터 전자서명, 월세 자동수납, 하자보수 접수까지 원스톱으로 관리하는 스마트 건물관리 앱의 진화",
     isHeadline: false,
     isImportant: false,
   },
@@ -132,8 +132,8 @@ const TARGET_TOPICS = [
   {
     section1: "라이프·오피니언",
     section2: "인물/인터뷰",
-    keyword: "프롭테크 대표 인터뷰 공실 해결 부동산 빅데이터 전문가",
-    promptSeed: "[인터뷰] '상권 빅데이터로 빈 상가 100일 만에 완판'… 프롭테크 혁신 리더가 밝히는 공실 제로의 공식",
+    keyword: "부동산 전문가 인터뷰 서울 아파트 공급 절벽 입주 물량",
+    promptSeed: "[긴급진단] '2026~2027 서울 신규 입주 가뭄 본격화'… 부동산 석학이 제안하는 무주택자 청약 및 매수 로드맵",
     isHeadline: false,
     isImportant: false,
   },
@@ -141,8 +141,8 @@ const TARGET_TOPICS = [
   {
     section1: "라이프·오피니언",
     section2: "중개실무/인테리어Tip",
-    keyword: "상가 오피스 인테리어 리모델링 홈스테이징 공실 단축",
-    promptSeed: "오래된 빈 상가와 낡은 사무실의 임대료를 30% 높이는 가성비 인테리어 감성 홈스테이징 실전 팁",
+    keyword: "원룸 오피스텔 인테리어 조명 홈스타일링 가구 배치",
+    promptSeed: "소형 평수 원룸과 오피스텔 공간을 2배 넓어 보이게 만드는 미니멀 빌트인 수납 가구 배치와 3색 조명 홈스타일링 팁",
     isHeadline: false,
     isImportant: false,
   },
@@ -150,8 +150,8 @@ const TARGET_TOPICS = [
   {
     section1: "라이프·오피니언",
     section2: "맛집/여행/건강",
-    keyword: "핫플레이스 골목상권 팝업스토어 성수동 한남동 F&B 맛집",
-    promptSeed: "MZ세대가 줄 서는 로컬 골목상권 성공 비결과 F&B 팝업스토어로 살아난 구도심 상권 트렌드",
+    keyword: "경의선 숲길 연남동 공덕 상권 로컬 식음료 카페거리",
+    promptSeed: "폐철길 녹지 축을 따라 형성된 연남·공덕 경의선 숲길 상권의 세대교체와 로컬 F&B 브랜딩 성공 전략",
     isHeadline: false,
     isImportant: false,
   },
@@ -159,8 +159,8 @@ const TARGET_TOPICS = [
   {
     section1: "라이프·오피니언",
     section2: "스포츠/연예/기타",
-    keyword: "스타 연예인 빌딩 매입 강남 한남 꼬마빌딩 자산관리",
-    promptSeed: "톱스타와 스포츠 스타들의 강남·성수 일대 꼬마빌딩 매입 트렌드와 밸류애드(Value-add) 리모델링 투자법",
+    keyword: "북촌 서촌 한옥 스테이 외국인 관광 상권 공간 대여",
+    promptSeed: "K-컬처와 전통 한옥의 만남… 북촌·서촌 일대 노후 한옥을 프리미엄 스테이로 변신시켜 고수익을 올리는 공간 기획 비즈니스",
     isHeadline: false,
     isImportant: false,
   },
@@ -168,8 +168,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "아파트/오피스텔",
-    keyword: "재건축 재개발 정비사업 공사비 협상 분담금 입주권",
-    promptSeed: "정비사업 공사비 증액 갈등 속 조합-시공사 간 공사비 검증 협상 사례와 입주권 시세 동향",
+    keyword: "3기 신도시 본청약 사전청약 분양가 공급 일정",
+    promptSeed: "3기 신도시 인천계양·고양창릉 등의 본청약 확정 분양가와 공사비 인상분 반영 현황, 무주택 실수요자 당첨 전략 분석",
     isHeadline: false,
     isImportant: true,
   },
@@ -177,8 +177,8 @@ const TARGET_TOPICS = [
   {
     section1: "공실뉴스",
     section2: "상가/사무실/빌딩/공장/토지",
-    keyword: "성수동 도산공원 플래그십 스토어 팝업 꼬마빌딩 임대료",
-    promptSeed: "글로벌 패션·뷰티 브랜드의 성수·도산공원 플래그십 스토어 유치 경쟁과 임대료 상승세 분석",
+    keyword: "판교 테크노밸리 지식산업센터 벤처 스타트업 임대 지원",
+    promptSeed: "경기 판교 제2·제3 테크노밸리 내 공공·민간 지식산업센터의 IT 스타트업 유치를 위한 임대료 감면 혜택과 공실률 추이",
     isHeadline: false,
     isImportant: false,
   },
@@ -186,8 +186,8 @@ const TARGET_TOPICS = [
   {
     section1: "부동산·경제",
     section2: "부동산정책/정치",
-    keyword: "수도권 광역급행철도 GTX 개통 역세권 집값 상권 영향",
-    promptSeed: "GTX 노선 개통 및 추가 연장 계획에 따른 수도권 핵심 환승역세권의 출퇴근 혁신과 부동산 가격 재평가",
+    keyword: "그린벨트 해제 개발제한구역 신규 택지 후보지 토지 보상",
+    promptSeed: "정부의 서울 및 수도권 개발제한구역(그린벨트) 해제를 통한 5만 가구 신규 택지 후보지 발표와 토지 보상금 유입 효과",
     isHeadline: false,
     isImportant: false,
   },
@@ -195,8 +195,8 @@ const TARGET_TOPICS = [
   {
     section1: "부동산·경제",
     section2: "경제/재테크/주식",
-    keyword: "부동산 PF 정상화 펀드 건설사 유동성 채권 시장",
-    promptSeed: "정부와 금융권의 부동산 PF 정상화 펀드 본격 가동과 우량 사업장 중심의 자금 재편 및 투자 시사점",
+    keyword: "인프라 펀드 상장 리츠 배당수익률 맥쿼리인프라 부동산 투자",
+    promptSeed: "금리 인하기 안정적인 현금 흐름을 창출하는 상장 인프라 펀드 및 우량 상업용 리츠의 연 6~8% 배당 수익률 매력 분석",
     isHeadline: false,
     isImportant: false,
   },
@@ -204,15 +204,15 @@ const TARGET_TOPICS = [
   {
     section1: "AI마케팅",
     section2: "AI/NEWS",
-    keyword: "AI 건축 설계 자동화 용적률 법규 검토 프롭테크",
-    promptSeed: "인공지능이 10초 만에 대지 조건별 최적 용적률과 일조권을 계산하는 AI 건축 설계 자동화 기술 상용화",
+    keyword: "드론 항공촬영 위성 AI 토지 입지 분석 국토정보",
+    promptSeed: "고해상도 드론 항공촬영 영상과 AI 공간 분석을 결합해 토지 경사도, 일조권, 인근 인프라를 1분 만에 시각화하는 스마트 임장 기술",
     isHeadline: false,
     isImportant: false,
   },
 ];
 
 async function main() {
-  console.log("🚀 [공실뉴스] AI 기사 20개 일괄 자동 발행 파이프라인 시작...");
+  console.log("🚀 [공실뉴스] AI 기사 20개 일괄 자동 발행 파이프라인 시작 (2026-11-03 신규 기획)...");
   console.log(`- 관리자 계정: ${ADMIN_NAME} (${ADMIN_EMAIL})`);
   console.log(`- 상태 원칙: 즉시 승인 및 자동 발행 (status: APPROVED)`);
 
@@ -305,7 +305,7 @@ async function main() {
         finalContent = `<div style="text-align: center;"><img src="${media.thumbnailUrl}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>${finalContent}`;
       }
 
-      // 발행 시각: 순차적 시간 배치 (최근 순 정렬)
+      // 발행 시각: 현재 시각 기준 순차적 시간 배치 (최근 순 정렬)
       const offsetSeconds = (TARGET_TOPICS.length - i) * 60; // 1분 간격 순차 정렬
       const publishedAt = new Date(Date.now() - offsetSeconds * 1000).toISOString();
 
@@ -388,7 +388,7 @@ async function main() {
   }
 
   console.log(`\n============================================================`);
-  console.log(`🎉 [공실뉴스] 20개 기사 발행 작업 완료!`);
+  console.log(`🎉 [공실뉴스] 20개 신규 기사 발행 작업 완료!`);
   const successCount = results.filter((r) => r.status === 'SUCCESS').length;
   console.log(`- 성공: ${successCount}건 / 실패: ${results.length - successCount}건`);
   console.log(JSON.stringify(results, null, 2));

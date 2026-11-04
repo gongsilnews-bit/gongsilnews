@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getExtensionMember } from "@/utils/extensionMember";
-import { consumeStudio, getStudioUsage } from "@/utils/studioUsage";
+import { consumeStudio, getStudioUsage, proMember } from "@/utils/studioUsage";
 
 /**
  * 공실마케팅 이용 횟수
@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401 });
   const [usage, snsUsage, youtubeUsage] = await Promise.all([getStudioUsage(member, "blog"), getStudioUsage(member, "sns"), getStudioUsage(member, "youtube")]);
-  return NextResponse.json({ success: true, usage, snsUsage, youtubeUsage, simAllowed: member.canRemodel });
+  // pro — 공실뉴스부동산 PRO·비즈니스·최고관리자 (뉴스칼럼·SNS·유튜브 잠금 표시, 2026-11-04)
+  return NextResponse.json({ success: true, usage, snsUsage, youtubeUsage, simAllowed: member.canRemodel, pro: proMember(member) || usage.custom });
 }
 
 export async function POST(req: NextRequest) {

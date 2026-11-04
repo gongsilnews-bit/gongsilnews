@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js"
 import { getEffectivePlan } from "@/utils/planCheck"
+import { memberTier, vacancyLimit } from "@/utils/tier"
 import { createNotification } from "./notification"
 
 function getAdminClient() {
@@ -13,6 +14,28 @@ function getAdminClient() {
 }
 
 // ── 공실 등록 ──
+/**
+ * 광고 중 공실 한도 (2026-11-04 사장님 등급 회의) — 공실뉴스부동산(무료) 3건 · PRO 20건 · 비즈니스·최고관리자 없음
+ * 회원마다 따로: [회원관리]에서 "개별 한도 사용"(use_custom_registration_limits)을 켜면 그 회원의 max_vacancies
+ * 광고 중(ACTIVE)만 센다 — 광고를 내리거나 거래가 끝난 공실·임시저장은 안 센다. exceptId = 지금 광고로 바꾸려는 공실
+ */
+async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId: string, exceptId?: string): Promise<string | null> {
+  const { data: m } = await supabase.from('members').select('role, plan_type, plan_end_date, studio_end_date, max_vacancies, use_custom_registration_limits').eq('id', ownerId).maybeSingle();
+  if (!m) return null;
+  const tier = memberTier(m);
+  if (tier !== 'free' && tier !== 'pro') return null; // 일반회원은 아래 예전 규칙, 비즈니스·최고관리자는 없음
+  const limit = m.use_custom_registration_limits && typeof m.max_vacancies === 'number' && m.max_vacancies > 0 ? m.max_vacancies : vacancyLimit(tier);
+  if (limit === null) return null;
+  let q = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE');
+  if (exceptId) q = q.neq('id', exceptId);
+  const { count, error } = await q;
+  if (error) return '광고 중인 공실 수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.';
+  if ((count || 0) < limit) return null;
+  return tier === 'free'
+    ? `광고 중인 공실은 ${limit}건까지 걸 수 있어요. 다른 공실의 광고를 내리거나, 공실뉴스부동산 PRO에서 ${vacancyLimit('pro')}건까지 걸 수 있어요.`
+    : `광고 중인 공실은 ${limit}건까지 걸 수 있어요. 다른 공실의 광고를 내린 뒤 다시 해 주세요.`;
+}
+
 export async function createVacancy(data: {
   owner_id: string;
   owner_role: string;
@@ -95,6 +118,10 @@ export async function createVacancy(data: {
 
     // 클라이언트가 보낸 status 존중 (DRAFT=임시저장, ACTIVE=바로발행)
     const status = data.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
+    if (status === 'ACTIVE') {
+      const full = await vacancyRoom(supabase, data.owner_id);
+      if (full) return { success: false, error: full };
+    }
 
     const insertData = {
       ...data,
@@ -629,6 +656,13 @@ export async function getVacancyByVacancyNo(vacancyNo: number) {
 export async function updateVacancyStatus(vacancyId: string, newStatus: string) {
   const supabase = getAdminClient();
   try {
+    if (newStatus === 'ACTIVE') {
+      const { data: v } = await supabase.from('vacancies').select('owner_id, status').eq('id', vacancyId).maybeSingle();
+      if (v && v.status !== 'ACTIVE' && v.owner_id) {
+        const full = await vacancyRoom(supabase, v.owner_id, vacancyId);
+        if (full) return { success: false, error: full };
+      }
+    }
     const { error } = await supabase
       .from('vacancies')
       .update({ status: newStatus })
@@ -646,6 +680,13 @@ export async function updateVacancyStatus(vacancyId: string, newStatus: string) 
 export async function updateVacancy(vacancyId: string, updates: Record<string, any>) {
   const supabase = getAdminClient();
   try {
+    if (updates?.status === 'ACTIVE') {
+      const { data: v } = await supabase.from('vacancies').select('owner_id, status').eq('id', vacancyId).maybeSingle();
+      if (v && v.status !== 'ACTIVE' && v.owner_id) {
+        const full = await vacancyRoom(supabase, v.owner_id, vacancyId);
+        if (full) return { success: false, error: full };
+      }
+    }
     const { error } = await supabase
       .from('vacancies')
       .update(updates)

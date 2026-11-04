@@ -13,16 +13,25 @@ export const inStudioApp = (): boolean => {
 };
 /** 웹(크롬)에서 열었는지 — 공유하기만 웹에서 숨긴다 (2026-11-04 사장님: 보고서·홍보지는 이미지로 보낸다) */
 export const IS_WEB = typeof window !== 'undefined' && !inStudioApp();
-/** 웹 잠금 — 2026-11-04 사장님: "그냥 웹에서 다 해결되도록 · 앱으로 가는 일은 없애" → 끔. 모든 쪽·디자인을 웹에서도 */
+/**
+ * 무료 잠금 — 2026-11-04 사장님 등급 회의: 공실뉴스부동산(무료)은 매물보고서 표지·개요만 · 유리창홍보지 "숫자 크게"만, PRO 는 모두
+ * 관리자 화면(바깥 창)이 window.__gsTierPro 를 알려 준다 (realty_admin). 아직 모르면(불러오는 중) 막지 않는다.
+ * 앱 안에서는 예전처럼 막지 않는다.
+ */
+const parentPro = (): boolean | undefined => {
+  try { const v = (window.parent as any)?.__gsTierPro ?? (window as any).__gsTierPro; return typeof v === 'boolean' ? v : undefined; } catch { return undefined; }
+};
+export const isLimited = (): boolean => typeof window !== 'undefined' && !inStudioApp() && parentPro() === false;
+/** 예전 이름 — 공유 단추에서만 쓴다 (웹은 공유를 숨긴다) */
 export const WEB_LIMITED = false;
 /** 웹에서 쓸 수 있는 디자인 (LAYOUTS id) */
-export const WEB_LAYOUT_IDS = ['big', 'photo'];
-export const webLayoutAllowed = (id: string | null | undefined) => !WEB_LIMITED || WEB_LAYOUT_IDS.includes(String(id || ''));
+export const WEB_LAYOUT_IDS = ['big']; // 무료는 "숫자 크게"만 (2026-11-04)
+export const webLayoutAllowed = (id: string | null | undefined) => !isLimited() || WEB_LAYOUT_IDS.includes(String(id || ''));
 
-/** 공실마케팅 소개 페이지로 (설치는 마케팅 페이지에서) */
-const MARKETING_URL = 'https://www.gongsilnews.com/marketing';
-function goMarketing() {
-  try { (window.top || window).open(MARKETING_URL, '_blank', 'noopener'); } catch { window.open(MARKETING_URL, '_blank', 'noopener'); }
+/** 금액안내 — 관리자 화면의 [금액안내] 창을 연다 (없으면 금액안내 페이지) */
+function goPricing() {
+  try { const f = (window.parent as any)?.__gsAskUpgrade; if (typeof f === 'function') { f(); return; } } catch { /* */ }
+  window.open('https://www.gongsilnews.com/marketing/pricing', '_blank', 'noopener');
 }
 
 let openFn: ((why: string) => void) | null = null;
@@ -37,17 +46,17 @@ export const InstallAppModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] print:hidden" onClick={() => setWhy(null)}>
       <div className="w-[440px] max-w-[92vw] rounded-2xl bg-white p-7 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
-        <div className="text-[13px] font-bold tracking-wider text-orange-600">공실마케팅 앱</div>
-        <h3 className="mt-2 text-xl font-black text-gray-900">{why || '이 디자인은 공실마케팅 앱에서 만들어요'}</h3>
+        <div className="text-[13px] font-bold tracking-wider text-orange-600">공실뉴스부동산 PRO</div>
+        <h3 className="mt-2 text-xl font-black text-gray-900">{why || '이 디자인은 PRO에서 만들 수 있어요'}</h3>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
-          웹에서는 <b>숫자 크게 · 사진형</b> 두 디자인만 만들 수 있어요.<br />
-          공실마케팅 앱을 설치하면 <b>모든 디자인</b>(추천 걸이판·반반 사진·색 바탕·테두리·사진 갤러리 등)과 <b>카톡 공유·링크 공유</b>까지 쓸 수 있어요.
+          무료 공실뉴스부동산은 <b>숫자 크게</b> 디자인만 만들 수 있어요.<br />
+          공실뉴스부동산 <b>PRO</b>는 <b>모든 디자인</b>(사진형·추천 걸이판·반반 사진·색 바탕·테두리·사진 갤러리 등)을 쓸 수 있어요.
         </p>
         <div className="mt-6 flex gap-2">
           <button className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50" onClick={() => setWhy(null)}>닫기</button>
           <button className="flex-[2] rounded-xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600"
-            onClick={() => { goMarketing(); setWhy(null); }}>
-            공실마케팅 앱 알아보기 →
+            onClick={() => { goPricing(); setWhy(null); }}>
+            금액안내 보기 →
           </button>
         </div>
       </div>
@@ -62,10 +71,10 @@ export const WebLockCover: React.FC<{ layoutId: string }> = ({ layoutId }) => {
     <div data-web-lock className="absolute inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-[3px] print:hidden">
       <div className="rounded-2xl bg-white/95 px-8 py-7 text-center shadow-xl ring-1 ring-gray-200">
         <div className="text-3xl">🔒</div>
-        <div className="mt-2 text-lg font-black text-gray-900">이 디자인은 공실마케팅 앱에서 만들 수 있어요</div>
-        <div className="mt-1 text-sm text-gray-500">웹에서는 숫자 크게 · 사진형 두 디자인만 · 앱은 모든 디자인</div>
+        <div className="mt-2 text-lg font-black text-gray-900">이 디자인은 PRO에서 만들 수 있어요</div>
+        <div className="mt-1 text-sm text-gray-500">무료는 숫자 크게 디자인만 · PRO는 모든 디자인</div>
         <button className="mt-4 rounded-xl bg-orange-500 px-6 py-3 text-sm font-black text-white hover:bg-orange-600" onClick={() => askInstallApp()}>
-          공실마케팅 앱 알아보기 →
+          금액안내 보기 →
         </button>
       </div>
     </div>

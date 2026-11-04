@@ -20,6 +20,11 @@ import { isAdminRole } from "@/utils/permissionCheck";
  * - 하루 안전 상한(계정 보호: 새 공실 20건, AI 이미지 10장)은 2026-10-15 사장님 결정으로 없앴다. 월 횟수(등급별)만 센다.
  */
 
+/* 2026-11-04 사장님 등급 회의 (docs/2026-11-04_member_tiers_plan.md) — 위 규칙을 이렇게 바꿈:
+ *  공실뉴스부동산(무료): 공실로 블로그 **한 달에 3건** (같은 공실 고쳐 쓰기는 안 셈) · SNS·유튜브·뉴스칼럼은 안 됨 (PRO)
+ *  공실뉴스부동산 PRO(이용 기간 안)·비즈니스회원·최고관리자: 무제한
+ *  회원마다 따로: members.studio_blog_limit (NULL=등급 기본, -1=무제한, n=한 달 n회 — 블로그·SNS·유튜브 모두)
+ *  이름 monthLimit 등은 예전 그대로 (한 달로 돌아왔다) */
 const UNLIMITED = -1;
 
 function admin() {
@@ -28,11 +33,10 @@ function admin() {
   });
 }
 
-/* 한국 시간 이번 주 월요일 0시 (UTC ISO) — 횟수는 이때부터 센다 */
-function kstWeekStart(now = new Date()) {
+/* 한국 시간 이번 달 1일 0시 (UTC ISO) — 횟수는 이때부터 센다 (2026-11-04: 1주일 → 한 달) */
+function kstMonthStart(now = new Date()) {
   const kst = new Date(now.getTime() + 9 * 3600 * 1000);
-  const day = (kst.getUTCDay() + 6) % 7; // 월 0 … 일 6
-  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() - day) - 9 * 3600 * 1000).toISOString();
+  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), 1) - 9 * 3600 * 1000).toISOString();
 }
 
 /* 한국 시간 오늘 0시 (UTC ISO) */
@@ -41,11 +45,12 @@ function kstTodayStart(now = new Date()) {
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 3600 * 1000).toISOString();
 }
 
-/** 등급 기본 한 달 횟수 */
-export function gradeBlogLimit(member: ExtensionMember): number {
-  if (isAdminRole(member.role)) return UNLIMITED;
-  if (member.canBlog || member.role === "BIZ") return UNLIMITED;
-  if (member.role === "REALTOR") return 3;
+/** PRO 기능을 쓰나 — PRO(이용 기간 안)·비즈니스회원·최고관리자 */
+export const proMember = (member: ExtensionMember) => isAdminRole(member.role) || member.canBlog || member.role === "BIZ";
+/** 등급 기본 한 달 횟수 — 무료는 블로그만 3, SNS·유튜브는 0 (PRO) */
+export function gradeBlogLimit(member: ExtensionMember, feature: StudioFeature = "blog"): number {
+  if (proMember(member)) return UNLIMITED;
+  if (member.role === "REALTOR") return feature === "blog" ? 3 : 0;
   return 0;
 }
 
@@ -77,9 +82,9 @@ export type StudioFeature = "blog" | "sns" | "youtube";
 export async function getStudioUsage(member: ExtensionMember, feature: StudioFeature = "blog"): Promise<StudioUsage> {
   const db = admin();
   const override = await memberOverride(member.id);
-  const monthLimit = override ?? gradeBlogLimit(member);
+  const monthLimit = override ?? gradeBlogLimit(member, feature);
 
-  const week = kstWeekStart();
+  const week = kstMonthStart(); // 이름은 예전 그대로 — 이번 달 1일부터
   let rows: { vacancy_id?: string | null; created_at: string; feature: string }[] = [];
   const withVacancy = await db.from("extension_trial_usage").select("vacancy_id, created_at, feature").eq("member_id", member.id).gte("created_at", week).in("feature", [feature, "ai_image"]);
   if (withVacancy.error) {
@@ -140,14 +145,19 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
   }
 
   if (!vacancyId) return { ok: false, reason: "공실 정보가 없습니다.", usage };
+  // 뉴스칼럼(번호 col-…)은 PRO 전용 (2026-11-04) — 회원마다 따로 정한 값이 있으면 그 값을 따른다
+  if (/^col-/.test(vacancyId) && !proMember(member) && !usage.custom) {
+    return { ok: false, reason: "뉴스칼럼은 공실뉴스부동산 PRO에서 쓸 수 있어요.", usage };
+  }
   // 이번 주 이미 쓴 공실이면 깎지 않는다
   if (usage.vacancyIds.includes(vacancyId)) return { ok: true, charged: false, usage };
 
   if (usage.monthLimit === 0) {
-    return { ok: false, reason: `${name} 쓰기는 공실뉴스부동산(중개사) 회원 기능입니다. 공실뉴스부동산 회원은 1주일에 3번 사용할 수 있습니다.`, usage };
+    if (member.role === "REALTOR") return { ok: false, reason: `${name}는 공실뉴스부동산 PRO에서 쓸 수 있어요.`, usage };
+    return { ok: false, reason: `${name} 쓰기는 공실뉴스부동산(중개사) 회원 기능입니다.`, usage };
   }
   if (usage.monthRemaining !== null && usage.monthRemaining <= 0) {
-    return { ok: false, reason: `이번 주 ${name} ${usage.monthLimit}번을 모두 사용했습니다. 공실마케팅에서 무제한으로 사용하실 수 있습니다.`, usage };
+    return { ok: false, reason: `이번 달 ${name} ${usage.monthLimit}건을 모두 썼어요. 공실뉴스부동산 PRO에서는 제한 없이 쓸 수 있어요.`, usage };
   }
   if (usage.dailyLimit !== null && usage.todayUsed >= usage.dailyLimit) {
     return { ok: false, reason: `계정 보호를 위해 ${name}는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };

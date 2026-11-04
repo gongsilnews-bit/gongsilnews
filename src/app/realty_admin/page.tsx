@@ -6,6 +6,7 @@ import NotificationBell from "@/components/common/NotificationBell";
 import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
 import { agencyKind, type AgencyKind } from "@/utils/agencyKind";
 import { UpgradeModal, TIER_LABEL, type Tier } from "@/components/admin/UpgradeModal";
+import { ProLock, ProTag } from "@/components/admin/ProBadge";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm, IconImage } from "@/components/admin/sections/AdminIcons";
 import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
@@ -215,15 +216,17 @@ function RealtyAdminContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studioApp.isApp, activeMenu, userRole]);
 
+  // 보고서·홍보지 화면(틀 안)이 무료 잠금을 알도록 — 등급을 아직 모르면 비워 둔다 (marketing/*/webLimit.tsx, 2026-11-04)
+  useEffect(() => {
+    const w = window as unknown as { __gsTierPro?: boolean; __gsAskUpgrade?: () => void };
+    if (!userRole) return;
+    w.__gsTierPro = isAdminRole(userRole) || userRole === "BIZ" || isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
+    w.__gsAskUpgrade = () => setUpgradeOpen(true);
+  }, [userRole, planType, planEndDate, studioEndDate]);
+
   // 공실뉴스기자(유료회원/최고관리자) 자격 판별
-  const isReporterEligible =
-    userRole === "ADMIN" ||
-    userRole === "BIZ" ||
-    planType === "news_basic" ||
-    planType === "news_premium" ||
-    planType === "vacancy_basic" ||
-    planType === "study_premium" || // 옛 공실스터디부동산 — 공실뉴스부동산으로 합침 (2026-10-26)
-    planType === "business";
+  // 2026-11-04: PRO(이용 기간 안)·비즈니스·최고관리자 — 예전엔 등급 값(plan_type)만 봐서 기간이 끝나도 열렸다
+  const isReporterEligible = userRole === "ADMIN" || userRole === "BIZ" || isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
 
   /* ── 프리페치 데이터 저장소 ── */
   const [prefetchedData, setPrefetchedData] = useState<Record<string, any>>({});
@@ -406,11 +409,13 @@ function RealtyAdminContent() {
         <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#111827", color: "#fff" }}>최고관리자</span>
       ) : (() => {
         const until = formatPlanEnd(userRole === 'BIZ' ? planEndDate : studioEndDate);
-        const tone: Record<Tier, { bg: string; fg: string }> = { free: { bg: "rgba(255,255,255,0.16)", fg: "#fff" }, pro: { bg: "#2563eb", fg: "#fff" }, studio: { bg: "#e8890c", fg: "#fff" }, corp: { bg: "#1e3a5f", fg: "#fff" }, biz: { bg: "#7c3aed", fg: "#fff" } };
+        // 공실뉴스부동산 · 공실뉴스부동산 PRO(주황 딱지) · 비즈니스회원 (2026-11-04 사장님)
+        const tone: Record<Tier, { bg: string; fg: string }> = { free: { bg: "rgba(255,255,255,0.16)", fg: "#fff" }, pro: { bg: "rgba(255,255,255,0.16)", fg: "#fff" }, studio: { bg: "rgba(255,255,255,0.16)", fg: "#fff" }, corp: { bg: "rgba(255,255,255,0.16)", fg: "#fff" }, biz: { bg: "#7c3aed", fg: "#fff" } };
+        const proOn = myTier === "pro" || myTier === "studio" || myTier === "corp";
         return (
           <span title={myTier !== "free" && until ? `이용 기간 ~${until}` : undefined}
-            style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 999, marginLeft: 4, background: tone[myTier].bg, color: tone[myTier].fg }}>
-            {TIER_LABEL[myTier]}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 999, marginLeft: 4, background: tone[myTier].bg, color: tone[myTier].fg }}>
+            {TIER_LABEL[myTier]}{proOn && <ProTag />}
           </span>
         );
       })()
@@ -472,7 +477,8 @@ function RealtyAdminContent() {
           background={sidebarBg}
           isApp={studioApp.isApp}
           appVersion={studioApp.version}
-          badges={badges}
+          // 무료 회원 — PRO 전용 메뉴에 주황 PRO 딱지 (2026-11-04)
+          badges={studioPaid ? badges : { ...badges, homepage: "pro", photo: "pro", customer: "pro" }}
           autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
           // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
           hidden={railGone}
@@ -518,7 +524,7 @@ function RealtyAdminContent() {
           <div style={{ display: "flex", alignItems: "center", minWidth: 0, flexShrink: 1 }}>
           {useStudioMenu && <StudioHistoryNav onHome={() => selectMenu("dashboard")} atHome={activeMenu === "dashboard" && !searchParams.get("action")} />}
           {/* 물건접수홈페이지 줄은 왼쪽, 사용자 칸은 오른쪽으로 (2026-10-30 사장님) · 웹 아이콘 메뉴(간단한 화면)에는 이 줄을 뺀다 (2026-10-29) */}
-          {memberId && useStudioMenu && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
+          {memberId && useStudioMenu && studioPaid && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
           {!useStudioMenu && userBlock}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -550,7 +556,8 @@ function RealtyAdminContent() {
           {activeMenu === "dashboard" && useStudioMenu && <StudioHomeSection theme={theme} memberId={memberId || undefined} onMenuChange={selectMenu} />}
           {activeMenu === "dashboard" && !useStudioMenu && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
-          {activeMenu === "article" && memberId && (
+          {activeMenu === "article" && memberId && !studioPaid && searchParams.get("action") === "write" && <ProLock what="기사 작성" detail="공실뉴스에 내 기사를 올려요 (한 달에 4건)" dark={darkMode} onUpgrade={askUpgrade} />}
+          {activeMenu === "article" && memberId && (studioPaid || searchParams.get("action") !== "write") && (
             <MemberArticleSection
               theme={theme}
               memberId={memberId}
@@ -580,9 +587,11 @@ function RealtyAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} initialTab={searchParams.get("tab") === "agency" ? 1 : 0} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} />}
+          {/* 물건접수홈페이지 · 고객관리 · 포토studio · 기사 작성은 PRO 전용 (2026-11-04 사장님 등급 회의) */}
+          {activeMenu === "homepage" && memberId && (studioPaid ? <IntakeStudio theme={theme} memberId={memberId} planType={planType} /> : <ProLock what="물건접수홈페이지" detail="내 부동산 홈페이지 · 집주인 물건 접수 · 로고·색상 · 홈페이지 전용 공실" dark={darkMode} onUpgrade={askUpgrade} />)}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
-          {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
+          {activeMenu === "customer" && memberId && !studioPaid && <ProLock what="고객관리" detail="손님 연락처 · 찾는 물건 · 메모를 한곳에" dark={darkMode} onUpgrade={askUpgrade} />}
+          {activeMenu === "customer" && memberId && studioPaid && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
           {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {/* 뉴스·SNS자동화 — 웹도 (2026-11-03 사장님: 앱의 공실뉴스 부분, 회원 AI 복사·붙여넣기 · 도우미로 채우기) */}
@@ -591,7 +600,7 @@ function RealtyAdminContent() {
           {activeMenu === "write" && studioApp.isApp && memberId && <ScriptSection />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
           {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 스튜디오회원부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
-          {activeMenu === "photo" && <PhotoStudio menu={null} aiLock={studioPaid ? undefined : askUpgrade} />}
+          {activeMenu === "photo" && (studioPaid ? <PhotoStudio menu={null} /> : <ProLock what="포토studio" detail="공실 사진 편집 · 홍보 이미지 디자인 · AI 편집" dark={darkMode} onUpgrade={askUpgrade} />)}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
           {((activeMenu === "write" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />

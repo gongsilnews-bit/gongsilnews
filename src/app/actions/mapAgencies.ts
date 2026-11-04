@@ -4,6 +4,7 @@
  * 누르면 왼쪽 목록에 그 사무소 카드 + 공실 전부 + 기사 전부. 값은 DB 그대로 — 없는 값은 비워 둔다 (지어내지 않는다).
  */
 import { createClient } from "@supabase/supabase-js";
+import { isPro } from "@/utils/tier";
 
 const admin = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 
@@ -11,6 +12,8 @@ export type MapAgency = {
   id: string; ownerId: string; name: string; ceo: string; regNum: string; phone: string; cell: string;
   address: string; lat: number; lng: number; intro: string; photo: string; sns: { key: string; url: string }[];
   vacancies: number; articles: number;
+  /** 공실뉴스부동산 PRO (이용 기간 안) — 이름 옆 주황 PRO 딱지 (2026-11-04). 지도 순서에는 쓰지 않는다 */
+  pro: boolean;
 };
 
 /** box = 지금 보이는 지도 범위 [[남,서],[북,동]] — 그 안의 사무소만, 최대 300 (2026-11-04: 회원 10만 명이어도 가볍게). id = 한 곳만 */
@@ -29,7 +32,7 @@ export async function listMapAgencies(box?: [[number, number], [number, number]]
   if (!list.length) return [];
   const owners = [...new Set(list.map((a) => a.owner_id as string))];
   const [mem, vac, art] = await Promise.all([
-    db.from("members").select("id, profile_image_url, sns_links, is_deleted").in("id", owners),
+    db.from("members").select("id, profile_image_url, sns_links, is_deleted, role, studio_end_date").in("id", owners),
     db.from("vacancies").select("owner_id").eq("status", "ACTIVE").in("owner_id", owners).limit(20000),
     db.from("articles").select("author_id").eq("status", "APPROVED").eq("is_deleted", false).eq("section1", "공실뉴스").in("author_id", owners).lte("published_at", new Date().toISOString()).limit(20000),
   ]);
@@ -53,6 +56,7 @@ export async function listMapAgencies(box?: [[number, number], [number, number]]
         phone: String(a.phone || ""), cell: a.cell && a.cell !== a.phone ? String(a.cell) : "",
         address: [a.address, a.address_detail].filter(Boolean).join(" "), lat: Number(a.lat), lng: Number(a.lng), intro: String(a.intro || ""),
         photo: String(m?.profile_image_url || ""), sns, vacancies: vc.get(a.owner_id) || 0, articles: ac.get(a.owner_id) || 0,
+        pro: Boolean(m && m.role !== "ADMIN" && isPro(m)),
       };
     });
 }
