@@ -83,7 +83,7 @@ function monthAvg(list: { d: string; v: number }[], months = 3) {
 }
 
 /* ── 3년 그래프 ── */
-function PriceChart({ points }: { points: { d: string; v: number }[] }) {
+function PriceChart({ points, small = false }: { points: { d: string; v: number }[]; small?: boolean }) {
   const W = 540, H = 190, VOL = 34, PADL = 34, PADR = 8, TOP = 16;
   const months: string[] = [];
   const now = new Date();
@@ -112,7 +112,7 @@ function PriceChart({ points }: { points: { d: string; v: number }[] }) {
   const maxP = inRange.reduce((m, p) => (p.v > m.v ? p : m)), minP = inRange.reduce((m, p) => (p.v < m.v ? p : m));
   const maxVol = Math.max(...months.map((m) => byMonth.get(m)?.length || 0));
   const ticks = [0, 1, 2, 3].map((i) => lo + ((hi - lo) * i) / 3);
-  const tickLabel = (v: number) => (v >= 10000 ? `${Math.round(v / 1000) / 10}억` : `${Math.round(v / 100) * 100}만`);
+  const tickLabel = (v: number) => (small ? `${Math.round(v)}만` : v >= 10000 ? `${Math.round(v / 1000) / 10}억` : `${Math.round(v / 100) * 100}만`);
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H + VOL + 22}`} style={{ display: "block", maxWidth: W }}>
       {ticks.map((t) => (
@@ -604,13 +604,20 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const g = groups.find((x) => x.label === label) || groups[0];
   const salePoints = (g?.sales || []).map((t) => ({ d: t.d, v: t.p }));
   const jeonsePoints = (g?.rents || []).filter((r) => !r.m).map((r) => ({ d: r.d, v: r.dep }));
-  const points = mode === "sale" ? salePoints : jeonsePoints;
+  // 전세 없이 월세만 있는 평형 — 월세로 평균·그래프 (2026-11-05 사장님: 거래가 있는데 "거래 없음"이던 것)
+  const monthlyRents = (g?.rents || []).filter((r) => r.m);
+  const monthlyOnly = mode === "lease" && !jeonsePoints.length && monthlyRents.length > 0;
+  const points = mode === "sale" ? salePoints : monthlyOnly ? monthlyRents.map((r) => ({ d: r.d, v: r.m })) : jeonsePoints;
   // 평균 기간 — 3·6·12개월, 고른 것은 기억한다 (다른 단지를 열어도 같게)
   const [avgMonths, setAvgMonthsState] = useState(3);
   useEffect(() => { try { const v = Number(localStorage.getItem("gs-apt-avg-months")); if ([3, 6, 12].includes(v)) setAvgMonthsState(v); } catch { /* */ } }, []);
   const setAvgMonths = (v: number) => { setAvgMonthsState(v); try { localStorage.setItem("gs-apt-avg-months", String(v)); } catch { /* */ } };
   const avg = monthAvg(points, avgMonths);
-  const latestMonthly = mode === "lease" ? (g?.rents || []).find((r) => r.m) : undefined;
+  // 월세만 — 같은 기간 보증금 평균도 같이 ("300만 / 84")
+  const depAvg = monthlyOnly ? monthAvg(monthlyRents.map((r) => ({ d: r.d, v: r.dep })), avgMonths) : null;
+  const avgText = avg ? (monthlyOnly && depAvg ? `${fullPrice(depAvg.avg)} / ${avg.avg.toLocaleString("ko-KR")}` : fullPrice(avg.avg)) : "거래 없음";
+  const leaseTag = mode === "lease" ? (monthlyOnly ? " (월세)" : " (전세)") : "";
+  const latestMonthly = mode === "lease" && !monthlyOnly ?(g?.rents || []).find((r) => r.m) : undefined;
   // 최고가 거래 한 건에 [최고] 표시 (2026-11-02 사장님) — 매매는 거래가, 전월세는 전세 보증금 기준
   const topSale = Math.max(0, ...(g?.sales || []).map((t) => t.p));
   const topJeonse = Math.max(0, ...(g?.rents || []).filter((r) => !r.m).map((r) => r.dep));
@@ -633,7 +640,9 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   }, [villa, g]);
   const [guess, setGuess] = useState<number | null>(null);
   useEffect(() => { setGuess(null); }, [detail.id, label, mode]);
-  const expected = guess ?? avg?.avg ?? 0;
+  // 월세만이면 환산보증금(보증금 + 월세×100, 5천만 미만이면 ×70)으로 중개보수를 셈
+  const converted = monthlyOnly && avg && depAvg ? (depAvg.avg + avg.avg * 100 < 5000 ? depAvg.avg + avg.avg * 70 : depAvg.avg + avg.avg * 100) : 0;
+  const expected = guess ?? (monthlyOnly ? converted : avg?.avg ?? 0);
   const fee = expected ? brokerFee(mode === "sale" ? "sale" : "lease", expected) : null;
 
   const info = detail.info;
@@ -701,7 +710,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             <button onClick={() => setSheet(true)} style={{ border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, borderRadius: 6, padding: "6px 12px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>{g?.label} ▾</button>
           </div>
           <div style={{ padding: "16px 20px 4px", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ flex: 1, color: ACC, fontWeight: 600 }}>최근 실거래 기준 {avgMonths === 12 ? "1년" : `${avgMonths}개월`} 평균{mode === "lease" ? " (전세)" : ""}</span>
+            <span style={{ flex: 1, color: ACC, fontWeight: 600 }}>최근 실거래 기준 {avgMonths === 12 ? "1년" : `${avgMonths}개월`} 평균{leaseTag}</span>
             <span style={{ display: "inline-flex", border: `1px solid ${ACC}`, borderRadius: 6, overflow: "hidden" }}>
               {[3, 6, 12].map((m) => (
                 <button key={m} type="button" onClick={() => setAvgMonths(m)} aria-pressed={avgMonths === m}
@@ -712,7 +721,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             </span>
           </div>
           <div style={{ padding: "0 20px", fontSize: 30, fontWeight: 900, color: ACC, letterSpacing: "-0.5px" }}>
-            {avg ? fullPrice(avg.avg) : "거래 없음"}
+            {avgText}
           </div>
           {avg && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>{dot(avg.last)} 기준 · {avg.count}건 평균</div>}
           {villa && jeonseRate && (
@@ -723,7 +732,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           )}
           {latestMonthly && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>최근 월세 {dot(latestMonthly.d)} · 보증금/월세 {leasePrice(latestMonthly)}</div>}
           <div style={{ padding: "14px 20px 4px", fontWeight: 700 }}>최근 3년</div>
-          <div style={{ padding: "0 20px 16px" }}><PriceChart points={points} /></div>
+          <div style={{ padding: "0 20px 16px" }}><PriceChart points={points} small={monthlyOnly} /></div>
         </div>}
 
         {/* 거래 목록 */}
@@ -823,10 +832,10 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           <h3 style={h3}>거래비용</h3>
           <div style={{ padding: "0 20px 18px" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ flex: 1, color: "#4b5563" }}>예상 거래가{mode === "lease" ? " (전세)" : ""}</span>
+              <span style={{ flex: 1, color: "#4b5563" }}>예상 거래가{monthlyOnly ? " (월세 환산보증금)" : leaseTag}</span>
               <b style={{ fontSize: 16 }}>{expected ? fullPrice(expected) : "-"}</b>
             </div>
-            {avg && (
+            {avg && !monthlyOnly && (
               <input type="range" min={Math.round(avg.avg * 0.5)} max={Math.round(avg.avg * 1.5)} step={100} value={expected}
                 onChange={(e) => setGuess(Number(e.target.value))} style={{ width: "100%", marginTop: 10, accentColor: ACC }} />
             )}

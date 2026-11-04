@@ -131,7 +131,8 @@ export async function GET(req: NextRequest) {
     want.includes("villa") ? supabase.from("apt_complexes")
       .select(`id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count, rent0:rents->0, t0:trades->0`) // t0 = 가장 최근 매매 — NEW(지난 7일 계약) 판단
       .gte("lat", swLat).lte("lat", neLat).gte("lng", swLng).lte("lng", neLng)
-      .eq("kind", "villa").neq("rents", "[]")
+      // 매매만 있고 전월세가 없는 건물도 (2026-11-05 사장님: 논현아펠바움 등이 지도에 없던 것)
+      .eq("kind", "villa").or(`rents.neq."[]",trades.neq."[]"`)
       .order("trade_count", { ascending: false })
       .limit(400) : Promise.resolve({ data: [], error: null }),
   ]);
