@@ -88,8 +88,8 @@ export const ICON = {
   folder: "M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z",
 };
 
-/** 공실마케팅 도우미(크롬 확장) 웹스토어 — 검색에 아직 안 잡혀 직접 주소로 (2026-11-03 사장님) */
-export const HELPER_STORE_URL = "https://chromewebstore.google.com/detail/bmbpokmmadjkaipepdnfaockgkndmiaj";
+/** 크롬 확장 웹스토어 — 공실뉴스 AI 기사·블로그·SNS·유튜브 작성기 (2026-11-04 도우미 기능을 이 확장에 합침, 앱 없이 웹만) */
+export const HELPER_STORE_URL = "https://chromewebstore.google.com/detail/opoimbbagnpmhlblgbpophbigakilofc";
 /** 평소 크롬으로 연다 — 앱이면 openInBrowser, 웹이면 새 탭 */
 export function openHelperStore() {
   const g = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<unknown> } }).gongsilStudio;

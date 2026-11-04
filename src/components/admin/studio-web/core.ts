@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * 웹 뉴스·SNS자동화 공통 (2026-11-04 사장님: 웹 전용은 한 폴더에 — 관리자 코드가 복잡해지지 않게)
- *  서버 묻기 · 이용 횟수 · 진행 글 · 이 브라우저 저장(IndexedDB) · 사진 다듬기·내려받기 · 공실마케팅 도우미(크롬 확장)
+ *  서버 묻기 · 이용 횟수 · 진행 글 · 이 브라우저 저장(IndexedDB) · 사진 다듬기·내려받기 · 공실뉴스 작성기(크롬 확장)
  *  소재마다 따로: gongsil.ts(공실뉴스) · 다음에 column.ts(뉴스칼럼)
  */
 import { webAi } from "./ai-ask";
+import { F, ROOT_NAME, folderReady, saveToFolder, type FolderKey } from "./folder";
 export { webAi };
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -109,7 +110,26 @@ export function pickFiles(multiple: boolean): Promise<File[]> {
     input.click();
   });
 }
-export function download(name: string, blob: Blob) {
+/** 내려받기 — [저장 폴더]를 정했으면 문서\공실뉴스\(메뉴 폴더)\오늘 날짜 에, 아니면 다운로드 폴더로 (2026-11-04 사장님: PC 폴더 저장) */
+export function download(name: string, blob: Blob, key: FolderKey = "sns") {
+  if (folderReady) {
+    const day = ymd();
+    void saveToFolder(key, [day], name, blob).then((ok) => {
+      if (ok) toast(`문서\\${ROOT_NAME}\\${F[key]}\\${day} 에 저장했어요 — ${name}`);
+      else browserDownload(name, blob);
+    });
+    return;
+  }
+  browserDownload(name, blob);
+}
+function toast(text: string) {
+  const el = document.createElement("div");
+  el.textContent = text;
+  el.style.cssText = "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:10001;background:#1a3a6b;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;font-family:'Pretendard Variable',-apple-system,sans-serif";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+function browserDownload(name: string, blob: Blob) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
@@ -121,17 +141,17 @@ export function download(name: string, blob: Blob) {
 export const safeName = (s: string) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
 export const ymd = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; };
 
-export async function zipDownload(name: string, files: { name: string; data: string | Blob }[]) {
+export async function zipDownload(name: string, files: { name: string; data: string | Blob }[], key: FolderKey = "sns") {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   for (const f of files) {
     if (typeof f.data === "string" && f.data.startsWith("data:")) zip.file(f.name, f.data.split(",")[1], { base64: true });
     else zip.file(f.name, f.data);
   }
-  download(name, await zip.generateAsync({ type: "blob" }));
+  download(name, await zip.generateAsync({ type: "blob" }), key);
 }
 
-/* ── 공실마케팅 도우미 (크롬 확장 web-bridge.js) ── */
+/* ── 공실뉴스 작성기 (크롬 확장 web-bridge.js) ── */
 /* 도우미가 깔려 있나 — web-bridge.js 가 바로 대답한다 (한 번 대답하면 기억) */
 export let helperSeen = false;
 export async function helperOn() {
@@ -163,7 +183,7 @@ export async function helperWait(id: string, what: "taken" | "done", ms: number)
   }
   return null;
 }
-export const NO_HELPER = "HELPER_NONE: 공실마케팅 도우미(크롬 확장)가 응답하지 않았어요. 도우미(1.0.39 이상)를 설치하거나 새로 고친 뒤에는 이 화면을 한 번 새로고침(F5)하고 다시 눌러 주세요. 아니면 아래 직접 붙여 넣기로 올려 주세요.";
+export const NO_HELPER = "HELPER_NONE: 공실뉴스 작성기(크롬 확장)가 응답하지 않았어요. 작성기(4.1.0 이상)를 설치하거나 새로 고친 뒤에는 이 화면을 한 번 새로고침(F5)하고 다시 눌러 주세요. 아니면 아래 직접 붙여 넣기로 올려 주세요.";
 /* 발행한 글 주소 → 홍보현황 (앱은 helper-server onPublished). 웹은 이 화면이 열려 있는 동안 도우미에게 묻는다 */
 export const PUB_KEY = "gs-web-helper-pubs";
 type Pub = { id: string; vacancyId: string; channel: string; at: number };
@@ -191,7 +211,7 @@ export async function helperJob(target: string, payload: Record<string, unknown>
   if (!r || !r.ok || !r.id) throw new Error(NO_HELPER);
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vacancyId)) setPubs([...pubs(), { id: r.id, vacancyId, channel, at: Date.now() }]);
   window.open(openUrl, "_blank");
-  say(progressCh, `새 탭에 ${label}을(를) 열었어요. 공실마케팅 도우미가 채우기를 기다리는 중…`);
+  say(progressCh, `새 탭에 ${label}을(를) 열었어요. 공실뉴스 작성기가 채우기를 기다리는 중…`);
   if (!(await helperWait(r.id, "taken", 45000))) {
     void helper({ op: "forget", id: r.id });
     throw new Error(`HELPER_NONE: 도우미가 ${label} 화면에서 일감을 받아 가지 않았어요. 새 탭에 ${label}이(가) 로그인된 채로 열렸는지 확인하고 다시 눌러 주세요.`);

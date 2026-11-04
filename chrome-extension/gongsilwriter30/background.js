@@ -8,7 +8,7 @@
    판단은 전부 작업창(panel.js)이 한다. 여기는 문을 여닫기만 한다.
    ══════════════════════════════════════════════════════════════ */
 
-importScripts("shared/config.js", "shared/write-page.js");
+importScripts("shared/config.js", "shared/write-page.js", "helper/bg-web.js"); // helper/bg-web.js — 웹 도우미 일감 (2026-11-04)
 
 /* ── 작업창을 아이콘 클릭으로 연다 ──
    tabId 를 주지 않고 전역으로 설정한다.

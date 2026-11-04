@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
 import { useStudioTheme } from "@/components/admin/studio-video/ui";
+import FolderBox from "@/components/admin/studio-web/FolderBox";
 
 /**
  * 공실마케팅 텍스트 메뉴 (중개사 관리자 /realty_admin)
@@ -91,7 +92,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
   useEffect(() => {
     const gs = (window as unknown as { gongsilStudio?: { openAiConnect?: () => void; snap?: unknown } }).gongsilStudio;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasAi(Boolean(gs?.openAiConnect));
+    setHasAi(true); // 웹도 [AI 설정] — 쓸 AI 고르기 (studio-web/ai-ask chooseWebAi, 2026-11-04)
     setHasSnap(Boolean(gs?.snap));
   }, []);
   // 공실마케팅 저장 위치 (문서\공실마케팅 · D 드라이브 · 외장하드) — 앱에서만
@@ -105,7 +106,11 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
     window.addEventListener("focus", load);
     return () => window.removeEventListener("focus", load);
   }, []);
-  const openAi = () => (window as unknown as { gongsilStudio?: { openAiConnect?: () => void } }).gongsilStudio?.openAiConnect?.();
+  const openAi = () => {
+    const app = (window as unknown as { gongsilStudio?: { openAiConnect?: () => void } }).gongsilStudio;
+    if (app?.openAiConnect) return app.openAiConnect();
+    void import("@/components/admin/studio-web/ai-ask").then((m) => m.chooseWebAi());
+  };
   // 자동으로 접힌 동안 [»]를 누르면 그때만 펼친다 (다른 메뉴로 가면 원래 설정으로)
   const [peek, setPeek] = useState(false);
   useEffect(() => {
@@ -201,6 +206,15 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
       <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "space-between", padding: collapsed ? 0 : "0 10px 0 18px", borderBottom: "1px solid rgba(255,255,255,0.15)", flexShrink: 0 }}>
         {!collapsed && (
           // 로고를 누르면 앱 홈으로 (2026-10-30 사장님 — 예전에는 공실뉴스 사이트를 새 창으로 열었다)
+          // 웹은 앱과 같은 모양 — 동그라미 + "공실뉴스" (studio 꼬리표 없이, 2026-11-04 사장님)
+          !isApp ? (
+          <div onClick={() => onSelect("dashboard")} title="홈" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            {/* 동그라미 → 공실뉴스 사이트 첫 화면 (gongsilnews.com, 2026-11-04 사장님). 글씨는 관리자 홈 */}
+            <img src="/new_logo.png" alt="공실뉴스" title="공실뉴스 사이트로" onClick={(e) => { e.stopPropagation(); window.location.href = "/"; }}
+              style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px", whiteSpace: "nowrap", lineHeight: 1.2 }}>공실뉴스</div>
+          </div>
+          ) : (
           <div onClick={() => onSelect("dashboard")} title="홈" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <img src="/new_logo.png" alt="공실뉴스" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
             <div style={{ lineHeight: 1.2 }}>
@@ -212,6 +226,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
               </div>
             </div>
           </div>
+          )
         )}
         <button onClick={toggle} title={collapsed ? "메뉴 펼치기" : "메뉴 접기"} className="studio-nav-btn"
           style={{ ...plainBtn, width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -288,7 +303,9 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
       </div>
       <div style={{ padding: collapsed ? "10px 8px 14px" : "10px 10px 14px", borderTop: "1px solid rgba(255,255,255,0.15)", flexShrink: 0 }}>
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>{item(settings)}</ul>
-        {!collapsed && (
+        {/* 웹 — 앱 "저장 위치" 자리에 [저장 폴더] (문서\공실뉴스, 2026-11-04). 앱 안내 글은 넣지 않는다 */}
+        {!isApp && <FolderBox collapsed={collapsed} />}
+        {!collapsed && isApp && (
           <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 10, background: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.10)" }}>
             {isApp ? (
               <>

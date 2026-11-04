@@ -4,6 +4,7 @@
 import { chooseWebAi, webAi, webAsk } from "./ai-ask";
 import { NO_HELPER, api, download, getMember, helper, helperJob, helperOn, helperWait, newId, now, onProgress, options, pickFiles, readFile, safeName, say, sleep, toJpeg, tx, useQuota, ymd, zipDownload } from "./core";
 import { getMyArticlePhotos } from "@/app/actions/studioWebColumn";
+import { listFolder, markRestored, restored, saveToFolder } from "./folder";
 
 /**
  * 웹 뉴스·SNS자동화 [공실뉴스] — 앱(window.gongsilStudio)의 대역 (공통은 core.ts) (2026-11-03 사장님: 앱의 공실뉴스 부분을 웹에서도 똑같이)
@@ -13,7 +14,7 @@ import { getMyArticlePhotos } from "@/app/actions/studioWebColumn";
  *          화면 3장(공실열람 검증·지도·로드뷰)은 웹에서 못 찍는다 (앱에서)
  *  - 글쓰기: 서버(/api/studio/web)가 앱과 같은 확장 프롬프트로 질문을 만들고 → 회원 AI(새 탭, 복사·붙여넣기) → 서버가 답을 나눈다
  *  - 저장: 이 브라우저(IndexedDB)에 — 앱의 PC 저장 자리 (다른 PC·브라우저에서는 안 보인다)
- *  - 채우기: 공실마케팅 도우미(크롬 확장 1.0.39~)에게 웹페이지가 직접 일감을 넘긴다 (web-bridge.js)
+ *  - 채우기: 공실뉴스 작성기(크롬 확장 4.1.0~, 2026-11-04 도우미 합침)에게 웹페이지가 직접 일감을 넘긴다 (web-bridge.js)
  *  - 이용 횟수: 앱과 같은 /api/studio/usage (블로그·SNS·유튜브)
  * 앱과 같은 일을 하는 곳: studio-app/src blog-writer.js · sns-writer.js · all-writer.js · youtube-writer.js · naver-write.js · main.js(vacancy-*)
  */
@@ -35,8 +36,54 @@ const FIT_KINDS = new Set(["proof", "map", "roadview", "capture"]); // 화면 �
 
 const keyOf = (vacancyId: string) => `${getMember()}:${vacancyId}`;
 const getWork = (vacancyId: string) => tx<Work | undefined>("readonly", (s) => s.get(keyOf(vacancyId))).then((w) => w || null).catch(() => null);
-const putWork = (w: Work) => tx("readwrite", (s) => s.put({ ...w, updatedAt: now() }));
-const allWorks = () => tx<Work[]>("readonly", (s) => s.getAll()).then((l) => (l || []).filter((w) => w.memberId === getMember())).catch(() => [] as Work[]);
+const putWork = (w: Work) => tx("readwrite", (s) => s.put({ ...w, updatedAt: now() })).then((r) => { gsnLater(w.vacancyId); return r; });
+const allWorks = async () => {
+  await restoreFromFolder();
+  return tx<Work[]>("readonly", (s) => s.getAll()).then((l) => (l || []).filter((w) => w.memberId === getMember())).catch(() => [] as Work[]);
+};
+
+/* ── PC 폴더 작업 파일 .gsn (2026-11-04 사장님: PC 폴더 저장 — 문서\공실뉴스 뉴스SNS발행\프로젝트6110461104 작업이름.gsn)
+   작업이 바뀌면 3초 쉬었다가 통째로 쓴다 (앱 gsn.js 와 같은 자리·이름). 폴더를 안 정했으면 아무것도 안 한다.
+   파일 이름은 처음 정한 것을 이 브라우저에 기억 — 제목을 고쳐도 같은 파일에 쓴다.
+   다른 브라우저(엣지↔크롬)·새 PC 에서 같은 폴더를 고르면 목록을 열 때 브라우저 안에 없는 작업을 되살린다 */
+const GSN_KIND = "gongsilnews-web-gsn";
+const GSN_NAMES = "gs-web-gsn-names";
+const gsnNames = (): Record<string, { day: string; name: string }> => { try { return JSON.parse(localStorage.getItem(GSN_NAMES) || "{}"); } catch { return {}; } };
+const setGsnName = (key: string, v: { day: string; name: string }) => { try { localStorage.setItem(GSN_NAMES, JSON.stringify({ ...gsnNames(), [key]: v })); } catch { /* */ } };
+const dayOf = (iso: string) => { const d = new Date(iso || Date.now()); return isNaN(+d) ? ymd() : `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; };
+const gsnTimers = new Map<string, ReturnType<typeof setTimeout>>();
+function gsnLater(vacancyId: string) {
+  clearTimeout(gsnTimers.get(vacancyId));
+  gsnTimers.set(vacancyId, setTimeout(() => { gsnTimers.delete(vacancyId); void gsnWrite(vacancyId); }, 3000));
+}
+async function gsnWrite(vacancyId: string) {
+  const w = await getWork(vacancyId);
+  if (!w) return;
+  let at = gsnNames()[w.key];
+  if (!at) {
+    const day = dayOf(w.column?.createdAt || w.analysis?.analyzedAt || w.updatedAt);
+    at = { day, name: `${day} ${workName(w) || "작업"}.gsn` };
+  }
+  const body = JSON.stringify({ kind: GSN_KIND, version: 1, savedAt: now(), work: w });
+  if (await saveToFolder("sns", ["프로젝트", at.day], at.name, new Blob([body], { type: "application/json" }))) setGsnName(w.key, at);
+}
+async function restoreFromFolder() {
+  if (restored || !getMember()) return;
+  markRestored();
+  const files = await listFolder("sns", ["프로젝트"], ".gsn");
+  for (const f of files) {
+    try {
+      const d = JSON.parse(await f.file.text());
+      const w: Work | undefined = d && d.kind === GSN_KIND ? d.work : undefined;
+      if (!w || w.memberId !== getMember() || w.key !== `${w.memberId}:${w.vacancyId}`) continue; // 다른 회원 작업은 안 읽는다
+      const have = await tx<Work | undefined>("readonly", (s) => s.get(w.key)).catch(() => undefined);
+      if (!have || String(have.updatedAt) < String(w.updatedAt)) await tx("readwrite", (s) => s.put(w)); // 폴더 것이 더 새것일 때만
+      if (!gsnNames()[w.key] && f.path[0]) setGsnName(w.key, { day: f.path[0], name: f.name });
+    } catch { /* 못 읽는 파일은 건너뛴다 */ }
+  }
+}
+/** 폴더를 새로 고르면 되살리기를 다시 (folder.ts 가 restored 를 내린다) — 목록 화면이 다시 읽게 알린다 */
+if (typeof window !== "undefined") window.addEventListener("gs-folder-change", () => { window.dispatchEvent(new Event("gs-works-change")); });
 async function need(vacancyId: string) {
   const w = await getWork(vacancyId);
   if (!w) throw new Error("먼저 [분석]을 해 주세요.");
@@ -133,8 +180,7 @@ async function analyze(vacancyId: string) {
     const t0 = Date.now();
     (vacancy.images || []).forEach((u: string, i: number) => media.push({ key: `photo:${u}`, kind: "photo", src: u, caption: captionFor("photo", vacancy, i), real: true, addedAt: t0 }));
 
-    // 화면 3장(공실열람 검증·지도·로드뷰)은 웹에서 찍지 못한다 — 다른 곳(카카오) 그림이 섞여 브라우저가 막는다 (앱에서)
-    failures.push("공실열람 검증·지도·로드뷰 화면: 공실마케팅studio 앱에서 찍을 수 있어요");
+    // 화면 3장(공실열람 검증·지도·로드뷰)은 웹에서 찍지 못한다 — 다른 곳(카카오) 그림이 섞여 브라우저가 막는다. 앱 안내는 하지 않는다 (2026-11-04 사장님)
 
     // 다시 분석해도 회원이 넣은 사진(내 사진)은 남기고, 뺀 사진은 계속 뺀 채로 (앱과 같다)
     const hidden: Src[] = [];
@@ -194,7 +240,7 @@ async function mediaOp(vacancyId: string, op: any) {
       a.media.push({ key: `upload:${newId()}`, kind: "upload", src, caption: `${f.name.replace(/\.[^.]+$/, "")} (직접 올린 사진)`, real: true, addedAt: Date.now() });
     }
   } else if (op.type === "ai") {
-    throw new Error("AI 그림 만들기는 공실마케팅studio 앱에서 할 수 있어요. 웹에서는 [내 사진 올리기]로 넣어 주세요.");
+    throw new Error("웹에서는 [내 사진 올리기]로 넣어 주세요.");
   } else throw new Error("알 수 없는 작업이에요.");
   // 대표(맨 앞)는 실제 사진
   const isReal = (m: Src) => m && m.kind !== "ai" && m.real !== false;
@@ -677,7 +723,7 @@ async function colMedia(id: string, op: any) {
 }
 
 /* ── 대역 ── */
-const notInWeb = (what: string) => () => Promise.reject(new Error(`${what}는 공실마케팅studio 앱에서 할 수 있어요.`));
+const notInWeb = (what: string) => () => Promise.reject(new Error(`${what}는 웹에서 아직 안 돼요.`));
 const web = {
   isWeb: true,
   openAiConnect: () => chooseWebAi(),

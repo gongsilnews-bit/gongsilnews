@@ -171,7 +171,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       setError(cleanErr(e));
     }
   };
-  /* [도우미로 채우기] — 평소 크롬 + 공실마케팅 도우미 확장 (2026-10-23 사장님) */
+  /* [도우미로 채우기] — 평소 크롬 + 공실뉴스 작성기 확장 (2026-10-23 사장님) */
   const [helping, setHelping] = useState(false);
   const [helpMsg, setHelpMsg] = useState("");
   const fillHelper = async () => {
@@ -373,7 +373,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             <ChannelButton channel={channel} label={`${info.label} 열기`} onClick={openChannel} />
             {/* [채널 열기] 바로 옆 · 블로그 [네이버 블로그에 채우기]와 같은 남색 (2026-10-23 사장님) */}
             {bridge()?.sns.fillByHelper && (
-              <button onClick={() => void fillHelper()} disabled={helping} title="평소 크롬에 이 채널을 열고 공실마케팅 도우미(크롬 확장)가 사진·글을 넣어요"
+              <button onClick={() => void fillHelper()} disabled={helping} title="평소 크롬에 이 채널을 열고 공실뉴스 작성기(크롬 확장)가 사진·글을 넣어요"
                 style={{ ...btn(true), background: helping ? "#94a3b8" : "#1a3a6b" }}>{helping ? "도우미가 채우는 중…" : `도우미로 ${info.label}에 채우기`}</button>
             )}
           </div>

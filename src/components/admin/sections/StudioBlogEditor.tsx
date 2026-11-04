@@ -1,6 +1,6 @@
 "use client";
 
-import { studioBridge } from "../studio-web";
+import { isWebStudio, studioBridge } from "../studio-web";
 import React, { useEffect, useRef, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
 import StudioWorking from "./StudioWorking";
@@ -334,9 +334,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setEditId(null); pickReplace(m.id); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진으로 바꾸기
             </button>
-            <button onClick={() => { setEditId(null); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
+            {!isWebStudio() && <button onClick={() => { setEditId(null); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d={SPARK} /> AI 이미지로 바꾸기 <span title="공실뉴스부동산(유료 회원) 전용" style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.4 }}>Membership</span>
-            </button>
+            </button>}
             <button className="sbe-menu-x" onClick={() => setEditId(null)} title="닫기">✕</button>
           </div>
         )}
@@ -356,9 +356,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setOpenSlot(null); pickPhotos(slot); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
             </button>
-            <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
+            {!isWebStudio() && <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지 <span title="공실뉴스부동산(유료 회원) 전용" style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.4 }}>Membership</span>{/* 유료 전용 표시 — 왼쪽 메뉴와 같은 주황 (2026-10-24 사장님) */}
-            </button>
+            </button>}
             <button className="sbe-menu-x" onClick={() => setOpenSlot(null)} title="닫기">✕</button>
           </div>
         ) : (

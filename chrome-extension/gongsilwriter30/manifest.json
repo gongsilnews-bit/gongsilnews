@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사 & 블로그·SNS·유튜브 작성기",
-  "version": "4.0.1",
-  "description": "오른쪽 작업창에서 공실 매물과 경매·공매 물건을 기사, 블로그·SNS, 유튜브 대본으로 만들고 각 화면으로 전송합니다.",
+  "version": "4.1.0",
+  "description": "오른쪽 작업창에서 공실 매물과 경매·공매 물건을 기사, 블로그·SNS, 유튜브 대본으로 만들고, 공실뉴스 웹에서 네이버 블로그·인스타그램·스레드·페이스북 글쓰기 화면을 채워 줍니다.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -111,11 +111,37 @@
       ],
       "js": [
         "shared/naver-blog.js",
-        "content-naver.js"
+        "content-naver.js",
+        "helper/naver-fill.js",
+        "helper/helper-naver.js"
       ],
       "run_at": "document_idle",
       "all_frames": true,
       "match_about_blank": true
+    },
+    {
+      "matches": [
+        "https://www.instagram.com/*",
+        "https://www.threads.com/*",
+        "https://www.threads.net/*",
+        "https://www.facebook.com/*"
+      ],
+      "js": [
+        "helper/sns-panel.js",
+        "helper/helper-sns.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gongsilnews.com/*",
+        "https://www.gongsilnews.com/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "helper/web-bridge.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "background": {

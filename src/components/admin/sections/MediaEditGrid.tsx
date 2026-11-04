@@ -1,7 +1,7 @@
 "use client";
 // 사진 정리 칸 (2026-10-28 사장님) — 공실뉴스 분석 사진 · 뉴스칼럼 기사 화면 같이 쓴다
 //  [×] 빼기 · 끌어서 순서 · [+ AI 이미지 만들기](스타일·그릴 내용 추천) · [+ 내 사진 올리기] · 뺀 사진 되살리기. 맨 앞 = 대표 사진
-import { studioBridge } from "../studio-web";
+import { isWebStudio, studioBridge } from "../studio-web";
 import React, { useEffect, useState } from "react";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 
@@ -88,9 +88,12 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
           </figure>
         ))}
         <div style={{ border: `2px dashed ${theme.border}`, borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, minHeight: 180 }}>
+          {/* 웹은 AI 이미지 단추를 안 보인다 (2026-11-04 사장님: 앱으로 보내지 않는다) */}
+          {!isWebStudio() && <>
           <button disabled={Boolean(busy)} onClick={() => setAiAsk(seed)}
             style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: "#7048e8", fontSize: 14, fontWeight: 800 }}>＋ AI 이미지 만들기</button>
           <div style={{ borderTop: `1px dashed ${theme.border}` }} />
+          </>}
           <button disabled={Boolean(busy)} onClick={() => void run({ type: "upload" })} title="내 PC 의 사진을 골라 넣어요 (여러 장 가능)"
             style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 내 사진 올리기</button>
         </div>

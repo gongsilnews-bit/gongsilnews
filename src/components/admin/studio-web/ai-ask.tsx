@@ -179,7 +179,6 @@ function AiPicker({ done }: { done: () => void }) {
             </button>
           ))}
         </div>
-        <div style={{ marginTop: 12, fontSize: 12.5, color: "#6b7280", lineHeight: 1.6 }}>AI가 글을 바로 받아 넣고 화면 캡처까지 하는 자동 쓰기는 공실마케팅studio 앱에서 됩니다.</div>
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
           <button type="button" onClick={() => done()} style={{ padding: "9px 18px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>확인</button>
         </div>

@@ -69,7 +69,11 @@ const REALTY_MENU: MenuItem[] = [
    업무 메뉴 6개만 위에 두고 나머지는 [더보기]에 접는다.
    2026-10-15 앱에서 먼저 써 보고 웹에도 켰다. 예전 아이콘 메뉴로 돌리려면 STUDIO_MENU_ON_WEB 을 false 로.
    2026-10-26 사장님: 웹은 일반회원과 같은 아이콘 메뉴(무료 관리 기능만) — 지금 모양은 공실마케팅 앱에서만 */
-const STUDIO_MENU_ON_WEB = false;
+// 2026-11-04 사장님: "웹메인을 앱과 같이 · 디자인을 똑같이 · 웹에 없는 기능은 넣지 마 (단추도)" — 웹도 이 메뉴. 앱은 앞으로 안 쓴다
+const STUDIO_MENU_ON_WEB = true;
+// 웹 메뉴 — 웹에서 되는 것만 (대본 작성·동영상studio·광고관리는 빼고), 순서 고정 · 메뉴 편집 없음 (편집기에 앱 메뉴가 섞여 있다)
+const WEB_MAIN_KEYS = ["dashboard", "gongsil", "article", "homepage", "marketing", "sns", "photo", "customer"];
+const WEB_MORE_KEYS = [...(SHOW_STUDY ? ["study"] : []), "inquiry_board", "point", "manual"];
 const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "홈", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
@@ -458,9 +462,9 @@ function RealtyAdminContent() {
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
       {useStudioMenu ? (
         <StudioSidebar
-          main={menuLayout.main.filter(shown).map(menuItem)}
-          more={menuLayout.more.filter(shown).map(menuItem)}
-          onEditMenu={() => { setMenuError(""); setMenuDraft(menuLayout); }}
+          main={(studioApp.isApp ? menuLayout.main.filter(shown) : WEB_MAIN_KEYS).map(menuItem)}
+          more={(studioApp.isApp ? menuLayout.more.filter(shown) : WEB_MORE_KEYS).map(menuItem)}
+          onEditMenu={studioApp.isApp ? () => { setMenuError(""); setMenuDraft(menuLayout); } : undefined}
           settings={STUDIO_SETTINGS_MENU}
           activeMenu={activeMenu}
           onSelect={selectMenu}

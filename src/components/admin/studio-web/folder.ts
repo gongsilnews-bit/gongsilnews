@@ -1,0 +1,145 @@
+"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * 웹 PC 폴더 저장 (2026-11-04 사장님: "PC폴더 저장을 만들자 · 공실뉴스라고 해줘")
+ *  회원이 [저장 폴더 정하기]로 문서\공실뉴스 를 한 번 고르면, 웹에서 만든 것을 그 폴더에 쓴다.
+ *  - 크롬·엣지(showDirectoryPicker)만. 안 되는 브라우저는 지금처럼 다운로드 폴더로 내려받는다
+ *  - 고른 폴더는 이 브라우저에 기억 (IndexedDB 에 폴더 손잡이). 크롬을 새로 켜면 처음 한 번 "허락"을 다시 묻기도 한다
+ *  - 안쪽 폴더는 앱과 같은 번호 (data-server-vs-local): 01 뉴스SNS발행 · 02 공실마케팅 · 04 이미지제작 · 10 글쓰기
+ *  - 고른 폴더 이름이 "공실뉴스"가 아니면 그 안에 "공실뉴스" 폴더를 만들어 쓴다 (문서를 골라도 문서\공실뉴스)
+ *  작업(브라우저 안 IndexedDB)은 그대로 두고, 이 폴더는 백업 겸 다른 브라우저(엣지↔크롬)·다른 PC로 옮기는 길
+ */
+
+export const ROOT_NAME = "공실뉴스";
+export const F = { sns: "01 뉴스SNS발행", mkt: "02 공실마케팅", photo: "04 이미지제작", write: "10 글쓰기" } as const;
+export type FolderKey = keyof typeof F;
+
+type Dir = any; // FileSystemDirectoryHandle (브라우저마다 타입이 달라 any)
+const DB = "gs-web-folder";
+function idb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const r = indexedDB.open(DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("h");
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function kv<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  const d = await idb();
+  return new Promise((resolve, reject) => {
+    const q = fn(d.transaction("h", mode).objectStore("h"));
+    q.onsuccess = () => resolve(q.result);
+    q.onerror = () => reject(q.error);
+  });
+}
+
+export const folderSupported = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
+const changed = () => window.dispatchEvent(new Event("gs-folder-change"));
+
+let rootP: Promise<Dir | null> | null = null;
+const stored = () => (rootP ||= kv<Dir | undefined>("readonly", (s) => s.get("root")).then((h) => h || null).catch(() => null));
+
+export type FolderState = { supported: boolean; set: boolean; granted: boolean; name: string };
+/** 지금 바로 폴더에 쓸 수 있나 — 내려받기 단추가 기다리지 않고 고르게 (folderState 가 고친다) */
+export let folderReady = false;
+export async function folderState(): Promise<FolderState> {
+  if (!folderSupported()) return { supported: false, set: false, granted: false, name: "" };
+  const h = await stored();
+  if (!h) { folderReady = false; return { supported: true, set: false, granted: false, name: "" }; }
+  let granted = false;
+  try { granted = (await h.queryPermission({ mode: "readwrite" })) === "granted"; } catch { /* */ }
+  folderReady = granted;
+  return { supported: true, set: true, granted, name: h.name };
+}
+if (typeof window !== "undefined") void folderState();
+
+/** 안쪽 번호 폴더를 만들어 둔다 */
+async function makeSubs(root: Dir) {
+  for (const n of Object.values(F)) await root.getDirectoryHandle(n, { create: true });
+}
+
+/** [저장 폴더 정하기] — 단추를 누른 그 순간에 불러야 한다 (브라우저 규칙) */
+export async function pickFolder(): Promise<FolderState> {
+  if (!folderSupported()) throw new Error("이 브라우저는 PC 폴더 저장을 지원하지 않아요. 크롬이나 엣지에서 써 주세요.");
+  let picked: Dir;
+  try {
+    // 처음 = 바탕 화면에서 열림 (2026-11-04 사장님) · [바꾸기] = 지금 쓰는 공실뉴스 폴더에서 열림 (바탕 화면 자체를 다시 골라 "이 폴더를 열 수 없음"이 뜨지 않게)
+    const cur = await stored();
+    picked = await (window as any).showDirectoryPicker({ mode: "readwrite", startIn: cur || "desktop" });
+  } catch (e: any) {
+    if (e && e.name === "AbortError") return folderState(); // 회원이 닫았다
+    throw new Error("폴더를 고르지 못했어요. 다른 폴더를 골라 주세요.");
+  }
+  const root = picked.name === ROOT_NAME ? picked : await picked.getDirectoryHandle(ROOT_NAME, { create: true });
+  await makeSubs(root);
+  await kv("readwrite", (s) => s.put(root, "root"));
+  rootP = Promise.resolve(root);
+  restored = false;
+  folderReady = true;
+  changed();
+  return folderState();
+}
+
+/** 크롬을 새로 켠 뒤 — 저장 허락을 다시 받는다 (단추를 누른 순간에만 된다) */
+export async function allowFolder(): Promise<boolean> {
+  const h = await stored();
+  if (!h) return false;
+  try {
+    const ok = (await h.requestPermission({ mode: "readwrite" })) === "granted";
+    if (ok) { await makeSubs(h); folderReady = true; changed(); }
+    return ok;
+  } catch { return false; }
+}
+
+/** 쓸 수 있는 폴더 (정했고 허락도 받았을 때만) */
+async function root(): Promise<Dir | null> {
+  const h = await stored();
+  if (!h) return null;
+  try { return (await h.queryPermission({ mode: "readwrite" })) === "granted" ? h : null; } catch { return null; }
+}
+async function dirOf(key: FolderKey, parts: string[], create = true): Promise<Dir | null> {
+  let d = await root();
+  if (!d) return null;
+  for (const p of [F[key], ...parts]) d = await d.getDirectoryHandle(p, { create });
+  return d;
+}
+
+/** 폴더에 파일 쓰기 — 폴더를 안 정했거나 허락이 없으면 false (부르는 쪽이 내려받기로) */
+export async function saveToFolder(key: FolderKey, parts: string[], name: string, data: Blob | string): Promise<boolean> {
+  try {
+    const d = await dirOf(key, parts);
+    if (!d) return false;
+    const f = await d.getFileHandle(name, { create: true });
+    const w = await f.createWritable();
+    await w.write(data);
+    await w.close();
+    return true;
+  } catch { return false; }
+}
+
+/** 폴더 안 파일 읽기 (하위 폴더 한 단계까지) — .gsn 되살리기에 쓴다 */
+export async function listFolder(key: FolderKey, parts: string[], ext: string): Promise<{ path: string[]; name: string; file: File }[]> {
+  const out: { path: string[]; name: string; file: File }[] = [];
+  try {
+    const d = await dirOf(key, parts, false);
+    if (!d) return out;
+    for await (const [n, h] of d.entries()) {
+      if (h.kind === "file" && n.toLowerCase().endsWith(ext)) out.push({ path: [], name: n, file: await h.getFile() });
+      else if (h.kind === "directory") {
+        for await (const [n2, h2] of h.entries()) if (h2.kind === "file" && n2.toLowerCase().endsWith(ext)) out.push({ path: [n], name: n2, file: await h2.getFile() });
+      }
+    }
+  } catch { /* 폴더가 없다 */ }
+  return out;
+}
+
+/** 이번 화면에서 폴더 되살리기를 했나 (gongsil.ts 가 쓴다) */
+export let restored = false;
+export const markRestored = () => { restored = true; };
+
+/** 파일 내려받기 — 폴더가 있으면 그 폴더에, 없으면 다운로드 폴더로 (true = 폴더에 저장함) */
+export async function saveOrDownload(key: FolderKey, parts: string[], name: string, blob: Blob, download: (n: string, b: Blob) => void): Promise<boolean> {
+  if (await saveToFolder(key, parts, name, blob)) return true;
+  download(name, blob);
+  return false;
+}

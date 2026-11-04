@@ -235,7 +235,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     }
   };
 
-  /* via — helper(처음 값: 평소 크롬 + 공실마케팅 도우미) · manual(복사·사진 폴더) · ""(전용 크롬, 예전 방식) — 2026-10-23 사장님 */
+  /* via — helper(처음 값: 평소 크롬 + 공실뉴스 작성기) · manual(복사·사진 폴더) · ""(전용 크롬, 예전 방식) — 2026-10-23 사장님 */
   const fillNaver = async (via = "helper") => {
     const b = bridge();
     if (!b || !blog) return;
@@ -350,7 +350,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
-                  평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실마케팅 도우미</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
+                  평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실뉴스 작성기</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
                 </div>
                 <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
                 <button onClick={() => void fillNaver("helper")} disabled={filling}
@@ -368,7 +368,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>복사·사진 폴더로 직접 붙여 넣기</button>
               {!isWebStudio() && <button onClick={() => void fillNaver("")} disabled={filling} title="예전 방식 — 앱이 따로 띄운 크롬에서 채워요 (네이버 로그인을 그 창에서 한 번 해야 해요)"
                 style={{ padding: "10px 16px", background: "transparent", color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>전용 크롬으로 채우기</button>}
-              <button onClick={openHelperStore} title="평소 크롬에 공실마케팅 도우미를 설치해요"
+              <button onClick={openHelperStore} title="평소 크롬에 공실뉴스 작성기를 설치해요"
                 style={{ padding: "10px 16px", background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>크롬 도우미 설치하기</button>
             </div>
           )}

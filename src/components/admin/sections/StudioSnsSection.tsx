@@ -677,7 +677,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   </button>
                 )}
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{web ? "등록 사진 전부를 모읍니다. 10초쯤 걸립니다. (공실열람 검증·지도·로드뷰 화면 캡처는 공실마케팅studio 앱에서)" : "등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다."}</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{web ? "등록 사진 전부를 모읍니다. 10초쯤 걸립니다." : "등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다."}</div>
             </>
           )}
           {progress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{progress}</div>}

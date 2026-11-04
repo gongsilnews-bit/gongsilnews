@@ -58,8 +58,9 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
   // 크롬 도우미 — 확장이 1분마다 앱을 부른다. 3분 안에 불렀으면 연결됨 (2026-11-03 사장님: AI 설정 옆에)
   const [helperOn, setHelperOn] = useState<boolean | null>(null);
   useEffect(() => {
-    const h = bridge()?.helperStatus;
-    if (!h) return;
+    const app = bridge()?.helperStatus;
+    // 웹 — 크롬 확장(공실뉴스 작성기 4.1.0~)에게 바로 묻는다 (studio-web/core helper ping, 2026-11-04)
+    const h = app ?? (() => import("@/components/admin/studio-web/core").then((m) => m.helper({ op: "ping" }, 1200)).then((r) => ({ seenAgo: r && r.ok ? 0 : null })));
     const tick = () => { h().then((r) => setHelperOn(r.seenAgo !== null && r.seenAgo < 180000)).catch(() => {}); };
     tick();
     const t = window.setInterval(tick, 30000);
@@ -67,18 +68,28 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
     return () => { window.clearInterval(t); window.removeEventListener("focus", tick); };
   }, []);
   useEffect(() => {
-    const load = () => { bridge()?.ai?.list().then((l) => setAiOn(l.filter((a) => a.ok).map((a) => a.name))).catch(() => {}); };
+    // 웹 — 고른 AI 하나 (내 계정 · 새 탭, studio-web/ai-ask)
+    const load = () => {
+      const g = bridge();
+      if (g) { g.ai?.list().then((l) => setAiOn(l.filter((a) => a.ok).map((a) => a.name))).catch(() => {}); return; }
+      void import("@/components/admin/studio-web/ai-ask").then((m) => setAiOn([m.webAi().name]));
+    };
     load();
     window.addEventListener("focus", load);
-    return () => window.removeEventListener("focus", load);
+    window.addEventListener("gs-web-ai", load);
+    return () => { window.removeEventListener("focus", load); window.removeEventListener("gs-web-ai", load); };
   }, []);
+  const openAi = () => {
+    const g = bridge();
+    if (g?.openAiConnect) return void g.openAiConnect();
+    void import("@/components/admin/studio-web/ai-ask").then((m) => m.chooseWebAi());
+  };
 
   // 작업 줄 — 종류마다 따로 받아 먼저 온 줄부터 보인다 (2026-10-30 사장님: 로딩이 길다 — 넷을 다 기다리지 않게)
   const [parts, setParts] = useState<Partial<Record<Card["kind"], Card[]>>>({});
   const put = (k: Card["kind"], list: Card[]) => setParts((p) => ({ ...p, [k]: list.sort((x, y) => y.at - x.at) }));
   useEffect(() => {
     const g = bridge();
-    if (!g) { setParts({ report: [], flyer: [], photo: [], video: [] }); return; }
     const toVac = (kind: "report" | "flyer") => (rows: { id: string; title: string; updatedAt: string; thumb?: string }[]): Card[] => rows.map((r) => ({
       key: (kind === "report" ? "r:" : "f:") + r.id, kind, ref: r.id, name: r.title || (kind === "report" ? "매물보고서" : "물건홍보지"), thumb: r.thumb || "", at: Date.parse(r.updatedAt) || 0,
       open: () => {
@@ -89,6 +100,7 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
     // 매물보고서 · 물건홍보지 — 내 공실로 저장한 것 (서버, 표지 그림만 받는다)
     listMyStudioReports().then((r) => put("report", toVac("report")(r.success ? r.data : []))).catch(() => put("report", []));
     listMyStudioReports("flyer").then((r) => put("flyer", toVac("flyer")(r.success ? r.data : []))).catch(() => put("flyer", []));
+    if (!g) return; // 웹 — 포토studio·동영상studio 줄은 PC 파일이라 없다 (보고서·홍보지는 위에서 서버로)
     // 포토studio — PSD 로 저장한 파일만 (그냥 열어 본 그림·캡처는 빼고)
     (g.photo?.recent() ?? Promise.resolve([] as PhotoRecent[])).then((ph) => put("photo", ph.filter((r) => !r.missing && /\.psd$/i.test(r.path) && r.thumb).map((r) => ({
       key: "p:" + r.path, kind: "photo" as const, ref: r.path, name: r.name, thumb: r.thumb, at: r.at,
@@ -140,8 +152,8 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
         [
           ...(c.kind === "report" ? [{ label: "PDF 내보내기", icon: <IconReport />, note: "열고 바로", go: () => run("pdf") }] : [{ label: "인쇄 · PDF", icon: <IconReport />, note: "열고 바로", go: () => run("print") }]),
           { label: "이미지 내보내기", icon: <IconImg />, note: "열고 바로", go: () => run("image") },
-          { label: "카카오톡으로 보내기", icon: <IconOut />, go: () => void kakaoShare({ title: c.name, description: c.kind === "report" ? "매물보고서" : "물건홍보지", url, button: c.kind === "report" ? "보고서 보기" : "홍보지 보기" }).catch(() => window.alert("카카오톡을 열지 못했어요.")) },
-          { label: "링크 복사", icon: <IconLink />, go: async () => { try { await navigator.clipboard.writeText(url); window.alert("링크를 복사했어요. 문자·카톡에 붙여넣으세요."); } catch { window.prompt("이 링크를 복사하세요", url); } } },
+          ...(!g ? [] : [{ label: "카카오톡으로 보내기", icon: <IconOut />, go: () => void kakaoShare({ title: c.name, description: c.kind === "report" ? "매물보고서" : "물건홍보지", url, button: c.kind === "report" ? "보고서 보기" : "홍보지 보기" }).catch(() => window.alert("카카오톡을 열지 못했어요.")) },
+          { label: "링크 복사", icon: <IconLink />, go: async () => { try { await navigator.clipboard.writeText(url); window.alert("링크를 복사했어요. 문자·카톡에 붙여넣으세요."); } catch { window.prompt("이 링크를 복사하세요", url); } } }]), // 웹은 공유 안 함 — 이미지로 보낸다
         ],
         [{ label: `${what} 삭제`, icon: <IconTrash />, danger: true, note: "공실은 그대로", go: async () => {
           if (!window.confirm(`"${c.name}" ${what}를 지울까요?\n공실은 그대로 남아요. 지운 ${what}는 되살릴 수 없어요.`)) return;
@@ -176,7 +188,7 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
     { label: "매물보고서", color: "#5c3b2e", icon: <IconReport />, go: () => openMarketing("report") },
     { label: "유리창홍보지", color: "#2f9e44", icon: <IconFlyer />, go: () => openMarketing("flyer") },
     { label: "포토studio", color: "#7048e8", icon: <IconImage />, go: () => onMenuChange("photo") },
-    { label: "동영상studio", color: "#c2255c", icon: <IconFilm />, go: () => onMenuChange("video") },
+    { label: "동영상studio", color: "#c2255c", icon: <IconFilm />, go: () => onMenuChange("video"), hide: !b }, // 웹에는 없다
     // 동영상제작 › 강의/영상녹화 (영상 녹화하기 창) — 앱에서만
     // 홈 위에서 바로 녹화 창 — 다 찍으면 동영상studio 편집으로 이어 간다 (2026-10-30 사장님)
     { label: "강의영상녹화", color: "#f08c00", icon: <IconLecture />, hide: !b, go: () => setRecOpen(true) },
@@ -210,8 +222,8 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
       <div style={{ position: "relative", borderRadius: 18, padding: "40px 24px 30px", textAlign: "center",
         background: darkMode ? "linear-gradient(135deg,#2b2320,#3a2a22)" : "linear-gradient(135deg,#fff4e6 0%,#ffe8cc 45%,#f3d9c4 100%)" }}>
         <div style={{ position: "absolute", top: 18, left: 18, display: "flex", gap: 8, flexWrap: "wrap", maxWidth: "calc(100% - 36px)" }}>
-        {b?.openAiConnect && aiOn && (
-          <button onClick={() => void b.openAiConnect?.()} title="AI 설정 (내 AI 연결)"
+        {aiOn && (
+          <button onClick={openAi} title="AI 설정 (내 AI 연결)"
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
               background: aiOn.length ? (darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5") : cardBg, border: `1px solid ${aiOn.length ? (darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7") : border}`, color: aiOn.length ? (darkMode ? "#6ee7b7" : "#047857") : textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: aiOn.length ? "#22c55e" : "#cbd5e1", boxShadow: aiOn.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
@@ -233,7 +245,7 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
         <div style={{ maxWidth: 640, margin: "22px auto 0", display: "flex", alignItems: "center", gap: 10, padding: "0 18px", height: 52,
           background: cardBg, border: `1px solid ${border}`, borderRadius: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
           <IconSearch width={20} height={20} stroke={textSecondary} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="공실 이름·광고번호·작업 파일 찾기"
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={b ? "공실 이름·광고번호·작업 파일 찾기" : "공실 이름·광고번호·기사·보고서 찾기"}
             style={{ flex: 1, border: 0, outline: 0, background: "transparent", fontSize: 15, color: textPrimary }} />
         </div>
         {/* 만들기 아이콘 한 줄 */}
@@ -286,10 +298,10 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
             add: { label: "동영상 만들기", color: "#c2255c", go: () => { try { sessionStorage.setItem("gs-video-flow", "new"); } catch {} onMenuChange("video"); } } },
         ];
         // 탭 대신 종류마다 한 줄씩 쭉 (2026-10-30 사장님: 1열로 쭉)
-        return secs.map((sec) => {
+        return secs.filter((sec) => b || sec.kind === "report" || sec.kind === "flyer").map((sec) => {
         const list = shownCards.filter((c) => c.kind === sec.kind).slice(0, 12);
         const tall = sec.kind === "flyer"; // 홍보지는 세로 A4
-        const addCard = b && (
+        const addCard = (
           <button key="add" onClick={sec.add.go} style={{ flex: `0 0 ${tall ? 150 : 210}px`, width: tall ? 150 : 210, aspectRatio: tall ? "860 / 1216" : "16 / 10", alignSelf: "flex-start", borderRadius: 12, border: `2px dashed ${sec.add.color}66`, background: darkMode ? "#2c2d31" : "#fbf7f4", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <span style={{ width: 44, height: 44, borderRadius: 22, background: sec.add.color, color: "#fff", fontSize: 26, lineHeight: "44px", fontWeight: 400 }}>+</span>
             <span style={{ fontSize: 14, fontWeight: 800, color: sec.add.color }}>{sec.add.label}</span>
@@ -303,7 +315,6 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
               <button onClick={sec.go} style={{ marginLeft: "auto", border: 0, background: "transparent", color: textSecondary, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>모두 보기</button>
             </div>
             {parts[sec.kind] === undefined ? <div style={{ ...empty, display: "flex", justifyContent: "center" }}><LoadingDots color={textSecondary} /></div>
-              : !b ? <div style={empty}>작업 파일은 공실마케팅 앱에서 보여요.</div>
               : (
                 // 캔바처럼 한 줄 — 넘치면 옆으로 밀어 본다
                 <div style={{ display: "flex", gap: 18, overflowX: "auto", paddingBottom: 6, alignItems: "flex-start" }}>

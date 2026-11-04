@@ -196,7 +196,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
     try {
       // 웹 — 기사 주소를 서버가 읽어 온다 (2026-11-03 사장님: 웹도 앱과 같이)
       if (!c) {
-        if (how === "grab") throw new Error("지금 보는 뉴스 가져오기는 앱에서 돼요. 기사 주소를 붙여 넣고 [가져오기]를 눌러 주세요.");
+        if (how === "grab") throw new Error("기사 주소를 붙여 넣고 [가져오기]를 눌러 주세요.");
         const r = await writingFetchNews(newsUrl.trim());
         if (!r.success) throw new Error(r.error);
         setNews(r.data); setNewsUrl(r.data.url);
@@ -617,21 +617,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
             })}
             {!ana.shots.length && !working && <div style={{ fontSize: 12, color: DIM }}>캡처한 사진이 없어요</div>}
           </div>
-          {/* 웹 — 브라우저는 화면을 찍지 못한다 → 빠진 자리를 보여 주고 앱 설치를 권한다 (2026-11-03 사장님) */}
-          {!isApp && ana.complex && (
-            <div style={{ marginTop: 8, padding: "10px 11px", border: `1px dashed ${NAVY}`, borderRadius: 6, background: "#fff" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
-                {["공실열람", "지도", "로드뷰"].map((t) => (
-                  <div key={t} style={{ aspectRatio: "4/3", borderRadius: 5, background: "#eef1f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11.5, fontWeight: 800, color: "#9aa6b8" }}>{t}</div>
-                ))}
-              </div>
-              <div style={{ marginTop: 8, fontSize: 12.5, fontWeight: 800, color: TEXT, lineHeight: 1.5 }}>공실열람 화면·지도·로드뷰 사진은 <span style={{ color: NAVY }}>공실마케팅studio 앱</span>에서만 찍을 수 있어요</div>
-              <div style={{ fontSize: 11.5, color: SUB, lineHeight: 1.5, marginTop: 2 }}>앱으로 쓰면 이 사진들이 저절로 찍혀 기사에 들어가요 · 윈도우 10·11</div>
-              {installer.ready && (
-                <a href={installer.href} onClick={() => setInstallGuide(true)} style={{ display: "block", marginTop: 8, height: 34, lineHeight: "34px", textAlign: "center", borderRadius: 5, background: NAVY, color: "#fff", fontSize: 13, fontWeight: 800, textDecoration: "none" }}>⬇ 공실마케팅studio 앱 설치하기</a>
-              )}
-            </div>
-          )}
+          {/* 웹 — 앱 설치 안내는 없앴다 (2026-11-04 사장님: 앱으로 이동시키지 않는다) */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7 }}>
             <span style={{ fontSize: 11.5, color: DIM, flex: 1, lineHeight: 1.45 }}>끌어서 순서를 바꿔요 · 맨 앞이 대표 사진 · 대표 사진은 기사 맨 앞에 들어가요</span>
             {ana.complex && <button type="button" onClick={() => void recapture()} disabled={working} style={{ ...btn, height: 26, padding: "0 8px", fontSize: 12 }}>↻ 다시 캡처</button>}

@@ -15,9 +15,15 @@ import { getHomepageBase } from "@/app/actions/homepage";
 
 type Done = Record<string, boolean>;
 type LocalWork = { vacancyId: string; thumb: string | null; updatedAt: string; done: Done };
-const localWorks = () => {
-  const g = typeof window === "undefined" ? undefined : (window as unknown as { gongsilStudio?: { vacancy?: { list: () => Promise<LocalWork[]> } } }).gongsilStudio;
-  return g?.vacancy?.list().catch(() => [] as LocalWork[]) ?? Promise.resolve([] as LocalWork[]);
+// 앱은 PC 작업 파일, 웹은 이 브라우저에 둔 작업 (studio-web/gongsil — 웹 홈도 앱과 같은 카드, 2026-11-04 사장님)
+const localWorks = async (): Promise<LocalWork[]> => {
+  if (typeof window === "undefined") return [];
+  const app = (window as unknown as { gongsilStudio?: { vacancy?: { list: () => Promise<LocalWork[]> } } }).gongsilStudio;
+  if (app) return app.vacancy?.list().catch(() => [] as LocalWork[]) ?? [];
+  try {
+    const m = await import("@/components/admin/studio-web/gongsil");
+    return await (m.studioBridge<{ vacancy: { list: () => Promise<LocalWork[]> } }>()?.vacancy.list() ?? []);
+  } catch { return []; }
 };
 
 // 한 번 읽은 카드·홍보현황은 기억해 두고 바로 그린다 — 화면을 옮겨 다시 와도 "불러오는 중"이 다시 뜨지 않게.
@@ -241,8 +247,9 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
     // 크롬에서 발행하고 앱으로 돌아오면 · 도우미가 글 주소를 보내 오면 다시 읽는다
     const again = () => { void loadPromos(); checkLinks(); };
     window.addEventListener("focus", again);
+    window.addEventListener("gs-promo-saved", again); // 웹 — 확장이 잡아 온 발행 주소를 저장했을 때 (studio-web/core)
     const off = (window as unknown as { gongsilStudio?: { promo?: { onSaved: (fn: () => void) => () => void } } }).gongsilStudio?.promo?.onSaved(again);
-    return () => { window.removeEventListener("focus", again); off?.(); };
+    return () => { window.removeEventListener("focus", again); window.removeEventListener("gs-promo-saved", again); off?.(); };
   }, []);
 
   // 공실마케팅의 매물보고서·물건홍보지를 그 공실을 고른 채로 (StudioMarketingSection 이 기억을 읽어 연다)

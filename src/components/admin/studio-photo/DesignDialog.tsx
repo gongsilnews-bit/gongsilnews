@@ -160,7 +160,7 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
   const makeAiImage = async () => {
     const scene = aiScene.trim();
     if (!scene) return;
-    if (!vb) return setErr("스튜디오 앱에서만 돼요");
+    if (!vb) return setErr("웹에서는 아직 안 돼요");
     const st = IMAGE_STYLES.find((x) => x.id === aiStyle) || IMAGE_STYLES[0];
     setAiOpen(false);
     setAiBusy(true);
@@ -177,7 +177,7 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
   };
   useEffect(() => { loadMineImgs(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const registerImgs = async () => {
-    if (!vb) return setErr("스튜디오 앱에서만 등록할 수 있어요");
+    if (!vb) return setErr("웹에서는 아직 등록할 수 없어요");
     try {
       const got = (await vb.lib.pick({ kinds: "media" })).filter((x) => x.kind === "image" && x.path);
       if (!got.length) return;
@@ -341,7 +341,7 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
       return;
     }
     if (!pick) return void makeBlank(chosen, id); // 공실·기사를 안 골라도 틀대로 만든다 (2026-10-22 사장님)
-    if (!b?.aiDesign || !vb) return setErr("스튜디오 앱에서만 돼요 (앱을 새로 받아 주세요)");
+    if (!b?.aiDesign || !vb) return setErr("웹에서는 아직 안 돼요");
     try {
       // 1) 자료
       const content: Content = agencyContent();

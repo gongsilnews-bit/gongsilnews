@@ -938,7 +938,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
   };
   const aiPicture = async (prompt: string, ratio: string, files: HTMLCanvasElement[]) => {
     const vb = videoBridge();
-    if (!vb || !b?.readFile || (files.length && !b.tempWrite)) throw new Error("스튜디오 앱에서만 돼요 (앱을 새로 받아 주세요)");
+    if (!vb || !b?.readFile || (files.length && !b.tempWrite)) throw new Error((bridge() ? "앱을 새로 받아 주세요" : "웹에서는 아직 안 돼요"));
     const paths: string[] = [];
     for (const c of files) {
       const r = await b.tempWrite!({ bytes: await pngBytes(c), ext: "png" });
@@ -1064,7 +1064,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
         // 글자 레이어 — 회원 AI 가 글만 고친다 (바로 바꾸고, Ctrl+Z 로 되돌리기)
         const l0 = selL && isText(selL) ? selL : null;
         if (!l0) throw new Error("글자 레이어를 골라 주세요");
-        if (!b?.aiText) throw new Error("스튜디오 앱에서만 돼요 (앱을 새로 받아 주세요)");
+        if (!b?.aiText) throw new Error((bridge() ? "앱을 새로 받아 주세요" : "웹에서는 아직 안 돼요"));
         const vb = videoBridge();
         const off = vb?.onProgress?.((t: string) => setAiBusy(t));
         try {
@@ -1442,7 +1442,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
     }
   };
   const saveMine = async (name: string) => {
-    if (!doc || !b?.tplWrite) return say("스튜디오 앱에서만 돼요");
+    if (!doc || !b?.tplWrite) return say((bridge() ? "앱을 새로 받아 주세요" : "웹에서는 아직 안 돼요"));
     if (!hasSlots(doc)) say("칸이 정해진 레이어가 없어요 — 다른 공실을 넣을 땐 글이 바뀌지 않아요 (레이어 칸 위 [칸] 에서 정하세요)");
     // 저장 창에서 위치·이름을 고른다 — 처음엔 공실마케팅\04 이미지제작\내템플릿, 다음부터는 지난번에 고른 폴더 (고른 곳에 저장해도 내 템플릿 목록에 뜬다)
     const r = await b.tplWrite({ name: name || doc.name, bytes: savePsdBytes(doc), thumb: thumbOf(composite(doc)), w: doc.psd.width, h: doc.psd.height, ask: true });
@@ -2360,7 +2360,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       { t: "인쇄…", key: "Ctrl+P", go: openPrint, off: !doc },
       "-",
       { t: "AI 자동 디자인 (공실·기사 가져오기)…", go: openDesign },
-      { t: "내 템플릿으로 저장…", go: () => doc && void saveMine(doc.name), off: !doc },
+      ...(b?.tplWrite ? [{ t: "내 템플릿으로 저장…", go: () => doc && void saveMine(doc.name), off: !doc }] : []),
       "-",
       { t: "사진 가져오기 (PC에서)…", go: () => void addImages(), off: !doc },
       { t: "내보내기 › PNG…", go: () => void exportAs("png"), off: !doc },
@@ -2535,7 +2535,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       { t: "전체 화면", key: "F", go: toggleFull },
     ] },
     { id: "window", label: "창", items: [
-      { t: "상황별 작업 표시줄 (AI 요청바)", go: () => setAiBar(!aiBar), on: aiBar, off: !doc },
+      ...(b ? [{ t: "상황별 작업 표시줄 (AI 요청바)", go: () => setAiBar(!aiBar), on: aiBar, off: !doc }] : []),
       "-",
       { t: "떠 있는 창으로 빼기", go: () => doc && floatDoc(doc.id), off: !doc || store.float.has(doc?.id || "") },
       { t: "탭으로 붙이기", go: () => doc && dockDoc(doc.id), off: !doc || !store.float.has(doc?.id || "") },
@@ -2918,11 +2918,14 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       {extraBtn("sticker", "그래픽 · 픽토그램", () => setSide(side === "sticker" || side === "picto" ? "" : "sticker"))}
       {extraBtn(svg("M4 4h16v6H4zM4 14h7v6H4zM15 14h5v6h-5z"), "디자인 템플릿 (레이어로)", () => { if (side !== "tpl") loadMine(); setSide(side === "tpl" ? "" : "tpl"); })}
       {/* [AI] — AI 요청바 켜고 끄기 (포토샵 상황별 작업 표시줄 · 프롬프트 입력창, 2026-10-22 사장님) */}
+      {/* 웹은 AI 단추를 안 보인다 (2026-11-04 사장님: 앱으로 보내지 않는다) */}
+      {b && <>
       <button type="button" title="AI 요청바 — 생성형 채우기 · 프롬프트로 편집 · 이미지 생성 · 배경 제거" onClick={() => setAiBar(!aiBar)}
         style={{ width: 36, height: 32, borderRadius: 4, border: 0, background: aiBar ? "#1473e6" : "transparent", color: aiBar ? "#fff" : "#cfcfcf", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
         onMouseEnter={(e) => { if (!aiBar) e.currentTarget.style.background = C.psHover; }} onMouseLeave={(e) => { if (!aiBar) e.currentTarget.style.background = "transparent"; }}>
         <span style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: -0.5 }}>AI</span>
       </button>
+      </>}
       {/* 전경색 · 배경색 — AI 바로 아래, 포토샵처럼 두 칸이 겹쳐 보이게 (2026-10-22 사장님) */}
       <div style={{ width: 26, height: 1, background: C.line2, margin: "4px 0 6px" }} />
       <div style={{ position: "relative", width: 40, height: 46, flexShrink: 0, marginBottom: 6 }}>
