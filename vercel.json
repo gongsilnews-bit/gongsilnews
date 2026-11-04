@@ -88,6 +88,10 @@
     {
       "path": "/api/cron/apt-prices/round?mode=recent",
       "schedule": "*/5 17-23,0-2 * * *"
+    },
+    {
+      "path": "/api/cron/apt-prices/round?mode=geo",
+      "schedule": "*/5 3-14 * * *"
     }
   ]
 }

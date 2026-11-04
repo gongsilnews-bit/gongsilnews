@@ -4,6 +4,7 @@
 //                07:00~11:55 에 같은 것을 한 바퀴 더 (2026-11-04: 밤에 마포 등 30여 곳이 안 바뀌어 있었다 — 바뀐 것만 쓰니 두 번째는 가볍다)
 //  ?mode=full    밤 0:00~1:55, 5분마다 24번 — 그날 차례인 시군구 하나씩 36개월 전체 (28일에 한 바퀴, aptMap.syncTrades)
 //  손으로 시험: ?mode=recent&slot=3  ·  ?mode=full&slot=0&day=5  ·  ?mode=recent&lawd=11680&kind=offi
+import { createClient as createSupabase } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { LAWD_NAMES, RECENT_MONTHS, syncGeo, syncInfo, syncRecent, syncSupply, syncTrades, type Kind } from "@/utils/aptMap";
 import { matchAuctions } from "@/utils/auctionMatch";
@@ -22,6 +23,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "인증되지 않은 요청입니다." }, { status: 401 });
   }
   const params = new URL(req.url).searchParams;
+  // ?mode=geo — 위치(좌표)가 빈 단지 채우기 (2026-11-05 사장님: "빌라도 다 해야지")
+  //  낮 12:00~23:55 (크론이 쉬는 때) 5분마다. 아직 안 찾아본 빌라가 있는 시군구를 하나씩 골라 syncGeo (카카오 하루 한도에 걸리면 멈추고 다음에 이어서)
+  if (params.get("mode") === "geo") return geoRound();
   const mode = params.get("mode") === "full" ? "full" : "recent";
   const kst = new Date(Date.now() + 9 * 3600_000);
   const min = kst.getUTCHours() * 60 + kst.getUTCMinutes();
@@ -70,4 +74,25 @@ export async function GET(req: Request) {
   // 새 실거래 알림은 한 바퀴가 끝날 때만 (06:55 · 11:55 — 하루 두 번, 회원이 많아도 가볍게). 공실·기사 알림은 올라오는 그때 따로
   const alerts = mode === "recent" && slot === RECENT_SLOTS - 1 ? await import("@/utils/starAlerts").then(async (m) => ({ sent: await m.alertTrades(14), pruned: await m.pruneNotifications(90) })).catch(() => null) : null;
   return NextResponse.json({ success: true, mode, slot, jobs: jobs.length, done, alerts });
+}
+
+/* 위치가 빈 단지 채우기 — 빌라를 먼저, 다 채우면 할 일이 없어 바로 끝난다 */
+async function geoRound() {
+  const deadline = Date.now() + 270_000;
+  const sb = createSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const done: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
+  while (Date.now() < deadline - 20_000) {
+    const { data } = await sb.from("apt_complexes").select("lawd_cd").eq("kind", "villa").is("geo_tried_at", null).limit(1);
+    const lawd = String(data?.[0]?.lawd_cd || "");
+    if (!lawd || !LAWD_NAMES[lawd] || seen.has(lawd)) break; // 남은 게 없거나, 같은 곳이 또 나오면(못 나아감) 이번엔 그만
+    seen.add(lawd);
+    const g = await syncGeo(lawd, deadline - 10_000);
+    done.push({ lawd, name: LAWD_NAMES[lawd], ...g });
+    if ("limited" in g && g.limited) break; // 카카오 하루 한도 — 자정에 풀린다
+    if (!g.found && !g.missed) break;
+    if (g.found + g.missed >= 500) seen.delete(lawd); // 한 번에 500곳까지라 아직 남았다 — 같은 곳을 이어서
+  }
+  const { count } = await sb.from("apt_complexes").select("id", { count: "exact", head: true }).eq("kind", "villa").is("geo_tried_at", null);
+  return NextResponse.json({ success: true, mode: "geo", done, left: count });
 }
