@@ -17,6 +17,26 @@ async function listingsOf(supabase: ReturnType<typeof db>, id: string) {
   };
 }
 
+/** 이 단지 뉴스 — 단지에서 50m 안에 찍힌 기사 + 근처(약 2km)에서 제목에 단지 이름이 든 기사 (2026-11-04 사장님: 단지 창 [뉴스 N])
+ *  저장해 둔 연결 없이 그때그때 찾는다. 흔한 짧은 이름(2글자)은 이름으로 찾지 않는다 */
+async function newsOf(supabase: ReturnType<typeof db>, c: { name: string; lat: number | null; lng: number | null }) {
+  if (!c.lat || !c.lng) return [];
+  const cols = "id, article_no, title, subtitle, section1, section2, location_name, published_at, created_at, author_name, thumbnail_url, lat, lng";
+  const now = new Date().toISOString();
+  const base = () => supabase.from("articles").select(cols).eq("status", "APPROVED").eq("is_deleted", false).lte("published_at", now);
+  const near = (d: number) => (q: ReturnType<typeof base>) => q.gte("lat", c.lat! - d).lte("lat", c.lat! + d).gte("lng", c.lng! - d * 1.25).lte("lng", c.lng! + d * 1.25);
+  const bare = String(c.name || "").replace(/\(.*?\)|아파트|오피스텔|\s/g, "");
+  const [a, b] = await Promise.all([
+    near(0.0006)(base()).limit(50),
+    bare.length >= 3 ? near(0.02)(base()).ilike("title", `%${bare.replace(/[%_]/g, "")}%`).limit(50) : Promise.resolve({ data: [] as unknown[] }),
+  ]);
+  const meters = (x: { lat: number; lng: number }) => Math.hypot((x.lat - c.lat!) * 111_000, (x.lng - c.lng!) * 88_000);
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const x of (a.data || []) as { id: string; lat: number; lng: number }[]) if (meters(x) <= 50) byId.set(x.id, x);
+  for (const x of (b.data || []) as { id: string }[]) byId.set(x.id, x);
+  return [...byId.values()].sort((p, q) => String(q.published_at || q.created_at || "").localeCompare(String(p.published_at || p.created_at || "")));
+}
+
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const supabase = db();
@@ -61,6 +81,7 @@ export async function GET(req: NextRequest) {
       agent_fields: [...Object.keys(agentInfo || {}), ...(agentSupply && Object.keys(agentSupply).length ? ["supply"] : [])],
       agent_supply_keys: Object.keys(agentSupply || {}),
       ...(await listingsOf(supabase, data.id)),
+      news: await newsOf(supabase, data).catch(() => []),
     };
     return NextResponse.json({ success: true, complex }, { headers: { "Cache-Control": "no-store" } });
   }

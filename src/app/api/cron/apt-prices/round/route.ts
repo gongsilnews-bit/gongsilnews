@@ -66,5 +66,7 @@ export async function GET(req: Request) {
     }
     done.push(r);
   }
-  return NextResponse.json({ success: true, mode, slot, jobs: jobs.length, done });
+  // 찜한 단지·부동산 새 소식 🔔 (새 실거래·공실·기사 — 같은 알림은 한 번만, utils/starAlerts)
+  const alerts = mode === "recent" ? await import("@/utils/starAlerts").then((m) => m.sweepStarAlerts(26)).catch(() => null) : null;
+  return NextResponse.json({ success: true, mode, slot, jobs: jobs.length, done, alerts });
 }

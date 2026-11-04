@@ -17,6 +17,7 @@ import { getBookmarkCategories } from "@/app/actions/bookmark";
 import GongsilSidebar from "./GongsilSidebar";
 import GongsilDetailPanel from "./GongsilDetailPanel";
 import VacancyBalloon from "./VacancyBalloon";
+import MyStarsBoard, { MY_DIM } from "./MyStarsBoard";
 import KakaoMapView from "./KakaoMapView";
 import GongsilFilterBar from "./GongsilFilterBar";
 import GongsilFilterPanel from "./GongsilFilterPanel";
@@ -276,6 +277,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   // 지도 [부동산]에서 사무소를 고르면 — 왼쪽 목록에 그 사무소 공실 전부 (지도 화면과 상관없이, AgencyLayer · 2026-11-04 사장님)
+  const [wishDetailOn, setWishDetailOn] = useState(false);
+  useEffect(() => { if (activeCategory === "wish") { setWishDetailOn(false); setShowDetail(false); } }, [activeCategory]); // eslint-disable-line react-hooks/exhaustive-deps
   const dbVacanciesRef = useRef<any[]>([]);
   dbVacanciesRef.current = dbVacancies;
   useEffect(() => {
@@ -500,7 +503,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   }, [activeProperty, currentUser]);
 
   useEffect(() => {
-    document.title = isAuctionMode ? "경/공매 | 공실뉴스" : "공실열람 | 공실뉴스";
+    document.title = isAuctionMode ? "경/공매 | 공실뉴스" : "우리동네부동산 | 공실뉴스";
   }, [isAuctionMode]);
 
   const toggleWishlist = (id: any) => {
@@ -519,6 +522,23 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
     toggleWishlistToDB(currentUser.id, String(id), !isWished);
   };
+
+  // 지도·목록의 ★ (stars.ts) — 공실 찜은 여기 wishlist 를 그대로 쓴다 (2026-11-04 사장님)
+  useEffect(() => { window.dispatchEvent(new CustomEvent("gs-vacancy-stars", { detail: wishlist.map(String) })); }, [wishlist]);
+  const toggleWishRef = useRef(toggleWishlist); toggleWishRef.current = toggleWishlist;
+  useEffect(() => {
+    const star = (e: Event) => {
+      const id = String((e as CustomEvent).detail);
+      const v = dbVacanciesRef.current.find((x) => String(x.id) === id);
+      toggleWishRef.current(v ? v.id : id);
+    };
+    const login = (e: Event) => { setToastMessage(String((e as CustomEvent).detail || "로그인이 필요합니다.")); setIsAuthModalOpen(true); };
+    const toast = (e: Event) => setToastMessage(String((e as CustomEvent).detail || ""));
+    window.addEventListener("gs-vacancy-star", star);
+    window.addEventListener("gs-need-login", login);
+    window.addEventListener("gs-toast", toast);
+    return () => { window.removeEventListener("gs-vacancy-star", star); window.removeEventListener("gs-need-login", login); window.removeEventListener("gs-toast", toast); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vacancyFilterOptions = {
     dbVacancies,
@@ -1780,7 +1800,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     >
       {/* ===== 상단 필터 바 ===== */}
       <div
-        style={{ background: "#fff", width: "100%", zIndex: 2000, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}
+        // 아래 화면(MY관심 3000·상세 창)보다 위 — 🔔 알림 목록·검색 창이 가려지지 않게 (2026-11-04)
+        style={{ background: "#fff", width: "100%", zIndex: 3500, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}
       >
         <GongsilFilterBar
           activeCategory={activeCategory}
@@ -2597,6 +2618,33 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
       {/* ===== 메인 레이아웃 ===== */}
       <main style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        {/* MY관심 — 지도 없이 넓게 (2026-11-04 사장님) */}
+        {activeCategory === "wish" && (
+          <MyStarsBoard
+            vacancies={displayVacancies}
+            allVacancies={dbVacancies}
+            wishTab={wishTab}
+            setWishTab={setWishTab}
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            setSelectedCategoryId={setSelectedCategoryId}
+            onManageFolders={() => { setSelectedVacancyId(null); setShowCategoryModal(true); }}
+            currentUser={currentUser}
+            userLevel={userLevel}
+            onLogin={() => setIsAuthModalOpen(true)}
+            detailId={showDetail ? activeProperty : null}
+            onOpenVacancy={(prop) => {
+              if (showDetail && String(activeProperty) === String(prop.id)) { setShowDetail(false); return; }
+              setWishDetailOn(true);
+              setPrevPropertyId(null);
+              setActiveProperty(prop.id);
+              setShowDetail(true);
+              setActiveDetailTab(prop.trade_type === "경매" ? "auction_detail" : "info");
+              setGalleryIndex(0);
+            }}
+            onCloseVacancy={() => setShowDetail(false)}
+          />
+        )}
         <GongsilSidebar
           activeCategory={activeCategory}
           wishTab={wishTab}
@@ -2625,6 +2673,11 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           setShowCategoryModal={setShowCategoryModal}
         />
 
+        {/* MY관심 화면 위에서도 공실 상세가 보이게 — 상세 창은 그대로, 바깥만 위로 (2026-11-04 사장님) */}
+        <div className="gs-wish-detail" style={activeCategory === "wish" && !(showDetail && wishDetailOn) ? { display: "none" } : activeCategory === "wish" ? { position: "absolute", top: 20, bottom: 20, left: "calc(50% - 680px)", width: 980, zIndex: 3100, pointerEvents: "none" } : { display: "contents" }}>
+          {/* 상세 창은 380px 옆에 그려진다 — 바깥을 왼쪽으로 680 당겨 상세(600)가 화면 가운데에 오게 */}
+          {activeCategory === "wish" && showDetail && wishDetailOn && <div style={{ ...MY_DIM, position: "fixed", pointerEvents: "auto" }} onClick={() => setShowDetail(false)} />}
+        <style>{".gs-wish-detail > *{pointer-events:auto}"}</style>
         <GongsilDetailPanel
           showDetail={showDetail}
           activeProperty={activeProperty}
@@ -2666,6 +2719,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           isAuctionMode={isAuctionMode}
           onPanToMap={handlePanToProperty}
         />
+        </div>
 
         <VacancyBalloon
           kakaoMapRef={kakaoMapRef}

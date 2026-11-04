@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { 
   getBookmarkCategories, 
   createBookmarkCategory, 
-  setArticleBookmarkCategory, 
+  setArticleBookmarkCategory, setStarBookmarkCategory, 
   setVacancyBookmarkCategory,
   updateBookmarkCategory,
   deleteBookmarkCategory
@@ -16,7 +16,7 @@ interface BookmarkCategoryModalProps {
   onClose: () => void;
   userId: string;
   itemId: string | number | null;
-  type: 'ARTICLE' | 'VACANCY';
+  type: 'ARTICLE' | 'VACANCY' | 'AGENCY' | 'COMPLEX';
   onSuccess?: () => void;
 }
 
@@ -152,6 +152,8 @@ export default function BookmarkCategoryModal({
     let res;
     if (type === 'ARTICLE') {
       res = await setArticleBookmarkCategory(userId, itemId, categoryId);
+    } else if (type === 'AGENCY' || type === 'COMPLEX') {
+      res = await setStarBookmarkCategory(userId, type, String(itemId), categoryId);
     } else {
       res = await setVacancyBookmarkCategory(userId, String(itemId), categoryId);
     }

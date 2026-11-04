@@ -337,8 +337,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             <div style={{ display: "flex", alignItems: isSmallHeader ? "center" : "flex-end", gap: isSmallHeader ? "16px" : "20px", flex: 1, minWidth: 0 }}>
               {/* 1. 로고 (isSmallHeader에 따라 크기만 변경) */}
               <div style={{ display: "flex", alignItems: "flex-end", cursor: "pointer", flexShrink: 0 }} onClick={() => window.location.href = "/"}>
-                {/* 그림 로고 대신 맨 위 줄 "공실뉴스"와 같은 글자를 남색으로 크게 (2026-10-29 사장님) */}
-                <span className="top-logo" style={{ color: "var(--brand-navy)", fontSize: isSmallHeader ? "30px" : "42px", lineHeight: 1, margin: 0, position: "relative", top: isSmallHeader ? 0 : -8, transition: "font-size 0.3s ease", whiteSpace: "nowrap" }}>공실뉴스</span>
+                {/* 원래 그림 로고로 되돌림 (2026-11-04 사장님 — 공실열람과 같은 "부동산 정보채널 공실뉴스") */}
+                <img src="/logo.png" style={{ height: isSmallHeader ? "38px" : "56px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
               </div>
 
               {/* 2. 메인 메뉴 또는 기사 제목 (Indication Bar) */}
@@ -410,17 +410,17 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
-                  {/* 우리동네뉴스는 오른쪽 공실열람 바로 앞으로 (2026-10-30 사장님) */}
-                  <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
+                  {/* 우리동네뉴스는 오른쪽 공실열람 바로 앞으로 (2026-10-30 사장님) — 일단 숨김 (2026-11-04 사장님: 우리동네부동산 지도에 [우리동네뉴스] 단추로) */}
+                  <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "none", alignItems: "center" }}>
                     <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>우리동네뉴스</span>
                       <NavCategoryHighlightMarker categoryKey="map" active={navBubble.key === "map" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "map"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="map" />
                   </div>
-                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
                     <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "inline-block", position: "relative" }}>
-                      <span style={{ position: "relative", zIndex: 1 }}>공실열람</span>
+                      <span style={{ position: "relative", zIndex: 1 }}>우리동네부동산</span>
                       <NavCategoryHighlightMarker categoryKey="gongsil" active={navBubble.key === "gongsil" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
@@ -696,8 +696,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실마케팅</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실열람</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네부동산</a></li>
+                  {/* 우리동네뉴스 — 일단 숨김 (2026-11-04) */}
                   {SHOW_STUDY && <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>}
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/newsrealty/resources"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>

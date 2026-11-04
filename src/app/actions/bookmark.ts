@@ -15,7 +15,7 @@ function getAdminClient() {
 // 북마크 카테고리 (bookmark_categories)
 // ==========================================
 
-export async function getBookmarkCategories(userId: string, type: 'ARTICLE' | 'VACANCY') {
+export async function getBookmarkCategories(userId: string, type: 'ARTICLE' | 'VACANCY' | 'AGENCY' | 'COMPLEX') {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase
@@ -32,7 +32,7 @@ export async function getBookmarkCategories(userId: string, type: 'ARTICLE' | 'V
   }
 }
 
-export async function createBookmarkCategory(userId: string, name: string, type: 'ARTICLE' | 'VACANCY') {
+export async function createBookmarkCategory(userId: string, name: string, type: 'ARTICLE' | 'VACANCY' | 'AGENCY' | 'COMPLEX') {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase
@@ -108,6 +108,16 @@ export async function setVacancyBookmarkCategory(userId: string, vacancyId: stri
   } catch (err: any) {
     return { success: false, error: err.message };
   }
+}
+
+/** 부동산·단지 찜 폴더 옮기기 (2026-11-04 사장님: 기사·부동산·단지도 폴더로) — agency_bookmarks · complex_bookmarks 의 category_id */
+export async function setStarBookmarkCategory(userId: string, kind: "AGENCY" | "COMPLEX", itemId: string, categoryId: string | null) {
+  const supabase = getAdminClient();
+  const table = kind === "AGENCY" ? "agency_bookmarks" : "complex_bookmarks";
+  const col = kind === "AGENCY" ? "agency_id" : "complex_id";
+  const { error } = await supabase.from(table).update({ category_id: categoryId }).eq("user_id", userId).eq(col, itemId);
+  if (error) return { success: false, error: /category_id/.test(error.message) ? "폴더 칸이 아직 없습니다 (DB 칸 만들기 필요)." : error.message };
+  return { success: true };
 }
 
 // ==========================================

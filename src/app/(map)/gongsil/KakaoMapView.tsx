@@ -5,7 +5,6 @@ import { getJitteredCoords } from "./gongsilHelpers";
 import AptPriceLayer from "./AptPriceLayer";
 import NewsLayer from "./NewsLayer";
 import AgencyLayer from "./AgencyLayer";
-import BldSampleLayer from "./BldSampleLayer";
 
 interface KakaoMapViewProps {
   activePills?: string[];
@@ -923,8 +922,7 @@ export default function KakaoMapView({
 
       </div>
 
-      {/* 건물 실거래 디자인 견본 — 내 PC(localhost)에서만 (2026-11-02) */}
-      <BldSampleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} />
+      {/* 건물 실거래 견본(논현동)은 내렸다 (2026-11-04 사장님) */}
       {/* 빌라 실거래 견본(논현동)은 내렸다 — 실제 자료가 [빌라 실거래가] 단추로 같은 지도에 (2026-11-03 사장님) */}
 
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}

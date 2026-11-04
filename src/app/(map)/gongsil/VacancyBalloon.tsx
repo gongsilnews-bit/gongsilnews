@@ -7,6 +7,7 @@
  *  알림: KakaoMapView 가 "gs-vacancy-marker" { ids, lat, lng } 를 보낸다.
  */
 import { useCallback, useEffect, useRef } from "react";
+import { starHtml } from "./stars";
 import { formatAmount, formatAreaWithPy, getAuctionInfo, getCleanAddrText, getPriceText } from "./gongsilHelpers";
 
 const BLUE = "#1a73e8";
@@ -66,7 +67,7 @@ export default function VacancyBalloon({ kakaoMapRef, vacancies, userLevel, curr
       `</div></div>` +
       `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0">` +
       `<span style="font-size:12px;color:#a1a1aa;white-space:nowrap"><b style="color:#d9363e">${esc(p.vacancy_no || "")}</b>${p.created_at ? ` · ${esc(String(p.created_at).slice(0, 10).replace(/-/g, "."))}` : ""}</span>` +
-      `<a href="#" data-vac-open="${esc(p.id)}" style="font-size:13px;font-weight:700;color:${BLUE};text-decoration:none;white-space:nowrap">공실상세보기 &gt;</a>` +
+      `<span style="display:inline-flex;align-items:center;gap:8px">${starHtml("vac", String(p.id), 18)}<a href="#" data-vac-open="${esc(p.id)}" style="font-size:13px;font-weight:700;color:${BLUE};text-decoration:none;white-space:nowrap">공실상세보기 &gt;</a></span>` +
       `</div></div>`;
   }, [currentUser, userLevel]);
 

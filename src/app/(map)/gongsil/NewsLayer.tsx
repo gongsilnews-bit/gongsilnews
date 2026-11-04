@@ -5,12 +5,13 @@
  *  [전체] 공실뉴스 기사 전부 · [아파트·오피스텔] 아파트/오피스텔 · … · [신축/분양] · [경매/공매] · [MY관심공실] 기사 없음.
  *  부동산·경제 · 라이프·오피니언 · AI마케팅 기사는 공실열람에 띄우지 않는다 (우리동네뉴스 메뉴에서는 그대로).
  *  가까운 기사는 하나로 묶고, 누르면 그 자리 기사 카드가 작은 창으로 · 카드를 누르면 기사로.
- *  왼쪽 공실 목록 · 위쪽 칸 · 우리동네뉴스 메뉴(/news_map)는 그대로 둔다. 처음엔 꺼 두고, 켠 것은 기억한다.
+ *  왼쪽 공실 목록 · 위쪽 칸 · 우리동네뉴스 메뉴(/news_map)는 그대로 둔다. 들어올 때마다 꺼진 채로 시작 (11-04).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getArticles } from "@/app/actions/article";
 import NewsArticlePanel from "./NewsArticlePanel";
+import { starHtml, useStars } from "./stars";
 
 const ORANGE = "#ff8e15";
 const KEY = "gs-news-layer";
@@ -36,6 +37,7 @@ const fits = (a: Art, cat: string) => {
 
 export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null; category: string }) {
   const [on, setOn] = useState(false);
+  useStars(); // ★ 찜 목록 불러오기
   const [arts, setArts] = useState<Art[] | null>(null);
   const [busy, setBusy] = useState(false);
   const overlays = useRef<any[]>([]);
@@ -67,8 +69,9 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
     window.dispatchEvent(new CustomEvent("gs-news-reading", { detail: reading })); // 왼쪽 뉴스 목록도 같은 표시
   }, [reading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { try { if (localStorage.getItem(KEY) === "1") setOn(true); } catch { /* */ } }, []);
-  const toggle = () => setOn((v) => { try { localStorage.setItem(KEY, v ? "0" : "1"); } catch { /* */ } return !v; });
+  // 들어올 때마다 꺼진 채로 시작 — 켠 것을 기억하지 않는다 (11-04 사장님: 지도가 복잡하지 않게)
+  useEffect(() => { try { localStorage.removeItem(KEY); } catch { /* */ } }, []);
+  const toggle = () => setOn((v) => !v);
 
   // 켰을 때 한 번만 받는다 — 발행된 기사 중 위치가 있는 것 (예약 기사는 뺀다)
   useEffect(() => {
@@ -110,7 +113,7 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
       `</div></div>` +
       `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0">` +
       `<span style="font-size:12px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(day(a.published_at || a.created_at))} · ${esc(a.author_name || "공실뉴스")}</span>` +
-      `<a href="${esc(href(a))}" data-open="${esc(a.id)}" style="font-size:13px;font-weight:700;color:${ORANGE};text-decoration:none;white-space:nowrap">기사 보러가기 &gt;</a>` +
+      `<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">${starHtml("art", a.id, 18)}<a href="${esc(href(a))}" data-open="${esc(a.id)}" style="font-size:13px;font-weight:700;color:${ORANGE};text-decoration:none;white-space:nowrap">기사 보러가기 &gt;</a></span>` +
       `</div></div>`;
     wrap.innerHTML =
       `<div data-box style="position:relative;background:#fff;padding:14px 16px;width:${group.some((a) => a.thumbnail_url) ? 300 : 250}px;max-height:340px;overflow-y:auto;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);border:1px solid #ddd">` +

@@ -9,6 +9,7 @@ import { getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import { formatSection1 } from "@/utils/formatCategory";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import BannerSlot from "@/components/BannerSlot";
+import { addRecent } from "./stars";
 
 const formatDateFull = (dateStr: string) => {
   if (!dateStr) return "";
@@ -34,7 +35,12 @@ export default function NewsArticlePanel({ id, onClose }: { id: string | null; o
     if (!id) return;
     setShownId(id); setA(null);
     let alive = true;
-    getArticleDetail(id).then((r) => { if (alive && r.success) setA(r.data); }).catch(() => {});
+    getArticleDetail(id).then((r) => {
+      if (!alive || !r.success) return;
+      setA(r.data);
+      const d = r.data as Record<string, unknown>; // MY관심 [최근 본 기사]에
+      addRecent("art", { id: String(d.id), article_no: d.article_no ?? null, title: d.title, subtitle: d.subtitle ?? null, thumbnail_url: d.thumbnail_url ?? null, published_at: d.published_at ?? null, author_name: d.author_name ?? null, section1: d.section1 ?? null, section2: d.section2 ?? null, location_name: d.location_name ?? null });
+    }).catch(() => {});
     if (!viewed.has(id)) { viewed.add(id); incrementArticleView(id).catch(() => {}); }
     return () => { alive = false; };
   }, [id]);

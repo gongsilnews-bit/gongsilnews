@@ -10,7 +10,8 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShared";
+import { LAWD_NAMES, areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShared";
+import { addRecent } from "./stars";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
 type Complex = { t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
@@ -230,6 +231,20 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
   }, [pick]);
 
   const close = useCallback(() => { setDetail(null); setDetailError(""); setListOpen(false); pick(null); }, [pick]);
+  // 단지 창이 열리면 — MY관심 [최근 본 단지]에 (이 기기, stars.addRecent)
+  useEffect(() => {
+    if (!detail) return;
+    const t = [...(detail.trades || [])].sort((p, q) => q.d.localeCompare(p.d))[0];
+    addRecent("apt", { id: detail.id, kind: detail.kind || "apt", name: detail.name, place: `${(LAWD_NAMES[detail.lawd_cd] || "").replace(/^\S+\s/, "")} ${detail.dong || ""}`.trim(),
+      repArea: t?.a ?? null, repPrice: t?.p ?? null, repDate: t?.d ?? null, tradeCount: (detail.trades || []).length, newTrades: 0, newVacancies: 0, newArticles: 0 });
+  }, [detail]);
+  // 부동산(사무소·묶음)을 누르면 — 왼쪽을 덮고 있는 단지 창을 닫아 부동산 목록이 보이게 (11-04 사장님)
+  useEffect(() => {
+    const shut = (e: Event) => { if ((e as CustomEvent).detail) close(); };
+    window.addEventListener("gs-agency-open", shut);
+    window.addEventListener("gs-agency-group", shut);
+    return () => { window.removeEventListener("gs-agency-open", shut); window.removeEventListener("gs-agency-group", shut); };
+  }, [close]);
 
   // 주소 ?apt=<단지 id> — 그 단지로 지도를 옮기고 단지 창을 연다 (대본·기사 글쓰기의 "공실열람 단지 시세" 캡처, 2026-11-03 사장님)
   const aptParamDone = useRef(false);
@@ -535,6 +550,8 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
           // 창은 그대로 두고 왼쪽 목록만 그 단지 공실로 (2026-11-02 사장님)
           onShowVacancies={() => { onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])]); if (!mobile && side) setListOpen(true); }}
           onShowAuctions={onShowAuctions ? () => { onShowAuctions(detail.auction_ids || []); if (!mobile && side) setListOpen(true); } : undefined}
+          // [뉴스 N] — 왼쪽 목록에 이 단지 기사 (GongsilSidebar 가 받는다)
+          onShowNews={() => { window.dispatchEvent(new CustomEvent("gs-news-select", { detail: detail.news || [] })); if (!mobile && side) setListOpen(true); }}
         />
       )}
       {on && detailError && (

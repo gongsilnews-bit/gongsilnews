@@ -1,5 +1,6 @@
 "use client";
 
+import NotificationBell from "@/components/common/NotificationBell";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
@@ -100,6 +101,8 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
         {/* 로그인 / 회원 버튼 */}
         {currentUser ? (
           <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
+            {/* 🔔 메인 화면과 같은 알림 종 — 찜한 부동산·단지 새 소식도 여기로 (2026-11-04 사장님) */}
+            <NotificationBell color="#333" />
             <div style={{
               background: userRole === 'ADMIN' ? '#111827' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '#ef4444' : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : userRole === 'REALTOR' ? '#2563eb' : '#6b7280',
               color: '#fff',

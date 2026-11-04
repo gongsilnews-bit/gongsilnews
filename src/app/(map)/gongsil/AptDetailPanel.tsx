@@ -9,6 +9,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import { aptViewerInfo, submitAptInfoCapture, submitAptInfoRequest } from "@/app/actions/aptReports";
+import { starSvg, useStars } from "./stars";
 import { LAWD_NAMES, areaLabel, brokerFee, fullPrice, isNewDeal, supplyFor, type Rent, type Trade } from "@/utils/aptMapShared";
 
 export type AptDetail = {
@@ -23,6 +24,7 @@ export type AptDetail = {
   } | null;
   agent_fields?: string[];      // 부동산이 보완한 칸 (화면에 "공인중개사 제공")
   agent_supply_keys?: string[]; // 부동산이 보완한 공급면적의 전용㎡
+  news?: { id: string; title: string; subtitle?: string | null; section1?: string | null; section2?: string | null; location_name?: string | null; published_at?: string | null; created_at?: string | null; author_name?: string | null; thumbnail_url?: string | null; lat?: number | null; lng?: number | null }[]; // 이 단지 뉴스 (50m 안 · 제목에 단지 이름)
   vacancy_ids?: string[];       // 이 단지 공실 (DB, 탭과 상관없이)
   auction_ids?: string[];       // 이 단지 경매·공매 (2026-11-02)
 };
@@ -486,57 +488,44 @@ function InfoRequest({ detail, groups }: { detail: AptDetail; groups: { label: s
  *  로그인 안 함: [무료 공실등록] → 로그인 뒤 등록 화면 · 부동산 회원·관리자: 단지가 미리 채워진 등록 화면 · 일반 회원: 등록 단추 숨김
  *  조회수는 실제로 센 것만, 5번 이상일 때만 보인다 (지어내지 않는다) */
 const VIEW_SHOW_MIN = 5;
-function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, mobile = false, stack = false }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void; mobile?: boolean; stack?: boolean }) {
+/** 맨 아래 개수 줄 (2026-11-04 사장님: 파란 등록 단추를 빼고 공실·뉴스 개수만 — 누르면 왼쪽 목록에). 입점은 회의 뒤 */
+function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, onShowNews }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void; onShowNews?: () => void }) {
   const auctionCount = (detail.auction_ids || []).length;
-  const [viewer, setViewer] = useState<{ loggedIn: boolean; realtor: boolean; admin: boolean; weekViews: number } | null>(null);
+  const newsCount = (detail.news || []).length;
+  // 조회 수는 그대로 센다 (손님에게 보이지는 않는다)
   useEffect(() => {
     const key = `apt-view:${detail.id}:${new Date().toISOString().slice(0, 10)}`;
     let count = true;
     try { count = !localStorage.getItem(key); localStorage.setItem(key, "1"); } catch { /* 사생활 보호 모드 */ }
-    aptViewerInfo(detail.id, count).then(setViewer).catch(() => setViewer(null));
+    aptViewerInfo(detail.id, count).catch(() => {});
   }, [detail.id]);
-
-  const canRegister = !viewer || !viewer.loggedIn || viewer.realtor; // 불러오기 전엔 보인다
-  const base = viewer?.admin ? "/admin" : "/realty_admin";
-  const target = mobile ? `/m/admin/vacancy/write?complex=${encodeURIComponent(detail.id)}` : `${base}?menu=gongsil&action=write&complex=${encodeURIComponent(detail.id)}`;
-  const register = () => {
-    window.location.href = viewer?.loggedIn ? target : `${mobile ? "/m/login" : "/login"}?returnTo=${encodeURIComponent(target)}`;
-  };
-  const hasVacancy = vacancyCount > 0 && !!onShowVacancies;
-  if (!hasVacancy && !canRegister) return null;
-
-  const views = viewer && viewer.weekViews >= VIEW_SHOW_MIN ? viewer.weekViews : 0;
-  const pitch = canRegister && (hasVacancy
-    ? `이 단지 실거래가를 보는 손님에게 대표님 공실도 함께 보입니다.`
-    : `지금 올리면 이 단지를 보는 손님에게 대표님 공실이 먼저 보입니다.`);
+  // 맨 아래 줄 — 단지 색(아파트 파랑·오피스텔 초록·빌라 자주) 진한 바탕 + 흰 글씨 "공실 2 | 뉴스 1" (11-04 사장님)
+  const bg = detail.kind === "villa" ? VILLA_ROSE : detail.kind === "offi" ? OFFI_GREEN : BRAND;
+  const cell = (label: string, n: number, on?: () => void) => (
+    <button key={label} onClick={on} disabled={!on}
+      style={{ flex: 1, height: 52, border: "none", background: "transparent", cursor: on ? "pointer" : "default", fontSize: 16, fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: on ? 1 : 0.75 }}>
+      {label}<span style={{ fontSize: 19 }}>{n}</span>
+    </button>
+  );
+  const bar = <span style={{ width: 1, alignSelf: "stretch", margin: "12px 0", background: "rgba(255,255,255,.35)" }} />;
   return (
-    <div style={{ flexShrink: 0, padding: "12px 16px 14px", background: "#fff", borderTop: `1px solid ${LINE}` }}>
-      {(views > 0 || pitch) && (
-        <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 9, lineHeight: 1.5 }}>
-          {views > 0 && <b style={{ color: ACC }}>이번 주 이 단지 실거래가 조회 {views.toLocaleString("ko-KR")}번 · </b>}
-          {pitch}
-        </div>
-      )}
-      {stack && <style>{".apt-stack > button { flex: none !important; }"}</style>}
-      <div className={stack ? "apt-stack" : undefined} style={{ display: "flex", flexDirection: stack ? "column-reverse" : "row", gap: 8 }}>{/* 왼쪽 창은 좁아서 위아래로 — 등록 단추가 위 */}
-        {hasVacancy && (
-          <button onClick={onShowVacancies} style={{ flex: canRegister ? 1.3 : 1, height: 50, borderRadius: 12, border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
-            이 단지 공실 {vacancyCount}개 보기
-          </button>
-        )}
-        {auctionCount > 0 && onShowAuctions && (
-          <button onClick={onShowAuctions} style={{ flex: 1, height: 50, borderRadius: 12, border: "1.5px solid #7048e8", background: "#fff", color: "#7048e8", fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
-            경매 {auctionCount}건 보기
-          </button>
-        )}
-        {canRegister && (
-          <button onClick={register} style={{ flex: 1, height: 50, borderRadius: 12, border: "none", background: ACC, color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 3px 10px rgba(0,0,0,.15)" }}>
-            {/* 2026-11-02 사장님 */}
-            공실무료등록하고 SNS자동홍보하기
-          </button>
-        )}
-      </div>
+    <div style={{ flexShrink: 0, background: bg, display: "flex", alignItems: "stretch" }}>
+      {cell("공실", vacancyCount, vacancyCount ? onShowVacancies : undefined)}
+      {bar}
+      {cell("뉴스", newsCount, onShowNews)}
+      {auctionCount > 0 && <>{bar}{cell("경매", auctionCount, onShowAuctions)}</>}
     </div>
+  );
+}
+
+/** 단지 찜 ★ — 머리 ✕ 옆, 누르면 노란 별 (11-04 사장님) */
+function AptStar({ id }: { id: string }) {
+  const { isStar, toggleStar } = useStars();
+  const on = isStar("apt", id);
+  return (
+    <button onClick={() => void toggleStar("apt", id)} title={on ? "관심 단지 해제" : "관심 단지로 찜하기"} aria-label="찜하기"
+      style={{ border: "none", background: "rgba(255,255,255,.18)", borderRadius: "50%", width: 34, height: 34, marginRight: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+      dangerouslySetInnerHTML={{ __html: starSvg(on, 20).replace('stroke="#9ca3af"', 'stroke="#ffffff"') }} />
   );
 }
 
@@ -563,12 +552,12 @@ function ScriptPickBar({ detail }: { detail: AptDetail }) {
   );
 }
 
-export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, mobile = false, side, flat = false, part }: {
+export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onShowVacancies, onShowAuctions, onShowNews, mobile = false, side, flat = false, part }: {
   /** 캡처 한 장 — chart: 시세·그래프만 · trades: 실거래 내역만 (flat 일 때) */
   part?: "chart" | "trades";
   /** 캡처용 — 창 없이 페이지에 펼쳐 그린다 (대본 작성 › 단지/시세 화면 캡처, /apt-capture). 로드뷰·지도·거래비용·아래 단추는 뺀다 */
   flat?: boolean;
-  detail: AptDetail; onClose: () => void; vacancyCount?: number; onShowVacancies?: () => void; onShowAuctions?: () => void;
+  detail: AptDetail; onClose: () => void; vacancyCount?: number; onShowVacancies?: () => void; onShowAuctions?: () => void; onShowNews?: () => void;
   /** PC: 왼쪽 목록 자리에 붙인다 (2026-11-02 사장님: 호갱노노처럼 왼쪽에) — 목록의 화면 위치·크기, 숨김 */
   side?: { left: number; top: number; height: number; hidden?: boolean };
   mobile?: boolean; // 모바일: 아래에서 올라오는 시트 (2026-11-02 사장님: 옆에 붙는 모양은 모바일에 좋다)
@@ -670,6 +659,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             {(detail.kind === "offi" || villa) && <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,.22)", borderRadius: 6, padding: "2px 7px", marginRight: 8, verticalAlign: "middle" }}>{villa ? detail.house_type || "빌라" : "오피스텔"}</span>}
             {detail.dong} {detail.name}
           </div>
+{!flat && <AptStar id={detail.id} />}
 {!flat && <button onClick={close} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 0.6fr", gap: 8, marginTop: 12 }}>
@@ -855,7 +845,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
       </div>
 
       {/* 맨 아래 고정 — [이 단지 공실 n개 보기] [무료 공실등록] (2026-11-02 사장님: 단지가 보이면 부동산에게 공실등록 유도) */}
-      {!villa && !flat && <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} mobile={mobile} stack={Boolean(side)} />}
+      {!flat && <BottomActions detail={detail} vacancyCount={vacancyCount} onShowVacancies={onShowVacancies} onShowAuctions={onShowAuctions} onShowNews={(detail.news || []).length ? onShowNews : undefined} />}
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (

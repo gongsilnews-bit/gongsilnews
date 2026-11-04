@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useNotificationsRealtime } from "@/hooks/useNotificationsRealtime";
@@ -13,6 +14,9 @@ import {
 
 const TYPE_LABEL: Record<string, { icon: string; color: string }> = {
   member_signup: { icon: "👤", color: "#2563eb" },
+  star_vacancy: { icon: "🏢", color: "#2563eb" },
+  star_article: { icon: "📰", color: "#ff8e15" },
+  star_trade: { icon: "🏠", color: "#1a56db" },
   article_pending: { icon: "📝", color: "#d97706" },
   newsrealty_apply: { icon: "🏢", color: "#059669" },
   study_apply: { icon: "🎓", color: "#059669" },
@@ -53,6 +57,9 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  // 목록은 화면 맨 위(body)에 띄운다 — 감싼 칸이 잘라 내도(overflow) 가려지지 않게 (2026-11-04: 공실열람 위쪽 띠에서 안 보이던 것)
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
 
   // 로그인 사용자와 권한 파악
   useEffect(() => {
@@ -86,7 +93,7 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
   useEffect(() => {
     if (!open) return;
     const onOutside = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      if (boxRef.current && !boxRef.current.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
@@ -115,7 +122,11 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
     <div ref={boxRef} style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={(e) => {
+          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          setPos({ top: r.bottom + 10, right: Math.max(8, window.innerWidth - r.right) });
+          setOpen(o => !o);
+        }}
         aria-label={`알림 ${unread}건`}
         style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", alignItems: "center", position: "relative" }}
       >
@@ -134,9 +145,9 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
         )}
       </button>
 
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 10px)", right: 0, width: 340, maxHeight: 420,
+      {open && pos && typeof document !== "undefined" && createPortal(
+        <div ref={dropRef} style={{
+          position: "fixed", top: pos.top, right: pos.right, width: 340, maxHeight: 420,
           background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12,
           boxShadow: "0 12px 28px rgba(0,0,0,0.16)", zIndex: 10000, display: "flex", flexDirection: "column",
         }}>
@@ -185,7 +196,8 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
