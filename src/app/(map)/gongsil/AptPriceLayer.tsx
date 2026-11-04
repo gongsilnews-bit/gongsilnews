@@ -385,7 +385,6 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
     const level = map.getLevel();
     // 오피스텔을 감춘 축척에서는 오피스텔 공실도 단지에 붙이지 않고 원래 공실 표시로 둔다
     // 겹치지 않게 — 거래 많은 단지부터 화면 자리를 잡고, 이미 잡힌 자리와 겹치면 뺀다 (축소하면 큰 단지만 남는다)
-    void level;
     const proj = map.getProjection();
     const taken: { x: number; y: number }[] = [];
     const BOX_W = 74, BOX_H = 44;
@@ -396,6 +395,8 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
       .filter((c) => priceOf(c) && kindsRef.current[c.kind === "offi" ? "offi" : c.kind === "villa" ? "villa" : "apt"])
       .sort((a, b) => b.trade_count - a.trade_count)
       .filter((c) => {
+        // 많이 확대하면(축척 30m 이하, level 1·2) 숨기지 않고 다 — 붙은 건물은 끝까지 겹쳐 안 보이던 것 (2026-11-05 사장님)
+        if (level <= 2) return true;
         const pt = proj.containerPointFromCoords(new kakao.maps.LatLng(c.lat, c.lng));
         if (taken.some((t) => Math.abs(t.x - pt.x) < BOX_W && Math.abs(t.y - pt.y) < BOX_H)) return false;
         taken.push({ x: pt.x, y: pt.y });
@@ -483,6 +484,9 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
       }
       el.addEventListener("click", (e) => { e.stopPropagation(); hidePeek(); openDetail(c.id); });
       const overlay = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(c.lat, c.lng), content: el, yAnchor: 1, zIndex: 1, clickable: true });
+      // 겹쳐 있으면 마우스를 올린 것이 맨 앞으로
+      el.addEventListener("mouseenter", () => overlay.setZIndex(6));
+      el.addEventListener("mouseleave", () => overlay.setZIndex(c.id === pickedRef.current ? 5 : 1)); // 고른 단지는 앞에 둔 채로
       overlay.setMap(map);
       overlaysRef.current.push(overlay);
       elsRef.current.set(c.id, el);

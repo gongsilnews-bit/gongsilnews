@@ -73,12 +73,13 @@ function groupsOf(c: AptDetail): Group[] {
   return [...map.values()].sort((x, y) => x.lo - y.lo);
 }
 
-/** 최근 실거래 기준 N개월 평균 — 가장 최근 거래일부터 N개월 안 (3·6·12개월 고르기, 2026-11-03 사장님) */
+/** 최근 N개월 평균 — 오늘부터 거꾸로 N개월 안 거래만 (3·6·12개월 고르기, 2026-11-03 사장님)
+ *  2026-11-05: 마지막 거래일부터 세던 것을 오늘부터로 — 1년 넘은 거래 1건이 "3개월 평균"으로 나오던 것 */
 function monthAvg(list: { d: string; v: number }[], months = 3) {
-  if (!list.length) return null;
-  const last = list.reduce((m, x) => (x.d > m ? x.d : m), list[0].d);
-  const from = new Date(new Date(last).getTime() - Math.round(months * 30.4) * DAY).toISOString().slice(0, 10);
+  const from = new Date(Date.now() - Math.round(months * 30.4) * DAY).toISOString().slice(0, 10);
   const recent = list.filter((x) => x.d >= from);
+  if (!recent.length) return null;
+  const last = recent.reduce((m, x) => (x.d > m ? x.d : m), recent[0].d);
   return { avg: Math.round(recent.reduce((t, x) => t + x.v, 0) / recent.length), count: recent.length, last };
 }
 
@@ -617,6 +618,10 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const depAvg = monthlyOnly ? monthAvg(monthlyRents.map((r) => ({ d: r.d, v: r.dep })), avgMonths) : null;
   const avgText = avg ? (monthlyOnly && depAvg ? `${fullPrice(depAvg.avg)} / ${avg.avg.toLocaleString("ko-KR")}` : fullPrice(avg.avg)) : "거래 없음";
   const leaseTag = mode === "lease" ? (monthlyOnly ? " (월세)" : " (전세)") : "";
+  // 고른 기간 안에 거래가 없으면 — 마지막 거래를 작게 (평균에는 넣지 않는다)
+  const lastPoint = !avg && points.length ? points.reduce((m, x) => (x.d > m.d ? x : m)) : null;
+  const lastDep = lastPoint && monthlyOnly ? monthlyRents.find((r) => r.d === lastPoint.d)?.dep : undefined;
+  const lastText = lastPoint ? (monthlyOnly && lastDep !== undefined ? `${fullPrice(lastDep)} / ${lastPoint.v.toLocaleString("ko-KR")}` : fullPrice(lastPoint.v)) : "";
   const latestMonthly = mode === "lease" && !monthlyOnly ?(g?.rents || []).find((r) => r.m) : undefined;
   // 최고가 거래 한 건에 [최고] 표시 (2026-11-02 사장님) — 매매는 거래가, 전월세는 전세 보증금 기준
   const topSale = Math.max(0, ...(g?.sales || []).map((t) => t.p));
@@ -724,6 +729,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
             {avgText}
           </div>
           {avg && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>{dot(avg.last)} 기준 · {avg.count}건 평균</div>}
+          {lastPoint && <div style={{ padding: "4px 20px 0", color: SUB, fontSize: 12 }}>최근 {avgMonths === 12 ? "1년" : `${avgMonths}개월`} 안 거래 없음 · 마지막 거래 {dot(lastPoint.d)} {lastText}</div>}
           {villa && jeonseRate && (
             <div style={{ margin: "10px 20px 0", padding: "10px 12px", borderRadius: 8, background: ACC_SOFT, display: "flex", alignItems: "center", gap: 8 }}>
               <b style={{ color: ACC }}>전세가율 {jeonseRate.rate}%</b>
