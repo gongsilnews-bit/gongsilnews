@@ -886,6 +886,13 @@ function MobileGongsilContent() {
     const loadDirectVacancy = async () => {
       try {
         const res = await getVacancyDetail(idFromUrl);
+        // 내 홈페이지 전용 공실 — 공실뉴스에서는 보이지 않고 그 부동산 홈페이지로 (2026-11-05)
+        if (res.success && res.data && String(res.data.exposure_type || "").replace(/\s/g, "") === "홈페이지전용") {
+          const { homepageOnlyRedirect } = await import("@/app/actions/homepage");
+          const r = await homepageOnlyRedirect(String(idFromUrl));
+          if (r.url) { window.location.replace(r.url.replace("/gongsil/detail/", "/m/gongsil/detail/")); return; }
+          return;
+        }
         if (res.success && res.data) {
           const detail = {
             ...res.data,

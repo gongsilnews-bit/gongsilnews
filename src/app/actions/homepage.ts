@@ -422,3 +422,15 @@ export async function uploadHomepageFile(formData: FormData) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * 내 홈페이지 전용 공실을 공실뉴스 주소(/gongsil?id=…)로 열었을 때 — 그 부동산 홈페이지의 같은 물건 주소 (2026-11-05 사장님: "여기서 보이잖아")
+ *  홈페이지가 닫혀 있으면 "" (공실뉴스에서는 보이지 않는다)
+ */
+export async function homepageOnlyRedirect(vacancyId: string): Promise<{ homeOnly: boolean; url: string }> {
+  const supabase = getAdminClient();
+  const { data: v } = await supabase.from('vacancies').select('owner_id, exposure_type').eq('id', vacancyId).maybeSingle();
+  if (!v || String(v.exposure_type || '').replace(/\s/g, '') !== '홈페이지전용') return { homeOnly: false, url: '' };
+  const base = await getHomepageBase(String(v.owner_id));
+  return { homeOnly: true, url: base ? `${base}/gongsil/detail/${vacancyId}` : '' };
+}

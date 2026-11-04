@@ -668,6 +668,14 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         let target = dbVacancies.find((v) => String(v.id) === String(idParam));
         if (!target) {
           const res = await getVacancyDetail(idParam);
+          // 내 홈페이지 전용 공실 — 올린 사람이 아니면 공실뉴스에서 보이지 않고 그 부동산 홈페이지로 (2026-11-05)
+          if (res.success && res.data && String(res.data.exposure_type || "").replace(/\s/g, "") === "홈페이지전용" && String(res.data.owner_id) !== String(currentUser?.id || "")) {
+            idParamHandledRef.current = idParam;
+            const { homepageOnlyRedirect } = await import("@/app/actions/homepage");
+            const r = await homepageOnlyRedirect(String(idParam));
+            if (r.url) window.location.replace(r.url);
+            return;
+          }
           if (res.success && res.data) {
             target = res.data;
             setDbVacancies((prev) => {
