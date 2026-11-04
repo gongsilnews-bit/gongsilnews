@@ -627,9 +627,8 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const topJeonse = Math.max(0, ...(g?.rents || []).filter((r) => !r.m).map((r) => r.dep));
   let topMarked = false;
   const markTop = (isTop: boolean) => (isTop && !topMarked ? (topMarked = true) : false);
-  // NEW — 1주일 안에 새로 들어온 거래 (s 가 없던 때 것은 단지 new_at 으로 어림, aptMapShared.isNewDeal)
-  const legacyNewAt = (detail.trades || []).some((t) => t.s) || (detail.rents || []).some((r) => r.s) ? null : detail.new_at;
-  const isNew = (x: { d: string; s?: string }) => isNewDeal(x, legacyNewAt);
+  // NEW — 1주일 안에 새로 들어온 거래만 (들어온 날 s 가 적힌 거래, aptMapShared.isNewDeal)
+  const isNew = (x: { d: string; s?: string }) => isNewDeal(x);
   const rows = mode === "sale"
     ? (g?.sales || []).map((t) => ({ d: t.d, f: t.f, price: fullPrice(t.p), kind: "", top: markTop(t.p === topSale), fresh: isNew(t) }))
     : (g?.rents || []).map((r) => ({ d: r.d, f: r.f, price: leasePrice(r), kind: r.m ? "월세" : "전세", top: markTop(!r.m && r.dep === topJeonse), fresh: isNew(r) }));

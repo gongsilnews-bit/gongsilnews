@@ -37,7 +37,7 @@ const GW = {
     PHOTO_CAPTION: 'input[placeholder="사진 설명(캡션) 입력"]',
     /* 경매·공매 기사가 올라갈 섹션 */
     SECTION1: "공실뉴스",
-    SECTION2: "신축/분양/경매",
+    SECTION2: "경매/공매",
   },
 
   /* ── ChatGPT ── */

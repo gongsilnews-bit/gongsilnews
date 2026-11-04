@@ -27,7 +27,8 @@ const FULL_CATEGORY_MAP = [
   { section1: "공실뉴스", section2: "빌라/주택/다가구/다세대", keyword: "빌라 다세대 전세 OR 단독주택 매매" },
   { section1: "공실뉴스", section2: "원룸/투룸(풀옵션)", keyword: "원룸 투룸 월세 임대차" },
   { section1: "공실뉴스", section2: "상가/사무실/빌딩/공장/토지", keyword: "지식산업센터 공실 OR 상가 매매 동향 OR 오피스 빌딩 매매 OR 토지 거래" },
-  { section1: "공실뉴스", section2: "신축/분양/경매", keyword: "신축 아파트 분양 청약 OR 법원 경매 낙찰가율 OR 오피스텔 분양" },
+  { section1: "공실뉴스", section2: "신축/분양", keyword: "신축 아파트 분양 청약 OR 오피스텔 분양 OR 입주 예정 아파트" },
+  { section1: "공실뉴스", section2: "경매/공매", keyword: "법원 경매 낙찰가율 OR 아파트 경매 OR 캠코 공매" },
 
   // 2. 부동산·경제
   { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "국토교통부 부동산 정책 OR 아파트 분양가 OR 재건축 규제 OR 부동산 대출" },

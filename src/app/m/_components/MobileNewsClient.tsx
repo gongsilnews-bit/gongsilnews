@@ -19,7 +19,8 @@ import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import { formatSection1, formatSection2 } from "@/utils/formatCategory";
 import { MobilePopularNewsWidget } from "./MobilePopularNewsWidget";
-
+
+
 import { SHOW_STUDY } from "@/utils/siteFlags";
 function formatPrice(v: any): string {
   const formatValue = (val: number) => {
@@ -91,8 +92,8 @@ const SECTION1_TO_KEY: Record<string, string> = {
 
 // 4대 표준 1차/2차 카테고리 맵
 const SECTION2_MAP: Record<string, string[]> = {
-  "공실뉴스": ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양/경매"],
-  "공실현장": ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양/경매"],
+  "공실뉴스": ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양", "경매/공매"],
+  "공실현장": ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양", "경매/공매"],
   "부동산·경제": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
   "정책시장": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
   "AI마케팅": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
@@ -109,7 +110,8 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
     "빌라/주택/다가구/다세대": "현장 확인 완료 빌라·주택·다가구·다세대 무료 공실 소식",
     "원룸/투룸(풀옵션)": "임대인 직등록 원룸·투룸 실시간 무료 공유",
     "상가/사무실/빌딩/공장/토지": "상가·사무실·빌딩·토지 무료 공동중개 네트워크",
-    "신축/분양/경매": "전국 신축 분양 & 경·공매 무료 권리분석"
+    "신축/분양": "전국 신축 분양·청약 무료 정보",
+    "경매/공매": "전국 경·공매 무료 권리분석"
   },
   "news_politics": {
     "전체": "11만 부동산 & 임대인을 위한 무료 정책 브리핑",
@@ -182,8 +184,18 @@ const SUB_CATEGORY_PICTOGRAMS: Record<string, { label: string; icon: React.React
       </svg>
     )
   },
-  "신축/분양/경매": {
-    label: "신축·경매",
+  "신축/분양": {
+    label: "신축·분양",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2l6 6-4 4-6-6 4-4z"/>
+        <path d="M3 21l6-6"/>
+        <path d="M15 11l-4 4"/>
+      </svg>
+    )
+  },
+  "경매/공매": {
+    label: "경매·공매",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2l6 6-4 4-6-6 4-4z"/>

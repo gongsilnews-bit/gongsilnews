@@ -260,7 +260,7 @@
       done.push("제목");
     }
 
-    /* 1-1. 섹션 — 경매·공매 기사는 공실뉴스 > 신축/분양/경매 */
+    /* 1-1. 섹션 — 경매·공매 기사는 공실뉴스 > 경매/공매 */
     if (draft.saleKind) {
       if (await fillSection()) done.push("섹션");
       else failed.push("섹션");

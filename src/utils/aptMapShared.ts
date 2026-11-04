@@ -94,15 +94,11 @@ export const LAWD_NAMES: Record<string, string> = {
 export type Trade = { a: number; p: number; d: string; f: number; s?: string };               // 매매: 전용㎡ · 만원 · YYYY-MM-DD · 층 · s = 새로 들어온 날
 export type Rent = { a: number; dep: number; m: number; d: string; f: number; s?: string };   // 전월세: 보증금·월세 만원 (m 0 = 전세)
 
-/** NEW — 새로 신고되어 들어온 지 1주일 안의 거래 (2026-11-04 사장님: 지도 배지·평형 목록·실거래 내역).
- *  s 가 없던 때(11-04 오전) 들어온 것은 단지 new_at 과 최근 30일 계약으로 어림한다 */
+/** NEW — 지난 7일 안에 계약된 거래 (오늘 포함 7일, 한국 날짜 · 2026-11-04 사장님: 들어온 날 말고 계약일로).
+ *  지도 배지 · 평형 목록 · 실거래 내역이 모두 이 기준 하나 */
 export const NEW_DAYS = 7;
-export const isNewDeal = (x: { d: string; s?: string }, newAt?: string | null, now = Date.now()) => {
-  const fresh = (iso?: string | null) => Boolean(iso) && now - Date.parse(iso!) < NEW_DAYS * 86400_000;
-  if (x.s) return fresh(x.s);
-  if (!fresh(newAt) || !newAt) return false; // newAt 은 단지 안 거래에 s 가 하나도 없을 때만 넘긴다
-  return x.d >= new Date(Date.parse(newAt) - 30 * 86400_000).toISOString().slice(0, 10); // 신고는 계약 30일 안
-};
+export const newSince = (now = Date.now()) => new Date(now + 9 * 3600_000 - (NEW_DAYS - 1) * 86400_000).toISOString().slice(0, 10);
+export const isNewDeal = (x: { d?: string | null } | null | undefined, now = Date.now()) => Boolean(x?.d) && String(x!.d) >= newSince(now);
 export type AreaSummary = { a: number; s: number | null; n: number; p: number; d: string; f: number; lo: number; hi: number };
 
 /** 공급면적 찾기: 전용㎡가 ±0.05 안에서 가장 가까운 것 */

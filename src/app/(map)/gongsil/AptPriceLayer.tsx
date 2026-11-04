@@ -10,10 +10,10 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { NEW_DAYS, areaLabel, shortPrice } from "@/utils/aptMapShared";
+import { areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShared";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
-type Complex = { new_at?: string | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
+type Complex = { t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
 
 // 축척 제한은 없앴다 (2026-11-02 사장님: 모든 화면에서) — 복잡함은 겹치는 표시 거르기로 푼다 (draw)
 const VAC = "#4b89ff"; // 공실 묶음 동그라미와 같은 색
@@ -420,10 +420,12 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
         `<div style="font-size:${pr.label.length > 7 ? 13 : 15}px;font-weight:800;letter-spacing:-.3px">${pr.label}</div></div>` +
         `<div style="width:0;height:0;margin:-1px auto 0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color}"></div>`;
       // 새로 신고된 거래가 들어온 단지 — 1주일 동안 오른쪽 위에 NEW (2026-11-04 사장님). 공실 수 동그라미가 있으면 그 왼쪽
-      if (c.new_at && Date.now() - Date.parse(c.new_at) < NEW_DAYS * 86400_000) {
+      // 배지에 보이는 거래(매매, 없으면 전월세)가 지난 7일 안에 계약됐으면 NEW
+      const shownDeal = c.rep_price && c.rep_area ? c.t0 : c.rent0;
+      if (isNewDeal(shownDeal)) {
         const nb = document.createElement("div");
         nb.textContent = "NEW";
-        nb.title = `새 실거래 신고 ${c.new_at.slice(0, 10).replace(/-/g, ".")}`;
+        nb.title = `최근 계약 ${String(shownDeal!.d).replace(/-/g, ".")}`;
         nb.style.cssText = `position:absolute;top:-9px;right:${ids.length ? 15 : -8}px;padding:0 4px;height:15px;border-radius:8px;background:#ef4444;color:#fff;font-size:9.5px;font-weight:900;line-height:15px;letter-spacing:.2px;pointer-events:none`;
         el.appendChild(nb);
       }

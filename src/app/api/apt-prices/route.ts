@@ -5,8 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
 
-// NEW 배지 — 새 거래가 들어온 때 (supabase/migrations/20261104_apt_complexes_new_at.sql). 칸이 아직 없으면 빼고 읽는다
-let NEW_COL = ", new_at";
 const headers = { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" };
 
 /** 이 단지에 붙은 공실·경매 — 지금 탭과 상관없이 DB 에서 직접 (2026-11-02: 경매 탭에서 "공실 없음"으로 잘못 나오던 것) */
@@ -49,7 +47,7 @@ export async function GET(req: NextRequest) {
   const id = params.get("id");
   if (id) {
     const { data, error } = await supabase.from("apt_complexes")
-      .select("id, kind, name, dong, jibun, lawd_cd, build_year, lat, lng, trades, rents, supply_map, agent_supply, unit_map, supply_tried_at, info, agent_info, trade_count, updated_at, new_at")
+      .select("id, kind, name, dong, jibun, lawd_cd, build_year, lat, lng, trades, rents, supply_map, agent_supply, unit_map, supply_tried_at, info, agent_info, trade_count, updated_at")
       .eq("id", id).maybeSingle();
     if (error || !data) return NextResponse.json({ success: false, error: error?.message || "단지를 찾지 못했습니다." }, { status: 404 });
     // 부동산이 보완한 값이 공공 자료보다 우선 — 어느 칸이 부동산 값인지도 함께 (화면에 "공인중개사 제공")
@@ -77,7 +75,7 @@ export async function GET(req: NextRequest) {
   // 새 아파트는 분양권·입주권으로만 팔려 매매가 0건이고 전월세만 있다 — 그래도 최근 전월세(rent0)로 보인다
   // (2026-11-04 사장님: 청담르엘이 지도에 없음 — 아파트 6천여·오피스텔 8천여 곳이 이래서 빠져 있었다). 매매 있는 곳이 먼저
   const box = () => supabase.from("apt_complexes")
-    .select(`id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count, rent0:rents->0${NEW_COL}`)
+    .select(`id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count, rent0:rents->0, t0:trades->0`) // t0 = 가장 최근 매매 — NEW(지난 7일 계약) 판단
     .gte("lat", swLat).lte("lat", neLat).gte("lng", swLng).lte("lng", neLng)
     .neq("fp", "gone")
     .order("trade_count", { ascending: false })
@@ -87,17 +85,13 @@ export async function GET(req: NextRequest) {
     main.length ? box().in("kind", main) : Promise.resolve({ data: [], error: null }),
     // 빌라는 전월세만 있는 건물이 많다 — 매매가 없어도 최근 전월세 한 건(rent0)으로 표시 (2026-11-03)
     want.includes("villa") ? supabase.from("apt_complexes")
-      .select(`id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count, rent0:rents->0${NEW_COL}`)
+      .select(`id, kind, name, lat, lng, rep_area, rep_supply, rep_price, rep_date, trade_count, rent0:rents->0, t0:trades->0`) // t0 = 가장 최근 매매 — NEW(지난 7일 계약) 판단
       .gte("lat", swLat).lte("lat", neLat).gte("lng", swLng).lte("lng", neLng)
       .eq("kind", "villa").neq("rents", "[]")
       .order("trade_count", { ascending: false })
       .limit(400) : Promise.resolve({ data: [], error: null }),
   ]);
-  let [a, v] = await read();
-  if (NEW_COL && /new_at/.test(`${a.error?.message || ""} ${v.error?.message || ""}`)) {
-    NEW_COL = ""; [a, v] = await read();
-    setTimeout(() => { NEW_COL = ", new_at"; }, 600_000); // 칸을 만든 뒤 저절로 다시 읽게
-  }
+  const [a, v] = await read();
   const error = a.error || v.error;
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   return NextResponse.json({ success: true, complexes: [...(a.data || []), ...(v.data || [])] }, { headers });

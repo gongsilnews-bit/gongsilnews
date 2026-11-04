@@ -1174,7 +1174,7 @@
         /* 대표를 첫 순서로도 보낸다. isCover 를 모르는 구버전 기사작성 폼도 안전하다. */
         media: prepared.media.filter((item, index) => !prepared.failed.includes(index)),
         vacancyId: S.vacancy?.vacancyId || null,
-        /* 경매·공매 기사는 기사쓰기 폼에서 섹션(공실뉴스 > 신축/분양/경매)까지 고른다 */
+        /* 경매·공매 기사는 기사쓰기 폼에서 섹션(공실뉴스 > 경매/공매)까지 고른다 */
         saleKind: S.vacancy?.saleKind || null,
       });
 

@@ -16,6 +16,7 @@ import { getBookmarkCategories } from "@/app/actions/bookmark";
 // Import modular components
 import GongsilSidebar from "./GongsilSidebar";
 import GongsilDetailPanel from "./GongsilDetailPanel";
+import VacancyBalloon from "./VacancyBalloon";
 import KakaoMapView from "./KakaoMapView";
 import GongsilFilterBar from "./GongsilFilterBar";
 import GongsilFilterPanel from "./GongsilFilterPanel";
@@ -274,6 +275,19 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
+  // 지도 [부동산]에서 사무소를 고르면 — 왼쪽 목록에 그 사무소 공실 전부 (지도 화면과 상관없이, AgencyLayer · 2026-11-04 사장님)
+  const dbVacanciesRef = useRef<any[]>([]);
+  dbVacanciesRef.current = dbVacancies;
+  useEffect(() => {
+    const on = (e: Event) => {
+      const a = (e as CustomEvent).detail as { ownerId: string } | null;
+      if (!a) { setSelectedClusterIds(null); return; }
+      setSelectedClusterIds(dbVacanciesRef.current.filter((v) => v.owner_id === a.ownerId).map((v) => String(v.id)));
+      setShowDetail(false);
+    };
+    window.addEventListener("gs-agency-open", on);
+    return () => window.removeEventListener("gs-agency-open", on);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(6);
   const [selectedRegion, setSelectedRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
@@ -2653,6 +2667,23 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           onPanToMap={handlePanToProperty}
         />
 
+        <VacancyBalloon
+          kakaoMapRef={kakaoMapRef}
+          vacancies={dbVacancies}
+          userLevel={userLevel}
+          currentUser={currentUser}
+          activeProperty={activeProperty}
+          showDetail={showDetail}
+          onToggle={(prop, open) => {
+            if (!open) { setShowDetail(false); return; }
+            setPrevPropertyId(null);
+            setActiveProperty(prop.id);
+            setShowDetail(true);
+            setActiveDetailTab(prop.trade_type === "경매" ? "auction_detail" : "info");
+            setGalleryIndex(0);
+          }}
+          onDismiss={() => setSelectedClusterIds(null)}
+        />
         <KakaoMapView
           activePills={activePills}
           onSwitchCategory={handleCategoryChange}

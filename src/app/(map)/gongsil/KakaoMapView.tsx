@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
 import AptPriceLayer from "./AptPriceLayer";
+import NewsLayer from "./NewsLayer";
+import AgencyLayer from "./AgencyLayer";
 import BldSampleLayer from "./BldSampleLayer";
 
 interface KakaoMapViewProps {
@@ -257,6 +259,8 @@ export default function KakaoMapView({
     });
 
     kakao.maps.event.addListener(map, "dragstart", () => {
+      // 지도를 움직이면 — 보고 있던 목록 종류(공실·뉴스·부동산)는 그대로, 고른 것만 풀고 새 지도 화면 것으로 (2026-11-04 사장님)
+      window.dispatchEvent(new CustomEvent("gs-map-moved"));
       setSelectedClusterIds(null);
       setSelectedRegion(null);
       if (onResetSearchRef.current) {
@@ -738,6 +742,13 @@ export default function KakaoMapView({
       });
 
       kakao.maps.event.addListener(marker, "click", () => {
+        window.dispatchEvent(new CustomEvent("gs-vacancy-pick")); // 왼쪽 목록이 뉴스·부동산을 보고 있어도 공실로 (11-04 사장님)
+        // 뉴스 말풍선과 같은 공실 개요 말풍선 (VacancyBalloon)
+        window.dispatchEvent(new CustomEvent("gs-vacancy-marker", { detail: { ids: group.map((v) => String(v.id)), lat: position.getLat(), lng: position.getLng() } }));
+        // 같은 표시를 또 누르면 — 고른 것을 풀고 왼쪽 목록은 지도 화면 공실로 (11-04 사장님)
+        const ids = group.map((v) => String(v.id));
+        const cur = selectedClusterIdsRef.current;
+        if (cur && cur.length === ids.length && ids.every((id) => cur.includes(id))) { setSelectedClusterIds(null); return; }
         setSelectedClusterIds(group.map((v) => String(v.id)));
         setShowDetail(false);
         setMapPick((b) => ({ ids: group.map((v) => String(v.id)), n: (b?.n || 0) + 1 }));
@@ -935,6 +946,10 @@ export default function KakaoMapView({
         mapPick={mapPick}
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
       />
+      {/* [우리동네뉴스] 켜기·끄기 — 실거래가 단추 옆, 모든 기사를 지도 위 자리 그대로 (2026-11-04 사장님) */}
+      <NewsLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceButtonSlot} category={isAuctionMode ? "auction" : activeCategory} />
+      {/* [부동산] 켜기·끄기 — 회원 부동산 집 모양 · 누르면 왼쪽 목록에 그 사무소 (2026-11-04 사장님) */}
+      <AgencyLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceButtonSlot} />
     </div>
   );
 }

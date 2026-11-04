@@ -1,3 +1,5 @@
+import { agencyArticles, type MapAgency } from "@/app/actions/mapAgencies";
+import SnsIconLink from "./SnsIconLink";
 import React, { useEffect, useState, useMemo } from "react";
 import { useMapFields } from "@/utils/useMapFields";
 import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount, formatAreaWithPy } from "./gongsilHelpers";
@@ -68,6 +70,80 @@ export default function GongsilSidebar({
     return () => window.removeEventListener("gongsil-apt-list", on);
   }, []);
   useMapFields("pc-gongsil-sort", { auctionSort }, { auctionSort: setAuctionSort });
+  // [우리동네뉴스]를 켜면 — 공실 수 옆에 주황 "뉴스 N개", 누르면 지도 위 뉴스 목록 (2026-11-04 사장님). 뉴스 목록은 NewsLayer 가 알려 준다
+  type News = { id: string; title: string; subtitle?: string | null; section1?: string | null; section2?: string | null; location_name?: string | null; published_at?: string | null; created_at?: string | null; author_name?: string | null; thumbnail_url?: string | null };
+  const [news, setNews] = useState<News[] | null>(null);
+  const [newsMode, setNewsMode] = useState(false);
+  const [newsPicked, setNewsPicked] = useState<News[] | null>(null); // 지도에서 누른 뉴스 동그라미의 기사들
+  useEffect(() => {
+    const on = (e: Event) => {
+      const l = (e as CustomEvent).detail as News[] | null;
+      setNewsPicked(l);
+      if (l) {
+        setNewsMode(true); setAgListMode(false);
+        setAgency((a) => { if (a) { window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null })); window.dispatchEvent(new CustomEvent("gs-agency-close")); } return null; });
+      }
+    };
+    window.addEventListener("gs-news-select", on);
+    return () => window.removeEventListener("gs-news-select", on);
+  }, []);
+  useEffect(() => {
+    const on = (e: Event) => { const l = (e as CustomEvent).detail as News[] | null; setNews(l); if (!l) setNewsMode(false); };
+    window.addEventListener("gs-news-visible", on);
+    return () => window.removeEventListener("gs-news-visible", on);
+  }, []);
+  const openNews = (id: string) => window.dispatchEvent(new CustomEvent("gs-news-open", { detail: id }));
+  // 지도 [부동산]에서 고른 사무소 — 맨 위 사무소 카드 + [공실 N] [기사 N] (공실은 GongsilClient 가 그 사무소 것 전부로 거른다, 2026-11-04 사장님)
+  const [agency, setAgency] = useState<MapAgency | null>(null);
+  const [agList, setAgList] = useState<MapAgency[] | null>(null); // 지도 화면 안 부동산 ([부동산]을 켰을 때만)
+  const [agListMode, setAgListMode] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => { const l = (e as CustomEvent).detail as MapAgency[] | null; setAgList(l); if (!l) setAgListMode(false); };
+    window.addEventListener("gs-agency-visible", on);
+    return () => window.removeEventListener("gs-agency-visible", on);
+  }, []);
+  const [agencyTab, setAgencyTab] = useState<"vac" | "art">("vac");
+  const [agencyArts, setAgencyArts] = useState<News[] | null>(null);
+  const [introOpen, setIntroOpen] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => {
+      const a = (e as CustomEvent).detail as MapAgency | null;
+      setAgency(a); setAgencyTab("vac"); setAgencyArts(null); setIntroOpen(false); setNewsMode(false); if (a) setNewsPicked(null);
+      if (!a) setAgListMode(true); // 사무소를 닫으면(또 누르기 · ‹ · ✕) 지도 화면의 부동산 목록으로 (11-04 사장님)
+      if (a) agencyArticles(a.ownerId).then((l) => setAgencyArts(l as News[])).catch(() => setAgencyArts([]));
+    };
+    window.addEventListener("gs-agency-open", on);
+    return () => window.removeEventListener("gs-agency-open", on);
+  }, []);
+  const closeAgency = () => {
+    setAgency(null);
+    window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null }));
+    window.dispatchEvent(new CustomEvent("gs-agency-close"));
+  };
+  // 다른 데서 공실 선택이 풀리면(지도 빈 곳 누르기 등) 사무소 보기도 닫는다
+  useEffect(() => { if (agency && selectedClusterIds === null) { setAgency(null); if (agList) setAgListMode(true); window.dispatchEvent(new CustomEvent("gs-agency-close")); } }, [selectedClusterIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const showArts = Boolean(agency && agencyTab === "art");
+  // 지도를 움직이면 — 고른 뉴스·사무소를 풀고 지금 화면의 뉴스·부동산 목록으로 (보던 종류 그대로)
+  useEffect(() => {
+    const on = () => {
+      setNewsPicked(null);
+      if (agency) { setAgency(null); setAgListMode(true); window.dispatchEvent(new CustomEvent("gs-agency-close")); }
+    };
+    window.addEventListener("gs-map-moved", on);
+    return () => window.removeEventListener("gs-map-moved", on);
+  }, [agency]);
+  // 지도에서 공실 표시를 누르면 — 뉴스·부동산 목록을 보고 있었어도 공실 목록으로
+  useEffect(() => {
+    const on = () => { setNewsMode(false); setAgListMode(false); setNewsPicked(null); if (agency) { setAgency(null); window.dispatchEvent(new CustomEvent("gs-agency-close")); } };
+    window.addEventListener("gs-vacancy-pick", on);
+    return () => window.removeEventListener("gs-vacancy-pick", on);
+  }, [agency]);
+  const [newsReading, setNewsReading] = useState<string | null>(null); // 열린 기사 — 카드에 빨간 [기사닫기 ✕]
+  useEffect(() => {
+    const on = (e: Event) => setNewsReading(((e as CustomEvent).detail as string | null) || null);
+    window.addEventListener("gs-news-reading", on);
+    return () => window.removeEventListener("gs-news-reading", on);
+  }, []);
 
   const sortedVacancies = useMemo(() => {
     if (!isAuctionMode) return displayVacancies;
@@ -252,6 +328,48 @@ export default function GongsilSidebar({
             현재 화면 {displayVacancies.length}개
           </div>
         </>
+      ) : agency ? (
+        <div style={{ flexShrink: 0, borderBottom: "1px solid #eee", background: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 14px 10px", fontSize: 15, fontWeight: 800, color: "#111" }}>
+            <button onClick={closeAgency} title="목록으로" aria-label="목록으로" style={{ border: "none", background: "none", padding: "0 4px 0 0", fontSize: 22, lineHeight: 1, fontWeight: 700, color: "#333", cursor: "pointer" }}>‹</button>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agency.name}</span>
+            <button onClick={closeAgency} title="닫기" aria-label="닫기" style={{ border: "none", background: "none", fontSize: 20, lineHeight: 1, color: "#999", cursor: "pointer" }}>✕</button>
+          </div>
+          {/* 사무소 카드 — 기사 아래 사무소 소개 상자와 같은 내용 (없는 값은 빼고) */}
+          <div style={{ margin: "0 14px 12px", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 14px 12px", boxShadow: "0 4px 14px -4px rgba(0,0,0,.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              {agency.photo
+                ? <img src={agency.photo} alt="" style={{ width: 48, height: 48, borderRadius: 14, objectFit: "cover", border: "1.5px solid #e5e7eb", flexShrink: 0 }} />
+                : <div style={{ width: 48, height: 48, borderRadius: 14, background: "#e8eef8", color: "#1e3a6e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800, flexShrink: 0 }}>{agency.name.slice(0, 1)}</div>}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>{agency.name}</div>
+                <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2 }}>{[agency.ceo && `대표 ${agency.ceo}`, agency.regNum && `등록번호 ${agency.regNum}`].filter(Boolean).join("  |  ")}</div>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "52px 1fr", rowGap: 6, marginTop: 12, fontSize: 13 }}>
+              {agency.address && <><span style={{ color: "#6b7280" }}>주소</span><span style={{ color: "#111" }}>{agency.address}</span></>}
+              {(agency.phone || agency.cell) && <><span style={{ color: "#6b7280" }}>연락처</span><span style={{ color: "#2563eb", fontWeight: 800 }}>{[agency.phone, agency.cell].filter(Boolean).join(", ")}</span></>}
+            </div>
+            {agency.sns.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                {agency.sns.map((x) => <SnsIconLink key={x.key} kind={x.key} url={x.url} />)}
+              </div>
+            )}
+            {agency.intro && (
+              <div style={{ marginTop: 10, background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "9px 11px", fontSize: 12.5, color: "#374151", lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 800, fontSize: 12, color: "#6b7280", marginBottom: 3 }}>소개말</div>
+                <div style={introOpen ? undefined : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{agency.intro}</div>
+                {agency.intro.length > 60 && <button onClick={() => setIntroOpen((v) => !v)} style={{ border: "none", background: "none", padding: 0, marginTop: 3, fontSize: 12, color: "#1e3a6e", fontWeight: 700, cursor: "pointer" }}>{introOpen ? "접기" : "더보기"}</button>}
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 6, padding: "0 14px 12px" }}>
+            {([["vac", "공실", displayVacancies.length, "#2563eb"], ["art", "기사", agencyArts ? agencyArts.length : agency.articles, "#ff8e15"]] as const).map(([k, l, n, c]) => (
+              <button key={k} type="button" onClick={() => setAgencyTab(k)}
+                style={{ flex: 1, height: 36, borderRadius: 8, border: `1.5px solid ${agencyTab === k ? c : "#e5e7eb"}`, background: agencyTab === k ? c : "#fff", color: agencyTab === k ? "#fff" : "#374151", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>{l} {n}</button>
+            ))}
+          </div>
+        </div>
       ) : (
         <div
           style={{
@@ -275,8 +393,30 @@ export default function GongsilSidebar({
               "지도를 더 확대해 주세요"
             ) : (
               <>
-                {isAuctionMode ? "해당 지역의 경/공매 매물" : selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실"}{" "}
-                {displayVacancies.length}개
+                {news || agList ? (
+                  // [우리동네뉴스]·[부동산]을 켜면 — 공실 | 뉴스 | 부동산 (고른 것만 진하게, 2026-11-04 사장님)
+                  (() => {
+                    const mode = news && newsMode ? "news" : agList && agListMode ? "agency" : "vac";
+                    const seg = (k: "vac" | "news" | "agency", label: string, n: number, color: string) =>
+                      mode === k
+                        ? <span key={k}>{label} <span style={{ color }}>{n}</span>개</span>
+                        : <button key={k} type="button" onClick={() => { setNewsMode(k === "news"); setAgListMode(k === "agency"); }}
+                            style={{ border: "none", background: "none", padding: 0, font: "inherit", color: "#9ca3af", cursor: "pointer" }}>{label.replace(/^지도위의 /, "")} {n}개</button>;
+                    const bar = <span style={{ color: "#d1d5db", margin: "0 6px" }}>|</span>;
+                    return (
+                      <>
+                        {seg("vac", isAuctionMode ? "경/공매" : selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실", displayVacancies.length, "#111")}
+                        {news && <>{bar}{seg("news", newsPicked ? "선택한 뉴스" : "지도위의 뉴스", newsPicked ? newsPicked.length : news.length, "#ff8e15")}</>}
+                        {agList && <>{bar}{seg("agency", "지도위의 부동산", agList.length, "#1e3a6e")}</>}
+                      </>
+                    );
+                  })()
+                ) : (
+                  <>
+                    {isAuctionMode ? "해당 지역의 경/공매 매물" : selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실"}{" "}
+                    {displayVacancies.length}개
+                  </>
+                )}
               </>
             )}
           </span>
@@ -305,6 +445,57 @@ export default function GongsilSidebar({
         </div>
       )}
 
+      {agList && agListMode && !agency && (
+        <div style={{ flex: 1, overflowY: "auto", background: "#fff" }}>
+          {!agList.length && <div style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>이 지도 영역에는 부동산이 없어요</div>}
+          {agList.map((a) => (
+            <div key={a.id} onClick={() => window.dispatchEvent(new CustomEvent("gs-agency-pick", { detail: a.id }))}
+              style={{ display: "flex", gap: 12, alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f6fb")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
+              {a.photo
+                ? <img src={a.photo} alt="" style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", border: "1.5px solid #e5e7eb", flexShrink: 0 }} />
+                : <div style={{ width: 52, height: 52, borderRadius: 14, background: "#e8eef8", color: "#1e3a6e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, flexShrink: 0 }}>{a.name.slice(0, 1)}</div>}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</div>
+                <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.address}</div>
+                <div style={{ fontSize: 12.5, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <b style={{ color: "#2563eb" }}>공실 {a.vacancies}</b>
+                  <b style={{ color: "#ff8e15" }}>기사 {a.articles}</b>
+                  {a.phone && <span style={{ color: "#374151" }}>{a.phone}</span>}
+                  {/* 기사 수 옆에 [상세보기] — 누르면 사무소 화면 (11-04 사장님) */}
+                  <span style={{ marginLeft: "auto", color: "#1e3a6e", fontWeight: 800, whiteSpace: "nowrap" }}>상세보기 &gt;</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {((news && newsMode && !agency) || showArts) && (
+        <div style={{ flex: 1, overflowY: "auto", background: "#fff" }}>
+          {showArts && !agencyArts && <div style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>기사를 불러오는 중…</div>}
+          {(showArts ? agencyArts || [] : newsPicked || news || []).length === 0 && (!showArts || agencyArts) && <div style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>{showArts ? "이 사무소가 쓴 기사가 아직 없어요" : "이 지도 영역에는 뉴스가 없어요"}</div>}
+          {(showArts ? agencyArts || [] : newsPicked || news || []).map((a) => (
+            <div key={a.id} onClick={() => openNews(a.id)} style={{ padding: "18px 20px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", background: newsReading === a.id ? "#fff7ed" : "#fff", borderLeft: newsReading === a.id ? "4px solid #ff8e15" : "4px solid transparent" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#fff7ed")} onMouseLeave={(e) => (e.currentTarget.style.background = newsReading === a.id ? "#fff7ed" : "#fff")}>
+              <div style={{ fontSize: 11, color: "#ff8e15", fontWeight: "bold", marginBottom: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ border: "1px solid #fdba74", background: "#fff7ed", borderRadius: 3, padding: "1px 6px" }}>{[a.section1, a.section2].filter(Boolean).join(" > ")}</span>
+                {a.location_name && <span style={{ color: "#9ca3af", fontWeight: 600 }}>📍 {a.location_name}</span>}
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#111", lineHeight: 1.4, letterSpacing: -0.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>{a.title}</div>
+                  {a.subtitle && <div style={{ fontSize: 12.5, color: "#666", marginTop: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{String(a.subtitle).split(/\r?\n/)[0]}</div>}
+                </div>
+                {a.thumbnail_url && <img src={a.thumbnail_url} alt="" style={{ width: 84, height: 64, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "#f3f4f6" }} />}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12 }}>
+                <span style={{ color: "#a1a1aa" }}>{String(a.published_at || a.created_at || "").slice(0, 10).replace(/-/g, ". ")} · {a.author_name || "공실뉴스"}</span>
+                <span style={{ color: newsReading === a.id ? "#d32f2f" : "#ff8e15", fontWeight: 700 }}>{newsReading === a.id ? "기사닫기 ✕" : "기사 보러가기 >"}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div
         onScroll={(e) => {
           const target = e.currentTarget;
@@ -314,9 +505,9 @@ export default function GongsilSidebar({
             }
           }
         }}
-        style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}
+        style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff", display: (news && newsMode && !agency) || showArts || (agList && agListMode && !agency) ? "none" : undefined }}
       >
-        {zoomLevel >= 9 && activeCategory !== "wish" ? (
+        {zoomLevel >= 9 && activeCategory !== "wish" && !agency ? (
           <div
             style={{
               padding: "80px 30px",

@@ -1050,7 +1050,8 @@ function MobileArticleWrite() {
                   <option value="빌라/주택/다가구/다세대">빌라/주택/다가구/다세대</option>
                   <option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option>
                   <option value="상가/사무실/빌딩/공장/토지">상가/사무실/빌딩/공장/토지</option>
-                  <option value="신축/분양/경매">신축/분양/경매</option>
+                  <option value="신축/분양">신축/분양</option>
+                  <option value="경매/공매">경매/공매</option>
                 </>
               )}
               {(section1 === "부동산·경제" || section1 === "정책시장") && (
