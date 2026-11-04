@@ -93,8 +93,9 @@ export const HELPER_STORE_URL = "https://chromewebstore.google.com/detail/opoimb
 /** 평소 크롬으로 연다 — 앱이면 openInBrowser, 웹이면 새 탭 */
 export function openHelperStore() {
   const g = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<unknown> } }).gongsilStudio;
-  if (g?.openInBrowser) void g.openInBrowser(HELPER_STORE_URL);
-  else window.open(HELPER_STORE_URL, "_blank", "noopener");
+  if (g?.openInBrowser) { void g.openInBrowser(HELPER_STORE_URL); return; }
+  // 웹 — 크롬·엣지·웨일 설치 안내 창 (2026-11-04 사장님: 자동 설치 + 직접 설치)
+  void import("@/components/admin/HelperInstallGuide").then((m) => m.showHelperGuide());
 }
 
 /** 최고관리자 화면 공통 곤색 껍질 — 18개 관리자 화면에 한 번에 (2026-11-03 사장님: 하나하나 다 바꿔줘)

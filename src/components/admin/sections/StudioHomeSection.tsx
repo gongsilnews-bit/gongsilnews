@@ -231,13 +231,13 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
           </button>
         )}
         {helperOn !== null && (
-          <button onClick={() => (helperOn ? undefined : openHelperStore())} title={helperOn ? "평소 크롬의 공실마케팅 도우미가 연결돼 있어요 — 블로그·SNS 채우기에 써요" : "평소 크롬에 공실마케팅 도우미를 설치해요 (블로그·SNS 채우기·홍보현황)"}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: helperOn ? "default" : "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+          <button onClick={() => openHelperStore()} title={helperOn ? "자동화 도우미가 연결돼 있어요 — 블로그·SNS 칸을 자동으로 채워요 (누르면 설치 안내)" : "자동화 도우미를 설치해요 — 크롬 · 엣지 · 웨일 (블로그·SNS 자동 채우기)"}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
               ...(helperOn
                 ? { background: darkMode ? "rgba(34,197,94,0.12)" : "#ecfdf5", border: `1px solid ${darkMode ? "rgba(110,231,183,0.6)" : "#6ee7b7"}`, color: darkMode ? "#6ee7b7" : "#047857" }
                 : { background: darkMode ? "rgba(249,115,22,0.14)" : "#fff7ed", border: "1px solid #fdba74", color: "#c2410c" }) }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: helperOn ? "#22c55e" : "#f97316", boxShadow: helperOn ? "0 0 0 3px rgba(34,197,94,0.2)" : "0 0 0 3px rgba(249,115,22,0.2)" }} />
-            {helperOn ? "크롬 도우미 · 연결됨" : "크롬 도우미 설치하기"}
+            {helperOn ? "자동화 도우미 · 연결됨" : "자동화 도우미 설치"}
           </button>
         )}
         </div>
