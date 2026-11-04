@@ -2,7 +2,7 @@
 /**
  * 공실열람 지도 [부동산] 켜기·끄기 (2026-11-04 사장님) — 가입한 회원 부동산을 곤색 집 모양으로.
  *  마우스를 올리면 이름·주소·"공실 5 · 기사 3"(0도 그대로) · 누르면 왼쪽 목록이 그 사무소(카드 + 공실 전부 + 기사 전부)로 바뀐다.
- *  지도는 움직이지 않는다. 처음엔 꺼 두고, 켠 것은 기억한다.
+ *  지도는 움직이지 않는다. 들어올 때마다 켜진 채로 시작 (11-04).
  *  알림: "gs-agency-open"(고른 사무소) → GongsilClient(공실 목록) · GongsilSidebar(카드·기사) / "gs-agency-close" ← 목록에서 닫기
  */
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,15 +30,15 @@ const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, 
 };
 
 export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null }) {
-  const [on, setOn] = useState(false);
+  const [on, setOn] = useState(true); // 들어올 때마다 켜진 채로 시작 (11-04 사장님: 부동산은 일단 켜 두자)
   useStars(); // ★ 찜 목록 불러오기
   const [list, setList] = useState<MapAgency[] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const overlays = useRef<{ o: any; el: HTMLElement; id: string }[]>([]);
   const tip = useRef<any>(null);
 
-  useEffect(() => { try { if (localStorage.getItem(KEY) === "1") setOn(true); } catch { /* */ } }, []);
-  const toggle = () => setOn((v) => { try { localStorage.setItem(KEY, v ? "0" : "1"); } catch { /* */ } return !v; });
+  useEffect(() => { try { localStorage.removeItem(KEY); } catch { /* */ } }, []);
+  const toggle = () => setOn((v) => !v);
 
   useEffect(() => {
     if (!on || list) return;
