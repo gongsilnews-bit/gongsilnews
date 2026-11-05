@@ -6,7 +6,7 @@ import { isAdminRole } from "@/utils/permissionCheck";
 import { GUIDE_BOARD, postYoutube } from "@/components/studio-site/guideUtil";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "사용법 배우기 | 공실뉴스부동산 PRO", description: "공실뉴스부동산 PRO 사용법 영상" };
+export const metadata = { title: "사용법 배우기 | 공실뉴스부동산", description: "공실뉴스부동산 사용법 영상" };
 
 /**
  * 사용법 배우기 (/newsrealty/guide) — 브루 튜토리얼처럼 유튜브 영상 카드 4열 (2026-10-26 사장님)

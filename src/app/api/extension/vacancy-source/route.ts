@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       {
         success: false,
         error: requester
-          ? "블로그 작성은 공실뉴스부동산 회원 전용입니다. 무료 체험은 [AI 블로그 초안 작성]으로 시작해 주세요."
+          ? "블로그 작성은 공실뉴스부동산은 무제한, 부동산회원은 한 달에 3번 쓸 수 있습니다. [AI 블로그 초안 작성]으로 시작해 주세요."
           : "공실뉴스에 로그인한 뒤 다시 시도해 주세요.",
       },
       { status: requester ? 403 : 401, headers: corsHeaders }

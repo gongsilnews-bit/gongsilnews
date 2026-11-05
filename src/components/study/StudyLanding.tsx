@@ -244,7 +244,7 @@ export default function StudyLanding() {
             </div>
             <div className="stl-hero-cta">
               <Link href={APPLY} className="stl-btn">
-                공실뉴스부동산 무료 가입하기 <i className="ph ph-arrow-right" />
+                부동산회원 무료 가입하기 <i className="ph ph-arrow-right" />
               </Link>
               <a href="#lectures" className="stl-btn-ghost">
                 강의 둘러보기
@@ -471,7 +471,7 @@ export default function StudyLanding() {
                 <div><i className="ph ph-check" />공동중개 열람 무료</div>
                 <div><i className="ph ph-check" />공실 3건 · 기사 월 4건 등록</div>
               </div>
-              <Link href={APPLY} className="stl-plan-btn ghost">공실뉴스부동산 무료 가입하기 &gt;&gt;</Link>
+              <Link href={APPLY} className="stl-plan-btn ghost">부동산회원 무료 가입하기 &gt;&gt;</Link>
             </div>
             <div className="stl-plan rec">
               <div className="stl-plan-top">
@@ -544,7 +544,7 @@ export default function StudyLanding() {
             <p>공실뉴스와 부동산특강은 부동산이 가진 매물과 지역정보를 더 많은 사람에게 전달하고, 더 많은 부동산과 연결되도록 돕습니다.</p>
           </div>
           <Link href={APPLY} className="stl-btn">
-            공실뉴스부동산 무료 가입하기 <i className="ph ph-arrow-right" />
+            부동산회원 무료 가입하기 <i className="ph ph-arrow-right" />
           </Link>
         </div>
       </section>

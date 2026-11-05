@@ -93,7 +93,7 @@ const CSS = `
 `;
 
 const BULLETS: React.ReactNode[] = [
-  <>공실뉴스부동산 가입은 <strong style={{ color: "var(--accent-700)" }}>무료</strong>입니다.</>,
+  <>부동산회원 가입은 <strong style={{ color: "var(--accent-700)" }}>무료</strong>입니다.</>,
   <>가입 후 중개사 서류가 승인되면 공실 3건 · 기사 월 4건을 바로 등록할 수 있습니다.</>,
   <>문의는 1:1 게시판을 이용해주세요.</>,
 ];
@@ -409,7 +409,7 @@ export default function NewsrealtyApplyView(p: NewsrealtyApplyViewProps) {
             </div>
           )}
           <button type="submit" disabled={p.submitting} className="nra-btn nra-btn-solid" style={{ width: "100%", height: 54, fontSize: 16 }}>
-            {p.submitting ? "신청 처리 중..." : "공실뉴스부동산 무료 가입하기"}
+            {p.submitting ? "신청 처리 중..." : "부동산회원 무료 가입하기"}
           </button>
         </form>
       );

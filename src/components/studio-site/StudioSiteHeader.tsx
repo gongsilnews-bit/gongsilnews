@@ -133,7 +133,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
             <>
               <NotificationBell color="#ffffff" />
               <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
+                {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus, member.studioOn)}
               </button>
               <button type="button" onClick={async () => { await createClient().auth.signOut({ scope: "local" }); window.location.reload(); }} style={{ background: "none", border: 0, color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>로그아웃</button>
             </>
@@ -161,7 +161,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
           }}
         >
           {/* 공실마케팅 앱 아이콘 (공실뉴스 홈은 위 남색 줄의 "공실뉴스"로, 2026-10-26 사장님) */}
-          <Link href="/newsrealty" title="공실뉴스부동산 PRO 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -22 }}>
+          <Link href="/newsrealty" title="공실뉴스부동산 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -22 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/new_logo.png" alt="공실뉴스부동산" style={{ height: stuck ? 34 : 42, width: stuck ? 34 : 42, borderRadius: "50%", objectFit: "cover" }} /* 동그란 재생 단추 — 앱 왼쪽 위와 같게 (2026-10-29 사장님) */ />
           </Link>
@@ -174,8 +174,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
             title="공실뉴스부동산 홈"
           >
             공실뉴스부동산
-            {/* 사이트 이름 공실뉴스부동산 PRO (2026-11-04 사장님: "제목도 홍보도 공실뉴스부동산 PRO로") — 주황 PRO 딱지 */}
-            <span style={{ display: "inline-block", marginLeft: 6, verticalAlign: "bottom", background: "#ea8a0c", color: "#fff", fontSize: stuck ? 11 : 13, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1, padding: stuck ? "3px 5px 4px" : "3px 6px 4px", borderRadius: 3 }}>PRO</span>
+            {/* 사이트 이름 공실뉴스부동산 (2026-11-05 사장님: PRO 이름 뺌 — 유료가 곧 공실뉴스부동산) */}
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
@@ -292,7 +291,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
               )}
               {member ? (
                 <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
+                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus, member.studioOn)}
                 </button>
               ) : (
                 <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#e8890c", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>

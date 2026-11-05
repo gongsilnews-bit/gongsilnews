@@ -113,15 +113,15 @@ const rows = [
 // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로 보여 준다.
 type Brand = { name: string; applyHref: string; applyShort: string; applyLong: string; benefitsLabel: string };
 const BRANDS: Record<"orange" | "green", Brand> = {
-  orange: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 무료 가입", applyLong: "공실뉴스부동산 무료 가입하기", benefitsLabel: "부동산 혜택" },
-  green: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 무료 가입", applyLong: "공실뉴스부동산 무료 가입하기", benefitsLabel: "멤버십 혜택" },
+  orange: { name: "부동산회원", applyHref: "/newsrealty/apply", applyShort: "부동산회원 무료 가입", applyLong: "부동산회원 무료 가입하기", benefitsLabel: "부동산 혜택" },
+  green: { name: "부동산회원", applyHref: "/newsrealty/apply", applyShort: "부동산회원 무료 가입", applyLong: "부동산회원 무료 가입하기", benefitsLabel: "멤버십 혜택" },
 };
 
 const faqs = (brand: Brand): { q: string; badge?: string; a: string }[] => [
   { q: `${brand.name}은 어떤 서비스인가요?`, a: "내 지역·단지 공실과 소식을 공실뉴스에 뉴스로 전하는 무료 중개사 회원입니다. 가입하고 중개사 서류가 승인되면 공실 3건과 기사 월 4건을 등록할 수 있습니다." },
   { q: "블로그나 유튜브를 잘 모르는 초보도 할 수 있나요?", a: "네. 글은 AI가 초안을 작성하고, 영상은 촬영부터 편집까지 실습 강의로 안내합니다." },
   { q: "블로그 포스팅 초안은 어떻게 작성하나요? 별도 비용이 드나요?", a: "크롬 확장프로그램을 설치하면 바로 작성할 수 있습니다. 본인이 구독 중인 챗GPT 또는 제미나이 계정이 필요합니다." },
-  { q: "비용이 드나요?", badge: "가입 무료", a: "공실뉴스부동산 가입은 무료입니다. 영상뉴스 · 블로그 · SNS를 공실마케팅로 만들려면 공실마케팅 멤버십(월 3만원 · 1년 36만원)을 결제합니다." },
+  { q: "비용이 드나요?", badge: "가입 무료", a: "부동산회원 가입은 무료입니다. 영상뉴스 · 블로그 · SNS를 공실마케팅로 만들려면 공실마케팅 멤버십(월 3만원 · 1년 36만원)을 결제합니다." },
   { q: "모든 기사를 작성할 수 있나요?", a: "공실뉴스의 물건 기사를 작성할 수 있습니다. 기사는 작성 후 승인 신청을 거쳐 게재됩니다." },
   { q: "신청 후 절차는 어떻게 되나요?", a: "가입 후 중개사 서류가 승인되면 바로 공실 3건 · 기사 월 4건을 등록할 수 있습니다. 공실마케팅 멤버십을 결제하면 공실 20건과 공실마케팅 모든 프로그램이 열립니다." },
 ];
@@ -184,7 +184,7 @@ const studyRows = [
 function PriceHeading() {
   return (
     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px", margin: "0 0 12px" }}>
-      <h2 className="nrl-h2" style={{ margin: 0 }}>공실뉴스부동산은 무료입니다</h2>
+      <h2 className="nrl-h2" style={{ margin: 0 }}>부동산회원은 무료입니다</h2>
       <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--accent-200)", color: "var(--accent-700)", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>
         공실마케팅 월 3만원 · 1년 36만원
       </span>
@@ -259,7 +259,7 @@ function CtaBand({ onApplyClick, brand = BRANDS.orange }: { onApplyClick: (e: Re
     <div style={{ background: "var(--band)", marginTop: 128 }}>
       <section className="nrl-sec" style={{ padding: "96px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
-          <span style={{ fontSize: 14, color: "var(--band-kicker)" }}>공실뉴스부동산 · 가입 무료</span>
+          <span style={{ fontSize: 14, color: "var(--band-kicker)" }}>부동산회원 · 가입 무료</span>
           <h2 style={{ fontSize: "clamp(28px,4vw,40px)", lineHeight: 1.3, margin: 0, letterSpacing: "-0.02em", textWrap: "balance", color: "#ffffff" }}>
             내 지역/단지 공실을<br />뉴스로 전달하세요.
           </h2>
@@ -490,7 +490,7 @@ export function NewsrealtyPricing({ onApply }: { onApply: () => void; onGeneral?
       <section style={{ background: "linear-gradient(180deg, #fff7ed 0%, #ffffff 100%)", padding: "70px 20px 0", textAlign: "center" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", fontSize: 13, fontWeight: 800, padding: "6px 18px", borderRadius: 20, marginBottom: 20, border: "1px solid #ffd8b2" }}>
-            공실뉴스부동산 가입 무료
+            부동산회원 가입 무료
           </div>
           <h1 style={{ fontSize: "clamp(30px,4vw,42px)", fontWeight: 900, color: "#1c1917", letterSpacing: "-1.5px", margin: "0 0 16px", lineHeight: 1.3 }}>
             내 지역/단지 공실을 뉴스로<br />
@@ -504,7 +504,7 @@ export function NewsrealtyPricing({ onApply }: { onApply: () => void; onGeneral?
             {/* 공실뉴스부동산 (무료) */}
             <div style={{ background: "#ffffff", border: "2.5px solid #ff8e15", borderRadius: 20, padding: "42px 34px", boxShadow: "0 16px 44px rgba(255, 142, 21, 0.18)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>공실뉴스부동산</h3>
+                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>부동산회원</h3>
                 <span style={{ fontSize: 12, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "4px 12px", borderRadius: 20 }}>가입 무료</span>
               </div>
               <div style={{ marginBottom: 20 }}>

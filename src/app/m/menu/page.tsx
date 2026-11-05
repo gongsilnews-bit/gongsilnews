@@ -292,7 +292,7 @@ export default function MenuPage() {
           {(() => { const joined = isAdminRole(memberData?.role) || getPlanLabel(memberData ? { role: memberData.role, plan_type: memberData.plan_type } : null) === '공실뉴스부동산'; if (!joined) return null; /* 2026-10-26 가입 버튼은 없앰 */ return (
             <div style={{ padding: '0 20px 10px', background: '#fff' }}>
               <Link href={joined ? '/marketing' : '/m/newsrealty'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: `1px solid ${joined ? '#1a3a6b' : '#d1d5db'}`, borderRadius: 8, color: joined ? '#1a3a6b' : '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                {joined ? '공실마케팅 ›' : '공실뉴스부동산 가입 ›'}
+                {joined ? '공실마케팅 ›' : '부동산회원 가입 ›'}
               </Link>
             </div>
           ); })()}

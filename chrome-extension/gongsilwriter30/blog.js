@@ -234,16 +234,16 @@
       el.blogLockText.textContent = "인터넷 연결을 확인한 뒤 [다시 확인]을 눌러 주세요.";
       el.blogLockLink.classList.add("hidden");
     } else if (!blogAccess.isLoggedIn) {
-      el.blogLockTitle.textContent = "공실뉴스에 로그인하면 무료로 체험할 수 있습니다";
-      el.blogLockText.textContent = "블로그 작성은 공실뉴스 회원이면 매월 3번 무료로 체험할 수 있고, 공실뉴스부동산·공실스터디부동산 회원은 무제한입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
+      el.blogLockTitle.textContent = "공실뉴스에 로그인하면 쓸 수 있습니다";
+      el.blogLockText.textContent = "블로그 작성은 부동산회원이면 한 달에 3번 쓸 수 있고, 공실뉴스부동산 회원은 무제한입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
       el.blogLockLink.textContent = "공실뉴스 열기";
       el.blogLockLink.href = `${origin}/`;
       el.blogLockLink.classList.remove("hidden");
     } else {
       /* 로그인은 했는데 무료 체험 횟수를 읽지 못한 경우 */
-      el.blogLockTitle.textContent = "무료 체험 횟수를 확인하지 못했습니다";
-      el.blogLockText.textContent = `${blogAccess.name}님은 현재 ${blogAccess.planLabel || "무료"} 등급입니다. ` +
-        "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산·공실스터디부동산 회원은 무제한으로 쓸 수 있습니다.";
+      el.blogLockTitle.textContent = "이번 달 남은 횟수를 확인하지 못했습니다";
+      el.blogLockText.textContent = `${blogAccess.name}님은 현재 ${blogAccess.planLabel || "일반회원"} 등급입니다. ` +
+        "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산 회원은 무제한으로 쓸 수 있습니다.";
       el.blogLockLink.textContent = "공실스터디 신청하기";
       el.blogLockLink.href = `${origin}/study/apply`;
       el.blogLockLink.classList.remove("hidden");
@@ -292,7 +292,7 @@
     if (!result.unlimited) {
       blogAccess.trial = { remaining: result.remaining, limit: result.limit };
       applyBlogLock();
-      if (result.remaining === 0) toast("이번이 이번 달 마지막 블로그 무료 체험입니다.", "info", 8000);
+      if (result.remaining === 0) toast("이번 달 블로그 쓰기를 모두 썼습니다 (한 달에 3번).", "info", 8000);
     }
   }
 

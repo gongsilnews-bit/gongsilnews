@@ -18,7 +18,7 @@ const house = (fill: string, size: number) =>
 const FAR_LEVEL = 7; // 이만큼 축소하면 이름 없이 동그라미만 (빽빽하지 않게)
 const short = (name: string) => (name.length > 8 ? `${name.slice(0, 8)}…` : name);
 /** 이름표형 (2026-11-04 사장님: 집 그림이 마음에 안 든다 → 권고안) — 곤색 이름표 + 흰 동그라미 집 + 아래 꼬리 */
-const PRO_TAG = `<span style="display:inline-block;background:#ea8a0c;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px;line-height:1;padding:2px 4px 3px;border-radius:3px;margin-left:4px;vertical-align:middle">PRO</span>`;
+const PRO_TAG = `<span style="display:inline-block;background:#ea8a0c;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px;line-height:1;padding:2px 4px 3px;border-radius:3px;margin-left:4px;vertical-align:middle" title="공실뉴스부동산">NEWS</span>`;
 const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, count = 1, pro = false) => {
   const bg = mode === "normal" ? NAVY : NAVY_DARK;
   const ring = mode === "picked" ? "box-shadow:0 0 0 2px #fff,0 0 0 4px #0f2347,0 4px 10px rgba(15,35,71,.45);" : "box-shadow:0 3px 8px rgba(15,35,71,.35);";

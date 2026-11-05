@@ -527,7 +527,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                               <div style={{ position: "fixed", top: menuAt.y, left: menuAt.x, transform: "translateX(-50%)", zIndex: 9991, minWidth: 150, padding: 6, borderRadius: 10, background: cardBg, border: `1px solid ${border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", display: "flex", flexDirection: "column", gap: 4 }}>
                                 {([
                                   { k: "광고중", c: "#10b981", d: "공실뉴스 지도·목록에 광고" },
-                                  { k: "홈페이지만", c: "#1a3a6b", d: "내 물건접수홈페이지에만 (PRO)" },
+                                  { k: "홈페이지만", c: "#1a3a6b", d: "내 물건접수홈페이지에만 (공실뉴스부동산)" },
                                   { k: "광고종료", c: "#ef4444", d: "광고를 내립니다" },
                                 ] as const).map((o) => (
                                   <button key={o.k} type="button" onClick={() => void setAdState(row, o.k)}

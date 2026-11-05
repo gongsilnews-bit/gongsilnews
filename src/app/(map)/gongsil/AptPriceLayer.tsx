@@ -256,23 +256,35 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
 
   // 주소 ?apt=<단지 id> — 그 단지로 지도를 옮기고 단지 창을 연다 (대본·기사 글쓰기의 "공실열람 단지 시세" 캡처, 2026-11-03 사장님)
   const aptParamDone = useRef(false);
+  // 이미 이 화면에 있을 때 알림 [새 실거래] 등을 누르면 — "gs-apt-open" 으로 받는다 (2026-11-05 사장님: 알림 누르면 그 단지로)
+  const [aptReq, setAptReq] = useState<string | null>(null);
   useEffect(() => {
-    if (aptParamDone.current || !mapLoaded || mobile) return;
-    const id = new URLSearchParams(window.location.search).get("apt");
+    const on = (e: Event) => { const id = (e as CustomEvent).detail?.id; if (id) setAptReq(String(id)); };
+    window.addEventListener("gs-apt-open", on);
+    return () => window.removeEventListener("gs-apt-open", on);
+  }, []);
+  useEffect(() => {
+    if (!mapLoaded || mobile) return;
+    const id = aptReq || (aptParamDone.current ? null : new URLSearchParams(window.location.search).get("apt"));
     if (!id) return;
     if (!on) { setShow({ apt: true, offi: true, villa: true }); return; } // 어느 탭이든 실거래가를 켜고 다시
     aptParamDone.current = true;
+    setAptReq(null);
     (async () => {
       const res = await fetch(`/api/apt-prices?id=${encodeURIComponent(id)}`).then((r) => r.json()).catch(() => null);
       const c = res?.success ? res.complex : null;
       const kakao = (window as any).kakao;
-      if (c && Number.isFinite(c.lat) && kakaoMapRef.current && kakao?.maps) {
-        kakaoMapRef.current.setLevel(3);
-        kakaoMapRef.current.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+      // MY관심 탭에서 지도 탭으로 막 바뀐 경우 — 지도가 다시 보인 뒤 크기를 다시 잡고 옮긴다
+      await new Promise((r) => setTimeout(r, 250));
+      const map = kakaoMapRef.current;
+      if (c && Number.isFinite(c.lat) && map && kakao?.maps) {
+        map.relayout?.();
+        map.setLevel(3);
+        map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
       }
-      void openDetail(id);
+      if (pickedRef.current !== id) void openDetail(id);
     })();
-  }, [mapLoaded, on, mobile, openDetail, kakaoMapRef]);
+  }, [mapLoaded, on, mobile, openDetail, kakaoMapRef, aptReq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 지도 주소 검색으로 고른 자리 — 남색 주소 말풍선 + 퍼지는 점, 그 번지 단지가 있으면 단지 창 (2026-11-05 사장님)
   // 다른 곳을 검색하거나 지도를 누르면 핀은 없어진다

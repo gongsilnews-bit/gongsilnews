@@ -48,7 +48,7 @@ export const PLANS: Plan[] = [
   /* 2026-11-04 사장님 등급 확정 (docs/2026-11-04_member_tiers_plan.md) — 무료 공실뉴스부동산 · 공실뉴스부동산 PRO 혜택표대로.
      앱은 안 쓰므로 앱 전용 항목(화면캡처·동영상studio 등)은 뺐다. 금액은 10-31 회의 값 그대로 */
   {
-    key: "free", name: "공실뉴스부동산",
+    key: "free", name: "부동산회원",
     icon: ic("M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"),
     price: () => ({ won: "0", per: "/ 평생", sub: "무료" }),
     cta: { label: "시작하기", href: "/newsrealty/apply" },
@@ -64,8 +64,8 @@ export const PLANS: Plan[] = [
     cta: { label: "시작하기", href: "/newsrealty/pro-apply", solid: true },
     base: ["공실 광고 20건 + 내 홈페이지 전용 20건", "기사 쓰기 월 4건"],
     items: ["블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본 무제한", "뉴스칼럼 (내 기사로 블로그 · SNS · 유튜브)", "AI 매물보고서 모든 쪽 · 디자인 · AI 채우기", "유리창홍보지 모든 디자인", "물건접수홈페이지 (집주인 접수 · 로고 · 색상 · 사진 · 영상)", "포토studio (AI 포함)", "고객관리", "기사 아래 광고 · 배너"],
-    extraTitle: "공실뉴스부동산의 모든 기능 포함",
-    extra: ["주황 PRO 딱지 (지도 · 공실 카드 · 기자란)", "모든 링크는 내 물건접수홈페이지로", "일반 중개사무소 · 중개법인 같은 금액"],
+    extraTitle: "부동산회원의 모든 기능 포함",
+    extra: ["주황 NEWS 딱지 (지도 · 공실 카드 · 기자란)", "모든 링크는 내 물건접수홈페이지로", "일반 중개사무소 · 중개법인 같은 금액"],
   },
   {
     key: "biz", name: "비즈니스회원", tag: "세무사·법무사·변호사 등 전문가용",
@@ -73,8 +73,8 @@ export const PLANS: Plan[] = [
     price: mon(100000),
     cta: { label: "시작하기", href: "/newsrealty/pro-apply", solid: true },
     base: ["공실 등록 무제한", "기사 쓰기"],
-    items: ["스튜디오회원 항목 모두", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
-    extraTitle: "스튜디오회원의 모든 기능 포함",
+    items: ["공실뉴스부동산 항목 모두", "직원 계정 여러 개", "사무소 여러 곳 함께 관리"],
+    extraTitle: "공실뉴스부동산의 모든 기능 포함",
     extra: ["전담 상담", "세금계산서 발행"],
   },
 ];
@@ -82,7 +82,7 @@ export const PLANS: Plan[] = [
 const NOTES = [
   "모든 금액은 부가세를 포함한 최종 결제 금액이에요.",
   "모든 요금제는 1년 단위로 결제해요. 표의 월 금액은 1년 금액을 12로 나눈 금액이에요.",
-  "공실뉴스부동산은 중개사 서류가 승인되면 무료로 이용할 수 있어요.",
+  "부동산회원은 중개사 서류가 승인되면 무료로 이용할 수 있어요.",
   "공실 건수는 광고 중인 공실만 세요. 광고를 내리거나 거래가 끝난 공실은 빠지니, 그 자리에 새 공실을 올릴 수 있어요.",
   "그 외 궁금한 점이 있으시다면 채팅 상담을 통해 문의 주세요.",
 ];
@@ -222,7 +222,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
             return (
               <div key={p.key + "items"} style={{ padding: "26px 24px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 4 }}>사용 가능 항목</div>
-                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "승인만 받으면 바로 써요." : p.key === "biz" ? "공실마케팅 앱에서 써요." : "웹에서 바로 써요. 설치할 것이 없어요."}</div>
+                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "승인만 받으면 바로 써요." : p.key === "biz" ? "웹에서 바로 써요. 설치할 것이 없어요." : "웹에서 바로 써요. 설치할 것이 없어요."}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {p.items.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span>{info}</div>)}
                 </div>

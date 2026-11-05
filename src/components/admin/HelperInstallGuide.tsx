@@ -4,7 +4,7 @@
  *  [자동화 도우미 설치]를 누르면 — 크롬 · 엣지 · 웨일 탭, 탭마다 설치하는 법
  *   크롬·웨일: 웹스토어에서 자동 설치 + 파일 받아 직접 설치
  *   엣지: 파일 받아 직접 설치 (사장님: "엣지는 아까 알려준 대로 직접 설치")
- *  설치 파일: public/downloads/gongsilnews-helper.zip (작성기 4.1.0 — 스토어에 새 판을 올리면 같이 바꾼다)
+ *  설치 파일: public/downloads/gongsilnews-helper.zip (작성기 4.1.1 — 스토어에 새 판을 올리면 같이 바꾼다)
  */
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";

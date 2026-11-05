@@ -236,7 +236,7 @@ export default function NewsrealtyHeader(_props: NewsrealtyHeaderProps = {}) {
               )}
               {member ? (
                 <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
+                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus, member.studioOn)}
                 </button>
               ) : (
                 <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>

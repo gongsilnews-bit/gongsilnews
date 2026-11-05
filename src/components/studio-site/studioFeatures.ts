@@ -22,7 +22,7 @@ export const FEATURE_GROUPS: { name: string; slugs: string[] }[] = [
   { name: "부동산마케팅", slugs: ["report", "flyer", "intake"] },
   // 2026-10-26 사장님: 영상 앞에 "이미지 편집" — 이미지제작 템플릿(포토샵·블로그·유튜브·명함·전단·유리창)
   { name: "이미지 편집", slugs: ["psd", "blogdesign", "thumbnail", "print"] },
-  // 2026-11-04 사장님: 공실뉴스부동산 PRO 소개는 웹 기능만 — 영상 · 강의스튜디오(앱 전용) 칸과 인테리어·리모델링은 메뉴에서 뺐다 (페이지 글은 남김)
+  // 2026-11-04 사장님: 공실뉴스부동산 소개는 웹 기능만 — 영상 · 강의스튜디오(앱 전용) 칸과 인테리어·리모델링은 메뉴에서 뺐다 (페이지 글은 남김)
 ];
 
 export const FEATURES: StudioFeature[] = [
@@ -228,7 +228,7 @@ export const FEATURES: StudioFeature[] = [
       { t: "편집하기", d: "자르고 옮기고, 텍스트와 그래픽을 얹습니다." },
       { t: "내보내기", d: "완성한 영상을 파일로 내보냅니다." },
     ],
-    end: "영상 다듬기, 공실뉴스부동산 PRO 하나로.",
+    end: "영상 다듬기, 공실뉴스부동산 하나로.",
   },
   {
     slug: "template", name: "부동산 템플릿 제공",
@@ -301,7 +301,7 @@ export const FEATURES: StudioFeature[] = [
   {
     slug: "remodel", name: "인테리어 · 리모델링 AI",
     title: ["고친 뒤 모습을", "미리 보여 드려요"],
-    lead: "공실 사진으로 인테리어 · 리모델링 뒤 모습을 AI가 그려 손님에게 보여 줍니다. 공실뉴스부동산 PRO 전용 기능입니다.",
+    lead: "공실 사진으로 인테리어 · 리모델링 뒤 모습을 AI가 그려 손님에게 보여 줍니다. 공실뉴스부동산 전용 기능입니다.",
     promise: "\"고치면 이렇게 됩니다\"를 눈으로 보여 주세요",
     points: [
       { t: "사진 한 장으로", d: "공실 사진 한 장으로 고친 뒤 모습을 그립니다." },

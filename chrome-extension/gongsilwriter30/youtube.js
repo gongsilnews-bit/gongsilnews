@@ -208,16 +208,16 @@
         el.scriptLockText.textContent = "인터넷 연결을 확인한 뒤 [다시 확인]을 눌러 주세요.";
         el.scriptLockLink.classList.add("hidden");
       } else if (!access.isLoggedIn) {
-        el.scriptLockTitle.textContent = "공실뉴스에 로그인하면 무료로 체험할 수 있습니다";
-        el.scriptLockText.textContent = "유튜브 대본은 공실뉴스 회원이면 매월 3번 무료로 체험할 수 있고, 공실뉴스부동산·공실스터디부동산 회원은 무제한입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
+        el.scriptLockTitle.textContent = "공실뉴스에 로그인하면 쓸 수 있습니다";
+        el.scriptLockText.textContent = "유튜브 대본은 부동산회원이면 한 달에 3번 쓸 수 있고, 공실뉴스부동산 회원은 무제한입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
         el.scriptLockLink.textContent = "공실뉴스 열기";
         el.scriptLockLink.href = `${access.origin}/`;
         el.scriptLockLink.classList.remove("hidden");
       } else {
         /* 로그인은 했는데 무료 체험 횟수를 읽지 못한 경우 */
-        el.scriptLockTitle.textContent = "무료 체험 횟수를 확인하지 못했습니다";
-        el.scriptLockText.textContent = `${access.name}님은 현재 ${access.planLabel || "무료"} 등급입니다. ` +
-          "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산·공실스터디부동산 회원은 무제한으로 쓸 수 있습니다.";
+        el.scriptLockTitle.textContent = "이번 달 남은 횟수를 확인하지 못했습니다";
+        el.scriptLockText.textContent = `${access.name}님은 현재 ${access.planLabel || "일반회원"} 등급입니다. ` +
+          "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산 회원은 무제한으로 쓸 수 있습니다.";
         el.scriptLockLink.textContent = "공실스터디 신청하기";
         el.scriptLockLink.href = `${access.origin}/study/apply`;
         el.scriptLockLink.classList.remove("hidden");
@@ -250,7 +250,7 @@
     if (!result.unlimited) {
       access.trial = { remaining: result.remaining, limit: result.limit };
       applyLock();
-      if (result.remaining === 0) toast("이번이 이번 달 마지막 유튜브 대본 무료 체험입니다.", "info", 8000);
+      if (result.remaining === 0) toast("이번 달 유튜브 대본 쓰기를 모두 썼습니다 (한 달에 3번).", "info", 8000);
     }
   }
 

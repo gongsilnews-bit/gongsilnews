@@ -23,9 +23,8 @@ export const NEWSMAKER_PLANS = ["admin", "news_premium", "study_premium"] as con
 
 export const PLAN_LABELS: Record<string, string> = {
   admin: "최고관리자",
-  news_premium: "공실뉴스부동산 Pro",
-  study_premium: "공실뉴스부동산 Studio",
-  free: "무료",
+  news_premium: "공실뉴스부동산",
+  study_premium: "공실뉴스부동산",
 };
 
 export type ExtensionMember = {
@@ -152,7 +151,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
     email: member.email || "",
     role,
     plan,
-    planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "공실뉴스부동산" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
+    planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "부동산회원" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
     canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan) || isBiz, // 비즈니스회원도 PRO 와 같이 무제한 (2026-11-04)
     canYoutubeWriter: isAdmin || (YOUTUBE_WRITER_PLANS as readonly string[]).includes(plan),
     canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan) || isBiz,

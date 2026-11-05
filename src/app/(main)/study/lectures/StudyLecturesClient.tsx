@@ -213,7 +213,7 @@ export default function StudyLecturesClient({
                     textDecoration: "none",
                   }}
                 >
-                  공실뉴스부동산 무료 가입하기 &gt;&gt;
+                  부동산회원 무료 가입하기 &gt;&gt;
                 </Link>
               </div>
             </div>

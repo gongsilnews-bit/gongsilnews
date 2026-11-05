@@ -302,7 +302,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             </thead>
             <tbody>
               {displayMembers.length > 0 ? displayMembers.map((member, idx) => {
-                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '공실뉴스부동산', 'BIZ': '비즈니스', 'USER': '일반회원' };
+                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'BIZ': '비즈니스', 'USER': '일반회원' };
                 let displayRole = roleMap[member.role] || member.role || '일반회원';
                 const memberAgency = Array.isArray(member.agencies) ? member.agencies[0] : member.agencies;
                 const memberBiz = Array.isArray(member.business_profiles) ? member.business_profiles[0] : member.business_profiles;
@@ -312,7 +312,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                   displayRole = '비즈니스(신청)';
                 }
                 // 부동산회원은 공실마케팅 이용기간 하나로 가른다 (2026-10-26)
-                if (member.role === 'REALTOR' && isStudioMember(member)) displayRole = '공실뉴스부동산 PRO'; // 2026-11-04 등급 회의
+                if (member.role === 'REALTOR' && isStudioMember(member)) displayRole = '공실뉴스부동산'; // 2026-11-04 등급 회의
                 if (member.role === 'BIZ' && member.plan_type === 'biz_premium') {
                   displayRole = '비즈니스';
                 }
@@ -553,8 +553,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
 /** 물건접수홈페이지 구역의 줄 순서. 위 표와 같은 순서로 세운다. */
 const HOMEPAGE_ROWS: [string, string][] = [
   ["일반회원", "USER"],
-  ["공실뉴스부동산 (무료)", "REALTOR_FREE"],
-  ["공실뉴스부동산 + Pro", "REALTOR_NEWS"],
+  ["부동산회원", "REALTOR_FREE"],
+  ["공실뉴스부동산", "REALTOR_NEWS"],
   ["공실뉴스부동산 + Studio", "REALTOR_STUDY"],
   ["비즈니스회원", "BIZ"],
 ];
@@ -747,7 +747,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       {/* 공실뉴스부동산 (무료) — 공실마케팅 이용기간 없음 */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>공실뉴스부동산 (무료)</span>
+          <span style={labelStyle}>부동산회원</span>
           <input type="number" value={formData.LIMIT_REALTOR_FREE_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_FREE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_FREE_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_FREE_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
@@ -760,7 +760,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       {/* 공실뉴스부동산 + Pro — 공실마케팅 Pro 이용기간 안 (news_premium, 2026-10-29) */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>공실뉴스부동산 + Pro</span>
+          <span style={labelStyle}>공실뉴스부동산</span>
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
@@ -802,7 +802,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: `2px solid ${border}` }}>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0" }}>물건접수홈페이지</h3>
         <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 18px 0" }}>
-          물건접수홈페이지는 공실뉴스부동산 PRO(비즈니스회원 포함)만 쓰고, 여기서 기능으로 등급을 나눕니다.
+          물건접수홈페이지는 공실뉴스부동산(비즈니스회원 포함)만 쓰고, 여기서 기능으로 등급을 나눕니다.
           추천공실·기사 노출은 위의 공실·기사 한도를 그대로 따라가므로 따로 설정하지 않습니다.
         </p>
 

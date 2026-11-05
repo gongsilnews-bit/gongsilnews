@@ -27,7 +27,6 @@ export default function StudioFooter() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/new_logo.png" alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
               <span style={{ fontSize: 20, fontWeight: 900 }}>공실뉴스부동산</span>
-              <span style={{ background: "#ea8a0c", color: "#fff", fontSize: 12, fontWeight: 800, padding: "3px 6px 4px", borderRadius: 3, lineHeight: 1 }}>PRO</span>
             </Link>
             <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS까지</p>
             <Link href="/newsrealty/apply" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>무료로 시작하기</Link>

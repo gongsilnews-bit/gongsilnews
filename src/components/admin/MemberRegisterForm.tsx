@@ -1207,7 +1207,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 공실뉴스부동산(무료). 날짜를 넣으면 끝나는 날까지 스튜디오회원 — 이름표 옆 공실마케팅 마크.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 부동산회원(무료). 날짜를 넣으면 끝나는 날까지 스튜디오회원 — 이름표 옆 공실마케팅 마크.</span>
               </div>
             </div>
 

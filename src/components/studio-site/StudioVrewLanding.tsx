@@ -27,7 +27,7 @@ const COMPARE: { t: string; free: string; pro: string }[] = [
   { t: "포토studio · AI 이미지", free: "—", pro: "됨" },
   { t: "고객관리 · 기사 아래 광고 · 배너", free: "—", pro: "됨" },
   { t: "글 속 링크", free: "공실뉴스로", pro: "내 물건접수홈페이지로" },
-  { t: "이름 옆 딱지", free: "—", pro: "PRO" },
+  { t: "이름 옆 딱지", free: "—", pro: "NEWS" },
 ];
 
 const CSS = `
@@ -356,9 +356,9 @@ export default function StudioVrewLanding() {
       {/* 3 PRO가 되면 — 무료 · PRO 비교 (2026-11-04 사장님). /pro 주소가 여기(#pro)로 온다 */}
       <section id="pro" className="sv-sec" style={{ scrollMarginTop: 80 }}>
         <h2 className="sv-h2" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>공실뉴스부동산 <ProTag size="md" style={{ fontSize: 20, padding: "5px 9px 6px", borderRadius: 5 }} />가 되면</h2>
-        <p className="sv-p">무료로 시작해 한 달 3번 써 보고,<br />더 많이 · 더 멀리 알리고 싶을 때 <b>마케팅의 PRO</b>가 되세요.</p>
+        <p className="sv-p">무료로 시작해 한 달 3번 써 보고,<br />더 많이 · 더 멀리 알리고 싶을 때 <b>공실뉴스부동산</b>이 되세요.</p>
         <div className="sv-cmp">
-          <div className="h"><span /><span>무료</span><span className="pro">PRO</span></div>
+          <div className="h"><span /><span>부동산회원</span><span className="pro">공실뉴스부동산</span></div>
           {COMPARE.map((r) => (
             <div key={r.t} className="r"><span className="t">{r.t}</span><span>{r.free}</span><span className="pro">{r.pro}</span></div>
           ))}
@@ -373,7 +373,7 @@ export default function StudioVrewLanding() {
       <section className="sv-sec">
         <h2 className="sv-h2" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>내 부동산 홈페이지를<br />바로 열어 드립니다 <ProTag size="md" style={{ fontSize: 18, padding: "4px 8px 5px", borderRadius: 5 }} /></h2>
         <p className="sv-p">
-          PRO 회원에게 <b>물건접수홈페이지</b>를 만들어 드려요. 내 공실이 저절로 올라가고,<br />
+          공실뉴스부동산 회원에게 <b>물건접수홈페이지</b>를 만들어 드려요. 내 공실이 저절로 올라가고,<br />
           집주인은 <b>[물건 접수]</b>로 직접 물건을 맡깁니다. 로고 · 색상 · 첫 화면 사진 · 영상도 내 마음대로.<br />
           블로그 · SNS 글의 링크도 모두 <b>내 홈페이지</b>로 모입니다.
         </p>
@@ -430,7 +430,7 @@ export default function StudioVrewLanding() {
       {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
       <section className="sv-sec">
         <h2 className="sv-h2">부동산 마케팅, 이거 하나면 끝!</h2>
-        <p className="sv-p">뉴스 · 블로그 · SNS · 보고서 · 디자인 · 홈페이지까지<br />공실뉴스부동산 PRO 하나로 마케팅의 프로가 되세요.</p>
+        <p className="sv-p">뉴스 · 블로그 · SNS · 보고서 · 디자인 · 홈페이지까지<br />공실뉴스부동산 하나로 마케팅의 프로가 되세요.</p>
         {btns}
         <Reviews />
       </section>

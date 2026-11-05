@@ -7,7 +7,7 @@ import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
 import { createClient } from "@/utils/supabase/client";
 import NewsrealtyJoinButton, { showNewsrealtyJoin } from "@/components/NewsrealtyJoinButton";
-import { getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getAdminEntryLabel, isNewsAdminButton, isStudioMember, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeColor?: string }) {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [planType, setPlanType] = useState<string>('');
+  const [paidOn, setPaidOn] = useState(false); // 공실뉴스부동산(유료) 이용 중 — 관리자 단추 이름 (2026-11-05)
   const [agencyStatus, setAgencyStatus] = useState<string>('');
 
   const searchWrapRef = useRef<HTMLDivElement>(null);
@@ -39,6 +40,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
           
         if (data) {
           setCurrentUser(user);
+          setPaidOn(isStudioMember(data as any));
           
           const { data: agencyData } = await supabase
             .from('agencies')
@@ -117,7 +119,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
               else if (userRole === 'REALTOR') router.push('/realty_admin');
               else router.push('/user_admin');
             }}>
-              {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
+              {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus, paidOn)}
             </div>
             <div style={{ color: "#555", cursor: "pointer", fontWeight: "600", fontSize: "13px" }} onClick={handleLogout}>
               로그아웃

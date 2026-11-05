@@ -39,9 +39,9 @@ export function vacancyLimit(t: Tier): number | null {
 }
 
 export const PRO_ORANGE = "#ea8a0c";
-export const TIER_NAME: Record<Tier, string> = { user: "일반회원", free: "공실뉴스부동산", pro: "공실뉴스부동산", biz: "비즈니스회원", admin: "최고관리자" };
+export const TIER_NAME: Record<Tier, string> = { user: "일반회원", free: "부동산회원", pro: "공실뉴스부동산", biz: "비즈니스회원", admin: "최고관리자" };
 /** PRO 기능을 무료 회원이 눌렀을 때 */
-export const PRO_ONLY = "공실뉴스부동산 PRO에서 쓸 수 있어요.";
+export const PRO_ONLY = "공실뉴스부동산에서 쓸 수 있어요.";
 
 /**
  * 내 홈페이지 전용 공실 (2026-11-04 사장님: "기능 만들자") — 노출 칸 세 번째 값

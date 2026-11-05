@@ -919,7 +919,7 @@ export default function StudyAiYoutubeClient() {
                   transition: "transform 0.15s ease",
                 }}
               >
-                공실뉴스부동산 무료 가입하기 &gt;&gt;
+                부동산회원 무료 가입하기 &gt;&gt;
               </Link>
               <Link
                 href="/study"

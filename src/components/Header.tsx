@@ -15,7 +15,7 @@ import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
 import NewsrealtyJoinButton, { showNewsrealtyJoin } from "@/components/NewsrealtyJoinButton";
-import { getAdminEntryLabel, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
+import { getAdminEntryLabel, isNewsAdminButton, isStudioMember, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 
 import { SHOW_STUDY } from "@/utils/siteFlags";
@@ -57,6 +57,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [planType, setPlanType] = useState<string>('');
+  const [paidOn, setPaidOn] = useState(false); // 공실뉴스부동산(유료) 이용 중 — 관리자 단추 이름 (2026-11-05)
   const [agencyStatus, setAgencyStatus] = useState<string>('');
   const newsOrange = isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus);
 
@@ -190,6 +191,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
           setCurrentUser(user);
           setUserRole(data.role);
           setPlanType(data.plan_type || '');
+          setPaidOn(isStudioMember(data as any));
 
           const { data: agencyData } = await supabase
             .from('agencies')
@@ -304,7 +306,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 else if (userRole === 'REALTOR') router.push('/realty_admin');
                 else router.push('/user_admin');
               }}>
-                {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
+                {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus, paidOn)}
               </div>
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();
@@ -511,7 +513,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : "#dc2626"}
                     onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : newsOrange ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444"}>
-                    {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
+                    {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus, paidOn)}
                   </button>
                 ) : (
                   <button onClick={() => router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write'))}

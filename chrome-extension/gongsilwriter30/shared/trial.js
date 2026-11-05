@@ -44,8 +44,8 @@
       body: JSON.stringify({ feature }),
     }).catch(() => null);
     const data = response ? await response.json().catch(() => null) : null;
-    if (!data) return { ok: false, error: "무료 체험 횟수를 확인하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 눌러 주세요." };
-    if (!data.success) return { ok: false, exhausted: Boolean(data.exhausted), error: data.error || "무료 체험을 쓸 수 없습니다." };
+    if (!data) return { ok: false, error: "이번 달 남은 횟수를 확인하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 눌러 주세요." };
+    if (!data.success) return { ok: false, exhausted: Boolean(data.exhausted), error: data.error || "이번 달 횟수를 쓸 수 없습니다." };
     return { ok: true, unlimited: Boolean(data.unlimited), remaining: data.remaining, limit: data.limit };
   }
 
@@ -63,16 +63,16 @@
     if (remaining > 0) {
       box.className = "gw-trial";
       box.innerHTML =
-        `<strong>🎁 이번 달 무료 체험 ${remaining}/${limit}회 남음</strong>` +
+        `<strong>한 달에 ${limit}번 · 이번 달 ${remaining}/${limit}번 남음</strong>` +
         `<small>${esc(featureName)}은(는) [작성]을 누를 때 1회로 셉니다. 수정·가져오기·전송은 세지 않습니다. ` +
-        `공실뉴스부동산·공실스터디부동산 회원은 무제한입니다.</small>`;
+        `공실뉴스부동산 회원은 무제한입니다.</small>`;
       return;
     }
     box.className = "gw-trial is-exhausted";
     box.innerHTML =
-      `<strong>🔒 이번 달 ${esc(featureName)} 무료 체험 ${limit}회를 모두 사용했습니다</strong>` +
+      `<strong>🔒 이번 달 ${esc(featureName)} ${limit}번을 모두 썼습니다</strong>` +
       `<small>횟수 제한 없이 쓰려면 공실스터디부동산 회원이 되어 주세요. ` +
-      `다음 달 1일에 무료 체험 ${limit}회가 다시 생깁니다. 이미 만든 글은 계속 고치고 보낼 수 있습니다.</small>` +
+      `다음 달 1일에 ${limit}번이 다시 생깁니다. 이미 만든 글은 계속 고치고 보낼 수 있습니다.</small>` +
       `<div class="gw-trial-links">` +
       `<a href="${esc(origin)}/study" target="_blank" rel="noopener noreferrer">공실스터디부동산 알아보기</a>` +
       `</div>`;

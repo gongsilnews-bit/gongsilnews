@@ -450,7 +450,7 @@ function RealtyAdminContent() {
             title={soon ? "요금제 만료가 얼마 남지 않았습니다" : undefined}
             style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: tone.bg, color: tone.fg }}
           >
-            {getPlanLabel({ role: userRole, plan_type: planType })}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
+            {(() => { const l = getPlanLabel({ role: userRole, plan_type: planType }); return l === "공실뉴스부동산" && !isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }) ? "부동산회원" : l; })()}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
           </span>
         );
       })()

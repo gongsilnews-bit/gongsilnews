@@ -95,7 +95,7 @@ export default function StudyHomeYunClient() {
                 </Link>
               </div>
               <Link href="/newsrealty/apply" className={styles.heroV2Newsrealty}>
-                공실뉴스부동산 무료 가입하기 &gt;
+                부동산회원 무료 가입하기 &gt;
               </Link>
               <ul className={styles.heroV2Notes}>
                 <li>물건 등록 한 번으로 자동 완성</li>

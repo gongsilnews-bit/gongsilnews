@@ -22,7 +22,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const f = featureBySlug((await params).slug);
-  return f ? { title: `${f.name} | 공실뉴스부동산 PRO`, description: f.lead } : {};
+  return f ? { title: `${f.name} | 공실뉴스부동산`, description: f.lead } : {};
 }
 
 /** 찍어 둔 화면이 있으면 그 주소 */
@@ -115,7 +115,7 @@ export default async function StudioFeaturePage({ params }: { params: Promise<{ 
 
       {/* ⑥ */}
       <div style={{ background: "#1f1714", color: "#fff", marginTop: 112, padding: "88px 24px", textAlign: "center" }}>
-        <h2 style={{ ...h2, color: "#fff" }}>{f.end || `${f.name}, 공실뉴스부동산 PRO로 시작하세요.`}</h2>
+        <h2 style={{ ...h2, color: "#fff" }}>{f.end || `${f.name}, 공실뉴스부동산로 시작하세요.`}</h2>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 28, flexWrap: "wrap" }}>
           <Link href="/newsrealty#download" style={btn(true)}>앱 받기</Link>
           <Link href="/newsrealty/pricing" style={{ ...btn(false), color: "#fff", background: "transparent", borderColor: "rgba(255,255,255,.7)" }}>이용료 보기</Link>

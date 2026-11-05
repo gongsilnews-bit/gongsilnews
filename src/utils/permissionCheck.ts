@@ -152,14 +152,16 @@ export function studioPlan(member: {
 /** 사이트 헤더에서 관리자 화면으로 들어가는 버튼에 쓸 글자 */
 export function getAdminEntryLabel(
   member: { role?: string | null; plan_type?: string | null } | null | undefined,
-  agencyStatus?: string | null
+  agencyStatus?: string | null,
+  paid?: boolean, // 공실뉴스부동산(유료, 이용 기간 안)인가 — 아니면 "부동산회원" (2026-11-05 사장님: 무료=부동산회원·유료=공실뉴스부동산)
 ): string {
   const role = member?.role;
   // 서류가 반려된 중개사에게는 등급보다 먼저 알려줄 것이 있다
   if ((role === 'REALTOR' || role === '부동산회원') && agencyStatus === 'REJECTED') {
     return '서류보완 >>';
   }
-  return `${getPlanLabel(member)} admin >>`;
+  const label = getPlanLabel(member);
+  return `${label === '공실뉴스부동산' && !paid ? '부동산회원' : label} admin >>`;
 }
 
 /** 요금제 만료일을 배지에 붙일 짧은 꼴로. 없으면 빈 글자 */

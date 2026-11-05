@@ -107,7 +107,16 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
       void markNotificationRead(n.id);
     }
     const target = mobile ? n.mobile_link || n.link : n.link || n.mobile_link;
-    if (target) router.push(target);
+    if (!target) return;
+    // 이미 우리동네부동산(/gongsil)에서 단지 알림을 누르면 — 주소만 바뀌고 다시 열리지 않던 것 (2026-11-05 사장님)
+    // 화면에 "이 단지 열기"를 알린다: 지도 탭으로 바꾸고(GongsilClient) 그 단지로 옮겨 단지 창(AptPriceLayer)
+    const apt = /^\/gongsil\?apt=([^&]+)/.exec(target);
+    if (apt && window.location.pathname === "/gongsil") {
+      window.history.replaceState(null, "", target);
+      window.dispatchEvent(new CustomEvent("gs-apt-open", { detail: { id: decodeURIComponent(apt[1]) } }));
+      return;
+    }
+    router.push(target);
   };
 
   const handleReadAll = async () => {

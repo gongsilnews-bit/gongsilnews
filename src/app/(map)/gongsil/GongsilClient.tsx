@@ -1438,6 +1438,15 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setFilterSearchKeyword("");
   };
 
+  // 알림 [새 실거래] 등으로 "이 단지 열기"가 오면 — MY관심(지도 없는 화면)에서는 [전체] 지도로 (2026-11-05 사장님)
+  const toMapRef = useRef<() => void>(() => {});
+  toMapRef.current = () => { if (activeCategory === "wish") handleCategoryChange("all"); };
+  useEffect(() => {
+    const on = () => toMapRef.current();
+    window.addEventListener("gs-apt-open", on);
+    return () => window.removeEventListener("gs-apt-open", on);
+  }, []);
+
   const handleCategoryChange = (key: string) => {
     if (activeCategory === key) return;
     // 현재 탭의 pill 상태를 sessionStorage에 저장
