@@ -621,7 +621,8 @@ export default function GongsilSidebar({
                 }}
               >
                 <Star k="vac" id={String(prop.id)} style={{ top: 22, right: 26 }} />
-                <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
+                {/* 기본 폭 50% — 사진 없는 카드에서 꼬리표 줄(100%)과 한 줄에 놓여 글자가 세로로 쌓이던 것 (2026-11-05 사장님) */}
+                <div style={{ flex: "1 1 50%", paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
                   <div
                     style={{
                       display: "flex",

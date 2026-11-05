@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FilterState } from './useVacancyFilters';
+import { searchMapPlaces, announceMapPin, levelFor, type MapSearchItem } from '@/utils/mapAddressSearch';
 
 interface Props {
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
@@ -22,7 +23,7 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
   const [selSidoCode, setSelSidoCode] = useState("");
   const [selGugunCode, setSelGugunCode] = useState("");
   const [locKeyword, setLocKeyword] = useState("");
-  const [locResults, setLocResults] = useState<any[]>([]);
+  const [locResults, setLocResults] = useState<MapSearchItem[]>([]);
   const [regTab, setRegTab] = useState<"sido"|"gugun"|"dong">("sido");
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -89,15 +90,10 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
     });
   };
 
+  // 주소(지번·도로명)를 먼저, 장소는 그 아래 (2026-11-05 사장님, PC 검색과 같다)
   const doLocKeywordSearch = () => {
     if (!locKeyword.trim()) return;
-    const kakao = (window as any).kakao;
-    if (!kakao?.maps?.services) return;
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch(locKeyword, (data: any, status: any) => {
-      if (status === kakao.maps.services.Status.OK) setLocResults(data);
-      else setLocResults([]);
-    });
+    searchMapPlaces(locKeyword).then(setLocResults);
   };
 
   const gridBtnStyle = (active: boolean): React.CSSProperties => ({
@@ -241,14 +237,14 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
       ) : (
         <div>
           <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-            <input type="text" placeholder="동, 읍, 면 또는 랜드마크 검색" value={locKeyword} onChange={e => setLocKeyword(e.target.value)} onKeyDown={e => e.key === "Enter" && doLocKeywordSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none" }} />
+            <input type="text" placeholder="주소(역삼동 685-19) 또는 장소 검색" value={locKeyword} onChange={e => setLocKeyword(e.target.value)} onKeyDown={e => e.key === "Enter" && doLocKeywordSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none" }} />
             <button onClick={doLocKeywordSearch} style={{ padding: "10px 16px", background: "#4b89ff", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>이동</button>
           </div>
           <div style={{ maxHeight: "180px", overflowY: "auto" }}>
             {locResults.map((r, i) => (
-              <div key={i} onClick={() => { onLocationMove(parseFloat(r.y), parseFloat(r.x), 5); if (setLocLabel) setLocLabel(r.place_name || r.address_name); if (onClose) onClose(); }} style={{ padding: "12px 4px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>{r.place_name || r.address_name}</div>
-                <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{r.address_name}</div>
+              <div key={i} onClick={() => { onLocationMove(r.lat, r.lng, levelFor(r)); announceMapPin(r); if (setLocLabel) setLocLabel(r.label); if (onClose) onClose(); }} style={{ padding: "12px 4px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: r.isAddr ? "#1a2e5a" : "#111" }}>{r.title}</div>
+                <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{r.sub}</div>
               </div>
             ))}
           </div>

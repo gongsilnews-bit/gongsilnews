@@ -274,6 +274,56 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
     })();
   }, [mapLoaded, on, mobile, openDetail, kakaoMapRef]);
 
+  // 지도 주소 검색으로 고른 자리 — 남색 주소 말풍선 + 퍼지는 점, 그 번지 단지가 있으면 단지 창 (2026-11-05 사장님)
+  // 다른 곳을 검색하거나 지도를 누르면 핀은 없어진다
+  useEffect(() => {
+    if (!mapLoaded) return;
+    const kakao = (window as any).kakao;
+    let pin: any = null;
+    const removePin = () => { if (pin) { pin.setMap(null); pin = null; } };
+    if (!document.getElementById("gs-map-pin-style")) {
+      const st = document.createElement("style");
+      st.id = "gs-map-pin-style";
+      st.textContent = "@keyframes gsPinPulse{0%{transform:translate(-50%,-50%) scale(.4);opacity:.75}100%{transform:translate(-50%,-50%) scale(2.6);opacity:0}}";
+      document.head.appendChild(st);
+    }
+    const onPin = async (e: Event) => {
+      const map = kakaoMapRef.current;
+      if (!map || !kakao?.maps) return;
+      const { lat, lng, label, dong, jibun } = (e as CustomEvent).detail || {};
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      removePin();
+      const el = document.createElement("div");
+      el.style.cssText = "position:relative;display:flex;flex-direction:column;align-items:center;pointer-events:none;font-family:inherit;transform:translateY(8px)"; // 점 가운데가 정확한 자리에
+      const esc = String(label || "").replace(/[<>&]/g, "");
+      el.innerHTML =
+        `<div style="background:#1a2e5a;color:#fff;border-radius:10px;padding:7px 12px;font-size:14px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(26,46,90,.35)">📍 ${esc}</div>` +
+        `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:8px solid #1a2e5a;margin-top:-1px"></div>` +
+        `<div style="position:relative;width:16px;height:16px;margin-top:3px">` +
+        [0, 0.6, 1.2].map((d) => `<span style="position:absolute;left:50%;top:50%;width:16px;height:16px;border-radius:50%;background:#2563eb;animation:gsPinPulse 1.6s ease-out ${d}s 2 both"></span>`).join("") +
+        `<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:#2563eb;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></span></div>`;
+      pin = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(lat, lng), content: el, yAnchor: 1, xAnchor: 0.5, zIndex: 20 });
+      pin.setMap(map);
+      // 그 번지 단지
+      const q = new URLSearchParams({ at: `${lat},${lng}`, ...(dong ? { dong } : {}), ...(jibun ? { jibun } : {}) });
+      const r = await fetch(`/api/apt-prices?${q}`).then((x) => x.json()).catch(() => null);
+      const c = r?.success ? r.complex : null;
+      if (!c?.id) return;
+      const k = c.kind === "offi" ? "offi" : c.kind === "villa" ? "villa" : "apt";
+      setShow((s) => (s[k] ? s : { ...s, [k]: true }));
+      if (pickedRef.current !== c.id) void openDetail(c.id);
+    };
+    window.addEventListener("gs-map-pin", onPin);
+    let map: any = null;
+    const attachClick = () => { map = kakaoMapRef.current; if (map && kakao?.maps) kakao.maps.event.addListener(map, "click", removePin); };
+    attachClick();
+    return () => {
+      window.removeEventListener("gs-map-pin", onPin);
+      if (map && kakao?.maps) kakao.maps.event.removeListener(map, "click", removePin);
+      removePin();
+    };
+  }, [mapLoaded, kakaoMapRef, openDetail]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // PC — 단지 창은 왼쪽 목록 자리에 (2026-11-02 사장님: 호갱노노처럼). 목록(aside[data-gongsil-side])의 화면 위치를 따라간다
   const [side, setSide] = useState<{ left: number; top: number; height: number } | null>(null);
   const [listOpen, setListOpen] = useState(false); // [이 단지 공실 보기] — 창을 잠깐 숨기고 목록 위에 [‹ 단지 정보] 줄

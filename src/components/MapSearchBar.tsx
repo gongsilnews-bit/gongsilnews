@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { searchMapPlaces, announceMapPin, levelFor, type MapSearchItem } from "@/utils/mapAddressSearch";
 
 interface MapSearchBarProps {
   onSearchCoord: (lat: number, lng: number, zoomLevel?: number) => void;
@@ -28,7 +29,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
   const [currentGugunCode, setCurrentGugunCode] = useState<string>("");
 
   const [keyword, setKeyword] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<MapSearchItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const regionRef = useRef<HTMLDivElement>(null);
@@ -173,27 +174,24 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
     onRegionSelect?.(selectedSido, selectedGugun, name);
   };
 
+  // 주소(지번·도로명)를 먼저, 장소는 그 아래 — 고르면 가까이(주소 level 2) 가서 핀 (2026-11-05 사장님)
+  const goTo = (it: MapSearchItem) => {
+    onSearchCoord(it.lat, it.lng, levelFor(it));
+    announceMapPin(it);
+  };
+
   const executeMapKeywordSearch = () => {
     if (!keyword.trim()) return;
     setIsSearching(true);
-    const kakao = (window as any).kakao;
-    if (!kakao || !kakao.maps || !kakao.maps.services) return;
-    const ps = new kakao.maps.services.Places();
-
-    ps.keywordSearch(keyword, (data: any, status: any) => {
+    searchMapPlaces(keyword).then((list) => {
       setIsSearching(false);
-      if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        setSearchResults(data);
-        // 검색 즉시 첫 번째 결과 위치로 지도를 이동시킵니다
-        onSearchCoord(parseFloat(data[0].y), parseFloat(data[0].x), 5);
-      } else {
-        setSearchResults([]);
-      }
+      setSearchResults(list);
+      if (list.length) goTo(list[0]); // 검색 즉시 첫 번째(주소가 있으면 주소)로
     });
   };
 
-  const onSelectSearchResult = (item: any) => {
-    onSearchCoord(parseFloat(item.y), parseFloat(item.x), 5); // Navigate and zoom
+  const onSelectSearchResult = (item: MapSearchItem) => {
+    goTo(item);
     setActivePanel(null);
   };
 
@@ -403,7 +401,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
           <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "stretch" }}>
             <input 
               type="text" 
-              placeholder="동, 읍, 면 또는 랜드마크 검색" 
+              placeholder="주소(역삼동 685-19) 또는 장소 검색" 
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && executeMapKeywordSearch()}
@@ -422,8 +420,8 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
             ) : searchResults.length > 0 ? (
               searchResults.map((item, idx) => (
                 <div key={idx} style={{ padding: 10, borderBottom: "1px solid #eee", cursor: "pointer" }} onClick={() => onSelectSearchResult(item)}>
-                  <div style={{ fontWeight: "bold", color: "#333", marginBottom: 2 }}>{item.place_name || item.address_name}</div>
-                  <div style={{ fontSize: 14, color: "#888" }}>{item.address_name}</div>
+                  <div style={{ fontWeight: "bold", color: item.isAddr ? "#1a2e5a" : "#333", marginBottom: 2 }}>{item.title}</div>
+                  <div style={{ fontSize: 14, color: "#888" }}>{item.sub}</div>
                 </div>
               ))
             ) : keyword && !isSearching ? (

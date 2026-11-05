@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 import { SHOW_STUDY } from "@/utils/siteFlags";
+import { searchMapPlaces, announceMapPin, levelFor, type MapSearchItem } from "@/utils/mapAddressSearch";
 const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: false });
 
 const CATEGORIES = [
@@ -42,20 +43,14 @@ interface KakaoLocationSearchApi {
 
 function VacancyLocationSearchOverlay({ onClose, onLocationMove }: { onClose: () => void; onLocationMove: (lat: number, lng: number, zoom: number) => void }) {
   const [keyword, setKeyword] = useState("");
-  const [results, setResults] = useState<LocationResult[]>([]);
+  const [results, setResults] = useState<MapSearchItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // 주소(지번·도로명)를 먼저, 장소는 그 아래 — 고르면 가까이 가서 핀 (2026-11-05 사장님, PC 검색과 같다)
   const searchLocation = () => {
-    const query = keyword.trim();
-    const kakao = (window as Window & { kakao?: KakaoLocationSearchApi }).kakao;
-    if (!query || !kakao?.maps?.services) return;
-
+    if (!keyword.trim()) return;
     setIsSearching(true);
-    const places = new kakao.maps.services.Places();
-    places.keywordSearch(query, (data: LocationResult[], status: string) => {
-      setResults(status === kakao.maps.services.Status.OK ? data : []);
-      setIsSearching(false);
-    });
+    searchMapPlaces(keyword).then((list) => { setResults(list); setIsSearching(false); });
   };
 
   return (
@@ -69,7 +64,7 @@ function VacancyLocationSearchOverlay({ onClose, onLocationMove }: { onClose: ()
           value={keyword}
           onChange={event => setKeyword(event.target.value)}
           onKeyDown={event => event.key === "Enter" && searchLocation()}
-          placeholder="지역 또는 지하철역을 입력해 주세요"
+          placeholder="주소(역삼동 685-19)·지역·지하철역"
           style={{ flex: 1, padding: "11px 14px", border: "none", borderRadius: "8px", background: "#f8fafc", fontSize: "16px", outline: "none" }}
         />
         <button onClick={searchLocation} aria-label="지역 검색" style={{ padding: "4px", background: "none", border: "none", cursor: "pointer" }}>
@@ -77,17 +72,17 @@ function VacancyLocationSearchOverlay({ onClose, onLocationMove }: { onClose: ()
         </button>
       </div>
       <div style={{ padding: "18px 16px", overflowY: "auto" }}>
-        <div style={{ color: "#64748b", fontSize: "13px", marginBottom: "12px" }}>지역 또는 지하철역 검색 결과</div>
+        <div style={{ color: "#64748b", fontSize: "13px", marginBottom: "12px" }}>주소·지역·지하철역 검색 결과</div>
         {isSearching && <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>검색 중...</div>}
         {!isSearching && keyword.trim() && results.length === 0 && <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>검색 결과가 없습니다.</div>}
         {results.map((result, index) => (
           <button
-            key={result.id || `${result.x}-${result.y}-${index}`}
-            onClick={() => { onLocationMove(Number(result.y), Number(result.x), 5); onClose(); }}
+            key={`${result.lng}-${result.lat}-${index}`}
+            onClick={() => { onLocationMove(result.lat, result.lng, levelFor(result)); announceMapPin(result); onClose(); }}
             style={{ width: "100%", padding: "13px 4px", textAlign: "left", background: "none", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
           >
-            <div style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>{result.place_name || result.address_name}</div>
-            <div style={{ marginTop: "4px", fontSize: "12px", color: "#64748b" }}>{result.road_address_name || result.address_name}{result.category_name ? ` · ${result.category_name}` : ""}</div>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: result.isAddr ? "#1a2e5a" : "#111827" }}>{result.title}</div>
+            <div style={{ marginTop: "4px", fontSize: "12px", color: "#64748b" }}>{result.sub}</div>
           </button>
         ))}
       </div>

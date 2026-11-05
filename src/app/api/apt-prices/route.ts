@@ -109,6 +109,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, complex }, { headers: { "Cache-Control": "no-store" } });
   }
 
+  // ?at=37.5,127.03&dong=역삼동&jibun=685-19 — 지도 주소 검색으로 고른 자리의 단지 (2026-11-05 사장님)
+  // 같은 동·지번이 가까이(약 1km 안) 있으면 그것, 없으면 30m 안 가장 가까운 단지. 없으면 null
+  if (params.get("at")) {
+    const [lat, lng] = String(params.get("at")).split(",").map(Number);
+    if (![lat, lng].every(Number.isFinite)) return NextResponse.json({ success: false, error: "at 이 필요합니다." }, { status: 400 });
+    const dong = String(params.get("dong") || ""), jibun = String(params.get("jibun") || "");
+    const near = (d: number) => supabase.from("apt_complexes").select("id, kind, lat, lng, dong, jibun, trade_count")
+      .gte("lat", lat - d).lte("lat", lat + d).gte("lng", lng - d * 1.25).lte("lng", lng + d * 1.25).neq("fp", "gone");
+    const pickKind = (rows: { id: string; kind: string; trade_count: number }[]) =>
+      [...rows].sort((a, b) => (a.kind === "villa" ? 1 : 0) - (b.kind === "villa" ? 1 : 0) || b.trade_count - a.trade_count)[0];
+    let found: { id: string; kind: string } | null = null;
+    if (dong && jibun) {
+      const { data } = await near(0.01).eq("dong", dong).eq("jibun", jibun).limit(10);
+      if (data?.length) found = pickKind(data);
+    }
+    if (!found) {
+      const { data } = await near(0.0004).limit(50);
+      const dist = (r: { lat: number; lng: number }) => Math.hypot((r.lat - lat) * 111000, (r.lng - lng) * 88000);
+      const close = (data || []).filter((r) => dist(r) <= 30).sort((a, b) => dist(a) - dist(b));
+      if (close.length) found = close[0];
+    }
+    return NextResponse.json({ success: true, complex: found ? { id: found.id, kind: found.kind } : null }, { headers: { "Cache-Control": "no-store" } });
+  }
+
   const [swLat, swLng] = String(params.get("sw") || "").split(",").map(Number);
   const [neLat, neLng] = String(params.get("ne") || "").split(",").map(Number);
   if (![swLat, swLng, neLat, neLng].every(Number.isFinite)) {
