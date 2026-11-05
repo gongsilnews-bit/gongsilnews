@@ -350,7 +350,7 @@ export default function StudioVrewLanding() {
           <Link href={START_HREF} className="sv-btn solid big">무료로 시작하기</Link>
         </div>
         {/* 첫 화면 영상 — 사장님이 만든 studio.mp4 (소리 빼고 줄임, 2026-10-26). 소리 없이 자동 재생 · 반복 */}
-        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
+        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4?v=2" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
       </section>
 
       {/* 2 뉴스·SNS 자동 발행 */}

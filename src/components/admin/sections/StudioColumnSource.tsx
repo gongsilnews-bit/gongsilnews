@@ -63,8 +63,6 @@ const tidy = (n: News): News => ({ ...n, publishedAt: n.publishedAt ? shortDate(
 
 export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView, onDesk, memberId }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void; /** 작업대 화면인지 — 위에서 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로) */ onDesk?: (on: boolean) => void; memberId?: string }) {
   const router = useRouter();
-  // 웹 = 자유 글쓰기 (2026-11-05 사장님: 뉴스칼럼을 기사 형식이 아니라 자유 글쓰기로, 원하면 뉴스 기사로) — 제목 + 내 글 한 칸
-  const free = isWebStudio();
   const [column, setColumn] = useState<Column | null>(null);
   // "" = 지금 칼럼(한 줄 요약) · list = [소재 바꾸기] 칼럼 목록 · new = [+ 새로 작성] ① 소재 고르기 (공실뉴스와 같다, 2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 목록이 먼저 — [+ 새로 만들기] + 만든 칼럼 카드. 홈 "내 기사"·.gsn 으로 오면 바로 그 칼럼
@@ -147,11 +145,9 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
     if (!b) return;
     const source: Source = mode === "news" ? { mode, angle, news: news || undefined } : { mode, angle, topic };
     const c = await b.column.create(source);
-    // 자유 글쓰기 — 공실뉴스 기사는 처음엔 끈다 (원하면 켜서 뉴스 기사로, 2026-11-05 사장님)
-    if (free) { try { const k = "gs-allwrite:column"; const v = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...v, article: { kind: "news", length: "normal", ...(v.article || {}), on: false } })); } catch { /* 기본값 */ } }
     choose(c);
     setShowSource(true); // 가져온 원문·기사 화면을 펼친 채로 (2026-10-24 사장님)
-    onTab(free ? "blog" : "article"); // 자유 글쓰기는 블로그부터 — 기사는 원할 때 [공실뉴스 기사] 탭에서
+    onTab("article");
     b.column.list(200).then(setRecent).catch(() => {});
   });
 
@@ -191,11 +187,10 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
     ])).filter(Boolean);
   };
   const openNew = () => {
-    if (free) setMode("topic");
     setView("new");
     setUrl(""); setNews(null); setTopic(EMPTY_TOPIC); setAngle(""); setHint(""); setError("");
   };
-  const ready = free ? Boolean(topic.subject.trim() && topic.memo.trim()) : mode === "news" ? Boolean(news && news.title.trim() && news.body.trim()) : Boolean(topic.subject.trim());
+  const ready = mode === "news" ? Boolean(news && news.title.trim() && news.body.trim()) : Boolean(topic.subject.trim());
   const deskOn = Boolean(column) && view === "";
   useEffect(() => { onDesk?.(deskOn); }, [deskOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -218,12 +213,12 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <div style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: theme.darkMode ? "#374151" : "#e5e7eb", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {caps[0]?.thumb ? <img src={caps[0].thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
-                    : <span style={{ fontSize: 11.5, fontWeight: 800, color: isNews ? "#1d4ed8" : "#6d28d9" }}>{isNews ? "뉴스" : free ? "내 글" : "주제"}</span>}
+                    : <span style={{ fontSize: 11.5, fontWeight: 800, color: isNews ? "#1d4ed8" : "#6d28d9" }}>{isNews ? "뉴스" : "주제"}</span>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{column.label}</div>
                   <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
-                    {isNews ? [n?.publisher, n?.publishedAt].filter(Boolean).join(" · ") || "뉴스" : free ? "내 글" : "주제 직접입력"}<br />{isNews ? (caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음") : free ? `${String(t?.memo || "").length.toLocaleString("ko-KR")}자` : `본론 ${(t?.points || []).filter(Boolean).length}개`}
+                    {isNews ? [n?.publisher, n?.publishedAt].filter(Boolean).join(" · ") || "뉴스" : "주제 직접입력"}<br />{isNews ? (caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음") : `본론 ${(t?.points || []).filter(Boolean).length}개`}
                   </div>
                 </div>
               </div>
@@ -294,25 +289,19 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
           <LinkNotice darkMode={Boolean((theme as { darkMode?: boolean }).darkMode)} />
           {/* 기사관리 SNS홍보형 카드 그대로 (2026-10-29 사장님: "이것과 똑같아야지") — 기사를 누르면 그 기사의 칼럼 (없으면 만든다) */}
           {/* [새로 만들기] → 기사등록 화면, 등록·취소하면 뉴스·SNS자동화(뉴스칼럼)로 돌아온다 (2026-10-30 사장님) */}
-          {free && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <button onClick={openNew} style={{ padding: "12px 22px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>✎ 새로 쓰기</button>
-              <span style={{ fontSize: 13.5, color: theme.textSecondary }}>형식 없이 쓰고, 그 글로 블로그·SNS·쇼츠릴스 대본을 만들어요. 아래는 내가 쓴 공실뉴스 기사예요.</span>
-            </div>
-          )}
-          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel={free ? "기사 쓰기" : "새로 만들기"}
+          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기"
             onAdd={() => router.push(`?menu=article&action=write&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false })}
             onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
             onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
           {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}
-          {recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
+          {!isWebStudio() && recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
             <div style={{ marginTop: 28 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{free ? "자유 글쓰기로 쓴 글" : "다른 뉴스·주제로 만든 칼럼"}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>다른 뉴스·주제로 만든 칼럼</div>
               <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
                 cards={recent.filter((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")).map((c) => {
                   const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };
                   const isNews = c.source.mode === "news";
-                  return { id: c.id, badge: isNews ? "뉴스" : free ? "내 글" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
+                  return { id: c.id, badge: isNews ? "뉴스" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
                     line1: isNews ? (c.source.news?.publisher || "") : (c.source.topic?.subject || ""), thumb: x.thumb || null, done: x.done, current: c.id === column?.id };
                 })}
                 onOpen={(id, t) => { const c = recent.find((r) => r.id === id); if (c) { choose(c); onTab(t); } }} />
@@ -328,22 +317,11 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
           {busy && <LoadingCover theme={theme} title={busy.split("…")[0]} detail={busy.split("…").slice(1).join("…").trim().replace(/^\((.*)\)$/, "$1")} />}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary, flex: 1 }}>{free ? "자유 글쓰기" : "소재 고르기"}</h3>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary, flex: 1 }}>소재 고르기</h3>
             {!column && <button onClick={openList} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>← 목록</button>}
             {column && <button onClick={() => setView("")} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>취소</button>}
           </div>
 
-          {free ? (
-            <>
-              <label style={label}>제목</label>
-              <input value={topic.subject} onChange={(e) => setTopic({ ...topic, subject: e.target.value })} placeholder="예: 강남에서 10억 미만으로 살 수 있는 아파트" style={input} />
-              <label style={label}>내 글 — 형식 없이 자유롭게</label>
-              <textarea value={topic.memo} onChange={(e) => setTopic({ ...topic, memo: e.target.value })} rows={16}
-                placeholder={"생각나는 대로 써 주세요. 몇 줄 메모여도, 길게 쓴 글이어도 돼요.\n여기 적은 사실·숫자는 그대로 쓰고, AI가 블로그·SNS·대본에 맞게 다듬어요."}
-                style={{ ...input, fontSize: 15, lineHeight: 1.8, resize: "vertical" }} />
-              <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 4 }}>{topic.memo.length.toLocaleString("ko-KR")}자 · 뉴스 기사로 올리고 싶으면 다음 화면 [공실뉴스 기사] 탭에서 기사로 써서 등록해요 (기사 한도는 등록할 때만)</div>
-            </>
-          ) : (<>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
             {MODES.map((m) => {
               const on = mode === m.id;
@@ -427,7 +405,6 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
                 placeholder="여기 적은 사실·숫자는 그대로 씁니다. 비우면 널리 확정된 일반 지식으로만 씁니다." style={{ ...input, lineHeight: 1.6, resize: "vertical" }} />
             </>
           )}
-          </>)}
 
           <label style={label}>추가 요청 (선택)</label>
           <input value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="예: 세입자 입장에서, 우리 동네(마포) 독자에게 맞춰" style={input} />
@@ -436,7 +413,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
             {busy && <span style={{ fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{busy}</span>}
             <button onClick={start} disabled={!ready || Boolean(busy)}
               style={{ marginLeft: "auto", padding: "11px 20px", background: !ready || busy ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: !ready || busy ? "default" : "pointer" }}>
-              {free ? "이 글로 시작" : "이 소재로 칼럼 시작"}
+              이 소재로 칼럼 시작
             </button>
           </div>
           {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}

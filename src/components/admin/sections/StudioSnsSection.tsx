@@ -80,7 +80,7 @@ const HIDDEN_CATEGORIES = ["interior", "remodel"];
 /* 뉴스 카테고리 (2026-10-15 회의: 구성만 먼저, 공실뉴스부터) */
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
-  { id: "column", label: "자유 글쓰기", /* 옛 뉴스칼럼 (2026-11-05 사장님: "기사 쓰는 형식이 아니라 자유 글쓰기 형식으로, 원하면 뉴스 기사로") */ lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 씁니다." },
+  { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 씁니다." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
   { id: "myvideo", label: "내 영상 홍보", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
   // 경매·공매는 내 공실과 섞지 않고 따로 (2026-10-29 사장님) — 작업 화면은 공실뉴스와 같다
@@ -91,7 +91,7 @@ const NEWS_CATEGORIES = [
 ];
 // 웹에서 보이는 카테고리 — 공실뉴스 · 뉴스칼럼(내 기사로, 2026-11-04 사장님: 공실뉴스 하단에)
 const WEB_CATEGORIES = ["gongsil", "column"];
-const WEB_LEAD: Record<string, string> = { column: "형식 없이 쓴 내 글(또는 내가 쓴 공실뉴스 기사)로 네이버 블로그·SNS 글·쇼츠릴스 대본을 소장님 AI가 씁니다. 원하면 [공실뉴스 기사] 탭에서 뉴스 기사로 써서 등록할 수 있어요. 기사 한도는 등록할 때만 셉니다." };
+const WEB_LEAD: Record<string, string> = { column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진" };

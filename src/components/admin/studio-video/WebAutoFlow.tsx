@@ -14,7 +14,7 @@ import type { Clip, Layer, Project, Ratio, TypecastVoice } from "./types";
 import { datedName, errText, uid, videoBridge } from "./types";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import type { VideoVacancy } from "@/app/actions/videoWeb";
-import { getVideoVacancy } from "@/app/actions/videoWeb";
+import { getMyVideoBase, getVideoVacancy } from "@/app/actions/videoWeb";
 import { studioBridge } from "@/components/admin/studio-web";
 import { Btn, C, FONT, Icon, Modal } from "./ui";
 import { estimateSeconds } from "./timeline";
@@ -101,12 +101,14 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
 
   // 공실을 고르면 — 정보 + 대본 (유튜브 대본이 있으면 그것)
   useEffect(() => {
-    if (!vac) { setInfo(null); return; }
     let live = true;
+    // 공실 없이 — 내 사무소로 위쪽 제목·상호·연락처·표시광고·드론 (2026-11-05 사장님: "제목과 상호와 드론 영상 다 들어가도 됨")
+    if (!vac) { setInfo(null); void getMyVideoBase().then((d) => { if (live) setInfo(d); }).catch(() => {}); return () => { live = false; }; }
     (async () => {
       const r = await getVideoVacancy(vac);
       if (!live) return;
-      if (!r.success) { setErr(r.error); return; }
+      // 공실을 못 찾아도(지웠거나 남의 공실) 막지 않는다 — 공실 없이 대본만으로 만든다 (2026-11-05 사장님: "공실 찾기 못해도 만들 수 있음")
+      if (!r.success) { setInfo(null); setVac(""); return; }
       setInfo(r.data);
       if (seed?.script && vac === seed.vacancyId) return; // 유튜브 대본에서 넘어온 대본 그대로
       const yt = await studioBridge<{ youtube?: { get: (id: string) => Promise<{ narration?: string[] } | null> } }>()?.youtube?.get(vac).catch(() => null);
@@ -136,7 +138,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const assetIds: string[] = [];
       if (vac) {
         setBusy("공실 사진을 불러오는 중…");
-        const r = await b.vacancy(vac);
+        const r = await b.vacancy(vac).catch(() => ({ photos: [] as { id: string }[] }));
         for (const ph of r.photos.slice(0, MAX_PHOTOS)) { const a = await b.project.addAsset(ph.id); p.assets[a.id] = a; assetIds.push(a.id); }
       }
       const clips: Clip[] = paras.map((t, i) => ({
@@ -161,7 +163,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         p.settings.voice = { ...p.settings.voice, id: voiceId, speed: WEB_VOICE_SPEED };
       }
       // 공실이면 — 첫 장면 동네·종류, 마지막 사무소 화면 (법정 표시)
-      const last: Clip | null = info?.outro && assetIds.length ? ({ id: uid(), type: "voice", text: "", words: [], voice: null, visual: { asset: assetIds[0], s: 0 }, hold: 4 } as Clip) : null;
+      const last: Clip | null = info?.outro ? ({ id: uid(), type: "voice", text: "", words: [], voice: null, ...(assetIds.length ? { visual: { asset: assetIds[0], s: 0 } } : {}), hold: 4 } as Clip) : null; // 사진이 없어도 끝 장면(사무소·표시광고)은
       if (last) clips.push(last);
       p.scenes = [{ id: uid(), clips }];
       const first = clips[0].id, end = clips[clips.length - 1].id;
@@ -173,7 +175,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const bodyEnd = clips[clips.length - (last ? 2 : 1)].id;
       const ag = info?.agency;
       const contact = ag?.name ? [ag.name, ag.phone].filter(Boolean).join(" · ") : "";
-      if (info) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: true, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" });
+      if (info && (info.intro.place || info.intro.kind)) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: true, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" });
       if (contact) layers.push({ x: 0.5, y: 0.815, size: 52, bold: true, color: "#FFFFFF", font: theme.title.font, box: true, boxColor: "#000000", boxOpacity: 0.55, ...(theme.kit?.contactStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, text: contact, name: "상호·연락처" } as Layer);
       // 가격 말하는 장면 — 연락처를 한 번 크게 (관심이 가장 높은 순간)
       const priceAt = paras.findIndex((t, i) => i > 0 && /보증금|월세|전세|매매가|가격|권리금/.test(t)); // 첫 클립은 훅과 겹쳐서 빼고 (2026-11-05)

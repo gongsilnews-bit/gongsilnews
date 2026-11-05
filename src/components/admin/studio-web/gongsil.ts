@@ -722,19 +722,8 @@ function colForWeb(w: Work) {
 }
 async function colCreate(source: any) {
   const n = source?.news;
-  // 자유 글쓰기 — 제목 + 내 글 (2026-11-05 사장님: 뉴스칼럼을 자유 글쓰기로)
-  if (source?.mode === "topic") {
-    const t = source.topic || {};
-    const subject = String(t.subject || "").trim(), memo = String(t.memo || "").trim();
-    if (!subject || !memo) throw new Error("제목과 내 글을 써 주세요.");
-    const id = `col-${Date.now().toString(16)}${hex(3)}`;
-    const source2 = { mode: "topic", angle: String(source.angle || ""), topic: { subject, intro: "", points: [], outro: "", memo } };
-    const w: Work = { key: keyOf(id), memberId: getMember(), vacancyId: id, analysis: { vacancyId: id, vacancy: null, media: [], hidden: [], failures: [], analyzedAt: now() }, column: { source: source2 as any, createdAt: now(), articleNo: "" }, updatedAt: now() };
-    await putWork(w);
-    return colForWeb(w);
-  }
-  // 기사로 시작 — 내 공실뉴스 기사 (2026-11-04 사장님: 본인이 작성한 기사만) — 기사관리 카드에서 연다
-  if (!source || source.mode !== "news" || !n || n.publisher !== "공실뉴스") throw new Error("내가 쓴 공실뉴스 기사 카드를 누르거나 [새로 쓰기]로 시작해 주세요.");
+  // 웹은 내 공실뉴스 기사로만 (2026-11-04 사장님: 본인이 작성한 기사만) — 기사관리 카드에서 연다
+  if (!source || source.mode !== "news" || !n || n.publisher !== "공실뉴스") throw new Error("웹 뉴스칼럼은 내가 쓴 공실뉴스 기사로 만들 수 있어요. 아래 기사 카드를 눌러 주세요.");
   if (!String(n.title || "").trim() || !String(n.body || "").trim()) throw new Error("기사 제목과 본문이 필요합니다.");
   const id = `col-${Date.now().toString(16)}${hex(3)}`;
   const articleNo = articleNoOf(n.url);

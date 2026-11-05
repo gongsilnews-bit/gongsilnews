@@ -118,3 +118,30 @@ export async function getVideoVacancy(vacancyId: string): Promise<{ success: tru
     },
   };
 }
+
+/** 공실 없이 만들 때 — 내 사무소로 위쪽 제목(사무소 동네)·상호·연락처·끝 장면 표시광고·그 동네 드론 (2026-11-05 사장님: "그냥 제목과 상호와 드론 영상 다 들어가도 됨")
+ *  사무소 주소에서 구·동을 읽는다. 사무소가 없으면 null (그때는 대본만) */
+export async function getMyVideoBase(): Promise<VideoVacancy | null> {
+  const cookie = await createCookieSupabase();
+  const { data: { user } } = await cookie.auth.getUser();
+  if (!user) return null;
+  const db = createAdminSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: ag } = await db.from("agencies").select("name, ceo_name, reg_num, address, phone, cell").eq("owner_id", user.id).eq("status", "APPROVED").maybeSingle();
+  if (!ag) return null;
+  const addr = String(ag.address || "");
+  const gu = /(\S+구)\s/.exec(addr)?.[1] || /(\S+군)\s/.exec(addr)?.[1] || [...addr.matchAll(/(\S+시)\s/g)].pop()?.[1] || ""; // 구 → 군 → 마지막 시 (서울특별시는 건너뛰게)
+  const dong = /(\S+[동가리읍면])(?:\s|\d|$)/.exec(addr.replace(/^.*?[구군]\s/, ""))?.[1] || "";
+  const place = [gu, dong].filter(Boolean).join(" ");
+  const phone = String(ag.phone || ag.cell || "");
+  return {
+    id: "",
+    title: place || String(ag.name || ""),
+    photos: [],
+    intro: { place, kind: "", price: "" },
+    captions: [],
+    outro: { name: String(ag.name || ""), lines: [[ag.ceo_name && `대표 ${ag.ceo_name}`, ag.reg_num && `등록번호 ${ag.reg_num}`].filter(Boolean).join(" · "), addr, phone].filter(Boolean) },
+    agency: { name: String(ag.name || ""), ceo: String(ag.ceo_name || ""), regNum: String(ag.reg_num || ""), address: addr, phone },
+    listing: "",
+    dong,
+  };
+}
