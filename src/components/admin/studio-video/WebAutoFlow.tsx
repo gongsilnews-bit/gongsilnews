@@ -117,7 +117,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
     return () => { live = false; };
   }, [vac]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const paras = script.split(/\n+/).map((x) => x.trim()).filter(Boolean);
+  const paras = script.split(/\n+/).map((x) => x.trim().replace(/(\d)\.0(?=\s?평)/g, "$1")).filter(Boolean); // 31.0평 → 31평 (2026-11-05 사장님)
   // 읽는 데 걸리는 시간 (목소리 없으면 장면마다 3초)
   const secs = Math.round(mode === "none" ? paras.reduce((t, p) => t + holdOf(p), 0) : paras.reduce((t, p) => t + estimateSeconds(p, WEB_VOICE_SPEED) + 0.2, 0));
   const chars = paras.join(" ").length; // AI 성우 포인트 — 1자 1P
@@ -169,22 +169,20 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       clips[0].motionPower = "high"; // 첫 장면은 크게 움직여 눈길을 (사진 줌)
       const layers: Layer[] = [];
       // 위쪽 고정 머리 (2026-11-05 사장님 회의: "상단 제목은 왜 1클립에만", "부동산 상호·연락처가 왜 한 번도 안 들어가지")
-      //  1줄 동네·종류 · 2줄 상호·연락처 — 영상 내내 (마지막 사무소 장면만 빼고), 맨 위에서 조금 내려 앱 버튼에 안 가리게
+      //  위 동네·종류 · 자막 바로 아래 상호·연락처 (2026-11-05 사장님: "자막 아래에 위치해줘") — 영상 내내 (마지막 사무소 장면만 빼고), 맨 위에서 조금 내려 앱 버튼에 안 가리게
       const bodyEnd = clips[clips.length - (last ? 2 : 1)].id;
       const ag = info?.agency;
       const contact = ag?.name ? [ag.name, ag.phone].filter(Boolean).join(" · ") : "";
       if (info) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: true, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" });
-      if (contact) layers.push({ id: uid(), type: "text", from: first, to: bodyEnd, x: 0.5, y: 0.158, text: contact, size: 52, bold: true, color: "#FFFFFF", font: theme.title.font, box: true, boxColor: "#000000", boxOpacity: 0.55, name: "상호·연락처" } as Layer);
+      if (contact) layers.push({ x: 0.5, y: 0.815, size: 52, bold: true, color: "#FFFFFF", font: theme.title.font, box: true, boxColor: "#000000", boxOpacity: 0.55, ...(theme.kit?.contactStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, text: contact, name: "상호·연락처" } as Layer);
       // 가격 말하는 장면 — 연락처를 한 번 크게 (관심이 가장 높은 순간)
-      const priceAt = paras.findIndex((t) => /보증금|월세|전세|매매가|가격|권리금/.test(t));
-      if (ag?.phone && priceAt >= 0) layers.push({ id: uid(), type: "text", from: clips[priceAt].id, to: clips[priceAt].id, ts: 0.3, x: 0.5, y: 0.42, text: `${ag.name}
-${ag.phone}`, size: 92, bold: true, color: theme.office.color, font: theme.office.font, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, anim: { in: "pop", out: "fade", dur: 0.3 }, name: "가격 장면 연락처" } as Layer);
+      const priceAt = paras.findIndex((t, i) => i > 0 && /보증금|월세|전세|매매가|가격|권리금/.test(t)); // 첫 클립은 훅과 겹쳐서 빼고 (2026-11-05)
+      if (ag?.phone && priceAt >= 0) layers.push({ ts: 0.3, x: 0.5, y: 0.42, size: 92, bold: true, color: theme.office.color, font: theme.office.font, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, anim: { in: "pop", out: "fade", dur: 0.3 }, ...(theme.kit?.priceStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: clips[priceAt].id, to: clips[priceAt].id, text: `${ag.name}\n${ag.phone}`, name: "가격 장면 연락처" } as Layer);
       // 끝 장면 — 테마에 표시광고가 있고 사무소 글 모양을 따로 저장하지 않았으면 표시광고만 (글 상자와 겹치지 않게)
       // 마지막 장면 — 상호·전화 크게 + 표시광고 카드(테마에 있으면 함께, 카드는 가운데라 상호는 위쪽에)
       const withLegal = Boolean(theme.kit?.legal && !theme.kit.officeStyle);
       if (last && ag?.name && withLegal) {
-        layers.push({ id: uid(), type: "text", from: last.id, to: last.id, x: 0.5, y: 0.13, text: ag.phone ? `${ag.name}
-${ag.phone}` : ag.name, size: 104, bold: true, color: theme.office.color, font: theme.office.font, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, anim: { in: "pop", dur: 0.3 }, name: "사무소" } as Layer);
+        layers.push({ id: uid(), type: "text", from: last.id, to: last.id, x: 0.5, y: 0.13, text: ag.phone ? `${ag.name}\n${ag.phone}` : ag.name, size: 104, bold: true, color: theme.office.color, font: theme.office.font, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, anim: { in: "pop", dur: 0.3 }, name: "사무소" } as Layer);
       }
       if (last && info?.outro && !withLegal) {
         layers.push({ ...(theme.kit?.officeStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: last.id, to: last.id, text: info.outro.name, pos: "middle", size: 120, color: theme.office.color, font: theme.office.font, bold: true, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, name: "사무소" });
@@ -194,7 +192,7 @@ ${ag.phone}` : ag.name, size: 104, bold: true, color: theme.office.color, font: 
       //  훅 = 대본 제목 → 없으면 "논현동 빌라 월세 5,000만 / 100만"처럼 동·종류·가격 (위쪽 제목과 겹치지 않게)
       const priceHook = info ? [info.intro.place.split(" ").pop(), info.intro.kind.split(/[/·]/)[0], info.intro.price].filter(Boolean).join(" ") : "";
       const hook = hookOf(hookTitle || seed?.title || priceHook, paras[0] || "");
-      if (hook) layers.push({ id: uid(), type: "text", from: first, to: first, ts: 0, te: 2.6, text: twoLines(hook), x: 0.5, y: 0.6, size: 116, bold: true, color: theme.title.color, font: theme.title.font, box: true, boxColor: theme.title.boxColor, boxOpacity: 1, anim: { in: "pop", emph: "pulse", out: "fade", dur: 0.35 }, name: "훅" } as Layer);
+      if (hook) layers.push({ x: 0.5, y: 0.6, size: 116, bold: true, color: theme.title.color, font: theme.title.font, box: true, boxColor: theme.title.boxColor, boxOpacity: 1, anim: { in: "pop", emph: "pulse", out: "fade", dur: 0.35 }, ...(theme.kit?.hookStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: first, ts: 0, te: 2.6, text: twoLines(hook), name: "훅" } as Layer);
       if (theme.music) layers.push({ id: uid(), type: "music", from: first, to: end, url: theme.music, file: theme.music, volume: ai ? 0.3 : 0.35, duck: "mid", loop: true, fadeOut: 1.5, name: theme.musicName || "배경음악" });
       p.layers = layers;
       // 테마 꾸러미 — 그래픽·화면 전환·드론·끝 장면 표시광고 (2026-11-05 사장님)

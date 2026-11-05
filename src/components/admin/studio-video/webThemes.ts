@@ -59,7 +59,7 @@ export const SHORTS_THEMES: ShortsTheme[] = [
     title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1E2A4A" },
     office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#E8890C" },
     ...M("/reels-assets/bgm/lib/rm-018.mp3"),
-    voice: "el_PDoCXqBQFGsvfO0hNkEs",
+    voice: "el_uyVNoMrnUku1dZyVEXwD", // 애나 김 (2026-11-05 사장님: "테마1번 성우는 애나김")
     kit: {
       titleStyle: { pos: "top", size: 90, bold: true, box: true, boxOpacity: 0.9, anim: { in: "drop" } },
       graphics: [G(0, "꼭 보세요", "marker", undefined, { y: 0.4, anim: { in: "pop", emph: "pulse" } }), G(4, "완전 추천!", "neon", undefined, { y: 0.36, anim: { in: "zoom" } })],

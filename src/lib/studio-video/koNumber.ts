@@ -48,7 +48,7 @@ function decimalPart(s: string) {
 }
 
 export function koReadNumbers(text: string): string {
-  let t = String(text || "");
+  let t = String(text || "").replace(/(\d)\.0(?=\s?(평|㎡|m²|층))/g, "$1"); // 31.0평 → 31평 (2026-11-05 사장님)
   // 단위 기호
   t = t.replace(/(\d)\s*(㎡|m²|m2)(?![\w])/gi, "$1 제곱미터").replace(/(\d)\s*㎥/g, "$1 세제곱미터").replace(/(\d)\s*km(?![a-z])/gi, "$1 킬로미터").replace(/(\d)\s*m(?![a-z²\d])/gi, "$1 미터");
   // 전화번호·등록번호 같은 줄 숫자 — 한 자리씩

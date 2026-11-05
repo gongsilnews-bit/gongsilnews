@@ -17,6 +17,10 @@ export type ThemeKit = {
   titleStyle?: Rec;
   officeStyle?: Rec;
   officeInfoStyle?: Rec;
+  /** 첫 1초 훅 · 자막 아래 상호·연락처 띠 · 가격 장면 연락처 — 모양만 (글자는 새 공실 것으로, 2026-11-05 사장님: "다 저장하게 해줘") */
+  hookStyle?: Rec;
+  contactStyle?: Rec;
+  priceStyle?: Rec;
   graphics?: KitGraphic[];
   /** 그 밖의 화면 글 (제목·사무소 말고) — 숫자 든 것은 빼고 */
   texts?: { at: number; n: number; text: string; layer: Rec }[];
@@ -42,8 +46,14 @@ export function captureKit(p: Project): { kit: ThemeKit; skipped: number } {
   const title = texts.find((l) => l.name === "동네·종류") || texts.find((l) => l.pos === "top" && idx(l.from) === 0);
   const office = texts.find((l) => l.name === "사무소");
   const officeInfo = texts.find((l) => l.name === "사무소 정보");
+  const hook = texts.find((l) => l.name === "훅");
+  const contact = texts.find((l) => l.name === "상호·연락처");
+  const price = texts.find((l) => l.name === "가격 장면 연락처");
   const kit: ThemeKit = {};
   if (title) kit.titleStyle = styleOf(title);
+  if (hook) kit.hookStyle = styleOf(hook);
+  if (contact) kit.contactStyle = styleOf(contact);
+  if (price) kit.priceStyle = styleOf(price);
   if (office) kit.officeStyle = styleOf(office);
   if (officeInfo) kit.officeInfoStyle = styleOf(officeInfo);
 
@@ -64,7 +74,7 @@ export function captureKit(p: Project): { kit: ThemeKit; skipped: number } {
     else graphics.push({ at, n, stk: { ...l.stk }, layer: styleOf(l) });
   }
   if (graphics.length) kit.graphics = graphics;
-  const extra = texts.filter((l) => l !== title && l !== office && l !== officeInfo && l.text && idx(l.from) >= 0);
+  const extra = texts.filter((l) => l !== title && l !== office && l !== officeInfo && l !== hook && l !== contact && l !== price && l.text && idx(l.from) >= 0);
   const keepTexts = extra.filter((l) => !/\d/.test(String(l.text)));
   skipped += extra.length - keepTexts.length;
   if (keepTexts.length) kit.texts = keepTexts.map((l) => ({ at: idx(l.from), n, text: String(l.text), layer: styleOf(l) }));

@@ -284,7 +284,7 @@ const SHORTS_RULES = `[쇼츠 대본 — 위 지시보다 먼저 지킬 것]
 지금 비어 있어서 바로 들어올 수 있어요. 문의주세요!`;
 /** 말로 읽는 대본 — AI 가 그래도 넣은 괄호 속 ㎡ 등은 빼고 (2026-11-05) */
 const SMALL_KO = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
-const speakable = (t: string) => t.replace(/(^|[^\d.,])([1-9])\s?(대|개|명|채|곳|칸|가지|마리|시간)(?![\d월])/g, (_m, pre: string, n: string, u: string) => `${pre}${SMALL_KO[Number(n)]} ${u}`).replace(/\s*\([^()]*(㎡|m²|m2|평형?)[^()]*\)/g, "").replace(/\s{2,}/g, " ").trim();
+const speakable = (t: string) => t.replace(/(\d)\.0(?=\s?평)/g, "$1").replace(/(^|[^\d.,])([1-9])\s?(대|개|명|채|곳|칸|가지|마리|시간)(?![\d월])/g, (_m, pre: string, n: string, u: string) => `${pre}${SMALL_KO[Number(n)]} ${u}`).replace(/\s*\([^()]*(㎡|m²|m2|평형?)[^()]*\)/g, "").replace(/\s{2,}/g, " ").trim();
 function ytPrompt(vacancy: any, settings: Record<string, string>, article: any) {
   const number = lib.ytCol().GW_YT_NUMBER.digit; // 웹은 늘 숫자 그대로 (자막 2017년 · 읽기는 서버가 한글로) — 예전에 고른 "한글 읽기"가 남아 있어도
   return `${lib.yt().gwBuildYtScriptPrompt({ vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}\n\n${SHORTS_RULES}`;
