@@ -200,9 +200,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       // 끝 장면 — 테마에 표시광고가 있고 사무소 글 모양을 따로 저장하지 않았으면 표시광고만 (글 상자와 겹치지 않게)
       // 마지막 장면 — 상호·전화 크게 + 표시광고 카드(테마에 있으면 함께, 카드는 가운데라 상호는 위쪽에)
       const withLegal = Boolean(theme.kit?.legal && !theme.kit.officeStyle);
-      if (last && ag?.name && withLegal) {
-        layers.push({ id: uid(), type: "text", from: last.id, to: last.id, x: 0.5, y: 0.13, text: ag.phone ? `${ag.name}\n${ag.phone}` : ag.name, size: 104, bold: true, color: theme.office.color, font: theme.office.font, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, anim: { in: "pop", dur: 0.3 }, name: "사무소" } as Layer);
-      }
+      // 표시광고 카드가 있으면 위쪽 큰 상호·전화 상자는 넣지 않는다 (2026-11-05 사장님: "너무 촌스러워") — 상호·전화는 카드 안에
       if (last && info?.outro && !withLegal) {
         layers.push({ ...(theme.kit?.officeStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: last.id, to: last.id, text: info.outro.name, pos: "middle", size: 120, color: theme.office.color, font: theme.office.font, bold: true, box: true, boxColor: theme.office.boxColor, boxOpacity: 0.95, name: "사무소" });
         if (info.outro.lines.length) layers.push({ ...(theme.kit?.officeInfoStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: last.id, to: last.id, text: info.outro.lines.join("\n"), pos: "bottom", size: 62, color: "#FFFFFF", box: true, boxColor: "#000000", boxOpacity: 0.65, name: "사무소 정보" });
