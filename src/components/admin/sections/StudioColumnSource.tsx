@@ -218,7 +218,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{column.label}</div>
                   <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
-                    {isNews ? [n?.publisher, n?.publishedAt].filter(Boolean).join(" · ") || "뉴스" : "주제 직접입력"}<br />{isNews ? (caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음") : `본론 ${(t?.points || []).filter(Boolean).length}개`}
+                    {isNews ? [n?.publisher, n?.publishedAt].filter(Boolean).join(" · ") || "뉴스" : isWebStudio() ? "자유 글쓰기" : "주제 직접입력"}<br />{isNews ? (caps.length ? `기사 화면 ${caps.length}장` : "기사 화면 없음") : isWebStudio() ? `${String(t?.memo || "").length.toLocaleString("ko-KR")}자 · 사진 ${caps.length}장` : `본론 ${(t?.points || []).filter(Boolean).length}개`}
                   </div>
                 </div>
               </div>
@@ -294,10 +294,11 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
             onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
             onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
           {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}
-          {!isWebStudio() && recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
+          {/* 웹 — 자유 글쓰기로 만든 글도 여기서 다시 연다 (2026-11-05) */}
+          {recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
             <div style={{ marginTop: 28 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>다른 뉴스·주제로 만든 칼럼</div>
-              <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{isWebStudio() ? "자유 글쓰기로 만든 글" : "다른 뉴스·주제로 만든 칼럼"}</div>
+              <WorkCardGrid theme={theme} variant="article" addLabel={isWebStudio() ? "자유 글쓰기" : "새로 만들기"} onAdd={isWebStudio() ? () => { try { localStorage.setItem("studio_news_category", "free"); } catch {} window.location.reload(); } : openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
                 cards={recent.filter((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")).map((c) => {
                   const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };
                   const isNews = c.source.mode === "news";

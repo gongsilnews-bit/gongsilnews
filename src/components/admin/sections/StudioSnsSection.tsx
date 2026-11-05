@@ -9,6 +9,7 @@ import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
+import StudioFreeWrite from "./StudioFreeWrite";
 import StudioChannelTabs, { StepLine, StepTitle } from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
@@ -81,6 +82,8 @@ const HIDDEN_CATEGORIES = ["interior", "remodel"];
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 씁니다." },
+  // 자유 글쓰기 — 뉴스칼럼 밑 (2026-11-05 사장님): 공실 없이 제목·본문만 쓰고 블로그·SNS·대본, 원하면 뉴스 기사로
+  { id: "free", label: "자유 글쓰기", lead: "형식 없이 쓴 글(또는 왼쪽 글쓰기 도구로 받은 AI 초안)로 블로그·SNS·쇼츠릴스 대본을 만들어요. 원하면 뉴스 기사로 보내 등록할 수 있어요. 기사 한도는 등록할 때만 셉니다." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
   { id: "myvideo", label: "내 영상 홍보", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
   // 경매·공매는 내 공실과 섞지 않고 따로 (2026-10-29 사장님) — 작업 화면은 공실뉴스와 같다
@@ -90,7 +93,7 @@ const NEWS_CATEGORIES = [
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
 // 웹에서 보이는 카테고리 — 공실뉴스 · 뉴스칼럼(내 기사로, 2026-11-04 사장님: 공실뉴스 하단에)
-const WEB_CATEGORIES = ["gongsil", "column"];
+const WEB_CATEGORIES = ["gongsil", "column", "free"];
 const WEB_LEAD: Record<string, string> = { column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
@@ -574,6 +577,19 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             )}
           <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{(web && WEB_LEAD[category]) || NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
         </div>
+
+        {category === "free" && (
+          <StudioFreeWrite theme={theme} onOpenColumn={(id) => {
+            try {
+              localStorage.setItem("studio_last_column", id); localStorage.setItem("studio_open_column", "1");
+              // 자유 글은 기사를 처음엔 끈다 — 뉴스 기사는 [뉴스 기사로 보내기]로
+              const k = "gs-allwrite:column"; const v = JSON.parse(localStorage.getItem(k) || "{}");
+              localStorage.setItem(k, JSON.stringify({ ...v, article: { kind: "news", length: "normal", ...(v.article || {}), on: false } }));
+            } catch {}
+            setColumnTab("blog");
+            setCategory("column");
+          }} />
+        )}
 
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} onDesk={setSubDesk} />}
 

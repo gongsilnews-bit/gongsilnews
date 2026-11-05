@@ -7,6 +7,7 @@
  *  디자인은 대본 작성과 같은 톤 — 흰 바탕 · 옅은 회색 선 · 남색 하나 · 번호 단계.
  */
 import React, { useEffect, useState } from "react";
+import { openDocked } from "../studio-web/ai-ask";
 import { createPortal } from "react-dom";
 import AiCopyGuide from "./AiCopyGuide";
 import { InstallGuideModal, useStudioInstaller } from "@/components/admin/sections/StudioInstallGuide";
@@ -144,7 +145,7 @@ function WebAiOverlay({ name, msg, onReopen, onPaste, onStop }: { name: string; 
         <button type="button" onClick={onStop} title="멈추기 (Esc)" style={{ position: "absolute", top: 12, right: 14, border: 0, background: "none", color: "#cbd5e1", fontSize: 20, cursor: "pointer" }}>×</button>
         <div style={{ fontSize: 18.5, fontWeight: 800, color: "#fff", marginBottom: 14 }}>{name} 내 계정(무료·수동)으로 기사 초안을 쓰고 있습니다<Dots /></div>
         <div style={{ textAlign: "left", lineHeight: 1.75, fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
-          <b>1.</b> 질문을 복사해 두고 새 탭에 <b>{name}</b> 창을 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br />
+          <b>1.</b> 질문을 복사해 두고 오른쪽 작은 창에 <b>{name}</b>을(를) 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br />
           <b>2.</b> 답이 다 나오면 답 안의 <b>코드 상자 오른쪽 위 [복사]</b>를 누르고 이 창으로 돌아오세요 — 알아서 가져와요.
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14, flexWrap: "wrap" }}>
@@ -170,8 +171,8 @@ function BigDots() {
   );
 }
 
-export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: ArticleDraft) => void; hasContent: () => boolean }) {
-  const [src, setSrc] = useState<Src>("vacancy");
+export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }: { onDraft: (d: ArticleDraft) => void; hasContent: () => boolean; /** 자유 글쓰기 — 매물 소개·공실 고르기 없이 (2026-11-05 사장님) */ noVacancy?: boolean }) {
+  const [src, setSrc] = useState<Src>(noVacancy ? "market" : "vacancy");
   const [kind, setKind] = useState("news");
   const [tone, setTone] = useState("");
   const [hook, setHook] = useState("");
@@ -494,7 +495,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
     if (!w) return;
     const site = WEB_AI.find((x) => x.id === webAi) || WEB_AI[0];
     try { await navigator.clipboard.writeText(w.prompt); } catch { /* */ }
-    window.open(site.url, "_blank", "noopener");
+    openDocked(site.url, "gs-ai-window"); // 오른쪽에 작은 창으로 (2026-11-05 사장님: "우측에 작게 띄워줘")
     setNote("질문을 다시 복사했어요. 입력칸에 Ctrl+V 하고 보내세요.");
   };
   const write = async () => {
@@ -507,7 +508,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
       const prompt = buildPrompt(a);
       const site = WEB_AI.find((x) => x.id === webAi) || WEB_AI[0];
       try { await navigator.clipboard.writeText(prompt); } catch { return setErr("질문을 복사하지 못했어요. [질문 복사]를 눌러 주세요."); }
-      window.open(site.url, "_blank", "noopener");
+      openDocked(site.url, "gs-ai-window"); // 큰 새 탭 대신 오른쪽 작은 창 (2026-11-05 사장님)
       setErr(""); setDone(false); setNote("");
       setWebWait({ prompt, a });
       setBusy(`${site.name} 답을 기다리는 중`);
@@ -666,11 +667,11 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "#fff", color: TEXT }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 18px", borderBottom: `1px solid ${LINE}` }}>
-        <span style={{ fontSize: 15, fontWeight: 800 }}>✍ 글쓰기 도구</span>{dim("AI 기사 초안")}
+        <span style={{ fontSize: 15, fontWeight: 800 }}>✍ 글쓰기 도구</span>{dim(noVacancy ? "AI 글 초안" : "AI 기사 초안")}
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 18 }}>
         <div>{head(n++, "무엇으로 쓸까요")}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>{SRCS.map(([k, l]) => <button key={k} type="button" onClick={() => setSrc(k)} style={chip(src === k)}>{l}</button>)}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>{SRCS.filter(([k]) => !(noVacancy && k === "vacancy")).map(([k, l]) => <button key={k} type="button" onClick={() => setSrc(k)} style={chip(src === k)}>{l}</button>)}</div>
         </div>
         <div>
           {src === "vacancy" && (<>{head(n++, "공실 고르기")}
@@ -775,7 +776,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 9 }}>
             <span style={{ fontSize: 12.5, fontWeight: 800, color: SUB, marginRight: 3 }}>쓸 AI</span>
             {WEB_AI.map((o) => (
-              <button key={o.id} type="button" onClick={() => setWebAi(o.id)} title={`내 ${o.name} 계정으로 — 새 탭에 열려요`} style={{ ...chip(webAi === o.id), height: 28, padding: "0 9px", fontSize: 12.5 }}>{o.name}</button>
+              <button key={o.id} type="button" onClick={() => setWebAi(o.id)} title={`내 ${o.name} 계정으로 — 오른쪽 작은 창에 열려요`} style={{ ...chip(webAi === o.id), height: 28, padding: "0 9px", fontSize: 12.5 }}>{o.name}</button>
             ))}
             <span style={{ fontSize: 11.5, color: DIM }}>내 계정 · 새 탭</span>
           </div>
@@ -798,7 +799,7 @@ export default function ArticleAiTool({ onDraft, hasContent }: { onDraft: (d: Ar
         {webWait && <WebAiOverlay name={(WEB_AI.find((x) => x.id === webAi) || WEB_AI[0]).name} msg={note} onReopen={() => void webReopen()} onPaste={() => void webTry(false)} onStop={() => { setWebWait(null); setBusy(""); setNote(""); }} />}
         <button type="button" onClick={() => void write()} disabled={!webWait && (Boolean(busy) || !ready)}
           style={{ width: "100%", height: 48, borderRadius: 6, border: 0, background: busy || anaBusy ? NAVY : !ready ? "#9aa6b8" : "#2563eb", color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: busy || !ready ? "default" : "pointer", fontFamily: "inherit" }}>
-          {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : "✨ AI 기사 초안 작성"}
+          {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : noVacancy ? "✨ AI 초안 작성" : "✨ AI 기사 초안 작성"}
         </button>
         <div style={{ marginTop: 7, fontSize: 12, textAlign: "center", color: err ? "#dc2626" : busy ? NAVY : done ? "#16a34a" : DIM, fontWeight: err || busy || done ? 700 : 500, lineHeight: 1.5 }}>
           {err || busy || note || (done ? "기사 칸에 채웠어요. 고쳐서 등록하세요." : anaBusy ? "분석이 끝나면 쓸 수 있어요" : !ready && src !== "topic" ? "재료를 고르면 저절로 분석해요" : "분석한 재료로 써요 · 문체를 바꿔 여러 번 다시 써도 돼요")}
