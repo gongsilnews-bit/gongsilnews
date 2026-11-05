@@ -42,7 +42,10 @@ import { videoBridge } from "@/components/admin/studio-video/types";
 import { AiSettingsBox } from "@/components/admin/studio-video/VideoMenu";
 import { DocPanel, LayerPanel, PictoSide, StickerSide, TextPanel } from "./PhotoPanels";
 import { folderReady } from "@/components/admin/studio-web/folder";
-import { download as webDownload } from "@/components/admin/studio-web/core";
+import { download as webDownload, downloadWithHandle } from "@/components/admin/studio-web/core";
+import { canPickWithHandle, pickWithHandles, saveAsPicker, webRecentAdd, webRecentList, webRecentRead, webRecentRemove, writeToHandle } from "./webRecent";
+/** 웹 — 문서마다 PC 파일 손잡이 (열었거나 저장한 자리). 있으면 Ctrl+S 가 그 파일에 덮어쓴다 (2026-11-05) */
+const webHandles = new Map<string, unknown>();
 
 /* ── 앱 통로 (없으면 브라우저: 파일 고르기·내려받기) ── */
 type FileRes = { path: string; name: string; bytes?: Uint8Array; error?: string };
@@ -80,7 +83,13 @@ function pickLocal(images: boolean): Promise<File[]> {
   });
 }
 /** 웹 — [저장 폴더]를 정했으면 공실뉴스\04 포토studio\오늘 날짜 에, 아니면 다운로드 폴더로 (2026-11-04 사장님) */
-function download(bytes: Uint8Array, name: string) {
+function download(bytes: Uint8Array, name: string, recentOf?: Doc) {
+  // 다시 열 수 있는 문서(PSD·PNG·JPG)는 웹 최근 파일에 남긴다 — 저장 폴더면 손잡이까지 (2026-11-05 사장님: "저장했는데 안 보여서")
+  if (recentOf) {
+    const thumb = (() => { try { return thumbOf(composite(recentOf)); } catch { return ""; } })();
+    if (folderReady) { void downloadWithHandle(name, new Blob([bytes as BlobPart]), "photo").then((h) => webRecentAdd({ name, thumb, handle: h || undefined })); return; }
+    void webRecentAdd({ name, thumb });
+  }
   if (folderReady) { webDownload(name, new Blob([bytes as BlobPart]), "photo"); return; }
   const url = URL.createObjectURL(new Blob([bytes as BlobPart]));
   const a = document.createElement("a");
@@ -176,10 +185,13 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
   const b = bridge();
   const [cat, setCat] = useState("");
   const [recent, setRecent] = useState<Recent[] | null>(null);
-  const load = useCallback(() => { if (b) b.recent().then(setRecent).catch(() => setRecent([])); else setRecent([]); }, [b]);
+  const load = useCallback(() => { (b ? b.recent() : webRecentList()).then(setRecent).catch(() => setRecent([])); }, [b]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    // 웹 — 저장·열기로 목록이 바뀌면 다시 (webRecent.ts)
+    window.addEventListener("gs-photo-recent", load);
+    return () => window.removeEventListener("gs-photo-recent", load);
   }, [load]);
   const catBtn = (id: string, label: string, icon: string) => (
     <button key={id} type="button" onClick={() => setCat(id)}
@@ -237,7 +249,7 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
         <Btn onClick={onOpen} disabled={busy}><Icon name="open" size={17} />{busy ? "여는 중…" : "열기"}</Btn>
       </div>
       <div style={{ fontSize: 16, fontWeight: 800, marginTop: 30, marginBottom: 12 }}>최근 파일</div>
-      {recent && !recent.length && <div style={{ fontSize: 14, color: C.sub }}>{b ? "아직 연 파일이 없어요. [열기]로 PSD·사진을 열거나 [새 파일]로 시작하세요. 파일을 이 화면에 끌어다 놓아도 열려요." : "브라우저에서는 최근 파일이 남지 않아요."}</div>}
+      {recent && !recent.length && <div style={{ fontSize: 14, color: C.sub }}>{b ? "아직 연 파일이 없어요. [열기]로 PSD·사진을 열거나 [새 파일]로 시작하세요. 파일을 이 화면에 끌어다 놓아도 열려요." : "아직 연 파일이 없어요. [열기]로 PSD·사진을 열거나 저장하면 여기에 남아요. ([저장 폴더]를 정하면 저장한 파일을 바로 다시 열 수 있어요)"}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
         {(recent || []).map((r) => (
           <div key={r.path} style={{ position: "relative" }}>
@@ -248,10 +260,10 @@ function PhotoHome({ onNew, onOpen, onRecent, busy, onPreset, top, onSample, onA
               </div>
               <div style={{ padding: "8px 10px" }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{r.missing ? "파일을 찾을 수 없어요" : new Date(r.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{r.missing ? (b ? "파일을 찾을 수 없어요" : "여기서 다시 열 수 없어요 — [열기]로 열어 주세요") : new Date(r.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
               </div>
             </button>
-            <button type="button" title="목록에서 빼기" onClick={() => b?.recentRemove(r.path).then(load)}
+            <button type="button" title="목록에서 빼기" onClick={() => (b ? b.recentRemove(r.path) : webRecentRemove(r.path)).then(load)}
               style={{ position: "absolute", right: 6, top: 6, width: 22, height: 22, borderRadius: 11, border: 0, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12, cursor: "pointer", padding: 0 }}>✕</button>
           </div>
         ))}
@@ -280,6 +292,13 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick((t) => t + 1), []);
   const [sel, setSelRaw] = useState<string | null>(null);
+  // 마지막으로 누른 곳이 레이어 목록인가 — Ctrl+A 를 레이어 전체 선택으로 (2026-11-05)
+  const layersFocus = useRef(false);
+  useEffect(() => {
+    const down = (e: PointerEvent) => { layersFocus.current = Boolean((e.target as HTMLElement | null)?.closest?.("[data-gs-layers]")); };
+    window.addEventListener("pointerdown", down, true);
+    return () => window.removeEventListener("pointerdown", down, true);
+  }, []);
   const [extra, setExtra] = useState<string[]>([]); // 함께 고른 다른 레이어들 (Shift·Ctrl 로)
   const [maskEdit, setMaskEditS] = useState(false); // 고른 레이어의 마스크에 칠하는 중
   const setSelS = (k: string | null) => { setSelRaw(k); setExtra([]); };
@@ -527,7 +546,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
         if (r.canceled) { setWebDlg({ ...webDlg, busy: false }); return; }
         if (r.error) say(`저장하지 못했어요: ${r.error}`);
         else say(`웹용으로 저장했어요 — ${r.name}`);
-      } else download(bytes, `${doc.name}.${webDlg.fmt}`);
+      } else download(bytes, `${doc.name}.${webDlg.fmt}`, doc);
       setWebDlg(null);
     } catch (e) {
       say(`저장하지 못했어요: ${e instanceof Error ? e.message : String(e)}`);
@@ -1515,7 +1534,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
     else addDoc(embed.doc);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const openFiles = async (files: { name: string; bytes: Uint8Array; path?: string }[]) => {
+  const openFiles = async (files: { name: string; bytes: Uint8Array; path?: string; handle?: unknown }[]) => {
     for (const f of files) {
       const already = f.path && store.docs.find((d) => d.path === f.path);
       if (already) { store.home = false; activate(already.id); continue; }
@@ -1529,6 +1548,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
           const c = composite(d);
           (b as unknown as { recentThumb?: (p: string, t: string) => Promise<boolean> }).recentThumb?.(f.path, thumbOf(c));
         }
+        if (!b) { if (f.handle) webHandles.set(d.id, f.handle); void webRecentAdd({ name: f.name, thumb: thumbOf(composite(d)), handle: f.handle }); } // 웹 최근 파일 (2026-11-05)
       } catch (e) {
         say(`${f.name} 을(를) 열지 못했어요: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -1542,12 +1562,22 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       if (bad.length) say(`${bad[0].name}: ${bad[0].error}`);
       await openFiles(r.filter((x) => x.bytes).map((x) => ({ name: x.name, bytes: x.bytes!, path: x.path })));
     } else {
+      // 크롬·엣지·웨일은 파일 손잡이와 함께 열어 최근 파일에서 다시 열 수 있게 (2026-11-05)
+      if (canPickWithHandle()) {
+        const hs = await pickWithHandles(false);
+        await openFiles(await Promise.all(hs.map(async (x) => ({ name: x.file.name, bytes: new Uint8Array(await x.file.arrayBuffer()), handle: x.handle }))));
+        return;
+      }
       const fs = await pickLocal(false);
       await openFiles(await Promise.all(fs.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) }))));
     }
   };
   const openRecent = async (r: Recent) => {
-    if (!b) return;
+    if (!b) {
+      const f = await webRecentRead(r.path);
+      if (f.error || !f.bytes) return say(f.error || "열지 못했어요");
+      return openFiles([{ name: f.name, bytes: f.bytes, handle: f.handle }]);
+    }
     const f = await b.read(r.path);
     if (f.error || !f.bytes) return say(f.error || "열지 못했어요");
     await openFiles([{ name: f.name, bytes: f.bytes, path: f.path }]);
@@ -1661,7 +1691,29 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
         if (r.error) { say(`저장하지 못했어요: ${r.error}`); return false; }
         d.path = r.path;
         d.name = (r.name || d.name).replace(/\.psd$/i, "");
-      } else download(bytes, `${d.name}.psd`);
+      } else {
+        // 웹 (2026-11-05 사장님): 저장한 자리를 기억해 최근 파일에서 다시 열리게
+        //  손잡이가 있고 원본 보호가 끝났으면(앱처럼 밖에서 연 PSD 는 처음엔 다른 이름으로) → 그 파일에 덮어쓰기
+        //  아니면 저장 폴더 → 없으면 다른 이름으로 저장 창 → 안 되는 브라우저는 다운로드 폴더
+        const name = `${d.name}.psd`;
+        const h = webHandles.get(d.id) as { name?: string } | undefined;
+        if (h && !d.fromFile && !ask && /\.psd$/i.test(h.name || "") && (await writeToHandle(h, bytes))) {
+          void webRecentAdd({ name: h.name || name, thumb, handle: h });
+        } else if (!folderReady) {
+          const nh = await saveAsPicker(name, bytes);
+          if (nh === "cancel") return false;
+          if (nh) {
+            webHandles.set(d.id, nh);
+            const nm = (nh as { name?: string }).name || name;
+            d.name = nm.replace(/\.psd$/i, "");
+            void webRecentAdd({ name: nm, thumb, handle: nh });
+          } else download(bytes, name, d);
+        } else {
+          const nh = await downloadWithHandle(name, new Blob([bytes as BlobPart]), "photo");
+          if (nh) webHandles.set(d.id, nh);
+          void webRecentAdd({ name, thumb, handle: nh || undefined });
+        }
+      }
       d.fromFile = false;
       d.dirty = false;
       void b?.autosaveClear?.(d.id);
@@ -1706,7 +1758,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       const r = await b.save({ file: doc.path?.replace(/\.(psd|psb)$/i, `.${type}`), name: doc.name, ext: type, bytes, ask: true });
       if (r.path) say(`내보냈어요 — ${r.name}`);
       else if (r.error) say(`내보내지 못했어요: ${r.error}`);
-    } else download(bytes, `${doc.name}.${type}`);
+    } else download(bytes, `${doc.name}.${type}`, doc);
   };
 
   /* 넣기 */
@@ -1990,6 +2042,13 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       if (ctrl && (c === "Digit1" || c === "Numpad1")) return go(() => { const v = store.view.get(doc.id); if (v) { store.view.set(doc.id, { z: 1, x: v.x, y: v.y }); bump(); } });
       if (ctrl && (c === "Equal" || c === "Minus" || c === "NumpadAdd" || c === "NumpadSubtract")) return go(() => zoomBy(c === "Minus" || c === "NumpadSubtract" ? 1 / 1.25 : 1.25));
       // 선택
+      // 레이어 전체 선택 — Ctrl+Alt+A(포토샵 "모든 레이어 선택"), 또는 레이어 목록을 마지막으로 누른 뒤 Ctrl+A (2026-11-05 사장님)
+      if (ctrl && c === "KeyA" && (alt || layersFocus.current)) return go(() => {
+        const all = kids(doc.psd).map((l) => l._k).filter(Boolean) as string[];
+        if (!all.length) return;
+        pickSel(all[all.length - 1], all); // 맨 위 레이어가 속성 칸에
+        say(`레이어 ${all.length}개를 모두 골랐어요`);
+      });
       if (ctrl && c === "KeyA") return go(() => setSelMask(selectAll(doc.psd.width, doc.psd.height), { kind: "rect", box: { x: 0, y: 0, w: doc.psd.width, h: doc.psd.height } }));
       if (ctrl && sh && c === "KeyD") return go(() => { const o = sels.get(doc.id); if (o?.prev) setSelMask(o.prev, o.pvec || null); });
       // Ctrl+D — 선택 영역이 있으면 그것을 풀고(포토샵), 없으면 고른 레이어를 풀어 파란 틀을 없앤다 (2026-10-30 사장님)
@@ -2487,6 +2546,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
       { t: "텍스트 뒤틀기…", go: openWarp, off: !selL || !isText(selL), on: Boolean(selL && isText(selL) && lookOf(selL).warp) },
     ] },
     { id: "select", label: "선택", items: [
+      { t: "모든 레이어", key: "Ctrl+Alt+A", go: () => { if (!doc) return; const all = kids(doc.psd).map((l) => l._k).filter(Boolean) as string[]; if (all.length) pickSel(all[all.length - 1], all); }, off: !doc }, // 2026-11-05 사장님
       { t: "모두", key: "Ctrl+A", go: () => doc && setSelMask(selectAll(doc.psd.width, doc.psd.height), { kind: "rect", box: { x: 0, y: 0, w: doc.psd.width, h: doc.psd.height } }), off: !doc },
       { t: "선택 해제", key: "Ctrl+D", go: () => setSelMask(null), off: !hasSelMask },
       { t: "다시 선택", key: "Shift+Ctrl+D", go: () => { const o = doc && sels.get(doc.id); if (o?.prev) setSelMask(o.prev, o.pvec || null); }, off: !(doc && sels.get(doc.id)?.prev) },
@@ -3006,6 +3066,8 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
           onKeyDown={(e) => e.stopPropagation()}
           style={{ width: 54, height: 26, borderRadius: 4, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 13, fontFamily: FONT, padding: "0 6px" }} />
       </div>
+      {/* data-gs-layers — 마지막으로 레이어 목록을 눌렀으면 Ctrl+A = 레이어 전체 선택 (2026-11-05 사장님) */}
+      <div data-gs-layers="" style={{ display: "contents" }}>
       <LayerList doc={doc} tick={tick} sel={sel} selSet={allSel()} onSel={setSel} onPick={pickSel} onToggle={toggle}
         maskEdit={maskEdit}
         onMaskThumb={(k, e) => {
@@ -3015,6 +3077,7 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
         }}
         onLayerThumb={() => setMaskEditS(false)} onDrop={dropLayer} onAct={(k, a) => void act(k, a)}
         onRename={(k, name) => { const l = findLayer(kids(doc.psd), k); if (l && l.name !== name) mutate(() => { l.name = name; }); }} />
+      </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2, height: 36, padding: "0 8px", borderTop: `1px solid ${C.line}` }}>
         {iconBtn(svg(LINK_D), "레이어 연결 / 풀기 — 두 개 이상 고르고 누르면 같이 움직여요", toggleLink, !sel, Boolean(selL && isLinked(selL)))}
         {iconBtn(<span style={{ fontStyle: "italic", fontWeight: 800, fontSize: 14 }}>fx</span>, "레이어 스타일 (효과)", () => void act(S, "fx"), !sel || Boolean(selL?.children))}

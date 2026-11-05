@@ -102,15 +102,19 @@ async function dirOf(key: FolderKey, parts: string[], create = true): Promise<Di
 
 /** 폴더에 파일 쓰기 — 폴더를 안 정했거나 허락이 없으면 false (부르는 쪽이 내려받기로) */
 export async function saveToFolder(key: FolderKey, parts: string[], name: string, data: Blob | string): Promise<boolean> {
+  return Boolean(await saveToFolderHandle(key, parts, name, data));
+}
+/** 폴더에 쓰고 그 파일 손잡이를 돌려준다 — 포토studio 최근 파일이 다시 열 때 쓴다 (2026-11-05). 못 쓰면 null */
+export async function saveToFolderHandle(key: FolderKey, parts: string[], name: string, data: Blob | string): Promise<any | null> {
   try {
     const d = await dirOf(key, parts);
-    if (!d) return false;
+    if (!d) return null;
     const f = await d.getFileHandle(name, { create: true });
     const w = await f.createWritable();
     await w.write(data);
     await w.close();
-    return true;
-  } catch { return false; }
+    return f;
+  } catch { return null; }
 }
 
 /** 폴더 안 파일 읽기 (하위 폴더 한 단계까지) — .gsn 되살리기에 쓴다 */

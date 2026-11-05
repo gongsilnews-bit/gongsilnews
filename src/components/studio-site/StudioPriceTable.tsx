@@ -1,5 +1,6 @@
 "use client";
 
+import { useStartHref } from "./useStartHref";
 import React from "react";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
@@ -163,6 +164,7 @@ const coin = (
  * current · allowed 는 예전 업그레이드 창(지금 등급 회색 · 고르기)에서 쓰던 것 — 지금은 화면에 안 쓴다
  */
 export default function StudioPriceTable({ compact = false, current, allowed }: { compact?: boolean; current?: string; allowed?: string[] } = {}) {
+  const startHref = useStartHref(); // 부동산회원 [시작하기] — 로그인 안 했으면 회원가입, 했으면 관리자 (2026-11-05)
   const yearly = false; // 연 구독만 — 금액은 늘 월 금액으로 보여 준다
   // 창 안도 웹 금액안내와 같은 디자인 (2026-10-31 사장님: 고르기·지금 등급 회색 칸은 촌스러움 → 원래 디자인으로)
   //  스튜디오회원 칸만 늘 주황으로 · 버튼은 모두 [시작하기] (창 안에서는 새 창)
@@ -179,7 +181,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
     <div style={{ fontFamily: font, color: "#111827", background: "#fff", wordBreak: "keep-all" }}>
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: compact ? "36px 24px 0" : "80px 24px 0", textAlign: "center" }}>
         {TEMP_PRICES && <div style={{ display: "inline-block", marginBottom: 18, padding: "6px 14px", borderRadius: 999, background: "#fef3c7", color: "#92400e", fontSize: 13, fontWeight: 700 }}>임시 금액 · 요금제 금액과 항목은 아직 정해지지 않았어요</div>}
-        <h1 style={{ fontSize: compact ? 30 : "clamp(34px,4.4vw,52px)", fontWeight: 600, letterSpacing: "-0.03em", margin: compact ? "0 0 28px" : "0 0 56px" }}>여러분에게 맞는 요금제를 찾아 보세요</h1>
+        <h1 style={{ fontSize: compact ? 30 : "clamp(34px,4.4vw,52px)", fontWeight: 600, letterSpacing: "-0.03em", margin: compact ? "0 0 28px" : "0 0 56px" }}>공실뉴스부동산이 되시면</h1>
 
         {/* 연 구독만 — 월·연 고르는 칸은 없앴다 (2026-10-30) */}
         <div style={{ fontSize: 15, color: "#4b5563", marginBottom: compact ? 28 : 40 }}>모든 요금제는 <b style={{ color: "#111827" }}>1년 단위</b>로 결제해요</div>
@@ -209,7 +211,7 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
                 <div style={{ fontSize: 13, color: "#6b7280", minHeight: 20 }}>{pr.sub || ""}</div>
                 <div style={{ fontSize: 12, color: "#9ca3af", minHeight: 18 }}>{pr.day || ""}</div>
                 {/* 창 안도 웹 금액안내처럼 모든 칸 [시작하기] — 누르면 새 창으로 신청 (2026-10-31 사장님: "여기 페이지 같이 그냥 신청하게") */}
-                <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
+                <Link href={p.key === "free" ? startHref : p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
                 <div style={{ marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
                   {p.base.map((b) => <div key={b} style={{ fontSize: 14, color: "#374151", display: "flex", gap: 8 }}>{coin}<span><Bold t={b} /></span></div>)}
                 </div>

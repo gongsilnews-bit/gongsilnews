@@ -19,7 +19,7 @@ import { getAdminEntryLabel, isNewsAdminButton, isStudioMember, NEWS_ADMIN_BUTTO
 
 
 import { SHOW_STUDY } from "@/utils/siteFlags";
-import LoginJoinButton from "@/components/LoginJoinButton";
+import LoginJoinButton, { InquiryButton } from "@/components/LoginJoinButton";
 import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 /** 우리동네부동산 위 말풍선 차례 (2026-11-04 사장님: 색상별로 텍스트가 계속 뜨게) */
 const GONGSIL_BUBBLES: { text: (auction: number) => string; icon: "gongsil" | "map" | "apt" | "officetel" }[] = [
@@ -291,6 +291,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <NotificationBell color="#ffffff" />
+              <InquiryButton small /> {/* 로그인해도 늘 (2026-11-05) */}
               <NewsrealtyJoinButton tone="dark" small joined={!showNewsrealtyJoin({ role: userRole, plan_type: planType })} />
               <div style={{
                 background: userRole === 'ADMIN' ? '#111827' : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : '#ef4444',

@@ -6,7 +6,7 @@
  *  소재마다 따로: gongsil.ts(공실뉴스) · 다음에 column.ts(뉴스칼럼)
  */
 import { openDocked, webAi } from "./ai-ask";
-import { F, ROOT_NAME, folderReady, saveToFolder, type FolderKey } from "./folder";
+import { F, ROOT_NAME, folderReady, saveToFolder, saveToFolderHandle, type FolderKey } from "./folder";
 export { webAi };
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -121,6 +121,16 @@ export function download(name: string, blob: Blob, key: FolderKey = "sns") {
     return;
   }
   browserDownload(name, blob);
+}
+/** download 와 같되, 폴더에 썼으면 그 파일 손잡이를 돌려준다 (다운로드 폴더로 갔으면 null) — 포토studio 최근 파일 (2026-11-05) */
+export async function downloadWithHandle(name: string, blob: Blob, key: FolderKey = "sns"): Promise<unknown | null> {
+  if (folderReady) {
+    const day = ymd();
+    const h = await saveToFolderHandle(key, [day], name, blob);
+    if (h) { toast(`${ROOT_NAME}\\${F[key]}\\${day} 에 저장했어요 — ${name}`); return h; }
+  }
+  browserDownload(name, blob);
+  return null;
 }
 function toast(text: string) {
   const el = document.createElement("div");

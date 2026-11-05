@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useStartHref } from "./useStartHref";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
 
@@ -12,24 +13,7 @@ import { ProTag } from "@/components/admin/ProBadge";
  */
 const ACCENT = "#e8890c";
 const ACCENT_SOFT = "#fdf4e7";
-/** [무료로 시작하기] — 공실뉴스부동산 가입 신청 (중개사 서류 승인 뒤 무료) */
-const START_HREF = "/newsrealty/apply";
 const PRICING_HREF = "/newsrealty/pricing";
-/** 무료 · PRO 비교 (docs/2026-11-04_member_tiers_plan.md) — 금액안내 표와 같은 내용 */
-const COMPARE: { t: string; free: string; pro: string }[] = [
-  { t: "공실뉴스에 거는 공실", free: "광고 중 3건", pro: "광고 중 20건 + 내 홈페이지 전용 20건" },
-  { t: "블로그 · SNS · 유튜브 대본 쓰기", free: "한 달 3번", pro: "무제한" },
-  { t: "공실뉴스 기사 쓰기", free: "—", pro: "한 달 4건" },
-  { t: "뉴스칼럼 (내 기사로 블로그 · SNS)", free: "—", pro: "됨" },
-  { t: "AI 매물보고서", free: "표지 · 개요", pro: "모든 쪽 · AI 채우기" },
-  { t: "유리창 홍보지", free: "\"숫자 크게\" 디자인", pro: "모든 디자인" },
-  { t: "물건접수홈페이지", free: "—", pro: "집주인 접수 · 로고 · 색상 · 사진 · 영상" },
-  { t: "포토studio · AI 이미지", free: "—", pro: "됨" },
-  { t: "고객관리 · 기사 아래 광고 · 배너", free: "—", pro: "됨" },
-  { t: "글 속 링크", free: "공실뉴스로", pro: "내 물건접수홈페이지로" },
-  { t: "이름 옆 딱지", free: "—", pro: "NEWS" },
-];
-
 const CSS = `
 .sv{font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;color:#111827;background:#fff;word-break:keep-all}
 .sv-sec{max-width:1120px;margin:0 auto;padding:120px 24px 0;text-align:center}
@@ -57,12 +41,15 @@ const CSS = `
 .sv-shot{margin:56px auto 0;width:100%;border-radius:18px;background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 14px,#eef0f3 14px,#eef0f3 28px);border:1px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:15px;font-weight:600}
 .sv-img{display:block;margin:56px auto 0;width:100%;height:auto;border-radius:14px;border:1px solid #e5e7eb;box-shadow:0 24px 60px rgba(31,23,20,.16)}
 .sv-band{background:${ACCENT_SOFT};margin-top:120px;padding-bottom:120px}
+.sv-band-y{background:#FFF8E6;margin-top:120px;padding:0 0 120px}
+.sv-band-y .sv-card{background:#fff;box-shadow:0 6px 20px rgba(120,90,20,.06)}
 .sv-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px;text-align:left}
 .sv-step{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:28px}
 .sv-step .n{width:38px;height:38px;border-radius:50%;background:${ACCENT};color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
 .sv-step .t{font-size:20px;font-weight:800;margin-bottom:8px}
 .sv-step .d{font-size:15.5px;line-height:1.7;color:#4b5563}
 .sv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:56px;text-align:center}
+.sv-grid.five{grid-template-columns:repeat(6,1fr)}.sv-grid.five .sv-card{grid-column:span 2}.sv-grid.five .sv-card:nth-child(4){grid-column:2/span 2}
 .sv-card{background:#fafafa;border-radius:20px;padding:36px 28px 34px}
 .sv-card .ic{height:64px;display:flex;align-items:center;justify-content:center;margin-bottom:24px};color:${ACCENT};display:flex;align-items:center;justify-content:center;margin-bottom:16px}
 .sv-card .t{font-size:21px;font-weight:800;margin-bottom:14px}
@@ -134,7 +121,7 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-last .os{font-size:15px;color:#4b5563;margin:28px 0 14px}
 .sv-last .osi{display:inline-flex;width:42px;height:42px;border:1px solid #e5e7eb;border-radius:10px;align-items:center;justify-content:center;color:#374151}
 .sv-dl{max-width:820px;margin:40px auto 0;text-align:left}
-@media (max-width:860px){.sv-steps,.sv-grid,.sv-cases,.sv-price{grid-template-columns:1fr}.sv-sec{padding-top:88px}}
+@media (max-width:860px){.sv-steps,.sv-grid,.sv-grid.five,.sv-cases,.sv-price{grid-template-columns:1fr}.sv-grid.five .sv-card,.sv-grid.five .sv-card:nth-child(4){grid-column:auto}.sv-sec{padding-top:88px}}
 `;
 
 /** 그림 — src 가 있으면 실제 앱에서 찍은 화면 (public/studio-shots, 2026-10-26), 없으면 자리 표시 */
@@ -165,6 +152,7 @@ function VideoModal({ id, onClose }: { id: string; onClose: () => void }) {
 
 /** 실무 소스 칸 — 그림은 실제 앱 캡처, 없는 것은 자리만 (지어낸 화면 넣지 않음) */
 const SOURCES: { t: string; i: string; src?: string }[] = [
+  { t: "포토studio 편집 화면", i: "M3 4h18v12H3zM8 20h8M12 16v4M7 12l3-3 3 3 4-4", src: "/studio-shots/home-photo.webp" }, // 디자인 편집과 합침 (2026-11-05)
   { t: "이미지 소스", i: "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6", src: "/studio-shots/src-media.webp" },
   { t: "인스타 · 페이스북 · 스레드 소스", i: "M4 4h16v16H4zM8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0M17 7h.01", src: "/studio-shots/f-photo-1.webp" },
   { t: "물건홍보 · 명함 · 썸네일", i: "M5 3h14v18H5zM8 7h8M8 11h8M8 15h5", src: "/studio-shots/f-flyer.webp" },
@@ -178,7 +166,7 @@ const REVIEWS: { text: string; who: string }[] = [
 ];
 
 /** 실제 후기가 들어오기 전 자리 — 3개가 돌아가는 모양만 보여 준다 */
-const REVIEW_SLOTS = [1, 2, 3].map(() => ({ text: "공실뉴스부동산 PRO를 쓰는 대표님의 실제 후기가 이 자리에 들어갑니다.", who: "" }));
+const REVIEW_SLOTS = [1, 2, 3].map(() => ({ text: "공실뉴스부동산을 쓰는 대표님의 실제 후기가 이 자리에 들어갑니다.", who: "" }));
 
 /** 후기 쓴 분 얼굴 자리 — 선으로 그린 작은 사람 (브루 후기처럼) */
 const AVATAR = (
@@ -283,18 +271,42 @@ const ART = {
       <rect x="22" y="34" width="20" height="12" rx="2" fill="#fff" />
     </svg>
   ),
+  news: (
+    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+      <rect x="8" y="10" width="40" height="44" rx="5" fill="#fff" stroke="#374151" strokeWidth="3" />
+      <rect x="14" y="17" width="28" height="9" rx="2" fill="#e8890c" />
+      <path d="M14 33h28M14 40h28M14 47h18" stroke="#9ca3af" strokeWidth="3" strokeLinecap="round" />
+      <path d="M48 22h6a2 2 0 0 1 2 2v26a4 4 0 0 1-8 0z" fill="#fde68a" stroke="#374151" strokeWidth="3" />
+    </svg>
+  ),
+  design: (
+    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+      <rect x="6" y="10" width="44" height="36" rx="5" fill="#eef2ff" stroke="#374151" strokeWidth="3" />
+      <path d="M12 40l10-12 8 8 6-6 8 10z" fill="#60a5fa" />
+      <circle cx="20" cy="20" r="4" fill="#fbbf24" />
+      <path d="M44 54l14-14-6-6-14 14-2 8z" fill="#e8890c" stroke="#374151" strokeWidth="2.5" strokeLinejoin="round" />
+    </svg>
+  ),
+  alert: (
+    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+      <path d="M32 8c-9 0-15 7-15 16v10l-5 8h40l-5-8V24c0-9-6-16-15-16z" fill="#fde68a" stroke="#374151" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M26 46a6 6 0 0 0 12 0" fill="none" stroke="#374151" strokeWidth="3" />
+      <circle cx="46" cy="14" r="9" fill="#ef4444" />
+      <path d="M42 15l3 3 5-6" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 };
 
-const MORE = [
-  { t: "뉴스칼럼", d: "내가 쓴 공실뉴스 기사로\n블로그 · SNS 글을 만듭니다.", a: ART.capture },
-  { t: "AI 이미지", d: "글에 맞는 그림을\n내 AI로 그려 넣습니다.", a: ART.remodel },
-  { t: "유리창 홍보지", d: "사무소 유리창에 붙일\n매물 홍보지를 만듭니다.", a: ART.flyer },
+const MORE = [ // 공실뉴스부동산 5가지 혜택 (2026-11-05 사장님)
+  { t: "공실등록 20건 · 뉴스 월 4건", d: "광고 공실 20건을 올리고\n내 지역 소식을 공실뉴스 기사로 냅니다.", a: ART.news },
+  { t: "AI 매물보고서 · 유리창 홍보지", d: "공실 하나로 손님에게 보낼 보고서와\n사무소 유리창 홍보지를 만듭니다.", a: ART.flyer },
   { t: "물건접수홈페이지", d: "임대인이 물건을 맡기는\n나만의 홈페이지를 엽니다.", a: ART.intake },
-  { t: "발행 도우미 (크롬 확장)", d: "평소 쓰는 크롬에서\n블로그 · SNS 칸을 채워 줍니다.", a: ART.voice },
-  { t: "만든 글 · 사진은 내 PC에", d: "고른 폴더에\n날짜별로 저장됩니다.", a: ART.folder },
+  { t: "부동산 디자인 편집 프로그램", d: "포토샵 파일(PSD)까지 여는 편집기로\n홍보 이미지를 직접 만듭니다.", a: ART.design },
+  { t: "단지 실시간 실거래 알림", d: "찜한 단지에 새 실거래가 뜨면\n바로 알려 드립니다.", a: ART.alert },
 ];
 
 export default function StudioVrewLanding() {
+  const START_HREF = useStartHref();
   const [video, setVideo] = React.useState<string | null>(null);
   const [src, setSrc] = React.useState(0);
   /** 칸마다 같은 두 버튼 — [영상보기] 유튜브 창 · [무료로 시작하기] (2026-11-04: 앱 설치 대신 웹) */
@@ -314,11 +326,12 @@ export default function StudioVrewLanding() {
 
       {/* 1 첫 화면 */}
       <section className="sv-sec" style={{ paddingTop: 96 }}>
-        <p className="sv-kicker" style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>부동산 마케팅의 프로가 되세요 · 공실뉴스부동산 <ProTag size="md" /></p>
+        <p className="sv-kicker">내 지역 공실! 이제 뉴스로 전달하세요.</p>
         <h1 className="sv-h1">공실만 등록하면<br />뉴스 · 블로그 · SNS까지</h1>
         <p className="sv-p">
           공실 하나로 <b>공실뉴스 기사</b>와 <b>블로그 · 인스타그램 · 스레드 · 페이스북 글</b>,<br />
-          <b>유튜브 대본</b>까지 AI가 채웁니다. 설치 없이 웹에서, 마지막 <b>[발행]</b>만 직접 누르세요.
+          <b>유튜브 대본</b>까지 AI가 채웁니다.<br />
+          지금 회원가입하시고, <b>공실3건 무료 등록</b>하세요.
         </p>
         <div className="sv-btns">
           <Link href={START_HREF} className="sv-btn solid big">무료로 시작하기</Link>
@@ -353,20 +366,64 @@ export default function StudioVrewLanding() {
         </section>
       </div>
 
-      {/* 3 PRO가 되면 — 무료 · PRO 비교 (2026-11-04 사장님). /pro 주소가 여기(#pro)로 온다 */}
-      <section id="pro" className="sv-sec" style={{ scrollMarginTop: 80 }}>
-        <h2 className="sv-h2" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>공실뉴스부동산 <ProTag size="md" style={{ fontSize: 20, padding: "5px 9px 6px", borderRadius: 5 }} />가 되면</h2>
-        <p className="sv-p">무료로 시작해 한 달 3번 써 보고,<br />더 많이 · 더 멀리 알리고 싶을 때 <b>공실뉴스부동산</b>이 되세요.</p>
-        <div className="sv-cmp">
-          <div className="h"><span /><span>부동산회원</span><span className="pro">공실뉴스부동산</span></div>
-          {COMPARE.map((r) => (
-            <div key={r.t} className="r"><span className="t">{r.t}</span><span>{r.free}</span><span className="pro">{r.pro}</span></div>
-          ))}
-        </div>
-        <div className="sv-btns" style={{ marginTop: 32 }}>
-          <Link href={START_HREF} className="sv-btn line">무료로 시작하기</Link>
-          <Link href={PRICING_HREF} className="sv-btn solid">금액안내 보기</Link>
-        </div>
+      {/* SNS 안 하는 대표님께 경각심 (2026-11-05 사장님) — 숫자는 확인된 출처만 (가짜 데이터 금지) */}
+      <section className="sv-sec">
+        <h2 className="sv-h2">손님은 하루 5시간, 스마트폰을 봅니다.<br />대표님은 SNS 광고 하고 계신가요?</h2>
+        <p className="sv-p" style={{ marginBottom: 14 }}>
+          한국인 10명 중 4명이 인스타그램을 씁니다.<br />
+          이미, 대형 부동산은 <b>블로그 · 인스타그램 · 유튜브 · 스레드 · 페이스북</b>으로 손님을 꾸준히 만나고 있습니다.
+        </p>
+        <p style={{ fontSize: 12.5, color: "#9ca3af", margin: 0 }}>출처: data.ai 2023 모바일 현황 보고서(한국인 하루 앱 사용 약 5시간) · 와이즈앱 2023년 4월(인스타그램 이용자 2,167만 명, 42%)</p>
+        {/* 빈 SNS 칸 앞에서 막막해하는 중개사 (2026-11-05 사장님 영상, 슬로모션 앞뒤로 반복) */}
+        <video className="sv-img" style={{ maxWidth: 960, marginTop: 36 }} src="/studio-shots/sns-frustrated.mp4?v=1" poster="/studio-shots/sns-frustrated-poster.jpg?v=1" autoPlay muted loop playsInline preload="metadata" aria-label="블로그·인스타그램·유튜브·스레드 빈 글 칸 앞에서 막막해하는 중개사" />
+      </section>
+
+      {/* 해결 — 복사·붙여넣기만 하면 다섯 곳 글이 채워진다, [발행]은 대표님이 (2026-11-05 사장님. 자동 발행은 안 함 — 계정 보호) */}
+      <section className="sv-sec">
+        <h2 className="sv-h2">복사, 붙여넣기만 하면<br />블로그부터 인스타그램 · 페이스북 · 스레드까지</h2>
+        <p className="sv-p">
+          글쓰기 칸이 <b>알아서 자동으로 채워집니다.</b><br />
+          대표님은 마지막 <b>[발행]</b>만 누르세요.
+        </p>
+        {/* 실제 화면 하이퍼랩스 광고 영상 (2026-11-05 사장님 녹화 "1분이면 ok", 이름·메일 흐림, 6배속) — 소리 없이 자동 재생 · 반복 */}
+        <video className="sv-img" style={{ maxWidth: 1060, marginTop: 36 }} src="/studio-shots/write-ad.mp4?v=3" poster="/studio-shots/write-ad-poster.jpg?v=3" autoPlay muted loop playsInline preload="metadata" aria-label="공실 하나를 고르고 한 번에 쓰기를 누르면 AI가 기사·블로그·SNS 글을 쓰는 실제 화면" />
+      </section>
+
+      {/* 2026-11-05 사장님 — 해결(복사·붙여넣기) 다음, 비교표 앞 */}
+      <section className="sv-sec">
+        <h2 className="sv-h2" style={{ margin: 0 }}><span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되시고,<br />내 지역 정보를 뉴스로 전달하세요!!</h2>
+        {/* 커피 한 잔 하는 사이 다섯 곳 글 완성 (2026-11-05 사장님 영상 + 완성 카드) — 소리 없이 자동 재생 · 반복 */}
+        <video className="sv-img" style={{ maxWidth: 1060, marginTop: 40 }} src="/studio-shots/coffee-sns.mp4?v=5" poster="/studio-shots/coffee-sns-poster.jpg?v=5" autoPlay muted loop playsInline preload="metadata" aria-label="커피를 마시는 사이 블로그·인스타그램·스레드·유튜브·페이스북 글이 완성되는 모습" />
+      </section>
+
+      {/* 여기부터 혜택 이야기 — 노란 미색 띠로 구분 (2026-11-05 사장님) */}
+      <div className="sv-band-y">
+        {/* 7 이것도 돼요 */}
+        <section className="sv-sec">
+          <h2 className="sv-h2"><span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되시면,<br />부동산마케팅이 쉬워집니다.</h2>
+          <div className="sv-grid five">
+            {MORE.map((m) => (
+              <div key={m.t} className="sv-card"><div className="ic">{m.a}</div><div className="t">{m.t}</div><div className="d">{m.d}</div></div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* 혜택 1 — 공실등록 20건 · 뉴스 월 4건 (2026-11-05 사장님: 혜택 5가지 순서대로) */}
+      <section className="sv-sec">
+        <h2 className="sv-h2">공실등록 20건 · 뉴스 월 4건</h2>
+        <p className="sv-p">광고 공실을 <b>20건</b>까지 올리고, 내 지역 소식을 <b>한 달 4건 공실뉴스 기사</b>로 냅니다.<br />공실 하나를 고르면 기사 · 블로그 · SNS 글을 AI가 함께 씁니다.</p>
+        {btns}
+        <Shot label="공실뉴스 기사 쓰기 화면" src="/studio-shots/f-news-web.webp" />
+      </section>
+
+      {/* 4 AI 물건보고서 */}
+      <section className="sv-sec">
+        <h2 className="sv-h2">AI 매물보고서 · 유리창 홍보지</h2>
+        <p className="sv-p">다양한 디자인 · 컬러를 골라 <b>온라인 · 오프라인 매물보고서</b>를 만듭니다.<br /><b>건축물대장 · 시세현황</b>까지 AI가 자동으로 작성합니다.</p>
+        <p className="sv-p" style={{ marginTop: -12 }}>사무소 유리창에 붙일 <b>매물 홍보지</b>도 공실 하나로 바로 만듭니다.</p>
+        {btns}
+        <Shot label="AI 매물보고서 화면" src="/studio-shots/home-report.webp" />
       </section>
 
       {/* 3-1 물건접수홈페이지 제공 (2026-11-04 사장님: "매물접수홈페이지 제공도 넣어줘") — PRO 혜택. 그림은 실제 화면 */}
@@ -381,27 +438,12 @@ export default function StudioVrewLanding() {
         <Shot label="물건접수홈페이지 화면" src="/studio-shots/f-intake.webp" />
       </section>
 
-      {/* 4 AI 물건보고서 */}
-      <section className="sv-sec">
-        <h2 className="sv-h2">AI 물건보고서 자동 작성</h2>
-        <p className="sv-p">다양한 디자인 · 컬러를 골라 <b>온라인 · 오프라인 매물보고서</b>를 만듭니다.<br /><b>건축물대장 · 시세현황</b>까지 AI가 자동으로 작성합니다.</p>
-        {btns}
-        <Shot label="AI 매물보고서 화면" src="/studio-shots/home-report.webp" />
-      </section>
-
       {/* 5 디자인 편집 */}
       <section className="sv-sec">
         <h2 className="sv-h2">부동산에 꼭 맞춘<br />디자인 편집 프로그램</h2>
-        <p className="sv-p"><b>유튜브 썸네일 · 인스타 카드 · 명함 · 유리창 홍보지</b>까지.<br />포토샵(PSD) 파일과도 호환됩니다.</p>
+        <p className="sv-p"><b>유튜브 썸네일 · 인스타 카드 · 명함 · 유리창 홍보지</b>까지.<br />포토샵(PSD) 파일과도 호환됩니다. 실무에 꼭 필요한 <b>소스 · 템플릿</b>도 저작권 걱정 없이 한번에.</p>
         {btns}
-        <Shot label="포토studio 화면" src="/studio-shots/home-photo.webp" />
-      </section>
-
-      {/* 5-1 실무 소스 — 브루 "저작권 걱정 없는 영상 소스"식: 왼쪽 목록 · 오른쪽 그림 (2026-10-26 사장님) */}
-      <section className="sv-sec">
-        <h2 className="sv-h2">부동산 실무에 꼭 필요한 소스를 한번에</h2>
-        <p className="sv-p">마케팅 실무에 꼭 필요한 다양한 소스를 템플릿으로,<br />저작권 걱정 없이 한번에 쓰세요.</p>
-        {btns}
+        {/* 실무 소스와 합침 — 왼쪽 목록 · 오른쪽 그림 (2026-11-05 사장님) */}
         <div className="sv-src">
           <ul className="sv-src-list">
             {SOURCES.map((x, i) => (
@@ -417,14 +459,12 @@ export default function StudioVrewLanding() {
         </div>
       </section>
 
-      {/* 7 이것도 돼요 */}
+      {/* 혜택 5 — 단지 실거래 알림 (2026-11-05 사장님) */}
       <section className="sv-sec">
-        <h2 className="sv-h2">PRO에서는 이것도 다 됩니다</h2>
-        <div className="sv-grid">
-          {MORE.map((m) => (
-            <div key={m.t} className="sv-card"><div className="ic">{m.a}</div><div className="t">{m.t}</div><div className="d">{m.d}</div></div>
-          ))}
-        </div>
+        <h2 className="sv-h2">단지 실시간 실거래 알림</h2>
+        <p className="sv-p">찜한 <b>아파트 · 오피스텔 · 빌라 단지</b>에 새 실거래가 신고되면 알림으로 알려 드립니다.<br />알림을 누르면 그 단지의 시세 창이 바로 열립니다.</p>
+        {btns}
+        <Shot label="단지 실거래 창 화면" src="/studio-shots/f-alert.webp" />
       </section>
 
       {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
@@ -451,33 +491,13 @@ export default function StudioVrewLanding() {
         </div>
         {/* "공실뉴스부동산 PRO와 12개월 뒤" 상자 (2026-10-26 사장님) */}
         <div className="sv-after">
-          <div className="k">공실뉴스부동산 PRO와 12개월 뒤</div>
+          <div className="k">공실뉴스부동산이 되시면,</div>
           <h3>블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.</h3>
           <div className="row">
             {CHANNELS.map((c) => (
               <div key={c.t} className="ch">{ico(c.i)}<span>{c.t}</span></div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* 8-1 이렇게 쓰세요 — 브루 "이렇게 Vrew를 사용하고 있어요"식 2×2, 그림은 공실뉴스부동산 PRO로 실제 만든 결과물 (2026-10-26 사장님) */}
-      <section className="sv-sec">
-        <h2 className="sv-h2">이렇게 공실뉴스부동산 PRO를 사용하세요</h2>
-        <div className="sv-uses">
-          {[
-            { t: "공동중개 광고", d: "등록한 공실이 공실뉴스 공실열람에 올라가\n중개사님들과 함께 공동중개로 홍보됩니다.", src: "/studio-shots/case-news.webp" },
-            { t: "물건보고서 작성", d: "건축물대장 · 시세까지 AI가 채운 물건보고서를\n온라인 · 오프라인으로 손님께 보냅니다.", src: "/studio-shots/case-report.webp" },
-            { t: "블로그 / SNS 자동화", d: "공실 하나로 블로그 · 인스타그램 · 페이스북 · 스레드 글을\n한 번에 채우고 [발행]만 누릅니다.", src: "/studio-shots/sns-poster.jpg" },
-            { t: "이미지 편집", d: "홍보 이미지 · 명함 · 썸네일 · 카드뉴스까지\n포토studio에서 직접 만듭니다.", src: "/studio-shots/home-photo.webp" },
-          ].map((c) => (
-            <div key={c.t} className="sv-use">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={c.src} alt={c.t} loading="lazy" />
-              <div className="t">{c.t}</div>
-              <div className="d">{c.d}</div>
-            </div>
-          ))}
         </div>
       </section>
 

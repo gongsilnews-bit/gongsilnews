@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { openChannelTalk } from "@/utils/channelTalk";
+import { useStartHref } from "./useStartHref";
 import { FEATURE_GROUPS, featureBySlug } from "@/components/studio-site/studioFeatures";
 
 /**
@@ -17,6 +18,7 @@ const link: React.CSSProperties = { display: "block", padding: "5px 0", fontSize
 const head: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: DIM, marginBottom: 12 };
 
 export default function StudioFooter() {
+  const startHref = useStartHref(); // 로그인 안 했으면 회원가입, 했으면 관리자 (2026-11-05)
   return (
     <footer style={{ background: BG, color: "#fff", fontFamily: "'Pretendard Variable','Pretendard',-apple-system,sans-serif", wordBreak: "keep-all" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "64px 24px 40px" }}>
@@ -29,7 +31,7 @@ export default function StudioFooter() {
               <span style={{ fontSize: 20, fontWeight: 900 }}>공실뉴스부동산</span>
             </Link>
             <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS까지</p>
-            <Link href="/newsrealty/apply" style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>무료로 시작하기</Link>
+            <Link href={startHref} style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>무료로 시작하기</Link>
           </div>
 
           {/* 주요 기능 */}

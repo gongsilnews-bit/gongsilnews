@@ -9,7 +9,7 @@ import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
 import { getEffectiveMemberRole, getAdminEntryLabel, isStudioMember, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
-import LoginJoinButton from "@/components/LoginJoinButton";
+import LoginJoinButton, { InquiryButton } from "@/components/LoginJoinButton";
 // 공실마케팅 메뉴 줄. 공실스터디(StudyHeader)와 같은 방식으로 메인 헤더 아래에 붙고,
 // 스크롤해서 화면 위에 닿으면 이 줄이 고정된다.
 
@@ -132,6 +132,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
           {member ? (
             <>
               <NotificationBell color="#ffffff" />
+              <InquiryButton small /> {/* 로그인해도 늘 (2026-11-05) */}
               <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus, member.studioOn)}
               </button>
