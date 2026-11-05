@@ -459,7 +459,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     const artSum = artOpts ? [artOpts.kinds.find((k) => k.id === all.article.kind)?.label, withChars(artOpts.lengths.find((l) => l.id === all.article.length))].filter(Boolean).join(" · ") : "";
     const blogSum = blogOpts ? [blogOpts.styles.find((x) => x.id === style)?.label, withChars(blogOpts.lengths.find((l) => l.id === length))].filter(Boolean).join(" · ") : "";
     const ytPick = (k: "videoType" | "duration" | "tone", list?: YtOpt[]) => { const id = (all.youtube[k] as string | undefined) || ytOpts?.defaults?.[k]; return list?.find((x) => x.id === id)?.label || ""; };
-    const ytSum = ytOpts ? [ytPick("videoType", ytOpts.videoTypes), ytPick("duration", ytOpts.durations), ytPick("tone", ytOpts.tones)].filter(Boolean).join(" · ") : "형식 · 길이 · 말투 · 숫자";
+    const ytSum = ytOpts ? [ytPick("videoType", ytOpts.videoTypes), ytPick("duration", ytOpts.durations), ytPick("tone", ytOpts.tones)].filter(Boolean).join(" · ") : "형식 · 길이 · 말투";
     const toneGrid = (ch: string) => (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {SNS_TONES.map((t) => {

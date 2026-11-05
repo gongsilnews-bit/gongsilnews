@@ -6,7 +6,7 @@
 //  손으로 시험: ?mode=recent&slot=3  ·  ?mode=full&slot=0&day=5  ·  ?mode=recent&lawd=11680&kind=offi
 import { createClient as createSupabase } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { LAWD_NAMES, RECENT_MONTHS, syncGeo, syncInfo, syncRecent, syncSupply, syncTrades, type Kind } from "@/utils/aptMap";
+import { LAWD_NAMES, RECENT_MONTHS, infoRound, syncGeo, syncInfo, syncRecent, syncSupply, syncTrades, type Kind } from "@/utils/aptMap";
 import { matchAuctions } from "@/utils/auctionMatch";
 
 export const maxDuration = 300;
@@ -94,5 +94,8 @@ async function geoRound() {
     if (g.found + g.missed >= 500) seen.delete(lawd); // 한 번에 500곳까지라 아직 남았다 — 같은 곳을 이어서
   }
   const { count } = await sb.from("apt_complexes").select("id", { count: "exact", head: true }).eq("kind", "villa").is("geo_tried_at", null);
-  return NextResponse.json({ success: true, mode: "geo", done, left: count });
+  // 위치를 다 채웠으면 남는 시간에 단지 정보(세대수·용적률·건폐율…) 빈 곳 채우기 (2026-11-05 사장님: "건축물대장부터 하자")
+  //  5분마다 25곳 — 공공데이터포털 하루 한도 안에서 (12시간 × 25곳 × 약 2번 호출)
+  const info = !count ? await infoRound(deadline - 10_000, 25) : null;
+  return NextResponse.json({ success: true, mode: "geo", done, left: count, info });
 }

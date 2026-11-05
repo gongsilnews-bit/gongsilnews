@@ -498,7 +498,7 @@ function RealtyAdminContent() {
           appVersion={studioApp.version}
           // 무료 회원 — PRO 전용 메뉴에 주황 PRO 딱지 (2026-11-04)
           pro={myTier === "pro" || myTier === "studio" || myTier === "corp"} // PRO 회원 — 로고 옆 PRO 딱지 (2026-11-04)
-          badges={{ ...badges, article: "pro", homepage: "pro", photo: "pro", customer: "pro" }} // PRO 기능 메뉴 — 무료·PRO 모두 딱지 (2026-11-04 사장님: "프로 마크는 그냥 보여줘")
+          badges={{ ...badges, article: "pro", homepage: "pro", photo: "pro", video: "pro", customer: "pro" }} // PRO 기능 메뉴 — 무료·PRO 모두 딱지 (2026-11-04 사장님: "프로 마크는 그냥 보여줘")
           autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
           // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
           hidden={railGone}

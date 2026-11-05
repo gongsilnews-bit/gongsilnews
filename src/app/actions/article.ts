@@ -52,7 +52,7 @@ async function checkMonthlyArticleQuota(
   supabase: ReturnType<typeof getAdminClient>,
   member: { role?: string; plan_type?: string; plan_end_date?: string | null; studio_end_date?: string | null; max_articles_per_month?: number | null; use_custom_registration_limits?: boolean | null },
   authorId: string,
-): Promise<{ allowed: true } | { allowed: false; error: string }> {
+): Promise<{ allowed: true } | { allowed: false; error: string; quotaFull?: boolean }> {
   if (isAdminRole(member.role)) return { allowed: true };
 
   // 2026-11-04 사장님 등급 회의: 공실뉴스부동산(무료) 기사 작성 안 됨 · PRO 월 4건 · 비즈니스·일반회원은 회원 값
@@ -74,10 +74,11 @@ async function checkMonthlyArticleQuota(
     .select("id", { count: "exact", head: true })
     .eq("author_id", authorId)
     .gte("created_at", firstDayOfMonth)
-    .eq("is_deleted", false);
+    .eq("is_deleted", false)
+    .neq("status", "DRAFT"); // 임시저장은 세지 않는다 — 한도는 공실뉴스에 올릴 때 (2026-11-05 사장님: "기사만 못쓰게 하면 되잖아")
   if (error) return { allowed: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
   if ((count || 0) >= maxArticles) {
-    return { allowed: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 모두 사용했습니다.` };
+    return { allowed: false, quotaFull: true, error: `이번 달 기사 등록 한도(${maxArticles}건)를 모두 사용했습니다.` };
   }
   return { allowed: true };
 }
@@ -226,9 +227,17 @@ export async function saveArticle(data: {
     }
 
     // --- [권한/요금제 검증 (신규 작성 시에만)] ---
-    if (!articleId) {
-      const quota = await checkMonthlyArticleQuota(supabase, authorMember, effectiveAuthorId);
-      if (!quota.allowed) return { success: false, error: quota.error };
+    //  임시저장(DRAFT)은 한도와 상관없이 — 블로그·SNS·대본 재료로 쓴다. 승인신청·발행할 때만 센다 (새 글 · 임시저장 글을 올릴 때)
+    if (articleData.status !== "DRAFT" && !actor.isAdmin) {
+      let wasDraft = !articleId;
+      if (articleId) {
+        const { data: prev } = await supabase.from("articles").select("status").eq("id", articleId).maybeSingle();
+        wasDraft = prev?.status === "DRAFT";
+      }
+      if (wasDraft) {
+        const quota = await checkMonthlyArticleQuota(supabase, authorMember, effectiveAuthorId);
+        if (!quota.allowed) return { success: false, error: "quotaFull" in quota && quota.quotaFull ? `${quota.error} [임시저장]으로 저장하면 뉴스·SNS자동화에서 블로그·SNS·대본을 만들 수 있어요.` : quota.error };
+      }
     }
     // ---------------------------------------------
 

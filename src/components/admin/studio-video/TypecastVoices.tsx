@@ -6,6 +6,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { TypecastVoice } from "./types";
 import { AGE_KO, VoiceAvatar, koTag, koVoice } from "./voiceKo";
+import { RANK_KO } from "@/lib/studio-video/elevenRank";
+const STATIC_RANK = new Map(RANK_KO.map(([id], i) => [`el_${id}`, i + 1]));
 import { errText, videoBridge } from "./types";
 import { addExtraVoices } from "@/lib/studio-video/voices";
 import { Btn, C, FONT, Icon, input } from "./ui";
@@ -203,7 +205,9 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
   const notMine: TypecastVoice[] = rank.filter((x) => !x.mine).map((x) => ({ id: x.id, name: x.name, gender: x.gender, age: x.age, useCases: [], preview: x.preview, emotions: [], type: "rank", korean: true } as unknown as TypecastVoice));
   // 목록에서 숨긴 성우 (일레븐랩스 계정에는 그대로) — 김동현 내 목소리 복제본은 [내 목소리] 탭에서만 (2026-10-30 사장님)
   const HIDDEN = new Set(["el_iCIBCLkAkEpasNJ527e0"]);
-  const merged = (provider === "el" && rank.length ? [...list, ...notMine].sort((a, c) => (rankOf.get(a.id)?.rank ?? 999) - (rankOf.get(c.id)?.rank ?? 999)) : list).filter((v) => !HIDDEN.has(v.id));
+  // 순위는 서버 답을 기다리지 않고 바로 (2026-11-05 사장님: "목소리 선택할 때 이전 못생긴 썸네일이 나오네" — 순위를 늦게 받으면 사진 없는 성우가 먼저 보였다)
+  const rankNo = (id: string) => rankOf.get(id)?.rank ?? STATIC_RANK.get(id) ?? 999;
+  const merged = (provider === "el" ? [...list, ...notMine].sort((a, c) => rankNo(a.id) - rankNo(c.id)) : list).filter((v) => !HIDDEN.has(v.id));
   const shown = merged.filter((v) => (!g || String(v.gender).toLowerCase() === g) && (!q || v.name.includes(q) || koVoice(v.name).name.includes(q) || v.useCases.join(" ").toLowerCase().includes(q.toLowerCase())));
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", fontFamily: FONT }}>

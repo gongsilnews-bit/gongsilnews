@@ -131,6 +131,13 @@ async function relink(p: Project): Promise<Project> {
     if (r?.blob) a.url = withUrl(r).url;
     else a.missing = true;
   }
+  // 공실뉴스 드론 — 잠깐만 열리는 주소라 열 때마다 새로 받는다 (2026-11-05: 다음 날 열면 드론이 안 나오던 것)
+  for (const a of Object.values(p.assets || {})) {
+    const m = /^stock:s-gongsil-d-(.+)$/.exec(a.path || "");
+    if (!m) continue;
+    const r = await fetch(`/api/studio/video/stock?type=drone-url&id=${encodeURIComponent(m[1])}`, { credentials: "include" }).then((x) => x.json()).catch(() => null);
+    if (r?.url) a.url = r.url;
+  }
   // 클립 목소리 (웹에서 만든 AI 목소리·녹음)
   for (const sc of p.scenes || []) for (const c of sc.clips || []) {
     const v = (c as any).voice as { file?: string; url?: string } | null;
@@ -178,6 +185,54 @@ async function open(dir: string): Promise<Project> {
   return relink(p);
 }
 
+/* ── 작업 파일 .gsw (2026-11-05: 웹 프로젝트가 이 브라우저에만 있어 기록을 지우면 사라지던 것) ──
+ *  zip 안: project.json + lib/<id>.json(자료 정보) + lib/<id>(파일). 공실 사진·드론·음악은 주소만 (다시 받는다) */
+function libIdsOf(p: Project): string[] {
+  const ids = new Set<string>();
+  const take = (v?: string) => { if (v?.startsWith("web-lib:")) ids.add(v.slice(8)); };
+  for (const a of Object.values(p.assets || {})) take(a.path);
+  for (const sc of p.scenes || []) for (const c of sc.clips || []) take(((c as any).voice as { file?: string } | null)?.file);
+  for (const l of (p.layers || []) as { file?: string }[]) take(l.file);
+  return [...ids];
+}
+export async function exportProject(p: Project): Promise<Blob> {
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+  const copy = JSON.parse(JSON.stringify(p));
+  for (const a of Object.values(copy.assets || {}) as Asset[]) if (a.url?.startsWith("blob:")) a.url = "";
+  zip.file("project.json", JSON.stringify(copy));
+  for (const id of libIdsOf(p)) {
+    const r = await run<LibRow | undefined>("lib", "readonly", (st) => st.get(id)).catch(() => undefined);
+    if (!r?.blob) continue;
+    zip.file(`lib/${id}.json`, JSON.stringify({ ...r.item, url: "", thumb: "" }));
+    zip.file(`lib/${id}`, r.blob);
+  }
+  return zip.generateAsync({ type: "blob", compression: "STORE" });
+}
+export async function importProject(file: File): Promise<Project> {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(file);
+  const pj = zip.file("project.json");
+  if (!pj) throw new Error("공실 쇼츠 작업 파일(.gsw)이 아니에요.");
+  const p = JSON.parse(await pj.async("string")) as Project;
+  for (const name of Object.keys(zip.files)) {
+    const m = /^lib\/([^/]+)\.json$/.exec(name);
+    if (!m) continue;
+    const id = m[1];
+    const item = JSON.parse(await zip.file(name)!.async("string")) as LibItem;
+    const bin = zip.file(`lib/${id}`);
+    if (!bin) continue;
+    const ab = await bin.async("arraybuffer");
+    const blob = new Blob([ab], { type: item.kind === "image" ? "image/png" : item.kind === "video" ? "video/mp4" : "audio/mpeg" });
+    await run("lib", "readwrite", (st) => st.put({ id, item, blob } as LibRow));
+  }
+  // 같은 프로젝트가 이 브라우저에 있으면 덮어쓰지 않고 새 이름으로
+  const had = await run<Project | undefined>("projects", "readonly", (st) => st.get(p.dir)).catch(() => undefined);
+  if (had) { p.dir = `web:${uid()}`; p.name = `${p.name} (가져옴)`; }
+  await run("projects", "readwrite", (st) => st.put(p));
+  return relink(p);
+}
+
 async function recent(): Promise<Recent[]> {
   const all = await run<Project[]>("projects", "readonly", (s) => s.getAll()).catch(() => [] as Project[]);
   return all
@@ -193,7 +248,7 @@ async function addAsset(libId: string): Promise<Asset> {
   }
   if (!it) throw new Error("자료를 찾지 못했어요. 다시 골라 주세요.");
   return {
-    id: uid(), path: it.source === "web" ? `web-lib:${libId}` : "", url: it.url, thumb: it.thumb, kind: it.kind, name: it.name,
+    id: uid(), path: it.source === "web" ? `web-lib:${libId}` : it.source === "stock" ? `stock:${libId}` : "", url: it.url, thumb: it.thumb, kind: it.kind, name: it.name,
     duration: it.duration, width: it.width, height: it.height, hasAudio: it.kind === "video" ? false : undefined, source: it.source, credit: it.credit,
   };
 }
@@ -264,9 +319,21 @@ export function webVideoBridge(): VideoBridge {
     project: {
       create,
       open,
-      openPick: async () => null,
+      // [프로젝트 열기] — PC 의 작업 파일(.gsw)
+      openPick: async () => {
+        const [f] = await pickFiles(".gsw,application/zip");
+        return f ? importProject(f) : null;
+      },
       save,
-      flush: async (p: Project) => { await save(p); return { savedAt: now() }; },
+      // [저장](Ctrl+S) — 이 브라우저에 + 저장 폴더를 정했으면 PC 05 동영상studio 에 작업 파일(.gsw)도 (2026-11-05)
+      flush: async (p: Project) => {
+        await save(p);
+        try {
+          const { saveToFolderHandle } = await import("@/components/admin/studio-web/folder");
+          await saveToFolderHandle("video", ["작업 파일"], `${(p.name || "쇼츠").replace(/[\\/:*?"<>|]+/g, "")}.gsw`, await exportProject(p));
+        } catch { /* 폴더를 안 정했거나 권한 없음 — 브라우저 저장은 됐다 */ }
+        return { savedAt: now() };
+      },
       setDirty: async () => true,
       recent,
       addAsset,

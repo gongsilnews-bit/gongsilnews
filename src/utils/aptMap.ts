@@ -10,7 +10,7 @@
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseError, parseItems, parseTotalCount, recentMonths } from "@/utils/aptTrades";
-import { buildingsAt, kaptFor, recapAt, type Parcel } from "@/utils/publicLand";
+import { buildingsAt, hubLimited, kaptFor, recapAt, resetHubLimited, type Parcel } from "@/utils/publicLand";
 import { LAWD_NAMES, areaLabel, supplyFor, type AreaSummary, type Rent, type Trade } from "@/utils/aptMapShared";
 
 export { LAWD_NAMES, areaLabel, supplyFor };
@@ -430,6 +430,8 @@ export type ComplexInfo = {
   baseFloor: number | null; manage: string; saleType: string; parkingGround: number | null; elevators: number | null;
   cctv: number | null; evChargers: number | null; subway: string; subwayTime: string; busTime: string;
   school: string; convenience: string; welfare: string;
+  /** K-apt 단지 코드 — 관리비 받을 때 (아파트만, 2026-11-05) */
+  kaptCode?: string;
 };
 
 export async function syncInfo(lawd: string, deadline: number) {
@@ -438,8 +440,21 @@ export async function syncInfo(lawd: string, deadline: number) {
     .select("id, kind, name, dong, jibun, bcode").eq("lawd_cd", lawd).not("bcode", "is", null).is("info_tried_at", null)
     .order("trade_count", { ascending: false }).limit(400);
   let done = 0;
-  for (const r of (data || []) as { id: string; kind: Kind; name: string; dong: string; jibun: string; bcode: string }[]) {
-    if (Date.now() > deadline) break;
+  for (const r of (data || []) as InfoRow[]) {
+    if (Date.now() > deadline || hubLimited) break;
+    if (await fillInfo(r)) done++;
+  }
+  return { done };
+}
+
+type InfoRow = { id: string; kind: Kind; name: string; dong: string; jibun: string; bcode: string };
+/**
+ * 단지 하나 — 건축물대장(총괄표제부·표제부)·공동주택 기본정보로 세대수·용적률·건폐율·준공·최고층… 채우기 (2026-11-05: 빌라도)
+ *  하루 한도에 걸리면 저장하지 않고 null (다음에 다시)
+ */
+export async function fillInfo(r: InfoRow): Promise<ComplexInfo | null> {
+  {
+    const supabase = db();
     const { bun, ji, mountain } = splitJibun(r.jibun);
     const p: Parcel = {
       bcode: r.bcode, sigungu: r.bcode.slice(0, 5), bjdong: r.bcode.slice(5), dong: r.dong, mountain, bun, ji,
@@ -467,11 +482,30 @@ export async function syncInfo(lawd: string, deadline: number) {
       parkingGround: kapt?.parkingGround ?? null, elevators: kapt?.elevators ?? null, cctv: kapt?.cctv ?? null, evChargers: kapt?.evChargers ?? null,
       subway: kapt?.subway || "", subwayTime: kapt?.subwayTime || "", busTime: kapt?.busTime || "",
       school: kapt?.school || "", convenience: kapt?.convenience || "", welfare: kapt?.welfare || "",
+      ...(kapt?.kaptCode ? { kaptCode: kapt.kaptCode } : {}),
     };
+    if (hubLimited) return null; // 한도 — 빈 값으로 "찾아봄"을 남기지 않는다
     await supabase.from("apt_complexes").update({ info, info_tried_at: new Date().toISOString() }).eq("id", r.id);
-    done++;
+    return info;
   }
-  return { done };
+}
+
+/**
+ * 단지 정보가 빈 곳 채우기 — 낮 크론(위치 채우기가 끝나 쉬는 때)이 조금씩 (2026-11-05 사장님: 단지 창 세대수·용적률 빈칸)
+ *  공공데이터포털 하루 한도를 나눠 쓰려고 한 번에 perRun 곳까지. 거래 많은 단지부터. 한도에 걸리면 멈춤
+ */
+export async function infoRound(deadline: number, perRun = 25) {
+  resetHubLimited(); // 어제 한도에 걸렸어도 오늘은 다시
+  const supabase = db();
+  const { data } = await supabase.from("apt_complexes")
+    .select("id, kind, name, dong, jibun, bcode").not("bcode", "is", null).not("lat", "is", null).is("info_tried_at", null)
+    .order("trade_count", { ascending: false, nullsFirst: false }).limit(perRun);
+  let done = 0;
+  for (const r of (data || []) as InfoRow[]) {
+    if (Date.now() > deadline || hubLimited) break;
+    if (await fillInfo(r)) done++;
+  }
+  return { done, limited: hubLimited };
 }
 
 /** 요약만 다시 (묶는 방식을 바꿨을 때) — 공공 API 는 부르지 않는다 */

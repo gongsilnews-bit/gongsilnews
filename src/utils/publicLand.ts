@@ -54,12 +54,18 @@ export type Building = {
   permitDay: string; useAprDay: string;
 };
 
+/** 공공데이터포털 하루 호출 한도에 걸렸는지 — 걸리면 그날은 채우기를 멈춘다 (빈 값으로 "찾아봄" 표시를 남기지 않게, 2026-11-05) */
+export let hubLimited = false;
+export const resetHubLimited = () => { hubLimited = false; };
+
 /** 건축HUB 한 창구 호출 (지번 기준) */
 async function hub(service: string, op: string, p: Parcel, rows = 100) {
   const key = process.env.DATA_GO_KR_API_KEY;
   if (!key) throw new Error("공공데이터포털 키(DATA_GO_KR_API_KEY)가 서버에 없어요.");
   const url = `https://apis.data.go.kr/1613000/${service}/${op}?serviceKey=${key}&sigunguCd=${p.sigungu}&bjdongCd=${p.bjdong}&platGbCd=${p.mountain ? 1 : 0}&bun=${p.bun}&ji=${p.ji}&numOfRows=${rows}&pageNo=1&_type=json`;
-  return itemsOf(await fetch(url).then((r) => r.json()));
+  const text = await fetch(url).then((r) => r.text());
+  if (/LIMITED_NUMBER_OF_SERVICE_REQUESTS|SERVICE_KEY_IS_NOT_REGISTERED|<returnReasonCode>22</.test(text)) { hubLimited = true; throw new Error("공공데이터포털 하루 한도"); }
+  return itemsOf(JSON.parse(text));
 }
 
 /** 건축물대장 표제부 — 주건축물 먼저 */

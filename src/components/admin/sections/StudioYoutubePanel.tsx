@@ -212,7 +212,6 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
         {row("영상 형식", "videoType", opts?.videoTypes)}
         {row("길이", "duration", opts?.durations)}
         {row("말투", "tone", opts?.tones)}
-        {row("숫자", "number", opts?.numbers)}
   </>);
   if (view === "settings") return <div>{rows}</div>;
   const result = view === "result";

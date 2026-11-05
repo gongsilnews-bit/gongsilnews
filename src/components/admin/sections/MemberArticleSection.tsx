@@ -47,7 +47,7 @@ export default function MemberArticleSection({
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!initialData || initialData.length === 0);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
-  const [writePermission, setWritePermission] = useState<{ checked: boolean; allowed: boolean; error?: string }>({ checked: false, allowed: false });
+  const [writePermission, setWritePermission] = useState<{ checked: boolean; allowed: boolean; error?: string; quotaFull?: boolean }>({ checked: false, allowed: false });
 
   // 배너광고 상태 및 일괄적용 state
   const [adSettingsMap, setAdSettingsMap] = useState<Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>>(initialAdSettings || {});
@@ -87,6 +87,7 @@ export default function MemberArticleSection({
 
   const checkWritePermission = async () => {
     const result = await checkArticleWritePermission(memberId);
+    if (!result.allowed && (result as { quotaFull?: boolean }).quotaFull) return true; // 한도가 차도 글쓰기는 열린다 (임시저장 → SNS 재료)
     if (!result.allowed) {
       alert(result.error || "기사 작성 권한이 없습니다.");
       return false;
@@ -117,7 +118,7 @@ export default function MemberArticleSection({
   useEffect(() => {
     if (!showWriteForm || !memberId) return;
     checkArticleWritePermission(memberId).then(result => {
-      setWritePermission({ checked: true, allowed: result.allowed, error: result.error });
+      setWritePermission({ checked: true, allowed: result.allowed, error: (result as { error?: string }).error, quotaFull: Boolean((result as { quotaFull?: boolean }).quotaFull) });
     });
   }, [showWriteForm, memberId]);
 
@@ -428,16 +429,27 @@ export default function MemberArticleSection({
     if (!writePermission.checked) {
       return <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: textSecondary }}>기사 작성 권한을 확인하는 중입니다...</div>;
     }
-    if (!writePermission.allowed) {
+    if (!writePermission.allowed && !writePermission.quotaFull) {
+      // 기사만 막고 블로그·SNS·쇼츠 대본은 계속 (2026-11-05 사장님: "기사만 못쓰게 하면 되잖아", "나머지 SNS는 쓸 수 있게")
       return (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, color: textSecondary }}>
-          <div>{writePermission.error || "기사 작성 권한이 없습니다."}</div>
-          <button type="button" onClick={() => router.push("?menu=article")} style={{ padding: "8px 16px", border: "none", borderRadius: 6, background: "#374151", color: "#fff", cursor: "pointer" }}>기사관리로 돌아가기</button>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, color: textSecondary, textAlign: "center", lineHeight: 1.7 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary }}>{writePermission.error || "기사 작성 권한이 없습니다."}</div>
+          <div style={{ fontSize: 14 }}>새 기사 등록만 다음 달까지 쉬어요.<br />블로그 · SNS · 쇼츠릴스 대본은 <b>뉴스·SNS자동화</b>에서 내 공실이나 이미 쓴 기사로 계속 만들 수 있어요.</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={() => router.push("?menu=sns")} style={{ padding: "10px 18px", border: "none", borderRadius: 6, background: "#1e3a8a", color: "#fff", fontWeight: 700, cursor: "pointer" }}>뉴스·SNS자동화로 가기</button>
+            <button type="button" onClick={() => router.push("?menu=article")} style={{ padding: "10px 18px", border: "none", borderRadius: 6, background: "#374151", color: "#fff", cursor: "pointer" }}>기사관리로 돌아가기</button>
+          </div>
         </div>
       );
     }
     return (
       <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 에디터를 불러오는 중입니다...</div>}>
+        {/* 한도를 다 써도 글은 쓴다 — [임시저장]으로 두고 블로그·SNS·대본 재료로 (승인신청만 막힘, 2026-11-05 사장님) */}
+        {writePermission.quotaFull && (
+          <div style={{ margin: "12px 16px 0", padding: "12px 16px", borderRadius: 8, background: "#FFF7ED", border: "1px solid #FDBA74", color: "#9A3412", fontSize: 14, lineHeight: 1.6 }}>
+            <b>{writePermission.error}</b> 글은 그대로 쓰고 아래 <b>[임시저장]</b>으로 저장하세요. 뉴스·SNS자동화에서 이 글로 블로그·SNS·쇼츠릴스 대본을 만들 수 있어요. 공실뉴스 등록(승인신청)은 다음 달에 할 수 있어요.
+          </div>
+        )}
         <NewsWriteForm />
       </React.Suspense>
     );

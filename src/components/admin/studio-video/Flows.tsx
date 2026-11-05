@@ -72,6 +72,7 @@ function FoldersDialog({ onClose }: { onClose: () => void }) {
 const iconBtn: React.CSSProperties = { flexShrink: 0, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: "#8b95a3", cursor: "pointer" };
 export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void; onImported?: (p: Project) => void }) {
   const b = videoBridge()!;
+  const web = Boolean((b as { web?: boolean }).web);
   const [importOpen, setImportOpen] = useState(false);
   const [recent, setRecent] = useState<Recent[] | null>(null);
   useEffect(() => {
@@ -238,8 +239,9 @@ export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => v
       {foldersOpen && <FoldersDialog onClose={() => setFoldersOpen(false)} />}
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "64px 24px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
-          {big("plus", "새로 만들기", "원하는 방식으로 새 영상을 만들어요", onNew, true)}
-          {big("open", "프로젝트 열기", "저장한 프로젝트를 이어서 편집해요", onOpenPick)}
+          {/* 웹 — 쇼츠릴스studio (2026-11-05): 쇼츠 만들기 · PC 작업 파일(.gsw) 열기 */}
+          {web ? big("plus", "쇼츠 만들기", "대본 넣고 · 테마 고르고 · 바로 편집 (60초 세로)", onNew, true) : big("plus", "새로 만들기", "원하는 방식으로 새 영상을 만들어요", onNew, true)}
+          {web ? big("open", "PC에서 열기", "저장해 둔 작업 파일(.gsw)을 열어 이어서 편집해요", onOpenPick) : big("open", "프로젝트 열기", "저장한 프로젝트를 이어서 편집해요", onOpenPick)}
           {b.project.importList && onImported && big("ai", "가져오기", "캡컷 프로젝트 · 프리미어·다빈치 XML 을 열어 마무리해요", () => setImportOpen(true))}
         </div>
         {importOpen && onImported && <ImportDialog onClose={() => setImportOpen(false)} onDone={(p) => { setImportOpen(false); onImported(p); }} />}
@@ -316,7 +318,7 @@ export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => v
               </div>
             )
           ) : recent === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : recent.length === 0 ? (
-            <Hint>아직 만든 영상이 없어요. 위의 [새로 만들기]를 눌러 시작하세요.</Hint>
+            <Hint>{web ? "아직 만든 쇼츠가 없어요. 위의 [쇼츠 만들기]를 눌러 시작하세요." : "아직 만든 영상이 없어요. 위의 [새로 만들기]를 눌러 시작하세요."}</Hint>
           ) : shown.length === 0 ? (
             <Hint>“{q}” 이름이 들어간 프로젝트가 없어요.</Hint>
           ) : view === "grid" ? (

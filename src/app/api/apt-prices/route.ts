@@ -90,11 +90,19 @@ export async function GET(req: NextRequest) {
   const id = params.get("id");
   if (id) {
     const { data, error } = await supabase.from("apt_complexes")
-      .select("id, kind, name, dong, jibun, lawd_cd, build_year, lat, lng, trades, rents, supply_map, agent_supply, unit_map, supply_tried_at, info, agent_info, trade_count, updated_at")
+      .select("id, kind, name, dong, jibun, bcode, lawd_cd, build_year, lat, lng, trades, rents, supply_map, agent_supply, unit_map, supply_tried_at, info, info_tried_at, agent_info, trade_count, updated_at")
       .eq("id", id).maybeSingle();
     if (error || !data) return NextResponse.json({ success: false, error: error?.message || "단지를 찾지 못했습니다." }, { status: 404 });
+    // 단지 정보가 아직 비었으면 — 단지 창을 연 그때 건축물대장에서 바로 채운다 (최대 8초, 2026-11-05 사장님: 세대수·용적률 빈칸)
+    if (!data.info && !data.info_tried_at && data.bcode && data.jibun) {
+      const { fillInfo } = await import("@/utils/aptMap");
+      const { resetHubLimited } = await import("@/utils/publicLand");
+      resetHubLimited();
+      const got = await Promise.race([fillInfo(data as never).catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 8000))]);
+      if (got) (data as { info: unknown }).info = got;
+    }
     // 부동산이 보완한 값이 공공 자료보다 우선 — 어느 칸이 부동산 값인지도 함께 (화면에 "공인중개사 제공")
-    const { agent_supply: agentSupply, agent_info: agentInfo, supply_tried_at: unitsAt, ...rest } = data;
+    const { agent_supply: agentSupply, agent_info: agentInfo, supply_tried_at: unitsAt, info_tried_at: _infoAt, bcode: _bcode, ...rest } = data;
     const complex = {
       ...rest,
       // 고치기 전(첫 100줄만 센) 세대수는 보이지 않는다 — 다시 세면 저절로 보인다 (2026-11-03 사장님: "세대수가 다르면 안 되지")

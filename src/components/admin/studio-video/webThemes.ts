@@ -26,7 +26,10 @@ export type ShortsTheme = {
   /** 그래픽·전환·드론 자리·표시광고·제목 움직임 (webThemeKit) */
   kit?: ThemeKit;
 };
-const T = (type: string, a = 0.3) => ({ type, a, b: a });
+// 전환 — 요즘 쇼츠처럼 짧게 + 휙 소리 (2026-11-05 사장님: "앗! 너무 좋다 할 만큼 요즘 트렌드에 맞게")
+const T = (type: string, a = 0.25, sfx = "whoosh-short") => ({ type, a, b: a, sfx });
+/** 요즘 쇼츠 자막 — 화면 가운데 아래 한 줄, 크게, 말하는 단어만 색·크게 */
+const TREND = { position: "middle-low" as const, size: 118, maxLines: 1 as const, length: "long" as const };
 const G = (at: number, text: string, style: string, color: string | undefined, layer: Record<string, unknown>) => ({ at, n: 9, stk: { style, text, ...(color ? { color } : {}) }, layer: { x: 0.5, y: 0.4, w: 0.5, opacity: 1, ...layer } });
 
 export const SHORTS_MUSIC: { url: string; name: string }[] = [
@@ -52,7 +55,7 @@ const M = (url: string) => ({ music: url, musicName: SHORTS_MUSIC.find((m) => m.
 export const SHORTS_THEMES: ShortsTheme[] = [
   {
     id: "navy", name: "깔끔 남색",
-    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 4, bg: false, bold: true, shadow: 0, glow: "", anim: { in: "fade" } },
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 5, bg: false, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "pop", wshow: "word", whl: "both", wcolor: "#FFD400" } },
     title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1E2A4A" },
     office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#E8890C" },
     ...M("/reels-assets/bgm/lib/rm-018.mp3"),
@@ -67,7 +70,7 @@ export const SHORTS_THEMES: ShortsTheme[] = [
   },
   {
     id: "impact", name: "노랑 임팩트",
-    sub: { font: "Black Han Sans", color: "#FFE14D", outline: "#111111", outlineWidth: 7, bg: false, bold: true, shadow: 0, glow: "", anim: { in: "pop" } },
+    sub: { font: "Black Han Sans", color: "#FFFFFF", outline: "#111111", outlineWidth: 7, bg: false, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "pop", wshow: "word", whl: "both", wcolor: "#FFE14D" } },
     title: { font: "Black Han Sans", color: "#111111", boxColor: "#FFD400" },
     office: { font: "Black Han Sans", color: "#FFE14D", boxColor: "#111111" },
     ...M("/reels-assets/bgm/lib/rm-015.mp3"),
@@ -82,7 +85,7 @@ export const SHORTS_THEMES: ShortsTheme[] = [
   },
   {
     id: "premium", name: "고급 블랙·골드",
-    sub: { font: "NanumMyeongjo", color: "#FFFFFF", outline: "#000000", outlineWidth: 1, bg: false, bold: true, shadow: 0.07, shadowColor: "#000000", glow: "", anim: { in: "fade", dur: 0.6 } },
+    sub: { font: "NanumMyeongjo", color: "#FFFFFF", outline: "#000000", outlineWidth: 2, bg: false, bold: true, shadow: 0.07, shadowColor: "#000000", glow: "", ...TREND, anim: { in: "fade", dur: 0.4, wshow: "word", whl: "both", wcolor: "#E9C77B" } },
     title: { font: "NanumMyeongjo", color: "#E9C77B", boxColor: "#111111" },
     office: { font: "NanumMyeongjo", color: "#111111", boxColor: "#D4AF37" },
     ...M("/reels-assets/bgm/lib/rm-001.mp3"),
@@ -97,7 +100,7 @@ export const SHORTS_THEMES: ShortsTheme[] = [
   },
   {
     id: "fresh", name: "상큼 민트",
-    sub: { font: "Jua", color: "#FFFFFF", bg: true, bgColor: "#0CA678", bgOpacity: 0.95, outlineWidth: 0, bold: true, shadow: 0, glow: "", anim: { in: "jelly" } },
+    sub: { font: "Jua", color: "#FFFFFF", bg: false, outline: "#0B4F3C", outlineWidth: 6, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "jelly", wshow: "word", whl: "both", wcolor: "#7CFFB2" } },
     title: { font: "Jua", color: "#FFFFFF", boxColor: "#0CA678" },
     office: { font: "Jua", color: "#0B4F3C", boxColor: "#FFFFFF" },
     ...M("/reels-assets/bgm/lib/rm-022.mp3"),
@@ -112,7 +115,7 @@ export const SHORTS_THEMES: ShortsTheme[] = [
   },
   {
     id: "news", name: "뉴스 속보",
-    sub: { font: "GmarketSans", color: "#FFFFFF", bg: true, bgColor: "#111827", bgOpacity: 0.9, outlineWidth: 0, bold: true, shadow: 0, glow: "", anim: { in: "slideL" } },
+    sub: { font: "GmarketSans", color: "#FFFFFF", bg: true, bgColor: "#111827", bgOpacity: 0.9, outlineWidth: 0, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "slideL", wshow: "word", whl: "both", wcolor: "#FF5A5A" } },
     title: { font: "GmarketSans", color: "#FFFFFF", boxColor: "#E03131" },
     office: { font: "GmarketSans", color: "#FFFFFF", boxColor: "#1C3D8F" },
     ...M("/reels-assets/bgm/lib/rm-007.mp3"),

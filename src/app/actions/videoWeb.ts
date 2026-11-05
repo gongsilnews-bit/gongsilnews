@@ -69,7 +69,7 @@ export async function getVideoVacancy(vacancyId: string): Promise<{ success: tru
   const place = [row.sigungu, row.dong].filter(Boolean).join(" ");
 
   const caps: string[] = [];
-  if (row.exclusive_m2) caps.push(`전용 ${Number(row.exclusive_m2)}㎡ (${Math.round(Number(row.exclusive_m2) / 3.3058)}평)`);
+  if (row.exclusive_m2) caps.push(`전용 ${Math.round(Number(row.exclusive_m2) / 3.3058)}평`); // 화면 글은 평만 (2026-11-05 사장님: "(69.4㎡) 읽기가 좋지 않아") — 표시광고 칸은 ㎡ 그대로
   if (typeof row.room_count === "number" && row.room_count > 0) caps.push(`방 ${row.room_count} · 욕실 ${row.bath_count ?? 1}`);
   // 층 — 0·빈 값은 빼고 ("중층 / 0층" 이 나오던 것)
   const okFloor = (v: unknown) => v != null && String(v).trim() !== "" && String(v).trim() !== "0";
