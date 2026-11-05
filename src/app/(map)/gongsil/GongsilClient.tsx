@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useMapFields } from "@/utils/useMapFields";
 import { useSearchParams } from "next/navigation";
-import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap, getVacancyByVacancyNo } from "@/app/actions/vacancy";
+import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap, getVacancyByVacancyNo, getAuctionByMngNo } from "@/app/actions/vacancy";
+import { searchMapPlaces, announceMapPin, levelFor } from "@/utils/mapAddressSearch";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
 import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
@@ -1606,12 +1607,29 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         setFilterSearchKeyword(trimmed);
       }
     } else {
-      // 1) 경매 관리번호 / 사건번호 매칭 검사
-      const auctionTarget = dbVacancies.find((v) => {
+      // 1) 경매 관리번호 / 사건번호 매칭 검사 — 불러온 것에서 먼저, 없으면 서버 전체에서 (2026-11-05)
+      let auctionTarget: any = dbVacancies.find((v) => {
         const meta = (v as any).metadata || {};
         const cltrNo = String(meta.cltrMngNo || meta.cltr_mng_no || "");
         return cltrNo && cltrNo.toLowerCase().includes(trimmed.toLowerCase());
       });
+      if (!auctionTarget && /^\d{4}-\d{3,4}-\d{3,}$/.test(trimmed)) {
+        beginFetchingIndicator();
+        try {
+          const res = await getAuctionByMngNo(trimmed);
+          if (res.success && res.data) {
+            const data: any = res.data;
+            const withImages = { ...data, images: data.vacancy_photos ? [...data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [] };
+            auctionTarget = withImages;
+            setDbVacancies((prev) => (prev.some((v) => String(v.id) === String(withImages.id)) ? prev : [withImages, ...prev]));
+          }
+        } catch (err) {
+          console.error("Failed to query auction by number:", err);
+        } finally {
+          endFetchingIndicator();
+        }
+        if (!auctionTarget) { setToastMessage("입력하신 경매번호에 해당하는 물건을 찾을 수 없습니다."); return; }
+      }
 
       if (auctionTarget) {
         setActiveProperty(auctionTarget.id);
@@ -1638,30 +1656,22 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         return;
       }
 
-      // 2) 카카오 지도 키워드/장소/주소 검색 (지하철역, 동 이름, 랜드마크 검색 시 지도 중심 이동)
-      if (typeof window !== "undefined" && (window as any).kakao?.maps?.services) {
+      // 2) 지도 검색 — 주소(지번·도로명)를 먼저, 그 다음 장소(역·동·건물). 지도 위 검색창과 같은 길 (utils/mapAddressSearch)
+      //    주소면 가까이 가서 남색 주소 말풍선 핀 + 그 번지 단지 창 (2026-11-05 사장님: "이 검색도 그렇게 고쳐줘")
+      const found = await searchMapPlaces(trimmed).catch(() => []);
+      const it = found[0];
+      if (it && kakaoMapRef.current) {
         const kakao = (window as any).kakao;
-        const places = new kakao.maps.services.Places();
-        places.keywordSearch(trimmed, (data: any[], status: any) => {
-          if (status === kakao.maps.services.Status.OK && data.length > 0 && kakaoMapRef.current) {
-            const first = data[0];
-            kakaoMapRef.current.panTo(new kakao.maps.LatLng(Number(first.y), Number(first.x)));
-            kakaoMapRef.current.setLevel(5);
-          } else {
-            const geocoder = new kakao.maps.services.Geocoder();
-            geocoder.addressSearch(trimmed, (geoData: any[], geoStatus: any) => {
-              if (geoStatus === kakao.maps.services.Status.OK && geoData.length > 0 && kakaoMapRef.current) {
-                const firstGeo = geoData[0];
-                kakaoMapRef.current.panTo(new kakao.maps.LatLng(Number(firstGeo.y), Number(firstGeo.x)));
-                kakaoMapRef.current.setLevel(5);
-              }
-            });
-          }
-        });
+        kakaoMapRef.current.setLevel(levelFor(it));
+        kakaoMapRef.current.panTo(new kakao.maps.LatLng(it.lat, it.lng));
+        announceMapPin(it);
+      } else if (it) {
+        setPendingPan({ lat: it.lat, lng: it.lng });
+        announceMapPin(it);
       }
 
-      // 3) 일반 주소/지하철/텍스트 검색어인 경우 텍스트 필터링 수행
-      setFilterSearchKeyword(trimmed);
+      // 3) 글자로 목록 거르기 — 번지까지 맞은 주소는 거르지 않는다 (그 자리 둘레 공실을 보여 주려고)
+      setFilterSearchKeyword(it && it.isAddr && it.jibun ? "" : trimmed);
     }
   };
 

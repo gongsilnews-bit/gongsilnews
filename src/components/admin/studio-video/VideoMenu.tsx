@@ -38,7 +38,7 @@ export function AiSettingsBox({ light = false }: { light?: boolean } = {}) {
   );
 }
 
-export default function VideoMenu({ view, onView, onMethod }: { view: VideoView; onView: (v: VideoView) => void; onMethod: (m: Method) => void }) {
+export default function VideoMenu({ view, onView, onMethod, web, onAuto }: { view: VideoView; onView: (v: VideoView) => void; onMethod: (m: Method) => void; /** 웹 체험판 — 공실로 자동 만들기 · 사진·영상으로만, 나머지는 앱에서 (2026-11-05) */ web?: boolean; onAuto?: () => void }) {
   const [theme] = useStudioTheme(false);
   // 일반 메뉴 — 색 상자·왼쪽 막대 없이, 고른 것은 글자만 밝고 굵게 (2026-10-18 사장님)
   const item = (on: boolean): React.CSSProperties => ({
@@ -50,7 +50,15 @@ export default function VideoMenu({ view, onView, onMethod }: { view: VideoView;
   const head: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: C.dim, margin: "14px 12px 4px" };
   return (
     <aside style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, padding: "22px 12px", background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto", fontFamily: FONT, color: C.text }}>
-      <h2 style={{ margin: "0 6px 10px", fontSize: 19, fontWeight: 800 }}>동영상studio</h2>
+      <h2 style={{ margin: "0 6px 10px", fontSize: 19, fontWeight: 800 }}>{web ? "쇼츠릴스studio" : "동영상studio"}</h2>
+      {web ? (
+        <>
+          <button type="button" onClick={() => onView("home")} style={item(view === "home")}><Icon name="folder" size={17} />내 프로젝트</button>
+          <button type="button" onClick={() => onAuto?.()} title="대본 넣고 · 목소리 고르고 · 바로 편집 (세로 60초)" style={{ ...item(false), color: C.accent, fontWeight: 800 }}><Icon name="plus" size={17} />쇼츠 만들기</button>
+          {/* 쇼츠·릴스만 (2026-11-05 사장님: "그냥 쇼츠 릴스만 되게 · 긴 건 나중에") — 잠긴 앱 메뉴·앱 다운로드 안내는 뺌 */}
+          <div style={{ fontSize: 12, color: C.dim, margin: "12px 8px 0", lineHeight: 1.6 }}>60초 세로 쇼츠·릴스를 만들어요.</div>
+        </>
+      ) : <>
       <AiSettingsBox light={theme === "light"} />
       <button type="button" onClick={() => onView("home")} style={item(view === "home")}><Icon name="folder" size={17} />내 프로젝트</button>
       {METHODS.filter((m) => m.id !== "record").map((m) => (
@@ -60,6 +68,7 @@ export default function VideoMenu({ view, onView, onMethod }: { view: VideoView;
       <button type="button" onClick={() => onMethod("record")} title="화면이나 카메라를 녹화하면 바로 편집 화면으로 가요" style={item(false)}><Icon name="record" size={17} />강의/영상녹화</button>
       <button type="button" onClick={() => onView("aivoice")} title="글을 쓰면 AI 성우가 읽어서 MP3·WAV 로 저장해요" style={item(view === "aivoice")}><Icon name="music" size={17} />AI 보이스 녹음</button>
       <button type="button" onClick={() => onView("myvoice")} style={item(view === "myvoice")}><Icon name="mic" size={17} />AI 내 목소리 만들기</button>
+      </>}
     </aside>
   );
 }

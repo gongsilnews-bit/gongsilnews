@@ -190,7 +190,7 @@ export default function GongsilSearchModal({
             letterSpacing: "-0.5px",
           }}
         >
-          찾고 싶은 매물번호, 경매번호, 위치를 검색해 보세요.
+          찾고 싶은 매물번호, 경매번호, 주소를 검색해 보세요.
         </h2>
 
         {/* 거대한 검색 입력창 */}
@@ -214,7 +214,7 @@ export default function GongsilSearchModal({
                 executeSearch(searchTerm);
               }
             }}
-            placeholder="물건번호, 경매번호, 지하철, 동 이름 검색"
+            placeholder="매물번호, 경매번호, 주소, 역·동 이름 검색"
             style={{
               width: "100%",
               border: "none",

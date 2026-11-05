@@ -27,7 +27,15 @@ const items = [
   'content-gongsil.js',
   'content-naver.js',
   'icons',
-  'shared'
+  'shared',
+  // 도우미 (웹 일감 받기·네이버·SNS·유튜브 채우기) — manifest 가 부른다 (2026-11-05: 빠져 있던 것)
+  'helper/bg-web.js',
+  'helper/web-bridge.js',
+  'helper/helper-naver.js',
+  'helper/naver-fill.js',
+  'helper/helper-sns.js',
+  'helper/sns-panel.js',
+  'helper/helper-youtube.js'
 ];
 
 for (const item of items) {

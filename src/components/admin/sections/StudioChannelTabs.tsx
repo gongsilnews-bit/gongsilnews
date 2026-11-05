@@ -491,14 +491,14 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
             </label>
           </div>
         ) })),
-      { id: "youtube", label: "유튜브 대본", sum: ytSum, on: all.youtube.on, flip: () => keepAll({ ...all, youtube: { ...all.youtube, on: !all.youtube.on } }),
+      { id: "youtube", label: "쇼츠릴스 대본", sum: ytSum, on: all.youtube.on, flip: () => keepAll({ ...all, youtube: { ...all.youtube, on: !all.youtube.on } }),
         body: <StudioYoutubePanel view="settings" theme={theme} vacancyId={workId} onUsed={onUsed} oneShot remembered={all.youtube} onPick={(p) => keepAll({ ...all, youtube: { ...all.youtube, ...p } })} /> },
     ];
     const tabs = [
       ...(analysis ? [{ id: "source", label: "📋 분석 내용 · 글의 재료", done: true }] : []),
       { id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) },
       ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) })),
-      { id: "youtube", label: "유튜브 대본", done: hasYoutube },
+      { id: "youtube", label: "쇼츠릴스 대본", done: hasYoutube },
     ];
     const cur = tab === "source" && !analysis ? "article" : tab;
     return (
@@ -612,7 +612,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       {/* 채널 탭 — 탭에서는 스타일만 고르고, 오른쪽 끝 [한 번에 쓰기]로 ☑ 한 글을 함께 쓴다 (2026-10-23 사장님) */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: allBusy || allMsg ? 8 : 16 }}>
         <div style={{ display: "flex", gap: 4, flex: 1, minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
-          {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article), part: "article" as const }, { id: "blog", label: "네이버 블로그", done: Boolean(blog), part: "blog" as const }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post), part: "sns" as const })), { id: "youtube", label: "유튜브 대본", done: hasYoutube, part: "youtube" as const }].map((t) => (
+          {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article), part: "article" as const }, { id: "blog", label: "네이버 블로그", done: Boolean(blog), part: "blog" as const }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post), part: "sns" as const })), { id: "youtube", label: "쇼츠릴스 대본", done: hasYoutube, part: "youtube" as const }].map((t) => (
             <div key={t.id} role="button" tabIndex={0} onClick={() => onTab(t.id)} onKeyDown={(e) => e.key === "Enter" && onTab(t.id)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap", userSelect: "none",
                 fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary,

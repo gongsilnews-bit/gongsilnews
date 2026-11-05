@@ -36,10 +36,13 @@ import { bakeAnim } from "./AnimBake";
 import { focusTextBasic, resetTextTabs } from "./TextTabs";
 import { SfxInsertPanel, TextInsertPanel } from "./InsertPanels";
 import { ChannelMark, PostDialog } from "./PostDialog";
+import WebPostDialog from "./WebPostDialog";
 import type { TextLook } from "./SubPresets";
 import { StickerPanel, stickerFileName, stickerPng, stickerSpecOf, warmStickers } from "./Stickers";
 import { TemplatePanel, drawTemplate, isTplStyle, tplFonts, tplOptsOf } from "./Templates";
 import type { SubLook } from "./SubPresets";
+import { SHORTS_THEMES, loadBaseThemes, loadMyThemes, saveMyThemeAt, themeFromProject } from "./webThemes";
+import { canEditShortsThemes, saveShortsTheme } from "@/app/actions/shortsThemes";
 import { AnimPanel, type AnimBodyProps } from "./Anim";
 import { TRANS_DEFAULT, TRANS_MAX, TRANS_MIN, TRANSITIONS, transLabel } from "./transitions";
 import { isSticker, isVideoLayer, layerIcon, layerName, LANE_W, zCan, zReorder, LayerPanel, LayerPopup, SourcePanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
@@ -324,6 +327,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     setProjectState(p);
     force((x) => x + 1);
   };
+  const [themeSave, setThemeSave] = useState(false);
+  const [themeAdmin, setThemeAdmin] = useState(false); // 최고관리자 — 기본 테마 5칸도 바꿀 수 있다
+  useEffect(() => { if (themeSave) void canEditShortsThemes().then(setThemeAdmin).catch(() => {}); }, [themeSave]);
   const say = (t: string) => {
     setToast(t);
     setTimeout(() => setToast((x) => (x === t ? "" : x)), 3500);
@@ -1374,6 +1380,16 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     setSelLayer(id);
     setPanel("layer");
     say(`${l.type === "music" ? "음악을" : l.type === "sfx" ? "효과음을" : l.sticker ? "그래픽을" : l.type === "image" ? "사진을" : "텍스트를"} 클립 ${r.n}개에 넣었어요`);
+    // 웹 — 넣은 그래픽이 바로 보이게: 재생 막대가 클립 맨 앞(나타나기 전)이면 조금 안쪽으로 (2026-11-05 사장님: "그래픽 넣기가 안 되네")
+    if ((b as { web?: boolean }).web && l.type !== "music" && l.type !== "sfx") {
+      const its = flatten(pref.current).items;
+      const a = its.find((x) => x.clip.id === r.from);
+      const z = its.find((x) => x.clip.id === r.to) || a;
+      if (a && z) {
+        const s = a.start, e = z.start + z.dur;
+        if (time < s + 0.8 || time >= e) setTimeout(() => player.current?.seek(Math.min(e - 0.05, s + Math.min(1, (e - s) / 2))), 60);
+      }
+    }
   };
   const updateLayer = (id: string, patch: Partial<Layer>) => change((p) => {
     const l = (p.layers || []).find((x) => x.id === id);
@@ -1412,7 +1428,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (c && !c.box && isPhotoClip(project, c) && (c.motion || project.settings.motion) !== "none") say("직접 옮기면 사진 움직임(줌인 등)은 쉬어요 · [채우기]로 돌리면 다시 움직여요");
   };
   /** 화면 비율 바꾸기 — 오른쪽 [화면 비율] 칸 · 위쪽 비율 단추가 같이 쓴다 */
-  const setRatio = (r: Ratio) => change((p) => { p.ratio = r; if (p.settings.subtitle.posAuto && typeof p.settings.subtitle.x !== "number") p.settings.subtitle.position = autoSubPosition(r); });
+  const setRatio = (r: Ratio) => (b as { web?: boolean }).web && r !== "9:16" ? undefined : change((p) => { /* 웹은 9:16 고정 (2026-11-05) */ p.ratio = r; if (p.settings.subtitle.posAuto && typeof p.settings.subtitle.x !== "number") p.settings.subtitle.position = autoSubPosition(r); });
   const openLayer = (id: string) => {
     const lay = (project.layers || []).find((x) => x.id === id);
     // 그래픽은 무엇을 보다가 골랐든 밑에 그래픽 창 — 속성 X 면 그래픽으로 (2026-10-21 사장님)
@@ -4057,7 +4073,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             setPanel("");
             setLibOpen(false);
           }} />}
-        {kind === "voice" && <VoicePanel key={voiceMe ? "me" : "all"} startMe={voiceMe} project={project} gap={gapOf(project.settings)} onGap={(g) => change((p) => { p.settings.voice = { ...p.settings.voice, gap: g }; })} wordCount={selWord && findClip(project, selWord.clip)?.clip.type === "voice" ? wordIs().length : 0} targetCount={selected.filter((id) => { const c = findClip(project, id)?.clip; return c && (c.type === "voice" || c.src); }).length} onApply={applyVoice} onClose={() => setPanel("")} />}
+        {kind === "voice" && <VoicePanel key={voiceMe ? "me" : "all"} startMe={voiceMe} project={project}
+          web={(b as { web?: boolean }).web} gap={gapOf(project.settings)} onGap={(g) => change((p) => { p.settings.voice = { ...p.settings.voice, gap: g }; })} wordCount={selWord && findClip(project, selWord.clip)?.clip.type === "voice" ? wordIs().length : 0} targetCount={selected.filter((id) => { const c = findClip(project, id)?.clip; return c && (c.type === "voice" || c.src); }).length} onApply={applyVoice} onClose={() => setPanel("")} />}
         {kind === "subtitle" && (() => {
           // 이 클립 자막 — 고른 클립(하나)이 있으면 그것, 없으면 지금 재생 위치 클립
           const it = flat.items.find((x) => x.clip.id === subClip) || (selected.length === 1 && flat.items.find((x) => x.clip.id === selected[0])) || cur;
@@ -4872,6 +4889,43 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           style={{ width: 34, height: 32, marginRight: 8, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: dirty && gssMode ? C.text : C.sub, cursor: "pointer" }}>
           <Icon name="save" size={18} />
         </button>
+        {/* 웹 — 편집한 모양(자막·제목 상자·음악·성우)을 내 테마로 (2026-11-05 사장님) */}
+        {(b as { web?: boolean }).web && (
+          <span style={{ position: "relative", marginRight: 8 }}>
+            <Btn small onClick={() => setThemeSave((v) => !v)} title="지금 영상의 자막·제목 상자·음악·성우를 내 테마로 저장해요 — 다음 [쇼츠 만들기]에서 그 테마를 누르면 같은 모양으로 만들어져요"><Icon name="star" size={15} />내 테마로 저장</Btn>
+            {themeSave && (
+              <div style={{ position: "absolute", right: 0, top: 38, zIndex: 80, width: 240, padding: 10, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.panel, boxShadow: "0 10px 30px rgba(0,0,0,0.45)", fontFamily: FONT }}>
+                <div style={{ fontSize: 13, color: C.sub, marginBottom: 8, lineHeight: 1.5 }}>어느 칸에 저장할까요?</div>
+                {loadMyThemes().map((m, i) => (
+                  <button key={i} type="button" onClick={() => {
+                    if (m && !window.confirm(`내 테마 ${i + 1}을(를) 지금 영상 모양으로 바꿀까요?`)) return;
+                    saveMyThemeAt(i, themeFromProject(pref.current as never));
+                    setThemeSave(false);
+                    say(`내 테마 ${i + 1}에 저장했어요 — [쇼츠 만들기]에서 고르면 이 모양으로 만들어져요`);
+                  }} style={{ display: "block", width: "100%", textAlign: "left", height: 36, marginBottom: 6, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.text, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+                    내 테마 {i + 1} <span style={{ color: C.dim, fontWeight: 600, fontSize: 12.5 }}>{m ? "· 저장됨 (바꾸기)" : "· 비어 있음"}</span>
+                  </button>
+                ))}
+                {themeAdmin && (<>
+                  <div style={{ fontSize: 12.5, color: C.dim, margin: "10px 0 6px", lineHeight: 1.5 }}>기본 테마 (모든 회원) — 이 영상 모양으로 바꾸기</div>
+                  {SHORTS_THEMES.map((t, i) => (
+                    <button key={t.id} type="button" onClick={async () => {
+                      if (!window.confirm(`기본 테마 ${i + 1} "${t.name}"을(를) 지금 영상 모양으로 바꿀까요? 모든 회원에게 바로 바뀌어요.`)) return;
+                      const th = themeFromProject(pref.current as never, t);
+                      const r = await saveShortsTheme(i, { ...th, id: t.id, name: t.name, mine: false } as never);
+                      setThemeSave(false);
+                      if (!r.success) return say(r.error);
+                      void loadBaseThemes(true);
+                      say(`기본 테마 ${i + 1} "${t.name}"을(를) 이 영상 모양으로 바꿨어요`);
+                    }} style={{ display: "block", width: "100%", textAlign: "left", height: 34, marginBottom: 5, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.accent}`, background: "transparent", color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+                      기본 테마 {i + 1} · {t.name}
+                    </button>
+                  ))}
+                </>)}
+              </div>
+            )}
+          </span>
+        )}
         <Btn primary small onClick={() => setDialog("export")}><Icon name="export" size={16} />내보내기</Btn>
       </div>
       </>)}
@@ -5054,7 +5108,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               <Btn small primary onClick={() => { setSelected(blank.map((x) => x.clip.id)); openLib("mine"); }}>빈 클립에 화면 넣기</Btn>
             </div>
           )}
-          {!photoHintHide && silentShots.length > 0 && (
+          {!photoHintHide && silentShots.length > 0 && !(b as { web?: boolean }).web && ( /* 웹은 AI 목소리가 없어 안내하지 않는다 (2026-11-05) */
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", borderBottom: `1px solid ${C.line}`, background: C.panel, fontSize: 14.5 }}>
               <Icon name="text" size={18} />
               <span style={{ flex: 1 }}>글이 없는 사진 클립이 {silentShots.length}개 있어요 (소리 없이 넘어가요). 클립에 글을 쓰면 AI 목소리로 읽어 줘요.</span>
@@ -5070,7 +5124,9 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             return (
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", borderBottom: `1px solid ${C.line}`, background: C.panel, fontSize: 14.5 }}>
                 <Icon name="voice" size={18} />
-                <span style={{ flex: 1 }}>{making ? `AI 목소리를 만드는 중… (${Object.keys(busy).length}개 남음)` : `AI 목소리가 없는 클립이 ${need.length}개 있어요. 글을 그대로 성우가 읽어요.`}</span>
+                <span style={{ flex: 1 }}>{making ? `AI 목소리를 만드는 중… (${Object.keys(busy).length}개 남음)` : (b as { web?: boolean }).web
+                  ? `목소리가 없는 장면이 ${need.length}개 있어요. AI 성우가 글을 읽게 할 수 있어요 (포인트).`
+                  : `AI 목소리가 없는 클립이 ${need.length}개 있어요. 글을 그대로 성우가 읽어요.`}</span>
                 {!making && <Btn small primary onClick={() => void revoice(need)}>AI 목소리 모두 만들기</Btn>}
               </div>
             );
@@ -5310,7 +5366,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         ]} />;
       })()}
       {ratioMenu && <QuickMenu title="화면 비율 — 누르면 바로 바뀌어요" what="화면 비율" x={ratioMenu.x} y={ratioMenu.y} onClose={() => setRatioMenu(null)}
-        items={[...(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => ({ icon: "ratio", iconEl: <RatioBox ratio={r} />, label: `${RATIO_LABEL[r]} (${r})`, desc: r === "9:16" ? "세로 영상 — 쇼츠·릴스·틱톡" : r === "16:9" ? "가로 영상 — 유튜브" : r === "1:1" ? "정사각형 — 피드" : r === "4:5" ? "인스타그램 피드 세로" : "예전 TV 화면 비율", on: project.ratio === r, run: () => setRatio(r) })),
+        items={[...(Object.keys(RATIO_LABEL) as Ratio[]).filter((r) => !(b as { web?: boolean }).web || r === "9:16").map((r) => ({ icon: "ratio", iconEl: <RatioBox ratio={r} />, label: `${RATIO_LABEL[r]} (${r})`, desc: r === "9:16" ? "세로 영상 — 쇼츠·릴스·틱톡" : r === "16:9" ? "가로 영상 — 유튜브" : r === "1:1" ? "정사각형 — 피드" : r === "4:5" ? "인스타그램 피드 세로" : "예전 TV 화면 비율", on: project.ratio === r, run: () => setRatio(r) })),
           { icon: "gear", label: "채우기·자세히", desc: "사진·영상을 화면에 어떻게 채울지 (오른쪽 칸)", run: () => setPanel("ratio") }]} />}
       {/* 클립 아이콘 메뉴 — 메인자막 · 화면전환 (사진·글자·효과음 메뉴와 같은 생김새, 2026-10-21 사장님) */}
       {quick && (() => {
@@ -5819,6 +5875,8 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
       setState(null);
     }
   };
+  // 웹 — 유튜브 쇼츠는 도우미 확장이 유튜브 스튜디오에 채운다 (2026-11-05)
+  if (done && post && (b as { web?: boolean }).web && done.url) return <WebPostDialog project={project} url={done.url} channel={post === "instagram" ? "instagram" : "youtube"} onClose={() => setPost("")} />;
   if (done && post) return <PostDialog project={project} file={done.file} seconds={done.seconds} channel={post} onClose={() => setPost("")} />;
   if (done) {
     return (
@@ -5837,9 +5895,9 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
               <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>내 SNS에 올리기</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Btn onClick={() => setPost("youtube")}><ChannelMark ch="youtube" />유튜브에 올리기</Btn>
-                <Btn onClick={() => setPost("instagram")}><ChannelMark ch="instagram" />인스타그램에 올리기</Btn>
+                <Btn onClick={() => setPost("instagram")}><ChannelMark ch="instagram" />{(b as { web?: boolean }).web ? "인스타그램·스레드·페이스북" : "인스타그램에 올리기"}</Btn>
               </div>
-              <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>AI가 제목·설명을 쓰고, 크롬에서 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요.</div>
+              <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>{(b as { web?: boolean }).web ? "도우미(크롬 확장)가 유튜브·인스타그램 릴스·스레드·페이스북 올리기 화면에 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요." : "AI가 제목·설명을 쓰고, 크롬에서 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요."}</div>
             </div>
           )}
         </div>

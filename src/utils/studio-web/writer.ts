@@ -92,15 +92,22 @@ function toneLine(tone: unknown) {
 }
 
 /* ── 선택지 (앱 blog-writer styles·articleOptions · sns channelInfo · naver designs · youtube options) ── */
-const YT_DEFAULTS = { duration: "short", tone: "news", number: "hangul" };
+// 웹 유튜브 대본 = 60초 쇼츠만 · 말투 기본 릴스·쇼츠 (2026-11-05 사장님: "무조건 60초 · 릴스 쇼츠 스타일", 말투는 고를 수 있게)
+const YT_DEFAULTS = { duration: "short", tone: "reels", number: "digit" }; // 자막은 2017년처럼 숫자로 · 읽을 때는 서버가 한글로 바꿔 읽음 (2026-11-05 사장님)
+const REELS_TONE = { label: "릴스·쇼츠", prompt: "릴스·쇼츠 말투 — 첫 문장에서 바로 눈길을 끄는 한마디로 시작하고, 짧고 리듬감 있는 문장으로 핵심만 빠르게, 친근한 구어체 존댓말(~요). 군더더기·인사말 없이, 마지막은 짧게 행동을 이끄는 한마디" };
+/** 말투 표에 릴스·쇼츠를 넣고(앞에), 길이는 60초 쇼츠만 — 프롬프트(확장 파일)가 같은 표를 읽으므로 거기에 더한다 */
+function webYt(T: Record<string, any>, D: Record<string, any>) {
+  if (!T.reels) T.reels = REELS_TONE;
+  return { tones: [["reels", T.reels] as [string, any], ...Object.entries(T).filter(([k]) => k !== "reels")], durations: Object.entries(D).filter(([k]) => k === "short") };
+}
 function ytOptions(vacancy: any) {
   const L = lib.yt();
   const types = L.gwYtVideoTypes(vacancy || null);
   const table = (t: Record<string, any>, extra: (v: any) => object = () => ({})) => Object.entries(t).map(([id, v]) => ({ id, label: v.label, ...extra(v) }));
   return {
     videoTypes: table(types, (v) => ({ structure: v.structure })),
-    durations: table(L.GW_YT_DURATION, (v) => ({ chars: v.chars, seconds: v.seconds })),
-    tones: table(L.GW_YT_TONE),
+    durations: webYt(L.GW_YT_TONE, L.GW_YT_DURATION).durations.map(([id, v]: [string, any]) => ({ id, label: v.label, chars: v.chars, seconds: v.seconds })),
+    tones: webYt(L.GW_YT_TONE, L.GW_YT_DURATION).tones.map(([id, v]: [string, any]) => ({ id, label: v.label })),
     numbers: table(lib.ytCol().GW_YT_NUMBER),
     defaults: { ...YT_DEFAULTS, videoType: Object.keys(types)[0] },
   };
@@ -126,8 +133,8 @@ function colOptions() {
     imageStyles: table(M.GW_IMAGE_STYLE),
     youtube: {
       videoTypes: table(Y.GW_YT_VIDEO_TYPE, (v) => ({ structure: v.structure })),
-      durations: table(Y.GW_YT_DURATION, (v) => ({ chars: v.chars, seconds: v.seconds })),
-      tones: table(Y.GW_YT_TONE),
+      durations: webYt(Y.GW_YT_TONE, Y.GW_YT_DURATION).durations.map(([id, v]: [string, any]) => ({ id, label: v.label, chars: v.chars, seconds: v.seconds })),
+      tones: webYt(Y.GW_YT_TONE, Y.GW_YT_DURATION).tones.map(([id, v]: [string, any]) => ({ id, label: v.label })),
       numbers: table(Y.GW_YT_NUMBER),
       defaults: { ...YT_DEFAULTS, videoType: Object.keys(Y.GW_YT_VIDEO_TYPE)[0] },
     },
@@ -205,7 +212,7 @@ function colAllPrompt(b: any, source: any) {
   if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen })]);
   if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone)]);
   const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
-  if (want.youtube) parts.push(["youtube", "유튜브 대본", Y.gwBuildYtScriptPrompt({ article: REF, source }, ytSet)]);
+  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", Y.gwBuildYtScriptPrompt({ article: REF, source }, ytSet)]);
   return bundle(parts, { artKind, artLen, blogSt, blogLen, ytSet });
 }
 function bundle(parts: [string, string, string][], settings: Record<string, unknown>) {
@@ -236,7 +243,7 @@ function allPrompt(b: any) {
   if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen })]);
   if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone)]);
   const ytSet = want.youtube ? ytSettings(v, b.youtube || {}) : null;
-  if (want.youtube) parts.push(["youtube", "유튜브 대본", ytPrompt(v, ytSet!, REF)]);
+  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", ytPrompt(v, ytSet!, REF)]);
   const keys = parts.map((p) => p[0]);
   const prompt = [
     `여러 글을 한 번에 씁니다. 아래 [작업 ${parts.map((_, i) => i + 1).join("·")}]을 모두 하십시오.`,
@@ -248,9 +255,14 @@ function allPrompt(b: any) {
   ].join("\n");
   return { prompt, keys, settings: { artKind, artLen, blogSt, blogLen, ytSet } };
 }
+/** 웹 쇼츠 대본 — 군더더기 빼기 (2026-11-05 사장님: "이런 내용을 굳이 넣어야 하나?") · 위 지시와 겹치면 이것이 먼저 */
+const SHORTS_RULES = `[쇼츠 대본 — 위 지시보다 먼저 지킬 것]
+- "계약 전에는 ~을 확인해야 합니다", "등기사항증명서·권리관계·관리비 항목을 확인하세요" 같은 확인할 점·주의 안내 문장은 쓰지 마십시오.
+- "자세한 내용은 영상 설명란(공실뉴스)에서 확인할 수 있습니다" 같은 맺음 안내 문장도 쓰지 마십시오.
+- 매물의 좋은 점과 핵심 조건만 짧게 전하고, 마지막은 문의·방문을 이끄는 짧은 한마디로 끝내십시오.`;
 function ytPrompt(vacancy: any, settings: Record<string, string>, article: any) {
-  const number = lib.ytCol().GW_YT_NUMBER[settings.number] || lib.ytCol().GW_YT_NUMBER.hangul;
-  return `${lib.yt().gwBuildYtScriptPrompt({ vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}`;
+  const number = lib.ytCol().GW_YT_NUMBER.digit; // 웹은 늘 숫자 그대로 (자막 2017년 · 읽기는 서버가 한글로) — 예전에 고른 "한글 읽기"가 남아 있어도
+  return `${lib.yt().gwBuildYtScriptPrompt({ vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}\n\n${SHORTS_RULES}`;
 }
 
 /* 기사·블로그 답 → 제목·부제·문단·키워드 */
@@ -280,7 +292,7 @@ function allParse(b: any) {
   if (keys.includes("article")) { const p = AJ.parse(fence(o.article)); if (p.ok) out.article = docOf(p, col); else miss.push("기사"); }
   if (keys.includes("blog")) { const p = AJ.parse(fence(o.blog)); if (p.ok) out.blog = docOf(p); else miss.push("블로그"); }
   if (keys.includes("sns")) { const p = (col ? lib.nm() : lib.sns()).gwSnsParse(fence(o.sns)); if (p.ok) out.sns = p.posts; else miss.push("SNS"); }
-  if (keys.includes("youtube")) { try { out.youtube = ytOf(fence(o.youtube), col); } catch { miss.push("유튜브 대본"); } }
+  if (keys.includes("youtube")) { try { out.youtube = ytOf(fence(o.youtube), col); } catch { miss.push("쇼츠릴스 대본"); } }
   return { ok: true, ...out, miss };
 }
 

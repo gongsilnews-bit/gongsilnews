@@ -188,7 +188,7 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
     { label: "매물보고서", color: "#5c3b2e", icon: <IconReport />, go: () => openMarketing("report") },
     { label: "유리창홍보지", color: "#2f9e44", icon: <IconFlyer />, go: () => openMarketing("flyer") },
     { label: "포토studio", color: "#7048e8", icon: <IconImage />, go: () => onMenuChange("photo") },
-    { label: "동영상studio", color: "#c2255c", icon: <IconFilm />, go: () => onMenuChange("video"), hide: !b }, // 웹에는 없다
+    { label: b ? "동영상studio" : "쇼츠릴스studio", color: "#c2255c", icon: <IconFilm />, go: () => onMenuChange("video") }, // 웹은 쇼츠릴스studio — 포토studio 옆 (2026-11-05 사장님)
     // 동영상제작 › 강의/영상녹화 (영상 녹화하기 창) — 앱에서만
     // 홈 위에서 바로 녹화 창 — 다 찍으면 동영상studio 편집으로 이어 간다 (2026-10-30 사장님)
     { label: "강의영상녹화", color: "#f08c00", icon: <IconLecture />, hide: !b, go: () => setRecOpen(true) },

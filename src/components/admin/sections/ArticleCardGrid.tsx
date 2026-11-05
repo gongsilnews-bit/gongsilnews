@@ -37,7 +37,7 @@ const ago = (t: number) => {
 };
 
 // 사진 위 채널 아이콘 — 기사는 이미 있으니 기사 탭은 없다 · 글 주소는 도우미가 발행 순간 잡아 온다 (기사 홍보현황 article_promos)
-const ART_CHANNELS = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브 대본"]] as const;
+const ART_CHANNELS = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "쇼츠릴스 대본"]] as const;
 type ArtCh = (typeof ART_CHANNELS)[number][0];
 
 export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword = "", layout = "row", onOpenColumn, onAdd, addLabel = "기사 작성" }: {

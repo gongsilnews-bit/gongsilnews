@@ -1,4 +1,6 @@
 // 영상 편집기 자료 모양 — 앱(studio-app/src/video/project.js)과 같다
+import { webVideoBridge } from "./webBridge";
+
 export type Ratio = "16:9" | "9:16" | "1:1" | "4:5" | "4:3";
 export type Method = "text" | "video" | "longform" | "record" | "audio"; // audio = 오디오로 편집하기 (2026-10-20)
 export type Fill = "cover" | "contain" | "blur";
@@ -581,9 +583,14 @@ export type VideoBridge = {
   onRender: (fn: (text: string, frac: number, jobId?: string, x?: { clip?: string; i?: number; n?: number; dur?: number }) => void) => () => void;
 };
 
+/** 웹 동영상studio — 동영상studio 화면이 열려 있는 동안만 웹 통로를 쓴다 (다른 메뉴는 지금처럼 "앱인가"로 판단, 2026-11-05) */
+let webVideoOn = false;
+export const setWebVideo = (on: boolean) => { webVideoOn = on; };
+export const appVideoBridge = (): VideoBridge | null =>
+  typeof window === "undefined" ? null : ((window as unknown as { gongsilStudio?: { video?: VideoBridge } }).gongsilStudio?.video) || null;
 export const videoBridge = (): VideoBridge | null => {
   if (typeof window === "undefined") return null;
-  return ((window as unknown as { gongsilStudio?: { video?: VideoBridge } }).gongsilStudio?.video) || null;
+  return appVideoBridge() || (webVideoOn ? webVideoBridge() : null);
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);

@@ -496,7 +496,7 @@ export function NewDialog({ onPick, onClose }: { onPick: (m: Method) => void; on
 export function RatioPick({ value, onChange }: { value: Ratio; onChange: (r: Ratio) => void }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-      {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => {
+      {(Object.keys(RATIO_LABEL) as Ratio[]).filter((r) => !(videoBridge() as { web?: boolean } | null)?.web || r === "9:16").map((r) => { // 웹은 9:16 쇼츠만 (2026-11-05)
         const [w, h] = r.split(":").map(Number);
         const s = 40 / Math.max(w, h);
         return (

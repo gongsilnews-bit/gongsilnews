@@ -73,7 +73,9 @@ const REALTY_MENU: MenuItem[] = [
 // 2026-11-04 사장님: "웹메인을 앱과 같이 · 디자인을 똑같이 · 웹에 없는 기능은 넣지 마 (단추도)" — 웹도 이 메뉴. 앱은 앞으로 안 쓴다
 const STUDIO_MENU_ON_WEB = true;
 // 웹 메뉴 — 웹에서 되는 것만 (대본 작성·동영상studio·광고관리는 빼고), 순서 고정 · 메뉴 편집 없음 (편집기에 앱 메뉴가 섞여 있다)
-const WEB_MAIN_KEYS = ["dashboard", "gongsil", "article", "homepage", "marketing", "sns", "photo", "customer"];
+const WEB_MAIN_KEYS = ["dashboard", "gongsil", "article", "homepage", "marketing", "sns", "photo", "video", "customer"]; // 동영상studio 웹 체험판 (2026-11-05 사장님: 브루 웹처럼)
+/** 웹에서만 다른 메뉴 이름 */
+const webLabel = (m: MenuItem): MenuItem => (m.key === "video" ? { ...m, label: "쇼츠릴스studio" } : m);
 const WEB_MORE_KEYS = [...(SHOW_STUDY ? ["study"] : []), "inquiry_board", "point", "manual"];
 const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "홈", icon: <IconDashboard /> },
@@ -178,7 +180,7 @@ function RealtyAdminContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const studioApp = useStudioApp();
   // 동영상제작·이미지제작 편집 화면에서 [«]로 메뉴를 완전히 숨긴 상태 — 위 머리줄도 같이 숨긴다
-  const railGone = ((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing && railHidden;
+  const railGone = (activeMenu === "video" || activeMenu === "photo") && videoEditing && railHidden;
 
   /* 메뉴 구성: 최고관리자 기본값 위에 회원 각자의 구성 (realtyMenu.tsx) */
   const [defaultLayout, setDefaultLayout] = useState<MenuLayout>(FACTORY_LAYOUT);
@@ -187,11 +189,13 @@ function RealtyAdminContent() {
   const [menuDraft, setMenuDraft] = useState<MenuLayout | null>(null);
   const [menuSaving, setMenuSaving] = useState(false);
   const [menuError, setMenuError] = useState("");
+  const [hasMine, setHasMine] = useState(false); // 회원이 메뉴를 고쳐 저장한 적이 있는지 — 없으면 웹은 웹 기본 순서
   useEffect(() => {
     getRealtyMenu().then((r) => {
       const def = normalizeLayout(r.defaultLayout);
       setDefaultLayout(def);
       setMenuLayout(normalizeLayout(r.mine, def));
+      setHasMine(Boolean(r.mine));
       setCanSaveMenu(r.canSaveMine);
     }).catch(() => {});
   }, []);
@@ -202,8 +206,23 @@ function RealtyAdminContent() {
     setMenuSaving(false);
     if (!res.success) return setMenuError(res.error || "저장하지 못했습니다.");
     setMenuLayout(layout ? normalizeLayout(layout, defaultLayout) : defaultLayout);
+    setHasMine(Boolean(layout));
     setMenuDraft(null);
   };
+  // 웹 메뉴 편집 (2026-11-05 사장님: "앱에는 메뉴 편집이 있는데 웹에는 없네") — 웹에서 되는 메뉴만 보여 주고 옮긴다.
+  //  저장은 앱과 같은 한 벌 — 웹에 없는 메뉴(대본 작성·광고관리)는 원래 묶음 끝에 그대로 둔다
+  const WEB_KEYS = [...WEB_MAIN_KEYS, ...WEB_MORE_KEYS];
+  const webLayout: MenuLayout = (() => {
+    if (!hasMine) return { main: [...WEB_MAIN_KEYS], more: [...WEB_MORE_KEYS] };
+    const main = menuLayout.main.filter((k) => WEB_KEYS.includes(k));
+    const more = menuLayout.more.filter((k) => WEB_KEYS.includes(k));
+    for (const k of WEB_KEYS) if (!main.includes(k) && !more.includes(k)) (WEB_MAIN_KEYS.includes(k) ? main : more).push(k);
+    return { main, more };
+  })();
+  const webSave = (draft: MenuLayout) => saveMenu({
+    main: [...draft.main, ...menuLayout.main.filter((k) => !WEB_KEYS.includes(k))],
+    more: [...draft.more, ...menuLayout.more.filter((k) => !WEB_KEYS.includes(k))],
+  });
   // 2026-10-29 사장님: 웹은 공실마케팅 회원이라도 예전 아이콘 메뉴 — 바뀐 화면(심플한 글자 메뉴)은 공실마케팅 앱에서만
   const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
   // 최고관리자는 앱에서도 숨긴 메뉴까지 모두 본다 — 숨긴 메뉴에는 [개발중] 표시 (2026-10-23 사장님)
@@ -467,9 +486,9 @@ function RealtyAdminContent() {
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
       {useStudioMenu ? (
         <StudioSidebar
-          main={(studioApp.isApp ? menuLayout.main.filter(shown) : WEB_MAIN_KEYS).map(menuItem)}
-          more={(studioApp.isApp ? menuLayout.more.filter(shown) : WEB_MORE_KEYS).map(menuItem)}
-          onEditMenu={studioApp.isApp ? () => { setMenuError(""); setMenuDraft(menuLayout); } : undefined}
+          main={(studioApp.isApp ? menuLayout.main.filter(shown).map(menuItem) : webLayout.main.map(menuItem).map(webLabel))}
+          more={(studioApp.isApp ? menuLayout.more.filter(shown).map(menuItem) : webLayout.more.map(menuItem).map(webLabel))}
+          onEditMenu={() => { setMenuError(""); setMenuDraft(studioApp.isApp ? menuLayout : webLayout); }}
           settings={STUDIO_SETTINGS_MENU}
           activeMenu={activeMenu}
           onSelect={selectMenu}
@@ -483,7 +502,7 @@ function RealtyAdminContent() {
           autoCollapse={activeMenu === "marketing" || activeMenu === "video" || activeMenu === "photo"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
           // 영상 편집·이미지 편집 화면에서는 왼쪽 메뉴를 숨길 수 있다 (이미지 편집도 같게 — 2026-10-19 사장님)
           hidden={railGone}
-          onHide={((activeMenu === "video" && studioApp.isApp) || activeMenu === "photo") && videoEditing ? () => setRailHidden(true) : undefined}
+          onHide={(activeMenu === "video" || activeMenu === "photo") && videoEditing ? () => setRailHidden(true) : undefined}
         />
       ) : (
       /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */
@@ -601,10 +620,11 @@ function RealtyAdminContent() {
           {/* 대본 작성 — 앱 전용 (회원 AI · 내 PC 저장, 2026-11-03) */}
           {activeMenu === "write" && studioApp.isApp && memberId && <ScriptSection />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
+          {activeMenu === "video" && !studioApp.isApp && <VideoStudio />} {/* 웹 체험판 — 공실로 자동 만들기 · 1분 내외 (2026-11-05) */}
           {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 스튜디오회원부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
           {activeMenu === "photo" && (studioPaid ? <PhotoStudio menu={null} /> : <ProLock what="포토studio" detail="공실 사진 편집 · 홍보 이미지 디자인 · AI 편집" dark={darkMode} onUpgrade={askUpgrade} />)}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
-          {((activeMenu === "write" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
+          {activeMenu === "write" && !studioApp.isApp && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>
@@ -617,7 +637,7 @@ function RealtyAdminContent() {
               <p style={{ margin: "0 0 16px", fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
                 끌어서 옮기거나 ▲▼·[업무로]/[더보기로] 버튼을 쓰세요. 웹과 PC 앱에 똑같이 적용됩니다. 정보설정은 늘 맨 아래에 있습니다.
               </p>
-              <MenuLayoutEditor theme={theme} value={menuDraft} onChange={setMenuDraft} />
+              <MenuLayoutEditor theme={theme} value={menuDraft} onChange={setMenuDraft} labelOf={studioApp.isApp ? undefined : (k, l) => webLabel({ key: k, label: l } as MenuItem).label} />
               {!canSaveMenu && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>메뉴 저장 준비 중입니다. 지금 바꾼 구성은 저장되지 않습니다.</div>}
               {menuError && <div style={{ marginTop: 12, fontSize: 13, color: "#c53030" }}>{menuError}</div>}
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 18 }}>
@@ -630,7 +650,7 @@ function RealtyAdminContent() {
                     style={{ padding: "10px 16px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textPrimary, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                     취소
                   </button>
-                  <button onClick={() => saveMenu(menuDraft)} disabled={menuSaving || !canSaveMenu}
+                  <button onClick={() => (studioApp.isApp ? saveMenu(menuDraft) : webSave(menuDraft))} disabled={menuSaving || !canSaveMenu}
                     style={{ padding: "10px 18px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", opacity: menuSaving || !canSaveMenu ? 0.6 : 1 }}>
                     {menuSaving ? "저장 중…" : "저장"}
                   </button>

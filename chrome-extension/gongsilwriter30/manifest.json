@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사 & 블로그·SNS·유튜브 작성기",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "오른쪽 작업창에서 공실 매물과 경매·공매 물건을 기사, 블로그·SNS, 유튜브 대본으로 만들고, 공실뉴스 웹에서 네이버 블로그·인스타그램·스레드·페이스북 글쓰기 화면을 채워 줍니다.",
   "icons": {
     "16": "icons/icon16.png",
@@ -129,6 +129,15 @@
       "js": [
         "helper/sns-panel.js",
         "helper/helper-sns.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://studio.youtube.com/*"
+      ],
+      "js": [
+        "helper/helper-youtube.js"
       ],
       "run_at": "document_idle"
     },

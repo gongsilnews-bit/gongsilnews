@@ -7,7 +7,39 @@
 (() => {
   const WEB_TTL = 5 * 60 * 1000;
   const WEB_KEEP = 3 * 60 * 60 * 1000; // 발행 주소를 웹이 가져갈 때까지
-  const TARGETS = ["naver", "instagram", "threads", "facebook"];
+  const TARGETS = ["naver", "instagram", "threads", "facebook", "youtube"];
+
+  /* 영상 파일 맡기기 (2026-11-05 사장님: 웹 쇼츠릴스studio → 유튜브 스튜디오 채우기)
+     영상은 수십 MB 라 일감(storage.session)에 넣지 못한다 — 확장 IndexedDB 에 조각(base64)으로 두고, 유튜브 화면이 조각을 받아 간다 */
+  const VDB = "gs-helper-files";
+  const vdb = () => new Promise((res, rej) => {
+    const r = indexedDB.open(VDB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("chunks");
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  async function vput(key, val) {
+    const d = await vdb();
+    await new Promise((res, rej) => { const t = d.transaction("chunks", "readwrite"); t.objectStore("chunks").put(val, key); t.oncomplete = res; t.onerror = () => rej(t.error); });
+    d.close();
+  }
+  async function vget(key) {
+    const d = await vdb();
+    const v = await new Promise((res, rej) => { const t = d.transaction("chunks", "readonly"); const q = t.objectStore("chunks").get(key); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    d.close();
+    return v;
+  }
+  async function vclear(prefix) {
+    const d = await vdb();
+    await new Promise((res) => {
+      const t = d.transaction("chunks", "readwrite");
+      const st = t.objectStore("chunks");
+      const q = st.openCursor();
+      q.onsuccess = () => { const c = q.result; if (!c) return; if (!prefix || String(c.key).startsWith(prefix)) c.delete(); c.continue(); };
+      t.oncomplete = res; t.onerror = res;
+    });
+    d.close();
+  }
 
   async function jobsGet() {
     try { const { gsWebJobs = {} } = await chrome.storage.session.get("gsWebJobs"); return gsWebJobs; } catch (_) { return {}; }
@@ -38,6 +70,9 @@
       return j ? { ok: true, taken: Boolean(j.taken), done: j.done, published: j.published || "" } : { ok: false };
     }
     if (msg.op === "forget") { delete jobs[msg.id]; await jobsSave(jobs); return { ok: true }; }
+    // 영상 파일 — fileStart(옛 파일 비우기) → fileChunk(i, b64) … → 일감 payload 에 { fileId, fileName, chunks, size }
+    if (msg.op === "fileStart") { await vclear(""); return { ok: true }; }
+    if (msg.op === "fileChunk") { await vput(`${msg.fileId}:${msg.i}`, String(msg.b64 || "")); return { ok: true }; }
     return { ok: false };
   }
 
@@ -55,6 +90,7 @@
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const type = msg && msg.type;
     if (type === "GS_WEB") { webMessage(msg.msg || {}).then(sendResponse, () => sendResponse({ ok: false })); return true; }
+    if (type === "GS_FILE_CHUNK") { vget(`${msg.fileId}:${msg.i}`).then((b64) => sendResponse({ b64: b64 || "" }), () => sendResponse({ b64: "" })); return true; }
     if (type === "GS_CLAIM") { claim(msg.target || "").then((job) => sendResponse({ job }), () => sendResponse({ job: null })); return true; }
     if (type === "GS_DONE") {
       jobsGet().then(async (jobs) => { if (jobs[msg.id]) { jobs[msg.id].done = msg.result || { ok: false }; await jobsSave(jobs); } sendResponse({ ok: true }); });

@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
       { source: '/marketing/guide/:id', destination: '/newsrealty/guide/:id', permanent: false },
       { source: '/marketing/apply', destination: '/newsrealty/pro-apply', permanent: false },
       // 짧은 주소 /pro → 소개의 "PRO가 되면" 부분
-      { source: '/pro', destination: '/newsrealty/pricing#pro', permanent: false }, // 비교표가 금액안내로 옮김 (2026-11-05)
+      { source: '/pro', destination: '/newsrealty#pro', permanent: false }, // 비교표가 메인 맨 아래로 (2026-11-05)
     ];
   },
   async rewrites() {

@@ -339,6 +339,9 @@
       post: ["게시물", "Post"],
       next: ["다음", "Next"],
       caption: ["div[aria-label^='문구']", "div[aria-label^='Write a caption']"],
+      // 자르기 비율 — 영상은 "원본"으로 (세로 쇼츠가 정사각형으로 잘리던 것, 2026-11-05)
+      crop: ["svg[aria-label='자르기 선택']", "svg[aria-label='Select crop']", "svg[aria-label='자르기']", "svg[aria-label='Crop']"],
+      original: ["원본", "Original"],
     },
     facebook: {
       composer: ["무슨 생각을 하고 계신가요", "What's on your mind"],
@@ -451,7 +454,21 @@
     });
   }
   let videoFile = null;
+  /* 웹 쇼츠릴스studio 가 확장에 조각으로 맡긴 영상 (2026-11-05) — bg-web.js GS_FILE_CHUNK */
+  async function chunkFile(j) {
+    const parts = [];
+    for (let i = 0; i < Number(j.chunks || 0); i++) {
+      const c = await send({ type: "GS_FILE_CHUNK", fileId: j.fileId, i });
+      if (!c || !c.b64) throw new Error("영상 조각을 받지 못했어요. 웹에서 다시 눌러 주세요.");
+      const bin = atob(c.b64);
+      const u8 = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
+      parts.push(u8);
+    }
+    return new File(parts, j.fileName || "reels.mp4", { type: "video/mp4" });
+  }
   const files = async () => {
+    if (job.fileId) return [videoFile ||= await chunkFile(job)];
     if (job.video) return [videoFile ||= await fetchFile(job.video)];
     return toFiles(job.photos || []);
   };
@@ -471,6 +488,17 @@
     if (job.video) {
       const ok = await waitFor(() => byText(["확인", "OK"], dialog() || document), 6000);
       if (ok) { click(ok); await sleep(1200); }
+    }
+    // 자르기 단계 — 원래 비율(세로 9:16)로
+    if (job.video) {
+      const cropBtn = await waitFor(() => firstSel(SEL.instagram.crop, dialog() || document), 8000);
+      if (cropBtn) {
+        click(cropBtn);
+        await sleep(700);
+        const orig = await waitFor(() => byText(SEL.instagram.original, dialog() || document), 4000);
+        if (orig) { click(orig); await sleep(900); }
+        else warn("자르기 비율에서 [원본]을 못 찾았어요. 왼쪽 아래 자르기 단추를 눌러 [원본]을 고른 뒤 [다음]을 눌러 주세요.");
+      }
     }
     for (let i = 0; i < 2; i++) {
       const nx = await waitFor(() => byText(SEL.instagram.next, dialog() || document), 20000);
@@ -616,6 +644,7 @@
     }
     if (!(r && r.job)) return;
     job = r.job;
+    if (job.fileId && !job.video) job.video = "web-chunks"; // 영상 일감으로 (인스타 릴스 안내 [확인] 등)
     panel = self.GSPanel.open({
       label: job.label || target,
       texts: texts(),

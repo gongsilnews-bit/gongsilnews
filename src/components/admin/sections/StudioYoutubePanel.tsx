@@ -220,7 +220,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
   return (
     <div>
       <div style={card}>
-        {!result && <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 14 }}>{oneShot ? "유튜브 대본 스타일" : "유튜브 대본 쓰기"}</div>}
+        {!result && <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 14 }}>{oneShot ? "쇼츠릴스 대본 스타일" : "쇼츠릴스 대본 쓰기"}</div>}
         {!result && rows}
         {result && !script && <div style={{ fontSize: 14, color: theme.textSecondary, lineHeight: 1.7 }}>아직 대본을 쓰지 않았어요. 왼쪽에서 형식·길이·말투를 고르고 <b>[✨ 한 번에 쓰기]</b>, 또는 아래 <b>[이 대본만 쓰기]</b>를 누르세요.</div>}
         {!result && <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
@@ -290,7 +290,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
             <button onClick={() => copy(descText, "설명란을 복사했습니다.", "desc")} style={btn()}>설명란 복사</button>
             <button onClick={exportText} style={btn()}>{isWebStudio() ? "텍스트로 내려받기" : "텍스트로 저장"}</button>
             <button onClick={() => void toVideo()} title="동영상제작 › 대본 작성으로 — 이 공실이 골라지고 대본이 칸에 들어가요"
-              style={{ ...btn(), marginLeft: "auto", border: 0, background: "#16a34a", color: "#fff" }}>▶ 이 대본으로 동영상 만들기</button>
+              style={{ ...btn(), marginLeft: "auto", border: 0, background: "#FF0033", color: "#fff" }}>▶ 이 대본으로 동영상 만들기</button>
           </div>
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
           <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>[이 대본으로 동영상 만들기]를 누르면 동영상제작 › 대본 작성 화면에 이 공실과 원고가 들어가요. 거기서 고쳐 쓰고 초안 꾸미기로 넘어가면 돼요.</div>

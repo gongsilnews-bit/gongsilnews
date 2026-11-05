@@ -5,7 +5,8 @@
 import { useInnerHistory } from "@/utils/useInnerHistory";
 import React, { useEffect, useState } from "react";
 import type { LibItem, Method, Project, Recover } from "./types";
-import { errText, isRecover, videoBridge } from "./types";
+import { appVideoBridge, errText, isRecover, setWebVideo, videoBridge } from "./types";
+import WebAutoFlow from "./WebAutoFlow";
 import Editor from "./Editor";
 import TextWizard from "./TextWizard";
 import { AudioFlow, Home, LongformFlow, NewDialog, RecordFlow, VideoFlow, loadPrompter, savePrompter } from "./Flows";
@@ -22,13 +23,18 @@ let lastProject: Project | null = null;
 
 export default function VideoStudio() {
   useStudioTheme(); // 밝은/어두운 화면 (2026-10-23)
+  // 웹 체험판 (2026-11-05 사장님: 브루 웹처럼) — 앱이 아니면 이 화면이 열려 있는 동안 웹 통로(webBridge)를 쓴다
+  const web = typeof window !== "undefined" && !appVideoBridge();
+  if (web) setWebVideo(true);
+  useEffect(() => { if (web) setWebVideo(true); return () => { if (web) setWebVideo(false); }; }, [web]); // 개발 엄격 모드(붙였다 떼기)에도 다시 켠다
   const b = videoBridge();
   const [project, setProject] = useState<Project | null>(null);
   // 뒤로가기 = 편집 화면 → 처음 화면, 앞으로가기 = 그 프로젝트 다시 열기 (저장 안 한 내용은 먼저 묻는다, 2026-11-03 사장님)
   if (project) lastProject = project;
   useInnerHistory("video-edit", Boolean(project), () => setProject(null), () => { if (lastProject) setProject(lastProject); },
     () => (window as unknown as { __gsvGuard?: (next: () => void) => void }).__gsvGuard);
-  const [flow, setFlow] = useState<"" | "new" | Method>("");
+  const [flow, setFlow] = useState<"" | "new" | "auto" | Method>("");
+  const goNew = () => setFlow(web ? "auto" : "new"); // 웹 [새로 만들기] = 공실로 자동 만들기
   const [recorded, setRecorded] = useState<LibItem | null>(null);
   const [recScript, setRecScript] = useState(""); // 녹화할 때 프롬프터로 읽은 대본 → 자막
   const [err, setErr] = useState("");
@@ -43,7 +49,7 @@ export default function VideoStudio() {
     try {
       const v = JSON.parse(sessionStorage.getItem("gs-video-seed") || "null");
       sessionStorage.removeItem("gs-video-seed");
-      if (v && v.vacancyId && Date.now() - (v.at || 0) < 10 * 60 * 1000) { setSeed(v); setResume(null); setFlow("text"); }
+      if (v && v.vacancyId && Date.now() - (v.at || 0) < 10 * 60 * 1000) { setSeed(v); setResume(null); setFlow(web ? "auto" : "text"); } // 웹 — 대본을 들고 공실로 영상 만들기 창으로 (2026-11-05)
       // 홈 [강의영상녹화] — 바로 강의/영상녹화 (2026-10-29 사장님)
       if (sessionStorage.getItem("gs-video-flow") === "record") setFlow("record");
       // 홈에서 [강의영상녹화]로 바로 녹화한 영상 — 받아서 편집으로 이어 간다 (2026-10-30 사장님: 홈 위에서 바로 녹화)
@@ -167,7 +173,8 @@ export default function VideoStudio() {
       savePrompter({ ...loadPrompter(), on: true, text: script });
       setFlow("record");
     }} />
-  ) : flow === "video" ? <VideoFlow onCancel={() => setFlow("")} onDone={done} />
+  ) : flow === "auto" ? <WebAutoFlow seed={seed} onCancel={() => { setFlow(""); setSeed(null); }} onDone={(p) => { setSeed(null); void done(p); }} />
+    : flow === "video" ? <VideoFlow onCancel={() => setFlow("")} onDone={done} />
     : flow === "longform" ? <LongformFlow onCancel={() => setFlow("")} onDone={done} />
     : flow === "audio" ? <AudioFlow onCancel={() => setFlow("")} onDone={done} />
     : flow === "record" && recorded ? <VideoFlow method="record" preset={[recorded]} script={recScript} onCancel={() => { setFlow(""); setRecorded(null); }} onDone={done} />
@@ -176,7 +183,7 @@ export default function VideoStudio() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg }}>
       {project ? (
-        <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={() => setFlow("new")} onOpen={openPick} onSwitch={setProject} />
+        <Editor key={project.dir} initial={project} onHome={() => setProject(null)} onNew={goNew} onOpen={openPick} onSwitch={setProject} />
       ) : (
         <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
           {pageFlow && !menuPeek ? (
@@ -184,7 +191,7 @@ export default function VideoStudio() {
               style={{ width: 18, flexShrink: 0, border: 0, borderRight: `1px solid ${C.line}`, background: C.panel, color: C.sub, cursor: "pointer", fontSize: 14, fontWeight: 800, padding: 0 }}>›</button>
           ) : (
             <div style={{ display: "flex", flexShrink: 0, position: "relative" }}>
-              <VideoMenu view={view} onView={(v) => { if (leaveFlow()) { setView(v); setMenuPeek(false); } }} onMethod={(m) => { if (m === flow) return; if (leaveFlow()) { setFlow(m); setMenuPeek(false); } }} />
+              <VideoMenu web={web} onAuto={() => { if (leaveFlow()) { setFlow("auto"); setMenuPeek(false); } }} view={view} onView={(v) => { if (leaveFlow()) { setView(v); setMenuPeek(false); } }} onMethod={(m) => { if (m === flow) return; if (leaveFlow()) { setFlow(m); setMenuPeek(false); } }} />
               {pageFlow && <button type="button" onClick={() => setMenuPeek(false)} title="메뉴 숨기기" style={{ position: "absolute", right: 6, top: 18, width: 26, height: 26, border: `1px solid ${C.line2}`, borderRadius: 6, background: C.panel, color: C.sub, cursor: "pointer", fontSize: 14, fontWeight: 800 }}>‹</button>}
             </div>
           )}
@@ -201,7 +208,7 @@ export default function VideoStudio() {
               <div style={{ flex: 1, minHeight: 0, display: "flex", maxWidth: 760 }}><MyVoicePane selected={false} onPick={() => {}} /></div>
             </div>
           ) : (
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={() => setFlow("new")} onOpenPick={openPick} onOpen={open} onImported={(p) => take(p)} /></div>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={goNew} onOpenPick={openPick} onOpen={open} onImported={(p) => take(p)} /></div>
           )}
         </div>
       )}

@@ -78,7 +78,7 @@ export function normalizeLayout(layout: Partial<MenuLayout> | null | undefined, 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
 
 /** 업무·더보기 두 줄을 오가며 순서를 바꾸는 편집기 (회원 메뉴 편집·최고관리자 기본값 공용) */
-export function MenuLayoutEditor({ theme, value, onChange }: { theme: Theme; value: MenuLayout; onChange: (v: MenuLayout) => void }) {
+export function MenuLayoutEditor({ theme, value, onChange, labelOf }: { theme: Theme; value: MenuLayout; onChange: (v: MenuLayout) => void; /** 웹 — 이름이 다른 메뉴 (쇼츠릴스studio) */ labelOf?: (key: string, label: string) => string }) {
   const [drag, setDrag] = useState<{ key: string } | null>(null);
 
   const move = (key: string, to: "main" | "more", index?: number) => {
@@ -123,7 +123,7 @@ export function MenuLayoutEditor({ theme, value, onChange }: { theme: Theme; val
               <span style={{ width: 18, height: 18, display: "block", flexShrink: 0 }}>
                 {React.cloneElement(m.icon as React.ReactElement<React.SVGProps<SVGSVGElement>>, { style: { width: 18, height: 18, stroke: theme.textPrimary } })}
               </span>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{m.label}</span>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: theme.textPrimary }}>{labelOf ? labelOf(m.key, m.label) : m.label}</span>
               <button style={btn} onClick={() => step(key, -1)} title="위로">▲</button>
               <button style={btn} onClick={() => step(key, 1)} title="아래로">▼</button>
               {key !== "dashboard" && (

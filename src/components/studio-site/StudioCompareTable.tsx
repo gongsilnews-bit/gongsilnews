@@ -5,7 +5,7 @@ import { ProTag } from "@/components/admin/ProBadge";
 import { useStartHref } from "./useStartHref";
 
 /**
- * 부동산회원 · 공실뉴스부동산 비교표 — 금액안내(/newsrealty/pricing) 가격 칸 아래 (2026-11-05 사장님: 소개 첫 화면에서 금액안내로 옮김)
+ * 부동산회원 · 공실뉴스부동산 비교표 — 소개 첫 화면(/newsrealty) 맨 아래 (2026-11-05 사장님: 금액안내로 옮겼다가 다시 "메인 하단으로")
  * /pro 주소가 여기(#pro)로 온다
  */
 const ACCENT = "#e8890c";

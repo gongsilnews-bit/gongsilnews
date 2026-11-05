@@ -677,6 +677,27 @@ export async function getVacancyByVacancyNo(vacancyNo: number) {
 }
 
 
+/** 경매 관리번호(예: 2026-0700-039502)로 전체에서 찾기 — 지도에 불러온 것 밖의 경매도 (2026-11-05 사장님: 검색 고쳐줘) */
+export async function getAuctionByMngNo(mngNo: string) {
+  const q = String(mngNo || "").trim();
+  if (!/^[\d-]{6,30}$/.test(q)) return { success: false, error: "경매번호 형식이 아니에요." };
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from('vacancies')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .eq('trade_type', '경매')
+      .neq('status', 'DELETED')
+      .ilike('metadata->>cltrMngNo', `%${q}%`)
+      .limit(1)
+      .maybeSingle();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ── 공실 상태 변경 (광고중 ↔ 광고종료, 승인 등) ──
 export async function updateVacancyStatus(vacancyId: string, newStatus: string) {
   const supabase = getAdminClient();

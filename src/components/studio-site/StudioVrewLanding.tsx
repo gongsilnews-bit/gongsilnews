@@ -4,6 +4,7 @@ import React from "react";
 import { useStartHref } from "./useStartHref";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
+import StudioCompareTable from "./StudioCompareTable";
 
 /**
  * 공실뉴스부동산 · PRO 소개 (/newsrealty, 2026-11-04 사장님: 공실마케팅 studio → 공실뉴스부동산 PRO, 영상편집·앱 설치 빼고 웹으로)
@@ -295,13 +296,25 @@ const ART = {
       <path d="M42 15l3 3 5-6" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  // 쇼츠·릴스 편집기 — 세로 화면 안 재생 단추 (2026-11-05 사장님)
+  video: (
+    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+      <rect x="18" y="6" width="28" height="50" rx="5" fill="#fff" stroke="#374151" strokeWidth="3" />
+      <rect x="23" y="13" width="18" height="30" rx="2" fill="#fde68a" />
+      <path d="M29 22v12l10-6z" fill="#e8890c" stroke="#374151" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M26 49h12" stroke="#9ca3af" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="50" cy="14" r="8" fill="#ef4444" />
+      <path d="M47 11v6l5-3z" fill="#fff" />
+    </svg>
+  ),
 };
 
-const MORE = [ // 공실뉴스부동산 5가지 혜택 (2026-11-05 사장님)
+const MORE = [ // 공실뉴스부동산 혜택 (2026-11-05 사장님) — 쇼츠·릴스 편집기 더해 6가지
   { t: "공실등록 20건 · 뉴스 월 4건", d: "광고 공실 20건을 올리고\n내 지역 소식을 공실뉴스 기사로 냅니다.", a: ART.news },
   { t: "AI 매물보고서 · 유리창 홍보지", d: "공실 하나로 손님에게 보낼 보고서와\n사무소 유리창 홍보지를 만듭니다.", a: ART.flyer },
   { t: "물건접수홈페이지", d: "임대인이 물건을 맡기는\n나만의 홈페이지를 엽니다.", a: ART.intake },
   { t: "부동산 디자인 편집 프로그램", d: "포토샵 파일(PSD)까지 여는 편집기로\n홍보 이미지를 직접 만듭니다.", a: ART.design },
+  { t: "쇼츠·릴스 편집기", d: "공실 하나로 60초 쇼츠를 만들고\n유튜브·인스타그램에 바로 올립니다.", a: ART.video },
   { t: "단지 실시간 실거래 알림", d: "찜한 단지에 새 실거래가 뜨면\n바로 알려 드립니다.", a: ART.alert },
 ];
 
@@ -401,7 +414,7 @@ export default function StudioVrewLanding() {
         {/* 7 이것도 돼요 */}
         <section className="sv-sec">
           <h2 className="sv-h2"><span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되시면,<br />부동산마케팅이 쉬워집니다.</h2>
-          <div className="sv-grid five">
+          <div className={`sv-grid${MORE.length % 3 === 2 ? " five" : ""}`}>
             {MORE.map((m) => (
               <div key={m.t} className="sv-card"><div className="ic">{m.a}</div><div className="t">{m.t}</div><div className="d">{m.d}</div></div>
             ))}
@@ -525,6 +538,9 @@ export default function StudioVrewLanding() {
         </section>
       </div>
 
+      {/* 부동산회원 · 공실뉴스부동산 비교표 — 금액안내에서 메인 맨 아래로 (2026-11-05 사장님) */}
+      <StudioCompareTable />
+
       {/* 마지막 — 브루 맨 아래처럼 큰 로고 · 한 줄 · 버튼 (2026-10-26 사장님) */}
       <section id="start" className="sv-sec sv-last" style={{ scrollMarginTop: 80 }}>
         <div className="logo">
@@ -533,7 +549,7 @@ export default function StudioVrewLanding() {
           <span>공실뉴스부동산</span>
           <ProTag size="md" style={{ fontSize: 16, padding: "4px 8px 5px", borderRadius: 4 }} />
         </div>
-        <h2 className="sv-h2">이제 부동산 마케팅의 프로가 되세요</h2>
+        <h2 className="sv-h2">내 지역 · 내 단지 <span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되세요</h2>
         <div className="sv-btns">
           <Link href={START_HREF} className="sv-btn solid">무료로 시작하기</Link>
           <Link href={PRICING_HREF} className="sv-btn line">금액안내 보기</Link>

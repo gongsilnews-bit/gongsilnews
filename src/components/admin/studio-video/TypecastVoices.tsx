@@ -84,6 +84,10 @@ export function ElevenTab(p: { id: string; onPick: (id: string) => void; emotion
   return <ProviderTab provider="el" {...p} />;
 }
 
+/** 웹 일레븐랩스 포인트 안내 — "1자 1P · 이번 달 목소리 전용 3,200P 남음 · 내 포인트 6,675P" */
+const pointsLineOf = (p: { rate: number; balance: number; free?: { left: number } | null }) =>
+  [p.rate === 100 ? "1자 1P" : `100자당 ${p.rate}P`, p.free ? `이번 달 목소리 전용 ${p.free.left.toLocaleString("ko-KR")}P 남음` : "", `내 포인트 ${p.balance.toLocaleString("ko-KR")}P`].filter(Boolean).join(" · ");
+
 function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: Prov; id: string; onPick: (id: string) => void; emotion: string; onEmotion: (e: string) => void }) {
   const b = videoBridge();
   const tc = provider === "tc" ? b?.typecast : b?.eleven;
@@ -101,6 +105,10 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
   const [g, setG] = useState("");
   const [q, setQ] = useState("");
   const [editKey, setEditKey] = useState(false);
+  // 웹 일레븐랩스 = 공실뉴스 계정 · 포인트 (2026-11-05)
+  const elServerMode = provider === "el" && Boolean((b as { web?: boolean } | null)?.web);
+  const [pts, setPts] = useState<{ rate: number; balance: number; admin?: boolean; free?: import("./webVoice").VoiceFree } | null>(null);
+  useEffect(() => { if (elServerMode) void import("./webVoice").then((m) => m.elPoints()).then(setPts).catch(() => {}); }, [elServerMode]);
   const [playing, setPlaying] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
   const [favs, toggleFav] = useVoiceFavs();
@@ -202,9 +210,15 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
       {/* 연결 상태 · 감정 · 거르기 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: `1px solid ${C.line2}`, flexWrap: "wrap" }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "#6ee7b7" }}><Mark />{info.name} 연결됨</span>
+        {/* 웹 일레븐랩스 = 공실뉴스 계정 · 포인트 (2026-11-05 사장님) — 키 단추 대신 포인트 안내 · 최고관리자 [인기 50명 넣기] */}
+        {elServerMode ? (<>
+          <span style={{ fontSize: 13, color: C.dim }}>공실뉴스 계정 · {pts ? pointsLineOf(pts) : "포인트로 써요"}</span>
+          {/* 최고관리자는 아래 [인기 N명 모두 넣기]로 앱과 같은 순위 50명을 공실뉴스 계정에 */}
+        </>) : (<>
         <span style={{ fontSize: 13, color: C.dim }}>키 {st.masked}</span>
         <Btn small onClick={() => setEditKey(true)}>키 바꾸기</Btn>
         <Btn small onClick={async () => { await tc.clear(); setList([]); await load(); }}>연결 끊기</Btn>
+        </>)}
         <Btn small onClick={() => { setBusy("목록 새로 받는 중…"); load(true).catch((e) => setErr(errText(e))).finally(() => setBusy("")); }}>{busy || "목록 새로"}</Btn>
         {/* 인기 순위 성우 모두 넣기 (2026-10-30 사장님: 다 보유하게) */}
         {provider === "el" && b?.eleven?.addRanked && rank.some((x) => !x.mine) && (

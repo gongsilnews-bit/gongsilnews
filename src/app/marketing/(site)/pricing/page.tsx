@@ -1,7 +1,6 @@
 import React from "react";
 import StudioSiteHeader from "@/components/studio-site/StudioSiteHeader";
 import StudioPriceTable from "@/components/studio-site/StudioPriceTable";
-import StudioCompareTable from "@/components/studio-site/StudioCompareTable";
 
 export const metadata = {
   title: "금액안내 | 공실뉴스부동산",
@@ -14,8 +13,7 @@ export default function StudioPricingPage() {
     <div style={{ minHeight: "100vh", backgroundColor: "#ffffff" }}>
       <StudioSiteHeader />
       <StudioPriceTable />
-      {/* 부동산회원 · 공실뉴스부동산 비교표 — 소개 첫 화면에서 옮겨 옴 (2026-11-05 사장님) */}
-      <StudioCompareTable />
+      {/* 비교표는 소개 첫 화면 맨 아래로 다시 옮김 (2026-11-05 사장님: "메인 하단으로") */}
     </div>
   );
 }

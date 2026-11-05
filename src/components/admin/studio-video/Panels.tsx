@@ -956,16 +956,17 @@ function studioAi(): StudioAi | null {
   return g?.ai ? { ...g.ai, open: g.openAiConnect } : null;
 }
 
-export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose, gap, onGap, startMe }: { /** 처음부터 [내 목소리] 탭 (AI 목소리 › AI 내 목소리 만들기) */ startMe?: boolean; /** 문장 사이 쉼 (초) — 편집 화면에서만 */ gap?: number; onGap?: (g: number) => void; project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number; emotion?: string }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words"; emotion?: string }) => Promise<void> | void; onClose: () => void }) {
+export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount = 0, onApply, onClose, gap, onGap, startMe, web }: { /** 웹 — 공실뉴스 일레븐랩스 성우만 (내 목소리·제미나이·타입캐스트 탭 없음, 2026-11-05 사장님) */ web?: boolean; /** 처음부터 [내 목소리] 탭 (AI 목소리 › AI 내 목소리 만들기) */ startMe?: boolean; /** 문장 사이 쉼 (초) — 편집 화면에서만 */ gap?: number; onGap?: (g: number) => void; project?: Project; /** 텍스트로 만들기처럼 프로젝트가 아직 없을 때 */ initial?: { id: string; speed?: number; volume?: number; emotion?: string }; /** 있으면 아래 단추 하나만 (예: "이 목소리로") */ pickLabel?: string; targetCount: number; /** 고른 단어 수 (AI 목소리 클립) — 있으면 [고른 단어만] */ wordCount?: number; onApply: (o: { id: string; speed: number; volume: number; scope: "all" | "selected" | "words"; emotion?: string }) => Promise<void> | void; onClose: () => void }) {
   const cur = initial ?? project?.settings.voice ?? { id: "Charon", speed: 1, volume: 1 };
   const [id, setId] = useState(cur.id);
-  const [speed, setSpeed] = useState(cur.speed || 1);
+  const baseSpeed = web ? 1.25 : 1; // 웹은 1.25배가 기본 (2026-11-05 사장님)
+  const [speed, setSpeed] = useState(cur.speed || baseSpeed);
   const [volume, setVolume] = useState(cur.volume ?? 1);
   const [g, setG] = useState<"all" | "여성" | "남성">("all");
   const [rec, setRec] = useState(false); // 예전 [추천] 탭 — 이제 [제미나이] 하나라 늘 모두
-  const [meTab, setMeTab] = useState(Boolean(startMe) || cur.id === MY_VOICE_ID); // [내 목소리] 탭
+  const [meTab, setMeTab] = useState(!web && (Boolean(startMe) || cur.id === MY_VOICE_ID)); // [내 목소리] 탭
   const [tcTab, setTcTab] = useState(!startMe && isTypecast(cur.id)); // [타입캐스트] 탭 (회원 자기 키)
-  const [elTab, setElTab] = useState(!startMe && isEleven(cur.id)); // [일레븐랩스] 탭 (회원 자기 키)
+  const [elTab, setElTab] = useState(Boolean(web) || (!startMe && isEleven(cur.id))); // [일레븐랩스] 탭 (회원 자기 키)
   const [favs, toggleFav] = useVoiceFavs();
   const [favTab, setFavTab] = useState(false); // [★ 즐겨찾기] 탭
   // 제미나이 성우 = 회원 Gemini API 키 ([AI 설정], 이 PC). null = 아직 모름·앱이 아님 (2026-10-19 사장님: 공실뉴스 서버 Gemini 안 씀)
@@ -1036,13 +1037,13 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
           {/* 위 탭 */}
           <div style={{ display: "flex", gap: 22, padding: "0 18px", borderBottom: `1px solid ${C.line2}` }}>
             {/* 내 목소리 — 맨 앞 (2026-10-19 사장님) */}
-            <button type="button" onClick={() => { setMeTab(true); setTcTab(false); setElTab(false); setFavTab(false); }} style={tab(meTab)}>내 목소리</button>
+            {!web && <button type="button" onClick={() => { setMeTab(true); setTcTab(false); setElTab(false); setFavTab(false); }} style={tab(meTab)}>내 목소리</button>}
             <button type="button" onClick={() => { setFavTab(true); setMeTab(false); setTcTab(false); setElTab(false); }} style={{ ...tab(favTab), color: favTab ? C.text : "#facc15" }}>★ 즐겨찾기{favs.length ? ` ${favs.length}` : ""}</button>
-            {/* 제미나이 성우 — [추천]·[전체]를 하나로 (2026-10-19 사장님) */}
-            <button type="button" onClick={() => { setRec(false); setMeTab(false); setTcTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(!meTab && !tcTab && !elTab && !favTab), display: "inline-flex", alignItems: "center", gap: 6 }}><GeminiMark size={16} />제미나이</button>
+            {/* 제미나이 성우 — [추천]·[전체]를 하나로 (2026-10-19 사장님). 웹은 서버 AI 를 안 써서 뺀다 (2026-11-05) */}
+            {!web && <button type="button" onClick={() => { setRec(false); setMeTab(false); setTcTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(!meTab && !tcTab && !elTab && !favTab), display: "inline-flex", alignItems: "center", gap: 6 }}><GeminiMark size={16} />제미나이</button>}
             {/* 타입캐스트 · 일레븐랩스 — 회원 자기 키 (2026-10-19 사장님) */}
-            <button type="button" onClick={() => { setTcTab(true); setMeTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(tcTab), display: "inline-flex", alignItems: "center", gap: 6 }}><TypecastMark size={16} />타입캐스트</button>
-            <button type="button" onClick={() => { setElTab(true); setMeTab(false); setTcTab(false); setFavTab(false); }} style={{ ...tab(elTab), display: "inline-flex", alignItems: "center", gap: 6 }}><ElevenMark size={16} />일레븐랩스</button>
+            {!web && <button type="button" onClick={() => { setTcTab(true); setMeTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(tcTab), display: "inline-flex", alignItems: "center", gap: 6 }}><TypecastMark size={16} />타입캐스트</button>}
+            <button type="button" onClick={() => { setElTab(true); setMeTab(false); setTcTab(false); setFavTab(false); }} style={{ ...tab(elTab), display: "inline-flex", alignItems: "center", gap: 6 }}><ElevenMark size={16} />{web ? "AI 성우" : "일레븐랩스"}</button>
           </div>
           {meTab && <MyVoicePane selected={id === MY_VOICE_ID} onPick={() => setId(MY_VOICE_ID)} />}
           {tcTab && <TypecastTab id={id} onPick={setId} emotion={emotion} onEmotion={setEmotion} />}
@@ -1162,10 +1163,10 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
               <span style={{ minWidth: 44 }}>{Math.round(volume * 100)}%</span>
             </label>
             <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: C.text }}>
-              빠르기 <input type="range" min={0.7} max={1.6} step={0.1} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: 120, accentColor: C.accent }} />
-              <span style={{ minWidth: 40 }}>{speed.toFixed(1)}배</span>
+              빠르기 <input type="range" min={0.7} max={1.6} step={0.05} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: 120, accentColor: C.accent }} />
+              <span style={{ minWidth: 44 }}>{Number(speed.toFixed(2))}배</span>
             </label>
-            <button type="button" onClick={() => { setSpeed(1); setVolume(1); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
+            <button type="button" onClick={() => { setSpeed(baseSpeed); setVolume(1); }} style={{ border: 0, background: "transparent", color: C.sub, fontSize: 14, fontFamily: FONT, cursor: "pointer" }}>처음대로</button>
             {onGap && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, color: C.text }} title="AI 목소리 클립과 클립 사이 쉬는 시간 (모든 클립)">
                 문장 사이 쉼
@@ -1317,7 +1318,7 @@ export function RatioPanel({ ratio, fill, onRatio, onFill, onClose }: { ratio: R
   return (
     <Side title="화면 비율" onClose={onClose}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: 14 }}>
-        {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => {
+        {(Object.keys(RATIO_LABEL) as Ratio[]).filter((r) => !(videoBridge() as { web?: boolean } | null)?.web || r === "9:16").map((r) => { // 웹은 9:16 쇼츠만 (2026-11-05)
           const [w, h] = r.split(":").map(Number);
           const s = 30 / Math.max(w, h);
           return (
