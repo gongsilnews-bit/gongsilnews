@@ -49,6 +49,8 @@ function decimalPart(s: string) {
 
 export function koReadNumbers(text: string): string {
   let t = String(text || "").replace(/(\d)\.0(?=\s?(평|㎡|m²|층))/g, "$1"); // 31.0평 → 31평 (2026-11-05 사장님)
+  // 부동산 말투 — 억·만 뒤 "원"은 읽지 않는다: 보증금 5,000만 원 → 보증금 오천만 (2026-11-05 사장님: "부동산에 맞게 읽어줘")
+  t = t.replace(/(\d[\d,]*\s?[억만])\s?원/g, "$1");
   // 단위 기호
   t = t.replace(/(\d)\s*(㎡|m²|m2)(?![\w])/gi, "$1 제곱미터").replace(/(\d)\s*㎥/g, "$1 세제곱미터").replace(/(\d)\s*km(?![a-z])/gi, "$1 킬로미터").replace(/(\d)\s*m(?![a-z²\d])/gi, "$1 미터");
   // 전화번호·등록번호 같은 줄 숫자 — 한 자리씩
