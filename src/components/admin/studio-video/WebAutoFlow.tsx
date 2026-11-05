@@ -103,7 +103,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   useEffect(() => {
     let live = true;
     // 공실 없이 — 내 사무소로 위쪽 제목·상호·연락처·표시광고·드론 (2026-11-05 사장님: "제목과 상호와 드론 영상 다 들어가도 됨")
-    if (!vac) { setInfo(null); void getMyVideoBase().then((d) => { if (live) setInfo(d); }).catch(() => {}); return () => { live = false; }; }
+    if (!vac || vac.startsWith("col-")) { setInfo(null); void getMyVideoBase().then((d) => { if (live) setInfo(d); }).catch(() => {}); return () => { live = false; }; }
     (async () => {
       const r = await getVideoVacancy(vac);
       if (!live) return;
@@ -138,8 +138,25 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const assetIds: string[] = [];
       if (vac) {
         setBusy("공실 사진을 불러오는 중…");
-        const r = await b.vacancy(vac).catch(() => ({ photos: [] as { id: string }[] }));
-        for (const ph of r.photos.slice(0, MAX_PHOTOS)) { const a = await b.project.addAsset(ph.id); p.assets[a.id] = a; assetIds.push(a.id); }
+        // 뉴스칼럼(col-…) — 칼럼 "사진·화면"의 사진을 차례로 (2026-11-05 사장님: "사진 화면에 다 넣어줘 쇼츠에서 뉴스칼럼할 때")
+        const col = vac.startsWith("col-") ? await studioBridge<{ column?: { get: (id: string) => Promise<{ captures?: { thumb: string | null; caption: string }[] } | null> } }>()?.column?.get(vac).catch(() => null) : null;
+        const r = col
+          ? { photos: b.photosFrom ? await b.photosFrom((col.captures || []).filter((c) => c.thumb).map((c, i) => ({ url: String(c.thumb), name: c.caption || `사진 ${i + 1}` }))).catch(() => []) : [] }
+          : await b.vacancy(vac).catch(() => ({ photos: [] as { id: string }[] }));
+        for (const ph of r.photos.slice(0, MAX_PHOTOS)) { const a = await b.project.addAsset(ph.id).catch(() => null); if (a) { p.assets[a.id] = a; assetIds.push(a.id); } }
+      }
+      // 사진이 문장보다 모자라면 무료 이미지로 채운다 — 같은 사진 되풀이·빈 화면 없이 (2026-11-05 사장님: "무료 이미지도 넣어줘 · 블랭크가 없게")
+      const need = Math.min(paras.length, MAX_PHOTOS) - assetIds.length;
+      if (need > 0 && b.stock) {
+        setBusy("빈 장면에 넣을 무료 이미지를 찾는 중…");
+        const q = assetIds.length ? "Seoul apartment" : "Seoul city real estate";
+        const res = await b.stock.search(q, "photo", ratio === "9:16" ? "portrait" : "landscape", 1).catch(() => null);
+        const items = (res?.items || []).filter((x) => x.kind === "image").slice(0, need);
+        for (const s of items) {
+          const it = await b.stock.get(p.dir, s).catch(() => null);
+          const a = it ? await b.project.addAsset(it.id).catch(() => null) : null;
+          if (a) { p.assets[a.id] = a; assetIds.push(a.id); }
+        }
       }
       const clips: Clip[] = paras.map((t, i) => ({
         id: uid(), type: "voice", text: ai ? t : "", words: [], voice: null,

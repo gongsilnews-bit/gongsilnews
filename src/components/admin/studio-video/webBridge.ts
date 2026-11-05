@@ -268,6 +268,20 @@ async function vacancy(id: string) {
   return { vacancy: { title: r.data.title, fields: [] as { label: string; value: string }[] }, photos, info: r.data };
 }
 
+/** 주소 사진 → 자료 (뉴스칼럼 "사진·화면" 등, 2026-11-05) */
+async function photosFrom(list: { url: string; name?: string }[]) {
+  const out: LibItem[] = [];
+  for (let i = 0; i < list.length; i++) {
+    const url = list[i].url;
+    if (!url) continue;
+    const { w, h } = await sizeOfImage(url).catch(() => ({ w: 1080, h: 1080 }));
+    const item: LibItem = { id: `u${Date.now().toString(36)}-${i}`, name: list[i].name || `사진 ${i + 1}`, kind: "image", source: "vacancy", fav: false, duration: 0, width: w, height: h, url, thumb: url, ready: true };
+    mem.set(item.id, item);
+    out.push(item);
+  }
+  return out;
+}
+
 const no = () => () => {};
 const renderFns = new Set<(text: string, frac: number, jobId?: string) => void>();
 const cancelled = new Set<string>();
@@ -352,6 +366,7 @@ export function webVideoBridge(): VideoBridge {
       motionScene: async () => { throw new Error("모션그래픽은 공실마케팅 앱에서 쓸 수 있어요."); },
     },
     vacancy,
+    photosFrom,
     // 오픈자료 — 서버 무료 사진·영상 검색(Pexels·Pixabay) · 공실뉴스 드론 (같은 주소, 웹 로그인 쿠키로, 2026-11-05)
     stock: {
       search: async (q: string, type: "photo" | "video" | "drone", orientation: string, page = 1) => {
