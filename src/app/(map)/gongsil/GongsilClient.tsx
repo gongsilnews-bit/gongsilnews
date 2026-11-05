@@ -20,6 +20,7 @@ import GongsilDetailPanel from "./GongsilDetailPanel";
 import VacancyBalloon from "./VacancyBalloon";
 import MyStarsBoard, { MY_DIM } from "./MyStarsBoard";
 import KakaoMapView from "./KakaoMapView";
+import WebCapture from "@/components/capture/WebCapture";
 import GongsilFilterBar from "./GongsilFilterBar";
 import GongsilFilterPanel from "./GongsilFilterPanel";
 import { filterVacancies } from "./filterVacancies";
@@ -2773,6 +2774,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           }}
           onDismiss={() => setSelectedClusterIds(null)}
         />
+        {/* 화면캡처·판서 막대 — 우리 사이트 안에서만 (2026-11-05 사장님) */}
+        <WebCapture />
         <KakaoMapView
           activePills={activePills}
           onSwitchCategory={handleCategoryChange}

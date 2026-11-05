@@ -551,7 +551,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       </>) : (
       <div style={fullDesk ? { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 } : { flex: 1, overflowY: "auto", padding: 24 }}>
       {/* 목록(공실 카드)일 때는 폭 제한 없이 왼쪽부터 — 공실관리와 같이 (2026-10-29 사장님) */}
-      <div style={fullDesk ? { flex: 1, display: "flex", flexDirection: "column", minHeight: 0 } : ((category === "gongsil" || category === "auction") && mode === "list") || ((category === "column" || category === "myvideo") && wideList) ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
+      <div style={fullDesk ? { flex: 1, display: "flex", flexDirection: "column", minHeight: 0 } : ((category === "gongsil" || category === "auction") && mode === "list") || ((category === "column" || category === "myvideo") && wideList) || category === "free" ? { maxWidth: "none", margin: 0 } : { maxWidth: 980, margin: "0 auto" }}>
         <div style={{ display: fullDesk ? "none" : "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
             {((category === "gongsil" && mode === "list") || (category === "column" && wideList)) && (
               <div style={{ display: "flex", padding: 3, gap: 2, borderRadius: 10, background: theme.darkMode ? "#2c2d31" : "#f1f3f5", marginLeft: 6 }}>
@@ -579,14 +579,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         </div>
 
         {category === "free" && (
-          <StudioFreeWrite theme={theme} onOpenColumn={(id) => {
+          <StudioFreeWrite theme={theme} onOpenColumn={(id, tab) => {
             try {
               localStorage.setItem("studio_last_column", id); localStorage.setItem("studio_open_column", "1");
               // 자유 글은 기사를 처음엔 끈다 — 뉴스 기사는 [뉴스 기사로 보내기]로
               const k = "gs-allwrite:column"; const v = JSON.parse(localStorage.getItem(k) || "{}");
               localStorage.setItem(k, JSON.stringify({ ...v, article: { kind: "news", length: "normal", ...(v.article || {}), on: false } }));
             } catch {}
-            setColumnTab("blog");
+            setColumnTab(tab || "blog");
             setCategory("column");
           }} />
         )}

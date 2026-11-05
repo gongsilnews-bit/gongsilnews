@@ -295,7 +295,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
             onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
           {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}
           {/* 웹 — 자유 글쓰기로 만든 글도 여기서 다시 연다 (2026-11-05) */}
-          {recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
+          {!isWebStudio() && recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
             <div style={{ marginTop: 28 }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{isWebStudio() ? "자유 글쓰기로 만든 글" : "다른 뉴스·주제로 만든 칼럼"}</div>
               <WorkCardGrid theme={theme} variant="article" addLabel={isWebStudio() ? "자유 글쓰기" : "새로 만들기"} onAdd={isWebStudio() ? () => { try { localStorage.setItem("studio_news_category", "free"); } catch {} window.location.reload(); } : openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}

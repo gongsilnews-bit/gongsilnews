@@ -6,17 +6,30 @@
  *  다 쓰면  [이 글로 블로그·SNS·대본 만들기] → 뉴스칼럼 작업 화면(이 글이 소재, 사진도 함께)
  *          [뉴스 기사로 보내기] → 기사쓰기에 제목·본문·사진을 채워서 (기사 한도는 등록할 때만)
  */
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ArticleAiTool, { type ArticleDraft } from "../writing/ArticleAiTool";
 import { studioBridge } from "../studio-web";
+import WorkCardGrid, { LinkNotice, type WorkCard } from "./WorkCardGrid";
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Photo = { url: string; caption: string };
-type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }> } };
+type Col = { id: string; label: string; createdAt: string; source: { mode: string; topic?: { subject?: string; memo?: string } }; thumb?: string | null; done?: Record<string, boolean> };
+type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]> } };
+const shortDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
 
-export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme; /** 만든 칼럼을 뉴스칼럼에서 연다 */ onOpenColumn: (id: string) => void }) {
+export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme; /** 만든 칼럼을 뉴스칼럼에서 연다 (tab — 그 채널부터) */ onOpenColumn: (id: string, tab?: string) => void }) {
   const router = useRouter();
+  // 처음엔 목록 — [+ 새로 만들기] + 자유 글쓰기로 쓴 글 카드 (2026-11-05 사장님: "자유글쓰기도 이런 형식으로", 뉴스칼럼과 같이)
+  const [view, setView] = useState<"list" | "write">("list");
+  const [cards, setCards] = useState<WorkCard[] | null>(null);
+  useEffect(() => {
+    if (view !== "list") return;
+    studioBridge<Bridge>()?.column.list(200).then((l) => setCards(l.filter((c) => c.source?.mode === "topic").map((c) => ({
+      id: c.id, badge: "내 글", date: shortDay(c.createdAt), title: c.label || c.source.topic?.subject || "자유 글", line1: `${String(c.source.topic?.memo || "").length.toLocaleString("ko-KR")}자`,
+      thumb: c.thumb || null, done: c.done,
+    })))).catch(() => setCards([]));
+  }, [view]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -54,6 +67,16 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
     router.push(`?menu=article&action=write&studioDraft=${id}&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false });
   };
 
+  if (view === "list") return (
+    <div>
+      <LinkNotice darkMode={Boolean(theme.darkMode)} />
+      <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" cards={cards}
+        onAdd={() => { setTitle(""); setBody(""); setPhotos([]); setErr(""); setView("write"); }}
+        onOpen={(id, tab) => onOpenColumn(id, tab === "article" ? "blog" : tab)}
+        placeholder={<span style={{ fontSize: 30 }}>✍</span>} empty="아직 쓴 글이 없어요. [새로 만들기]로 첫 글을 써 보세요." />
+    </div>
+  );
+
   const input: React.CSSProperties = { width: "100%", boxSizing: "border-box", padding: "11px 14px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 15, background: theme.cardBg, color: theme.textPrimary, fontFamily: "inherit" };
   return (
     <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
@@ -62,7 +85,10 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
       </aside>
       {/* data-ai-dock — AI 창(ChatGPT·Gemini)이 이 칸 위에 작은 창으로 뜬다 (큰 새 탭 대신, 2026-11-05 사장님) */}
       <div data-ai-dock="" style={{ flex: 1, minWidth: 0, background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 12, padding: "22px 26px" }}>
-        <h2 style={{ margin: "0 0 18px", fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>자유 글쓰기</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 0 18px" }}>
+          <button onClick={() => setView("list")} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← 목록으로</button>
+          <h2 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>자유 글쓰기</h2>
+        </div>
         <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 6 }}>제목</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목을 입력하세요" style={input} />
         <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: theme.textPrimary, margin: "18px 0 6px" }}>본문</label>

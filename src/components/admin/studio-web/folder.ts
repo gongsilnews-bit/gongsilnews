@@ -12,7 +12,7 @@
  */
 
 export const ROOT_NAME = "공실뉴스";
-export const F = { sns: "01 뉴스SNS발행", mkt: "02 보고서홍보지", photo: "04 포토studio", video: "05 동영상studio" } as const; // video — 웹 동영상studio 내보내기 (2026-11-05)
+export const F = { sns: "01 뉴스SNS발행", mkt: "02 보고서홍보지", photo: "04 포토studio", video: "05 동영상studio", capture: "07 화면캡쳐" } as const; // capture — 웹 화면캡처 막대 (2026-11-05) // video — 웹 동영상studio 내보내기 (2026-11-05)
 export type FolderKey = keyof typeof F;
 
 type Dir = any; // FileSystemDirectoryHandle (브라우저마다 타입이 달라 any)
