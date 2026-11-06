@@ -52,10 +52,10 @@ const KINDS = [
   // 더 다양하게 (2026-11-03 사장님 "기사 스타일을 조금 더 다양하게, 지금은 딱 2개")
   { id: "data", name: "숫자로 보는", prompt: "재료의 숫자(가격·면적·거래 건수·기간)를 앞세운 데이터 브리핑 기사. 문단마다 핵심 숫자 하나를 중심에 두고, 숫자가 뜻하는 바를 짧게 풀어 쓴다. 재료에 없는 숫자는 쓰지 않는다.", heads: true },
   { id: "qa", name: "질문·답변(Q&A)", prompt: "독자가 궁금해할 질문을 소제목으로 세우고(예: \"지금 시세는 얼마인가?\"), 그 아래에 재료에 근거한 답을 쓴다. 질문은 4~6개.", heads: true },
-  { id: "check", name: "체크포인트", prompt: "계약·투자 전에 확인할 점을 번호 붙은 소제목(1. 2. 3.)으로 정리하는 실용 기사. 항목마다 왜 중요한지와 재료 속 근거를 쓴다.", heads: true },
+  // 체크포인트는 뺌 — "확인할 점"을 쓰는 형식이라 가르치는 말 금지 원칙과 부딪침 (2026-11-06)
   { id: "compare", name: "비교 분석", prompt: "면적·시기·거래 유형(매매/전세)·주변과 비교하며 차이를 짚는 분석 기사. 비교 축마다 소제목을 두고 수치 차이를 분명하게 쓴다.", heads: true },
   { id: "column", name: "칼럼·해설", prompt: "현장 전문가가 쓰는 칼럼. 사실을 바탕으로 시장의 흐름과 의미를 해설하고, 마지막에 독자에게 줄 조언으로 맺는다. 근거 없는 전망·단정은 하지 않는다." },
-  { id: "brief", name: "짧은 단신", prompt: "핵심 사실만 담은 짧은 단신 기사. 첫 문장에 누가·어디서·무엇을·얼마에를 담고, 2~3문단으로 끝낸다." },
+  // 짧은 단신은 뺌 (2026-11-06 사장님: "단신은 없애고")
 ];
 const TONES = [
   { id: "report", name: "보도형", desc: "사실 중심, 건조하게", prompt: "사실을 먼저, 건조하고 정확하게. 형용사·감탄 없이." },
@@ -812,17 +812,9 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
         <div>{head(n++, "기사 스타일")}
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{KINDS.map((k) => <button key={k.id} type="button" onClick={() => setKind(k.id)} title={k.prompt} style={chip(kind === k.id)}>{k.name}</button>)}</div>
         </div>
-        <div>{head(n++, <>문체 {dim("(선택)")}</>)}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
-            {TONES.map((t) => (
-              <button key={t.id} type="button" onClick={() => setTone(tone === t.id ? "" : t.id)} title={t.prompt}
-                style={{ ...chip(tone === t.id), height: "auto", padding: "7px 9px", textAlign: "left", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1 }}>
-                <span>{t.name}</span><span style={{ fontSize: 11, fontWeight: 600, opacity: 0.75 }}>{t.desc}</span>
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 7, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: SUB, marginRight: 3 }}>제목</span>
+        {/* [문체] 줄은 없앴다 — 기사 스타일과 겹치고, 말투는 원칙(지역 부동산 전문가)으로 정해져 있음 (2026-11-06 사장님: "하나로 통일해줘") */}
+        <div>{head(n++, <>제목 {dim("(선택)")}</>)}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
             {HOOKS.map((h) => <button key={h.id} type="button" onClick={() => setHook(hook === h.id ? "" : h.id)} title={h.prompt} style={{ ...chip(hook === h.id), height: 28, padding: "0 9px", fontSize: 12.5 }}>{h.name}</button>)}
           </div>
         </div>

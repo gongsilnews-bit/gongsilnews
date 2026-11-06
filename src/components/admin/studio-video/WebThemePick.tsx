@@ -46,7 +46,13 @@ function hexA(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled }: {
+/* 테마 분류 탭 (2026-11-06 사장님: "테마를 3종류로 — 공실소개 · 단지소개 · 뉴스칼럼") — 기본 테마만 나누고, 내 테마는 어느 탭에서나 */
+export type ThemeCat = "vacancy" | "complex" | "column";
+export const THEME_CATS: [ThemeCat, string][] = [["vacancy", "공실소개"], ["complex", "단지소개"], ["column", "뉴스칼럼"]];
+const CAT_OF: Record<string, ThemeCat> = { navy: "vacancy", impact: "vacancy", fresh: "vacancy", premium: "complex", news: "column" };
+export const catOfTheme = (id: string): ThemeCat => CAT_OF[id] || "vacancy";
+
+export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled, cat: catProp }: {
   theme: ShortsTheme;
   onTheme: (t: ShortsTheme, fromTile: boolean) => void;
   photo: string;
@@ -58,6 +64,8 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
   onVoiceOn: (on: boolean) => void;
   onPickVoice: () => void;
   disabled?: boolean;
+  /** 처음 탭 — 대본이 어디서 왔는지로 (공실 → 공실소개, 뉴스칼럼·자유 글 → 뉴스칼럼) */
+  cat?: ThemeCat;
 }) {
   const [mine, setMine] = useState<(ShortsTheme | null)[]>(() => Array.from({ length: MY_THEME_SLOTS }, () => null));
   const [base, setBase] = useState(theme.id); // 고른 칸 (고치면 theme 만 바뀌고 base 는 그대로)
@@ -81,7 +89,19 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
     au.current = a;
     setPlaying(url);
   };
-  const tiles = [...bases, ...mine];
+  const [cat, setCat] = useState<ThemeCat>(catProp || catOfTheme(theme.id));
+  const catBases = bases.filter((t) => catOfTheme(t.id) === cat);
+  // 대본 종류가 바뀌면 그 탭으로 — 고른 테마가 그 탭에 없으면 탭의 첫 테마로
+  useEffect(() => {
+    if (!catProp) return;
+    setCat(catProp);
+    if (!theme.mine && catOfTheme(theme.id) !== catProp) { const f = bases.find((t) => catOfTheme(t.id) === catProp); if (f) { setBase(f.id); onTheme(f, true); } }
+  }, [catProp]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickCat = (c: ThemeCat) => {
+    setCat(c);
+    if (!theme.mine && catOfTheme(theme.id) !== c) { const f = bases.find((t) => catOfTheme(t.id) === c); if (f) { setBase(f.id); setOpen(""); onTheme(f, true); } }
+  };
+  const tiles = [...catBases, ...mine];
   const baseT = tiles.find((t) => t && t.id === base) as ShortsTheme | undefined;
   const changed = Boolean(baseT) && JSON.stringify({ ...baseT, id: "", name: "", mine: false }) !== JSON.stringify({ ...theme, id: "", name: "", mine: false });
   const v = (voices || []).find((x) => x.id === voiceId);
@@ -112,13 +132,21 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
 
   return (
     <div style={{ fontFamily: FONT }}>
+      {/* 분류 탭 — 공실소개 · 단지소개 · 뉴스칼럼 */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {THEME_CATS.map(([k, l]) => {
+          const on = cat === k;
+          return <button key={k} type="button" disabled={disabled} onClick={() => pickCat(k)}
+            style={{ height: 34, padding: "0 16px", borderRadius: 17, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.sub, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>{l}</button>;
+        })}
+      </div>
       {/* 테마 칸 — 누르면 성우·자막·음악까지 한 번에 */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${SHORTS_THEMES.length}, ${W}px)`, columnGap: 12, rowGap: 10, justifyContent: "space-between", paddingBottom: 4 }}>
         {tiles.flatMap((t, i) => [
-          i === SHORTS_THEMES.length ? <div key="myhead" style={{ gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: C.sub, marginTop: 6 }}>내 테마 <span style={{ fontWeight: 600, color: C.dim, fontSize: 12.5 }}>— 아래에서 고친 뒤 [내 테마로 저장] (3개까지)</span></div> : null,
+          i === catBases.length ? <div key="myhead" style={{ gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: C.sub, marginTop: 6 }}>내 테마 <span style={{ fontWeight: 600, color: C.dim, fontSize: 12.5 }}>— 아래에서 고친 뒤 [내 테마로 저장] (3개까지)</span></div> : null,
           (() => {
           if (!t) {
-            const n = i - SHORTS_THEMES.length + 1;
+            const n = i - catBases.length + 1;
             return (
               <div key={`empty${i}`} title="아래에서 성우·자막·음악을 바꾼 뒤 [내 테마로 저장]을 누르면 여기에 들어가요" style={{ width: W }}>
                 <div style={{ width: W, height: mine.some(Boolean) ? Math.round((W * 16) / 9) : 84, borderRadius: 8, border: `1.5px dashed ${C.line2}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: C.dim, fontSize: 11.5, textAlign: "center", lineHeight: 1.4 }}>
@@ -140,7 +168,7 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
                 style={{ position: "absolute", right: 8, top: 8, width: 28, height: 28, borderRadius: 14, border: 0, background: "rgba(0,0,0,0.55)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
                 {playing === t.music ? <span style={{ width: 7, height: 7, background: "#fff" }} /> : <Icon name="play" size={11} />}
               </button>
-              {t.mine && <button type="button" onClick={() => remove(i - SHORTS_THEMES.length)} title="내 테마 지우기"
+              {t.mine && <button type="button" onClick={() => remove(i - catBases.length)} title="내 테마 지우기"
                 style={{ position: "absolute", right: 6, bottom: 30, width: 20, height: 20, borderRadius: 10, border: 0, background: "rgba(0,0,0,0.55)", color: "#fff", cursor: "pointer", fontSize: 12, lineHeight: "20px", padding: 0 }}>×</button>}
               <div style={{ fontSize: 13.5, fontWeight: on ? 800 : 600, color: on ? C.text : C.sub, textAlign: "center", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
             </div>
