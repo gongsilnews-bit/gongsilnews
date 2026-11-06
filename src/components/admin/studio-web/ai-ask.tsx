@@ -32,7 +32,7 @@ export const setWebAiId = (id: string) => {
  *  결과 칸이 없는 화면(보고서 등)은 화면 오른쪽 60%. 화면 좌표는 크롬 확대(%)를 셈해서 맞춘다
  */
 type Dock = { x: number; y: number; w: number; h: number }; // 페이지 안 (CSS px)
-function dockArea(): Dock {
+export function dockArea(): Dock {
   const el = document.querySelector("[data-ai-dock]") as HTMLElement | null;
   const r = el && el.offsetParent !== null ? el.getBoundingClientRect() : null;
   if (r && r.width > 320 && r.height > 300) return { x: r.left, y: r.top, w: r.width, h: r.height };

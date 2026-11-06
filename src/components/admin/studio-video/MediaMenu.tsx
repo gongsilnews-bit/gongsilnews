@@ -483,12 +483,17 @@ export function SoundMenu({ title, x, y, scope, selCount, allCount, onScope, mut
             </div>
           </>
         )}
-        {onVoice && !lenOnly && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
-          <Icon name="voice" size={16} />AI 목소리 바꾸기<Icon name="chevron" size={14} color={C.sub} />
-        </button>}
-        {onRedo && !lenOnly && <button type="button" onClick={() => { onRedo(); onClose(); }} title="이 목소리를 새로 만들어요 (마음에 안 들면 몇 번이든)" style={{ ...rowStyle, marginTop: 6, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
-          <Icon name="redo" size={16} />목소리 다시 만들기
-        </button>}
+        {/* 두 버튼 한 줄 (2026-11-06 사장님: "버튼 지금 2줄인데 1줄로") */}
+        {(onVoice || onRedo) && !lenOnly && (
+          <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+            {onVoice && <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, flex: 1, minWidth: 0, padding: "0 6px", gap: 4, fontSize: 13, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text, whiteSpace: "nowrap" }}>
+              <Icon name="voice" size={15} />AI 목소리 바꾸기
+            </button>}
+            {onRedo && <button type="button" onClick={() => { onRedo(); onClose(); }} title="이 목소리를 새로 만들어요 (마음에 안 들면 몇 번이든)" style={{ ...rowStyle, flex: 1, minWidth: 0, padding: "0 6px", gap: 4, fontSize: 13, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text, whiteSpace: "nowrap" }}>
+              <Icon name="redo" size={15} />목소리 다시 만들기
+            </button>}
+          </div>
+        )}
         <div style={{ fontSize: 11.5, color: C.dim, marginTop: 6 }}>{lenOnly ? "볼륨·빠르기는 위 소리 칩에서 · Esc 로 닫기" : "길이는 오른쪽 클립 시간을 눌러서 · Esc 로 닫기"}</div>
       </div>
     </>

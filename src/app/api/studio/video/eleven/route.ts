@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getExtensionMember, trialMonth, type ExtensionMember } from "@/utils/extensionMember";
+import { getExtensionMember } from "@/utils/extensionMember";
 import { RANK_KO } from "@/lib/studio-video/elevenRank";
 import { koReadNumbers } from "@/lib/studio-video/koNumber";
 
 /**
  * 웹 동영상studio AI 목소리 — 공실뉴스 일레븐랩스 계정 하나를 모든 회원이 (2026-11-05 사장님: "회원 모두 내 계정을 사용할 수 있게 · 포인트로")
  *  키는 서버에만 (ELEVENLABS_API_KEY). 회원은 쓴 만큼 포인트가 빠진다 — 1자 1P (point_settings.ai_voice_per_100, 없으면 100)
- *  공실뉴스부동산은 매달 목소리 전용 5,000P 를 먼저 쓴다
+ *  포인트는 통합 — 회원 잔액 하나에서 빠진다 (2026-11-06, 목소리 전용 따로 주머니 없앰)
  *  GET                       → { voices, rate, balance }  (공실뉴스 계정의 성우, 한국어 먼저)
  *  POST { text, voiceId, emotion?, prev?, next? } → mp3 (포인트를 먼저 확인하고, 만들어진 뒤에만 뺀다)
  *  POST { action: "popular", n: 50 } (최고관리자) → 보이스 라이브러리 한국어 인기 성우를 계정에 넣기
@@ -39,20 +39,23 @@ async function rate() {
   const v = Number(data?.value);
   return Number.isFinite(v) && v >= 0 ? v : 100;
 }
-/** 공실뉴스부동산 회원 — 매달 목소리 전용 5,000P (2026-11-05 사장님). 목소리에만 쓰이고 보내기·다른 곳엔 못 쓴다 */
-const VOICE_FREE = 5000;
-const isPaid = (m: ExtensionMember) => m.canBlog; // admin · news_premium · study_premium
-/** 이번 달(한국 시간) 쓴 목소리 전용 포인트 — 기록 이유 "… · 목소리 전용 NP" 를 더한다 */
-async function freeUsed(memberId: string) {
-  const ym = trialMonth();
-  const start = new Date(`${ym}-01T00:00:00+09:00`).toISOString();
-  const { data } = await db().from("point_transactions").select("reason").eq("member_id", memberId).gte("created_at", start).like("reason", "AI 목소리%목소리 전용%");
-  return (data || []).reduce((t, r) => t + (Number(/목소리 전용 (\d+)P/.exec(String(r.reason))?.[1]) || 0), 0);
-}
-async function freeOf(m: ExtensionMember) {
-  if (!isPaid(m)) return null;
-  const used = await freeUsed(m.id);
-  return { limit: VOICE_FREE, used, left: Math.max(0, VOICE_FREE - used) };
+/* 포인트는 통합 — 잔액 하나 (2026-11-06 사장님: "포인트는 통합으로 관리하자", "목소리 보이스만 포인트에 적용").
+ *  예전 "공실뉴스부동산 매달 목소리 전용 5,000P" 따로 주머니는 없앴다. 목소리는 회원 포인트 잔액에서 바로 빠진다.
+ *  docs/2026-11-06_point_system_review.md */
+
+/** 잔액에서 cost 만큼 빼기 — 읽은 잔액이 그대로일 때만 쓴다(동시에 여러 문장이 와도 덜 빠지지 않게). 모자라면 null */
+async function spend(memberId: string, cost: number): Promise<number | null> {
+  const s = db();
+  for (let i = 0; i < 8; i++) {
+    const { data: m } = await s.from("members").select("point_balance").eq("id", memberId).maybeSingle();
+    const bal = Number(m?.point_balance) || 0;
+    if (bal < cost) return null;
+    if (cost <= 0) return bal;
+    const { data: done } = await s.from("members").update({ point_balance: bal - cost }).eq("id", memberId).eq("point_balance", bal).select("id");
+    if (done && done.length) return bal - cost;
+    await new Promise((r) => setTimeout(r, 30 + Math.random() * 120)); // 다른 문장이 먼저 뺐다 — 다시 읽고 다시
+  }
+  throw new Error("포인트 처리가 몰렸어요. 잠시 뒤 다시 해 주세요.");
 }
 // 글자 수만큼 (100자당 r → 1자당 r/100, 올림) — 문장마다 100자 값을 다 받으면 짧은 문장이 많은 쇼츠가 너무 비싸다 (2026-11-05 사장님: "목소리가 엄청 들어갔네")
 const costOf = (text: string, r: number) => (r <= 0 ? 0 : Math.max(1, Math.ceil((text.length * r) / 100)));
@@ -119,8 +122,8 @@ export async function GET(req: NextRequest) {
       const mine = await voiceList(k, Boolean(req.nextUrl.searchParams.get("fresh")));
       return NextResponse.json({ success: true, ranked: await rankedList(k, mine) }, { headers: { "Cache-Control": "no-store" } });
     }
-    const [voices, r, bal, free] = await Promise.all([voiceList(k, Boolean(req.nextUrl.searchParams.get("fresh"))), rate(), db().from("members").select("point_balance, role").eq("id", member.id).maybeSingle(), freeOf(member)]);
-    return NextResponse.json({ success: true, voices, rate: r, balance: Number(bal.data?.point_balance) || 0, admin: bal.data?.role === "ADMIN", free }, { headers: { "Cache-Control": "no-store" } });
+    const [voices, r, bal] = await Promise.all([voiceList(k, Boolean(req.nextUrl.searchParams.get("fresh"))), rate(), db().from("members").select("point_balance, role").eq("id", member.id).maybeSingle()]);
+    return NextResponse.json({ success: true, voices, rate: r, balance: Number(bal.data?.point_balance) || 0, admin: bal.data?.role === "ADMIN", free: null }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return NextResponse.json({ success: false, error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
@@ -200,11 +203,8 @@ export async function POST(req: NextRequest) {
   const s = db();
   const { data: m } = await s.from("members").select("point_balance").eq("id", member.id).maybeSingle();
   const bal = Number(m?.point_balance) || 0;
-  // 목소리 전용 포인트를 먼저, 모자라면 일반 포인트에서
-  const free = await freeOf(member);
-  const fromFree = Math.min(cost, free?.left || 0);
-  const fromBal = cost - fromFree;
-  if (bal < fromBal) return NextResponse.json({ success: false, error: `포인트가 모자라요. 이 문장은 ${cost}P (1자 ${r0 / 100}P)${free ? `, 이번 달 목소리 전용 ${free.left.toLocaleString("ko-KR")}P` : ""}, 남은 포인트 ${bal.toLocaleString("ko-KR")}P예요.`, points: true }, { status: 402 });
+  const short = (b: number) => NextResponse.json({ success: false, error: `포인트가 모자라요. 이 문장은 ${cost}P (1자 ${r0 / 100}P), 남은 포인트 ${b.toLocaleString("ko-KR")}P예요.`, points: true }, { status: 402 });
+  if (bal < cost) return short(bal);
   const em = String(body.emotion || "normal");
   const r = await fetch(`${API}/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
     method: "POST",
@@ -213,9 +213,15 @@ export async function POST(req: NextRequest) {
   });
   if (!r.ok) return NextResponse.json({ success: false, error: errOf(r.status, await r.json().catch(() => null)) }, { status: 502 });
   const audio = await r.arrayBuffer();
-  // 만들어진 뒤에만 포인트를 뺀다
-  const left = bal - fromBal;
-  if (fromBal) await s.from("members").update({ point_balance: left }).eq("id", member.id);
-  await s.from("point_transactions").insert({ member_id: member.id, type: "SPEND", amount: fromBal, reason: `AI 목소리 ${text.length}자${fromFree ? ` · 목소리 전용 ${fromFree}P` : ""}`, balance_after: left });
-  return new NextResponse(audio, { headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", "X-Points-Left": String(left), "X-Points-Cost": String(cost), ...(free ? { "X-Voice-Free-Left": String(free.left - fromFree) } : {}) } });
+  // 만들어진 뒤에만 포인트를 뺀다 — 잔액 하나에서
+  let left: number | null;
+  try { left = await spend(member.id, cost); } catch (e) { return NextResponse.json({ success: false, error: e instanceof Error ? e.message : String(e) }, { status: 503 }); }
+  if (left === null) {
+    const { data: m2 } = await s.from("members").select("point_balance").eq("id", member.id).maybeSingle();
+    return short(Number(m2?.point_balance) || 0);
+  }
+  // 묶음 번호(reference_id) — 한 번 만들기의 문장들을 포인트 화면이 1줄로 합쳐 보여 준다 (장부는 문장마다 1줄 그대로)
+  const batch = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(body.batch || "")) ? String(body.batch) : null;
+  if (cost > 0) await s.from("point_transactions").insert({ member_id: member.id, type: "SPEND", amount: cost, reason: `AI 목소리${body.edit ? " 수정" : ""} ${text.length}자`, balance_after: left, reference_id: batch }); // 고쳐 만든 목소리는 "수정" (2026-11-06 사장님)
+  return new NextResponse(audio, { headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", "X-Points-Left": String(left), "X-Points-Cost": String(cost) } });
 }

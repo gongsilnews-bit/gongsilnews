@@ -7,7 +7,7 @@
  *  디자인은 대본 작성과 같은 톤 — 흰 바탕 · 옅은 회색 선 · 남색 하나 · 번호 단계.
  */
 import React, { useEffect, useState } from "react";
-import { openDocked } from "../studio-web/ai-ask";
+import { openDocked, dockArea } from "../studio-web/ai-ask";
 import { createPortal } from "react-dom";
 import AiCopyGuide from "./AiCopyGuide";
 import { InstallGuideModal, useStudioInstaller } from "@/components/admin/sections/StudioInstallGuide";
@@ -139,9 +139,13 @@ function WebAiOverlay({ name, msg, onReopen, onPaste, onStop }: { name: string; 
     return () => { window.clearInterval(t); window.removeEventListener("keydown", k); };
   }, [onStop]);
   const gb: React.CSSProperties = { height: 34, padding: "0 12px", borderRadius: 6, border: "1px solid #475569", background: "#1e293b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+  // 오른쪽 AI 창이 가운데 안내를 덮으니 그 왼쪽 빈 자리 가운데에 (2026-11-06 사장님: "가려짐") — 뉴스·SNS자동화 안내 창과 같은 셈
+  const [dock] = useState(dockArea);
+  const leftRoom = dock.x > 420 ? dock.x : 0;
+  const boxW = leftRoom ? Math.min(600, leftRoom - 40) : 600;
   return createPortal(
-    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,14,20,.62)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ position: "relative", width: 600, maxWidth: "100%", background: "#16202b", color: "#e5e7eb", borderRadius: 14, padding: "26px 30px 20px", boxShadow: "0 20px 60px rgba(0,0,0,.35)", textAlign: "center" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,14,20,.62)", display: "flex", alignItems: "center", justifyContent: leftRoom ? "flex-start" : "center", padding: 20, paddingLeft: leftRoom ? Math.max(20, (leftRoom - boxW) / 2) : 20 }}>
+      <div style={{ position: "relative", width: boxW, maxWidth: "100%", background: "#16202b", color: "#e5e7eb", borderRadius: 14, padding: "26px 30px 20px", boxShadow: "0 20px 60px rgba(0,0,0,.35)", textAlign: "center" }}>
         <button type="button" onClick={onStop} title="멈추기 (Esc)" style={{ position: "absolute", top: 12, right: 14, border: 0, background: "none", color: "#cbd5e1", fontSize: 20, cursor: "pointer" }}>×</button>
         <div style={{ fontSize: 18.5, fontWeight: 800, color: "#fff", marginBottom: 14 }}>{name} 내 계정(무료·수동)으로 기사 초안을 쓰고 있습니다<Dots /></div>
         <div style={{ textAlign: "left", lineHeight: 1.75, fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
@@ -719,7 +723,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
               <button type="button" onClick={() => void takeNews("url")} disabled={newsBusy || !/^https?:\/\//.test(newsUrl.trim())} style={btn}>가져오기</button>
             </div>
             <div style={{ display: "flex", gap: 5, marginTop: 6 }}>
-              <button type="button" onClick={() => (isApp ? void bridge()?.column?.openNews?.().catch(() => {}) : void window.open("https://news.naver.com/section/101", "_blank", "noopener"))} style={{ ...btn, height: 34 }}>📂 네이버 뉴스 열기</button>
+              <button type="button" onClick={() => (isApp ? void bridge()?.column?.openNews?.().catch(() => {}) : void openDocked("https://news.naver.com/section/101", "gs-naver-news"))} /* 오른쪽 작은 창 (2026-11-06 사장님: "우측에 창으로 떠야 함") */ style={{ ...btn, height: 34 }}>📂 네이버 뉴스 열기</button>
               {isApp
                 ? <button type="button" onClick={() => void takeNews("grab")} disabled={newsBusy} title="전용 크롬에서 보고 있는 기사를 가져와요" style={{ ...btn, height: 34 }}>{newsBusy ? "가져오는 중…" : "지금 보는 뉴스 가져오기"}</button>
                 : <span style={{ alignSelf: "center", fontSize: 11.5, color: DIM }}>{newsBusy ? "가져오는 중…" : "기사 주소를 복사해 위에 붙여 넣으세요"}</span>}

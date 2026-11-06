@@ -447,7 +447,7 @@ export function webVideoBridge(): VideoBridge {
     // AI 목소리 — 회원 본인 키(타입캐스트·일레븐랩스), 브라우저가 그 회사에 바로 (webVoice.ts). 같은 문장·성우는 다시 만들지 않는다
     typecast: keyApi("typecast"),
     eleven: elevenApi(), // 공실뉴스 계정 · 포인트 (2026-11-05 사장님)
-    voice: async (_dir: string, text: string, voiceId: string, opts?: { fresh?: boolean; emotion?: string; prev?: string; next?: string }) => {
+    voice: async (_dir: string, text: string, voiceId: string, opts?: { fresh?: boolean; emotion?: string; prev?: string; next?: string; edit?: boolean }) => {
       const t = String(text || "").replace(/\s+/g, " ").trim();
       const cacheId = `vo-${voiceId}-${opts?.emotion || ""}-${t}`;
       let it: LibItem | undefined;

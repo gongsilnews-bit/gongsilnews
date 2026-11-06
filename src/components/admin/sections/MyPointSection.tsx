@@ -9,6 +9,7 @@ import {
   searchMembersForTransfer,
   getPointSettings,
 } from "@/app/actions/point";
+import { groupPointTx } from "@/utils/pointGroup";
 
 interface MyPointSectionProps extends AdminSectionProps {
   memberId: string;
@@ -22,6 +23,7 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [txFilter, setTxFilter] = useState<"ALL" | "EARN" | "SPEND">("ALL");
+  const [openTx, setOpenTx] = useState<string | null>(null); // 펼친 묶음 (문장별 보기)
 
   // 전송 모달
   const [showTransfer, setShowTransfer] = useState(false);
@@ -40,7 +42,7 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
     setLoading(true);
     const [balRes, txRes, settingsRes] = await Promise.all([
       getPointBalance(memberId),
-      getPointTransactions({ memberId, limit: 50 }),
+      getPointTransactions({ memberId, limit: 200 }), // 목소리 묶음이 잘리지 않게 넉넉히 (화면은 1줄로 합친다)
       getPointSettings(),
     ]);
     if (balRes.success) setBalance(balRes.balance);
@@ -126,15 +128,20 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
         </div>
 
         <div>
-          {transactions
-            .filter(t => txFilter === "ALL" || t.type === txFilter)
+          {groupPointTx(transactions
+            .filter(t => txFilter === "ALL" || t.type === txFilter))
             .map(t => (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", padding: "16px 24px", borderBottom: `1px solid ${darkMode ? "#2c2d31" : "#f3f4f6"}`, gap: 16 }}>
+            <React.Fragment key={t.id}>
+            <div onClick={t.items.length > 1 ? () => setOpenTx(openTx === t.id ? null : t.id) : undefined}
+              style={{ display: "flex", alignItems: "center", padding: "16px 24px", borderBottom: `1px solid ${darkMode ? "#2c2d31" : "#f3f4f6"}`, gap: 16, cursor: t.items.length > 1 ? "pointer" : "default" }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: t.type === "EARN" ? "#d1fae5" : "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
                 {t.type === "EARN" ? "✅" : "💸"}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>{reasonMap[t.reason] || t.reason}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>
+                  {reasonMap[t.reason] || t.reason}
+                  {t.items.length > 1 && <span style={{ fontSize: 12, fontWeight: 600, color: textSecondary, marginLeft: 8 }}>{openTx === t.id ? "▲ 접기" : "▼ 문장별 보기"}</span>}
+                </div>
                 <div style={{ fontSize: 12, color: textSecondary, marginTop: 2 }}>
                   {new Date(t.created_at).toLocaleString("ko-KR")}
                   {t.counterpart?.name && <span> · {t.type === "EARN" ? "← " : "→ "}{t.counterpart.name}</span>}
@@ -147,6 +154,17 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
                 <div style={{ fontSize: 11, color: textSecondary }}>잔액 {t.balance_after.toLocaleString()} P</div>
               </div>
             </div>
+            {openTx === t.id && t.items.length > 1 && (
+              <div style={{ background: darkMode ? "#1a1b1e" : "#f9fafb", borderBottom: `1px solid ${darkMode ? "#2c2d31" : "#f3f4f6"}`, padding: "6px 24px 6px 80px" }}>
+                {[...t.items].sort((a, b) => b.balance_after - a.balance_after).map((x, i) => (
+                  <div key={x.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: textSecondary }}>
+                    <span>{i + 1}. {x.reason}</span>
+                    <span><b style={{ color: "#ef4444" }}>-{x.amount.toLocaleString()} P</b> · 잔액 {x.balance_after.toLocaleString()} P</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            </React.Fragment>
           ))}
           {transactions.filter(t => txFilter === "ALL" || t.type === txFilter).length === 0 && (
             <div style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 14 }}>거래 내역이 없습니다.</div>

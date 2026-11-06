@@ -15,7 +15,7 @@ import { datedName, errText, uid, videoBridge } from "./types";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import type { VideoVacancy } from "@/app/actions/videoWeb";
 import { getMyVideoBase, getVideoVacancy } from "@/app/actions/videoWeb";
-import { studioBridge } from "@/components/admin/studio-web";
+import { studioBridge, ensureStudioWebMember } from "@/components/admin/studio-web";
 import { Btn, C, FONT, Icon, Modal } from "./ui";
 import { estimateSeconds } from "./timeline";
 import { WEB_VOICE_SPEED } from "./webBridge";
@@ -85,9 +85,17 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const voiceOf = (t: ShortsTheme, list: TypecastVoice[] | null) => (list || []).find((x) => x.id === t.voice)?.id || list?.[0]?.id || "";
 
   useEffect(() => {
-    listMyStudioVacancies(seed?.vacancyId).then((r) =>
-      setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address}`, photo: v.photo })) : []),
-    ).catch(() => setVacs([]));
+    // 뉴스·SNS자동화에서 쇼츠릴스 대본을 써 둔 공실 — 목록에 표시하고, 아무것도 안 골랐으면 가장 최근 것을 미리 고른다 (2026-11-06 사장님: "SNS에서 만들어 놨던 대본이 나와야지")
+    const ytWorks = ensureStudioWebMember()
+      .then(() => studioBridge<{ vacancy?: { list: () => Promise<{ vacancyId: string; updatedAt: string; done?: { youtube?: boolean } }[]> } }>()?.vacancy?.list())
+      .then((l) => (l || []).filter((w) => w.done?.youtube).map((w) => w.vacancyId)) // 최근 것부터
+      .catch(() => [] as string[]);
+    Promise.all([listMyStudioVacancies(seed?.vacancyId), ytWorks]).then(([r, yt]) => {
+      const has = new Set(yt);
+      setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address}${has.has(v.id) ? " · 쇼츠 대본 있음" : ""}`, photo: v.photo })) : []);
+      const first = yt.find((id) => r.success && r.data.some((v) => v.id === id));
+      if (first && !seed?.vacancyId) setVac((cur) => cur || first);
+    }).catch(() => setVacs([]));
     // 내 키로 연결한 성우 (타입캐스트·일레븐랩스)
     void import("./webVoice").then((m) => m.elPoints()).then(setPts).catch(() => {});
     const b = videoBridge();
@@ -111,6 +119,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       if (!r.success) { setInfo(null); setVac(""); return; }
       setInfo(r.data);
       if (seed?.script && vac === seed.vacancyId) return; // 유튜브 대본에서 넘어온 대본 그대로
+      await ensureStudioWebMember(); // 쇼츠릴스studio로 바로 왔을 때도 내 작업을 찾게
       const yt = await studioBridge<{ youtube?: { get: (id: string) => Promise<{ narration?: string[] } | null> } }>()?.youtube?.get(vac).catch(() => null);
       if (!live) return;
       if (yt?.narration?.length) { setScript(yt.narration.join("\n\n")); setFrom("youtube"); setHookTitle(String((yt as { title?: string }).title || "")); }
@@ -256,7 +265,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           voices={voices} voiceId={voiceId} voiceOn={mode === "ai"} onVoiceOn={(on) => setMode(on ? "ai" : "none")} onPickVoice={() => setPicker(true)} />
         {picker && <VoicePanel web pickLabel="이 성우로" targetCount={0} initial={{ id: voiceId || "", speed: WEB_VOICE_SPEED, volume: 1 }}
           onApply={(v) => { if (v.id) { voicePicked.current = true; setVoiceId(v.id); setMode("ai"); } setPicker(false); }} onClose={() => setPicker(false)} />}
-        {/* 만들기 전에 포인트 미리 (2026-11-05) — 1자 1P, 목소리 전용 먼저 */}
+        {/* 만들기 전에 포인트 미리 (2026-11-05) — 1자 1P, 내 포인트에서 (11-06 통합: 서버가 free 를 null 로 줌) */}
         {mode === "ai" && chars > 0 && pts && (() => {
           const cost = Math.ceil((chars * (pts.rate || 100)) / 100);
           const free = pts.free?.left ?? 0;

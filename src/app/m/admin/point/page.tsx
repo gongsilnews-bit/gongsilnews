@@ -7,6 +7,7 @@ import {
   getPointBalance, getPointTransactions, transferPoints, searchMembersForTransfer,
   getPointSettings, updatePointSetting, getAllMembersWithBalance, adminAdjustPoints 
 } from "@/app/actions/point";
+import { groupPointTx } from "@/utils/pointGroup";
 
 const SETTING_LABELS: Record<string, { label: string; unit: string; desc: string }> = {
   SIGNUP_BONUS: { label: "가입 축하 포인트", unit: "P", desc: "신규 회원가입 시 자동 지급" },
@@ -30,11 +31,11 @@ function MobileUserPointView({ memberId, userName, balance, transactions, loadin
   const [transferring, setTransferring] = useState(false);
   const [searching, setSearching] = useState(false);
 
-  const filtered = transactions.filter((t: any) => {
+  const filtered = groupPointTx(transactions.filter((t: any) => {
     if (filter === "적립" && t.type !== "EARN") return false;
     if (filter === "사용" && t.type !== "SPEND") return false;
     return true;
-  });
+  })); // 목소리 한 번 만들기 = 1줄 (2026-11-06)
 
   const handleSearch = async () => {
     if (!searchQuery.trim() || !memberId) return;
@@ -364,7 +365,7 @@ function MobileAdminPointView({ userName, activeKeyword }: { userName: string, a
             {txLoading ? (
               <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>불러오는 중...</div>
             ) : (
-              transactions.filter(t => txFilter === "ALL" || t.type === txFilter).map(tx => {
+              groupPointTx(transactions.filter(t => txFilter === "ALL" || t.type === txFilter)).map(tx => {
                 const isEarn = tx.type === "EARN";
                 return (
                   <div key={tx.id} style={{ background: "#fff", borderRadius: 12, padding: "16px", marginBottom: 12, border: "1px solid #e5e7eb" }}>

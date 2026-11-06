@@ -475,6 +475,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         const t0 = Date.now();
         try {
           const base = f.clip.voiceId || pref.current.settings.voice.id;
+          const edit = Boolean(fresh || f.clip.voice); // 있던 목소리를 고쳐 만들면 포인트 기록에 "수정" (2026-11-06 사장님)
           // 타입캐스트 성우 — 감정(기본 "스마트": 앞뒤 문장에 맞춰 말투), 앞뒤 클립 글을 같이 보낸다
           const its0 = flatten(pref.current).items;
           const k0 = its0.findIndex((x) => x.clip.id === id);
@@ -490,7 +491,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           }
           if (runs.length > 1 && b.voiceJoin) {
             const parts = [];
-            for (const r of runs) parts.push(await b.voice(pref.current.dir, r.tokens.join(" "), r.v, { fresh, ...tcOpts }));
+            for (const r of runs) parts.push(await b.voice(pref.current.dir, r.tokens.join(" "), r.v, { fresh, ...tcOpts, edit }));
             const j = await b.voiceJoin(pref.current.dir, parts.map((x) => x.file));
             // 단어 시각 — 조각 길이만큼 밀어서 잇고, 다른 목소리 표시는 그대로
             const words: Word[] = [];
@@ -508,7 +509,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               fitVoice(c, j.duration, p);
             }, false);
           } else {
-            const r = await b.voice(pref.current.dir, text, base, { fresh, ...tcOpts });
+            const r = await b.voice(pref.current.dir, text, base, { fresh, ...tcOpts, edit });
             change((p) => {
               const c = findClip(p, id)?.clip;
               if (!c) return;

@@ -70,7 +70,7 @@ export async function getAllMembersWithBalance() {
   const supabase = getAdminClient();
   const { data, error } = await supabase
     .from("members")
-    .select("id, name, email, role, point_balance, created_at")
+    .select("id, name, email, role, plan_type, plan_end_date, studio_end_date, point_balance, created_at")
     .eq("is_deleted", false)
     .order("point_balance", { ascending: false });
   if (error) return { success: false, error: error.message, data: [] };

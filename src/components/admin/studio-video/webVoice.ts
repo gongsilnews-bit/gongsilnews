@@ -165,8 +165,20 @@ export function elevenApi() {
     },
   };
 }
-async function elServerSay(text: string, voiceId: string, emotion = "normal", prev = "", next = ""): Promise<Blob> {
-  const r = await fetch("/api/studio/video/eleven", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voiceId, emotion, prev, next }) });
+/* 포인트 기록 묶음 (2026-11-06 사장님: "1건으로 통합") — 한 번 만들기에 연달아 가는 문장들은 같은 묶음 번호.
+   15초 넘게 쉬었다 다시 만들면 새 묶음. 장부는 문장마다 1줄, 포인트 화면이 같은 묶음을 1줄로 합쳐 보여 준다 */
+//  새로 만들기와 수정(있던 목소리 고쳐 만들기)은 묶음을 따로 — 기록이 "AI 목소리" / "AI 목소리 수정" 으로 나뉜다
+let elBatch: Record<"make" | "edit", { id: string; at: number }> = { make: { id: "", at: 0 }, edit: { id: "", at: 0 } };
+function voiceBatch(k: "make" | "edit") {
+  const b = elBatch[k];
+  if (!b.id || Date.now() - b.at > 15e3) elBatch = { ...elBatch, [k]: { id: crypto.randomUUID(), at: 0 } };
+  elBatch[k].at = Date.now();
+  return elBatch[k].id;
+}
+async function elServerSay(text: string, voiceId: string, emotion = "normal", prev = "", next = "", edit = false): Promise<Blob> {
+  const k = edit ? "edit" : "make";
+  const batch = voiceBatch(k);
+  const r = await fetch("/api/studio/video/eleven", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voiceId, emotion, prev, next, batch, edit }) }).finally(() => { if (elBatch[k].id === batch) elBatch[k].at = Date.now(); });
   if (!r.ok) { const j = await r.json().catch(() => null); throw new Error(j?.error || `AI 목소리를 만들지 못했어요 (${r.status})`); }
   if (elInfo) {
     const left = r.headers.get("X-Points-Left");
@@ -178,10 +190,10 @@ async function elServerSay(text: string, voiceId: string, emotion = "normal", pr
 }
 
 /** 문장 하나 → 소리 Blob (성우 id 앞글자로 회사를 고른다) */
-export async function sayBlob(text: string, voiceId: string, o: { emotion?: string; prev?: string; next?: string } = {}): Promise<Blob> {
+export async function sayBlob(text: string, voiceId: string, o: { emotion?: string; prev?: string; next?: string; edit?: boolean } = {}): Promise<Blob> {
   const t = String(text || "").replace(/\s+/g, " ").trim();
   if (!t) throw new Error("읽을 문장이 없어요.");
-  if (/^el_/.test(voiceId)) return elServerSay(t, voiceId, o.emotion || "normal", o.prev, o.next); // 공실뉴스 계정 · 포인트
+  if (/^el_/.test(voiceId)) return elServerSay(t, voiceId, o.emotion || "normal", o.prev, o.next, Boolean(o.edit)); // 공실뉴스 계정 · 포인트
   if (/^tc_/.test(voiceId)) return tcSay(t, voiceId, o.emotion || "smart", o.prev, o.next);
   throw new Error("웹에서는 내 키를 넣은 타입캐스트·일레븐랩스 성우나 내 목소리 녹음을 쓸 수 있어요. [AI 목소리]에서 성우를 골라 주세요.");
 }

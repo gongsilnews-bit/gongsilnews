@@ -17,6 +17,14 @@ export const now = () => new Date().toISOString();
 let memberId = "";
 export const setStudioWebMember = (id: string) => { memberId = id; };
 export const getMember = () => memberId;
+/** 회원 번호가 아직 없으면 로그인 정보에서 (2026-11-06: 쇼츠릴스studio로 바로 들어가면 뉴스·SNS자동화 대본을 못 찾던 것 — 번호는 SNS 화면에서만 정했다) */
+export async function ensureStudioWebMember() {
+  if (memberId) return memberId;
+  const { createClient } = await import("@/utils/supabase/client");
+  const { data } = await createClient().auth.getUser().catch(() => ({ data: { user: null } }));
+  if (!memberId && data?.user?.id) memberId = data.user.id;
+  return memberId;
+}
 export const DB_NAME = "gs-studio-web";
 export let dbp: Promise<IDBDatabase> | null = null;
 export function db() {
