@@ -60,10 +60,11 @@ async function gsnWrite(vacancyId: string) {
   const w = await getWork(vacancyId);
   if (!w) return;
   let at = gsnNames()[w.key];
-  // 처음이거나 예전 자리(프로젝트)·예전 이름이면 새 자리·새 이름으로 — 예전 파일은 그대로 남아 계속 읽힌다
-  if (!at || !at.dir || at.dir === "프로젝트") {
+  // 처음이거나 예전 자리(프로젝트\날짜 · 메뉴별 폴더)면 새 자리로 — 01 뉴스SNS발행 바로 밑 (2026-11-06 사장님: "폴더가 너무 많아", "뉴스SNS발행 폴더 밑에 20261106 제목")
+  //  예전 파일은 그대로 남아 계속 읽힌다
+  if (!at || at.dir !== GSN_ROOT) {
     const day = dayOf(w.column?.createdAt || w.analysis?.analyzedAt || w.updatedAt);
-    const dir = workDir(w), base = `${day} ${workName(w) || "작업"}`;
+    const dir = GSN_ROOT, base = `${day} ${workName(w) || "작업"}`;
     // 같은 날 같은 제목의 다른 글이 있으면 덮어쓰지 않게 (2), (3)…
     const taken = new Set(Object.entries(gsnNames()).filter(([k, v]) => k !== w.key && v.dir === dir && v.day === day).map(([, v]) => v.name));
     let name = `${base}.gsn`;
@@ -71,12 +72,16 @@ async function gsnWrite(vacancyId: string) {
     at = { dir, day, name };
   }
   const body = JSON.stringify({ kind: GSN_KIND, version: 1, savedAt: now(), work: w });
-  if (await saveToFolder("sns", [at.dir || workDir(w)], at.name, new Blob([body], { type: "application/json" }))) setGsnName(w.key, at);
+  if (await saveToFolder("sns", [], at.name, new Blob([body], { type: "application/json" }))) setGsnName(w.key, at);
 }
 async function restoreFromFolder() {
   if (restored || !getMember()) return;
   markRestored();
-  const files = (await Promise.all(GSN_DIRS.map(async (dir) => (await listFolder("sns", [dir], ".gsn")).map((f) => ({ ...f, dir }))))).flat();
+  // 01 뉴스SNS발행 바로 밑(+ 한 단계 아래 메뉴별 폴더) + 예전 프로젝트\날짜
+  const files = [
+    ...(await listFolder("sns", [], ".gsn")).map((f) => ({ ...f, dir: f.path.length ? f.path[0] : GSN_ROOT })),
+    ...(await listFolder("sns", ["프로젝트"], ".gsn")).map((f) => ({ ...f, dir: "프로젝트" })),
+  ];
   for (const f of files) {
     try {
       const d = JSON.parse(await f.file.text());
@@ -84,7 +89,7 @@ async function restoreFromFolder() {
       if (!w || w.memberId !== getMember() || w.key !== `${w.memberId}:${w.vacancyId}`) continue; // 다른 회원 작업은 안 읽는다
       const have = await tx<Work | undefined>("readonly", (s) => s.get(w.key)).catch(() => undefined);
       if (!have || String(have.updatedAt) < String(w.updatedAt)) await tx("readwrite", (s) => s.put(w)); // 폴더 것이 더 새것일 때만
-      if (f.dir !== "프로젝트" && !f.path.length && gsnNames()[w.key]?.dir !== f.dir) setGsnName(w.key, { dir: f.dir, day: /^(\d{8})/.exec(f.name)?.[1] || "", name: f.name }); // 새 자리 파일이면 그 이름을 기억
+      if (f.dir === GSN_ROOT && gsnNames()[w.key]?.dir !== GSN_ROOT) setGsnName(w.key, { dir: GSN_ROOT, day: /^(\d{8})/.exec(f.name)?.[1] || "", name: f.name }); // 새 자리 파일이면 그 이름을 기억
     } catch { /* 못 읽는 파일은 건너뛴다 */ }
   }
 }
@@ -97,7 +102,7 @@ async function need(vacancyId: string) {
 }
 
 /* 작업 파일 이름·폴더 (2026-11-06 사장님: 자유 글쓰기가 "20261106 뉴스칼럼_" 으로 제목이 빠지던 것)
-   파일 이름 = 년월일 8자리 + 제목(앞 40자) · 무엇으로 만든 글인지는 폴더로: 01 뉴스SNS발행\공실뉴스|뉴스칼럼|자유글쓰기\ (날짜 폴더 없이 — 사장님 "날짜 폴더는 필요없어") */
+   파일 이름 = 년월일 8자리 + 제목(앞 40자) · 01 뉴스SNS발행 바로 밑, 하위 폴더 없음 (사장님 "날짜 폴더는 필요없어", "폴더가 너무 많아") */
 const workName = (w: Work) => {
   if (w.column) {
     const s: any = w.column.source || {};
@@ -106,8 +111,8 @@ const workName = (w: Work) => {
   const no = fieldOf(w.analysis.vacancy, "공실광고번호") || "";
   return safeName(`${no ? `${no} ` : ""}${w.analysis.vacancy?.title || "공실"}`);
 };
-const workDir = (w: Work) => (w.column ? ((w.column.source as any)?.mode === "topic" ? "자유글쓰기" : "뉴스칼럼") : "공실뉴스");
-const GSN_DIRS = ["공실뉴스", "뉴스칼럼", "자유글쓰기", "프로젝트"]; // 프로젝트 = 11-06 전에 쓰던 자리 (계속 읽는다)
+/** 01 뉴스SNS발행 바로 밑 (하위 폴더 없음) — 기억해 둔 자리 표시 */
+const GSN_ROOT = "root";
 
 /* ── 뉴스칼럼 (앱 column-writer.js) — 웹은 본인이 쓴 공실뉴스 기사만 소재로 (2026-11-04 사장님) ── */
 const isCol = (id: string) => /^col-[a-f0-9]+$/.test(String(id || ""));

@@ -1,6 +1,6 @@
 /**
  * 웹 PC 폴더 저장 — 관리자 왼쪽 [저장 폴더]에서 정한 공실뉴스 폴더에 보고서·홍보지 파일을 쓴다 (2026-11-04 사장님: "우리 웹과 맞춰서")
- *  공실뉴스\02 보고서홍보지\오늘 날짜(20261104)\파일
+ *  공실뉴스\02 보고서홍보지\20261106 매물보고서_잠원동_….pdf — 날짜 폴더 없이, 이름 앞에 날짜 (2026-11-06 사장님: "폴더가 너무 많아")
  *  폴더 손잡이는 웹 관리자(src/components/admin/studio-web/folder.ts)가 같은 사이트의 IndexedDB "gs-web-folder"에 넣어 둔 것을 읽는다
  *  폴더를 안 정했거나 허락이 없으면 false → 부르는 쪽이 지금처럼 다운로드로 받는다
  *  marketing/report/webFolder.ts 와 marketing/ai-detail/webFolder.ts 는 같은 내용 (둘 다 고칠 것)
@@ -41,13 +41,20 @@ export async function saveToWebFolder(fileName: string, dataUrl: string): Promis
   try {
     const root = await rootHandle();
     if (!root || (await root.queryPermission({ mode: "readwrite" })) !== "granted") return false;
-    const day = ymd();
-    const dir = await (await root.getDirectoryHandle(SUB, { create: true })).getDirectoryHandle(day, { create: true });
+    const dir = await root.getDirectoryHandle(SUB, { create: true });
+    // "매물보고서_잠원동_….pdf" → "20261106 매물보고서_잠원동_….pdf" (사장님이 보내 준 모양 그대로) · 같은 이름이 있으면 (2), (3)…
+    const dot = fileName.lastIndexOf(".");
+    const stem = `${ymd()} ${(dot > 0 ? fileName.slice(0, dot) : fileName).trim()}`, ext = dot > 0 ? fileName.slice(dot) : "";
+    let name = `${stem}${ext}`;
+    for (let n = 2; n < 100; n++) {
+      try { await dir.getFileHandle(name); } catch { break; } // 없으면 이 이름
+      name = `${stem} (${n})${ext}`;
+    }
     const blob = await (await fetch(dataUrl)).blob();
-    const w = await (await dir.getFileHandle(fileName, { create: true })).createWritable();
+    const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
     await w.write(blob);
     await w.close();
-    toast(`${root.name}\\${SUB}\\${day} 에 저장했어요 — ${fileName}`);
+    toast(`${root.name}\\${SUB} 에 저장했어요 — ${name}`);
     return true;
   } catch { return false; }
 }

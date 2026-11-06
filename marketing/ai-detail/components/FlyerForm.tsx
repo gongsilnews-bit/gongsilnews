@@ -190,21 +190,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
                  </button>
              ))}
         </div>
-        <details className="mt-2" open={!isNewLayout(currentLayout.type)}>
-          <summary className="text-[11px] text-gray-400 cursor-pointer select-none">예전 디자인</summary>
-          <div className="grid grid-cols-6 gap-1 mt-2">
-             {layouts.filter((l) => !isNewLayout(l.type) && !l.hidden).map((layout, idx) => (
-                 <button
-                    key={layout.id}
-                    onClick={() => onLayoutSelect(layout)}
-                    title={layout.name}
-                    className={`py-1.5 rounded-md border text-xs font-bold ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}
-                 >
-                     {idx + 1}{!webLayoutAllowed(layout.id) && '🔒'}
-                 </button>
-             ))}
-          </div>
-        </details>
+        {/* 예전 디자인 1~6 고르는 줄은 뺐다 (2026-11-06 사장님: "필요 없어") — 이미 그 디자인으로 만든 홍보지는 그대로 열린다 (App.tsx LAYOUTS) */}
         {presetsSlot}
       </div>
 
