@@ -48,8 +48,8 @@ const allWorks = async () => {
    다른 브라우저(엣지↔크롬)·새 PC 에서 같은 폴더를 고르면 목록을 열 때 브라우저 안에 없는 작업을 되살린다 */
 const GSN_KIND = "gongsilnews-web-gsn";
 const GSN_NAMES = "gs-web-gsn-names";
-const gsnNames = (): Record<string, { day: string; name: string }> => { try { return JSON.parse(localStorage.getItem(GSN_NAMES) || "{}"); } catch { return {}; } };
-const setGsnName = (key: string, v: { day: string; name: string }) => { try { localStorage.setItem(GSN_NAMES, JSON.stringify({ ...gsnNames(), [key]: v })); } catch { /* */ } };
+const gsnNames = (): Record<string, { day: string; name: string; dir?: string }> => { try { return JSON.parse(localStorage.getItem(GSN_NAMES) || "{}"); } catch { return {}; } };
+const setGsnName = (key: string, v: { day: string; name: string; dir?: string }) => { try { localStorage.setItem(GSN_NAMES, JSON.stringify({ ...gsnNames(), [key]: v })); } catch { /* */ } };
 const dayOf = (iso: string) => { const d = new Date(iso || Date.now()); return isNaN(+d) ? ymd() : `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`; };
 const gsnTimers = new Map<string, ReturnType<typeof setTimeout>>();
 function gsnLater(vacancyId: string) {
@@ -60,17 +60,23 @@ async function gsnWrite(vacancyId: string) {
   const w = await getWork(vacancyId);
   if (!w) return;
   let at = gsnNames()[w.key];
-  if (!at) {
+  // 처음이거나 예전 자리(프로젝트)·예전 이름이면 새 자리·새 이름으로 — 예전 파일은 그대로 남아 계속 읽힌다
+  if (!at || !at.dir || at.dir === "프로젝트") {
     const day = dayOf(w.column?.createdAt || w.analysis?.analyzedAt || w.updatedAt);
-    at = { day, name: `${day} ${workName(w) || "작업"}.gsn` };
+    const dir = workDir(w), base = `${day} ${workName(w) || "작업"}`;
+    // 같은 날 같은 제목의 다른 글이 있으면 덮어쓰지 않게 (2), (3)…
+    const taken = new Set(Object.entries(gsnNames()).filter(([k, v]) => k !== w.key && v.dir === dir && v.day === day).map(([, v]) => v.name));
+    let name = `${base}.gsn`;
+    for (let n = 2; taken.has(name); n++) name = `${base} (${n}).gsn`;
+    at = { dir, day, name };
   }
   const body = JSON.stringify({ kind: GSN_KIND, version: 1, savedAt: now(), work: w });
-  if (await saveToFolder("sns", ["프로젝트", at.day], at.name, new Blob([body], { type: "application/json" }))) setGsnName(w.key, at);
+  if (await saveToFolder("sns", [at.dir || workDir(w)], at.name, new Blob([body], { type: "application/json" }))) setGsnName(w.key, at);
 }
 async function restoreFromFolder() {
   if (restored || !getMember()) return;
   markRestored();
-  const files = await listFolder("sns", ["프로젝트"], ".gsn");
+  const files = (await Promise.all(GSN_DIRS.map(async (dir) => (await listFolder("sns", [dir], ".gsn")).map((f) => ({ ...f, dir }))))).flat();
   for (const f of files) {
     try {
       const d = JSON.parse(await f.file.text());
@@ -78,7 +84,7 @@ async function restoreFromFolder() {
       if (!w || w.memberId !== getMember() || w.key !== `${w.memberId}:${w.vacancyId}`) continue; // 다른 회원 작업은 안 읽는다
       const have = await tx<Work | undefined>("readonly", (s) => s.get(w.key)).catch(() => undefined);
       if (!have || String(have.updatedAt) < String(w.updatedAt)) await tx("readwrite", (s) => s.put(w)); // 폴더 것이 더 새것일 때만
-      if (!gsnNames()[w.key] && f.path[0]) setGsnName(w.key, { day: f.path[0], name: f.name });
+      if (f.dir !== "프로젝트" && !f.path.length && gsnNames()[w.key]?.dir !== f.dir) setGsnName(w.key, { dir: f.dir, day: /^(\d{8})/.exec(f.name)?.[1] || "", name: f.name }); // 새 자리 파일이면 그 이름을 기억
     } catch { /* 못 읽는 파일은 건너뛴다 */ }
   }
 }
@@ -90,7 +96,18 @@ async function need(vacancyId: string) {
   return w;
 }
 
-const workName = (w: Work) => w.column ? safeName(`뉴스칼럼_${w.column.source?.news?.title || ""}`.slice(0, 60)) : safeName(`${w.analysis.vacancy?.title || "공실"}_${fieldOf(w.analysis.vacancy, "공실광고번호") || ""}`);
+/* 작업 파일 이름·폴더 (2026-11-06 사장님: 자유 글쓰기가 "20261106 뉴스칼럼_" 으로 제목이 빠지던 것)
+   파일 이름 = 년월일 8자리 + 제목(앞 40자) · 무엇으로 만든 글인지는 폴더로: 01 뉴스SNS발행\공실뉴스|뉴스칼럼|자유글쓰기\ (날짜 폴더 없이 — 사장님 "날짜 폴더는 필요없어") */
+const workName = (w: Work) => {
+  if (w.column) {
+    const s: any = w.column.source || {};
+    return safeName(s.mode === "topic" ? s.topic?.subject || "자유 글" : s.news?.title || "뉴스칼럼");
+  }
+  const no = fieldOf(w.analysis.vacancy, "공실광고번호") || "";
+  return safeName(`${no ? `${no} ` : ""}${w.analysis.vacancy?.title || "공실"}`);
+};
+const workDir = (w: Work) => (w.column ? ((w.column.source as any)?.mode === "topic" ? "자유글쓰기" : "뉴스칼럼") : "공실뉴스");
+const GSN_DIRS = ["공실뉴스", "뉴스칼럼", "자유글쓰기", "프로젝트"]; // 프로젝트 = 11-06 전에 쓰던 자리 (계속 읽는다)
 
 /* ── 뉴스칼럼 (앱 column-writer.js) — 웹은 본인이 쓴 공실뉴스 기사만 소재로 (2026-11-04 사장님) ── */
 const isCol = (id: string) => /^col-[a-f0-9]+$/.test(String(id || ""));

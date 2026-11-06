@@ -263,7 +263,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     const returnUrl = `${base}?menu=${/^[a-z_]+$/.test(back) ? back : "gongsil"}`;
     return (
       <VacancyRegisterForm
-        onBack={() => { router.push(returnUrl); }}
+        onBack={() => {
+          // 광고등록·수정완료 뒤 목록으로 — router.push 가 무시되어 등록 화면 그대로인 때가 있었다 (2026-11-06 사장님: "바로 넘어가게")
+          //  공실관리 목록이면 브라우저 주소를 바로 바꾼다 (Next 가 주소를 따라 화면을 바꾼다 — 기다림 없음). 다른 메뉴로 돌아갈 때는 router.push
+          if (!back || back === "gongsil") window.history.pushState(null, "", returnUrl);
+          else router.push(returnUrl);
+          // 그래도 등록 화면이면 (아주 드묾) 주소로 다시 연다
+          window.setTimeout(() => { if (new URLSearchParams(window.location.search).get("action") === "write") window.location.assign(returnUrl); }, 1500);
+        }}
         darkMode={darkMode}
         userRole={role}
         ownerId={ownerId}

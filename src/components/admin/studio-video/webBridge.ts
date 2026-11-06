@@ -9,6 +9,7 @@
  *  계획: memory web-shorts-video-plan · 1분 내외 9:16·16:9
  */
 import type { Asset, LibItem, Project, Ratio, Method, Recent, VideoBridge } from "./types";
+import { ymd } from "./types";
 import { getVideoVacancy } from "@/app/actions/videoWeb";
 import { renderWebMp4 } from "./webExport";
 import { FONT_URLS } from "@/lib/studio-video/fontUrls";
@@ -344,7 +345,11 @@ export function webVideoBridge(): VideoBridge {
         await save(p);
         try {
           const { saveToFolderHandle } = await import("@/components/admin/studio-web/folder");
-          await saveToFolderHandle("video", ["작업 파일"], `${(p.name || "쇼츠").replace(/[\\/:*?"<>|]+/g, "")}.gsw`, await exportProject(p));
+          // 05 동영상studio\작업 파일\년월일 제목.gsw — 날짜 폴더 없이 (2026-11-06 사장님: "쇼츠도 마찬가지", "날짜 폴더는 필요없어")
+          const nm = String(p.name || "쇼츠").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+          const day = /^(\d{8})/.exec(nm)?.[1] || ymd();
+          const file = `${(/^\d{8}/.test(nm) ? nm : `${day} ${nm}`).slice(0, 49)}.gsw`; // 년월일 8자리 + 제목 앞 40자
+          await saveToFolderHandle("video", ["작업 파일"], file, await exportProject(p));
         } catch { /* 폴더를 안 정했거나 권한 없음 — 브라우저 저장은 됐다 */ }
         return { savedAt: now() };
       },

@@ -142,7 +142,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       if (!paras.length) throw new Error("대본을 한 줄 이상 써 주세요.");
       if (over) throw new Error(`대본이 약 ${secs}초예요. 웹에서는 ${MAX_SEC}초까지 만들 수 있어요. 문장을 줄여 주세요.`);
       const ai = mode === "ai" && voiceId;
-      const p = await b.project.create({ method: "text", ratio, name: datedName(info?.title || seed?.title || "쇼츠"), vacancyId: vac || "" });
+      const p = await b.project.create({ method: "text", ratio, name: datedName(hookTitle || seed?.title || info?.title || "쇼츠") /* 쇼츠릴스 대본 제목 먼저 (2026-11-06: 지역 이름 "강남구 논현동" 만 들어가던 것) */, vacancyId: vac || "" });
       // 공실을 골랐으면 그 사진을 차례로 (없으면 화면은 편집에서 넣는다)
       const assetIds: string[] = [];
       if (vac) {
