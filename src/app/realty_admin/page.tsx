@@ -17,6 +17,8 @@ import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import ArticleAdUpgradeModal from "@/components/admin/ArticleAdUpgradeModal";
 import { getVacancies } from "@/app/actions/vacancy";
 import { getMyArticles } from "@/app/actions/article";
+import { getPointBalance } from "@/app/actions/point";
+import { shortEnd } from "@/utils/tier";
 import { getAuthorArticlesAdSettingsMap } from "@/app/actions/articleAd";
 import { adminApproveRealtorApplication, normalizePendingRealtorRole } from "@/app/admin/actions";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
@@ -380,6 +382,16 @@ function RealtyAdminContent() {
     if (key !== "video" && guard) return guard(go);
     go();
   }, [isReporterEligible, router]);
+  // 머리줄 내 포인트 (2026-11-06 사장님: "포인트 오렌지색으로, 클릭하면 포인트관리로") — 화면을 옮길 때·창으로 돌아올 때 다시 읽는다 (목소리를 만들면 바로 줄어 보이게)
+  const [myPoints, setMyPoints] = useState<number | null>(null);
+  useEffect(() => {
+    if (!memberId) return;
+    let live = true;
+    const load = () => { void getPointBalance(memberId).then((r) => { if (live && r.success) setMyPoints(Number(r.balance) || 0); }); };
+    load();
+    window.addEventListener("focus", load);
+    return () => { live = false; window.removeEventListener("focus", load); };
+  }, [memberId, activeMenu]);
   // 화면캡처 알림의 [이미지제작에서 열기] — 이미지제작으로 가서 그 그림을 연다 (PhotoStudio 가 __gsSnapPhoto 를 받아 감)
   useEffect(() => {
     const snap = (window as unknown as { gongsilStudio?: { snap?: { onPhoto: (fn: (file: string) => void) => () => void } } }).gongsilStudio?.snap;
@@ -435,6 +447,8 @@ function RealtyAdminContent() {
           <span title={myTier !== "free" && until ? `이용 기간 ~${until}` : undefined}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 999, marginLeft: 4, background: tone[myTier].bg, color: tone[myTier].fg }}>
             {TIER_LABEL[myTier]}{proOn && <ProTag />}
+            {/* 종료일 짧게 — ~261130 (2026-11-06 사장님) */}
+            {myTier !== "free" && shortEnd(userRole === 'BIZ' ? planEndDate : studioEndDate) && <span style={{ fontWeight: 700, opacity: 0.9 }}>~{shortEnd(userRole === 'BIZ' ? planEndDate : studioEndDate)}</span>}
           </span>
         );
       })()
@@ -549,6 +563,14 @@ function RealtyAdminContent() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
             {useStudioMenu && userBlock}
+            {/* 내 포인트 — 주황, 누르면 포인트 화면 (2026-11-06 사장님) */}
+            {useStudioMenu && myPoints !== null && (
+              <button type="button" onClick={() => selectMenu("point")} title="포인트 내역 보기"
+                style={{ display: "flex", alignItems: "center", gap: 5, height: 30, padding: "0 12px", borderRadius: 999, border: 0, background: "#e8890c", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M10 16V8h3a2.5 2.5 0 0 1 0 5h-3" /></svg>
+                {myPoints.toLocaleString("ko-KR")} P
+              </button>
+            )}
             {useStudioMenu && userRole !== 'ADMIN' && myTier === "free" && ( /* 유료는 스튜디오회원 하나 — 이미 유료면 더 올라갈 요금제가 없어 숨긴다 (2026-10-31) */
               <button type="button" onClick={() => setUpgradeOpen(true)}
                 style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 16px", borderRadius: 999, border: 0, background: "#fff", color: "#111827", fontSize: 13.5, fontWeight: 800, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>
@@ -621,7 +643,7 @@ function RealtyAdminContent() {
           {activeMenu === "write" && studioApp.isApp && memberId && <ScriptSection />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
           {activeMenu === "video" && !studioApp.isApp && <VideoStudio />} {/* 웹 체험판 — 공실로 자동 만들기 · 1분 내외 (2026-11-05) */}
-          {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 스튜디오회원부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
+          {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 공실뉴스부동산부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
           {activeMenu === "photo" && (studioPaid ? <PhotoStudio menu={null} /> : <ProLock what="포토studio" detail="공실 사진 편집 · 홍보 이미지 디자인 · AI 편집" dark={darkMode} onUpgrade={askUpgrade} />)}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
           {activeMenu === "write" && !studioApp.isApp && (

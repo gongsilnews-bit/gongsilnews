@@ -29,6 +29,7 @@ type Column = { id: string; source: Source; label: string; createdAt: string; ar
 type Bridge = {
   column: {
     media?: (id: string, op: MediaOp) => Promise<Column>; // 기사 화면 정리 (2026-10-28)
+    save?: (id: string, p: { title?: string; body?: string; angle?: string; intro?: string; points?: string[]; outro?: string }) => Promise<Column>; // 원문·재료 고치기 (2026-11-06)
     fetchNews: (url: string) => Promise<News>;
     openNews: () => Promise<unknown>;
     grabNews: () => Promise<News>;
@@ -83,6 +84,29 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [hint, setHint] = useState("");
+  /* 원문·글의 재료 고치기 — 뉴스칼럼(기사 제목·본문) · 자유 글쓰기(제목·내 글) · 서론·본론·결론 · 추가 요청 (2026-11-06 사장님: "다 고칠 수 있게") */
+  const [ed, setEd] = useState<{ title: string; body: string; angle: string; intro: string; points: string[]; outro: string } | null>(null);
+  const [edSaving, setEdSaving] = useState(false);
+  useEffect(() => { setEd(null); }, [column?.id]);
+  const startEd = () => {
+    if (!column) return;
+    const s = column.source;
+    setEd(s.mode === "news"
+      ? { title: s.news?.title || "", body: s.news?.body || "", angle: s.angle || "", intro: "", points: [], outro: "" }
+      : { title: s.topic?.subject || "", body: s.topic?.memo || "", angle: s.angle || "", intro: s.topic?.intro || "", points: [...(s.topic?.points || [])], outro: s.topic?.outro || "" });
+  };
+  const saveEd = async () => {
+    const b = bridge();
+    if (!column || !ed || !b?.column.save) return;
+    setEdSaving(true);
+    setError("");
+    try {
+      const c = await b.column.save(column.id, column.source.mode === "news" ? { title: ed.title, body: ed.body, angle: ed.angle } : ed);
+      if (c) setColumn({ ...column, ...c });
+      setEd(null);
+    } catch (e) { setError(cleanErr(e)); }
+    setEdSaving(false);
+  };
 
   // 돌아오면 마지막 칼럼을 다시 연다
   useEffect(() => {
@@ -233,10 +257,45 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
         );
         const analysis = (
           <div style={{ background: theme.cardBg, borderRadius: 14, border: `1px solid ${theme.border}`, overflow: "hidden" }}>
-            <div style={{ padding: "12px 18px", borderBottom: `1px solid ${theme.border}`, fontSize: 12.5, color: theme.textSecondary }}>
-              AI가 이 내용만 보고 기사·블로그·SNS를 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 써요.
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", borderBottom: `1px solid ${theme.border}`, fontSize: 12.5, color: theme.textSecondary }}>
+              <span style={{ flex: 1 }}>{ed ? "고친 내용은 저장한 뒤 쓰는 글부터 반영돼요." : "AI가 이 내용만 보고 기사·블로그·SNS를 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 써요."}</span>
+              {bridge()?.column.save && (ed ? (<>
+                <button onClick={() => setEd(null)} disabled={edSaving} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>취소</button>
+                <button onClick={() => void saveEd()} disabled={edSaving} style={{ padding: "6px 16px", borderRadius: 8, border: 0, background: NAVY, color: "#fff", fontSize: 13, fontWeight: 800, cursor: edSaving ? "default" : "pointer" }}>{edSaving ? "저장 중…" : "저장"}</button>
+              </>) : (
+                <button onClick={startEd} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>✎ 원문·재료 고치기</button>
+              ))}
             </div>
+            {error && ed && <div style={{ padding: "8px 18px 0", fontSize: 12.5, color: "#c53030" }}>{error}</div>}
             <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+              {ed ? (() => {
+                const inp: React.CSSProperties = { width: "100%", boxSizing: "border-box", padding: "8px 10px", border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 13.5, lineHeight: 1.6, background: theme.cardBg, color: theme.textPrimary, fontFamily: "inherit" };
+                const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: theme.textSecondary, margin: "10px 0 4px" };
+                const hasOutline = !isNews && (ed.intro || ed.points.length > 0 || ed.outro);
+                return (
+                  <div style={{ border: `1px solid ${NAVY}`, borderRadius: 12, padding: "14px 16px" }}>
+                    <div style={{ ...lab, marginTop: 0 }}>{isNews ? "기사 제목" : "제목"}</div>
+                    <input value={ed.title} onChange={(e) => setEd({ ...ed, title: e.target.value })} style={{ ...inp, fontWeight: 700 }} />
+                    {hasOutline && (<>
+                      <div style={lab}>서론</div>
+                      <textarea value={ed.intro} onChange={(e) => setEd({ ...ed, intro: e.target.value })} rows={2} style={{ ...inp, resize: "vertical" }} />
+                      {ed.points.map((x, i) => (
+                        <React.Fragment key={i}>
+                          <div style={lab}>본론 {i + 1}</div>
+                          <textarea value={x} onChange={(e) => setEd({ ...ed, points: ed.points.map((y, k) => (k === i ? e.target.value : y)) })} rows={2} style={{ ...inp, resize: "vertical" }} />
+                        </React.Fragment>
+                      ))}
+                      {ed.points.length < 5 && <button onClick={() => setEd({ ...ed, points: [...ed.points, ""] })} style={{ marginTop: 6, padding: "4px 12px", borderRadius: 6, border: `1px dashed ${theme.border}`, background: "transparent", color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>+ 본론 더하기</button>}
+                      <div style={lab}>결론</div>
+                      <textarea value={ed.outro} onChange={(e) => setEd({ ...ed, outro: e.target.value })} rows={2} style={{ ...inp, resize: "vertical" }} />
+                    </>)}
+                    <div style={lab}>{isNews ? "기사 본문" : hasOutline ? "참고 메모" : "내 글"}</div>
+                    <textarea value={ed.body} onChange={(e) => setEd({ ...ed, body: e.target.value })} rows={16} style={{ ...inp, resize: "vertical" }} />
+                    <div style={lab}>추가 요청 (AI에게 · 선택)</div>
+                    <input value={ed.angle} onChange={(e) => setEd({ ...ed, angle: e.target.value })} placeholder="예: 실수요자 눈높이로, 숫자는 표로" style={inp} />
+                  </div>
+                );
+              })() : (
               <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px", fontSize: 13.5, color: theme.textPrimary, lineHeight: 1.75 }}>
                 {isNews ? (<>
                   <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 2 }}>{n?.title}</div>
@@ -251,6 +310,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
                 </>)}
                 {column.source.angle && <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary }}><b>추가 요청</b> {column.source.angle}</div>}
               </div>
+              )}
               {(caps.length > 0 || bridge()?.column.media) && (
                 <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 4 }}>사진 · 화면 <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>글에 들어갈 순서</span></div>

@@ -208,6 +208,18 @@ async function analyze(vacancyId: string) {
     frame.remove();
   }
 }
+/* 분석 내용 고치기 (2026-11-06 사장님: "분석 내용 · 글의 재료를 수정할 수 있어야 함") — 공실 정보 항목 · 주변 환경 · 특징
+   AI 는 이 내용만 보고 쓰므로, 고친 뒤 쓰는 글부터 반영된다. [다시 분석]하면 새로 읽은 값으로 바뀐다 */
+async function saveVacancyInfo(vacancyId: string, patch: { fields?: { label: string; value: string }[]; infra?: string; themes?: string[] }) {
+  const w = await need(vacancyId);
+  const v = { ...(w.analysis.vacancy || {}) };
+  if (Array.isArray(patch.fields)) v.fields = patch.fields.map((f) => ({ label: String(f.label || "").trim(), value: String(f.value || "").trim() })).filter((f) => f.label && f.value);
+  if (typeof patch.infra === "string") v.infra = patch.infra.trim();
+  if (Array.isArray(patch.themes)) v.themes = patch.themes.map((t) => String(t || "").trim()).filter(Boolean);
+  w.analysis = { ...w.analysis, vacancy: v };
+  await putWork(w);
+  return analysisForWeb(w.analysis);
+}
 const analysisForWeb = (a: Analysis) => ({
   vacancyId: a.vacancyId,
   vacancy: a.vacancy,
@@ -764,6 +776,24 @@ async function colSetUrl(id: string, url: string) {
   if (w.column.source.news.url !== next) { w.column.source.news.url = next; await putWork(w); }
   return colForWeb(w);
 }
+/* 뉴스칼럼 원문·글의 재료 고치기 (2026-11-06 사장님: "어떻게 고쳐 고칠 수가 없는데") — 기사 제목·본문 / 자유 글쓰기 제목·내 글 / 추가 요청 */
+async function colSave(id: string, p: { title?: string; body?: string; angle?: string; intro?: string; points?: string[]; outro?: string }) {
+  const w = isCol(id) ? await getWork(id) : null;
+  if (!w?.column) throw new Error("이 소재를 찾지 못했어요. 목록에서 다시 골라 주세요.");
+  const s: any = { ...w.column.source };
+  const title = typeof p.title === "string" ? p.title.trim() : undefined;
+  const body = typeof p.body === "string" ? p.body.trim() : undefined;
+  if (s.mode === "news") s.news = { ...s.news, ...(title ? { title } : {}), ...(body ? { body } : {}) };
+  else s.topic = { ...s.topic, ...(title ? { subject: title } : {}), ...(body !== undefined ? { memo: body } : {}),
+    ...(typeof p.intro === "string" ? { intro: p.intro.trim() } : {}), ...(typeof p.outro === "string" ? { outro: p.outro.trim() } : {}),
+    ...(Array.isArray(p.points) ? { points: p.points.map((x) => String(x || "").trim()).filter(Boolean) } : {}) };
+  if (typeof p.angle === "string") s.angle = p.angle.trim();
+  const tp = s.topic || {};
+  if (s.mode === "news" ? !String(s.news?.body || "").trim() : !String(tp.memo || tp.intro || (tp.points || []).join("") || tp.outro || "").trim()) throw new Error("본문을 비울 수는 없어요.");
+  w.column = { ...w.column, source: s };
+  await putWork(w);
+  return colForWeb(w);
+}
 async function colMedia(id: string, op: any) {
   await mediaOp(id, op);
   return colGet(id);
@@ -783,7 +813,7 @@ const web = {
   },
   vacancy: {
     analyze, load: async (id: string) => { const w = await getWork(id); return w ? analysisForWeb(w.analysis) : null; },
-    list, media: mediaOp, onProgress: onProgress("vacancy"),
+    list, media: mediaOp, save: saveVacancyInfo, onProgress: onProgress("vacancy"),
   },
   article: {
     options: async (id: string) => { const w = await getWork(id); return (await optionsOf(w)).article; },
@@ -804,7 +834,7 @@ const web = {
     onProgress: onProgress("sns"),
   },
   column: {
-    create: colCreate, get: colGet, list: colList, setUrl: colSetUrl, media: colMedia,
+    create: colCreate, get: colGet, list: colList, setUrl: colSetUrl, media: colMedia, save: colSave,
     // 다른 뉴스 가져오기는 앱에서 (웹은 내 기사만, 2026-11-04 사장님)
     fetchNews: notInWeb("다른 뉴스 가져오기"), openNews: notInWeb("다른 뉴스 가져오기"), grabNews: notInWeb("다른 뉴스 가져오기"),
   },

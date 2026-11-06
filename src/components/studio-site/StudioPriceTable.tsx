@@ -37,8 +37,8 @@ const ic = (d: string) => (
 export const TEMP_PRICES = false;
 /* 연 구독만 받는다 (2026-10-30 사장님) — 큰 글자는 월 금액, 작게 1년 결제 금액 · 하루 금액 (연 금액만 크면 부담스러워 보여서)
    was = 할인 전 정가 (줄 그어 보여 준다) */
-const mon = (m: number, was?: number) => () => ({
-  won: m.toLocaleString(), per: "/ 월",
+const mon = (m: number, was?: number, vatExtra = false) => () => ({
+  won: m.toLocaleString(), per: vatExtra ? "/ 월 (VAT 별도)" : "/ 월",
   sub: `1년 ${(m * 12).toLocaleString()}원 · 한 번에 결제`,
   day: `하루 약 ${(Math.round((m * 12) / 365 / 100) * 100).toLocaleString()}원`,
   year: (m * 12).toLocaleString(),
@@ -61,7 +61,7 @@ export const PLANS: Plan[] = [
   {
     key: "standard", name: "공실뉴스부동산", pro: true, tag: "특별 할인",
     icon: ic("M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"),
-    price: mon(30000, 50000),
+    price: mon(10000, 30000, true), // 2026-11-06 사장님: 정가 3만 → 월 1만 (VAT 별도) · 1년 12만 (전: 정가 5만 → 월 3만 · 1년 36만)
     cta: { label: "시작하기", href: "/newsrealty/pro-apply", solid: true },
     base: ["공실 광고 20건 + 내 홈페이지 전용 20건", "기사 쓰기 월 4건"],
     items: ["블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본 무제한", "뉴스칼럼 (내 기사로 블로그 · SNS · 유튜브)", "AI 매물보고서 모든 쪽 · 디자인 · AI 채우기", "유리창홍보지 모든 디자인", "물건접수홈페이지 (집주인 접수 · 로고 · 색상 · 사진 · 영상)", "포토studio (AI 포함)", "고객관리", "기사 아래 광고 · 배너"],
@@ -81,7 +81,7 @@ export const PLANS: Plan[] = [
 ];
 
 const NOTES = [
-  "모든 금액은 부가세를 포함한 최종 결제 금액이에요.",
+  "공실뉴스부동산 금액은 부가세(VAT) 별도예요. 비즈니스회원 금액은 부가세를 포함한 최종 결제 금액이에요.",
   "모든 요금제는 1년 단위로 결제해요. 표의 월 금액은 1년 금액을 12로 나눈 금액이에요.",
   "부동산회원은 중개사 서류가 승인되면 무료로 이용할 수 있어요.",
   "공실 건수는 광고 중인 공실만 세요. 광고를 내리거나 거래가 끝난 공실은 빠지니, 그 자리에 새 공실을 올릴 수 있어요.",
@@ -181,7 +181,15 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
     <div style={{ fontFamily: font, color: "#111827", background: "#fff", wordBreak: "keep-all" }}>
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: compact ? "36px 24px 0" : "80px 24px 0", textAlign: "center" }}>
         {TEMP_PRICES && <div style={{ display: "inline-block", marginBottom: 18, padding: "6px 14px", borderRadius: 999, background: "#fef3c7", color: "#92400e", fontSize: 13, fontWeight: 700 }}>임시 금액 · 요금제 금액과 항목은 아직 정해지지 않았어요</div>}
-        <h1 style={{ fontSize: compact ? 30 : "clamp(34px,4.4vw,52px)", fontWeight: 600, letterSpacing: "-0.03em", margin: compact ? "0 0 28px" : "0 0 56px" }}>공실뉴스부동산이 되시면</h1>
+        {/* 제목 (2026-11-06 사장님: "공실뉴스부동산이 되시면" 대신) */}
+        <h1 style={{ fontSize: compact ? 30 : "clamp(34px,4.4vw,52px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.25, margin: compact ? "0 0 16px" : "0 0 24px" }}>
+          부동산 SNS 뉴스 마케팅!<br />월 <span style={{ color: ACCENT }}>1만원</span>이면 다 됩니다.
+        </h1>
+        {/* 제목 아래 설명 (2026-11-06 사장님) */}
+        <p style={{ fontSize: compact ? 15 : "clamp(15px,1.4vw,18px)", color: "#374151", lineHeight: 1.7, margin: compact ? "0 0 26px" : "0 0 44px" }}>
+          <b>공실등록 20건, 공실뉴스 4건, SNS자동화, 인스타그램, 페이스북, 스레드, 유튜브쇼츠, 홈페이지까지!</b><br />
+          12개월 동안 내 마케팅 채널을 완성하실 수 있습니다.
+        </p>
 
         {/* 연 구독만 — 월·연 고르는 칸은 없앴다 (2026-10-30) */}
         <div style={{ fontSize: 15, color: "#4b5563", marginBottom: compact ? 28 : 40 }}>모든 요금제는 <b style={{ color: "#111827" }}>1년 단위</b>로 결제해요</div>

@@ -58,6 +58,9 @@ export type NewsrealtyApplyViewProps = {
   setAgreeTerms: (v: boolean) => void;
   termsAccordionOpen: boolean;
   setTermsAccordionOpen: (v: boolean) => void;
+  /** 기사 작성 약관 동의 (필수) — 공실뉴스부동산은 기사를 쓰므로 (2026-11-06 사장님). 주면 보인다 */
+  agreeArticle?: boolean;
+  setAgreeArticle?: (v: boolean) => void;
   errorMsg: string;
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
@@ -228,6 +231,35 @@ function InfoRows({ rows }: { rows: { label: string; value?: React.ReactNode; ac
           <span style={{ fontWeight: 700, color: r.accent ? "var(--accent-700)" : "var(--text)", textAlign: "right" }}>{r.value || "-"}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** 기사 작성 약관 — 공실뉴스부동산은 회원이 기사를 쓴다 (2026-11-06 사장님: "약관 신청동의가 있어야 해, 꼭 확인하게")
+ *  접지 않고 늘 펼쳐 보여 준다 · 처음엔 체크 안 됨 · 체크해야 신청 버튼이 눌린다. 동의 기록은 신청 메모에 남긴다 (ARTICLE_TERMS_VERSION) */
+export const ARTICLE_TERMS_VERSION = "기사작성약관 2026-11-06";
+export const ARTICLE_TERMS = [
+  "기사는 본인이 직접 확인한 사실로만 씁니다. 거짓이나 부풀린 내용을 쓰지 않습니다.",
+  "매물 기사는 공인중개사법의 표시·광고 기준(중개사무소·매물 정보 표시)과 표시·광고법을 지킵니다.",
+  "다른 사람의 글·사진·영상은 허락 없이 쓰지 않습니다. 저작권·초상권 문제가 생기면 작성자가 책임집니다.",
+  "특정인·업체를 헐뜯거나 명예를 해치는 내용, 집주인·임차인 연락처 같은 개인정보를 쓰지 않습니다.",
+  "공실뉴스는 기사를 검토해 고치거나, 반려하거나, 게시를 내릴 수 있습니다.",
+  "작성한 기사는 공실뉴스에 실리고 검색·포털에 노출될 수 있으며, 기사로 생긴 법적 책임은 작성자에게 있습니다.",
+];
+function ArticleTerms({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div style={{ border: `2px solid ${checked ? "#a5440f" : "#e8890c"}`, borderRadius: 8, padding: "14px 14px 12px", background: checked ? "#fff" : "#fffaf3" }}>
+      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>공실뉴스 기사 작성 약관 <span style={{ color: "#dc2626" }}>(필수)</span></div>
+      <div style={{ fontSize: 12.5, color: "var(--n300)", lineHeight: 1.7, marginBottom: 10 }}>
+        공실뉴스부동산은 공실뉴스에 <b>기사를 직접 씁니다.</b> 아래 내용을 꼭 읽고 동의해 주세요.
+        <ol style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+          {ARTICLE_TERMS.map((t) => <li key={t} style={{ marginBottom: 2 }}>{t}</li>)}
+        </ol>
+      </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, userSelect: "none", paddingTop: 10, borderTop: "1px solid var(--divider)" }}>
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#a5440f", cursor: "pointer" }} />
+        위 기사 작성 약관을 읽었고 동의합니다
+      </label>
     </div>
   );
 }
@@ -404,13 +436,15 @@ export default function StudioApplyView(p: NewsrealtyApplyViewProps) {
             </div>
             <p style={{ fontSize: 12, color: "var(--n500)", margin: "6px 0 0 4px" }}>약관의 효력은 회원가입 절차가 완료된 후 적용됩니다.</p>
           </div>
+          {p.setAgreeArticle && <ArticleTerms checked={Boolean(p.agreeArticle)} onChange={p.setAgreeArticle} />}
           {p.errorMsg && (
             <div style={{ padding: 12, borderRadius: 8, background: "#fdf0ee", border: "1px solid #f3c8c0", fontSize: 13, fontWeight: 600, color: "#b3261e" }}>
               {p.errorMsg}
             </div>
           )}
-          <button type="submit" disabled={p.submitting} className="nra-btn nra-btn-solid" style={{ width: "100%", height: 54, fontSize: 16 }}>
-            {p.submitting ? "신청 처리 중..." : "공실뉴스부동산 신청하기"}
+          {/* 기사 작성 약관에 체크해야 눌린다 (2026-11-06) */}
+          <button type="submit" disabled={p.submitting || (Boolean(p.setAgreeArticle) && !p.agreeArticle)} className="nra-btn nra-btn-solid" style={{ width: "100%", height: 54, fontSize: 16, ...(p.setAgreeArticle && !p.agreeArticle ? { opacity: 0.45, cursor: "not-allowed" } : {}) }}>
+            {p.submitting ? "신청 처리 중..." : p.setAgreeArticle && !p.agreeArticle ? "기사 작성 약관에 동의해 주세요" : "공실뉴스부동산 신청하기"}
           </button>
         </form>
       );

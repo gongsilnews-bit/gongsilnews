@@ -5,6 +5,7 @@ import { agencyKind, kindFromBizNum, AGENCY_KIND_LABEL } from "@/utils/agencyKin
 import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies, adminApproveRealtorApplication, adminRejectRealtorApplication, adminFindAgencyDuplicates } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { getHomepageSettings } from "@/app/actions/homepage";
+import { memberTier, TIER_NAME, PRO_ORANGE, shortEnd } from "@/utils/tier";
 
 interface MemberRegisterFormProps {
   onBack: () => void;
@@ -888,6 +889,13 @@ function gradeDefaults(p: any, role: string, planType?: string) {
     });
   };
 
+  /* 회원구분을 명확하게 (2026-11-06 사장님) — 부동산회원 (무료) / 공실뉴스부동산 (~종료일). 판정은 utils/tier.ts 한 곳 (이용 종료일이 남았나) */
+  const tierNow = memberTier({ role: formData.role, studio_end_date: formData.studio_end_date || null });
+  const tierEnd = shortEnd(formData.studio_end_date || null); // 261130 처럼 짧게
+  const tierText = tierNow === "free" ? "부동산회원 (무료)" : tierNow === "pro" ? `공실뉴스부동산 (~${tierEnd})` : tierNow === "biz" ? `비즈니스회원${tierEnd ? ` (~${tierEnd})` : ""}` : TIER_NAME[tierNow];
+  const tierColor = tierNow === "pro" ? { fg: "#fff", bg: PRO_ORANGE } : tierNow === "free" ? { fg: darkMode ? "#93c5fd" : "#2563eb", bg: darkMode ? "#1e3a8a" : "#dbeafe" } : tierNow === "biz" ? { fg: "#6d28d9", bg: "#ede9fe" } : tierNow === "admin" ? { fg: "#fff", bg: "#111827" } : { fg: "#4b5563", bg: "#f3f4f6" };
+  const tierBadge = <span style={{ fontSize: 15, fontWeight: 800, color: tierColor.fg, background: tierColor.bg, padding: "5px 12px", borderRadius: 6, whiteSpace: "nowrap" }}>{tierText}</span>;
+
   const registrationLimitSettings = (
     <div style={rowStyle}>
       <div style={labelStyle}>등록 한도 적용 방식</div>
@@ -959,7 +967,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             <option value="30">30회</option>
             <option value="-1">무제한</option>
           </select>
-          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 공실뉴스부동산 3회 · 스튜디오회원·비즈니스회원 무제한 · 일반회원 0회</span>
+          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 부동산회원 3회 · 공실뉴스부동산·비즈니스회원 무제한 · 일반회원 0회</span>
         </label>
       </div>
     </div>
@@ -1166,16 +1174,17 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         <div style={rowStyle}>
           <div style={labelStyle}>회원구분</div>
           <div style={contentStyle}>
-            {isAdmin ? (
+            {isAdmin ? (<div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <select name="role" value={formData.role} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
                 <option value="일반회원">일반회원</option>
                 <option value="부동산회원">부동산회원</option>
                 <option value="비즈니스회원">비즈니스회원</option>
                 <option value="최고관리자">최고관리자</option>
               </select>
-            ) : (
+              {tierBadge}
+            </div>) : (
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? "#3b82f6" : "#2563eb", background: darkMode ? "#1e3a8a" : "#dbeafe", padding: "4px 10px", borderRadius: 6 }}>{formData.role}</span>
+                {tierBadge}
                 {formData.role === "일반회원" && (
                   <>
                     <button type="button" onClick={() => {
@@ -1197,17 +1206,17 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {formData.role === "부동산회원" && (
           <>
-            {/* 부동산회원은 요금제 칸 없이 공실마케팅 이용권 종류 + 이용기간 — 비우면 공실뉴스부동산(무료) (2026-10-26, 종류 2026-10-29 사장님) */}
+            {/* 이름 공실뉴스부동산 이용기간 (2026-11-06, 11-05 이름 결정) · 부동산회원은 요금제 칸 없이 이용권 종류 + 이용기간 — 비우면 공실뉴스부동산(무료) (2026-10-26, 종류 2026-10-29 사장님) */}
             <div style={rowStyle}>
-              <div style={labelStyle}>공실마케팅 이용기간</div>
+              <div style={labelStyle}>공실뉴스부동산 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select name="studio_plan" value={formData.studio_plan} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 230 }}>
-                  <option value="studio">스튜디오회원 (월 3만 · 1년 36만)</option>
+                  <option value="studio">공실뉴스부동산 (월 1만 · 1년 12만)</option>
                 </select>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 부동산회원(무료). 날짜를 넣으면 끝나는 날까지 스튜디오회원 — 이름표 옆 공실마케팅 마크.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 부동산회원(무료). 날짜를 넣으면 끝나는 날까지 공실뉴스부동산 — 이름표 옆 NEWS 딱지.</span>
               </div>
             </div>
 
@@ -1277,12 +1286,12 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           <>
             {/* 비즈니스회원도 요금제 칸 없이 공실마케팅 이용기간 하나 — 날짜가 있으면 그동안 미니홈피 · 공실마케팅 (2026-10-26 사장님) */}
             <div style={rowStyle}>
-              <div style={labelStyle}>공실마케팅 이용기간</div>
+              <div style={labelStyle}>공실뉴스부동산 이용기간</div>
               <div style={{ ...contentStyle, gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · 스튜디오회원 이용권 포함. 비우면 이용 안 함.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 미니홈피 · 공실뉴스부동산 이용권 포함. 비우면 이용 안 함.</span>
               </div>
             </div>
           </>

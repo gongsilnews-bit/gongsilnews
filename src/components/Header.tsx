@@ -55,6 +55,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [signupName, setSignupName] = useState('');
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [myPoints, setMyPoints] = useState<number | null>(null); // 맨 위 줄 내 포인트 (2026-11-06 사장님)
   const [userRole, setUserRole] = useState<string>('');
   const [planType, setPlanType] = useState<string>('');
   const [paidOn, setPaidOn] = useState(false); // 공실뉴스부동산(유료) 이용 중 — 관리자 단추 이름 (2026-11-05)
@@ -184,11 +185,12 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
         // members 테이블에서 현재 회원의 상태 파악
         const { data, error } = await supabase
           .from('members')
-          .select('signup_completed, email, name, role, plan_type, plan_end_date, studio_end_date')
+          .select('signup_completed, email, name, role, plan_type, plan_end_date, studio_end_date, point_balance')
           .eq('id', user.id)
           .single();
         if (data) {
           setCurrentUser(user);
+          setMyPoints(Number((data as { point_balance?: number }).point_balance) || 0);
           setUserRole(data.role);
           setPlanType(data.plan_type || '');
           setPaidOn(isStudioMember(data as any));
@@ -291,7 +293,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <NotificationBell color="#ffffff" />
-              <InquiryButton small /> {/* 로그인해도 늘 (2026-11-05) */}
               <NewsrealtyJoinButton tone="dark" small joined={!showNewsrealtyJoin({ role: userRole, plan_type: planType })} />
               <div style={{
                 background: userRole === 'ADMIN' ? '#111827' : isNewsAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : '#ef4444',
@@ -309,11 +310,19 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               }}>
                 {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus, paidOn)}
               </div>
+              {/* 내 포인트 — 주황, 누르면 내 관리자 화면의 포인트 (2026-11-06 사장님: "로그인하면 뜨도록") */}
+              {myPoints !== null && (
+                <div title="포인트 내역 보기" onClick={() => router.push(userRole === 'ADMIN' ? '/admin?menu=point' : userRole === 'REALTOR' ? '/realty_admin?menu=point' : '/user_admin?menu=point')}
+                  style={{ background: '#e8890c', color: '#fff', padding: '4px 10px', borderRadius: '4px', fontWeight: 800, cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                  {myPoints.toLocaleString('ko-KR')} P
+                </div>
+              )}
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();
                 await supabase.auth.signOut({ scope: "local" });
                 window.location.reload();
               }}>로그아웃</div>
+              <InquiryButton small /> {/* 로그인해도 늘 (2026-11-05) · 맨 뒤로 (2026-11-06 사장님) */}
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingRight: "4px" }}>

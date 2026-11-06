@@ -11,7 +11,7 @@ export default function StudioMark({ small = false }: { small?: boolean; plan?: 
     <img
       src="/new_logo.png"
       alt="공실마케팅"
-      title="스튜디오회원 이용 중"
+      title="공실뉴스부동산 이용 중"
       width={size}
       height={size}
       style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 4, width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}

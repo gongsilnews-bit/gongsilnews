@@ -44,7 +44,7 @@ type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
   blog?: { imageStyles?: (vacancyId?: string) => Promise<{ id: string; label: string }[]> };
-  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; media?: (id: string, op: MediaOp) => Promise<Analysis>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
+  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; media?: (id: string, op: MediaOp) => Promise<Analysis>; save?: (id: string, patch: { fields?: { label: string; value: string }[]; infra?: string; themes?: string[] }) => Promise<Analysis>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
 };
 /** [공실 바꾸기] 목록 한 줄 — 이 PC에서 작업한 공실 (앱 studio:vacancy-list) */
 type WorkRow = { vacancyId: string; no: string; title: string; priceText: string; saleKind: string; thumb: string | null; updatedAt: string; done: Record<string, boolean> };
@@ -362,6 +362,22 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     </div>
   );
   /* 분석 사진 정리 (2026-10-28 사장님) — 화면은 MediaEditGrid (뉴스칼럼과 같이 씀) */
+  /* 분석 내용 고치기 (2026-11-06 사장님: "분석 내용 · 글의 재료를 수정할 수 있어야 함") — [✎ 고치기] → 칸에서 고치고 [저장] */
+  const [edit, setEdit] = useState<{ fields: { label: string; value: string }[]; infra: string; themes: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const canEdit = Boolean(bridge()?.vacancy.save);
+  useEffect(() => { setEdit(null); }, [result?.vacancyId, result?.vacancy]); // 다른 공실을 고르거나 다시 분석하면 고치던 것은 접는다
+  const startEdit = () => result && setEdit({ fields: (result.vacancy.fields || []).map((f) => ({ ...f })), infra: result.vacancy.infra || "", themes: (result.vacancy.themes || []).join(", ") });
+  const saveEdit = async () => {
+    const b = bridge();
+    if (!result || !edit || !b?.vacancy.save) return;
+    setSaving(true);
+    try {
+      setResult(await b.vacancy.save(result.vacancyId, { fields: edit.fields, infra: edit.infra, themes: edit.themes.split(/[,，\n]/) }));
+      setEdit(null);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    setSaving(false);
+  };
   const mediaOp = async (op: MediaOp) => {
     const b = bridge();
     if (!result || !b?.vacancy.media) throw new Error("앱을 새 버전으로 다시 켜 주세요.");
@@ -406,7 +422,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const desk = (category === "gongsil" || category === "auction") && Boolean(result) && mode === "";
   // 뉴스칼럼·내 영상 홍보도 작업대 모양일 때는 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로)
   const [subDesk, setSubDesk] = useState(false);
-  const fullDesk = subDesk && (category === "column" || category === "myvideo");
+  // 자유 글쓰기로 만든 글을 연 작업 화면 — 뉴스칼럼 작업 화면을 같이 쓰지만 메뉴는 자유 글쓰기에 그대로 (2026-11-06 사장님: "자유글쓰기 클릭하면 뉴스칼럼으로 들어가네")
+  const [freeOpen, setFreeOpen] = useState<string | null>(null);
+  useEffect(() => { if (category !== "free") setFreeOpen(null); }, [category]);
+  const fullDesk = subDesk && (category === "column" || category === "myvideo" || (category === "free" && Boolean(freeOpen)));
   // 뒤로가기 = 작업대 → 공실 목록, 앞으로가기 = 그 작업대로 다시 (2026-11-03 사장님)
   useInnerHistory("sns-desk", desk, () => openList(), () => {
     if (result) return setMode("");
@@ -454,23 +473,65 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         <span>사진 {result.media.length}장 분석·캡처 완료</span>
         <button onClick={() => void analyze(picked)} disabled={busy} style={{ border: 0, background: "transparent", color: theme.darkMode ? "#93c5fd" : "#2563eb", fontSize: 12.5, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>{busy ? "분석 중…" : "↻ 다시 분석·캡처"}</button>
       </div>
-      <div style={{ padding: "18px 22px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
-        <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{category === "auction" ? "물건 정보" : "공실 정보"} <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>상세 항목 {result.vacancy.fields?.length || 0}개</span></div>
-          <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", rowGap: 7, columnGap: 10, fontSize: 13.5 }}>
-            {(result.vacancy.fields || []).map((f, i) => (
-              <React.Fragment key={i}><span style={{ color: theme.textSecondary }}>{f.label}</span><b style={{ fontWeight: 600, color: theme.textPrimary, wordBreak: "break-all" }}>{f.value}</b></React.Fragment>
-            ))}
-          </div>
-          {!result.vacancy.fields?.length && <div style={{ fontSize: 13, color: theme.textSecondary }}>읽은 항목이 없습니다. [↻ 다시 분석·캡처]를 눌러 주세요.</div>}
+      {/* 고치기 줄 — [✎ 고치기] / 고치는 중이면 [저장] [취소] (2026-11-06) */}
+      {canEdit && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 22px 0" }}>
+          {edit ? (
+            <>
+              <span style={{ flex: 1, fontSize: 12.5, color: theme.textSecondary }}>고친 내용은 저장한 뒤 쓰는 글부터 반영돼요. [다시 분석]하면 새로 읽은 값으로 바뀌어요.</span>
+              <button onClick={() => setEdit(null)} disabled={saving} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>취소</button>
+              <button onClick={() => void saveEdit()} disabled={saving} style={{ padding: "7px 16px", borderRadius: 8, border: 0, background: navy, color: "#fff", fontSize: 13, fontWeight: 800, cursor: saving ? "default" : "pointer" }}>{saving ? "저장 중…" : "저장"}</button>
+            </>
+          ) : (
+            <>
+              <span style={{ flex: 1 }} />
+              <button onClick={startEdit} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>✎ 분석 내용 고치기</button>
+            </>
+          )}
         </div>
-        <div style={{ border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>주변 환경 · 특징</div>
-          <div style={{ fontSize: 13.5, color: theme.textPrimary, lineHeight: 1.7 }}>{result.vacancy.infra || <span style={{ color: theme.textSecondary }}>주변 환경 정보가 없습니다.</span>}</div>
-          {!!result.vacancy.themes?.length && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-              {result.vacancy.themes.map((t) => <span key={t} style={{ padding: "4px 10px", borderRadius: 14, background: soft, border: `1px solid ${theme.border}`, fontSize: 12.5, fontWeight: 600, color: theme.textPrimary }}>{t}</span>)}
+      )}
+      <div style={{ padding: "18px 22px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ border: `1px solid ${edit ? navy : theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{category === "auction" ? "물건 정보" : "공실 정보"} <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary }}>상세 항목 {(edit ? edit.fields : result.vacancy.fields || []).length}개</span></div>
+          {edit ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {edit.fields.map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 6 }}>
+                  <input value={f.label} onChange={(e) => setEdit({ ...edit, fields: edit.fields.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)) })} placeholder="항목" style={{ width: 110, flexShrink: 0, padding: "6px 8px", border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 13, background: theme.cardBg, color: theme.textSecondary }} />
+                  <input value={f.value} onChange={(e) => setEdit({ ...edit, fields: edit.fields.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)) })} placeholder="내용" style={{ flex: 1, minWidth: 0, padding: "6px 8px", border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, background: theme.cardBg, color: theme.textPrimary }} />
+                  <button onClick={() => setEdit({ ...edit, fields: edit.fields.filter((_, k) => k !== i) })} title="이 항목 빼기" style={{ width: 28, flexShrink: 0, border: 0, background: "transparent", color: "#c53030", fontSize: 16, cursor: "pointer" }}>×</button>
+                </div>
+              ))}
+              <button onClick={() => setEdit({ ...edit, fields: [...edit.fields, { label: "", value: "" }] })} style={{ alignSelf: "flex-start", marginTop: 4, padding: "5px 12px", borderRadius: 6, border: `1px dashed ${theme.border}`, background: "transparent", color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>+ 항목 더하기</button>
             </div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", rowGap: 7, columnGap: 10, fontSize: 13.5 }}>
+                {(result.vacancy.fields || []).map((f, i) => (
+                  <React.Fragment key={i}><span style={{ color: theme.textSecondary }}>{f.label}</span><b style={{ fontWeight: 600, color: theme.textPrimary, wordBreak: "break-all" }}>{f.value}</b></React.Fragment>
+                ))}
+              </div>
+              {!result.vacancy.fields?.length && <div style={{ fontSize: 13, color: theme.textSecondary }}>읽은 항목이 없습니다. [↻ 다시 분석·캡처]를 눌러 주세요.</div>}
+            </>
+          )}
+        </div>
+        <div style={{ border: `1px solid ${edit ? navy : theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>주변 환경 · 특징</div>
+          {edit ? (
+            <>
+              <textarea value={edit.infra} onChange={(e) => setEdit({ ...edit, infra: e.target.value })} rows={6} placeholder="역·학교·상권 등 주변 환경" style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 13.5, lineHeight: 1.6, resize: "vertical", background: theme.cardBg, color: theme.textPrimary, fontFamily: "inherit" }} />
+              <div style={{ fontSize: 12.5, color: theme.textSecondary, margin: "10px 0 4px" }}>특징 (쉼표로 나눠요)</div>
+              <input value={edit.themes} onChange={(e) => setEdit({ ...edit, themes: e.target.value })} placeholder="예: 역세권, 남향, 즉시입주" style={{ width: "100%", boxSizing: "border-box", padding: "6px 10px", border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 13.5, color: theme.textPrimary, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{result.vacancy.infra || <span style={{ color: theme.textSecondary }}>주변 환경 정보가 없습니다.</span>}</div>
+              {!!result.vacancy.themes?.length && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+                  {result.vacancy.themes.map((t) => <span key={t} style={{ padding: "4px 10px", borderRadius: 14, background: soft, border: `1px solid ${theme.border}`, fontSize: 12.5, fontWeight: 600, color: theme.textPrimary }}>{t}</span>)}
+                </div>
+              )}
+            </>
           )}
         </div>
         <div style={{ gridColumn: "1 / -1", border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 16px" }}>
@@ -521,7 +582,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "nowrap" }}>
           {(() => {
-            const t = category === "column" ? columnTab : category === "gongsil" || category === "auction" ? tab : simTabs[category];
+            const t = category === "column" || (category === "free" && freeOpen) ? columnTab : category === "gongsil" || category === "auction" ? tab : simTabs[category];
             if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
             const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
             const name = t === "blog" ? "블로그" : t === "youtube" ? "유튜브" : "SNS";
@@ -578,7 +639,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{(web && WEB_LEAD[category]) || NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
         </div>
 
-        {category === "free" && (
+        {category === "free" && !freeOpen && (
           <StudioFreeWrite theme={theme} onOpenColumn={(id, tab) => {
             try {
               localStorage.setItem("studio_last_column", id); localStorage.setItem("studio_open_column", "1");
@@ -587,8 +648,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               localStorage.setItem(k, JSON.stringify({ ...v, article: { kind: "news", length: "normal", ...(v.article || {}), on: false } }));
             } catch {}
             setColumnTab(tab || "blog");
-            setCategory("column");
+            setFreeOpen(id); // 메뉴는 자유 글쓰기 그대로 — 아래 작업 화면을 연다
           }} />
+        )}
+        {category === "free" && freeOpen && (
+          <StudioColumnSource key={freeOpen} theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage}
+            onListView={(on) => { if (on) { setFreeOpen(null); setSubDesk(false); } }} onDesk={setSubDesk} memberId={memberId} />
         )}
 
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} onDesk={setSubDesk} />}

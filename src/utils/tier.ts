@@ -39,6 +39,13 @@ export function vacancyLimit(t: Tier): number | null {
 }
 
 export const PRO_ORANGE = "#ea8a0c";
+/** 종료일 짧게 — 2026-11-30 → 261130 (2026-11-06 사장님: "2026-11-30 너무 길어") */
+export function shortEnd(d?: string | Date | null): string {
+  if (!d) return "";
+  const s = typeof d === "string" ? d.slice(0, 10) : new Date(d).toISOString().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  return m ? `${m[1].slice(2)}${m[2]}${m[3]}` : "";
+}
 export const TIER_NAME: Record<Tier, string> = { user: "일반회원", free: "부동산회원", pro: "공실뉴스부동산", biz: "비즈니스회원", admin: "최고관리자" };
 /** PRO 기능을 무료 회원이 눌렀을 때 */
 export const PRO_ONLY = "공실뉴스부동산에서 쓸 수 있어요.";

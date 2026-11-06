@@ -772,7 +772,7 @@ export default function SignupPage() {
               </ul>
               
               <div className="pc-pricing-card-price" style={{ color: "#e11d48", marginTop: 12 }}>
-                30,000원 <span>/ 월 (VAT 별도)</span>
+                10,000원 <span>/ 월 (VAT 별도)</span>
               </div>
               
               <button 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { submitNewsrealtyApplication, checkExistingNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 import StudioSiteHeader from "@/components/studio-site/StudioSiteHeader";
-import StudioApplyView, { type ApplyStage } from "@/components/studio-site/StudioApplyView";
+import StudioApplyView, { type ApplyStage, ARTICLE_TERMS_VERSION } from "@/components/studio-site/StudioApplyView";
 
 export default function NewsRealtyApplyPage() {
   const [user, setUser] = useState<any>(null);
@@ -23,6 +23,7 @@ export default function NewsRealtyApplyPage() {
   const [agencyName, setAgencyName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [termsAccordionOpen, setTermsAccordionOpen] = useState(false);
+  const [agreeArticle, setAgreeArticle] = useState(false); // 기사 작성 약관 (필수, 처음엔 체크 안 됨 — 2026-11-06 사장님)
 
   // 기존 신청 내역 상태
   const [existingApplication, setExistingApplication] = useState<any>(null);
@@ -171,6 +172,10 @@ export default function NewsRealtyApplyPage() {
       setErrorMsg("회원가입 약관에 동의해 주세요.");
       return;
     }
+    if (!agreeArticle) {
+      setErrorMsg("기사 작성 약관을 읽고 동의해 주세요.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -181,7 +186,7 @@ export default function NewsRealtyApplyPage() {
         email: finalEmail,
         agencyName: agencyName.trim(),
         interests: ["로컬기자", "부동산중개"],
-        memo: `[공실마케팅 신청] 신청자: ${applicantName.trim()} / 연락처: ${phone.trim()} / 이메일: ${finalEmail} / 중개사무소: ${agencyName.trim()}`,
+        memo: `[공실마케팅 신청] 신청자: ${applicantName.trim()} / 연락처: ${phone.trim()} / 이메일: ${finalEmail} / 중개사무소: ${agencyName.trim()} / ${ARTICLE_TERMS_VERSION} 동의 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}`,
       });
 
       if (res.success) {
@@ -242,6 +247,8 @@ export default function NewsRealtyApplyPage() {
       setAgreeTerms={setAgreeTerms}
       termsAccordionOpen={termsAccordionOpen}
       setTermsAccordionOpen={setTermsAccordionOpen}
+      agreeArticle={agreeArticle}
+      setAgreeArticle={setAgreeArticle}
       errorMsg={errorMsg}
       submitting={submitting}
       onSubmit={handleSubmit}

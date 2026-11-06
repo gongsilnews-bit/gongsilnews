@@ -158,7 +158,7 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
         <div ref={dropRef} style={{
           position: "fixed", top: pos.top, right: pos.right, width: 340, maxHeight: 420,
           background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12,
-          boxShadow: "0 12px 28px rgba(0,0,0,0.16)", zIndex: 10000, display: "flex", flexDirection: "column",
+          boxShadow: "0 12px 28px rgba(0,0,0,0.16)", zIndex: 2147483000, display: "flex", flexDirection: "column", /* 맨 위 — 첫 화면 메뉴 줄(.header 9,999,999)에 가려지던 것 (2026-11-06) */
         }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>알림 {unread > 0 && <span style={{ color: "#ef4444" }}>{unread}</span>}</span>
