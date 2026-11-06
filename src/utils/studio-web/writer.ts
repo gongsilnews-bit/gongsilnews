@@ -27,10 +27,130 @@ function run(fileNames: string[], names?: string[]) {
   cache.set(key, out);
   return out;
 }
+/* 웹 공실뉴스 기사 스타일 여섯 개 (2026-11-06 사장님 회의: "6개로 해줘", 기본 매물 소개형, 기타 없음)
+ *  확장·앱과 같이 쓰는 prompt.js 는 그대로 두고, 웹 서버가 읽은 GW_KIND 만 바꿔 넣는다 (gwBuildPrompt 가 같은 객체를 읽는다)
+ *  예전에 고른 스타일(단락별 요약 등)은 gwBuildPrompt 가 news(매물 소개형)로 쓴다 */
+const WEB_KIND: Record<string, { label: string; brief: string; subs: string; heads?: boolean }> = {  // heads — ■ 소제목을 쓴다
+  news: {
+    label: "매물 소개형",
+    brief: "이 매물을 소개하는 스트레이트 기사입니다. 위치 → 면적·구조 → 가격·거래 조건 → 특징·주변 순서로, 문단이 자연스럽게 이어지게 쓰십시오. 사실과 숫자로 쓰고, 독자를 가르치려 드는 말('~확인해야 한다', '~할 필요가 있다')은 쓰지 마십시오.",
+    subs: "1) 위치와 매물 개요  2) 면적·구조  3) 가격과 거래 조건",
+  },
+  location: {
+    heads: true,
+    label: "입지 분석형",
+    brief: "입지를 중심으로 쓰는 기사입니다. 지하철역·버스·상권·학교·병원까지의 거리를 [확인된 매물 정보]에 있는 숫자로 서로 비교해 정리하십시오(예: 가장 가까운 역, 두 학교의 거리 차이). 상가·사무실이면 배후 수요(주변 주거·업무 시설)를 씁니다. 자료에 없는 거리·시설은 쓰지 마십시오.",
+    subs: "1) 교통  2) 생활·상권  3) 이 입지의 매물 조건",
+  },
+  value: {
+    heads: true,
+    label: "시세·수익 분석형",
+    brief: "가격을 중심으로 쓰는 분석 기사입니다. 아파트·오피스텔이면 이 매물 가격을 [확인된 매물 정보]의 같은 단지·주변 실거래와 숫자로 견주고, 상가·사무실·건물 임대 매물이면 보증금·월세·관리비로 따진 수익을 씁니다. 실거래·수익 숫자가 자료에 없으면 계산하거나 지어내지 말고 가격·조건만 정확히 쓰십시오. '시세보다 싸다' 같은 단정은 자료로 확인될 때만 쓰십시오.",
+    subs: "1) 가격과 거래 조건  2) 주변 시세·수익 비교  3) 숫자가 뜻하는 것",
+  },
+  persona: {
+    heads: true,
+    label: "수요자 맞춤형",
+    brief: "이 매물에 가장 잘 맞는 수요자 한 부류(예: 신혼부부, 1인 창업자, 소규모 법인, 학부모)를 매물 조건에서 골라, 그 사람이 궁금해할 순서로 매물을 소개하는 기사입니다. 수요자는 자료에 맞게 정하고, 그 수요자에게 필요한 조건(면적·교통·주차·가격)을 사실로 짚으십시오. 독자를 가르치려 드는 말은 쓰지 마십시오.",
+    subs: "1) 이런 분께 맞는 매물  2) 필요한 조건 짚어 보기  3) 가격과 입주",
+  },
+  qa: {
+    heads: true,
+    label: "질문·답변형",
+    brief: "문의할 때 자주 묻는 질문을 소제목으로 세우고(예: \"보증금과 월세는 얼마인가?\", \"주차는 되나?\", \"언제 들어갈 수 있나?\"), 그 아래에 [확인된 매물 정보]에 근거한 답을 쓰는 기사입니다. 질문은 4~6개, 자료로 답할 수 없는 질문은 넣지 마십시오.",
+    subs: "1) 가격은 얼마인가  2) 위치와 교통은  3) 언제 들어갈 수 있나",
+  },
+  building: {
+    heads: true,
+    label: "건물 소개형",
+    brief: "매물이 있는 건물·단지 자체를 소개하는 기사입니다. 준공 연도·구조·층수·엘리베이터·주차·용도 같은 건물 정보를 중심으로 쓰고, 끝 문단에서 이 건물에 나온 매물 조건을 정리하십시오. 자료에 없는 건물 정보는 쓰지 마십시오.",
+    subs: "1) 건물 개요  2) 구조와 시설  3) 이 건물에 나온 매물",
+  },
+};
+/* 웹 공실뉴스 네이버 블로그 문체 다섯 개 (2026-11-06 사장님 회의: "그렇게 해줘")
+ *  현장답사형 → 사진 둘러보기형(가 본 척 금지) · 동네 정보형 새로 · 스토리텔링형·숏폼·속보형 뺌 · "확인할 점·체크포인트" 소제목 없앰
+ *  확장·앱 blog-prompt.js 는 그대로, 웹 서버가 읽은 GW_BLOG_STYLE 만 바꾼다 (경매 문체는 그대로) */
+// 블로그는 부드러운 권유는 된다 (2026-11-06 사장님: "블로그에는 ~해보세요 넣어도 괜찮음") — 훈계·당부는 여전히 안 됨
+const NO_PREACH = " 부드러운 권유('~해 보세요', '한번 둘러보세요', '사진으로 먼저 살펴보세요')는 써도 된다. 다만 가르치려 드는 말('~확인해야 한다', '~할 필요가 있다', '~봐야 한다')과 '계약 전 확인할 점' 같은 구역은 쓰지 않는다. 이 동네를 잘 아는 지역 부동산 전문가의 눈으로, 사실과 숫자로 쓴다.";
+const WEB_BLOG: Record<string, any> = {
+  listing: {
+    label: "기본 매물소개형", fit: "모든 매물", titleExample: "논현동 아크로힐스 매매 15억, 3룸 남향", design: "basic",
+    guide: "깔끔하고 정보 중심으로 쓴다. 제목과 첫 문단에서 지역·매물·거래 조건을 분명히 보여 주고, 본문은 핵심 조건, 입지, 내부 구성 순서로 정리한다." + NO_PREACH,
+    structure: "소제목 3~4개, 명사형으로 짧게 (예: ■ 핵심 조건 / ■ 입지와 교통 / ■ 내부 구성). 핵심 요약 → 입지 → 내부 구성 순서",
+  },
+  visit: {
+    label: "사진 둘러보기형", fit: "사진이 여러 장인 매물", titleExample: "논현동 아크로힐스, 사진으로 먼저 둘러보기", design: "magazine",
+    guide: "등록된 사진을 순서대로 보여 주며 공간을 하나씩 소개한다. 실제로 방문·촬영·답사했다고 쓰지 말고('직접 가 보니' 금지), 사진과 매물 정보에서 확인되는 것만 쓴다." + NO_PREACH,
+    structure: "소제목 3~5개, 공간 이름으로 (예: ■ 건물 외관 / ■ 실내 공간 / ■ 주변 거리). 사진 순서를 따라 바깥 → 안 → 주변",
+  },
+  area: {
+    label: "동네 정보형", fit: "주변 시설 정보가 있는 매물", titleExample: "논현역 400m·마트 500m, 논현동 생활권 정리", design: "news",
+    guide: "이 매물이 있는 동네의 생활 정보를 중심으로 쓰는 정보 글이다. 지하철역·버스·마트·학교·병원까지 거리를 [확인된 매물 정보]에 있는 숫자로 서로 비교해 정리하고, 마지막 구역에서 이 동네에 나온 매물 조건을 짧게 정리한다. 자료에 없는 시설·거리는 쓰지 않는다." + NO_PREACH,
+    structure: "소제목 3~4개, 명사형 (예: ■ 교통 / ■ 장보기·병원 / ■ 학교 / ■ 이 동네의 매물). 동네 → 매물 순서",
+  },
+  report: {
+    label: "분석·리포트형", fit: "빌딩·상가·투자매물", titleExample: "논현동 50억 건물, 숫자로 정리해 보니", design: "news",
+    guide: "가격·면적·층·수익 같은 숫자로 매물을 분석한다. 아파트·오피스텔은 같은 단지·주변 실거래와 비교하고, 임대 매물은 보증금·월세로 따진 수익을 쓴다. 확인되지 않은 수익률·시세·개발 호재는 추정하지 않는다." + NO_PREACH,
+    structure: "소제목 3~4개, 명사형 (■ 핵심 숫자 / ■ 가격 비교 / ■ 입지와 수요). 각 구역은 1~2문단",
+  },
+  consult: {
+    label: "친근한 해설형", fit: "실수요 매물", titleExample: "방 3개 아파트 매물, 어떤 가구에 맞을까", design: "qna",
+    guide: "매물 조건을 독자가 이해하기 쉽게 풀어 설명하는 해설 글로 쓴다. 부드러운 존댓말은 허용하지만 권유하지 말고, 어떤 가구·업종에 맞는 조건인지를 사실로 짚는다." + NO_PREACH,
+    structure: "소제목 3~4개, 문의할 때 자주 묻는 질문형 (예: ■ 관리비는 얼마인가요? / ■ 주차는 되나요?). 각 소제목 바로 다음 문단이 그 질문의 답",
+  },
+};
+function webBlogStyles(B: any) {
+  const S = B && B.GW_BLOG_STYLE;
+  if (S && !S.__web) {
+    for (const k of Object.keys(S)) delete S[k];
+    Object.assign(S, WEB_BLOG);
+    Object.defineProperty(S, "__web", { value: true, enumerable: false });
+  }
+  return B;
+}
+/* 공실 기사 지시 고치기 — 확장·앱 prompt.js 는 그대로, 웹이 만든 질문 글만 (2026-11-06 사장님: "자세한 내용은 공실뉴스 공실열람에서 확인할 수 있다 — 이렇게 쓰면 안 되지, 부동산이 쓰는 글인데")
+ *  · 맺음 문장 "공실뉴스 공실열람에서 확인…" 지시를 뺀다 (경매·공매도)
+ *  · 해설 구역의 "계약 전 확인해야 할 점"을 뺀다 — 가르치려 드는 말 금지 */
+const ARTICLE_FIX = `
+
+[먼저 지킬 것 — 위 지시와 다르면 이것을 따르십시오]
+- 이 기사는 이 동네를 잘 아는 지역 부동산 전문가가 씁니다. 글 안에 '공실뉴스'·'공실열람' 같은 사이트 이름이나 "자세한 내용은 ~에서 확인할 수 있다" 같은 안내 문장을 쓰지 마십시오.
+- "계약 전 확인할 점", "확인할 필요가 있다", "~해야 한다", "~하는 편이 좋다" 같은 독자를 가르치려 드는 말과 그런 소제목을 쓰지 마십시오. 해설은 이 조건이 무엇을 뜻하는지, 어떤 수요에 맞는지를 전문가의 해석으로 쓰십시오.`;
+/* 끝맺음 네 가지 — 기사마다 서버가 하나를 골라 준다 (2026-11-06 사장님: "끝내는 형식을 다양하게", "원칙에 넣어줘")
+ *  회원은 고르지 않는다. 기사들이 같은 모양으로 끝나지 않게 */
+const ARTICLE_ENDINGS = [
+  "특징 + 관계자 한마디 — 마지막 문단에서 이 매물의 눈에 띄는 특징(구조·시설·공간)을 숫자와 함께 정리하고, 매물 관계자의 한마디로 맺는다. 예: 매물 관계자는 \"신사역과 논현역을 함께 쓸 수 있어 직원 출퇴근이 편한 자리\"라며 \"소규모 법인 사무실로 잘 맞을 것\"이라고 말했다. 말하는 사람은 '매물 관계자'로만 쓰고(사무소·사람 이름·'공인중개사'는 쓰지 않는다), 말 속에는 입지와 어떤 수요에 맞는지만 담는다. 가격이 오를 것·투자 가치 같은 전망은 넣지 않는다.",
+  "동네로 넓혀 맺기 — 마지막 문단에서 시야를 이 동네 전체로 넓혀, 이 일대가 어떤 곳인지(업무지구·주거지·상권의 성격)와 이 매물에서 역·주요 시설까지의 거리로 맺는다. 개발 계획·분양 가구 수·시세처럼 [확인된 매물 정보]에 없는 숫자는 쓰지 않는다. 주변 시설 정보가 없으면 이 형식 대신 '핵심 조건으로 맺기'를 쓴다.",
+  "수요자 정리로 맺기 — 마지막 문단에서 이 매물이 어떤 수요자에게 어떤 점이 맞는지를 두세 부류로 정리해 맺는다. 예: 역세권을 원하는 소규모 법인에는 출퇴근 편의가, 회의가 잦은 팀에는 따로 마련된 회의실이 장점이다. 따옴표 인용은 쓰지 않는다.",
+  "핵심 조건으로 맺기 — 마지막 문단을 가격·거래 조건·입주 시기 같은 핵심 조건 한두 문장으로 담백하게 맺는다. 예: 매매가는 10억 원이며, 현재 비어 있어 계약 후 바로 입주할 수 있다.",
+];
+function fixArticlePrompt(t: string) {
+  const end = ARTICLE_ENDINGS[Math.floor(Math.random() * ARTICLE_ENDINGS.length)];
+  return String(t)
+    .replace(/[^\n]*마지막 문단은 "[^"]*공실열람[^"]*"로 맺을 것[^\n]*\n?/g, "")
+    .replace(/- 이런 조건의 물건을 볼 때 계약 전 확인해야 할 점\n/g, "")
+    + ARTICLE_FIX
+    + `\n- 끝맺음 형식(이번 기사): ${end}\n- 예시의 숫자·이름은 모양만 보여 주는 것입니다. 실제 숫자·시설은 [확인된 매물 정보]에 있는 것만 쓰십시오.`;
+}
+function webKinds(P: any) {
+  if (P.gwBuildPrompt && !P.gwBuildPrompt.__web) {
+    const orig = P.gwBuildPrompt;
+    const wrapped = (v: any, o: any) => fixArticlePrompt(orig(v, o));
+    Object.defineProperty(wrapped, "__web", { value: true });
+    P.gwBuildPrompt = wrapped;
+  }
+  const K = P.GW_KIND;
+  if (K && !K.__web) {
+    for (const k of Object.keys(K)) delete K[k];
+    Object.assign(K, WEB_KIND);
+    Object.defineProperty(K, "__web", { value: true, enumerable: false });
+  }
+  return P;
+}
 const YT_COMMON = ["GW_YT_VIDEO_TYPE", "GW_YT_DURATION", "GW_YT_TONE", "gwBuildYtScriptPrompt", "gwBuildYtRevisePrompt", "gwYtSpeechSeconds", "gwYtCharCount", "GWYoutubeJson"];
 const lib = {
-  prompt: () => run(["gongsil/prompt.js"], ["gwBuildPrompt", "gwBuildRevisePrompt", "GW_KIND", "GW_AUCTION_KIND", "GW_LENGTH", "GW_IMAGE_STYLE", "gwBuildImagePrompt"]),
-  blog: () => run(["gongsil/blog-prompt.js"]),
+  prompt: () => webKinds(run(["gongsil/prompt.js"], ["gwBuildPrompt", "gwBuildRevisePrompt", "GW_KIND", "GW_AUCTION_KIND", "GW_LENGTH", "GW_IMAGE_STYLE", "gwBuildImagePrompt"])),
+  blog: () => webBlogStyles(run(["gongsil/blog-prompt.js"])),
   aj: () => run(["gongsil/article-json.js"]),
   naver: () => run(["gongsil/naver-blog.js"]),
   sns: () => run(["gongsil/blog-prompt.js", "gongsil/naver-blog.js", "gongsil/youtube-json.js", "gongsil/sns-prompt.js"], ["GW_SNS_CHANNELS", "GW_SNS_ORDER", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsPickMedia", "gwSnsAiLabelNote"]),
@@ -73,14 +193,17 @@ function outer(text: string) {
 const NO_ARTICLE = { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 [확인된 매물 정보]만 사용해 작성하십시오." };
 const NO_REF = { title: "(참조 기사 없음)", subtitles: [], body: "참조 기사 없이, 아래 [확인된 매물 정보](처음 분석·캡처한 공실 정보)만 사용해 작성하십시오." };
 
-/* SNS 문체 — 앱 sns-writer.js TONES 와 같은 글 (바꾸면 둘 다) */
+/* SNS 문체 — 웹 (2026-11-06 사장님 회의: 스토리체 뺌 · 반말체 → 친근체. 예전 story 는 공손체로 쓴다) */
 const TONES: Record<string, string> = {
   polite: "공손체 — 존댓말(~습니다·~해요)로 차분하고 믿음직하게 안내하십시오.",
-  casual: "반말체 — 친구에게 말하듯 편한 반말(~했어·~야·~지)로 쓰십시오. 무례하거나 비꼬는 말은 쓰지 마십시오.",
+  casual: "친근체 — 동네 단골에게 말하듯 편하고 다정한 말투(~요, 예: '역에서 진짜 가까워요~', '주차도 돼요!')로 쓰십시오. 툭툭 끊는 반말(~해·~야)·말장난·무례한 말은 쓰지 마십시오.",
   hook: "후킹체 — 첫 줄에서 궁금증을 일으키는 한 문장(숫자·질문·반전)으로 시작하고, 문장은 짧게 끊어 끝까지 읽게 쓰십시오. 과장·낚시성 거짓은 쓰지 마십시오.",
   expert: "전문가체 — 부동산 전문가가 짚어 주듯 입지·교통·가격·활용도를 근거와 함께 분석하는 말투로 쓰십시오. 수익률·시세는 [확인된 매물 정보]에 있는 숫자만 쓰십시오.",
-  story: "스토리체 — 현장을 다녀온 사람이 들려주듯 장면과 이야기로 풀어 쓰십시오. 없는 일화나 사람을 지어내지 마십시오.",
   short: "요약체 — 핵심만 3~5줄로 아주 짧게, 줄마다 한 가지 정보만 쓰십시오.",
+  // 동네소식체 — 페이스북 (2026-11-06 사장님)
+  local: "동네소식체 — 동네 소식을 전하듯 2~3문단의 정보 글로 쓰십시오. 첫 문단은 이 동네의 소식·특징과 함께 이 매물이 나왔다는 사실(예: '신사역 일대에 2009년 준공 통사무실이 매매로 나왔습니다'), 둘째 문단은 매물 조건을 문장으로, 셋째 문단은 어떤 분에게 맞는 자리인지. 지인에게 공유하기 좋은 차분한 존댓말로, 영업하는 티·이모지 목록은 쓰지 마십시오. 사실·숫자는 [확인된 매물 정보]에 있는 것만 쓰십시오.",
+  // 체크체 (2026-11-06 사장님: "이런 느낌 좋은 것 같아", 핀 📍은 촌스러워 빼고 ✔️ 는 좋다)
+  check: "체크체 — 아래 모양 그대로 쓰십시오. ① 첫 줄: 지역·매물·가장 큰 장점 한 줄 (이모지 없이, 예: '신사역 5분, 35평 통사무실 매매') ② 빈 줄 ③ '✔️ '로 시작하는 조건 줄 3~5개, 한 줄에 조건 하나 (면적·준공·가격·층·주차·입주 등, [확인된 매물 정보]에 있는 것만) ④ 빈 줄 ⑤ 어떤 분에게 맞는 자리인지 친근한 존댓말(~예요·~입니다) 두 줄 ⑥ 빈 줄 ⑦ 마지막 줄 '자세한 조건은 DM 주세요 🙂'. 이모지는 ✔️ 와 🙂 만 쓰고 📍 등 다른 이모지는 쓰지 마십시오. 해시태그는 본문에 넣지 말고 hashtags 칸에만 쓰십시오.",
   thread: "스레드 감성 — 현장을 아는 사람이 지나가며 툭 던지는 편한 존댓말 혼잣말로 쓰십시오. ① 첫 줄은 놀라운 사실·숫자 비교 한 문장(명사로 끝내도 됨) ② 3~8줄, 한 줄에 한 생각, 줄바꿈을 자주 ③ 끝맺음은 '~네요·~더라고요·~거든요', 짧은 줄은 명사형으로 끊기 ④ 끝에서 둘째 줄에 내 생각 한 줄('~같네요', '근데 ~는 꼭 보셔야 해요') ⑤ 마지막 줄은 독자에게 묻는 질문 하나. ~습니다·반말(~해·~야)·해시태그·전화번호·'문의 주세요'·칭찬 늘어놓기('미쳤어' 등)는 쓰지 말고, 숫자·사실은 [확인된 매물 정보]에 있는 것만 쓰십시오.",
 };
 const CH_NAME: Record<string, string> = { instagram: "인스타그램", threads: "스레드", facebook: "페이스북" };
@@ -93,7 +216,14 @@ function toneLine(tone: unknown) {
 
 /* ── 선택지 (앱 blog-writer styles·articleOptions · sns channelInfo · naver designs · youtube options) ── */
 // 웹 유튜브 대본 = 60초 쇼츠만 · 말투 기본 릴스·쇼츠 (2026-11-05 사장님: "무조건 60초 · 릴스 쇼츠 스타일", 말투는 고를 수 있게)
-const YT_DEFAULTS = { duration: "short", tone: "reels", number: "digit" }; // 자막은 2017년처럼 숫자로 · 읽을 때는 서버가 한글로 바꿔 읽음 (2026-11-05 사장님)
+const YT_DEFAULTS = { duration: "short", tone: "reels", number: "digit", ending: "ask" };
+// 끝맺음 — 대본 마지막 한마디 (2026-11-06 사장님: "그래 문의주세요" 기본, "부동산에"는 넣지 않음, 프로필 링크는 헷갈려 뺌)
+const YT_ENDINGS: { id: string; label: string; line: string }[] = [
+  { id: "ask", label: "문의주세요!", line: "문의주세요!" },
+  { id: "comment", label: "댓글로 '문의'", line: "댓글로 '문의'라고 남겨주세요!" },
+  { id: "dm", label: "DM 주세요", line: "DM 주세요!" },
+  { id: "none", label: "멘트 없음", line: "" }, // 권유 한마디 없이 (2026-11-06 사장님: "없음도 있어야지")
+]; // 자막은 2017년처럼 숫자로 · 읽을 때는 서버가 한글로 바꿔 읽음 (2026-11-05 사장님)
 const REELS_TONE = { label: "릴스·쇼츠", prompt: "릴스·쇼츠 말투 — 첫 문장에서 바로 눈길을 끄는 한마디로 시작하고, 짧고 리듬감 있는 문장으로 핵심만 빠르게, 친근한 구어체 존댓말(~요). 군더더기·인사말 없이, 마지막은 짧게 행동을 이끄는 한마디" };
 /** 말투 표에 릴스·쇼츠를 넣고(앞에), 길이는 60초 쇼츠만 — 프롬프트(확장 파일)가 같은 표를 읽으므로 거기에 더한다 */
 function webYt(T: Record<string, any>, D: Record<string, any>) {
@@ -104,10 +234,13 @@ function ytOptions(vacancy: any) {
   const L = lib.yt();
   const types = L.gwYtVideoTypes(vacancy || null);
   const table = (t: Record<string, any>, extra: (v: any) => object = () => ({})) => Object.entries(t).map(([id, v]) => ({ id, label: v.label, ...extra(v) }));
+  // 공실 쇼츠 = 매물 소개 하나 · 말투에서 뉴스형 뺌 (2026-11-06 사장님: "매물소개잖아", 부동산 뉴스·지역 분석 뺌)
   return {
-    videoTypes: table(types, (v) => ({ structure: v.structure })),
+    videoTypes: table(types, (v) => ({ structure: v.structure })).slice(0, 1),
     durations: webYt(L.GW_YT_TONE, L.GW_YT_DURATION).durations.map(([id, v]: [string, any]) => ({ id, label: v.label, chars: v.chars, seconds: v.seconds })),
-    tones: webYt(L.GW_YT_TONE, L.GW_YT_DURATION).tones.map(([id, v]: [string, any]) => ({ id, label: v.label })),
+    // 말투 두 개 — 릴스·쇼츠 · 전문가 분석 (뉴스형·친근한 설명 뺌, 2026-11-06)
+    tones: webYt(L.GW_YT_TONE, L.GW_YT_DURATION).tones.filter(([id]: [string, any]) => id !== "news" && id !== "friendly").map(([id, v]: [string, any]) => ({ id, label: v.label })),
+    endings: YT_ENDINGS.map(({ id, label }) => ({ id, label })),
     numbers: table(lib.ytCol().GW_YT_NUMBER),
     defaults: { ...YT_DEFAULTS, videoType: Object.keys(types)[0] },
   };
@@ -115,7 +248,7 @@ function ytOptions(vacancy: any) {
 function ytSettings(vacancy: any, pick: Record<string, string> = {}) {
   const o = ytOptions(vacancy);
   const ok = (list: { id: string }[], v?: string) => (v && list.some((x) => x.id === v) ? v : "");
-  const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number) };
+  const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number), ending: ok(o.endings, pick.ending) };
   return { ...o.defaults, ...Object.fromEntries(Object.entries(want).filter(([, v]) => v)) } as Record<string, string>;
 }
 /* 뉴스칼럼 선택지 (앱 blog-writer styles · column-writer articleOptions · youtube-writer options 의 칼럼 부분) */
@@ -179,7 +312,8 @@ function options(vacancy: any) {
       lengths: Object.entries(B.GW_BLOG_LENGTH as Record<string, any>).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
     },
     article: {
-      kinds: Object.entries((auction ? P.GW_AUCTION_KIND : P.GW_KIND) as Record<string, any>).map(([id, k]) => ({ id, label: k.label, brief: k.brief })),
+      // 짧은 단신은 뺀다 — 공실 기사는 매물 조건을 다 담아야 해서 단신으로는 쓸 게 없다 (2026-11-06 사장님: "의미가 없지 않아", 분량 [짧게]는 그대로)
+      kinds: Object.entries((auction ? P.GW_AUCTION_KIND : P.GW_KIND) as Record<string, any>).filter(([id]) => id !== "brief").map(([id, k]) => ({ id, label: k.label, brief: k.brief })),
       lengths: Object.entries(P.GW_LENGTH as Record<string, any>).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
     },
     channels: CHANNELS.map((id) => {
@@ -195,6 +329,15 @@ function options(vacancy: any) {
 }
 
 /* ── 한 번에 쓰기 프롬프트 (앱 all-writer.js 공실뉴스 부분과 같다) ── */
+/* 뉴스칼럼 기사·블로그 말투 — 지역 부동산 전문가가 쓰는 글 (2026-11-06 사장님: "전문가의 말투로", "지역 부동산전문가가 쓰는 거야") · 위 지시보다 먼저 */
+const COL_EXPERT = `
+
+[말투 — 위 지시보다 먼저 지킬 것]
+- 이 글은 이 동네에서 오래 일해 지역 시장을 잘 아는 지역 부동산 전문가가 씁니다. 글 안에 사무소·중개 이야기는 쓰지 마십시오.
+- 전문가답게 숫자를 읽고 그 뜻을 자신 있게 짚으십시오: 면적·층·시기·매매/전세를 비교해 무엇이 다른지, 그 차이가 무엇을 뜻하는지 (예: "같은 84㎡라도 4층과 12층 거래가 4,000만 원 벌어졌다"). 근거는 원문 소재에 있는 것만 쓰고, 근거 없는 전망·단정은 하지 마십시오.
+- 지역·주변 시설은 역·마트·학교 거리 같은 숫자를 서로 비교해 객관적인 사실로 쓰십시오.
+- 독자를 가르치려 드는 말은 쓰지 마십시오: "~할 필요가 있다", "구분해 볼 필요가 있다", "~봐야 한다", "~확인해야 한다", "~살펴볼 만하다", "~하는 편이 정확하다", "걸어 보라", "주의해야 한다". 문단은 사실·숫자·전문가의 해석으로 끝내십시오.
+- 가 보거나 걸어 본 것처럼 꾸며 쓰지 마십시오.`;
 /* 뉴스칼럼 한 번에 쓰기 (앱 all-writer.js 의 col 부분과 같다) — 기사를 안 쓰면 소재인 내 기사(ref)가 참조 기사 */
 function colAllPrompt(b: any, source: any) {
   const want = { article: b.want?.article === true, blog: b.want?.blog === true, sns: b.want?.sns === true, youtube: b.want?.youtube === true };
@@ -208,8 +351,8 @@ function colAllPrompt(b: any, source: any) {
   const artLen = M.GW_LENGTH[b.article?.length] ? b.article.length : "normal";
   const blogSt = M.GW_BLOG_STYLE[b.blog?.style] ? b.blog.style : "info", blogLen = b.blog?.length || "normal";
   const parts: [string, string, string][] = [];
-  if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen })]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen })]);
+  if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen }) + COL_EXPERT]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen }) + COL_EXPERT]);
   if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone)]);
   const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
   if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", Y.gwBuildYtScriptPrompt({ article: REF, source }, ytSet)]);
@@ -259,16 +402,17 @@ function allPrompt(b: any) {
 const SHORTS_RULES = `[쇼츠 대본 — 위 지시보다 먼저 지킬 것]
 - "계약 전에는 ~을 확인해야 합니다", "등기사항증명서·권리관계·관리비 항목을 확인하세요" 같은 확인할 점·주의 안내 문장은 쓰지 마십시오.
 - "자세한 내용은 영상 설명란(공실뉴스)에서 확인할 수 있습니다" 같은 맺음 안내 문장도 쓰지 마십시오.
-- 매물의 좋은 점과 핵심 조건만 짧게 전하고, 마지막은 문의·방문을 이끄는 짧은 한마디로 끝내십시오.
+- 매물의 좋은 점과 핵심 조건만 짧게 전하고, {{END_HINT}}
 
 [말로 듣는 글 — 2026-11-05 사장님: "내용이 착착 안 달라붙어", "(69.4㎡) 이런 것 읽기가 좋지 않아"]
 - 이 글은 성우가 읽고 화면 자막으로 나옵니다. 정보표를 읽듯 쓰지 말고, 친구에게 집을 보여 주며 말하듯 이어지게 쓰십시오.
 - 개수·금액·연도·평수·층은 숫자로 씁니다: "방 2개, 욕실 1개", "주차 1대", "보증금 5,000만 원", "월세 100만 원", "매매가 1억 2,000만 원", "2017년", "21평", "3층". 자막에는 숫자로 나오고, 성우는 "방 두 개, 보증금 오천만"처럼 부동산 말투로 읽습니다. (2026-11-05 사장님)
 - 괄호 ( )와 ㎡·m²·㎡당 같은 단위·기호는 쓰지 마십시오. 면적은 평으로만 말합니다 (예: "전용 21평"). 전용과 공급이 같으면 전용만 말합니다.
 - "각각", "~로 등록돼 있습니다", "~이 제공됩니다", "~시설과 ~시설이 함께 있는" 같은 서류·안내문 말투는 쓰지 마십시오. 사실은 그냥 말합니다 ("전체 수리를 마친 집이에요").
+- 주용도·건축구조·용도지역 같은 서류 항목은 말하지 마십시오 (예: 사무실 영상에서 "주용도는 단독주택" 금지, 2026-11-06 사장님). 보는 사람이 바로 알아듣는 것만 말합니다.
 - 같은 조건(평수·방 수·가격)은 한 번만 말합니다. 첫 문장에서 말했으면 뒤에서 다시 말하지 않습니다.
 - 순서: ① 가장 끌리는 한마디(동네 + 가장 좋은 점) → ② 공간(평수·방·욕실) → ③ 건물·상태(준공·수리·향·엘리베이터) → ④ 옵션 → ⑤ 가격(보증금·월세·관리비 한 번에) → ⑥ 입주 시기.
-- 마지막 문장은 반드시 "문의주세요!" 또는 "문의 남겨주세요!" 로 끝냅니다. ("직접 둘러보세요", "확인해 보세요" 같은 맺음은 쓰지 않습니다)
+- {{END_RULE}} ("직접 둘러보세요", "확인해 보세요" 같은 맺음은 쓰지 않습니다)
 - 분량: 띄어쓰기 포함 400자 안팎(390~420자), 문단 9~11개. 위에 적힌 "약 280~380자"보다 이것이 먼저입니다. 1.25배 성우로 약 55초입니다. (2026-11-05 사장님: "글도 너무 짧아", "400자는 되어야")
   아래 본보기는 형식만 보여 주는 짧은 것이니, 그만큼 짧게 쓰지 마십시오. 늘릴 때도 같은 말을 되풀이하지 말고, 각 조건에 사는 사람에게 어떤 뜻인지 한마디를 더 붙이는 식으로 채웁니다.
 - 문단 하나가 화면 한 장입니다. 문단은 한두 문장, 40자 안팎으로 짧게, 앞 문단에 자연스럽게 이어지게 ("게다가", "여기에", "가격은요" 같은 이음말을 가끔).
@@ -281,12 +425,20 @@ const SHORTS_RULES = `[쇼츠 대본 — 위 지시보다 먼저 지킬 것]
 남서향이라 오후 햇살이 잘 들어요.
 벽걸이 에어컨이랑 세탁기도 있어서 짐만 오시면 돼요.
 가격은 보증금 5,000만 원에 월세 100만 원, 관리비 10만 원은 따로예요.
-지금 비어 있어서 바로 들어올 수 있어요. 문의주세요!`;
+지금 비어 있어서 바로 들어올 수 있어요.{{ENDING}}`;
 /** 말로 읽는 대본 — AI 가 그래도 넣은 괄호 속 ㎡ 등은 빼고 (2026-11-05) */
 const speakable = (t: string) => t.replace(/(\d)\.0(?=\s?평)/g, "$1").replace(/\s*\([^()]*(㎡|m²|m2|평형?)[^()]*\)/g, "").replace(/\s{2,}/g, " ").trim();
+/** 끝맺음을 넣은 쇼츠 규칙 — 없음이면 권유 한마디 없이 자연스럽게 끝낸다 */
+function shortsRules(ending?: string) {
+  const e = YT_ENDINGS.find((x) => x.id === ending) || YT_ENDINGS[0];
+  return SHORTS_RULES
+    .split("{{END_HINT}}").join(e.line ? "마지막은 문의를 이끄는 짧은 한마디로 끝내십시오." : "마지막은 덧붙이는 한마디 없이 매물 소개 문장(가격·입주 등)으로 그냥 끝내십시오.")
+    .split("{{END_RULE}}").join(e.line ? `마지막 문장은 반드시 "${e.line}" 로 끝냅니다.` : "'문의주세요'·'DM 주세요'·'댓글 남겨주세요' 같은 권유 문장은 쓰지 마십시오. 마지막 문장은 매물 이야기로 끝냅니다.")
+    .split("{{ENDING}}").join(e.line ? ` ${e.line}` : "");
+}
 function ytPrompt(vacancy: any, settings: Record<string, string>, article: any) {
   const number = lib.ytCol().GW_YT_NUMBER.digit; // 웹은 늘 숫자 그대로 (자막 2017년 · 읽기는 서버가 한글로) — 예전에 고른 "한글 읽기"가 남아 있어도
-  return `${lib.yt().gwBuildYtScriptPrompt({ vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}\n\n${SHORTS_RULES}`;
+  return `${lib.yt().gwBuildYtScriptPrompt({ vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}\n\n${shortsRules(settings.ending)}`;
 }
 
 /* 기사·블로그 답 → 제목·부제·문단·키워드 */

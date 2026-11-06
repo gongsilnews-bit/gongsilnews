@@ -47,7 +47,7 @@ const WEB_AI = [
 // 단지/지역/시세 — 공실 홍보(공실뉴스)와 다른 실거래 시장 기사. 단지 하나 또는 지역(구·동) (2026-11-04 사장님)
 const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/지역/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"], ["gongsil", "공실뉴스"]];
 const KINDS = [
-  { id: "news", name: "뉴스기사형", prompt: "도입부터 결론까지 문단이 자연스럽게 이어지는 뉴스 기사. 매물 조건·지역·수요·확인할 점을 기사 흐름 안에서 풀어 쓴다." },
+  { id: "news", name: "뉴스기사형", prompt: "도입부터 결론까지 문단이 자연스럽게 이어지는 뉴스 기사. 매물 조건·지역·수요를 사실과 숫자로 기사 흐름 안에서 풀어 쓴다." },
   { id: "summary", name: "단락별 요약", prompt: "첫 문단에서 기사 전체를 요약하고, 이어서 핵심 내용을 소제목 단위로 나눠 독자가 빠르게 훑어볼 수 있게 쓴다.", heads: true },
   // 더 다양하게 (2026-11-03 사장님 "기사 스타일을 조금 더 다양하게, 지금은 딱 2개")
   { id: "data", name: "숫자로 보는", prompt: "재료의 숫자(가격·면적·거래 건수·기간)를 앞세운 데이터 브리핑 기사. 문단마다 핵심 숫자 하나를 중심에 두고, 숫자가 뜻하는 바를 짧게 풀어 쓴다. 재료에 없는 숫자는 쓰지 않는다.", heads: true },
@@ -60,7 +60,7 @@ const KINDS = [
 const TONES = [
   { id: "report", name: "보도형", desc: "사실 중심, 건조하게", prompt: "사실을 먼저, 건조하고 정확하게. 형용사·감탄 없이." },
   { id: "analysis", name: "해설형", desc: "의미까지 차분히", prompt: "사실을 전한 뒤 그 의미와 독자에게 주는 영향을 차분히 해설한다. 단정·전망 금지." },
-  { id: "field", name: "현장 르포", desc: "와 있는 듯 생생하게", prompt: "현장에 와 있는 기자처럼 동선·주변 모습을 생생하게 묘사한다. 사실은 자료 그대로." },
+  { id: "field", name: "현장 르포", desc: "와 있는 듯 생생하게", prompt: "장면이 그려지도록 구체적으로 쓴다. 단, 기자가 직접 가 보거나 걸어 본 것처럼 꾸미지 않고, 자료에 있는 거리·숫자·이름으로만 묘사한다." },
   { id: "quote", name: "인터뷰·인용형", desc: "말을 살려서", prompt: "자료에 있는 말·설명을 인용 형식으로 살린다. 자료에 없는 발언은 절대 지어내지 않는다." },
 ];
 const HOOKS = [
@@ -74,12 +74,36 @@ const LENGTHS = [
   { id: "normal", name: "보통", chars: "1,400~1,800자" },
   { id: "long", name: "길게", chars: "2,800~3,500자" },
 ];
+type Focus = "all" | "complex" | "price" | "region";
+const FOCUS: [Focus, string, string][] = [
+  ["all", "종합", "단지·시세·지역을 고르게"],
+  ["complex", "단지 정보", "세대수·준공·주차 등 단지 특징"],
+  ["price", "시세 정보", "실거래 내역·가격 흐름"],
+  ["region", "지역 정보", "교통·편의시설·학교"],
+];
+/** 단지/지역/시세 재료 줄 나누기 — 머리 줄([…])·"- 단지:"·"- 지역:"은 늘, 나머지는 중심에 맞는 줄만 */
+function focusMats(text: string, f: Focus) {
+  if (f === "all") return text;
+  return text.split("\n").filter((l) => {
+    if (!l.startsWith("- ") || /^- (단지|지역):/.test(l)) return true;
+    const kind = /주변 시설/.test(l) ? "region" : /^- 단지 정보/.test(l) ? "complex" : "price";
+    return kind === f;
+  }).join("\n");
+}
+const FOCUS_SUBJECT: Record<Focus, string> = {
+  all: "단지 특징 · 실거래 시세 · 주변 생활 여건을 고르게 다루는 종합 기사. 단지 → 시세 → 지역 순서로 문단을 나눠, 셋 다 비중 있게 쓴다",
+  complex: "단지 정보 기사 — 세대수·준공 연도·동 수·층·주차·용적률 같은 단지의 특징이 중심. 가격 이야기는 쓰지 않는다",
+  price: "시세 정보 기사 — 실거래 내역(면적·층·시기별 매매·전세, 최고·최저, 신고가)이 중심. 주변 시설 이야기는 쓰지 않는다",
+  region: "지역 정보 기사 — 교통(역)·편의시설(마트·병원)·학교 같은 생활 여건이 중심. 거리 숫자를 비교해 쓰고, 가격 이야기는 쓰지 않는다",
+};
 const RULES = [
   "사실(숫자·가격·면적·주소·날짜·이름)은 [재료]에 있는 것만 쓴다. 재료에 없으면 쓰지 않는다 — 지어내지 않는다.",
   "AI 티 나는 말(다양한·최적의·완벽한·결론적으로·요약하자면·여러분)과 과장·단정·투자 권유('무조건 오른다' 등)를 쓰지 않는다.",
   "한 문장은 짧게, 쉬운 말로. 같은 말을 되풀이하지 않는다.",
   "개인정보(연락처·동호수·실명)를 넣지 않는다. 남의 기사 문장을 그대로 옮기지 않고 사실만 살려 새로 쓴다.",
   "단지·건물 이름은 브랜드와 동네를 띄어 쓰고, 영문 이름은 한글로.",
+  "지역·주변 시설 정보는 객관적 근거로 쓴다 — 역·마트·학교 거리 같은 숫자를 서로 비교해 사실 문장으로 정리한다(예: 가장 가까운 역, 학교 두 곳의 거리 차이).",
+  "기사 전체에서 독자에게 하는 당부·훈계·요령을 쓰지 않는다(기사 형식이 '체크포인트'·'칼럼·해설'일 때 그 형식이 정한 자리만 예외) — '~할 필요가 있다', '구분해 볼 필요가 있다', '~봐야 한다', '~확인해야 한다', '~살펴볼 만하다', '~하는 편이 정확하다', '걸어 보라', '주의해야 한다' 같은 말 금지. 그 대신 전문가의 해석으로 쓴다 — 숫자를 비교해 무엇이 다른지, 그 차이가 무엇을 뜻하는지 단정 없이 짚는다(예: '같은 84㎡라도 4층과 12층 거래가 4,000만 원 벌어졌다', '전세가율은 ○%로 앞 기간보다 낮아졌다'). 문단은 사실·숫자·해석으로 끝낸다.",
   "기사 끝에 '본 기사(칼럼)는 ○○ 보도·자료를 바탕으로 작성했다' 같은 작성 경위 문장, 원문 언론사·포털 이름, 원문 게재 날짜·시각을 쓰지 않는다. 기사는 마지막 내용 문단으로 끝낸다.",
 ];
 
@@ -175,8 +199,9 @@ function BigDots() {
   );
 }
 
-export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }: { onDraft: (d: ArticleDraft) => void; hasContent: () => boolean; /** 자유 글쓰기 — 매물 소개·공실 고르기 없이 (2026-11-05 사장님) */ noVacancy?: boolean }) {
-  const [src, setSrc] = useState<Src>(noVacancy ? "market" : "vacancy");
+export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, noGongsil = false }: { onDraft: (d: ArticleDraft) => void; hasContent: () => boolean; /** 자유 글쓰기 — 매물 소개·공실 고르기 없이 (2026-11-05 사장님) */ noVacancy?: boolean; /** 뉴스칼럼에서 온 기사쓰기 — 매물 소개·공실뉴스 없이 (2026-11-06 사장님) */ noGongsil?: boolean }) {
+  const [src, setSrc] = useState<Src>(noVacancy || noGongsil ? "market" : "vacancy");
+  useEffect(() => { if (noGongsil && (src === "vacancy" || src === "gongsil")) setSrc("market"); }, [noGongsil]); // eslint-disable-line react-hooks/exhaustive-deps
   const [kind, setKind] = useState("news");
   const [tone, setTone] = useState("");
   const [hook, setHook] = useState("");
@@ -216,6 +241,10 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
   const [topic, setTopic] = useState("");
   // 지역 시세 — 시군구·동·종류·기간 (고른 것은 기억)
   const [mkt, setMkt] = useState<"complex" | "area">("complex");
+  // 무엇을 중심으로 (2026-11-06 사장님: 단지 정보 · 시세 정보 · 지역 정보 · 종합) — 고른 중심의 재료만 AI 에게 (섞이지 않게)
+  const [focus, setFocus] = useState<Focus>("all");
+  useEffect(() => { if (mkt === "area" && focus === "complex") setFocus("all"); }, [mkt]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (focus === "region" && len === "long") setLen("normal"); }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   const [lawd, setLawd] = useState("");
   const [dong, setDong] = useState("");
   const [dongs, setDongs] = useState<string[]>([]);
@@ -249,7 +278,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
   }, []);
-  const openGongsil = () => { window.open(`${window.location.origin}/gongsil?aptPick=1`, "gs-apt-pick", "width=1400,height=900"); };
+  const openGongsil = () => { window.open(`${window.location.origin}/gongsil?aptPick=article`, "gs-apt-pick", "width=1400,height=900"); };
 
   const search = async () => {
     setErr("");
@@ -271,11 +300,11 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
     const k = l.findIndex(isReal);
     return k < 0 ? l : [l[k], ...l.filter((_, j) => j !== k)];
   };
-  type Analysis = { key: string; subject: string; mats: string[]; summary: string[]; complex: { id: string; name: string } | null; shots: Shot[] };
+  type Analysis = { key: string; subject: string; /** 단지 이름·지역 이름 (단지/지역/시세) */ name?: string; mats: string[]; summary: string[]; complex: { id: string; name: string } | null; shots: Shot[] };
   const [ana, setAna] = useState<Analysis | null>(null);
   const [anaBusy, setAnaBusy] = useState("");
   const [capBusy, setCapBusy] = useState(false);
-  const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}` : `m:${pick?.id || ""}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
+  const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}:${focus}` : `m:${pick?.id || ""}:${focus}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
   const errOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
   /** 공실뉴스 단지 화면 3장 — 시세 그래프 · 로드뷰 · 실거래 금액. 하나씩 차례로 (한꺼번에 찍으면 버벅거린다) */
   const webShots = async (complex: { id: string; name: string }): Promise<Shot[]> => {
@@ -341,7 +370,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
     setErr(""); setDone(false); setAnaBusy("공실뉴스 자료를 모으는 중…");
     try {
       const mats: string[] = [], summary: string[] = [];
-      let subject = "", complex: { id: string; name: string } | null = null;
+      let subject = "", name = "", complex: { id: string; name: string } | null = null;
       let regPhotos: Shot[] = [];
       let snsShots = false; // 매물 소개를 뉴스·SNS자동화 방식으로 찍었다 — 단지 화면은 실거래가만 더한다
       if (src === "vacancy") {
@@ -375,14 +404,16 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
         setAnaBusy("이 지역 실거래를 모으는 중… (빌라가 많으면 20초쯤)");
         const r = await writingAreaFacts(lawd, dong, kinds, months);
         if (!r.success) throw new Error(r.error);
-        mats.push(r.data.text); complex = r.data.complex;
+        const ft = focusMats(r.data.text, focus);
+        mats.push(ft); complex = r.data.complex; name = r.data.title.replace(/ 실거래 현황$/, "");
         subject = `${r.data.title.replace(/ 실거래 현황$/, "")} 부동산 실거래 시장 기사 (최근 ${months === 12 ? "1년" : `${months}개월`} 흐름 · 앞 기간 비교 · 신고가 · 전세가율). 공실 매물 홍보 기사가 아니다`;
-        summary.push(...r.data.text.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
+        summary.push(...ft.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
       } else if (src === "market") {
         const c = await writingComplexFacts(pick!.id);
         if (!c.success) throw new Error(c.error);
-        mats.push(c.data.text); subject = `${c.data.title} 실거래 시세 기사`; complex = { id: pick!.id, name: c.data.title };
-        summary.push(...c.data.text.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
+        const ft = focusMats(c.data.text, focus);
+        mats.push(ft); subject = `${c.data.title} 실거래 시세 기사`; name = c.data.title; complex = { id: pick!.id, name: c.data.title };
+        summary.push(...ft.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
       } else if (src === "gongsil") {
         const a = await writingArticleFacts(pick!.id);
         if (!a.success) throw new Error(a.error);
@@ -394,7 +425,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
         subject = `뉴스「${n.title}」의 사실을 바탕으로 새로 쓰는 기사. 원문 문장을 옮기지 않는다. "이 기사는 ○○ 보도를 바탕으로 작성했다", "○○에 따르면 ○일 ○시 게재" 처럼 원문 언론사·포털·게재 시각·작성 경위를 밝히는 문장은 절대 쓰지 않는다`;
         summary.push(n.title);
       } else subject = topic.trim();
-      const base: Analysis = { key, subject, mats, summary, complex, shots: regPhotos };
+      const base: Analysis = { key, subject, name, mats, summary, complex, shots: regPhotos };
       setAna(base);
       if (complex) { const shots = await capture(complex, snsShots ? ["실거래가"] : undefined); setAna((a) => (a && a.key === key ? { ...a, shots: fixFront([...regPhotos, ...shots]) } : a)); }
     } catch (e) { setErr(errOf(e)); setAna(null); }
@@ -409,12 +440,14 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
     setAna((a) => (a ? { ...a, shots: fixFront([...a.shots.filter((x) => (sns ? !x.caption.startsWith("[실거래가]") : !x.caption.startsWith("["))), ...shots]) } : a)); // 등록 사진은 그대로, 캡처만 새로
     setAnaBusy(""); setCapBusy(false);
   };
+  const canAna = src === "vacancy" ? Boolean(vacId) : src === "news" ? Boolean(news) : src === "market" && mkt === "area" ? Boolean(lawd && kinds.length) : src === "topic" ? false : Boolean(pick);
   // 고르면 저절로 분석 (자유 주제는 분석할 것이 없다)
   useEffect(() => {
     if (src === "topic") { setAna(null); return; }
-    const can = src === "vacancy" ? Boolean(vacId) : src === "news" ? Boolean(news) : src === "market" && mkt === "area" ? Boolean(lawd && kinds.length) : Boolean(pick);
-    if (!can) { setAna(null); return; }
+    if (!canAna) { setAna(null); return; }
     if (ana?.key === anaKey) return;
+    // 단지/지역/시세는 저절로 하지 않는다 — 단지·중심을 고르고 [분석하기] (2026-11-06 사장님)
+    if (src === "market") { setAna(null); return; }
     void analyze();
   }, [anaKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -430,7 +463,12 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
   ]).filter((o) => o.ok || o.c.mode === "account");
   const aiDef = aiList.find((x) => x.isWriter);
   const [webAi, setWebAiState] = useState("chatgpt");
-  useEffect(() => { try { const v = localStorage.getItem("gs-web-ai"); if (v) setWebAiState(v); } catch { /* */ } }, []);
+  useEffect(() => {
+    const read = () => { try { const v = localStorage.getItem("gs-web-ai"); if (v) setWebAiState(v); } catch { /* */ } };
+    read();
+    window.addEventListener("gs-web-ai", read); // [AI 설정]에서 바꾸면 바로
+    return () => window.removeEventListener("gs-web-ai", read);
+  }, []);
   const setWebAi = (v: string) => { setWebAiState(v); try { localStorage.setItem("gs-web-ai", v); } catch { /* */ } };
   const [isApp, setIsApp] = useState(false);
   const installer = useStudioInstaller();
@@ -438,16 +476,22 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
   useEffect(() => { setIsApp(Boolean(bridge()?.write)); }, []);
   const aiCur = aiUse || (aiDef ? { provider: aiDef.id, mode: aiDef.mode === "api" ? "api" : "account" } : null);
   const curAnalysis = (): Analysis | null => (src === "topic" ? (topic.trim() ? { key: anaKey, subject: topic.trim(), mats: [], summary: [], complex: null, shots: [] } : null) : ana && ana.key === anaKey ? ana : null);
+  // 단지/지역/시세 — 고른 중심으로 주제를 바꾼다 (지역 종합·시세는 원래 시장 기사 주제 그대로)
+  const subjectOf = (a: Analysis) => {
+    if (src !== "market" || !a.name) return a.subject;
+    if (mkt === "area" && focus !== "region") return a.subject;
+    return `${a.name}${mkt === "area" ? " (대표 단지 주변)" : ""} — ${FOCUS_SUBJECT[focus]}. 공실 매물 홍보 기사가 아니다`;
+  };
   const buildPrompt = (a: Analysis) => {
     const k = KINDS.find((x) => x.id === kind)!, tn = TONES.find((x) => x.id === tone), hk = HOOKS.find((x) => x.id === hook), ln = LENGTHS.find((x) => x.id === len)!;
     return [
-      "당신은 대한민국 부동산 전문 매체의 숙련된 기자다. 아래 자료로 기사 한 편을 쓴다.",
-      `[주제] ${a.subject}`,
+      "당신은 이 동네에서 오래 일해 지역 시장을 잘 아는 지역 부동산 전문가다(글에 사무소·중개 이야기는 쓰지 않는다). 아래 자료로 기사 한 편을 쓴다. 전문가답게 숫자를 읽고 그 뜻을 자신 있게 짚되, 근거는 자료에 있는 것만 쓴다.",
+      `[주제] ${subjectOf(a)}`,
       `[기사 형식] ${k.name} — ${k.prompt}${"heads" in k && k.heads ? " (문단마다 heading 에 소제목을 넣는다)" : " (heading 은 빈 글자로 둔다)"}`,
       tn ? `[문체] ${tn.name} — ${tn.prompt}` : "",
       hk ? `[제목] ${hk.prompt}` : "[제목] 핵심을 담아 클릭하고 싶게, 과장 없이",
       `[분량] 본문 ${ln.chars}`,
-      `[재료 — 사실은 여기 있는 것만]\n${a.mats.length ? a.mats.join("\n\n") : "(자료 없음 — 일반적인 정보만, 숫자·이름을 지어내지 말 것)"}`,
+      `[재료 — 사실은 여기 있는 것만]\n${a.mats.length ? a.mats.map((m) => (src === "market" ? focusMats(m, focus) : m)).join("\n\n") : "(자료 없음 — 일반적인 정보만, 숫자·이름을 지어내지 말 것)"}`,
       more.trim() ? `[요청 — 꼭 반영] ${more.trim()}` : "",
       `[규칙]\n${RULES.map((r, i) => `${i + 1}. ${r}`).join("\n")}`,
       "[쓰는 방법] 다 쓴 뒤 스스로 점검하고 고친 최종본만 낸다: 제목이 끌리는가 · 첫 문단에 핵심이 있는가 · 사실이 재료에 있는 것뿐인가 · 문장이 짧은가.",
@@ -675,7 +719,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 18 }}>
         <div>{head(n++, "무엇으로 쓸까요")}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>{SRCS.filter(([k]) => !(noVacancy && k === "vacancy")).map(([k, l]) => <button key={k} type="button" onClick={() => setSrc(k)} style={chip(src === k)}>{l}</button>)}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>{SRCS.filter(([k]) => !((noVacancy || noGongsil) && k === "vacancy") && !(noGongsil && k === "gongsil")).map(([k, l]) => <button key={k} type="button" onClick={() => setSrc(k)} style={chip(src === k)}>{l}</button>)}</div>
         </div>
         <div>
           {src === "vacancy" && (<>{head(n++, "공실 고르기")}
@@ -715,6 +759,22 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
             <button type="button" onClick={openGongsil} style={{ ...btn, marginTop: 6, height: 34 }}>📂 공실열람에서 단지 고르기</button>
             {found.length > 0 && !pick && list(found)}
             {pick && <div style={{ marginTop: 6, fontSize: 13, color: TEXT }}><b>{pick.label}</b> <button type="button" onClick={() => setPick(null)} style={{ border: 0, background: "none", color: SUB, cursor: "pointer" }}>바꾸기</button><div style={{ fontSize: 12, color: DIM }}>국토교통부 실거래가 — 기사에는 이 단지 숫자만 들어가요</div></div>}
+          </>)}
+          {src === "market" && (<>{head(n++, "무엇을 중심으로")}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+              {FOCUS.filter(([k]) => !(mkt === "area" && k === "complex")).map(([k, l, d]) => (
+                <button key={k} type="button" onClick={() => setFocus(k)} style={{ ...chip(focus === k), height: "auto", padding: "7px 10px", textAlign: "left", display: "block", whiteSpace: "normal" }}>
+                  <div style={{ fontWeight: 800 }}>{l}</div>
+                  <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.8, marginTop: 1 }}>{d}</div>
+                </button>
+              ))}
+            </div>
+            {focus === "region" && <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>주변 시설 자료가 많지 않아 분량은 &apos;짧게·보통&apos;까지만 돼요</div>}
+            <button type="button" onClick={() => void analyze()} disabled={!canAna || Boolean(anaBusy) || ana?.key === anaKey}
+              style={{ width: "100%", height: 40, marginTop: 8, borderRadius: 6, border: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 800,
+                background: !canAna || anaBusy || ana?.key === anaKey ? "#e5e7eb" : NAVY, color: !canAna || anaBusy || ana?.key === anaKey ? "#6b7280" : "#fff", cursor: !canAna || anaBusy || ana?.key === anaKey ? "default" : "pointer" }}>
+              {anaBusy ? "분석하는 중…" : ana?.key === anaKey ? "✓ 분석했어요" : !canAna ? (mkt === "area" ? "지역을 고르면 분석할 수 있어요" : "단지를 고르면 분석할 수 있어요") : "🔍 분석하기"}
+            </button>
           </>)}
           {src === "news" && (<>{head(n++, "뉴스 기사 고르기")}
             <div style={{ display: "flex", gap: 5 }}>
@@ -767,7 +827,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
           </div>
         </div>
         <div>{head(n++, "분량")}
-          <div style={{ display: "flex", gap: 5 }}>{LENGTHS.map((l) => <button key={l.id} type="button" onClick={() => setLen(l.id)} style={{ ...chip(len === l.id), height: 28, padding: "0 12px", fontSize: 12.5 }}>{l.name}</button>)}</div>
+          <div style={{ display: "flex", gap: 5 }}>{LENGTHS.map((l) => { const off = src === "market" && focus === "region" && l.id === "long"; return <button key={l.id} type="button" disabled={off} onClick={() => setLen(l.id)} title={off ? "지역 정보는 자료가 적어 '보통'까지만 돼요" : undefined} style={{ ...chip(len === l.id), height: 28, padding: "0 12px", fontSize: 12.5, ...(off ? { opacity: 0.35, cursor: "default" } : {}) }}>{l.name}</button>; })}</div>
           <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>{LENGTHS.find((l) => l.id === len)?.name} · {LENGTHS.find((l) => l.id === len)?.chars}</div>
         </div>
         <div>{head(n++, <>더 할 말 {dim("(선택)")}</>)}
@@ -775,44 +835,14 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false }
         </div>
       </div>
       <div style={{ padding: "12px 18px 14px", borderTop: `1px solid ${LINE}` }}>
-        {/* 쓸 AI — 대본 작성과 같은 기억 (2026-11-03 사장님: "제미나이로 만드는 것이었는데 GPT로") */}
-        {!isApp && (
-          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 9 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: SUB, marginRight: 3 }}>쓸 AI</span>
-            {WEB_AI.map((o) => (
-              <button key={o.id} type="button" onClick={() => setWebAi(o.id)} title={`내 ${o.name} 계정으로 — 오른쪽 작은 창에 열려요`} style={{ ...chip(webAi === o.id), height: 28, padding: "0 9px", fontSize: 12.5 }}>{o.name}</button>
-            ))}
-            <span style={{ fontSize: 11.5, color: DIM }}>내 계정 · 새 탭</span>
-          </div>
-        )}
-        {isApp && aiOpts.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 9 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: SUB, marginRight: 3 }}>쓸 AI</span>
-            {aiOpts.map((o) => {
-              const on = Boolean(aiCur && aiCur.provider === o.c.provider && aiCur.mode === o.c.mode);
-              return (
-                <button key={`${o.c.provider}-${o.c.mode}`} type="button" disabled={!o.ok} onClick={() => setAiSel(o.c)}
-                  title={o.ok ? (o.c.mode === "api" ? "넣어 둔 API 키로 — 쓴 만큼 요금" : "연결한 내 계정 웹 창으로 — 따로 돈 안 듦") : "연결 안 됨 — [AI 설정]에서 연결하세요"}
-                  style={{ ...chip(on), height: 28, padding: "0 9px", fontSize: 12.5, ...(o.ok ? {} : { borderStyle: "dashed", color: "#b0b8c4", cursor: "default" }) }}>
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* 쓸 AI 는 왼쪽 메뉴 [AI 설정]에서 정한 것 그대로 (2026-11-06 사장님: "이미 메인에서 지정되어 있음") */}
         {webWait && <WebAiOverlay name={(WEB_AI.find((x) => x.id === webAi) || WEB_AI[0]).name} msg={note} onReopen={() => void webReopen()} onPaste={() => void webTry(false)} onStop={() => { setWebWait(null); setBusy(""); setNote(""); }} />}
         <button type="button" onClick={() => void write()} disabled={!webWait && (Boolean(busy) || !ready)}
           style={{ width: "100%", height: 48, borderRadius: 6, border: 0, background: busy || anaBusy ? NAVY : !ready ? "#9aa6b8" : "#2563eb", color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: busy || !ready ? "default" : "pointer", fontFamily: "inherit" }}>
           {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : noVacancy ? "✨ AI 초안 작성" : "✨ AI 기사 초안 작성"}
         </button>
         <div style={{ marginTop: 7, fontSize: 12, textAlign: "center", color: err ? "#dc2626" : busy ? NAVY : done ? "#16a34a" : DIM, fontWeight: err || busy || done ? 700 : 500, lineHeight: 1.5 }}>
-          {err || busy || note || (done ? "기사 칸에 채웠어요. 고쳐서 등록하세요." : anaBusy ? "분석이 끝나면 쓸 수 있어요" : !ready && src !== "topic" ? "재료를 고르면 저절로 분석해요" : "분석한 재료로 써요 · 문체를 바꿔 여러 번 다시 써도 돼요")}
-        </div>
-        {/* AI 창에서 직접 묻고 답을 복사해 와도 된다 (2026-11-03 사장님: "GPT로 해서 복사 붙여넣기 해도") */}
-        <div style={{ display: "flex", gap: 6, marginTop: 9 }}>
-          <button type="button" onClick={() => void copyQuestion()} disabled={!ready || Boolean(busy)} title="AI에게 줄 질문을 복사해요 — ChatGPT·Gemini 창에 붙여 넣어 물어보세요" style={{ ...btn, flex: 1, height: 32, fontSize: 12.5 }}>📋 질문 복사</button>
-          <button type="button" onClick={() => void pasteAnswer()} disabled={Boolean(busy) && !webWait} title="AI 창에서 [복사]한 답을 그대로 기사 칸에 넣어요" style={{ ...btn, flex: 1, height: 32, fontSize: 12.5 }}>📋 AI 답 붙여넣기</button>
-          <button type="button" onClick={() => setGuide(true)} title="AI 창에서 복사·붙여넣기 하는 법" style={{ ...btn, height: 32, padding: "0 10px", fontSize: 12.5 }}>? 쓰는 법</button>
+          {err || busy || note || (done ? "기사 칸에 채웠어요. 고쳐서 등록하세요." : anaBusy ? "분석이 끝나면 쓸 수 있어요" : !ready && src === "market" ? "단지와 중심을 고른 뒤 [분석하기]를 누르세요" : !ready && src !== "topic" ? "재료를 고르면 저절로 분석해요" : "분석한 재료로 써요 · 문체를 바꿔 여러 번 다시 써도 돼요")}
         </div>
         {/* 웹 — AI 답을 기다리는 동안 그림 설명 창 · [? 쓰는 법] (2026-11-03 사장님: 처음 하는 사람은 복사 붙여넣기를 모름, 복사 단추 위치까지) */}
         {installGuide && <InstallGuideModal ver={installer.ver} onClose={() => setInstallGuide(false)} />}

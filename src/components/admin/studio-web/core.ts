@@ -220,6 +220,12 @@ export function watchPublished() {
       const s = await helper({ op: "status", id: p.id });
       if (!s || !s.ok) { if (s && !s.ok) setPubs(pubs().filter((x) => x.id !== p.id)); continue; }
       if (s.published) {
+        // 뉴스칼럼·자유 글쓰기(col-…) — 서버에 올리지 않고 그 작업(회원 PC)에 주소를 남긴다 (2026-11-06 사장님)
+        if (p.vacancyId.startsWith("col-")) {
+          setPubs(pubs().filter((x) => x.id !== p.id)); void helper({ op: "forget", id: p.id });
+          window.dispatchEvent(new CustomEvent("gs-col-published", { detail: { id: p.vacancyId, channel: p.channel, url: s.published } }));
+          continue;
+        }
         const r = await fetch("/api/studio/promo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ vacancyId: p.vacancyId, channel: p.channel, url: s.published }) }).then((x) => x.json()).catch(() => null);
         if (r && r.success) { setPubs(pubs().filter((x) => x.id !== p.id)); void helper({ op: "forget", id: p.id }); window.dispatchEvent(new CustomEvent("gs-promo-saved", { detail: { vacancyId: p.vacancyId, channel: p.channel } })); }
       }
@@ -230,7 +236,7 @@ export async function helperJob(target: string, payload: Record<string, unknown>
   if (!(await helperOn())) throw new Error(NO_HELPER);
   const r = await helper({ op: "job", target, payload });
   if (!r || !r.ok || !r.id) throw new Error(NO_HELPER);
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vacancyId)) setPubs([...pubs(), { id: r.id, vacancyId, channel, at: Date.now() }]);
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vacancyId) || /^col-[\w-]+$/.test(vacancyId)) setPubs([...pubs(), { id: r.id, vacancyId, channel, at: Date.now() }]);
   openDocked(openUrl); // AI 창과 같은 자리에 작은 창으로 (2026-11-04)
   say(progressCh, `오른쪽에 ${label}을(를) 열었어요. 공실뉴스 작성기가 채우기를 기다리는 중…`);
   if (!(await helperWait(r.id, "taken", 45000))) {

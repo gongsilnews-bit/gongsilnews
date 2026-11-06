@@ -2065,7 +2065,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         {/* 앱 — 왼쪽 글쓰기 도구 (대본 작성 모양) */}
         {studioMode && (
           <aside style={{ width: 400, minWidth: 400, position: "sticky", top: 8, height: "calc(100vh - 120px)", flexShrink: 0, border: `1px solid ${border}`, borderRadius: 6, overflow: "hidden", background: "#fff" }}>
-            <ArticleAiTool onDraft={applyStudioDraft} hasContent={() => Boolean(title.trim() || (editorRef.current?.innerText || "").trim())} />
+            <ArticleAiTool onDraft={applyStudioDraft} hasContent={() => Boolean(title.trim() || (editorRef.current?.innerText || "").trim())}
+              /* 뉴스·SNS자동화(뉴스칼럼)에서 [새로 만들기]로 왔으면 매물 소개·공실뉴스는 빼고 (2026-11-06 사장님) */
+              noGongsil={/(^|[?&])menu=sns(&|$)/.test(memberReturnPath.split("?")[1] || "")} />
           </aside>
         )}
 

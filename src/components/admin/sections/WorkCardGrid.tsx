@@ -84,13 +84,18 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
                 {c.done && (
                   <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "18px 6px 6px", display: "flex", gap: 3, alignItems: "center", background: "linear-gradient(transparent, rgba(0,0,0,0.55))" }}>
                     {CH.map(([k, label]) => {
-                      const on = Boolean(c.done![k]);
+                      const wrote = Boolean(c.done![k]);
+                      // links 가 있으면 올린 주소가 연결된 채널만 ✓, 글만 써 뒀으면 반투명 + ! (공실관리 카드와 같이, 2026-11-06) — 공실뉴스 기사 칸은 써 둔 글 = ✓
+                      const useLinks = Boolean(c.links) && k !== "article";
+                      const linked = useLinks ? Boolean(c.links![k]) : wrote;
+                      const draft = useLinks && wrote && !linked;
                       return (
-                        <span key={k} role="button" title={`${label} · ${on ? "써 둔 글 열기" : "이 칼럼으로 글 쓰기"}`} onClick={(e) => { e.stopPropagation(); onOpen(c.id, k); }}
+                        <span key={k} role="button" title={`${label} · ${useLinks ? (linked ? "올린 게시물 보기" : draft ? "써 뒀어요 — 올렸다면 [링크체크]에서 주소를 넣어 주세요" : "이 글로 쓰기") : wrote ? "써 둔 글 열기" : "이 칼럼으로 글 쓰기"}`} onClick={(e) => { e.stopPropagation(); onOpen(c.id, k); }}
                           style={{ position: "relative", width: 24, height: 24, borderRadius: 7, background: BG[k], display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.3)", filter: on ? "none" : "grayscale(1)", opacity: on ? 1 : 0.6 }}>
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.3)", filter: linked || draft ? "none" : "grayscale(1)", opacity: linked ? 1 : draft ? 0.55 : 0.6 }}>
                           {G[k]}
-                          {on && <span style={{ position: "absolute", right: -4, bottom: -4, width: 14, height: 14, borderRadius: "50%", background: "#2f9e44", border: "2px solid #fff", color: "#fff", fontSize: 8, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>}
+                          {linked && <span style={{ position: "absolute", right: -4, bottom: -4, width: 14, height: 14, borderRadius: "50%", background: "#2f9e44", border: "2px solid #fff", color: "#fff", fontSize: 8, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>}
+                          {draft && <span style={{ position: "absolute", right: -4, top: -4, width: 13, height: 13, borderRadius: "50%", background: "#f59f00", border: "2px solid #fff", color: "#fff", fontSize: 8, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>!</span>}
                         </span>
                       );
                     })}
@@ -101,7 +106,15 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
               </div>
               <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</div>
             </button>
-            <div style={{ marginTop: 2, fontSize: 12, color: textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[c.line1, c.date].filter(Boolean).join(" · ")}</div>
+            <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[c.line1, c.date].filter(Boolean).join(" · ")}</span>
+              {onLinks && c.done && (
+                <button onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onLinks(c.id, r.left, r.bottom + 6); }} title="채널별 링크 보기·복사·수정"
+                  style={{ flexShrink: 0, height: 24, padding: "0 8px", borderRadius: 8, border: 0, background: darkMode ? "#3a3b40" : "#e9ecef", color: textSecondary, fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                  <RefreshGlyph size={11} />링크체크
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

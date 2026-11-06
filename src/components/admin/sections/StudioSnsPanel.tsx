@@ -44,14 +44,24 @@ const RATIO: Record<string, string> = { instagram: "4 / 5", facebook: "1 / 1", t
 export const SNS_TONES = [
   { id: "thread", label: "스레드 감성", brief: "툭 던지는 혼잣말 · 숫자 · 질문으로 끝" },
   { id: "polite", label: "공손체", brief: "존댓말로 차분하게 안내" },
-  { id: "casual", label: "반말체", brief: "친구에게 말하듯 편하게" },
+  { id: "casual", label: "친근체", brief: "동네 단골에게 말하듯 편하고 다정하게" },
   { id: "hook", label: "후킹체", brief: "첫 줄에서 궁금하게, 짧게 끊어서" },
   { id: "expert", label: "전문가체", brief: "입지·가격·활용도를 분석하듯" },
-  { id: "story", label: "스토리체", brief: "현장을 다녀온 듯 이야기로" },
   { id: "short", label: "요약체", brief: "핵심만 3~5줄" },
+  { id: "check", label: "체크체", brief: "✔️ 조건 정리 + 한마디" }, // 2026-11-06 사장님: 인스타 기본
+  { id: "local", label: "동네소식체", brief: "동네 소식 전하듯 2~3문단" }, // 2026-11-06 사장님: 페이스북 전용·기본
 ];
+/** 채널에 맞는 문체 — 스레드 감성은 스레드에만 (2026-11-06 사장님 회의: 스토리체 뺌 · 반말체 → 친근체) */
+//  인스타그램은 친근체 → 공손체 순서로 맨 앞에 (2026-11-06 사장님)
+const IG_FIRST = ["casual", "polite"];
+export const tonesFor = (ch: string) => {
+  if (ch === "threads") return SNS_TONES.filter((t) => t.id !== "short" && t.id !== "local"); // 스레드는 요약체 뺌 (2026-11-06 사장님)
+  const l = SNS_TONES.filter((t) => t.id !== "thread" && t.id !== "local" && !(ch === "facebook" && t.id === "short")); // 페이스북도 요약체 뺌 (2026-11-06 사장님)
+  if (ch === "facebook") return [SNS_TONES.find((t) => t.id === "local")!, ...l]; // 동네소식체는 페이스북에만, 맨 앞
+  return ch === "instagram" ? [...IG_FIRST.map((id) => l.find((t) => t.id === id)!), ...l.filter((t) => !IG_FIRST.includes(t.id))] : l;
+};
 /** 채널마다 처음 문체 — 스레드는 스레드 감성 (2026-11-03 사장님) */
-export const defaultTone = (ch: string) => (ch === "threads" ? "thread" : "polite");
+export const defaultTone = (ch: string) => (ch === "threads" ? "thread" : ch === "instagram" ? "check" : ch === "facebook" ? "local" : "polite");
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
@@ -234,7 +244,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
   const narrow = view === "settings";
   const toneGrid = (
         <div style={{ display: "grid", gridTemplateColumns: narrow ? "1fr 1fr" : "repeat(auto-fill, minmax(160px, 1fr))", gap: narrow ? 6 : 8, marginTop: narrow ? 0 : 14 }}>
-          {SNS_TONES.map((t) => (
+          {tonesFor(channel).map((t) => (
             <button key={t.id} type="button" onClick={() => onTone?.(t.id)} disabled={!onTone}
               style={{ textAlign: "left", padding: narrow ? "7px 9px" : "9px 12px", borderRadius: 8, cursor: onTone ? "pointer" : "default", color: theme.textPrimary,
                 border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>

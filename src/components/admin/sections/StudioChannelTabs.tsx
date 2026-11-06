@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
-import StudioSnsPanel, { SNS_TONES, type SnsData, type ChannelInfo } from "./StudioSnsPanel";
+import StudioSnsPanel, { SNS_TONES, tonesFor, defaultTone, type SnsData, type ChannelInfo } from "./StudioSnsPanel";
 import ChannelButton from "./ChannelButton";
 import StudioArticlePanel from "./StudioArticlePanel";
 import StudioYoutubePanel from "./StudioYoutubePanel";
@@ -104,7 +104,11 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [ytVer, setYtVer] = useState(0);
   // 한 번에 쓰기로 대본을 새로 받으면 유튜브 탭을 다시 그린다
   // SNS 문체 — 채널마다 (전에 세 채널 같이 고른 값이 있으면 그것으로 시작)
-  const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => [ch, all.sns.tones?.[ch] || (ch === "threads" ? "thread" : all.sns.tone || "polite")]));
+  // 목록에 없는 문체(뺀 스토리체, 인스타·페북의 스레드 감성)는 그 채널 처음 문체로 (2026-11-06)
+  const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => {
+    const t = all.sns.tones?.[ch] || defaultTone(ch);
+    return [ch, tonesFor(ch).some((x) => x.id === t) ? t : defaultTone(ch)];
+  }));
   const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
   // only — 이 탭 글만 쓰기 (2026-10-28 사장님: 한 번에 쓰기와 함께 각각 쓰기도). ☑ 기억은 바꾸지 않는다
   // SNS 는 채널 하나만도 (instagram · threads · facebook — 나머지 채널 글은 그대로, 2026-10-28 사장님)
@@ -146,6 +150,11 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     bridge()?.article?.options(workId).then(setArtOpts).catch(() => {});
     bridge()?.youtube.options?.(workId).then(setYtOpts).catch(() => {});
   }, [layout, workId]);
+  // 고른 기사 스타일이 목록에 없으면(예전 "숫자로 보는" 등 — 2026-11-06 웹은 여섯 개로 줄임) 맨 앞(매물 소개형)으로
+  useEffect(() => {
+    if (!artOpts?.kinds.length || artOpts.kinds.some((k) => k.id === all.article.kind)) return;
+    keepAll({ ...all, article: { ...all.article, kind: artOpts.kinds[0].id } });
+  }, [artOpts]); // eslint-disable-line react-hooks/exhaustive-deps
   const [openRow, setOpenRow] = useState<string>(""); // 작업대 왼쪽 — 펼친 글 (하나만)
   // 가운데 탭이 어떤 길로든 바뀌면 왼쪽도 그 글 설정을 펼친다 (2026-11-03 사장님: 좌우가 함께) — 분석 내용 탭은 그대로
   useEffect(() => { if (layout === "desk" && tab && tab !== "source") setOpenRow(tab); }, [tab, layout]);
@@ -438,7 +447,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
     const soft = theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc";
     const sameTone = all.sns.same ?? new Set(Object.values(snsTones)).size === 1;
-    const setTone = (ch: string, t: string) => keepAll({ ...all, sns: { ...all.sns, tones: sameTone ? { instagram: t, threads: t, facebook: t } : { ...snsTones, [ch]: t } } });
+    // 같은 문체로 — 스레드 감성은 스레드에만 (인스타·페북은 그대로)
+    const setTone = (ch: string, t: string) => keepAll({ ...all, sns: { ...all.sns, tones: sameTone ? (t === "thread" ? { ...snsTones, threads: t } : { instagram: t, threads: t, facebook: t }) : { ...snsTones, [ch]: t } } });
     const toneLabel = (id: string) => SNS_TONES.find((t) => t.id === id)?.label || id;
     const chOn = (c: string) => all.sns.on && all.sns.chs?.[c] !== false;
     const flipCh = (c: string) => {
@@ -462,7 +472,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     const ytSum = ytOpts ? [ytPick("videoType", ytOpts.videoTypes), ytPick("duration", ytOpts.durations), ytPick("tone", ytOpts.tones)].filter(Boolean).join(" · ") : "형식 · 길이 · 말투";
     const toneGrid = (ch: string) => (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-        {SNS_TONES.map((t) => {
+        {tonesFor(ch).map((t) => {
           const on = snsTones[ch] === t.id;
           return (
             <button key={t.id} type="button" onClick={() => setTone(ch, t.id)}

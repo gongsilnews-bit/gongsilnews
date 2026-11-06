@@ -17,7 +17,7 @@ import { useStudioWriter } from "./useStudioWriter";
  */
 
 type Option = { id: string; label: string; structure?: string; chars?: string };
-type Options = { videoTypes: Option[]; durations: Option[]; tones: Option[]; numbers: Option[]; defaults: Record<string, string> };
+type Options = { videoTypes: Option[]; durations: Option[]; tones: Option[]; numbers: Option[]; endings?: Option[]; defaults: Record<string, string> };
 type Script = {
   vacancyId: string;
   settings: Record<string, string>;
@@ -87,7 +87,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
       setOpts(o);
       // 처음 값 ← 이 PC 에 기억한 값 (이 공실에 없는 영상 형식은 빼고)
       const mem: Record<string, string> = {};
-      const lists: Record<string, Option[]> = { videoType: o.videoTypes, duration: o.durations, tone: o.tones, number: o.numbers };
+      const lists: Record<string, Option[]> = { videoType: o.videoTypes, duration: o.durations, tone: o.tones, number: o.numbers, ending: o.endings || [] };
       for (const k of Object.keys(lists)) { const v = remembered?.[k]; if (typeof v === "string" && lists[k].some((x) => x.id === v)) mem[k] = v; }
       setPickRaw((p) => ({ ...o.defaults, ...mem, ...p }));
     }).catch(() => {});
@@ -209,9 +209,11 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
   const target = opts?.durations.find((d) => d.id === (script?.settings?.duration || pick.duration));
 
   const rows = (<>
-        {row("영상 형식", "videoType", opts?.videoTypes)}
-        {row("길이", "duration", opts?.durations)}
+        {/* 고를 것이 하나뿐이면 줄을 그리지 않는다 — 공실 쇼츠는 매물 소개 · 60초 쇼츠만 (2026-11-06 사장님) */}
+        {(opts?.videoTypes.length || 0) > 1 && row("영상 형식", "videoType", opts?.videoTypes)}
+        {(opts?.durations.length || 0) > 1 && row("길이", "duration", opts?.durations)}
         {row("말투", "tone", opts?.tones)}
+        {(opts?.endings?.length || 0) > 0 && row("끝맺음", "ending", opts?.endings)}
   </>);
   if (view === "settings") return <div>{rows}</div>;
   const result = view === "result";

@@ -11,11 +11,15 @@ import { useRouter } from "next/navigation";
 import ArticleAiTool, { type ArticleDraft } from "../writing/ArticleAiTool";
 import { studioBridge } from "../studio-web";
 import WorkCardGrid, { LinkNotice, type WorkCard } from "./WorkCardGrid";
+import { LinksPanel } from "./VacancyCardGrid";
+import type { PromoChannel } from "@/utils/vacancyPromos";
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Photo = { url: string; caption: string };
-type Col = { id: string; label: string; createdAt: string; source: { mode: string; topic?: { subject?: string; memo?: string } }; thumb?: string | null; done?: Record<string, boolean> };
-type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]> } };
+type Col = { id: string; label: string; createdAt: string; source: { mode: string; topic?: { subject?: string; memo?: string } }; thumb?: string | null; done?: Record<string, boolean>; links?: Record<string, string> };
+type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]>; setLink?: (id: string, channel: string, url: string) => Promise<unknown> } };
+/** [링크체크] 채널 — 블로그·인스타·스레드·페북·유튜브 (공실뉴스 기사 칸은 빼고) */
+export const COL_LINK_CH: [PromoChannel, string][] = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
 const shortDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme; /** 만든 칼럼을 뉴스칼럼에서 연다 (tab — 그 채널부터) */ onOpenColumn: (id: string, tab?: string) => void }) {
@@ -23,13 +27,20 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   // 처음엔 목록 — [+ 새로 만들기] + 자유 글쓰기로 쓴 글 카드 (2026-11-05 사장님: "자유글쓰기도 이런 형식으로", 뉴스칼럼과 같이)
   const [view, setView] = useState<"list" | "write">("list");
   const [cards, setCards] = useState<WorkCard[] | null>(null);
-  useEffect(() => {
-    if (view !== "list") return;
+  // 올린 게시물 주소 — 그 글의 작업 파일(회원 PC)에 저장, 서버에는 안 올림 (2026-11-06 사장님: "자유글쓰기에서 매칭이 되지 않음")
+  const [linksFor, setLinksFor] = useState<{ id: string; x: number; y: number } | null>(null);
+  const load = () => {
     studioBridge<Bridge>()?.column.list(200).then((l) => setCards(l.filter((c) => c.source?.mode === "topic").map((c) => ({
       id: c.id, badge: "내 글", date: shortDay(c.createdAt), title: c.label || c.source.topic?.subject || "자유 글", line1: `${String(c.source.topic?.memo || "").length.toLocaleString("ko-KR")}자`,
-      thumb: c.thumb || null, done: c.done,
+      thumb: c.thumb || null, done: c.done, links: c.links || {},
     })))).catch(() => setCards([]));
-  }, [view]);
+  };
+  useEffect(() => {
+    if (view !== "list") return;
+    load();
+    window.addEventListener("gs-col-links", load); // 도우미가 올린 주소를 잡으면
+    return () => window.removeEventListener("gs-col-links", load);
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -72,8 +83,22 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
       <LinkNotice darkMode={Boolean(theme.darkMode)} />
       <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" cards={cards}
         onAdd={() => { setTitle(""); setBody(""); setPhotos([]); setErr(""); setView("write"); }}
-        onOpen={(id, tab) => onOpenColumn(id, tab === "article" ? "blog" : tab)}
+        onOpen={(id, tab) => {
+          const url = (cards || []).find((c) => c.id === id)?.links?.[tab];
+          if (url) return void window.open(url, "_blank", "noopener"); // 올린 채널 — 그 게시물로
+          onOpenColumn(id, tab === "article" ? "blog" : tab);
+        }}
+        onLinks={(id, x, y) => setLinksFor({ id, x, y })}
         placeholder={<span style={{ fontSize: 30 }}>✍</span>} empty="아직 쓴 글이 없어요. [새로 만들기]로 첫 글을 써 보세요." />
+      {linksFor && (
+        <LinksPanel theme={theme as never} x={linksFor.x} y={linksFor.y} channels={COL_LINK_CH} onClose={() => setLinksFor(null)}
+          links={(cards || []).find((c) => c.id === linksFor.id)?.links || {}}
+          onSave={async (ch, u) => {
+            const b = studioBridge<Bridge>();
+            if (!b?.column.setLink) return "이 화면을 새로고침해 주세요.";
+            try { await b.column.setLink(linksFor.id, ch, u); load(); return ""; } catch (e) { return e instanceof Error ? e.message : String(e); }
+          }} />
+      )}
     </div>
   );
 

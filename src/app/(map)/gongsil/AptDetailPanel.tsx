@@ -534,10 +534,14 @@ function AptStar({ id }: { id: string }) {
 /** 대본 작성에서 연 공실열람 창(?aptPick=1)이면 단지 창 맨 위에 [✍ 이 단지로 대본 쓰기] — 앱의 대본 작성 화면으로 단지를 보내고 창을 닫는다 */
 function ScriptPickBar({ detail }: { detail: AptDetail }) {
   const [on, setOn] = useState(false);
+  const [what, setWhat] = useState("대본"); // 기사쓰기에서 열면 "기사"
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get("aptPick") === "1") sessionStorage.setItem("gs-apt-pick", "1");
-      setOn(sessionStorage.getItem("gs-apt-pick") === "1" && Boolean(window.opener));
+      const q = new URLSearchParams(window.location.search).get("aptPick");
+      if (q === "1" || q === "article") sessionStorage.setItem("gs-apt-pick", q);
+      const v = sessionStorage.getItem("gs-apt-pick");
+      setOn((v === "1" || v === "article") && Boolean(window.opener));
+      setWhat(v === "article" ? "기사" : "대본");
     } catch {}
   }, []);
   if (!on) return null;
@@ -546,9 +550,8 @@ function ScriptPickBar({ detail }: { detail: AptDetail }) {
     window.close();
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#eef3ff", borderBottom: "1px solid #c7d7fe" }}>
-      <span style={{ flex: 1, fontSize: 13, color: "#1e3a8a", lineHeight: 1.45 }}>이 단지의 실거래 시세로 대본을 써요</span>
-      <button onClick={send} style={{ border: 0, borderRadius: 8, background: "#2563eb", color: "#fff", fontSize: 14, fontWeight: 800, padding: "9px 14px", cursor: "pointer", whiteSpace: "nowrap" }}>✍ 이 단지로 대본 쓰기</button>
+    <div style={{ flexShrink: 0, padding: "12px 16px", background: "#fff", borderTop: "1px solid #e5e7eb", boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}>
+      <button onClick={send} style={{ width: "100%", height: 50, border: 0, borderRadius: 10, background: "var(--apt-accent, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>✍ 이 단지로 {what} 쓰기</button>
     </div>
   );
 }
@@ -684,8 +687,6 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
       </div>
 
       <div style={flat ? {} : { flex: 1, overflowY: "auto" }}>
-        {/* 대본 작성 › 단지/시세 [공실열람에서 고르기]로 연 창이면 — 이 단지를 골라 보낸다 (2026-11-03 사장님) */}
-        <ScriptPickBar detail={detail} />
         {/* 단지 한 줄 */}
         <div style={{ ...sectionStyle, padding: "16px 20px" }}>
           <div style={{ fontSize: 16, fontWeight: 800 }}>{address}</div>
@@ -909,6 +910,8 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           </div>
         </div>
       )}
+      {/* 대본·기사 작성 › 단지/시세 [공실열람에서 고르기]로 연 창이면 — 창 맨 아래에 붙은 단추로 이 단지를 보낸다 (2026-11-06 사장님: 위치가 어정쩡) */}
+      <ScriptPickBar detail={detail} />
     </div>
     </div>
   );

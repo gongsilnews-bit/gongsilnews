@@ -26,7 +26,8 @@ type Doc = { vacancyId: string; style: string; length: string; section1?: string
 type Sns = { vacancyId: string; noun: string; listing: any; posts: Record<string, any>; pool: DocMedia[]; media: Record<string, string[]>; seenFiles?: string[]; tone?: unknown; writtenAt: string };
 type Yt = { title: string; titles: string[]; narration: string[]; settings: Record<string, string>; detailUrl: string; listing: any; writtenAt: string; revisedAt?: string; editedAt?: string };
 // column — 뉴스칼럼(번호 "col-…", 2026-11-04 웹): 소재는 회원 본인 기사. 사진은 analysis.media 에 (공실과 같은 길을 탄다)
-type Column = { source: any; createdAt: string; articleNo: string };
+//  links — 올린 게시물 주소 { blog·instagram·threads·facebook·youtube: url } (회원 PC 작업 파일에만, 2026-11-06)
+type Column = { source: any; createdAt: string; articleNo: string; links?: Record<string, string> };
 type Work = { key: string; memberId: string; vacancyId: string; analysis: Analysis; column?: Column; article?: Doc; blog?: Doc; sns?: Sns; youtube?: Yt; updatedAt: string };
 
 const CHANNELS = ["instagram", "threads", "facebook"];
@@ -751,8 +752,37 @@ function colForWeb(w: Work) {
     thumb: media[0]?.src || null,
     worked: Boolean(w.article || w.blog || w.sns || w.youtube),
     done: { article: Boolean(w.article), blog: Boolean(w.blog), instagram: Boolean(w.sns?.posts?.instagram), threads: Boolean(w.sns?.posts?.threads), facebook: Boolean(w.sns?.posts?.facebook), youtube: Boolean(w.youtube) },
+    links: { ...(c.links || {}) },
     updatedAt: w.updatedAt,
   };
+}
+/* 올린 게시물 주소 연결·풀기 — 빈 주소면 푼다. 서버에는 올리지 않는다 (작업 파일 .gsn 에 같이 저장) */
+async function colSetLink(id: string, channel: string, url: string) {
+  const w = isCol(id) ? await getWork(id) : null;
+  if (!w?.column) throw new Error("이 글을 찾지 못했어요. 목록에서 다시 골라 주세요.");
+  const ch = String(channel || "");
+  if (!["blog", "instagram", "threads", "facebook", "youtube"].includes(ch)) throw new Error("채널을 다시 골라 주세요.");
+  const v = String(url || "").trim();
+  if (v && !/^https:\/\//.test(v)) throw new Error("https:// 로 시작하는 주소를 넣어 주세요.");
+  const links = { ...(w.column.links || {}) };
+  if (v) links[ch] = v; else delete links[ch];
+  w.column = { ...w.column, links };
+  await putWork(w);
+  window.dispatchEvent(new CustomEvent("gs-col-links", { detail: { id } }));
+  return colForWeb(w);
+}
+// 도우미가 올린 글 주소를 잡으면 (core.ts watchPublished) 저절로 연결
+if (typeof window !== "undefined") {
+  window.addEventListener("gs-col-published", (e) => {
+    const d = (e as CustomEvent<{ id: string; channel: string; url: string }>).detail;
+    if (!d?.id || !d.url) return;
+    void colSetLink(d.id, d.channel, d.url).then((c) => {
+      // 내 공실뉴스 기사로 만든 뉴스칼럼이면 그 기사 홍보현황에도 (기사는 원래 서버 데이터 — 기사 카드 ✓)
+      const no = articleNoOf(String((c.source as any)?.news?.url || ""));
+      if (no) void fetch("/api/studio/promo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ articleNo: no, channel: d.channel, url: d.url }) })
+        .then(() => window.dispatchEvent(new CustomEvent("gs-promo-changed"))).catch(() => {});
+    }).catch(() => {});
+  });
 }
 async function colCreate(source: any) {
   const n = source?.news;
@@ -856,7 +886,7 @@ const web = {
     onProgress: onProgress("sns"),
   },
   column: {
-    create: colCreate, get: colGet, list: colList, setUrl: colSetUrl, media: colMedia, save: colSave,
+    create: colCreate, get: colGet, list: colList, setUrl: colSetUrl, media: colMedia, save: colSave, setLink: colSetLink,
     // 다른 뉴스 가져오기는 앱에서 (웹은 내 기사만, 2026-11-04 사장님)
     fetchNews: notInWeb("다른 뉴스 가져오기"), openNews: notInWeb("다른 뉴스 가져오기"), grabNews: notInWeb("다른 뉴스 가져오기"),
   },
