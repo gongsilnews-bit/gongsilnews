@@ -157,7 +157,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
     setErr("");
     try {
       if (!paras.length) throw new Error("대본을 한 줄 이상 써 주세요.");
-      if (over) throw new Error(`대본이 약 ${secs}초예요. 웹에서는 ${MAX_SEC}초까지 만들 수 있어요. 문장을 줄여 주세요.`);
+      // 60초가 넘어도 막지 않는다 — 편집에서 줄이면 된다 (2026-11-06 사장님: "60초 넘으니까 줄이라고 하더라, 편집도 안 되고, 그러면 안 되지")
       const ai = mode === "ai" && voiceId;
       const p = await b.project.create({ method: "text", ratio, name: datedName(hookTitle || seed?.title || info?.title || "쇼츠") /* 쇼츠릴스 대본 제목 먼저 (2026-11-06: 지역 이름 "강남구 논현동" 만 들어가던 것) */, vacancyId: vac || "" });
       // 공실을 골랐으면 그 사진을 차례로 (없으면 화면은 편집에서 넣는다)
@@ -260,7 +260,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   return (
     <Modal title="쇼츠 만들기" onClose={busy ? () => {} : onCancel} width={780}
       footer={<><span style={{ marginRight: "auto" }} />
-        <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={!paras.length || Boolean(busy) || over}><Icon name="video" size={16} />{busy || "편집 시작"}</Btn></>}>
+        <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={!paras.length || Boolean(busy)}><Icon name="video" size={16} />{busy || "편집 시작"}</Btn></>}>
       <div style={{ padding: "4px 24px 20px", fontFamily: FONT, color: C.text, maxHeight: "72vh", overflowY: "auto" }}>
         {head("① 대본")}
         <select value={vac} onChange={(e) => { setVac(e.target.value); setErr(""); }} disabled={Boolean(busy)} style={{ ...box, height: 40, fontSize: 14, padding: "0 10px", marginBottom: 8, color: vac ? C.text : C.sub }}>
@@ -273,7 +273,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
           style={{ ...box, padding: "12px 14px", lineHeight: 1.7, resize: "vertical" }} />
         <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 13 }}>
-          <b style={{ color: over ? C.danger : C.accent }}>약 {secs}초 / {MAX_SEC}초{over ? ` — ${secs - MAX_SEC}초쯤 줄여 주세요` : ""}</b>
+          <b style={{ color: over ? "#f59f00" : C.accent }}>약 {secs}초 / {MAX_SEC}초{over ? ` — 조금 길어요. 그대로 편집을 시작하고, 편집에서 문장·클립을 지워 줄여도 돼요` : ""}</b>
           <span style={{ color: C.dim }}>{from === "youtube" || from === "seed" ? "쇼츠릴스 대본에서 가져왔어요" : from === "base" ? "공실 정보로 만든 문장이에요" : ""}</span>
         </div>
 
