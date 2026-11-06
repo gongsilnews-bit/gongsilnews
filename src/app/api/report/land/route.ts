@@ -152,7 +152,8 @@ export async function GET(req: NextRequest) {
   let cadastralError = "";
   let zones: { name: string; rings: number[][][] }[] = [];
   let landChar: { year: string; jimok: string; area: number | null; zoning: string; price: number | null; road: string; terrain: string; use: string } | null = null;
-  const vkey = process.env.VWORLD_API_KEY;
+  // 브이월드 키 — 설정에 VWORLD_MAP_KEY 이름으로 들어 있어 지적도가 늘 비었다 (2026-11-06: 같은 키로 지적도 받아짐 확인, 등록 도메인 VWORLD_DOMAIN 필수)
+  const vkey = process.env.VWORLD_API_KEY || process.env.VWORLD_MAP_KEY;
   if (vkey) {
     try {
       const dLat = 0.0011, dLng = 0.0014;
@@ -201,7 +202,7 @@ export async function GET(req: NextRequest) {
         break;
       }
     } catch { /* 표에서 빼고 넘어간다 */ }
-  } else cadastralError = "지적도는 브이월드 인증키(VWORLD_API_KEY)를 넣으면 나와요.";
+  } else cadastralError = "지적도는 브이월드 인증키(VWORLD_API_KEY 또는 VWORLD_MAP_KEY)를 넣으면 나와요.";
 
   return NextResponse.json({
     ok: true,

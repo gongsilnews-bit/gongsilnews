@@ -1863,7 +1863,8 @@ function App() {
     if (!new URLSearchParams(window.location.search).get("vacancy_id")) return;
     autoPublicDone.current = true;
     const info: any = state.info;
-    if (!info.landInfo || !info.tradeInfo) void fetchPublic({ silent: true });
+    // 키가 없을 때 받아 둔 "인증키를 넣으면 나와요" 결과도 다시 받는다 (2026-11-06: 키 이름이 어긋나 저장된 안내가 30일 동안 그대로 보이던 것)
+    if (!info.landInfo || !info.tradeInfo || /인증키/.test(String(info.landInfo.cadastralError || ""))) void fetchPublic({ silent: true });
     else if (info.landInfo.multiUnit && !info.typeInfo) {
       // 타입 구성이 생기기 전에 만든 아파트 보고서 — 그것만 받는다
       const id = new URLSearchParams(window.location.search).get("vacancy_id") || "";

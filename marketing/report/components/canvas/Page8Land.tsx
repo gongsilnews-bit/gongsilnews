@@ -224,24 +224,43 @@ export const Page8Cadastral: React.FC<PageProps> = ({ info, pageString, isHidden
                 if (x > tb[0] && x < tb[1] && y > tb[2] && y < tb[3]) continue;
                 for (let i = zones.length - 1; i >= 0; i--) if (inPoly([x, y], zones[i].rings)) { (hits[i] ||= []).push([x, y]); break; }
               }
+              /* 글자 자리 겹침 막기 (2026-11-06 사장님: "지적도가 깨져 나와") — 이 매물 지번 → 용도지역 이름 → 다른 필지 지번 순으로 자리를 잡고, 겹치면 뺀다 */
+              type Box = [number, number, number, number]; // 왼·오·위·아래
+              const taken: Box[] = [];
+              const boxOf = (x: number, y: number, text: string, fs: number): Box => { const w = text.length * fs * 0.62 + 4, h = fs + 4; return [x - w / 2, x + w / 2, y - h / 2, y + h / 2]; };
+              const free = (b: Box) => !taken.some((t) => b[0] < t[1] && b[1] > t[0] && b[2] < t[3] && b[3] > t[2]);
+              const center = (p: { rings: number[][][] }) => { const q = p.rings[0]?.map(S) || []; return q.length ? [q.reduce((t, v) => t + v[0], 0) / q.length, q.reduce((t, v) => t + v[1], 0) / q.length, Math.max(...q.map((v) => v[0])) - Math.min(...q.map((v) => v[0])), Math.max(...q.map((v) => v[1])) - Math.min(...q.map((v) => v[1]))] : null; };
+              const out: React.ReactNode[] = [];
+              // 1) 이 매물 지번 — 늘
+              const tc = center(target);
+              if (tc) { taken.push(boxOf(tc[0], tc[1], target.jibun, 15)); out.push(<text key="t-target" x={tc[0]} y={tc[1]} textAnchor="middle" dominantBaseline="middle" fontSize={15} fontWeight={800} fill="#b91c1c" stroke="#ffffff" strokeWidth={3} paintOrder="stroke">{target.jibun}</text>); }
+              // 2) 용도지역 이름 — 구역 한가운데, 같은 이름은 한 번
               const used = new Set<string>();
-              return Object.entries(hits).filter(([, pts]) => pts.length >= 8).sort((a, b) => b[1].length - a[1].length).map(([i, pts]) => {
+              Object.entries(hits).filter(([, pts]) => pts.length >= 8).sort((a, b) => b[1].length - a[1].length).forEach(([i, pts]) => {
                 const z = zones[Number(i)];
-                if (used.has(z.name)) return null; // 같은 이름은 한 번만
-                used.add(z.name);
+                if (used.has(z.name)) return;
                 const mx = pts.reduce((t, q) => t + q[0], 0) / pts.length, my = pts.reduce((t, q) => t + q[1], 0) / pts.length;
-                const [x, y] = pts.reduce((b2, q) => (Math.hypot(q[0] - mx, q[1] - my) < Math.hypot(b2[0] - mx, b2[1] - my) ? q : b2), pts[0]);
-                return <text key={`zl${i}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={17} fontWeight={900} fill="#5b4a12" stroke="#fffbe8" strokeWidth={4} paintOrder="stroke" opacity={0.92}>{z.name}</text>;
+                // 가운데에 가까운 점부터, 다른 글자와 안 겹치는 자리
+                const spot = [...pts].sort((a, b) => Math.hypot(a[0] - mx, a[1] - my) - Math.hypot(b[0] - mx, b[1] - my)).find((q) => free(boxOf(q[0], q[1], z.name, 17)));
+                if (!spot) return;
+                used.add(z.name);
+                taken.push(boxOf(spot[0], spot[1], z.name, 17));
+                out.push(<text key={`zl${i}`} x={spot[0]} y={spot[1]} textAnchor="middle" dominantBaseline="middle" fontSize={17} fontWeight={900} fill="#5b4a12" stroke="#fffbe8" strokeWidth={4} paintOrder="stroke" opacity={0.92}>{z.name}</text>);
               });
+              // 3) 다른 필지 지번 — 글자가 들어갈 만큼 큰 필지만, 겹치지 않을 때만 (큰 필지부터)
+              land.parcels.filter((p) => p !== target).map((p) => ({ p, c: center(p) })).filter((x) => x.c)
+                .sort((a, b) => b.c![2] * b.c![3] - a.c![2] * a.c![3])
+                .forEach(({ p, c }) => {
+                  const [x, y, w, h] = c!;
+                  if (x < 10 || x > W - 10 || y < 10 || y > H - 10) return;
+                  const b = boxOf(x, y, p.jibun, 10);
+                  if (w < (b[1] - b[0]) * 0.8 || h < 12) return; // 작은 필지는 지번 생략 (지적도도 그렇다)
+                  if (!free(b)) return;
+                  taken.push(b);
+                  out.push(<text key={`t${p.pnu}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600} fill="#27272a" stroke="#fbf8ef" strokeWidth={2.5} paintOrder="stroke">{p.jibun}</text>);
+                });
+              return out;
             })()}
-            {land.parcels.map((p) => {
-              const pts = p.rings[0]?.map(S) || [];
-              if (!pts.length) return null;
-              const x = pts.reduce((t, q) => t + q[0], 0) / pts.length, y = pts.reduce((t, q) => t + q[1], 0) / pts.length;
-              if (x < 10 || x > W - 10 || y < 10 || y > H - 10) return null;
-              const on = p === target;
-              return <text key={`t${p.pnu}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={on ? 15 : 10} fontWeight={on ? 800 : 500} fill={on ? '#b91c1c' : '#27272a'} stroke={on ? '#ffffff' : 'none'} strokeWidth={on ? 3 : 0} paintOrder="stroke">{p.jibun}</text>;
-            })}
             {/* 방위 · 축척 */}
             <g transform={`translate(${W - 34},34)`}>
               <path d="M0,-18 L7,6 L0,1 L-7,6 Z" fill="#334155" />
