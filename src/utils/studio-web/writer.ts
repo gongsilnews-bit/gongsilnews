@@ -132,6 +132,26 @@ function fixArticlePrompt(t: string) {
     + ARTICLE_FIX
     + `\n- 끝맺음 형식(이번 기사): ${end}\n- 예시의 숫자·이름은 모양만 보여 주는 것입니다. 실제 숫자·시설은 [확인된 매물 정보]에 있는 것만 쓰십시오.`;
 }
+/* SNS 글 고치기 — 확장 sns-prompt.js 의 "줄마다 이모지(📍📐💰🚇✅🏢)" 지시를 웹에서 덮는다
+ *  (2026-11-06 사장님: "이런 아이콘 안 나왔으면 좋겠어, 촌스러워" — 정보 줄 앞은 ✔️ 하나, "~라고 나와요" 서류 말투 금지) */
+const SNS_FIX = `
+
+[먼저 지킬 것 — 위 지시·예시와 다르면 이것을 따르십시오]
+- 📍📐💰🚇✅🏢 같은 그림 이모지를 쓰지 마십시오. 첫 줄(훅)에도 이모지를 붙이지 마십시오.
+- 인스타그램의 정보 줄은 줄 앞에 ✔️ 하나만 붙입니다 (예: "✔️ 전용 35평 · 1층"). 쓸 수 있는 이모지는 ✔️ 와 맺음의 🙂 뿐입니다.
+- "등록 정보에는 ~라고 나와요", "~가능하다고 나와요", "~로 등록돼 있어요" 같은 서류를 읽어 주는 말투를 쓰지 마십시오. 전해 주듯 편하게 씁니다 (예: "관리비는 따로 없고, 입주는 2개월 안에 가능하다고 하네요!").
+- 같은 조건(평수·가격)을 두 번 쓰지 마십시오. 괄호 속 ㎡ 표기는 쓰지 말고 평으로만 씁니다.
+- "확인할 점", "~확인해야 합니다" 같은 가르치려 드는 문장은 쓰지 마십시오 (페이스북·스레드 포함).`;
+function webSns(S: any) {
+  for (const k of ["gwBuildSnsPrompt", "gwBuildSnsRevisePrompt"]) {
+    const orig = S && S[k];
+    if (typeof orig !== "function" || orig.__web) continue;
+    const wrapped = (...a: any[]) => `${orig(...a)}${SNS_FIX}`;
+    Object.defineProperty(wrapped, "__web", { value: true });
+    S[k] = wrapped;
+  }
+  return S;
+}
 function webKinds(P: any) {
   if (P.gwBuildPrompt && !P.gwBuildPrompt.__web) {
     const orig = P.gwBuildPrompt;
@@ -153,16 +173,16 @@ const lib = {
   blog: () => webBlogStyles(run(["gongsil/blog-prompt.js"])),
   aj: () => run(["gongsil/article-json.js"]),
   naver: () => run(["gongsil/naver-blog.js"]),
-  sns: () => run(["gongsil/blog-prompt.js", "gongsil/naver-blog.js", "gongsil/youtube-json.js", "gongsil/sns-prompt.js"], ["GW_SNS_CHANNELS", "GW_SNS_ORDER", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsPickMedia", "gwSnsAiLabelNote"]),
+  sns: () => webSns(run(["gongsil/blog-prompt.js", "gongsil/naver-blog.js", "gongsil/youtube-json.js", "gongsil/sns-prompt.js"], ["GW_SNS_CHANNELS", "GW_SNS_ORDER", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsPickMedia", "gwSnsAiLabelNote"])),
   yt: () => run(["gongsil/prompt.js", "gongsil/youtube-json.js", "gongsil/youtube-prompt.js"], [...YT_COMMON, "GW_YT_AUCTION_VIDEO_TYPE", "gwYtVideoTypes"]),
   ytCol: () => run(["newsmaker/youtube-json.js", "newsmaker/youtube-prompt.js"], [...YT_COMMON, "GW_YT_NUMBER"]),
   // 뉴스칼럼 (앱 ext-newsmaker.js 와 같은 파일·이름) — 2026-11-04 웹 뉴스칼럼
-  nm: () => run(["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "naver-blog.js", "youtube-json.js", "article-json.js", "sns-prompt.js"].map((f) => `newsmaker/${f}`), [
+  nm: () => webSns(run(["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "naver-blog.js", "youtube-json.js", "article-json.js", "sns-prompt.js"].map((f) => `newsmaker/${f}`), [
     "GW_LENGTH", "GW_KIND", "GW_IMAGE_STYLE", "gwSourceReady", "gwSourceLabel", "gwBuildPrompt", "gwBuildRevisePrompt", "gwNormalizeSection",
     "GW_BLOG_LENGTH", "GW_BLOG_STYLE", "gwBuildBlogPrompt", "gwBuildBlogRevisePrompt",
     "GW_SNS_CHANNELS", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsCredit", "gwSnsAiLabelNote",
     "GWNaverBlog", "GWArticleJson", "gwBuildImagePrompt", "gwAiImageCaption",
-  ]),
+  ])),
 };
 /* 보고서·홍보지 AI 채우기 (앱 marketing-writer.js 와 같은 프롬프트, 2026-11-04 사장님: 웹에서 다 되게) */
 const mk = () => run(["marketing/marketing-prompt.js"]);
@@ -207,11 +227,23 @@ const TONES: Record<string, string> = {
   thread: "스레드 감성 — 현장을 아는 사람이 지나가며 툭 던지는 편한 존댓말 혼잣말로 쓰십시오. ① 첫 줄은 놀라운 사실·숫자 비교 한 문장(명사로 끝내도 됨) ② 3~8줄, 한 줄에 한 생각, 줄바꿈을 자주 ③ 끝맺음은 '~네요·~더라고요·~거든요', 짧은 줄은 명사형으로 끊기 ④ 끝에서 둘째 줄에 내 생각 한 줄('~같네요', '근데 ~는 꼭 보셔야 해요') ⑤ 마지막 줄은 독자에게 묻는 질문 하나. ~습니다·반말(~해·~야)·해시태그·전화번호·'문의 주세요'·칭찬 늘어놓기('미쳤어' 등)는 쓰지 말고, 숫자·사실은 [확인된 매물 정보]에 있는 것만 쓰십시오.",
 };
 const CH_NAME: Record<string, string> = { instagram: "인스타그램", threads: "스레드", facebook: "페이스북" };
-function toneLine(tone: unknown) {
+/* SNS 채널 하나·둘만 쓸 때 — 그 채널만 묻는다 (2026-11-06 사장님: "페북 인스타 쓰레드 전부 한 번에 명령어가 들어감, 각각 돌리는데")
+ *  예전에는 [이 인스타그램 글만 쓰기]에도 세 채널을 다 쓰게 하고 화면이 인스타만 골라 담았다 */
+const SNS_SHAPE: Record<string, string> = { facebook: '"facebook": { "paragraphs": [], "hashtags": [] }', instagram: '"instagram": { "lines": [], "hashtags": [] }', threads: '"threads": { "posts": [], "topic": "" }' };
+function snsOnlyOf(v: unknown): string[] {
+  const l = (Array.isArray(v) ? v : [v]).filter((c): c is string => typeof c === "string" && CHANNELS.includes(c));
+  return l.length && l.length < CHANNELS.length ? [...new Set(l)] : [];
+}
+function snsOnlyLine(only: string[]) {
+  if (!only.length) return "";
+  return `\n\n[이번에 쓸 채널 — 위 지시보다 먼저]\n- 이번에는 ${only.map((c) => CH_NAME[c]).join("·")} 글만 쓰십시오. 위에 적힌 다른 플랫폼 글은 쓰지 말고 JSON 에도 넣지 마십시오.\n- 출력 JSON 모양: { ${only.map((c) => SNS_SHAPE[c]).join(", ")} }`;
+}
+function toneLine(tone: unknown, only: string[] = []) {
+  const chs = only.length ? only : CHANNELS;
   const per: Record<string, string> = tone && typeof tone === "object" ? (tone as Record<string, string>) : { instagram: String(tone || ""), threads: String(tone || ""), facebook: String(tone || "") };
   const pick = Object.fromEntries(CHANNELS.map((ch) => [ch, TONES[per[ch]] ? per[ch] : "polite"]));
-  if (CHANNELS.every((ch) => pick[ch] === "polite")) return "";
-  return `\n\n[문체 지정 — 위 지시보다 우선 · 채널마다 따로]\n${CHANNELS.map((ch) => `- ${CH_NAME[ch]} 글: ${TONES[pick[ch]]}`).join("\n")}\n문체만 바꾸고, 사실은 [확인된 매물 정보]·참조 기사에 있는 것만 쓰십시오. 출력 JSON 형식은 그대로 지키십시오.`;
+  if (chs.every((ch) => pick[ch] === "polite")) return "";
+  return `\n\n[문체 지정 — 위 지시보다 우선 · 채널마다 따로]\n${chs.map((ch) => `- ${CH_NAME[ch]} 글: ${TONES[pick[ch]]}`).join("\n")}\n문체만 바꾸고, 사실은 [확인된 매물 정보]·참조 기사에 있는 것만 쓰십시오. 출력 JSON 형식은 그대로 지키십시오.`;
 }
 
 /* ── 선택지 (앱 blog-writer styles·articleOptions · sns channelInfo · naver designs · youtube options) ── */
@@ -353,7 +385,8 @@ function colAllPrompt(b: any, source: any) {
   const parts: [string, string, string][] = [];
   if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen }) + COL_EXPERT]);
   if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen }) + COL_EXPERT]);
-  if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone)]);
+  const only = snsOnlyOf(b.snsOnly);
+  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
   const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
   if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", Y.gwBuildYtScriptPrompt({ article: REF, source }, ytSet)]);
   return bundle(parts, { artKind, artLen, blogSt, blogLen, ytSet });
@@ -384,7 +417,8 @@ function allPrompt(b: any) {
   const parts: [string, string, string][] = [];
   if (want.article) parts.push(["article", "공실뉴스 기사", P.gwBuildPrompt(v, { kind: artKind, length: artLen })]);
   if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen })]);
-  if (want.sns) parts.push(["sns", "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone)]);
+  const only = snsOnlyOf(b.snsOnly);
+  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
   const ytSet = want.youtube ? ytSettings(v, b.youtube || {}) : null;
   if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", ytPrompt(v, ytSet!, REF)]);
   const keys = parts.map((p) => p[0]);

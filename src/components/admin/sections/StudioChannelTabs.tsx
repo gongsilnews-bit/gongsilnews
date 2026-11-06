@@ -342,7 +342,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               {narrow && blogOpts?.lengths.find((l) => l.id === length)?.chars && <div style={{ marginTop: 6, fontSize: 12, color: theme.textSecondary }}>{blogOpts.lengths.find((l) => l.id === length)!.label} · {blogOpts.lengths.find((l) => l.id === length)!.chars}</div>}
   </>);
   /* 네이버 블로그 채우기 — 디자인 고르기 · 채우기 · 로그인 · 복사 (예전 탭 화면과 작업대가 같이 쓴다) */
-  const naverBlock = (<>
+  // 함수 — [이 블로그만 쓰기](writeBtn, 아래에서 만든다)를 단추 줄에 같이 넣는다 (2026-11-06 사장님: 인스타와 같이 단추를 밑으로 한 줄)
+  const naverBlock = (wb?: React.ReactNode) => (<>
           {!blog ? (
             <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 블로그 글을 써 주세요.</div>
           ) : (
@@ -358,15 +359,17 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                   </button>
                 ))}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
-                  평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실뉴스 작성기</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
-                </div>
+              {/* 단추 한 줄 — [이 블로그만 쓰기] · 바로가기 · 채우기, 설명은 그 아래 (인스타그램 탭과 같은 모양) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                {wb}
                 <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
                 <button onClick={() => void fillNaver("helper")} disabled={filling}
-                  style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
+                  style={{ padding: "10px 16px", background: filling ? "#94a3b8" : "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer", whiteSpace: "nowrap" }}>
                   {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}
                 </button>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary, lineHeight: 1.6 }}>
+                평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실뉴스 작성기</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
               </div>
             </>
           )}
@@ -597,10 +600,9 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
               {!blog && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
               {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.version || blog.title}`} theme={theme} initial={blog} />}
-              {blog && writeBtn && <div style={{ marginTop: 14 }}>{writeBtn}</div>}
             </div>
             <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, margin: "6px 0 8px 2px" }}>네이버 블로그 채우기</div>
-            <div style={{ ...card, opacity: blog ? 1 : 0.6 }}>{naverBlock}</div>
+            <div style={{ ...card, opacity: blog ? 1 : 0.6 }}>{naverBlock(blog ? writeBtn : null)}</div>
           </>)}
         </main>
       </div>
@@ -698,7 +700,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         {/* 네이버 블로그 채우기 */}
         {stepTitle(kind !== "sim" ? 3 : firstStep + 1, "네이버 블로그 채우기")}
         <div style={{ ...card, opacity: blog ? 1 : 0.6 }}>
-          {naverBlock}
+          {naverBlock()}
         </div>
       </>)}
     </>

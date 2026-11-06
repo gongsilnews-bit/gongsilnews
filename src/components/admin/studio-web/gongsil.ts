@@ -679,7 +679,7 @@ async function writeAll(o: any) {
   await writeRoom(o.vacancyId);
   const skipped: string[] = [];
   say("blog", "질문을 만드는 중…");
-  const P = await api("allPrompt", { vacancy: v, want, article: o.article, blog: o.blog, tone: o.sns?.tone, youtube: o.youtube, ref: want.article ? null : referenceArticle(w), ...colBody(w) });
+  const P = await api("allPrompt", { vacancy: v, want, article: o.article, blog: o.blog, tone: o.sns?.tone, snsOnly, youtube: o.youtube, ref: want.article ? null : referenceArticle(w), ...colBody(w) });
   say("blog", `${webAi().name} 답을 기다리는 중…`);
   const r = await webAsk(P.prompt, `${P.keys.length}가지 글을 한 번에 쓰고 있습니다`, async (text) => {
     const x = await api("allParse", { text, keys: P.keys, ...colBody(w) });
