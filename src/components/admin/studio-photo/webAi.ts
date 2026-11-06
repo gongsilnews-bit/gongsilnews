@@ -16,7 +16,7 @@ export async function webAiDesign(o: { kind: string; facts: string; size: string
   const isNews = o.kind === "article";
   const prompt = [
     `당신은 이 동네를 잘 아는 지역 부동산 전문가가 쓰는 ${isNews ? "뉴스 카드" : "매물 홍보 이미지"}의 카피라이터이자 아트 디렉터입니다.`,
-    `아래 ${isNews ? "기사" : "공실(매물)"} 자료를 읽고, ${o.size || "SNS"}용 이미지에 들어갈 문구와 배경 장면을 정해 주세요.`,
+    `아래 ${isNews ? "기사" : "공실(매물)"} 자료를 읽고, ${o.size || "SNS"}용 이미지에 들어갈 문구만 정해 주세요. 이미지는 만들지 않습니다 (배경은 고른 사진 그대로).`,
     isNews ? "사실만 짧게. 과장·추측 금지." : "객관적인 보도 톤으로 \"이런 매물이 나왔다\"는 느낌. 과장 광고 문구(최고, 무조건, 대박 등) 금지.",
     "중요: 가격·보증금·월세·면적·층수·주소·전화번호 같은 숫자와 정보는 문구에 절대 쓰지 마세요 (화면에서 자료 그대로 따로 넣습니다). 자료에 없는 내용도 지어내지 마세요.",
     o.request ? `회원 요청: ${String(o.request).slice(0, 400)}` : "",
@@ -25,14 +25,12 @@ export async function webAiDesign(o: { kind: string; facts: string; size: string
     String(o.facts || "").slice(0, 6000),
     "",
     "설명 없이 JSON 하나로만 답하세요:",
-    '{"title":"제목 (한국어 6~16자)","sub":"부제 (한국어 10~28자, 없으면 빈칸)","badge":"강조 딱지 2~5자 (예: 신규 매물, 역세권, 단독 — 자료에 근거가 있을 때만, 없으면 빈칸)",',
-    ' "scene":"English description of a background image for this design — the place/mood only, NO text, NO letters, NO numbers, NO logos, leave calm empty space for headline",',
-    ' "retouch":"English instruction to gently improve the real listing photo — only sky, lighting, color, tidiness. Never change the building, rooms, layout or furniture."}',
+    '{"title":"제목 (한국어 6~16자)","sub":"부제 (한국어 10~28자, 없으면 빈칸)","badge":"강조 딱지 2~5자 (예: 신규 매물, 역세권, 단독 — 자료에 근거가 있을 때만, 없으면 빈칸)"}',
   ].filter((x) => x !== "").join("\n");
   return webAsk(prompt, "이미지 문구를 쓰고 있습니다", async (text) => {
     const j = objOf(text);
     if (!j || typeof j.title !== "string") throw new Error("AI 답을 읽지 못했어요. 답이 다 나온 뒤 [복사]해 주세요.");
-    return { title: clean(j.title, 40), sub: clean(j.sub, 60), badge: clean(j.badge, 12), scene: clean(j.scene, 800), retouch: clean(j.retouch, 400) };
+    return { title: clean(j.title, 40), sub: clean(j.sub, 60), badge: clean(j.badge, 12), scene: "", retouch: "" }; // 이미지는 만들지 않는다 (2026-11-06 사장님)
   });
 }
 

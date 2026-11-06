@@ -8,7 +8,7 @@ import { webAiDesign } from "./webAi";
 import React, { useEffect, useMemo, useState } from "react";
 import { loadFont } from "@/components/admin/studio-video/Pickers";
 import { Btn, C, FONT, Modal, input } from "@/components/admin/studio-video/ui";
-import { videoBridge, type LibItem } from "@/components/admin/studio-video/types";
+import { appVideoBridge, setWebVideo, videoBridge, type LibItem } from "@/components/admin/studio-video/types";
 import { getStudioAgency, getMyStudioArticlePhotos, getStudioArticle, listMyStudioArticles, listMyStudioVacancies } from "@/app/actions/studio";
 import { IMAGE_STYLES, imagePrompt } from "@/lib/studio-video/imageStyles";
 import { bytesToCanvas, composite, kids, mk, openPsdBytes, walk, type PsdGuide } from "./model";
@@ -51,6 +51,9 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
   onClose: () => void;
 }) {
   const b = (typeof window !== "undefined" ? (window as unknown as { gongsilStudio?: { photo?: Bridge } }).gongsilStudio?.photo : null) || null;
+  // 웹 — 영상 편집기와 같은 웹 통로(webBridge)를 켠다. 꺼져 있어서 공실 사진·정보를 못 받고 배경이 샘플 사진으로 남았다 (2026-11-06 사장님: "배경 사진이 안 잡히는 것")
+  const webVb = typeof window !== "undefined" && !appVideoBridge();
+  if (webVb) setWebVideo(true);
   const vb = videoBridge();
   const [kind, setKind] = useState<"none" | "vacancy" | "article">(start);
   const [vacs, setVacs] = useState<Vac[] | null>(null);
@@ -272,8 +275,10 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
     try {
       const r = await vb.vacancy(v.id);
       setPhotos(r.photos || []);
-      setPhoto(r.photos?.[0]?.path || "");
-      setPhotoUrl("");
+      // 대표 사진(첫 장)을 배경으로 — 앱은 파일 위치, 웹은 사진 주소 (2026-11-06 사장님: "선택한 공실의 대표 사진이 배경으로")
+      const first = r.photos?.[0];
+      setPhoto(first?.path || "");
+      setPhotoUrl(first && !first.path ? first.url || first.thumb || "" : "");
       if (r.photos?.length) setBgTab("src");
       setVinfo(r.vacancy as never);
     } catch (e) {
@@ -504,7 +509,7 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
           {/* 배경으로 쓸 사진 — [기사 사진]·[매물 사진] / [내 이미지] 탭 (2026-10-30 사장님) */}
           {(() => {
             const srcList = kind === "article" ? artPhotos.map((u) => ({ key: u, img: u, on: photoUrl === u && !photo, pick: () => { setPhotoUrl(u); setPhoto(""); } }))
-              : kind === "vacancy" ? photos.map((p) => ({ key: p.id, img: p.thumb || p.url || "", on: photo === p.path, pick: () => { setPhoto(p.path || ""); setPhotoUrl(""); } }))
+              : kind === "vacancy" ? photos.map((p) => ({ key: p.id, img: p.thumb || p.url || "", on: p.path ? photo === p.path : !photo && photoUrl === (p.url || p.thumb), pick: () => { setPhoto(p.path || ""); setPhotoUrl(p.path ? "" : p.url || p.thumb || ""); } }))
               : [];
             const srcName = kind === "article" ? "기사 사진" : "매물 사진";
             const showSrc = kind !== "none" && srcList.length > 0;

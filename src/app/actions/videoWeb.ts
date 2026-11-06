@@ -32,6 +32,8 @@ export type VideoVacancy = {
   listing: string;
   /** 동 이름 — 그 동네 드론 영상 찾기 */
   dong: string;
+  /** 칸 값 — 포토studio 등에서 자료 그대로 (2026-11-06, 빈 값은 빈칸) */
+  facts?: { label: string; value: string }[];
 };
 
 /** 원 → "5억 3,000만" · "5,000만" · "100만" (DB 금액은 원 단위) */
@@ -115,6 +117,12 @@ export async function getVideoVacancy(vacancyId: string): Promise<{ success: tru
       agency,
       listing,
       dong: String(row.dong || ""),
+      facts: [
+        { label: "면적", value: row.exclusive_m2 ? `전용 ${Math.round((Number(row.exclusive_m2) / 3.3058) * 10) / 10}평` : "" },
+        { label: "층", value: fl },
+        { label: "방향", value: String(row.direction || "") },
+        { label: "입주", value: row.move_in_date ? String(row.move_in_date) : "" },
+      ].filter((x) => x.value),
     },
   };
 }

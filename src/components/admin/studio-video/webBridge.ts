@@ -267,7 +267,8 @@ async function vacancy(id: string) {
     mem.set(item.id, item);
     photos.push(item);
   }
-  return { vacancy: { title: r.data.title, fields: [] as { label: string; value: string }[] }, photos, info: r.data };
+  // 가격·위치·면적도 같이 (포토studio 칸에 자료 그대로, 2026-11-06 — 예전엔 비어서 "가격"·"면적" 칸 이름이 그대로 나왔다)
+  return { vacancy: { title: r.data.title, priceText: r.data.intro.price, location: r.data.intro.place, fields: (r.data.facts || []) as { label: string; value: string }[] }, photos, info: r.data };
 }
 
 /** 주소 사진 → 자료 (뉴스칼럼 "사진·화면" 등, 2026-11-05) */
