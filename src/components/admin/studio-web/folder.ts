@@ -60,9 +60,9 @@ export async function pickFolder(): Promise<FolderState & { aborted?: boolean }>
   if (!folderSupported()) throw new Error("이 브라우저는 PC 폴더 저장을 지원하지 않아요. 크롬이나 엣지에서 써 주세요.");
   let picked: Dir;
   try {
-    // 처음 = 문서 폴더에서 열림 (2026-11-04 사장님: 초기값 문서, 회원이 다른 곳으로 바꿀 수 있음) · [바꾸기] = 지금 쓰는 공실뉴스 폴더에서 열림 (문서·바탕 화면 자체를 다시 골라 "이 폴더를 열 수 없음"이 뜨지 않게)
+    // 처음 = 바탕 화면에서 열림 (2026-11-06 사장님: "첫 위치를 바탕화면으로" — 전엔 문서, 회원이 다른 곳으로 바꿀 수 있음) · [바꾸기] = 지금 쓰는 공실뉴스 폴더에서 열림 (문서·바탕 화면 자체를 다시 골라 "이 폴더를 열 수 없음"이 뜨지 않게)
     const cur = await stored();
-    picked = await (window as any).showDirectoryPicker({ mode: "readwrite", startIn: cur || "documents" });
+    picked = await (window as any).showDirectoryPicker({ mode: "readwrite", startIn: cur || "desktop" });
   } catch (e: any) {
     if (e && e.name === "AbortError") return { ...(await folderState()), aborted: true }; // 회원이 닫았다 (크롬 "이 폴더를 열 수 없음"에서 [취소]도 여기로)
     throw new Error("폴더를 고르지 못했어요. 다른 폴더를 골라 주세요.");

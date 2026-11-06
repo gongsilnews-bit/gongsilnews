@@ -65,7 +65,7 @@ function Guide({ again, onGo, onClose }: { again: boolean; onGo: () => void; onC
           {step(3, <><b>[폴더 선택]</b>을 누르고, 크롬이 저장을 허락할지 물으면 <b>허용</b>을 눌러요</>)}
         </div>
         <PickerPicture />
-        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10, lineHeight: 1.5 }}>창은 문서 폴더에서 열려요. 바탕 화면이나 D 드라이브 등 다른 곳에 만들어도 돼요. 나중에 [바꾸기]로 옮길 수 있어요.</div>
+        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10, lineHeight: 1.5 }}>창은 바탕 화면에서 열려요. 문서나 D 드라이브 등 다른 곳에 만들어도 돼요. 나중에 [바꾸기]로 옮길 수 있어요.</div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
           <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>나중에</button>
           <button onClick={onGo} style={{ padding: "8px 16px", borderRadius: 8, border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{again ? "다시 고르기" : "폴더 고르기"}</button>
@@ -129,7 +129,7 @@ export default function FolderBox({ collapsed }: { collapsed: boolean }) {
       <div style={{ marginTop: 4, fontSize: 11, color: st.set ? "rgba(255,255,255,0.75)" : "#fbbf24", lineHeight: 1.4 }}>
         {st.set ? `📁 ${st.name}` :"아직 안 정했어요 — 다운로드 폴더로 받아요"}
       </div>
-      {!st.set && <div style={{ marginTop: 6, fontSize: 10.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.5 }}>문서 안에 &quot;{ROOT_NAME}&quot; 폴더를 만들어 골라요. [정하기]를 누르면 방법을 알려 드려요</div>}
+      {!st.set && <div style={{ marginTop: 6, fontSize: 10.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.5 }}>바탕 화면에 &quot;{ROOT_NAME}&quot; 폴더를 만들어 골라요. [정하기]를 누르면 방법을 알려 드려요</div>}
       {err && <div style={{ marginTop: 4, fontSize: 10.5, color: "#fbbf24", lineHeight: 1.4 }}>{err}</div>}
       {guideEl}
     </div>
