@@ -5951,15 +5951,22 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
         {kind === "mp4" && (() => {
           // 이 앱이 키프레임·색 보정을 못 그리면 (옛 앱) — 미리 알린다
           const clips = project.scenes.flatMap((s) => s.clips);
-          const usesKf = clips.some((c) => c.kf?.length || c.rot || (c.opacity ?? 1) < 1) || (project.layers || []).some((l) => l.kf?.length || typeof l.ts === "number" || typeof l.te === "number");
+          // 웹 내보내기(webExport)는 그래픽 시간 범위(ts·te)·나타나기 움직임·고급 화면전환은 넣는다 — 실제로 못 넣는 것만 알린다 (2026-11-06 사장님 회의: 옛 앱 경고가 웹에 잘못 뜨던 것)
+          const web = Boolean((b as { web?: boolean }).web);
+          const usesKf = clips.some((c) => c.kf?.length || c.rot || (c.opacity ?? 1) < 1) || (project.layers || []).some((l) => l.kf?.length || (!web && (typeof l.ts === "number" || typeof l.te === "number")));
           const usesAdj = clips.some((c) => c.adj);
-          const f = b.features || [];
+          const f = web ? ["trx"] : b.features || [];
           const usesTrx = clips.some((c) => String(c.trans?.type || "").startsWith("x_"));
           const miss = [usesKf && !f.includes("kf") ? "키프레임·화면 돌리기·진하기" : "", usesAdj && !f.includes("adj") ? "필터·색 보정" : "", usesTrx && !f.includes("trx") ? "고급 화면전환" : ""].filter(Boolean);
           return miss.length ? (
             <div style={{ padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, background: "rgba(239,68,68,0.1)", fontSize: 14, lineHeight: 1.6 }}>
+              {web ? (<>
+                <b style={{ color: C.danger }}>웹 내보내기에서는 {miss.join("·")}이(가) 아직 영상에 들어가지 않아요.</b><br />
+                <span style={{ color: C.sub }}>그 부분은 움직이지 않은 채로 나와요. 나머지(글자·그래픽·화면전환·목소리·음악)는 그대로 들어가요.</span>
+              </>) : (<>
               <b style={{ color: C.danger }}>이 앱은 {miss.join("·")}을(를) 영상에 넣지 못해요.</b><br />
               <span style={{ color: C.sub }}>공실마케팅를 최신 버전으로 업데이트한 뒤 내보내 주세요. (지금 내보내면 그 부분은 움직이지 않아요)</span>
+              </>)}
             </div>
           ) : null;
         })()}
@@ -5992,7 +5999,7 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
             <option value={480}>480p (카톡으로 보내기 좋아요)</option>
           </select>
         </div>}
-        <div style={{ fontSize: 14, color: C.sub }}>{b.exportPick ? "[내보내기]를 누르면 저장할 폴더와 파일 이름을 고르는 창이 떠요." : "저장 위치: 저장 폴더 설정의 내보내기 폴더 (앱을 업데이트하면 직접 고를 수 있어요)"}</div>
+        <div style={{ fontSize: 14, color: C.sub }}>{(b as { web?: boolean }).web ? "저장 위치: 공실뉴스\\05 동영상studio (저장 폴더를 정하지 않았으면 다운로드 폴더)" : b.exportPick ? "[내보내기]를 누르면 저장할 폴더와 파일 이름을 고르는 창이 떠요." : "저장 위치: 저장 폴더 설정의 내보내기 폴더 (앱을 업데이트하면 직접 고를 수 있어요)"}</div>
         {err && <div style={{ fontSize: 14.5, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
       </div>
     </Modal>
