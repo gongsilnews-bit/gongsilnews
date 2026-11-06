@@ -110,6 +110,37 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     return [ch, tonesFor(ch).some((x) => x.id === t) ? t : defaultTone(ch)];
   }));
   const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
+  // 스레드는 스레드 감성(반말 혼잣말)으로 한 번 되돌린다 — 그 뒤에 고른 것은 그대로 (2026-11-06 사장님: "기본값을 쓰레드로")
+  useEffect(() => {
+    const mark = "gs-sns-thread-default-1106";
+    try {
+      if (localStorage.getItem(mark)) return;
+      localStorage.setItem(mark, "1");
+    } catch { return; }
+    const cur = all.sns.tones?.threads;
+    if (cur && cur !== "thread") keepAll({ ...all, sns: { ...all.sns, same: false, tones: { ...(all.sns.tones || {}), threads: "thread" } } });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 인스타그램도 체크체로 한 번 되돌린다 — 그 뒤에 고른 것은 그대로 (2026-11-06 사장님: "인스타는 체크체가 기본으로")
+  useEffect(() => {
+    const mark = "gs-sns-insta-default-1106";
+    try {
+      const first = !localStorage.getItem(mark);
+      localStorage.setItem(mark, "1");
+      const raw = JSON.parse(localStorage.getItem(allKey(kind)) || "null") as AllOpts | null; // 위 스레드 되돌리기와 겹쳐도 지워지지 않게 저장된 값에서
+      const base = raw || all;
+      const cur = base.sns.tones?.instagram;
+      if (first && cur && cur !== "check") keepAll({ ...base, sns: { ...base.sns, same: false, tones: { ...(base.sns.tones || {}), instagram: "check" } } });
+    } catch { /* */ }
+    // 쇼츠 대본 말투도 물건 소개형(기본형)으로 한 번 (2026-11-06 사장님: "기본형으로")
+    try {
+      const m2 = "gs-yt-tone-default-1106";
+      if (localStorage.getItem(m2)) return;
+      localStorage.setItem(m2, "1");
+      const raw = JSON.parse(localStorage.getItem(allKey(kind)) || "null") as AllOpts | null;
+      const base = raw || all;
+      if (base.youtube?.tone && base.youtube.tone !== "listing") keepAll({ ...base, youtube: { ...base.youtube, tone: "listing" } });
+    } catch { /* */ }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // only — 이 탭 글만 쓰기 (2026-10-28 사장님: 한 번에 쓰기와 함께 각각 쓰기도). ☑ 기억은 바꾸지 않는다
   // SNS 는 채널 하나만도 (instagram · threads · facebook — 나머지 채널 글은 그대로, 2026-10-28 사장님)
   const runAll = async (only?: "article" | "blog" | "sns" | "youtube" | "instagram" | "threads" | "facebook") => {
@@ -449,7 +480,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   if (layout === "desk") {
     const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
     const soft = theme.darkMode ? "rgba(255,255,255,0.04)" : "#f8fafc";
-    const sameTone = all.sns.same ?? new Set(Object.values(snsTones)).size === 1;
+    const sameTone = false; // 채널마다 따로 (2026-11-06 사장님: "같은 문체로" 선택 없앰)
     // 같은 문체로 — 스레드 감성은 스레드에만 (인스타·페북은 그대로)
     const setTone = (ch: string, t: string) => keepAll({ ...all, sns: { ...all.sns, tones: sameTone ? (t === "thread" ? { ...snsTones, threads: t } : { instagram: t, threads: t, facebook: t }) : { ...snsTones, [ch]: t } } });
     const toneLabel = (id: string) => SNS_TONES.find((t) => t.id === id)?.label || id;
@@ -497,11 +528,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         body: (
           <div>
             {toneGrid(c.id)}
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: theme.textSecondary, marginTop: 10, cursor: "pointer" }}>
-              <input type="checkbox" checked={sameTone} style={{ accentColor: "#2563eb", margin: 0 }}
-                onChange={(e) => keepAll({ ...all, sns: { ...all.sns, same: e.target.checked, tones: e.target.checked ? { instagram: snsTones[c.id], threads: snsTones[c.id], facebook: snsTones[c.id] } : snsTones } })} />
-              {channels.filter((x) => x.id !== c.id).map((x) => x.label).join("·")}도 같은 문체로
-            </label>
+            {/* "○○도 같은 문체로" 단추는 뺐다 — 채널마다 맞는 문체가 달라서 늘 따로 고른다 (2026-11-06 사장님) */}
           </div>
         ) })),
       { id: "youtube", label: "쇼츠릴스 대본", sum: ytSum, on: all.youtube.on, flip: () => keepAll({ ...all, youtube: { ...all.youtube, on: !all.youtube.on } }),

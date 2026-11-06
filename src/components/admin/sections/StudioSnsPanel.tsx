@@ -42,21 +42,22 @@ const RATIO: Record<string, string> = { instagram: "4 / 5", facebook: "1 / 1", t
 
 /** SNS 문체 — 세 채널 같이 (2026-10-23 사장님 회의). 앱 sns-writer.js TONES 와 같은 id */
 export const SNS_TONES = [
-  { id: "thread", label: "스레드 감성", brief: "툭 던지는 혼잣말 · 숫자 · 질문으로 끝" },
+  { id: "thread", label: "스레드 감성", brief: "반말 혼잣말 · 짧게 끊어서" },
   { id: "polite", label: "공손체", brief: "존댓말로 차분하게 안내" },
   { id: "casual", label: "친근체", brief: "동네 단골에게 말하듯 편하고 다정하게" },
   { id: "hook", label: "후킹체", brief: "첫 줄에서 궁금하게, 짧게 끊어서" },
   { id: "expert", label: "전문가체", brief: "입지·가격·활용도를 분석하듯" },
-  { id: "short", label: "요약체", brief: "핵심만 3~5줄" },
+  // 요약체는 뺌 — 스레드·페이스북에 이어 인스타에서도 (2026-11-06 사장님). 예전에 고른 것은 그 채널 기본 문체로
   { id: "check", label: "체크체", brief: "✔️ 조건 정리 + 한마디" }, // 2026-11-06 사장님: 인스타 기본
+  { id: "icon", label: "아이콘체", brief: "📍 위치 · 💰 가격처럼 아이콘 줄" }, // 2026-11-06 사장님: "아까 있던 이것도 살려도 될 것 같아" — 인스타 전용
   { id: "local", label: "동네소식체", brief: "동네 소식 전하듯 2~3문단" }, // 2026-11-06 사장님: 페이스북 전용·기본
 ];
 /** 채널에 맞는 문체 — 스레드 감성은 스레드에만 (2026-11-06 사장님 회의: 스토리체 뺌 · 반말체 → 친근체) */
 //  인스타그램은 친근체 → 공손체 순서로 맨 앞에 (2026-11-06 사장님)
 const IG_FIRST = ["casual", "polite"];
 export const tonesFor = (ch: string) => {
-  if (ch === "threads") return SNS_TONES.filter((t) => t.id !== "short" && t.id !== "local"); // 스레드는 요약체 뺌 (2026-11-06 사장님)
-  const l = SNS_TONES.filter((t) => t.id !== "thread" && t.id !== "local" && !(ch === "facebook" && t.id === "short")); // 페이스북도 요약체 뺌 (2026-11-06 사장님)
+  if (ch === "threads") return SNS_TONES.filter((t) => t.id !== "short" && t.id !== "local" && t.id !== "icon"); // 스레드는 요약체 뺌 (2026-11-06 사장님)
+  const l = SNS_TONES.filter((t) => t.id !== "thread" && t.id !== "local" && !(ch !== "instagram" && t.id === "icon") && !(ch === "facebook" && t.id === "short")); // 페이스북도 요약체 뺌 (2026-11-06 사장님)
   if (ch === "facebook") return [SNS_TONES.find((t) => t.id === "local")!, ...l]; // 동네소식체는 페이스북에만, 맨 앞
   return ch === "instagram" ? [...IG_FIRST.map((id) => l.find((t) => t.id === id)!), ...l.filter((t) => !IG_FIRST.includes(t.id))] : l;
 };
