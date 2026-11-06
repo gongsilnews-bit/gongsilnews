@@ -249,7 +249,8 @@ async function addAsset(libId: string): Promise<Asset> {
   }
   if (!it) throw new Error("자료를 찾지 못했어요. 다시 골라 주세요.");
   return {
-    id: uid(), path: it.source === "web" ? `web-lib:${libId}` : it.source === "stock" ? `stock:${libId}` : "", url: it.url, thumb: it.thumb, kind: it.kind, name: it.name,
+    // 보관해 둔 오픈자료(kept)도 web-lib: — 다시 열 때 이 브라우저 보관본으로 (2026-11-06)
+    id: uid(), path: it.source === "web" || (it as { kept?: boolean }).kept ? `web-lib:${libId}` : it.source === "stock" ? `stock:${libId}` : "", url: it.url, thumb: it.thumb, kind: it.kind, name: it.name,
     duration: it.duration, width: it.width, height: it.height, hasAudio: it.kind === "video" ? false : undefined, source: it.source, credit: it.credit,
   };
 }
@@ -390,6 +391,20 @@ export function webVideoBridge(): VideoBridge {
           if (r?.url) url = r.url;
         }
         const item: LibItem = { id: `s-${s.id}`, name: s.credit ? `${s.source} · ${s.credit}` : s.source || "오픈자료", kind: s.kind, source: "stock", fav: false, credit: s.credit ? `${s.source} / ${s.credit}` : s.source, duration: s.duration || 0, width: s.width, height: s.height, url, thumb: s.thumb || url, ready: true };
+        // Pexels·Pixabay — 넣는 순간 파일을 받아 이 브라우저에 보관한다 (2026-11-06 사장님: Pixabay 주소는 24시간 뒤 막혀 클립 사진이 깨지던 것)
+        //  보관하면 web-lib: 로 이어져 다음 날 열어도 그대로. 못 받으면(막힘) 예전처럼 주소로
+        if (!/^gongsil-d-/.test(s.id)) {
+          const have = await run<LibRow | undefined>("lib", "readonly", (st) => st.get(item.id)).catch(() => undefined);
+          if (have?.blob) { const it = { ...withUrl(have), kept: true } as LibItem; mem.set(item.id, it); return it; }
+          const blob = await fetch(url).then((r) => (r.ok ? r.blob() : null)).catch(() => null);
+          if (blob && blob.size > 0) {
+            const kept = { ...item, kept: true } as LibItem;
+            await run("lib", "readwrite", (st) => st.put({ id: item.id, item: { ...kept, url: "", thumb: item.kind === "image" ? "" : item.thumb }, blob } as LibRow)).catch(() => {});
+            const it = withUrl({ id: item.id, item: kept, blob });
+            mem.set(item.id, it);
+            return it;
+          }
+        }
         mem.set(item.id, item);
         return item;
       },

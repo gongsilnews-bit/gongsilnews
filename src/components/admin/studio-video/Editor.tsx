@@ -5832,7 +5832,16 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   const [state, setState] = useState<{ text: string; frac: number } | null>(null);
   const [job, setJob] = useState("");
   const [done, setDone] = useState<{ file: string; seconds: number; took: number; url?: string } | null>(null);
-  const [post, setPost] = useState<"" | "youtube" | "instagram">(""); // 완성 영상 SNS 올리기 (2026-10-21)
+  const [post, setPost] = useState<"" | "youtube" | "instagram" | "threads" | "facebook">(""); // 완성 영상 SNS 올리기 (2026-10-21) · 웹은 네 채널 따로 (2026-11-06)
+  // 웹 — 도우미(크롬 확장) 연결 상태 · 이 영상을 채워 둔 채널 ✓ (2026-11-06 사장님: "네 곳이면 충분해", 버튼 정리)
+  const postedKey = `gs-posted:${project.id || project.name}`;
+  const [posted, setPosted] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(postedKey) || "[]"); } catch { return []; } });
+  const markPosted = (ch: string) => setPosted((l) => { const n = l.includes(ch) ? l : [...l, ch]; try { localStorage.setItem(postedKey, JSON.stringify(n)); } catch { /* */ } return n; });
+  const [helper, setHelper] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!(b as { web?: boolean }).web) return;
+    void import("@/components/admin/studio-web/core").then((m) => m.helperOn()).then(setHelper).catch(() => setHelper(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 만드는 중 — 다 만든 클립을 바로 틀어 보여 준다 (2026-10-22 사장님: 실시간으로 영상 보여 주기)
   const [made, setMade] = useState<{ url: string; i: number; n: number }[]>([]);
   const [watch, setWatch] = useState(-1); // 크게 보는 클립 (-1 = 늘 방금 만든 것)
@@ -5878,27 +5887,61 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
   };
   // 웹 — 유튜브 쇼츠는 도우미 확장이 유튜브 스튜디오에 채운다 (2026-11-05)
   if (done && post && (b as { web?: boolean }).web && done.url) return <WebPostDialog project={project} url={done.url} channel={post === "instagram" ? "instagram" : "youtube"} onClose={() => setPost("")} />;
-  if (done && post) return <PostDialog project={project} file={done.file} seconds={done.seconds} channel={post} onClose={() => setPost("")} />;
+  if (done && post) return <PostDialog project={project} file={done.file} seconds={done.seconds} channel={post} onClose={() => setPost("")} onFilled={(ch) => markPosted(ch)} />;
   if (done) {
+    const web = Boolean((b as { web?: boolean }).web);
+    // 웹 — [내 SNS에 올리기]는 창 맨 아래, [폴더에서 보기]는 "길이 …" 줄 옆으로 (2026-11-06 사장님)
+    const snsWeb = kind === "mp4" ? (
+      <div style={{ width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 800 }}>내 SNS에 올리기</span>
+          <span style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 700, color: helper ? "#34d399" : helper === false ? "#f59e0b" : C.dim }}>
+            {helper === null ? "도우미 확인 중…" : helper ? "● 도우미 연결됨" : "○ 도우미가 없어요"}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", opacity: helper === false ? 0.45 : 1 }}>
+          {([["youtube", "유튜브 쇼츠"], ["instagram", "인스타 릴스"], ["facebook", "페이스북"], ["threads", "스레드"]] as const).map(([ch, label]) => (
+            <Btn key={ch} onClick={() => setPost(ch)} title={posted.includes(ch) ? "이 채널에 영상과 글을 채워 뒀어요 (다시 채울 수 있어요)" : undefined}>
+              <ChannelMark ch={ch} />{label}{posted.includes(ch) && <span style={{ color: "#34d399", fontWeight: 900, marginLeft: 2 }}>✓</span>}
+            </Btn>
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>
+          {helper === false
+            ? <>채우기는 공실뉴스 도우미(크롬 확장)가 해요. <a href="https://chromewebstore.google.com/detail/opoimbbagnpmhlblgbpophbigakilofc" target="_blank" rel="noreferrer" style={{ color: "#60a5fa", fontWeight: 700 }}>도우미 설치하기</a> 뒤 이 화면을 새로 고쳐 주세요.</>
+            : "누르면 그 채널 올리기 화면이 열리고 영상·글이 채워져요. 마지막 [게시]는 직접 눌러요."}
+        </div>
+      </div>
+    ) : undefined;
     return (
-      <Modal title={kind === "mp3" ? "소리 파일이 완성됐어요" : "영상이 완성됐어요"} onClose={onClose} width={kind === "mp4" && done.url ? 760 : 560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />{kind === "mp3" ? "소리 들어 보기" : "영상 열어 보기"}</Btn></>}>
+      <Modal title={kind === "mp3" ? "소리 파일이 완성됐어요" : "영상이 완성됐어요"} onClose={onClose} width={kind === "mp4" && done.url ? 760 : 560} footer={web
+        // 웹 — [영상 열어 보기]는 뺐다 (2026-11-06 사장님: "그냥 없애자" — 위 재생 화면으로 본다, 웹은 PC 재생 프로그램을 못 연다)
+        ? snsWeb
+        : <><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />{kind === "mp3" ? "소리 들어 보기" : "영상 열어 보기"}</Btn></>}>
         <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.8 }}>
           {/* 완성본 바로 재생 (2026-10-22 사장님) */}
           {kind === "mp4" && done.url && (
             <video key={done.url} src={done.url} controls autoPlay playsInline
               style={{ width: "100%", maxHeight: 420, background: "#000", borderRadius: 8, display: "block", marginBottom: 12, aspectRatio: project.ratio.replace(":", " / ") }} />
           )}
-          {done.seconds > 0 && <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>}
-          <div style={{ color: C.sub, fontSize: 14, wordBreak: "break-all" }}>{done.file}</div>
-          {/* SNS 올리기 — 반자동: 크롬에서 파일·글을 채우고 [게시]는 직접 (2026-10-21 사장님) */}
-          {kind === "mp4" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {done.seconds > 0 && <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>}
+              <div style={{ color: C.sub, fontSize: 14, wordBreak: "break-all" }}>{done.file}</div>
+            </div>
+            {web && <Btn primary onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn>}
+          </div>
+          {/* SNS 올리기 — 반자동: 크롬에서 파일·글을 채우고 [게시]는 직접 (2026-10-21 사장님) · 웹은 창 맨 아래(snsWeb) */}
+          {kind === "mp4" && !web && (
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${C.line}` }}>
+              {(<>
               <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>내 SNS에 올리기</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Btn onClick={() => setPost("youtube")}><ChannelMark ch="youtube" />유튜브에 올리기</Btn>
-                <Btn onClick={() => setPost("instagram")}><ChannelMark ch="instagram" />{(b as { web?: boolean }).web ? "인스타그램·스레드·페이스북" : "인스타그램에 올리기"}</Btn>
+                <Btn onClick={() => setPost("instagram")}><ChannelMark ch="instagram" />인스타그램에 올리기</Btn>
               </div>
-              <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>{(b as { web?: boolean }).web ? "도우미(크롬 확장)가 유튜브·인스타그램 릴스·스레드·페이스북 올리기 화면에 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요." : "AI가 제목·설명을 쓰고, 크롬에서 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요."}</div>
+              <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>AI가 제목·설명을 쓰고, 크롬에서 영상과 글을 채워 둬요. 마지막 [게시]는 직접 눌러요.</div>
+              </>)}
             </div>
           )}
         </div>

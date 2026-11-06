@@ -12,7 +12,8 @@ import { r2Json, r2Ready, r2Url } from "@/lib/r2";
 type Item = { id: string; kind: "image" | "video"; thumb: string; url: string; width: number; height: number; duration?: number; credit: string; source: string; page: string };
 
 // 같은 검색은 24시간 저장해 두고 다시 쓴다 — Pixabay 규칙(요청 24시간 캐시)이고, 한도(1분 100번)도 아낀다 (서버 데이터 캐시)
-const DAY = 60 * 60 * 24;
+// 24시간이던 것을 3시간으로 줄였다 (2026-11-06): Pixabay 그림 주소는 받은 뒤 24시간만 열려서, 실제 사이트에서 하루 묵은 결과의 그림이 깨져 보였다
+const DAY = 60 * 60 * 3;
 
 async function pexels(q: string, type: string, orientation: string, page: number): Promise<Item[]> {
   const key = process.env.PEXELS_API_KEY;
