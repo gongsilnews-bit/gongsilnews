@@ -4,6 +4,7 @@
 //  1. 재료: 없음(빈 문서·템플릿) · 내 공실 · 공실뉴스 기사  →  2. 종류 · 크기  →  3. 레이아웃(맨 앞 [빈 문서])  →  미리보기 · 빈 문서 세부 설정
 //  재료가 없으면 칸 이름 그대로(템플릿 열기), 재료가 있으면 AI가 제목·부제·키워드 문구만 쓴다. 가격·면적·주소·중개사는 자료 그대로 (가짜 데이터 금지)
 //  배경은 고른 사진 그대로 (AI로 그리거나 다듬지 않음) — 기사는 뉴스칼럼 배경 사진
+import { webAiDesign } from "./webAi";
 import React, { useEffect, useMemo, useState } from "react";
 import { loadFont } from "@/components/admin/studio-video/Pickers";
 import { Btn, C, FONT, Modal, input } from "@/components/admin/studio-video/ui";
@@ -282,7 +283,13 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
     }
   };
   const readCanvas = async (file: string) => {
-    if (!b?.readFile) throw new Error("앱을 새로 받아 주세요 (사진 읽기)");
+    if (!b?.readFile) {
+      // 웹 — 내 이미지(브라우저 보관)는 그 주소로 읽는다 (2026-11-06)
+      const it = (mineImgs || []).find((x) => x.path === file || x.id === file);
+      const c = it && (it.url || it.thumb) ? await urlCanvas(it.url || it.thumb) : null;
+      if (c) return c;
+      throw new Error("사진을 읽지 못했어요. 다른 사진을 골라 주세요");
+    }
     const r = await b.readFile(file);
     if (!r.bytes) throw new Error(r.error || "사진을 읽지 못했어요");
     return bytesToCanvas(r.bytes);
@@ -341,7 +348,8 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
       return;
     }
     if (!pick) return void makeBlank(chosen, id); // 공실·기사를 안 골라도 틀대로 만든다 (2026-10-22 사장님)
-    if (!b?.aiDesign || !vb) return setErr("웹에서는 아직 안 돼요");
+    // 웹 — 앱 대신 회원 본인 AI(새 탭)로 같은 질문 (2026-11-06 사장님: "AI 작동이 되게 해줘")
+    const aiDesign = b?.aiDesign || webAiDesign;
     try {
       // 1) 자료
       const content: Content = agencyContent();
@@ -378,7 +386,7 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
       }
       // 2) AI 문구
       setBusy("AI가 제목·부제·키워드를 쓰는 중…");
-      const d = await b.aiDesign({ kind, facts, size: `${size.w}x${size.h}`, request: req });
+      const d = await aiDesign({ kind, facts, size: `${size.w}x${size.h}`, request: req });
       content.title = d.title || (kind === "article" ? srcTitle : "");
       content.sub = d.sub;
       content.badge = kind === "vacancy" ? d.badge : "";

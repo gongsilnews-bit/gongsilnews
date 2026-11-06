@@ -42,6 +42,7 @@ import { videoBridge } from "@/components/admin/studio-video/types";
 import { AiSettingsBox } from "@/components/admin/studio-video/VideoMenu";
 import { DocPanel, LayerPanel, PictoSide, StickerSide, TextPanel } from "./PhotoPanels";
 import { folderReady } from "@/components/admin/studio-web/folder";
+import { webAiText } from "./webAi";
 import { download as webDownload, downloadWithHandle } from "@/components/admin/studio-web/core";
 import { canPickWithHandle, pickWithHandles, saveAsPicker, webRecentAdd, webRecentList, webRecentRead, webRecentRemove, writeToHandle } from "./webRecent";
 /** 웹 — 문서마다 PC 파일 손잡이 (열었거나 저장한 자리). 있으면 Ctrl+S 가 그 파일에 덮어쓴다 (2026-11-05) */
@@ -1088,12 +1089,12 @@ export default function PhotoStudio({ menu, embed, aiLock }: { menu: React.React
         // 글자 레이어 — 회원 AI 가 글만 고친다 (바로 바꾸고, Ctrl+Z 로 되돌리기)
         const l0 = selL && isText(selL) ? selL : null;
         if (!l0) throw new Error("글자 레이어를 골라 주세요");
-        if (!b?.aiText) throw new Error((bridge() ? "앱을 새로 받아 주세요" : "웹에서는 아직 안 돼요"));
+        const aiText = b?.aiText || webAiText; // 웹은 회원 본인 AI(새 탭)로 (2026-11-06)
         const vb = videoBridge();
         const off = vb?.onProgress?.((t: string) => setAiBusy(t));
         try {
           const look = lookOf(l0);
-          const r = await b.aiText({ text: look.text, request: prompt });
+          const r = await aiText({ text: look.text, request: prompt });
           const wasAuto = !l0.name || l0.name === look.text.slice(0, 20);
           mutate(() => {
             applyText(l0, { ...look, text: r.text });
