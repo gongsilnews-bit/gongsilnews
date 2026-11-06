@@ -82,15 +82,16 @@ function pickLocal(images: boolean): Promise<File[]> {
     i.click();
   });
 }
-/** 웹 — [저장 폴더]를 정했으면 공실뉴스\04 포토studio 바로 밑에 (날짜 폴더 없이, 2026-11-06), 아니면 다운로드 폴더로 (2026-11-04 사장님) */
+/** 웹 — [저장 폴더]를 정했으면 PSD 는 공실뉴스\04 포토studio 바로 밑, PNG·JPG 등 완성 이미지는 04 포토studio\완성이미지 (2026-11-06 사장님), 아니면 다운로드 폴더로 */
 function download(bytes: Uint8Array, name: string, recentOf?: Doc) {
+  const sub = /\.psd$/i.test(name) ? [] : ["완성이미지"];
   // 다시 열 수 있는 문서(PSD·PNG·JPG)는 웹 최근 파일에 남긴다 — 저장 폴더면 손잡이까지 (2026-11-05 사장님: "저장했는데 안 보여서")
   if (recentOf) {
     const thumb = (() => { try { return thumbOf(composite(recentOf)); } catch { return ""; } })();
-    if (folderReady) { void downloadWithHandle(name, new Blob([bytes as BlobPart]), "photo").then((h) => webRecentAdd({ name, thumb, handle: h || undefined })); return; }
+    if (folderReady) { void downloadWithHandle(name, new Blob([bytes as BlobPart]), "photo", sub).then((h) => webRecentAdd({ name, thumb, handle: h || undefined })); return; }
     void webRecentAdd({ name, thumb });
   }
-  if (folderReady) { webDownload(name, new Blob([bytes as BlobPart]), "photo"); return; }
+  if (folderReady) { webDownload(name, new Blob([bytes as BlobPart]), "photo", sub); return; }
   const url = URL.createObjectURL(new Blob([bytes as BlobPart]));
   const a = document.createElement("a");
   a.href = url;

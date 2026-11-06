@@ -119,7 +119,10 @@ export async function saveAsPicker(name: string, bytes: Uint8Array): Promise<any
     const ext = (/\.(\w+)$/.exec(name)?.[1] || "psd").toLowerCase();
     const mime = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "application/octet-stream";
     const dir = await import("@/components/admin/studio-web/folder").then((m) => m.menuDir("photo")).catch(() => null); // 04 포토studio 에서 (2026-11-06)
-    const h = await (window as any).showSaveFilePicker({ suggestedName: name, startIn: dir || "documents", types: [{ description: ext.toUpperCase(), accept: { [mime]: [`.${ext}`] } }] });
+    // 이름 앞에 날짜 — 폴더에서 날짜 순서대로 (2026-11-06 사장님: "psd 파일이 날짜 이름 순서대로")
+    const d = new Date(), day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    const suggested = /^\d{8}/.test(name) ? name : `${day} ${name}`;
+    const h = await (window as any).showSaveFilePicker({ suggestedName: suggested, startIn: dir || "documents", types: [{ description: ext.toUpperCase(), accept: { [mime]: [`.${ext}`] } }] });
     const w = await h.createWritable();
     await w.write(new Blob([bytes as BlobPart]));
     await w.close();

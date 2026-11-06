@@ -109,10 +109,10 @@ export async function menuDir(key: FolderKey): Promise<Dir | null> {
 
 /** 메뉴 폴더에서 파일 고르기 창 (2026-11-06 사장님: 쇼츠 [PC에서 열기]는 05 동영상studio 에서)
  *  고른 파일 · 닫았으면 null · 폴더를 안 정했거나 이 창을 못 열면 undefined (부르는 쪽이 보통 파일 고르기로) */
-export async function pickFromFolder(key: FolderKey, ext: string, description: string): Promise<File | null | undefined> {
+export async function pickFromFolder(key: FolderKey, ext: string, description: string, parts: string[] = []): Promise<File | null | undefined> {
   if (typeof window === "undefined" || !("showOpenFilePicker" in window)) return undefined;
-  let d = await dirOf(key, [], true).catch(() => null);
-  if (!d && (await stored())) { if (await allowFolder()) d = await dirOf(key, [], true).catch(() => null); }
+  let d = await dirOf(key, parts, true).catch(() => null);
+  if (!d && (await stored())) { if (await allowFolder()) d = await dirOf(key, parts, true).catch(() => null); }
   if (!d) return undefined;
   try {
     const [h] = await (window as any).showOpenFilePicker({ startIn: d, multiple: false, types: [{ description, accept: { "application/octet-stream": [ext] } }] });

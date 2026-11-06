@@ -286,7 +286,7 @@ async function photosFrom(list: { url: string; name?: string }[]) {
 const no = () => () => {};
 const renderFns = new Set<(text: string, frac: number, jobId?: string) => void>();
 const cancelled = new Set<string>();
-let lastOut: { name: string; blob: Blob } | null = null;
+let lastOut: { name: string; blob: Blob; inFolder?: boolean } | null = null;
 
 /** 웹 통로 하나 (한 번만 만든다) */
 let bridge: VideoBridge | null = null;
@@ -447,11 +447,27 @@ export function webVideoBridge(): VideoBridge {
       const { blob, seconds } = await renderWebMp4(p, (text, frac) => renderFns.forEach((fn) => fn(text, frac)), () => cancelled.has(id));
       const name = `${(p.name || "영상").replace(/[\\/:*?"<>|]+/g, " ").trim()}.mp4`;
       lastOut = { name, blob };
-      const h = await downloadWithHandle(name, blob, "video");
-      return { file: h ? `공실뉴스\\05 동영상studio\\${name}` : `다운로드 폴더\\${name}`, seconds, took: (Date.now() - t0) / 1000, encoder: "web", url: URL.createObjectURL(blob) };
+      // 완성 영상은 05 동영상studio\완성영상 에 (2026-11-06 사장님) — 작업 파일(.gsw)은 05 동영상studio 바로 밑. 폴더를 안 정했으면 다운로드 폴더
+      const { saveToFolderHandle } = await import("@/components/admin/studio-web/folder");
+      const fileName = /^\d{8}/.test(name) ? name : `${ymd()} ${name}`;
+      const h = await saveToFolderHandle("video", ["완성영상"], fileName, blob);
+      if (!h) await downloadWithHandle(name, blob, "video").catch(() => null); // 저장 폴더가 없으면 내려받기
+      lastOut.inFolder = Boolean(h);
+      return { file: h ? `공실뉴스\\05 동영상studio\\완성영상\\${fileName}` : `다운로드 폴더\\${name}`, seconds, took: (Date.now() - t0) / 1000, encoder: "web", url: URL.createObjectURL(blob) };
     },
     renderCancel: async (id: string) => { cancelled.add(id); },
-    showFile: async () => { if (lastOut) { const a = document.createElement("a"); a.href = URL.createObjectURL(lastOut.blob); a.download = lastOut.name; a.click(); } return true; },
+    // [폴더에서 보기] — 웹은 탐색기를 못 연다. 예전엔 같은 영상을 또 내려받아 "(3).mp4"가 쌓였다 (2026-11-06 사장님)
+    //  저장 폴더에 썼으면 05 동영상studio\완성영상 에서 파일 고르기 → 새 탭 재생 · 다운로드 폴더로 갔으면 여는 법 안내
+    showFile: async () => {
+      if (lastOut?.inFolder) {
+        const { pickFromFolder } = await import("@/components/admin/studio-web/folder");
+        const f = await pickFromFolder("video", ".mp4", "영상", ["완성영상"]);
+        if (f) { const u = URL.createObjectURL(f); window.open(u, "_blank", "noopener"); setTimeout(() => URL.revokeObjectURL(u), 60_000); return true; }
+        if (f === null) return true; // 닫음
+      }
+      alert(`영상은 크롬 다운로드 폴더에 있어요${lastOut ? ` (${lastOut.name})` : ""}.\n크롬 오른쪽 위 ⬇ (다운로드) 표시를 누르고 파일 옆 폴더 그림을 누르면 바로 열려요.\n\n왼쪽 아래 [저장 폴더]를 정해 두면 다음부터 공실뉴스\\05 동영상studio 에 저장되고, 여기서 바로 볼 수 있어요.`);
+      return true;
+    },
     openPath: async () => true,
     // AI 목소리 — 회원 본인 키(타입캐스트·일레븐랩스), 브라우저가 그 회사에 바로 (webVoice.ts). 같은 문장·성우는 다시 만들지 않는다
     typecast: keyApi("typecast"),

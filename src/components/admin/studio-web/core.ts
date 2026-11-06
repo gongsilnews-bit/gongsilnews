@@ -121,11 +121,12 @@ export function pickFiles(multiple: boolean): Promise<File[]> {
 /** 내려받기 — [저장 폴더]를 정했으면 공실뉴스\(메뉴 폴더) 바로 밑에 "년월일 이름"으로, 아니면 다운로드 폴더로 (2026-11-04 사장님: PC 폴더 저장)
  *  날짜 폴더는 만들지 않는다 (2026-11-06 사장님: "폴더가 너무 많아") — 이름 앞에 날짜가 없으면 붙인다 */
 const dated = (name: string) => (/^\d{8}/.test(name) ? name : `${ymd()} ${name}`);
-export function download(name: string, blob: Blob, key: FolderKey = "sns") {
+/** parts — 메뉴 폴더 안 하위 폴더 (예: 포토studio 완성이미지, 2026-11-06 사장님) */
+export function download(name: string, blob: Blob, key: FolderKey = "sns", parts: string[] = []) {
   if (folderReady) {
     const nm = dated(name);
-    void saveToFolder(key, [], nm, blob).then((ok) => {
-      if (ok) toast(`${ROOT_NAME}\\${F[key]} 에 저장했어요 — ${nm}`);
+    void saveToFolder(key, parts, nm, blob).then((ok) => {
+      if (ok) toast(`${ROOT_NAME}\\${[F[key], ...parts].join("\\")} 에 저장했어요 — ${nm}`);
       else browserDownload(name, blob);
     });
     return;
@@ -133,11 +134,11 @@ export function download(name: string, blob: Blob, key: FolderKey = "sns") {
   browserDownload(name, blob);
 }
 /** download 와 같되, 폴더에 썼으면 그 파일 손잡이를 돌려준다 (다운로드 폴더로 갔으면 null) — 포토studio 최근 파일 (2026-11-05) */
-export async function downloadWithHandle(name: string, blob: Blob, key: FolderKey = "sns"): Promise<unknown | null> {
+export async function downloadWithHandle(name: string, blob: Blob, key: FolderKey = "sns", parts: string[] = []): Promise<unknown | null> {
   if (folderReady) {
     const nm = dated(name);
-    const h = await saveToFolderHandle(key, [], nm, blob);
-    if (h) { toast(`${ROOT_NAME}\\${F[key]} 에 저장했어요 — ${nm}`); return h; }
+    const h = await saveToFolderHandle(key, parts, nm, blob);
+    if (h) { toast(`${ROOT_NAME}\\${[F[key], ...parts].join("\\")} 에 저장했어요 — ${nm}`); return h; }
   }
   browserDownload(name, blob);
   return null;
