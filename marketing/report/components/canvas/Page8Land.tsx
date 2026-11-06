@@ -529,7 +529,74 @@ export const won = (v: number | null) => {
   return `${v.toLocaleString('ko-KR')}만`;
 };
 
-export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo }) => {
+/* ── 넘치면 다음 쪽으로 (2026-11-06 사장님: "다 다음 페이지까지 보여줘, 지우면 어차피 조절되잖아") ──
+   줄을 빼지 않고 모두 보여 준다. 한 쪽에 들어가는 만큼 넣고 나머지는 "(계속)" 쪽으로. 숨긴 줄·더한 줄까지 세므로 지우면 쪽도 줄어든다.
+   FlyerCanvas 가 floorPageCount · tradePageCount 로 쪽을 늘리고 쪽 번호를 민다 */
+const FL_FIRST = 13, FL_NEXT = 17; // 10쪽 층별 — 첫 쪽(아래 인허가 이력 자리 남김) · 다음 쪽
+type FloorPart = { rows: number[]; added: number[] };
+export function floorParts(info: any): FloorPart[] {
+  const t = info?.tradeInfo as TradeInfo | undefined;
+  if (!t) return [{ rows: [], added: [] }];
+  const hid: Record<string, boolean> = info.publicHidden || {};
+  const fl = (t.floors || []).filter((f) => f.mainAtch !== '부속건축물');
+  const items = [
+    ...fl.map((_, i) => i).filter((i) => !hid[`p10.${i}`]).map((i) => ({ a: false, i })),
+    ...((info.publicAdded || {}).p10 || []).map((_: unknown, i: number) => ({ a: true, i })),
+  ];
+  const parts: FloorPart[] = [];
+  let cur: FloorPart = { rows: [], added: [] }, cap = FL_FIRST;
+  for (const it of items) {
+    if (cur.rows.length + cur.added.length >= cap) { parts.push(cur); cur = { rows: [], added: [] }; cap = FL_NEXT; }
+    (it.a ? cur.added : cur.rows).push(it.i);
+  }
+  parts.push(cur);
+  return parts;
+}
+export const floorPageCount = (info: any) => floorParts(info).length;
+
+/* 11쪽 실거래 — 이 건물 이력 표 · 변화 · 전월세 · 비슷한 거래 표를 차례로 담고, 쪽이 차면 다음 쪽 (표는 머리줄을 다시) */
+type TItem = { t: 'h' | 'ha' | 'h0' | 's' | 'r' | 'e' | 'ea'; i: number };
+const TR_CAP = 15; // 한 쪽에 들어가는 줄 단위 (표 한 줄 = 1)
+const tableOf = (x: TItem) => (x.t === 'h' || x.t === 'ha' ? 'H' : x.t === 'e' || x.t === 'ea' ? 'E' : '');
+const histKey = (h: TradeRow) => `p11.h.${h.date}.${h.amount}`;
+export function tradeParts(info: any): TItem[][] {
+  const t = info?.tradeInfo as TradeInfo | undefined;
+  if (!t) return [[]];
+  const hid: Record<string, boolean> = info.publicHidden || {};
+  const add: Record<string, string[][]> = info.publicAdded || {};
+  const hist = (t.history || []).filter((h) => !hid[histKey(h)]);
+  const items: TItem[] = [];
+  hist.forEach((_, i) => items.push({ t: 'h', i }));
+  (add.p11h || []).forEach((_, i) => items.push({ t: 'ha', i }));
+  if (!items.length) items.push({ t: 'h0', i: 0 });
+  const live = hist.filter((h) => !h.cancelled && h.amount);
+  if (live.length > 1) items.push({ t: 's', i: Math.min(3, live.length - 1) });
+  if ((t.rentHistory || []).length) items.push({ t: 'r', i: 0 });
+  if ((t.examples || []).length) {
+    t.examples.forEach((_, i) => { if (!hid[`p11.e.${i}`]) items.push({ t: 'e', i }); });
+    (add.p11e || []).forEach((_, i) => items.push({ t: 'ea', i }));
+  }
+  const base = (x: TItem) => (x.t === 'h0' || x.t === 'r' ? 2.4 : x.t === 's' ? 0.3 + x.i * 0.75 : 1);
+  const parts: TItem[][] = [[]];
+  let used = 0;
+  for (const it of items) {
+    const cur = parts[parts.length - 1];
+    const tb = tableOf(it);
+    const cost = base(it) + (tb && !cur.some((x) => tableOf(x) === tb) ? 2.4 : 0); // 표 제목·머리줄
+    if (used + cost > TR_CAP && cur.length) {
+      parts.push([it]);
+      used = base(it) + (tb ? 2.4 : 0);
+      continue;
+    }
+    cur.push(it);
+    used += cost;
+  }
+  return parts;
+}
+export const tradePageCount = (info: any) => tradeParts(info).length;
+const Cont: React.FC = () => <span className="ml-1.5 text-[11px] font-bold text-gray-400">(계속)</span>;
+
+export const Page10Floors: React.FC<PageProps & { part?: number }> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, part = 0 }) => {
   const t = (info as any).tradeInfo as TradeInfo | undefined;
   const ed = useEd(info, onUpdateInfo);
   const set = (k: string, v: string) => onUpdateInfo && onUpdateInfo({ ...info, [k]: v });
@@ -537,15 +604,20 @@ export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, 
   const body = (() => {
     if (!t) return <Empty text="층별 현황 자료가 아직 없어요." />;
     const fl = (t.floors || []).filter((f) => f.mainAtch !== '부속건축물');
-    const shown = fl.slice(0, 13).map((f, i) => ({ f, i })).filter(({ i }) => !ed.hidden(`p10.${i}`));
-    if (!fl.length) return <Empty text={(t.errors || []).find((e) => e.startsWith('층별')) || '건축물대장에 층별 내용이 없어요.'} />;
-    const total = shown.reduce((s, { f }) => s + (f.area || 0), 0);
+    const parts = floorParts(info);
+    const pIdx = Math.min(part, parts.length - 1), last = pIdx === parts.length - 1;
+    const shown = parts[pIdx].rows.map((i) => ({ f: fl[i], i }));
+    const addedHere = parts[pIdx].added;
+    if (!fl.length && !ed.added('p10').length) return <Empty text={(t.errors || []).find((e) => e.startsWith('층별')) || '건축물대장에 층별 내용이 없어요.'} />;
+    const allShown = parts.flatMap((p) => p.rows).map((i) => fl[i]);
+    const total = allShown.reduce((s, f) => s + (f.area || 0), 0);
     const multiDong = new Set(fl.map((f) => f.dong).filter(Boolean)).size > 1;
-    const permits = (t.permits || []).slice(0, 5);
+    const permits = pIdx === 0 ? (t.permits || []).slice(0, 5) : [];
     return (
       <div className="h-[520px] flex flex-col">
+        {pIdx > 0 && <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>층별 현황<Cont /></div>}
         <div className="relative group/table rounded-2xl border border-gray-200">
-          <AddRow onClick={() => ed.addRow('p10', 4)} />
+          {last && <AddRow onClick={() => ed.addRow('p10', 4)} />}
           <table className="w-full text-[13px] [&_td]:align-middle [&_td]:py-1.5">
             <thead>
               <tr style={{ background: tint(primary, '12'), color: primary }}>
@@ -566,7 +638,7 @@ export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, 
                   <td className="px-3 py-1.5 text-right text-gray-900"><E ed={ed} k={`p10.${i}.area`} v={m2(f.area)} /></td>
                 </tr>
               ))}
-              {ed.added('p10').map((r, i) => (
+              {addedHere.map((i) => ({ r: ed.added('p10')[i], i })).filter((x) => x.r).map(({ r, i }) => (
                 <tr key={`a${i}`} className="group/row border-t border-gray-100">
                   {multiDong && <td className="px-3 py-1.5" />}
                   <td className="relative px-3 py-1.5 font-bold text-gray-800"><AE ed={ed} t="p10" r={i} c={0} v={r[0]} ph="층" /><DelBtn onClick={() => ed.delRow('p10', i)} /></td>
@@ -575,10 +647,12 @@ export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, 
                   <td className="px-3 py-1.5 text-right text-gray-900"><AE ed={ed} t="p10" r={i} c={3} v={r[3]} ph="면적" /></td>
                 </tr>
               ))}
-              <tr className="border-t-2 border-gray-200 font-bold">
-                <td className="px-3 py-1.5" colSpan={multiDong ? 4 : 3}>합계{fl.length > 13 ? ` (${fl.length}개 층 중 13개 표시)` : ''}</td>
-                <td className="px-3 py-1.5 text-right"><E ed={ed} k="p10.total" v={m2(Math.round(total * 100) / 100)} /></td>
-              </tr>
+              {last && (
+                <tr className="border-t-2 border-gray-200 font-bold">
+                  <td className="px-3 py-1.5" colSpan={multiDong ? 4 : 3}>합계{allShown.length > 1 ? ` (${allShown.length}개 층)` : ''}</td>
+                  <td className="px-3 py-1.5 text-right"><E ed={ed} k="p10.total" v={m2(Math.round(total * 100) / 100)} /></td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -595,9 +669,9 @@ export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, 
             {permits[0]?.zoning && !ed.hidden('p10.zoning') && <div className="group/row relative mt-1.5 text-[12px] text-gray-500"><E ed={ed} k="p10.zoning" v={`용도지역: ${permits[0].zoning}${permits[0].jimok ? ` · 지목 ${permits[0].jimok}` : ''}`} /><Hide ed={ed} k="p10.zoning" /></div>}
           </div>
         )}
-        <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
+        {last && <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
           자료: 국토교통부 건축물대장 층별개요 · 건축인허가 기본개요 ({ymd(t.fetchedAt)} 조회). 공사 중이거나 사용승인 전 변경 내용은 대장에 아직 반영되지 않았을 수 있어요.{edited(ed, 'p10.')}
-        </p>
+        </p>}
       </div>
     );
   })();
@@ -611,7 +685,7 @@ export const Page10Floors: React.FC<PageProps> = ({ info, pageString, isHidden, 
   );
 };
 
-export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo }) => {
+export const Page11Trades: React.FC<PageProps & { part?: number }> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, part = 0 }) => {
   const t = (info as any).tradeInfo as TradeInfo | undefined;
   const ed = useEd(info, onUpdateInfo);
   const set = (k: string, v: string) => onUpdateInfo && onUpdateInfo({ ...info, [k]: v });
@@ -634,17 +708,26 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
     );
     const isNamed = t.kind === 'Apt' || t.kind === 'Offi' || t.kind === 'RH';
     const failed = (t.errors || []).some((e) => /실거래/.test(e));
+    // 이 쪽에 담을 것 (넘치면 다음 쪽 — tradeParts)
+    const parts = tradeParts(info);
+    const pIdx = Math.min(part, parts.length - 1), here = parts[pIdx], last = pIdx === parts.length - 1;
+    const has = (k: TItem['t']) => here.some((x) => x.t === k);
+    const idx = (k: TItem['t']) => here.filter((x) => x.t === k).map((x) => x.i);
+    const before = (tb: string) => parts.slice(0, pIdx).some((p) => p.some((x) => tableOf(x) === tb || (tb === 'H' && x.t === 'h0')));
+    const lastOf = (tb: string) => { let k = -1; parts.forEach((p, n) => { if (p.some((x) => tableOf(x) === tb || (tb === 'H' && x.t === 'h0'))) k = n; }); return k; };
+    const showHist = has('h') || has('ha') || has('h0');
+    const showEx = has('e') || has('ea');
     return (
       <div className="h-[520px] flex flex-col gap-3">
-        <div>
-          <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>{isNamed ? '이 단지' : '이 건물'} 매매 이력 <span className="font-normal text-gray-400">(최근 {t.rentChart ? 5 : 10}년 · {t.kindLabel} 실거래)</span></div>
-          {hist.length || ed.added('p11h').length ? (
+        {showHist && <div>
+          <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>{isNamed ? '이 단지' : '이 건물'} 매매 이력{before('H') ? <Cont /> : <span className="font-normal text-gray-400"> (최근 {t.rentChart ? 5 : 10}년 · {t.kindLabel} 실거래)</span>}</div>
+          {has('h') || has('ha') ? (
             <div className="relative group/table rounded-2xl border border-gray-200">
-              <AddRow onClick={() => ed.addRow('p11h', 5)} />
+              {lastOf('H') === pIdx && <AddRow onClick={() => ed.addRow('p11h', 5)} />}
               <table className="w-full text-[12.5px] [&_td]:align-middle">
                 {head(['거래일', '금액', `평당가 (${basis})`, isNamed ? '층·전용' : '판 쪽 → 산 쪽', '비고'])}
                 <tbody>
-                  {hist.slice(-8).map((h, i) => (
+                  {idx('h').map((n) => hist[n]).filter(Boolean).map((h, i) => (
                     <tr key={i} className={`group/row border-t border-gray-100 ${h.cancelled ? 'text-gray-400' : ''}`}>
                       <td className="relative px-3 py-1.5"><E ed={ed} k={`${hk(h)}.date`} v={h.date} /><Hide ed={ed} k={hk(h)} /></td>
                       <td className={`px-3 py-1.5 font-bold ${h.cancelled ? 'line-through' : ''}`}><E ed={ed} k={`${hk(h)}.amount`} v={won(h.amount)} /></td>
@@ -653,7 +736,7 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
                       <td className="px-3 py-1.5 text-gray-500"><E ed={ed} k={`${hk(h)}.note`} v={h.cancelled ? '해제됨' : !isNamed && h.matchedBy ? `${h.matchedBy} 일치` : ''} /></td>
                     </tr>
                   ))}
-                  {ed.added('p11h').map((r, i) => (
+                  {idx('ha').map((i) => ({ r: ed.added('p11h')[i], i })).filter((x) => x.r).map(({ r, i }) => (
                     <tr key={`a${i}`} className="group/row border-t border-gray-100">
                       {['거래일', '금액', '평당가', isNamed ? '층·전용' : '판 쪽 → 산 쪽', '비고'].map((ph, c) => (
                         <td key={c} className={`${c === 0 ? 'relative ' : ''}px-3 py-1.5${c === 1 ? ' font-bold' : ''}`}><AE ed={ed} t="p11h" r={i} c={c} v={r[c]} ph={ph} />{c === 0 && <DelBtn onClick={() => ed.delRow('p11h', i)} />}</td>
@@ -669,9 +752,9 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
               {failed ? '실거래 내용을 채우지 못했어요. 잠시 뒤 [새로 채우기]를 눌러 주세요.' : `최근 ${t.rentChart ? 5 : 10}년 동안 이 건물로 확인된 매매 신고가 없어요.`}
             </div>
           )}
-          {steps.length > 0 && <ul className="mt-2 text-[12.5px] text-gray-700 list-disc pl-5 space-y-0.5">{steps.slice(-3).map((s, i) => ed.hidden(`p11.s.${i}`) ? null : <li key={i} className="group/row relative"><E ed={ed} k={`p11.s.${i}`} v={s} /><Hide ed={ed} k={`p11.s.${i}`} /></li>)}</ul>}
-        </div>
-        {(t.rentHistory || []).length > 0 && (
+        </div>}
+        {has('s') && steps.length > 0 && <ul className="text-[12.5px] text-gray-700 list-disc pl-5 space-y-0.5 -mt-1">{steps.slice(-3).map((s, i) => ed.hidden(`p11.s.${i}`) ? null : <li key={i} className="group/row relative"><E ed={ed} k={`p11.s.${i}`} v={s} /><Hide ed={ed} k={`p11.s.${i}`} /></li>)}</ul>}
+        {has('r') && (t.rentHistory || []).length > 0 && (
           <div>
             <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>이 단지 최근 전월세</div>
             <div className="flex flex-wrap gap-2 text-[12px]">
@@ -679,15 +762,15 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
             </div>
           </div>
         )}
-        {(t.examples || []).length > 0 && (
+        {showEx && (t.examples || []).length > 0 && (
           <div>
-            <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>{t.parcel?.dong} 최근 비슷한 거래 <span className="font-normal text-gray-400">(최근 12개월 · {t.rentChart ? '전월세' : '매매'})</span></div>
+            <div className="text-[13px] font-bold mb-1.5" style={{ color: primary }}>{t.parcel?.dong} 최근 비슷한 거래{before('E') ? <Cont /> : <span className="font-normal text-gray-400"> (최근 12개월 · {t.rentChart ? '전월세' : '매매'})</span>}</div>
             <div className="relative group/table rounded-2xl border border-gray-200">
-              <AddRow onClick={() => ed.addRow('p11e', 4)} />
+              {lastOf('E') === pIdx && <AddRow onClick={() => ed.addRow('p11e', 4)} />}
               <table className="w-full text-[12.5px] [&_td]:align-middle">
                 {head(['거래일', t.rentChart ? '보증금 / 월세' : '금액', t.rentChart ? '면적' : `평당가 (${basis})`, isNamed ? '단지' : '건축연도'])}
                 <tbody>
-                  {t.examples.map((h, i) => ed.hidden(`p11.e.${i}`) ? null : (
+                  {idx('e').map((i) => ({ h: t.examples[i], i })).filter((x) => x.h).map(({ h, i }) => (
                     <tr key={i} className="group/row border-t border-gray-100">
                       <td className="relative px-3 py-1.5"><E ed={ed} k={`p11.e.${i}.date`} v={h.date} /><Hide ed={ed} k={`p11.e.${i}`} /></td>
                       <td className="px-3 py-1.5 font-bold"><E ed={ed} k={`p11.e.${i}.price`} v={t.rentChart ? (h.monthly ? `${won(h.deposit)} / ${h.monthly}만` : `전세 ${won(h.deposit)}`) : won(h.amount)} /></td>
@@ -695,7 +778,7 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
                       <td className="px-3 py-1.5 text-gray-600"><E ed={ed} k={`p11.e.${i}.etc`} v={isNamed ? h.name : h.buildYear ? `${h.buildYear}년` : ''} /></td>
                     </tr>
                   ))}
-                  {ed.added('p11e').map((r, i) => (
+                  {idx('ea').map((i) => ({ r: ed.added('p11e')[i], i })).filter((x) => x.r).map(({ r, i }) => (
                     <tr key={`a${i}`} className="group/row border-t border-gray-100">
                       {['거래일', t.rentChart ? '보증금 / 월세' : '금액', t.rentChart ? '면적' : '평당가', isNamed ? '단지' : '건축연도'].map((ph, c) => (
                         <td key={c} className={`${c === 0 ? 'relative ' : ''}px-3 py-1.5${c === 1 ? ' font-bold' : ''}`}><AE ed={ed} t="p11e" r={i} c={c} v={r[c]} ph={ph} />{c === 0 && <DelBtn onClick={() => ed.delRow('p11e', i)} />}</td>
@@ -707,9 +790,9 @@ export const Page11Trades: React.FC<PageProps> = ({ info, pageString, isHidden, 
             </div>
           </div>
         )}
-        <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
+        {last && <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
           자료: 국토교통부 실거래가 공개 자료 ({ymd(t.fetchedAt)} 조회). {isNamed ? '' : '지번 뒷자리가 가려져 공개되므로, 대지면적·연면적·준공연도가 건축물대장과 맞는 거래만 이 건물로 표시했어요. '}거래 당사자는 개인·법인 구분만 공개돼요.{edited(ed, 'p11.')}
-        </p>
+        </p>}
       </div>
     );
   })();

@@ -336,7 +336,11 @@ export function webVideoBridge(): VideoBridge {
       open,
       // [프로젝트 열기] — PC 의 작업 파일(.gsw)
       openPick: async () => {
-        const [f] = await pickFiles(".gsw,application/zip");
+        // 저장 폴더를 정했으면 05 동영상studio 에서 바로 (2026-11-06 사장님: 저장한 .gsw 가 바로 보이게) — 아니면 보통 파일 고르기
+        const { pickFromFolder } = await import("@/components/admin/studio-web/folder");
+        const got = await pickFromFolder("video", ".gsw", "공실 쇼츠 작업 파일");
+        if (got === null) return null; // 닫음
+        const f = got || (await pickFiles(".gsw,application/zip"))[0];
         return f ? importProject(f) : null;
       },
       save,

@@ -86,8 +86,11 @@ export async function webRecentRead(id: string): Promise<{ name: string; bytes?:
 /** 크롬 파일 열기 — 손잡이와 함께. 취소하면 [] */
 export async function pickWithHandles(images: boolean): Promise<{ file: File; handle: any }[]> {
   try {
+    // 저장 폴더를 정했으면 04 포토studio 에서 열린다 (2026-11-06 사장님)
+    const dir = await import("@/components/admin/studio-web/folder").then((m) => m.menuDir("photo")).catch(() => null);
     const hs: any[] = await (window as any).showOpenFilePicker({
       multiple: true,
+      ...(dir ? { startIn: dir } : {}),
       types: [{ description: images ? "사진" : "PSD · 사진", accept: images ? { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif"] } : { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif"], "application/octet-stream": [".psd", ".psb"] } }],
     });
     return Promise.all(hs.map(async (h) => ({ file: await h.getFile(), handle: h })));
@@ -115,7 +118,8 @@ export async function saveAsPicker(name: string, bytes: Uint8Array): Promise<any
   try {
     const ext = (/\.(\w+)$/.exec(name)?.[1] || "psd").toLowerCase();
     const mime = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "application/octet-stream";
-    const h = await (window as any).showSaveFilePicker({ suggestedName: name, startIn: "documents", types: [{ description: ext.toUpperCase(), accept: { [mime]: [`.${ext}`] } }] });
+    const dir = await import("@/components/admin/studio-web/folder").then((m) => m.menuDir("photo")).catch(() => null); // 04 포토studio 에서 (2026-11-06)
+    const h = await (window as any).showSaveFilePicker({ suggestedName: name, startIn: dir || "documents", types: [{ description: ext.toUpperCase(), accept: { [mime]: [`.${ext}`] } }] });
     const w = await h.createWritable();
     await w.write(new Blob([bytes as BlobPart]));
     await w.close();

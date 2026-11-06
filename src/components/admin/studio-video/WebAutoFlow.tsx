@@ -63,6 +63,7 @@ function baseScript(v: VideoVacancy) {
 
 export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () => void; onDone: (p: Project) => void; seed?: VideoSeed | null }) {
   const [vacs, setVacs] = useState<Vac[] | null>(null);
+  const [cols, setCols] = useState<{ id: string; label: string; free: boolean; yt: boolean }[]>([]); // 뉴스칼럼 · 자유 글쓰기 (2026-11-06)
   const [vac, setVac] = useState(seed?.vacancyId || "");
   const ratio: Ratio = "9:16"; // 웹은 60초 세로 쇼츠만 (2026-11-05 사장님: 가로 16:9 없앰)
   const [info, setInfo] = useState<VideoVacancy | null>(null);
@@ -96,6 +97,11 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const first = yt.find((id) => r.success && r.data.some((v) => v.id === id));
       if (first && !seed?.vacancyId) setVac((cur) => cur || first);
     }).catch(() => setVacs([]));
+    // 뉴스칼럼 · 자유 글쓰기로 만든 글도 대본으로 (2026-11-06 사장님: "공실뉴스 · 뉴스칼럼 · 자유 글쓰기 이렇게 가져올 수 있게")
+    ensureStudioWebMember()
+      .then(() => studioBridge<{ column?: { list: (n?: number) => Promise<{ id: string; label: string; source?: { mode?: string }; done?: { youtube?: boolean } }[]> } }>()?.column?.list(200))
+      .then((l) => setCols((l || []).map((c) => ({ id: c.id, label: c.label || "제목 없음", free: c.source?.mode === "topic", yt: Boolean(c.done?.youtube) }))))
+      .catch(() => setCols([]));
     // 내 키로 연결한 성우 (타입캐스트·일레븐랩스)
     void import("./webVoice").then((m) => m.elPoints()).then(setPts).catch(() => {});
     const b = videoBridge();
@@ -111,7 +117,18 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   useEffect(() => {
     let live = true;
     // 공실 없이 — 내 사무소로 위쪽 제목·상호·연락처·표시광고·드론 (2026-11-05 사장님: "제목과 상호와 드론 영상 다 들어가도 됨")
-    if (!vac || vac.startsWith("col-")) { setInfo(null); void getMyVideoBase().then((d) => { if (live) setInfo(d); }).catch(() => {}); return () => { live = false; }; }
+    if (!vac || vac.startsWith("col-")) {
+      setInfo(null); void getMyVideoBase().then((d) => { if (live) setInfo(d); }).catch(() => {});
+      // 뉴스칼럼 · 자유 글쓰기 — 그 글로 써 둔 쇼츠릴스 대본 (2026-11-06)
+      if (vac.startsWith("col-") && !(seed?.script && vac === seed.vacancyId)) void (async () => {
+        await ensureStudioWebMember();
+        const yt = await studioBridge<{ youtube?: { get: (id: string) => Promise<{ narration?: string[]; title?: string } | null> } }>()?.youtube?.get(vac).catch(() => null);
+        if (!live) return;
+        if (yt?.narration?.length) { setScript(yt.narration.join("\n\n")); setFrom("youtube"); setHookTitle(String(yt.title || "")); }
+        else { setScript(""); setFrom(""); setErr("이 글은 아직 쇼츠릴스 대본이 없어요. 뉴스·SNS자동화에서 [쇼츠릴스 대본]을 먼저 쓰거나, 아래 칸에 대본을 직접 넣어 주세요."); }
+      })();
+      return () => { live = false; };
+    }
     (async () => {
       const r = await getVideoVacancy(vac);
       if (!live) return;
@@ -247,8 +264,11 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       <div style={{ padding: "4px 24px 20px", fontFamily: FONT, color: C.text, maxHeight: "72vh", overflowY: "auto" }}>
         {head("① 대본")}
         <select value={vac} onChange={(e) => { setVac(e.target.value); setErr(""); }} disabled={Boolean(busy)} style={{ ...box, height: 40, fontSize: 14, padding: "0 10px", marginBottom: 8, color: vac ? C.text : C.sub }}>
-          <option value="">{vacs === null ? "내 공실 불러오는 중…" : "공실에서 가져오기 (사진·정보·대본) — 선택"}</option>
-          {(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+          <option value="">{vacs === null ? "불러오는 중…" : "대본 가져오기 — 공실뉴스 · 뉴스칼럼 · 자유 글쓰기에서 고르기"}</option>
+          {/* 세 묶음 (2026-11-06 사장님) — 뉴스·SNS자동화 왼쪽 메뉴와 같은 순서 */}
+          {(vacs || []).length > 0 && <optgroup label="공실뉴스">{(vacs || []).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</optgroup>}
+          {cols.some((c) => !c.free) && <optgroup label="뉴스칼럼">{cols.filter((c) => !c.free).map((c) => <option key={c.id} value={c.id}>{c.label}{c.yt ? " · 쇼츠 대본 있음" : ""}</option>)}</optgroup>}
+          {cols.some((c) => c.free) && <optgroup label="자유 글쓰기">{cols.filter((c) => c.free).map((c) => <option key={c.id} value={c.id}>{c.label}{c.yt ? " · 쇼츠 대본 있음" : ""}</option>)}</optgroup>}
         </select>
         <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
           style={{ ...box, padding: "12px 14px", lineHeight: 1.7, resize: "vertical" }} />

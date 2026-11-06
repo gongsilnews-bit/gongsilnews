@@ -1,12 +1,12 @@
 /**
  * 웹 PC 폴더 저장 — 관리자 왼쪽 [저장 폴더]에서 정한 공실뉴스 폴더에 보고서·홍보지 파일을 쓴다 (2026-11-04 사장님: "우리 웹과 맞춰서")
- *  공실뉴스\02 보고서홍보지\20261106 매물보고서_잠원동_….pdf — 날짜 폴더 없이, 이름 앞에 날짜 (2026-11-06 사장님: "폴더가 너무 많아")
+ *  공실뉴스\03 물건홍보지\20261106 유리창홍보지_잠원동_….jpg (2026-11-06 사장님: 보고서·홍보지 폴더 따로) — 날짜 폴더 없이, 이름 앞에 날짜 (2026-11-06 사장님: "폴더가 너무 많아")
  *  폴더 손잡이는 웹 관리자(src/components/admin/studio-web/folder.ts)가 같은 사이트의 IndexedDB "gs-web-folder"에 넣어 둔 것을 읽는다
  *  폴더를 안 정했거나 허락이 없으면 false → 부르는 쪽이 지금처럼 다운로드로 받는다
  *  marketing/report/webFolder.ts 와 marketing/ai-detail/webFolder.ts 는 같은 내용 (둘 다 고칠 것)
  */
 const DB = "gs-web-folder";
-const SUB = "02 보고서홍보지"; // folder.ts 의 F.mkt 와 같게
+const SUB = "03 물건홍보지"; // folder.ts 의 F.flyer 와 같게
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function rootHandle(): Promise<any | null> {
@@ -58,3 +58,25 @@ export async function saveToWebFolder(fileName: string, dataUrl: string): Promis
     return true;
   } catch { return false; }
 }
+
+/** [📁] 내보낸 파일 보기 (2026-11-06 사장님: "버튼 옆에 파일 이미지, 누르면 바로 연결") — 웹은 탐색기를 못 연다.
+ *  그 폴더에서 파일 고르기 창을 열고, 고른 파일을 새 탭에서 연다. 폴더를 안 정했으면 "nofolder" */
+export async function openFromWebFolder(): Promise<"ok" | "nofolder" | "cancel"> {
+  const root = await rootHandle();
+  if (!root) return "nofolder";
+  try {
+    let perm = await root.queryPermission({ mode: "readwrite" });
+    if (perm !== "granted") perm = await root.requestPermission({ mode: "readwrite" }); // 누른 순간이라 물어볼 수 있다
+    if (perm !== "granted") return "nofolder";
+    const dir = await root.getDirectoryHandle(SUB, { create: true });
+    const [h] = await (window as any).showOpenFilePicker({ startIn: dir, multiple: false });
+    const f: File = await h.getFile();
+    const url = URL.createObjectURL(f);
+    window.open(url, "_blank", "noopener");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return "ok";
+  } catch (e: any) {
+    return e && e.name === "AbortError" ? "cancel" : "nofolder";
+  }
+}
+export const WEB_FOLDER_NAME = SUB;

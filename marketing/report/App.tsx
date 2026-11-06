@@ -16,6 +16,7 @@ import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroi
 import { fillFieldDefaults, roadmapItems } from './reportFields';
 import { scrubSampleInfo, buildLeaseTable, buildLeaseRight, LEASE_NOTICE, floorText } from './realData';
 import { saveToWebFolder } from './webFolder';
+import FolderOpenButton from './FolderOpenButton';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -1502,7 +1503,7 @@ function App() {
      웹에서는 false — 예전처럼 브라우저 다운로드. */
   const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
     const id = new URLSearchParams(window.location.search).get("vacancy_id") || getLocalId();
-    if (!id || !studioMarketing?.saveFile) return saveToWebFolder(fileName, dataUrl); // 웹 — 저장 폴더(공실뉴스\02 보고서홍보지)
+    if (!id || !studioMarketing?.saveFile) return saveToWebFolder(fileName, dataUrl); // 웹 — 저장 폴더(공실뉴스\02 매물보고서)
     try {
       await studioMarketing.saveFile({ id, sub: '매물보고서', fileName, dataUrl, hint: vacancyMetaRef.current });
       return true;
@@ -2894,6 +2895,9 @@ ${clone.outerHTML}
             <span>{isGeneratingPdf ? "생성 중..." : "PDF 내보내기"}</span>
           </button>
 
+          {/* [📁] 내보낸 파일 보기 — 저장 폴더(02 매물보고서)에서 파일 고르기 창 → 새 탭 (2026-11-06 사장님) */}
+          <FolderOpenButton />
+
 
           {/* Share Button (Relative Container for Popover) — 공실 없는 보고서는 공유 링크가 없다 (PDF·이미지로 보낸다) */}
           {/* 웹에서는 공유하기 단추를 아예 안 보인다 (2026-11-04 사장님) */}
@@ -3032,7 +3036,13 @@ ${clone.outerHTML}
             </div>
           )}
             <div className="font-bold text-gray-900 leading-relaxed">{aiProgress.replace(/^✓\s*/, "")}</div>
-            {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">스튜디오 전용 크롬에서 연결한 AI(ChatGPT·Gemini)가 씁니다. 1~2분 걸립니다.</div>}
+            {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">{/* 단계에 맞는 안내 (2026-11-06 사장님: "뭘 쓴다는 거야?" — 앱 시절 "스튜디오 전용 크롬" 문구가 웹에 남아 있던 것) */}
+              {/지적도|건축물대장|층별|실거래|공공/.test(aiProgress)
+                ? "국토교통부·브이월드 공공자료를 받아 오는 중이에요. AI는 아직 쓰지 않아요. 보통 몇 초~1분 걸려요."
+                : (() => { try { return Boolean((window.parent as any)?.gongsilStudio || (window as any).gongsilStudio); } catch { return false; } })()
+                  ? "공실마케팅 앱에 연결한 AI(ChatGPT·Gemini)가 씁니다. 1~2분 걸립니다."
+                  : "내 AI(ChatGPT·Gemini) 창에서 씁니다. 질문을 붙여 넣고 답을 복사해 오면 보고서가 채워져요."}
+            </div>}
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ import Page3LeaseStatus from './canvas/Page3LeaseStatus';
 import Page4Photos from './canvas/Page4Photos';
 import { photoPageCount, extraPhotoSlots } from './canvas/photoPages';
 import { pageOrder, HIDDEN_PAGES } from './canvas/pageOrder';
-import { Page8Cadastral, Page9Building, Page10Floors, Page11Trades } from './canvas/Page8Land';
+import { Page8Cadastral, Page9Building, Page10Floors, Page11Trades, floorPageCount, tradePageCount } from './canvas/Page8Land';
 import Page5AreaAnalysis from './canvas/Page5AreaAnalysis';
 import Page6Roadmap from './canvas/Page6Roadmap';
 import Page7Ending from './canvas/Page7Ending';
@@ -34,19 +34,22 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
   const order = pageOrder(info);
   // 사진 쪽이 늘면(2~5쪽) 뒤 쪽 번호도 밀린다 (2026-10-24)
   const photoPages = photoPageCount(info);
-  const extraPhoto = visiblePages.includes(4) ? photoPages - 1 : 0;
+  // 표가 넘치면 "(계속)" 쪽 — 10쪽 층별 · 11쪽 실거래 (2026-11-06 사장님: "다 다음 페이지까지")
+  const floorPages = floorPageCount(info), tradePages = tradePageCount(info);
+  const pagesOf = (p: number) => (p === 4 ? photoPages : p === 10 ? floorPages : p === 11 ? tradePages : 1);
   const pad2 = (n: number) => String(n).padStart(2, '0');
-  const getPageStatus = (pageNum: number, photoNo = 1) => {
+  /** sub — 여러 쪽짜리(사진·층별·실거래)의 몇 번째 쪽인가 (1부터) */
+  const getPageStatus = (pageNum: number, sub = 1) => {
       const isVisible = visiblePages.includes(pageNum);
       const shouldRender = (activeTab === 'all' && isVisible) || activeTab === pageNum;
-      
+
       let pageString = `PAGE ${pad2(pageNum)} / 06`;
       if (isVisible) {
-          // 쪽 차례 — 회원이 바꾼 차례 (info.pageOrder)
+          // 쪽 차례 — 회원이 바꾼 차례 (info.pageOrder) · 앞의 여러 쪽짜리만큼 뒤 쪽 번호가 밀린다
           const rank = (p: number) => { const i = order.indexOf(p); return i < 0 ? 99 + p : i; };
-          const before = visiblePages.filter((p) => rank(p) < rank(pageNum) && p !== 4).length + (visiblePages.includes(4) && rank(pageNum) > rank(4) ? photoPages : 0);
-          const idx = pageNum === 4 ? visiblePages.filter((p) => rank(p) < rank(4)).length + photoNo : before + 1;
-          const total = visiblePages.length + extraPhoto;
+          const before = visiblePages.filter((p) => rank(p) < rank(pageNum)).reduce((t, p) => t + pagesOf(p), 0);
+          const idx = before + sub;
+          const total = visiblePages.reduce((t, p) => t + pagesOf(p), 0);
           pageString = `PAGE ${pad2(idx)} / ${pad2(total)}`;
       } else {
           pageString = `EXCLUDED`;
@@ -212,16 +215,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         )}
   </>);
   blocks[10] = (<>
-        {getPageStatus(10).shouldRender && (
-            <Page10Floors info={info} pageString={getPageStatus(10).pageString} isHidden={getPageStatus(10).isHidden}
+        {getPageStatus(10).shouldRender && Array.from({ length: floorPages }, (_, n) => (
+            <Page10Floors key={`floors-${n}`} part={n} info={info} pageString={getPageStatus(10, n + 1).pageString} isHidden={getPageStatus(10).isHidden}
                 layoutTheme={layoutTheme} colorTheme={colorTheme} onUpdateInfo={onUpdateInfo} />
-        )}
+        ))}
   </>);
   blocks[11] = (<>
-        {getPageStatus(11).shouldRender && (
-            <Page11Trades info={info} pageString={getPageStatus(11).pageString} isHidden={getPageStatus(11).isHidden}
+        {getPageStatus(11).shouldRender && Array.from({ length: tradePages }, (_, n) => (
+            <Page11Trades key={`trades-${n}`} part={n} info={info} pageString={getPageStatus(11, n + 1).pageString} isHidden={getPageStatus(11).isHidden}
                 layoutTheme={layoutTheme} colorTheme={colorTheme} onUpdateInfo={onUpdateInfo} />
-        )}
+        ))}
   </>);
   // 12. 인테리어 전후 · 13. 리모델링 전후 (AI시뮬레이션, 2026-10-24)
   ([['interior', 12], ['remodel', 13]] as const).forEach(([kind, id]) => {

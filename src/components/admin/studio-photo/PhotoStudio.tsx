@@ -82,7 +82,7 @@ function pickLocal(images: boolean): Promise<File[]> {
     i.click();
   });
 }
-/** 웹 — [저장 폴더]를 정했으면 공실뉴스\04 포토studio\오늘 날짜 에, 아니면 다운로드 폴더로 (2026-11-04 사장님) */
+/** 웹 — [저장 폴더]를 정했으면 공실뉴스\04 포토studio 바로 밑에 (날짜 폴더 없이, 2026-11-06), 아니면 다운로드 폴더로 (2026-11-04 사장님) */
 function download(bytes: Uint8Array, name: string, recentOf?: Doc) {
   // 다시 열 수 있는 문서(PSD·PNG·JPG)는 웹 최근 파일에 남긴다 — 저장 폴더면 손잡이까지 (2026-11-05 사장님: "저장했는데 안 보여서")
   if (recentOf) {

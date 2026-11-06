@@ -5,14 +5,14 @@
  *  회원이 [저장 폴더 정하기]로 문서\공실뉴스 를 한 번 고르면, 웹에서 만든 것을 그 폴더에 쓴다.
  *  - 크롬·엣지(showDirectoryPicker)만. 안 되는 브라우저는 지금처럼 다운로드 폴더로 내려받는다
  *  - 고른 폴더는 이 브라우저에 기억 (IndexedDB 에 폴더 손잡이). 크롬을 새로 켜면 처음 한 번 "허락"을 다시 묻기도 한다
- *  - 안쪽 폴더는 웹 메뉴 이름 (2026-11-04 사장님: "우리 웹과 맞춰서"): 01 뉴스SNS발행 · 02 보고서홍보지 · 04 포토studio (글쓰기 폴더는 웹에선 안 둠, 2026-11-04 사장님)
+ *  - 안쪽 폴더는 웹 메뉴 이름 (2026-11-04 사장님: "우리 웹과 맞춰서"): 01 뉴스SNS발행 · 02 매물보고서 · 03 물건홍보지 · 04 포토studio (2026-11-06 사장님: 보고서·홍보지 폴더 따로) (글쓰기 폴더는 웹에선 안 둠, 2026-11-04 사장님)
  *    처음 저장할 때 생긴다 (빈 폴더를 미리 만들지 않는다). 보고서·홍보지(marketing/report·ai-detail 의 webFolder.ts)도 같은 이름을 쓴다
  *  - 고른 폴더 이름이 "공실뉴스"가 아니면 그 안에 "공실뉴스" 폴더를 만들어 쓴다 (문서를 골라도 문서\공실뉴스)
  *  작업(브라우저 안 IndexedDB)은 그대로 두고, 이 폴더는 백업 겸 다른 브라우저(엣지↔크롬)·다른 PC로 옮기는 길
  */
 
 export const ROOT_NAME = "공실뉴스";
-export const F = { sns: "01 뉴스SNS발행", mkt: "02 보고서홍보지", photo: "04 포토studio", video: "05 동영상studio", capture: "07 화면캡쳐" } as const; // capture — 웹 화면캡처 막대 (2026-11-05) // video — 웹 동영상studio 내보내기 (2026-11-05)
+export const F = { sns: "01 뉴스SNS발행", mkt: "02 매물보고서", flyer: "03 물건홍보지", photo: "04 포토studio", video: "05 동영상studio", capture: "07 화면캡쳐" } as const; // capture — 웹 화면캡처 막대 (2026-11-05) // video — 웹 동영상studio 내보내기 (2026-11-05)
 export type FolderKey = keyof typeof F;
 
 type Dir = any; // FileSystemDirectoryHandle (브라우저마다 타입이 달라 any)
@@ -98,6 +98,28 @@ async function dirOf(key: FolderKey, parts: string[], create = true): Promise<Di
   if (!d) return null;
   for (const p of [F[key], ...parts]) d = await d.getDirectoryHandle(p, { create });
   return d;
+}
+
+/** 메뉴 폴더 손잡이 — 열기·저장 창의 처음 위치로 쓴다 (2026-11-06 사장님: 포토studio 열기·저장도 04 포토studio 에서). 폴더를 안 정했으면 null */
+export async function menuDir(key: FolderKey): Promise<Dir | null> {
+  let d = await dirOf(key, [], true).catch(() => null);
+  if (!d && (await stored())) { if (await allowFolder()) d = await dirOf(key, [], true).catch(() => null); }
+  return d;
+}
+
+/** 메뉴 폴더에서 파일 고르기 창 (2026-11-06 사장님: 쇼츠 [PC에서 열기]는 05 동영상studio 에서)
+ *  고른 파일 · 닫았으면 null · 폴더를 안 정했거나 이 창을 못 열면 undefined (부르는 쪽이 보통 파일 고르기로) */
+export async function pickFromFolder(key: FolderKey, ext: string, description: string): Promise<File | null | undefined> {
+  if (typeof window === "undefined" || !("showOpenFilePicker" in window)) return undefined;
+  let d = await dirOf(key, [], true).catch(() => null);
+  if (!d && (await stored())) { if (await allowFolder()) d = await dirOf(key, [], true).catch(() => null); }
+  if (!d) return undefined;
+  try {
+    const [h] = await (window as any).showOpenFilePicker({ startIn: d, multiple: false, types: [{ description, accept: { "application/octet-stream": [ext] } }] });
+    return (await h.getFile()) as File;
+  } catch (e: any) {
+    return e && e.name === "AbortError" ? null : undefined;
+  }
 }
 
 /** 폴더에 파일 쓰기 — 폴더를 안 정했거나 허락이 없으면 false (부르는 쪽이 내려받기로) */
