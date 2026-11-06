@@ -4,6 +4,7 @@
 //  1. 재료: 없음(빈 문서·템플릿) · 내 공실 · 공실뉴스 기사  →  2. 종류 · 크기  →  3. 레이아웃(맨 앞 [빈 문서])  →  미리보기 · 빈 문서 세부 설정
 //  재료가 없으면 칸 이름 그대로(템플릿 열기), 재료가 있으면 AI가 제목·부제·키워드 문구만 쓴다. 가격·면적·주소·중개사는 자료 그대로 (가짜 데이터 금지)
 //  배경은 고른 사진 그대로 (AI로 그리거나 다듬지 않음) — 기사는 뉴스칼럼 배경 사진
+import { ensureStudioWebMember, studioBridge } from "@/components/admin/studio-web";
 import { webAiDesign } from "./webAi";
 import React, { useEffect, useMemo, useState } from "react";
 import { loadFont } from "@/components/admin/studio-video/Pickers";
@@ -58,6 +59,17 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
   const [kind, setKind] = useState<"none" | "vacancy" | "article">(start);
   const [vacs, setVacs] = useState<Vac[] | null>(null);
   const [arts, setArts] = useState<Art[] | null>(null);
+  // 자유 글쓰기 — 회원 PC(브라우저)에 저장된 내 글 (2026-11-06 사장님: "내 기사·칼럼 옆에 자유 글쓰기도")
+  type Free = { id: string; title: string; date: string; thumb: string | null; memo: string; shots: string[] };
+  const [artSrc, setArtSrc] = useState<"pub" | "free">("pub");
+  const [frees, setFrees] = useState<Free[] | null>(null);
+  const loadFrees = async () => {
+    try {
+      await ensureStudioWebMember();
+      const l = (await studioBridge<{ column?: { list: (n?: number) => Promise<{ id: string; label: string; createdAt: string; thumb?: string | null; source?: { mode?: string; topic?: { subject?: string; memo?: string } }; captures?: { thumb: string | null }[] }[]> } }>()?.column?.list(200)) || [];
+      setFrees(l.filter((c) => c.source?.mode === "topic").map((c) => ({ id: c.id, title: c.source?.topic?.subject || c.label || "자유 글", date: String(c.createdAt || "").slice(0, 10), thumb: c.thumb || null, memo: String(c.source?.topic?.memo || ""), shots: (c.captures || []).map((x) => x.thumb || "").filter(Boolean) })));
+    } catch { setFrees([]); }
+  };
   const [q, setQ] = useState("");
   const [pick, setPick] = useState<string>("");
   const [photos, setPhotos] = useState<LibItem[]>([]);
@@ -129,6 +141,13 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
     return () => { live = false; };
   }, [photo, photoUrl]); // eslint-disable-line react-hooks/exhaustive-deps
   /** 내 기사를 고르면 그 기사 사진들을 받아 첫 장을 배경으로 (내 공실과 같게) */
+  const chooseFree = (f: Free) => {
+    setPick(f.id);
+    setErr("");
+    setPhoto("");
+    setArtPhotos(f.shots);
+    setPhotoUrl(f.shots[0] || ""); // 글의 첫 사진이 배경
+  };
   const chooseArt = async (a: Art) => {
     setPick(a.id);
     setErr("");
@@ -378,6 +397,15 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
         setBusy("중개사무소 정보를 받는 중…");
         const ag = await getStudioAgency().catch(() => null);
         if (ag?.success && ag.data.name) content.agency = [ag.data.name, ag.data.phone].filter(Boolean).join(" · ");
+      } else if (artSrc === "free") {
+        // 자유 글쓰기 — 내 PC 의 글 (발행 전이라 날짜·출처 없이 내 부동산 뉴스 머리표만)
+        const f = frees?.find((x) => x.id === pick);
+        if (!f) throw new Error("글을 다시 골라 주세요.");
+        srcTitle = f.title;
+        content.label = newsLabelOf(agencyData?.name);
+        content.source = content.label;
+        facts = `제목: ${f.title}
+${f.memo.slice(0, 5000)}`;
       } else {
         setBusy("기사를 받는 중…");
         const a = await getStudioArticle(pick);
@@ -415,9 +443,9 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
     }
   };
 
-  const seg = (on: boolean, text: string, go: () => void, off = false) => (
+  const seg = (on: boolean, text: string, go: () => void, off = false, tight = false) => (
     <button type="button" onClick={go} disabled={off}
-      style={{ height: 34, padding: "0 12px", borderRadius: 6, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.bg : off ? C.dim : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: off ? "default" : "pointer" }}>{text}</button>
+      style={{ height: 34, padding: tight ? "0 7px" : "0 12px", whiteSpace: "nowrap", flexShrink: tight ? 1 : undefined, ...(tight ? { fontSize: 12.5 } : {}), borderRadius: 6, border: `1px solid ${on ? C.sel : C.line2}`, background: on ? C.sel : "transparent", color: on ? C.bg : off ? C.dim : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: off ? "default" : "pointer" }}>{text}</button>
   );
   const hd = (t: string, sub?: string) => <div style={{ fontWeight: 800, fontSize: 15, margin: "2px 0 10px" }}>{t}{sub && <span style={{ fontWeight: 500, fontSize: 12.5, color: C.dim, marginLeft: 8 }}>{sub}</span>}</div>;
   const row = (on: boolean): React.CSSProperties => ({ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${on ? C.accent : C.line}`, background: on ? "rgba(59,130,246,0.14)" : "transparent", color: C.text, cursor: "pointer", textAlign: "left", fontFamily: FONT, fontSize: 13.5 });
@@ -470,19 +498,21 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
         {/* 1. 재료 */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {hd("1. 가져올 내용")}
-          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-            {seg(kind === "none", "직접 쓰기", () => { setKind("none"); setPick(""); setPhoto(""); setPhotos([]); setPhotoUrl(""); setArtPhotos([]); setLay(""); })}
-            {seg(kind === "vacancy", "내 공실", () => { setKind("vacancy"); setPick(""); setPhotoUrl(""); setArtPhotos([]); setLay((l) => (l === "@blank" ? "" : l)); })}
-            {seg(kind === "article", "내 기사·칼럼", () => { setKind("article"); setPick(""); setPhoto(""); setPhotos([]); setPhotoUrl(""); setArtPhotos([]); setLay((l) => (l === "@blank" ? "" : l)); })}
+          {/* 네 칸을 한 줄로 (2026-11-06 사장님) */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+            {seg(kind === "none", "직접 쓰기", () => { setKind("none"); setPick(""); setPhoto(""); setPhotos([]); setPhotoUrl(""); setArtPhotos([]); setLay(""); }, false, true)}
+            {seg(kind === "vacancy", "공실", () => { setKind("vacancy"); setPick(""); setPhotoUrl(""); setArtPhotos([]); setLay((l) => (l === "@blank" ? "" : l)); }, false, true)}
+            {seg(kind === "article" && artSrc === "pub", "기사·칼럼", () => { setKind("article"); setArtSrc("pub"); setPick(""); setPhoto(""); setPhotos([]); setPhotoUrl(""); setArtPhotos([]); setLay((l) => (l === "@blank" ? "" : l)); }, false, true)}
+            {seg(kind === "article" && artSrc === "free", "자유 글쓰기", () => { setKind("article"); setArtSrc("free"); setPick(""); setPhoto(""); setPhotos([]); setPhotoUrl(""); setArtPhotos([]); setLay((l) => (l === "@blank" ? "" : l)); if (frees === null) void loadFrees(); }, false, true)}
           </div>
           {kind === "none" ? (
             <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.7, padding: "4px 2px 8px" }}>
               빈 문서나 템플릿으로 시작해요.<br />
-              <b style={{ color: C.text }}>내 공실</b>이나 <b style={{ color: C.text }}>내 기사·칼럼</b>을 고르면 AI가 그 내용으로 제목·부제·키워드를 채워요.
+              <b style={{ color: C.text }}>공실</b>·<b style={{ color: C.text }}>기사·칼럼</b>·<b style={{ color: C.text }}>자유 글쓰기</b>를 고르면 AI가 그 내용으로 제목·부제·키워드를 채워요.
             </div>
           ) : (
             <>
-              {kind === "article" && (
+              {kind === "article" && artSrc === "pub" && (
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                   <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") listMyStudioArticles(q).then((r) => setArts(r.success ? r.data : [])); }} placeholder="내 기사·칼럼 제목 찾기" style={{ ...input, flex: 1 }} />
                   <Btn small onClick={() => listMyStudioArticles(q).then((r) => setArts(r.success ? r.data : []))}>찾기</Btn>
@@ -497,6 +527,11 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
                       <span style={{ fontSize: 12, color: C.sub }}>{[v.trade_type, v.address].filter(Boolean).join(" · ")}</span>
                     </span>
                   </button>
+                ))) : artSrc === "free" ? (frees === null ? <span style={{ color: C.sub, fontSize: 13 }}>불러오는 중…</span> : !frees.length ? <span style={{ color: C.sub, fontSize: 13, lineHeight: 1.6 }}>자유 글쓰기로 쓴 글이 없어요.<br />[뉴스·SNS자동화] › 자유 글쓰기에서 쓴 글이 여기에 나와요.</span> : frees.map((f) => (
+                  <button key={f.id} type="button" style={row(pick === f.id)} onClick={() => chooseFree(f)}>
+                    {f.thumb ? <img src={f.thumb} alt="" style={{ width: 56, height: 42, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} /> : <span style={{ width: 56, height: 42, background: C.card, borderRadius: 4, flexShrink: 0 }} />}
+                    <span style={{ minWidth: 0 }}><b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.title}</b><span style={{ fontSize: 12, color: C.sub }}>{f.date} · 내 글 {f.memo.length.toLocaleString("ko-KR")}자</span></span>
+                  </button>
                 ))) : (arts === null ? <span style={{ color: C.sub, fontSize: 13 }}>불러오는 중…</span> : !arts.length ? <span style={{ color: C.sub, fontSize: 13, lineHeight: 1.6 }}>발행된 내 기사·칼럼이 없어요.<br />[기사관리]나 [뉴스·SNS자동화]에서 쓴 글이 발행되면 여기에 나와요.</span> : arts.map((a) => (
                   <button key={a.id} type="button" style={row(pick === a.id)} onClick={() => void chooseArt(a)}>
                     {a.thumb ? <img src={a.thumb} alt="" style={{ width: 56, height: 42, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} /> : <span style={{ width: 56, height: 42, background: C.card, borderRadius: 4, flexShrink: 0 }} />}
@@ -506,66 +541,8 @@ export function DesignDialog({ init, start = "vacancy", newInit, canRefill, mine
               </div>
             </>
           )}
-          {/* 배경으로 쓸 사진 — [기사 사진]·[매물 사진] / [내 이미지] 탭 (2026-10-30 사장님) */}
-          {(() => {
-            const srcList = kind === "article" ? artPhotos.map((u) => ({ key: u, img: u, on: photoUrl === u && !photo, pick: () => { setPhotoUrl(u); setPhoto(""); } }))
-              : kind === "vacancy" ? photos.map((p) => ({ key: p.id, img: p.thumb || p.url || "", on: p.path ? photo === p.path : !photo && photoUrl === (p.url || p.thumb), pick: () => { setPhoto(p.path || ""); setPhotoUrl(p.path ? "" : p.url || p.thumb || ""); } }))
-              : [];
-            const srcName = kind === "article" ? "기사 사진" : "매물 사진";
-            const showSrc = kind !== "none" && srcList.length > 0;
-            const tabNow = showSrc ? bgTab : "mine";
-            const tabBtn = (id: "src" | "mine", label: string) => (
-              <button key={id} type="button" onClick={() => setBgTab(id)}
-                style={{ height: 28, padding: "0 10px", border: 0, borderBottom: `2px solid ${tabNow === id ? C.accent : "transparent"}`, background: "transparent", color: tabNow === id ? C.text : C.sub, fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>{label}</button>
-            );
-            const thumbBox: React.CSSProperties = { width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 4, display: "block" };
-            return (
-              <>
-                <div style={{ fontSize: 13, color: C.sub, margin: "12px 0 4px", fontWeight: 700 }}>배경으로 쓸 사진</div>
-                <div style={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${C.line}`, marginBottom: 6 }}>
-                  {showSrc && tabBtn("src", `${srcName} (${srcList.length})`)}
-                  {tabBtn("mine", `내 이미지${mineImgs && mineImgs.length ? ` (${mineImgs.length})` : ""}`)}
-                  <span style={{ flex: 1 }} />
-                  {tabNow === "mine" && <Btn small onClick={() => void registerImgs()}>+ 이미지 등록</Btn>}
-                </div>
-                {tabNow === "src" ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, maxHeight: 170, overflowY: "auto" }}>
-                    {srcList.map((s) => (
-                      <button key={s.key} type="button" onClick={s.pick} style={{ padding: 0, border: `2px solid ${s.on ? C.accent : "transparent"}`, borderRadius: 6, background: "transparent", cursor: "pointer" }}>
-                        <img src={s.img} alt="" style={thumbBox} />
-                      </button>
-                    ))}
-                  </div>
-                ) : mineImgs && mineImgs.length > 0 ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, maxHeight: 170, overflowY: "auto" }}>
-                    {mineImgs.map((p) => (
-                      <div key={p.id} style={{ position: "relative" }} onContextMenu={(e) => { e.preventDefault(); void removeMineImg(p); }}>
-                        <button type="button" title={`${p.name || ""} · 오른쪽 클릭: 목록에서 빼기`} onClick={() => { setPhoto(photo === p.path ? "" : p.path || ""); setPhotoUrl(""); }}
-                          style={{ width: "100%", padding: 0, border: `2px solid ${photo === p.path ? C.accent : "transparent"}`, borderRadius: 6, background: "transparent", cursor: "pointer" }}>
-                          <img src={p.thumb || p.url} alt="" style={thumbBox} />
-                        </button>
-                        {/* 목록에서 빼기 — 최근 파일 카드의 × 와 같은 모양 (2026-10-30 사장님) */}
-                        <button type="button" title="내 이미지에서 빼기" onClick={() => void removeMineImg(p)}
-                          style={{ position: "absolute", top: 3, right: 3, width: 20, height: 20, padding: 0, border: 0, borderRadius: 10, background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 13, lineHeight: "20px", cursor: "pointer" }}>×</button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.5 }}>내 PC 의 사진을 등록하면 여기에 남아요. 배경으로 쓸 수 있어요 (동영상 편집기 [내 자료] 와 같은 곳).</div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                  {aiBusy && <span style={{ flex: 1, fontSize: 12.5, color: C.accent, fontWeight: 700 }}>AI가 그리는 중… (30초~1분)</span>}
-                  <Btn small onClick={() => { if (!aiScene) setAiScene(aiIdeas[0] || ""); setAiOpen(true); }}>{aiBusy ? "그리는 중…" : "✨ AI로 만들기"}</Btn>
-                </div>
-              </>
-            );
-          })()}
-          {kind !== "none" && (
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 13, color: C.sub, marginBottom: 6, fontWeight: 700 }}>AI에게 요청 (선택)</div>
-              <textarea value={req} onChange={(e) => setReq(e.target.value)} onKeyDown={(e) => e.stopPropagation()} rows={2} placeholder="예: 역세권을 강조해 줘, 차분한 느낌으로" style={{ ...input, width: "100%", height: 58, resize: "none", padding: 8 }} />
-            </div>
-          )}
+          {/* 배경으로 쓸 사진 · 내 이미지 · 이미지 등록 · AI로 만들기 · AI에게 요청은 없앴다 (2026-11-06 사장님: "굳이 배경으로 쓸 사진 설정할 필요 없을 것 같아")
+              배경은 고른 공실(기사)의 대표 사진이 저절로 — 다른 사진은 만든 뒤 편집 화면에서 바꾼다 */}
         </div>
         {/* 2. 종류 · 크기 · 3. 레이아웃 */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0 }}>
