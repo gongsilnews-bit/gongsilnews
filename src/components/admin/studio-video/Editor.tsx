@@ -108,7 +108,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [voiceMe, setVoiceMe] = useState(false); // 목소리 창을 [내 목소리] 탭으로 열기
   useEffect(() => {
     b.typecast?.voices().then((v) => { addExtraVoices(v.map((x) => ({ id: x.id, name: x.name }))); setVoiceNameTick((x) => x + 1); }).catch(() => {});
-    b.eleven?.voices().then((v) => { addExtraVoices(v.map((x) => ({ id: x.id, name: x.name, kind: "일레븐랩스 성우" }))); setVoiceNameTick((x) => x + 1); }).catch(() => {});
+    b.eleven?.voices().then((v) => { addExtraVoices(v.map((x) => ({ id: x.id, name: x.name, kind: "AI 성우" /* 회사 이름은 감춘다 (2026-11-06) */ }))); setVoiceNameTick((x) => x + 1); }).catch(() => {});
   }, [b]);
   // 내 목소리 이름 (예: 공실뉴스편집장) — 클립 목소리 단추에 "내 목소리" 대신 그 이름
   const [, setVoiceNameTick] = useState(0);
@@ -739,7 +739,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
       const c = findClip(pref.current, id)?.clip;
       setSoundScope("one");
-      if (c && c.type !== "voice") setPanel("source"); // AI 목소리 칩은 작은 메뉴만 — 목소리 설정은 가운데 큰 창이라 [AI 목소리 바꾸기]를 누를 때만
+      // 왼쪽에서 누른 것은 오른쪽 속성 칸에도 (2026-11-07 사장님: "좌측에서 클릭하면 해당하는 것이 우측에 속성값으로") — AI 목소리 칩은 목소리 칸
+      if (c) { if (c.type === "voice") setVoiceMe(false); setPanel(c.type === "voice" ? "voice" : "source"); }
       setSoundPop({ id, x, y });
     },
     openVoice: (id) => {
@@ -809,6 +810,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       // 오른쪽 '속도·길이' 칸은 없앴다 — 목소리 칩과 같은 메뉴 (볼륨·빠르기·길이)를 시간 자리에
       const r = document.querySelector(`[data-clip="${id}"] [data-cliptime]`)?.getBoundingClientRect();
       setSoundScope("one");
+      const tc = findClip(pref.current, id)?.clip; // 시간·빠르기도 오른쪽 속성 칸에 그 클립 목소리·소리 칸 (2026-11-07)
+      if (tc) { if (tc.type === "voice") setVoiceMe(false); setPanel(tc.type === "voice" ? "voice" : "source"); }
       setSoundPop({ id, x: x ?? (r ? r.left - 200 : 400), y: y ?? (r ? r.bottom + 6 : 300), lenOnly: true });
     },
     openMedia: (id, x, y) => {
@@ -992,7 +995,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     toggleVisualLock: (id) => { if (visualOpen === id) setVisualOpen(""); else openVisualXf(id); },
     // 메인자막 아이콘 — 메뉴는 그대로 띄우고, 오른쪽 칸도 [텍스트](이 클립 메인자막 속성)로 (2026-10-25 사장님)
     openSubMenu: (id, x, y) => { setMedia(null); actions.pickSub?.(id); setQuick({ kind: "sub", id, x, y }); },
-    openTransMenu: (id, x, y) => { setMedia(null); setQuick({ kind: "trans", id, x, y }); },
+    // 화면전환 칩 — 메뉴는 그대로 띄우고, 오른쪽 칸도 이 화면전환 속성으로 (2026-11-07 사장님: "화면전환 클릭하면 우측 속성에 화면전환 나와야 함")
+    openTransMenu: (id, x, y) => { setMedia(null); setTransClip(id); setPanel("trans"); setQuick({ kind: "trans", id, x, y }); },
     openTrans: (id, add) => {
       if (add) change((p) => { const c = findClip(p, id)?.clip; if (c && !c.trans) c.trans = { ...TRANS_DEFAULT }; });
       setTransClip(id);
@@ -3780,9 +3784,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       "|",
       { icon: "save", label: "프로젝트 저장하기", onClick: () => void saveNow(), title: "Ctrl+S · 프로젝트 파일(.gss) 하나로 저장해요" },
       { icon: "copy", label: "다른 이름으로 저장", onClick: () => { setSaveAsName(`${pref.current.name}_사본`); setSaveAsDir((pref.current.file || pref.current.dir).replace(/[\\/][^\\/]+[\\/]?$/, "")); setDialog("saveAs"); } },
-      { icon: "folder", label: project.file ? "파일 위치 열기" : "프로젝트 폴더 열기", onClick: openWhere },
-      { icon: "undo", label: "자동 저장본 보기", onClick: openBackups, disabled: !project.file || !b.project.backups, title: "5분마다 따로 저장해 둔 사본 — 골라서 열 수 있어요" },
-      { icon: "layers", label: "프로젝트 패키지 만들기", onClick: openPackage, title: "원본 영상·사진·음악을 한 폴더에 모아요 — 그 폴더만 옮기면 다른 PC에서도 열려요" },
+      // 웹에서는 폴더 열기·자동 저장본·패키지 단추를 뺀다 (2026-11-08 사장님)
+      ...((b as { web?: boolean }).web ? [] : [
+        { icon: "folder", label: project.file ? "파일 위치 열기" : "프로젝트 폴더 열기", onClick: openWhere },
+        { icon: "undo", label: "자동 저장본 보기", onClick: openBackups, disabled: !project.file || !b.project.backups, title: "5분마다 따로 저장해 둔 사본 — 골라서 열 수 있어요" },
+        { icon: "layers", label: "프로젝트 패키지 만들기", onClick: openPackage, title: "원본 영상·사진·음악을 한 폴더에 모아요 — 그 폴더만 옮기면 다른 PC에서도 열려요" },
+      ] as RibbonBtn[]),
       "|",
       { icon: "export", label: "영상으로 내보내기", onClick: () => setDialog("export") },
       { icon: "file", label: "다른 형식으로 내보내기", onClick: () => setDialog("formats") },
@@ -3878,8 +3885,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     ],
     "AI 목소리": [
       { icon: "voice", label: "AI 목소리", title: "AI 목소리 고르기·바꾸기 (성우 · 빠르기 · 볼륨)", onClick: () => { setVoiceMe(false); setPanel("voice"); } },
-      { icon: "mic", label: "AI 내 목소리 만들기", title: "내 목소리를 녹음해 두면 대본을 내 목소리로 읽어요 (이 PC에서, 무료)", onClick: () => { setVoiceMe(true); setPanel("voice"); } },
-      { icon: "redo", label: "목소리 다시 만들기", disabled: !selected.length, title: "고른 클립 목소리를 새로 만들어요 (전에 만든 것을 다시 쓰지 않아요)", onClick: () => revoice(selected, true) },
+      // 내 목소리·다시 만들기는 앱 전용 — 웹에서는 뺀다 (2026-11-08 사장님)
+      ...((b as { web?: boolean }).web ? [] : [
+        { icon: "mic", label: "AI 내 목소리 만들기", title: "내 목소리를 녹음해 두면 대본을 내 목소리로 읽어요 (이 PC에서, 무료)", onClick: () => { setVoiceMe(true); setPanel("voice"); } },
+        { icon: "redo", label: "목소리 다시 만들기", disabled: !selected.length, title: "고른 클립 목소리를 새로 만들어요 (전에 만든 것을 다시 쓰지 않아요)", onClick: () => revoice(selected, true) },
+      ] as RibbonBtn[]),
     ], // [새 클립 넣기]는 뺐다 — [삽입] 탭에 있다 (2026-10-19 사장님)
     효과: [
       { icon: "merge", label: "화면전환 모두 넣기", onClick: () => allTrans({ ...TRANS_DEFAULT }), disabled: flat.items.length < 2, title: "모든 클립 사이에 디졸브 0.6초 (클립 사이 칩을 누르면 바꿀 수 있어요)" },
@@ -4718,7 +4728,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     </div>
   );
   // 템플릿은 스티커 분류 안에 (2026-10-20) · AI 자동 편집은 타임라인 편집에서 뺌, 대신 [전환] (2026-10-25 사장님)
-  const TL_LEFT: [string, string][] = [["project", "프로젝트"], ["library", "사진·영상"], ["text", "텍스트"], ["sticker", "그래픽"], ["trans", "전환"], ["sfx", "효과음"], ["music", "음악"]];
+  // 웹은 [프로젝트] 칸 없음 (2026-11-08 사장님)
+  const TL_LEFT: [string, string][] = ([["project", "프로젝트"], ["library", "사진·영상"], ["text", "텍스트"], ["sticker", "그래픽"], ["trans", "전환"], ["sfx", "효과음"], ["music", "음악"]] as [string, string][]).filter(([k]) => !(k === "project" && (b as { web?: boolean }).web));
   const tlRightOverride = ["anim", "subanim", "voice", "source", "ratio"].includes(panel) ? panel : "";
   const TOOLS: [TlTool, string, string][] = [["v", "선택 도구 (V)", "M5 3l13 8-6 1.5L9 19z"], ["a", "앞으로 트랙 선택 도구 (A) — 누른 곳부터 뒤에 있는 것 모두", "M4 5v14M8 12h12M15 7l5 5-5 5"], ["c", "자르기 도구 · 면도칼 (C) — 누른 자리에서 나누기", "M15.5 2.5l6 6L8.5 21.5l-6-6zM10 11.5l2.5 2.5M3 21l2.5-2.5"], ["h", "손 도구 (H) — 타임라인 끌어 보기", "M8 12V6a1.5 1.5 0 013 0v5V4.5a1.5 1.5 0 013 0V11V6a1.5 1.5 0 013 0v8c0 4-2.5 6-6 6s-5-2-7-5l-2-3a1.5 1.5 0 012.5-1.5L8 14"], ["t", "문자 도구 (T) — 누른 트랙·시각에 글자 넣기", "M5 6V4h14v2M12 4v16M9 20h6"]];
   const tlLayout = (
@@ -4960,7 +4971,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             const el: { icon: string; label: string; on: boolean; off?: boolean; title: string; go: () => void; txt?: string }[] = [
               // [AI 자동 편집] · [AI 이미지·영상 제작] 단추는 오른쪽 줄에서 뺐다 (2026-11-02 사장님)
               // [프로젝트] — 이 영상에 넣은 사진·영상과 프로젝트 폴더만 따로 (프리미어 프로젝트 창처럼, 2026-11-02 사장님)
-              { icon: "folder", label: "프로젝트", on: panel === "project", title: "프로젝트 — 이 영상의 사진·영상 · 폴더", go: () => setPanel(panel === "project" ? "" : "project") },
+              // 웹에서는 [프로젝트] 칸을 뺀다 (2026-11-08 사장님)
+              ...((b as { web?: boolean }).web ? [] : [{ icon: "folder", label: "프로젝트", on: panel === "project", title: "프로젝트 — 이 영상의 사진·영상 · 폴더", go: () => setPanel(panel === "project" ? "" : "project") }]),
               { icon: "image", label: "사진·영상", on: side === "library", title: "사진·영상 고르기", go: () => { if (side === "library") { setPanel(""); setLibOpen(false); } else { setPanel(""); setLibOpen(true); } } },
               // 메인자막 + 텍스트 = [텍스트] 하나 — 칸 위 [메인자막][텍스트] 탭 (2026-10-25 사장님)
               { icon: "font", label: "텍스트", on: panel === "subtitle" || panel === "subanim" || panel === "text" || selL?.type === "text", title: "텍스트 — [메인자막] 모양·애니메이션 · [텍스트] 넣기·꾸미기",
@@ -6105,8 +6117,10 @@ function FindDialog({ project, onJump, onClose }: { project: Project; onJump: (i
     let n = 0;
     for (const sc of project.scenes) for (const c of sc.clips) {
       n++;
-      const t = clipText(c);
-      if (t.includes(q.trim())) out.push({ id: c.id, n, text: t });
+      // 말 + 따로 고친 자막 둘 다 (웹 쇼츠는 말이 비고 자막만 있음 — 2026-11-08 사장님: "전용"이 안 찾아짐)
+      const said = clipText(c), sub = typeof c.subText === "string" ? c.subText : "";
+      const t = [sub, said].filter(Boolean).find((x) => x.includes(q.trim()));
+      if (t) out.push({ id: c.id, n, text: t });
     }
     return out;
   }, [q, project]);

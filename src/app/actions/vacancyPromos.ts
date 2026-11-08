@@ -18,6 +18,8 @@ export type VacancyPromo = {
   /** 공실뉴스 기사 — 발행된(APPROVED) 기사가 있으면 그 기사 번호, 검토 중이면 pending */
   article: { no: string; pending: boolean } | null;
   links: Partial<Record<PromoChannel, string>>;
+  /** 채널마다 발행일 — 올린 주소가 연결된 날 (ISO) · 카드는 가장 최근 하나만 "최종발행" (2026-11-06 사장님) */
+  at?: Partial<Record<PromoChannel, string>>;
 };
 
 function admin() {
@@ -60,8 +62,13 @@ export async function getMyVacancyPromos(): Promise<{ success: boolean; promos: 
   }
 
   // 채널 링크 (표가 없으면 건너뜀)
-  const { data: rows, error } = await db.from("vacancy_promos").select("vacancy_id, channel, url").eq("owner_id", user.id);
-  if (!error) for (const r of rows || []) slot(String(r.vacancy_id)).links[r.channel as PromoChannel] = r.url;
+  const { data: rows, error } = await db.from("vacancy_promos").select("vacancy_id, channel, url, updated_at").eq("owner_id", user.id);
+  if (!error) for (const r of rows || []) {
+    const s = slot(String(r.vacancy_id));
+    s.links[r.channel as PromoChannel] = r.url;
+    const at = (r as { updated_at?: string }).updated_at;
+    if (at) (s.at ||= {})[r.channel as PromoChannel] = at;
+  }
 
   return { success: true, promos };
 }

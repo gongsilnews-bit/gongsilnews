@@ -17,7 +17,7 @@ import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 
 const FPS = 30;
 const SR = 48000;
-export const WEB_MAX_SECONDS = 61; // 웹은 60초 쇼츠까지 (2026-11-05 사장님, 반올림 여유 1초)
+// 길이 제한 없음 — 60초 넘어도 내보내기 (2026-11-07 사장님: "60초 쇼츠 제한 걸어놨네 · 그러지 마 · 제한 풀어줘")
 
 type Progress = (text: string, frac: number) => void;
 
@@ -371,7 +371,6 @@ export async function renderWebMp4(p: Project, onProgress: Progress, cancelled: 
   const [W, H] = RATIO_SIZE[p.ratio] || [1080, 1920];
   const { items, total } = flatten(p);
   if (!items.length || total <= 0) throw new Error("영상에 클립이 없어요.");
-  if (total > WEB_MAX_SECONDS) throw new Error(`웹에서는 60초 쇼츠까지 만들 수 있어요 (지금 ${Math.round(total)}초). 클립을 줄이거나, 더 긴 영상은 공실마케팅 앱에서 만들어 주세요.`);
   const order = clipOrder(p);
 
   // 글꼴·화면 미리 받기

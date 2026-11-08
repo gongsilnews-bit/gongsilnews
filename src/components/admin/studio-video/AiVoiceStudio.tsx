@@ -190,13 +190,13 @@ export function AiVoiceStudio() {
             <Icon name={smp === "play" ? "pause" : "play"} size={18} />
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16.5, fontWeight: 800 }}>{v?.name || (voiceId === "me" ? "내 목소리" : voiceId.startsWith("el_") ? "일레븐랩스 성우" : voiceId.startsWith("tc_") ? "타입캐스트 성우" : "목소리")}</div>
+            <div style={{ fontSize: 16.5, fontWeight: 800 }}>{v?.name || (voiceId === "me" ? "내 목소리" : voiceId.startsWith("el_") ? "AI 성우" : voiceId.startsWith("tc_") ? "타입캐스트 성우" : "목소리")}</div>
             {v && <div style={{ fontSize: 13.5, color: C.sub, marginTop: 3 }}>{v.kind}{"age" in v && "mood" in v ? ` · ${v.age} · ${v.mood}` : ""}</div>}
           </div>
           <Btn onClick={() => setPick(true)}><Icon name="mic" size={16} />목소리 바꾸기</Btn>
         </div>
         {/* 일레븐랩스 성우면 세부 설정을 이 화면에서 바로 (2026-10-20 사장님) */}
-        {voiceId.startsWith("el_") && <div style={{ margin: "0 -16px" }}><ElevenDetail voiceId={voiceId} emotion={emotion || "normal"} onEmotion={setEmotion} openFirst /></div>}
+        {voiceId.startsWith("el_") && !(b as { web?: boolean } | null)?.web /* 웹은 세부 설정 숨김 (2026-11-06) */ && <div style={{ margin: "0 -16px" }}><ElevenDetail voiceId={voiceId} emotion={emotion || "normal"} onEmotion={setEmotion} openFirst /></div>}
         {pick && <VoicePanel initial={{ id: voiceId, speed, emotion }} pickLabel="이 목소리로" targetCount={0} onApply={(o) => { setVoiceId(o.id); setSpeed(o.speed); setEmotion(o.emotion); saveLastVoice({ id: o.id, speed: o.speed, emotion: o.emotion }); setPick(false); }} onClose={() => setPick(false)} />}
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 18, marginTop: 14 }}>

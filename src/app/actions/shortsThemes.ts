@@ -12,7 +12,7 @@ import { isAdminRole } from "@/utils/permissionCheck";
 const ID = "shorts_themes";
 /** 기본 테마를 바꿀 수 있는 계정 — 최고관리자 + 사장님이 영상을 편집하는 공실마케팅 계정 (2026-11-05) */
 const EDITORS = ["gongsilmarketing@gmail.com"];
-const SLOTS = 5;
+const SLOTS = 15; // 공실소개 5 · 단지소개 5 · 뉴스칼럼 5 (2026-11-06)
 const db = () => createAdminSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
 
 async function read(): Promise<(Record<string, unknown> | null)[]> {

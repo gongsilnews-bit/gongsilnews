@@ -125,7 +125,7 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
     if (s.has) {
       const v = await tc.voices(refresh);
       setList(v);
-      addExtraVoices(v.map((x) => ({ id: x.id, name: x.name, kind: `${info.name} 성우` })));
+      addExtraVoices(v.map((x) => ({ id: x.id, name: x.name, kind: elServerMode ? "AI 성우" : `${info.name} 성우` }))); // 웹은 회사 이름 감춤 (2026-11-06)
       await loadRank(refresh);
     }
   };
@@ -213,10 +213,10 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", fontFamily: FONT }}>
       {/* 연결 상태 · 감정 · 거르기 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: `1px solid ${C.line2}`, flexWrap: "wrap" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "#6ee7b7" }}><Mark />{info.name} 연결됨</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "#6ee7b7" }}>{elServerMode ? "AI 성우 사용 가능" /* 회사 이름은 감춘다 (2026-11-06 사장님) */ : <><Mark />{info.name} 연결됨</>}</span>
         {/* 웹 일레븐랩스 = 공실뉴스 계정 · 포인트 (2026-11-05 사장님) — 키 단추 대신 포인트 안내 · 최고관리자 [인기 50명 넣기] */}
         {elServerMode ? (<>
-          <span style={{ fontSize: 13, color: C.dim }}>공실뉴스 계정 · {pts ? pointsLineOf(pts) : "포인트로 써요"}</span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: "#FFFFFF" /* 진한 흰색 (2026-11-06 사장님) */ }}>공실뉴스 계정 · {pts ? pointsLineOf(pts) : "포인트로 써요"}</span>
           {/* 최고관리자는 아래 [인기 N명 모두 넣기]로 앱과 같은 순위 50명을 공실뉴스 계정에 */}
         </>) : (<>
         <span style={{ fontSize: 13, color: C.dim }}>키 {st.masked}</span>
@@ -235,7 +235,8 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
         {info.emotions.map(([k, t]) => <button key={k} type="button" onClick={() => onEmotion(k)} style={chip(emotion === k)} title={k === "smart" ? "앞뒤 문장을 보고 알아서 말투를 맞춰요" : undefined}>{t}</button>)}
         {provider === "el" && emotion.startsWith("x:") && <span style={{ ...chip(true), display: "inline-flex", alignItems: "center" }}>세부 설정</span>}
       </div>
-      {provider === "el" && <ElevenDetail voiceId={id} emotion={emotion} onEmotion={onEmotion} />}
+      {/* 세부 설정(모델·안정감·닮은 정도·표현·빠르기)은 웹 회원에게 숨긴다 — 서버는 말투 세 가지만 쓰고 모델은 하나로 고정 (2026-11-06 사장님: "숨기자") */}
+      {provider === "el" && !elServerMode && <ElevenDetail voiceId={id} emotion={emotion} onEmotion={onEmotion} />}
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px", flexWrap: "wrap" }}>
         {[["", "모두"], ["female", "여성"], ["male", "남성"]].map(([k, t]) => <button key={k} type="button" onClick={() => setG(k)} style={chip(g === k)}>{t}</button>)}
         <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="이름·쓰임새로 찾기" style={{ ...input, height: 34, width: 200, marginLeft: "auto", fontSize: 14 }} />
@@ -256,7 +257,8 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
               </div>
               {koVoice(v.name).desc && <div style={{ fontSize: 13.5, color: C.text, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{koVoice(v.name).desc}</div>}
               {v.useCases.length > 0 && <div style={{ fontSize: 13, color: C.sub, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[...new Set(v.useCases.slice(0, 4).map(koTag))].map((t) => `#${t}`).join("  ")}</div>}
-              <div title={`이 목소리는 내 ${info.name} API 키로 만들어요`} style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: info.color }}><Mark size={13} />{info.tag}</div>
+              {elServerMode ? <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700, color: info.color }}>#AI성우</div> /* 회사 이름은 감춘다 (2026-11-06) */
+                : <div title={`이 목소리는 내 ${info.name} API 키로 만들어요`} style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: info.color }}><Mark size={13} />{info.tag}</div>}
             </div>
             {off ? <Btn small onClick={() => void addRanked([v.id])}>넣기</Btn> : <FavStar on={favs.includes(v.id)} onToggle={() => toggleFav(v.id)} />}
             <button type="button" onClick={(e) => { e.stopPropagation(); if (!off) onPick(v.id); play(v); }} title={playing === v.id ? "멈추기" : "견본 듣기"}
@@ -265,7 +267,7 @@ function ProviderTab({ provider, id, onPick, emotion, onEmotion }: { provider: P
             </button>
           </div>
         ); })}
-        {!shown.length && <div style={{ fontSize: 14.5, color: C.sub, padding: "16px 0" }}>{list.length ? "맞는 성우가 없어요." : provider === "el" ? "내 일레븐랩스 목소리가 없어요. 일레븐랩스 보이스 라이브러리에서 목소리를 추가한 뒤 [목록 새로]를 눌러 보세요." : "성우 목록이 비어 있어요. [목록 새로]를 눌러 보세요."}</div>}
+        {!shown.length && <div style={{ fontSize: 14.5, color: C.sub, padding: "16px 0" }}>{list.length ? "맞는 성우가 없어요." : provider === "el" ? (elServerMode ? "성우 목록을 받지 못했어요. [목록 새로]를 눌러 보세요." : "내 일레븐랩스 목소리가 없어요. 일레븐랩스 보이스 라이브러리에서 목소리를 추가한 뒤 [목록 새로]를 눌러 보세요.") : "성우 목록이 비어 있어요. [목록 새로]를 눌러 보세요."}</div>}
       </div>
     </div>
   );

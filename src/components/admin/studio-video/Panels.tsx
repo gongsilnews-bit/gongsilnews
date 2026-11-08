@@ -1043,7 +1043,7 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
             {!web && <button type="button" onClick={() => { setRec(false); setMeTab(false); setTcTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(!meTab && !tcTab && !elTab && !favTab), display: "inline-flex", alignItems: "center", gap: 6 }}><GeminiMark size={16} />제미나이</button>}
             {/* 타입캐스트 · 일레븐랩스 — 회원 자기 키 (2026-10-19 사장님) */}
             {!web && <button type="button" onClick={() => { setTcTab(true); setMeTab(false); setElTab(false); setFavTab(false); }} style={{ ...tab(tcTab), display: "inline-flex", alignItems: "center", gap: 6 }}><TypecastMark size={16} />타입캐스트</button>}
-            <button type="button" onClick={() => { setElTab(true); setMeTab(false); setTcTab(false); setFavTab(false); }} style={{ ...tab(elTab), display: "inline-flex", alignItems: "center", gap: 6 }}><ElevenMark size={16} />{web ? "AI 성우" : "일레븐랩스"}</button>
+            <button type="button" onClick={() => { setElTab(true); setMeTab(false); setTcTab(false); setFavTab(false); }} style={{ ...tab(elTab), display: "inline-flex", alignItems: "center", gap: 6 }}>{web ? "AI 성우" : <><ElevenMark size={16} />일레븐랩스</>}</button>
           </div>
           {meTab && <MyVoicePane selected={id === MY_VOICE_ID} onPick={() => setId(MY_VOICE_ID)} />}
           {tcTab && <TypecastTab id={id} onPick={setId} emotion={emotion} onEmotion={setEmotion} />}
@@ -1062,7 +1062,7 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
                       <div style={{ fontSize: 17, fontWeight: 800 }} title={v?.name}>{v?.name ? koVoice(v.name).name : "목소리"}</div>
                       <div style={{ fontSize: 13, color: C.sub, marginTop: 3 }}>{stock ? `${stock.gender} · ${stock.age} · ${stock.kind}` : v?.kind || ""}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 13, fontWeight: 700, color: tcV ? "#b4a7ff" : elV ? "#e5e7eb" : mine ? "#6ee7b7" : "#8ab4ff" }}>
-                        {tcV ? <><TypecastMark size={13} />#타입캐스트API</> : elV ? <><ElevenMark size={13} />#일레븐랩스API</> : mine ? "#내목소리 (PC, 무료)" : <><GeminiMark size={13} />#제미나이API</>}
+                        {tcV ? <><TypecastMark size={13} />#타입캐스트API</> : elV ? (web ? "#AI성우" /* 회사 이름은 감춘다 (2026-11-06) */ : <><ElevenMark size={13} />#일레븐랩스API</>) : mine ? "#내목소리 (PC, 무료)" : <><GeminiMark size={13} />#제미나이API</>}
                       </div>
                     </div>
                     <FavStar on onToggle={() => toggleFav(fid)} />
@@ -1157,7 +1157,7 @@ export function VoicePanel({ project, initial, pickLabel, targetCount, wordCount
           </div>
           {/* 아래 — 고른 성우 · 목소리 크기 · 빠르기 */}
           <div style={{ display: "flex", alignItems: "center", gap: 18, padding: "12px 18px", borderTop: `1px solid ${C.line2}`, flexWrap: "wrap" }}>
-            <span style={{ height: 38, padding: "0 16px", borderRadius: 5, background: C.card, border: `1px solid ${C.line2}`, display: "inline-flex", alignItems: "center", fontSize: 16, fontWeight: 800 }}>{pick ? `${pick.name} · ${pick.kind}` : "목소리"}</span>
+            <span style={{ height: 38, padding: "0 16px", borderRadius: 5, background: C.card, border: `1px solid ${C.line2}`, display: "inline-flex", alignItems: "center", fontSize: 16, fontWeight: 800 }}>{pick ? `${koVoice(pick.name).name}${pick.kind && pick.kind !== pick.name ? ` · ${pick.kind}` : ""}` : "목소리"}</span>
             <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: C.text }}>
               목소리 크기 <input type="range" min={0.3} max={2} step={0.1} value={volume} onChange={(e) => setVolume(Number(e.target.value))} style={{ width: 120, accentColor: C.accent }} />
               <span style={{ minWidth: 44 }}>{Math.round(volume * 100)}%</span>

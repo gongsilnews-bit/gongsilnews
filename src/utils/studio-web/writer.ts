@@ -133,6 +133,86 @@ function fixArticlePrompt(t: string) {
     + ARTICLE_FIX
     + `\n- 끝맺음 형식(이번 기사): ${end}\n- 예시의 숫자·이름은 모양만 보여 주는 것입니다. 실제 숫자·시설은 [확인된 매물 정보]에 있는 것만 쓰십시오.`;
 }
+/* ── 뉴스칼럼·자유 글쓰기 웹 정리 (2026-11-06 사장님: "공실뉴스와 같이 성격에 맞게, 하나하나 꼼꼼하게") ──
+ *  확장·앱 newsmaker 파일은 그대로, 웹 서버가 읽은 표만 바꾼다
+ *  · 기사 스타일: 체크포인트·짧은 단신 뺌 (가르치는 말 · 너무 짧음)
+ *  · 블로그 문체: 스토리텔링형·숏폼·속보형 뺌, 전문가 칼럼형 새로, "확인할 점" 구역 없앰
+ *  · 쇼츠: 이야기형 뺌, 구성에서 "확인할 점" 없앰 */
+const COL_BLOG: Record<string, any> = {
+  info: {
+    label: "기본 정보형", fit: "모든 주제", titleExample: "논현동 아파트 신고가, 무엇이 달라졌나", design: "basic",
+    guide: "깔끔하고 정보 중심으로 쓴다. 제목과 첫 문단에서 무엇에 관한 글인지 분명히 보여 주고, 본문은 핵심 내용, 배경, 이 동네·생활에 미치는 영향, 지역 전문가의 시각 순서로 정리한다.",
+    structure: "소제목 3~4개, 명사형으로 짧게 (예: ■ 무엇이 달라졌나 / ■ 누구에게 해당되나 / ■ 이 동네에서는). 핵심 요약 → 내용 → 영향 → 전문가의 시각 순서",
+  },
+  expert: {
+    label: "전문가 칼럼형", fit: "뉴스 해설·동네 시장", titleExample: "논현동에서 20년 지켜본 사람이 보는 이번 신고가", design: "magazine",
+    guide: "이 동네를 오래 지켜본 지역 부동산 전문가가 쓰는 칼럼이다. 사실을 먼저 짧게 전하고, 이 소식이 이 지역에 어떤 뜻인지, 전문가로서 어떻게 보는지를 차분한 존댓말로 풀어 쓴다. '제가 보기에는'처럼 1인칭 의견은 되지만, 근거 없는 전망·단정은 쓰지 않는다.",
+    structure: "소제목 3~4개, 칼럼처럼 (예: ■ 무슨 일이 있었나 / ■ 이 동네에서 이 숫자가 뜻하는 것 / ■ 지켜본 사람의 생각). 사실 → 의미 → 전문가의 시각 순서",
+  },
+  qna: {
+    label: "Q&A 해설형", fit: "제도·법률·세금", titleExample: "새 임대차 제도, 가장 많이 묻는 5가지", design: "qna",
+    guide: "독자가 실제로 궁금해할 질문을 뽑아 하나씩 답하는 해설 글로 쓴다. 부드러운 존댓말로, 사실을 객관적으로 짚는다.",
+    structure: "소제목 3~5개, 독자가 물어볼 질문형 (예: ■ 언제부터 적용되나요? / ■ 기존 계약도 해당되나요?). 각 소제목 바로 다음 문단이 그 질문의 답",
+  },
+  report: {
+    label: "분석·리포트형", fit: "정책·시장·경제", titleExample: "금리 동결 이후 강남 아파트 시장, 숫자로 보니", design: "news",
+    guide: "배경, 핵심 쟁점, 영향을 균형 있게 분석하고 지역 전문가의 해석으로 맺는다. 자료에 없는 전망 수치·시세·수익률은 추정하지 않는다.",
+    structure: "소제목 4~5개, 명사형 (■ 배경 / ■ 핵심 쟁점 / ■ 누구에게 어떤 영향 / ■ 전문가의 해석). 각 구역은 1~2문단",
+  },
+  tips: {
+    label: "생활 꿀팁형", fit: "생활정보·실무 요령", titleExample: "이사 날짜 정할 때 알아 두면 좋은 5가지", design: "basic",
+    guide: "읽고 바로 써먹을 수 있는 요령을 순서대로 정리한다. '~해 보세요'처럼 부드럽게 권하고, 각 요령마다 이유를 한두 문장 붙인다. 과장된 효과나 확인되지 않은 수치는 쓰지 않는다.",
+    structure: "소제목 4~7개, 행동형으로 짧게 (예: ■ 계약서 특약부터 챙겨 보세요). 각 소제목 뒤에 1문단으로 방법과 이유",
+  },
+};
+const COL_YT_TYPE: Record<string, any> = {
+  briefing: { label: "뉴스 브리핑", structure: "훅 → 무슨 일인가 → 배경 → 이 동네·내 생활에 미치는 영향 → 전문가 한마디 → 끝맺음" },
+  info: { label: "생활 정보", structure: "훅(생활 속 질문) → 핵심 답 → 알아 둘 내용 2~3가지 → 전문가 한마디 → 끝맺음" },
+};
+function webCol(M: any) {
+  const K = M && M.GW_KIND;
+  if (K && !K.__web) {
+    delete K.check; delete K.brief;
+    Object.defineProperty(K, "__web", { value: true, enumerable: false });
+  }
+  const B = M && M.GW_BLOG_STYLE;
+  if (B && !B.__web) {
+    for (const k of Object.keys(B)) delete B[k];
+    Object.assign(B, COL_BLOG);
+    Object.defineProperty(B, "__web", { value: true, enumerable: false });
+  }
+  return M;
+}
+function webColYt(Y: any) {
+  const T = Y && Y.GW_YT_VIDEO_TYPE;
+  if (T && !T.__web) {
+    for (const k of Object.keys(T)) delete T[k];
+    Object.assign(T, COL_YT_TYPE);
+    Object.defineProperty(T, "__web", { value: true, enumerable: false });
+  }
+  return Y;
+}
+/* 뉴스칼럼 쇼츠 끝맺음 · 원칙 (공실 쇼츠의 SHORTS_RULES 와 같은 자리) */
+const COL_ENDINGS: { id: string; label: string; line: string }[] = [
+  { id: "follow", label: "팔로우해 주세요", line: "더 많은 동네 소식은 팔로우해 주세요!" },
+  { id: "comment", label: "댓글로 의견", line: "여러분 생각은 댓글로 남겨 주세요!" },
+  { id: "ask", label: "문의주세요!", line: "문의주세요!" },
+  { id: "none", label: "멘트 없음", line: "" },
+];
+function colShortsRules(ending?: string) {
+  const e = COL_ENDINGS.find((x) => x.id === ending) || COL_ENDINGS[0];
+  return `
+
+[쇼츠 대본 — 위 지시보다 먼저 지킬 것]
+- 이 대본은 이 동네를 잘 아는 지역 부동산 전문가가 말합니다. "확인해야 합니다", "~할 필요가 있습니다" 같은 가르치는 말과 "확인할 점" 구간은 넣지 마십시오.
+- "기사에 따르면", "보도에 따르면", "자료를 보면" 같은 출처 말은 쓰지 마십시오. 사실만 바로 말합니다.
+- 사이트 이름(공실뉴스 등)이나 "자세한 내용은 ~에서" 같은 안내는 쓰지 마십시오.
+- 숫자는 원문에 있는 것만, 괄호·㎡ 없이 말하듯 씁니다. 같은 숫자를 두 번 말하지 않습니다.
+- ${e.line ? `마지막 문장은 반드시 "${e.line}" 로 끝냅니다.` : "'팔로우'·'댓글'·'문의' 같은 권유 문장은 쓰지 말고, 마지막 문장은 소식·해석으로 끝냅니다."}`;
+}
+function colYtPrompt(input: any, set: Record<string, string>) {
+  return `${lib.ytCol().gwBuildYtScriptPrompt(input, set)}${colShortsRules(set.ending)}`;
+}
 /* SNS 글 고치기 — 확장 sns-prompt.js 의 "줄마다 이모지(📍📐💰🚇✅🏢)" 지시를 웹에서 덮는다
  *  (2026-11-06 사장님: "이런 아이콘 안 나왔으면 좋겠어, 촌스러워" — 정보 줄 앞은 ✔️ 하나, "~라고 나와요" 서류 말투 금지) */
 const SNS_FIX = `
@@ -183,14 +263,14 @@ const lib = {
   naver: () => run(["gongsil/naver-blog.js"]),
   sns: () => webSns(run(["gongsil/blog-prompt.js", "gongsil/naver-blog.js", "gongsil/youtube-json.js", "gongsil/sns-prompt.js"], ["GW_SNS_CHANNELS", "GW_SNS_ORDER", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsPickMedia", "gwSnsAiLabelNote"])),
   yt: () => run(["gongsil/prompt.js", "gongsil/youtube-json.js", "gongsil/youtube-prompt.js"], [...YT_COMMON, "GW_YT_AUCTION_VIDEO_TYPE", "gwYtVideoTypes"]),
-  ytCol: () => run(["newsmaker/youtube-json.js", "newsmaker/youtube-prompt.js"], [...YT_COMMON, "GW_YT_NUMBER"]),
+  ytCol: () => webColYt(run(["newsmaker/youtube-json.js", "newsmaker/youtube-prompt.js"], [...YT_COMMON, "GW_YT_NUMBER"])),
   // 뉴스칼럼 (앱 ext-newsmaker.js 와 같은 파일·이름) — 2026-11-04 웹 뉴스칼럼
-  nm: () => webSns(run(["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "naver-blog.js", "youtube-json.js", "article-json.js", "sns-prompt.js"].map((f) => `newsmaker/${f}`), [
+  nm: () => webCol(webSns(run(["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "naver-blog.js", "youtube-json.js", "article-json.js", "sns-prompt.js"].map((f) => `newsmaker/${f}`), [
     "GW_LENGTH", "GW_KIND", "GW_IMAGE_STYLE", "gwSourceReady", "gwSourceLabel", "gwBuildPrompt", "gwBuildRevisePrompt", "gwNormalizeSection",
     "GW_BLOG_LENGTH", "GW_BLOG_STYLE", "gwBuildBlogPrompt", "gwBuildBlogRevisePrompt",
     "GW_SNS_CHANNELS", "gwBuildSnsPrompt", "gwBuildSnsRevisePrompt", "gwSnsParse", "gwSnsCompose", "gwSnsCredit", "gwSnsAiLabelNote",
     "GWNaverBlog", "GWArticleJson", "gwBuildImagePrompt", "gwAiImageCaption",
-  ])),
+  ]))),
 };
 /* 보고서·홍보지 AI 채우기 (앱 marketing-writer.js 와 같은 프롬프트, 2026-11-04 사장님: 웹에서 다 되게) */
 const mk = () => run(["marketing/marketing-prompt.js"]);
@@ -230,6 +310,9 @@ const TONES: Record<string, string> = {
   short: "요약체 — 핵심만 3~5줄로 아주 짧게, 줄마다 한 가지 정보만 쓰십시오.",
   // 아이콘체 — 인스타 전용, 줄마다 알맞은 아이콘 (2026-11-06 사장님: 예전 모양도 살리기)
   icon: "아이콘체 — 인스타그램 매물 소개 글로 쓰십시오. ① 첫 줄: 위치·매물 핵심 한 줄, 끝에 📍 하나 (예: '잠원동 전용 35평, 1층 사무실 📍') ② 이어서 조건 줄 5~8개, 줄마다 알맞은 아이콘 하나로 시작 — 🏢 건물·위치 · 📐 면적 · 💰 가격 · 🚇 교통 · 🚗 주차 · 📅 입주 · ✅ 특징 (한 줄에 정보 하나, [확인된 매물 정보]에 있는 것만) ③ 마지막 한 줄은 친근한 존댓말로 이 매물의 좋은 점. 이 문체에서는 위 아이콘을 쓸 수 있고 ✔️ 는 쓰지 않습니다. 면적은 평으로만(괄호 속 ㎡ 없이), '~라고 나와요' 같은 서류 말투는 쓰지 마십시오.",
+  // 뉴스칼럼·자유 글쓰기 전용 (2026-11-06)
+  card: "카드뉴스체 — 아래 모양으로 쓰십시오. ① 첫 줄: 이 소식의 핵심을 담은 제목 한 줄 (이모지 없이) ② 빈 줄 ③ '✔️ '로 시작하는 핵심 줄 3~5개 (원문에 있는 사실·숫자만, 한 줄에 하나) ④ 빈 줄 ⑤ 이 동네를 잘 아는 지역 부동산 전문가의 한 줄 해석 (친근한 존댓말). 'DM 주세요'·문의 권유·해시태그는 본문에 쓰지 마십시오.",
+  newsfb: "뉴스해설체 — 2~3문단의 차분한 존댓말로 쓰십시오. ① 무슨 일인지 (사실과 숫자) ② 이 동네·생활에 무슨 뜻인지 ③ 지역 부동산 전문가로서 내 생각 한두 문장. 이모지 목록·문의 권유는 쓰지 마십시오.",
   // 동네소식체 — 페이스북 (2026-11-06 사장님)
   local: "동네소식체 — 동네 소식을 전하듯 2~3문단의 정보 글로 쓰십시오. 첫 문단은 이 동네의 소식·특징과 함께 이 매물이 나왔다는 사실(예: '신사역 일대에 2009년 준공 통사무실이 매매로 나왔습니다'), 둘째 문단은 매물 조건을 문장으로, 셋째 문단은 어떤 분에게 맞는 자리인지. 지인에게 공유하기 좋은 차분한 존댓말로, 영업하는 티·이모지 목록은 쓰지 마십시오. 사실·숫자는 [확인된 매물 정보]에 있는 것만 쓰십시오.",
   // 체크체 (2026-11-06 사장님: "이런 느낌 좋은 것 같아", 핀 📍은 촌스러워 빼고 ✔️ 는 좋다)
@@ -314,9 +397,11 @@ function colOptions() {
     youtube: {
       videoTypes: table(Y.GW_YT_VIDEO_TYPE, (v) => ({ structure: v.structure })),
       durations: webYt(Y.GW_YT_TONE, Y.GW_YT_DURATION).durations.map(([id, v]: [string, any]) => ({ id, label: v.label, chars: v.chars, seconds: v.seconds })),
-      tones: webYt(Y.GW_YT_TONE, Y.GW_YT_DURATION).tones.map(([id, v]: [string, any]) => ({ id, label: v.label })),
+      // 말투 셋 — 뉴스형 · 전문가 해설 · 친근한 이야기 (릴스·쇼츠는 공실 쇼츠용, 2026-11-06)
+      tones: ["news", "expert", "friendly"].filter((id) => Y.GW_YT_TONE[id]).map((id) => ({ id, label: Y.GW_YT_TONE[id].label })),
+      endings: COL_ENDINGS.map(({ id, label }) => ({ id, label })),
       numbers: table(Y.GW_YT_NUMBER),
-      defaults: { ...YT_DEFAULTS, videoType: Object.keys(Y.GW_YT_VIDEO_TYPE)[0] },
+      defaults: { ...YT_DEFAULTS, videoType: "briefing", tone: "news", ending: "follow" },
     },
     writeUrl: lib.naver().WRITE_URL,
     siteUrl: lib.naver().SITE_URL,
@@ -325,7 +410,7 @@ function colOptions() {
 function colYtSettings(pick: Record<string, string> = {}) {
   const o = colOptions().youtube;
   const ok = (list: { id: string }[], v?: string) => (v && list.some((x) => x.id === v) ? v : "");
-  const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number) };
+  const want = { videoType: ok(o.videoTypes, pick.videoType), duration: ok(o.durations, pick.duration), tone: ok(o.tones, pick.tone), number: ok(o.numbers, pick.number), ending: ok(o.endings, pick.ending) };
   return { ...o.defaults, ...Object.fromEntries(Object.entries(want).filter(([, v]) => v)) } as Record<string, string>;
 }
 /* 내 기사 링크 줄 — 웹 뉴스칼럼은 내 기사만 소재라, 글 끝에 내 물건접수 홈페이지의 그 기사 주소 (2026-11-04 사장님: 링크는 모두 내 홈페이지로)
@@ -403,7 +488,7 @@ function colAllPrompt(b: any, source: any) {
   const only = snsOnlyOf(b.snsOnly);
   if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
   const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
-  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", Y.gwBuildYtScriptPrompt({ article: REF, source }, ytSet)]);
+  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", colYtPrompt({ article: REF, source }, ytSet!)]);
   return bundle(parts, { artKind, artLen, blogSt, blogLen, ytSet });
 }
 function bundle(parts: [string, string, string][], settings: Record<string, unknown>) {
@@ -572,7 +657,7 @@ function colRevisePrompt(b: any, source: any, req: string) {
   }
   if (b.doc === "youtube") {
     const full = { title: d.title, text: (d.narration || []).join("\n\n") };
-    return `${Y.gwBuildYtScriptPrompt({ article: ref, source }, colYtSettings(d.settings || {}))}\n\n${Y.gwBuildYtRevisePrompt(full, req)}`;
+    return `${colYtPrompt({ article: ref, source }, colYtSettings(d.settings || {}))}\n\n${Y.gwBuildYtRevisePrompt(full, req)}`;
   }
   throw new Error("알 수 없는 글입니다.");
 }

@@ -50,23 +50,38 @@ export const SNS_TONES = [
   // 요약체는 뺌 — 스레드·페이스북에 이어 인스타에서도 (2026-11-06 사장님). 예전에 고른 것은 그 채널 기본 문체로
   { id: "check", label: "체크체", brief: "✔️ 조건 정리 + 한마디" }, // 2026-11-06 사장님: 인스타 기본
   { id: "icon", label: "아이콘체", brief: "📍 위치 · 💰 가격처럼 아이콘 줄" }, // 2026-11-06 사장님: "아까 있던 이것도 살려도 될 것 같아" — 인스타 전용
+  { id: "card", label: "카드뉴스체", brief: "제목 + ✔️ 핵심 3~5줄 + 한 줄 해석" }, // 뉴스칼럼·자유 글쓰기 인스타 (2026-11-06)
+  { id: "newsfb", label: "뉴스해설체", brief: "무슨 일 → 무슨 뜻 → 내 생각" }, // 뉴스칼럼·자유 글쓰기 페이스북 (2026-11-06)
   { id: "local", label: "동네소식체", brief: "동네 소식 전하듯 2~3문단" }, // 2026-11-06 사장님: 페이스북 전용·기본
 ];
 /** 채널에 맞는 문체 — 스레드 감성은 스레드에만 (2026-11-06 사장님 회의: 스토리체 뺌 · 반말체 → 친근체) */
 //  인스타그램은 친근체 → 공손체 순서로 맨 앞에 (2026-11-06 사장님)
 const IG_FIRST = ["casual", "polite"];
-export const tonesFor = (ch: string) => {
+/* 뉴스칼럼·자유 글쓰기 — 매물 문체(체크체·아이콘체·동네소식체) 대신 뉴스용 (2026-11-06 사장님: "공실뉴스와 같이 성격에 맞게") */
+const COL_TONES: Record<string, string[]> = {
+  instagram: ["card", "casual", "polite", "hook", "expert"],
+  threads: ["thread", "polite", "casual", "hook", "expert"],
+  facebook: ["newsfb", "polite", "casual", "hook", "expert"],
+};
+const VAC_ONLY_NOT = new Set(["card", "newsfb"]); // 공실 문체 목록에는 안 보이게
+export const tonesFor = (ch: string, column = false) => {
+  if (column) return (COL_TONES[ch] || COL_TONES.instagram).map((id) => SNS_TONES.find((t) => t.id === id)!).filter(Boolean);
+  return tonesForVac(ch).filter((t) => !VAC_ONLY_NOT.has(t.id));
+};
+const tonesForVac = (ch: string) => {
   if (ch === "threads") return SNS_TONES.filter((t) => t.id !== "short" && t.id !== "local" && t.id !== "icon"); // 스레드는 요약체 뺌 (2026-11-06 사장님)
   const l = SNS_TONES.filter((t) => t.id !== "thread" && t.id !== "local" && !(ch !== "instagram" && t.id === "icon") && !(ch === "facebook" && t.id === "short")); // 페이스북도 요약체 뺌 (2026-11-06 사장님)
   if (ch === "facebook") return [SNS_TONES.find((t) => t.id === "local")!, ...l]; // 동네소식체는 페이스북에만, 맨 앞
   return ch === "instagram" ? [...IG_FIRST.map((id) => l.find((t) => t.id === id)!), ...l.filter((t) => !IG_FIRST.includes(t.id))] : l;
 };
 /** 채널마다 처음 문체 — 스레드는 스레드 감성 (2026-11-03 사장님) */
-export const defaultTone = (ch: string) => (ch === "threads" ? "thread" : ch === "instagram" ? "check" : ch === "facebook" ? "local" : "polite");
+export const defaultTone = (ch: string, column = false) => (column ? (COL_TONES[ch] || ["polite"])[0] : ch === "threads" ? "thread" : ch === "instagram" ? "check" : ch === "facebook" ? "local" : "polite");
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
-export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone, writeBtn, view }: {
+export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed, oneShot = false, tones = {}, onTone, writeBtn, view, pubAt, column = false }: {
+  /** 뉴스칼럼·자유 글쓰기 — 문체 목록이 뉴스용 (2026-11-06) */
+  column?: boolean;
   /** 작업대 화면 (2026-11-03 사장님 시안 A3): "settings" = 왼쪽 "쓸 글" 칸에 설정만 · "result" = 가운데에 결과만. 없으면 예전 그대로 */
   view?: "settings" | "result";
   theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
@@ -75,8 +90,10 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
   oneShot?: boolean; tones?: Record<string, string>; onTone?: (t: string) => void;
   /** [이 ○○만 쓰기] — 아래 버튼 줄 맨 앞에 (StudioChannelTabs 가 만든다, 2026-10-29) */
   writeBtn?: React.ReactNode;
+  /** 이 채널 발행일 "26.11.06" — 단추 줄 끝에 (2026-11-06 사장님: 채널별 발행일은 작업 화면에서) */
+  pubAt?: string;
 }) {
-  const tone = tones[channel] || defaultTone(channel);
+  const tone = tones[channel] || defaultTone(channel, column);
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
@@ -245,7 +262,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
   const narrow = view === "settings";
   const toneGrid = (
         <div style={{ display: "grid", gridTemplateColumns: narrow ? "1fr 1fr" : "repeat(auto-fill, minmax(160px, 1fr))", gap: narrow ? 6 : 8, marginTop: narrow ? 0 : 14 }}>
-          {tonesFor(channel).map((t) => (
+          {tonesFor(channel, column).map((t) => (
             <button key={t.id} type="button" onClick={() => onTone?.(t.id)} disabled={!onTone}
               style={{ textAlign: "left", padding: narrow ? "7px 9px" : "9px 12px", borderRadius: 8, cursor: onTone ? "pointer" : "default", color: theme.textPrimary,
                 border: `1px solid ${tone === t.id ? "#1a3a6b" : theme.border}`, background: tone === t.id ? "rgba(26,58,107,0.08)" : "transparent" }}>
@@ -387,6 +404,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
               <button onClick={() => void fillHelper()} disabled={helping} title="평소 크롬에 이 채널을 열고 공실뉴스 작성기(크롬 확장)가 사진·글을 넣어요"
                 style={{ ...btn(true), background: helping ? "#94a3b8" : "#1a3a6b" }}>{helping ? "도우미가 채우는 중…" : `도우미로 ${info.label}에 채우기`}</button>
             )}
+            {pubAt && <span title="이 채널에 올린 날 (올린 주소가 연결된 날)" style={{ marginLeft: "auto", alignSelf: "center", fontSize: 12.5, fontWeight: 700, color: theme.textSecondary, whiteSpace: "nowrap" }}>발행 {pubAt}</span>}
           </div>
           {helpMsg && <div style={{ marginTop: 10, fontSize: 13, color: /못|없|응답/.test(helpMsg) ? "#c2410c" : (theme.darkMode ? "#93c5fd" : "#1a3a6b"), fontWeight: 600, lineHeight: 1.6 }}>{helpMsg}</div>}
           {helpMsg && /도우미/.test(helpMsg) && /응답|설치/.test(helpMsg) && (

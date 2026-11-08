@@ -232,7 +232,7 @@ export default function StudioMyVideoPanel({ theme, onListView, onDesk }: { them
 
           {lab("문체 — 네 채널 같이")}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {SNS_TONES.map((t) => {
+            {SNS_TONES.filter((t) => !["card", "newsfb"].includes(t.id) /* 뉴스칼럼 전용 문체는 빼고 */).map((t) => {
               const on = tone === t.id;
               return (
                 <button key={t.id} type="button" onClick={() => pickTone(t.id)}

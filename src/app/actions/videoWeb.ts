@@ -32,6 +32,8 @@ export type VideoVacancy = {
   listing: string;
   /** 동 이름 — 그 동네 드론 영상 찾기 */
   dong: string;
+  /** 건물·단지 이름 — 단지소개 테마 배경 (2026-11-06, 없으면 빈칸) */
+  building?: string;
   /** 칸 값 — 포토studio 등에서 자료 그대로 (2026-11-06, 빈 값은 빈칸) */
   facts?: { label: string; value: string }[];
 };
@@ -117,6 +119,7 @@ export async function getVideoVacancy(vacancyId: string): Promise<{ success: tru
       agency,
       listing,
       dong: String(row.dong || ""),
+      building: String(row.building_name || ""),
       facts: [
         { label: "면적", value: row.exclusive_m2 ? `전용 ${Math.round((Number(row.exclusive_m2) / 3.3058) * 10) / 10}평` : "" },
         { label: "층", value: fl },

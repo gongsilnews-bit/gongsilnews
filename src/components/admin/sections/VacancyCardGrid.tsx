@@ -602,6 +602,15 @@ function PromoRows({ theme, v, promo, homepage = "", onMake, onListing, onPaste,
         <span style={{ flex: 1, height: 4, borderRadius: 4, background: darkMode ? "#333" : "#eef0f2", overflow: "hidden" }}>
           <span style={{ display: "block", height: "100%", width: `${(onCount / slots.length) * 100}%`, background: green, borderRadius: 4, transition: "width .3s" }} />
         </span>
+        {/* 최종발행 — 채널마다 올린 날 가운데 가장 최근 하나 (2026-11-06 사장님: "최종발행 26.11.06 이렇게", 채널별 발행일은 작업 화면에서) */}
+        {(() => {
+          const last = Object.entries(promo?.at || {}).filter(([c]) => promo?.links[c as PromoChannel]).map(([, d]) => String(d)).sort().pop();
+          if (!last) return null;
+          const d = new Date(last);
+          if (Number.isNaN(d.getTime())) return null;
+          const t = `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+          return <span title="채널에 올린 날 가운데 가장 최근 날" style={{ fontSize: 11.5, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>최종발행 {t}</span>;
+        })()}
       </div>
 
       <div style={{ display: "flex", gap: 4 }}>

@@ -49,7 +49,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 const secondsOf = (text: string) => Math.round(text.replace(/\s/g, "").length / 5.5);
 const clock = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`);
 
-export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick, writeBtn, view }: {
+export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript, oneShot = false, remembered, onPick, writeBtn, view, pubAt }: {
   /** 작업대 화면 (2026-11-03 사장님 시안 A3): "settings" = 왼쪽 "쓸 글" 칸에 설정만 · "result" = 가운데에 결과만. 없으면 예전 그대로 */
   view?: "settings" | "result";
   theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void;
@@ -57,6 +57,8 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
   oneShot?: boolean; remembered?: Record<string, unknown>; onPick?: (p: Record<string, string>) => void;
   /** [이 ○○만 쓰기] — 아래 버튼 줄 맨 앞에 (StudioChannelTabs 가 만든다, 2026-10-29) */
   writeBtn?: React.ReactNode;
+  /** 유튜브 발행일 "26.11.06" (2026-11-06) */
+  pubAt?: string;
 }) {
   const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const router = useRouter();
@@ -290,6 +292,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
             <button onClick={() => copy(paragraphs().join("\n\n"), "원고를 복사했습니다.", "narration")} style={btn(true)}>원고 복사</button>
             <button onClick={() => copy(descText, "설명란을 복사했습니다.", "desc")} style={btn()}>설명란 복사</button>
             <button onClick={exportText} style={btn()}>{isWebStudio() ? "텍스트로 내려받기" : "텍스트로 저장"}</button>
+            {pubAt && <span title="이 채널에 올린 날 (올린 주소가 연결된 날)" style={{ marginLeft: "auto", alignSelf: "center", fontSize: 12.5, fontWeight: 700, color: theme.textSecondary, whiteSpace: "nowrap" }}>발행 {pubAt}</span>}
             <button onClick={() => void toVideo()} title="동영상제작 › 대본 작성으로 — 이 공실이 골라지고 대본이 칸에 들어가요"
               style={{ ...btn(), marginLeft: "auto", border: 0, background: "#FF0033", color: "#fff" }}>▶ 이 대본으로 동영상 만들기</button>
           </div>

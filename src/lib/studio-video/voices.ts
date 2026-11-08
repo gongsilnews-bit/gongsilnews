@@ -59,5 +59,5 @@ export function addExtraVoices(list: { id: string; name: string; kind?: string }
   for (const v of list) EXTRA.set(v.id, { id: v.id, name: v.name, kind: v.kind || "타입캐스트 성우" });
 }
 export const findVoice = (id?: string): { id: string; name: string; kind: string } | undefined =>
-  id === MY_VOICE_ID ? MY_VOICE : STUDIO_VOICES.find((v) => v.id === id) || (id ? EXTRA.get(id) || (isTypecast(id) ? { id, name: "타입캐스트 성우", kind: "타입캐스트" } : isEleven(id) ? { id, name: "일레븐랩스 성우", kind: "일레븐랩스" } : undefined) : undefined);
+  id === MY_VOICE_ID ? MY_VOICE : STUDIO_VOICES.find((v) => v.id === id) || (id ? EXTRA.get(id) || (isTypecast(id) ? { id, name: "타입캐스트 성우", kind: "타입캐스트" } : isEleven(id) ? { id, name: "AI 성우", kind: "AI 성우" } /* 회사 이름은 감춘다 (2026-11-06) */ : undefined) : undefined);
 export const voicePhoto = (id: string) => `/studio-voices/${id.toLowerCase()}.webp?v=2`; // v=2 — 2026-10-30 새 그림 (예전 그림이 남아 보이지 않게)

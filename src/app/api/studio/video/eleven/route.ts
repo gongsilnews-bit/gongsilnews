@@ -24,7 +24,7 @@ const STYLE: Record<string, { stability: number; similarity_boost: number; style
 };
 const db = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
 const KEY = () => process.env.ELEVENLABS_API_KEY || "";
-const NO_KEY = "AI 목소리 준비 중이에요 (공실뉴스 일레븐랩스 키 등록 전).";
+const NO_KEY = "AI 목소리 준비 중이에요."; // 회사 이름은 감춘다 (2026-11-06)
 
 function errOf(status: number, body: any) {
   const d = body && body.detail;

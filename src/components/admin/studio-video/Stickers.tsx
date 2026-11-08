@@ -13,7 +13,9 @@ import { loadFont } from "./Pickers";
 import { TEMPLATES, TPL_PREFIX, TemplatePanel, drawTemplate, tplFonts, type TplDef, FavStar, toggleGFav, useGFav } from "./Templates";
 
 export type StickerStyle = "burst" | "tag" | "pin" | "bubble" | "stamp" | "ribbon" | "neon" | "check" | "marker" | "badge" | "arrow" | "ticket" | "cloud" | "sign" | "circle" | "block"
-  | "speed" | "slant" | "emoji" | "frame" | "halftone" | "comicword" | "manga" | "panel"; // 강조 효과 (2026-10-30 사장님): 집중선 · 기울어진 말딱지 · 작은 아이콘 · 테두리 틀
+  | "speed" | "slant" | "emoji" | "frame" | "halftone" | "comicword" | "manga" | "panel"
+  | "sbg" | "apt" | "aptlogo"; // 쇼츠배경 · 아파트 배경 · 아파트 브랜드 로고 (2026-11-06)
+  // 쇼츠배경 (2026-11-06 사장님: 위아래 배경 + 제목, 가운데 가로 화면) · 강조 효과 (2026-10-30 사장님): 집중선 · 기울어진 말딱지 · 작은 아이콘 · 테두리 틀
 export type Sticker = { text: string; style: StickerStyle; color?: string; icon?: string; mo?: number /* 1 = 모션 스티커 (순간마다 다시 그림) */ };
 
 export const STYLE_LABEL: Record<StickerStyle, string> = {
@@ -21,19 +23,50 @@ export const STYLE_LABEL: Record<StickerStyle, string> = {
   arrow: "화살표", ticket: "티켓", cloud: "구름", sign: "나무 간판", circle: "동그라미", block: "입체 글자",
   speed: "집중선", slant: "말딱지", emoji: "아이콘", frame: "테두리 틀",
   halftone: "만화 망점", comicword: "만화 효과음", manga: "만화 기호", panel: "만화 칸",
+  sbg: "쇼츠배경", apt: "아파트 배경", aptlogo: "아파트 로고",
 };
 /** 화면 전체에 까는 그래픽 — 넣을 때 화면 너비 그대로 */
-export const FULL_STYLES = new Set<StickerStyle>(["speed", "frame", "halftone", "panel"]);
+export const FULL_STYLES = new Set<StickerStyle>(["speed", "frame", "halftone", "panel", "sbg", "apt"]);
+/** 움직이지 않는 그래픽 — 깔리는 배경·브랜드 로고 (반짝이·튀어나오기 없이, 2026-11-06 사장님: "굳이 움직이지 않아도 될 듯") */
+export const STILL_STYLES = new Set<StickerStyle>(["sbg", "apt", "aptlogo"]);
 /** 기본 색 (스티커 바탕·주색) */
 const BASE: Record<StickerStyle, string> = {
   burst: "#FFD400", tag: "#E60012", pin: "#E60012", bubble: "#FFFFFF", stamp: "#D7261E", ribbon: "#1F5FD6", neon: "#FF3EA5", check: "#16A34A", marker: "#FFE600", badge: "#1A3A6B",
   arrow: "#E60012", ticket: "#FF7A00", cloud: "#FFFFFF", sign: "#8B5A2B", circle: "#E60012", block: "#FFD400",
   speed: "#FFFFFF", slant: "#111111", emoji: "#FFD400", frame: "#FFE14D",
   halftone: "#111111", comicword: "#FFD400", manga: "#111111", panel: "#111111",
+  sbg: "#14306B", apt: "#14306B", aptlogo: "#FFFFFF",
 };
 
 /* 분류 — 공실등록 테마·옵션 (VacancyRegisterForm 테마/옵션 목록)도 모두 담았다 */
+/* 아파트 브랜드 (2026-11-06) — 분류보다 먼저 (분류가 이 목록으로 그림을 만든다) */
+type AptBrand = { key: string; name: string; sample: string; alt?: string; deep: string; mid: string; accent: string; ivory: string; ink: string; serif: boolean; plate?: boolean };
+export const APT_BRANDS: AptBrand[] = [
+  { key: "raemian", name: "래미안", sample: "래미안 단지 이름", deep: "#0C3438", mid: "#1D6A6A", accent: "#9ED9D3", ivory: "#F4F7F6", ink: "#0C3438", serif: false, plate: true },
+  { key: "xi", name: "자이", sample: "자이 단지 이름", deep: "#062A38", mid: "#00809F", accent: "#8FD6EA", ivory: "#F3F7F9", ink: "#0A3B4E", serif: false },
+  { key: "hillstate", name: "힐스테이트", sample: "힐스테이트 단지 이름", deep: "#4A060E", mid: "#8E0A16", accent: "#E2BE78", ivory: "#FAF6F1", ink: "#7A0A14", serif: true },
+  { key: "prugio", name: "푸르지오", sample: "푸르지오 단지 이름", deep: "#0C3522", mid: "#1D6A44", accent: "#B7CF5A", ivory: "#F4F7F1", ink: "#124A2F", serif: false, plate: true },
+  { key: "epyeonhan", name: "e편한세상", sample: "e편한세상 단지 이름", deep: "#2E241E", mid: "#5C4637", accent: "#F28A1A", ivory: "#F8F4EF", ink: "#3A2E26", serif: false },
+  { key: "lottecastle", name: "롯데캐슬", sample: "롯데캐슬 단지 이름", alt: "lottecastle_wine", deep: "#141210", mid: "#2A241D", accent: "#C9A46A", ivory: "#F8F5EF", ink: "#5A4527", serif: true },
+  { key: "thesharp", name: "더샵", sample: "더샵 단지 이름", deep: "#07142F", mid: "#16295A", accent: "#A9BEDF", ivory: "#F3F5F9", ink: "#0B1A3D", serif: true },
+  { key: "paragon", name: "파라곤", sample: "파라곤 단지 이름", deep: "#1C150E", mid: "#3A2B1B", accent: "#C99A4B", ivory: "#F9F5EE", ink: "#6B4E22", serif: true },
+  { key: "sk", name: "SK뷰", sample: "SK뷰 단지 이름", deep: "#17181B", mid: "#2B2D33", accent: "#F47725", ivory: "#F6F6F7", ink: "#1F2024", serif: false },
+];
+
+/** 단지 이름 → 브랜드 (2026-11-06 단지소개 테마) — 모르는 이름이면 "" */
+const APT_ALIAS: [string, RegExp][] = [
+  ["raemian", /래미안|raemian/i], ["xi", /자이|\bxi\b/i], ["hillstate", /힐스테이트|hillstate/i], ["prugio", /푸르지오|prugio/i],
+  ["epyeonhan", /e\s*편한세상|이\s*편한세상/i], ["lottecastle", /롯데\s*캐슬|lotte\s*castle/i], ["thesharp", /더\s*샵|the\s*#|thesharp/i],
+  ["paragon", /파라곤|paragon/i], ["sk", /sk\s*뷰|에스케이\s*뷰|sk\s*view/i],
+];
+export const aptBrandOf = (name: string) => APT_ALIAS.find(([, re]) => re.test(String(name || "")))?.[0] || "";
+
 export const CATS: { id: string; label: string; items: Sticker[] }[] = [
+  // 아파트 — 브랜드 색·글꼴에 맞춘 단지소개 배경 + 로고 (2026-11-06 사장님: "우리 사업의 핵심, 아파트 단지 부동산에게 혹하도록 이쁘게")
+  //  배경 글 = "머리표|단지 이름|핵심 한 줄" · icon = "브랜드:dark|light"
+  //  흰 바탕(light)은 고르는 칸에서 뺌 (2026-11-07 사장님: "아파트배경에서 흰색 빼줘") — 예전 프로젝트에 깔린 것은 그대로 그려짐
+  { id: "aptbg", label: "아파트 배경", items: APT_BRANDS.flatMap((b) => (["dark"] as const).map((v) => ({ text: `NEWS|${b.sample}|핵심 한 줄을 써 주세요`, style: "apt" as StickerStyle, icon: `${b.key}:${v}` }))) },
+  { id: "aptlogo", label: "아파트 로고", items: APT_BRANDS.flatMap((b) => [{ text: b.name, style: "aptlogo" as StickerStyle, icon: b.key }, ...(b.alt ? [{ text: `${b.name} (와인)`, style: "aptlogo" as StickerStyle, icon: b.alt }] : [])]) },
   {
     // 만화처럼 (2026-10-30 사장님: 만화와 같이 보이게) — 망점 · 의성어 효과음 글자 · 만화 기호 · 만화 칸 테두리. 모두 우리가 그린 기본 모양
     id: "comic", label: "만화 효과", items: [
@@ -304,7 +337,202 @@ function make3D(flat: HTMLCanvasElement, accent: string) {
   return cv;
 }
 
+/* ── 아파트 배경 · 브랜드 로고 (2026-11-06) ──
+ *  로고 = public/studio-brands/{key}.png (색) · {key}_w.png (흰색 한 가지 — 무늬가 뭉개지는 래미안·푸르지오는 흰 판 위에 색 로고)
+ *  색은 각 브랜드 BI 가이드·로고에서 뽑은 색. 글꼴 — 고급 브랜드는 명조, 나머지는 Pretendard */
+const APT_IMG = new Map<string, HTMLImageElement>();
+let aptWarm: Promise<void> | null = null;
+/** 로고 그림·글꼴을 미리 — 그리기는 바로(동기)라서 먼저 받아 둔다 */
+export function warmApt() {
+  if (typeof document === "undefined") return Promise.resolve();
+  aptWarm ||= (async () => {
+    const keys = APT_BRANDS.flatMap((b) => [b.key, `${b.key}_w`, ...(b.alt ? [b.alt, `${b.alt}_w`] : [])]);
+    await Promise.all([
+      ...keys.map((k) => new Promise<void>((ok) => { const im = new Image(); im.onload = () => { APT_IMG.set(k, im); ok(); }; im.onerror = () => ok(); im.src = `/studio-brands/${k}.png`; })),
+      ...["800 80px Pretendard", "600 40px Pretendard", "bold 80px NanumMyeongjo"].map((f) => (document.fonts ? document.fonts.load(f, "가나다ABC123").catch(() => []) : Promise.resolve([]))),
+    ]);
+  })();
+  return aptWarm;
+}
+const SANS = `Pretendard, "Malgun Gothic", sans-serif`;
+const SERIF = `NanumMyeongjo, "Nanum Myeongjo", Batang, serif`;
+function drawAptLogo(key: string) {
+  const im = APT_IMG.get(key);
+  if (!im) { const { cv, g } = mk(600, 200); g.fillStyle = "#1A3A6B"; g.font = `800 80px ${SANS}`; g.fillText(APT_BRANDS.find((b) => key.startsWith(b.key))?.name || key, 300, 100); return cv; }
+  const k = Math.min(1, 520 / im.height);
+  const { cv, g } = mk(im.width * k, im.height * k);
+  g.drawImage(im, 0, 0, cv.width, cv.height);
+  return cv;
+}
+function drawAptBg(icon: string, text: string) {
+  const [key, mode] = icon.split(":");
+  const B = APT_BRANDS.find((b) => b.key === key) || APT_BRANDS[0];
+  const dark = mode !== "light";
+  const W = 1080, H = 1920, { y0, y1 } = SBG_WIN;
+  const { cv, g } = mk(W, H);
+  const face = B.serif ? SERIF : SANS;
+  // 바탕 — 짙은 브랜드 색 그라데이션 / 밝은 아이보리
+  const fill = (ya: number, yb: number, up: boolean) => {
+    const gr = g.createLinearGradient(0, ya, W * 0.35, yb);
+    if (dark) { gr.addColorStop(0, up ? B.deep : B.mid); gr.addColorStop(1, up ? B.mid : B.deep); } else { gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(1, B.ivory); }
+    g.fillStyle = gr; g.fillRect(0, ya, W, yb - ya);
+  };
+  fill(0, y0, true);
+  fill(y1, H, false);
+  g.save();
+  g.beginPath(); g.rect(0, 0, W, y0); g.rect(0, y1, W, H - y1); g.clip();
+  // 빛 한 줄기 (위 왼쪽 → 오른쪽 아래) — 고급스러운 광택
+  const sh = g.createLinearGradient(0, 0, W, y0);
+  sh.addColorStop(0, "rgba(255,255,255,0)"); sh.addColorStop(0.5, dark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.6)"); sh.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = sh; g.fillRect(0, 0, W, y0);
+  // 아래 띠 — 브랜드 로고를 크게 아주 옅게 (워터마크)
+  const wm = APT_IMG.get(dark ? `${B.key}_w` : B.key);
+  if (wm) { const k = Math.min((W * 1.1) / wm.width, ((H - y1) * 0.9) / wm.height); g.globalAlpha = dark ? 0.06 : 0.07; g.drawImage(wm, (W - wm.width * k) / 2, y1 + (H - y1 - wm.height * k) / 2 + 40, wm.width * k, wm.height * k); g.globalAlpha = 1; }
+  g.restore();
+  // 창 테두리 — 얇은 브랜드 강조색 선 (위아래)
+  g.fillStyle = B.accent;
+  g.fillRect(0, y0 - 6, W, 6); g.fillRect(0, y1, W, 6);
+  // 로고 — 흰색 한 가지(어두운 바탕) / 색(밝은 바탕) · 래미안·푸르지오는 흰 판 위에 색
+  const plate = dark && B.plate;
+  const lg = APT_IMG.get(dark && !plate ? `${B.key}_w` : B.key);
+  const LH = 96, LY = 70;
+  if (lg) {
+    const k = Math.min(LH / lg.height, 520 / lg.width), lw = lg.width * k, lh = lg.height * k;
+    if (plate) { g.fillStyle = "rgba(255,255,255,0.96)"; g.beginPath(); g.roundRect((W - lw) / 2 - 34, LY - 18, lw + 68, lh + 36, 18); g.fill(); }
+    g.drawImage(lg, (W - lw) / 2, LY, lw, lh);
+  }
+  // 글 — "머리표|단지 이름|핵심 한 줄"
+  const [tag, l1, l2] = splitBgText(text);
+  g.textAlign = "center"; g.textBaseline = "middle";
+  let y = 250;
+  if (tag) {
+    // 머리표 — 글자 사이를 띄운 작은 대문자 + 양옆 가는 선 (명품 광고 느낌)
+    const f = `600 30px ${SANS}`; g.font = f;
+    const spaced = tag.split("").join(" ");
+    const tw = measure(f, spaced);
+    g.fillStyle = dark ? B.accent : B.ink; g.fillText(spaced, W / 2, y);
+    g.fillRect(W / 2 - tw / 2 - 90, y - 1, 60, 2); g.fillRect(W / 2 + tw / 2 + 30, y - 1, 60, 2);
+    y += 20;
+  }
+  const line = (t: string, yy: number, col: string, size: number, weight: string) => {
+    if (!t) return;
+    let fs = size;
+    while (fs > 40 && measure(`${weight} ${fs}px ${face}`, t) > W - 120) fs -= 3;
+    g.font = `${weight} ${fs}px ${face}`;
+    if (dark) { g.fillStyle = "rgba(0,0,0,0.28)"; g.fillText(t, W / 2, yy + 3); }
+    g.fillStyle = col; g.fillText(t, W / 2, yy);
+  };
+  line(l1, l2 ? y + 110 : y + 160, dark ? "#FFFFFF" : B.ink, 92, "800");
+  line(l2, y + 230, dark ? B.accent : B.mid, 64, B.serif ? "bold" : "700");
+  return cv;
+}
+
+/* ── 쇼츠배경 (2026-11-06) — 1080×1920 세로 한 장. 가운데 16:9 창(656~1264)은 비워 둔다 → 그 뒤 클립 사진·영상이 보인다 ── */
+const SBG: Record<string, { top: string; bot: string; title: string; hl: string; tag: string; tagInk: string; deco: string }> = {
+  navy: { top: "#0F2A5F", bot: "#14306B", title: "#FFFFFF", hl: "#7FE3FF", tag: "#FFFFFF", tagInk: "#0F2A5F", deco: "stripe" },
+  purple: { top: "#1B1150", bot: "#2A1A7A", title: "#5BF0C8", hl: "#FFFFFF", tag: "#5BF0C8", tagInk: "#1B1150", deco: "glow" },
+  tech: { top: "#0B3D91", bot: "#0A2E6E", title: "#4FF0D2", hl: "#FFE14D", tag: "#4FF0D2", tagInk: "#0B3D91", deco: "grid" },
+  gold: { top: "#0E0E10", bot: "#151518", title: "#E8C46A", hl: "#FFFFFF", tag: "#E8C46A", tagInk: "#111111", deco: "goldline" },
+  white: { top: "#FFFFFF", bot: "#F3F5F9", title: "#14306B", hl: "#FF7A00", tag: "#14306B", tagInk: "#FFFFFF", deco: "thin" },
+  red: { top: "#8E0F14", bot: "#6E0A0E", title: "#FFFFFF", hl: "#FFE14D", tag: "#FFE14D", tagInk: "#8E0F14", deco: "ribbon" },
+  green: { top: "#E8F5E9", bot: "#D7EED9", title: "#1B5E20", hl: "#2E7D32", tag: "#1B5E20", tagInk: "#FFFFFF", deco: "leaf" },
+  cream: { top: "#F6EFE1", bot: "#EFE5D0", title: "#1F1A14", hl: "#8B5A2B", tag: "#8B5A2B", tagInk: "#FFFFFF", deco: "paper" },
+};
+/** 배경 글 나누기 (2026-11-06 사장님: "글씨를 쓰는데 작아지네") — | 없이 쓰면 큰 제목으로
+ *  "제목" → NEWS · 제목 / "제목|둘째 줄" → NEWS · 제목 · 둘째 줄 / "머리표|제목|둘째 줄" → 그대로 */
+function splitBgText(text: string): [string, string, string] {
+  const p = String(text || "").split(/[|｜]/).map((x) => x.trim());
+  if (p.length >= 3) return [p[0], p[1], p.slice(2).join(" ")];
+  if (p.length === 2) return ["NEWS", p[0], p[1]];
+  return ["NEWS", p[0] || "", ""];
+}
+export const SBG_WIN = { y0: 656, y1: 1264 }; // 가운데 창 (16:9, 세로 1920 기준)
+function fitFont(text: string, max: number, size: number) {
+  let fs = size;
+  while (fs > 40 && measure(`${fs}px ${HEAD}`, text) > max) fs -= 4;
+  return fs;
+}
+function drawShortsBg(design: string, text: string) {
+  const d = SBG[design] || SBG.navy;
+  const W = 1080, H = 1920, { y0, y1 } = SBG_WIN;
+  const { cv, g } = mk(W, H);
+  const band = (ya: number, yb: number, c1: string, c2: string) => {
+    const gr = g.createLinearGradient(0, ya, 0, yb); gr.addColorStop(0, c1); gr.addColorStop(1, c2);
+    g.fillStyle = gr; g.fillRect(0, ya, W, yb - ya);
+  };
+  band(0, y0, d.top, shade(d.top, 0.86));
+  band(y1, H, shade(d.bot, 0.9), d.bot);
+  // 무늬 — 위아래 띠에만 (가운데 창은 비워 둔다)
+  g.save();
+  g.beginPath(); g.rect(0, 0, W, y0); g.rect(0, y1, W, H - y1); g.clip();
+  const diag = (step: number, wd: number, a: number) => {
+    g.globalAlpha = a; g.fillStyle = "#FFFFFF";
+    for (let x = -H; x < W; x += step) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + wd, 0); g.lineTo(x + wd + H, H); g.lineTo(x + H, H); g.closePath(); g.fill(); }
+    g.globalAlpha = 1;
+  };
+  if (d.deco === "stripe") diag(90, 40, 0.08);
+  if (d.deco === "glow") {
+    const r = g.createRadialGradient(W / 2, 0, 20, W / 2, 0, 700); r.addColorStop(0, "rgba(120,140,255,0.55)"); r.addColorStop(1, "rgba(120,140,255,0)");
+    g.fillStyle = r; g.fillRect(0, 0, W, y0);
+    const r2 = g.createRadialGradient(W / 2, H, 20, W / 2, H, 700); r2.addColorStop(0, "rgba(150,90,255,0.45)"); r2.addColorStop(1, "rgba(150,90,255,0)");
+    g.fillStyle = r2; g.fillRect(0, y1, W, H - y1);
+  }
+  if (d.deco === "grid") {
+    g.globalAlpha = 0.16; g.strokeStyle = "#7FD8FF"; g.lineWidth = 2;
+    for (let x = 0; x < W; x += 60) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    for (let y = 0; y < H; y += 60) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+    g.globalAlpha = 0.5; g.fillStyle = "#7FFFE8";
+    for (let i = 0; i < 70; i++) { const x = (i * 157) % W, y = i % 2 ? (i * 97) % y0 : y1 + ((i * 131) % (H - y1)); g.fillRect(x, y, 4, 4); }
+    g.globalAlpha = 1;
+  }
+  if (d.deco === "goldline") {
+    g.strokeStyle = d.title; g.lineWidth = 3;
+    for (const y of [y0 - 40, y1 + 40]) { g.beginPath(); g.moveTo(60, y); g.lineTo(W - 60, y); g.stroke(); }
+    g.globalAlpha = 0.22; g.lineWidth = 1.5;
+    for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(0, y1 + 120 + i * 90); g.lineTo(W, y1 + 60 + i * 90); g.stroke(); }
+    g.globalAlpha = 1;
+  }
+  if (d.deco === "thin") {
+    g.strokeStyle = d.title; g.lineWidth = 4;
+    for (const y of [y0 - 30, y1 + 30]) { g.beginPath(); g.moveTo(80, y); g.lineTo(W - 80, y); g.stroke(); }
+  }
+  if (d.deco === "ribbon") { diag(140, 60, 0.1); g.fillStyle = "#FFE14D"; g.fillRect(0, y0 - 22, W, 22); g.fillRect(0, y1, W, 22); }
+  if (d.deco === "leaf") {
+    g.globalAlpha = 0.22; g.fillStyle = "#66BB6A";
+    for (let i = 0; i < 26; i++) { const x = (i * 211) % W, y = i % 2 ? (i * 53) % y0 : y1 + ((i * 89) % (H - y1)); g.beginPath(); g.ellipse(x, y, 46, 22, (i % 5) * 0.6, 0, Math.PI * 2); g.fill(); }
+    g.globalAlpha = 1;
+  }
+  if (d.deco === "paper") {
+    g.globalAlpha = 0.07; g.strokeStyle = "#5A4630"; g.lineWidth = 2;
+    for (let y = 10; y < H; y += 14) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y + ((y * 7) % 5) - 2); g.stroke(); }
+    g.globalAlpha = 1;
+  }
+  g.restore();
+  // 글 — "머리표|첫 줄|둘째 줄"
+  const [tag, l1, l2] = splitBgText(text);
+  g.textAlign = "center"; g.textBaseline = "middle";
+  if (tag) {
+    const f = `54px ${HEAD}`, tw = measure(f, tag) + 64;
+    g.fillStyle = d.tag;
+    g.beginPath(); g.roundRect((W - tw) / 2, 110, tw, 80, 14); g.fill();
+    g.fillStyle = d.tagInk; g.font = f; g.fillText(tag, W / 2, 152);
+  }
+  const line = (t: string, y: number, col: string, size: number) => {
+    if (!t) return;
+    const fs = fitFont(t, W - 110, size);
+    g.font = `${fs}px ${HEAD}`;
+    g.fillStyle = "rgba(0,0,0,0.25)"; g.fillText(t, W / 2, y + 4);
+    g.fillStyle = col; g.fillText(t, W / 2, y);
+  };
+  line(l1, l2 ? 340 : 400, d.title, 104);
+  line(l2, 470, d.hl, 112);
+  return cv;
+}
+
 export function drawSticker(s: Sticker, colorIn?: string): HTMLCanvasElement {
+  if (s.style === "sbg") return drawShortsBg(s.icon || "navy", s.text);
+  if (s.style === "apt") return drawAptBg(s.icon || "raemian:dark", s.text);
+  if (s.style === "aptlogo") return drawAptLogo(s.icon || "raemian");
   const color = colorIn || s.color || BASE[s.style];
   if (s.style === "speed") return drawSpeed(color, s.icon || "", 0);
   if (s.style === "frame") return drawFrame(color, s.icon === "double");
@@ -1130,6 +1358,8 @@ export function stickerAnim(st: StickerStyle, text = ""): LayerAnim {
     case "halftone": return { ...base, in: "fade", sfx: "whoosh-short" };
     case "panel": return { ...base, in: "zoom", sfx: "click" };
     case "frame": return { ...base, in: "zoom", emph: "pulse", sfx: "impact-bass-1" }; // 테두리 쾅
+    case "sbg": case "apt": return { sfx: "none" };
+    case "aptlogo": return { sfx: "none" }; // 쇼츠배경 — 깔리는 틀이라 움직이지 않고 소리 없음
     case "slant": return { ...base, in: "pop", emph: "sway", sfx: "pop" }; // 말딱지 톡 · 살랑
     case "emoji": return { ...base, in: "pop", emph: "bounce", sfx: "sparkle" }; // 아이콘 통통
     default: return { ...base, in: "pop", emph: "pulse", sfx: "sparkle" }; // 반짝 짠!
@@ -1211,7 +1441,7 @@ function small(cv: HTMLCanvasElement, h: number) {
 let fontsOnce: Promise<void> | null = null;
 export function stickerFonts() {
   if (!fontsOnce)
-    fontsOnce = Promise.all(["Black Han Sans", "Jua"].map((f) => loadFont(f).catch(() => {})))
+    fontsOnce = Promise.all([...["Black Han Sans", "Jua", "Pretendard", "NanumMyeongjo"].map((f) => loadFont(f).catch(() => {})), warmApt()]) // 아파트 배경 글꼴·로고 (2026-11-06)
       .then(() => stickerGlyphs(CATS.flatMap((c) => c.items.map((x) => x.text))))
       .catch(() => {});
   return fontsOnce;
@@ -1254,11 +1484,13 @@ const TABS: { id: TabId; label: string; subs: Sub[] }[] = [
   {
     id: "real", label: "부동산", subs: [
       ...["hot", "price", "place", "home", "biz", "opt", "size", "call", "state"].map(STK_SUB),
+      STK_SUB("aptbg"), STK_SUB("aptlogo"), // 아파트 배경·브랜드 로고 — 아파트 탭을 없애고 부동산 안으로 (2026-11-07 사장님)
       { ...STK_SUB("point"), tpl: catOf("가리키기"), tplHead: "화살표·가리키기 템플릿" },
       { id: "money", label: "돈", tpl: isMoney },
       { id: "adlaw", label: "부동산 표시광고", tpl: catOf("부동산 표시광고") }, // 끝 화면 중개사무소 정보 (2026-10-20)
     ],
   },
+  // 쇼츠배경 탭은 없앰 (2026-11-07 사장님: "너무 촌스러워 · 그냥 삭제해줘") — 예전 프로젝트에 깔린 것은 그대로 보이게 그리기만 남김
   // 강조 효과(집중선·말딱지·아이콘·테두리)는 예능 탭 맨 앞 (2026-10-30 사장님: 집중선 어디 있어?)
   { id: "fun", label: "예능", subs: [STK_SUB("fx"), STK_SUB("comic"), { id: "fsub", label: "예능 자막", tpl: catOf("예능 자막") }, { id: "fword", label: "예능 글자", tpl: catOf("예능 글자") }, { id: "react", label: "반응", tpl: catOf("반응") }] },
   { id: "vlog", label: "브이로그", subs: [{ id: "vlog", label: "브이로그", tpl: catOf("브이로그") }, { id: "trip", label: "여행 경로", tpl: isTrip }] },
@@ -1365,7 +1597,8 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
       if (i < todo.length) setTimeout(step, 0);
     };
     let t: ReturnType<typeof setTimeout> | undefined;
-    stickerGlyphs(todo.map((x) => x.text)).then(() => { if (live) t = setTimeout(step, 0); });
+    // 로고 그림(warmApt)도 받은 뒤에 그린다 — 안 그러면 로고 대신 이름 글자만 (2026-11-07 "로고 없어졌어")
+    Promise.all([stickerGlyphs(todo.map((x) => x.text)), warmApt()]).then(() => { if (live) t = setTimeout(step, 0); });
     return () => { live = false; if (t) clearTimeout(t); };
   }, [items, fontsReady]);
   // 내 설정의 템플릿 그림
@@ -1402,10 +1635,11 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     e.dataTransfer.setData(DRAG_STICKER, s.text);
     e.dataTransfer.effectAllowed = "copy";
     stickerDrag.make = async () => {
-      const m = { ...s, mo: 1 };
+      const still = STILL_STYLES.has(s.style); // 아파트 배경·로고·쇼츠배경은 움직이지 않게 (2026-11-06 사장님)
+      const m = still ? s : { ...s, mo: 1 };
       const url = await stickerPng(m);
       const item = await b.lib.saveImage!(project.dir, url, stickerFileName(s.text));
-      return { item, o: { anim: motionLayerAnim(m), w: FULL_STYLES.has(s.style) ? 1 : sz, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color, mo: 1 } } };
+      return { item, o: { anim: still ? stickerAnim(s.style) : motionLayerAnim(m), w: FULL_STYLES.has(s.style) ? 1 : sz, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color, ...(still ? {} : { mo: 1 }) } } };
     };
   };
   const insert = async (s: Sticker = cur) => {
@@ -1413,10 +1647,11 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
     setErr("");
     setBusy(true);
     try {
-      const m = { ...s, mo: 1 };
+      const still = STILL_STYLES.has(s.style); // 아파트 배경·로고·쇼츠배경은 움직이지 않게 (2026-11-06 사장님)
+      const m = still ? s : { ...s, mo: 1 };
       const url = await stickerPng(m);
       const item = await b.lib.saveImage(project.dir, url, stickerFileName(s.text));
-      await onInsert(item, { anim: motionLayerAnim(m), w: FULL_STYLES.has(s.style) ? 1 : size, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color, mo: 1 } });
+      await onInsert(item, { anim: still ? stickerAnim(s.style) : motionLayerAnim(m), w: FULL_STYLES.has(s.style) ? 1 : size, spec: { style: s.style, text: s.text, icon: s.icon, color: s.color, ...(still ? {} : { mo: 1 }) } });
     } catch (e) {
       setErr(errText(e));
     } finally {
@@ -1458,9 +1693,16 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {preview && <div draggable onDragStart={(e) => dragStart(e, cur)} title="끌어서 클립·미리보기·타임라인에 놓으면 들어가요" style={{ width: "92%", height: 116, cursor: "grab" }}><StkMotion spec={cur} k={0.45} /></div>}
             </div>
+            {/* 아파트 배경·쇼츠배경 — 세 줄 (엔터로 나눔). 안에서는 "|" 로 이어 둔다 (2026-11-06 사장님: "| 헛갈려 · 3줄로 하자") */}
+            {(pick.style === "apt" || pick.style === "sbg") ? (<>
+              <div style={head}>글자 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>— 1줄 머리표 · 2줄 큰 제목 · 3줄 한 줄 설명</span></div>
+              <textarea rows={3} value={text.split(/[|｜]/).join("\n")} onChange={(e) => setText(e.target.value.replace(/[|｜]/g, " ").split("\n").slice(0, 3).join("|"))}
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, lineHeight: 1.5, fontFamily: FONT, boxSizing: "border-box", resize: "none" }} />
+            </>) : (<>
             <div style={head}>글자 <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>— 가격·역 이름 등 바꿔 쓰세요</span></div>
             <input value={text} onChange={(e) => setText(e.target.value)} maxLength={20} onKeyDown={(e) => { if (e.key === "Enter") insert(); }}
               style={{ width: "100%", height: 38, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, fontFamily: FONT, boxSizing: "border-box" }} />
+            </>)}
             <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10 }}>
               <span style={{ fontSize: 13, color: C.sub, marginRight: 2 }}>크기</span>
               {([[0.3, "작게"], [0.45, "보통"], [0.65, "크게"]] as const).map(([v, l]) => <button key={v} type="button" onClick={() => setSize(v)} style={chip(size === v)}>{l}</button>)}
@@ -1474,7 +1716,7 @@ export function StickerPanel({ project, onInsert, onClose, replacing, onTemplate
   const grid = (list: Sticker[]) => (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
       {list.map((s, i) => {
-        const on = pick.text === s.text && pick.style === s.style;
+        const on = pick.text === s.text && pick.style === s.style && (pick.icon || "") === (s.icon || ""); // 같은 글이라도 모양(icon)이 다르면 따로 — 아파트 짙은·아이보리 (2026-11-06)
         return (
           <div key={s.text + i} style={{ position: "relative" }}>
           <button type="button" title={`${s.text} · ${STYLE_LABEL[s.style]} — 한 번 누르면 고르기, 두 번 누르면 바로 넣기, 끌어서 클립·미리보기에 놓아도 돼요`}
@@ -1692,6 +1934,22 @@ export function stickerFrame(s: Sticker, t: number, k = 1): HTMLCanvasElement {
     if (k >= 0.999) return src;
     const { cv, g } = mk(src.width * k, src.height * k);
     g.drawImage(src, 0, 0, cv.width, cv.height);
+    return cv;
+  }
+  // 아파트 배경·쇼츠배경·로고 — 움직이지 않는 틀이라 반짝이 없이 (2026-11-06 사장님: "왜 이렇게 2개가 나오는 거야?")
+  //  목록·미리보기 칸에서는 가운데 빈 창(영상 자리)을 회색 사진 자리로 채워 한 장으로 보이게 — 실제 영상에는 비어 있어 클립이 보인다
+  if (STILL_STYLES.has(s.style)) {
+    const b0 = baseOf(s, k);
+    if (s.style === "aptlogo" || k >= 0.999) return b0; // 실제 영상(배율 1)은 창을 비워 둔다 — 예전에 움직이게 넣은 배경도
+    const { cv, g } = mk(b0.width, b0.height);
+    const r = b0.height / 1920, y0 = SBG_WIN.y0 * r, y1 = SBG_WIN.y1 * r;
+    const gr = g.createLinearGradient(0, y0, 0, y1);
+    gr.addColorStop(0, "#9AA3AF"); gr.addColorStop(1, "#6B7280");
+    g.fillStyle = gr; g.fillRect(0, y0, cv.width, y1 - y0);
+    g.fillStyle = "rgba(255,255,255,0.85)"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.font = `700 ${Math.max(10, Math.round(64 * r))}px ${SANS}`;
+    g.fillText("영상 자리", cv.width / 2, (y0 + y1) / 2);
+    g.drawImage(b0, 0, 0);
     return cv;
   }
   const base = baseOf(s, k);

@@ -7,7 +7,7 @@
 import type { Clip, Layer, Project, VideoBridge } from "./types";
 import { uid } from "./types";
 import { TEMPLATES, TPL_PREFIX, drawTemplate, tplFieldsOf, tplFonts, tplOf, tplTextOf } from "./Templates";
-import { stickerPng, stickerSpecOf } from "./Stickers";
+import { aptBrandOf, stickerPng, stickerSpecOf } from "./Stickers";
 import type { VideoVacancy } from "@/app/actions/videoWeb";
 
 type Rec = Record<string, unknown>;
@@ -30,6 +30,10 @@ export type ThemeKit = {
   drone?: number[];
   /** 끝 장면 부동산 표시광고 — 디자인 이름 · 색 · 자리 */
   legal?: { label: string; color?: string; layer: Rec } | null;
+  /** 단지소개 — 아파트 그래픽 배경 (2026-11-06 사장님: "단지소개 그래픽 배경을 사용해도 좋을 것 같은데")
+   *  단지 이름으로 브랜드를 알아내 그 브랜드 색·로고 배경 · 모르는 브랜드면 쇼츠배경(fb) 디자인
+   *  span all = 끝 장면 앞까지 내내 / first = 첫 장면만 · tag = 배경 위쪽 머리표 */
+  apt?: { mode: "dark" | "light"; fb: string; span: "all" | "first"; tag: string; /** 단지소개 — 이 브랜드 배경으로 고정 (2026-11-07 사장님: 1 래미안 · 2 자이 · 3 푸르지오 · 4 힐스테이트 · 5 롯데캐슬) */ brand?: string; /** 뉴스칼럼 — 브랜드 없이 늘 쇼츠배경, 큰 글은 대본 제목 */ news?: boolean };
 };
 
 const DROP = new Set(["id", "from", "to", "text", "asset", "w0", "w1", "te", "bake", "roll", "lead", "pair", "track", "stk", "name", "sticker", "off", "lock"]);
@@ -63,6 +67,12 @@ export function captureKit(p: Project): { kit: ThemeKit; skipped: number } {
     if (l.type !== "image" || !l.sticker || !l.stk) continue;
     const at = idx(l.from);
     if (at < 0) continue;
+    // 첫 장면부터 깔린 아파트 배경 — 단지 이름은 공실마다 다르니 모양(밝기·머리표·길이)만 (2026-11-06)
+    if (l.stk.style === "apt" && at === 0) { // 쇼츠배경은 테마로 담지 않음 (2026-11-07)
+      const k = String(l.stk.icon || "").split(":")[0];
+      kit.apt = { mode: "dark", fb: "navy", ...(k ? { brand: k } : {}), span: idx(l.to) > 0 ? "all" : "first", tag: String(l.stk.text || "").split(/[|｜]/)[0].trim() || "NEWS" };
+      continue;
+    }
     const def = tplOf(l.stk.style);
     if (def && def.cat === AD_CAT) {
       kit.legal = { label: def.label, color: l.stk.color, layer: styleOf(l) };
@@ -91,6 +101,15 @@ export function captureKit(p: Project): { kit: ThemeKit; skipped: number } {
   return { kit, skipped };
 }
 
+/** 긴 제목은 가운데 가까운 띄어쓰기에서 두 줄로 */
+function halves(t: string): [string, string] {
+  if (t.length <= 12) return [t, ""];
+  const mid = t.length / 2;
+  let at = -1;
+  for (let i = 0; i < t.length; i++) if (t[i] === " " && (at < 0 || Math.abs(i - mid) < Math.abs(at - mid))) at = i;
+  return at > 0 ? [t.slice(0, at), t.slice(at + 1)] : [t, ""];
+}
+
 /** 저장할 때 클립 자리 → 새 쇼츠 자리 (처음·끝은 그대로, 가운데는 비율로) */
 function placeAt(at: number, n: number, N: number) {
   if (N <= 1) return 0;
@@ -100,7 +119,7 @@ function placeAt(at: number, n: number, N: number) {
 }
 
 /** 테마 꾸러미를 새 쇼츠에 — 레이어·전환·드론·표시광고. 반환: 알릴 말 */
-export async function applyKit(p: Project, kit: ThemeKit, o: { b: VideoBridge; info: VideoVacancy | null; clips: Clip[]; officeClip: Clip | null; say: (t: string) => void }): Promise<string[]> {
+export async function applyKit(p: Project, kit: ThemeKit, o: { b: VideoBridge; info: VideoVacancy | null; clips: Clip[]; officeClip: Clip | null; say: (t: string) => void; title?: string }): Promise<string[]> {
   const notes: string[] = [];
   const { b, info, clips } = o;
   const N = clips.length;
@@ -118,6 +137,30 @@ export async function applyKit(p: Project, kit: ThemeKit, o: { b: VideoBridge; i
       const t = kit.trans[(i - 1) % kit.trans.length];
       if (t) clips[i].trans = { ...t };
     }
+  }
+
+  // 단지소개 아파트 배경 — 맨 아래 깔기 (제목·자막·그래픽이 그 위로)
+  if (kit.apt && N) {
+    try {
+      const a = kit.apt;
+      const name = a.news ? "" : info?.building || "";
+      const brand = a.news ? "" : a.brand || aptBrandOf(`${name} ${info?.title || ""}`); // 테마에 정한 브랜드가 먼저 (2026-11-07)
+      const place = info?.intro.place || "";
+      // 글 = 머리표|단지 이름|동네 · 종류 — 자료에 있는 것만 (없으면 빈칸, 지어내지 않음)
+      //  뉴스칼럼은 대본 제목을 두 줄로 (2026-11-06)
+      const [t1, t2] = halves(String(o.title || "").replace(/\s+/g, " ").trim());
+      const l1 = a.news && t1 ? t1 : name || place || "단지 소개";
+      const l2 = a.news && t1 ? t2 : name ? place : info?.intro.kind || "";
+      const text = [a.tag, l1, l2].join("|");
+      // 브랜드를 못 찾거나 뉴스칼럼이면 배경 없이 — 쇼츠배경은 없앰 (2026-11-07 사장님: "너무 촌스러워 · 그냥 삭제해줘")
+      const stk = { style: "apt", text, icon: `${brand}:dark` }; // 흰 바탕은 뺌 — 예전에 저장한 내 테마도 (2026-11-07)
+      const spec = brand ? stickerSpecOf({ stk }) : null;
+      if (spec) {
+        const asset = await addImg(await stickerPng(spec), "스티커_아파트배경");
+        const endAt = a.span === "all" ? Math.max(0, N - (o.officeClip ? 2 : 1)) : 0;
+        (p.layers ||= []).unshift({ x: 0.5, y: 0.5, w: 1, opacity: 1, anim: { sfx: "none" }, id: uid(), type: "image", from: clips[0].id, to: clips[endAt].id, asset, sticker: true, stk, name: "아파트 배경" } as Layer);
+      }
+    } catch { notes.push("단지 배경 그래픽을 넣지 못했어요 — 편집에서 [그래픽 › 부동산 › 아파트 배경]로 넣어 주세요."); }
   }
 
   // 3 그래픽

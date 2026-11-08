@@ -10,6 +10,7 @@ import StudioSnsPanel, { SNS_TONES, tonesFor, defaultTone, type SnsData, type Ch
 import ChannelButton from "./ChannelButton";
 import StudioArticlePanel from "./StudioArticlePanel";
 import StudioYoutubePanel from "./StudioYoutubePanel";
+import { getMyVacancyPromos } from "@/app/actions/vacancyPromos";
 import { useStudioWriter } from "./useStudioWriter";
 
 /**
@@ -45,10 +46,13 @@ type Bridge = {
 /** 한 번에 쓰기 — 탭마다 "함께 쓰기" 체크 · 기사 스타일·분량 · SNS 문체 (이 PC 에 기억). 블로그 문체·분량은 블로그 탭 값 */
 type AllOpts = { article: { on: boolean; kind: string; length: string; autoCover?: boolean }; blog: { on: boolean; style: string; length: string }; sns: { on: boolean; tone?: string; tones?: Record<string, string>; same?: boolean; chs?: Record<string, boolean> }; youtube: { on: boolean; videoType?: string; duration?: string; tone?: string; number?: string } };
 // 공실뉴스·뉴스칼럼은 기사 종류·블로그 문체가 달라 따로 기억한다
-const allKey = (kind: string) => (kind === "column" ? "gs-allwrite:column" : kind === "sim" ? "gs-allwrite:sim" : "gs-allwrite");
-const loadAll = (kind: string): AllOpts => {
-  const ALL_KEY = allKey(kind);
-  const d: AllOpts = { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
+// 자유 글쓰기는 뉴스칼럼과 따로 기억한다 — 기본값이 다르다 (2026-11-06: 기사 칼럼·해설 · 블로그 전문가 칼럼형 · 쇼츠 생활 정보·친근한 이야기)
+const allKey = (kind: string, free = false) => (kind === "column" ? (free ? "gs-allwrite:column-free" : "gs-allwrite:column") : kind === "sim" ? "gs-allwrite:sim" : "gs-allwrite");
+const loadAll = (kind: string, free = false): AllOpts => {
+  const ALL_KEY = allKey(kind, free);
+  const d: AllOpts = free
+    ? { article: { on: true, kind: "column", length: "normal" }, blog: { on: true, style: "expert", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false, videoType: "info", tone: "friendly" } }
+    : { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
   try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); return v ? { article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } } : d; } catch { return d; }
 };
 const bridge = (): Bridge | null => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
@@ -97,8 +101,17 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [blog, setBlog] = useState<BlogDraft | null>(null);
   // 한 번에 쓰기 (공실뉴스 매물만 — 칼럼·인테리어는 탭마다 쓰기)
   const oneShot = true; // 공실뉴스·뉴스칼럼·인테리어·리모델링 모두 (2026-10-23 사장님)
+  // 자유 글쓰기인지 — 칼럼 소재가 "topic" 이면 (2026-11-06)
+  const [free, setFree] = useState(false);
+  useEffect(() => {
+    if (kind !== "column") { setFree(false); return; }
+    let live = true;
+    void (studioBridge<{ column?: { get: (id: string) => Promise<{ source?: { mode?: string } } | null> } }>()?.column?.get(workId) || Promise.resolve(null))
+      .then((c) => { if (live) setFree(c?.source?.mode === "topic"); }).catch(() => {});
+    return () => { live = false; };
+  }, [kind, workId]);
   const [all, setAll] = useState<AllOpts>(() => loadAll(kind));
-  useEffect(() => setAll(loadAll(kind)), [kind]);
+  useEffect(() => setAll(loadAll(kind, free)), [kind, free]);
   const [allBusy, setAllBusy] = useState("");
   const [allMsg, setAllMsg] = useState("");
   const [ytVer, setYtVer] = useState(0);
@@ -106,12 +119,35 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   // SNS 문체 — 채널마다 (전에 세 채널 같이 고른 값이 있으면 그것으로 시작)
   // 목록에 없는 문체(뺀 스토리체, 인스타·페북의 스레드 감성)는 그 채널 처음 문체로 (2026-11-06)
   const snsTones: Record<string, string> = Object.fromEntries(["instagram", "threads", "facebook"].map((ch) => {
-    const t = all.sns.tones?.[ch] || defaultTone(ch);
-    return [ch, tonesFor(ch).some((x) => x.id === t) ? t : defaultTone(ch)];
+    const t = all.sns.tones?.[ch] || defaultTone(ch, column);
+    return [ch, tonesFor(ch, column).some((x) => x.id === t) ? t : defaultTone(ch, column)];
   }));
-  const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind), JSON.stringify(n)); } catch {} };
+  // 채널별 발행일 — 홍보현황에 올린 주소가 연결된 날 (공실만, 2026-11-06 사장님)
+  const [pubDates, setPubDates] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!/^[0-9a-f]{8}-/i.test(workId)) { setPubDates({}); return; }
+    let live = true;
+    const load = () => getMyVacancyPromos().then((r) => {
+      if (!live || !r.success) return;
+      const p = r.promos[workId];
+      const out: Record<string, string> = {};
+      for (const [c, at] of Object.entries(p?.at || {})) {
+        const d = new Date(String(at));
+        if (p?.links[c as keyof typeof p.links] && !Number.isNaN(d.getTime())) out[c] = `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+      }
+      setPubDates(out);
+    }).catch(() => {});
+    void load();
+    window.addEventListener("gs-promo-saved", load);
+    window.addEventListener("focus", load);
+    return () => { live = false; window.removeEventListener("gs-promo-saved", load); window.removeEventListener("focus", load); };
+  }, [workId]);
+  // 자유 글쓰기 블로그 문체 기본 = 전문가 칼럼형 (2026-11-06)
+  useEffect(() => { if (free && blogOpts?.styles.some((x) => x.id === "expert")) setStyle("expert"); }, [free, blogOpts]); // eslint-disable-line react-hooks/exhaustive-deps
+  const keepAll = (n: AllOpts) => { setAll(n); try { localStorage.setItem(allKey(kind, free), JSON.stringify(n)); } catch {} };
   // 스레드는 스레드 감성(반말 혼잣말)으로 한 번 되돌린다 — 그 뒤에 고른 것은 그대로 (2026-11-06 사장님: "기본값을 쓰레드로")
   useEffect(() => {
+    if (kind === "column") return; // 뉴스칼럼·자유 글쓰기는 따로 (문체 목록이 다르다)
     const mark = "gs-sns-thread-default-1106";
     try {
       if (localStorage.getItem(mark)) return;
@@ -122,6 +158,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 인스타그램도 체크체로 한 번 되돌린다 — 그 뒤에 고른 것은 그대로 (2026-11-06 사장님: "인스타는 체크체가 기본으로")
   useEffect(() => {
+    if (kind === "column") return; // 뉴스칼럼·자유 글쓰기는 공실 기본값(체크체·물건소개형)으로 되돌리지 않는다
     const mark = "gs-sns-insta-default-1106";
     try {
       const first = !localStorage.getItem(mark);
@@ -222,7 +259,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       const opts = await b.blog.styles(workId); // 경매·공매면 경매용, 칼럼이면 뉴스메이커 문체
       if (!alive) return;
       setBlogOpts(opts);
-      setStyle(opts.styles[0]?.id || "");
+      setStyle(opts.styles[0]?.id || ""); // 자유 글쓰기는 아래 효과에서 전문가 칼럼형으로
       setSnsData(await b.sns.get(workId).catch(() => null));
       setHasYoutube(Boolean(await b.youtube.get(workId).catch(() => null)));
       const prevArticle = await b.blog.get(workId, "article").catch(() => null);
@@ -398,6 +435,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                   style={{ padding: "10px 16px", background: filling ? "#94a3b8" : "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer", whiteSpace: "nowrap" }}>
                   {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}
                 </button>
+                {pubDates.blog && <span title="네이버 블로그에 올린 날 (올린 주소가 연결된 날)" style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 700, color: theme.textSecondary, whiteSpace: "nowrap" }}>발행 {pubDates.blog}</span>}
               </div>
               <div style={{ marginTop: 8, fontSize: 12.5, color: theme.textSecondary, lineHeight: 1.6 }}>
                 평소 쓰는 크롬에 네이버 글쓰기가 열리고 <b>공실뉴스 작성기</b>(크롬 확장)가 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
@@ -506,7 +544,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     const ytSum = ytOpts ? [ytPick("videoType", ytOpts.videoTypes), ytPick("duration", ytOpts.durations), ytPick("tone", ytOpts.tones)].filter(Boolean).join(" · ") : "형식 · 길이 · 말투";
     const toneGrid = (ch: string) => (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-        {tonesFor(ch).map((t) => {
+        {tonesFor(ch, column).map((t) => {
           const on = snsTones[ch] === t.id;
           return (
             <button key={t.id} type="button" onClick={() => setTone(ch, t.id)}
@@ -613,12 +651,12 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           )}
           {cur === "youtube" && (
             <StudioYoutubePanel view="result" key={ytVer} theme={theme} vacancyId={workId} onUsed={onUsed} onScript={setHasYoutube}
-              oneShot remembered={all.youtube} onPick={(p) => keepAll({ ...all, youtube: { ...all.youtube, ...p } })} writeBtn={writeBtn} />
+              oneShot remembered={all.youtube} onPick={(p) => keepAll({ ...all, youtube: { ...all.youtube, ...p } })} writeBtn={writeBtn} pubAt={pubDates.youtube} />
           )}
           {channels.find((c) => c.id === cur) && (
             <StudioSnsPanel view="result" theme={theme} channel={cur} info={channels.find((c) => c.id === cur)!} vacancyId={workId}
               data={snsData} onData={setSnsData} onUsed={onUsed}
-              oneShot tones={snsTones} onTone={(t) => setTone(cur, t)} writeBtn={writeBtn} />
+              oneShot tones={snsTones} onTone={(t) => setTone(cur, t)} writeBtn={writeBtn} pubAt={pubDates[cur]} column={column} />
           )}
           {cur === "blog" && (<>
             <div style={card}>

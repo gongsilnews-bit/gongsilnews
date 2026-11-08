@@ -195,7 +195,7 @@ export async function sayBlob(text: string, voiceId: string, o: { emotion?: stri
   if (!t) throw new Error("읽을 문장이 없어요.");
   if (/^el_/.test(voiceId)) return elServerSay(t, voiceId, o.emotion || "normal", o.prev, o.next, Boolean(o.edit)); // 공실뉴스 계정 · 포인트
   if (/^tc_/.test(voiceId)) return tcSay(t, voiceId, o.emotion || "smart", o.prev, o.next);
-  throw new Error("웹에서는 내 키를 넣은 타입캐스트·일레븐랩스 성우나 내 목소리 녹음을 쓸 수 있어요. [AI 목소리]에서 성우를 골라 주세요.");
+  throw new Error("[AI 목소리]에서 AI 성우를 고르거나 내 목소리를 녹음해 주세요.");
 }
 
 /** 글을 고르게 나눈 단어 시간 (앱 project.js spreadWords 와 같음) */

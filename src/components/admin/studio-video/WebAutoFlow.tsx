@@ -23,6 +23,7 @@ import { VoiceFace, VoicePanel } from "./Panels";
 import { koVoice } from "./voiceKo";
 import WebThemePick from "./WebThemePick";
 import { applyKit } from "./webThemeKit";
+import { aptBrandOf } from "./Stickers";
 import { pointsLine, type VoiceFree } from "./webVoice";
 import { SHORTS_THEMES, lastThemeId, loadBaseThemes, loadMyThemes, rememberTheme, type ShortsTheme } from "./webThemes";
 
@@ -66,11 +67,11 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const [cols, setCols] = useState<{ id: string; label: string; free: boolean; yt: boolean }[]>([]); // 뉴스칼럼 · 자유 글쓰기 (2026-11-06)
   const [vac, setVac] = useState(seed?.vacancyId || "");
   // 대본 가져오기 탭 — 고른 대본(넘어온 대본)이 있는 묶음으로 시작
-  const [srcTab, setSrcTab] = useState<"vac" | "col" | "free">(seed?.vacancyId?.startsWith("col-") ? "col" : "vac");
+  const [srcTab, setSrcTab] = useState<"all" | "vac" | "col" | "free">(seed?.vacancyId?.startsWith("col-") ? "col" : seed?.vacancyId ? "vac" : "all");
   useEffect(() => { if (vac.startsWith("col-")) { const c = cols.find((x) => x.id === vac); if (c) setSrcTab(c.free ? "free" : "col"); } }, [vac, cols]);
-  const tabItems: { id: string; label: string }[] = srcTab === "vac"
-    ? (vacs || []).map((v) => ({ id: v.id, label: v.label }))
-    : cols.filter((c) => (srcTab === "free") === c.free).map((c) => ({ id: c.id, label: `${c.label}${c.yt ? " · 쇼츠 대본 있음" : ""}` }));
+  const vacItems = (vacs || []).map((v) => ({ id: v.id, label: v.label }));
+  const colItems = (free: boolean) => cols.filter((c) => c.free === free).map((c) => ({ id: c.id, label: `${c.label}${c.yt ? " · 쇼츠 대본 있음" : ""}` }));
+  const tabItems: { id: string; label: string }[] = srcTab === "vac" ? vacItems : srcTab === "col" ? colItems(false) : srcTab === "free" ? colItems(true) : [...vacItems, ...colItems(false), ...colItems(true)];
   const ratio: Ratio = "9:16"; // 웹은 60초 세로 쇼츠만 (2026-11-05 사장님: 가로 16:9 없앰)
   const [info, setInfo] = useState<VideoVacancy | null>(null);
   const [script, setScript] = useState(seed?.script || "");
@@ -224,7 +225,11 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const bodyEnd = clips[clips.length - (last ? 2 : 1)].id;
       const ag = info?.agency;
       const contact = ag?.name ? [ag.name, ag.phone].filter(Boolean).join(" · ") : "";
-      if (info && (info.intro.place || info.intro.kind)) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: true, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" });
+      // 단지소개 아파트 배경이 깔리는 동안은 위쪽 동네·종류 상자를 넣지 않는다 — 배경 위쪽에 단지 이름·동네가 이미 있다 (2026-11-06)
+      //  배경은 아파트 브랜드를 찾았을 때만 깔린다 — 못 찾거나 뉴스칼럼이면 배경 없이 제목 상자를 넣는다 (2026-11-07 쇼츠배경 없앰)
+      const aptKit = theme.kit?.apt && !theme.kit.apt.news && (theme.kit.apt.brand || aptBrandOf(`${info?.building || ""} ${info?.title || ""}`)) ? theme.kit.apt : undefined;
+      const titleFrom = aptKit ? (aptKit.span === "all" || clips.length < (last ? 3 : 2) ? "" : clips[1].id) : first;
+      if (titleFrom && info && (info.intro.place || info.intro.kind)) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: titleFrom, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: theme.kit?.titleStyle?.box !== false, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" }); // 테마가 상자 없음이면 따른다 (2026-11-07)
       if (contact) layers.push({ x: 0.5, y: 0.815, size: 52, bold: true, color: "#FFFFFF", font: theme.title.font, box: true, boxColor: "#000000", boxOpacity: 0.55, ...(theme.kit?.contactStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, text: contact, name: "상호·연락처" } as Layer);
       // 가격 말하는 장면 — 연락처를 한 번 크게 (관심이 가장 높은 순간)
       const priceAt = paras.findIndex((t, i) => i > 0 && /보증금|월세|전세|매매가|가격|권리금/.test(t)); // 첫 클립은 훅과 겹쳐서 빼고 (2026-11-05)
@@ -248,7 +253,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       let notes: string[] = [];
       if (theme.kit) {
         setBusy("테마(그래픽·전환·드론·표시광고)를 넣는 중…");
-        notes = await applyKit(p, theme.kit, { b, info, clips, officeClip: last, say: setBusy });
+        notes = await applyKit(p, theme.kit, { b, info, clips, officeClip: last, say: setBusy, title: hookTitle || seed?.title || "" });
       }
       await b.project.save(p);
       if (notes.length) window.alert(notes.join("\n"));
@@ -269,19 +274,23 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={!paras.length || Boolean(busy)}><Icon name="video" size={16} />{busy || "편집 시작"}</Btn></>}>
       <div style={{ padding: "4px 24px 20px", fontFamily: FONT, color: C.text, maxHeight: "72vh", overflowY: "auto" }}>
         {head("① 대본")}
-        {/* 먼저 탭(공실뉴스 · 뉴스칼럼 · 자유 글쓰기)을 고르고, 그 묶음 안에서 대본 고르기 (2026-11-06 사장님: "쭉 말고 선택하고 가져와야", "탭을 나눠서") */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-          {([["vac", "공실뉴스", (vacs || []).length], ["col", "뉴스칼럼", cols.filter((c) => !c.free).length], ["free", "자유 글쓰기", cols.filter((c) => c.free).length]] as const).map(([k, l, n]) => {
-            const on = srcTab === k;
-            return <button key={k} type="button" disabled={Boolean(busy)} onClick={() => setSrcTab(k)}
-              style={{ height: 34, padding: "0 16px", borderRadius: 17, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.sub, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
-              {l} <span style={{ fontWeight: 600, opacity: 0.75 }}>{n}</span></button>;
-          })}
+        {/* 한 줄 — 왼쪽 묶음 고르기(전체·공실뉴스·뉴스칼럼·자유 글쓰기) · 오른쪽 그 묶음의 대본 (2026-11-06 사장님: "한 줄로 카테고리 셀렉트 바, 그 옆에 해당 선택") */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <select value={srcTab} onChange={(e) => setSrcTab(e.target.value as typeof srcTab)} disabled={Boolean(busy)} style={{ ...box, width: 170, flexShrink: 0, height: 40, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>
+            <option value="all">전체 ({vacItems.length + cols.length})</option>
+            <option value="vac">공실뉴스 ({vacItems.length})</option>
+            <option value="col">뉴스칼럼 ({colItems(false).length})</option>
+            <option value="free">자유 글쓰기 ({colItems(true).length})</option>
+          </select>
+          <select value={tabItems.some((x) => x.id === vac) ? vac : ""} onChange={(e) => { setVac(e.target.value); setErr(""); }} disabled={Boolean(busy)} style={{ ...box, flex: 1, minWidth: 0, height: 40, fontSize: 14, padding: "0 10px", color: vac ? C.text : C.sub }}>
+            <option value="">{vacs === null ? "불러오는 중…" : tabItems.length ? `대본 가져오기 — ${tabItems.length}개에서 고르기` : srcTab === "vac" ? "광고 중인 공실이 없어요" : srcTab === "col" ? "아직 뉴스칼럼이 없어요" : srcTab === "free" ? "아직 자유 글쓰기로 쓴 글이 없어요" : "가져올 글이 없어요"}</option>
+            {srcTab === "all" ? (<>
+              {vacItems.length > 0 && <optgroup label="공실뉴스">{vacItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</optgroup>}
+              {colItems(false).length > 0 && <optgroup label="뉴스칼럼">{colItems(false).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</optgroup>}
+              {colItems(true).length > 0 && <optgroup label="자유 글쓰기">{colItems(true).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</optgroup>}
+            </>) : tabItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+          </select>
         </div>
-        <select value={tabItems.some((x) => x.id === vac) ? vac : ""} onChange={(e) => { setVac(e.target.value); setErr(""); }} disabled={Boolean(busy)} style={{ ...box, height: 40, fontSize: 14, padding: "0 10px", marginBottom: 8, color: vac ? C.text : C.sub }}>
-          <option value="">{vacs === null ? "불러오는 중…" : tabItems.length ? `${srcTab === "vac" ? "공실" : srcTab === "col" ? "뉴스칼럼" : "자유 글"}을 골라 대본 가져오기 (${tabItems.length}개)` : srcTab === "vac" ? "광고 중인 공실이 없어요" : srcTab === "col" ? "아직 뉴스칼럼이 없어요" : "아직 자유 글쓰기로 쓴 글이 없어요"}</option>
-          {tabItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-        </select>
         <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
           style={{ ...box, padding: "12px 14px", lineHeight: 1.7, resize: "vertical" }} />
         <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 13 }}>
@@ -295,7 +304,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           photo={info?.photos[0] || ""} place={info ? [info.intro.place, info.intro.kind].filter(Boolean).join(" · ") : "우리 동네 · 빌라"}
           sample="바로 입주 가능해요"
           voices={voices} voiceId={voiceId} voiceOn={mode === "ai"} onVoiceOn={(on) => setMode(on ? "ai" : "none")} onPickVoice={() => setPicker(true)}
-          cat={vac.startsWith("col-") ? "column" : vac ? "vacancy" : undefined} /* 대본 종류로 탭 (단지소개는 회원이 탭을 눌러서) */ />
+          cat={vac && !vac.startsWith("col-") ? "vacancy" : undefined} /* 뉴스칼럼 테마는 없앰 (2026-11-08) */ /* 대본 종류로 탭 (단지소개는 회원이 탭을 눌러서) */ />
         {picker && <VoicePanel web pickLabel="이 성우로" targetCount={0} initial={{ id: voiceId || "", speed: WEB_VOICE_SPEED, volume: 1 }}
           onApply={(v) => { if (v.id) { voicePicked.current = true; setVoiceId(v.id); setMode("ai"); } setPicker(false); }} onClose={() => setPicker(false)} />}
         {/* 만들기 전에 포인트 미리 (2026-11-05) — 1자 1P, 내 포인트에서 (11-06 통합: 서버가 free 를 null 로 줌) */}

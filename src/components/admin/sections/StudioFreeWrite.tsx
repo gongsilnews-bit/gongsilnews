@@ -13,6 +13,7 @@ import { studioBridge } from "../studio-web";
 import WorkCardGrid, { LinkNotice, type WorkCard } from "./WorkCardGrid";
 import { LinksPanel } from "./VacancyCardGrid";
 import type { PromoChannel } from "@/utils/vacancyPromos";
+import { listFreeDrafts, pickFreeDraft, saveFreeDraft, type FreeFile } from "../studio-web/freeWrite";
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Photo = { url: string; caption: string };
@@ -48,6 +49,56 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   const [err, setErr] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  // [저장하기]·[불러오기] — 쓰는 중인 글을 PC 작업 파일(.gsn)로 (2026-11-07 사장님: "자유글쓰기는 저장하기 불러오기를 넣었으면 좋겠어")
+  const [draftId, setDraftId] = useState("");
+  const [fileName, setFileName] = useState(""); // 한 번 저장하면 그 파일에 덮어쓴다
+  const sigOf = (t: string, b: string, ps: Photo[]) => JSON.stringify([t.trim(), b.trim(), ps.map((p) => p.url)]);
+  const [savedSig, setSavedSig] = useState(sigOf("", "", []));
+  const [savedNote, setSavedNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loadList, setLoadList] = useState<FreeFile[] | null>(null);
+  const dirty = view === "write" && Boolean(title.trim() || body.trim()) && sigOf(title, body, photos) !== savedSig;
+  const leaveOk = () => !dirty || window.confirm("저장하지 않은 글이 있어요. 저장하지 않고 나갈까요?");
+  useEffect(() => {
+    if (!dirty) return;
+    const stop = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", stop);
+    return () => window.removeEventListener("beforeunload", stop);
+  }, [dirty]);
+  const startNew = () => {
+    setTitle(""); setBody(""); setPhotos([]); setErr("");
+    setDraftId(`free-${Date.now().toString(36)}`); setFileName(""); setSavedSig(sigOf("", "", [])); setSavedNote("");
+  };
+  const hhmm = () => new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const saveNow = async () => {
+    if (!title.trim() && !body.trim()) { setErr("제목이나 본문을 쓴 뒤 저장해 주세요."); return; }
+    setSaving(true); setErr("");
+    try {
+      const r = await saveFreeDraft({ id: draftId || `free-${Date.now().toString(36)}`, title: title.trim(), body, photos }, fileName);
+      setFileName(r.name); setSavedSig(sigOf(title, body, photos));
+      setSavedNote(r.where === "folder" ? `저장됨 · ${hhmm()} · 01 뉴스SNS발행 › ${r.name}` : `내려받음 · ${hhmm()} · ${r.name} (저장 폴더를 정하면 그 폴더에 저장돼요)`);
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    finally { setSaving(false); }
+  };
+  const fill = (name: string, d: FreeFile["draft"]) => {
+    setTitle(d.title); setBody(d.body); setPhotos(d.photos); setErr("");
+    setDraftId(d.id || `free-${Date.now().toString(36)}`); setFileName(name); setSavedSig(sigOf(d.title, d.body, d.photos));
+    setSavedNote(`불러옴 · ${name}`); setLoadList(null);
+  };
+  const openLoad = async () => {
+    if (!leaveOk()) return;
+    setErr("");
+    try {
+      const l = await listFreeDrafts();
+      if (l) { setLoadList(l); return; }
+      const p = await pickFreeDraft(); // 폴더를 못 쓰면 파일 고르기
+      if (p) fill(p.name, p.draft);
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  };
+  const openOther = async () => {
+    try { const p = await pickFreeDraft(); if (p) fill(p.name, p.draft); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  };
+
   // 글쓰기 도구가 쓴 초안 → 제목 · 본문 (소제목은 한 줄로) · 사진
   const onDraft = (d: ArticleDraft) => {
     setTitle(d.title || "");
@@ -82,7 +133,7 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
     <div>
       <LinkNotice darkMode={Boolean(theme.darkMode)} />
       <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" cards={cards}
-        onAdd={() => { setTitle(""); setBody(""); setPhotos([]); setErr(""); setView("write"); }}
+        onAdd={() => { startNew(); setView("write"); }}
         onOpen={(id, tab) => {
           const url = (cards || []).find((c) => c.id === id)?.links?.[tab];
           if (url) return void window.open(url, "_blank", "noopener"); // 올린 채널 — 그 게시물로
@@ -111,8 +162,15 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
       {/* data-ai-dock — AI 창(ChatGPT·Gemini)이 이 칸 위에 작은 창으로 뜬다 (큰 새 탭 대신, 2026-11-05 사장님) */}
       <div data-ai-dock="" style={{ flex: 1, minWidth: 0, background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 12, padding: "22px 26px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 0 18px" }}>
-          <button onClick={() => setView("list")} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← 목록으로</button>
+          <button onClick={() => { if (leaveOk()) setView("list"); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← 목록으로</button>
           <h2 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>자유 글쓰기</h2>
+          <span style={{ marginLeft: "auto", fontSize: 12.5, color: dirty ? "#b45309" : theme.textSecondary, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={savedNote}>
+            {dirty ? (fileName ? "고친 내용이 아직 저장되지 않았어요" : "아직 저장하지 않았어요") : savedNote}
+          </span>
+          <button onClick={() => void openLoad()} title="저장해 둔 쓰던 글을 열어요"
+            style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
+          <button onClick={() => void saveNow()} disabled={saving} title="쓰는 중인 제목·본문·사진을 내 PC 공실뉴스 폴더에 저장해요"
+            style={{ padding: "7px 14px", borderRadius: 8, border: 0, background: saving ? "#94a3b8" : "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: saving ? "default" : "pointer" }}>{saving ? "저장하는 중…" : "저장하기"}</button>
         </div>
         <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 6 }}>제목</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목을 입력하세요" style={input} />
@@ -145,6 +203,31 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
         {!ready && <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 8, textAlign: "right" }}>제목과 본문을 쓰면 눌러져요.</div>}
         {err && <div style={{ marginTop: 10, fontSize: 14, color: "#c53030" }}>{err}</div>}
       </div>
+      {loadList && (
+        <div onClick={() => setLoadList(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(15,23,42,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 540, maxWidth: "92vw", maxHeight: "70vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
+            <div style={{ display: "flex", alignItems: "center", padding: "14px 18px", borderBottom: "1px solid #e5e7eb" }}>
+              <b style={{ flex: 1, fontSize: 16, color: "#111827" }}>쓰던 글 불러오기</b>
+              <button type="button" onClick={() => setLoadList(null)} style={{ border: 0, background: "none", fontSize: 18, color: "#6b7280", cursor: "pointer" }}>✕</button>
+            </div>
+            <div style={{ overflowY: "auto", padding: 8 }}>
+              {!loadList.length && <div style={{ padding: 24, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>저장한 글이 없어요. 글을 쓰고 [저장하기]를 눌러 주세요.</div>}
+              {loadList.map((r) => (
+                <button key={r.name} type="button" onClick={() => fill(r.name, r.draft)}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "11px 12px", border: 0, borderBottom: "1px solid #f1f3f5", background: "#fff", cursor: "pointer" }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: "#1f2937" }}>{r.title || "무제"}</div>
+                  <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                    {r.savedAt ? new Date(r.savedAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""} · {r.chars.toLocaleString("ko-KR")}자 · {r.name}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div style={{ padding: "10px 18px", borderTop: "1px solid #e5e7eb", textAlign: "right" }}>
+              <button type="button" onClick={() => void openOther()} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>다른 곳에서 파일 열기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

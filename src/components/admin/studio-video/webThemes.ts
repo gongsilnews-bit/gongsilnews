@@ -62,7 +62,13 @@ export const SHORTS_THEMES: ShortsTheme[] = [
     voice: "el_uyVNoMrnUku1dZyVEXwD", // 애나 김 (2026-11-05 사장님: "테마1번 성우는 애나김")
     kit: {
       titleStyle: { pos: "top", size: 90, bold: true, box: true, boxOpacity: 0.9, anim: { in: "drop" } },
-      graphics: [G(0, "꼭 보세요", "marker", undefined, { y: 0.4, anim: { in: "pop", emph: "pulse" } }), G(4, "완전 추천!", "neon", undefined, { y: 0.36, anim: { in: "zoom" } })],
+      // 2026-11-08 사장님: 첫 클립 "추천합니다"(노랑 말딱지) · 6번째 클립 "실화?!"(하늘색 굵은 글자) — 11클립 기준 자리
+      graphics: [
+        { ...G(0, "추천합니다", "slant", "#FFD400", { y: 0.33, w: 0.46 }), n: 11 },
+        { ...G(5, "실화?!", "block", "#22D3EE", { y: 0.4, w: 0.52 }), n: 11 },
+      ],
+      // 가격 장면 상호·전화 — 상자 없이 노랑 굵은 글자 + 검은 테두리 (2026-11-08 사장님)
+      priceStyle: { box: false, color: "#FFD400", font: "GmarketSans", bold: true, outline: "#111111", outlineWidth: 5, shadow: 0.05, shadowColor: "#000000" },
       trans: [T("fade"), T("zoomin")],
       drone: [1],
       legal: { label: "네이비 클래식", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
@@ -115,22 +121,122 @@ export const SHORTS_THEMES: ShortsTheme[] = [
   },
   {
     id: "news", name: "뉴스 속보",
-    sub: { font: "GmarketSans", color: "#FFFFFF", bg: true, bgColor: "#111827", bgOpacity: 0.9, outlineWidth: 0, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "slideL", wshow: "word", whl: "both", wcolor: "#FF5A5A" } },
+    // 자막·연락처는 배경색 없이 흰 글씨 + 테두리·그림자, 제목·훅만 빨간 상자, 끝은 명함형 (2026-11-07 사장님: "디자인을 이렇게 바꿔줘 · 배경색이 없는 거야")
+    sub: { font: "GmarketSans", color: "#FFFFFF", outline: "#000000", outlineWidth: 4, bg: false, bold: true, shadow: 0.05, shadowColor: "#000000", glow: "", ...TREND, anim: { in: "slideL", wshow: "word", whl: "both", wcolor: "#FF5A5A" } },
     title: { font: "GmarketSans", color: "#FFFFFF", boxColor: "#E03131" },
     office: { font: "GmarketSans", color: "#FFFFFF", boxColor: "#1C3D8F" },
     ...M("/reels-assets/bgm/lib/rm-007.mp3"),
     voice: "el_uyVNoMrnUku1dZyVEXwD",
     kit: {
       titleStyle: { pos: "top", size: 88, bold: true, box: true, boxOpacity: 1, anim: { in: "slideL" } },
+      contactStyle: { box: false, color: "#FFFFFF", outline: "#000000", outlineWidth: 3, shadow: 0.05, shadowColor: "#000000" },
+      priceStyle: { box: false, color: "#FFFFFF", outline: "#000000", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000" },
       graphics: [G(0, "오늘의 매물", "slant", "#FFD400", { y: 0.36, w: 0.5, anim: { in: "slideL" } }), G(4, "현장 직접 다녀옴", "slant", "#1E9BF0", { y: 0.36, w: 0.56, anim: { in: "slideR" } })],
       trans: [T("wiperight"), T("coverleft")],
+      drone: [1],
+      legal: { label: "명함형", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
+    },
+  },
+  /* ── 단지소개 5개 — 2026-11-07 사장님: 테마마다 브랜드 배경 고정 · 1 래미안 · 2 자이 · 3 푸르지오 · 4 힐스테이트 · 5 롯데캐슬 (공실 이름에 브랜드가 없어도 카드 그대로)
+   *  (2026-11-06 사장님: "단지 소개 테마 만들어줘", "단지소개 그래픽 배경을 사용해도 좋을 것 같은데")
+   *  모두 아파트 그래픽 배경 — 단지 이름으로 브랜드(래미안·자이·힐스테이트…)를 알아내 그 색·로고로, 모르는 브랜드면 쇼츠배경
+   *  자막은 배경 아래 띠(중하단)에 · 그래픽 문구에 숫자·사실 주장 없음 */
+  {
+    id: "cx_ivory", name: "래미안",
+    // 래미안 진한 청록 배경 위 — 흰 글씨 (흰 바탕용 진한 글씨였던 것, 2026-11-07)
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#0C3438", outlineWidth: 4, bg: false, bold: true, shadow: 0.05, shadowColor: "#000000", glow: "", ...TREND, size: 100, anim: { in: "fade", dur: 0.4, wshow: "word", whl: "color", wcolor: "#9ED9D3" } },
+    title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1D6A6A" },
+    office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#0C3438" },
+    ...M("/reels-assets/bgm/lib/corporate.mp3"),
+    voice: "el_K3qo7ugXmpT87FDhLBbN",
+    kit: {
+      apt: { brand: "raemian", mode: "dark", fb: "cream", span: "all", tag: "PREMIUM" } /* 흰 아파트 배경 뺌 (2026-11-07) */,
+      hookStyle: { y: 0.5, boxColor: "#1D6A6A", color: "#FFFFFF", font: "Pretendard" },
+      contactStyle: { box: false, color: "#FFFFFF", outline: "#0C3438", outlineWidth: 3, shadow: 0.05, shadowColor: "#000000" }, // 상호 뒤 배경색 없음 · 글꼴 Pretendard (2026-11-07 사장님)
+      trans: [T("slideleft", 0.3, "swish")],
+      drone: [1],
+      legal: { label: "골드 프리미엄", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
+    },
+  },
+  {
+    id: "cx_news", name: "자이",
+    // 글자 뒤 배경색 모두 없앰 — 흰 글씨 + 자이 진한 파랑 테두리·그림자 (2026-11-07 사장님: "자이에서 글자색 배경색 없애줘")
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#062A38", outlineWidth: 4, bg: false, bold: true, shadow: 0.05, shadowColor: "#000000", glow: "", ...TREND, size: 96, anim: { in: "slideL", wshow: "word", whl: "color", wcolor: "#8FD6EA" } },
+    title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#C62828" },
+    office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#0B1F4D" },
+    ...M("/reels-assets/bgm/lib/good-vibe.mp3"),
+    voice: "el_uyVNoMrnUku1dZyVEXwD",
+    kit: {
+      apt: { brand: "xi", mode: "dark", fb: "tech", span: "all", tag: "단지 뉴스" },
+      hookStyle: { y: 0.5, box: false, color: "#FFFFFF", outline: "#062A38", outlineWidth: 5, shadow: 0.05, shadowColor: "#000000" },
+      contactStyle: { box: false, color: "#FFFFFF", outline: "#062A38", outlineWidth: 3, shadow: 0.05, shadowColor: "#000000" },
+      priceStyle: { box: false, color: "#FFFFFF", outline: "#062A38", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000" },
+      trans: [T("wiperight", 0.25), T("coverleft", 0.25)],
       drone: [1],
       legal: { label: "블루 그라데이션", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
     },
   },
+  {
+    id: "cx_green", name: "푸르지오",
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#0F3D24", outlineWidth: 6, bg: false, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "pop", wshow: "word", whl: "both", wcolor: "#C6F36B" } },
+    title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1D6A44" },
+    office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1D6A44" },
+    ...M("/reels-assets/bgm/lib/film-guitar.mp3"),
+    voice: "el_KlstlYt9VVf3zgie2Oht",
+    kit: {
+      apt: { brand: "prugio", mode: "dark", fb: "green", span: "first", tag: "LIFE" } /* 흰 아파트 배경 뺌 (2026-11-07) */,
+      // 글자 뒤 배경색 모두 없앰 — 흰 글씨 + 푸르지오 진한 초록 테두리·그림자 (2026-11-07 사장님: "푸르지오에서 글자색 없애줘")
+      titleStyle: { pos: "top", size: 86, bold: true, box: false, outline: "#0F3D24", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000", anim: { in: "drop" } },
+      hookStyle: { y: 0.5, box: false, color: "#FFFFFF", outline: "#0F3D24", outlineWidth: 5, shadow: 0.05, shadowColor: "#000000" },
+      contactStyle: { box: false, color: "#FFFFFF", outline: "#0F3D24", outlineWidth: 3, shadow: 0.05, shadowColor: "#000000" },
+      priceStyle: { box: false, color: "#FFFFFF", outline: "#0F3D24", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000" },
+      graphics: [G(2, "동네 한 바퀴", "bubble", undefined, { y: 0.38, w: 0.5, anim: { in: "pop", emph: "float" } })],
+      trans: [T("zoomin", 0.3), T("fade", 0.35, "")],
+      drone: [1],
+      legal: { label: "그린 신뢰", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
+    },
+  },
+  {
+    id: "cx_sig", name: "힐스테이트",
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 4, bg: false, bold: true, shadow: 0.05, shadowColor: "#000000", glow: "", ...TREND, size: 104, anim: { in: "fade", dur: 0.35, wshow: "word", whl: "color", wcolor: "#E9C77B" } },
+    title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#14213D" },
+    office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#14213D" },
+    ...M("/reels-assets/bgm/lib/rm-001.mp3"),
+    voice: "el_uyVNoMrnUku1dZyVEXwD",
+    kit: {
+      apt: { brand: "hillstate", mode: "dark", fb: "navy", span: "all", tag: "NEWS" },
+      // 글자 뒤 배경색 모두 없앰 — 흰 글씨 + 힐스테이트 진한 빨강 테두리·그림자 (2026-11-07 사장님: "글자뒤 배경색 없애줘")
+      hookStyle: { y: 0.5, box: false, color: "#FFFFFF", outline: "#4A060E", outlineWidth: 5, shadow: 0.05, shadowColor: "#000000" },
+      contactStyle: { box: false, color: "#FFFFFF", outline: "#4A060E", outlineWidth: 3, shadow: 0.05, shadowColor: "#000000" },
+      priceStyle: { box: false, color: "#FFFFFF", outline: "#4A060E", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000" },
+      trans: [T("fade", 0.45, "")],
+      drone: [1],
+      legal: { label: "네이비 클래식", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
+    },
+  },
+  {
+    id: "cx_night", name: "롯데캐슬",
+    sub: { font: "GmarketSans", color: "#FFFFFF", outline: "#141210", outlineWidth: 6, bg: false, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "zoom", wshow: "word", whl: "both", wcolor: "#C9A46A" } },
+    title: { font: "GmarketSans", color: "#FFFFFF", boxColor: "#2A241D" },
+    office: { font: "GmarketSans", color: "#FFFFFF", boxColor: "#2A241D" },
+    ...M("/reels-assets/bgm/lib/chill-vibe.mp3"),
+    voice: "el_1W00IGEmNmwmsDeYy7ag",
+    kit: {
+      apt: { brand: "lottecastle", mode: "dark", fb: "purple", span: "first", tag: "NEWS" },
+      // 글자 뒤 배경색 모두 없앰 — 흰·금색 글씨 + 롯데캐슬 진한 갈색 테두리·그림자 (2026-11-07 사장님: "폰트 배경색 없애줘")
+      titleStyle: { pos: "top", size: 88, bold: true, box: false, outline: "#141210", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000", anim: { in: "slideL" } },
+      hookStyle: { y: 0.5, box: false, color: "#E2C891", outline: "#141210", outlineWidth: 5, shadow: 0.05, shadowColor: "#000000" },
+      contactStyle: { box: false, color: "#FFFFFF", outline: "#141210", outlineWidth: 3, shadow: 0.05, shadowColor: "#000000" },
+      priceStyle: { box: false, color: "#FFFFFF", outline: "#141210", outlineWidth: 4, shadow: 0.05, shadowColor: "#000000" },
+      graphics: [G(2, "단지 둘러보기", "neon", "#C9A46A", { y: 0.36, w: 0.56, anim: { in: "zoom" } })],
+      trans: [T("slideup", 0.25), T("flash", 0.2)],
+      drone: [1],
+      legal: { label: "다크 글래스 네온", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
+    },
+  },
 ];
 
-/* ── 기본 테마 5칸 — 최고관리자가 편집한 영상으로 바꾼 것(서버)이 있으면 그것 (2026-11-05) ── */
+/* ── 기본 테마 칸 — 최고관리자가 편집한 영상으로 바꾼 것(서버)이 있으면 그것 (2026-11-05) ── */
 let baseCache: Promise<ShortsTheme[]> | null = null;
 export function loadBaseThemes(fresh = false): Promise<ShortsTheme[]> {
   if (!baseCache || fresh)
@@ -163,6 +269,12 @@ export const rememberTheme = (id: string) => { try { localStorage.setItem(LAST, 
 
 /** 편집한 프로젝트 → 테마 (2026-11-05 사장님: "내가 영상 편집을 하고 테마로 저장하면 테마로 저장되는 거야")
  *  메인자막 모양 · 첫 장면 제목 글(위쪽 상자) · 사무소 이름 글 · 배경음악 · 성우 */
+/** 저장한 꾸러미 + 기본 테마의 배경 성격 (단지소개는 브랜드 찾기, 뉴스칼럼은 늘 쇼츠배경) — 2026-11-06 */
+function withBase(kit: ThemeKit, base: ShortsTheme): ThemeKit {
+  const b = base.kit?.apt;
+  if (kit.apt && b) kit.apt = { ...kit.apt, news: b.news, ...(b.news ? {} : { fb: b.fb, brand: kit.apt.brand || b.brand }) };
+  return kit;
+}
 export function themeFromProject(p: { settings: { subtitle: Record<string, unknown>; voice?: { id?: string } }; layers?: Array<Record<string, any>> }, base: ShortsTheme = SHORTS_THEMES[0]): ShortsTheme {
   // 자막 — 모양·크기·자리·줄 수·움직임까지 그대로 (켜고 끄기만 빼고)
   const sub: Record<string, unknown> = JSON.parse(JSON.stringify(p.settings.subtitle || {}));
@@ -183,7 +295,7 @@ export function themeFromProject(p: { settings: { subtitle: Record<string, unkno
     music: url.startsWith("/") ? url : known?.url || "",
     musicName: known?.name || (url ? String(music?.name || "내 음악") : ""),
     voice: String(p.settings.voice?.id || base.voice),
-    kit: captureKit(p as never).kit,
+    kit: withBase(captureKit(p as never).kit, base),
   };
 }
 export function saveMyThemeAt(i: number, t: ShortsTheme) {

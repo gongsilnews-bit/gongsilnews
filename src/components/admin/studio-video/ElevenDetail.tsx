@@ -71,7 +71,7 @@ export function ElevenDetail({ voiceId, emotion, onEmotion, openFirst }: { voice
           {slider("안정감", "낮추면 감정 기복이 커지고, 높이면 차분하고 일정해요", v.st, 0, 1, v.m === "v3" ? 0.5 : 0.05, "st", (x) => (v.m === "v3" ? (x < 0.25 ? "창의" : x < 0.75 ? "자연" : "단단") : `${Math.round(x * 100)}`))}
           {slider("닮은 정도", "높일수록 원래 성우 목소리에 가까워요", v.si, 0, 1, 0.05, "si", (x) => `${Math.round(x * 100)}`)}
           {slider("표현 과장", "높일수록 연기가 과장돼요 (조금만 올려도 커요)", v.sy, 0, 1, 0.05, "sy", (x) => `${Math.round(x * 100)}`)}
-          {slider("빠르기", "일레븐랩스 자체 빠르기 (0.7~1.2배)", v.sp, 0.7, 1.2, 0.05, "sp", (x) => `${x.toFixed(2)}배`)}
+          {slider("빠르기", "성우 자체 빠르기 (0.7~1.2배)", v.sp, 0.7, 1.2, 0.05, "sp", (x) => `${x.toFixed(2)}배`)}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ width: 92, fontSize: 13.5, fontWeight: 700 }}>스피커 부스트</span>
             <Toggle on={v.bo} onChange={(x) => set({ bo: x })} />
