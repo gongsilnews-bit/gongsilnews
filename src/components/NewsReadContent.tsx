@@ -125,38 +125,16 @@ export default function NewsReadContent({
   const fontSizePopupRef = useRef<HTMLDivElement>(null);
   const [commentText, setCommentText] = useState("");
   // 공실뉴스 드론 영상 — 가운데 흐린 로고 · 전체 화면에서도 로고 · 다운로드 막기 (2026-11-09 사장님)
-  const bodyRef = useRef<HTMLDivElement>(null);
+  // 드론 영상 전체 화면 — 플레이어의 전체 화면을 누르면 로고가 든 상자째로 키운다 (영상만 키우면 로고가 사라진다)
   useEffect(() => {
-    const root = bodyRef.current;
-    if (!root) return;
-    const cleanups: (() => void)[] = [];
-    root.querySelectorAll<HTMLVideoElement>('video[src^="/api/drone/"]').forEach((video) => {
-      if (video.closest(".gs-drone-box")) return;
-      video.setAttribute("controlslist", "nodownload");
-      video.disablePictureInPicture = true;
-      const box = document.createElement("div");
-      box.className = "gs-drone-box";
-      box.style.cssText = "position:relative;display:block;width:100%;";
-      video.parentNode?.insertBefore(box, video);
-      box.appendChild(video);
-      const mark = document.createElement("div");
-      mark.setAttribute("aria-hidden", "true");
-      mark.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;pointer-events:none;opacity:0.2;user-select:none;";
-      mark.innerHTML = '<img src="/new_logo.png" alt="" style="width:13%;min-width:36px;max-width:90px;aspect-ratio:1;border-radius:50%;object-fit:cover;"><span style="color:#fff;font-weight:900;font-size:clamp(18px,4.2vw,40px);letter-spacing:-0.03em;text-shadow:0 1px 4px rgba(0,0,0,0.6);">공실뉴스</span>';
-      box.appendChild(mark);
-      const noMenu = (e: Event) => e.preventDefault();
-      video.addEventListener("contextmenu", noMenu);
-      // 플레이어의 전체 화면을 누르면 영상만이 아니라 로고가 든 상자째로 키운다
-      const onFs = () => {
-        if (document.fullscreenElement === video) {
-          void document.exitFullscreen().then(() => box.requestFullscreen?.()).catch(() => {});
-        }
-      };
-      document.addEventListener("fullscreenchange", onFs);
-      cleanups.push(() => { video.removeEventListener("contextmenu", noMenu); document.removeEventListener("fullscreenchange", onFs); });
-    });
-    return () => cleanups.forEach((c) => c());
-  }, [article.content]);
+    const onFs = () => {
+      const el = document.fullscreenElement;
+      const box = el instanceof HTMLVideoElement ? el.closest<HTMLElement>(".gs-drone-box") : null;
+      if (box) void document.exitFullscreen().then(() => box.requestFullscreen?.()).catch(() => {});
+    };
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
   const [viewCount, setViewCount] = useState(article.view_count || 0);
   const [mounted, setMounted] = useState(false);
 
@@ -932,13 +910,12 @@ export default function NewsReadContent({
 
               {article.content && (
                 <div 
-                  ref={bodyRef}
                   suppressHydrationWarning 
                   dangerouslySetInnerHTML={{ 
                     __html: article.content
                       .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
-                      // 공실뉴스 드론 영상 — 플레이어 [다운로드]·오른쪽 클릭 저장 막기 (2026-11-09 사장님). 이미 쓴 기사도 여기서 막는다
-                      .replace(/<video((?:(?!>)[^])*?src="\/api\/drone\/[^"]*"[^>]*)>/gi, '<video$1 controlslist="nodownload" disablepictureinpicture oncontextmenu="return false;">')
+                      // 공실뉴스 드론 영상 — 가운데 흐린 로고(10%) · 다운로드·오른쪽 클릭 막기 (2026-11-09 사장님). 본문을 그릴 때 함께 넣는다 — 그린 뒤 덧붙이면 다시 그릴 때 지워졌다
+                      .replace(/<video((?:(?!>)[^])*?src="\/api\/drone\/[^"]*"[^>]*)>([\s\S]*?)<\/video>/gi, '<div class="gs-drone-box" style="position:relative;display:block;width:100%;"><video$1 controlslist="nodownload" disablepictureinpicture oncontextmenu="return false;">$2</video><div aria-hidden="true" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;pointer-events:none;opacity:0.1;user-select:none;"><img src="/new_logo.png" alt="" style="width:13%;min-width:36px;max-width:90px;aspect-ratio:1;border-radius:50%;object-fit:cover;"><span style="color:#fff;font-weight:900;font-size:clamp(18px,4.2vw,40px);letter-spacing:-0.03em;text-shadow:0 1px 4px rgba(0,0,0,0.6);">공실뉴스</span></div></div>')
                       .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
                       .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
                       .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
