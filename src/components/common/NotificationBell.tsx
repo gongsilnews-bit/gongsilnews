@@ -55,7 +55,24 @@ interface Props {
    크롬 규칙상 이 페이지를 한 번이라도 누른 뒤부터 소리가 난다. */
 const SOUND_KEY = "gs-noti-sound";
 let lastDing = { id: "", at: 0 };
-function soundOn() { try { return localStorage.getItem(SOUND_KEY) !== "off"; } catch { return true; } }
+type SoundMode = "voice" | "ding" | "off";
+/** 목소리(애나 김 "대표님! …") · 띵동 · 꺼짐 — 기본은 목소리 (2026-11-09 사장님: "대표님!", "애나 김 좋아") */
+function soundMode(): SoundMode { try { const v = localStorage.getItem(SOUND_KEY); return v === "off" ? "off" : v === "ding" || v === "on" ? "ding" : "voice"; } catch { return "voice"; } }
+function soundOn() { return soundMode() !== "off"; }
+/** 알림 종류 → 미리 만든 목소리 (public/sounds/noti) */
+const VOICE_OF: Record<string, string> = {
+  star_trade: "trade", intake_new: "intake", inquiry_new: "inquiry", inquiry_reply: "reply", inquiry_answered: "reply",
+  star_vacancy: "star", star_article: "star", member_signup: "signup", newsrealty_apply: "apply", study_apply: "apply",
+  smartstore_order: "order", article_pending: "article", vacancy_new: "vacancy", lecture_pending: "lecture",
+};
+function voice(type: string) {
+  try {
+    const a = new Audio(`/sounds/noti/${VOICE_OF[type] || "default"}.mp3`);
+    a.volume = 0.9;
+    void a.play().catch(() => ding()); // 못 틀면 띵동이라도
+  } catch { ding(); }
+}
+function alertSound(type: string) { const m = soundMode(); if (m === "voice") voice(type); else if (m === "ding") ding(); }
 function ding() {
   try {
     const AC = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -80,8 +97,8 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [items, setItems] = useState<NotificationRow[]>([]);
-  const [sound, setSound] = useState(true);
-  useEffect(() => { setSound(soundOn()); }, []); // eslint-disable-line react-hooks/set-state-in-effect
+  const [sound, setSound] = useState<SoundMode>("voice");
+  useEffect(() => { setSound(soundMode()); }, []); // eslint-disable-line react-hooks/set-state-in-effect
   const firstLoad = useRef(true);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -110,7 +127,7 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
       const top = res.data[0];
       if (!firstLoad.current && top && !top.read_at && top.id !== lastDing.id && soundOn()) {
         lastDing = { id: String(top.id), at: Date.now() };
-        ding();
+        alertSound(String(top.type || ""));
       } else if (firstLoad.current && top && !lastDing.id) lastDing = { id: String(top.id), at: Date.now() };
       firstLoad.current = false;
       setItems(res.data);
@@ -198,10 +215,11 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
         }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>알림 {unread > 0 && <span style={{ color: "#ef4444" }}>{unread}</span>}</span>
-            <button type="button" onClick={() => { const next = !sound; setSound(next); try { localStorage.setItem(SOUND_KEY, next ? "on" : "off"); } catch {} if (next) ding(); }}
-              title={sound ? "새 알림이 오면 소리가 나요 — 누르면 꺼요" : "소리가 꺼져 있어요 — 누르면 켜요"}
-              style={{ marginLeft: "auto", marginRight: 8, display: "flex", alignItems: "center", gap: 4, height: 26, padding: "0 10px", borderRadius: 13, border: `1px solid ${sound ? "#1e3a6e" : "#d1d5db"}`, background: sound ? "#eef2ff" : "#fff", color: sound ? "#1e3a6e" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              {sound ? "🔔 소리 켜짐" : "🔕 소리 꺼짐"}
+            {/* 누를 때마다 목소리 → 띵동 → 꺼짐 (바꾸면 한 번 들려 준다) */}
+            <button type="button" onClick={() => { const next: SoundMode = sound === "voice" ? "ding" : sound === "ding" ? "off" : "voice"; setSound(next); try { localStorage.setItem(SOUND_KEY, next); } catch {} if (next === "voice") voice("default"); else if (next === "ding") ding(); }}
+              title={sound === "voice" ? "새 알림을 목소리로 알려 줘요 (대표님! …) — 누르면 띵동으로" : sound === "ding" ? "새 알림이 오면 띵동 — 누르면 소리 끄기" : "소리가 꺼져 있어요 — 누르면 목소리로"}
+              style={{ marginLeft: "auto", marginRight: 8, display: "flex", alignItems: "center", gap: 4, height: 26, padding: "0 10px", borderRadius: 13, border: `1px solid ${sound !== "off" ? "#1e3a6e" : "#d1d5db"}`, background: sound !== "off" ? "#eef2ff" : "#fff", color: sound !== "off" ? "#1e3a6e" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {sound === "voice" ? "🗣 목소리" : sound === "ding" ? "🔔 띵동" : "🔕 소리 꺼짐"}
             </button>
             {unread > 0 && (
               <button type="button" onClick={handleReadAll} style={{ background: "none", border: "none", color: "#6b7280", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
