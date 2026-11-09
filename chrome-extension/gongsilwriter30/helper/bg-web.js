@@ -92,10 +92,12 @@
     // 공실뉴스 웹이 "이 탭 찍기"를 부탁 — 그 탭이 보이는 창을 찍어 돌려준다 (권한은 이미 있음: <all_urls>·tabs)
     if (type === "GS_CAPTURE_TAB") {
       const tab = sender && sender.tab;
-      if (!tab || !/^https?:\/\/((www\.)?gongsilnews\.com|localhost)(:\d+)?\//.test(tab.url || "")) { sendResponse({ ok: false }); return false; }
+      const from = String((sender && sender.url) || (tab && tab.url) || "");
+      if (!tab) { sendResponse({ ok: false, error: "부탁한 탭을 찾지 못했어요" }); return false; }
+      if (!/^https?:\/\/((www\.)?gongsilnews\.com|localhost)(:\d+)?\//.test(from)) { sendResponse({ ok: false, error: `공실뉴스 주소가 아니에요 (${from.slice(0, 60) || "주소 없음"})` }); return false; }
       chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 92 }, (dataUrl) => {
         const err = chrome.runtime.lastError && chrome.runtime.lastError.message;
-        sendResponse(err || !dataUrl ? { ok: false, error: err || "" } : { ok: true, dataUrl });
+        sendResponse(err || !dataUrl ? { ok: false, error: err || "크롬이 빈 화면을 돌려줬어요" } : { ok: true, dataUrl });
       });
       return true;
     }
