@@ -79,7 +79,7 @@ async function nearbyLines(lat: number | null, lng: number | null, label = "주�
   if (schools.length) out.push(`학교: ${schools.map(m).join(", ")}`);
   if (ps.length) out.push(`어린이집·유치원: ${ps.map(m).join(", ")}`);
   if (mt.length) out.push(`대형마트·슈퍼: ${mt.map(m).join(", ")}`);
-  return out.length ? [`- ${label} (카카오 지도 검색, 단지에서 직선거리 · 여기 없는 노선·시설은 쓰지 않는다): ${out.join(" / ")}`] : [];
+  return out.length ? [`- ${label} (단지에서 거리 · 여기 없는 노선·시설은 쓰지 않는다): ${out.join(" / ")}`] : [];
 }
 
 /** 신고가 — 같은 단지·같은 전용(±0.5㎡)의 앞선 3년 최고가보다 1% 넘게 오른 거래 (앞선 거래 3건 이상일 때만, 2026-11-04 사장님) */
