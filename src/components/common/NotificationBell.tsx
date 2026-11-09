@@ -56,7 +56,7 @@ interface Props {
 const SOUND_KEY = "gs-noti-sound";
 let lastDing = { id: "", at: 0 };
 type SoundMode = "voice" | "ding" | "off";
-/** 목소리(애나 김 "대표님! …") · 띵동 · 꺼짐 — 기본은 목소리 (2026-11-09 사장님: "대표님!", "애나 김 좋아") */
+/** 목소리(Jisoo "대표님! …", 2026-11-09 애나 김에서 바꿈) · 띵동 · 꺼짐 — 기본은 목소리 (2026-11-09 사장님: "대표님!", "애나 김 좋아") */
 function soundMode(): SoundMode { try { const v = localStorage.getItem(SOUND_KEY); return v === "off" ? "off" : v === "ding" || v === "on" ? "ding" : "voice"; } catch { return "voice"; } }
 function soundOn() { return soundMode() !== "off"; }
 /** 알림 종류 → 미리 만든 목소리 (public/sounds/noti) */
