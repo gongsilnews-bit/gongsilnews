@@ -55,6 +55,7 @@ export async function listMyStudioVacancies(includeId?: string) {
     .select("id, vacancy_no, building_name, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, created_at, vacancy_photos(url, sort_order)")
     .eq("owner_id", user.id)
     .eq("status", "ACTIVE")
+    .or("is_onbid.is.null,is_onbid.eq.false") // 온비드 공매는 [경매·공매] 칸에서 (2026-11-09)
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return { success: false as const, error: error.message };

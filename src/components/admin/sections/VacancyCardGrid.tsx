@@ -179,11 +179,14 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
 
   // 내 공실 — 등록한 공실 + 이 PC에서 무엇을 만들었는지
   const [reloadVac, setReloadVac] = useState(0); // 메뉴로 광고 내리기·삭제한 뒤 다시 읽기
+  // 온비드 매물 제외 (2026-11-09 사장님: 공실관리처럼) — 온비드 물건을 가진 계정(최고관리자)에게만 체크 칸이 보인다
+  const [noOnbid, setNoOnbid] = useState(true);
+  const [hasOnbid, setHasOnbid] = useState(false);
   useEffect(() => {
     if (!memberId) return;
     let off = false;
     Promise.all([
-      (ids ? getVacancyCardsByIds(ids) : getMyVacancyCards()).then((r) => (r.success ? r.data : [])).catch(() => [] as any[]),
+      (ids ? getVacancyCardsByIds(ids) : getMyVacancyCards({ includeOnbid: !noOnbid }).then((r) => { setHasOnbid(Boolean(r.hasOnbid)); return r; })).then((r) => (r.success ? r.data : [])).catch(() => [] as any[]),
       localWorks(),
     ]).then(([rows, works]) => {
       if (off) return;
@@ -212,12 +215,12 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
         };
       });
       list.sort((x, y) => y.at - x.at);
-      if (!ids) { memo.member = memberId;
-      memo.cards = list; }
+      if (!ids && noOnbid) { memo.member = memberId;
+      memo.cards = list; } // 온비드를 넣어 본 목록은 기억하지 않는다
       setVacancies(list);
     });
     return () => { off = true; };
-  }, [memberId, reloadVac, ids?.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [memberId, reloadVac, ids?.join(","), noOnbid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 홍보현황 — 공실뉴스 기사 · 채널별 글 주소 (서버)
   const [promos, setPromos] = useState<Record<string, VacancyPromo>>((fresh && memo.promos) || {});
@@ -386,6 +389,12 @@ export default function VacancyCardGrid({ theme, memberId, onMenuChange, keyword
         <div style={{ marginBottom: 10, fontSize: 13, fontWeight: 700, color: "#c92a2a" }}>
           {notice} <button onClick={() => setNotice("")} style={{ border: 0, background: "transparent", color: textSecondary, cursor: "pointer" }}>✕</button>
         </div>
+      )}
+      {!ids && hasOnbid && (
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 8, background: cardBg, fontSize: 13, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
+          <input type="checkbox" checked={noOnbid} onChange={(e) => { setVacancies(null); setNoOnbid(e.target.checked); }} />
+          온비드 매물 제외
+        </label>
       )}
       {showTypes && vacancies && vacancies.length > 0 && (
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 14 }}>

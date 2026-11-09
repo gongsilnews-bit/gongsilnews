@@ -221,18 +221,21 @@ export async function getVacancyCardsByIds(ids: string[]): Promise<{ success: bo
   return { success: true, data: data || [] };
 }
 
-export async function getMyVacancyCards(): Promise<{ success: boolean; data: any[]; error?: string }> {
+/** 내 공실 카드 — 온비드 공매 물건은 기본으로 뺀다 (2026-11-09 사장님: 공실관리 [온비드 매물 제외]처럼)
+ *  최고관리자 계정은 온비드 물건이 수천 건이라 최근 1,000건이 거의 온비드가 되어 직접 등록한 공실이 묻혔다. hasOnbid — 체크 칸을 보일지 */
+export async function getMyVacancyCards(opts?: { includeOnbid?: boolean }): Promise<{ success: boolean; data: any[]; hasOnbid?: boolean; error?: string }> {
   const user = await me();
   if (!user) return { success: false, data: [], error: "로그인이 필요합니다." };
-  const { data, error } = await admin()
+  const { count: onbidCount } = await admin().from("vacancies").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("is_onbid", true).neq("status", "DELETED");
+  let q = admin()
     .from("vacancies")
     .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, exposure_type, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
     .eq("owner_id", user.id)
-    .neq("status", "DELETED")
-    .order("created_at", { ascending: false })
-    .limit(1000);
+    .neq("status", "DELETED");
+  if (!opts?.includeOnbid) q = q.or("is_onbid.is.null,is_onbid.eq.false");
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(1000);
   if (error) return { success: false, data: [], error: error.message };
-  return { success: true, data: data || [] };
+  return { success: true, data: data || [], hasOnbid: (onbidCount || 0) > 0 };
 }
 
 /**
