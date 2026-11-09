@@ -366,8 +366,15 @@ function toneLine(tone: unknown, only: string[] = []) {
   const chs = only.length ? only : CHANNELS;
   const per: Record<string, string> = tone && typeof tone === "object" ? (tone as Record<string, string>) : { instagram: String(tone || ""), threads: String(tone || ""), facebook: String(tone || "") };
   const pick = Object.fromEntries(CHANNELS.map((ch) => [ch, TONES[per[ch]] ? per[ch] : "polite"]));
-  if (chs.every((ch) => pick[ch] === "polite")) return "";
-  return `\n\n[문체 지정 — 위 지시보다 우선 · 채널마다 따로]\n${chs.map((ch) => `- ${CH_NAME[ch]} 글: ${TONES[pick[ch]]}`).join("\n")}\n문체만 바꾸고, 사실은 [확인된 매물 정보]·참조 기사에 있는 것만 쓰십시오. 출력 JSON 형식은 그대로 지키십시오.`;
+  // 인스타그램 끝맺음 — 댓글 유도 (2026-11-09 사장님: bunyangnote 처럼 댓글로 문의를 모으기, 고를 수 있게)
+  const igEnd = per.igEnd === "comment" && chs.includes("instagram")
+    ? `
+
+[인스타그램 끝맺음 — 위 지시보다 먼저]
+- 인스타그램 글의 마지막 줄은 "댓글에 '정보'라고 남겨 주시면 자세한 조건 보내 드려요 🙂" 로 끝냅니다. 'DM 주세요'·전화 권유는 쓰지 마십시오. 다른 채널 글에는 이 줄을 넣지 마십시오.`
+    : "";
+  if (chs.every((ch) => pick[ch] === "polite")) return igEnd;
+  return `\n\n[문체 지정 — 위 지시보다 우선 · 채널마다 따로]\n${chs.map((ch) => `- ${CH_NAME[ch]} 글: ${TONES[pick[ch]]}`).join("\n")}\n문체만 바꾸고, 사실은 [확인된 매물 정보]·참조 기사에 있는 것만 쓰십시오. 출력 JSON 형식은 그대로 지키십시오.` + igEnd;
 }
 
 /* ── 선택지 (앱 blog-writer styles·articleOptions · sns channelInfo · naver designs · youtube options) ── */

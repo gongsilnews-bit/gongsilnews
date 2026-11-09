@@ -125,6 +125,8 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     const t = all.sns.tones?.[ch] || defaultTone(ch, column);
     return [ch, tonesFor(ch, column).some((x) => x.id === t) ? t : defaultTone(ch, column)];
   }));
+  // 인스타그램 끝맺음 — DM 주세요 / 댓글 유도 (2026-11-09 사장님: "선택할 수 있게") — 문체와 같이 서버로 간다
+  snsTones.igEnd = all.sns.tones?.igEnd === "comment" ? "comment" : "dm";
   // 채널별 발행일 — 홍보현황에 올린 주소가 연결된 날 (공실만, 2026-11-06 사장님)
   const [pubDates, setPubDates] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -569,6 +571,23 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
         body: (
           <div>
             {toneGrid(c.id)}
+            {c.id === "instagram" && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>끝맺음</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {[{ id: "dm", label: "DM 주세요", brief: "자세한 조건은 DM 주세요 🙂" }, { id: "comment", label: "댓글 유도", brief: "댓글에 '정보' 남기면 보내 드려요" }].map((o) => {
+                    const on = snsTones.igEnd === o.id;
+                    return (
+                      <button key={o.id} type="button" title={o.brief} onClick={() => keepAll({ ...all, sns: { ...all.sns, tones: { ...snsTones, igEnd: o.id } } })}
+                        style={{ padding: "6px 12px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700, color: on ? (theme.darkMode ? "#93c5fd" : "#1d4ed8") : theme.textPrimary, border: `1px solid ${on ? "#2563eb" : theme.border}`, background: on ? (theme.darkMode ? "rgba(37,99,235,0.18)" : "#eff5ff") : "transparent" }}>
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {snsTones.igEnd === "comment" && <div style={{ fontSize: 11.5, color: theme.textSecondary, marginTop: 6, lineHeight: 1.5 }}>댓글이 달리면 인스타 알림을 보고 그분께 DM으로 조건을 보내 주세요. 답장이 늦으면 손님을 놓쳐요.</div>}
+              </div>
+            )}
             {/* "○○도 같은 문체로" 단추는 뺐다 — 채널마다 맞는 문체가 달라서 늘 따로 고른다 (2026-11-06 사장님) */}
           </div>
         ) })),
