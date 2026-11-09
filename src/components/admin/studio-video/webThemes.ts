@@ -55,7 +55,7 @@ const M = (url: string) => ({ music: url, musicName: SHORTS_MUSIC.find((m) => m.
 export const SHORTS_THEMES: ShortsTheme[] = [
   {
     id: "navy", name: "깔끔 남색",
-    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 5, bg: false, bold: true, shadow: 0, glow: "", ...TREND, anim: { in: "pop", wshow: "word", whl: "both", wcolor: "#FFD400" } },
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 5, bg: false, bold: true, shadow: 0, glow: "", ...TREND, anim: undefined }, // 기본형 — 메인자막 애니메이션 없음 (앞 설정의 애니메이션도 지우게 undefined) (2026-11-09 사장님: 너무 복잡해서)
     title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1E2A4A" },
     office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#E8890C" },
     ...M("/reels-assets/bgm/lib/rm-018.mp3"),
