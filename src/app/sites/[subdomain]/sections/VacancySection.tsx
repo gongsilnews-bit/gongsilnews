@@ -122,7 +122,12 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
     return () => window.removeEventListener("pageshow", clear);
   }, []);
 
-  const isLocked = (v: any) => !String(v?.exposure_type || "").includes("일반인노출");
+  // "홈페이지전용"(내 홈페이지만, 2026-11-04)은 이 홈페이지에서 모두에게 보이는 공실이다 — 가리지 않는다 (2026-11-09 사장님: "홈페이지만 광고인데 왜 안 보여")
+  //  이 칸에는 홈페이지 주인의 공실만 들어온다 (page.tsx getVacanciesByOwnerId)
+  const isLocked = (v: any) => {
+    const exp = String(v?.exposure_type || "").replace(/\s/g, "");
+    return !exp.includes("일반인노출") && exp !== "홈페이지전용";
+  };
 
   const openDetail = (v: any, card?: HTMLElement | null) => {
     // 가려진 매물은 상세로 보내지 않는다. 포털의 잠금 화면으로 넘기면 중개사가

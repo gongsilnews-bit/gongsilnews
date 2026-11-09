@@ -91,15 +91,16 @@ export const SHORTS_THEMES: ShortsTheme[] = [
   },
   {
     id: "premium", name: "고급 블랙·골드",
-    sub: { font: "NanumMyeongjo", color: "#FFFFFF", outline: "#000000", outlineWidth: 2, bg: false, bold: true, shadow: 0.07, shadowColor: "#000000", glow: "", ...TREND, anim: { in: "fade", dur: 0.4, wshow: "word", whl: "both", wcolor: "#E9C77B" } },
-    title: { font: "NanumMyeongjo", color: "#E9C77B", boxColor: "#111111" },
-    office: { font: "NanumMyeongjo", color: "#111111", boxColor: "#D4AF37" },
+    // 2026-11-09 사장님: "3번째 테마 이렇게 깔끔하게" — 굵은 고딕 흰 글자 + 얇은 검은 테두리·그림자, 화면 위쪽(1/4), 말하는 단어만 금색(크기는 그대로), 꾸밈 그래픽 없음
+    sub: { font: "Pretendard", color: "#FFFFFF", outline: "#000000", outlineWidth: 3, bg: false, bold: true, shadow: 0.06, shadowColor: "#000000", glow: "", ...TREND, position: "middle-high", size: 108, anim: { in: "fade", dur: 0.3, wshow: "word", whl: "color", wcolor: "#F2C55C" } },
+    title: { font: "Pretendard", color: "#F2C55C", boxColor: "#111111" },
+    office: { font: "Pretendard", color: "#111111", boxColor: "#F2C55C" },
     ...M("/reels-assets/bgm/lib/rm-001.mp3"),
     voice: "el_K3qo7ugXmpT87FDhLBbN",
     kit: {
-      titleStyle: { pos: "top", size: 84, box: true, boxOpacity: 0.85, anim: { in: "fade", dur: 0.8 } },
-      graphics: [G(0, "완전 추천!", "neon", "#D4AF37", { y: 0.4, w: 0.48, anim: { in: "fade", dur: 0.8 } })],
-      trans: [T("fadeblack", 0.5)],
+      titleStyle: { pos: "top", size: 84, bold: true, box: true, boxOpacity: 0.85, anim: { in: "fade", dur: 0.5 } },
+      graphics: [],
+      trans: [T("fade", 0.35)],
       drone: [1],
       legal: { label: "골드 프리미엄", layer: { x: 0.5, y: 0.5, w: 0.86, opacity: 1 } },
     },
