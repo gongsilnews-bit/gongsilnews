@@ -9,7 +9,7 @@ import { helper } from "@/components/admin/studio-web/core";
  *  ② 단지 쪽을 보는 로드뷰 (/apt-capture?part=street)
  *  ③ 스카이뷰 단지 전경 (part=sky)
  *  ④ 넓은 지도 — 역·학교·큰길 (part=wide)
- *  찍기: 도우미(크롬 확장 4.1.3+)가 있으면 자동, 없으면 [이 화면 찍기] 한 번 → 크롬 탭 공유를 끝까지 이어 쓴다
+ *  찍기: 도우미(크롬 확장 4.1.3+)가 있으면 자동, 없거나 크롬이 아니면 묻지 않고 화면을 그려 찍고 넘어간다 (2026-11-09)
  *  순서는 [무엇을 중심으로]에 따라 (맨 앞이 대표 사진). 예전 html-to-image 다시 그리기는 글자가 어긋나고 지도를 못 그려 어색했다
  */
 export type RealShot = { url: string; thumb: string; caption: string };
@@ -64,6 +64,44 @@ async function helperSnapper(): Promise<{ s: Snapper | null; why: string }> {
       close: () => {},
     },
   };
+}
+
+/** 도우미가 없거나 크롬이 아닐 때 (2026-11-09 사장님: "안 되는 조건에서는 그냥 화면캡처를 하고 넘어가라고")
+ *  묻는 창·단추 없이 띄운 화면을 그대로 그려서 찍고 넘어간다. 지도 타일·로드뷰처럼 그려지지 않아 거의 빈 사진은 넣지 않는다 */
+function drawSnapper(frame: HTMLIFrameElement): Snapper {
+  return {
+    snap: async () => {
+      const d = frame.contentDocument;
+      if (!d?.body) return null;
+      try {
+        const { toCanvas } = await import("html-to-image");
+        const w = frame.clientWidth || window.innerWidth, h = frame.clientHeight || window.innerHeight;
+        const c = await toCanvas(d.body, { width: w, height: h, pixelRatio: 1, cacheBust: false, skipFonts: true, backgroundColor: "#ffffff",
+          style: { width: `${w}px`, height: `${h}px`, overflow: "hidden" }, imagePlaceholder: "data:image/gif;base64,R0lGODlhAQABAAAAACw=" });
+        if (looksBlank(c)) return null;
+        return await new Promise<Blob | null>((ok) => c.toBlob((b) => ok(b), "image/jpeg", 0.92));
+      } catch (e) {
+        console.warn("[화면 그려 찍기]", e);
+        return null;
+      }
+    },
+    close: () => {},
+  };
+}
+/** 거의 한 가지 색이면 빈 사진 — 점 400개를 뽑아 서로 다른 색이 얼마나 되는지 본다 */
+function looksBlank(c: HTMLCanvasElement): boolean {
+  try {
+    const g = c.getContext("2d");
+    if (!g || !c.width || !c.height) return true;
+    const { data } = g.getImageData(0, 0, c.width, c.height);
+    const seen = new Set<number>();
+    for (let i = 0; i < 400; i++) {
+      const x = Math.floor(((i % 20) + 0.5) * c.width / 20), y = Math.floor((Math.floor(i / 20) + 0.5) * c.height / 20);
+      const k = (y * c.width + x) * 4;
+      seen.add(((data[k] >> 4) << 8) | ((data[k + 1] >> 4) << 4) | (data[k + 2] >> 4));
+    }
+    return seen.size < 6;
+  } catch { return false; }
 }
 
 async function shareSnapper(): Promise<Snapper | null> {
@@ -160,25 +198,9 @@ async function runCapture(first: Step, panelOf: ((d: Document) => Rect | null) |
     const h = await helperSnapper();
     snapper = h.s;
     if (!snapper) {
-      // 도우미가 없으면 크롬 탭 공유 — 크롬은 방금 누른 뒤에만 물을 수 있어서 단추를 누르게 한다 (한 번 허락하면 나머지도 이어서 찍는다)
-      const why = document.createElement("div");
-      why.textContent = `자동으로 찍지 못한 이유: ${h.why}`;
-      why.style.cssText = "position:absolute;left:50%;bottom:92px;transform:translateX(-50%);padding:6px 12px;border-radius:6px;background:rgba(17,24,39,.85);color:#fde68a;font-size:13px;font-weight:700;white-space:nowrap";
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = `📸 이 화면 찍기 — 크롬이 물으면 [공유]를 눌러 주세요 (사진 ${rest.length + (panelOf ? 2 : 1)}장을 차례로 찍어요)`;
-      btn.style.cssText = "position:absolute;left:50%;bottom:32px;transform:translateX(-50%);padding:14px 26px;border:0;border-radius:10px;background:#1e3a6e;color:#fff;font-size:16px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.35);cursor:pointer;font-family:inherit";
-      const skip = document.createElement("button");
-      skip.type = "button";
-      skip.textContent = "건너뛰기";
-      skip.style.cssText = "position:absolute;right:20px;bottom:36px;padding:10px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit";
-      cover.append(why, btn, skip);
-      snapper = await new Promise<Snapper | null>((ok) => {
-        skip.onclick = () => ok(null);
-        btn.onclick = () => { why.remove(); btn.remove(); skip.remove(); void shareSnapper().then(ok); };
-      });
-      why.remove(); btn.remove(); skip.remove();
-      if (!snapper) return [];
+      // 도우미가 없거나 크롬이 아니면 묻지 않고 그냥 화면을 그려 찍고 넘어간다 (2026-11-09 사장님)
+      console.info("[화면 찍기] 도우미 없음 → 그려서 찍기:", h.why);
+      snapper = drawSnapper(frame);
     }
     const screen = await snapper.snap();
     keep(first.key, screen, first.caption);
