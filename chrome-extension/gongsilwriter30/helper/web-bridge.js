@@ -10,6 +10,11 @@
     const { id, msg } = e.data;
     const reply = (res) => window.postMessage({ gsHelperRes: true, id, res }, location.origin);
     if (msg && msg.op === "ping") return reply({ ok: true, version: chrome.runtime.getManifest().version }); // 깔려 있나 — 바로 대답
+    // 기사쓰기 단지 분석 — 지금 보이는 이 탭을 그대로 찍기 (2026-11-09 사장님: 캡처가 자연스럽게, 지도·공실뉴스까지)
+    if (msg && msg.op === "captureTab") {
+      try { chrome.runtime.sendMessage({ type: "GS_CAPTURE_TAB" }, (r) => reply(chrome.runtime.lastError ? null : r)); } catch (_) { reply(null); }
+      return;
+    }
     try {
       chrome.runtime.sendMessage({ type: "GS_WEB", msg }, (r) => reply(chrome.runtime.lastError ? null : r));
     } catch (_) {

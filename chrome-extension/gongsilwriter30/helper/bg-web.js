@@ -89,6 +89,16 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const type = msg && msg.type;
+    // 공실뉴스 웹이 "이 탭 찍기"를 부탁 — 그 탭이 보이는 창을 찍어 돌려준다 (권한은 이미 있음: <all_urls>·tabs)
+    if (type === "GS_CAPTURE_TAB") {
+      const tab = sender && sender.tab;
+      if (!tab || !/^https?:\/\/((www\.)?gongsilnews\.com|localhost)(:\d+)?\//.test(tab.url || "")) { sendResponse({ ok: false }); return false; }
+      chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 92 }, (dataUrl) => {
+        const err = chrome.runtime.lastError && chrome.runtime.lastError.message;
+        sendResponse(err || !dataUrl ? { ok: false, error: err || "" } : { ok: true, dataUrl });
+      });
+      return true;
+    }
     if (type === "GS_WEB") { webMessage(msg.msg || {}).then(sendResponse, () => sendResponse({ ok: false })); return true; }
     if (type === "GS_FILE_CHUNK") { vget(`${msg.fileId}:${msg.i}`).then((b64) => sendResponse({ b64: b64 || "" }), () => sendResponse({ b64: "" })); return true; }
     if (type === "GS_CLAIM") { claim(msg.target || "").then((job) => sendResponse({ job }), () => sendResponse({ job: null })); return true; }

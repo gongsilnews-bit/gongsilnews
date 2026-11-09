@@ -393,7 +393,7 @@ export default function WebCapture({ launcherStyle }: { launcherStyle?: React.CS
     <>
       <style>{`.gwc-b:hover{background:rgba(255,255,255,0.10)!important}.gwc-stop:hover{background:#b91c1c!important}.gwc-dot{animation:gwcBlink 1s infinite}@keyframes gwcBlink{50%{opacity:.25}}`}</style>
       {!open && (
-        <button type="button" onClick={() => setOpen(true)} title="화면캡처 · 판서 — 지금 보이는 화면을 찍어 클립보드·폴더에"
+        <button type="button" data-gs-cap-launcher onClick={() => setOpen(true)} title="화면캡처 · 판서 — 지금 보이는 화면을 찍어 클립보드·폴더에"
           style={{ position: "fixed", right: 16, top: 232, zIndex: 900, height: 38, padding: "0 13px", borderRadius: 19, border: BORDER, background: BAR_BG, color: "#e5e7eb", fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: "pointer", boxShadow: SHADOW, display: "flex", alignItems: "center", gap: 6, ...launcherStyle }}>
           <Svg k="area" size={17} />화면캡처
         </button>

@@ -306,42 +306,12 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
   const [capBusy, setCapBusy] = useState(false);
   const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}:${focus}` : `m:${pick?.id || ""}:${focus}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
   const errOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
-  /** 공실뉴스 단지 화면 3장 — 시세 그래프 · 로드뷰 · 실거래 금액. 하나씩 차례로 (한꺼번에 찍으면 버벅거린다) */
+  /** 웹 — 우리동네부동산 단지 화면을 실제 화면 그대로 한 장 (공실뉴스 머리줄·단지 시세 창·가격 지도, 2026-11-09 사장님)
+   *  예전엔 시세 그래프·실거래가를 그림으로 다시 그려 어색했다 (글자 어긋남·지도 없음) */
   const webShots = async (complex: { id: string; name: string }): Promise<Shot[]> => {
-    const out: Shot[] = [];
-    const { toJpeg } = await import("html-to-image");
-    const parts = [
-      { part: "chart", what: "시세 그래프", caption: `[시세 그래프] ${complex.name} 최근 실거래 시세 흐름 (자료: 국토교통부 실거래가)` },
-      { part: "trades", what: "실거래가", caption: `[실거래가] ${complex.name} 최근 실거래 내역 (자료: 국토교통부 실거래가)` },
-    ];
-    for (const [n, x] of parts.entries()) {
-      setAnaBusy(`${x.what} 그림을 만드는 중… (${n + 1}/${parts.length})`);
-      const f = document.createElement("iframe");
-      f.style.cssText = "position:fixed;left:-12000px;top:0;width:1040px;height:1600px;border:0;opacity:0;pointer-events:none";
-      f.src = `/apt-capture/${encodeURIComponent(complex.id)}?part=${x.part}`;
-      document.body.appendChild(f);
-      try {
-        await new Promise<void>((ok) => { f.onload = () => ok(); setTimeout(ok, 15000); });
-        const doc = f.contentDocument;
-        // 단지 자료가 그려질 때까지 (최대 12초)
-        let el: HTMLElement | null = null;
-        for (let i = 0; i < 40 && doc; i++) {
-          const m = doc.querySelector("main");
-          el = (m?.lastElementChild as HTMLElement | null) || null;
-          if (el && el.getBoundingClientRect().height > 200) break;
-          el = null;
-          await new Promise((r) => setTimeout(r, 300));
-        }
-        if (!el) continue;
-        await new Promise((r) => setTimeout(r, 800)); // 그래프 그림
-        const url = await toJpeg(el, { quality: 0.92, pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true });
-        const blob = await (await fetch(url)).blob();
-        const obj = URL.createObjectURL(blob);
-        out.push({ url: obj, thumb: obj, caption: x.caption });
-      } catch { /* 이 한 장은 건너뛴다 */ }
-      finally { f.remove(); }
-    }
-    return out;
+    const { captureComplexScreen } = await import("./realScreenShot");
+    const shot = await captureComplexScreen(complex, (t) => setAnaBusy(t)).catch(() => null);
+    return shot ? [shot] : [];
   };
   const capture = async (complex: { id: string; name: string }, only?: string[]) => {
     const cap = bridge()?.video?.capturePage;
