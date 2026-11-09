@@ -156,7 +156,8 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript,
   const toVideo = async () => {
     await persist({ title, narration: paragraphs() });
     try { sessionStorage.setItem("gs-video-seed", JSON.stringify({ vacancyId, title, script: paragraphs().join("\n\n"), at: Date.now() })); } catch {}
-    router.push("/realty_admin?menu=video");
+    // 최고관리자 화면에서 누르면 최고관리자 쇼츠릴스studio 로 (2026-11-09 사장님: 홈으로 가던 것 — /realty_admin 은 최고관리자를 홈으로 돌려보낸다)
+    router.push(`${typeof window !== "undefined" && window.location.pathname.startsWith("/admin") ? "/admin" : "/realty_admin"}?menu=video`);
   };
   const exportText = async () => {
     const b = bridge();
