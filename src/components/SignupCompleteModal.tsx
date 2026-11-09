@@ -30,6 +30,8 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
     privacy: false,
   });
   const agreeAll = agreements.terms && agreements.privacy;
+  // 선택 — 광고성 정보 수신 동의 (기본 꺼짐, 2026-11-09)
+  const [mkt, setMkt] = useState({ sms: false, kakao: false });
 
   const [expandedTerms, setExpandedTerms] = useState<string | null>(null);
 
@@ -98,6 +100,8 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
         name: formData.name.trim(),
         phone: formData.phone.trim(),
         email: formData.email || user.email || '',
+        marketingSms: mkt.sms,
+        marketingKakao: mkt.kakao,
       });
 
       if (!res.success) {
@@ -315,6 +319,17 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
                 )}
               </div>
             ))}
+
+            {/* 선택 — 광고성 정보 수신 동의 (2026-11-09) */}
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #e5e7eb' }}>
+              {([['sms', '[선택] 공실뉴스 소식·혜택 문자 받기'], ['kakao', '[선택] 카카오톡 받기']] as const).map(([k, label]) => (
+                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, cursor: 'pointer', userSelect: 'none' }}>
+                  <input type="checkbox" checked={mkt[k]} onChange={() => setMkt(prev => ({ ...prev, [k]: !prev[k] }))} style={{ width: 16, height: 16, accentColor: '#1e56a0', cursor: 'pointer', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: '#444' }}>{label}</span>
+                </label>
+              ))}
+              <div style={{ marginLeft: 26, fontSize: 11, color: '#999' }}>광고성 정보 수신 동의 · 언제든 끌 수 있어요</div>
+            </div>
           </div>
         </div>
 

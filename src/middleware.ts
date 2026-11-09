@@ -108,6 +108,29 @@ export const config = {
   ],
 };
 
+/**
+ * 가입 경로 — 링크 꼬리표(?ref= · utm_source · utm_campaign)를 달고 들어온 첫 방문만 30일 기억한다 (2026-11-09 사장님)
+ *  가입을 마칠 때 completeMemberSignup 이 이 쿠키를 읽어 members.signup_ref · signup_landing 에 남긴다
+ *  → 최고관리자 홈에서 "어느 글을 보고 가입했는지"
+ */
+function refFrom(request: NextRequest): string {
+  const q = request.nextUrl.searchParams;
+  const ref = (q.get('ref') || '').trim();
+  const src = (q.get('utm_source') || '').trim();
+  const camp = (q.get('utm_campaign') || '').trim();
+  const v = ref || [src, camp].filter(Boolean).join('/');
+  return v.slice(0, 100);
+}
+function keepSignupRef(request: NextRequest, res: NextResponse, refQuery?: string): NextResponse {
+  try {
+    const v = refQuery ?? refFrom(request);
+    if (!v || request.cookies.get('gs_ref')) return res; // 첫 값만
+    const landing = (request.nextUrl.pathname + request.nextUrl.search).slice(0, 300);
+    res.cookies.set('gs_ref', JSON.stringify({ ref: v, landing }), { maxAge: 60 * 60 * 24 * 30, path: '/', sameSite: 'lax' });
+  } catch {}
+  return res;
+}
+
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   
@@ -156,11 +179,12 @@ export async function middleware(request: NextRequest) {
       !url.pathname.startsWith('/go/') && // 홈페이지로 넘겨주는 길 (카톡 공유, 2026-10-29)
       !url.pathname.startsWith('/flyer')
     ) {
+      const refQuery = refFrom(request); // 주소를 바꾸기 전에 읽는다
       url.pathname = `/m${url.pathname === '/' ? '' : url.pathname}`;
-      return NextResponse.rewrite(url);
+      return keepSignupRef(request, NextResponse.rewrite(url), refQuery);
     }
 
-    return NextResponse.next();
+    return keepSignupRef(request, NextResponse.next());
   }
 
   // ---- [여기는 서브도메인 접속 환경입니다 (예: happy.gongsilnews.com)] ----

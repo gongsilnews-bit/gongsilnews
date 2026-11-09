@@ -7,6 +7,7 @@ import { adminGetMemberDetail, adminUpdateMember, adminUpdateAgency, adminUpload
 import { geocodeAddress } from "@/app/actions/geocode";
 
 import imageCompression from "browser-image-compression";
+import MarketingConsentBox from "@/components/common/MarketingConsentBox";
 
 /* ── WebP 압축 (browser-image-compression 활용) ── */
 const compressToWebP = async (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
@@ -401,6 +402,8 @@ function MobileSettings() {
               <Field label="이름" value={name} onChange={setName} />
               <Field label="연락처" value={phone} onChange={v => setPhone(formatPhone(v))} placeholder="010-0000-0000" />
             </div>
+            {/* 소식·혜택 받기 — 광고성 정보 수신 동의 (2026-11-09) */}
+            {memberId && <MarketingConsentBox memberId={memberId} />}
           </>
         )}
 

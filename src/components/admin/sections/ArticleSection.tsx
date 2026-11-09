@@ -21,11 +21,11 @@ const REJECT_REASONS = [
   "기타 사유 (직접 입력)"
 ];
 
-export default function ArticleSection({ theme, initialData }: AdminSectionProps & { initialData?: any[] }) {
+export default function ArticleSection({ theme, initialData, initialFilter }: AdminSectionProps & { initialData?: any[]; initialFilter?: string }) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [dbArticles, setDbArticles] = useState<any[]>(initialData || []);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
-  const [articleFilter, setArticleFilter] = useState("전체");
+  const [articleFilter, setArticleFilter] = useState(initialFilter || "전체"); // 승인·결제 → 기사 승인은 "승인대기"로 열린다 (2026-11-09)
   const [publishFilter, setPublishFilter] = useState<"전체" | "헤드라인" | "중요" | "일반기사">("전체");
   const [isHeadlineHovered, setIsHeadlineHovered] = useState(false);
   const [isImportantHovered, setIsImportantHovered] = useState(false);

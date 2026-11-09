@@ -6,6 +6,7 @@ import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminG
 import { geocodeAddress } from "@/app/actions/geocode";
 import { getHomepageSettings } from "@/app/actions/homepage";
 import { memberTier, TIER_NAME, PRO_ORANGE, shortEnd } from "@/utils/tier";
+import MarketingConsentBox from "@/components/common/MarketingConsentBox";
 
 interface MemberRegisterFormProps {
   onBack: () => void;
@@ -1347,6 +1348,8 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         </div>
       </div>
       )}
+      {/* 소식·혜택 받기 — 광고성 정보 수신 동의 (2026-11-09) */}
+      {activeTab === 0 && editMemberId && <MarketingConsentBox memberId={editMemberId} dark={darkMode} />}
 
       {activeTab === 1 && (
         <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>

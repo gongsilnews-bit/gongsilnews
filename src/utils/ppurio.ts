@@ -22,13 +22,14 @@ function getEucKrByteLength(str: string): number {
  * Ppurio SMS/LMS/MMS Send Utility
  */
 export async function sendPpurioSms({ to, content, subject }: SendSmsOptions) {
-  const ppurioId = process.env.PPURIO_ID || "mygongsil";
-  const ppurioKey = process.env.PPURIO_KEY || "e9ad769b8e119d712791ce6a0a6fa2236b851674dc560f68fba444d890fc0da1";
-  const ppurioFrom = process.env.PPURIO_FROM || "15555343";
+  // 비밀 값은 환경 변수에서만 읽는다 — 코드 안 기본값 없앰 (2026-11-09)
+  const ppurioId = process.env.PPURIO_ID || "";
+  const ppurioKey = process.env.PPURIO_KEY || "";
+  const ppurioFrom = process.env.PPURIO_FROM || "";
 
-  if (!ppurioId || !ppurioKey) {
+  if (!ppurioId || !ppurioKey || !ppurioFrom) {
     console.error("Ppurio config missing in env variables.");
-    return { success: false, error: "뿌리오 연동 설정이 누락되었습니다." };
+    return { success: false, error: "문자 발송 설정(PPURIO_ID·PPURIO_KEY·PPURIO_FROM)이 없습니다." };
   }
 
   try {
@@ -116,12 +117,12 @@ interface SendKakaoOptions {
  * Ppurio Kakao AlimTalk Send Utility
  */
 export async function sendPpurioKakao({ to, content, templateCode, name, button }: SendKakaoOptions) {
-  const ppurioId = process.env.PPURIO_ID || "mygongsil";
-  const ppurioKey = process.env.PPURIO_KEY || "e9ad769b8e119d712791ce6a0a6fa2236b851674dc560f68fba444d890fc0da1";
+  const ppurioId = process.env.PPURIO_ID || "";
+  const ppurioKey = process.env.PPURIO_KEY || "";
   const senderKey = process.env.PPURIO_KAKAO_SENDER_KEY || "";
 
   if (!ppurioId || !ppurioKey) {
-    return { success: false, error: "뿌리오 연동 설정이 누락되었습니다." };
+    return { success: false, error: "문자 발송 설정(PPURIO_ID·PPURIO_KEY)이 없습니다." };
   }
 
   if (!senderKey) {
@@ -194,5 +195,60 @@ export async function sendPpurioKakao({ to, content, templateCode, name, button 
   } catch (error: any) {
     console.error("Ppurio Kakao send error:", error);
     return { success: false, error: error.message || "서버 오류가 발생했습니다." };
+  }
+}
+
+/* ── 여러 명에게 한 번에 (관리자 회원 문자, 2026-11-09) ──
+   뿌리오 /v1/message 는 targets 배열로 한 번에 1,000명까지 받는다 → 1,000명씩 나눠 보낸다.
+   "성공" = 뿌리오가 접수한 것 (실제 도착 여부는 뿌리오 발송 결과에서 따로 확인) */
+export function ppurioMessageType(content: string): "SMS" | "LMS" {
+  return getEucKrByteLength(content) > 90 ? "LMS" : "SMS";
+}
+
+export async function sendPpurioSmsBulk({ targets, content, subject }: { targets: { to: string; name?: string }[]; content: string; subject?: string }) {
+  const ppurioId = process.env.PPURIO_ID || "";
+  const ppurioKey = process.env.PPURIO_KEY || "";
+  const ppurioFrom = process.env.PPURIO_FROM || "";
+  if (!ppurioId || !ppurioKey || !ppurioFrom) {
+    return { success: false, accepted: 0, failed: targets.length, error: "문자 발송 설정(PPURIO_ID·PPURIO_KEY·PPURIO_FROM)이 없습니다." };
+  }
+  const clean = targets.map((t) => ({ to: t.to.replace(/[^0-9]/g, ""), name: t.name || "" })).filter((t) => /^01\d{8,9}$/.test(t.to));
+  const badNumbers = targets.length - clean.length;
+  if (!clean.length) return { success: false, accepted: 0, failed: targets.length, error: "보낼 수 있는 휴대폰 번호가 없습니다." };
+
+  try {
+    const credentials = Buffer.from(`${ppurioId}:${ppurioKey}`).toString("base64");
+    const tokenRes = await fetch(`${PPURIO_API_URL}/token`, { method: "POST", headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/json" } });
+    if (!tokenRes.ok) return { success: false, accepted: 0, failed: targets.length, error: `토큰 발급 실패: ${await tokenRes.text()}` };
+    const token = (await tokenRes.json()).token;
+    if (!token) return { success: false, accepted: 0, failed: targets.length, error: "인증 토큰이 비어 있습니다." };
+
+    const messageType = ppurioMessageType(content);
+    let accepted = 0;
+    const errors: string[] = [];
+    for (let i = 0; i < clean.length; i += 1000) {
+      const chunk = clean.slice(i, i + 1000);
+      const res = await fetch(`${PPURIO_API_URL}/message`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          account: ppurioId,
+          refKey: `gongsil_bulk_${Date.now()}_${i}`,
+          messageType,
+          content,
+          from: ppurioFrom.replace(/[^0-9]/g, ""),
+          duplicateFlag: "N",
+          targetCount: chunk.length,
+          targets: chunk,
+          subject: messageType === "LMS" ? (subject || "공실뉴스") : undefined,
+        }),
+      });
+      if (res.ok) accepted += chunk.length;
+      else errors.push(await res.text());
+    }
+    const failed = targets.length - accepted;
+    return { success: accepted > 0, accepted, failed, badNumbers, error: errors.length ? `일부 발송 실패: ${errors[0]}` : undefined };
+  } catch (error: unknown) {
+    return { success: false, accepted: 0, failed: targets.length, error: error instanceof Error ? error.message : "서버 오류가 발생했습니다." };
   }
 }

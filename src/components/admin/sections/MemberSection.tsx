@@ -371,9 +371,25 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                         <span>{member.name || '-'}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{member.phone || '-'}</td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
+                      {member.phone || '-'}
+                      {/* 수신 동의 (2026-11-09) — 칸이 없으면(SQL 전) 안 보인다 */}
+                      {(member.marketing_sms || member.marketing_kakao) && (
+                        <div title="광고성 정보 수신 동의" style={{ marginTop: 3, fontSize: 10.5, fontWeight: 800, color: darkMode ? "#86efac" : "#15803d" }}>
+                          {[member.marketing_sms && "문자", member.marketing_kakao && "카톡"].filter(Boolean).join("·")} 동의
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{displayRole}</td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
+                      {createdDate}
+                      {/* 가입 경로 — 링크 꼬리표 (2026-11-09) */}
+                      {member.signup_ref && (
+                        <div title={member.signup_landing ? `처음 들어온 주소: ${member.signup_landing}` : "가입 경로"} style={{ marginTop: 3, fontSize: 10.5, fontWeight: 700, color: darkMode ? "#93c5fd" : "#1a3a6b", maxWidth: 120, margin: "3px auto 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          경로 {member.signup_ref}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14 }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, justifyContent: "center" }}>
                         <span onClick={() => router.push(`?menu=members&editId=${member.id}`)}
