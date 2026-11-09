@@ -515,8 +515,8 @@ export default function StudioVrewLanding() {
         </div>
         <h2 className="sv-h2">내 지역 · 내 단지 <span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되세요</h2>
         <div className="sv-btns">
-          <Link href={START_HREF} className="sv-btn solid">무료로 시작하기</Link>
-          <Link href={PRICING_HREF} className="sv-btn line">금액안내 보기</Link>
+          <Link href="/newsrealty/pro-apply" className="sv-btn solid">신청하기</Link> {/* 공실뉴스부동산 신청 (2026-11-09 사장님) */}
+          <Link href={PRICING_HREF} className="sv-btn line">금액안내</Link>
         </div>
         <p className="os">설치 없이 크롬 · 엣지에서 바로 씁니다.</p>
       </section>

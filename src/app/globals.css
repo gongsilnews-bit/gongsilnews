@@ -966,7 +966,8 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     border: none !important;
     outline: none !important;
 }
-.article-body button:not(.zoom-btn),
+/* 드론 영상 전체 화면 단추(.gs-drone-fs)는 보이게 (2026-11-09) */
+.article-body button:not(.zoom-btn):not(.gs-drone-fs),
 .article-body [role="button"]:not(.zoom-btn) {
     display: none !important;
 }
