@@ -470,9 +470,7 @@ export default function StudioVrewLanding() {
 
       {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
       <section className="sv-sec">
-        <h2 className="sv-h2">부동산 마케팅, 이거 하나면 끝!</h2>
-        <p className="sv-p">뉴스 · 블로그 · SNS · 보고서 · 디자인 · 홈페이지까지<br />공실뉴스부동산 하나로 마케팅의 프로가 되세요.</p>
-        {btns}
+        {/* 제목 「부동산 마케팅, 이거 하나면 끝!」·설명·단추는 11-09 사장님 지시로 없앰 — 후기만 */}
         <Reviews />
       </section>
 
