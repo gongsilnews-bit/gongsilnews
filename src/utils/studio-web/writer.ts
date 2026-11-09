@@ -194,9 +194,9 @@ function webColYt(Y: any) {
 }
 /* 뉴스칼럼 쇼츠 끝맺음 · 원칙 (공실 쇼츠의 SHORTS_RULES 와 같은 자리) */
 const COL_ENDINGS: { id: string; label: string; line: string }[] = [
+  { id: "ask", label: "궁금하신 점은 문의주세요!", line: "궁금하신 점이 있으면 문의주세요!" }, // 기본 — 부동산이 홍보하는 글 (2026-11-09 사장님)
   { id: "follow", label: "팔로우해 주세요", line: "더 많은 동네 소식은 팔로우해 주세요!" },
   { id: "comment", label: "댓글로 의견", line: "여러분 생각은 댓글로 남겨 주세요!" },
-  { id: "ask", label: "문의주세요!", line: "문의주세요!" },
   { id: "none", label: "멘트 없음", line: "" },
 ];
 function colShortsRules(ending?: string) {
@@ -368,7 +368,7 @@ function toneLine(tone: unknown, only: string[] = []) {
 const YT_DEFAULTS = { duration: "short", tone: "listing", number: "digit", ending: "ask" }; // 말투 기본 = 물건 소개형 (2026-11-06 사장님)
 // 끝맺음 — 대본 마지막 한마디 (2026-11-06 사장님: "그래 문의주세요" 기본, "부동산에"는 넣지 않음, 프로필 링크는 헷갈려 뺌)
 const YT_ENDINGS: { id: string; label: string; line: string }[] = [
-  { id: "ask", label: "문의주세요!", line: "문의주세요!" },
+  { id: "ask", label: "궁금하신 점은 문의주세요!", line: "궁금하신 점이 있으면 문의주세요!" }, // 2026-11-09 사장님: "궁금하신 점이 있으면 문의주세요"
   { id: "comment", label: "댓글로 '문의'", line: "댓글로 '문의'라고 남겨주세요!" },
   { id: "dm", label: "DM 주세요", line: "DM 주세요!" },
   { id: "none", label: "멘트 없음", line: "" }, // 권유 한마디 없이 (2026-11-06 사장님: "없음도 있어야지")
@@ -420,10 +420,11 @@ function colOptions() {
       videoTypes: table(Y.GW_YT_VIDEO_TYPE, (v) => ({ structure: v.structure })),
       durations: webYt(Y.GW_YT_TONE, Y.GW_YT_DURATION).durations.map(([id, v]: [string, any]) => ({ id, label: v.label, chars: v.chars, seconds: v.seconds })),
       // 말투 셋 — 뉴스형 · 전문가 해설 · 친근한 이야기 (릴스·쇼츠는 공실 쇼츠용, 2026-11-06)
-      tones: ["news", "expert", "friendly"].filter((id) => Y.GW_YT_TONE[id]).map((id) => ({ id, label: Y.GW_YT_TONE[id].label })),
+      // 친근한 이야기를 맨 앞·기본으로 (2026-11-09 사장님: 부동산이 홍보하는 글이니 친근하게)
+      tones: ["friendly", "news", "expert"].filter((id) => Y.GW_YT_TONE[id]).map((id) => ({ id, label: Y.GW_YT_TONE[id].label })),
       endings: COL_ENDINGS.map(({ id, label }) => ({ id, label })),
       numbers: table(Y.GW_YT_NUMBER),
-      defaults: { ...YT_DEFAULTS, videoType: "briefing", tone: "news", ending: "follow" },
+      defaults: { ...YT_DEFAULTS, videoType: "briefing", tone: "friendly", ending: "ask" }, // 친근한 이야기 · 궁금하신 점은 문의주세요 (2026-11-09)
     },
     writeUrl: lib.naver().WRITE_URL,
     siteUrl: lib.naver().SITE_URL,
