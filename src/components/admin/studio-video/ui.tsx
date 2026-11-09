@@ -476,55 +476,7 @@ export function Modal({ title, onClose, children, width = 760, footer, steps, st
 }
 
 /** 일하는 동안 — 점 세 개 + 지금 하는 일 + 걸린 시간 + 진행 막대 */
-/** 기다리는 동안 광고 (자리: export = 영상 만들기·내보내기) — 같은 광고가 이어지지 않게 바로 전 광고는 뺀다 */
-type WaitAdItem = { id: number; youtube_id: string; label?: string; link_url?: string };
-export function WaitAd({ place = "export" }: { place?: string }) {
-  const [ad, setAd] = React.useState<WaitAdItem | null>(null);
-  const [muted, setMuted] = React.useState(true);
-  const frame = React.useRef<HTMLIFrameElement>(null);
-  const post = (id: number, kind: "view" | "watch" | "click", seconds = 0) => {
-    try { void fetch("/api/studio/ad", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, place, kind, seconds }), keepalive: true }).catch(() => {}); } catch {}
-  };
-  React.useEffect(() => {
-    let shownAt = 0, cur: WaitAdItem | null = null, alive = true;
-    const t = setTimeout(() => {
-      let last = "";
-      try { last = sessionStorage.getItem("gs-wait-ad-last") || ""; } catch {}
-      fetch(`/api/studio/ad?place=${place}&last=${last}`, { cache: "no-store" }).then((r) => r.json()).then((j: { ad?: WaitAdItem | null }) => {
-        if (!alive || !j.ad?.youtube_id) return;
-        cur = j.ad; shownAt = Date.now();
-        try { sessionStorage.setItem("gs-wait-ad-last", String(j.ad.id)); } catch {}
-        setAd(j.ad);
-        post(j.ad.id, "view");
-      }).catch(() => {});
-    }, 4000);
-    return () => { alive = false; clearTimeout(t); if (cur) post(cur.id, "watch", (Date.now() - shownAt) / 1000); };
-  }, [place]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!ad) return null;
-  const yid = encodeURIComponent(ad.youtube_id);
-  const open = () => { if (ad.link_url) { post(ad.id, "click"); window.open(ad.link_url, "_blank"); } };
-  const toggle = () => {
-    const m = !muted;
-    setMuted(m);
-    frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: m ? "mute" : "unMute", args: [] }), "*");
-  };
-  return (
-    <div style={{ width: 600, maxWidth: "80%", margin: "22px auto 0" }}>
-      <div style={{ position: "relative", aspectRatio: "16 / 9", background: "#000", borderRadius: 8, overflow: "hidden" }}>
-        <iframe ref={frame} title="광고" allow="autoplay; encrypted-media" style={{ width: "100%", height: "100%", border: 0, display: "block" }}
-          src={`https://www.youtube-nocookie.com/embed/${yid}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=${yid}&enablejsapi=1&origin=${encodeURIComponent(typeof location !== "undefined" ? location.origin : "")}`} />
-        {ad.link_url && <div onClick={open} title="광고주 사이트 열기 (새 창)" style={{ position: "absolute", inset: 0, cursor: "pointer" }} />}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-        <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, color: C.dim }}>{ad.label || "AD"}</span>
-        <button type="button" onClick={toggle} style={{ height: 28, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{muted ? "🔇 소리 켜기" : "🔊 소리 끄기"}</button>
-        {ad.link_url && <button type="button" onClick={open} style={{ height: 28, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: "transparent", color: C.sub, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>광고주 사이트 열기 ↗</button>}
-      </div>
-    </div>
-  );
-}
-
-export function Working({ title, detail, frac, ad = true }: { title: string; detail?: string; frac?: number | null; /** 기다림 광고 (4초 넘게 걸리면) */ ad?: boolean }) {
+export function Working({ title, detail, frac }: { title: string; detail?: string; frac?: number | null }) {
   const [sec, setSec] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setSec((x) => x + 1), 1000);
@@ -547,7 +499,6 @@ export function Working({ title, detail, frac, ad = true }: { title: string; det
       )}
       {detail && <div style={{ marginTop: 12, fontSize: 15, color: C.sub }}>{detail}</div>}
       <div style={{ marginTop: 8, fontSize: 14, color: C.dim }}>잠시만 기다려 주세요 · {Math.floor(sec / 60) ? `${Math.floor(sec / 60)}분 ` : ""}{sec % 60}초</div>
-      {ad && <WaitAd place="export" />}
     </div>
   );
 }

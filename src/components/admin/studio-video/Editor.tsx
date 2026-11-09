@@ -5990,7 +5990,7 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
             )}
           </div>
         )}
-        <Working ad={false} title={state.text} frac={state.frac} detail={left > 0 ? `남은 시간 약 ${left >= 60 ? `${Math.floor(left / 60)}분 ` : ""}${left % 60}초 · 이 창을 닫지 마세요.` : "PC에서 만들고 있어요. 이 창을 닫지 마세요."} />
+        <Working title={state.text} frac={state.frac} detail={left > 0 ? `남은 시간 약 ${left >= 60 ? `${Math.floor(left / 60)}분 ` : ""}${left % 60}초 · 이 창을 닫지 마세요.` : "PC에서 만들고 있어요. 이 창을 닫지 마세요."} />
       </Modal>
     );
   }
@@ -6102,7 +6102,7 @@ function FormatsDialog({ project, onClose }: { project: Project; onClose: () => 
         {row("file", "텍스트 (.txt)", "대본 글만", () => run(async () => { const f = await pick("txt"); return f === null ? null : b.project.exportText(project, "txt", f); }, "텍스트 파일을 저장했어요"))}
         {row("music", "소리 (.mp3)", "목소리·음악 소리만", () => run(async () => { const f = await pick("mp3"); if (f === null) return null; const r = await b.exportAudio(project, "mp3", { outFile: f }); return b.showFile(typeof r === "string" ? r : r.file); }, "소리 파일을 저장했어요"))}
         {row("music", "소리 (.wav)", "편집용 고음질 소리", () => run(async () => { const f = await pick("wav"); if (f === null) return null; const r = await b.exportAudio(project, "wav", { outFile: f }); return b.showFile(typeof r === "string" ? r : r.file); }, "소리 파일을 저장했어요"))}
-        {busy && <Working title="만드는 중…" ad={false} />}
+        {busy && <Working title="만드는 중…" />}
         {msg && <div style={{ fontSize: 14.5, color: C.sub, marginTop: 6 }}>{msg}</div>}
       </div>
     </Modal>

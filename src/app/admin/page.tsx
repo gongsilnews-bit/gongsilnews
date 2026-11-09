@@ -32,7 +32,6 @@ const SmartstoreOrdersPanel = lazy(() => import("@/components/admin/sections/Sma
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 const SttWordsSection = lazy(() => import("@/components/admin/sections/SttWordsSection"));
 const AptReportsSection = lazy(() => import("@/components/admin/sections/AptReportsSection"));
-const StudioAdsSection = lazy(() => import("@/components/admin/sections/StudioAdsSection"));
 // 공실뉴스 홍보 — 회원 도구를 같이 쓴다 (관리자용을 따로 만들지 않음, 2026-11-09)
 const PromoCalendarSection = lazy(() => import("@/components/admin/sections/PromoCalendarSection"));
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
@@ -59,7 +58,6 @@ const MENU_GROUPS: AdminMenuGroup[] = [
       { key: "study", label: "특강관리", icon: <IconStudy /> },
       { key: "board", label: "게시판", icon: <IconBoard /> },
       { key: "ad", label: "광고", icon: <IconAd /> },
-      { key: "studio_ads", label: "스튜디오 광고", icon: <IconAd /> },
       { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
       { key: "stats", label: "통계", icon: <IconStats /> },
     ],
@@ -348,7 +346,6 @@ function AdminContent() {
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
           {activeMenu === "ad" && <BannerSection theme={theme} />}
-          {activeMenu === "studio_ads" && <StudioAdsSection theme={theme} />}
 
           {/* ── 공실뉴스 홍보 ── */}
           {activeMenu === "promo" && adminUserId && <PromoCalendarSection theme={theme} adminId={adminUserId} />}

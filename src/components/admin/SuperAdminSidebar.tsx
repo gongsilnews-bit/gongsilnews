@@ -24,7 +24,7 @@ type Props = {
 };
 
 const COLLAPSE_KEY = "admin_menu_collapsed";
-const NAVY = "#1a3a6b";
+const NAVY = "#111111"; // 최고관리자 메뉴는 검정 (2026-11-09 사장님) — 회원 관리자는 남색
 
 export default function SuperAdminSidebar({ groups, bottom, activeMenu, activeSubmenu, onSelect, onHover, badges = {} }: Props) {
   const [collapsed, setCollapsed] = useState(false);

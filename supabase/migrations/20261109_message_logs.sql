@@ -29,6 +29,6 @@ create policy "message_logs_admin_read" on public.message_logs
     exists (
       select 1 from public.members m
       where m.id = auth.uid()
-        and upper(coalesce(m.role, '')) in ('ADMIN', 'SUPER_ADMIN', 'SUPERADMIN', '최고관리자')
+        and upper(coalesce(m.role::text, '')) in ('ADMIN', 'SUPER_ADMIN', 'SUPERADMIN', '최고관리자')
     )
   );
