@@ -19,6 +19,7 @@ import { getAuthorEligibleVacancies, updateArticleAttachedVacancy } from "@/app/
 import ArticlePhotoLibraryDrawer from "./article_form/ArticlePhotoLibraryDrawer";
 import ArticlePhotoModals from "./article_form/ArticlePhotoModals";
 import PhotoMosaicEditor from "./article_form/PhotoMosaicEditor";
+import ArticleStockModal, { type StockPick } from "./ArticleStockModal";
 import { pixelateCanvasRegion } from "@/utils/imageMosaic";
 
 import Link from "next/link";
@@ -714,6 +715,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   /* ── 포토DB 모달 상태 ── */
   const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
+  const [showStockModal, setShowStockModal] = useState(false); // 오픈자료 — Pixabay 이미지 · 공실뉴스 드론 (2026-11-09)
   const [photoDbTab, setPhotoDbTab] = useState<'전체사진' | '즐겨찾기'>('전체사진');
   const [photoDbSearch, setPhotoDbSearch] = useState('');
   const [photoDbItems, setPhotoDbItems] = useState<any[]>([]);
@@ -838,11 +840,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      .inserted-photo, .inserted-video {
+      .inserted-photo, .inserted-video, .inserted-drone {
         position: relative;
       }
       .inserted-photo .editor-media-delete,
-      .inserted-video .editor-media-delete {
+      .inserted-video .editor-media-delete,
+      .inserted-drone .editor-media-delete {
         display: none;
         position: absolute;
         top: 6px;
@@ -863,7 +866,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         transition: transform 0.15s;
       }
       .inserted-photo:hover .editor-media-delete,
-      .inserted-video:hover .editor-media-delete {
+      .inserted-video:hover .editor-media-delete,
+      .inserted-drone:hover .editor-media-delete {
         display: flex;
       }
       .inserted-photo .editor-media-delete:hover,
@@ -964,6 +968,53 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
       insertImageAtCursor(preview, '', { size: 600, align: 'center', captionAlign: 'center' });
     }
+  };
+
+  /* ── 오픈자료 (2026-11-09) — Pixabay 이미지는 받아서 WebP 로 · 드론은 R2 에서 바로 재생되는 영상 칸 ── */
+  const insertDroneAtCursor = (droneId: string, caption: string) => {
+    if (!editorRef.current) return;
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'margin: 16px auto; max-width: 720px; text-align: center;';
+    wrapper.setAttribute('contenteditable', 'false');
+    wrapper.className = 'inserted-drone';
+    const video = document.createElement('video');
+    // 영상 데이터는 /api/drone 이 R2 주소로 넘겨 줘서 R2 에서 바로 온다. 누를 때만 받는다(preload none)
+    video.setAttribute('src', `/api/drone/${encodeURIComponent(droneId)}`);
+    video.setAttribute('poster', `/api/drone/${encodeURIComponent(droneId)}?thumb=1`);
+    video.setAttribute('controls', '');
+    video.setAttribute('preload', 'none');
+    video.setAttribute('playsinline', '');
+    video.style.cssText = 'width: 100%; height: auto; border-radius: 8px; display: block; background: #000;';
+    wrapper.appendChild(video);
+    if (caption) {
+      const cap = document.createElement('p');
+      cap.style.cssText = 'font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;';
+      cap.textContent = caption;
+      wrapper.appendChild(cap);
+    }
+    createDeleteBtn(wrapper, 'video');
+    const br = document.createElement('br');
+    const range = savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer) ? savedRangeRef.current : null;
+    if (range) {
+      range.deleteContents();
+      range.insertNode(br);
+      range.insertNode(wrapper);
+    } else {
+      editorRef.current.appendChild(wrapper);
+      editorRef.current.appendChild(br);
+    }
+    setContent(editorRef.current.innerHTML || '');
+  };
+  const handleStockPick = async (p: StockPick) => {
+    if (p.kind === 'drone') return insertDroneAtCursor(p.id, p.caption);
+    const compressed = await compressToWebP(p.file);
+    const preview = URL.createObjectURL(compressed);
+    setPhotoFiles(prev => {
+      const updated = [...prev, { file: compressed, preview, caption: p.caption, isCover: false, size: 600, align: 'center', captionAlign: 'center' }];
+      if (prev.length === 0) updated[0].isCover = true;
+      return updated;
+    });
+    insertImageAtCursor(preview, p.caption, { size: 600, align: 'center', captionAlign: 'center' });
   };
 
   /* ── 사진추가 모달: 좌측 사진 버튼 클릭 시 열기 ── */
@@ -2661,7 +2712,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 if (target.classList.contains('editor-media-delete')) {
                   e.preventDefault();
                   e.stopPropagation();
-                  const wrapper = target.closest('.inserted-photo, .inserted-video') as HTMLElement;
+                  const wrapper = target.closest('.inserted-photo, .inserted-video, .inserted-drone') as HTMLElement;
                   if (wrapper) {
                     const nextSib = wrapper.nextSibling;
                     if (nextSib && nextSib.nodeName === 'BR') nextSib.remove();
@@ -2870,8 +2921,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             </div>
             {/* 앱 — 사진·영상·포토DB 를 라이브러리 위로 (2026-11-03 사장님) */}
             {studioMode && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 16 }}>
-                {([["사진", openPhotoModal, "M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21"], ["영상", openVideoModal, "M2 4h20v16H2zM10 8l6 4-6 4z"], ["포토DB", openPhotoDbModal, "M2 2h20v20H2zM2 12h20M12 2v20"]] as const).map(([l, fn, d]) => (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 16 }}>
+                {([["사진", openPhotoModal, "M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21"], ["영상", openVideoModal, "M2 4h20v16H2zM10 8l6 4-6 4z"], ["포토DB", openPhotoDbModal, "M2 2h20v20H2zM2 12h20M12 2v20"], ["오픈자료", () => setShowStockModal(true), "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z"]] as const).map(([l, fn, d]) => (
                   <button key={l} type="button" onClick={fn}
                     style={{ height: 58, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, border: "1px solid #d9dde3", borderRadius: 5, background: "#fff", color: NAVY, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>{l}
@@ -2892,6 +2943,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 </svg>
               </button>
             </form>
+
+            {/* 오픈자료 — 앱 모양(studioMode)은 위 네 칸에 있다 (2026-11-09) */}
+            {!studioMode && (
+              <button type="button" onClick={() => setShowStockModal(true)}
+                style={{ width: "100%", height: 40, marginTop: -8, marginBottom: 16, border: `1px solid ${border}`, borderRadius: 6, background: cardBg, color: textPrimary, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                오픈자료 · Pixabay 이미지 · 공실뉴스 드론
+              </button>
+            )}
 
             {/* ── 사진 섹션 ── */}
             <div style={{ marginBottom: 16 }}>
@@ -3169,6 +3228,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         textMuted={textMuted}
         studio={studioMode}
       />
+
+      {/* 오픈자료 — Pixabay 이미지 · 공실뉴스 드론 (2026-11-09) */}
+      {showStockModal && <ArticleStockModal onClose={() => setShowStockModal(false)} onPick={handleStockPick} />}
 
       {/* ── ⚡ 모듈화 분리된 포토DB 검색/보관 라이브러리 모달 ── */}
       <ArticlePhotoLibraryDrawer
