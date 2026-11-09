@@ -586,7 +586,8 @@ export async function getVacancyCountByKeyword(keyword: string) {
       .from('vacancies')
       .select('id', { count: 'exact', head: true })
       .neq('status', 'DELETED')
-      .or(orConditions);
+      .or(orConditions)
+      .or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`); // 홈페이지만 공실은 검색에도 안 나온다 (2026-11-09)
 
     if (error) return { success: false, error: error.message };
     return { success: true, count: count || 0 };
@@ -670,6 +671,7 @@ export async function getVacancyByVacancyNo(vacancyNo: number) {
       .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
       .eq('vacancy_no', vacancyNo)
       .neq('status', 'DELETED')
+      .or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`) // 홈페이지만 공실은 번호로도 안 찾아진다 (2026-11-09)
       .maybeSingle();
 
     if (error) return { success: false, error: error.message };
@@ -862,6 +864,7 @@ export async function getVacanciesForMap(options?: {
         .from('vacancies')
         .select(mapSelectFields)
         .eq('status', 'ACTIVE')
+        .or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`) // 내 홈페이지만 공실은 공실뉴스 지도·목록에 안 나온다 (2026-11-09 사장님)
         .not('lat', 'is', null)
         .not('lng', 'is', null);
 
@@ -976,6 +979,7 @@ export async function getVacancyListByKeyword(keyword: string) {
       .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
       .neq('status', 'DELETED')
       .or(orConditions)
+      .or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`) // 홈페이지만 공실은 검색에도 안 나온다 (2026-11-09)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
