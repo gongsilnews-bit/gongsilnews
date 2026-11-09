@@ -75,11 +75,11 @@ export default function AptDataCard({ theme, cardStyle }: { theme: AdminTheme; c
           <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>
             매일 받기 회차 기록 <span style={{ fontWeight: 500 }}>(최근 3개월 거래가 있는 단지를 전부 확인 → 바뀐 단지만 다시 씀)</span>
           </div>
-          {st.rounds.length === 0 ? (
+          {!(st.rounds || []).length ? (
             <div style={{ fontSize: 11.5, color: theme.textSecondary, padding: "4px 8px" }}>아직 기록이 없어요. 내일 새벽 2시 회차부터 쌓입니다.</div>
           ) : (
             <div style={{ maxHeight: 170, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-              {st.rounds.map((r) => {
+              {(st.rounds || []).map((r) => {
                 const bad = r.failed.length > 0;
                 return (
                   <div key={r.day} style={{ fontSize: 11, padding: "5px 8px", background: bad ? (theme.darkMode ? "#450a0a" : "#fef2f2") : theme.darkMode ? "#1e293b" : "#f1f5f9", borderRadius: 6, color: theme.textPrimary, border: bad ? "1px solid #fca5a5" : "none" }}>
@@ -106,7 +106,7 @@ export default function AptDataCard({ theme, cardStyle }: { theme: AdminTheme; c
             최근 7일 수집 이력 <span style={{ fontWeight: 500 }}>(바뀐 단지 / 새 거래 / 세대수 찾아본 단지)</span>
           </div>
           <div style={{ maxHeight: 130, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-            {st.days.map((d) => (
+            {(st.days || []).map((d) => (
               <div key={d.day} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "4px 8px", background: theme.darkMode ? "#1e293b" : "#f1f5f9", borderRadius: 6, color: theme.textPrimary }}>
                 <b>{dayLabel(d.day)}</b>
                 <span style={{ fontWeight: 700 }}>
