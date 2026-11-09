@@ -7,6 +7,7 @@ import StudioWorking from "./StudioWorking";
 import { useStudioImager } from "./useStudioWriter";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 import { ProTag } from "@/components/admin/ProBadge";
+import ArticleStockModal from "@/components/admin/ArticleStockModal";
 
 /**
  * 블로그 미리보기 편집기 (공실마케팅 SNS뉴스발행 3단계)
@@ -29,7 +30,7 @@ type Bridge = {
   blog: {
     save: (patch: SavePatch) => Promise<unknown>;
     revise: (opts: { vacancyId: string; doc: string; request: string }) => Promise<BlogDraft>;
-    addPhoto: (opts: { vacancyId: string; doc: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
+    addPhoto: (opts: { vacancyId: string; doc: string; dataUrl: string; slot?: number; replaceId?: string; kind?: string; caption?: string }) => Promise<BlogMedia>;
     imageStyles: (vacancyId?: string) => Promise<{ id: string; label: string }[]>;
     makeImage: (opts: { vacancyId: string; doc: string; style: string; request: string; slot?: number; replaceId?: string; styleLabel?: string; stylePrompt?: string }) => Promise<BlogMedia>;
     onProgress: (fn: (t: string) => void) => () => void;
@@ -37,7 +38,7 @@ type Bridge = {
 };
 const bridge = () => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지", capture: "기사 화면" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", stock: "오픈자료", ai: "AI 이미지", capture: "기사 화면" };
 const isHeading = (p: string) => p.startsWith("■");
 const stripHeading = (p: string) => p.replace(/^■\s*/, "");
 
@@ -69,6 +70,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const [editId, setEditId] = useState<string | null>(null); // [수정] 메뉴를 연 사진
   const [aiReplace, setAiReplace] = useState<string | null>(null); // AI 이미지로 바꿀 사진
   const replaceRef = useRef<string | null>(null); // 내 사진으로 바꿀 사진
+  const [stockFor, setStockFor] = useState<{ slot?: number; replaceId?: string } | null>(null); // [오픈자료] 창을 연 자리 (2026-11-09 사장님: "여기도 넣기 해줘")
   const [aiStyle, setAiStyle] = useState("news");
   const [aiRequest, setAiRequest] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
@@ -235,6 +237,16 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     if (fileInput.current) fileInput.current.multiple = false;
     fileInput.current?.click();
   };
+  const putStock = async (file: File, caption: string) => {
+    const b = bridge();
+    const at = stockFor;
+    if (!b || !at) return;
+    setAdding(at.slot ?? null);
+    try {
+      const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, doc, dataUrl: await readAsDataUrl(file), kind: "stock", caption, ...at });
+      setMedia((list) => (at.replaceId ? list.map((m) => (m.id === item.id ? { ...m, ...item } : m)) : [...list, item]));
+    } finally { setAdding(null); }
+  };
   const onFiles = async (files: FileList | null) => {
     const b = bridge();
     if (!b || !files || !files.length) return;
@@ -334,6 +346,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setEditId(null); pickReplace(m.id); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진으로 바꾸기
             </button>
+            {isWebStudio() && <button onClick={() => { setEditId(null); setStockFor({ replaceId: m.id }); }}>
+              <Ico d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /> 오픈자료로 바꾸기
+            </button>}
             {<button onClick={() => { setEditId(null); if (paid === false) return askUpgrade(); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d={SPARK} /> AI 이미지로 바꾸기 <ProTag style={{ marginLeft: 4 }} />
             </button>}
@@ -356,6 +371,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setOpenSlot(null); pickPhotos(slot); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
             </button>
+            {isWebStudio() && <button onClick={() => { setOpenSlot(null); setStockFor({ slot }); }}>
+              <Ico d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /> 오픈자료
+            </button>}
             {<button onClick={() => { setOpenSlot(null); if (paid === false) return askUpgrade(); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지 <ProTag style={{ marginLeft: 4 }} />
             </button>}
@@ -397,6 +415,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   return (
     <div style={{ marginTop: 18, border: `1px solid ${theme.border}`, borderRadius: 12, background: theme.bg || "#f6f8fa" }}>
       <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
+      {stockFor && <ArticleStockModal imagesOnly onClose={() => setStockFor(null)} onPick={async (p) => { if (p.kind === "image") await putStock(p.file, p.caption); }} />}
       <style>{editorCss}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${theme.border}`, fontSize: 12, color: theme.textSecondary }}>
         <span>{doc === "article" ? "기사에 들어갈" : "네이버에 들어갈"} 순서 그대로입니다. 글은 눌러서 고치고, 사진은 마우스를 올려 다룹니다. 문단 사이 ⊕로 사진을 넣습니다.</span>
