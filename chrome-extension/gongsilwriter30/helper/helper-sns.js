@@ -94,9 +94,11 @@
   }
   function click(el) {
     if (!el) return false;
+    // 그림(svg)을 찾았으면 그것을 감싼 단추·링크를 누른다 — svg 에는 click() 이 없다 (2026-11-09 인스타 [만들기])
+    if (!(el instanceof HTMLElement)) el = el.closest?.("a,button,[role='button'],[role='link'],[role='menuitem']") || el;
     el.scrollIntoView?.({ block: "center" });
     ["pointerdown", "mousedown", "pointerup", "mouseup"].forEach((t) => el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window })));
-    el.click();
+    if (typeof el.click === "function") el.click(); else el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
     return true;
   }
   const dialogName = (el) => {
@@ -481,8 +483,18 @@
     if (!create) return warn("[만들기] 단추를 못 찾았어요. 로그인돼 있는지 보고, [만들기]를 직접 누른 뒤 상자의 [사진 넣기]를 눌러 주세요.");
     click(create);
     await sleep(1200);
-    const post = byText(SEL.instagram.post);
-    if (post && !fileInput(dialog() || document)) { click(post); await sleep(1200); }
+    // [만들기]가 작은 메뉴(게시물·AI…)를 열면 [게시물] — 메뉴·대화 상자 안에서 먼저 찾는다 (피드 속 "게시물" 글자를 누르지 않게)
+    if (!fileInput(dialog() || document)) {
+      const pop = Array.from(document.querySelectorAll("[role='menu'],[role='dialog'],[role='listbox']")).filter(visible).pop();
+      const post = (pop && byText(SEL.instagram.post, pop)) || byText(SEL.instagram.post);
+      if (post) { click(post); await sleep(1200); }
+    }
+    // 그래도 사진 고르기 창이 안 열리면 회원이 한 번 열게 — 열리는 순간 저절로 이어서 (2026-11-09 사장님: "인스타그램이 채워지지 않네")
+    if ((job.video || (job.photos && job.photos.length)) && !(await waitFor(() => fileInput(dialog() || document) || fileInput(document), 6000))) {
+      panel.status("👆 왼쪽 [+ 만들기] → [게시물]을 한 번 눌러 주세요 — 사진 고르기 창이 열리면 사진·문구를 저절로 넣어요", "warn");
+      if (!(await waitFor(() => fileInput(dialog() || document) || fileInput(document), 120000, 400))) return warn("2분 동안 새 게시물 창이 열리지 않았어요. [+ 만들기] → [게시물]을 연 뒤 상자의 [사진 넣기]를 눌러 주세요.");
+      panel.status("새 게시물 창이 열렸어요 — 채우는 중…");
+    }
     if (!(await addPhotos())) return;
     // 영상이면 "동영상 게시물은 이제 릴스로 공유됩니다" 안내 [확인]
     if (job.video) {
