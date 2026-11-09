@@ -717,11 +717,12 @@ export default function ClipList(p: Props) {
             if (!e.dataTransfer.types.includes(DRAG_MEDIA)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "copy";
-            // 클립의 화면 칸(작은 칸·오른쪽 큰 칸)에 놓으면 늘 화면 바꾸기. 앞뒤 새 클립은 카드 맨 위·아래 가장자리에서만 (2026-10-18 사장님)
+            // 클립의 화면 칸(작은 칸·오른쪽 큰 칸)에 놓으면 화면 바꾸기. 카드 나머지에 놓으면 새 클립으로 — 위쪽 반은 앞, 아래쪽 반은 뒤에
+            //  (2026-11-09 사장님: "영상 사진을 드래그해도 클립에 넣을 수 있게" — 예전엔 카드 가운데도 화면 바꾸기라 새 클립이 안 생겼다)
             const r = e.currentTarget.getBoundingClientRect();
             const y = e.clientY - r.top;
             const onThumb = (e.target as HTMLElement).closest?.("[data-drop-replace]");
-            const where = onThumb ? "replace" : y < 14 ? "before" : y > r.height - 14 ? "after" : "replace";
+            const where = onThumb ? "replace" : y < r.height / 2 ? "before" : "after";
             if (!drop || drop.id !== id || drop.where !== where) setDrop({ id, where });
           },
           onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
@@ -817,6 +818,7 @@ export default function ClipList(p: Props) {
   };
   let n = 0;
   const [sceneEdit, setSceneEdit] = React.useState(""); // 이름 고치는 씬
+  const [endOver, setEndOver] = React.useState(false); // 맨 끝 놓는 곳 위에 끌고 있는지
   const byId = new Map(p.items.map((x) => [x.clip.id, x]));
   return (
     <div data-cliplist="" style={{ padding: "8px 24px 120px" }}>
@@ -878,6 +880,16 @@ export default function ClipList(p: Props) {
             {its.length > 0 && (
               <div style={{ display: "flex", height: 20 }}>
                 {gutter(its[its.length - 1].index + 1, true)}
+              </div>
+            )}
+            {/* 맨 끝 놓는 곳 — 여기에 사진·영상을 끌어 놓으면 맨 끝에 새 클립 (2026-11-09 사장님) */}
+            {its.length > 0 && si === project.scenes.length - 1 && p.onDropMedia && (
+              <div
+                onDragOver={(e) => { if (!e.dataTransfer.types.includes(DRAG_MEDIA)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; if (!endOver) setEndOver(true); }}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEndOver(false); }}
+                onDrop={(e) => { const raw = e.dataTransfer.getData(DRAG_MEDIA); setEndOver(false); if (!raw) return; e.preventDefault(); p.onDropMedia!(its[its.length - 1].clip.id, "after", raw); }}
+                style={{ margin: "4px 0 12px", padding: "16px 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: endOver ? "#fff" : C.dim, border: `2px dashed ${endOver ? C.accent : C.line2}`, borderRadius: 8, background: endOver ? "rgba(59,130,246,0.18)" : "transparent" }}>
+                ＋ 사진·영상을 여기에 끌어 놓으면 맨 끝에 새 클립으로 넣어요
               </div>
             )}
             {!its.length && <div style={{ padding: 30, textAlign: "center", color: C.dim, fontSize: 15, border: `1px dashed ${C.line2}`, borderRadius: 8 }}>아직 클립이 없어요. 위 [삽입] 탭이나 오른쪽 자료에서 넣어 주세요.</div>}

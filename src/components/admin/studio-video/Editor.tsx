@@ -2880,6 +2880,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setWork(null);
     }
   };
+  const insertAnchor = useRef(""); // 자료 칸에서 방금 넣은 클립 — 다음 넣기는 그 뒤에
+  useEffect(() => { if (selected.length) insertAnchor.current = ""; }, [selected]); // 클립을 직접 고르면 그 클립 기준
   const onPick = async (item: LibItem, action: LibPickAction, opt?: { range?: SrcRange | null; hold?: number }) => {
     const a = await ensureAsset(item);
     const rg = a.kind === "video" && opt?.range ? opt.range : null; // 두 번 눌러 고른 쓸 부분 (2026-10-25)
@@ -2906,7 +2908,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       say(`화면을 바꿨어요 (클립 ${selected.length}개)${a.kind === "video" && !rg ? " · 영상 시작점은 썸네일을 눌러 고를 수 있어요" : ""}`);
       return;
     }
-    await placeMedia(a, lastSelected(), false, rg, opt?.hold);
+    // 계속 이어 붙이기 (2026-11-09 사장님: "끝에 넣기를 2개 하면 더 추가가 안 되네") — 넣은 클립을 골라 두면 자료 칸이
+    //  [교체할 이미지]로 바뀌어 다음 것이 화면 바꾸기가 됐다. 이제 고르지 않고, 다음 넣기는 방금 넣은 클립 뒤에
+    const anchor = insertAnchor.current && findClip(pref.current, insertAnchor.current) ? insertAnchor.current : undefined;
+    const id = await placeMedia(a, lastSelected() || anchor, false, rg, opt?.hold);
+    if (id) { insertAnchor.current = id; setSelected([]); }
   };
 
   /** 모션그래픽 틀 (2026-10-28 사장님) — 이 영상 공실 정보로 구워 맨 앞에 넣는다 */
@@ -3113,7 +3119,11 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       });
       setSelected(ids);
       say((ids.length > 1 ? `고른 클립 ${ids.length}개 화면을 바꿨어요` : "이 클립 화면을 바꿨어요") + (a.kind === "video" && !rg ? " · 영상 시작점은 썸네일을 눌러 고를 수 있어요" : ""));
-    } else await placeMedia(a, clipId, where === "before", rg, holdOf(raw));
+    } else {
+      // 끌어 놓아 새 클립 — 골라 두지 않는다 (자료 칸이 [교체할 이미지]로 바뀌지 않게, 2026-11-09)
+      const id = await placeMedia(a, clipId, where === "before", rg, holdOf(raw));
+      if (id) { insertAnchor.current = id; setSelected([]); }
+    }
   };
   /**
    * 스티커·템플릿 끌어 놓기 (2026-10-20 사장님) — 클립 카드 = 그 클립에, 미리보기 = 지금 클립 그 자리에, 타임라인 = 놓은 시각부터 3초
