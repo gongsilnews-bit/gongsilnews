@@ -740,10 +740,12 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
               ))}
             </div>
             {focus === "region" && <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>주변 시설 자료가 많지 않아 분량은 &apos;짧게·보통&apos;까지만 돼요</div>}
-            <button type="button" onClick={() => void analyze()} disabled={!canAna || Boolean(anaBusy) || ana?.key === anaKey}
-              style={{ width: "100%", height: 40, marginTop: 8, borderRadius: 6, border: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 800,
-                background: !canAna || anaBusy || ana?.key === anaKey ? "#e5e7eb" : NAVY, color: !canAna || anaBusy || ana?.key === anaKey ? "#6b7280" : "#fff", cursor: !canAna || anaBusy || ana?.key === anaKey ? "default" : "pointer" }}>
-              {anaBusy ? "분석하는 중…" : ana?.key === anaKey ? "✓ 분석했어요" : !canAna ? (mkt === "area" ? "지역을 고르면 분석할 수 있어요" : "단지를 고르면 분석할 수 있어요") : <>Step 1<span style={{ display: "inline-block", width: 12 }} />분석하기</>} {/* 아이콘 대신 Step 1 (2026-11-08 사장님) */}
+            {/* 분석이 끝나도 다시 누를 수 있게 — [↻ 다시 분석하기] (2026-11-09 사장님: "한번 분석하고 끝이네") */}
+            <button type="button" onClick={() => void analyze()} disabled={!canAna || Boolean(anaBusy)}
+              style={{ width: "100%", height: 40, marginTop: 8, borderRadius: 6, fontFamily: "inherit", fontSize: 14, fontWeight: 800,
+                border: ana?.key === anaKey && !anaBusy ? `1px solid ${NAVY}` : 0,
+                background: !canAna || anaBusy ? "#e5e7eb" : ana?.key === anaKey ? "#fff" : NAVY, color: !canAna || anaBusy ? "#6b7280" : ana?.key === anaKey ? NAVY : "#fff", cursor: !canAna || anaBusy ? "default" : "pointer" }}>
+              {anaBusy ? "분석하는 중…" : ana?.key === anaKey ? "↻ 다시 분석하기" : !canAna ? (mkt === "area" ? "지역을 고르면 분석할 수 있어요" : "단지를 고르면 분석할 수 있어요") : <>Step 1<span style={{ display: "inline-block", width: 12 }} />분석하기</>} {/* 아이콘 대신 Step 1 (2026-11-08 사장님) */}
             </button>
           </>)}
           {src === "news" && (<>{head(n++, "뉴스 기사 고르기")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { helper, helperOn } from "@/components/admin/studio-web/core";
+import { helper } from "@/components/admin/studio-web/core";
 
 /**
  * 기사쓰기 단지 분석 — 우리동네부동산 단지 화면을 "실제 화면 그대로" 찍는다 (2026-11-09 사장님: 캡처가 부자연스러움, 지도·공실뉴스가 다 보이게)
@@ -13,11 +13,16 @@ export type RealShot = { url: string; thumb: string; caption: string };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function fromHelper(): Promise<Blob | null> {
-  if (!(await helperOn())) return null;
+/** 도우미로 찍기 — 못 찍으면 이유(why)를 돌려준다 (화면에 보여 원인을 바로 알 수 있게) */
+async function fromHelper(): Promise<{ blob: Blob | null; why: string }> {
+  const ping = await helper({ op: "ping" }, 1500);
+  if (!ping?.ok) return { blob: null, why: "도우미(크롬 확장)가 이 탭에 연결되지 않았어요" };
+  const ver = String(ping.version || "");
   const r = await helper({ op: "captureTab" }, 10000);
-  if (!r?.ok || !r.dataUrl) return null;
-  return (await fetch(r.dataUrl)).blob();
+  if (r?.ok && r.dataUrl) return { blob: await (await fetch(r.dataUrl)).blob(), why: "" };
+  const why = r == null ? `도우미 ${ver}가 대답하지 않았어요 (4.1.3 이상이면 자동으로 찍어요)` : `도우미 ${ver}: ${r.error || "찍지 못했어요"}`;
+  console.warn("[단지 화면 찍기]", why, r);
+  return { blob: null, why };
 }
 
 async function fromTabShare(): Promise<Blob | null> {
@@ -65,7 +70,8 @@ export async function captureComplexScreen(complex: { id: string; name: string }
     if (st) { st.textContent = "[data-gs-cap-launcher]{display:none!important}"; frame.contentDocument?.head.appendChild(st); }
     await sleep(3500); // 지도 그림·가격 표시가 다 뜰 때까지
     onStatus?.("화면을 찍는 중…");
-    let blob = await fromHelper();
+    const h = await fromHelper();
+    let blob = h.blob;
     if (!blob) {
       // 도우미가 없으면 크롬 탭 공유 — 크롬은 방금 누른 뒤에만 물을 수 있어서 단추를 누르게 한다 (단추는 찍히기 전에 사라진다)
       const btn = document.createElement("button");
@@ -76,12 +82,15 @@ export async function captureComplexScreen(complex: { id: string; name: string }
       skip.type = "button";
       skip.textContent = "건너뛰기";
       skip.style.cssText = "position:absolute;right:20px;bottom:36px;padding:10px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit";
-      cover.append(btn, skip);
+      const why = document.createElement("div");
+      why.textContent = `자동으로 찍지 못한 이유: ${h.why}`;
+      why.style.cssText = "position:absolute;left:50%;bottom:92px;transform:translateX(-50%);padding:6px 12px;border-radius:6px;background:rgba(17,24,39,.85);color:#fde68a;font-size:13px;font-weight:700;white-space:nowrap";
+      cover.append(why, btn, skip);
       blob = await new Promise<Blob | null>((ok) => {
         skip.onclick = () => ok(null);
-        btn.onclick = () => { btn.remove(); skip.remove(); void fromTabShare().then(ok); };
+        btn.onclick = () => { why.remove(); btn.remove(); skip.remove(); void fromTabShare().then(ok); };
       });
-      btn.remove(); skip.remove();
+      why.remove(); btn.remove(); skip.remove();
     }
     if (!blob) return null;
     const url = URL.createObjectURL(blob);
