@@ -1,5 +1,6 @@
 "use client";
 
+import { MARKET_STORIES, VACANCY_STORIES } from "@/utils/storyFlows";
 import { isWebStudio, prepareWebArticleDraft, studioBridge } from "../studio-web";
 import { openHelperStore } from "@/components/admin/studioLight";
 import React, { useCallback, useEffect, useState } from "react";
@@ -44,7 +45,7 @@ type Bridge = {
   };
 };
 /** 한 번에 쓰기 — 탭마다 "함께 쓰기" 체크 · 기사 스타일·분량 · SNS 문체 (이 PC 에 기억). 블로그 문체·분량은 블로그 탭 값 */
-type AllOpts = { article: { on: boolean; kind: string; length: string; autoCover?: boolean }; blog: { on: boolean; style: string; length: string }; sns: { on: boolean; tone?: string; tones?: Record<string, string>; same?: boolean; chs?: Record<string, boolean> }; youtube: { on: boolean; videoType?: string; duration?: string; tone?: string; number?: string } };
+type AllOpts = { story?: string; article: { on: boolean; kind: string; length: string; autoCover?: boolean }; blog: { on: boolean; style: string; length: string }; sns: { on: boolean; tone?: string; tones?: Record<string, string>; same?: boolean; chs?: Record<string, boolean> }; youtube: { on: boolean; videoType?: string; duration?: string; tone?: string; number?: string } };
 // 공실뉴스·뉴스칼럼은 기사 종류·블로그 문체가 달라 따로 기억한다
 // 자유 글쓰기는 뉴스칼럼과 따로 기억한다 — 기본값이 다르다 (2026-11-06: 기사 칼럼·해설 · 블로그 전문가 칼럼형 · 쇼츠 생활 정보·친근한 이야기)
 const allKey = (kind: string, free = false) => (kind === "column" ? (free ? "gs-allwrite:column-free" : "gs-allwrite:column") : kind === "sim" ? "gs-allwrite:sim" : "gs-allwrite");
@@ -53,9 +54,11 @@ const loadAll = (kind: string, free = false): AllOpts => {
   const d: AllOpts = free
     ? { article: { on: true, kind: "column", length: "normal" }, blog: { on: true, style: "expert", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false, videoType: "info", tone: "friendly" } }
     : { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
-  try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); return v ? { article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } } : d; } catch { return d; }
+  try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); return v ? { story: v.story, article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } } : d; } catch { return d; }
 };
-const bridge = (): Bridge | null => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
+const bridge = (): Bridge | null => studioBridge<Bridge>();
+/** 어떤 이야기로 — 공실은 매물 이야기, 뉴스칼럼은 단지 중심(기사 흐름 그대로가 기본) (2026-11-09 사장님: 자연스럽게 선택하고 이어지게) */
+const storyChoices = (kind: string) => (kind === "gongsil" ? VACANCY_STORIES.map((x) => ({ id: x.id, name: x.name, desc: x.desc })) : kind === "column" ? [{ id: "", name: "기사 흐름 그대로", desc: "내 기사의 흐름을 따라" }, ...MARKET_STORIES.map((x) => ({ id: x.id, name: x.name, desc: x.desc }))] : []); // 웹이면 웹 대역 (2026-11-03)
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 /** 작업 파일(.gsn) 저장 상태 — file 이 비면 아직 파일이 없다 */
@@ -589,6 +592,27 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
             {head}
             <StepTitle theme={theme} n={2} label="쓸 글 고르기" state={article || blog || hasYoutube || Object.values(snsData?.channels || {}).some((c) => c?.post) ? "done" : "now"} style={{ margin: "20px 0 8px" }}
               title="켜 둔 글을 [한 번에 쓰기]로 함께 씁니다. 줄을 누르면 그 글의 설정이 펼쳐집니다." />
+            {/* 어떤 이야기로 — 한 번 고르면 기사·블로그·SNS·쇼츠가 같은 이야기로 이어진다 (2026-11-09) */}
+            {storyChoices(kind).length > 0 && (() => {
+              const list = storyChoices(kind);
+              const cur = list.find((x) => x.id === (all.story ?? "")) ? all.story ?? "" : list[0].id;
+              return (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 6 }}>어떤 이야기로 <span style={{ fontWeight: 500 }}>· 모든 글이 같은 이야기로 이어져요</span></div>
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    {list.map((x) => {
+                      const on = cur === x.id;
+                      return (
+                        <button key={x.id || "flow"} type="button" onClick={() => keepAll({ ...all, story: x.id })} title={x.desc}
+                          style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${on ? (theme.darkMode ? "#93c5fd" : "#1a3a6b") : theme.border}`, background: on ? (theme.darkMode ? "#93c5fd" : "#1a3a6b") : theme.cardBg, color: on ? (theme.darkMode ? "#111827" : "#fff") : theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                          {x.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {rows.map((row) => {
                 const open = openRow === row.id;

@@ -6,6 +6,7 @@
  *  AI 는 회원 본인 계정 (앱 gongsilStudio.write.ask, 서버 AI 안 씀). 숫자는 공실뉴스 데이터(재료)에 있는 것만.
  *  디자인은 대본 작성과 같은 톤 — 흰 바탕 · 옅은 회색 선 · 남색 하나 · 번호 단계.
  */
+import { MARKET_STORIES, VACANCY_STORIES, type Story } from "@/utils/storyFlows";
 import React, { useEffect, useState } from "react";
 import { openDocked, dockArea } from "../studio-web/ai-ask";
 import { createPortal } from "react-dom";
@@ -49,22 +50,7 @@ const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/
 /* ── 어떤 이야기로 (2026-11-09 사장님: "글이 어색하지 않게, 기사 스타일·분류는 니가 알아서 나눠줘, 필요없는 건 지워") ──
    예전 [기사 스타일 6개]·[무엇을 중심으로 4개]·[제목 고르기]를 이것 하나로 합쳤다.
    재료마다 독자가 궁금한 이야기 하나를 고르면, 그 이야기의 문단 순서대로 쓴다 (한 방향으로 흐르게). 말투는 기사체 그대로 */
-type Story = { id: string; name: string; desc: string; flow: string; title: string; heads?: boolean };
-const STORIES: Partial<Record<Src, Story[]>> = {
-  // 단지/지역/시세는 지금의 [무엇을 중심으로] 4개 그대로 (2026-11-09 사장님: "지금의 구분 형식은 나쁘지 않아") — 중심마다 문단 순서만 정했다
-  market: [
-    { id: "all", name: "종합", desc: "단지·시세·지역을 고르게", title: "가장 눈에 띄는 사실(신고가·최근 거래)을 앞세운 제목", flow: "① 최근 거래 — 신고가가 있으면 맨 앞에 ② 어떤 단지인가(준공·세대·주차) ③ 역·학교·장보기 같은 생활 여건 ④ 그래서 어떤 단지인지 한 문단으로 정리" },
-    { id: "complex", name: "단지 정보", desc: "세대수·준공·주차 등 단지 특징", title: "단지의 특징(준공·규모)을 앞세운 제목", flow: "① 준공·세대·동·층 ② 주차·평형 구성 ③ 단지가 자리한 동네(역·학교 한두 문장) ④ 어떤 단지인지 정리. 가격 이야기는 쓰지 않는다" },
-    { id: "price", name: "시세 정보", desc: "실거래 내역·가격 흐름", title: "최근 거래가(신고가면 신고가)를 앞세운 제목", flow: "① 최근 매매 — 신고가가 있으면 맨 앞에 ② 평형별 매매 흐름(꼭 필요한 것만) ③ 전세(있으면) ④ 가격 흐름 정리. 주변 시설 이야기는 쓰지 않는다" },
-    { id: "region", name: "지역 정보", desc: "교통·편의시설·학교", title: "가까운 역·학교를 앞세운 제목", flow: "① 가장 가까운 역과 노선 ② 초·중·고와 어린이집 ③ 장보기·생활시설 ④ 그래서 어떤 생활이 가능한 곳인지 정리. 가격 이야기는 쓰지 않는다" },
-  ],
-  vacancy: [
-    { id: "intro", name: "매물 소개", desc: "위치·평수·가격 차례로", title: "동네와 매물의 가장 큰 장점을 담은 제목", flow: "① 위치와 매물 종류 ② 평수·구조 ③ 건물·상태·옵션 ④ 가격(보증금·월세·관리비 한 번에) ⑤ 입주 시기" },
-    { id: "fit", name: "이런 분께 추천", desc: "누구에게 맞는 집인지", title: "어떤 사람에게 맞는 집인지 담은 제목", flow: "① 이 매물이 맞는 사람(재료의 조건으로 뒷받침되는 것만) ② 그렇게 말하는 근거가 된 조건들 ③ 가격 ④ 입주 시기" },
-    { id: "area", name: "동네와 함께", desc: "역·주변을 앞세워", title: "동네·역을 앞세운 제목", flow: "① 동네와 가까운 역·생활 여건(재료에 있는 것만) ② 매물 조건 ③ 가격 ④ 입주 시기" },
-  ],
-  // 뉴스 기사·공실뉴스·자유 주제는 지금 그대로 — 기사 스타일·제목 고르기 (2026-11-09 사장님: "뉴스기사 자유주제는 일단 놔두기")
-};
+const STORIES: Partial<Record<Src, Story[]>> = { market: MARKET_STORIES, vacancy: VACANCY_STORIES }; // 이야기 정의는 utils/storyFlows 한 곳 (뉴스·SNS자동화와 같이)
 const KINDS = [
   { id: "news", name: "뉴스기사형", prompt: "도입부터 결론까지 문단이 자연스럽게 이어지는 뉴스 기사. 매물 조건·지역·수요를 사실과 숫자로 기사 흐름 안에서 풀어 쓴다." },
   { id: "summary", name: "단락별 요약", prompt: "첫 문단에서 기사 전체를 요약하고, 이어서 핵심 내용을 소제목 단위로 나눠 독자가 빠르게 훑어볼 수 있게 쓴다.", heads: true },

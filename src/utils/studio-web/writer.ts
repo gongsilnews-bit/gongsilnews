@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { storyBlock } from "@/utils/storyFlows";
 import vm from "node:vm";
 import { STUDIO_EXT_FILES, STUDIO_EXT_VERSION } from "@/app/api/studio/prompts/bundle.generated";
 
@@ -516,12 +517,13 @@ function colAllPrompt(b: any, source: any) {
   const artLen = M.GW_LENGTH[b.article?.length] ? b.article.length : "normal";
   const blogSt = M.GW_BLOG_STYLE[b.blog?.style] ? b.blog.style : "info", blogLen = b.blog?.length || "normal";
   const parts: [string, string, string][] = [];
-  if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen }) + COL_EXPERT]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen }) + COL_EXPERT + BLOG_FRIENDLY]);
+  const st = (m: "article" | "blog" | "sns" | "shorts") => storyBlock("market", b.story, m); // 고른 이야기 — 모든 글이 같은 이야기로 (2026-11-09)
+  if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen }) + COL_EXPERT + st("article")]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen }) + COL_EXPERT + BLOG_FRIENDLY + st("blog")]);
   const only = snsOnlyOf(b.snsOnly);
-  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
+  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone, only) + snsOnlyLine(only) + st("sns")]);
   const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
-  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", colYtPrompt({ article: REF, source }, ytSet!)]);
+  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", colYtPrompt({ article: REF, source }, ytSet!) + st("shorts")]);
   return bundle(parts, { artKind, artLen, blogSt, blogLen, ytSet });
 }
 function bundle(parts: [string, string, string][], settings: Record<string, unknown>) {
@@ -548,12 +550,13 @@ function allPrompt(b: any) {
   const artKind = b.article?.kind || "news", artLen = b.article?.length || "normal";
   const blogSt = b.blog?.style || "listing", blogLen = b.blog?.length || "normal";
   const parts: [string, string, string][] = [];
-  if (want.article) parts.push(["article", "공실뉴스 기사", P.gwBuildPrompt(v, { kind: artKind, length: artLen })]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen }) + BLOG_FRIENDLY]);
+  const st = (m: "article" | "blog" | "sns" | "shorts") => storyBlock("vacancy", b.story || "intro", m); // 고른 이야기 (안 골랐으면 매물 소개) — 모든 글이 같은 이야기로 (2026-11-09)
+  if (want.article) parts.push(["article", "공실뉴스 기사", P.gwBuildPrompt(v, { kind: artKind, length: artLen }) + st("article")]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen }) + BLOG_FRIENDLY + st("blog")]);
   const only = snsOnlyOf(b.snsOnly);
-  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
+  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone, only) + snsOnlyLine(only) + st("sns")]);
   const ytSet = want.youtube ? ytSettings(v, b.youtube || {}) : null;
-  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", ytPrompt(v, ytSet!, REF)]);
+  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", ytPrompt(v, ytSet!, REF) + st("shorts")]);
   const keys = parts.map((p) => p[0]);
   const prompt = [
     `여러 글을 한 번에 씁니다. 아래 [작업 ${parts.map((_, i) => i + 1).join("·")}]을 모두 하십시오.`,
