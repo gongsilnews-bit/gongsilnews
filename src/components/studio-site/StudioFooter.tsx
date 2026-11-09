@@ -49,8 +49,6 @@ export default function StudioFooter() {
               <div style={head}>고객지원</div>
               <Link href="/newsrealty/guide" style={link}>사용법 배우기</Link>
               <Link href="/newsrealty/pricing" style={link}>금액안내</Link>
-              <Link href="/newsrealty/resources" style={link}>자료실</Link>
-              <Link href="/newsrealty/community" style={link}>커뮤니티</Link>
               <Link href="/help" style={link}>고객센터</Link>
             </div>
           </div>

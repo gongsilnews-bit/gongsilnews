@@ -34,27 +34,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "금액안내", href: "/newsrealty/pricing", match: (p) => p.startsWith("/newsrealty/pricing") },
   { label: "신청하기", href: "/newsrealty/apply", match: (p) => p.startsWith("/newsrealty/apply") },
   // 자료실·커뮤니티는 2026-10-26 부동산특강(/study)에서 옮겨 왔다 — 게시판은 그대로, 회원 전용(4레벨) 혜택
-  {
-    label: "자료실",
-    href: "/newsrealty/resources?board=drone",
-    match: (p) => p.startsWith("/newsrealty/resources"),
-    subItems: [
-      { label: "드론영상", href: "/newsrealty/resources?board=drone", board: "drone", first: true },
-      { label: "APP(앱)", href: "/newsrealty/resources?board=app", board: "app" },
-      { label: "AI 프롬프트", href: "/newsrealty/resources?board=prompt", board: "prompt" },
-      { label: "음원", href: "/newsrealty/resources?board=sound", board: "sound" },
-      { label: "계약서/양식", href: "/newsrealty/resources?board=doc", board: "doc" },
-    ],
-  },
-  {
-    label: "커뮤니티",
-    href: "/newsrealty/community",
-    match: (p) => p.startsWith("/newsrealty/community"),
-    subItems: [
-      { label: "회원 Q&A", href: "/newsrealty/community?board=studyqa", board: "studyqa", first: true },
-      { label: "자유게시판", href: "/newsrealty/community?board=free", board: "free" },
-    ],
-  },
+  // 자료실 메뉴는 뺐다 (2026-11-09 사장님: "의미가 없어") — 게시판·주소(/newsrealty/resources)는 그대로
+  // 커뮤니티 메뉴도 뺐다 (2026-11-09 사장님) — 게시판·주소(/newsrealty/community)는 그대로
 ];
 
 interface NewsrealtyHeaderProps {
