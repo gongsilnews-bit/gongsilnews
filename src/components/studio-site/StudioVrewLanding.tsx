@@ -102,17 +102,6 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-use .t{font-size:22px;font-weight:800;margin-top:22px}
 .sv-use .d{font-size:16px;line-height:1.7;color:#4b5563;margin-top:10px;white-space:pre-line}
 @media (max-width:860px){.sv-uses{grid-template-columns:1fr;gap:40px}}
-.sv-maker{background:#1b1c1e;color:#fff;margin-top:120px}
-.sv-maker .sv-h2{color:#fff}
-.sv-maker .box{display:grid;grid-template-columns:340px 1fr;max-width:960px;margin:56px auto 0;background:#2a2c2f;border-radius:20px;text-align:left;overflow:hidden}
-.sv-maker .pic{border-right:1px solid #3a3c40;padding:32px;display:flex;align-items:center;justify-content:center}
-.sv-maker .ph{width:100%;aspect-ratio:3/4;border-radius:14px;border:1px dashed #55585d;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:15px;font-weight:600}
-.sv-maker .list{padding:44px 48px;display:flex;flex-direction:column;gap:30px;justify-content:center}
-.sv-maker .it{display:flex;gap:16px;align-items:flex-start}
-.sv-maker .it svg{flex:none;color:${ACCENT};margin-top:3px}
-.sv-maker .it .t{font-size:19px;font-weight:800}
-.sv-maker .it .d{font-size:15px;line-height:1.7;color:#c4c7cc;margin-top:6px}
-@media (max-width:860px){.sv-maker .box{grid-template-columns:1fr}.sv-maker .pic{border-right:0;border-bottom:1px solid #3a3c40}.sv-maker .list{padding:32px 24px}}
 .sv-last{padding-bottom:120px}
 .sv-last .logo{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:48px}
 .sv-last .logo img{width:96px;height:96px;border-radius:50%;object-fit:cover}
@@ -513,30 +502,7 @@ export default function StudioVrewLanding() {
         </div>
       </section>
 
-      {/* 8-2 만든 사람 — 브루 "개인정보 보호를 최우선으로" 검은 띠식: 왼쪽 사진 · 오른쪽 설명 (2026-10-26 사장님) */}
-      <div className="sv-maker">
-        <section className="sv-sec" style={{ paddingTop: 110, paddingBottom: 110 }}>
-          <h2 className="sv-h2">강남 부동산 마케팅 교육 10년,<br />방송국 PD 출신 마케팅 대표가 제작했습니다.</h2>
-          <div className="box">
-            <div className="pic">
-              {/* 대표 사진 — 사장님이 주시면 /public/studio-shots/maker.jpg 로 넣는다 */}
-              <div className="ph">대표 사진 자리</div>
-            </div>
-            <div className="list">
-              {[
-                { t: "강남권 최다 공동중개 마케팅 이사 직접 제작", d: "공동중개 현장에서 매일 쓰는 마케팅을 그대로 프로그램에 담았습니다.", i: "M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7zM9 12l2 2 4-4" },
-                { t: "부동산 마케팅 교육 10년", d: "강남에서 10년 동안 중개사님들께 블로그 · SNS · 영상 마케팅을 가르쳤습니다.", i: "M3 7l9-4 9 4-9 4zM7 9v5c0 2 2.5 3 5 3s5-1 5-3V9" },
-                { t: "서울벤처대학원대학교 부동산 마케팅 강의", d: "대학원에서 부동산 마케팅을 강의한 내용을 실무 기능으로 옮겼습니다.", i: "M4 20h16M6 20V10M10 20V10M14 20V10M18 20V10M3 10l9-6 9 6z" },
-                { t: "포토샵 · 프리미어 프로 · 캡컷 · 브루 강의 10년", d: "전문 프로그램을 10년 동안 가르치며 꼭 필요한 기능만 골라 담았습니다.", i: "M4 4h16v16H4zM8 15V9l4 3 4-3v6" },
-                { t: "방송국 PD 출신", d: "방송 제작 경험으로 누구나 쉽게 쓰는 화면을 만들었습니다.", i: "M3 6h18v12H3zM10 9l5 3-5 3z" },
-              ].map((x) => (
-                <div key={x.t} className="it">{ico(x.i)}<div><div className="t">{x.t}</div><div className="d">{x.d}</div></div></div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </div>
-
+      {/* 만든 사람(대표 소개) 띠는 11-09 사장님 지시로 없앰 */}
       {/* 부동산회원 · 공실뉴스부동산 비교표는 11-09 사장님 지시로 없앰 */}
 
       {/* 마지막 — 브루 맨 아래처럼 큰 로고 · 한 줄 · 버튼 (2026-10-26 사장님) */}
