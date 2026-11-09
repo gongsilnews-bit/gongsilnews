@@ -203,7 +203,20 @@ async function analyze(vacancyId: string) {
     const t0 = Date.now();
     (vacancy.images || []).forEach((u: string, i: number) => media.push({ key: `photo:${u}`, kind: "photo", src: u, caption: captionFor("photo", vacancy, i), real: true, addedAt: t0 }));
 
-    // 화면 3장(공실열람 검증·지도·로드뷰)은 웹에서 찍지 못한다 — 다른 곳(카카오) 그림이 섞여 브라우저가 막는다. 앱 안내는 하지 않는다 (2026-11-04 사장님)
+    // 실제 화면 5장 — 공실열람에 나와 있는 모습 · 상세 창 · 로드뷰 · 스카이뷰 · 주변 지도 (2026-11-09 사장님: 단지 분석처럼)
+    //  예전엔 "웹에서 못 찍는다"며 뺐다 — 이제 창 전체에 띄워 도우미(또는 크롬 공유)로 실제 화면을 찍는다. 주소 비공개 매물은 로드뷰·스카이뷰를 찍지 않는다
+    frame.remove();
+    try {
+      const { captureVacancyScreens } = await import("../writing/realScreenShot");
+      const shots = await captureVacancyScreens(vacancy.vacancyId || vacancyId, String(vacancy.title || ""), (t) => say("vacancy", t));
+      const KIND: Record<string, string> = { screen: "proof", panel: "detail", street: "roadview", sky: "sky", wide: "map" };
+      for (const [i, s] of shots.entries()) {
+        const src = await toJpeg(s.url, 1600).catch(() => "");
+        URL.revokeObjectURL(s.url);
+        if (src) media.push({ key: `shot:${s.key}`, kind: KIND[s.key] || "proof", src, caption: s.caption, real: true, addedAt: t0 + 1 + i });
+      }
+      if (!shots.length) failures.push("화면 사진을 찍지 못했어요 (건너뛰었거나 공유를 취소)");
+    } catch { failures.push("화면 사진을 찍지 못했어요"); }
 
     // 다시 분석해도 회원이 넣은 사진(내 사진)은 남기고, 뺀 사진은 계속 뺀 채로 (앱과 같다)
     const hidden: Src[] = [];

@@ -98,7 +98,7 @@ const WEB_CATEGORIES = ["gongsil", "column", "free", "auction"]; // 경매·공�
 const WEB_LEAD: Record<string, string> = { auction: "온비드 공매 물건 하나로 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 지역·종류·반값 이하·마감 임박으로 골라 찾습니다.", column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 화면", detail: "매물 정보", map: "지도", roadview: "로드뷰", sky: "스카이뷰", ai: "AI 생성", upload: "내 사진" }; // detail·sky — 웹 실제 화면 찍기 (2026-11-09)
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 
@@ -767,7 +767,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   </button>
                 )}
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{web ? "등록 사진 전부를 모읍니다. 10초쯤 걸립니다." : "등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다."}</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{web ? "등록 사진 전부와 실제 화면 5장(공실열람·매물 정보·로드뷰·스카이뷰·주변 지도)을 모읍니다. 30초쯤 걸립니다." : "등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다."}</div>
             </>
           )}
           {progress && <div style={{ marginTop: 12, fontSize: 14, color: (theme.darkMode ? "#ffffff" : "#1a3a6b"), fontWeight: 600 }}>{progress}</div>}
