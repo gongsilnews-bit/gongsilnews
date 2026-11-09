@@ -124,6 +124,39 @@ export default function NewsReadContent({
   const shareDropdownRef = useRef<HTMLDivElement>(null);
   const fontSizePopupRef = useRef<HTMLDivElement>(null);
   const [commentText, setCommentText] = useState("");
+  // 공실뉴스 드론 영상 — 가운데 흐린 로고 · 전체 화면에서도 로고 · 다운로드 막기 (2026-11-09 사장님)
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = bodyRef.current;
+    if (!root) return;
+    const cleanups: (() => void)[] = [];
+    root.querySelectorAll<HTMLVideoElement>('video[src^="/api/drone/"]').forEach((video) => {
+      if (video.closest(".gs-drone-box")) return;
+      video.setAttribute("controlslist", "nodownload");
+      video.disablePictureInPicture = true;
+      const box = document.createElement("div");
+      box.className = "gs-drone-box";
+      box.style.cssText = "position:relative;display:block;width:100%;";
+      video.parentNode?.insertBefore(box, video);
+      box.appendChild(video);
+      const mark = document.createElement("div");
+      mark.setAttribute("aria-hidden", "true");
+      mark.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;pointer-events:none;opacity:0.2;user-select:none;";
+      mark.innerHTML = '<img src="/new_logo.png" alt="" style="width:13%;min-width:36px;max-width:90px;aspect-ratio:1;border-radius:50%;object-fit:cover;"><span style="color:#fff;font-weight:900;font-size:clamp(18px,4.2vw,40px);letter-spacing:-0.03em;text-shadow:0 1px 4px rgba(0,0,0,0.6);">공실뉴스</span>';
+      box.appendChild(mark);
+      const noMenu = (e: Event) => e.preventDefault();
+      video.addEventListener("contextmenu", noMenu);
+      // 플레이어의 전체 화면을 누르면 영상만이 아니라 로고가 든 상자째로 키운다
+      const onFs = () => {
+        if (document.fullscreenElement === video) {
+          void document.exitFullscreen().then(() => box.requestFullscreen?.()).catch(() => {});
+        }
+      };
+      document.addEventListener("fullscreenchange", onFs);
+      cleanups.push(() => { video.removeEventListener("contextmenu", noMenu); document.removeEventListener("fullscreenchange", onFs); });
+    });
+    return () => cleanups.forEach((c) => c());
+  }, [article.content]);
   const [viewCount, setViewCount] = useState(article.view_count || 0);
   const [mounted, setMounted] = useState(false);
 
@@ -899,6 +932,7 @@ export default function NewsReadContent({
 
               {article.content && (
                 <div 
+                  ref={bodyRef}
                   suppressHydrationWarning 
                   dangerouslySetInnerHTML={{ 
                     __html: article.content
@@ -1340,6 +1374,8 @@ export default function NewsReadContent({
       )}
 
       <style>{`
+        .gs-drone-box:fullscreen { background: #000; display: flex !important; align-items: center; justify-content: center; }
+        .gs-drone-box:fullscreen video { width: 100% !important; height: 100% !important; max-width: none !important; object-fit: contain; border-radius: 0 !important; }
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
