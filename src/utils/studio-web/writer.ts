@@ -492,6 +492,16 @@ const COL_EXPERT = `
 - 지역·주변 시설은 역·마트·학교 거리 같은 숫자를 서로 비교해 객관적인 사실로 쓰십시오.
 - 독자를 가르치려 드는 말은 쓰지 마십시오: "~할 필요가 있다", "구분해 볼 필요가 있다", "~봐야 한다", "~확인해야 한다", "~살펴볼 만하다", "~하는 편이 정확하다", "걸어 보라", "주의해야 한다". 문단은 사실·숫자·전문가의 해석으로 끝내십시오.
 - 가 보거나 걸어 본 것처럼 꾸며 쓰지 마십시오.`;
+/* 블로그는 부동산이 자기 이름으로 홍보하는 글 — 친근하게 (2026-11-09 사장님: "블로그·SNS·대본은 객관적일 필요 없음, 부동산이 개별적으로 홍보하는 것, 친근하게")
+ *  뉴스 기사(공실뉴스 기사)는 객관적인 기사체 그대로 — 이 규칙은 블로그에만 붙인다 */
+const BLOG_FRIENDLY = `
+
+[블로그 말투 — 위 지시(객관적·전문가 말투 포함)보다 먼저 지킬 것]
+- 이 블로그는 동네 부동산이 자기 이웃·손님에게 들려주는 글입니다. 뉴스처럼 객관적으로 쓰지 말고, 친근한 존댓말(~해요·~이에요)로 이야기하듯 쓰십시오.
+- 숫자만 늘어놓지 말고, 사실에서 나오는 느낌을 붙이십시오 (예: "역이 코앞이라 출퇴근 걱정이 없어요", "초등학교가 단지 바로 앞이라 아이 키우는 집에 반가운 거리예요", "신고가가 나온 건 찾는 분이 꾸준하다는 얘기죠").
+- "~로 보면", "숫자로 보면", "자료상", "~가 드러난다" 같은 해석·보고서 말투, "~판단할 수는 없다", "~와는 다르다" 같은 단서 문장, 거리 숫자 빼기 계산("530m 더 가깝다"), "직선거리"라는 말은 쓰지 마십시오.
+- 흐름은 '요즘 무슨 일이 있었나(거래·신고가) → 어떤 단지·집인가 → 살면 어떤가(역·학교·장보기) → 그래서 어떤 분께 맞는 곳인가'로 이어지게 씁니다.
+- 자료에 없는 사실(걸어서 몇 분, 개발 계획, 앞으로 오른다)과 과장·투자 권유("무조건 오른다", "지금 사야 한다")는 쓰지 마십시오.`;
 /* 뉴스칼럼 한 번에 쓰기 (앱 all-writer.js 의 col 부분과 같다) — 기사를 안 쓰면 소재인 내 기사(ref)가 참조 기사 */
 function colAllPrompt(b: any, source: any) {
   const want = { article: b.want?.article === true, blog: b.want?.blog === true, sns: b.want?.sns === true, youtube: b.want?.youtube === true };
@@ -506,7 +516,7 @@ function colAllPrompt(b: any, source: any) {
   const blogSt = M.GW_BLOG_STYLE[b.blog?.style] ? b.blog.style : "info", blogLen = b.blog?.length || "normal";
   const parts: [string, string, string][] = [];
   if (want.article) parts.push(["article", "공실뉴스 기사 (뉴스칼럼)", M.gwBuildPrompt(source, { kind: artKind, length: artLen }) + COL_EXPERT]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen }) + COL_EXPERT]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", M.gwBuildBlogPrompt({ article: REF, source }, { style: blogSt, length: blogLen }) + COL_EXPERT + BLOG_FRIENDLY]);
   const only = snsOnlyOf(b.snsOnly);
   if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", M.gwBuildSnsPrompt({ article: REF, source }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
   const ytSet = want.youtube ? colYtSettings(b.youtube || {}) : null;
@@ -538,7 +548,7 @@ function allPrompt(b: any) {
   const blogSt = b.blog?.style || "listing", blogLen = b.blog?.length || "normal";
   const parts: [string, string, string][] = [];
   if (want.article) parts.push(["article", "공실뉴스 기사", P.gwBuildPrompt(v, { kind: artKind, length: artLen })]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen })]);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen }) + BLOG_FRIENDLY]);
   const only = snsOnlyOf(b.snsOnly);
   if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone, only) + snsOnlyLine(only)]);
   const ytSet = want.youtube ? ytSettings(v, b.youtube || {}) : null;
@@ -668,7 +678,7 @@ function colRevisePrompt(b: any, source: any, req: string) {
   if (b.doc === "article" || b.doc === "blog") {
     const original = b.doc === "article"
       ? M.gwBuildPrompt(source, { kind: M.GW_KIND[d.style] ? d.style : Object.keys(M.GW_KIND)[0], length: d.length || "normal" })
-      : M.gwBuildBlogPrompt({ article: ref, source }, { style: M.GW_BLOG_STYLE[d.style] ? d.style : "info", length: d.length || "normal" });
+      : M.gwBuildBlogPrompt({ article: ref, source }, { style: M.GW_BLOG_STYLE[d.style] ? d.style : "info", length: d.length || "normal" }) + BLOG_FRIENDLY;
     const ask = b.doc === "article" ? M.gwBuildRevisePrompt(req, source) : M.gwBuildBlogRevisePrompt(req);
     return `${original}\n\n[앞서 작성한 ${b.doc === "article" ? "기사" : "블로그"} — 미리보기에서 고친 내용 포함]\n${draftJson(d, b.doc)}\n\n${ask}`;
   }
@@ -721,7 +731,7 @@ function revisePrompt(b: any) {
     const ask = b.doc === "article" ? P.gwBuildRevisePrompt(req, v) : B.gwBuildBlogRevisePrompt(req, v);
     const original = b.doc === "article"
       ? P.gwBuildPrompt(v, { kind: d.style || "news", length: d.length || "normal" })
-      : B.gwBuildBlogPrompt({ vacancy: v, article: b.ref || NO_ARTICLE }, { style: d.style || "listing", length: d.length || "normal" });
+      : B.gwBuildBlogPrompt({ vacancy: v, article: b.ref || NO_ARTICLE }, { style: d.style || "listing", length: d.length || "normal" }) + BLOG_FRIENDLY;
     return `${original}\n\n[앞서 작성한 ${b.doc === "article" ? "기사" : "블로그"} — 미리보기에서 고친 내용 포함]\n${draftJson(d, b.doc)}\n\n${ask}`;
   }
   if (b.doc === "sns") {
