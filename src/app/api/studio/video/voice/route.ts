@@ -1,3 +1,4 @@
+import { koSpeakMarks } from "@/lib/studio-video/koNumber";
 import { NextResponse, type NextRequest } from "next/server";
 import { getExtensionMember } from "@/utils/extensionMember";
 import { getVoice, revoice, signedVoiceUrl } from "@/lib/reels/voice";
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401 });
   const { text, voice, fresh } = await req.json().catch(() => ({}));
-  const tts = String(text || "").replace(/\s+/g, " ").trim();
+  const tts = koSpeakMarks(String(text || "")).replace(/\s+/g, " ").trim(); // "빌라/연립" 같은 기호는 쉼표처럼 (2026-11-09)
   if (!tts) return NextResponse.json({ success: false, error: "읽을 문장이 없습니다." }, { status: 400 });
   if (tts.length > 300) return NextResponse.json({ success: false, error: "문장이 너무 깁니다 (300자 이하). 클립을 나눠 주세요." }, { status: 400 });
   if (!STUDIO_VOICE_IDS.includes(voice)) return NextResponse.json({ success: false, error: "지원하지 않는 목소리입니다." }, { status: 400 });
