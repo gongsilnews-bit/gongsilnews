@@ -50,10 +50,15 @@ export async function listMyStudioVacancies(includeId?: string) {
   const supabase = createAdminSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data, error } = await supabase
+  // 최고관리자는 회원 공실 전체에서 고른다 (2026-11-09 사장님)
+  const { data: meRow } = await supabase.from("members").select("role").eq("id", user.id).maybeSingle();
+  const r0 = String(meRow?.role || "").toUpperCase();
+  const isAdm = r0 === "ADMIN" || r0 === "SUPER_ADMIN" || r0 === "SUPERADMIN" || meRow?.role === "최고관리자";
+  let lq = supabase
     .from("vacancies")
-    .select("id, vacancy_no, building_name, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, created_at, vacancy_photos(url, sort_order)")
-    .eq("owner_id", user.id)
+    .select("id, vacancy_no, building_name, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, created_at, vacancy_photos(url, sort_order)");
+  if (!isAdm) lq = lq.eq("owner_id", user.id);
+  const { data, error } = await lq
     .eq("status", "ACTIVE")
     .or("is_onbid.is.null,is_onbid.eq.false") // 온비드 공매는 [경매·공매] 칸에서 (2026-11-09)
     .order("created_at", { ascending: false })

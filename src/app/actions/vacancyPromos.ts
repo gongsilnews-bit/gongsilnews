@@ -3,6 +3,7 @@
 import { createClient as createAdminSupabase } from "@supabase/supabase-js";
 import { createClient as createCookieSupabase } from "@/utils/supabase/server";
 import { savePromoFor, type PromoChannel } from "@/utils/vacancyPromos";
+import { isAdminRole } from "@/utils/permissionCheck";
 
 
 /**
@@ -230,12 +231,17 @@ export async function getVacancyCardsByIds(ids: string[]): Promise<{ success: bo
 export async function getMyVacancyCards(opts?: { includeOnbid?: boolean }): Promise<{ success: boolean; data: any[]; hasOnbid?: boolean; error?: string }> {
   const user = await me();
   if (!user) return { success: false, data: [], error: "로그인이 필요합니다." };
-  const { count: onbidCount } = await admin().from("vacancies").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("is_onbid", true).neq("status", "DELETED");
+  // 최고관리자는 공실관리처럼 회원 공실 전체 (2026-11-09 사장님: "최고관리자에서 공실이 안 나와" — 관리자 이름 공실은 온비드뿐)
+  const { data: meRow } = await admin().from("members").select("role").eq("id", user.id).maybeSingle();
+  const all = isAdminRole(meRow?.role);
+  let cq = admin().from("vacancies").select("id", { count: "exact", head: true }).eq("is_onbid", true).neq("status", "DELETED");
+  if (!all) cq = cq.eq("owner_id", user.id);
+  const { count: onbidCount } = await cq;
   let q = admin()
     .from("vacancies")
     .select("id, vacancy_no, status, trade_type, property_type, sub_category, deposit, monthly_rent, dong, building_name, created_at, realtor_commission, exposure_type, direction, exclusive_m2, room_count, bath_count, options, metadata, vacancy_photos(url, sort_order)")
-    .eq("owner_id", user.id)
     .neq("status", "DELETED");
+  if (!all) q = q.eq("owner_id", user.id);
   if (!opts?.includeOnbid) q = q.or("is_onbid.is.null,is_onbid.eq.false");
   const { data, error } = await q.order("created_at", { ascending: false }).limit(1000);
   if (error) return { success: false, data: [], error: error.message };
