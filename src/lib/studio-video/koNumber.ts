@@ -39,12 +39,29 @@ function native(n: number, attach: boolean): string {
   const TENS = ["", "열", attach && n === 20 ? "스무" : "스물", "서른", "마흔", "쉰", "예순", "일흔", "여든", "아흔"];
   return TENS[Math.floor(n / 10)] + ONES[n % 10];
 }
-const NATIVE_COUNTER = /^(개|명|살|시(?!간|세|장|청|공|행|설|점)|마리|가지|군데|채|번(?!지|째)|번째|달)/;
+const NATIVE_COUNTER = /^(개(?!월)|명|살|시(?!간|세|장|청|공|행|설|점)|마리|가지|군데|채|번(?!지|째)|번째|달)/;
 /** 작은 수(1~9)만 고유어 — 주차 1대 → 한 대, 2시간 → 두 시간 (20대·30곳은 그대로 이십 대·삼십 곳) (2026-11-05 사장님: "1대 → 한대") */
 const SMALL_COUNTER = /^(대(?!로|학|형|비|출|기|상|략|부분|표|지|역|교|단|금|리|변|중|외|내|에서)|곳|칸|시간|자리|장(?!소|점|기|관)|건(?!물|축|설|강|폐|너|의|조|국|식|평))/; // 건 — 거래 4건 → 네 건 (2026-11-09 사장님: "사건"으로 읽던 것)
 
 function decimalPart(s: string) {
   return s.split("").map((c) => DIGIT[Number(c)]).join(" ");
+}
+
+/** 붙은 두 수 범위 — 2~3개월 → 이삼 개월 · 2~3명 → 두세 명 (2026-11-09 사장님: "두개에서 세개월이라고 하네, 이삼 개월이라고 읽어야지")
+ *  우리말로 어림하는 말 그대로. 개월·년·층처럼 한자어 단위는 이삼·삼사, 개·명·곳처럼 고유어 단위는 두세·서너 */
+const SINO_PAIR = ["", "일이", "이삼", "삼사", "사오", "오륙", "육칠", "칠팔", "팔구"];
+const NATIVE_PAIR = ["", "한두", "두세", "서너", "네다섯", "대여섯", "예닐곱", "일고여덟", "여덟아홉"];
+const PAIR_SINO_UNIT = /^(개월|년|층|평|주|일|분|초|억|만|천|동|호|세대|배|회|차)/;
+const PAIR_NATIVE_UNIT = /^(개(?!월)|명|곳|채|대|건|번|가지|시간|달|마리|군데|살|칸|자리|장)/;
+function nearRange(text: string) {
+  return text.replace(/(^|[^\d.,])([1-8])\s*[~∼〜]\s*([2-9])\s?(?=[가-힣])/g, (m, pre: string, a: string, b: string, off: number, all: string) => {
+    const x = Number(a), y = Number(b);
+    if (y !== x + 1) return m;
+    const after = all.slice(off + m.length);
+    if (PAIR_NATIVE_UNIT.test(after)) return `${pre}${NATIVE_PAIR[x]} `;
+    if (PAIR_SINO_UNIT.test(after)) return `${pre}${SINO_PAIR[x]} `;
+    return m;
+  });
 }
 
 /** 성우가 읽기 어색한 기호 — "빌라/연립" → "빌라, 연립" (2026-11-09 사장님: "/ 이런건 발음이 이상해"). 가운뎃점(·)도 쉼표처럼 끊어 읽게 */
@@ -54,7 +71,8 @@ export function koSpeakMarks(text: string): string {
     // 점 날짜 — 26.07.03 · 2026.11.09 → 26년 7월 3일 (2026-11-09 사장님: 쇼츠 주의사항)
     .replace(/(^|[^\d.])(\d{2}|\d{4})\.(\d{1,2})\.(\d{1,2})(?![\d.])/g, (_m, a: string, y: string, mo: string, d: string) => `${a}${y}년 ${Number(mo)}월 ${Number(d)}일`)
     // 물결 범위 — 17억~18억 → 17억에서 18억 · 1~3건 → 1에서 3건
-    .replace(/(\d+)\s*[~∼〜]\s*(\d+)\s?(건|개|대|명|곳|채|층|평|년|개월|억|만)/g, "$1$3~$2$3") // 1~3건 → 1건~3건 (한 건에서 세 건)
+    .replace(/[\s\S]*/, (all) => nearRange(all)) // 2~3개월 → 이삼 개월 (붙은 두 수는 어림말로, 먼저)
+    .replace(/(\d+)\s*[~∼〜]\s*(\d+)\s?(개월|건|개|대|명|곳|채|층|평|년|억|만)/g, "$1$3~$2$3") // 1~3건 → 1건~3건 (한 건에서 세 건)
     .replace(/(\d[\d,.]*\s?[가-힣]{0,2})\s*[~∼〜]\s*(?=\d)/g, "$1에서 ")
     .replace(/[~∼〜]/g, "")
     // 영어 약자 — GS25 · CU · LH · SH · KB · GTX → 지에스 25 · 씨유 … (낱자로 또박또박)
