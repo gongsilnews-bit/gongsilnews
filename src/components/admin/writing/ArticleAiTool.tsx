@@ -773,7 +773,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
             <button type="button" onClick={() => void analyze()} disabled={!canAna || Boolean(anaBusy) || ana?.key === anaKey}
               style={{ width: "100%", height: 40, marginTop: 8, borderRadius: 6, border: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 800,
                 background: !canAna || anaBusy || ana?.key === anaKey ? "#e5e7eb" : NAVY, color: !canAna || anaBusy || ana?.key === anaKey ? "#6b7280" : "#fff", cursor: !canAna || anaBusy || ana?.key === anaKey ? "default" : "pointer" }}>
-              {anaBusy ? "분석하는 중…" : ana?.key === anaKey ? "✓ 분석했어요" : !canAna ? (mkt === "area" ? "지역을 고르면 분석할 수 있어요" : "단지를 고르면 분석할 수 있어요") : "🔍 분석하기"}
+              {anaBusy ? "분석하는 중…" : ana?.key === anaKey ? "✓ 분석했어요" : !canAna ? (mkt === "area" ? "지역을 고르면 분석할 수 있어요" : "단지를 고르면 분석할 수 있어요") : <>Step 1<span style={{ display: "inline-block", width: 12 }} />분석하기</>} {/* 아이콘 대신 Step 1 (2026-11-08 사장님) */}
             </button>
           </>)}
           {src === "news" && (<>{head(n++, "뉴스 기사 고르기")}
@@ -831,7 +831,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
         {webWait && <WebAiOverlay name={(WEB_AI.find((x) => x.id === webAi) || WEB_AI[0]).name} msg={note} onReopen={() => void webReopen()} onPaste={() => void webTry(false)} onStop={() => { setWebWait(null); setBusy(""); setNote(""); }} />}
         <button type="button" onClick={() => void write()} disabled={!webWait && (Boolean(busy) || !ready)}
           style={{ width: "100%", height: 48, borderRadius: 6, border: 0, background: busy || anaBusy ? NAVY : !ready ? "#9aa6b8" : "#2563eb", color: "#fff", fontSize: 15.5, fontWeight: 800, cursor: busy || !ready ? "default" : "pointer", fontFamily: "inherit" }}>
-          {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : noVacancy ? "✨ AI 초안 작성" : "✨ AI 기사 초안 작성"}
+          {webWait ? <>AI 답을 기다리는 중<Dots /> <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>· 누르면 그만두기</span></> : busy ? <>AI가 쓰는 중<Dots /></> : anaBusy ? <>분석하는 중<Dots /></> : noVacancy ? "✨ AI 초안 작성" : src === "market" ? <>Step 2<span style={{ display: "inline-block", width: 12 }} />AI 기사 초안 작성</> : "✨ AI 기사 초안 작성"} {/* 분석하기가 있는 단지/지역/시세만 Step 2 (2026-11-08) */}
         </button>
         <div style={{ marginTop: 7, fontSize: 12, textAlign: "center", color: err ? "#dc2626" : busy ? NAVY : done ? "#16a34a" : DIM, fontWeight: err || busy || done ? 700 : 500, lineHeight: 1.5 }}>
           {err || busy || note || (done ? "기사 칸에 채웠어요. 고쳐서 등록하세요." : anaBusy ? "분석이 끝나면 쓸 수 있어요" : !ready && src === "market" ? "단지와 중심을 고른 뒤 [분석하기]를 누르세요" : !ready && src !== "topic" ? "재료를 고르면 저절로 분석해요" : "분석한 재료로 써요 · 문체를 바꿔 여러 번 다시 써도 돼요")}

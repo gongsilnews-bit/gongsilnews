@@ -49,6 +49,23 @@ function twoLines(t: string) {
   return best > 0 ? `${t.slice(0, best)}\n${t.slice(best + 1)}` : t;
 }
 
+/** 칼럼 제목 → 위쪽 상자 글 (두 줄까지, 30자 안팎) — 길면 "…"·", " 앞에서 끊는다. 지어내지 않고 잘라 쓰기만 */
+function topTitle(raw: string) {
+  let t = raw.replace(/\s+/g, " ").trim();
+  if (!t || t === "뉴스칼럼" || t === "제목 없음") return "";
+  if (t.length > 30) {
+    const a = t.split(/…|\.{3}/)[0].trim();
+    if (a.length >= 6 && a.length <= 30) t = a;
+    else {
+      const parts = t.split(/,\s/);
+      let s = parts[0];
+      for (const p of parts.slice(1)) { if ((s + ", " + p).length > 30) break; s += ", " + p; }
+      t = s.length >= 6 && s.length <= 30 ? s : t.slice(0, 29).trim() + "…";
+    }
+  }
+  return twoLines(t);
+}
+
 type Vac = { id: string; label: string; photo: string | null };
 type VoiceMode = "none" | "ai"; // 웹 — 내 목소리 녹음은 뺐다 (2026-11-05 사장님)
 export type VideoSeed = { vacancyId: string; script: string; title?: string };
@@ -229,7 +246,11 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       //  배경은 아파트 브랜드를 찾았을 때만 깔린다 — 못 찾거나 뉴스칼럼이면 배경 없이 제목 상자를 넣는다 (2026-11-07 쇼츠배경 없앰)
       const aptKit = theme.kit?.apt && !theme.kit.apt.news && (theme.kit.apt.brand || aptBrandOf(`${info?.building || ""} ${info?.title || ""}`)) ? theme.kit.apt : undefined;
       const titleFrom = aptKit ? (aptKit.span === "all" || clips.length < (last ? 3 : 2) ? "" : clips[1].id) : first;
-      if (titleFrom && info && (info.intro.place || info.intro.kind)) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: titleFrom, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: theme.kit?.titleStyle?.box !== false, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" }); // 테마가 상자 없음이면 따른다 (2026-11-07)
+      // 뉴스칼럼·자유 글쓰기 — 위쪽은 칼럼 제목 (두 줄까지) · 내 사무소 동네는 넣지 않는다 (2026-11-08 사장님: "뉴스칼럼의 제목이 나오는 것")
+      const isCol = vac.startsWith("col-");
+      const colTitle = isCol ? topTitle(cols.find((c) => c.id === vac)?.label || "") : "";
+      if (titleFrom && colTitle) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: titleFrom, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: colTitle, pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Math.round((Number(theme.kit?.titleStyle?.size) || 90) * 0.8), color: theme.title.color, font: theme.title.font, bold: true, box: theme.kit?.titleStyle?.box !== false, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" });
+      else if (titleFrom && vac && !isCol && info && (info.intro.place || info.intro.kind)) layers.push({ ...(theme.kit?.titleStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: titleFrom, to: bodyEnd, ...(theme.kit?.titleStyle?.y == null ? { x: 0.5, y: 0.1 } : {}), text: [info.intro.place, info.intro.kind].filter(Boolean).join(" · "), pos: (theme.kit?.titleStyle?.pos as Layer["pos"]) || "top", size: Number(theme.kit?.titleStyle?.size) || 90, color: theme.title.color, font: theme.title.font, bold: true, box: theme.kit?.titleStyle?.box !== false, boxColor: theme.title.boxColor, boxOpacity: 0.85, name: "동네·종류" }); // 테마가 상자 없음이면 따른다 (2026-11-07)
       if (contact) layers.push({ x: 0.5, y: 0.815, size: 52, bold: true, color: "#FFFFFF", font: theme.title.font, box: true, boxColor: "#000000", boxOpacity: 0.55, ...(theme.kit?.contactStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: bodyEnd, text: contact, name: "상호·연락처" } as Layer);
       // 가격 말하는 장면 — 연락처를 한 번 크게 (관심이 가장 높은 순간)
       const priceAt = paras.findIndex((t, i) => i > 0 && /보증금|월세|전세|매매가|가격|권리금/.test(t)); // 첫 클립은 훅과 겹쳐서 빼고 (2026-11-05)
@@ -245,7 +266,9 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       // 첫 1초 훅 — 화면 가운데 큰 한 줄, 톡 튀어나와 2.6초 (요즘 쇼츠: 첫 장면에서 넘기지 않게)
       //  훅 = 대본 제목 → 없으면 "논현동 빌라 월세 5,000만 / 100만"처럼 동·종류·가격 (위쪽 제목과 겹치지 않게)
       const priceHook = info ? [info.intro.place.split(" ").pop(), info.intro.kind.split(/[/·]/)[0], info.intro.price].filter(Boolean).join(" ") : "";
-      const hook = hookOf(hookTitle || seed?.title || priceHook, paras[0] || "");
+      // 뉴스칼럼은 쇼츠 대본 제목이 있을 때만 훅 — 없으면 위쪽 칼럼 제목과 겹치니 넣지 않는다 (2026-11-08)
+      const hookSrc = hookTitle || seed?.title || "";
+      const hook = isCol && !hookSrc ? "" : hookOf(hookSrc || priceHook, paras[0] || "");
       if (hook) layers.push({ x: 0.5, y: 0.6, size: 116, bold: true, color: theme.title.color, font: theme.title.font, box: true, boxColor: theme.title.boxColor, boxOpacity: 1, anim: { in: "pop", emph: "pulse", out: "fade", dur: 0.35 }, ...(theme.kit?.hookStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: first, ts: 0, te: 2.6, text: twoLines(hook), name: "훅" } as Layer);
       if (theme.music) layers.push({ id: uid(), type: "music", from: first, to: end, url: theme.music, file: theme.music, volume: ai ? 0.3 : 0.35, duck: "mid", loop: true, fadeOut: 1.5, name: theme.musicName || "배경음악" });
       p.layers = layers;
