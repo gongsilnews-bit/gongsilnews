@@ -46,6 +46,25 @@ const WEB_AI = [
 ];
 // 단지/지역/시세 — 공실 홍보(공실뉴스)와 다른 실거래 시장 기사. 단지 하나 또는 지역(구·동) (2026-11-04 사장님)
 const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/지역/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"], ["gongsil", "공실뉴스"]];
+/* ── 어떤 이야기로 (2026-11-09 사장님: "글이 어색하지 않게, 기사 스타일·분류는 니가 알아서 나눠줘, 필요없는 건 지워") ──
+   예전 [기사 스타일 6개]·[무엇을 중심으로 4개]·[제목 고르기]를 이것 하나로 합쳤다.
+   재료마다 독자가 궁금한 이야기 하나를 고르면, 그 이야기의 문단 순서대로 쓴다 (한 방향으로 흐르게). 말투는 기사체 그대로 */
+type Story = { id: string; name: string; desc: string; flow: string; title: string; heads?: boolean };
+const STORIES: Partial<Record<Src, Story[]>> = {
+  // 단지/지역/시세는 지금의 [무엇을 중심으로] 4개 그대로 (2026-11-09 사장님: "지금의 구분 형식은 나쁘지 않아") — 중심마다 문단 순서만 정했다
+  market: [
+    { id: "all", name: "종합", desc: "단지·시세·지역을 고르게", title: "가장 눈에 띄는 사실(신고가·최근 거래)을 앞세운 제목", flow: "① 최근 거래 — 신고가가 있으면 맨 앞에 ② 어떤 단지인가(준공·세대·주차) ③ 역·학교·장보기 같은 생활 여건 ④ 그래서 어떤 단지인지 한 문단으로 정리" },
+    { id: "complex", name: "단지 정보", desc: "세대수·준공·주차 등 단지 특징", title: "단지의 특징(준공·규모)을 앞세운 제목", flow: "① 준공·세대·동·층 ② 주차·평형 구성 ③ 단지가 자리한 동네(역·학교 한두 문장) ④ 어떤 단지인지 정리. 가격 이야기는 쓰지 않는다" },
+    { id: "price", name: "시세 정보", desc: "실거래 내역·가격 흐름", title: "최근 거래가(신고가면 신고가)를 앞세운 제목", flow: "① 최근 매매 — 신고가가 있으면 맨 앞에 ② 평형별 매매 흐름(꼭 필요한 것만) ③ 전세(있으면) ④ 가격 흐름 정리. 주변 시설 이야기는 쓰지 않는다" },
+    { id: "region", name: "지역 정보", desc: "교통·편의시설·학교", title: "가까운 역·학교를 앞세운 제목", flow: "① 가장 가까운 역과 노선 ② 초·중·고와 어린이집 ③ 장보기·생활시설 ④ 그래서 어떤 생활이 가능한 곳인지 정리. 가격 이야기는 쓰지 않는다" },
+  ],
+  vacancy: [
+    { id: "intro", name: "매물 소개", desc: "위치·평수·가격 차례로", title: "동네와 매물의 가장 큰 장점을 담은 제목", flow: "① 위치와 매물 종류 ② 평수·구조 ③ 건물·상태·옵션 ④ 가격(보증금·월세·관리비 한 번에) ⑤ 입주 시기" },
+    { id: "fit", name: "이런 분께 추천", desc: "누구에게 맞는 집인지", title: "어떤 사람에게 맞는 집인지 담은 제목", flow: "① 이 매물이 맞는 사람(재료의 조건으로 뒷받침되는 것만) ② 그렇게 말하는 근거가 된 조건들 ③ 가격 ④ 입주 시기" },
+    { id: "area", name: "동네와 함께", desc: "역·주변을 앞세워", title: "동네·역을 앞세운 제목", flow: "① 동네와 가까운 역·생활 여건(재료에 있는 것만) ② 매물 조건 ③ 가격 ④ 입주 시기" },
+  ],
+  // 뉴스 기사·공실뉴스·자유 주제는 지금 그대로 — 기사 스타일·제목 고르기 (2026-11-09 사장님: "뉴스기사 자유주제는 일단 놔두기")
+};
 const KINDS = [
   { id: "news", name: "뉴스기사형", prompt: "도입부터 결론까지 문단이 자연스럽게 이어지는 뉴스 기사. 매물 조건·지역·수요를 사실과 숫자로 기사 흐름 안에서 풀어 쓴다." },
   { id: "summary", name: "단락별 요약", prompt: "첫 문단에서 기사 전체를 요약하고, 이어서 핵심 내용을 소제목 단위로 나눠 독자가 빠르게 훑어볼 수 있게 쓴다.", heads: true },
@@ -102,7 +121,7 @@ const RULES = [
   "한 문장은 짧게, 쉬운 말로. 같은 말을 되풀이하지 않는다.",
   "개인정보(연락처·동호수·실명)를 넣지 않는다. 남의 기사 문장을 그대로 옮기지 않고 사실만 살려 새로 쓴다.",
   "단지·건물 이름은 브랜드와 동네를 띄어 쓰고, 영문 이름은 한글로.",
-  "뉴스 기사는 객관적인 기사체로 쓰되 읽기 자연스럽게 쓴다(2026-11-09 사장님: 뉴스 기사는 객관적으로, 쇼츠·SNS는 부동산이 이야기하듯). 숫자 보고서처럼 한 문장에 숫자 하나씩 늘어놓지 말고, 관련 사실은 한 문장에 묶고, 문단은 '무슨 일이 있었나(거래·신고가) → 어떤 단지인가 → 살면 어떤가(역·학교·장보기) → 그래서 어떤 집인가' 흐름으로 앞 문단과 이어지게 쓴다.",
+  "뉴스 기사는 객관적인 기사체로 쓰되 읽기 자연스럽게 쓴다(2026-11-09 사장님: 뉴스 기사는 객관적으로, 쇼츠·SNS는 부동산이 이야기하듯). 숫자 보고서처럼 한 문장에 숫자 하나씩 늘어놓지 말고, 관련 사실은 한 문장에 묶고, 문단은 [이야기]가 있으면 그 순서대로, 앞 문단과 물 흐르듯 이어지게 쓴다(이음말로 자연스럽게, 갑자기 다른 이야기로 튀지 않게).",
   "주변 시설은 거리 숫자를 그대로 쓰되 서로 빼서 차이를 계산하지 않는다('상도역이 530m 더 가깝다', '세 곳의 거리 차는 147m' 금지). '직선거리'·'보행거리'라는 말은 쓰지 않는다. 시설은 나열하기보다 생활과 이어지게 묶어 쓰되(예: '7호선 상도역과 신상도초등학교가 모두 단지에서 300m 안에 있다'), 자료에 없는 사실(걸어서 몇 분, 개발 계획, 시세 전망)과 주관적 평가는 쓰지 않는다.",
   "보고서·해석 말투를 쓰지 않는다 — '~가 드러난다', '~로 이어진다', '~로 구성됐다', '~수준이다', '~셈이다', '~가 뚜렷하다', '~로 보면', '숫자로 보면', '배치로 보면', '자료상', '제시된'. 사람이 말하듯 쓴다.",
   "단서·한계 문장('~로 묶기는 어렵다', '~판단할 수는 없다', '~설명하기는 어렵다', '~와는 다르다')은 숫자마다 붙이지 않는다. 오해를 막는 데 꼭 필요할 때 기사 전체에서 한 번만, 짧게.",
@@ -207,7 +226,9 @@ function BigDots() {
 export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, noGongsil = false }: { onDraft: (d: ArticleDraft) => void; hasContent: () => boolean; /** 자유 글쓰기 — 매물 소개·공실 고르기 없이 (2026-11-05 사장님) */ noVacancy?: boolean; /** 뉴스칼럼에서 온 기사쓰기 — 매물 소개·공실뉴스 없이 (2026-11-06 사장님) */ noGongsil?: boolean }) {
   const [src, setSrc] = useState<Src>(noVacancy || noGongsil ? "market" : "vacancy");
   useEffect(() => { if (noGongsil && (src === "vacancy" || src === "gongsil")) setSrc("market"); }, [noGongsil]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [kind, setKind] = useState("news");
+  // 어떤 이야기로 — 재료마다 따로 기억 (사장님이 고른 것이 있으면 그대로, 없으면 단지는 분석 뒤 어울리는 것으로)
+  const [storyPick, setStoryPick] = useState<Record<string, string>>({});
+  const [kind, setKind] = useState("news"); // 뉴스 기사·공실뉴스·자유 주제의 기사 스타일 (그대로)
   const [tone, setTone] = useState("");
   const [hook, setHook] = useState("");
   const [len, setLen] = useState("normal");
@@ -247,8 +268,9 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
   // 지역 시세 — 시군구·동·종류·기간 (고른 것은 기억)
   const [mkt, setMkt] = useState<"complex" | "area">("complex");
   // 무엇을 중심으로 (2026-11-06 사장님: 단지 정보 · 시세 정보 · 지역 정보 · 종합) — 고른 중심의 재료만 AI 에게 (섞이지 않게)
-  const [focus, setFocus] = useState<Focus>("all");
-  useEffect(() => { if (mkt === "area" && focus === "complex") setFocus("all"); }, [mkt]); // eslint-disable-line react-hooks/exhaustive-deps
+  const storyList = (STORIES[src] || []).filter((x) => !(src === "market" && mkt === "area" && x.id === "complex")); // 지역(구·동)은 단지 정보 없음
+  const story: Story | null = storyList.find((x) => x.id === storyPick[src]) || storyList[0] || null; // 단지/지역/시세 · 매물 소개만
+  const focus: Focus = src === "market" && story ? (story.id as Focus) : "all"; // 단지는 고른 중심(종합·단지·시세·지역) 그대로
   useEffect(() => { if (focus === "region" && len === "long") setLen("normal"); }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
   const [lawd, setLawd] = useState("");
   const [dong, setDong] = useState("");
@@ -309,7 +331,7 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
   const [ana, setAna] = useState<Analysis | null>(null);
   const [anaBusy, setAnaBusy] = useState("");
   const [capBusy, setCapBusy] = useState(false);
-  const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}:${focus}` : `m:${pick?.id || ""}:${focus}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
+  const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}` : `m:${pick?.id || ""}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
   const errOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
   /** 웹 — 실제 화면 그대로 여러 장 (우리동네부동산 단지 화면 등 (공실뉴스 머리줄·단지 시세 창·가격 지도, 2026-11-09 사장님)
    *  예전엔 시세 그래프·실거래가를 그림으로 다시 그려 어색했다 (글자 어긋남·지도 없음) */
@@ -379,14 +401,14 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
         setAnaBusy("이 지역 실거래를 모으는 중… (빌라가 많으면 20초쯤)");
         const r = await writingAreaFacts(lawd, dong, kinds, months);
         if (!r.success) throw new Error(r.error);
-        const ft = focusMats(r.data.text, focus);
+        const ft = r.data.text; // 거르지 않고 다 — 이야기에 맞게는 질문 만들 때 거른다
         mats.push(ft); complex = r.data.complex; name = r.data.title.replace(/ 실거래 현황$/, "");
         subject = `${r.data.title.replace(/ 실거래 현황$/, "")} 부동산 실거래 시장 기사 (최근 ${months === 12 ? "1년" : `${months}개월`} 흐름 · 앞 기간 비교 · 신고가 · 전세가율). 공실 매물 홍보 기사가 아니다`;
         summary.push(...ft.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
       } else if (src === "market") {
         const c = await writingComplexFacts(pick!.id);
         if (!c.success) throw new Error(c.error);
-        const ft = focusMats(c.data.text, focus);
+        const ft = c.data.text;
         mats.push(ft); subject = `${c.data.title} 실거래 시세 기사`; name = c.data.title; complex = { id: pick!.id, name: c.data.title };
         summary.push(...ft.split("\n").slice(1, 5).map((l) => l.replace(/^- /, "")));
       } else if (src === "gongsil") {
@@ -458,13 +480,14 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
     return `${a.name}${mkt === "area" ? " (대표 단지 주변)" : ""} — ${FOCUS_SUBJECT[focus]}. 공실 매물 홍보 기사가 아니다`;
   };
   const buildPrompt = (a: Analysis) => {
-    const k = KINDS.find((x) => x.id === kind)!, tn = TONES.find((x) => x.id === tone), hk = HOOKS.find((x) => x.id === hook), ln = LENGTHS.find((x) => x.id === len)!;
+    const k = KINDS.find((x) => x.id === kind)!, hk = HOOKS.find((x) => x.id === hook), ln = LENGTHS.find((x) => x.id === len)!;
     return [
       "당신은 이 동네에서 오래 일해 지역 시장을 잘 아는 지역 부동산 전문가다(글에 사무소·중개 이야기는 쓰지 않는다). 아래 자료로 기사 한 편을 쓴다. 전문가답게 숫자를 읽고 그 뜻을 자신 있게 짚되, 근거는 자료에 있는 것만 쓴다.",
       `[주제] ${subjectOf(a)}`,
-      `[기사 형식] ${k.name} — ${k.prompt}${"heads" in k && k.heads ? " (문단마다 heading 에 소제목을 넣는다)" : " (heading 은 빈 글자로 둔다)"}`,
-      tn ? `[문체] ${tn.name} — ${tn.prompt}` : "",
-      hk ? `[제목] ${hk.prompt}` : "[제목] 핵심을 담아 클릭하고 싶게, 과장 없이",
+      story
+        ? `[이야기] ${story.name} — ${story.desc}. 문단 순서: ${story.flow}${story.heads ? " (문단마다 heading 에 소제목을 넣는다)" : " (heading 은 빈 글자로 둔다)"}`
+        : `[기사 형식] ${k.name} — ${k.prompt}${"heads" in k && k.heads ? " (문단마다 heading 에 소제목을 넣는다)" : " (heading 은 빈 글자로 둔다)"}`,
+      story ? `[제목] ${story.title}. 클릭하고 싶게, 과장 없이` : hk ? `[제목] ${hk.prompt}` : "[제목] 핵심을 담아 클릭하고 싶게, 과장 없이",
       `[분량] 본문 ${ln.chars}`,
       `[재료 — 사실은 여기 있는 것만]\n${a.mats.length ? a.mats.map((m) => (src === "market" ? focusMats(m, focus) : m)).join("\n\n") : "(자료 없음 — 일반적인 정보만, 숫자·이름을 지어내지 말 것)"}`,
       more.trim() ? `[요청 — 꼭 반영] ${more.trim()}` : "",
@@ -737,10 +760,10 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
           </>)}
           {src === "market" && (<>{head(n++, "무엇을 중심으로")}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
-              {FOCUS.filter(([k]) => !(mkt === "area" && k === "complex")).map(([k, l, d]) => (
-                <button key={k} type="button" onClick={() => setFocus(k)} style={{ ...chip(focus === k), height: "auto", padding: "7px 10px", textAlign: "left", display: "block", whiteSpace: "normal" }}>
-                  <div style={{ fontWeight: 800 }}>{l}</div>
-                  <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.8, marginTop: 1 }}>{d}</div>
+              {storyList.map((x) => (
+                <button key={x.id} type="button" onClick={() => setStoryPick((p) => ({ ...p, market: x.id }))} title={`문단 순서: ${x.flow}`} style={{ ...chip(story?.id === x.id), height: "auto", padding: "7px 10px", textAlign: "left", display: "block", whiteSpace: "normal" }}>
+                  <div style={{ fontWeight: 800 }}>{x.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.8, marginTop: 1 }}>{x.desc}</div>
                 </button>
               ))}
             </div>
@@ -786,15 +809,22 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
           </>)}
         </div>
         {anaBox()}
-        <div>{head(n++, "기사 스타일")}
-          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{KINDS.map((k) => <button key={k.id} type="button" onClick={() => setKind(k.id)} title={k.prompt} style={chip(kind === k.id)}>{k.name}</button>)}</div>
-        </div>
+        {/* 매물 소개 — 기사 스타일 대신 어떤 이야기로 (2026-11-09 사장님) · 단지는 위 [무엇을 중심으로]가 대신 · 뉴스·자유 주제는 그대로 */}
+        {src === "vacancy" ? (
+          <div>{head(n++, "어떤 이야기로")}
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{storyList.map((x) => <button key={x.id} type="button" onClick={() => setStoryPick((p) => ({ ...p, vacancy: x.id }))} title={`${x.desc} — 문단 순서: ${x.flow}`} style={chip(story?.id === x.id)}>{x.name}</button>)}</div>
+          </div>
+        ) : src !== "market" && (
+          <div>{head(n++, "기사 스타일")}
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{KINDS.map((k) => <button key={k.id} type="button" onClick={() => setKind(k.id)} title={k.prompt} style={chip(kind === k.id)}>{k.name}</button>)}</div>
+          </div>
+        )}
         {/* [문체] 줄은 없앴다 — 기사 스타일과 겹치고, 말투는 원칙(지역 부동산 전문가)으로 정해져 있음 (2026-11-06 사장님: "하나로 통일해줘") */}
-        <div>{head(n++, <>제목 {dim("(선택)")}</>)}
+        {!story && <div>{head(n++, <>제목 {dim("(선택)")}</>)}
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
             {HOOKS.map((h) => <button key={h.id} type="button" onClick={() => setHook(hook === h.id ? "" : h.id)} title={h.prompt} style={{ ...chip(hook === h.id), height: 28, padding: "0 9px", fontSize: 12.5 }}>{h.name}</button>)}
           </div>
-        </div>
+        </div>} {/* 단지·매물 소개는 제목도 고른 중심·이야기에 맞춰 (2026-11-09) */}
         <div>{head(n++, "분량")}
           <div style={{ display: "flex", gap: 5 }}>{LENGTHS.map((l) => { const off = src === "market" && focus === "region" && l.id === "long"; return <button key={l.id} type="button" disabled={off} onClick={() => setLen(l.id)} title={off ? "지역 정보는 자료가 적어 '보통'까지만 돼요" : undefined} style={{ ...chip(len === l.id), height: 28, padding: "0 12px", fontSize: 12.5, ...(off ? { opacity: 0.35, cursor: "default" } : {}) }}>{l.name}</button>; })}</div>
           <div style={{ fontSize: 12, color: DIM, marginTop: 5 }}>{LENGTHS.find((l) => l.id === len)?.name} · {LENGTHS.find((l) => l.id === len)?.chars}</div>
