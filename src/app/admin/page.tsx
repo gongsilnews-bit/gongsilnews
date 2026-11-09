@@ -43,18 +43,24 @@ const MEMBER_SUBMENUS = [{ key: "members_list", label: "회원목록" }, { key: 
 const MENU_GROUPS: AdminMenuGroup[] = [
   { items: [{ key: "dashboard", label: "홈", icon: <IconDashboard /> }] },
   {
-    title: "총괄",
+    // 기본관리 — 매일 보는 다섯 개를 따로 (2026-11-09 사장님)
+    title: "기본관리",
     items: [
       { key: "approval", label: "승인·결제", icon: <IconEdit /> },
       { key: "members", label: "회원관리", icon: <IconMembers />, submenus: MEMBER_SUBMENUS },
-      { key: "point", label: "포인트", icon: <IconPoint /> },
       { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
-      { key: "apt_reports", label: "단지 정보 요청", icon: <IconBuilding /> }, // 시세 지도 공급면적·단지 정보 보완 (2026-11-02)
       { key: "article", label: "기사관리", icon: <IconArticle /> },
+      { key: "study", label: "특강관리", icon: <IconStudy /> },
+    ],
+  },
+  {
+    title: "총괄",
+    items: [
+      { key: "point", label: "포인트", icon: <IconPoint /> },
+      { key: "apt_reports", label: "단지 정보 요청", icon: <IconBuilding /> }, // 시세 지도 공급면적·단지 정보 보완 (2026-11-02)
       { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
       { key: "stt_words", label: "받아쓰기 낱말장", icon: <IconEdit /> },
       { key: "inquiry", label: "문의", icon: <IconComment /> },
-      { key: "study", label: "특강관리", icon: <IconStudy /> },
       { key: "board", label: "게시판", icon: <IconBoard /> },
       { key: "ad", label: "광고", icon: <IconAd /> },
       { key: "stats", label: "통계", icon: <IconStats /> },
