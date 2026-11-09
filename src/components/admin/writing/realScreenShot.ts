@@ -13,12 +13,33 @@ export type RealShot = { url: string; thumb: string; caption: string };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** 도우미에 "이 탭 찍기" — 도우미가 둘 깔려 있으면(웹스토어 예전 판 + 새 판) 둘 다 대답한다.
+ *  예전 판은 찍기를 몰라 곧바로 실패로 답하므로, 실패가 먼저 와도 2.5초 더 기다려 성공한 답을 쓴다 */
+function askCapture(): Promise<{ ok?: boolean; dataUrl?: string; error?: string } | null> {
+  return new Promise((resolve) => {
+    const id = `${Date.now()}-${Math.random()}`;
+    let fail: { ok?: boolean; error?: string } | null = null;
+    let grace: ReturnType<typeof setTimeout> | null = null;
+    const done = (v: { ok?: boolean; dataUrl?: string; error?: string } | null) => { clearTimeout(t); if (grace) clearTimeout(grace); window.removeEventListener("message", on); resolve(v); };
+    const t = setTimeout(() => done(fail), 12000);
+    const on = (e: MessageEvent) => {
+      if (e.source !== window || !e.data || e.data.gsHelperRes !== true || e.data.id !== id) return;
+      const r = e.data.res;
+      if (r?.ok && r.dataUrl) return done(r);
+      if (!fail || r?.error) fail = r || fail;
+      if (!grace) grace = setTimeout(() => done(fail), 2500);
+    };
+    window.addEventListener("message", on);
+    window.postMessage({ gsHelperReq: true, id, msg: { op: "captureTab" } }, location.origin);
+  });
+}
+
 /** 도우미로 찍기 — 못 찍으면 이유(why)를 돌려준다 (화면에 보여 원인을 바로 알 수 있게) */
 async function fromHelper(): Promise<{ blob: Blob | null; why: string }> {
   const ping = await helper({ op: "ping" }, 1500);
   if (!ping?.ok) return { blob: null, why: "도우미(크롬 확장)가 이 탭에 연결되지 않았어요" };
   const ver = String(ping.version || "");
-  const r = await helper({ op: "captureTab" }, 10000);
+  const r = await askCapture();
   if (r?.ok && r.dataUrl) return { blob: await (await fetch(r.dataUrl)).blob(), why: "" };
   const why = r == null ? `도우미 ${ver}가 대답하지 않았어요 (4.1.3 이상이면 자동으로 찍어요)` : `도우미 ${ver}: ${r.error || "찍지 못했어요"}`;
   console.warn("[단지 화면 찍기]", why, r);
