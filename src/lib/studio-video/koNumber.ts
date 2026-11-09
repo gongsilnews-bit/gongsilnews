@@ -48,8 +48,19 @@ function decimalPart(s: string) {
 }
 
 /** 성우가 읽기 어색한 기호 — "빌라/연립" → "빌라, 연립" (2026-11-09 사장님: "/ 이런건 발음이 이상해"). 가운뎃점(·)도 쉼표처럼 끊어 읽게 */
+const LETTER: Record<string, string> = { A: "에이", B: "비", C: "씨", D: "디", E: "이", F: "에프", G: "지", H: "에이치", I: "아이", J: "제이", K: "케이", L: "엘", M: "엠", N: "엔", O: "오", P: "피", Q: "큐", R: "알", S: "에스", T: "티", U: "유", V: "브이", W: "더블유", X: "엑스", Y: "와이", Z: "지" };
 export function koSpeakMarks(text: string): string {
   return String(text || "")
+    // 점 날짜 — 26.07.03 · 2026.11.09 → 26년 7월 3일 (2026-11-09 사장님: 쇼츠 주의사항)
+    .replace(/(^|[^\d.])(\d{2}|\d{4})\.(\d{1,2})\.(\d{1,2})(?![\d.])/g, (_m, a: string, y: string, mo: string, d: string) => `${a}${y}년 ${Number(mo)}월 ${Number(d)}일`)
+    // 물결 범위 — 17억~18억 → 17억에서 18억 · 1~3건 → 1에서 3건
+    .replace(/(\d+)\s*[~∼〜]\s*(\d+)\s?(건|개|대|명|곳|채|층|평|년|개월|억|만)/g, "$1$3~$2$3") // 1~3건 → 1건~3건 (한 건에서 세 건)
+    .replace(/(\d[\d,.]*\s?[가-힣]{0,2})\s*[~∼〜]\s*(?=\d)/g, "$1에서 ")
+    .replace(/[~∼〜]/g, "")
+    // 영어 약자 — GS25 · CU · LH · SH · KB · GTX → 지에스 25 · 씨유 … (낱자로 또박또박)
+    .replace(/(?<![A-Za-z])([A-Z]{2,4})(?![a-z])/g, (m: string) => m.split("").map((c) => LETTER[c] || c).join(""))
+    // 기호
+    .replace(/\s*(→|->|=>)\s*/g, ", ").replace(/\s*&\s*/g, " 앤 ").replace(/(\d)\s*\+\s*(\d)/g, "$1 플러스 $2").replace(/\+/g, " ")
     .replace(/\s*\/\s*/g, ", ")
     .replace(/([가-힣A-Za-z0-9])\s*·\s*(?=[가-힣A-Za-z0-9])/g, "$1, ")
     .replace(/,\s*,/g, ",");
