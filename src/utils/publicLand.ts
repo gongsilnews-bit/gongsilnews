@@ -50,7 +50,7 @@ const n = (v: unknown) => (v === null || v === undefined || String(v).trim() ===
 export type Building = {
   name: string; kind: string; mainAtch: string; purpose: string; etcPurpose: string; structure: string; roof: string;
   platArea: number | null; archArea: number | null; totArea: number | null; bcRat: number | null; vlRat: number | null; height: number | null;
-  grndFlr: number | null; ugrndFlr: number | null; households: number | null; families: number | null; elevators: number; parking: number;
+  grndFlr: number | null; ugrndFlr: number | null; households: number | null; units: number | null; families: number | null; elevators: number; parking: number;
   permitDay: string; useAprDay: string;
 };
 
@@ -84,7 +84,7 @@ export async function buildingsAt(p: Parcel): Promise<Building[]> {
       platArea: n(b.platArea), archArea: n(b.archArea), totArea: n(b.totArea),
       bcRat: n(b.bcRat), vlRat: n(b.vlRat), height: n(b.heit),
       grndFlr: n(b.grndFlrCnt), ugrndFlr: n(b.ugrndFlrCnt),
-      households: n(b.hhldCnt), families: n(b.fmlyCnt),
+      households: n(b.hhldCnt), units: n(b.hoCnt), families: n(b.fmlyCnt), // hoCnt = 호수 (오피스텔은 세대가 아니라 호)
       elevators: (n(b.rideUseElvtCnt) || 0) + (n(b.emgenUseElvtCnt) || 0),
       parking: ["indrMechUtcnt", "oudrMechUtcnt", "indrAutoUtcnt", "oudrAutoUtcnt"].reduce((t, k) => t + (Number(b[k]) || 0), 0),
       permitDay: s(b.pmsDay), useAprDay: s(b.useAprDay),

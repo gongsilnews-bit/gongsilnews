@@ -469,7 +469,8 @@ export async function fillInfo(r: InfoRow): Promise<ComplexInfo | null> {
     const floors = (homes.length ? homes : titles).map((b) => b.grndFlr || 0).filter(Boolean);
     const info: ComplexInfo = {
       // 오피스텔은 세대가 아니라 호수 (총괄표제부 hoCnt)
-      households: r.kind === "offi" ? recap?.units ?? null : kapt?.households ?? recap?.households ?? (homes.reduce((t, b) => t + (b.households || 0), 0) || null),
+      //  총괄표제부가 없는 한 동짜리 오피스텔이 많다 → 표제부 호수를 더한다 (2026-11-09: 찾아본 오피스텔 1,506곳 중 187곳만 호수가 있었다)
+      households: r.kind === "offi" ? recap?.units ?? (homes.reduce((t, b) => t + (b.units || 0), 0) || null) : kapt?.households ?? recap?.households ?? (homes.reduce((t, b) => t + (b.households || 0), 0) || null),
       dongs: kapt?.dongs ?? recap?.dongs ?? (homes.length || null),
       useAprDay: kapt?.useAprDay || recap?.useAprDay || titles[0]?.useAprDay || "",
       vlRat: recap?.vlRat || titles[0]?.vlRat || null,
@@ -497,11 +498,17 @@ export async function fillInfo(r: InfoRow): Promise<ComplexInfo | null> {
 export async function infoRound(deadline: number, perRun = 25) {
   resetHubLimited(); // 어제 한도에 걸렸어도 오늘은 다시
   const supabase = db();
-  const { data } = await supabase.from("apt_complexes")
-    .select("id, kind, name, dong, jibun, bcode").not("bcode", "is", null).not("lat", "is", null).is("info_tried_at", null)
-    .order("trade_count", { ascending: false, nullsFirst: false }).limit(perRun);
+  // 아파트 먼저, 그다음 오피스텔, 빌라는 마지막 (2026-11-09 사장님: "세대수도 아직 다 가지고 온 것 같지 않음") — 예전엔 셋을 거래 많은 순으로 섞어 빌라가 끼어들었다
+  let rows: InfoRow[] = [];
+  for (const kind of ["apt", "offi", "villa"] as const) {
+    const { data } = await supabase.from("apt_complexes")
+      .select("id, kind, name, dong, jibun, bcode").eq("kind", kind).not("bcode", "is", null).not("lat", "is", null).is("info_tried_at", null)
+      .order("trade_count", { ascending: false, nullsFirst: false }).limit(perRun - rows.length);
+    rows = rows.concat((data || []) as InfoRow[]);
+    if (rows.length >= perRun) break;
+  }
   let done = 0;
-  for (const r of (data || []) as InfoRow[]) {
+  for (const r of rows) {
     if (Date.now() > deadline || hubLimited) break;
     if (await fillInfo(r)) done++;
   }

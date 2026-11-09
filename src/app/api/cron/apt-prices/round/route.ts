@@ -96,6 +96,7 @@ async function geoRound() {
   const { count } = await sb.from("apt_complexes").select("id", { count: "exact", head: true }).eq("kind", "villa").is("geo_tried_at", null);
   // 위치를 다 채웠으면 남는 시간에 단지 정보(세대수·용적률·건폐율…) 빈 곳 채우기 (2026-11-05 사장님: "건축물대장부터 하자")
   //  5분마다 25곳 — 공공데이터포털 하루 한도 안에서 (12시간 × 25곳 × 약 2번 호출)
-  const info = !count ? await infoRound(deadline - 10_000, 25) : null;
+  //  한도에 걸리면 저절로 멈추고(찾아본 표시도 안 남김) 다음 날 이어서 — 그래서 넉넉히 40곳 (2026-11-09)
+  const info = !count ? await infoRound(deadline - 10_000, 40) : null;
   return NextResponse.json({ success: true, mode: "geo", done, left: count, info });
 }
