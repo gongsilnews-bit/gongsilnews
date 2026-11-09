@@ -132,23 +132,19 @@ export async function getAdminHome(): Promise<{ success: true; data: AdminHomeDa
     refs = [...map.entries()].map(([ref, count]) => ({ ref, count })).sort((a, b) => b.count - a.count).slice(0, 10);
   }
 
-  const [newsrealtyPending, paymentReview, articlePending, articleRejected, siteInqOpen, boardInqOpen, aptReports, vacancies, articles, siteInqAll, boardInqAll] = await Promise.all([
+  const [newsrealtyPending, paymentReview, articlePending, articleRejected, boardInqOpen, aptReports, vacancies, articles, boardInqAll] = await Promise.all([
     // 공실뉴스부동산 가입 신청 — 처리 안 끝난 것 (신규·연락완료·진행중)
     countOf(db.from("newsrealty_applications").select("id", { count: "exact", head: true }).in("status", ["신규", "연락완료", "진행중"])),
     // 스마트스토어 주문 — 회원 연결·확인이 필요한 것 (SmartstoreOrdersPanel 과 같은 판정)
     countOf(db.from("smartstore_orders").select("product_order_id", { count: "exact", head: true }).in("status", ["needs_review", "revoke_review"])),
     countOf(db.from("articles").select("id", { count: "exact", head: true }).eq("status", "PENDING").eq("is_deleted", false)),
     countOf(db.from("articles").select("id", { count: "exact", head: true }).eq("status", "REJECTED").eq("is_deleted", false)),
-    countOf(db.from("site_inquiries").select("id", { count: "exact", head: true }).eq("status", "신규")),
     countOf(db.from("board_posts").select("id", { count: "exact", head: true }).eq("board_id", "inquiry").eq("is_deleted", false).is("answered_at", null)),
     countOf(db.from("apt_info_reports").select("id", { count: "exact", head: true }).eq("status", "pending")),
     countOf(db.from("vacancies").select("id", { count: "exact", head: true })),
     countOf(db.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false)),
-    countOf(db.from("site_inquiries").select("id", { count: "exact", head: true })),
     countOf(db.from("board_posts").select("id", { count: "exact", head: true }).eq("board_id", "inquiry").eq("is_deleted", false)),
   ]);
-
-  const sum = (a: number | null, b: number | null) => (a == null && b == null ? null : (a || 0) + (b || 0));
 
   return {
     success: true,
@@ -163,10 +159,10 @@ export async function getAdminHome(): Promise<{ success: true; data: AdminHomeDa
         paymentReview,
         articlePending,
         articleRejected,
-        inquiryOpen: sum(siteInqOpen, boardInqOpen),
+        inquiryOpen: boardInqOpen, // 문의는 1:1문의 하나 (site_inquiries 는 쓰지 않아 11-09 정리)
         aptReports,
       },
-      totals: { vacancies, articles, members: membersTotal, inquiries: sum(siteInqAll, boardInqAll) },
+      totals: { vacancies, articles, members: membersTotal, inquiries: boardInqAll },
     },
   };
 }

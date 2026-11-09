@@ -5,7 +5,7 @@ import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from 
 import { createClient } from "@/utils/supabase/client";
 import NotificationBell from "@/components/common/NotificationBell";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconPlugin, IconStats, IconSettings, IconManual, IconPoint, IconComment, IconRobot, IconSend, IconImage, IconFilm, IconMegaphone } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconStats, IconSettings, IconManual, IconPoint, IconComment, IconRobot, IconSend, IconImage, IconFilm, IconMegaphone } from "@/components/admin/sections/AdminIcons";
 import { getArticles } from "@/app/actions/article";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
@@ -25,7 +25,6 @@ const BannerSection = lazy(() => import("@/components/admin/sections/BannerSecti
 const PointSection = lazy(() => import("@/components/admin/sections/PointSection"));
 const AdminManual = lazy(() => import("./AdminManual"));
 const AIWorkspaceSection = lazy(() => import("@/components/admin/agents/AIWorkspaceSection"));
-const InquirySection = lazy(() => import("@/components/admin/sections/InquirySection"));
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const SmartstoreOrdersPanel = lazy(() => import("@/components/admin/sections/SmartstoreOrdersPanel"));
@@ -58,7 +57,6 @@ const MENU_GROUPS: AdminMenuGroup[] = [
       { key: "study", label: "특강관리", icon: <IconStudy /> },
       { key: "board", label: "게시판", icon: <IconBoard /> },
       { key: "ad", label: "광고", icon: <IconAd /> },
-      { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
       { key: "stats", label: "통계", icon: <IconStats /> },
     ],
   },
@@ -89,17 +87,12 @@ const APPROVAL_TABS = [
   { key: "payment", label: "결제" },
   { key: "article", label: "기사 승인" },
 ];
-/* 문의 — 문의관리 + 1:1문의 합침 */
-const INQUIRY_TABS = [
-  { key: "inquiry", label: "문의관리" },
-  { key: "board", label: "1:1문의" },
-];
-const DEFAULT_SUB: Record<string, string> = { members: "members_list", approval: "member", inquiry: "inquiry", point: "members" };
+const DEFAULT_SUB: Record<string, string> = { members: "members_list", approval: "member", point: "members" };
 
 /* 예전 메뉴 주소 → 새 자리 (알림 링크 등에 남아 있다) */
 const OLD_MENU: Record<string, { menu: string; sub?: string }> = {
   newsrealty: { menu: "approval", sub: "newsrealty" },
-  inquiry_board: { menu: "inquiry", sub: "board" },
+  inquiry_board: { menu: "inquiry" },
   marketing: { menu: "message" },
 };
 
@@ -337,12 +330,8 @@ function AdminContent() {
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
           {activeMenu === "stt_words" && <SttWordsSection theme={theme} />}
-          {activeMenu === "inquiry" && (
-            <div style={sectionCol}>
-              <AdminTabs theme={theme} title="문의" tabs={INQUIRY_TABS} active={activeSubmenu} onChange={(k) => go("inquiry", k)} />
-              {activeSubmenu === "board" ? <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" /> : <InquirySection theme={theme} />}
-            </div>
-          )}
+          {/* 문의 = 1:1문의 하나 (예전 문의관리 탭은 쓰이지 않는 표를 읽어 늘 비어 있었다 — 11-09 정리) */}
+          {activeMenu === "inquiry" && <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" />}
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
           {activeMenu === "ad" && <BannerSection theme={theme} />}
@@ -362,7 +351,7 @@ function AdminContent() {
               {adminUserId ? <MemberRegisterForm editMemberId={adminUserId} onBack={() => go("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["plugin", "stats"].includes(activeMenu) && (
+          {activeMenu === "stats" && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
