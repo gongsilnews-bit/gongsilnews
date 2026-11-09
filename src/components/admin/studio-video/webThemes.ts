@@ -29,7 +29,7 @@ export type ShortsTheme = {
 // 전환 — 요즘 쇼츠처럼 짧게 + 휙 소리 (2026-11-05 사장님: "앗! 너무 좋다 할 만큼 요즘 트렌드에 맞게")
 const T = (type: string, a = 0.25, sfx = "whoosh-short") => ({ type, a, b: a, sfx });
 /** 요즘 쇼츠 자막 — 화면 가운데 아래 한 줄, 크게, 말하는 단어만 색·크게 */
-const TREND = { position: "middle-low" as const, size: 118, maxLines: 1 as const, length: "long" as const };
+const TREND = { position: "middle-low" as const, size: 118, maxLines: 2 as const, length: "long" as const }; // 2줄까지 — 문장이 한 줄에 들어가면 한 줄, 길면 두 줄로 한 화면 (2026-11-09 사장님: "자동으로 알아서")
 const G = (at: number, text: string, style: string, color: string | undefined, layer: Record<string, unknown>) => ({ at, n: 9, stk: { style, text, ...(color ? { color } : {}) }, layer: { x: 0.5, y: 0.4, w: 0.5, opacity: 1, ...layer } });
 
 export const SHORTS_MUSIC: { url: string; name: string }[] = [

@@ -289,6 +289,61 @@ export function subStyleOf(settings: Settings, clip?: Clip | null): SubtitleSett
 /** 한 화면 최대 줄 수 — 고른 값(1·2·3), 없으면 예전 길게(제한 없음)·짧게(1줄) */
 export const maxLinesOf = (st: { maxLines?: number; length?: string }) => st.maxLines || (st.length === "short" ? 1 : 999);
 
+/* ── 자막은 문장대로 (2026-11-09 사장님) — "계약됐어요. 올해"처럼 다음 문장 첫 말이 앞 화면에 붙던 것 ── */
+const SENT_END = /[.?!。…]["'”’)\]]*$/;
+/** 글을 문장으로 (띄어쓰기 기준 — 단어 순서·개수는 그대로라 말하는 시각 맞추기가 어긋나지 않는다) */
+function subSentences(text: string) {
+  const out: string[] = [];
+  let cur: string[] = [];
+  for (const w of text.split(/\s+/).filter(Boolean)) {
+    cur.push(w);
+    if (SENT_END.test(w)) { out.push(cur.join(" ")); cur = []; }
+  }
+  if (cur.length) out.push(cur.join(" "));
+  return out;
+}
+/** 한 문장 줄 나누기 — 넘칠 때 그 줄 뒤쪽 절반 안에 쉼표로 끝난 말이 있으면 거기서 끊는다 (말이 끊기는 자리) */
+function wrapSentence(sen: string, fits: (l: string) => boolean) {
+  const lines: string[] = [];
+  let cur: string[] = [];
+  for (const w of sen.split(/\s+/).filter(Boolean)) {
+    if (cur.length && !fits([...cur, w].join(" "))) {
+      let cut = cur.length;
+      for (let i = cur.length - 1; i >= Math.ceil(cur.length / 2); i--) if (/[,，]$/.test(cur[i - 1] || "")) { cut = i; break; }
+      lines.push(cur.slice(0, cut).join(" "));
+      cur = cur.slice(cut);
+      // 쉼표에서 끊고 남은 말에 새 말을 붙여도 넘치면 한 번 더
+      while (cur.length && !fits([...cur, w].join(" "))) { lines.push(cur.join(" ")); cur = []; }
+    }
+    cur.push(w);
+  }
+  if (cur.length) lines.push(cur.join(" "));
+  return lines;
+}
+/** 문장마다 줄을 나눠 per 줄씩 한 화면 — 한 화면에 두 문장이 섞이지 않는다 */
+function sentenceChunks(text: string, fits: (l: string) => boolean, per: number) {
+  const chunks: string[] = [];
+  const push = (lines: string[]) => { for (let i = 0; i < lines.length; i += per) chunks.push(lines.slice(i, i + per).join("\n")); };
+  for (const sen of subSentences(text)) {
+    const lines = wrapSentence(sen, fits);
+    if (lines.length <= per) { push(lines); continue; }
+    // 한 화면에 안 들어가는 긴 문장 — 쉼표(말이 끊기는 자리)마다 나눈 덩이를 화면에 들어가는 만큼 묶어서 넘긴다
+    const parts: string[] = [];
+    let cur: string[] = [];
+    for (const w of sen.split(/\s+/).filter(Boolean)) { cur.push(w); if (/[,，]$/.test(w)) { parts.push(cur.join(" ")); cur = []; } }
+    if (cur.length) parts.push(cur.join(" "));
+    if (parts.length < 2) { push(lines); continue; }
+    let screen = "";
+    for (const part of parts) {
+      const next = screen ? `${screen} ${part}` : part;
+      if (screen && wrapSentence(next, fits).length > per) { push(wrapSentence(screen, fits)); screen = part; }
+      else screen = next;
+    }
+    if (screen) push(wrapSentence(screen, fits));
+  }
+  return chunks;
+}
+
 export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: number, H = Math.round((W * 9) / 16)) {
   const st = subStyleOf(settings, clip);
   const custom = typeof clip.subText === "string";
@@ -304,10 +359,11 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
   if (custom) return evenLines(text, dur, !st.maxLines && st.length === "short" ? fit(0.7) : fit(), per);
   if (st.maxLines || st.length !== "short") {
     const lines = wrap(text, fit());
-    // 최대 줄 수 안이면 한 화면에 다 — 넘을 때만 그 줄 수씩 말하는 때에 맞춰 넘긴다
-    if (lines.length <= per) return [{ s: 0, e: dur, text: lines.join("\n") }];
-    const chunks: string[] = [];
-    for (let i = 0; i < lines.length; i += per) chunks.push(lines.slice(i, i + per).join("\n"));
+    // 줄 수 제한이 없으면(예전 "길게") 한 화면에 다
+    if (per >= 999 && lines.length <= per) return [{ s: 0, e: dur, text: lines.join("\n") }];
+    // 문장대로 (2026-11-09 사장님: "문장대로 나와야 하지 않을까?" · "자동으로 알아서") — 한 화면에 한 문장,
+    //  한 줄에 들어가면 한 줄 · 최대 줄 수 안이면 한 화면 · 넘으면 최대 줄 수씩 차례로 (쉼표에서 먼저 끊는다)
+    const chunks = sentenceChunks(text, fit(), per);
     if (chunks.length === 1) return [{ s: 0, e: dur, text: chunks[0] }];
     const words = wordTimes(clip, settings);
     let wi = 0;
@@ -330,6 +386,7 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
   for (const w of words) {
     if (cur.length && !fit(0.7)(cur.map((x) => x.w).join(" ") + " " + w.w)) flush();
     cur.push(w);
+    if (SENT_END.test(w.w)) flush(); // 문장이 끝나면 다음 문장은 새 화면에 (2026-11-09)
   }
   flush();
   out.forEach((l, i) => {
@@ -341,9 +398,10 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
 
 /** 자막만 따로 쓴 글 — 말 시각을 모르니 글자 수만큼 시간을 나눠 차례로 (render.js evenLines 와 같음) */
 export function evenLines(text: string, dur: number, max: number | ((line: string) => boolean), perChunk: number) {
-  const lines = wrap(text, max);
-  const chunks: string[] = [];
-  for (let i = 0; i < lines.length; i += perChunk) chunks.push(lines.slice(i, i + perChunk).join("\n"));
+  const fits = typeof max === "number" ? (l: string) => l.length <= max : max;
+  const lines = wrap(text, fits);
+  if (perChunk >= 999 && lines.length <= perChunk) return [{ s: 0, e: dur, text: lines.join("\n") }];
+  const chunks = sentenceChunks(text, fits, perChunk); // 문장대로 (2026-11-09)
   const total = chunks.reduce((a, c) => a + c.length, 0) || 1;
   let t = 0;
   return chunks.map((c, i) => {
