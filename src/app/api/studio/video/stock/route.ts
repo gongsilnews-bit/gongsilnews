@@ -16,7 +16,7 @@ type Item = { id: string; kind: "image" | "video"; thumb: string; url: string; w
 const DAY = 60 * 60 * 3;
 
 async function pexels(q: string, type: string, orientation: string, page: number): Promise<Item[]> {
-  const key = process.env.PEXELS_API_KEY;
+  const key = envKey("PEXELS_API_KEY");
   if (!key) return [];
   const o = orientation ? `&orientation=${orientation}` : "";
   if (type === "video") {
@@ -35,25 +35,37 @@ async function pexels(q: string, type: string, orientation: string, page: number
   }));
 }
 
+/** 환경 변수 키 — 앞뒤 빈칸·줄바꿈·따옴표를 뗀다 (Vercel 에 붙여 넣을 때 섞이기 쉽다, 2026-11-09) */
+const envKey = (name: string) => (process.env[name] || "").trim().replace(/^["']|["']$/g, "").trim();
+
+/** Pixabay 답 읽기 — 실패하면 이유(상태·앞부분)를 담아 던진다. 예전에는 빈 목록으로 숨겨 "찾은 자료가 없어요"만 보였다 */
+async function pixabayJson(url: string) {
+  // 서버 저장(revalidate)을 쓰지 않는다 — 실패한 답이 저장돼 계속 빈 목록이 나올 수 있었다. 같은 검색은 브라우저가 10분 저장한다
+  const r = await fetch(url, { cache: "no-store" });
+  const text = await r.text();
+  if (!r.ok) throw new Error(`Pixabay ${r.status}: ${text.slice(0, 120)}`);
+  try { return JSON.parse(text) as { hits?: unknown[] }; } catch { throw new Error(`Pixabay 응답을 읽지 못함 (${r.status}): ${text.slice(0, 120)}`); }
+}
+
 async function pixabay(q: string, type: string, orientation: string, page: number): Promise<Item[]> {
-  const key = process.env.PIXABAY_API_KEY;
+  const key = envKey("PIXABAY_API_KEY");
   if (!key) return [];
   const o = orientation === "portrait" ? "&orientation=vertical" : orientation === "landscape" ? "&orientation=horizontal" : "";
   // 한글 검색어는 lang=ko 를 붙여야 찾는다 (기본 en — "아파트 거실"이 거의 안 나오던 것)
   const lang = /[가-힣]/.test(q) ? "&lang=ko" : "";
   if (type === "video") {
-    const r = await fetch(`https://pixabay.com/api/videos/?key=${key}&q=${encodeURIComponent(q)}${lang}&per_page=24&page=${page}&safesearch=true`, { next: { revalidate: DAY } });
-    const j = await r.json().catch(() => ({}));
-    return (j.hits || []).map((v: { id: number; duration: number; user: string; pageURL: string; videos: Record<string, { url: string; width: number; height: number; thumbnail: string }> }) => {
-      const f = v.videos.large?.url ? v.videos.large : v.videos.medium;
-      return { id: `pixabay-v-${v.id}`, kind: "video", thumb: f?.thumbnail || v.videos.medium?.thumbnail || "", url: f?.url || "", width: f?.width || 0, height: f?.height || 0, duration: v.duration, credit: v.user, source: "Pixabay", page: v.pageURL };
-    }).filter((x: Item) => x.url);
+    const j = await pixabayJson(`https://pixabay.com/api/videos/?key=${key}&q=${encodeURIComponent(q)}${lang}&per_page=24&page=${page}&safesearch=true`);
+    return ((j.hits || []) as Parameters<typeof pixabayVideo>[0][]).map(pixabayVideo).filter((x: Item) => x.url);
   }
-  const r = await fetch(`https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(q)}${lang}&image_type=photo&per_page=30&page=${page}&safesearch=true${o}`, { next: { revalidate: DAY } });
-  const j = await r.json().catch(() => ({}));
-  return (j.hits || []).map((p: { id: number; webformatURL: string; largeImageURL: string; imageWidth: number; imageHeight: number; user: string; pageURL: string }) => ({
-    id: `pixabay-p-${p.id}`, kind: "image", thumb: p.webformatURL, url: p.largeImageURL, width: p.imageWidth, height: p.imageHeight, credit: p.user, source: "Pixabay", page: p.pageURL,
-  }));
+  const j = await pixabayJson(`https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(q)}${lang}&image_type=photo&per_page=30&page=${page}&safesearch=true${o}`);
+  return ((j.hits || []) as Parameters<typeof pixabayPhoto>[0][]).map(pixabayPhoto);
+}
+function pixabayVideo(v: { id: number; duration: number; user: string; pageURL: string; videos: Record<string, { url: string; width: number; height: number; thumbnail: string }> }): Item {
+  const f = v.videos.large?.url ? v.videos.large : v.videos.medium;
+  return { id: `pixabay-v-${v.id}`, kind: "video", thumb: f?.thumbnail || v.videos.medium?.thumbnail || "", url: f?.url || "", width: f?.width || 0, height: f?.height || 0, duration: v.duration, credit: v.user, source: "Pixabay", page: v.pageURL };
+}
+function pixabayPhoto(p: { id: number; webformatURL: string; largeImageURL: string; imageWidth: number; imageHeight: number; user: string; pageURL: string }): Item {
+  return { id: `pixabay-p-${p.id}`, kind: "image", thumb: p.webformatURL, url: p.largeImageURL, width: p.imageWidth, height: p.imageHeight, credit: p.user, source: "Pixabay", page: p.pageURL };
 }
 
 /* ── 공실뉴스 자료 — R2 catalog/drone.json (올리기: drone 폴더 → R2, 항목 { id, place, shot, dur, w, h, thumb }) ── */
@@ -104,7 +116,7 @@ export async function GET(req: NextRequest) {
     const items = await gongsil((sp0.get("q") || "").trim().slice(0, 80), "drone", 1).catch(() => []);
     return NextResponse.json({ success: true, items }, { headers: { "Cache-Control": "private, max-age=600" } });
   }
-  if (!process.env.PEXELS_API_KEY && !process.env.PIXABAY_API_KEY) {
+  if (!envKey("PEXELS_API_KEY") && !envKey("PIXABAY_API_KEY")) {
     return NextResponse.json({ success: false, needKey: true, error: "무료 이미지·비디오 검색 준비 중입니다 (사이트 키 등록 전)." });
   }
   const sp = req.nextUrl.searchParams;
@@ -113,12 +125,16 @@ export async function GET(req: NextRequest) {
   const type = sp.get("type") === "video" ? "video" : "photo";
   const orientation = ["landscape", "portrait", "square"].includes(sp.get("orientation") || "") ? (sp.get("orientation") as string) : "";
   const page = Math.max(1, Math.min(20, Number(sp.get("page")) || 1));
-  const [g, a, b] = await Promise.all([gongsil(q, type, page).catch(() => []), pexels(q, type, orientation, page).catch(() => []), pixabay(q, type, orientation, page).catch(() => [])]);
+  const errs: string[] = [];
+  const keep = (src: string) => (e: unknown) => { const m = `${src}: ${e instanceof Error ? e.message : String(e)}`; errs.push(m); console.error("[오픈자료]", m); return [] as Item[]; };
+  const [g, a, b] = await Promise.all([gongsil(q, type, page).catch(keep("공실뉴스 드론")), pexels(q, type, orientation, page).catch(keep("Pexels")), pixabay(q, type, orientation, page).catch(keep("Pixabay"))]);
   // 공실뉴스 자료가 맨 앞, 나머지 두 곳은 번갈아 섞는다
   const items: Item[] = [...g];
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     if (a[i]) items.push(a[i]);
     if (b[i]) items.push(b[i]);
   }
-  return NextResponse.json({ success: true, items }, { headers: { "Cache-Control": "private, max-age=600" } });
+  // 하나도 못 찾았는데 실패가 있었으면 이유를 보여 준다 (빈 답은 브라우저에 저장하지 않는다)
+  if (!items.length && errs.length) return NextResponse.json({ success: false, error: `오픈자료를 불러오지 못했어요 (${errs.join(" · ").slice(0, 200)})` }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ success: true, items }, { headers: { "Cache-Control": items.length ? "private, max-age=600" : "no-store" } });
 }
