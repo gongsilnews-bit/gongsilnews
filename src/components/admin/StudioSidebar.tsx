@@ -5,6 +5,12 @@ import { MenuItem } from "@/components/admin/sections/types";
 import { useStudioTheme } from "@/components/admin/studio-video/ui";
 import FolderBox from "@/components/admin/studio-web/FolderBox";
 import { ProTag } from "@/components/admin/ProBadge";
+import { PRO_ORANGE } from "@/utils/tier";
+
+/** 공실뉴스부동산 메뉴 표시 — 글자 오른쪽 위 주황 점 */
+function ProDot() {
+  return <span aria-label="공실뉴스부동산" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: PRO_ORANGE, marginLeft: 3, verticalAlign: "top", position: "relative", top: 1 }} />;
+}
 
 /**
  * 공실마케팅 텍스트 메뉴 (중개사 관리자 /realty_admin)
@@ -173,10 +179,10 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
           )}
           {collapsed
             ? <span style={{ fontSize: 11, lineHeight: 1.25, textAlign: "center", wordBreak: "keep-all", overflowWrap: "anywhere" }}>{m.label}</span>
-            : <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}</span>}
+            : <span style={{ flex: 1, whiteSpace: "nowrap" }}>{m.label}{badges[m.key] === "pro" && <ProDot />}</span>}
           {badges[m.key] === "pro" ? (
-            // PRO 전용 메뉴 (무료 회원에게만, 2026-11-04) — 접힌 메뉴에서는 작게
-            <ProTag size={collapsed ? "xs" : "sm"} style={collapsed ? { position: "absolute", top: 4, right: 6 } : undefined} />
+            // 공실뉴스부동산 메뉴 — NEWS 딱지 대신 글자 오른쪽 위 주황 점 (2026-11-09 사장님: 딱지가 많아 보기 싫음). 접힌 메뉴는 아이콘 위
+            collapsed ? <span style={{ position: "absolute", top: 6, right: 14, width: 7, height: 7, borderRadius: "50%", background: PRO_ORANGE }} /> : null
           ) : badges[m.key] && badges[m.key].startsWith("dev:") ? (
             // [개발중] — 최고관리자에게만 보이는 미완성 메뉴 (2026-10-23 사장님)
             !collapsed && <span style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#64748b", color: "#fff", fontSize: 10, fontWeight: 800, lineHeight: 1.3 }}>{badges[m.key].slice(4)}</span>
@@ -276,6 +282,13 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
           </ul>
         )}
 
+        {/* 점 설명 (2026-11-09 사장님) */}
+        {!collapsed && [...main, ...more].some((m) => badges[m.key] === "pro") && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, padding: "0 12px", fontSize: 11.5, lineHeight: 1.5, color: "rgba(255,255,255,0.55)" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: PRO_ORANGE, flexShrink: 0 }} />
+            <span>표시는 공실뉴스부동산만 쓸 수 있어요</span>
+          </div>
+        )}
         {onEditMenu && (
           <button onClick={onEditMenu} className="studio-nav-btn" title="메뉴 편집"
             style={{ ...plainBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", marginTop: 14, padding: "7px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", border: "1px dashed rgba(255,255,255,0.2)" }}>
