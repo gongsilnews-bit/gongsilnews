@@ -4,7 +4,6 @@ import React from "react";
 import { useStartHref } from "./useStartHref";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
-import StudioCompareTable from "./StudioCompareTable";
 
 /**
  * 공실뉴스부동산 · PRO 소개 (/newsrealty, 2026-11-04 사장님: 공실마케팅 studio → 공실뉴스부동산 PRO, 영상편집·앱 설치 빼고 웹으로)
@@ -538,8 +537,7 @@ export default function StudioVrewLanding() {
         </section>
       </div>
 
-      {/* 부동산회원 · 공실뉴스부동산 비교표 — 금액안내에서 메인 맨 아래로 (2026-11-05 사장님) */}
-      <StudioCompareTable />
+      {/* 부동산회원 · 공실뉴스부동산 비교표는 11-09 사장님 지시로 없앰 */}
 
       {/* 마지막 — 브루 맨 아래처럼 큰 로고 · 한 줄 · 버튼 (2026-10-26 사장님) */}
       <section id="start" className="sv-sec sv-last" style={{ scrollMarginTop: 80 }}>
