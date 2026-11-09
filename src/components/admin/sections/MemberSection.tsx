@@ -569,9 +569,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
 /** 물건접수홈페이지 구역의 줄 순서. 위 표와 같은 순서로 세운다. */
 const HOMEPAGE_ROWS: [string, string][] = [
   ["일반회원", "USER"],
-  ["부동산회원", "REALTOR_FREE"],
-  ["공실뉴스부동산", "REALTOR_NEWS"],
-  ["공실뉴스부동산 + Studio", "REALTOR_STUDY"],
+  ["부동산회원 (무료)", "REALTOR_FREE"],
+  ["공실뉴스부동산 (유료)", "REALTOR_NEWS"],
   ["비즈니스회원", "BIZ"],
 ];
 
@@ -582,9 +581,11 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
   const [formData, setFormData] = useState({
     LIMIT_USER_VACANCY: 10,
     LIMIT_USER_ARTICLE: 0,
-    LIMIT_REALTOR_FREE_VACANCY: 10,
+    LIMIT_REALTOR_FREE_VACANCY: 3,
     LIMIT_REALTOR_FREE_ARTICLE: 0,
-    LIMIT_REALTOR_NEWS_VACANCY: 50,
+    LIMIT_REALTOR_FREE_WRITES: 3,
+    LIMIT_REALTOR_NEWS_HOMEPAGE_VACANCY: 20,
+    LIMIT_REALTOR_NEWS_VACANCY: 20,
     LIMIT_REALTOR_NEWS_ARTICLE: 4,
     LIMIT_REALTOR_STUDY_VACANCY: 20,
     LIMIT_REALTOR_STUDY_ARTICLE: 4,
@@ -763,7 +764,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       {/* 공실뉴스부동산 (무료) — 공실마케팅 이용기간 없음 */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>부동산회원</span>
+          <span style={labelStyle}>부동산회원 (무료)</span>
           <input type="number" value={formData.LIMIT_REALTOR_FREE_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_FREE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_FREE_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_FREE_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
@@ -776,26 +777,13 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       {/* 공실뉴스부동산 + Pro — 공실마케팅 Pro 이용기간 안 (news_premium, 2026-10-29) */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>공실뉴스부동산</span>
+          <span style={labelStyle}>공실뉴스부동산 (유료)</span>
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_REALTOR_NEWS_ARTICLE_BANNER")}
           {perm("PERM_REALTOR_NEWS_ARTICLE_VACANCY")}
           {perm("PERM_REALTOR_NEWS_HOMEPAGE")}
-        </div>
-      </div>
-
-      {/* 공실뉴스부동산 + Studio — 공실마케팅 Studio 이용기간 안 (study_premium, 2026-10-29) */}
-      <div style={sectionStyle}>
-        <div style={rowStyle}>
-          <span style={labelStyle}>공실뉴스부동산 + Studio</span>
-          <input type="number" value={formData.LIMIT_REALTOR_STUDY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_STUDY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          <input type="number" value={formData.LIMIT_REALTOR_STUDY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          <input type="number" value={formData.LIMIT_REALTOR_STUDY_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          {perm("PERM_REALTOR_STUDY_ARTICLE_BANNER")}
-          {perm("PERM_REALTOR_STUDY_ARTICLE_VACANCY")}
-          {perm("PERM_REALTOR_STUDY_HOMEPAGE")}
         </div>
       </div>
 
@@ -810,6 +798,19 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           {perm("PERM_BIZ_ARTICLE_VACANCY")}
           {perm("PERM_BIZ_HOMEPAGE")}
         </div>
+      </div>
+
+      {/* 실제 판정에 쓰는 추가 한도 (2026-11-09 사장님: "적용되는 것으로 바꿔줘") */}
+      <div style={{ ...sectionStyle, display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: textPrimary, fontWeight: 700 }}>
+          부동산회원 (무료) 블로그·SNS 쓰기 · 한 달
+          <input type="number" value={(formData as any).LIMIT_REALTOR_FREE_WRITES ?? 3} onChange={e => handleChange("LIMIT_REALTOR_FREE_WRITES", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />번
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: textPrimary, fontWeight: 700 }}>
+          공실뉴스부동산 (유료) 홈페이지 전용 공실
+          <input type="number" value={(formData as any).LIMIT_REALTOR_NEWS_HOMEPAGE_VACANCY ?? 20} onChange={e => handleChange("LIMIT_REALTOR_NEWS_HOMEPAGE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />건
+        </label>
+        <span style={{ fontSize: 12, color: textSecondary }}>공실뉴스부동산 블로그·SNS는 제한 없음 · 비즈니스회원 공실 0 = 제한 없음 · 저장하면 1분 안에 실제 등록·작성 한도에 바로 적용돼요</span>
       </div>
 
       {/* ── 물건접수홈페이지 ──

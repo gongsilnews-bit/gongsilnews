@@ -1,4 +1,5 @@
 "use server";
+import { getTierLimits } from "@/utils/tierLimits";
 import { revalidatePath } from "next/cache";
 import { memberTier, LIMITS } from "@/utils/tier";
 import { reviewArticleByAI, isAgentAutoMode } from "@/app/actions/agentChat";
@@ -59,9 +60,11 @@ async function checkMonthlyArticleQuota(
   // 회원마다 따로: [회원관리] "개별 한도 사용"을 켜면 그 회원의 max_articles_per_month
   const tier = memberTier(member);
   const custom = Boolean(member.use_custom_registration_limits);
+  const L = await getTierLimits(); // 등급별 한도 화면 값 (2026-11-09)
   const maxArticles = custom ? (member.max_articles_per_month || 0)
-    : tier === "free" ? 0
-    : tier === "pro" ? LIMITS.proArticlePerMonth
+    : tier === "free" ? L.freeArticles
+    : tier === "pro" ? L.proArticles
+    : tier === "biz" ? L.bizArticles
     : (member.max_articles_per_month || 0);
   if (maxArticles <= 0) {
     return { allowed: false, error: tier === "free" ? "기사 작성은 공실뉴스부동산 PRO에서 쓸 수 있어요." : "기사 작성 권한이 없는 회원 등급입니다. 요금제를 확인해 주세요." };

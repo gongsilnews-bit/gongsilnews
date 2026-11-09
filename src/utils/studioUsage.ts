@@ -1,3 +1,4 @@
+import { getTierLimits } from "./tierLimits";
 import { createClient as createAdminSupabase } from "@supabase/supabase-js";
 import { trialMonth, type ExtensionMember } from "@/utils/extensionMember";
 import { isAdminRole } from "@/utils/permissionCheck";
@@ -52,10 +53,10 @@ function kstTodayStart(now = new Date()) {
 /** PRO 기능을 쓰나 — PRO(이용 기간 안)·비즈니스회원·최고관리자 */
 export const proMember = (member: ExtensionMember) => isAdminRole(member.role) || member.canBlog || member.role === "BIZ";
 /** 등급 기본 한 달 횟수 — 무료는 블로그·SNS·유튜브를 묶어 공실 3건 (2026-11-04) */
-export function gradeBlogLimit(member: ExtensionMember, feature: StudioFeature = "blog"): number {
+export function gradeBlogLimit(member: ExtensionMember, feature: StudioFeature = "blog", freeWrites = 3): number {
   void feature;
   if (proMember(member)) return UNLIMITED;
-  if (member.role === "REALTOR") return 3;
+  if (member.role === "REALTOR") return freeWrites; // 등급별 한도 화면의 부동산회원 블로그·SNS 월 횟수 (2026-11-09)
   return 0;
 }
 /** 묶어 세는 글 — 공실 하나로 블로그·SNS·유튜브를 써도 1건 */
@@ -89,7 +90,7 @@ export type StudioFeature = "blog" | "sns" | "youtube";
 export async function getStudioUsage(member: ExtensionMember, feature: StudioFeature = "blog"): Promise<StudioUsage> {
   const db = admin();
   const override = await memberOverride(member.id);
-  const monthLimit = override ?? gradeBlogLimit(member, feature);
+  const monthLimit = override ?? gradeBlogLimit(member, feature, (await getTierLimits()).freeWrites);
 
   const week = kstMonthStart(); // 이름은 예전 그대로 — 이번 달 1일부터
   let rows: { vacancy_id?: string | null; created_at: string; feature: string }[] = [];

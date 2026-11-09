@@ -1,5 +1,6 @@
 "use server"
 
+import { clearTierLimitsCache } from "@/utils/tierLimits";
 import { createClient } from "@supabase/supabase-js"
 import { unstable_cache } from "next/cache"
 import { createClient as createCookieSupabase } from "@/utils/supabase/server"
@@ -1265,9 +1266,11 @@ export async function adminRejectBusinessApplication(memberId: string, reason: s
 const DEFAULT_LIMIT_POLICIES = {
   LIMIT_USER_VACANCY: 10,
   LIMIT_USER_ARTICLE: 0,
-  LIMIT_REALTOR_FREE_VACANCY: 10,
+  LIMIT_REALTOR_FREE_VACANCY: 3,
   LIMIT_REALTOR_FREE_ARTICLE: 0,
-  LIMIT_REALTOR_NEWS_VACANCY: 50,
+  LIMIT_REALTOR_FREE_WRITES: 3,
+  LIMIT_REALTOR_NEWS_HOMEPAGE_VACANCY: 20,
+  LIMIT_REALTOR_NEWS_VACANCY: 20,
   LIMIT_REALTOR_NEWS_ARTICLE: 4,
   LIMIT_REALTOR_STUDY_VACANCY: 20,
   LIMIT_REALTOR_STUDY_ARTICLE: 4,
@@ -1527,6 +1530,7 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
       .from('point_settings')
       .upsert(rows, { onConflict: 'key' });
     if (upsertError) return { success: false, error: upsertError.message };
+    clearTierLimitsCache(); // 저장한 값이 바로 판정에 쓰이게
 
     let applied = 0;
     for (const m of members as any[]) {
