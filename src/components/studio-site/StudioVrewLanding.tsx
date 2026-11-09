@@ -102,12 +102,13 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-use .t{font-size:22px;font-weight:800;margin-top:22px}
 .sv-use .d{font-size:16px;line-height:1.7;color:#4b5563;margin-top:10px;white-space:pre-line}
 @media (max-width:860px){.sv-uses{grid-template-columns:1fr;gap:40px}}
-.sv-last{padding-bottom:120px}
+.sv-last-wrap{background:#1b1c1e;margin-top:120px} /* 맨 아래 진한 바탕 (2026-11-09 사장님) */
+.sv-last{padding-top:110px;padding-bottom:120px}
 .sv-last .logo{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:48px}
 .sv-last .logo img{width:96px;height:96px;border-radius:50%;object-fit:cover}
-.sv-last .logo span{font-size:clamp(40px,5vw,60px);font-weight:900;letter-spacing:-0.03em;color:#1f1714}
-.sv-last .sv-h2{margin-bottom:40px}
-.sv-last .os{font-size:15px;color:#4b5563;margin:28px 0 14px}
+.sv-last .logo span{font-size:clamp(40px,5vw,60px);font-weight:900;letter-spacing:-0.03em;color:#fff}
+.sv-last .sv-h2{margin-bottom:40px;color:#fff}
+.sv-last .os{font-size:15px;color:#9ca3af;margin:28px 0 14px}
 .sv-last .osi{display:inline-flex;width:42px;height:42px;border:1px solid #e5e7eb;border-radius:10px;align-items:center;justify-content:center;color:#374151}
 .sv-dl{max-width:820px;margin:40px auto 0;text-align:left}
 @media (max-width:860px){.sv-steps,.sv-grid,.sv-grid.five,.sv-cases,.sv-price{grid-template-columns:1fr}.sv-grid.five .sv-card,.sv-grid.five .sv-card:nth-child(4){grid-column:auto}.sv-sec{padding-top:88px}}
@@ -504,6 +505,7 @@ export default function StudioVrewLanding() {
       {/* 부동산회원 · 공실뉴스부동산 비교표는 11-09 사장님 지시로 없앰 */}
 
       {/* 마지막 — 브루 맨 아래처럼 큰 로고 · 한 줄 · 버튼 (2026-10-26 사장님) */}
+      <div className="sv-last-wrap">
       <section id="start" className="sv-sec sv-last" style={{ scrollMarginTop: 80 }}>
         <div className="logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -518,6 +520,7 @@ export default function StudioVrewLanding() {
         </div>
         <p className="os">설치 없이 크롬 · 엣지에서 바로 씁니다.</p>
       </section>
+      </div>
     </div>
   );
 }
