@@ -58,7 +58,7 @@ const loadAll = (kind: string, free = false): AllOpts => {
 };
 const bridge = (): Bridge | null => studioBridge<Bridge>();
 /** 어떤 이야기로 — 공실은 매물 이야기, 뉴스칼럼은 단지 중심(기사 흐름 그대로가 기본) (2026-11-09 사장님: 자연스럽게 선택하고 이어지게) */
-const storyChoices = (kind: string) => (kind === "gongsil" ? VACANCY_STORIES.map((x) => ({ id: x.id, name: x.name, desc: x.desc })) : kind === "column" ? [{ id: "", name: "기사 흐름 그대로", desc: "내 기사의 흐름을 따라" }, ...MARKET_STORIES.map((x) => ({ id: x.id, name: x.name, desc: x.desc }))] : []); // 웹이면 웹 대역 (2026-11-03)
+const storyChoices = (kind: string) => (kind === "gongsil" ? VACANCY_STORIES.map((x) => ({ id: x.id, name: x.name, desc: x.desc })) : kind === "column" ? [...MARKET_STORIES.map((x) => ({ id: x.id, name: x.name, desc: x.desc })), { id: "", name: "기사 흐름 그대로", desc: "내 기사의 흐름을 따라" }] : []); // 기본은 종합 (2026-11-09 사장님 — 분석 기사 흐름은 영상에 안 맞음) // 웹이면 웹 대역 (2026-11-03)
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 /** 작업 파일(.gsn) 저장 상태 — file 이 비면 아직 파일이 없다 */
@@ -595,7 +595,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
             {/* 어떤 이야기로 — 한 번 고르면 기사·블로그·SNS·쇼츠가 같은 이야기로 이어진다 (2026-11-09) */}
             {storyChoices(kind).length > 0 && (() => {
               const list = storyChoices(kind);
-              const cur = list.find((x) => x.id === (all.story ?? "")) ? all.story ?? "" : list[0].id;
+              const cur = all.story !== undefined && list.some((x) => x.id === all.story) ? all.story : list[0].id;
               return (
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 800, color: theme.textSecondary, marginBottom: 6 }}>어떤 이야기로 <span style={{ fontWeight: 500 }}>· 모든 글이 같은 이야기로 이어져요</span></div>
