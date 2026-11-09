@@ -306,12 +306,12 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
   const [capBusy, setCapBusy] = useState(false);
   const anaKey = src === "vacancy" ? `v:${vacId}` : src === "market" ? (mkt === "area" ? `a:${lawd}:${dong}:${[...kinds].sort().join(",")}:${months}:${focus}` : `m:${pick?.id || ""}:${focus}`) : src === "gongsil" ? `g:${pick?.id || ""}` : src === "news" ? `n:${news?.url || news?.title || ""}` : `t:${topic.trim()}`;
   const errOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
-  /** 웹 — 우리동네부동산 단지 화면을 실제 화면 그대로 한 장 (공실뉴스 머리줄·단지 시세 창·가격 지도, 2026-11-09 사장님)
+  /** 웹 — 실제 화면 그대로 여러 장 (우리동네부동산 단지 화면 등 (공실뉴스 머리줄·단지 시세 창·가격 지도, 2026-11-09 사장님)
    *  예전엔 시세 그래프·실거래가를 그림으로 다시 그려 어색했다 (글자 어긋남·지도 없음) */
   const webShots = async (complex: { id: string; name: string }): Promise<Shot[]> => {
-    const { captureComplexScreen } = await import("./realScreenShot");
-    const shot = await captureComplexScreen(complex, (t) => setAnaBusy(t)).catch(() => null);
-    return shot ? [shot] : [];
+    // 다섯 장 — 단지 화면 · 시세 창 확대 · 로드뷰 · 스카이뷰 · 주변 지도. 순서는 [무엇을 중심으로]에 따라 (맨 앞이 대표)
+    const { captureComplexScreens } = await import("./realScreenShot");
+    return captureComplexScreens(complex, focus, (t) => setAnaBusy(t)).catch(() => []);
   };
   const capture = async (complex: { id: string; name: string }, only?: string[]) => {
     const cap = bridge()?.video?.capturePage;

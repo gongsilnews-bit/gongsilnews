@@ -3,8 +3,9 @@
  * 단지 시세 캡처용 화면 (2026-11-03 사장님: "단지/시세도 3~5장 정도 캡쳐해줘", "시세 캡쳐 로드뷰 캡쳐 실거래 금액 캡쳐")
  *  앱이 안 보이는 창으로 이 주소를 열어 찍는다 (video:capture-page).
  *  ?part=chart — 시세·그래프 · ?part=trades — 실거래 내역 · ?part=roadview — 로드뷰 크게 · ?part=map — 위치 지도 크게 · 없으면 전체(시세·실거래·단지 정보)
+ *  ?part=sky — 스카이뷰(위성) 단지 전경 · ?part=wide — 넓은 지도(역·학교·큰길) · ?part=street — 단지 쪽을 보는 로드뷰 — 웹 기사쓰기 실제 화면 찍기용 (2026-11-09)
  */
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AptDetailPanel, { MiniMap, Roadview, type AptDetail } from "@/app/(map)/gongsil/AptDetailPanel";
 
@@ -24,7 +25,7 @@ export default function AptCapturePage({ params }: { params: Promise<{ id: strin
   }, [id]);
   // 로드뷰는 카카오 지도 프로그램이 있어야 그린다
   useEffect(() => {
-    if (part !== "roadview" && part !== "map") return;
+    if (part !== "roadview" && part !== "map" && part !== "sky" && part !== "wide" && part !== "street") return;
     const w = window as unknown as { kakao?: { maps?: { load: (f: () => void) => void } } };
     if (w.kakao?.maps) { w.kakao.maps.load(() => setKakao(true)); return; }
     const s = document.createElement("script");
@@ -41,6 +42,20 @@ export default function AptCapturePage({ params }: { params: Promise<{ id: strin
           <style>{`.gs-rv-big > div { height: 100% !important; }`}</style>
           {kakao && Number.isFinite(detail.lat) && <MiniMap lat={detail.lat} lng={detail.lng} name={detail.name} />}
         </div>
+      </main>
+    );
+  }
+  if (part === "street") {
+    return (
+      <main style={{ width: "100vw", height: "100vh", background: "#111" }}>
+        {kakao && Number.isFinite(detail.lat) && <StreetView lat={detail.lat} lng={detail.lng} />}
+      </main>
+    );
+  }
+  if (part === "sky" || part === "wide") {
+    return (
+      <main style={{ width: "100vw", height: "100vh", background: "#fff" }}>
+        {kakao && Number.isFinite(detail.lat) && <BigMap lat={detail.lat} lng={detail.lng} name={detail.name} sky={part === "sky"} />}
       </main>
     );
   }
@@ -66,3 +81,55 @@ export default function AptCapturePage({ params }: { params: Promise<{ id: strin
     </main>
   );
 }
+
+/** 화면 가득 지도 — sky: 스카이뷰(위성+이름) 가까이 · 아니면 일반 지도 한 단계 넓게(역·학교·큰길 이름이 보이게). 다 그려지면 data-map-ready */
+function BigMap({ lat, lng, name, sky }: { lat: number; lng: number; name: string; sky: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const kakao = (window as unknown as { kakao?: any }).kakao; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const box = ref.current;
+    if (!kakao?.maps || !box) return;
+    const pos = new kakao.maps.LatLng(lat, lng);
+    const map = new kakao.maps.Map(box, { center: pos, level: sky ? 2 : 5 });
+    if (sky) map.setMapTypeId(kakao.maps.MapTypeId.SKYVIEW); // 글자 없는 위성 — 단지 동 배치가 잘 보이게
+    new kakao.maps.Marker({ position: pos, map, title: name });
+    kakao.maps.event.addListener(map, "tilesloaded", () => { box.dataset.mapReady = "1"; });
+  }, [lat, lng, name, sky]);
+  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
+}
+
+/** 단지 쪽을 보는 로드뷰 — 가까운 로드뷰 지점을 찾아(50m→300m) 카메라를 단지 방향으로 돌린다. 다 뜨면 data-roadview-status="ready"
+ *  (공실 상세와 같이 쓰는 utils/kakaoRoadview 는 건드리지 않으려고 따로 둔다) */
+function StreetView({ lat, lng }: { lat: number; lng: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const kakao = (window as unknown as { kakao?: any }).kakao; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const box = ref.current;
+    if (!kakao?.maps || !box) return;
+    const target = new kakao.maps.LatLng(lat, lng);
+    const client = new kakao.maps.RoadviewClient();
+    const rv = new kakao.maps.Roadview(box);
+    const bearing = (from: { getLat: () => number; getLng: () => number }) => {
+      const r = Math.PI / 180, p1 = from.getLat() * r, p2 = lat * r, dl = (lng - from.getLng()) * r;
+      const y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+      return (Math.atan2(y, x) / r + 360) % 360;
+    };
+    let alive = true;
+    kakao.maps.event.addListener(rv, "init", () => {
+      if (!alive) return;
+      rv.setViewpoint({ pan: bearing(rv.getPosition()), tilt: 8, zoom: 0 });
+      setTimeout(() => { if (alive) box.dataset.roadviewStatus = "ready"; }, 1500);
+    });
+    const tryAt = (radii: number[]) => {
+      if (!radii.length) { box.dataset.roadviewStatus = "failed"; return; }
+      client.getNearestPanoId(target, radii[0], (id: number | null) => {
+        if (!alive) return;
+        if (id) rv.setPanoId(id, target); else tryAt(radii.slice(1));
+      });
+    };
+    tryAt([50, 100, 200, 300]);
+    return () => { alive = false; };
+  }, [lat, lng]);
+  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
+}
+
