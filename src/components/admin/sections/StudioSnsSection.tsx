@@ -246,7 +246,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setPicked(v);
     setError("");
     if (works?.some((w) => w.vacancyId === v.id)) void openWork(v.id, v);
-    else void analyze(v);
+    else setResult(null); // 처음 고른 공실은 [분석·캡처 시작]을 눌러야 시작 (2026-11-09 사장님: "선택하자마자 그러면 안 되지, 분석하기 했을 때 해야지")
   };
   /* 목록 카드에서 열기 (2026-10-29) — 써 둔 작업이 있으면 그 채널 탭으로, 처음이면 분석·캡처부터 */
   const openFromCard = async (p: VacancyRow, t: string) => {
@@ -257,7 +257,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       setPicked(p);
       setTab(t);
       setError("");
-      await analyze(p);
+      setResult(null); // 분석·캡처는 [분석·캡처 시작]을 눌렀을 때 (2026-11-09)
     }
   };
   /* 작업해 둔 공실 열기 — 분석·캡처는 다시 하지 않는다 */
@@ -750,22 +750,20 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {category === "auction" && <OnbidPicker theme={theme as unknown as React.ComponentProps<typeof OnbidPicker>["theme"]} onPick={(r) => choose(r as unknown as VacancyRow)} />}
         </div>
 
-        {/* 2. 분석·캡처 — 고르면 저절로 시작 (멈췄을 때만 버튼으로 다시) */}
+        {/* 2. 분석·캡처 — [분석·캡처 시작]을 눌러야 시작 (2026-11-09 사장님) */}
         <div style={{ ...card, position: "relative", minHeight: busy ? 200 : undefined }}>
           {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
           {stepTitle(2, "공실 분석·캡처")}
           {!picked ? (
-            <div style={{ fontSize: 14, color: theme.textSecondary }}>공실을 고르면 분석·캡처가 저절로 시작됩니다. 전에 작업한 공실이면 써 둔 글이 바로 열립니다.</div>
+            <div style={{ fontSize: 14, color: theme.textSecondary }}>공실을 고르고 [분석·캡처 시작]을 누르세요. 전에 작업한 공실이면 써 둔 글이 바로 열립니다.</div>
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: theme.textPrimary }}>{vacancyLabel(picked)}</span>
-                {(busy || error) && (
-                  <button onClick={() => void analyze(picked)} disabled={busy}
-                    style={{ padding: "10px 18px", background: busy ? "#1a3a6b" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
-                    {busy ? <>분석·캡처 중<BusyDots /></> : "다시 시도"}
-                  </button>
-                )}
+                <button onClick={() => void analyze(picked)} disabled={busy}
+                  style={{ padding: "10px 18px", background: busy ? "#1a3a6b" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
+                  {busy ? <>분석·캡처 중<BusyDots /></> : error ? "다시 시도" : "🔍 분석·캡처 시작"}
+                </button>
               </div>
               <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>{web ? "등록 사진 전부와 실제 화면 5장(공실열람·매물 정보·로드뷰·스카이뷰·주변 지도)을 모읍니다. 30초쯤 걸립니다." : "등록 사진 전부와 화면 3장(공실열람 검증·지도·로드뷰)을 모읍니다. 10초쯤 걸립니다."}</div>
             </>
