@@ -49,11 +49,40 @@ interface Props {
   color?: string;
 }
 
+/* ── 알림 소리 (2026-11-09 사장님: "알림소리가 날 수 있게 · 소리 켜기 끄기 먼저") ──
+   새 알림이 실시간으로 들어오면 짧은 "띵". 사람마다 켜기/끄기를 기억 (gs-noti-sound, 기본 켬).
+   종이 한 화면에 여러 개 있어도 한 번만 울리게 (마지막으로 울린 알림 번호를 함께 쓴다).
+   크롬 규칙상 이 페이지를 한 번이라도 누른 뒤부터 소리가 난다. */
+const SOUND_KEY = "gs-noti-sound";
+let lastDing = { id: "", at: 0 };
+function soundOn() { try { return localStorage.getItem(SOUND_KEY) !== "off"; } catch { return true; } }
+function ding() {
+  try {
+    const AC = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const note = (freq: number, at: number) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + at);
+      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.45);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + at); o.stop(ctx.currentTime + at + 0.5);
+    };
+    note(1046.5, 0); note(1318.5, 0.12); // 띵-동 (도·미)
+    setTimeout(() => void ctx.close().catch(() => {}), 900);
+  } catch { /* 소리를 못 내도 알림은 그대로 */ }
+}
+
 export default function NotificationBell({ mobile = false, color = "#333" }: Props) {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [items, setItems] = useState<NotificationRow[]>([]);
+  const [sound, setSound] = useState(true);
+  useEffect(() => { setSound(soundOn()); }, []); // eslint-disable-line react-hooks/set-state-in-effect
+  const firstLoad = useRef(true);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -77,6 +106,13 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
     if (!userId) return;
     const res = await getNotifications({ userId, isAdmin });
     if (res.success) {
+      // 처음 불러온 것 말고, 실시간으로 새로 들어온 안 읽은 알림이면 "띵" (한 화면에 종이 여러 개여도 한 번)
+      const top = res.data[0];
+      if (!firstLoad.current && top && !top.read_at && top.id !== lastDing.id && soundOn()) {
+        lastDing = { id: String(top.id), at: Date.now() };
+        ding();
+      } else if (firstLoad.current && top && !lastDing.id) lastDing = { id: String(top.id), at: Date.now() };
+      firstLoad.current = false;
       setItems(res.data);
       setUnread(res.unread);
     }
@@ -162,6 +198,11 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
         }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>알림 {unread > 0 && <span style={{ color: "#ef4444" }}>{unread}</span>}</span>
+            <button type="button" onClick={() => { const next = !sound; setSound(next); try { localStorage.setItem(SOUND_KEY, next ? "on" : "off"); } catch {} if (next) ding(); }}
+              title={sound ? "새 알림이 오면 소리가 나요 — 누르면 꺼요" : "소리가 꺼져 있어요 — 누르면 켜요"}
+              style={{ marginLeft: "auto", marginRight: 8, display: "flex", alignItems: "center", gap: 4, height: 26, padding: "0 10px", borderRadius: 13, border: `1px solid ${sound ? "#1e3a6e" : "#d1d5db"}`, background: sound ? "#eef2ff" : "#fff", color: sound ? "#1e3a6e" : "#6b7280", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {sound ? "🔔 소리 켜짐" : "🔕 소리 꺼짐"}
+            </button>
             {unread > 0 && (
               <button type="button" onClick={handleReadAll} style={{ background: "none", border: "none", color: "#6b7280", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                 모두 읽음
