@@ -5,14 +5,15 @@ import { isWebStudio, studioBridge } from "../studio-web";
 import React, { useEffect, useState } from "react";
 import { IMAGE_STYLES } from "@/lib/studio-video/imageStyles";
 import { ProTag } from "@/components/admin/ProBadge";
+import ArticleStockModal from "@/components/admin/ArticleStockModal";
 
-export type MediaOp = { type: "order"; order: number[] } | { type: "remove"; index: number } | { type: "restore" } | { type: "upload" } | { type: "ai"; prompt: string; ai?: unknown; style?: string; styleLabel?: string; stylePrompt?: string };
+export type MediaOp = { type: "order"; order: number[] } | { type: "remove"; index: number } | { type: "restore" } | { type: "upload"; files?: File[]; caption?: string } | { type: "ai"; prompt: string; ai?: unknown; style?: string; styleLabel?: string; stylePrompt?: string };
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Item = { kind: string; caption: string; thumb: string | null };
 type Bridge = { blog?: { imageStyles?: (id?: string) => Promise<{ id: string; label: string }[]> }; vacancy?: { onProgress: (fn: (t: string) => void) => () => void } };
 const bridge = (): Bridge | null => studioBridge<Bridge>(); // 웹이면 웹 대역 (2026-11-03)
 
-const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진", capture: "기사 화면" };
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진", stock: "오픈자료", capture: "기사 화면" };
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
 export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey, ideas, seed, onOp, note }: {
@@ -31,6 +32,7 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
 }) {
   const [dragFrom, setDragFrom] = useState(-1);
   const [busy, setBusy] = useState("");
+  const [stockOpen, setStockOpen] = useState(false); // [+ 오픈자료] Pixabay 사진 (2026-11-09 사장님: "올리기 할 때 오픈자료도")
   const [err, setErr] = useState("");
   const [aiAsk, setAiAsk] = useState<string | null>(null);
   // AI 이미지는 PRO 전용 (2026-11-04 사장님) — null = 아직 모름(막지 않음, 서버가 한 번 더 막는다)
@@ -105,11 +107,18 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
           {/* 내 사진 올리기 · AI 이미지 만들기 둘 다 (2026-11-04 사장님: 웹도 — 웹은 [AI 설정] 이미지 칸의 내 ChatGPT·Gemini 옆 창에서 그린다) */}
           <button disabled={Boolean(busy)} onClick={() => void run({ type: "upload" })} title="내 PC 의 사진을 골라 넣어요 (여러 장 가능)"
             style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 내 사진 올리기</button>
+          {isWebStudio() && (<>
+            <div style={{ borderTop: `1px dashed ${theme.border}` }} />
+            <button disabled={Boolean(busy)} onClick={() => setStockOpen(true)} title="Pixabay 무료 사진을 찾아 넣어요"
+              style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 오픈자료</button>
+          </>)}
           <div style={{ borderTop: `1px dashed ${theme.border}` }} />
           <button disabled={Boolean(busy)} onClick={openAi} title={pro === false ? "AI 이미지는 공실뉴스부동산 전용이에요" : "그림 스타일을 골라 AI로 그려 넣어요"}
             style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: "#7048e8", fontSize: 14, fontWeight: 800 }}>＋ AI 이미지 만들기 <ProTag style={{ marginLeft: 4 }} /></button>
         </div>
       </div>
+      {stockOpen && <ArticleStockModal imagesOnly onClose={() => setStockOpen(false)}
+        onPick={async (p) => { if (p.kind === "image") await run({ type: "upload", files: [p.file], caption: p.caption }); }} />}
       {aiAsk !== null && (
         <div onClick={() => !busy && setAiAsk(null)} style={{ position: "fixed", inset: 0, zIndex: 10002, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="AI 이미지 만들기"

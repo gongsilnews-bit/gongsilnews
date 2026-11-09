@@ -267,7 +267,7 @@ const analysisForWeb = (a: Analysis) => ({
 /* 분석 사진 정리 — 순서·빼기·되살리기·내 사진·AI 이미지 (앱 main.js mediaOp) */
 async function mediaOp(vacancyId: string, op: any) {
   // 내 사진 고르기 창은 누른 순간에 열어야 한다 (브라우저가 막지 않게) — 기다리기 전에
-  const files = op?.type === "upload" ? pickFiles(true) : null;
+  const files = op?.type === "upload" ? (Array.isArray(op.files) ? Promise.resolve(op.files as File[]) : pickFiles(true)) : null;
   const w = await need(vacancyId);
   const a = w.analysis;
   if (op.type === "order") {
@@ -285,7 +285,9 @@ async function mediaOp(vacancyId: string, op: any) {
     if (!list.length) return analysisForWeb(a);
     for (const f of list) {
       const src = await toJpeg(await readFile(f), 1600);
-      a.media.push({ key: `upload:${newId()}`, kind: "upload", src, caption: `${f.name.replace(/\.[^.]+$/, "")} (직접 올린 사진)`, real: true, addedAt: Date.now() });
+      // 오픈자료(Pixabay)는 출처 글을 달고, 실제 매물 사진이 아니므로 대표 사진으로 앞세우지 않는다
+      if (op.caption) a.media.push({ key: `stock:${newId()}`, kind: "stock", src, caption: String(op.caption), real: false, addedAt: Date.now() });
+      else a.media.push({ key: `upload:${newId()}`, kind: "upload", src, caption: `${f.name.replace(/\.[^.]+$/, "")} (직접 올린 사진)`, real: true, addedAt: Date.now() });
     }
   } else if (op.type === "ai") {
     // AI 이미지 만들기 (2026-11-04 사장님: 웹도 내 사진 + AI 이미지, 스타일 20여 가지) — 앱 main.js mediaOp 와 같은 질문을

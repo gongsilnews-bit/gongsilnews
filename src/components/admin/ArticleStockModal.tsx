@@ -18,7 +18,8 @@ type Item = { id: string; kind: "image" | "video"; thumb: string; url: string; w
 
 const NAVY = "#1e3a6e";
 
-export default function ArticleStockModal({ onClose, onPick }: { onClose: () => void; onPick: (p: StockPick) => void | Promise<void> }) {
+/** imagesOnly: 사진 칸(뉴스칼럼·공실 분석)처럼 이미지만 받는 곳 — 드론 탭을 숨긴다 */
+export default function ArticleStockModal({ onClose, onPick, imagesOnly = false }: { onClose: () => void; onPick: (p: StockPick) => void | Promise<void>; imagesOnly?: boolean }) {
   const [tab, setTab] = useState<"image" | "drone">("image");
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Item[] | null>(null);
@@ -78,7 +79,7 @@ export default function ArticleStockModal({ onClose, onPick }: { onClose: () => 
   const list = tab === "image" ? items : droneShown;
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 10003, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 860, maxWidth: "100%", height: "82vh", background: "#fff", borderRadius: 10, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: "#111827" }}>오픈자료</div>
@@ -86,9 +87,9 @@ export default function ArticleStockModal({ onClose, onPick }: { onClose: () => 
         </div>
         <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb" }}>
           <button type="button" style={tabBtn(tab === "image")} onClick={() => setTab("image")}>이미지 (Pixabay)</button>
-          <button type="button" style={tabBtn(tab === "drone")} onClick={() => setTab("drone")}>
+          {!imagesOnly && <button type="button" style={tabBtn(tab === "drone")} onClick={() => setTab("drone")}>
             공실뉴스 드론<span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: PRO_ORANGE, marginLeft: 3, verticalAlign: "top" }} />
-          </button>
+          </button>}
         </div>
         <form onSubmit={(e) => { e.preventDefault(); if (tab === "image") void searchImages(q); }} style={{ display: "flex", gap: 8, padding: "12px 20px" }}>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "image" ? "예: 서울 아파트, 거실" : "예: 강남, 잠실 (동네·장소 이름)"}
