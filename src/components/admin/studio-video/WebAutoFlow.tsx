@@ -214,7 +214,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         hold: ai ? PHOTO_SEC : holdOf(t), ...(ai ? {} : { subText: t }),
       }) as Clip);
       if (ai) {
-        // 세 문장씩 동시에 (2026-11-05: 하나씩 기다리던 것 — 2~3배 빠르게)
+        // 한 문장씩 차례로 (2026-11-09 사장님: "빨리 만들지 않아도 되니 정확하게 꼼꼼하게") — 앞뒤 문장을 이어 듣고 만들어 말투가 고르게
         let doneN = 0, next = 0;
         setBusy(`AI 목소리를 만드는 중… (0/${clips.length})`);
         const worker = async () => {
@@ -226,7 +226,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
             setBusy(`AI 목소리를 만드는 중… (${++doneN}/${clips.length})`);
           }
         };
-        await Promise.all([worker(), worker(), worker()]);
+        await worker();
         p.settings.voice = { ...p.settings.voice, id: voiceId, speed: WEB_VOICE_SPEED };
       }
       // 공실이면 — 첫 장면 동네·종류, 마지막 사무소 화면 (법정 표시)

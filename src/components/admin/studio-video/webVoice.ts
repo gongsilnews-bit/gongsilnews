@@ -13,9 +13,11 @@ const TC_MODEL = "ssfm-v30";
 const EL_API = "https://api.elevenlabs.io";
 const EL_MODEL = "eleven_multilingual_v2";
 const EL_STYLE: Record<string, { stability: number; similarity_boost: number; style: number }> = {
-  normal: { stability: 0.5, similarity_boost: 0.75, style: 0 },
-  calm: { stability: 0.75, similarity_boost: 0.75, style: 0 },
-  lively: { stability: 0.3, similarity_boost: 0.75, style: 0.35 },
+  // 안정도를 올림 (2026-11-09 사장님: "성우의 말이 씹히는 경우") — 0.5 에서 같은 문장 3번 중 1번 "거래됐던"을 "거래되어 했던"으로 뭉갰다.
+  //  0.75 로 5번 모두 정확 (Whisper 받아쓰기로 확인). 밝게도 0.3 → 0.55
+  normal: { stability: 0.75, similarity_boost: 0.75, style: 0 },
+  calm: { stability: 0.85, similarity_boost: 0.75, style: 0 },
+  lively: { stability: 0.55, similarity_boost: 0.75, style: 0.25 },
 };
 
 type Kind = "typecast" | "eleven";

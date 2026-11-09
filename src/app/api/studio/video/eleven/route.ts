@@ -18,9 +18,11 @@ export const maxDuration = 60;
 const API = "https://api.elevenlabs.io";
 const MODEL = "eleven_multilingual_v2";
 const STYLE: Record<string, { stability: number; similarity_boost: number; style: number }> = {
-  normal: { stability: 0.5, similarity_boost: 0.75, style: 0 },
-  calm: { stability: 0.75, similarity_boost: 0.75, style: 0 },
-  lively: { stability: 0.3, similarity_boost: 0.75, style: 0.35 },
+  // 안정도를 올림 (2026-11-09 사장님: "성우의 말이 씹히는 경우") — 0.5 에서 같은 문장 3번 중 1번 "거래됐던"을 "거래되어 했던"으로 뭉갰다.
+  //  0.75 로 5번 모두 정확 (Whisper 받아쓰기로 확인). 밝게도 0.3 → 0.55
+  normal: { stability: 0.75, similarity_boost: 0.75, style: 0 },
+  calm: { stability: 0.85, similarity_boost: 0.75, style: 0 },
+  lively: { stability: 0.55, similarity_boost: 0.75, style: 0.25 },
 };
 const db = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
 const KEY = () => process.env.ELEVENLABS_API_KEY || "";
@@ -206,13 +208,27 @@ export async function POST(req: NextRequest) {
   const short = (b: number) => NextResponse.json({ success: false, error: `포인트가 모자라요. 이 문장은 ${cost}P (1자 ${r0 / 100}P), 남은 포인트 ${b.toLocaleString("ko-KR")}P예요.`, points: true }, { status: 402 });
   if (bal < cost) return short(bal);
   const em = String(body.emotion || "normal");
-  const r = await fetch(`${API}/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
-    method: "POST",
-    headers: { "xi-api-key": k, "Content-Type": "application/json" },
-    body: JSON.stringify({ text: koReadNumbers(text), model_id: MODEL, voice_settings: { ...(STYLE[em] || STYLE.normal), use_speaker_boost: true }, ...(body.prev ? { previous_text: koReadNumbers(String(body.prev)).slice(0, 1000) } : {}), ...(body.next ? { next_text: koReadNumbers(String(body.next)).slice(0, 1000) } : {}) }),
-  });
-  if (!r.ok) return NextResponse.json({ success: false, error: errOf(r.status, await r.json().catch(() => null)) }, { status: 502 });
-  const audio = await r.arrayBuffer();
+  // 꼼꼼하게 (2026-11-09 사장님: "빨리 만들지 않아도 되니 정확하게") — 글자 수에 비해 소리가 너무 짧거나 길면(말을 빼먹었거나 늘어짐)
+  //  더 안정된 설정으로 다시 만든다 (최대 2번 더). 포인트는 한 번만
+  const spoken = koReadNumbers(text);
+  const syl = (spoken.match(/[가-힣]/g) || []).length + (spoken.match(/[A-Za-z0-9]/g) || []).length * 0.7;
+  let audio: ArrayBuffer | null = null;
+  for (let tryN = 0; tryN < 3; tryN++) {
+    const vs = { ...(STYLE[em] || STYLE.normal) };
+    if (tryN > 0) { vs.stability = Math.min(0.9, vs.stability + 0.1 * tryN); vs.style = 0; }
+    const r = await fetch(`${API}/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
+      method: "POST",
+      headers: { "xi-api-key": k, "Content-Type": "application/json" },
+      body: JSON.stringify({ text: spoken, model_id: MODEL, voice_settings: { ...vs, use_speaker_boost: true }, ...(body.prev ? { previous_text: koReadNumbers(String(body.prev)).slice(0, 1000) } : {}), ...(body.next ? { next_text: koReadNumbers(String(body.next)).slice(0, 1000) } : {}) }),
+    });
+    if (!r.ok) { if (audio) break; return NextResponse.json({ success: false, error: errOf(r.status, await r.json().catch(() => null)) }, { status: 502 }); }
+    audio = await r.arrayBuffer();
+    const sec = (audio.byteLength * 8) / 128000; // mp3 128kbps 고정
+    const perSec = syl / Math.max(0.1, sec);
+    if (syl < 6 || (perSec >= 3 && perSec <= 8.5)) break; // 보통 한국어 성우는 1초에 4~6자
+    console.warn("[AI 목소리] 길이가 이상해 다시 만듦", { tryN, syl, sec: +sec.toFixed(2), perSec: +perSec.toFixed(2) });
+  }
+  if (!audio) return NextResponse.json({ success: false, error: "AI 목소리를 만들지 못했어요." }, { status: 502 });
   // 만들어진 뒤에만 포인트를 뺀다 — 잔액 하나에서
   let left: number | null;
   try { left = await spend(member.id, cost); } catch (e) { return NextResponse.json({ success: false, error: e instanceof Error ? e.message : String(e) }, { status: 503 }); }
