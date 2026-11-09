@@ -903,6 +903,8 @@ export default function NewsReadContent({
                   dangerouslySetInnerHTML={{ 
                     __html: article.content
                       .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
+                      // 공실뉴스 드론 영상 — 플레이어 [다운로드]·오른쪽 클릭 저장 막기 (2026-11-09 사장님). 이미 쓴 기사도 여기서 막는다
+                      .replace(/<video((?:(?!>)[^])*?src="\/api\/drone\/[^"]*"[^>]*)>/gi, '<video$1 controlslist="nodownload" disablepictureinpicture oncontextmenu="return false;">')
                       .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
                       .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
                       .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')

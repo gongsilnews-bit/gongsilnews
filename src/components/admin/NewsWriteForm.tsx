@@ -984,6 +984,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     video.setAttribute('controls', '');
     video.setAttribute('preload', 'none');
     video.setAttribute('playsinline', '');
+    video.setAttribute('controlslist', 'nodownload'); // 플레이어 [다운로드] 숨김 (2026-11-09 사장님)
+    video.setAttribute('disablepictureinpicture', '');
+    video.setAttribute('oncontextmenu', 'return false;');
     video.style.cssText = 'width: 100%; height: auto; border-radius: 8px; display: block; background: #000;';
     wrapper.appendChild(video);
     if (caption) {
