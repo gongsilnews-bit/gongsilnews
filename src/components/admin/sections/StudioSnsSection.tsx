@@ -9,6 +9,7 @@ import WorkCardGrid, { LinkNotice } from "./WorkCardGrid";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
+import OnbidPicker from "./OnbidPicker";
 import StudioFreeWrite from "./StudioFreeWrite";
 import StudioChannelTabs, { StepLine, StepTitle } from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
@@ -93,8 +94,8 @@ const NEWS_CATEGORIES = [
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
 // 웹에서 보이는 카테고리 — 공실뉴스 · 뉴스칼럼(내 기사로, 2026-11-04 사장님: 공실뉴스 하단에)
-const WEB_CATEGORIES = ["gongsil", "column", "free"];
-const WEB_LEAD: Record<string, string> = { column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
+const WEB_CATEGORIES = ["gongsil", "column", "free", "auction"]; // 경매·공매도 웹에 (2026-11-09 사장님: 온비드 물건을 따로 불러오게)
+const WEB_LEAD: Record<string, string> = { auction: "온비드 공매 물건 하나로 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 지역·종류·반값 이하·마감 임박으로 골라 찾습니다.", column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", ai: "AI 생성", upload: "내 사진" };
@@ -565,7 +566,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   boxShadow: on ? `inset 3px 0 0 ${(theme.darkMode ? "#ffffff" : "#1a3a6b")}` : "none" }}>
                 <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}</span>
                 {/* 유료 회원 전용 표시 — 주황 = 공실뉴스부동산 색 (2026-10-23 사장님) */}
-                {c.id === "column" && pro === false && <ProTag />}
+                {(c.id === "column" || c.id === "auction") && pro === false && <ProTag />}
                 {(c.id === "interior" || c.id === "remodel") && (
                   <span title="공실마케팅 회원 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
                 )}
@@ -668,7 +669,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             onTab={(id) => setSimTabs((m) => ({ ...m, [category]: id }))} onUsed={loadUsage} />
         )}
 
-        {(category === "gongsil" || category === "auction") && (<>
+        {category === "auction" && web && pro === false && <ProLock what="경매·공매" detail="온비드 공매 물건으로 블로그·SNS·유튜브 글을 만들어요." dark={Boolean(theme.darkMode)} onUpgrade={() => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank", "noopener"); }} />}
+        {(category === "gongsil" || (category === "auction" && !(web && pro === false))) && (<>
         {/* 작업 목록 — 처음 화면 (2026-10-29 사장님: 기사관리처럼, 카드는 공실관리 SNS홍보형 그대로)
             맨 앞 [+ 새로 만들기] → 공실 고르기 · 카드/채널을 누르면 이 자리에서 그 공실 작업 */}
         {mode === "list" && (
@@ -744,6 +746,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             </button>
           </div>
           )}
+          {/* 온비드 물건을 번호 없이 골라 찾기 (2026-11-09) */}
+          {category === "auction" && <OnbidPicker theme={theme as unknown as React.ComponentProps<typeof OnbidPicker>["theme"]} onPick={(r) => choose(r as unknown as VacancyRow)} />}
         </div>
 
         {/* 2. 분석·캡처 — 고르면 저절로 시작 (멈췄을 때만 버튼으로 다시) */}

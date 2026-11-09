@@ -264,3 +264,60 @@ export async function getStudioAgency() {
     },
   };
 }
+
+/**
+ * 뉴스·SNS자동화 [경매·공매] — 온비드 물건을 번호 없이 골라 찾기 (2026-11-09 사장님: 온비드 물건을 따로 불러오게)
+ *  입찰 마감 전(공실열람에 공개 중)인 온비드 물건만. 지역(시·도, 시·군·구) · 종류 · 묶음(반값 이하 · 이번 주 마감 · 유찰 2회 이상 · 1억 미만) · 이름
+ *  공개 화면에 나오는 값만 돌려준다 (findStudioVacancyByNo 와 같은 칸 + 감정가·최저가·유찰·마감)
+ */
+export type OnbidPreset = "" | "half" | "week" | "fail2" | "under1";
+export type OnbidPick = {
+  id: string; vacancy_no: number; building_name: string | null; trade_type: string | null; property_type: string | null;
+  sido: string; sigungu: string; dong: string;
+  caseNo: string; appraisal: number | null; lowest: number | null; failCount: number; bidEnd: string; status: string; kind: string;
+};
+
+export async function searchOnbidForStudio(f: { sido?: string; sigungu?: string; kind?: string; preset?: OnbidPreset; q?: string }) {
+  const cookie = await createCookieSupabase();
+  const { data: { user } } = await cookie.auth.getUser();
+  if (!user) return { success: false as const, error: "로그인이 필요합니다.", data: [] as OnbidPick[] };
+  const supabase = createAdminSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const kst = (ms: number) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 16).replace("T", " ");
+  const now = kst(Date.now());
+  let q = supabase
+    .from("vacancies")
+    .select("id, vacancy_no, building_name, trade_type, property_type, sido, sigungu, dong, metadata->cltrMngNo, metadata->appraisal_price, metadata->lowest_bid_price, metadata->fail_count, metadata->bid_end_date, metadata->bid_status, metadata->lctnSdnm, metadata->lctnSggnm, metadata->lctnEmdNm, metadata->cltrUsgSclsCtgrNm")
+    .eq("is_onbid", true)
+    .eq("status", "ACTIVE")
+    .gte("metadata->>bid_end_date", now)
+    .order("metadata->>bid_end_date", { ascending: true })
+    .limit(1000);
+  if (f.sido) q = q.eq("metadata->>lctnSdnm", f.sido);
+  if (f.sigungu?.trim()) q = q.ilike("metadata->>lctnSggnm", `%${f.sigungu.trim()}%`);
+  if (f.kind) q = q.eq("property_type", f.kind);
+  if (f.q?.trim()) q = q.ilike("building_name", `%${f.q.trim().replace(/[%,()]/g, " ")}%`);
+  const { data, error } = await q;
+  if (error) return { success: false as const, error: error.message, data: [] as OnbidPick[] };
+  const week = kst(Date.now() + 7 * 864e5);
+  type Row = { id: string; vacancy_no: number; building_name: string | null; trade_type: string | null; property_type: string | null; sido: string; sigungu: string; dong: string; cltrMngNo?: string; appraisal_price?: number; lowest_bid_price?: number; fail_count?: number; bid_end_date?: string; bid_status?: string; lctnSdnm?: string; lctnSggnm?: string; lctnEmdNm?: string; cltrUsgSclsCtgrNm?: string };
+  const rows = ((data || []) as unknown as Row[]).filter((r) => {
+    const ap = Number(r.appraisal_price) || 0, lo = Number(r.lowest_bid_price) || 0;
+    if (f.preset === "half") return ap > 0 && lo > 0 && lo <= ap * 0.5;
+    if (f.preset === "week") return String(r.bid_end_date || "") <= week;
+    if (f.preset === "fail2") return (Number(r.fail_count) || 0) >= 2;
+    if (f.preset === "under1") return lo > 0 && lo < 1e8;
+    return true;
+  });
+  return {
+    success: true as const,
+    total: rows.length,
+    data: rows.slice(0, 60).map((r): OnbidPick => ({
+      id: r.id, vacancy_no: r.vacancy_no, building_name: r.building_name, trade_type: r.trade_type, property_type: r.property_type,
+      sido: r.lctnSdnm || r.sido, sigungu: r.lctnSggnm || r.sigungu, dong: r.lctnEmdNm || r.dong,
+      caseNo: String(r.cltrMngNo || ""), appraisal: Number(r.appraisal_price) || null, lowest: Number(r.lowest_bid_price) || null,
+      failCount: Number(r.fail_count) || 0, bidEnd: String(r.bid_end_date || ""), status: String(r.bid_status || ""), kind: String(r.cltrUsgSclsCtgrNm || r.property_type || ""),
+    })),
+  };
+}
