@@ -71,6 +71,36 @@ export default function AptDataCard({ theme, cardStyle }: { theme: AdminTheme; c
       </div>
 
       {st && (
+        <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: 8, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>
+            매일 받기 회차 기록 <span style={{ fontWeight: 500 }}>(최근 3개월 거래가 있는 단지를 전부 확인 → 바뀐 단지만 다시 씀)</span>
+          </div>
+          {st.rounds.length === 0 ? (
+            <div style={{ fontSize: 11.5, color: theme.textSecondary, padding: "4px 8px" }}>아직 기록이 없어요. 내일 새벽 2시 회차부터 쌓입니다.</div>
+          ) : (
+            <div style={{ maxHeight: 170, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+              {st.rounds.map((r) => {
+                const bad = r.failed.length > 0;
+                return (
+                  <div key={r.day} style={{ fontSize: 11, padding: "5px 8px", background: bad ? (theme.darkMode ? "#450a0a" : "#fef2f2") : theme.darkMode ? "#1e293b" : "#f1f5f9", borderRadius: 6, color: theme.textPrimary, border: bad ? "1px solid #fca5a5" : "none" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                      <b>{dayLabel(r.day)}</b>
+                      <span style={{ fontWeight: 700 }}>
+                        {n(r.total)}묶음 중 <span style={{ color: r.ok === r.total ? "#10b981" : "#f59e0b" }}>{n(r.ok)} 완료</span>
+                        {" · "}확인 {n(r.checked)}곳 → 바뀐 <span style={{ color: "#2563eb" }}>{n(r.changed)}곳</span> (새 거래 <span style={{ color: "#10b981" }}>{n(r.fresh)}곳</span>)
+                        {" · "}실패 <span style={{ color: bad ? "#ef4444" : theme.textSecondary }}>{r.failed.length}</span>
+                      </span>
+                    </div>
+                    {bad && <div style={{ marginTop: 3, color: "#dc2626", fontWeight: 600 }}>못 받은 곳: {r.failed.slice(0, 8).map((f) => `${f.name}(${f.why})`).join(", ")}{r.failed.length > 8 ? ` 외 ${r.failed.length - 8}곳` : ""}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {st && (
         <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: 8 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>
             최근 7일 수집 이력 <span style={{ fontWeight: 500 }}>(바뀐 단지 / 새 거래 / 세대수 찾아본 단지)</span>

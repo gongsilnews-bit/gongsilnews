@@ -70,6 +70,15 @@ export async function GET(req: Request) {
     }
     done.push(r);
   }
+  // 회차 기록 (2026-11-09 사장님: "확인 몇 곳 → 바뀐 몇 곳 · 실패" 를 AI 비서실에서 보게) — 온비드처럼 agent_chats 에 한 줄
+  if (mode === "recent" && jobs.length) {
+    const log = done.map((d) => {
+      const t = d.trades as { complexes?: number; written?: number; fresh?: number } | undefined;
+      return { l: d.lawd, k: d.kind, c: t?.complexes ?? null, w: t?.written ?? null, f: t?.fresh ?? null, ...(d.error ? { e: String(d.error).slice(0, 120) } : {}), ...(d.skipped ? { s: 1 } : {}) };
+    });
+    const sb = createSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+    await sb.from("agent_chats").insert({ channel_id: "apt_sync_log", role: "agent", content: JSON.stringify({ mode, slot, total: RECENT_JOBS.length, manual: params.has("slot") || Boolean(one), jobs: log }) }).then(() => null, () => null);
+  }
   // 찜한 단지·부동산 새 소식 🔔 (새 실거래·공실·기사 — 같은 알림은 한 번만, utils/starAlerts)
   // 새 실거래 알림은 한 바퀴가 끝날 때만 (06:55 · 11:55 — 하루 두 번, 회원이 많아도 가볍게). 공실·기사 알림은 올라오는 그때 따로
   const alerts = mode === "recent" && slot === RECENT_SLOTS - 1 ? await import("@/utils/starAlerts").then(async (m) => ({ sent: await m.alertTrades(14), pruned: await m.pruneNotifications(90) })).catch(() => null) : null;

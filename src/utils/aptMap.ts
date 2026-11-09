@@ -229,7 +229,7 @@ export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MO
     if (error) throw new Error(`DB 읽기 오류: ${error.message}`);
     for (const row of (data || []) as Old[]) oldById.set(row.id, row);
   }
-  let added = 0;
+  let added = 0, freshN = 0;
   const rows = [...byId.entries()].flatMap(([id, g]) => {
     const o = oldById.get(id);
     const trades = byDateDesc([...older(o?.trades), ...g.trades]);
@@ -238,6 +238,7 @@ export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MO
     if (o?.fp === fp) return [];
     if (!o) added++;
     const fresh = hasNew(trades, kept, o);
+    if (fresh) freshN++;
     stampSeen(trades, kept, o, true);
     return [{
       id, kind, lawd_cd: lawd, dong: g.dong, jibun: g.jibun, name: g.name, build_year: g.buildYear || null,
@@ -250,7 +251,7 @@ export async function syncRecent(lawd: string, kind: Kind = "apt", n = RECENT_MO
     if (e) throw new Error(`DB 저장 오류: ${e.message}`);
     await sleep(250);
   }
-  return { kind, months: n, complexes: byId.size, written: rows.length, added, sales, rents };
+  return { kind, months: n, complexes: byId.size, written: rows.length, added, fresh: freshN, sales, rents };
 }
 
 /* ── 2. 위치 ── */

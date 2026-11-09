@@ -20,7 +20,9 @@ async function requireAdmin() {
 
 export type AptKindStat = { kind: "apt" | "offi" | "villa"; total: number | null; households: number | null; waiting: number | null };
 export type AptDayStat = { day: string; updated: number | null; newTrades: number | null; infoTried: number | null };
-export type AptDataStats = { kinds: AptKindStat[]; days: AptDayStat[]; latestTrade: string | null; lastUpdated: string | null };
+/** 하루 회차 기록 합계 — 크론이 agent_chats(apt_sync_log)에 남긴 것 (2026-11-09부터) */
+export type AptRoundDay = { day: string; total: number; ok: number; failed: { name: string; why: string }[]; checked: number; changed: number; fresh: number; rounds: number };
+export type AptDataStats = { kinds: AptKindStat[]; days: AptDayStat[]; rounds: AptRoundDay[]; latestTrade: string | null; lastUpdated: string | null };
 
 export async function getAptDataStats(): Promise<{ success: true; data: AptDataStats } | { success: false; error: string }> {
   if (!(await requireAdmin())) return { success: false, error: "최고관리자만 볼 수 있어요." };
@@ -55,5 +57,39 @@ export async function getAptDataStats(): Promise<{ success: true; data: AptDataS
     s.from("apt_complexes").select("rep_date").not("rep_date", "is", null).order("rep_date", { ascending: false }).limit(1),
     s.from("apt_complexes").select("updated_at").order("updated_at", { ascending: false }).limit(1),
   ]);
-  return { success: true, data: { kinds, days, latestTrade: lt?.[0]?.rep_date ?? null, lastUpdated: lu?.[0]?.updated_at ?? null } };
+  // 회차 기록 — 하루에 두 바퀴. 한 번이라도 받은 묶음은 완료, 끝내 못 받은 묶음만 실패로
+  const { LAWD_NAMES } = await import("@/utils/aptMap");
+  const KIND_KO: Record<string, string> = { apt: "아파트", offi: "오피스텔", villa: "빌라" };
+  const { data: logs } = await s.from("agent_chats").select("content, created_at").eq("channel_id", "apt_sync_log")
+    .gte("created_at", new Date(Date.parse(`${today}T00:00:00Z`) - KST - 6 * 86400_000).toISOString()).order("created_at", { ascending: true }).limit(2000);
+  type J = { l: string; k: string; c: number | null; w: number | null; f: number | null; e?: string; s?: number };
+  const byDay = new Map<string, { total: number; rounds: number; jobs: Map<string, { ok: boolean; c: number; why: string }>; changed: number; fresh: number }>();
+  for (const row of logs || []) {
+    let v: { total?: number; manual?: boolean; jobs?: J[] };
+    try { v = JSON.parse(row.content); } catch { continue; }
+    if (v.manual) continue;
+    const day = new Date(Date.parse(row.created_at) + KST).toISOString().slice(0, 10);
+    const D = byDay.get(day) || { total: 0, rounds: 0, jobs: new Map(), changed: 0, fresh: 0 };
+    D.total = Math.max(D.total, Number(v.total) || 0);
+    D.rounds++;
+    for (const j of v.jobs || []) {
+      const key = `${j.l}:${j.k}`;
+      const prev = D.jobs.get(key);
+      const ok = !j.e && !j.s && j.c != null;
+      if (ok) { D.changed += j.w || 0; D.fresh += j.f || 0; }
+      if (!prev || (ok && !prev.ok) || (ok && prev.ok && (j.c || 0) > prev.c)) D.jobs.set(key, { ok, c: ok ? j.c || 0 : 0, why: ok ? "" : j.e || "시간 부족" });
+      else if (!ok && !prev.ok) prev.why = j.e || prev.why;
+    }
+    byDay.set(day, D);
+  }
+  const rounds: AptRoundDay[] = [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([day, D]) => {
+    const list = [...D.jobs.entries()];
+    return {
+      day, total: D.total, rounds: D.rounds,
+      ok: list.filter(([, x]) => x.ok).length,
+      failed: list.filter(([, x]) => !x.ok).map(([key, x]) => { const [l, k] = key.split(":"); return { name: `${LAWD_NAMES[l] || l} ${KIND_KO[k] || k}`, why: x.why }; }),
+      checked: list.reduce((t, [, x]) => t + x.c, 0), changed: D.changed, fresh: D.fresh,
+    };
+  });
+  return { success: true, data: { kinds, days, rounds, latestTrade: lt?.[0]?.rep_date ?? null, lastUpdated: lu?.[0]?.updated_at ?? null } };
 }
