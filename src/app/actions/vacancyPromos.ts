@@ -45,11 +45,15 @@ export async function getMyVacancyPromos(): Promise<{ success: boolean; promos: 
   // 공실뉴스 기사 — 내가 쓴 기사 중 공실을 붙인 것
   const { data: arts } = await db.from("articles").select("id, article_no, status").eq("author_id", user.id).neq("is_deleted", true);
   if (arts?.length) {
-    const { data: media } = await db
+    // 100건씩 나눠 묻는다 — 최고관리자는 기사가 수백 건이라 번호를 한 주소에 다 붙이면(2만 자) 요청이 막혀 [공실뉴스] 칸이 느렸다 (2026-11-09)
+    const ids = arts.map((a) => a.id);
+    const parts = await Promise.all(Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => db
       .from("article_media")
       .select("article_id, url")
-      .in("article_id", arts.map((a) => a.id))
-      .or("media_type.eq.ATTACHED_VACANCY,and(media_type.eq.FILE,filename.eq.ATTACHED_VACANCY)");
+      .in("article_id", ids.slice(i * 100, i * 100 + 100))
+      .or("media_type.eq.ATTACHED_VACANCY,and(media_type.eq.FILE,filename.eq.ATTACHED_VACANCY)")
+      .then((r) => r.data || [])));
+    const media = parts.flat();
     const byId = new Map(arts.map((a) => [a.id, a]));
     for (const m of media || []) {
       const a = byId.get(m.article_id);
