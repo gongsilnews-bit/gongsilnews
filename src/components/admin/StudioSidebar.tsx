@@ -286,7 +286,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
         {!collapsed && [...main, ...more].some((m) => badges[m.key] === "pro") && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16, padding: "0 12px", fontSize: 11.5, lineHeight: 1.5, color: "rgba(255,255,255,0.55)" }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: PRO_ORANGE, flexShrink: 0 }} />
-            <span>표시는 공실뉴스부동산만 쓸 수 있어요</span>
+            <span>공실뉴스부동산 전용</span>
           </div>
         )}
         {onEditMenu && (

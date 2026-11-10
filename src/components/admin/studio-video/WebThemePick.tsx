@@ -13,7 +13,7 @@ import { loadFont } from "./Pickers";
 import { BASIC_GROUPS, SubPresetGrid } from "./SubPresets";
 import { VoiceAvatar, koVoice } from "./voiceKo";
 import { drawSticker, warmApt } from "./Stickers";
-import { MY_THEME_SLOTS, SHORTS_MUSIC, SHORTS_THEMES, loadBaseThemes, loadMyThemes, saveMyThemes, type ShortsTheme } from "./webThemes";
+import { HIDDEN_THEMES, MY_THEME_SLOTS, SHORTS_MUSIC, THEME_ORDER, SHORTS_THEMES, loadBaseThemes, loadMyThemes, saveMyThemes, type ShortsTheme } from "./webThemes";
 
 /** 웹 AI 목소리 빠르기 — 1.25배가 처음 값 (2026-11-05 사장님) */
 const VOICE_RATE = 1.25;
@@ -75,10 +75,10 @@ function hexA(hex: string, a: number) {
 /* 테마 분류 탭 (2026-11-06 사장님: "테마를 3종류로 — 공실소개 · 단지소개 · 뉴스칼럼") — 기본 테마만 나누고, 내 테마는 어느 탭에서나 */
 // 뉴스칼럼 탭·테마는 없앰 (2026-11-08 사장님: "아직 촌스러워 · 통째로 없애줘")
 export type ThemeCat = "vacancy" | "complex";
-export const THEME_CATS: [ThemeCat, string][] = [["vacancy", "공실소개"], ["complex", "단지소개"]];
+export const THEME_CATS: [ThemeCat, string][] = [["vacancy", "공실소개"]]; // 단지소개 탭 없앰 (2026-11-10 사장님: "단지소개 싹다 없애줘")
 // 기존 다섯 테마는 모두 공실소개 (2026-11-06 사장님: "있는 거에서 나누지 마") — 단지소개·뉴스칼럼 테마는 새로 만들어 넣는다
 const CAT_OF: Record<string, ThemeCat> = { navy: "vacancy", impact: "vacancy", premium: "vacancy", fresh: "vacancy", news: "vacancy",
-  cx_sig: "complex", cx_ivory: "complex", cx_green: "complex", cx_night: "complex", cx_news: "complex" }; // 단지소개 (2026-11-06)
+  cx_sig: "complex", cx_ivory: "vacancy" /* 래미안은 공실소개로 (2026-11-10) */, cx_green: "complex", cx_night: "complex", cx_news: "complex" }; // 단지소개 (2026-11-06)
 export const catOfTheme = (id: string): ThemeCat => CAT_OF[id] || "vacancy";
 
 export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled, cat: catProp }: {
@@ -118,8 +118,8 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
     au.current = a;
     setPlaying(url);
   };
-  const [cat, setCat] = useState<ThemeCat>(catProp || catOfTheme(theme.id));
-  const catBases = bases.filter((t) => catOfTheme(t.id) === cat);
+  const [cat, setCat] = useState<ThemeCat>("vacancy"); // 탭은 공실소개 하나 (2026-11-10)
+  const catBases = bases.filter((t) => !HIDDEN_THEMES.has(t.id) && catOfTheme(t.id) === cat).sort((a, b) => (THEME_ORDER.indexOf(a.id) + 1 || 99) - (THEME_ORDER.indexOf(b.id) + 1 || 99));
   // 대본 종류가 바뀌면 그 탭으로 — 고른 테마가 그 탭에 없으면 탭의 첫 테마로
   useEffect(() => {
     if (!catProp) return;
@@ -164,13 +164,13 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
   return (
     <div style={{ fontFamily: FONT }}>
       {/* 분류 탭 — 공실소개 · 단지소개 · 뉴스칼럼 */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+      {THEME_CATS.length > 1 && <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         {THEME_CATS.map(([k, l]) => {
           const on = cat === k;
           return <button key={k} type="button" disabled={disabled} onClick={() => pickCat(k)}
             style={{ height: 34, padding: "0 16px", borderRadius: 17, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.sub, fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>{l}</button>;
         })}
-      </div>
+      </div>}
       {emptyCat && <div style={{ padding: "18px 14px", marginBottom: 10, borderRadius: 8, border: `1px dashed ${C.line2}`, color: C.sub, fontSize: 13.5, lineHeight: 1.6 }}>{THEME_CATS.find(([k]) => k === cat)?.[1]} 테마는 준비 중이에요. 지금은 [공실소개] 테마나 아래 내 테마를 써 주세요.</div>}
       {/* 테마 칸 — 누르면 성우·자막·음악까지 한 번에 */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(5, ${W}px)`, columnGap: 12, rowGap: 10, justifyContent: "space-between", paddingBottom: 4 }}>

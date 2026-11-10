@@ -265,7 +265,11 @@ export function saveMyThemes(list: (ShortsTheme | null)[]) {
   try { localStorage.setItem(KEY, JSON.stringify(list.slice(0, MY_THEME_SLOTS))); } catch {}
 }
 const LAST = "gs-shorts-theme.v1";
-export const lastThemeId = () => { try { return localStorage.getItem(LAST) || "navy"; } catch { return "navy"; } };
+/** 고르는 칸에서 뺀 기본 테마 (2026-11-10 사장님: "단지소개 싹다 없애줘 · 고급 블랙 골드 없애고 래미안만 넣어줘") — 정의는 남겨 저장한 내 테마는 그대로 */
+export const HIDDEN_THEMES = new Set(["premium", "cx_news", "cx_green", "cx_sig", "cx_night"]);
+/** 공실소개 칸 순서 — 가운데(옛 고급 블랙·골드 자리)에 래미안 */
+export const THEME_ORDER = ["navy", "impact", "cx_ivory", "fresh", "news"];
+export const lastThemeId = () => { try { const v = localStorage.getItem(LAST) || "navy"; return HIDDEN_THEMES.has(v) ? "navy" : v; } catch { return "navy"; } };
 export const rememberTheme = (id: string) => { try { localStorage.setItem(LAST, id); } catch {} };
 
 /** 편집한 프로젝트 → 테마 (2026-11-05 사장님: "내가 영상 편집을 하고 테마로 저장하면 테마로 저장되는 거야")

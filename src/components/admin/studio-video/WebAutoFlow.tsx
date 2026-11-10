@@ -26,6 +26,7 @@ import { applyKit } from "./webThemeKit";
 import { aptBrandOf } from "./Stickers";
 import { pointsLine, type VoiceFree } from "./webVoice";
 import { SHORTS_THEMES, lastThemeId, loadBaseThemes, loadMyThemes, rememberTheme, type ShortsTheme } from "./webThemes";
+import { LoadingCover } from "../sections/StudioLoading";
 
 const PHOTO_SEC = 3; // 목소리 없을 때 사진 한 장 (초)
 const MAX_PHOTOS = 16;
@@ -156,7 +157,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         const yt = await studioBridge<{ youtube?: { get: (id: string) => Promise<{ narration?: string[]; title?: string } | null> } }>()?.youtube?.get(vac).catch(() => null);
         if (!live) return;
         if (yt?.narration?.length) { setScript(yt.narration.join("\n\n")); setFrom("youtube"); setHookTitle(String(yt.title || "")); }
-        else { setScript(""); setFrom(""); setNoScript(true); setErr("이 글은 아직 쇼츠릴스 대본이 없어요. 아래 [쇼츠릴스 대본 쓰러 가기]로 먼저 쓰거나, 칸에 대본을 직접 넣어 주세요."); }
+        else { setScript(""); setFrom(""); setNoScript(true); setErr("이 글은 아직 쇼츠릴스 대본이 없어요. [쇼츠릴스 대본 쓰러 가기]로 먼저 쓰거나, 위 칸에 대본을 직접 넣어 주세요."); }
       })();
       return () => { live = false; };
     }
@@ -172,7 +173,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       if (!live) return;
       if (yt?.narration?.length) { setScript(yt.narration.join("\n\n")); setFrom("youtube"); setHookTitle(String((yt as { title?: string }).title || "")); }
       // 대본을 안 썼으면 빈칸 — 공실 정보로 문장을 지어 넣지 않는다 (2026-11-10 사장님: "대본을 만든 것이 아니거든, 이런건 안나와야 혼돈이 되지 않지")
-      else { setScript(""); setFrom(""); setNoScript(true); setErr("이 공실은 아직 쇼츠릴스 대본이 없어요. 아래 [쇼츠릴스 대본 쓰러 가기]로 먼저 쓰거나, 칸에 대본을 직접 넣어 주세요."); }
+      else { setScript(""); setFrom(""); setNoScript(true); setErr("이 공실은 아직 쇼츠릴스 대본이 없어요. [쇼츠릴스 대본 쓰러 가기]로 먼저 쓰거나, 위 칸에 대본을 직접 넣어 주세요."); }
     })();
     return () => { live = false; };
   }, [vac]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -303,6 +304,9 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
     <Modal title="쇼츠 만들기" onClose={busy ? () => {} : onCancel} width={780}
       footer={<><span style={{ marginRight: "auto" }} />
         <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={!paras.length || Boolean(busy)}><Icon name="video" size={16} />{busy || "편집 시작"}</Btn></>}>
+      <div style={{ position: "relative" }}>
+      {/* 만드는 동안 — 우리 점점점 덮개 (2026-11-10 사장님: "점점점 우리 나오는거 · 그거 나오게 해줘") */}
+      {busy && (() => { const m = busy.match(/^(.*?)…\s*(.*)$/); return <LoadingCover theme={{ textSecondary: C.sub, darkMode: true }} title={m ? m[1] : busy} detail={m ? m[2] : ""} />; })()}
       <div style={{ padding: "4px 24px 20px", fontFamily: FONT, color: C.text, maxHeight: "72vh", overflowY: "auto" }}>
         {head("① 대본")}
         {/* 한 줄 — 왼쪽 묶음 고르기(전체·공실뉴스·뉴스칼럼·자유 글쓰기) · 오른쪽 그 묶음의 대본 (2026-11-06 사장님: "한 줄로 카테고리 셀렉트 바, 그 옆에 해당 선택") */}
@@ -328,6 +332,13 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           <b style={{ color: over ? "#f59f00" : C.accent }}>약 {secs}초 / {MAX_SEC}초{over ? ` — 조금 길어요. 그대로 편집을 시작하고, 편집에서 문장·클립을 지워 줄여도 돼요` : ""}</b>
           <span style={{ color: C.dim }}>{from === "youtube" || from === "seed" ? "쇼츠릴스 대본에서 가져왔어요" : ""}</span>
         </div>
+        {/* 대본 없음 안내 + [대본 쓰러 가기] — 대본 칸 바로 아래 (2026-11-10 사장님: "위에 넣어줘") */}
+        {noScript && !script.trim() && (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, fontSize: 14, flexWrap: "wrap" }}>
+            <span style={{ flex: 1, minWidth: 220 }}>{err}</span>
+            <button type="button" onClick={goWriteScript} style={{ height: 38, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", flexShrink: 0 }}>쇼츠릴스 대본 쓰러 가기 &gt;&gt;</button>
+          </div>
+        )}
 
         {head("② 테마 — 누르면 성우·자막·음악까지 한 번에")}
         <WebThemePick theme={theme} disabled={Boolean(busy)}
@@ -353,8 +364,8 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           );
         })()}
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>{voices?.length ? `AI 성우 ${voices.length}명${pts ? ` · ${pointsLine(pts)}` : ""}` : "AI 성우를 준비하고 있어요."}</div>
-        {err && <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, fontSize: 14 }}>{err}</div>}
-        {noScript && !script.trim() && <button type="button" onClick={goWriteScript} style={{ marginTop: 8, height: 38, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>쇼츠릴스 대본 쓰러 가기 &gt;&gt;</button>}
+        {err && !noScript && <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, fontSize: 14 }}>{err}</div>}
+      </div>
       </div>
     </Modal>
   );
