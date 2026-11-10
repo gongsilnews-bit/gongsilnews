@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getExtensionMember } from "@/utils/extensionMember";
 import { r2Json, r2Ready, r2Url } from "@/lib/r2";
+import { proMember } from "@/utils/studioUsage";
 
 /**
  * 영상 편집기 무료 이미지·비디오 검색 — 사이트 키는 서버에만 둔다 (앱에 넣지 않음)
@@ -98,10 +99,59 @@ async function gongsil(q: string, type: string, page: number): Promise<Item[]> {
   }));
 }
 
+/* ── 공실뉴스 사진 (2026-11-10 사장님 사진 5천여 장) — R2 catalog/photo.json, 사진 photo/{id}.webp · 미리보기 photo/thumbs/{id}.webp
+ *  올리기: scripts/upload_open_photos.mjs (목록.csv 블러 칸이 빈 사진만)
+ *  항목 { id, g 묶음(드론·거리·매물), c 분류, s 공간(매물만), k 검색 낱말, w, h } */
+type PhotoItem = { id: string; g: string; c: string; s: string; k: string; w: number; h: number };
+let photoCache: { at: number; items: PhotoItem[] } | null = null;
+async function photoList(): Promise<PhotoItem[]> {
+  if (photoCache && Date.now() - photoCache.at < 10 * 60 * 1000) return photoCache.items;
+  const j = await r2Json<{ items: PhotoItem[] }>("catalog/photo.json").catch(() => null);
+  const items = j?.items || photoCache?.items || [];
+  if (items.length) photoCache = { at: Date.now(), items };
+  return items;
+}
+const PHOTO_PER = 60;
+function photoItem(p: PhotoItem): Item {
+  return {
+    id: `gongsil-p-${p.id}`, kind: "image", thumb: r2Url(`photo/thumbs/${p.id}.webp`), url: `/api/studio/video/stock?type=gphoto-file&id=${p.id}`,
+    width: p.w, height: p.h, credit: [p.c, p.s, p.k].filter(Boolean).join(" · "), source: "공실뉴스", page: "",
+  };
+}
+/** 공실뉴스 사진 찾기 — 묶음·분류·공간으로 거르고, 검색 낱말은 모두 들어 있어야 */
+async function gongsilPhotos(sp: URLSearchParams) {
+  const all = await photoList();
+  const g = sp.get("g") || "", c = sp.get("c") || "", s = sp.get("s") || "";
+  const words = (sp.get("q") || "").trim().slice(0, 80).split(/\s+/).filter((w) => w && !/^(사진|공실뉴스)$/.test(w));
+  const page = Math.max(1, Number(sp.get("page")) || 1);
+  const hit = all.filter((p) => (!g || p.g === g) && (!c || p.c === c) && (!s || p.s === s) && words.every((w) => `${p.g}${p.c}${p.s}${p.k}`.replace(/\s+/g, "").includes(w)));
+  // 고르기 칸 — 지금 묶음(·분류) 안에서 있는 것만
+  const inG = all.filter((p) => !g || p.g === g);
+  const cats = Array.from(new Set(inG.map((p) => p.c))).filter(Boolean);
+  const spaces = Array.from(new Set(inG.filter((p) => !c || p.c === c).map((p) => p.s))).filter(Boolean);
+  return { items: hit.slice((page - 1) * PHOTO_PER, page * PHOTO_PER).map(photoItem), total: hit.length, more: hit.length > page * PHOTO_PER, cats, spaces };
+}
+
 export async function GET(req: NextRequest) {
   const member = await getExtensionMember(req);
   if (!member) return NextResponse.json({ success: false, error: "로그인이 필요합니다." }, { status: 401 });
   const sp0 = req.nextUrl.searchParams;
+  // 공실뉴스 사진 — 원본(WebP)은 서버가 받아 넘겨 준다 (보관함이 비공개라 브라우저가 바로 받지 못함)
+  if (sp0.get("type") === "gphoto-file") {
+    const id = (sp0.get("id") || "").replace(/[^a-f0-9]/g, "");
+    if (!id || !r2Ready()) return NextResponse.json({ success: false, error: "사진을 찾지 못했어요." }, { status: 404 });
+    // 공실뉴스부동산(유료)·비즈니스·최고관리자만 (2026-11-11 사장님: "공실뉴스부동산에게만 노출") — 무료 회원은 흰 막 아래 미리보기만
+    if (!proMember(member)) return NextResponse.json({ success: false, error: "공실뉴스 사진은 공실뉴스부동산 전용입니다." }, { status: 403 });
+    const r = await fetch(r2Url(`photo/${id}.webp`, 600), { cache: "no-store" });
+    if (!r.ok) return NextResponse.json({ success: false, error: "사진을 찾지 못했어요." }, { status: 404 });
+    return new NextResponse(r.body, { headers: { "Content-Type": "image/webp", "Cache-Control": "private, max-age=86400" } });
+  }
+  if (sp0.get("type") === "gphoto") {
+    if (!r2Ready()) return NextResponse.json({ success: false, error: "공실뉴스 사진을 준비 중이에요." });
+    const r = await gongsilPhotos(sp0).catch(() => null);
+    if (!r) return NextResponse.json({ success: false, error: "공실뉴스 사진을 불러오지 못했어요." });
+    return NextResponse.json({ success: true, ...r }, { headers: { "Cache-Control": "private, max-age=600" } });
+  }
   // 앱이 드론 영상을 미리보기·굽기에 쓸 때마다 — 잠깐만 열리는 주소 (PC에 받지 않음). 누가 무엇을 썼는지 기록
   //  쓰는 회원 범위는 나중에 정한다 (2026-10-28 사장님) — 정하면 여기서 막는다
   if (sp0.get("type") === "drone-url" || sp0.get("type") === "dronethumb-url") {

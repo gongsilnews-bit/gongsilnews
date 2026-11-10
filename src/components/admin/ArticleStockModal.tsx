@@ -9,6 +9,7 @@ import { ProCoverOverlay } from "@/components/admin/ProBadge";
  * 기사쓰기 라이브러리 [오픈자료] (2026-11-09 사장님)
  *  - 이미지: Pixabay — 고르면 브라우저가 한 번 받아 WebP 로 줄여 기사에 넣는다 (Pixabay 주소를 걸어 두지 않음: 24시간 뒤 깨지고 규칙 위반)
  *  - 공실뉴스 드론: 기사에는 /api/drone/{id} 를 넣는다 → 재생할 때 R2 에서 바로 (Vercel 은 넘겨 주기만)
+ *  - 공실뉴스 사진 (2026-11-10 사장님 사진, 맨 앞 탭): R2 사진 — 묶음(드론·거리·매물)·분류·공간·검색으로 거른다. 원본 그대로(로고 없음)
  *  검색은 쇼츠릴스studio 오픈자료와 같은 서버(/api/studio/video/stock)
  */
 export type StockPick =
@@ -21,7 +22,13 @@ const NAVY = "#1e3a6e";
 
 /** imagesOnly: 사진 칸(뉴스칼럼·공실 분석)처럼 이미지만 받는 곳 — 드론 탭을 숨긴다 */
 export default function ArticleStockModal({ onClose, onPick, imagesOnly = false }: { onClose: () => void; onPick: (p: StockPick) => void | Promise<void>; imagesOnly?: boolean }) {
-  const [tab, setTab] = useState<"image" | "drone">("image");
+  const [tab, setTab] = useState<"photo" | "image" | "drone">("photo");
+  // 공실뉴스 사진
+  const [pg, setPg] = useState(""); // 묶음: "" 전체 · 드론 · 거리 · 매물
+  const [pc, setPc] = useState(""); // 분류
+  const [ps, setPs] = useState(""); // 공간 (매물)
+  const [photos, setPhotos] = useState<Item[] | null>(null);
+  const [pInfo, setPInfo] = useState<{ total: number; more: boolean; page: number; cats: string[]; spaces: string[] }>({ total: 0, more: false, page: 1, cats: [], spaces: [] });
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Item[] | null>(null);
   const [drones, setDrones] = useState<Item[] | null>(null);
@@ -51,7 +58,23 @@ export default function ArticleStockModal({ onClose, onPick, imagesOnly = false 
     } catch { setMsg("드론 영상을 불러오지 못했어요."); setDrones([]); }
     setBusy("");
   };
-  useEffect(() => { void searchImages(""); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const loadPhotos = async (o: { g?: string; c?: string; s?: string; q?: string; page?: number } = {}) => {
+    const g = o.g ?? pg, c = o.c ?? pc, s = o.s ?? ps, word = o.q ?? q, page = o.page ?? 1;
+    if (page === 1) { setBusy("불러오는 중…"); setPhotos(null); }
+    setMsg("");
+    try {
+      const sp = new URLSearchParams({ type: "gphoto", g, c, s, q: word.trim(), page: String(page) });
+      const j = await fetch(`/api/studio/video/stock?${sp}`, { credentials: "include" }).then((r) => r.json());
+      if (!j.success) setMsg(j.error || "공실뉴스 사진을 불러오지 못했어요.");
+      const got = (j.items || []) as Item[];
+      setPhotos((prev) => (page === 1 ? got : [...(prev || []), ...got]));
+      setPInfo({ total: j.total || 0, more: !!j.more, page, cats: j.cats || [], spaces: j.spaces || [] });
+    } catch { setMsg("공실뉴스 사진을 불러오지 못했어요."); if (page === 1) setPhotos([]); }
+    setBusy("");
+  };
+  useEffect(() => { void loadPhotos(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [imgLoaded, setImgLoaded] = useState(false);
+  useEffect(() => { if (tab === "image" && !imgLoaded) { setImgLoaded(true); void searchImages(q); } }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (tab === "drone" && droneOk !== null) void loadDrones(); }, [tab, droneOk]); // 무료 회원에게도 목록은 보인다 (흰 막 아래, 2026-11-10) // eslint-disable-line react-hooks/exhaustive-deps
 
   const droneShown = useMemo(() => {
@@ -65,7 +88,7 @@ export default function ArticleStockModal({ onClose, onPick, imagesOnly = false 
     try {
       const blob = await fetch(it.url).then((r) => (r.ok ? r.blob() : null));
       if (!blob || !blob.size) throw new Error();
-      const file = new File([blob], `pixabay-${it.id}.${(blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`, { type: blob.type || "image/jpeg" });
+      const file = new File([blob], `${it.source === "공실뉴스" ? "gongsil" : "stock"}-${it.id.replace(/^gongsil-p-/, "")}.${(blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`, { type: blob.type || "image/jpeg" });
       await onPick({ kind: "image", file, caption: "" }); // 출처는 적지 않는다 (2026-11-10 사장님: "픽사베이인 거 알리기 싫어")
       onClose();
     } catch { setMsg("사진을 받지 못했어요. 다른 사진을 골라 주세요."); }
@@ -82,7 +105,9 @@ export default function ArticleStockModal({ onClose, onPick, imagesOnly = false 
   };
 
   const tabBtn = (on: boolean): React.CSSProperties => ({ flex: 1, height: 40, border: "none", borderBottom: `3px solid ${on ? NAVY : "transparent"}`, background: "none", fontSize: 14.5, fontWeight: on ? 800 : 600, color: on ? NAVY : "#6b7280", cursor: "pointer", fontFamily: "inherit" });
-  const list = tab === "image" ? items : droneShown;
+  const list = tab === "photo" ? photos : tab === "image" ? items : droneShown;
+  const chip = (on: boolean): React.CSSProperties => ({ height: 30, padding: "0 12px", border: `1px solid ${on ? NAVY : "#d1d5db"}`, borderRadius: 15, background: on ? NAVY : "#fff", color: on ? "#fff" : "#374151", fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer", fontFamily: "inherit" });
+  const sel: React.CSSProperties = { height: 30, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff" };
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 10003, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -92,21 +117,42 @@ export default function ArticleStockModal({ onClose, onPick, imagesOnly = false 
           <button type="button" onClick={onClose} style={{ border: "none", background: "none", fontSize: 22, cursor: "pointer", color: "#6b7280" }}>✕</button>
         </div>
         <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb" }}>
+          <button type="button" style={tabBtn(tab === "photo")} onClick={() => setTab("photo")}>공실뉴스 사진<span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: PRO_ORANGE, marginLeft: 3, verticalAlign: "top" }} /></button>
           <button type="button" style={tabBtn(tab === "image")} onClick={() => setTab("image")}>이미지<span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: PRO_ORANGE, marginLeft: 3, verticalAlign: "top" }} /></button>
           <button type="button" style={tabBtn(tab === "drone")} onClick={() => setTab("drone")}>
             공실뉴스 드론{imagesOnly ? " (장면 사진)" : ""}<span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: PRO_ORANGE, marginLeft: 3, verticalAlign: "top" }} />
           </button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); if (tab === "image") void searchImages(q); }} style={{ display: "flex", gap: 8, padding: "12px 20px" }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "image" ? "예: 서울 아파트, 거실" : "예: 강남, 잠실 (동네·장소 이름)"}
+        <form onSubmit={(e) => { e.preventDefault(); if (tab === "image") void searchImages(q); else if (tab === "photo") void loadPhotos(); }} style={{ display: "flex", gap: 8, padding: "12px 20px" }}>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "photo" ? "예: 논현동, 루프탑, 한강뷰" : tab === "image" ? "예: 서울 아파트, 거실" : "예: 강남, 잠실 (동네·장소 이름)"}
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
-          {tab === "image" && <button type="submit" style={{ height: 40, padding: "0 18px", border: "none", borderRadius: 6, background: NAVY, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>찾기</button>}
+          {tab !== "drone" && <button type="submit" style={{ height: 40, padding: "0 18px", border: "none", borderRadius: 6, background: NAVY, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>찾기</button>}
         </form>
+        {tab === "photo" && (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "0 20px 10px" }}>
+            {["", "드론", "거리", "매물"].map((g) => (
+              <button key={g || "all"} type="button" style={chip(pg === g)} onClick={() => { setPg(g); setPc(""); setPs(""); void loadPhotos({ g, c: "", s: "" }); }}>{g || "전체"}</button>
+            ))}
+            {pg && pInfo.cats.length > 0 && (
+              <select value={pc} style={sel} onChange={(e) => { setPc(e.target.value); setPs(""); void loadPhotos({ c: e.target.value, s: "" }); }}>
+                <option value="">{pg === "매물" ? "모든 종류" : "모든 분류"}</option>
+                {pInfo.cats.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+            {pg === "매물" && pInfo.spaces.length > 0 && (
+              <select value={ps} style={sel} onChange={(e) => { setPs(e.target.value); void loadPhotos({ s: e.target.value }); }}>
+                <option value="">모든 공간</option>
+                {pInfo.spaces.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
+            {photos && <span style={{ marginLeft: "auto", fontSize: 12.5, color: "#6b7280" }}>{pInfo.total.toLocaleString()}장</span>}
+          </div>
+        )}
         {msg && <div style={{ padding: "0 20px 8px", color: "#dc2626", fontSize: 13.5 }}>{msg}</div>}
         {/* 드론 — 무료 회원에게도 목록을 보이고 흰 막 + 안내 (2026-11-10 사장님: "오픈자료 역시 다 보여주고 공실뉴스부동산만 사용할 수 있다고") */}
         <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
         {droneOk === false && (
-          <ProCoverOverlay what={tab === "drone" ? "공실뉴스 드론" : "오픈자료 이미지"} message={tab === "drone" ? "공실뉴스부동산이 되시면 공실뉴스 드론 영상을 쓰실 수 있습니다." : "공실뉴스부동산이 되시면 오픈자료 이미지를 쓰실 수 있습니다."}
+          <ProCoverOverlay what={tab === "drone" ? "공실뉴스 드론" : tab === "photo" ? "공실뉴스 사진" : "오픈자료 이미지"} message={tab === "drone" ? "공실뉴스부동산이 되시면 공실뉴스 드론 영상을 쓰실 수 있습니다." : tab === "photo" ? "공실뉴스부동산이 되시면 공실뉴스 사진을 쓰실 수 있습니다." : "공실뉴스부동산이 되시면 오픈자료 이미지를 쓰실 수 있습니다."}
             onUpgrade={() => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; onClose(); if (f) f(); else window.open("/newsrealty/pricing", "_blank"); }} center />
         )}
         <div style={{ flex: 1, overflowY: droneOk === false ? "hidden" : "auto", padding: "4px 20px 16px", pointerEvents: droneOk === false ? "none" : undefined }}>
@@ -117,7 +163,7 @@ export default function ArticleStockModal({ onClose, onPick, imagesOnly = false 
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
               {(list || []).map((it) => (
-                <button key={it.id} type="button" onClick={() => void (tab === "image" ? pickImage(it) : pickDrone(it))} title={tab === "drone" ? it.credit : ""}
+                <button key={it.id} type="button" onClick={() => void (tab === "drone" ? pickDrone(it) : pickImage(it))} title={tab === "image" ? "" : it.credit}
                   style={{ position: "relative", padding: 0, border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden", background: "#f3f4f6", cursor: "pointer", aspectRatio: "16 / 10" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {it.thumb && <img src={it.thumb} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
@@ -128,10 +174,17 @@ export default function ArticleStockModal({ onClose, onPick, imagesOnly = false 
               ))}
             </div>
           )}
+          {tab === "photo" && !busy && pInfo.more && (
+            <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
+              <button type="button" onClick={() => void loadPhotos({ page: pInfo.page + 1 })} style={{ height: 38, padding: "0 22px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>더 보기</button>
+            </div>
+          )}
         </div>
         </div>
         <div style={{ padding: "10px 20px", borderTop: "1px solid #e5e7eb", fontSize: 12.5, color: "#6b7280", lineHeight: 1.6 }}>
-          {tab === "image"
+          {tab === "photo"
+            ? "공실뉴스가 직접 찍은 사진이에요. 고르면 기사에 넣고, 저장할 때 내 사진으로 올라가요."
+            : tab === "image"
             ? "고르면 사진을 받아 기사에 넣어요. 저장할 때 내 사진으로 올라가고 포토DB에도 남아요."
             : imagesOnly ? "드론 영상을 고르고 원하는 장면에서 [이 장면 넣기]를 누르면 공실뉴스 로고가 든 사진으로 들어가요."
             : "고르면 기사에 드론 영상이 들어가요. 독자가 재생을 누를 때만 영상을 받아요."}
