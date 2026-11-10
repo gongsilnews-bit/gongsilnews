@@ -598,7 +598,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               </span>
             ) : (
               <a href="/newsrealty/pricing" target="_blank" rel="noreferrer" onClick={(e) => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) { e.preventDefault(); f(); } }} style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {u.monthLimit === 0 ? <>{name}는 PRO에서 쓸 수 있어요 <ProTag /></> : <>이번 달 쓰기 {u.monthLimit}번을 다 썼어요 · PRO는 제한 없이 <ProTag /></>}
+                {u.monthLimit === 0 ? <>{name}는 공실뉴스부동산에서 쓸 수 있어요 <ProTag /></> : <>이번 달 쓰기 {u.monthLimit}번을 다 썼어요 · PRO는 제한 없이 <ProTag /></>}
               </a>
             );
           })()}

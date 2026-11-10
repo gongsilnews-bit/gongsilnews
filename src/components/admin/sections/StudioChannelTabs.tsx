@@ -206,7 +206,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       if (r.blog) { setBlog(r.blog); setNaverDone(null); setDesign(designFor(st)); }
       if (r.sns) setSnsData(r.sns);
       if (r.youtube) { setHasYoutube(true); setYtVer((n) => n + 1); }
-      const skip = r.skipped?.length ? ` (${r.skipped.join("·")}는 PRO에서 쓸 수 있어 빼고 썼어요)` : ""; // 무료 — 막지 않고 빼고 쓴다 (2026-11-04)
+      const skip = r.skipped?.length ? ` (${r.skipped.join("·")}는 공실뉴스부동산에서 쓸 수 있어 빼고 썼어요)` : ""; // 무료 — 막지 않고 빼고 쓴다 (2026-11-04)
       setAllMsg(r.miss?.length ? `${r.miss.join("·")} 글은 읽지 못했어요. 그 탭에서 [이 글만 쓰기]를 다시 눌러 주세요.` : (only ? "다 썼어요. 확인하고 고쳐 보세요." : "다 썼어요. 탭마다 확인하고 고쳐 보세요. 한 가지만 다시 쓰려면 그 탭에서 [이 글만 쓰기].") + skip);
     } catch (e) {
       setAllMsg(cleanErr(e));

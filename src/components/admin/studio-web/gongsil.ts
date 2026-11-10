@@ -672,10 +672,10 @@ async function ytExport(vacancyId: string) {
 async function writeRoom(vacancyId: string) {
   const d = await fetch("/api/studio/usage", { cache: "no-store" }).then((r) => r.json()).catch(() => null);
   if (!d || !d.success) return; // 모르면 막지 않는다 (받은 뒤 서버가 한 번 더 본다)
-  if (/^col-/.test(vacancyId) && !d.pro) throw new Error("뉴스칼럼은 공실뉴스부동산 PRO에서 쓸 수 있어요.");
+  if (/^col-/.test(vacancyId) && !d.pro) throw new Error("뉴스칼럼은 공실뉴스부동산에서 쓸 수 있어요.");
   const u = d.usage;
   if (u && u.monthRemaining !== null && u.monthRemaining <= 0) {
-    throw new Error(u.monthLimit === 0 ? "글쓰기는 공실뉴스부동산 회원 기능이에요." : `이번 달 쓰기 ${u.monthLimit}번을 모두 썼어요. 공실뉴스부동산 PRO에서는 제한 없이 쓸 수 있어요.`);
+    throw new Error(u.monthLimit === 0 ? "글쓰기는 공실뉴스부동산 회원 기능이에요." : `이번 달 쓰기 ${u.monthLimit}번을 모두 썼어요. 공실뉴스부동산에서는 제한 없이 쓸 수 있어요.`);
   }
 }
 

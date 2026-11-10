@@ -67,7 +67,7 @@ async function checkMonthlyArticleQuota(
     : tier === "biz" ? L.bizArticles
     : (member.max_articles_per_month || 0);
   if (maxArticles <= 0) {
-    return { allowed: false, error: tier === "free" ? "기사 작성은 공실뉴스부동산 PRO에서 쓸 수 있어요." : "기사 작성 권한이 없는 회원 등급입니다. 요금제를 확인해 주세요." };
+    return { allowed: false, error: tier === "free" ? "공실뉴스부동산이 되시면 기사를 작성하실 수 있습니다." : "기사 작성 권한이 없는 회원 등급입니다. 요금제를 확인해 주세요." };
   }
 
   const now = new Date();

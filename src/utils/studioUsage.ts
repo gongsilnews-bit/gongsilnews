@@ -155,17 +155,17 @@ export async function consumeStudio(member: ExtensionMember, kind: StudioFeature
   if (!vacancyId) return { ok: false, reason: "공실 정보가 없습니다.", usage };
   // 뉴스칼럼(번호 col-…)은 PRO 전용 (2026-11-04) — 회원마다 따로 정한 값이 있으면 그 값을 따른다
   if (/^col-/.test(vacancyId) && !proMember(member) && !usage.custom) {
-    return { ok: false, reason: "뉴스칼럼은 공실뉴스부동산 PRO에서 쓸 수 있어요.", usage };
+    return { ok: false, reason: "뉴스칼럼은 공실뉴스부동산에서 쓸 수 있어요.", usage };
   }
   // 무제한(PRO 등)은 같은 공실을 다시 써도 기록을 늘리지 않는다 — 무료는 쓰기마다 센다 (2026-11-04)
   if (usage.monthLimit === UNLIMITED && usage.vacancyIds.includes(vacancyId)) return { ok: true, charged: false, usage };
 
   if (usage.monthLimit === 0) {
-    if (member.role === "REALTOR") return { ok: false, reason: `${name}는 공실뉴스부동산 PRO에서 쓸 수 있어요.`, usage };
+    if (member.role === "REALTOR") return { ok: false, reason: `${name}는 공실뉴스부동산에서 쓸 수 있어요.`, usage };
     return { ok: false, reason: `${name} 쓰기는 공실뉴스부동산(중개사) 회원 기능입니다.`, usage };
   }
   if (usage.monthRemaining !== null && usage.monthRemaining <= 0) {
-    return { ok: false, reason: `이번 달 쓰기 ${usage.monthLimit}번을 모두 썼어요. 공실뉴스부동산 PRO에서는 제한 없이 쓸 수 있어요.`, usage };
+    return { ok: false, reason: `이번 달 쓰기 ${usage.monthLimit}번을 모두 썼어요. 공실뉴스부동산에서는 제한 없이 쓸 수 있어요.`, usage };
   }
   if (usage.dailyLimit !== null && usage.todayUsed >= usage.dailyLimit) {
     return { ok: false, reason: `계정 보호를 위해 ${name}는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };

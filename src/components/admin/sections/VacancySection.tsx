@@ -59,7 +59,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     // 홈페이지만 → 광고중: 공실뉴스에는 처음 값(모두에게 노출)으로 건다
     else res = home ? await updateVacancy(row.id, { status: "ACTIVE", exposure_type: "부동산노출 + 일반인노출" }) : await updateVacancyStatus(row.id, "ACTIVE");
     if (!res.success) {
-      if (/PRO에서/.test(res.error || "")) {
+      if (/공실뉴스부동산에서/.test(res.error || "")) {
         const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade;
         if (f) { f(); return; }
       }

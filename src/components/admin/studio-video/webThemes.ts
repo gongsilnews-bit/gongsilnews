@@ -149,7 +149,7 @@ export const SHORTS_THEMES: ShortsTheme[] = [
     title: { font: "Pretendard", color: "#FFFFFF", boxColor: "#1D6A6A" },
     office: { font: "Pretendard", color: "#FFFFFF", boxColor: "#0C3438" },
     ...M("/reels-assets/bgm/lib/corporate.mp3"),
-    voice: "el_K3qo7ugXmpT87FDhLBbN",
+    voice: "el_JQaWvPoEUkcuOTfxFYpJ", // 경(Kyung) — 차분한 여성 내레이터 (2026-11-10 사장님)
     kit: {
       apt: { brand: "raemian", mode: "dark", fb: "cream", span: "all", tag: "PREMIUM" } /* 흰 아파트 배경 뺌 (2026-11-07) */,
       hookStyle: { y: 0.5, boxColor: "#1D6A6A", color: "#FFFFFF", font: "Pretendard" },

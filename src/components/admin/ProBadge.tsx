@@ -35,3 +35,25 @@ export function ProLock({ what, detail, onUpgrade, dark }: { what: string; detai
     </div>
   );
 }
+
+/** 내용은 그대로 보여 주고 흰 반투명 막 위에 안내 (2026-11-10 사장님: "그냥 내용을 다 보여주고 흰색 불투명 위에 안내 문구 있는 것이 좋을 것 같아")
+ *  막 아래 화면은 누를 수 없다 */
+export function ProCover({ what, message, onUpgrade, children }: { what: string; message: string; onUpgrade?: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
+      <div aria-hidden style={{ flex: 1, minWidth: 0, display: "flex", pointerEvents: "none", userSelect: "none" }}>{children}</div>
+      <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgba(255,255,255,0.78)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ maxWidth: 460, textAlign: "center", padding: "30px 34px", borderRadius: 16, background: "#fff", boxShadow: "0 12px 40px rgba(15,23,42,0.14)", border: "1px solid #eef0f3" }}>
+          <div style={{ width: 56, height: 56, margin: "0 auto 14px", borderRadius: "50%", background: "rgba(234,138,12,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={PRO_ORANGE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+          </div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: "#111827", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>{what} <ProTag size="md" /></div>
+          <p style={{ margin: "10px 0 0", fontSize: 15, color: "#374151", lineHeight: 1.65 }}>{message}</p>
+          {onUpgrade && (
+            <button type="button" onClick={onUpgrade} style={{ marginTop: 18, padding: "11px 24px", borderRadius: 999, border: 0, background: PRO_ORANGE, color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>금액안내 보기</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -27,7 +27,7 @@ async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId:
   const L = await getTierLimits(); // 등급별 한도 화면 값 (2026-11-09)
   // 내 홈페이지 전용 — PRO 만, 공실뉴스 공실과 따로 20건 (2026-11-04)
   if (homepageOnly) {
-    if (tier === 'free' || tier === 'user') return "'내 홈페이지만'은 공실뉴스부동산 PRO에서 고를 수 있어요.";
+    if (tier === 'free' || tier === 'user') return "'내 홈페이지만'은 공실뉴스부동산에서 고를 수 있어요.";
     if (tier !== 'pro') return null; // 비즈니스·최고관리자는 한도 없음
     let hq = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE').eq('exposure_type', HOMEPAGE_ONLY);
     if (exceptId) hq = hq.neq('id', exceptId);
@@ -46,7 +46,7 @@ async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId:
   if (error) return '광고 중인 공실 수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.';
   if ((count || 0) < limit) return null;
   return tier === 'free'
-    ? `광고 중인 공실은 ${limit}건까지 걸 수 있어요. 다른 공실의 광고를 내리거나, 공실뉴스부동산 PRO에서 ${L.proVacancies}건까지 걸 수 있어요.`
+    ? `광고 중인 공실은 ${limit}건까지 걸 수 있어요. 다른 공실의 광고를 내리거나, 공실뉴스부동산에서 ${L.proVacancies}건까지 걸 수 있어요.`
     : `광고 중인 공실은 ${limit}건까지 걸 수 있어요. 다른 공실의 광고를 내린 뒤 다시 해 주세요.`;
 }
 

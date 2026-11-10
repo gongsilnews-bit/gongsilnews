@@ -6,7 +6,7 @@ import NotificationBell from "@/components/common/NotificationBell";
 import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
 import { agencyKind, type AgencyKind } from "@/utils/agencyKind";
 import { UpgradeModal, TIER_LABEL, type Tier } from "@/components/admin/UpgradeModal";
-import { ProLock, ProTag } from "@/components/admin/ProBadge";
+import { ProCover, ProLock, ProTag } from "@/components/admin/ProBadge";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm, IconImage } from "@/components/admin/sections/AdminIcons";
 import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
@@ -631,7 +631,7 @@ function RealtyAdminContent() {
             </div>
           )}
           {/* 물건접수홈페이지 · 고객관리 · 포토studio · 기사 작성은 PRO 전용 (2026-11-04 사장님 등급 회의) */}
-          {activeMenu === "homepage" && memberId && (studioPaid ? <IntakeStudio theme={theme} memberId={memberId} planType={planType} /> : <ProLock what="물건접수홈페이지" detail="내 부동산 홈페이지 · 집주인 물건 접수 · 로고·색상 · 홈페이지 전용 공실" dark={darkMode} onUpgrade={askUpgrade} />)}
+          {activeMenu === "homepage" && memberId && (studioPaid ? <IntakeStudio theme={theme} memberId={memberId} planType={planType} /> : <ProCover what="물건접수홈페이지" message="공실뉴스부동산이 되시면 내 부동산 홈페이지를 바로 열어 드립니다." onUpgrade={askUpgrade}><IntakeStudio theme={theme} memberId={memberId} planType={planType} /></ProCover>)}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "customer" && memberId && !studioPaid && <ProLock what="고객관리" detail="손님 연락처 · 찾는 물건 · 메모를 한곳에" dark={darkMode} onUpgrade={askUpgrade} />}
           {activeMenu === "customer" && memberId && studioPaid && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
@@ -642,9 +642,9 @@ function RealtyAdminContent() {
           {/* 대본 작성 — 앱 전용 (회원 AI · 내 PC 저장, 2026-11-03) */}
           {activeMenu === "write" && studioApp.isApp && memberId && <ScriptSection />}
           {activeMenu === "marketing" && shown("marketing") && <StudioMarketingSection theme={theme} dev={isSuperAdmin} />}
-          {activeMenu === "video" && !studioApp.isApp && <VideoStudio />} {/* 웹 체험판 — 공실로 자동 만들기 · 1분 내외 (2026-11-05) */}
+          {activeMenu === "video" && !studioApp.isApp && (studioPaid ? <VideoStudio /> : <ProCover what="쇼츠릴스studio" message="공실뉴스부동산이 되시면 쇼츠·릴스를 만드실 수 있습니다." onUpgrade={askUpgrade}><VideoStudio /></ProCover>)} {/* 웹 체험판 — 공실로 자동 만들기 · 1분 내외 (2026-11-05) */}
           {activeMenu === "video" && studioApp.isApp && (studioPaid ? <VideoStudio /> : <StudioOnlyLock theme={theme} what="동영상studio" detail="영상 편집 · AI 성우 · 자동 자막은 공실뉴스부동산부터 쓸 수 있어요." onUpgrade={askUpgrade} />)}
-          {activeMenu === "photo" && (studioPaid ? <PhotoStudio menu={null} /> : <ProLock what="포토studio" detail="공실 사진 편집 · 홍보 이미지 디자인 · AI 편집" dark={darkMode} onUpgrade={askUpgrade} />)}
+          {activeMenu === "photo" && (studioPaid ? <PhotoStudio menu={null} /> : <ProCover what="포토studio" message="공실뉴스부동산이 되시면 공실 사진 편집 · 홍보 이미지 디자인 · AI 편집을 쓰실 수 있습니다." onUpgrade={askUpgrade}><PhotoStudio menu={null} /></ProCover>)}
           {activeMenu === "studio" && <StudioPromoSection theme={theme} onTryPhoto={() => selectMenu("photo")} />}
           {activeMenu === "write" && !studioApp.isApp && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />

@@ -14,9 +14,9 @@ import { BASIC_GROUPS, SubPresetGrid } from "./SubPresets";
 import { VoiceAvatar, koVoice } from "./voiceKo";
 import { drawSticker, warmApt } from "./Stickers";
 import { HIDDEN_THEMES, MY_THEME_SLOTS, SHORTS_MUSIC, THEME_ORDER, SHORTS_THEMES, loadBaseThemes, loadMyThemes, saveMyThemes, type ShortsTheme } from "./webThemes";
+import { WEB_VOICE_SPEED, WEB_VOICE_SPEEDS } from "./webBridge";
 
 /** 웹 AI 목소리 빠르기 — 1.25배가 처음 값 (2026-11-05 사장님) */
-const VOICE_RATE = 1.25;
 const fontsOf = (t: ShortsTheme) => [t.sub.font, t.title.font, t.office.font].filter(Boolean) as string[];
 
 /* 단지소개 미리보기 — 테마마다 다른 브랜드로 견본 (실제 영상은 고른 공실의 단지 이름으로 브랜드를 알아낸다) */
@@ -81,7 +81,7 @@ const CAT_OF: Record<string, ThemeCat> = { navy: "vacancy", impact: "vacancy", p
   cx_sig: "complex", cx_ivory: "vacancy" /* 래미안은 공실소개로 (2026-11-10) */, cx_green: "complex", cx_night: "complex", cx_news: "complex" }; // 단지소개 (2026-11-06)
 export const catOfTheme = (id: string): ThemeCat => CAT_OF[id] || "vacancy";
 
-export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled, cat: catProp }: {
+export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled, cat: catProp, speed, onSpeed }: {
   theme: ShortsTheme;
   onTheme: (t: ShortsTheme, fromTile: boolean) => void;
   photo: string;
@@ -92,6 +92,9 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
   voiceOn: boolean;
   onVoiceOn: (on: boolean) => void;
   onPickVoice: () => void;
+  /** 목소리 빠르기 (배) — 처음 1.2 (2026-11-10) */
+  speed: number;
+  onSpeed: (v: number) => void;
   disabled?: boolean;
   /** 처음 탭 — 대본이 어디서 왔는지로 (공실 → 공실소개, 뉴스칼럼·자유 글 → 뉴스칼럼) */
   cat?: ThemeCat;
@@ -228,9 +231,13 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
         <div style={row}>
           <span style={label}><Icon name="voice" size={15} />성우</span>
           {voiceOn ? (v ? <><VoiceAvatar seed={v.id} gender={v.gender} age={v.age} name={koVoice(v.name).name} size={34} /><span style={{ fontSize: 14 }}><b>{koVoice(v.name).name}</b><span style={{ color: C.sub, fontSize: 12.5, marginLeft: 6 }}>{koVoice(v.name).desc}</span></span>
-              {v.preview && <button type="button" onClick={() => play(v.preview, VOICE_RATE)} title="성우 목소리 미리 듣기 (1.25배)" style={{ height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${playing === v.preview ? C.accent : C.line2}`, background: playing === v.preview ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, fontFamily: FONT }}>
+              {v.preview && <button type="button" onClick={() => play(v.preview, speed)} title={`성우 목소리 미리 듣기 (${speed}배)`} style={{ height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${playing === v.preview ? C.accent : C.line2}`, background: playing === v.preview ? C.accent : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, fontFamily: FONT }}>
                 {playing === v.preview ? <span style={{ width: 8, height: 8, background: "#fff" }} /> : <Icon name="play" size={12} />}미리 듣기</button>}
-              <span style={{ fontSize: 12, color: C.dim }}>빠르기 1.25배</span></>
+              <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.sub }}>빠르기
+                <select value={speed} disabled={disabled} onChange={(e) => onSpeed(Number(e.target.value))} title="목소리 빠르기 — 처음 값 1.2배"
+                  style={{ height: 28, padding: "0 6px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                  {WEB_VOICE_SPEEDS.map((x) => <option key={x} value={x}>{x.toFixed(1)}배{x === WEB_VOICE_SPEED ? " (기본)" : ""}</option>)}
+                </select></label></>
             : <span style={{ fontSize: 13.5, color: C.dim }}>{voices === null ? "성우 불러오는 중…" : "성우를 골라 주세요"}</span>)
             : <span style={{ fontSize: 13.5, color: C.sub }}>목소리 없이 — 자막과 음악만</span>}
           <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>

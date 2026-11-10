@@ -18,7 +18,7 @@ import { getMyVideoBase, getVideoVacancy } from "@/app/actions/videoWeb";
 import { studioBridge, ensureStudioWebMember } from "@/components/admin/studio-web";
 import { Btn, C, FONT, Icon, Modal } from "./ui";
 import { estimateSeconds } from "./timeline";
-import { WEB_VOICE_SPEED } from "./webBridge";
+import { loadWebVoiceSpeed, saveWebVoiceSpeed } from "./webBridge";
 import { VoiceFace, VoicePanel } from "./Panels";
 import { koVoice } from "./voiceKo";
 import WebThemePick from "./WebThemePick";
@@ -92,6 +92,9 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const [pts, setPts] = useState<{ rate: number; balance: number; free?: VoiceFree } | null>(null);
   const [picker, setPicker] = useState(false);
   const [err, setErr] = useState("");
+  const [speed, setSpeed] = useState(1.2); // 목소리 빠르기 — 처음 1.2배, 고른 값은 이 기기에 기억 (2026-11-10)
+  useEffect(() => { setSpeed(loadWebVoiceSpeed()); }, []);
+  const pickSpeed = (v: number) => { setSpeed(v); saveWebVoiceSpeed(v); };
   const [noScript, setNoScript] = useState(false); // 고른 공실·글에 쇼츠릴스 대본이 없다 → [대본 쓰러 가기]
   // 뉴스·SNS자동화의 [쇼츠릴스 대본] 탭으로 — 고른 공실(글)을 연 채로 (2026-11-10 사장님: "여기서 만드는 페이지로 이동할 수 있게")
   const goWriteScript = () => {
@@ -180,7 +183,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
 
   const paras = script.split(/\n+/).map((x) => x.trim().replace(/(\d)\.0(?=\s?평)/g, "$1")).filter(Boolean); // 31.0평 → 31평 (2026-11-05 사장님)
   // 읽는 데 걸리는 시간 (목소리 없으면 장면마다 3초)
-  const secs = Math.round(mode === "none" ? paras.reduce((t, p) => t + holdOf(p), 0) : paras.reduce((t, p) => t + estimateSeconds(p, WEB_VOICE_SPEED) + 0.2, 0));
+  const secs = Math.round(mode === "none" ? paras.reduce((t, p) => t + holdOf(p), 0) : paras.reduce((t, p) => t + estimateSeconds(p, speed) + 0.2, 0));
   const chars = paras.join(" ").length; // AI 성우 포인트 — 1자 1P
   const over = secs > MAX_SEC;
 
@@ -236,7 +239,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           }
         };
         await worker();
-        p.settings.voice = { ...p.settings.voice, id: voiceId, speed: WEB_VOICE_SPEED };
+        p.settings.voice = { ...p.settings.voice, id: voiceId, speed };
       }
       // 공실이면 — 첫 장면 동네·종류, 마지막 사무소 화면 (법정 표시)
       const last: Clip | null = info?.outro ? ({ id: uid(), type: "voice", text: "", words: [], voice: null, ...(assetIds.length ? { visual: { asset: assetIds[0], s: 0 } } : {}), hold: 4 } as Clip) : null; // 사진이 없어도 끝 장면(사무소·표시광고)은
@@ -279,7 +282,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const hookSrc = hookTitle || seed?.title || "";
       const hook = isCol && !hookSrc ? "" : hookOf(hookSrc || priceHook, paras[0] || "");
       if (hook) layers.push({ x: 0.5, y: 0.6, size: 116, bold: true, color: theme.title.color, font: theme.title.font, box: true, boxColor: theme.title.boxColor, boxOpacity: 1, anim: { in: "pop", emph: "pulse", out: "fade", dur: 0.35 }, ...(theme.kit?.hookStyle as Partial<Layer> | undefined), id: uid(), type: "text", from: first, to: first, ts: 0, te: 2.6, text: twoLines(hook), name: "훅" } as Layer);
-      if (theme.music) layers.push({ id: uid(), type: "music", from: first, to: end, url: theme.music, file: theme.music, volume: ai ? 0.3 : 0.35, duck: "mid", loop: true, fadeOut: 1.5, name: theme.musicName || "배경음악" });
+      if (theme.music) layers.push({ id: uid(), type: "music", from: first, to: end, url: theme.music, file: theme.music, volume: 0.15 /* 처음 값 15% (2026-11-10 사장님) */, duck: "mid", loop: true, fadeOut: 1.5, name: theme.musicName || "배경음악" });
       p.layers = layers;
       // 테마 꾸러미 — 그래픽·화면 전환·드론·끝 장면 표시광고 (2026-11-05 사장님)
       let notes: string[] = [];
@@ -345,10 +348,10 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           onTheme={(t, fromTile) => { setTheme(t); if (fromTile) { rememberTheme(t.id); voicePicked.current = false; if (voices?.length) setVoiceId(voiceOf(t, voices)); } }}
           photo={info?.photos[0] || ""} place={info ? [info.intro.place, info.intro.kind].filter(Boolean).join(" · ") : "우리 동네 · 빌라"}
           sample="바로 입주 가능해요"
-          voices={voices} voiceId={voiceId} voiceOn={mode === "ai"} onVoiceOn={(on) => setMode(on ? "ai" : "none")} onPickVoice={() => setPicker(true)}
+          voices={voices} voiceId={voiceId} voiceOn={mode === "ai"} onVoiceOn={(on) => setMode(on ? "ai" : "none")} onPickVoice={() => setPicker(true)} speed={speed} onSpeed={pickSpeed}
           cat={vac && !vac.startsWith("col-") ? "vacancy" : undefined} /* 뉴스칼럼 테마는 없앰 (2026-11-08) */ /* 대본 종류로 탭 (단지소개는 회원이 탭을 눌러서) */ />
-        {picker && <VoicePanel web pickLabel="이 성우로" targetCount={0} initial={{ id: voiceId || "", speed: WEB_VOICE_SPEED, volume: 1 }}
-          onApply={(v) => { if (v.id) { voicePicked.current = true; setVoiceId(v.id); setMode("ai"); } setPicker(false); }} onClose={() => setPicker(false)} />}
+        {picker && <VoicePanel web pickLabel="이 성우로" targetCount={0} initial={{ id: voiceId || "", speed, volume: 1 }}
+          onApply={(v) => { if (v.id) { voicePicked.current = true; setVoiceId(v.id); setMode("ai"); } if (v.speed) { const s = Math.min(1.5, Math.max(0.9, Math.round(v.speed * 10) / 10)); if (s !== speed) pickSpeed(s); } setPicker(false); }} onClose={() => setPicker(false)} />}
         {/* 만들기 전에 포인트 미리 (2026-11-05) — 1자 1P, 내 포인트에서 (11-06 통합: 서버가 free 를 null 로 줌) */}
         {mode === "ai" && chars > 0 && pts && (() => {
           const cost = Math.ceil((chars * (pts.rate || 100)) / 100);

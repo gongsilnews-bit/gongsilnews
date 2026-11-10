@@ -16,8 +16,12 @@ import { FONT_URLS } from "@/lib/studio-video/fontUrls";
 import { audioDuration, elevenApi, keyApi, sayBlob, spreadWords } from "./webVoice";
 import { downloadWithHandle } from "@/components/admin/studio-web/core";
 
-/** 웹 AI 목소리 빠르기 — 무조건 1.25배 (2026-11-05 사장님) */
-export const WEB_VOICE_SPEED = 1.25;
+/** 웹 AI 목소리 빠르기 — 처음 값 1.2배, 회원이 바꿀 수 있다 (2026-11-10 사장님: "1.2로 기본세팅하지만 조절도 할 수 있게") */
+export const WEB_VOICE_SPEED = 1.2;
+export const WEB_VOICE_SPEEDS = [0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5];
+const SPEED_KEY = "gs-web-voice-speed";
+export const loadWebVoiceSpeed = () => { try { const v = Number(localStorage.getItem(SPEED_KEY)); return WEB_VOICE_SPEEDS.includes(v) ? v : WEB_VOICE_SPEED; } catch { return WEB_VOICE_SPEED; } };
+export const saveWebVoiceSpeed = (v: number) => { try { localStorage.setItem(SPEED_KEY, String(v)); } catch { /* */ } };
 
 export const WEB_ONLY_APP = "이 기능은 공실마케팅 앱에서 쓸 수 있어요. 웹에서는 공실 사진·내 사진으로 1분 내외 영상을 만들어요.";
 

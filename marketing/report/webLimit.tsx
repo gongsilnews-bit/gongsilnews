@@ -47,17 +47,17 @@ export const InstallAppModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] print:hidden" onClick={() => setWhy(null)}>
       <div className="w-[440px] max-w-[92vw] rounded-2xl bg-white p-7 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
-        <div className="text-[13px] font-bold tracking-wider text-orange-600">공실뉴스부동산 PRO</div>
-        <h3 className="mt-2 text-xl font-black text-gray-900">{why || '전체 보고서는 PRO에서 만들 수 있어요'}</h3>
+        <div className="text-[13px] font-bold tracking-wider text-orange-600">공실뉴스부동산 전용</div>
+        <h3 className="mt-2 text-xl font-black text-gray-900">{why || '공실뉴스부동산이 되시면 전체 보고서를 만드실 수 있습니다'}</h3>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
-          무료 공실뉴스부동산은 <b>표지·개요 두 쪽</b>만 만들 수 있어요.<br />
-          공실뉴스부동산 <b>PRO</b>는 <b>모든 쪽</b>(시세·임대현황·사진·입지·로드뷰·지적도·연락처)과 <b>PDF·이미지 전체 내보내기</b>까지 쓸 수 있어요.
+          부동산회원(무료)은 <b>표지·개요 두 쪽</b>만 만들 수 있어요.<br />
+          공실뉴스부동산은 <b>모든 쪽</b>(시세·임대현황·사진·입지·로드뷰·지적도·연락처)과 <b>PDF·이미지 전체 내보내기</b>까지 쓸 수 있어요.
         </p>
         <div className="mt-6 flex gap-2">
           <button className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50" onClick={() => setWhy(null)}>닫기</button>
           <button className="flex-[2] rounded-xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600"
             onClick={() => { goPricing(); setWhy(null); }}>
-            금액안내 보기 →
+            공실뉴스부동산 금액안내 →
           </button>
         </div>
       </div>
@@ -71,14 +71,14 @@ export const WebLockCover: React.FC<{ exportId: string }> = ({ exportId }) => {
   return (
     <div data-web-lock className="absolute inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-[3px] print:hidden">
       <div className="w-[440px] max-w-[92%] rounded-2xl bg-white p-7 text-center shadow-2xl ring-1 ring-gray-200">
-        <div className="text-[13px] font-bold tracking-wider text-orange-600">🔒 공실뉴스부동산 PRO</div>
-        <h3 className="mt-2 text-xl font-black text-gray-900">전체 보고서는 PRO에서 만들 수 있어요</h3>
+        <div className="text-[13px] font-bold tracking-wider text-orange-600">🔒 공실뉴스부동산 전용</div>
+        <h3 className="mt-2 text-xl font-black text-gray-900">공실뉴스부동산이 되시면 전체 보고서를 만드실 수 있습니다</h3>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
-          무료 공실뉴스부동산은 <b>표지·개요 두 쪽</b>만 만들 수 있어요.<br />
-          공실뉴스부동산 <b>PRO</b>는 <b>모든 쪽</b>(시세·임대현황·사진·입지·로드뷰·지적도·연락처)과 <b>PDF·이미지 전체 내보내기</b>까지 쓸 수 있어요.
+          부동산회원(무료)은 <b>표지·개요 두 쪽</b>만 만들 수 있어요.<br />
+          공실뉴스부동산은 <b>모든 쪽</b>(시세·임대현황·사진·입지·로드뷰·지적도·연락처)과 <b>PDF·이미지 전체 내보내기</b>까지 쓸 수 있어요.
         </p>
         <button className="mt-6 w-full rounded-xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600" onClick={() => goPricing()}>
-          금액안내 보기 →
+          공실뉴스부동산 금액안내 →
         </button>
       </div>
     </div>
