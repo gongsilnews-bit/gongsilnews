@@ -66,18 +66,9 @@ function topTitle(raw: string) {
   return twoLines(t);
 }
 
-type Vac = { id: string; label: string; photo: string | null };
+type Vac = { id: string; label: string; photo: string | null; no: number; building: string | null };
 type VoiceMode = "none" | "ai"; // 웹 — 내 목소리 녹음은 뺐다 (2026-11-05 사장님)
 export type VideoSeed = { vacancyId: string; script: string; title?: string };
-
-/** 공실 정보 → 기본 대본 (문단 = 클립). 숫자는 공실 값 그대로 */
-function baseScript(v: VideoVacancy) {
-  const out: string[] = [];
-  out.push(`${v.intro.place} ${v.intro.kind}${v.intro.price ? `, ${v.intro.price}` : ""}입니다.`.replace(/\s+/g, " ").trim());
-  for (const c of v.captions) out.push(`${c}.`);
-  if (v.outro?.name) out.push(`자세한 내용은 ${v.outro.name}로 문의해 주세요.`);
-  return out.join("\n\n");
-}
 
 export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () => void; onDone: (p: Project) => void; seed?: VideoSeed | null }) {
   const [vacs, setVacs] = useState<Vac[] | null>(null);
@@ -92,7 +83,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const ratio: Ratio = "9:16"; // 웹은 60초 세로 쇼츠만 (2026-11-05 사장님: 가로 16:9 없앰)
   const [info, setInfo] = useState<VideoVacancy | null>(null);
   const [script, setScript] = useState(seed?.script || "");
-  const [from, setFrom] = useState<"seed" | "youtube" | "base" | "">(seed?.script ? "seed" : "");
+  const [from, setFrom] = useState<"seed" | "youtube" | "">(seed?.script ? "seed" : "");
   const [mode, setMode] = useState<VoiceMode>("none");
   const [voiceId, setVoiceId] = useState("");
   const [voices, setVoices] = useState<TypecastVoice[] | null>(null);
@@ -100,6 +91,22 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const [pts, setPts] = useState<{ rate: number; balance: number; free?: VoiceFree } | null>(null);
   const [picker, setPicker] = useState(false);
   const [err, setErr] = useState("");
+  const [noScript, setNoScript] = useState(false); // 고른 공실·글에 쇼츠릴스 대본이 없다 → [대본 쓰러 가기]
+  // 뉴스·SNS자동화의 [쇼츠릴스 대본] 탭으로 — 고른 공실(글)을 연 채로 (2026-11-10 사장님: "여기서 만드는 페이지로 이동할 수 있게")
+  const goWriteScript = () => {
+    try {
+      if (vac.startsWith("col-")) {
+        localStorage.setItem("studio_news_category", "column");
+        localStorage.setItem("studio_last_column", vac);
+        localStorage.setItem("studio_open_column", "1");
+      } else if (vac) {
+        const v = (vacs || []).find((x) => x.id === vac);
+        localStorage.setItem("studio_news_category", "gongsil");
+        localStorage.setItem("studio_last_vacancy", JSON.stringify({ vacancyId: vac, picked: { id: vac, vacancy_no: v?.no || 0, building_name: v?.building || null }, tab: "youtube", auto: true }));
+      }
+    } catch { /* */ }
+    window.location.href = `${window.location.pathname}?menu=sns`;
+  };
   const [hookTitle, setHookTitle] = useState(""); // 쇼츠릴스 대본 제목 — 첫 1초 훅
   // 디자인 테마 (2026-11-05 사장님) — 고르면 성우·자막·제목 상자·음악까지 한 번에, 세부는 아래 줄에서
   const [theme, setTheme] = useState<ShortsTheme>(SHORTS_THEMES[0]);
@@ -117,7 +124,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       .catch(() => [] as string[]);
     Promise.all([listMyStudioVacancies(seed?.vacancyId), ytWorks]).then(([r, yt]) => {
       const has = new Set(yt);
-      setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address}${has.has(v.id) ? " · 쇼츠 대본 있음" : ""}`, photo: v.photo })) : []);
+      setVacs(r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address}${has.has(v.id) ? " · 쇼츠 대본 있음" : ""}`, photo: v.photo, no: Number(v.vacancy_no) || 0, building: v.building_name || null })) : []);
       const first = yt.find((id) => r.success && r.data.some((v) => v.id === id));
       if (first && !seed?.vacancyId) setVac((cur) => cur || first);
     }).catch(() => setVacs([]));
@@ -149,7 +156,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         const yt = await studioBridge<{ youtube?: { get: (id: string) => Promise<{ narration?: string[]; title?: string } | null> } }>()?.youtube?.get(vac).catch(() => null);
         if (!live) return;
         if (yt?.narration?.length) { setScript(yt.narration.join("\n\n")); setFrom("youtube"); setHookTitle(String(yt.title || "")); }
-        else { setScript(""); setFrom(""); setErr("이 글은 아직 쇼츠릴스 대본이 없어요. 뉴스·SNS자동화에서 [쇼츠릴스 대본]을 먼저 쓰거나, 아래 칸에 대본을 직접 넣어 주세요."); }
+        else { setScript(""); setFrom(""); setNoScript(true); setErr("이 글은 아직 쇼츠릴스 대본이 없어요. 아래 [쇼츠릴스 대본 쓰러 가기]로 먼저 쓰거나, 칸에 대본을 직접 넣어 주세요."); }
       })();
       return () => { live = false; };
     }
@@ -164,7 +171,8 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       const yt = await studioBridge<{ youtube?: { get: (id: string) => Promise<{ narration?: string[] } | null> } }>()?.youtube?.get(vac).catch(() => null);
       if (!live) return;
       if (yt?.narration?.length) { setScript(yt.narration.join("\n\n")); setFrom("youtube"); setHookTitle(String((yt as { title?: string }).title || "")); }
-      else { setScript(baseScript(r.data)); setFrom("base"); }
+      // 대본을 안 썼으면 빈칸 — 공실 정보로 문장을 지어 넣지 않는다 (2026-11-10 사장님: "대본을 만든 것이 아니거든, 이런건 안나와야 혼돈이 되지 않지")
+      else { setScript(""); setFrom(""); setNoScript(true); setErr("이 공실은 아직 쇼츠릴스 대본이 없어요. 아래 [쇼츠릴스 대본 쓰러 가기]로 먼저 쓰거나, 칸에 대본을 직접 넣어 주세요."); }
     })();
     return () => { live = false; };
   }, [vac]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -305,7 +313,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
             <option value="col">뉴스칼럼 ({colItems(false).length})</option>
             <option value="free">자유 글쓰기 ({colItems(true).length})</option>
           </select>
-          <select value={tabItems.some((x) => x.id === vac) ? vac : ""} onChange={(e) => { setVac(e.target.value); setErr(""); }} disabled={Boolean(busy)} style={{ ...box, flex: 1, minWidth: 0, height: 40, fontSize: 14, padding: "0 10px", color: vac ? C.text : C.sub }}>
+          <select value={tabItems.some((x) => x.id === vac) ? vac : ""} onChange={(e) => { setVac(e.target.value); setErr(""); setNoScript(false); }} disabled={Boolean(busy)} style={{ ...box, flex: 1, minWidth: 0, height: 40, fontSize: 14, padding: "0 10px", color: vac ? C.text : C.sub }}>
             <option value="">{vacs === null ? "불러오는 중…" : tabItems.length ? `대본 가져오기 — ${tabItems.length}개에서 고르기` : srcTab === "vac" ? "광고 중인 공실이 없어요" : srcTab === "col" ? "아직 뉴스칼럼이 없어요" : srcTab === "free" ? "아직 자유 글쓰기로 쓴 글이 없어요" : "가져올 글이 없어요"}</option>
             {srcTab === "all" ? (<>
               {vacItems.length > 0 && <optgroup label="공실뉴스">{vacItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</optgroup>}
@@ -314,11 +322,11 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
             </>) : tabItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
           </select>
         </div>
-        <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
+        <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); if (noScript) { setNoScript(false); setErr(""); } }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
           style={{ ...box, padding: "12px 14px", lineHeight: 1.7, resize: "vertical" }} />
         <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 13 }}>
           <b style={{ color: over ? "#f59f00" : C.accent }}>약 {secs}초 / {MAX_SEC}초{over ? ` — 조금 길어요. 그대로 편집을 시작하고, 편집에서 문장·클립을 지워 줄여도 돼요` : ""}</b>
-          <span style={{ color: C.dim }}>{from === "youtube" || from === "seed" ? "쇼츠릴스 대본에서 가져왔어요" : from === "base" ? "공실 정보로 만든 문장이에요" : ""}</span>
+          <span style={{ color: C.dim }}>{from === "youtube" || from === "seed" ? "쇼츠릴스 대본에서 가져왔어요" : ""}</span>
         </div>
 
         {head("② 테마 — 누르면 성우·자막·음악까지 한 번에")}
@@ -346,6 +354,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         })()}
         <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>{voices?.length ? `AI 성우 ${voices.length}명${pts ? ` · ${pointsLine(pts)}` : ""}` : "AI 성우를 준비하고 있어요."}</div>
         {err && <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, fontSize: 14 }}>{err}</div>}
+        {noScript && !script.trim() && <button type="button" onClick={goWriteScript} style={{ marginTop: 8, height: 38, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>쇼츠릴스 대본 쓰러 가기 &gt;&gt;</button>}
       </div>
     </Modal>
   );

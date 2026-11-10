@@ -5,7 +5,7 @@ import Link from "next/link";
 import StudyBackButton from "@/components/study/StudyBackButton";
 import LecturePublicMaterialsModal from "@/components/LecturePublicMaterialsModal";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLectureDetail, getLectures, createLectureReview, updateLectureReview, deleteLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
+import { getLectureDetail, getLectures, createLectureReview, updateLectureReview, deleteLectureReview, enrollLecture, checkEnrollment, getMyLectureAccess } from "@/app/actions/lecture";
 import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
@@ -153,6 +153,13 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
     });
   }, [lecture?.id, user?.id]);
 
+  // 등급 덕분에 무료인가 · 회원 전용 강의인가 (2026-11-10) — 무료인 회원에게 "132,000P 결제"가 보이던 것, 회원 전용은 포인트로 못 산다
+  const [access, setAccess] = useState<{ free: boolean; membersOnly: boolean }>({ free: false, membersOnly: false });
+  useEffect(() => {
+    if (!lecture?.id) return;
+    getMyLectureAccess(lecture.id, user?.id || null).then(setAccess).catch(() => {});
+  }, [lecture?.id, user?.id]);
+
   const handleEnroll = async () => {
     if (!user) {
       setIsAuthModalOpen(true);
@@ -169,7 +176,12 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       router.push(`/study_watch?id=${lecture.id}`);
       return;
     }
-    const dp = lecture.discount_price || lecture.price || 0;
+    // 회원 전용인데 무료 등급이 아니면 — 포인트 결제 대신 공실뉴스부동산 신청으로
+    if (access.membersOnly && !access.free) {
+      router.push("/newsrealty/pro-apply");
+      return;
+    }
+    const dp = access.free ? 0 : (lecture.discount_price || lecture.price || 0);
     if (dp <= 0) {
       setEnrolling(true);
       const res = await enrollLecture(lecture.id, user.id);
@@ -521,7 +533,8 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               {lecture.title}
             </h1>
             <p style={{ fontSize: 15.5, color: "#475569", lineHeight: 1.6, margin: "0 0 18px 0" }}>
-              {lecture.short_description || "11만 부동산 실무자와 함께 1년 동안 실전 노하우를 배우고 성장하는 부동산특강 마스터 과정"}
+              {/* short_description 칸은 DB 에 없어 늘 아래 기본 문구만 나왔다 — 강의 부제(subtitle)를 먼저 (2026-11-10) */}
+              {lecture.short_description || lecture.subtitle || "11만 부동산 실무자와 함께 1년 동안 실전 노하우를 배우고 성장하는 부동산특강 마스터 과정"}
             </p>
 
             {/* 메타 뱃지 */}
@@ -542,9 +555,12 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                   {kw}
                 </span>
               ))}
-              <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#d97706", marginLeft: 4 }}>
-                ★ {(lecture.rating || 4.9).toFixed(1)} ({lecture.review_count || reviews.length})
-              </span>
+              {/* 별점은 실제 후기가 있을 때만, 후기 평균으로 (2026-11-10: 후기 0개인데 "4.9" 가 나오던 것 — 가짜 값 금지) */}
+              {reviews.length > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#d97706", marginLeft: 4 }}>
+                  ★ {(reviews.reduce((a: number, r: { rating?: number }) => a + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)} ({reviews.length})
+                </span>
+              )}
             </div>
           </div>
 
@@ -935,7 +951,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                   </span>
                 )}
                 <span style={{ fontSize: 26, fontWeight: 900, color: "#1c1917" }}>
-                  {displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
+                  {access.free ? "회원 무료 수강" : access.membersOnly ? "공실뉴스부동산 회원 전용" : displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
                 </span>
               </div>
               <div style={{ fontSize: 12.5, color: "#059669", fontWeight: 700, marginTop: 4 }}>
@@ -973,7 +989,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                 boxShadow: "0 4px 14px rgba(5, 150, 105,0.3)",
               }}
             >
-              {enrolling ? "처리 중..." : isEnrolled ? "강의실 입장하기 →" : displayPrice ? `${displayPrice.toLocaleString()}P 결제 후 수강하기` : "무료로 수강 시작하기 →"}
+              {enrolling ? "처리 중..." : isEnrolled ? "강의실 입장하기 →" : access.free ? "무료로 수강 시작하기 →" : access.membersOnly ? "공실뉴스부동산 신청하기 >>" : displayPrice ? `${displayPrice.toLocaleString()}P 결제 후 수강하기` : "무료로 수강 시작하기 →"}
             </button>
 
             {/* 보조 버튼들 */}

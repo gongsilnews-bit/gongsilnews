@@ -722,6 +722,16 @@ export async function createLectureReview(data: {
   }
 }
 
+// ── 이 회원이 이 강의를 등급 덕분에 무료로 듣는가 · 회원 전용 강의인가 (수강 버튼 글자용, 2026-11-10) ──
+export async function getMyLectureAccess(lectureId: string, userId: string | null) {
+  const supabase = getAdminClient();
+  const { data: lecture } = await supabase.from("lectures").select("free_for_plans, sidebar_copy").eq("id", lectureId).single();
+  const membersOnly = Boolean((lecture?.sidebar_copy as { members_only?: boolean } | null)?.members_only);
+  if (!lecture || !userId) return { free: false, membersOnly };
+  const { data: me } = await supabase.from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", userId).single();
+  return { free: canTakeFree(me, lecture.free_for_plans), membersOnly };
+}
+
 // ── 포인트 결제 수강 등록 (100% 강의등록자 지급) ──
 export async function enrollLecture(lectureId: string, userId: string) {
   const supabase = getAdminClient();
@@ -743,7 +753,7 @@ export async function enrollLecture(lectureId: string, userId: string) {
       }
     }
     const { data: lecture, error: lErr } = await supabase
-      .from("lectures").select("price, discount_price, author_id, duration_months, title, free_for_plans")
+      .from("lectures").select("price, discount_price, author_id, duration_months, title, free_for_plans, sidebar_copy")
       .eq("id", lectureId).single();
     if (lErr || !lecture) return { success: false, error: "강의 정보를 찾을 수 없습니다." };
 
@@ -756,6 +766,10 @@ export async function enrollLecture(lectureId: string, userId: string) {
     const { data: me } = await supabase
       .from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", userId).single();
     const freePlan = canTakeFree(me, lecture.free_for_plans) ? (lecturePlanOf(me) || "admin") : null;
+    // 회원 전용 강의(sidebar_copy.members_only)는 포인트로 따로 사지 못한다 (2026-11-10 사장님 — 공실뉴스부동산 수강권에만)
+    if (!freePlan && (lecture.sidebar_copy as { members_only?: boolean } | null)?.members_only) {
+      return { success: false, error: "members_only" };
+    }
 
     const pointsRequired = freePlan ? 0 : (lecture.discount_price || lecture.price || 0);
     const expiresAt = new Date();

@@ -130,6 +130,11 @@ const EL_PHOTOS = new Set([
   "onwK4e9ZLuTAKqWW03F9", "pFZP5JQG7iQjIQuC4Bku", "pNInz6obpgDQGcFmaJgB", "pb3lVZVjdFWbkhPKlelB", "pqHfZKP75CvOlQylNhV4", "s07IwTCOrCDCaETjUVjx",
   "sQ3a15DhENXU8pKTHlcc", "sf8Bpb1IU97NI9BHSMRf", "tIXHSlSWOafJawXSV1g4", "tl7lnnI5ADFNMMxMdzil", "uyVNoMrnUku1dZyVEXwD", "v1jVu1Ky28piIPEJqRrm",
   "wzMVIc8FAFmgMxFpN0uM", "xMFDeM9Ex3CdGGx9m3uS", "z6Kj0hecH20CdetSElRT", "zgDzx5jLLCqEp6Fl7Kl7",
+  // 2026-11-10 2차 (docs/2026-11-10_studio_voice_portraits_el.md)
+  "H9ihk5yaEtJLXjhBgRaF", "IAETYMYM3nJvjnlkVTKI", "bQlkYuipD5BHEhntA5iz", "SWu2lWaUX4JBPKyh7h1p", "6Vgh4FaCc0SCcWPwcyXa", "dMZ8mX0Ph1cjrCK7Jhrg", "Lvh2aRjIPjHAJj48NYOL", "k5siOxi4qsPS2kASoRt7", "5XgfKMHL4qnyg2mabE5t", "gmRUMzXYROUiUpOrXA0z", "fAgkbajYljImBTPFR28u", "8QclKarwLctvzN2plke3", "NaQdbkW5gNZD8wfwXeTV", "oq1tjx4KozsMmgTl9JVK", "gJSDQIpSQ56NBGhorBfg", "sSoVF9lUgTGJz0Xz3J9y", "5ON5Fnz24cnOozEQfGAm", "mgugV8tLa3KQE4mfYTw5", "ZcZcEsYxXAIc3nNSev1H", "Ctl3Pjfp5c2p3ThSA8Hn", "n2fbxG88jqAoaVPUy3IG", "LKOcTG4J4tYTPR9DnLeM", "L4az9Gb378GIycFl2nAB", "bhH6z2isuapS6ely1oMG", "5DWGv3VDkihNUcbvaonB", "ZjAPD4f11zlnEnZpKDgo", "74i8I1pZi98ZjmmYLdaF",
+  // 2026-11-10 2차 나머지 (docs/2026-11-10_studio_voice_portraits_el.md)
+  "2gbExjiWDnG1DMGr81Bx", "Ml2fm7pJDDTZqQkeGpRM", "9rZOpKhfmFa6UIvpEi4C", "HCANy6ACvOWyndVWS0gV", "1YzIw7PZ7iaD4alelyHY", "lO4E4qxAvq4BhWUWF8Ci", "h5eZa8VFAq0EQ8E81dfL", "cBOtnpVZNlQ5VJygXGB8", "PthLbtxfrHtPA1psYOnG", "xi3rF0t7dg7uN2M0WUhr", "r2b2z8wPmZeh7CQksHSs", "LS3HmRGCXV8wxCAhUbTt", "DMkRitQrfpiddSQT5adl", "5BPXIholvVqIEs2WxN5F", "8lidWTlnwgjObqCImnE2", "UmYoqGlufKxhJ6NCx5Mv", "ibCGc01503OQd2R6i1n1", "prgs92xTdxeczorJi7ez", "aiUUgjHa4mpHf6UenZuf", "JxIGrv4AVuvbo1Dxzryu", "7oLyBHyhxAjrctX6ZQlw",
+  "JQaWvPoEUkcuOTfxFYpJ", "H8ObVvroE5JXeeUSJakg",
 ]);
 /** 성우 얼굴 — 만들어 둔 그림이 있으면 그 그림, 없으면 우리가 그린 단순한 얼굴 */
 export function VoiceAvatar({ seed, gender, age, size = 56, name }: { seed: string; gender?: string; age?: string; size?: number; name?: string }) {

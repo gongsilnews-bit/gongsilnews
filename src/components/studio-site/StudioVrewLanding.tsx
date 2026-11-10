@@ -342,7 +342,7 @@ export default function StudioVrewLanding() {
         <p className="sv-kicker">내 지역 공실! 이제 <span style={{ color: ACCENT }}>SNS · 뉴스</span>로 전달하세요</p>{/* 2026-11-10 사장님 */}
         <h2 className="sv-h1">공실만 등록하면<br />뉴스 · 블로그 · SNS까지</h2>
         <p className="sv-p">
-          공실 하나로 <b>공실뉴스 기사</b>와 <b>블로그 · 인스타그램 · 스레드 · 페이스북 글</b>,<br />
+          공실 하나로 <b>공실뉴스 기사</b>와 <b>블로그 · 인스타그램 · 스레드 · 페이스북</b>,<br />
           <b>유튜브 대본</b>까지 AI가 채웁니다.<br />
           <b>공실뉴스부동산</b>이 되시면 <b>SNS · 뉴스</b> 마케팅이 쉬워집니다!
         </p>
@@ -460,7 +460,7 @@ export default function StudioVrewLanding() {
 
       {/* 3-1 물건접수홈페이지 제공 (2026-11-04 사장님: "매물접수홈페이지 제공도 넣어줘") — PRO 혜택. 그림은 실제 화면 */}
       <section className="sv-sec">
-        <h2 className="sv-h2" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>내 부동산 홈페이지를<br />바로 열어 드립니다 <ProTag size="md" style={{ fontSize: 18, padding: "4px 8px 5px", borderRadius: 5 }} /></h2>
+        <h2 className="sv-h2">내 부동산 홈페이지를<br />바로 열어 드립니다</h2>
         <p className="sv-p">
           공실뉴스부동산 회원에게 <b>물건접수홈페이지</b>를 만들어 드려요. 내 공실이 저절로 올라가고,<br />
           집주인은 <b>[물건 접수]</b>로 직접 물건을 맡깁니다. 로고 · 색상 · 첫 화면 사진 · 영상도 내 마음대로.<br />
