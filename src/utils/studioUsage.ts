@@ -56,7 +56,9 @@ export const proMember = (member: ExtensionMember) => isAdminRole(member.role) |
 export function gradeBlogLimit(member: ExtensionMember, feature: StudioFeature = "blog", freeWrites = 3): number {
   void feature;
   if (proMember(member)) return UNLIMITED;
-  if (member.role === "REALTOR") return freeWrites; // 등급별 한도 화면의 부동산회원 블로그·SNS 월 횟수 (2026-11-09)
+  // 2026-11-10 사장님: "공실3건을 무료 등록하고 SNS는 횟수 제한없이 · 3건에 대해서는 자유스럽게 전송하게" —
+  //  부동산회원(무료)도 자기 공실로 쓰는 블로그·SNS·유튜브 대본은 무제한 (공실 광고 3건이 곧 제한). 뉴스칼럼·자유 글쓰기(col-)는 그대로 유료
+  if (member.role === "REALTOR") { void freeWrites; return UNLIMITED; }
   return 0;
 }
 /** 묶어 세는 글 — 공실 하나로 블로그·SNS·유튜브를 써도 1건 */

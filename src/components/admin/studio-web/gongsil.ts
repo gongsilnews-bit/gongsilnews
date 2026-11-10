@@ -832,6 +832,12 @@ async function colGet(id: string) {
   const w = isCol(id) ? await getWork(id) : null;
   return w?.column ? colForWeb(w) : null;
 }
+/* 자유 글쓰기·뉴스칼럼 소재 지우기 — 이 브라우저의 작업만 (PC 작업 파일은 그대로) (2026-11-10) */
+async function colRemove(id: string) {
+  if (!isCol(id)) return false;
+  await tx("readwrite", (s) => s.delete(keyOf(id)));
+  return true;
+}
 async function colList(limit = 200) {
   return (await allWorks()).filter((w) => w.column).sort((a, b) => (a.column!.createdAt < b.column!.createdAt ? 1 : -1)).slice(0, limit).map(colForWeb);
 }
@@ -901,7 +907,7 @@ const web = {
     onProgress: onProgress("sns"),
   },
   column: {
-    create: colCreate, get: colGet, list: colList, setUrl: colSetUrl, media: colMedia, save: colSave, setLink: colSetLink,
+    create: colCreate, get: colGet, list: colList, remove: colRemove, setUrl: colSetUrl, media: colMedia, save: colSave, setLink: colSetLink,
     // 다른 뉴스 가져오기는 앱에서 (웹은 내 기사만, 2026-11-04 사장님)
     fetchNews: notInWeb("다른 뉴스 가져오기"), openNews: notInWeb("다른 뉴스 가져오기"), grabNews: notInWeb("다른 뉴스 가져오기"),
   },

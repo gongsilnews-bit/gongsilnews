@@ -15,7 +15,8 @@ import StudioChannelTabs, { StepLine, StepTitle } from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
 import StudioSimSource from "./StudioSimSource";
 import { BusyDots, LoadingCover } from "./StudioLoading";
-import { ProLock, ProTag } from "@/components/admin/ProBadge";
+import { ProCover, ProCoverOverlay, ProTag } from "@/components/admin/ProBadge";
+import { PRO_ORANGE } from "@/utils/tier";
 
 /**
  * SNS뉴스발행 (공실마케팅 앱 전용)
@@ -133,7 +134,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   });
   const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
-  const [pro, setPro] = useState<boolean | null>(null); // 공실뉴스부동산 PRO — 뉴스칼럼·SNS·유튜브 (2026-11-04)
+  const [pro, setPro] = useState<boolean | null>(null);
+  const askUp = () => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank"); }; // 공실뉴스부동산 PRO — 뉴스칼럼·SNS·유튜브 (2026-11-04)
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 기사관리처럼 목록이 먼저 — [+ 새로 만들기] + 만든 작업 카드. 홈 카드·.gsn 으로 오면 바로 작업
   // 홈 공실 카드에서 막 눌렀으면(.auto) 목록을 거치지 않고 바로 그 작업으로 (2026-10-30 사장님: 목록이 잠깐 보인다)
@@ -564,9 +566,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 style={{ display: "flex", alignItems: "center", gap: 6, textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
                   fontWeight: on ? 700 : 500, color: on ? (theme.darkMode ? "#ffffff" : "#1a3a6b") : theme.textSecondary, background: on ? (theme.darkMode ? "rgba(255,255,255,0.10)" : "rgba(26,58,107,0.08)") : "transparent",
                   boxShadow: on ? `inset 3px 0 0 ${(theme.darkMode ? "#ffffff" : "#1a3a6b")}` : "none" }}>
-                <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}</span>
-                {/* 유료 회원 전용 표시 — 주황 = 공실뉴스부동산 색 (2026-10-23 사장님) */}
-                {(c.id === "column" || c.id === "auction") && pro === false && <ProTag />}
+                {/* 공실뉴스부동산(유료) 전용 — NEWS 딱지 대신 왼쪽 메뉴처럼 글자 오른쪽 위 주황 점, 모든 회원에게 (2026-11-10 사장님: "뉴스칼럼 자유글쓰기 경매공매는 유료 회원전용 · news 대신 점으로") */}
+                <span style={{ flex: 1, whiteSpace: "nowrap" }}>{c.label}{(c.id === "column" || c.id === "free" || c.id === "auction") && (
+                  <span aria-label="공실뉴스부동산 전용" title="공실뉴스부동산 전용" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: PRO_ORANGE, marginLeft: 3, verticalAlign: "top", position: "relative", top: 1 }} />
+                )}</span>
                 {(c.id === "interior" || c.id === "remodel") && (
                   <span title="공실마케팅 회원 전용" style={{ flexShrink: 0, padding: "2px 6px", borderRadius: 4, background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.3 }}>Membership</span>
                 )}
@@ -640,7 +643,13 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <p style={{ margin: 0, fontSize: 13.5, color: theme.textSecondary, flex: 1, minWidth: 280 }}>{(web && WEB_LEAD[category]) || NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
         </div>
 
-        {category === "free" && !freeOpen && (
+        {/* 자유 글쓰기는 공실뉴스부동산 전용 — 무료 회원에게는 화면을 보이고 흰 막 + 안내 (2026-11-10 사장님) */}
+        {category === "free" && !freeOpen && pro === false && (
+          <ProCover what="자유 글쓰기" message="공실뉴스부동산이 되시면 자유 글쓰기로 블로그·SNS·쇼츠 대본을 만드실 수 있습니다." onUpgrade={askUp}>
+            <StudioFreeWrite theme={theme} onOpenColumn={() => {}} />
+          </ProCover>
+        )}
+        {category === "free" && !freeOpen && pro !== false && (
           <StudioFreeWrite theme={theme} onOpenColumn={(id, tab) => {
             try {
               localStorage.setItem("studio_last_column", id); localStorage.setItem("studio_open_column", "1");
@@ -659,7 +668,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         {category === "myvideo" && <StudioMyVideoPanel theme={theme} onListView={setWideList} onDesk={setSubDesk} />}
 
-        {category === "column" && pro === false && <ProLock what="뉴스칼럼" detail="내 공실뉴스 기사로 블로그·SNS·유튜브 글을 만들어요." dark={Boolean(theme.darkMode)} onUpgrade={() => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank", "noopener"); }} />}
+        {/* 뉴스칼럼 — 무료 회원에게는 화면을 보이고 흰 막 + 안내 (2026-11-10 사장님: "반투명으로 보여줘") */}
+        {category === "column" && pro === false && (
+          <ProCover what="뉴스칼럼" message="공실뉴스부동산이 되시면 내 공실뉴스 기사로 블로그·SNS·쇼츠 대본을 만드실 수 있습니다." onUpgrade={askUp}>
+            <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
+          </ProCover>
+        )}
         {category === "column" && pro !== false && (
           <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
         )}
@@ -669,8 +683,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             onTab={(id) => setSimTabs((m) => ({ ...m, [category]: id }))} onUsed={loadUsage} />
         )}
 
-        {category === "auction" && web && pro === false && <ProLock what="경매·공매" detail="온비드 공매 물건으로 블로그·SNS·유튜브 글을 만들어요." dark={Boolean(theme.darkMode)} onUpgrade={() => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank", "noopener"); }} />}
-        {(category === "gongsil" || (category === "auction" && !(web && pro === false))) && (<>
+        {/* 경매·공매도 무료 회원에게 화면을 보이고 흰 막 + 안내 (2026-11-10 사장님: "반투명으로 보여줘") */}
+        {(category === "gongsil" || category === "auction") && (<div style={{ position: "relative" }}>
+        {category === "auction" && web && pro === false && <ProCoverOverlay what="경매·공매" message="공실뉴스부동산이 되시면 온비드 공매 물건으로 블로그·SNS·쇼츠 대본을 만드실 수 있습니다." onUpgrade={askUp} />}
         {/* 작업 목록 — 처음 화면 (2026-10-29 사장님: 기사관리처럼, 카드는 공실관리 SNS홍보형 그대로)
             맨 앞 [+ 새로 만들기] → 공실 고르기 · 카드/채널을 누르면 이 자리에서 그 공실 작업 */}
         {mode === "list" && (
@@ -773,7 +788,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         </div>
         </>)}
 
-        </>)}
+        </div>)}
       </div>
       </div>
       )}

@@ -44,9 +44,11 @@ export function LinkNotice({ darkMode }: { darkMode?: boolean }) {
 
 const CH_ALL: [string, string][] = [["article", "공실뉴스 기사"], ["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
 
-export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy", channels, onLinks }: {
+export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들기", onAdd, onOpen, empty, placeholder, variant = "vacancy", channels, onLinks, onMenu }: {
   theme: Theme;
   cards: WorkCard[] | null;
+  /** 카드 오른쪽 클릭 메뉴 (2026-11-10 사장님: "자유 글쓰기 우측 클릭 메뉴가 안나와") */
+  onMenu?: (id: string, x: number, y: number) => void;
   addLabel?: string;
   onAdd: () => void;
   /** tab — 채널 칸을 누르면 그 채널 (카드 위쪽은 "article") */
@@ -77,7 +79,7 @@ export default function WorkCardGrid({ theme, cards, addLabel = "새로 만들�
         {cards === null && <div style={{ padding: 20, fontSize: 13, color: textSecondary }}>불러오는 중…</div>}
         {cards && !cards.length && empty && <div style={{ padding: 20, fontSize: 13.5, color: textSecondary }}>{empty}</div>}
         {(cards || []).map((c) => (
-          <div key={c.id} className="gs-work-card" style={{ position: "relative", minWidth: 0 }}>
+          <div key={c.id} className="gs-work-card" style={{ position: "relative", minWidth: 0 }} onContextMenu={onMenu ? (e) => { e.preventDefault(); onMenu(c.id, e.clientX, e.clientY); } : undefined}>
             <button onClick={() => onOpen(c.id, "article")} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", cursor: "pointer", padding: 0 }}>
               <div style={{ position: "relative", aspectRatio: "16 / 10", borderRadius: 12, background: darkMode ? "#2c2d31" : "#f1f3f5", border: `${c.current ? 2 : 1}px solid ${c.current ? (darkMode ? "#5b8def" : "#1a3a6b") : border}`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {c.thumb ? <img src={c.thumb} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : placeholder}

@@ -483,7 +483,7 @@ function RealtyAdminContent() {
             title={soon ? "요금제 만료가 얼마 남지 않았습니다" : undefined}
             style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: tone.bg, color: tone.fg }}
           >
-            {(() => { const l = getPlanLabel({ role: userRole, plan_type: planType }); return l === "공실뉴스부동산" && !isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }) ? "부동산회원" : l; })()}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
+            {(() => { const l = getPlanLabel({ role: userRole, plan_type: planType }); return l === "공실뉴스부동산" && !isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }) ? "부동산회원(무료)" : l; })()}{until ? ` ${until}` : ""}{studioOnTag && <StudioMark small plan={studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })} />}
           </span>
         );
       })()
@@ -633,8 +633,8 @@ function RealtyAdminContent() {
           {/* 물건접수홈페이지 · 고객관리 · 포토studio · 기사 작성은 PRO 전용 (2026-11-04 사장님 등급 회의) */}
           {activeMenu === "homepage" && memberId && (studioPaid ? <IntakeStudio theme={theme} memberId={memberId} planType={planType} /> : <ProCover what="물건접수홈페이지" message="공실뉴스부동산이 되시면 내 부동산 홈페이지를 바로 열어 드립니다." onUpgrade={askUpgrade}><IntakeStudio theme={theme} memberId={memberId} planType={planType} /></ProCover>)}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
-          {activeMenu === "customer" && memberId && !studioPaid && <ProLock what="고객관리" detail="손님 연락처 · 찾는 물건 · 메모를 한곳에" dark={darkMode} onUpgrade={askUpgrade} />}
-          {activeMenu === "customer" && memberId && studioPaid && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
+          {activeMenu === "customer" && memberId && (() => { const cs = <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />;
+            return studioPaid ? cs : <ProCover what="고객관리" message="공실뉴스부동산이 되시면 손님 연락처 · 찾는 물건 · 메모를 한곳에서 관리하실 수 있습니다." onUpgrade={askUpgrade}>{cs}</ProCover>; })()}
           {SHOW_STUDY && activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {/* 뉴스·SNS자동화 — 웹도 (2026-11-03 사장님: 앱의 공실뉴스 부분, 회원 AI 복사·붙여넣기 · 도우미로 채우기) */}

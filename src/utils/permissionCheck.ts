@@ -161,7 +161,7 @@ export function getAdminEntryLabel(
     return '서류보완 >>';
   }
   const label = getPlanLabel(member);
-  return `${label === '공실뉴스부동산' && !paid ? '부동산회원' : label} admin >>`;
+  return `${label === '공실뉴스부동산' && !paid ? '부동산회원(무료)' : label} admin >>`;
 }
 
 /** 요금제 만료일을 배지에 붙일 짧은 꼴로. 없으면 빈 글자 */

@@ -11,14 +11,14 @@ import { useRouter } from "next/navigation";
 import ArticleAiTool, { type ArticleDraft } from "../writing/ArticleAiTool";
 import { studioBridge } from "../studio-web";
 import WorkCardGrid, { LinkNotice, type WorkCard } from "./WorkCardGrid";
-import { LinksPanel } from "./VacancyCardGrid";
+import { CardMenu, IconLink, IconPen, IconTrash, LinksPanel, type MenuItem } from "./VacancyCardGrid";
 import type { PromoChannel } from "@/utils/vacancyPromos";
 import { listFreeDrafts, pickFreeDraft, saveFreeDraft, type FreeFile } from "../studio-web/freeWrite";
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Photo = { url: string; caption: string };
 type Col = { id: string; label: string; createdAt: string; source: { mode: string; topic?: { subject?: string; memo?: string } }; thumb?: string | null; done?: Record<string, boolean>; links?: Record<string, string> };
-type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]>; setLink?: (id: string, channel: string, url: string) => Promise<unknown> } };
+type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]>; get?: (id: string) => Promise<(Col & { captures?: { thumb: string; caption?: string; kind?: string }[] }) | null>; remove?: (id: string) => Promise<boolean>; setLink?: (id: string, channel: string, url: string) => Promise<unknown> } };
 /** [링크체크] 채널 — 블로그·인스타·스레드·페북·유튜브 (공실뉴스 기사 칸은 빼고) */
 export const COL_LINK_CH: [PromoChannel, string][] = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
 const shortDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
@@ -30,6 +30,8 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   const [cards, setCards] = useState<WorkCard[] | null>(null);
   // 올린 게시물 주소 — 그 글의 작업 파일(회원 PC)에 저장, 서버에는 안 올림 (2026-11-06 사장님: "자유글쓰기에서 매칭이 되지 않음")
   const [linksFor, setLinksFor] = useState<{ id: string; x: number; y: number } | null>(null);
+  // 카드 오른쪽 클릭 메뉴 (2026-11-10 사장님: "자유 글쓰기 우측 클릭 메뉴가 안나와") — 뉴스칼럼 카드 메뉴와 같은 모양
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const load = () => {
     studioBridge<Bridge>()?.column.list(200).then((l) => setCards(l.filter((c) => c.source?.mode === "topic").map((c) => ({
       id: c.id, badge: "내 글", date: shortDay(c.createdAt), title: c.label || c.source.topic?.subject || "자유 글", line1: `${String(c.source.topic?.memo || "").length.toLocaleString("ko-KR")}자`,
@@ -119,14 +121,40 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
     finally { setBusy(""); }
   };
   // 기사쓰기에 채워 보내기 — 공실관리 [SNS뉴스발행]과 같은 길 (?studioDraft=…)
-  const toArticle = () => {
-    if (!ready) return;
+  const toArticle = () => { if (ready) goArticle(title.trim(), body, photos); };
+  const goArticle = (tt: string, bb: string, ps: Photo[]) => {
     const id = `free-${Date.now().toString(36)}`;
-    const paragraphs = body.split(/\n{2,}/).map((x) => x.trim()).filter(Boolean);
+    const paragraphs = bb.split(/\n{2,}/).map((x) => x.trim()).filter(Boolean);
     try {
-      sessionStorage.setItem(`gsn-web-draft:${id}`, JSON.stringify({ title: title.trim(), subtitles: [], paragraphs, keywords: [], saleKind: "", photos: photos.map((p, i) => ({ dataUrl: p.url, caption: p.caption, after: Math.min(i, paragraphs.length - 1) })) }));
+      sessionStorage.setItem(`gsn-web-draft:${id}`, JSON.stringify({ title: tt, subtitles: [], paragraphs, keywords: [], saleKind: "", photos: ps.map((p, i) => ({ dataUrl: p.url, caption: p.caption, after: Math.min(i, paragraphs.length - 1) })) }));
     } catch { /* 저장 못 하면 빈 기사쓰기 */ }
     router.push(`?menu=article&action=write&studioDraft=${id}&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false });
+  };
+
+  const cardMenu = (id: string, x: number, y: number): MenuItem[][] => [
+    [
+      { label: "블로그·SNS 글 쓰기", icon: <IconPen />, note: "이 글로", go: () => onOpenColumn(id, "blog") },
+      { label: "쇼츠릴스 대본 쓰기", icon: <IconPen />, note: "이 글로", go: () => onOpenColumn(id, "youtube") },
+    ],
+    [
+      { label: "뉴스 기사로 보내기", icon: <IconPen />, note: "기사쓰기에 채움", go: () => void sendToArticle(id) },
+      { label: "링크 보기·복사", icon: <IconLink />, note: "올린 게시물", go: () => setLinksFor({ id, x, y }) },
+    ],
+    [
+      { label: "삭제", icon: <IconTrash />, danger: true, go: async () => {
+          const c = (cards || []).find((v) => v.id === id);
+          if (!confirm(`"${c?.title || "이 글"}"을 목록에서 지울까요?
+이 글로 쓴 블로그·SNS·대본도 함께 지워져요. 이미 올린 게시물은 그대로예요.`)) return;
+          try { await studioBridge<Bridge>()?.column.remove?.(id); load(); } catch (e) { alert(e instanceof Error ? e.message : String(e)); }
+        } },
+    ],
+  ];
+  // 목록의 글을 기사쓰기로 — 글쓰기 화면의 [뉴스 기사로 보내기]와 같은 길
+  const sendToArticle = async (id: string) => {
+    const c = await studioBridge<Bridge>()?.column.get?.(id).catch(() => null);
+    const t = c?.source?.topic;
+    if (!c || !t) { alert("이 글을 찾지 못했어요. 새로고침한 뒤 다시 해 주세요."); return; }
+    goArticle(String(t.subject || c.label || ""), String(t.memo || ""), (c.captures || []).filter((m) => m.kind !== "video" && m.thumb).map((m) => ({ url: m.thumb, caption: m.caption || "" })));
   };
 
   if (view === "list") return (
@@ -140,7 +168,12 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
           onOpenColumn(id, tab === "article" ? "blog" : tab);
         }}
         onLinks={(id, x, y) => setLinksFor({ id, x, y })}
+        onMenu={(id, x, y) => setMenu({ id, x, y })}
         placeholder={<span style={{ fontSize: 30 }}>✍</span>} empty="아직 쓴 글이 없어요. [새로 만들기]로 첫 글을 써 보세요." />
+      {menu && (() => { const c = (cards || []).find((v) => v.id === menu.id); return (
+        <CardMenu theme={theme as never} title={c?.title || "자유 글"} sub={["내 글", c?.date].filter(Boolean).join(" · ")} x={menu.x} y={menu.y}
+          groups={cardMenu(menu.id, menu.x, menu.y)} onClose={() => setMenu(null)} />
+      ); })()}
       {linksFor && (
         <LinksPanel theme={theme as never} x={linksFor.x} y={linksFor.y} channels={COL_LINK_CH} onClose={() => setLinksFor(null)}
           links={(cards || []).find((c) => c.id === linksFor.id)?.links || {}}
