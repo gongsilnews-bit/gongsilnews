@@ -3,6 +3,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
+/* 복사 — 클립보드 API 가 막힌 브라우저(어사이드 등)는 예전 방식(execCommand)으로 (2026-11-10 사장님: "어사이드에서 복사 붙여넣기가 안되네") */
+async function copyText(s: string): Promise<boolean> {
+  try { await navigator.clipboard.writeText(s); return true; } catch { /* 아래 */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = s; ta.setAttribute("readonly", ""); Object.assign(ta.style, { position: "fixed", left: "-9999px", top: "0", opacity: "0" });
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, s.length);
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch { return false; }
+}
+
 /**
  * 웹에서 회원 본인 AI 에게 묻기 (2026-11-03 사장님: 웹 뉴스·SNS자동화도 앱과 같이)
  *
@@ -130,7 +143,7 @@ function AskBox<T>({ prompt, what, check, done }: { prompt: string; what: string
   };
   const open = async () => {
     let copied = true;
-    try { await navigator.clipboard.writeText(prompt); } catch { copied = false; setManual(true); }
+    if (!(await copyText(prompt))) { copied = false; setManual(true); }
     // noopener 를 주면 열려도 null 이라 막힘을 알 수 없다 — 열고 나서 끊는다
     // 오른쪽 결과 칸 위에 작은 크롬 창으로 (같은 이름 = 다시 누르면 그 창을 다시 씀). 창이 막히면 새 탭으로
     const w = window.open(site.url, "gs-ai-window", popupFeatures(dockArea())) || window.open(site.url, "_blank");
@@ -166,10 +179,13 @@ function AskBox<T>({ prompt, what, check, done }: { prompt: string; what: string
         </div>
         {manual && (
           <div style={{ marginTop: 12, textAlign: "left" }}>
+            {/* 복사가 막힌 브라우저 — 질문을 직접 골라 복사 (누르면 전체 선택) */}
+            <textarea readOnly value={prompt} rows={3} onFocus={(e) => e.currentTarget.select()} onClick={(e) => e.currentTarget.select()} title="누르면 전체 선택돼요 — Ctrl+C 로 복사"
+              style={{ width: "100%", boxSizing: "border-box", borderRadius: 8, border: "1px solid #334155", background: "#0b1220", color: "#94a3b8", padding: 8, fontSize: 12, fontFamily: "inherit", resize: "vertical", marginBottom: 6 }} />
             <textarea value={paste} onChange={(e) => setPaste(e.target.value)} rows={4} placeholder="AI 답을 여기에 붙여 넣으세요 (Ctrl+V)"
               style={{ width: "100%", boxSizing: "border-box", borderRadius: 8, border: "1px solid #475569", background: "#0f172a", color: "#e5e7eb", padding: 10, fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
-              <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(prompt); setMsg("질문을 복사했어요."); } catch { setMsg("질문을 복사하지 못했어요."); } }} style={{ ...gb, height: 30 }}>질문 복사</button>
+              <button type="button" onClick={async () => { setMsg((await copyText(prompt)) ? "질문을 복사했어요." : "질문을 복사하지 못했어요. 위 질문 칸을 눌러 Ctrl+C 해 주세요."); }} style={{ ...gb, height: 30 }}>질문 복사</button>
               <button type="button" onClick={() => void tryText(paste, false)} disabled={busy} style={{ ...gb, height: 30, background: "#2563eb", borderColor: "#2563eb" }}>붙여 넣은 답 쓰기</button>
             </div>
           </div>
@@ -234,7 +250,7 @@ function ImageAskBox({ prompt, done }: { prompt: string; done: (v: string | null
     }
   };
   const open = async () => {
-    try { await navigator.clipboard.writeText(prompt); } catch { setMsg("질문을 복사하지 못했어요. 아래 [질문 복사]를 눌러 주세요."); }
+    if (!(await copyText(prompt))) setMsg("질문을 복사하지 못했어요. 아래 [질문 복사]를 눌러 주세요.");
     const w = window.open(site.url, "gs-ai-window", popupFeatures(dockArea())) || window.open(site.url, "_blank");
     if (w) { aiWin = w; try { w.opener = null; } catch { /* */ } try { w.focus(); } catch { /* */ } }
     else setMsg(`창이 막혔어요. [질문 다시 복사하고 ${site.name} 열기]를 눌러 주세요.`);

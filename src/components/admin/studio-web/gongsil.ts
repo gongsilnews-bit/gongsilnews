@@ -37,7 +37,29 @@ const FIT_KINDS = new Set(["proof", "map", "roadview", "capture"]); // 화면 �
 
 const keyOf = (vacancyId: string) => `${getMember()}:${vacancyId}`;
 const getWork = (vacancyId: string) => tx<Work | undefined>("readonly", (s) => s.get(keyOf(vacancyId))).then((w) => w || null).catch(() => null);
-const putWork = (w: Work) => tx("readwrite", (s) => s.put({ ...w, updatedAt: now() })).then((r) => { gsnLater(w.vacancyId); return r; });
+const putWork = (w: Work) => tx("readwrite", (s) => s.put({ ...w, updatedAt: now() })).then((r) => {
+  gsnLater(w.vacancyId);
+  // 작업 화면 위 "✓ 자동 저장됨 · 시각" (2026-11-10 사장님: "저장은 어떻게 하나?")
+  try { window.dispatchEvent(new CustomEvent("gs-work-saved", { detail: { id: w.vacancyId, at: Date.now() } })); } catch { /* */ }
+  return r;
+});
+/* [다른 이름으로 저장] — 이 작업(분석·글·사진)을 원하는 곳·이름으로. 저장 창을 못 쓰면 내려받기 (2026-11-10) */
+async function saveWorkAs(vacancyId: string): Promise<{ name: string } | null> {
+  const w = await getWork(vacancyId);
+  if (!w) throw new Error("이 작업을 찾지 못했어요. 새로고침한 뒤 다시 해 주세요.");
+  const blob = new Blob([JSON.stringify({ kind: GSN_KIND, version: 1, savedAt: now(), work: w })], { type: "application/json" });
+  const name = `${dayOf(w.column?.createdAt || w.analysis?.analyzedAt || w.updatedAt)} ${safeName(workName(w) || "작업") || "작업"}.gsn`;
+  const pick = (window as unknown as { showSaveFilePicker?: (o: unknown) => Promise<{ name: string; createWritable: () => Promise<{ write: (b: Blob) => Promise<void>; close: () => Promise<void> }> }> }).showSaveFilePicker;
+  if (pick) {
+    let h;
+    try { h = await pick({ suggestedName: name, startIn: "documents", types: [{ description: "공실뉴스 작업 파일", accept: { "application/json": [".gsn"] } }] }); } catch { return null; }
+    const out = await h.createWritable(); await out.write(blob); await out.close();
+    return { name: h.name };
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return { name };
+}
 const allWorks = async () => {
   await restoreFromFolder();
   return tx<Work[]>("readonly", (s) => s.getAll()).then((l) => (l || []).filter((w) => w.memberId === getMember())).catch(() => [] as Work[]);
@@ -935,6 +957,7 @@ const web = {
     // 다른 뉴스 가져오기는 앱에서 (웹은 내 기사만, 2026-11-04 사장님)
     fetchNews: notInWeb("다른 뉴스 가져오기"), openNews: notInWeb("다른 뉴스 가져오기"), grabNews: notInWeb("다른 뉴스 가져오기"),
   },
+  file: { saveAs: saveWorkAs },
   naver: {
     designs: async (id?: string) => (await optionsOf(id ? await getWork(id) : null)).designs,
     fill: naverFill,

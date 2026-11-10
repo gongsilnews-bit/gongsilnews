@@ -63,7 +63,7 @@ function shortDate(v: string) {
 /* 보도일은 "2026.10.15" 처럼 짧게 보여 주고 고칠 수 있게 */
 const tidy = (n: News): News => ({ ...n, publishedAt: n.publishedAt ? shortDate(n.publishedAt) : "" });
 
-export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView, onDesk, memberId }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void; /** 작업대 화면인지 — 위에서 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로) */ onDesk?: (on: boolean) => void; memberId?: string }) {
+export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListView, onDesk, memberId, onOpenWork }: { theme: Theme; tab: string; onTab: (id: string) => void; onUsed: () => void; /** 지금 열린 작업 번호 — 위 줄 "자동 저장됨"·[다른 이름으로 저장] (2026-11-10) */ onOpenWork?: (id: string | null) => void; /** 목록 화면인지 — 위에서 폭을 넓힌다 */ onListView?: (on: boolean) => void; /** 작업대 화면인지 — 위에서 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로) */ onDesk?: (on: boolean) => void; memberId?: string }) {
   const router = useRouter();
   const [column, setColumn] = useState<Column | null>(null);
   // "" = 지금 칼럼(한 줄 요약) · list = [소재 바꾸기] 칼럼 목록 · new = [+ 새로 작성] ① 소재 고르기 (공실뉴스와 같다, 2026-10-24 사장님)
@@ -76,6 +76,7 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
   useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   // 뒤로가기 = 작업 화면 → 목록 (뉴스칼럼·블로그·SNS 글쓰기) — 공실뉴스 작업대와 같게 (2026-11-10 사장님: "뒤로가기하면 이전에 있던 것으로")
   useInnerHistory("col-desk", view !== "list", () => setView("list"), () => { if (column) setView(""); });
+  useEffect(() => { onOpenWork?.(view === "" && column ? column.id : null); }, [view, column?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showSource, setShowSource] = useState(false); // 요약 줄 [원문 보기]
   const [refetching, setRefetching] = useState(false);
   const [recent, setRecent] = useState<Column[]>([]);

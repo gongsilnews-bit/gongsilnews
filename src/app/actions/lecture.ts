@@ -10,6 +10,7 @@ import { canTakeFree, lecturePlanOf, LECTURE_PLAN_KEYS } from '@/utils/lectureAc
 import { getLectureActor, getLectureAdmin, lectureQuotaFor } from '@/utils/lectureActor';
 import { createNotification } from '@/app/actions/notification';
 import { isAiHtml, aiHtmlSource, renderAiHtml } from '@/utils/aiHtml/renderAiHtml';
+import { webpForUpload } from "@/utils/serverWebp";
 
 async function lectureEditor(lectureAuthor?: string | null) {
   const session = await createSessionClient();
@@ -646,11 +647,12 @@ export async function uploadLectureImage(formData: FormData) {
     const ext = file.name.split(".").pop() || "webp";
     const folder = imageType === "thumbnail" ? "thumbnails" : "content";
     // 여러 장을 동시에 올려도 같은 이름으로 덮어쓰지 않게 임의 꼬리를 붙인다
-    const path = `${folder}/${lectureId || "temp"}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    let path = `${folder}/${lectureId || "temp"}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
+    const __up = await webpForUpload(file, path); path = __up.path; // 사진은 무조건 WebP (2026-11-10)
     const { error: uploadError } = await supabase.storage
       .from("lecture-media")
-      .upload(path, file, { upsert: true });
+      .upload(path, __up.body, { upsert: true, contentType: __up.contentType });
     if (uploadError) return { success: false, error: uploadError.message };
 
     const { data: urlData } = supabase.storage

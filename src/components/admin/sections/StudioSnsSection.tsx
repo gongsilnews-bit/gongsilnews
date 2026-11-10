@@ -135,6 +135,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
   const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
   const [pro, setPro] = useState<boolean | null>(null);
+  // 위 줄 "✓ 자동 저장됨 · 시각" · [다른 이름으로 저장] — 지금 열린 작업 (2026-11-10 사장님: "저장은 어떻게 하나?")
+  const [colWork, setColWork] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<{ id: string; at: number } | null>(null);
+  useEffect(() => {
+    const on = (e: Event) => { const d = (e as CustomEvent<{ id: string; at: number }>).detail; if (d?.id) setSavedAt(d); };
+    window.addEventListener("gs-work-saved", on);
+    return () => window.removeEventListener("gs-work-saved", on);
+  }, []);
   const askUp = () => { const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank"); }; // 공실뉴스부동산 PRO — 뉴스칼럼·SNS·유튜브 (2026-11-04)
   // 공실 고르기 — "" = 지금 작업(한 줄 요약) · list = [공실 바꾸기] 작업 목록 · new = [+ 새로 작성] ①② (2026-10-24 사장님)
   // 2026-10-29 사장님: 들어오면 기사관리처럼 목록이 먼저 — [+ 새로 만들기] + 만든 작업 카드. 홈 카드·.gsn 으로 오면 바로 작업
@@ -600,6 +608,16 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "nowrap" }}>
           {(() => {
+            const id = category === "gongsil" || category === "auction" ? (desk && result ? result.vacancyId : null) : (category === "column" || (category === "free" && freeOpen)) ? colWork : null;
+            if (!id) return null;
+            const at = savedAt?.id === id ? new Date(savedAt.at).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "";
+            return (<>
+              <span title="쓰거나 고치면 이 브라우저와 PC 저장 폴더(01 뉴스SNS발행)에 저절로 저장돼요" style={{ fontSize: 12.5, fontWeight: 700, color: theme.textSecondary, whiteSpace: "nowrap" }}>✓ 자동 저장됨{at ? ` · ${at}` : ""}</span>
+              <button type="button" onClick={async () => { try { const r = await studioBridge<{ file?: { saveAs: (id: string) => Promise<{ name: string } | null> } }>()?.file?.saveAs(id); if (r) setSavedAt({ id, at: Date.now() }); } catch (e) { alert(e instanceof Error ? e.message : String(e)); } }}
+                title="원하는 곳·이름으로 이 작업을 PC에 저장해요" style={{ height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}>다른 이름으로 저장</button>
+            </>);
+          })()}
+          {(() => {
             const t = category === "column" || (category === "free" && freeOpen) ? columnTab : category === "gongsil" || category === "auction" ? tab : simTabs[category];
             if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
             const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
@@ -676,7 +694,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           }} />
         )}
         {category === "free" && freeOpen && (
-          <StudioColumnSource key={freeOpen} theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage}
+          <StudioColumnSource key={freeOpen} theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onOpenWork={setColWork}
             onListView={(on) => { if (on) { setFreeOpen(null); setSubDesk(false); } }} onDesk={setSubDesk} memberId={memberId} />
         )}
 
@@ -685,11 +703,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         {/* 뉴스칼럼 — 무료 회원에게는 화면을 보이고 흰 막 + 안내 (2026-11-10 사장님: "반투명으로 보여줘") */}
         {category === "column" && pro === false && (
           <ProCover what="뉴스칼럼" message="공실뉴스부동산이 되시면 내 공실뉴스 기사로 블로그·SNS·쇼츠 대본을 만드실 수 있습니다." onUpgrade={askUp}>
-            <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
+            <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onOpenWork={setColWork} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
           </ProCover>
         )}
         {category === "column" && pro !== false && (
-          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
+          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} onOpenWork={setColWork} onListView={setWideList} onDesk={setSubDesk} memberId={memberId} />
         )}
 
         {(category === "interior" || category === "remodel") && (

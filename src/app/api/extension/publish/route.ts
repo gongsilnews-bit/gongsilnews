@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { webpForUpload } from "@/utils/serverWebp";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -95,9 +96,10 @@ export async function POST(req: NextRequest) {
             const ext = mimeType.split("/")[1] || "jpg";
             const fileName = `ext_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
 
+            const __up = await webpForUpload(new Blob([buffer], { type: mimeType }), fileName); // 사진은 무조건 WebP (2026-11-10)
             const { data: uploadData, error: uploadErr } = await supabase.storage
               .from("news-images")
-              .upload(fileName, buffer, { contentType: mimeType, upsert: true });
+              .upload(__up.path, __up.body, { contentType: __up.contentType, upsert: true });
 
             if (!uploadErr && uploadData) {
               const { data: pubUrl } = supabase.storage
@@ -117,9 +119,10 @@ export async function POST(req: NextRequest) {
               const ext = contentType.includes("png") ? "png" : "jpg";
               const fileName = `ext_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
 
+              const __up = await webpForUpload(new Blob([buffer], { type: contentType }), fileName); // 사진은 무조건 WebP (2026-11-10)
               const { data: uploadData, error: uploadErr } = await supabase.storage
                 .from("news-images")
-                .upload(fileName, buffer, { contentType, upsert: true });
+                .upload(__up.path, __up.body, { contentType: __up.contentType, upsert: true });
 
               if (!uploadErr && uploadData) {
                 const { data: pubUrl } = supabase.storage

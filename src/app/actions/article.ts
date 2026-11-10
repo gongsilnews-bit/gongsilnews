@@ -11,6 +11,7 @@ import { getEffectivePlan } from "@/utils/planCheck";
 import { isAdminRole } from "@/utils/permissionCheck";
 import { formatSection1, formatSection2, getSection2Aliases } from "@/utils/formatCategory";
 import { createNotification } from "./notification";
+import { webpForUpload } from "@/utils/serverWebp";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -712,11 +713,12 @@ export async function uploadArticleMedia(formData: FormData) {
 
   try {
     const ext = file.name.split(".").pop() || "webp";
-    const path = `articles/${articleId}/${Date.now()}.${ext}`;
+    let path = `articles/${articleId}/${Date.now()}.${ext}`;
 
+    const __up = await webpForUpload(file, path); path = __up.path; // 사진은 무조건 WebP (2026-11-10)
     const { error: uploadError } = await supabase.storage
       .from("article-media")
-      .upload(path, file, { upsert: true });
+      .upload(path, __up.body, { upsert: true, contentType: __up.contentType });
     if (uploadError) return { success: false, error: uploadError.message };
 
     const { data: urlData } = supabase.storage

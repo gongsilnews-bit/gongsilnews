@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js"
 import { canOpenHomepage } from "@/utils/planCheck";
+import { webpForUpload } from "@/utils/serverWebp";
 
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'api', 'm', 'admin', 'news', 'study', 'biz', 'flyer', 'sites',
@@ -399,7 +400,7 @@ export async function uploadHomepageFile(formData: FormData) {
     return { success: false, error: "파일 또는 경로가 누락되었습니다." };
   }
 
-  const path = safeStoragePath(rawPath);
+  let path = safeStoragePath(rawPath);
   if (!path) return { success: false, error: "저장 경로를 만들 수 없습니다." };
 
   const supabase = getAdminClient();
@@ -407,9 +408,10 @@ export async function uploadHomepageFile(formData: FormData) {
     // 버킷이 없으면 자동 생성
     await ensureBucket(supabase, 'homepage_assets');
 
+    const __up = await webpForUpload(file, path); path = __up.path; // 사진은 무조건 WebP (2026-11-10)
     const { data, error } = await supabase.storage
       .from('homepage_assets')
-      .upload(path, file, { upsert: true, contentType: file.type });
+      .upload(path, __up.body, { upsert: true, contentType: __up.contentType });
 
     if (error) return { success: false, error: error.message };
 

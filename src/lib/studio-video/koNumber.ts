@@ -95,6 +95,9 @@ export function koReadNumbers(text: string): string {
   t = t.replace(/(\d[\d,]*\s?[억만])\s?원(?![에은는이을를과와도으로까부])/g, "$1").replace(/(\d[\d,]*\s?[억만])원(?=[에은는이을를과와도으까부])/g, "$1 원");
   // 단위 기호
   t = t.replace(/(\d)\s*(㎡|m²|m2)(?![\w])/gi, "$1 제곱미터").replace(/(\d)\s*㎥/g, "$1 세제곱미터").replace(/(\d)\s*km(?![a-z])/gi, "$1 킬로미터").replace(/(\d)\s*m(?![a-z²\d])/gi, "$1 미터");
+  // 매물·공실·광고·물건 번호 — 한 자리씩: 매물 91648 → 매물 구일육사팔 (2026-11-10 사장님: "구만천육백사십팔 말고 구일육사팔")
+  //  번호 뒤에 "번"이 붙어도: 매물번호 91648번 → 구일육사팔 번
+  t = t.replace(/((?:매물|공실|물건|광고|기사)\s?(?:광고)?\s?(?:번호)?\s*(?:No\.?|#)?\s*)(\d{3,})/g, (_m, head: string, num: string) => head + num.split("").map((c) => DIGIT[Number(c)]).join(""));
   // 전화번호·등록번호 같은 줄 숫자 — 한 자리씩
   t = t.replace(/\d{2,4}(?:-\d{2,5}){1,3}/g, (m) => m.split("-").map((g) => g.split("").map((c) => DIGIT[Number(c)]).join("")).join(", "));
   // 숫자 (쉼표·소수점) + 뒤 글자

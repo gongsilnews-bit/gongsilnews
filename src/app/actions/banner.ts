@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { webpForUpload } from "@/utils/serverWebp";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -49,10 +50,11 @@ export async function createBanner(formData: FormData) {
 
   if (imageFile && imageFile.size > 0) {
     const ext = imageFile.name.split(".").pop();
-    const fileName = `banner_${Date.now()}.${ext}`;
+    let fileName = `banner_${Date.now()}.${ext}`;
+    const __up = await webpForUpload(imageFile, fileName); fileName = __up.path; // 사진은 무조건 WebP (2026-11-10)
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("banners")
-      .upload(fileName, imageFile, { contentType: imageFile.type, upsert: true });
+      .upload(fileName, __up.body, { upsert: true, contentType: __up.contentType });
     if (uploadError) return { success: false, error: "이미지 업로드 실패: " + uploadError.message };
     const { data: publicData } = supabase.storage.from("banners").getPublicUrl(fileName);
     imageUrl = publicData.publicUrl;
@@ -94,10 +96,11 @@ export async function updateBanner(id: string, formData: FormData) {
 
   if (imageFile && imageFile.size > 0) {
     const ext = imageFile.name.split(".").pop();
-    const fileName = `banner_${Date.now()}.${ext}`;
+    let fileName = `banner_${Date.now()}.${ext}`;
+    const __up = await webpForUpload(imageFile, fileName); fileName = __up.path; // 사진은 무조건 WebP (2026-11-10)
     const { error: uploadError } = await supabase.storage
       .from("banners")
-      .upload(fileName, imageFile, { contentType: imageFile.type, upsert: true });
+      .upload(fileName, __up.body, { upsert: true, contentType: __up.contentType });
     if (uploadError) return { success: false, error: "이미지 업로드 실패: " + uploadError.message };
     const { data: publicData } = supabase.storage.from("banners").getPublicUrl(fileName);
     imageUrl = publicData.publicUrl;

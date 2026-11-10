@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { isPermissionAlive } from "@/utils/planCheck";
+import { webpForUpload } from "@/utils/serverWebp";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -147,10 +148,11 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
 
     if (imageFile && imageFile.size > 0) {
       const ext = imageFile.name.split(".").pop() || "jpg";
-      const fileName = `article_banner_${authorId}_${Date.now()}.${ext}`;
+      let fileName = `article_banner_${authorId}_${Date.now()}.${ext}`;
+      const __up = await webpForUpload(imageFile, fileName); fileName = __up.path; // 사진은 무조건 WebP (2026-11-10)
       const { error: uploadError } = await supabase.storage
         .from("banners")
-        .upload(fileName, imageFile, { contentType: imageFile.type, upsert: true });
+        .upload(fileName, __up.body, { upsert: true, contentType: __up.contentType });
 
       if (uploadError) {
         return { success: false, error: "이미지 업로드 실패: " + uploadError.message };

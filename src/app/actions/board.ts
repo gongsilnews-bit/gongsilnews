@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createNotification } from "./notification";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
+import { webpForUpload } from "@/utils/serverWebp";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -258,11 +259,12 @@ export async function uploadBoardAttachment(formData: FormData) {
   if (!file || !postId) return { success: false, error: "파일 또는 게시글ID 없음" };
 
   const ext = file.name.split(".").pop() || "bin";
-  const path = `boards/${postId}/${Date.now()}_${sortOrder}.${ext}`;
+  let path = `boards/${postId}/${Date.now()}_${sortOrder}.${ext}`;
 
+  const __up = await webpForUpload(file, path); path = __up.path; // 사진은 무조건 WebP (2026-11-10)
   const { error: uploadError } = await supabase.storage
     .from("article-media")
-    .upload(path, file, { upsert: true });
+    .upload(path, __up.body, { upsert: true, contentType: __up.contentType });
   if (uploadError) return { success: false, error: uploadError.message };
 
   const { data: urlData } = supabase.storage
@@ -290,11 +292,12 @@ export async function uploadBoardThumbnail(formData: FormData) {
   if (!file || !postId) return { success: false, error: "파일 또는 게시글ID 없음" };
 
   const ext = file.name.split(".").pop() || "webp";
-  const path = `boards/${postId}/thumb_${Date.now()}.${ext}`;
+  let path = `boards/${postId}/thumb_${Date.now()}.${ext}`;
 
+  const __up = await webpForUpload(file, path); path = __up.path; // 사진은 무조건 WebP (2026-11-10)
   const { error: uploadError } = await supabase.storage
     .from("article-media")
-    .upload(path, file, { upsert: true });
+    .upload(path, __up.body, { upsert: true, contentType: __up.contentType });
   if (uploadError) return { success: false, error: uploadError.message };
 
   const { data: urlData } = supabase.storage

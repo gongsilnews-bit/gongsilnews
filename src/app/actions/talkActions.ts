@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { webpForUpload } from "@/utils/serverWebp";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -477,12 +478,13 @@ export async function updateMyProfileImage(userId: string, imageUrl: string): Pr
 
 export async function uploadTalkProfileImage(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
   const file = formData.get('file') as File;
-  const path = formData.get('path') as string;
+  let path = formData.get('path') as string;
   if (!file || !path) return { success: false, error: "파일 누락" };
 
   const supabase = getAdminClient();
   try {
-    const { error } = await supabase.storage.from('vacancy_images').upload(path, file, { upsert: true });
+    const __up = await webpForUpload(file, path); path = __up.path; // 사진은 무조건 WebP (2026-11-10)
+    const { error } = await supabase.storage.from('vacancy_images').upload(path, __up.body, { upsert: true, contentType: __up.contentType });
     if (error) throw error;
     const { data: urlData } = supabase.storage.from('vacancy_images').getPublicUrl(path);
     return { success: true, url: urlData.publicUrl };
