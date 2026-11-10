@@ -141,6 +141,13 @@ function VideoModal({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 /** 실무 소스 칸 — 그림은 실제 앱 캡처, 없는 것은 자리만 (지어낸 화면 넣지 않음) */
+/** 쇼츠 자동 발행기 왼쪽 단계 목록 (2026-11-10 사장님: 디자인 편집 칸과 같은 모양) */
+const SHORTS_STEPS = [
+  { t: "공실 고르기", d: "등록한 공실의 사진·정보로 대본이 채워집니다." },
+  { t: "테마 고르기", d: "자막·글꼴·전환이 맞춰진 테마를 고르면 쇼츠가 완성됩니다." },
+  { t: "한 번에 올리기", d: "도우미가 영상·제목·설명을 채우고, [게시]는 대표님이 직접 누릅니다." },
+];
+
 const SOURCES: { t: string; i: string; src?: string }[] = [
   { t: "포토studio 편집 화면", i: "M3 4h18v12H3zM8 20h8M12 16v4M7 12l3-3 3 3 4-4", src: "/studio-shots/home-photo.webp" }, // 디자인 편집과 합침 (2026-11-05)
   { t: "이미지 소스", i: "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6", src: "/studio-shots/src-media.webp" },
@@ -311,6 +318,7 @@ export default function StudioVrewLanding() {
   const START_HREF = useStartHref();
   const [video, setVideo] = React.useState<string | null>(null);
   const [src, setSrc] = React.useState(0);
+  const [shortsStep, setShortsStep] = React.useState(0);
   /** 칸마다 같은 두 버튼 — [영상보기] 유튜브 창 · [무료로 시작하기] (2026-11-04: 앱 설치 대신 웹) */
   const btns = (
     <div className="sv-btns">
@@ -483,26 +491,31 @@ export default function StudioVrewLanding() {
         </div>
       </section>
 
-      {/* 혜택 5 — 단지 실거래 알림 (2026-11-05 사장님) */}
-      <section className="sv-sec">
-        <h2 className="sv-h2">단지 실시간 실거래 알림</h2>
-        <p className="sv-p">찜한 <b>아파트 · 오피스텔 · 빌라 단지</b>에 새 실거래가 신고되면 알림으로 알려 드립니다.<br />알림을 누르면 그 단지의 시세 창이 바로 열립니다.</p>
-        {btns}
-        <Shot label="단지 실거래 창 화면" src="/studio-shots/f-alert.webp" />
-      </section>
+      {/* 단지 실시간 실거래 알림 칸은 뺌 (2026-11-10 사장님) */}
 
-      {/* 쇼츠 자동 발행기 — 실거래 알림 다음 (2026-11-09 사장님). 실제 기능대로: 공실 하나로 60초 쇼츠 → 도우미가 올리기 칸 채움 → 게시는 회원 */}
+      {/* 쇼츠 자동 발행기 (2026-11-09 사장님). 실제 기능대로: 공실 하나로 60초 쇼츠 → 도우미가 올리기 칸 채움 → 게시는 회원
+          11-10 사장님: 디자인 편집 칸과 같은 모양 — 왼쪽 단계 목록 · 오른쪽 실제 화면 영상 */}
       <section className="sv-sec">
         <h2 className="sv-h2">쇼츠 자동 발행기</h2>
         <p className="sv-p">공실 하나로 <b>60초 쇼츠</b>를 만들고,<br /><b>유튜브 쇼츠 · 인스타그램 릴스 · 스레드 · 페이스북</b>에 올립니다.</p>
-        <div className="sv-steps" style={{ marginTop: 40 }}>
-          <div className="sv-step"><div className="n">1</div><div className="t">공실 고르기</div><div className="d">등록한 공실의 사진·정보로 대본이 채워집니다.</div></div>
-          <div className="sv-step"><div className="n">2</div><div className="t">테마 고르기</div><div className="d">자막·글꼴·전환이 맞춰진 테마를 고르면 쇼츠가 완성됩니다.</div></div>
-          <div className="sv-step"><div className="n">3</div><div className="t">한 번에 올리기</div><div className="d">도우미가 영상·제목·설명을 채우고, [게시]는 대표님이 직접 누릅니다.</div></div>
+        {btns}
+        <div className="sv-src">
+          <ul className="sv-src-list">
+            {SHORTS_STEPS.map((x, i) => (
+              <li key={x.t}>
+                <button type="button" className={i === shortsStep ? "on" : ""} onClick={() => setShortsStep(i)}>
+                  <span style={{ flex: "0 0 auto", width: 26, height: 26, borderRadius: "50%", background: i === shortsStep ? ACCENT : "#e5e7eb", color: i === shortsStep ? "#fff" : "#6b7280", fontSize: 13, fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
+                  {x.t}
+                </button>
+                {i === shortsStep && <p style={{ margin: "4px 18px 8px 56px", fontSize: 14.5, lineHeight: 1.6, color: "#6b7280" }}>{x.d}</p>}
+              </li>
+            ))}
+          </ul>
+          <div className="sv-src-view">
+            {/* 사장님이 찍은 실제 화면 (2026-11-09) — 위쪽 이름·메일은 흐림, 소리 뺌 */}
+            <video style={{ display: "block", width: "100%", height: "auto", borderRadius: 14, border: "1px solid #e5e7eb", boxShadow: "0 24px 60px rgba(31,23,20,.16)" }} src="/studio-shots/shorts.mp4?v=1" poster="/studio-shots/shorts-poster.jpg?v=1" autoPlay muted loop playsInline preload="metadata" aria-label="공실을 고르고 테마를 누르면 60초 쇼츠가 만들어지는 실제 화면" />
+          </div>
         </div>
-        <div style={{ marginTop: 36 }}>{btns}</div>
-        {/* 사장님이 찍은 실제 화면 (2026-11-09) — 위쪽 이름·메일은 흐림, 소리 뺌 */}
-        <video className="sv-img" style={{ maxWidth: 1060, marginTop: 40 }} src="/studio-shots/shorts.mp4?v=1" poster="/studio-shots/shorts-poster.jpg?v=1" autoPlay muted loop playsInline preload="metadata" aria-label="공실을 고르고 테마를 누르면 60초 쇼츠가 만들어지는 실제 화면" />
       </section>
 
       {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
