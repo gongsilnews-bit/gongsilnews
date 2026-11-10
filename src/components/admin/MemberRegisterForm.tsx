@@ -442,6 +442,27 @@ function gradeDefaults(p: any, role: string, planType?: string) {
     });
   }, [policies, initialFetchDone, formData.role, formData.plan_type, formData.use_custom_registration_limits]);
 
+  /* 회원구분 칸 — 공실뉴스부동산(유료)는 부동산회원 + 이용기간 (2026-11-10) */
+  const setMemberField = (name: string, value: string) => handleMemberChange({ target: { name, value } } as unknown as React.ChangeEvent<HTMLSelectElement>);
+  const pickMemberKind = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const v = e.target.value;
+    if (v === "공실뉴스부동산") {
+      setMemberField("role", "부동산회원");
+      if (!formData.studio_end_date || !studioAliveOn(formData.studio_end_date)) {
+        const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const s = new Date(); const en = new Date(s); en.setFullYear(en.getFullYear() + 1); en.setDate(en.getDate() - 1);
+        setMemberField("studio_start_date", day(s));
+        setMemberField("studio_end_date", day(en));
+      }
+      return;
+    }
+    if (v === "부동산회원") {
+      setMemberField("role", "부동산회원");
+      if (formData.studio_end_date) { setMemberField("studio_start_date", ""); setMemberField("studio_end_date", ""); }
+      return;
+    }
+    handleMemberChange(e);
+  };
   const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     // 체크박스는 value 가 늘 "on" 이라 checked 를 봐야 한다
     const isCheckbox = e.target instanceof HTMLInputElement && e.target.type === "checkbox";
@@ -957,7 +978,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {/* 공실마케팅 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>스튜디오 블로그·SNS(월):</span>
+          <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>블로그·SNS(월):</span>
           <select value={formData.studio_blog_limit} disabled={!isAdmin}
             onChange={(e) => setFormData((prev) => ({ ...prev, studio_blog_limit: e.target.value }))}
             style={{ ...inputStyle, flex: "none", width: 170 }}>
@@ -1176,9 +1197,12 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           <div style={labelStyle}>회원구분</div>
           <div style={contentStyle}>
             {isAdmin ? (<div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <select name="role" value={formData.role} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
+              {/* 회원구분에 등급을 그대로 — 부동산회원(무료) · 공실뉴스부동산(유료) (2026-11-10 사장님: "그렇게 바꾸는 것이 어색하지 않을 것 같아")
+                  DB 는 그대로: 공실뉴스부동산 = role 부동산회원 + 이용기간. 유료를 고르면 이용기간 칸이 열리고 기본 오늘부터 1년, 무료를 고르면 이용기간을 비운다 */}
+              <select name="role" value={formData.role === "부동산회원" && formData.studio_end_date ? "공실뉴스부동산" : formData.role} onChange={pickMemberKind} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
                 <option value="일반회원">일반회원</option>
-                <option value="부동산회원">부동산회원</option>
+                <option value="부동산회원">부동산회원(무료)</option>
+                <option value="공실뉴스부동산">{formData.role === "부동산회원" && formData.studio_end_date && !studioAliveOn(formData.studio_end_date) ? "공실뉴스부동산(만료)" : "공실뉴스부동산(유료)"}</option>
                 <option value="비즈니스회원">비즈니스회원</option>
                 <option value="최고관리자">최고관리자</option>
               </select>
@@ -1207,6 +1231,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {formData.role === "부동산회원" && (
           <>
+            {(!isAdmin || formData.studio_end_date) && <>
             {/* 이름 공실뉴스부동산 이용기간 (2026-11-06, 11-05 이름 결정) · 부동산회원은 요금제 칸 없이 이용권 종류 + 이용기간 — 비우면 공실뉴스부동산(무료) (2026-10-26, 종류 2026-10-29 사장님) */}
             <div style={rowStyle}>
               <div style={labelStyle}>공실뉴스부동산 이용기간</div>
@@ -1217,9 +1242,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 <input type="date" name="studio_start_date" value={formData.studio_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                 <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
                 <input type="date" name="studio_end_date" value={formData.studio_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>비우면 부동산회원(무료). 날짜를 넣으면 끝나는 날까지 공실뉴스부동산 — 이름표 옆 NEWS 딱지.</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>끝나는 날까지 공실뉴스부동산(이름표 옆 NEWS 딱지). 지나면 무료 혜택만 받아요.</span>
               </div>
             </div>
+            </>}
 
             <div style={rowStyle}>
               <div style={labelStyle}>기사 권한</div>

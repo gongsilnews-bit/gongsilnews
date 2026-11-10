@@ -448,7 +448,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {member.role === 'REALTOR' ? (member.studio_end_date ? `${member.plan_type === 'study_premium' ? '스튜디오' : '마케팅'} ~${new Date(member.studio_end_date).toISOString().split('T')[0]}` : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
+                      {member.role === 'REALTOR' ? (member.studio_end_date ? `~${new Date(member.studio_end_date).toISOString().split('T')[0]}` : '-') : member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
                     </td>
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
