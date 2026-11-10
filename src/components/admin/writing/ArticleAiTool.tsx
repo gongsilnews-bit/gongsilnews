@@ -46,7 +46,8 @@ const WEB_AI = [
   { id: "claude", name: "Claude", url: "https://claude.ai/new" },
 ];
 // 단지/지역/시세 — 공실 홍보(공실뉴스)와 다른 실거래 시장 기사. 단지 하나 또는 지역(구·동) (2026-11-04 사장님)
-const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/지역/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"], ["gongsil", "공실뉴스"]];
+// "공실뉴스"(내 공실뉴스 기사로 쓰기)는 뺌 — 2026-11-10 사장님: "공실뉴스 부분 빼줘" (코드는 남겨 둠)
+const SRCS: [Src, string][] = [["vacancy", "매물 소개"], ["market", "단지/지역/시세"], ["news", "뉴스 기사"], ["topic", "자유 주제"]];
 /* ── 어떤 이야기로 (2026-11-09 사장님: "글이 어색하지 않게, 기사 스타일·분류는 니가 알아서 나눠줘, 필요없는 건 지워") ──
    예전 [기사 스타일 6개]·[무엇을 중심으로 4개]·[제목 고르기]를 이것 하나로 합쳤다.
    재료마다 독자가 궁금한 이야기 하나를 고르면, 그 이야기의 문단 순서대로 쓴다 (한 방향으로 흐르게). 말투는 기사체 그대로 */
@@ -763,16 +764,17 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
             </button>
           </>)}
           {src === "news" && (<>{head(n++, "뉴스 기사 고르기")}
-            <div style={{ display: "flex", gap: 5 }}>
-              <input value={newsUrl} onChange={(e) => { setNewsUrl(e.target.value); setNews(null); }} onKeyDown={(e) => { if (e.key === "Enter" && /^https?:\/\//.test(newsUrl.trim())) void takeNews("url"); }}
-                placeholder="네이버 뉴스 기사 주소 붙여넣기 (https://n.news.naver.com/…)" style={{ ...input, flex: 1 }} />
-              <button type="button" onClick={() => void takeNews("url")} disabled={newsBusy || !/^https?:\/\//.test(newsUrl.trim())} style={btn}>가져오기</button>
-            </div>
-            <div style={{ display: "flex", gap: 5, marginTop: 6 }}>
+            <div style={{ display: "flex", gap: 5, marginBottom: 6 }}> {/* [네이버 뉴스 열기]를 위로 — 열고, 주소 복사, 아래에 붙여넣기 순서 (2026-11-10 사장님) */}
               <button type="button" onClick={() => (isApp ? void bridge()?.column?.openNews?.().catch(() => {}) : void openDocked("https://news.naver.com/section/101", "gs-naver-news"))} /* 오른쪽 작은 창 (2026-11-06 사장님: "우측에 창으로 떠야 함") */ style={{ ...btn, height: 34 }}>📂 네이버 뉴스 열기</button>
               {isApp
                 ? <button type="button" onClick={() => void takeNews("grab")} disabled={newsBusy} title="전용 크롬에서 보고 있는 기사를 가져와요" style={{ ...btn, height: 34 }}>{newsBusy ? "가져오는 중…" : "지금 보는 뉴스 가져오기"}</button>
-                : <span style={{ alignSelf: "center", fontSize: 11.5, color: DIM }}>{newsBusy ? "가져오는 중…" : "기사 주소를 복사해 위에 붙여 넣으세요"}</span>}
+                : <span style={{ alignSelf: "center", fontSize: 11.5, color: DIM }}>{newsBusy ? "가져오는 중…" : "기사 주소를 복사해 아래에 붙여 넣으세요"}</span>}
+            </div>
+            <div style={{ display: "flex", gap: 5 }}>
+              <input value={newsUrl} onChange={(e) => { setNewsUrl(e.target.value); setNews(null); }} onKeyDown={(e) => { if (e.key === "Enter" && /^https?:\/\//.test(newsUrl.trim())) void takeNews("url"); }}
+                placeholder="네이버 뉴스 기사 주소 붙여넣기 (https://n.news.naver.com/…)" style={{ ...input, flex: 1 }} />
+              {(() => { const ready = !newsBusy && /^https?:\/\//.test(newsUrl.trim()); return ( /* 주소를 넣으면 진청색 — 눌러 분석하라는 표시 (2026-11-10 사장님) */
+                <button type="button" onClick={() => void takeNews("url")} disabled={!ready} style={ready ? { ...btn, background: NAVY, borderColor: NAVY, color: "#fff" } : btn}>가져오기</button>); })()}
             </div>
             {news && (
               <div style={{ marginTop: 8, padding: "10px 12px", border: `1px solid ${NAVY}`, borderRadius: 5, background: "#f5f8fd" }}>

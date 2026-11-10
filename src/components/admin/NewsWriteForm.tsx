@@ -323,6 +323,40 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   /* ── 회원 모드 (URL 파라미터: role=member) ── */
   const [isMemberMode, setIsMemberMode] = useState(initialIsMemberMode);
+  /* [블로그·SNS로만 쓰기] — 기사를 임시저장(DB, 회원당 10건)한 뒤, 그 제목·본문·사진으로 블로그·SNS 작업 화면 (2026-11-10 사장님 1안)
+   *  공실뉴스에는 올라가지 않고 기사 4건에서도 빠지지 않는다. 나중에 기사관리 작성중에서 [승인신청]해도 된다 */
+  const [snsOnlyBusy, setSnsOnlyBusy] = useState(false);
+  // [블로그·SNS로만 쓰기]는 뉴스·SNS자동화 › SNS 글만의 [새로 만들기]로 왔을 때만 (2026-11-10 사장님: 기사쓰기에서는 "없애줘")
+  const [fromSnsOnly, setFromSnsOnly] = useState(false);
+  useEffect(() => { try { setFromSnsOnly(new URLSearchParams(window.location.search).get("from") === "sns"); } catch { /* */ } }, []);
+  const toSnsOnly = async () => {
+    const el = editorRef.current;
+    const text = (el?.innerText || content.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]+>/g, "")).replace(/\n{3,}/g, "\n\n").trim();
+    if (!title.trim() || !text) { alert("제목과 본문을 쓴 뒤 눌러 주세요."); return; }
+    const imgs = Array.from(el?.querySelectorAll("img") || []).map((im) => ({ url: im.getAttribute("src") || "", caption: im.getAttribute("alt") || "" })).filter((p) => /^(https?:|data:)/.test(p.url));
+    setSnsOnlyBusy(true);
+    // SNS 글만 10건은 서버(saveArticle)가 센다 — 임시저장 10건과 따로 (2026-11-10)
+    try {
+      setStatus("DRAFT");
+      await handleSave("DRAFT", undefined, async () => {
+        try {
+          const { ensureStudioWebMember, studioBridge } = await import("./studio-web");
+          await ensureStudioWebMember();
+          const b = studioBridge<{ column: { create: (s: unknown) => Promise<{ id: string }> } }>();
+          if (!b) throw new Error("이 화면을 새로고침한 뒤 다시 눌러 주세요.");
+          const c = await b.column.create({ mode: "topic", angle: "", topic: { subject: title.trim(), intro: "", points: [], outro: "", memo: text }, media: imgs });
+          // [SNS 글만] 메뉴에서 그 글의 블로그·SNS 작업 화면을 바로 연다 (기사 칸은 끈 채로 — StudioSnsSection 이 연다)
+          localStorage.setItem("studio_news_category", "free");
+          localStorage.setItem("studio_open_free", c.id);
+          window.location.href = "/realty_admin?menu=sns";
+        } catch (e) {
+          alert(`임시저장은 됐어요. 블로그·SNS 화면을 열지 못했어요: ${e instanceof Error ? e.message : String(e)}`);
+          window.location.href = memberReturnPath;
+        }
+      });
+    } finally { setSnsOnlyBusy(false); }
+  };
+
   const [memberReturnPath, setMemberReturnPath] = useState("/admin?menu=article");
   const [memberAuthorId, setMemberAuthorId] = useState<string | null>(null);
 
@@ -1825,7 +1859,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   };
 
   /* ── 기사 저장 ── */
-  const handleSave = async (overrideStatus?: string, overrideRejectReason?: string) => {
+  const handleSave = async (overrideStatus?: string, overrideRejectReason?: string, afterSave?: (articleId: string) => Promise<void>) => {
     if (!title.trim()) {
       alert("제목을 입력해주세요.");
       return;
@@ -1909,6 +1943,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       }
 
       const result = await saveArticle({
+        ...(afterSave ? { form_type: "SNS" as const } : {}), // [블로그·SNS로만 쓰기]
         id: loadArticleId || undefined,
         author_id: memberAuthorId || currentUserId || undefined,
         author_name: reporterName,
@@ -2083,6 +2118,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           }
         }
 
+        // [블로그·SNS로만 쓰기] — 임시저장한 뒤 블로그·SNS 작업 화면으로 (알림 없이)
+        if (afterSave && articleId) { navigating = true; await afterSave(articleId); return; }
         alert("✅ 기사가 저장되었습니다!");
         // 페이지 이동이 끝날 때까지 로딩 화면을 유지해 재클릭을 막는다
         navigating = true;
@@ -2905,6 +2942,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#6b7280", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
                   임시저장 (작성중)
                 </button>
+                {/* 기사 등록 없이 블로그·SNS만 — 한 달 4건에서 빠지지 않음, 자유 글쓰기 목록에 쌓인다 (2026-11-10 사장님 회의) */}
+                {isMemberMode && fromSnsOnly && (
+                  <button type="button" disabled={saving || snsOnlyBusy} onClick={() => void toSnsOnly()} title="기사를 임시저장하고, 이 글로 블로그·인스타그램·스레드·페이스북·쇼츠 대본을 만들어요. 공실뉴스에는 올라가지 않고 기사 4건에서도 빠지지 않아요 (임시저장 10건 안에서)."
+                    style={{ flex: 1, padding: "16px 0", background: "#fff", color: "#1e3a8a", border: "1.5px solid #1e3a8a", borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: saving || snsOnlyBusy ? "not-allowed" : "pointer" }}>
+                    {snsOnlyBusy ? "⏳ 준비 중..." : "블로그·SNS로만 쓰기"}
+                  </button>
+                )}
                 <button type="button" disabled={saving} onClick={async () => { setStatus('PENDING'); await handleSave('PENDING'); }}
                   style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : accentBlue, color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
                   onMouseOver={e => { if (!saving) e.currentTarget.style.background = "#2563eb"; }}

@@ -56,6 +56,26 @@ export async function saveFreeDraft(d: Omit<FreeDraft, "savedAt">, name: string)
   return { name: file, where: "download" };
 }
 
+/** 원하는 곳에 저장 — 저장 창에서 위치·이름을 고른다 (2026-11-10 사장님: "본인이 원하는대로 저장하게")
+ *  handle 이 있으면 그 파일에 바로 덮어쓴다. 저장 창을 못 쓰는 브라우저면 null (부르는 쪽이 예전 방식으로) · 창을 닫으면 "cancel" */
+type SaveHandle = { name: string; createWritable: () => Promise<{ write: (b: Blob) => Promise<void>; close: () => Promise<void> }> };
+export async function saveFreeDraftAs(d: Omit<FreeDraft, "savedAt">, handle?: unknown): Promise<{ name: string; handle: unknown } | "cancel" | null> {
+  const w = window as unknown as { showSaveFilePicker?: (o: unknown) => Promise<SaveHandle> };
+  if (!handle && !w.showSaveFilePicker) return null;
+  const savedAt = new Date().toISOString();
+  const blob = new Blob([JSON.stringify({ kind: FREE_KIND, version: 1, savedAt, draft: { ...d, savedAt } })], { type: "application/json" });
+  let h = handle as SaveHandle | undefined;
+  if (!h) {
+    try {
+      h = await w.showSaveFilePicker!({ suggestedName: `${ymd()} ${safeName(d.title) || "무제"}.gsn`, startIn: "documents", types: [{ description: "공실뉴스 작업 파일", accept: { "application/json": [".gsn"] } }] });
+    } catch { return "cancel"; }
+  }
+  const out = await h.createWritable();
+  await out.write(blob);
+  await out.close();
+  return { name: h.name, handle: h };
+}
+
 /** 저장 폴더의 쓰던 글 목록 — 새로 저장한 것부터. 폴더를 못 쓰면 null (부르는 쪽이 파일 고르기로) */
 export async function listFreeDrafts(): Promise<FreeFile[] | null> {
   if (!(await ensureFolder())) return null;

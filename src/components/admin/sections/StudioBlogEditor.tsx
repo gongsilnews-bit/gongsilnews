@@ -347,7 +347,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진으로 바꾸기
             </button>
             {isWebStudio() && <button onClick={() => { setEditId(null); setStockFor({ replaceId: m.id }); }}>
-              <Ico d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /> 오픈자료로 바꾸기
+              <Ico d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /> 오픈자료로 바꾸기 <ProTag style={{ marginLeft: 4 }} />
             </button>}
             {<button onClick={() => { setEditId(null); if (paid === false) return askUpgrade(); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d={SPARK} /> AI 이미지로 바꾸기 <ProTag style={{ marginLeft: 4 }} />
@@ -372,7 +372,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
             </button>
             {isWebStudio() && <button onClick={() => { setOpenSlot(null); setStockFor({ slot }); }}>
-              <Ico d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /> 오픈자료
+              <Ico d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /> 오픈자료 <ProTag style={{ marginLeft: 4 }} />
             </button>}
             {<button onClick={() => { setOpenSlot(null); if (paid === false) return askUpgrade(); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지 <ProTag style={{ marginLeft: 4 }} />

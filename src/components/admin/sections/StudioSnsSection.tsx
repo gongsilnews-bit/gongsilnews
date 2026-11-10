@@ -85,7 +85,7 @@ const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 사실만 살려 새로 씁니다." },
   // 자유 글쓰기 — 뉴스칼럼 밑 (2026-11-05 사장님): 공실 없이 제목·본문만 쓰고 블로그·SNS·대본, 원하면 뉴스 기사로
-  { id: "free", label: "자유 글쓰기", lead: "형식 없이 쓴 글(또는 왼쪽 글쓰기 도구로 받은 AI 초안)로 블로그·SNS·쇼츠릴스 대본을 만들어요. 원하면 뉴스 기사로 보내 등록할 수 있어요. 기사 한도는 등록할 때만 셉니다." },
+  { id: "free", label: "블로그·SNS 글쓰기", lead: "기사 등록 없이 블로그·SNS·쇼츠릴스 대본만 쓰는 곳이에요. 내 PC에 저장해서 건수 제한이 없고, 기사 4건에서도 빠지지 않아요." },
   // 편집이 끝난 영상 파일을 그대로 SNS에 (2026-10-29 사장님 — 뉴스칼럼과 인테리어뉴스 사이)
   { id: "myvideo", label: "내 영상 홍보", lead: "편집이 끝난 영상을 다시 굽지 않고 그대로 유튜브·인스타 릴스·스레드·페이스북에 올립니다. 글은 소장님 AI가 쓰고, [게시]는 소장님이 누릅니다." },
   // 경매·공매는 내 공실과 섞지 않고 따로 (2026-10-29 사장님) — 작업 화면은 공실뉴스와 같다
@@ -95,7 +95,7 @@ const NEWS_CATEGORIES = [
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
 // 웹에서 보이는 카테고리 — 공실뉴스 · 뉴스칼럼(내 기사로, 2026-11-04 사장님: 공실뉴스 하단에)
-const WEB_CATEGORIES = ["gongsil", "column", "free", "auction"]; // 경매·공매도 웹에 (2026-11-09 사장님: 온비드 물건을 따로 불러오게)
+const WEB_CATEGORIES = ["gongsil", "column", "free"]; // 경매공매 숨김 · 자유 글쓰기는 "SNS 글만" 메뉴로 따로 (2026-11-10 사장님: "sns 글만 따로 빼자") // 경매·공매도 웹에 (2026-11-09 사장님: 온비드 물건을 따로 불러오게)
 const WEB_LEAD: Record<string, string> = { auction: "온비드 공매 물건 하나로 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 지역·종류·반값 이하·마감 임박으로 골라 찾습니다.", column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
@@ -428,6 +428,20 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   // 자유 글쓰기로 만든 글을 연 작업 화면 — 뉴스칼럼 작업 화면을 같이 쓰지만 메뉴는 자유 글쓰기에 그대로 (2026-11-06 사장님: "자유글쓰기 클릭하면 뉴스칼럼으로 들어가네")
   const [freeOpen, setFreeOpen] = useState<string | null>(null);
   useEffect(() => { if (category !== "free") setFreeOpen(null); }, [category]);
+  // [새 기사 작성] › [블로그·SNS로만 쓰기]로 넘어오면 그 글의 작업 화면을 바로 연다 (2026-11-10)
+  useEffect(() => {
+    if (category !== "free") return;
+    try {
+      const id = localStorage.getItem("studio_open_free") || "";
+      if (!id) return;
+      localStorage.removeItem("studio_open_free");
+      localStorage.setItem("studio_last_column", id); localStorage.setItem("studio_open_column", "1");
+      const k = "gs-allwrite:column"; const v = JSON.parse(localStorage.getItem(k) || "{}");
+      localStorage.setItem(k, JSON.stringify({ ...v, article: { kind: "news", length: "normal", ...(v.article || {}), on: false } }));
+      setColumnTab("blog");
+      setFreeOpen(id);
+    } catch { /* */ }
+  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
   const fullDesk = subDesk && (category === "column" || category === "myvideo" || (category === "free" && Boolean(freeOpen)));
   // 뒤로가기 = 작업대 → 공실 목록, 앞으로가기 = 그 작업대로 다시 (2026-11-03 사장님)
   useInnerHistory("sns-desk", desk, () => openList(), () => {
@@ -645,7 +659,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         {/* 자유 글쓰기는 공실뉴스부동산 전용 — 무료 회원에게는 화면을 보이고 흰 막 + 안내 (2026-11-10 사장님) */}
         {category === "free" && !freeOpen && pro === false && (
-          <ProCover what="자유 글쓰기" message="공실뉴스부동산이 되시면 자유 글쓰기로 블로그·SNS·쇼츠 대본을 만드실 수 있습니다." onUpgrade={askUp}>
+          <ProCover what="블로그·SNS 글쓰기" message="공실뉴스부동산이 되시면 기사 등록 없이 블로그·SNS·쇼츠 대본을 만드실 수 있습니다." onUpgrade={askUp}>
             <StudioFreeWrite theme={theme} onOpenColumn={() => {}} />
           </ProCover>
         )}

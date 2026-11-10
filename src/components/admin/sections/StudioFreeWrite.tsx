@@ -8,19 +8,21 @@
  */
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useInnerHistory } from "@/utils/useInnerHistory";
 import ArticleAiTool, { type ArticleDraft } from "../writing/ArticleAiTool";
 import { studioBridge } from "../studio-web";
 import WorkCardGrid, { LinkNotice, type WorkCard } from "./WorkCardGrid";
 import { CardMenu, IconLink, IconPen, IconTrash, LinksPanel, type MenuItem } from "./VacancyCardGrid";
 import type { PromoChannel } from "@/utils/vacancyPromos";
-import { listFreeDrafts, pickFreeDraft, saveFreeDraft, type FreeFile } from "../studio-web/freeWrite";
+import { listFreeDrafts, pickFreeDraft, saveFreeDraft, saveFreeDraftAs, type FreeFile } from "../studio-web/freeWrite";
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string; darkMode?: boolean };
 type Photo = { url: string; caption: string };
 type Col = { id: string; label: string; createdAt: string; source: { mode: string; topic?: { subject?: string; memo?: string } }; thumb?: string | null; done?: Record<string, boolean>; links?: Record<string, string> };
-type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]>; get?: (id: string) => Promise<(Col & { captures?: { thumb: string; caption?: string; kind?: string }[] }) | null>; remove?: (id: string) => Promise<boolean>; setLink?: (id: string, channel: string, url: string) => Promise<unknown> } };
+type Bridge = { column: { create: (source: unknown) => Promise<{ id: string }>; list: (limit?: number) => Promise<Col[]>; get?: (id: string) => Promise<(Col & { captures?: { thumb: string; caption?: string; kind?: string }[] }) | null>; remove?: (id: string) => Promise<boolean>; save?: (id: string, p: { title?: string; body?: string }) => Promise<unknown>; setLink?: (id: string, channel: string, url: string) => Promise<unknown> } };
 /** [링크체크] 채널 — 블로그·인스타·스레드·페북·유튜브 (공실뉴스 기사 칸은 빼고) */
 export const COL_LINK_CH: [PromoChannel, string][] = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "유튜브"]];
+/* 블로그·SNS 글쓰기는 건수 제한 없음 — 회원 로컬(브라우저·PC)에 저장하니까 (2026-11-10 사장님: "무한대야 본인의 로컬에 저장하니까") */
 const shortDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme; /** 만든 칼럼을 뉴스칼럼에서 연다 (tab — 그 채널부터) */ onOpenColumn: (id: string, tab?: string) => void }) {
@@ -34,7 +36,7 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const load = () => {
     studioBridge<Bridge>()?.column.list(200).then((l) => setCards(l.filter((c) => c.source?.mode === "topic").map((c) => ({
-      id: c.id, badge: "내 글", date: shortDay(c.createdAt), title: c.label || c.source.topic?.subject || "자유 글", line1: `${String(c.source.topic?.memo || "").length.toLocaleString("ko-KR")}자`,
+      id: c.id, badge: "블로그·SNS", date: shortDay(c.createdAt), title: c.label || c.source.topic?.subject || "자유 글", line1: `${String(c.source.topic?.memo || "").length.toLocaleString("ko-KR")}자`,
       thumb: c.thumb || null, done: c.done, links: c.links || {},
     })))).catch(() => setCards([]));
   };
@@ -54,6 +56,8 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   // [저장하기]·[불러오기] — 쓰는 중인 글을 PC 작업 파일(.gsn)로 (2026-11-07 사장님: "자유글쓰기는 저장하기 불러오기를 넣었으면 좋겠어")
   const [draftId, setDraftId] = useState("");
   const [fileName, setFileName] = useState(""); // 한 번 저장하면 그 파일에 덮어쓴다
+  // 저장하면 목록에도 — 이 글의 목록 카드(칼럼 번호). 다시 저장하면 그 카드를 고친다 (2026-11-10 사장님: "자유 글쓰기에서 저장을 하면 리스트에 나타나야 함")
+  const [colId, setColId] = useState("");
   const sigOf = (t: string, b: string, ps: Photo[]) => JSON.stringify([t.trim(), b.trim(), ps.map((p) => p.url)]);
   const [savedSig, setSavedSig] = useState(sigOf("", "", []));
   const [savedNote, setSavedNote] = useState("");
@@ -61,6 +65,8 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   const [loadList, setLoadList] = useState<FreeFile[] | null>(null);
   const dirty = view === "write" && Boolean(title.trim() || body.trim()) && sigOf(title, body, photos) !== savedSig;
   const leaveOk = () => !dirty || window.confirm("저장하지 않은 글이 있어요. 저장하지 않고 나갈까요?");
+  // 뒤로가기 = 글쓰기 화면 → 목록. 저장 안 한 글이 있으면 먼저 묻는다 (2026-11-10)
+  useInnerHistory("free-write", view === "write", () => setView("list"), undefined, () => (dirty ? (next) => { if (window.confirm("저장하지 않은 글이 있어요. 저장하지 않고 나갈까요?")) next(); } : undefined));
   useEffect(() => {
     if (!dirty) return;
     const stop = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -69,14 +75,39 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   }, [dirty]);
   const startNew = () => {
     setTitle(""); setBody(""); setPhotos([]); setErr("");
-    setDraftId(`free-${Date.now().toString(36)}`); setFileName(""); setSavedSig(sigOf("", "", [])); setSavedNote("");
+    setDraftId(`free-${Date.now().toString(36)}`); setFileName(""); setSavedSig(sigOf("", "", [])); setSavedNote(""); setColId(""); saveHandle.current = null;
+  };
+  /* 목록 카드 만들기·고치기 — 제목과 본문이 다 있어야 카드가 된다 */
+  const upsertCard = async (): Promise<string> => {
+    const b = studioBridge<Bridge>();
+    if (!b || !title.trim() || !body.trim()) return colId;
+    if (colId && b.column.save) {
+      try { await b.column.save(colId, { title: title.trim(), body: body.trim() }); return colId; } catch { /* 지워진 카드면 새로 */ }
+    }
+    const c = await b.column.create({ mode: "topic", angle: "", topic: { subject: title.trim(), intro: "", points: [], outro: "", memo: body.trim() }, media: photos });
+    setColId(c.id);
+    return c.id;
   };
   const hhmm = () => new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
-  const saveNow = async () => {
+  // 저장한 파일 — 처음 [저장하기]는 저장 창에서 위치·이름을 고르고, 다음부터는 그 파일에 덮어쓴다 (2026-11-10 사장님: "본인이 원하는대로 저장하게")
+  const saveHandle = useRef<unknown>(null);
+  const saveNow = async (asNew = false) => {
     if (!title.trim() && !body.trim()) { setErr("제목이나 본문을 쓴 뒤 저장해 주세요."); return; }
     setSaving(true); setErr("");
     try {
-      const r = await saveFreeDraft({ id: draftId || `free-${Date.now().toString(36)}`, title: title.trim(), body, photos }, fileName);
+      const d = { id: draftId || `free-${Date.now().toString(36)}`, title: title.trim(), body, photos };
+      const picked = await saveFreeDraftAs(d, asNew ? undefined : saveHandle.current || undefined);
+      if (picked === "cancel") return;
+      if (picked) {
+        saveHandle.current = picked.handle;
+        await upsertCard().catch((e) => { setErr(e instanceof Error ? e.message : String(e)); return ""; });
+        setFileName(picked.name); setSavedSig(sigOf(title, body, photos));
+        setSavedNote(`저장됨 · ${hhmm()} · ${picked.name}`);
+        return;
+      }
+      // 저장 창을 못 쓰는 브라우저 — 저장 폴더 또는 내려받기
+      const r = await saveFreeDraft(d, fileName);
+      await upsertCard().catch((e) => { setErr(e instanceof Error ? e.message : String(e)); return ""; });
       setFileName(r.name); setSavedSig(sigOf(title, body, photos));
       setSavedNote(r.where === "folder" ? `저장됨 · ${hhmm()} · 01 뉴스SNS발행 › ${r.name}` : `내려받음 · ${hhmm()} · ${r.name} (저장 폴더를 정하면 그 폴더에 저장돼요)`);
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
@@ -84,8 +115,8 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
   };
   const fill = (name: string, d: FreeFile["draft"]) => {
     setTitle(d.title); setBody(d.body); setPhotos(d.photos); setErr("");
-    setDraftId(d.id || `free-${Date.now().toString(36)}`); setFileName(name); setSavedSig(sigOf(d.title, d.body, d.photos));
-    setSavedNote(`불러옴 · ${name}`); setLoadList(null);
+    setDraftId(d.id || `free-${Date.now().toString(36)}`); setFileName(name); setSavedSig(sigOf(d.title, d.body, d.photos)); setColId("");
+    setSavedNote(`불러옴 · ${name}`); setLoadList(null); saveHandle.current = null;
   };
   const openLoad = async () => {
     if (!leaveOk()) return;
@@ -115,8 +146,8 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
     if (!b || !ready) return;
     setBusy("글을 준비하는 중…"); setErr("");
     try {
-      const c = await b.column.create({ mode: "topic", angle: "", topic: { subject: title.trim(), intro: "", points: [], outro: "", memo: body.trim() }, media: photos });
-      onOpenColumn(c.id);
+      const id = await upsertCard(); // 저장해 둔 글이면 그 카드로 — 같은 글이 목록에 두 번 생기지 않게
+      onOpenColumn(id);
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(""); }
   };
@@ -161,7 +192,7 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
     <div>
       <LinkNotice darkMode={Boolean(theme.darkMode)} />
       <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" cards={cards}
-        onAdd={() => { startNew(); setView("write"); }}
+        onAdd={() => { startNew(); setView("write"); }} /* 새 글은 이 자유 글쓰기 화면에서 — 기사쓰기와 떼어 냄 (2026-11-10 사장님: "새로 만들기 하면 자유글쓰기란으로") */
         onOpen={(id, tab) => {
           const url = (cards || []).find((c) => c.id === id)?.links?.[tab];
           if (url) return void window.open(url, "_blank", "noopener"); // 올린 채널 — 그 게시물로
@@ -202,8 +233,10 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
           </span>
           <button onClick={() => void openLoad()} title="저장해 둔 쓰던 글을 열어요"
             style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
-          <button onClick={() => void saveNow()} disabled={saving} title="쓰는 중인 제목·본문·사진을 내 PC 공실뉴스 폴더에 저장해요"
+          <button onClick={() => void saveNow()} disabled={saving} title="처음에는 저장할 곳과 이름을 골라요. 다음부터는 같은 파일에 저장해요"
             style={{ padding: "7px 14px", borderRadius: 8, border: 0, background: saving ? "#94a3b8" : "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 800, cursor: saving ? "default" : "pointer" }}>{saving ? "저장하는 중…" : "저장하기"}</button>
+          <button onClick={() => void saveNow(true)} disabled={saving} title="다른 곳·다른 이름으로 저장해요"
+            style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer" }}>다른 이름으로 저장</button>
         </div>
         <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 6 }}>제목</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목을 입력하세요" style={input} />
@@ -226,10 +259,13 @@ export default function StudioFreeWrite({ theme, onOpenColumn }: { theme: Theme;
             </div>
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
           {busy && <span style={{ fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{busy}</span>}
+          {/* 아래에도 [저장하기] — 글을 다 쓰고 손이 여기 있다 (2026-11-10 사장님: "자유글쓰기를 하고 저장하기도 있어야 하지 않을까?") */}
+          <button onClick={() => void saveNow()} disabled={saving} title="처음에는 저장할 곳과 이름을 골라요. 다음부터는 같은 파일에 저장해요"
+            style={{ padding: "12px 18px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: dirty ? "#b45309" : theme.textPrimary, fontSize: 14.5, fontWeight: 800, cursor: saving ? "default" : "pointer" }}>{saving ? "저장하는 중…" : dirty ? "저장하기 •" : "저장하기"}</button>
           <button onClick={toArticle} disabled={!ready || Boolean(busy)} title="기사쓰기 화면에 제목·본문·사진을 채워요. 기사 한도는 등록할 때만 세요"
-            style={{ marginLeft: "auto", padding: "12px 18px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: !ready ? "#94a3b8" : theme.textPrimary, fontSize: 14.5, fontWeight: 800, cursor: ready ? "pointer" : "default" }}>뉴스 기사로 보내기</button>
+            style={{ padding: "12px 18px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: !ready ? "#94a3b8" : theme.textPrimary, fontSize: 14.5, fontWeight: 800, cursor: ready ? "pointer" : "default" }}>뉴스 기사로 보내기</button>
           <button onClick={() => void toSns()} disabled={!ready || Boolean(busy)}
             style={{ padding: "12px 20px", borderRadius: 8, border: 0, background: !ready || busy ? "#94a3b8" : "#1a3a6b", color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: ready && !busy ? "pointer" : "default" }}>이 글로 블로그·SNS·대본 만들기</button>
         </div>

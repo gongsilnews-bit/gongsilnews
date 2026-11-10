@@ -335,7 +335,9 @@ function syncAnalysisMedia(w: Work) {
     const end = (d.paragraphs || []).length;
     const seen = seenOf(d, an);
     void end;
-    const added = (an.media || []).filter((m) => !have.has(m.key) && !seen.has(m.key)).map((m, i) => ({ id: newId(), kind: m.kind, file: m.key, caption: m.caption, isCover: false, insertAfterParagraph: i === 0 ? null : 0 }));
+    // 글의 재료에 있는 사진은 기사·블로그에 늘 들어간다 — 빠진 사진은 맨 앞에 (2026-11-10 사장님: "기사와 블로그에도 들어가야지")
+    //  사진을 글에서 빼려면 글의 재료에서 뺀다 (빼면 글에서도 빠진다)
+    const added = (an.media || []).filter((m) => !have.has(m.key)).map((m, i) => ({ id: newId(), kind: m.kind, file: m.key, caption: m.caption, isCover: false, insertAfterParagraph: i === 0 ? null : 0 }));
     if (!added.length && media.length === before && Array.isArray(d.seenFiles)) continue;
     if (added.length) {
       // 새 사진 첫 장(실제 사진이면)이 대표 — 원래 대표는 첫 문단 뒤로
@@ -372,6 +374,10 @@ async function saveWritten(w: Work, doc: "article" | "blog", parsed: { title: st
 async function blogGet(vacancyId: string, doc: "article" | "blog" = "blog") {
   const w = await getWork(vacancyId);
   if (!w) return null;
+  // 열 때도 글의 재료 사진과 맞춘다 — 전에 넣어 둔 사진도 기사·블로그에 (2026-11-10 사장님: "기사와 블로그에도 들어가야지")
+  const before = JSON.stringify([w.article?.media, w.blog?.media]);
+  syncAnalysisMedia(w);
+  if (JSON.stringify([w.article?.media, w.blog?.media]) !== before) await putWork(w);
   return docForWeb(w, doc);
 }
 async function blogSave(p: any) {
@@ -462,6 +468,8 @@ async function pickMedia(w: Work) {
   const media: Record<string, string[]> = {};
   for (const ch of CHANNELS) {
     media[ch] = prev && Array.isArray(prev.media?.[ch]) && prev.media[ch].length && prev.media[ch].every((id) => pool.some((m) => m.id === id)) ? prev.media[ch] : fresh.media[ch] || [];
+    // 고른 사진이 없으면 글의 재료 사진을 순서대로 (2026-11-10 사장님: "글의 재료에 사진을 넣으면 인스타그램 스레드 페북 블로그 사진이 되어야 함")
+    if (!media[ch].length) media[ch] = pool.map((m) => m.id);
   }
   return { pool, media };
 }
@@ -478,11 +486,16 @@ async function syncNewMedia(w: Work) {
   for (const ch of CHANNELS) for (const id of data.media?.[ch] || []) { const m = byId.get(id); if (m) used.add(m.file); }
   const seen = seenOf(data as any, w.analysis, [...used]);
   const fresh = pool.filter((m) => !used.has(m.file) && !seen.has(m.file));
-  if (!fresh.length && pool.length === (data.pool || []).length && Array.isArray(data.seenFiles)) return;
+  const emptyCh = pool.length > 0 && CHANNELS.some((ch) => !(data.media?.[ch] || []).some((id) => byId.has(id)));
+  if (!fresh.length && !emptyCh && pool.length === (data.pool || []).length && Array.isArray(data.seenFiles)) return;
   const max = Object.fromEntries(((await options()).channels as any[]).map((c) => [c.id, c.maxMedia || 10]));
   const media: Record<string, string[]> = {};
   // 새 사진은 채널마다 맨 앞 — 장수 한도에 잘리지 않게 (2026-11-10 사장님: "앞으로")
-  for (const ch of CHANNELS) media[ch] = fresh.map((m) => m.id).concat((data.media?.[ch] || []).filter((id) => byId.has(id))).slice(0, max[ch]);
+  //  채널에 사진이 하나도 없으면 글의 재료 사진을 순서대로 채운다 (2026-11-10)
+  for (const ch of CHANNELS) {
+    const keep = (data.media?.[ch] || []).filter((id) => byId.has(id));
+    media[ch] = (keep.length ? fresh.map((m) => m.id).concat(keep) : pool.map((m) => m.id)).slice(0, max[ch]);
+  }
   w.sns = { ...data, pool, media, seenFiles: [...new Set([...seen, ...used, ...fresh.map((m) => m.file)])] };
 }
 async function snsForWeb(w: Work) {

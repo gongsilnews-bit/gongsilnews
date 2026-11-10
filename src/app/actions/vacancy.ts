@@ -20,11 +20,27 @@ function getAdminClient() {
  * 회원마다 따로: [회원관리]에서 "개별 한도 사용"(use_custom_registration_limits)을 켜면 그 회원의 max_vacancies
  * 광고 중(ACTIVE)만 센다 — 광고를 내리거나 거래가 끝난 공실·임시저장은 안 센다. exceptId = 지금 광고로 바꾸려는 공실
  */
-async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId: string, exceptId?: string, homepageOnly = false): Promise<string | null> {
+async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId: string, exceptId?: string, homepageOnly = false, asDraft = false): Promise<string | null> {
   const { data: m } = await supabase.from('members').select('role, plan_type, plan_end_date, studio_end_date, max_vacancies, use_custom_registration_limits').eq('id', ownerId).maybeSingle();
   if (!m) return null;
   const tier = memberTier(m);
   const L = await getTierLimits(); // 등급별 한도 화면 값 (2026-11-09)
+  // 공실뉴스부동산 — 전체 50건(광고 중 + 임시저장, 광고종료는 안 셈) 안에서 마음대로, 그중 공실뉴스 광고만 20건까지 (2026-11-10 사장님)
+  //  내 홈페이지 전용·임시저장은 50건 안에서 따로 막지 않는다
+  if (tier === 'pro' && !(m.use_custom_registration_limits && typeof m.max_vacancies === 'number' && m.max_vacancies > 0)) {
+    let tq = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).in('status', ['ACTIVE', 'DRAFT']);
+    if (exceptId) tq = tq.neq('id', exceptId);
+    const { count: tc, error: te } = await tq;
+    if (te) return '공실 수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.';
+    if ((tc || 0) >= L.proTotalVacancies) return `공실은 ${L.proTotalVacancies}건까지 쓸 수 있어요. 안 쓰는 공실의 광고를 내리거나 임시저장을 지워 주세요.`;
+    if (homepageOnly || asDraft) return null;
+    let pq = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE').or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`);
+    if (exceptId) pq = pq.neq('id', exceptId);
+    const { count: pc, error: pe } = await pq;
+    if (pe) return '광고 중인 공실 수를 확인하지 못했어요. 잠시 뒤 다시 해 주세요.';
+    return (pc || 0) < L.proVacancies ? null : `공실뉴스 광고는 ${L.proVacancies}건까지예요. 다른 공실의 광고를 내리거나 내 홈페이지 전용으로 바꿔 주세요.`;
+  }
+  if (asDraft) return null; // 임시저장은 공실뉴스부동산만 50건 안에서 센다
   // 내 홈페이지 전용 — PRO 만, 공실뉴스 공실과 따로 20건 (2026-11-04)
   if (homepageOnly) {
     if (tier === 'free' || tier === 'user') return "'내 홈페이지만'은 공실뉴스부동산에서 고를 수 있어요.";
@@ -132,8 +148,9 @@ export async function createVacancy(data: {
 
     // 클라이언트가 보낸 status 존중 (DRAFT=임시저장, ACTIVE=바로발행)
     const status = data.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
-    if (status === 'ACTIVE') {
-      const full = await vacancyRoom(supabase, data.owner_id, undefined, isHomepageOnly(data));
+    {
+      // 광고로 올리거나, 공실뉴스부동산의 임시저장(전체 50건 안) — 2026-11-10
+      const full = await vacancyRoom(supabase, data.owner_id, undefined, isHomepageOnly(data), status === 'DRAFT');
       if (full) return { success: false, error: full };
     }
 

@@ -447,7 +447,7 @@ export default function MemberArticleSection({
         {/* 한도를 다 써도 글은 쓴다 — [임시저장]으로 두고 블로그·SNS·대본 재료로 (승인신청만 막힘, 2026-11-05 사장님) */}
         {writePermission.quotaFull && (
           <div style={{ margin: "12px 16px 0", padding: "12px 16px", borderRadius: 8, background: "#FFF7ED", border: "1px solid #FDBA74", color: "#9A3412", fontSize: 14, lineHeight: 1.6 }}>
-            <b>{writePermission.error}</b> 글은 그대로 쓰고 아래 <b>[임시저장]</b>으로 저장하세요. 뉴스·SNS자동화에서 이 글로 블로그·SNS·쇼츠릴스 대본을 만들 수 있어요. 공실뉴스 등록(승인신청)은 다음 달에 할 수 있어요.
+            <b>{writePermission.error}</b> 기사 등록 없이 블로그·인스타그램·스레드·페이스북·쇼츠릴스 대본은 <b>뉴스·SNS자동화 › 블로그·SNS 글쓰기</b>에서 <b>제한 없이</b> 쓸 수 있어요. 공실뉴스 등록(승인신청)은 다음 달에 할 수 있어요.
           </div>
         )}
         <NewsWriteForm />

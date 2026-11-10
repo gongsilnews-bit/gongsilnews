@@ -40,7 +40,9 @@ const ago = (t: number) => {
 const ART_CHANNELS = [["blog", "네이버 블로그"], ["instagram", "인스타그램"], ["threads", "스레드"], ["facebook", "페이스북"], ["youtube", "쇼츠릴스 대본"]] as const;
 type ArtCh = (typeof ART_CHANNELS)[number][0];
 
-export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword = "", layout = "row", onOpenColumn, onAdd, addLabel = "기사 작성" }: {
+export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword = "", layout = "row", onOpenColumn, onAdd, addLabel = "기사 작성", hideDrafts = false }: {
+  /** 임시저장(작성중) 기사는 빼고 — 뉴스·SNS자동화 뉴스칼럼 (2026-11-10 사장님: "임시저장은 나타나지 않게") */
+  hideDrafts?: boolean;
   theme: AdminSectionProps["theme"];
   memberId?: string;
   onMenuChange: (menu: string) => void;
@@ -218,9 +220,9 @@ export default function ArticleCardGrid({ theme, memberId, onMenuChange, keyword
 
   const kw = keyword.trim().toLowerCase();
   const shown = useMemo(() => {
-    const list = (articles || []).filter((a) => !kw || a.title.toLowerCase().includes(kw) || a.no.includes(kw));
+    const list = (articles || []).filter((a) => !(hideDrafts && a.status === "DRAFT")).filter((a) => !kw || a.title.toLowerCase().includes(kw) || a.no.includes(kw));
     return list.sort((a, z) => Number(favs.includes(z.id)) - Number(favs.includes(a.id)));
-  }, [articles, kw, favs]);
+  }, [articles, kw, favs, hideDrafts]);
   const grid = layout === "grid";
   const empty: React.CSSProperties = { padding: "28px 20px", border: `1px dashed ${border}`, borderRadius: 12, color: textSecondary, fontSize: 14, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" };
   const cardBox: React.CSSProperties = grid ? { position: "relative", minWidth: 0 } : { position: "relative", flex: "0 0 210px", width: 210, minWidth: 0 };

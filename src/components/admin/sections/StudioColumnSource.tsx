@@ -8,6 +8,7 @@ import StudioChannelTabs, { StepLine, StepTitle } from "./StudioChannelTabs";
 import { LoadingCover } from "./StudioLoading";
 import MediaEditGrid, { type MediaOp } from "./MediaEditGrid";
 import { isWebStudio, studioBridge } from "../studio-web";
+import { useInnerHistory } from "@/utils/useInnerHistory";
 
 /**
  * 뉴스·SNS발행 > 뉴스칼럼 (크롬 확장 뉴스메이커를 앱으로 옮긴 것)
@@ -73,6 +74,8 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
     return "list";
   });
   useEffect(() => { onListView?.(view === "list"); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 뒤로가기 = 작업 화면 → 목록 (뉴스칼럼·블로그·SNS 글쓰기) — 공실뉴스 작업대와 같게 (2026-11-10 사장님: "뒤로가기하면 이전에 있던 것으로")
+  useInnerHistory("col-desk", view !== "list", () => setView("list"), () => { if (column) setView(""); });
   const [showSource, setShowSource] = useState(false); // 요약 줄 [원문 보기]
   const [refetching, setRefetching] = useState(false);
   const [recent, setRecent] = useState<Column[]>([]);
@@ -349,20 +352,21 @@ export default function StudioColumnSource({ theme, tab, onTab, onUsed, onListVi
           <LinkNotice darkMode={Boolean((theme as { darkMode?: boolean }).darkMode)} />
           {/* 기사관리 SNS홍보형 카드 그대로 (2026-10-29 사장님: "이것과 똑같아야지") — 기사를 누르면 그 기사의 칼럼 (없으면 만든다) */}
           {/* [새로 만들기] → 기사등록 화면, 등록·취소하면 뉴스·SNS자동화(뉴스칼럼)로 돌아온다 (2026-10-30 사장님) */}
-          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기"
-            onAdd={() => router.push(`?menu=article&action=write&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false })}
+          <ArticleCardGrid theme={theme as unknown as React.ComponentProps<typeof ArticleCardGrid>["theme"]} memberId={memberId} layout="grid" addLabel="새로 만들기" hideDrafts
+            onAdd={() => router.push(`?menu=article&action=write&from=column&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false })}
             onMenuChange={(m) => router.push(`?menu=${m}`, { scroll: false })}
             onOpenColumn={(id, t) => { bridge()?.column.get(id).then((c) => { if (c) { choose(c); onTab(t); } }).catch(() => {}); }} />
           {/* 공실뉴스 기사가 아닌 뉴스·주제로 만든 칼럼 — 기사로 등록하기 전이라 위 카드에 없다 */}
           {/* 웹 — 자유 글쓰기로 만든 글도 여기서 다시 연다 (2026-11-05) */}
-          {!isWebStudio() && recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && (
+          {/* 웹 — [새 기사 작성] › [블로그·SNS로만 쓰기]로 쓴 글(예전 자유 글쓰기 글 포함)을 "SNS 글만"으로 (2026-11-10 사장님: "자유 글쓰기는 없애고") */}
+          {!isWebStudio() && recent.some((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")) && ( /* 웹은 "SNS 글만" 메뉴로 따로 (2026-11-10) */
             <div style={{ marginTop: 28 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{isWebStudio() ? "자유 글쓰기로 만든 글" : "다른 뉴스·주제로 만든 칼럼"}</div>
-              <WorkCardGrid theme={theme} variant="article" addLabel={isWebStudio() ? "자유 글쓰기" : "새로 만들기"} onAdd={isWebStudio() ? () => { try { localStorage.setItem("studio_news_category", "free"); } catch {} window.location.reload(); } : openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 10 }}>{isWebStudio() ? <>SNS 글만 <span style={{ fontSize: 12.5, fontWeight: 600, color: theme.textSecondary }}>기사 등록 없이 블로그·SNS로만 쓴 글 (기사는 기사관리 작성중에)</span></> : "다른 뉴스·주제로 만든 칼럼"}</div>
+              <WorkCardGrid theme={theme} variant="article" addLabel="새로 만들기" onAdd={isWebStudio() ? () => router.push(`?menu=article&action=write&return=${encodeURIComponent("realty_admin?menu=sns")}`, { scroll: false }) : openNew} placeholder={<span style={{ fontSize: 30 }}>📰</span>}
                 cards={recent.filter((c) => !(c.source.mode === "news" && c.source.news?.publisher === "공실뉴스")).map((c) => {
                   const x = c as Column & { thumb?: string | null; done?: Record<string, boolean>; articleTitle?: string };
                   const isNews = c.source.mode === "news";
-                  return { id: c.id, badge: isNews ? "뉴스" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
+                  return { id: c.id, badge: isNews ? "뉴스" : isWebStudio() ? "SNS 글만" : "주제", date: shortDate(c.createdAt), title: x.articleTitle || c.label,
                     line1: isNews ? (c.source.news?.publisher || "") : (c.source.topic?.subject || ""), thumb: x.thumb || null, done: x.done, current: c.id === column?.id };
                 })}
                 onOpen={(id, t) => { const c = recent.find((r) => r.id === id); if (c) { choose(c); onTab(t); } }} />

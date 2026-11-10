@@ -14,6 +14,8 @@ export type TierLimits = {
   /** 공실뉴스부동산(유료) — 공실 · 홈페이지 전용 공실 · 월 기사 */
   proVacancies: number;
   proHomepageVacancies: number;
+  /** 공실뉴스부동산 — 광고 중(공실뉴스·내 홈페이지) + 임시저장 합계 (2026-11-10 사장님: "total 50 · 공실뉴스 광고는 20건까지") */
+  proTotalVacancies: number;
   proArticles: number;
   /** 비즈니스회원 — 공실(0 = 제한 없음) · 월 기사 */
   bizVacancies: number;
@@ -26,6 +28,7 @@ export const TIER_LIMIT_DEFAULTS: TierLimits = {
   freeWrites: LIMITS.freeBlogPerMonth,
   proVacancies: LIMITS.vacancy.pro,
   proHomepageVacancies: HOMEPAGE_ONLY_LIMIT,
+  proTotalVacancies: 50,
   proArticles: LIMITS.proArticlePerMonth,
   bizVacancies: 0,
   bizArticles: 10,
@@ -38,6 +41,7 @@ export const TIER_LIMIT_KEYS: Record<keyof TierLimits, string> = {
   freeWrites: "LIMIT_REALTOR_FREE_WRITES",
   proVacancies: "LIMIT_REALTOR_NEWS_VACANCY",
   proHomepageVacancies: "LIMIT_REALTOR_NEWS_HOMEPAGE_VACANCY",
+  proTotalVacancies: "LIMIT_REALTOR_NEWS_TOTAL_VACANCY",
   proArticles: "LIMIT_REALTOR_NEWS_ARTICLE",
   bizVacancies: "LIMIT_BIZ_VACANCY",
   bizArticles: "LIMIT_BIZ_ARTICLE",

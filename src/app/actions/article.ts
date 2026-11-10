@@ -114,7 +114,11 @@ export async function checkArticleWritePermission(authorId?: string) {
 }
 
 /* ── 기사 저장 (신규 + 수정 겸용) ── */
+/** 임시저장(작성중) 한도 — 회원당 (2026-11-10) */
+const DRAFT_LIMIT = 10;
 export async function saveArticle(data: {
+  /** "SNS" — [블로그·SNS로만 쓰기]로 저장한 임시저장 (SNS 글만 10건, 임시저장 10건과 따로 셈 — 2026-11-10) */
+  form_type?: "SNS" | "NORMAL";
   id?: string;
   author_id?: string;
   author_name: string;
@@ -206,6 +210,8 @@ export async function saveArticle(data: {
         (effectiveAuthorId === actor.user.id ? actor.user.email : null) ||
         "",
       status: statusMap[data.status] || data.status,
+      // SNS 글만 표시 — 임시저장일 때만 SNS, 그 밖에(승인신청·다시 임시저장)는 보통 기사로
+      form_type: data.form_type === "SNS" && (statusMap[data.status] || data.status) === "DRAFT" ? "SNS" : "NORMAL",
       section1: data.section1 || null,
       section2: formatSection2(data.section2) || null,
       title: data.title,
@@ -229,6 +235,25 @@ export async function saveArticle(data: {
       (articleData as any).is_headline = data.is_headline;
     }
 
+    // 임시저장은 회원당 10건까지 (2026-11-10 사장님) — 이미 임시저장한 글을 다시 저장하는 것은 세지 않는다
+    if (articleData.status === "DRAFT" && !actor.isAdmin) {
+      let alreadyDraft = false;
+      if (articleId) {
+        const { data: prev } = await supabase.from("articles").select("status").eq("id", articleId).maybeSingle();
+        alreadyDraft = prev?.status === "DRAFT";
+      }
+      if (!alreadyDraft) {
+        // 임시저장 10건 · SNS 글만 10건은 따로 센다 (2026-11-10 사장님 확정: 월 4건 · 임시 10건 · SNS글만 10건)
+        const sns = (articleData as { form_type?: string }).form_type === "SNS";
+        let q = supabase.from("articles").select("id", { count: "exact", head: true }).eq("author_id", effectiveAuthorId).eq("status", "DRAFT").neq("is_deleted", true);
+        q = sns ? q.eq("form_type", "SNS") : q.or("form_type.is.null,form_type.neq.SNS");
+        const { count } = await q;
+        if ((count || 0) >= DRAFT_LIMIT) return { success: false, error: sns
+          ? `블로그·SNS 글쓰기는 ${DRAFT_LIMIT}건까지예요. 안 쓰는 글을 지운 뒤 다시 눌러 주세요.`
+          : `임시저장은 ${DRAFT_LIMIT}건까지예요. 기사관리의 작성중 글 중 안 쓰는 글을 지우거나 승인신청해 주세요.` };
+      }
+    }
+
     // --- [권한/요금제 검증 (신규 작성 시에만)] ---
     //  임시저장(DRAFT)은 한도와 상관없이 — 블로그·SNS·대본 재료로 쓴다. 승인신청·발행할 때만 센다 (새 글 · 임시저장 글을 올릴 때)
     if (articleData.status !== "DRAFT" && !actor.isAdmin) {
@@ -239,7 +264,7 @@ export async function saveArticle(data: {
       }
       if (wasDraft) {
         const quota = await checkMonthlyArticleQuota(supabase, authorMember, effectiveAuthorId);
-        if (!quota.allowed) return { success: false, error: "quotaFull" in quota && quota.quotaFull ? `${quota.error} [임시저장]으로 저장하면 뉴스·SNS자동화에서 블로그·SNS·대본을 만들 수 있어요.` : quota.error };
+        if (!quota.allowed) return { success: false, error: "quotaFull" in quota && quota.quotaFull ? `${quota.error} 기사 등록 없이 블로그·SNS·쇼츠릴스 대본은 뉴스·SNS자동화 › 블로그·SNS 글쓰기에서 제한 없이 쓸 수 있어요.` : quota.error };
       }
     }
     // ---------------------------------------------

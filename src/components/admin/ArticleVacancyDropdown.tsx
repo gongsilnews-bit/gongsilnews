@@ -64,21 +64,27 @@ export default function ArticleVacancyDropdown({
 
   if (!isPaidRealtor) {
     return (
-      <span
+      // "공실뉴스부동산 전용" — 누르면 금액안내 (2026-11-10 사장님: "유료회원 말고 공실뉴스부동산 전용으로 · 클릭하면 가격보기")
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); const f = (window as unknown as { __gsAskUpgrade?: () => void }).__gsAskUpgrade; if (f) f(); else window.open("/newsrealty/pricing", "_blank"); }}
         style={{
           display: "inline-block",
           padding: "4px 8px",
-          background: darkMode ? "#2c2d31" : "#f3f4f6",
-          color: "#9ca3af",
+          border: 0,
+          background: darkMode ? "#2c2d31" : "#fff7ed",
+          color: "#ea580c",
           borderRadius: 6,
           fontSize: 11,
-          fontWeight: 600,
-          cursor: "not-allowed",
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
         }}
-        title="공실뉴스부동산 유료 회원 전용 기능입니다."
+        title="공실뉴스부동산 전용 기능이에요. 누르면 금액안내를 볼 수 있어요."
       >
-        🔒 유료회원
-      </span>
+        🔒 공실뉴스부동산 전용
+      </button>
     );
   }
 
