@@ -163,7 +163,9 @@ async function fetchListing(vacancyId: string, saleKind = "") {
 
 /* ── 분석 (앱 vacancy-capture analyzeVacancy) ── */
 let pageScript: Promise<string> | null = null;
-async function analyze(vacancyId: string) {
+/* o.shots === false — 화면 캡처(공실열람·로드뷰 등 5장) 없이 공실 정보·등록 사진만 (2026-11-10 사장님: "분석은 위에서 하지 말고 분석이라고 누를 때 해줘")
+ *  [SNS뉴스발행]으로 처음 열 때는 이것만 — 화면 캡처는 [↻ 다시 분석]을 누를 때 */
+async function analyze(vacancyId: string, o: { shots?: boolean } = {}) {
   say("vacancy", "공실열람 화면을 여는 중…");
   if (!pageScript) pageScript = api("pageScript").then((d) => String(d.script || "")).catch((e) => { pageScript = null; throw e; });
   const script = await pageScript;
@@ -206,7 +208,7 @@ async function analyze(vacancyId: string) {
     // 실제 화면 5장 — 공실열람에 나와 있는 모습 · 상세 창 · 로드뷰 · 스카이뷰 · 주변 지도 (2026-11-09 사장님: 단지 분석처럼)
     //  예전엔 "웹에서 못 찍는다"며 뺐다 — 이제 창 전체에 띄워 도우미(또는 크롬 공유)로 실제 화면을 찍는다. 주소 비공개 매물은 로드뷰·스카이뷰를 찍지 않는다
     frame.remove();
-    try {
+    if (o.shots !== false) try {
       const { captureVacancyScreens } = await import("../writing/realScreenShot");
       const shots = await captureVacancyScreens(vacancy.vacancyId || vacancyId, String(vacancy.title || ""), (t) => say("vacancy", t));
       const KIND: Record<string, string> = { screen: "proof", panel: "detail", street: "roadview", sky: "sky", wide: "map" };
@@ -319,7 +321,8 @@ function seenOf(d: { seenFiles?: string[]; writtenAt?: string; media?: DocMedia[
   const since = Date.parse(d.writtenAt || "") || 0;
   return new Set([...files, ...(an.media || []).filter((m) => m.kind !== "ai" && (m.addedAt || 0) <= since).map((m) => m.key)]);
 }
-/* 분석 사진을 고치면 이미 쓴 기사·블로그에도 — 새 사진은 글 끝에, 뺀 사진은 글에서도 뺀다 (앱 syncAnalysisMedia) */
+/* 분석 사진을 고치면 이미 쓴 기사·블로그에도 — 뺀 사진은 글에서도 뺀다 (앱 syncAnalysisMedia)
+ *  새로 넣은 사진은 글 맨 앞 — 첫 장이 대표 사진 (2026-11-10 사장님: "공실뉴스기사 블로그 인스타그램 스레드 페이스북에 들어가게 · 싱크 · 앞으로") */
 function syncAnalysisMedia(w: Work) {
   const an = w.analysis;
   const gone = new Set((an.hidden || []).map((m) => m.key));
@@ -331,9 +334,16 @@ function syncAnalysisMedia(w: Work) {
     const have = new Set(media.map((m) => m.file));
     const end = (d.paragraphs || []).length;
     const seen = seenOf(d, an);
-    const added = (an.media || []).filter((m) => !have.has(m.key) && !seen.has(m.key)).map((m) => ({ id: newId(), kind: m.kind, file: m.key, caption: m.caption, isCover: false, insertAfterParagraph: end }));
+    void end;
+    const added = (an.media || []).filter((m) => !have.has(m.key) && !seen.has(m.key)).map((m, i) => ({ id: newId(), kind: m.kind, file: m.key, caption: m.caption, isCover: false, insertAfterParagraph: i === 0 ? null : 0 }));
     if (!added.length && media.length === before && Array.isArray(d.seenFiles)) continue;
-    media = media.concat(added);
+    if (added.length) {
+      // 새 사진 첫 장(실제 사진이면)이 대표 — 원래 대표는 첫 문단 뒤로
+      const coverOk = added[0].kind !== "ai";
+      media = media.map((m) => (coverOk && m.isCover ? { ...m, isCover: false, insertAfterParagraph: 0 } : m));
+      if (coverOk) added[0].isCover = true; else added[0].insertAfterParagraph = 0;
+      media = [...added, ...media];
+    }
     if (media.length && !media.some((m) => m.isCover)) media[0].isCover = true;
     d.media = media;
     d.seenFiles = [...new Set([...seen, ...media.map((m) => m.file)])];
@@ -471,7 +481,8 @@ async function syncNewMedia(w: Work) {
   if (!fresh.length && pool.length === (data.pool || []).length && Array.isArray(data.seenFiles)) return;
   const max = Object.fromEntries(((await options()).channels as any[]).map((c) => [c.id, c.maxMedia || 10]));
   const media: Record<string, string[]> = {};
-  for (const ch of CHANNELS) media[ch] = (data.media?.[ch] || []).filter((id) => byId.has(id)).concat(fresh.map((m) => m.id)).slice(0, max[ch]);
+  // 새 사진은 채널마다 맨 앞 — 장수 한도에 잘리지 않게 (2026-11-10 사장님: "앞으로")
+  for (const ch of CHANNELS) media[ch] = fresh.map((m) => m.id).concat((data.media?.[ch] || []).filter((id) => byId.has(id))).slice(0, max[ch]);
   w.sns = { ...data, pool, media, seenFiles: [...new Set([...seen, ...used, ...fresh.map((m) => m.file)])] };
 }
 async function snsForWeb(w: Work) {

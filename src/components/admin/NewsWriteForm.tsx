@@ -2951,7 +2951,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             {!studioMode && (
               <button type="button" onClick={() => setShowStockModal(true)}
                 style={{ width: "100%", height: 40, marginTop: -8, marginBottom: 16, border: `1px solid ${border}`, borderRadius: 6, background: cardBg, color: textPrimary, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                오픈자료 · Pixabay 이미지 · 공실뉴스 드론
+                오픈자료 · 이미지 · 공실뉴스 드론
               </button>
             )}
 

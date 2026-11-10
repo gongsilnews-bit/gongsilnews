@@ -46,7 +46,7 @@ type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
   blog?: { imageStyles?: (vacancyId?: string) => Promise<{ id: string; label: string }[]> };
-  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; media?: (id: string, op: MediaOp) => Promise<Analysis>; save?: (id: string, patch: { fields?: { label: string; value: string }[]; infra?: string; themes?: string[] }) => Promise<Analysis>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
+  vacancy: { analyze: (id: string, o?: { shots?: boolean }) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; media?: (id: string, op: MediaOp) => Promise<Analysis>; save?: (id: string, patch: { fields?: { label: string; value: string }[]; infra?: string; themes?: string[] }) => Promise<Analysis>; list?: () => Promise<WorkRow[]>; onProgress: (fn: (t: string) => void) => () => void };
 };
 /** [공실 바꾸기] 목록 한 줄 — 이 PC에서 작업한 공실 (앱 studio:vacancy-list) */
 type WorkRow = { vacancyId: string; no: string; title: string; priceText: string; saleKind: string; thumb: string | null; updatedAt: string; done: Record<string, boolean> };
@@ -267,7 +267,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     const b = bridge();
     if (!b) return;
     const r = await b.vacancy.load(id).catch(() => null);
-    if (!r) return v ? analyze(v) : setError("이 공실 작업을 열지 못했어요.");
+    if (!r) return v ? analyze(v, false) : setError("이 공실 작업을 열지 못했어요.");
     const no = Number((r.vacancy.fields || []).find((f) => f.label === "공실광고번호")?.value) || 0;
     const row: VacancyRow = v || { id, vacancy_no: no, building_name: r.vacancy.title || "" };
     setPicked(row);
@@ -310,7 +310,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         if (!saved!.auto || !saved!.picked) { setMode("list"); return; }
         setPicked(saved!.picked);
         if (saved!.tab) setTab(saved!.tab);
-        await analyze(saved!.picked);
+        await analyze(saved!.picked, false); // 화면 캡처 없이 — 캡처는 [↻ 다시 분석]을 누를 때 (2026-11-10)
         return;
       }
       // .gsn 에서 연 작업은 고른 공실 정보가 없다 — 불러온 공실 정보로 채운다 (2026-10-23)
@@ -329,14 +329,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     } catch {}
   };
 
-  const analyze = async (v: VacancyRow | null = picked) => {
+  const analyze = async (v: VacancyRow | null = picked, shots = true) => {
     const b = bridge();
     if (!b || !v) return;
     setBusy(true);
     setError("");
     const off = b.vacancy.onProgress(setProgress);
     try {
-      const r = await b.vacancy.analyze(v.id);
+      const r = await b.vacancy.analyze(v.id, { shots });
       const again = result?.vacancyId === v.id; // [다시 분석·캡처] — 끝나면 [분석 내용] 탭으로 모은 사진을 바로 보여 준다
       await applyResult(r, v);
       if (again) { setShowMedia(true); chooseTab("source"); }

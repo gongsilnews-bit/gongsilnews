@@ -109,8 +109,8 @@ export default function MediaEditGrid({ theme, items, hiddenCount = 0, styleKey,
             style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 내 사진 올리기</button>
           {isWebStudio() && (<>
             <div style={{ borderTop: `1px dashed ${theme.border}` }} />
-            <button disabled={Boolean(busy)} onClick={() => setStockOpen(true)} title="Pixabay 무료 사진을 찾아 넣어요"
-              style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 오픈자료</button>
+            <button disabled={Boolean(busy)} onClick={() => setStockOpen(true)} title="무료 사진을 찾아 넣어요"
+              style={{ flex: 1, border: 0, background: "transparent", cursor: "pointer", color: theme.darkMode ? "#93c5fd" : "#1a3a6b", fontSize: 14, fontWeight: 800 }}>＋ 오픈자료 <ProTag style={{ marginLeft: 4 }} /></button>
           </>)}
           <div style={{ borderTop: `1px dashed ${theme.border}` }} />
           <button disabled={Boolean(busy)} onClick={openAi} title={pro === false ? "AI 이미지는 공실뉴스부동산 전용이에요" : "그림 스타일을 골라 AI로 그려 넣어요"}

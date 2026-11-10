@@ -924,7 +924,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
               {drones && (droneShown.length ? masonry(droneShown) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>맞는 드론 영상이 없어요.</div>)}
             </>
           ) : stock && (stock.length ? masonry(stock) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
-          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>Pexels · Pixabay 무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
+          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
         </div>
       )}
 
@@ -1660,7 +1660,7 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose, choos
                   })}
                 </div>
               ) : <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>받은 곡은 위 [PC에서 음악 불러오기]로 다운로드 폴더에서 넣어 주세요.</div>)}
-              <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginTop: 8 }}>픽사베이 곡 중 일부는 유튜브 저작권 알림이 올 수 있어요. 그럴 땐 받은 곡의 라이선스 문구로 이의 제기하면 돼요.</div>
+              <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginTop: 8 }}>일부 곡은 유튜브 저작권 알림이 올 수 있어요. 그럴 땐 받은 곡의 라이선스 문구로 이의 제기하면 돼요.</div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && loadMine()} placeholder="음악 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />

@@ -446,7 +446,7 @@ function RealtyAdminContent() {
         return (
           <span title={myTier !== "free" && until ? `이용 기간 ~${until}` : undefined}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 999, marginLeft: 4, background: tone[myTier].bg, color: tone[myTier].fg }}>
-            {TIER_LABEL[myTier]}{proOn && <ProTag />}
+            {myTier === "free" ? "부동산회원(무료)" : TIER_LABEL[myTier]}{proOn && <ProTag />}
             {/* 종료일 짧게 — ~261130 (2026-11-06 사장님) */}
             {myTier !== "free" && shortEnd(userRole === 'BIZ' ? planEndDate : studioEndDate) && <span style={{ fontWeight: 700, opacity: 0.9 }}>~{shortEnd(userRole === 'BIZ' ? planEndDate : studioEndDate)}</span>}
           </span>
