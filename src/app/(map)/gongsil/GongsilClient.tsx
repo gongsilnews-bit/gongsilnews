@@ -2774,7 +2774,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           }}
           onDismiss={() => setSelectedClusterIds(null)}
         />
-        {/* 화면캡처·판서 막대 — 우리 사이트 안에서만 (2026-11-05 사장님) */}
+        {/* 화면캡처·판서 막대 — 우리 사이트 안에서만 (2026-11-05 사장님). 빠른메뉴는 지도엔 넣지 않음 (2026-11-10 사장님) */}
         <WebCapture />
         <KakaoMapView
           activePills={activePills}

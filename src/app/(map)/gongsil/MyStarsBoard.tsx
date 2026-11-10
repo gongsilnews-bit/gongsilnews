@@ -44,6 +44,8 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
   detailId: string | number | null; onOpenVacancy: (prop: any) => void; onCloseVacancy: () => void; // eslint-disable-line @typescript-eslint/no-explicit-any
 }) {
   const [tab, setTab] = useState<Tab>("vac");
+  // 빠른메뉴 [관심단지] (/gongsil?tab=wish&star=apt) — 열자마자 단지 칸 (2026-11-10 사장님)
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("star") === "apt") setTab("apt"); }, []);
   const [src, setSrc] = useState<"star" | "recent">("star"); // 기사·부동산·단지 — 찜한 / 최근 본
   const [board, setBoard] = useState<{ articles: BoardArticle[]; agencies: BoardAgency[]; complexes: BoardComplex[] } | null>(null);
   const [cats, setCats] = useState<Record<"art" | "ag" | "apt", { id: string; name: string }[]>>({ art: [], ag: [], apt: [] });

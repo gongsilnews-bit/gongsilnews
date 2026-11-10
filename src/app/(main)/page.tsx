@@ -4,13 +4,12 @@ import { getArticles } from "@/app/actions/article";
 
 export const revalidate = 300; // 5분 캐시 (60s → 300s 확장)
 
-import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
 import HomeNewsHero from "@/components/home/HomeNewsHero";
 import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
 import PremiumDroneSection from "@/components/home/PremiumDroneSection";
 import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
 import BannerSlot from "@/components/BannerSlot";
-
+
 import { SHOW_STUDY } from "@/utils/siteFlags";
 export default async function Home() {
   // ✅ 크리티컬 경로 최적화: 초기 로드 35-40% 단축
@@ -52,8 +51,7 @@ export default async function Home() {
   return (
     <>
       <main className="container px-20" style={{ position: "relative" }}>
-        
-        <QuickFloatingMenu />
+        {/* 빠른메뉴는 (main) 레이아웃으로 옮김 (2026-11-10) */}
 
         {/* ========== 배너: 메인 상단 ========== */}
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>

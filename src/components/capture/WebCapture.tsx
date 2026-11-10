@@ -92,8 +92,12 @@ const stamp = () => { const d = new Date(); return `${d.getFullYear()}${pad(d.ge
 const today = () => { const d = new Date(); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`; };
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
-export default function WebCapture({ launcherStyle }: { launcherStyle?: React.CSSProperties }) {
+/** 바깥(공실뉴스 첫 화면 빠른메뉴 [화면캡쳐])에서 막대를 여는 신호 (2026-11-10 사장님) */
+export const OPEN_WEB_CAPTURE = "gs:open-web-capture";
+
+export default function WebCapture({ launcherStyle, noLauncher }: { launcherStyle?: React.CSSProperties; noLauncher?: boolean }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => { const on = () => setOpen(true); window.addEventListener(OPEN_WEB_CAPTURE, on); return () => window.removeEventListener(OPEN_WEB_CAPTURE, on); }, []);
   const [hide, setHide] = useState(false); // 찍는 순간 막대·알림을 숨긴다
   const [area, setArea] = useState(false);
   const [inkOn, setInkOn] = useState(false); // 판서 막대가 보이나
@@ -392,7 +396,7 @@ export default function WebCapture({ launcherStyle }: { launcherStyle?: React.CS
   return (
     <>
       <style>{`.gwc-b:hover{background:rgba(255,255,255,0.10)!important}.gwc-stop:hover{background:#b91c1c!important}.gwc-dot{animation:gwcBlink 1s infinite}@keyframes gwcBlink{50%{opacity:.25}}`}</style>
-      {!open && (
+      {!open && !noLauncher && (
         <button type="button" data-gs-cap-launcher onClick={() => setOpen(true)} title="화면캡처 · 판서 — 지금 보이는 화면을 찍어 클립보드·폴더에"
           style={{ position: "fixed", right: 16, top: 232, zIndex: 900, height: 38, padding: "0 13px", borderRadius: 19, border: BORDER, background: BAR_BG, color: "#e5e7eb", fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: "pointer", boxShadow: SHADOW, display: "flex", alignItems: "center", gap: 6, ...launcherStyle }}>
           <Svg k="area" size={17} />화면캡처

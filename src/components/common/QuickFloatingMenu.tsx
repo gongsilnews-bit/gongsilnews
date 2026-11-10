@@ -1,12 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMySubscriptions } from "@/app/actions/subscription";
 import { getMyEnrollments } from "@/app/actions/lecture";
-import { openChannelTalk } from "@/utils/channelTalk";
+import WebCapture, { OPEN_WEB_CAPTURE } from "@/components/capture/WebCapture";
 
+const itemStyle = (line: boolean): CSSProperties => ({
+  display: "flex", alignItems: "center", gap: 10,
+  padding: "12px 14px", cursor: "pointer",
+  borderBottom: line ? "1px solid #f0f0f0" : "none",
+  fontSize: 13, fontWeight: 600, color: "#333",
+  transition: "background 0.15s",
+});
+
+/**
+ * 오른쪽 빠른메뉴 (2026-11-10 사장님: 첫 화면만이 아니라 기사·뉴스 목록 등 공실뉴스 화면 맨 오른쪽에 늘)
+ *  (main) 레이아웃에 하나 — 1200 본문 바로 오른쪽 · [화면캡쳐] 막대도 여기서 띄운다
+ *  우리동네부동산 지도(/gongsil)에는 넣지 않는다 (2026-11-10 사장님) — 지도는 자기 [화면캡처] 버튼
+ */
 export default function QuickFloatingMenu() {
+  const pathname = usePathname() || "";
   const [isOpen, setIsOpen] = useState(true);
   const [isSubOpen, setIsSubOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -47,6 +62,9 @@ export default function QuickFloatingMenu() {
       window.location.href = href;
     }
   };
+
+  // 공실뉴스부동산 소개(/newsrealty)는 따로 꾸민 페이지라 빠른메뉴를 띄우지 않는다
+  if (pathname.startsWith("/newsrealty")) return null;
 
   return (
     <>
@@ -130,64 +148,44 @@ export default function QuickFloatingMenu() {
           관심기사
         </div>
 
-        {/* 내 수강특강 */}
+        {/* 2026-11-10 사장님: 찜한공실 · 관심기사 · 관심단지 · 1:1문의 · 화면캡쳐 · TOP (내 수강특강 · 실시간상담 · 고객센터는 뺌) */}
+        {/* 관심단지 — 지도 찜 판의 단지 칸 */}
         <div
-          onClick={() => handleAuthClick("/my_lectures")}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "12px 14px", cursor: "pointer",
-            borderBottom: "1px solid #f0f0f0",
-            fontSize: 13, fontWeight: 600, color: "#333",
-            transition: "background 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-          </svg>
-          내 수강특강
-        </div>
-
-        {/* 실시간상담 (채널톡 · 미로드 시 카카오톡 채널로 대체) */}
-        <div
-          onClick={() => openChannelTalk()}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "12px 14px", cursor: "pointer",
-            borderBottom: "1px solid #f0f0f0",
-            fontSize: 13, fontWeight: 600, color: "#333",
-            transition: "background 0.15s",
-          }}
+          onClick={() => handleAuthClick("/gongsil?tab=wish&star=apt")}
+          style={itemStyle(true)}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M4 14v-2a8 8 0 0 1 16 0v2"/>
-            <path d="M4 14h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>
-            <path d="M20 14h-2a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1z"/>
-            <path d="M19 19v1a2 2 0 0 1-2 2h-3"/>
+            <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/>
           </svg>
-          실시간상담
+          관심단지
         </div>
 
-        {/* 고객센터 (FAQ · 1:1 문의) */}
+        {/* 1:1문의 — 고객센터에서 문의 창을 바로 연다 (비회원도 가능) */}
         <div
-          onClick={() => { window.location.href = "/help"; }}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "12px 14px", cursor: "pointer",
-            fontSize: 13, fontWeight: 600, color: "#333",
-            transition: "background 0.15s",
-          }}
+          onClick={() => { window.location.href = "/help?inquiry=1"; }}
+          style={itemStyle(true)}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
-          고객센터
+          1:1문의
+        </div>
+
+        {/* 화면캡쳐 — 우리동네부동산과 같은 캡처·녹화·판서 막대를 연다 */}
+        <div
+          onClick={() => window.dispatchEvent(new Event(OPEN_WEB_CAPTURE))}
+          style={itemStyle(false)}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><rect x="8" y="8" width="8" height="8" rx="1"/>
+          </svg>
+          화면캡쳐
         </div>
       </div>
 
@@ -281,6 +279,8 @@ export default function QuickFloatingMenu() {
         TOP
       </div>
     </div>
+    {/* 빠른메뉴 [화면캡쳐]로 여는 막대 — 따로 띄우는 버튼은 숨김 */}
+    <WebCapture noLauncher />
     {toastMessage && (
       <div style={{ position: "fixed", top: "25%", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.85)", color: "#fff", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", whiteSpace: "nowrap", animation: "toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
         {toastMessage}
