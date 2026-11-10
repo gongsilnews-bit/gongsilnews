@@ -224,7 +224,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
             {/* 동그라미 → 공실뉴스 사이트 첫 화면 (gongsilnews.com, 2026-11-04 사장님). 글씨는 관리자 홈 */}
             <img src="/new_logo.png" alt="공실뉴스" title="공실뉴스 사이트로" onClick={(e) => { e.stopPropagation(); window.location.href = "/"; }}
               style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
-            <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px", whiteSpace: "nowrap", lineHeight: 1.2, display: "flex", alignItems: "center", gap: 6 }}>공실뉴스{pro && <ProTag size="md" />}</div>
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px", whiteSpace: "nowrap", lineHeight: 1.2, display: "flex", alignItems: "center", gap: 6 }}>공실뉴스{pro && <ProTag size="md" label="admin" />}</div>
           </div>
           ) : (
           <div onClick={() => onSelect("dashboard")} title="홈" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>

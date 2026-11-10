@@ -7,10 +7,10 @@
 import React from "react";
 import { PRO_ORANGE } from "@/utils/tier";
 
-export function ProTag({ size = "sm", style }: { size?: "xs" | "sm" | "md"; style?: React.CSSProperties }) {
+export function ProTag({ size = "sm", style, label = "NEWS" }: { size?: "xs" | "sm" | "md"; style?: React.CSSProperties; label?: string }) {
   const f = size === "xs" ? 9 : size === "md" ? 12 : 10;
   return (
-    <span title="공실뉴스부동산" style={{ display: "inline-block", flexShrink: 0, verticalAlign: "middle", background: PRO_ORANGE, color: "#fff", fontSize: f, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1, padding: size === "md" ? "3px 6px 4px" : "2px 4px 3px", borderRadius: 3, ...style }}>NEWS</span>
+    <span title="공실뉴스부동산" style={{ display: "inline-block", flexShrink: 0, verticalAlign: "middle", background: PRO_ORANGE, color: "#fff", fontSize: f, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1, padding: size === "md" ? "3px 6px 4px" : "2px 4px 3px", borderRadius: 3, ...style }}>{label}</span>
   );
 }
 

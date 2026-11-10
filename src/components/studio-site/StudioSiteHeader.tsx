@@ -3,15 +3,9 @@
 
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FEATURE_GROUPS, featureBySlug } from "@/components/studio-site/studioFeatures";
-import NotificationBell from "@/components/common/NotificationBell";
-import { createClient } from "@/utils/supabase/client";
-import { getEffectiveMemberRole, getAdminEntryLabel, isStudioMember, isNewsAdminButton, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
-
-import LoginJoinButton, { InquiryButton } from "@/components/LoginJoinButton";
-// 공실마케팅 메뉴 줄. 공실스터디(StudyHeader)와 같은 방식으로 메인 헤더 아래에 붙고,
-// 스크롤해서 화면 위에 닿으면 이 줄이 고정된다.
+// 공실뉴스부동산 한 줄 메뉴 (2026-11-09) — 로고 · 칸 이동 메뉴 · [신청하기]. 화면 위에 붙어 따라온다 (sticky)
 
 const POINT = "#d9661f";
 
@@ -34,9 +28,12 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   // "공실마케팅란?"은 뺐다 (2026-10-26 사장님) — 소개는 제목 [공실마케팅] 을 누르면 나온다
   // 브루식 [주요 기능 ▾] 큰 펼침 판 (2026-10-26) — 목록은 studioFeatures.ts
-  { label: "주요 기능", href: "/newsrealty/feature/news", match: (p) => p.startsWith("/newsrealty/feature") || p.startsWith("/newsrealty/benefits"), mega: true },
-  { label: "사용법 배우기", href: "/newsrealty/guide", match: (p) => p.startsWith("/newsrealty/guide") }, // 유튜브 사용법 영상 게시판 (2026-10-26)
-  { label: "금액안내", href: "/newsrealty/pricing", match: (p) => p.startsWith("/newsrealty/pricing") },
+  // 주요 기능 · 사용법 배우기 메뉴는 뺐다 (2026-11-09 사장님) — 페이지(/newsrealty/feature · /newsrealty/guide)는 그대로
+  // 원페이지 (2026-11-09 사장님) — 누르면 첫 화면의 그 칸으로 내려간다. 다른 페이지에 있으면 첫 화면으로 와서 내려간다
+  { label: "공실뉴스부동산이란?", href: "/newsrealty#intro", match: () => false },
+  { label: "SNS 자동화", href: "/newsrealty#sns", match: () => false },
+  { label: "부동산마케팅", href: "/newsrealty#benefits", match: () => false },
+  { label: "금액안내", href: "/newsrealty#pricing", match: () => false },
   // "신청하기"는 뺐다 (2026-10-26 사장님) — 금액안내의 [공실뉴스부동산 PRO 신청하기] 버튼으로 신청 (/newsrealty/pro-apply 화면은 그대로)
   // 자료실·커뮤니티는 2026-10-26 부동산특강(/study)에서 옮겨 왔다 — 게시판은 그대로, 회원 전용(4레벨) 혜택
   // 자료실 메뉴는 뺐다 (2026-11-09 사장님: "의미가 없어") — 게시판·주소(/newsrealty/resources)는 그대로
@@ -51,20 +48,17 @@ interface StudioSiteHeaderProps {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
   const pathname = usePathname() || "/newsrealty";
-  const router = useRouter();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   // 원래 자리(slot)가 화면 위에 닿으면 붙는다.
   const slotRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
-  const [slotHeight, setSlotHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const check = () => {
       const el = slotRef.current;
       if (!el) return;
       const isStuck = el.getBoundingClientRect().top <= 0 && window.scrollY > 0;
-      if (isStuck) setSlotHeight((h) => h ?? el.offsetHeight);
       setStuck(isStuck);
     };
     const raf = window.requestAnimationFrame(check);
@@ -75,82 +69,32 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
     };
   }, []);
 
-  // 붙었을 때 오른쪽에 메인 헤더와 같은 알림·검색·전체메뉴·관리자 버튼을 둔다
-  const [member, setMember] = useState<{ role: string; planType: string; agencyStatus: string; studioOn: boolean } | null>(null);
-  useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const [{ data: m }, { data: agency }] = await Promise.all([
-        supabase.from("members").select("role, plan_type, plan_end_date, studio_end_date").eq("id", user.id).single(),
-        supabase.from("agencies").select("status").eq("owner_id", user.id).maybeSingle(),
-      ]);
-      setMember({
-        role: getEffectiveMemberRole(m?.role, agency?.status),
-        planType: (m as { plan_type?: string } | null)?.plan_type || "",
-        agencyStatus: agency?.status || "",
-        studioOn: isStudioMember(m as any),
-      });
-    });
-  }, []);
-
-  const goAdmin = () => {
-    if (!member) return;
-    if (member.role === "REALTOR" && member.agencyStatus === "REJECTED") window.open("/realty_admin?menu=settings&tab=agency", "_blank");
-    else if (member.role === "ADMIN") router.push("/admin");
-    else if (member.role === "REALTOR") router.push("/realty_admin");
-    else router.push("/user_admin");
-  };
 
   return (
     <>
-    {/* 위 남색 줄 — 메인 홈 위쪽 줄과 같게: 왼쪽 "공실뉴스"(홈), 오른쪽 공실등록 · 무료가입 및 로그인 / 알림 · admin · 로그아웃 (2026-10-26 사장님) */}
-    <div style={{ background: "#1f1714", color: "#fff" }}>
-      <div style={{ maxWidth: 1820, margin: "0 auto", padding: "0 40px", height: 58, display: "flex", alignItems: "center", gap: 18 }}>
-        <Link href="/" title="공실뉴스 홈" style={{ fontSize: 22, fontWeight: 900, color: "#fff", textDecoration: "none", letterSpacing: "-0.5px", fontStyle: "italic" }}>공실뉴스</Link>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>11만 부동산을 위한 무료 정보 채널</span>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          {member ? (
-            <>
-              <NotificationBell color="#ffffff" />
-              <InquiryButton small /> {/* 로그인해도 늘 (2026-11-05) */}
-              <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus, member.studioOn)}
-              </button>
-              <button type="button" onClick={async () => { await createClient().auth.signOut({ scope: "local" }); window.location.reload(); }} style={{ background: "none", border: 0, color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>로그아웃</button>
-            </>
-          ) : (
-            <>
-              <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#e8890c", color: "#fff", border: "none", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>공실등록 &gt;&gt;</button>
-              <LoginJoinButton tone="dark" small />
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-    <div ref={slotRef} style={{ height: stuck ? slotHeight : undefined, background: "#ffffff" }}>
-      <div
-        style={stuck
-          ? { position: "fixed", top: 0, left: 0, width: "100%", zIndex: 9999990, background: "#ffffff", boxShadow: "0 4px 16px rgba(0,0,0,0.12)", borderBottom: "1px solid #e5e7eb" }
-          : { background: "#ffffff" }}
-      >
+    {/* 한 줄 메뉴 (2026-11-09 사장님) — 예전 위 검은 공실뉴스 줄은 없앰. 공실뉴스 홈·로그인·관리자는 이 줄 오른쪽에 */}
+    {/* 메뉴는 늘 화면 맨 위에 고정 (2026-11-09 사장님) — 공실뉴스 CSS 의 body overflow 때문에 sticky 가 안 붙어 fixed 로.
+        아래 칸이 메뉴에 가리지 않게 같은 높이(68px)만큼 자리를 비워 둔다 */}
+    <div ref={slotRef} style={{ height: 68 }}>
+      <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: 68, zIndex: 9999990, background: "#ffffff", transition: "box-shadow 0.2s", boxShadow: stuck ? "0 4px 16px rgba(0,0,0,0.12)" : "none", borderBottom: stuck ? "1px solid #e5e7eb" : "1px solid #f1f1f1" }}>
         <nav
           aria-label="공실뉴스부동산 메뉴"
           className="container px-20"
           style={{
             display: "flex", alignItems: "center", gap: "32px",
-            padding: stuck ? "12px 20px" : "16px 20px",
+            height: 68, padding: "0 20px",
           }}
         >
           {/* 공실마케팅 앱 아이콘 (공실뉴스 홈은 위 남색 줄의 "공실뉴스"로, 2026-10-26 사장님) */}
-          <Link href="/newsrealty" title="공실뉴스부동산 홈" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -22 }}>
+          {/* 맨 앞은 공실뉴스 로고 → 공실뉴스 홈, 그 옆 "공실뉴스부동산"은 글자 (2026-11-10 사장님) */}
+          <Link href="/" title="공실뉴스 홈으로" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, marginRight: -18 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/new_logo.png" alt="공실뉴스부동산" style={{ height: stuck ? 34 : 42, width: stuck ? 34 : 42, borderRadius: "50%", objectFit: "cover" }} /* 동그란 재생 단추 — 앱 왼쪽 위와 같게 (2026-10-29 사장님) */ />
+            <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 40 }} />
           </Link>
           <Link
             href="/newsrealty"
             style={{
-              fontSize: stuck ? "20px" : "24px", fontWeight: 900, color: "#111", letterSpacing: "-0.5px", lineHeight: 1,
+              fontSize: "22px", fontWeight: 900, color: "#111", letterSpacing: "-0.5px", lineHeight: 1,
               textDecoration: "none", whiteSpace: "nowrap",
             }}
             title="공실뉴스부동산 홈"
@@ -173,7 +117,27 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
                   <Link
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
-                    onClick={() => setHoveredNav(null)}
+                    onClick={(e) => {
+                      setHoveredNav(null);
+                      // 원페이지 — 같은 화면에 그 칸이 있으면 바로 부드럽게 내려간다 (주소의 #도 하나만, 2026-11-09)
+                      const id = item.href.split("#")[1];
+                      const el = id ? document.getElementById(id) : null;
+                      if (el) {
+                        e.preventDefault();
+                        history.replaceState(null, "", `#${id}`);
+                        el.scrollIntoView({ behavior: "smooth", block: "start" }); // 메뉴 아래에 멈추는 건 각 칸의 scrollMarginTop
+                        // 내려가는 도중 영상이 불려 와 길이가 바뀌면 덜 간다 — 다 멈춘 뒤 한 번만 맞춘다
+                        let fixed = false;
+                        const fix = () => {
+                          if (fixed) return;
+                          fixed = true;
+                          window.removeEventListener("scrollend", fix);
+                          if (Math.abs(el.getBoundingClientRect().top - 80) > 6) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        };
+                        window.addEventListener("scrollend", fix);
+                        setTimeout(fix, 1600);
+                      }
+                    }}
                     style={{
                       fontSize: "16px",
                       fontWeight: isActive ? 800 : 600,
@@ -265,23 +229,8 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
             })}
           </div>
 
-          {/* 로그인·관리자 버튼은 위 남색 줄에 — 스크롤해서 메뉴 줄이 위에 붙었을 때만 여기에도 (2026-10-26) */}
-          {stuck && (
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-              {member ? <NotificationBell color="#333" /> : (
-                <LoginJoinButton />
-              )}
-              {member ? (
-                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isNewsAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? NEWS_ADMIN_BUTTON_ORANGE : "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus, member.studioOn)}
-                </button>
-              ) : (
-                <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#e8890c", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  공실등록 &gt;&gt;
-                </button>
-              )}
-            </div>
-          )}
+          {/* 오른쪽은 [신청하기] 하나만 (2026-11-09 사장님) — 금액표의 공실뉴스부동산 [시작하기]와 같은 신청 화면 */}
+          <Link href="/newsrealty/pro-apply" style={{ marginLeft: "auto", flexShrink: 0, background: "#e8890c", color: "#fff", borderRadius: 8, padding: "10px 20px", fontSize: 15, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}>신청하기</Link>
         </nav>
         <Suspense fallback={null}>
           <StudioSiteSubTabs pathname={pathname} />

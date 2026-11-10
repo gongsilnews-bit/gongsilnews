@@ -144,10 +144,13 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
       )}
       {part !== "title" && (
       <>
-      <img
-        src="/images/realty/newsrealty_local_reporter.jpg"
-        alt="내 지역/단지 로컬 부동산 기자"
-        style={{ width: "100%", maxWidth: mobile ? "100%" : 400, aspectRatio: "1024 / 935", objectFit: "cover", borderRadius: 14, background: "var(--surface)", display: "block" }}
+      {/* 사진 대신 첫 화면(/newsrealty)과 같은 영상 (2026-11-10 사장님) — 소리 없이 자동 재생 · 반복 */}
+      <video
+        src="/studio-shots/intro.mp4"
+        poster="/studio-shots/intro-poster.jpg"
+        autoPlay muted loop playsInline preload="auto"
+        aria-label="공인중개사가 동네를 취재하고 스마트폰으로 공실 뉴스를 전하는 모습"
+        style={{ width: "100%", maxWidth: mobile ? "100%" : 480, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 14, background: "var(--surface)", display: "block" }}
       />
       <div className="nra-card" style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
         <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 14, color: "var(--n300)", lineHeight: 1.6 }}>

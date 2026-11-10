@@ -4,6 +4,7 @@ import React from "react";
 import { useStartHref } from "./useStartHref";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
+import StudioPriceTable from "./StudioPriceTable";
 
 /**
  * 공실뉴스부동산 · PRO 소개 (/newsrealty, 2026-11-04 사장님: 공실마케팅 studio → 공실뉴스부동산 PRO, 영상편집·앱 설치 빼고 웹으로)
@@ -13,7 +14,6 @@ import { ProTag } from "@/components/admin/ProBadge";
  */
 const ACCENT = "#e8890c";
 const ACCENT_SOFT = "#fdf4e7";
-const PRICING_HREF = "/newsrealty/pricing";
 const CSS = `
 .sv{font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;color:#111827;background:#fff;word-break:keep-all}
 .sv-sec{max-width:1120px;margin:0 auto;padding:120px 24px 0;text-align:center}
@@ -326,22 +326,39 @@ export default function StudioVrewLanding() {
       <style>{CSS}</style>
       {video && <VideoModal id={video} onClose={() => setVideo(null)} />}
 
-      {/* 1 첫 화면 */}
-      <section className="sv-sec" style={{ paddingTop: 96 }}>
-        <p className="sv-kicker">내 지역 공실! 이제 뉴스로 전달하세요.</p>
-        <h1 className="sv-h1">공실만 등록하면<br />뉴스 · 블로그 · SNS까지</h1>
+      {/* 원페이지 — 위 메뉴를 누르면 이 칸들로 내려간다 (2026-11-09 사장님) */}
+      <style>{`html{scroll-behavior:smooth}`}</style>
+      {/* 1 SNS 자동화 — 여기부터 (2026-11-09 사장님: "공실만 등록하면 뉴스 블로그 SNS까지 여기서부터") */}
+      <section id="sns" className="sv-sec" style={{ paddingTop: 96, scrollMarginTop: 80 }}>
+        {/* 2026-11-09 사장님 문구 — "내 지역 공실! 이제 뉴스로 전달하세요." 대신 */}
+        <p className="sv-kicker">내 지역 공실! 이제 <span style={{ color: ACCENT }}>SNS · 뉴스</span>로 전달하세요</p>{/* 2026-11-10 사장님 */}
+        <h2 className="sv-h1">공실만 등록하면<br />뉴스 · 블로그 · SNS까지</h2>
         <p className="sv-p">
           공실 하나로 <b>공실뉴스 기사</b>와 <b>블로그 · 인스타그램 · 스레드 · 페이스북 글</b>,<br />
           <b>유튜브 대본</b>까지 AI가 채웁니다.<br />
-          지금 회원가입하시고, <b>공실3건 무료 등록</b>하세요.
+          <b>공실뉴스부동산</b>이 되시면 <b>SNS · 뉴스</b> 마케팅이 쉬워집니다!
         </p>
         <div className="sv-btns">
-          <Link href={START_HREF} className="sv-btn solid big">무료로 시작하기</Link>
+          {/* 2026-11-10 사장님: 왼쪽 [금액안내] · 오른쪽 [공실뉴스부동산 신청 >>] */}
+          <a href="#pricing" className="sv-btn line big">금액안내</a>
+          <Link href="/newsrealty/pro-apply" className="sv-btn solid big">공실뉴스부동산 신청 &gt;&gt;</Link>
         </div>
         {/* 첫 화면 영상 — 사장님이 만든 studio.mp4 (소리 빼고 줄임, 2026-10-26). 소리 없이 자동 재생 · 반복 */}
-        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4?v=2" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
+        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4?v=4" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
       </section>
 
+      {/* 공실뉴스부동산이 되면 — 3단계 칸 (2026-11-10 사장님: 맨 위 소개 칸 없애고, 첫 화면 영상과 "클릭 한 번" 사이로 옮김. 위 메뉴 [공실뉴스부동산이란?]은 여기로) */}
+      <div id="intro" className="sv-band" style={{ scrollMarginTop: 80 }}>
+        <section className="sv-sec">
+          <h2 className="sv-h2">내 지역/단지 뉴스 부동산</h2>
+          <p className="sv-p">AI · 스마트폰 시대, 내 지역/단지 정보를<br />뉴스로 전달하세요!</p>
+          <div className="sv-steps">
+            <div className="sv-step"><div className="n">1</div><div className="t">내 지역·단지 기사 작성</div><div className="d">매월 4회 기사를 꾸준히 발행하세요. 지역 전문가로 알려집니다.</div></div>
+            <div className="sv-step"><div className="n">2</div><div className="t">공실 20건 등록</div><div className="d">공실을 20건까지 등록해 지도와 내 홈페이지에 함께 알릴 수 있습니다.</div></div>
+            <div className="sv-step"><div className="n">3</div><div className="t">쉬워지는 부동산마케팅</div><div className="d">SNS·뉴스 발행 · 매물보고서 · 물건접수 홈페이지를 공실 하나 등록하면 한 번에 만듭니다.</div></div>
+          </div>
+        </section>
+      </div>
       {/* 2 뉴스·SNS 자동 발행 */}
       <section className="sv-sec">
         <h2 className="sv-h2">클릭 한 번으로<br />블로그 · 인스타그램 · 페이스북 · 스레드까지</h2>
@@ -354,17 +371,22 @@ export default function StudioVrewLanding() {
       {/* 2-1 어렵지 않아요 — 뉴스·SNS 바로 아래 (2026-10-26 사장님) */}
       <div className="sv-band">
         <section className="sv-sec">
-          <h2 className="sv-h2">어렵지 않아요, 3단계면 됩니다</h2>
+          <h2 className="sv-h2">SNS 뉴스 마케팅! 어렵지 않아요.<br />3단계면 됩니다</h2>{/* 2026-11-10 사장님 */}
           <p className="sv-p">블로그 · 인스타그램 · 스레드 · 페이스북, 몰라도 괜찮습니다.<br />대표님은 고르고, 확인하고, 누르기만 하세요.</p>
           <div className="sv-steps">
             {[
-              { n: "1", t: "공실 고르기", d: "공실뉴스에 등록한 내 공실을 고릅니다." },
-              { n: "2", t: "AI가 채우기", d: "뉴스 · 블로그 · SNS 글과 유튜브 대본을 AI가 만들어 채웁니다." },
+              { n: "1", t: "공실등록하기", d: "내 지역/단지, 공실을 등록합니다." },
+              { n: "2", t: "AI 복사, 붙여넣기", d: "뉴스 · 블로그 · SNS 글과 유튜브 쇼츠를 AI가 만들어 채웁니다." },
               { n: "3", t: "내가 발행", d: "확인하고 고친 뒤 [발행]은 대표님이 직접 누릅니다. 계정이 안전합니다." },
             ].map((s) => (
               <div key={s.n} className="sv-step"><div className="n">{s.n}</div><div className="t">{s.t}</div><div className="d">{s.d}</div></div>
             ))}
           </div>
+          {/* 쓰기 전 준비물 — 작은 글씨 (2026-11-10 사장님) */}
+          <p style={{ margin: "28px auto 0", fontSize: 13, color: "#6b7280", lineHeight: 1.7, textAlign: "center" }}>
+            * 크롬 웹브라우저가 설치되어 있어야 합니다.<br />
+            * 개인이 사용하는 ChatGPT, Gemini, Claude 중 하나가 있어야 합니다.
+          </p>
         </section>
       </div>
 
@@ -399,7 +421,7 @@ export default function StudioVrewLanding() {
       </section>
 
       {/* 여기부터 혜택 이야기 — 노란 미색 띠로 구분 (2026-11-05 사장님) */}
-      <div className="sv-band-y">
+      <div id="benefits" className="sv-band-y" style={{ scrollMarginTop: 80 }}>
         {/* 7 이것도 돼요 */}
         <section className="sv-sec">
           <h2 className="sv-h2"><span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되시면,<br />부동산마케팅이 쉬워집니다.</h2>
@@ -469,8 +491,22 @@ export default function StudioVrewLanding() {
         <Shot label="단지 실거래 창 화면" src="/studio-shots/f-alert.webp" />
       </section>
 
-      {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
+      {/* 쇼츠 자동 발행기 — 실거래 알림 다음 (2026-11-09 사장님). 실제 기능대로: 공실 하나로 60초 쇼츠 → 도우미가 올리기 칸 채움 → 게시는 회원 */}
       <section className="sv-sec">
+        <h2 className="sv-h2">쇼츠 자동 발행기</h2>
+        <p className="sv-p">공실 하나로 <b>60초 쇼츠</b>를 만들고,<br /><b>유튜브 쇼츠 · 인스타그램 릴스 · 스레드 · 페이스북</b>에 올립니다.</p>
+        <div className="sv-steps" style={{ marginTop: 40 }}>
+          <div className="sv-step"><div className="n">1</div><div className="t">공실 고르기</div><div className="d">등록한 공실의 사진·정보로 대본이 채워집니다.</div></div>
+          <div className="sv-step"><div className="n">2</div><div className="t">테마 고르기</div><div className="d">자막·글꼴·전환이 맞춰진 테마를 고르면 쇼츠가 완성됩니다.</div></div>
+          <div className="sv-step"><div className="n">3</div><div className="t">한 번에 올리기</div><div className="d">도우미가 영상·제목·설명을 채우고, [게시]는 대표님이 직접 누릅니다.</div></div>
+        </div>
+        <div style={{ marginTop: 36 }}>{btns}</div>
+        {/* 사장님이 찍은 실제 화면 (2026-11-09) — 위쪽 이름·메일은 흐림, 소리 뺌 */}
+        <video className="sv-img" style={{ maxWidth: 1060, marginTop: 40 }} src="/studio-shots/shorts.mp4?v=1" poster="/studio-shots/shorts-poster.jpg?v=1" autoPlay muted loop playsInline preload="metadata" aria-label="공실을 고르고 테마를 누르면 60초 쇼츠가 만들어지는 실제 화면" />
+      </section>
+
+      {/* 7-1 후기 — 브루 "가벼우니까, 쉬우니까"식 (2026-10-26 사장님) */}
+      <section id="reviews" className="sv-sec" style={{ scrollMarginTop: 80 }}>
         {/* 제목 「부동산 마케팅, 이거 하나면 끝!」·설명·단추는 11-09 사장님 지시로 없앰 — 후기만 */}
         <Reviews />
       </section>
@@ -504,6 +540,11 @@ export default function StudioVrewLanding() {
       {/* 만든 사람(대표 소개) 띠는 11-09 사장님 지시로 없앰 */}
       {/* 부동산회원 · 공실뉴스부동산 비교표는 11-09 사장님 지시로 없앰 */}
 
+      {/* 금액안내 — 원페이지라 따로 떨어진 페이지 대신 여기 (2026-11-09 사장님) */}
+      <div id="pricing" style={{ scrollMarginTop: 80 }}>
+        <StudioPriceTable />
+      </div>
+
       {/* 마지막 — 브루 맨 아래처럼 큰 로고 · 한 줄 · 버튼 (2026-10-26 사장님) */}
       <div className="sv-last-wrap">
       <section id="start" className="sv-sec sv-last" style={{ scrollMarginTop: 80 }}>
@@ -513,12 +554,11 @@ export default function StudioVrewLanding() {
           <span>공실뉴스부동산</span>
           <ProTag size="md" style={{ fontSize: 16, padding: "4px 8px 5px", borderRadius: 4 }} />
         </div>
-        <h2 className="sv-h2">내 지역 · 내 단지 <span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되세요</h2>
+        {/* 2026-11-10 사장님: 문구 바꾸고 [금액안내]는 뺌, [신청하기 >>]만 */}
+        <h2 className="sv-h2">내 지역/단지 <span style={{ color: ACCENT }}>SNS 뉴스 마케팅!</span><br />이제 쉬워집니다.</h2>
         <div className="sv-btns">
-          <Link href="/newsrealty/pro-apply" className="sv-btn solid">신청하기</Link> {/* 공실뉴스부동산 신청 (2026-11-09 사장님) */}
-          <Link href={PRICING_HREF} className="sv-btn line">금액안내</Link>
+          <Link href="/newsrealty/pro-apply" className="sv-btn solid">신청하기 &gt;&gt;</Link>
         </div>
-        <p className="os">설치 없이 크롬 · 엣지에서 바로 씁니다.</p>
       </section>
       </div>
     </div>

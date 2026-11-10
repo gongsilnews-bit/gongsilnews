@@ -3,8 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { openChannelTalk } from "@/utils/channelTalk";
-import { useStartHref } from "./useStartHref";
-import { FEATURE_GROUPS, featureBySlug } from "@/components/studio-site/studioFeatures";
 
 /**
  * 공실마케팅 풋터 (/marketing 아래 모든 페이지, 2026-10-26 사장님)
@@ -14,48 +12,14 @@ import { FEATURE_GROUPS, featureBySlug } from "@/components/studio-site/studioFe
 const BG = "#1f1714";
 const DIM = "rgba(255,255,255,0.6)";
 
-const link: React.CSSProperties = { display: "block", padding: "5px 0", fontSize: 14, color: "rgba(255,255,255,0.82)", textDecoration: "none" };
-const head: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: DIM, marginBottom: 12 };
 
 export default function StudioFooter() {
-  const startHref = useStartHref(); // 로그인 안 했으면 회원가입, 했으면 관리자 (2026-11-05)
   return (
     <footer style={{ background: BG, color: "#fff", fontFamily: "'Pretendard Variable','Pretendard',-apple-system,sans-serif", wordBreak: "keep-all" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "64px 24px 40px" }}>
-        <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
-          {/* 브랜드 */}
-          <div style={{ minWidth: 200 }}>
-            <Link href="/newsrealty" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#fff" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/new_logo.png" alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
-              <span style={{ fontSize: 20, fontWeight: 900 }}>공실뉴스부동산</span>
-            </Link>
-            <p style={{ fontSize: 13.5, lineHeight: 1.7, color: DIM, margin: "14px 0 18px" }}>공실만 등록하면<br />뉴스 · 블로그 · SNS까지</p>
-            <Link href={startHref} style={{ display: "inline-flex", padding: "9px 16px", borderRadius: 8, background: "#e8890c", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>무료로 시작하기</Link>
-          </div>
-
-          {/* 주요 기능 */}
-          <div style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${FEATURE_GROUPS.length + 1}, minmax(120px, 1fr))`, gap: 24 }}>
-            {FEATURE_GROUPS.map((g) => (
-              <div key={g.name}>
-                <div style={head}>{g.name}</div>
-                {g.slugs.map((sl) => {
-                  const f = featureBySlug(sl);
-                  return f ? <Link key={sl} href={`/newsrealty/feature/${sl}`} style={link}>{f.name}</Link> : null;
-                })}
-              </div>
-            ))}
-            <div>
-              <div style={head}>고객지원</div>
-              <Link href="/newsrealty/guide" style={link}>사용법 배우기</Link>
-              <Link href="/newsrealty/pricing" style={link}>금액안내</Link>
-              <Link href="/help" style={link}>고객센터</Link>
-            </div>
-          </div>
-        </div>
-
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 40px" }}>
+        {/* 위쪽 로고·문구·무료로 시작하기·고객지원 칸은 뺐다 (2026-11-09 사장님) — 회사 정보만 */}
         {/* 아래 줄: 약관 · 회사 정보 */}
-        <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", gap: 18, flexWrap: "wrap", fontSize: 13 }}>
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 13 }}>
           <Link href="/" style={{ color: "#fff", fontWeight: 700, textDecoration: "none" }}>공실뉴스</Link>
           <Link href="/about" style={{ color: DIM, textDecoration: "none" }}>회사소개</Link>
           <Link href="/terms" style={{ color: DIM, textDecoration: "none" }}>이용약관</Link>
