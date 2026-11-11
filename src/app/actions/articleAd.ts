@@ -4,6 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { isPermissionAlive } from "@/utils/planCheck";
 import { webpForUpload } from "@/utils/serverWebp";
+import { createClient as createSessionClient } from "@/utils/supabase/server";
+import { isAdminRole } from "@/utils/permissionCheck";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -15,6 +17,19 @@ function getAdminClient() {
 }
 
 const NO_BANNER_PERMISSION = "기사 배너광고 권한이 없는 회원입니다.";
+
+/** 지금 부른 사람이 최고관리자인가 (로그인 쿠키로) */
+async function callerIsAdmin(): Promise<boolean> {
+  try {
+    const session = await createSessionClient();
+    const { data: { user } } = await session.auth.getUser();
+    if (!user) return false;
+    const { data: me } = await getAdminClient().from("members").select("role").eq("id", user.id).maybeSingle();
+    return isAdminRole(me?.role);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * 기사에 배너광고를 붙일 수 있는가.
@@ -94,6 +109,62 @@ function normalizeAuthorBanner(b: any): AuthorBanner {
   };
 }
 
+/**
+ * 최고관리자 [기사광고] 회원 고르기 (2026-11-11) — 기사를 쓰는 회원(부동산·비즈니스·최고관리자)을 이름·이메일·사무소로 찾는다
+ *  keyword 가 없으면 배너를 가진 회원부터. 최고관리자만 부를 수 있다
+ */
+export type AdMember = { id: string; name: string; email: string; role: string; office: string; banners: number };
+export async function adminSearchAdMembers(keyword = ""): Promise<{ success: boolean; data: AdMember[]; error?: string }> {
+  if (!(await callerIsAdmin())) return { success: false, data: [], error: "최고관리자만 쓸 수 있어요." };
+  const db = getAdminClient();
+  const kw = keyword.trim().replace(/[%,()]/g, "");
+  let q = db.from("members").select("id, name, email, role").in("role", ["ADMIN", "REALTOR", "BIZ"]).limit(kw ? 30 : 200); // role 칸은 영문 코드만 받는다
+  if (kw) q = q.or(`name.ilike.%${kw}%,email.ilike.%${kw}%`);
+  const [{ data: ms, error }, { data: bs }, agRes] = await Promise.all([
+    q,
+    db.from("article_author_banners").select("author_id"),
+    kw ? db.from("agencies").select("owner_id, name").ilike("name", `%${kw}%`).limit(30) : db.from("agencies").select("owner_id, name").limit(2000),
+  ]);
+  if (error) return { success: false, data: [], error: error.message };
+  const count = new Map<string, number>();
+  for (const b of bs || []) count.set(String(b.author_id), (count.get(String(b.author_id)) || 0) + 1);
+  const office = new Map<string, string>();
+  for (const a of agRes.data || []) office.set(String(a.owner_id), String(a.name || ""));
+  let rows = (ms || []) as { id: string; name: string | null; email: string | null; role: string | null }[];
+  // 사무소 이름으로 찾은 회원도 더한다
+  if (kw) {
+    const more = [...office.keys()].filter((id) => !rows.some((r) => r.id === id));
+    if (more.length) {
+      const { data: m2 } = await db.from("members").select("id, name, email, role").in("id", more);
+      rows = rows.concat((m2 || []) as typeof rows);
+    }
+  }
+  const data = rows.map((m) => ({ id: m.id, name: m.name || "(이름 없음)", email: m.email || "", role: String(m.role || ""), office: office.get(m.id) || "", banners: count.get(m.id) || 0 }));
+  data.sort((a, b) => b.banners - a.banners || a.name.localeCompare(b.name, "ko"));
+  return { success: true, data: data.slice(0, 50) };
+}
+
+/**
+ * 최고관리자 [기사광고] — 모든 배너 (주인 이름과 함께). 기사마다 어느 배너든 붙이게 (2026-11-11)
+ */
+export type AdminBannerOption = { id: string; name: string; author_id: string; author_name: string; is_admin: boolean };
+export async function adminListAllBanners(): Promise<{ success: boolean; data: AdminBannerOption[]; error?: string }> {
+  if (!(await callerIsAdmin())) return { success: false, data: [], error: "최고관리자만 쓸 수 있어요." };
+  const db = getAdminClient();
+  const { data: bs, error } = await db.from("article_author_banners").select("id, name, author_id").order("created_at", { ascending: false });
+  if (error) return { success: false, data: [], error: error.message };
+  const ids = Array.from(new Set((bs || []).map((b) => String(b.author_id))));
+  const { data: ms } = ids.length ? await db.from("members").select("id, name, role").in("id", ids) : { data: [] as { id: string; name: string | null; role: string | null }[] };
+  const who = new Map((ms || []).map((m) => [String(m.id), m]));
+  return {
+    success: true,
+    data: (bs || []).map((b) => {
+      const m = who.get(String(b.author_id));
+      return { id: String(b.id), name: String(b.name || "배너"), author_id: String(b.author_id), author_name: String(m?.name || "회원"), is_admin: isAdminRole(m?.role) };
+    }),
+  };
+}
+
 /* ── 1. 작성자의 배너 목록 조회 ── */
 export async function getAuthorBanners(authorId: string): Promise<{ success: boolean; data: AuthorBanner[]; error?: string }> {
   if (!authorId) return { success: true, data: [] };
@@ -138,7 +209,9 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
       return { success: false, error: "작성자 정보가 없습니다." };
     }
 
-    if (!(await canUseArticleBanner(authorId))) {
+    // 최고관리자가 [기사광고]에서 회원 대신 만들 때는 그 회원 권한과 상관없이 만든다 (2026-11-11 사장님)
+    //  (기사에 보이는지는 여전히 그 회원 권한대로 — getArticleAdInfo)
+    if (!(await canUseArticleBanner(authorId)) && !(await callerIsAdmin())) {
       return { success: false, error: NO_BANNER_PERMISSION };
     }
 
@@ -565,7 +638,7 @@ export async function updateArticlesAdSettings(
   }
 
   // 권한이 없으면 배너로는 못 바꾼다. 기본 프로필 카드나 노출 안 함은 막지 않는다.
-  if (settings.ad_type === "BANNER" && !(await canUseArticleBanner(authorId))) {
+  if (settings.ad_type === "BANNER" && !(await canUseArticleBanner(authorId)) && !(await callerIsAdmin())) {
     return { success: false, error: NO_BANNER_PERMISSION };
   }
 
@@ -752,7 +825,18 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
      * 손대지 않는다 — 화면에서만 빠지므로 재결제하면 그대로 다시 걸린다.
      * 기간이 지난 배너와 똑같이 기본형(등록자 카드)으로 떨어진다.
      */
-    const bannerAllowed = await canUseArticleBanner(targetAuthorId);
+    // 최고관리자가 붙인 배너는 글쓴이 권한과 상관없이 (2026-11-11 사장님: "최고관리자는 모든 것을 조절")
+    //  = 배너 주인이 최고관리자이거나, 다른 사람 배너를 이 기사에 붙인 경우(회원은 자기 배너만 붙일 수 있어 최고관리자만 가능)
+    const bannerOwner = (adSetting as any)?.custom_banner?.author_id as string | undefined;
+    let byAdmin = false;
+    if (adSetting?.ad_type === "BANNER" && bannerOwner) {
+      if (bannerOwner !== targetAuthorId) byAdmin = true;
+      else {
+        const { data: owner } = await supabase.from("members").select("role").eq("id", bannerOwner).maybeSingle();
+        byAdmin = isAdminRole(owner?.role);
+      }
+    }
+    const bannerAllowed = byAdmin || (await canUseArticleBanner(targetAuthorId));
 
     // 권한이 닫혔으면 배너 자리를 비운다. 등록자 카드로 바꿔치지 않는다 —
     // 배너를 걸어둔 자리는 그냥 사라지는 것이 맞다.

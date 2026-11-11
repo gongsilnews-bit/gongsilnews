@@ -22,6 +22,7 @@ const StudySection = lazy(() => import("@/components/admin/sections/StudySection
 const BoardSection = lazy(() => import("@/components/admin/sections/BoardSection"));
 const MemberSection = lazy(() => import("@/components/admin/sections/MemberSection"));
 const BannerSection = lazy(() => import("@/components/admin/sections/BannerSection"));
+const AdminArticleAdSection = lazy(() => import("@/components/admin/sections/AdminArticleAdSection"));
 const PointSection = lazy(() => import("@/components/admin/sections/PointSection"));
 const AdminManual = lazy(() => import("./AdminManual"));
 const AIWorkspaceSection = lazy(() => import("@/components/admin/agents/AIWorkspaceSection"));
@@ -62,6 +63,7 @@ const MENU_GROUPS: AdminMenuGroup[] = [
       { key: "stt_words", label: "받아쓰기 낱말장", icon: <IconEdit /> },
       { key: "inquiry", label: "문의", icon: <IconComment /> },
       { key: "board", label: "게시판", icon: <IconBoard /> },
+      { key: "article_ad", label: "기사광고", icon: <IconAd /> }, // 기사 아래 배너·공실 — 회원별로 (2026-11-11 사장님: 광고 메뉴 위)
       { key: "ad", label: "광고", icon: <IconAd /> },
       { key: "stats", label: "통계", icon: <IconStats /> },
     ],
@@ -340,6 +342,7 @@ function AdminContent() {
           {activeMenu === "inquiry" && <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" />}
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
+          {activeMenu === "article_ad" && adminUserId && <AdminArticleAdSection theme={theme} adminId={adminUserId} adminName={adminUserName} adminEmail={adminUserEmail} />}
           {activeMenu === "ad" && <BannerSection theme={theme} />}
 
           {/* ── 공실뉴스 홍보 ── */}

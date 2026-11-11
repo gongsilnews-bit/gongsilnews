@@ -21,7 +21,8 @@ const REJECT_REASONS = [
   "기타 사유 (직접 입력)"
 ];
 
-export default function ArticleSection({ theme, initialData, initialFilter }: AdminSectionProps & { initialData?: any[]; initialFilter?: string }) {
+/** authorId — 한 회원 기사만 (2026-11-11, 지금은 쓰는 곳 없음 — [기사광고]는 자기 간단한 표) */
+export default function ArticleSection({ theme, initialData, initialFilter, authorId }: AdminSectionProps & { initialData?: any[]; initialFilter?: string; authorId?: string }) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [dbArticles, setDbArticles] = useState<any[]>(initialData || []);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -112,9 +113,10 @@ export default function ArticleSection({ theme, initialData, initialFilter }: Ad
     }
 
     params.noCache = true;
+    if (authorId) params.author_id = authorId;
 
     const listRequest = getArticles(params);
-    const countFilters = { status: params.status, section1: params.section1, section2: params.section2, articleNo: params.articleNo, searchKeyword: params.searchKeyword };
+    const countFilters = { status: params.status, section1: params.section1, section2: params.section2, articleNo: params.articleNo, searchKeyword: params.searchKeyword, ...(authorId ? { author_id: authorId } : {}) };
     const countsKey = JSON.stringify(countFilters);
     if (refreshCounts || countsKeyRef.current !== countsKey) {
       countsKeyRef.current = countsKey;
@@ -184,7 +186,7 @@ export default function ArticleSection({ theme, initialData, initialFilter }: Ad
 
   useEffect(() => {
     loadData(false);
-  }, [currentPage, articleFilter, publishFilter, activeFilters, pageSize, sortBy]);
+  }, [currentPage, articleFilter, publishFilter, activeFilters, pageSize, sortBy, authorId]);
 
   // 배너 개별 빠른 변경 핸들러
   const handleQuickChangeBanner = async (articleId: string, bannerValue: string) => {

@@ -4,6 +4,19 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { getEffectivePlan, isPermissionAlive } from "@/utils/planCheck";
 import type { EligibleVacancy, AuthorVacancyOptions } from "@/types/vacancy";
+import { createClient as createSessionClient } from "@/utils/supabase/server";
+import { isAdminRole } from "@/utils/permissionCheck";
+
+/** 지금 부른 사람이 최고관리자인가 (로그인 쿠키로) */
+async function callerIsAdmin(): Promise<boolean> {
+  try {
+    const s = await createSessionClient();
+    const { data: { user } } = await s.auth.getUser();
+    if (!user) return false;
+    const { data: me } = await getAdminClient().from("members").select("role").eq("id", user.id).maybeSingle();
+    return isAdminRole(me?.role);
+  } catch { return false; }
+}
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -331,6 +344,7 @@ export async function updateArticleAttachedVacancy(
       bath_count: v.bath_count || 0,
       themes: v.themes || [],
       photo_url: thumbUrl,
+      ...((await callerIsAdmin()) ? { by_admin: true } : {}), // 최고관리자가 붙인 공실 — 글쓴이 권한과 상관없이 기사에 보인다 (2026-11-11)
     };
 
     // article_media 제약조건(media_type IN ('PHOTO','FILE'))을 준수하여 media_type: 'FILE', filename: 'ATTACHED_VACANCY'로 저장
@@ -425,6 +439,7 @@ export async function updateMultipleArticlesAttachedVacancy(
       bath_count: v.bath_count || 0,
       themes: v.themes || [],
       photo_url: thumbUrl,
+      ...((await callerIsAdmin()) ? { by_admin: true } : {}), // 최고관리자가 붙인 공실 — 글쓴이 권한과 상관없이 기사에 보인다 (2026-11-11)
     };
 
     const captionJson = JSON.stringify(snapshot);
@@ -453,4 +468,34 @@ export async function updateMultipleArticlesAttachedVacancy(
     console.error("[updateMultipleArticlesAttachedVacancy] unexpected error:", err);
     return { success: false, error: err.message };
   }
+}
+
+/**
+ * 최고관리자 [기사광고] — 모든 공실에서 찾기 (공실 번호·건물명·동) — 어느 기사에든 붙이게 (2026-11-11)
+ *  keyword 가 없으면 최근 등록 30건. 광고 중(ACTIVE)만
+ */
+export type AdminVacancyOption = { id: string; vacancy_no: string; title: string; trade_type: string; owner_id: string; owner_name: string };
+export async function adminSearchVacancies(keyword = "", ownerFirst = ""): Promise<{ success: boolean; data: AdminVacancyOption[]; error?: string }> {
+  if (!(await callerIsAdmin())) return { success: false, data: [], error: "최고관리자만 쓸 수 있어요." };
+  const db = getAdminClient();
+  const kw = keyword.trim().replace(/[%,()]/g, "");
+  let q = db.from("vacancies").select("id, vacancy_no, building_name, dong, sigungu, trade_type, owner_id, created_at").eq("status", "ACTIVE").neq("trade_type", "경매").order("created_at", { ascending: false }).limit(30);
+  if (kw) q = /^\d+$/.test(kw) ? q.eq("vacancy_no", kw) : q.or(`building_name.ilike.%${kw}%,dong.ilike.%${kw}%,sigungu.ilike.%${kw}%`);
+  const [{ data, error }, mine] = await Promise.all([
+    q,
+    ownerFirst && !kw ? db.from("vacancies").select("id, vacancy_no, building_name, dong, sigungu, trade_type, owner_id, created_at").eq("status", "ACTIVE").eq("owner_id", ownerFirst).order("created_at", { ascending: false }).limit(20) : Promise.resolve({ data: [] as any[] }),
+  ]);
+  if (error) return { success: false, data: [], error: error.message };
+  const rows = [...(mine.data || []), ...(data || []).filter((v: any) => !(mine.data || []).some((x: any) => x.id === v.id))];
+  const ownerIds = Array.from(new Set(rows.map((v: any) => String(v.owner_id)).filter(Boolean)));
+  const { data: ms } = ownerIds.length ? await db.from("members").select("id, name").in("id", ownerIds) : { data: [] as { id: string; name: string | null }[] };
+  const who = new Map((ms || []).map((m) => [String(m.id), String(m.name || "")]));
+  return {
+    success: true,
+    data: rows.map((v: any) => ({
+      id: String(v.id), vacancy_no: String(v.vacancy_no || ""),
+      title: v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ") || "공실",
+      trade_type: String(v.trade_type || ""), owner_id: String(v.owner_id || ""), owner_name: who.get(String(v.owner_id)) || "",
+    })),
+  };
 }

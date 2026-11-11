@@ -568,7 +568,7 @@ export async function searchArticles(query: string) {
 }
 
 /* ── 기사 탭별 건수 초고속 조회 (HEAD 쿼리로 본문 데이터 전송 없이 카운트만 고속 조회) ── */
-export async function getArticleTabCounts(filters: { status?: string; section1?: string; section2?: string; articleNo?: string; searchKeyword?: string } = {}) {
+export async function getArticleTabCounts(filters: { status?: string; section1?: string; section2?: string; articleNo?: string; searchKeyword?: string; author_id?: string } = {}) {
   try {
     const pendingCounts = new Map<string, ReturnType<typeof getArticles>>();
     const count = (extra: Record<string, unknown> = {}) => {

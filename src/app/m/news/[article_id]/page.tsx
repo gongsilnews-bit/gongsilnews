@@ -96,7 +96,7 @@ export default async function MobileNewsReadPage({
        * 작성자가 권한을 잃었으면 추천 공실을 내린다. 저장된 스냅샷은 그대로
        * 두므로 재결제하면 손대지 않아도 다시 붙는다.
        */
-      if (!isPermissionAlive(member, member.can_article_vacancy_banner)) attachedVacancy = null;
+      if (!(attachedVacancy as any)?.by_admin && !isPermissionAlive(member, member.can_article_vacancy_banner)) attachedVacancy = null; // 최고관리자가 붙인 공실은 권한과 상관없이 (2026-11-11)
     }
   }
 
