@@ -16,8 +16,10 @@ function getAdminClient() {
 }
 
 // ── 공실 등록 ──
+const BIZ_NO_VACANCY = "비즈니스회원은 공실을 등록할 수 없어요. 공실 등록은 부동산회원 전용이에요.";
 /**
- * 광고 중 공실 한도 (2026-11-04 사장님 등급 회의) — 공실뉴스부동산(무료) 3건 · PRO 20건 · 비즈니스·최고관리자 없음
+ * 광고 중 공실 한도 (2026-11-04 사장님 등급 회의) — 공실뉴스부동산(무료) 3건 · PRO 20건 · 최고관리자 없음
+ *  비즈니스회원은 광고하는 일반 업체라 공실을 걸지 않는다 (2026-11-11) — 최고관리자가 회원 개별 한도를 주면 그만큼은 된다
  * 회원마다 따로: [회원관리]에서 "개별 한도 사용"(use_custom_registration_limits)을 켜면 그 회원의 max_vacancies
  * 광고 중(ACTIVE)만 센다 — 광고를 내리거나 거래가 끝난 공실·임시저장은 안 센다. exceptId = 지금 광고로 바꾸려는 공실
  */
@@ -45,7 +47,8 @@ async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId:
   // 내 홈페이지 전용 — PRO 만, 공실뉴스 공실과 따로 20건 (2026-11-04)
   if (homepageOnly) {
     if (tier === 'free' || tier === 'user') return "'내 홈페이지만'은 공실뉴스부동산에서 고를 수 있어요.";
-    if (tier !== 'pro') return null; // 비즈니스·최고관리자는 한도 없음
+    if (tier === 'biz') return BIZ_NO_VACANCY;
+    if (tier !== 'pro') return null; // 최고관리자는 한도 없음
     let hq = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE').eq('exposure_type', HOMEPAGE_ONLY);
     if (exceptId) hq = hq.neq('id', exceptId);
     const { count: hc, error: he } = await hq;
@@ -53,9 +56,11 @@ async function vacancyRoom(supabase: ReturnType<typeof getAdminClient>, ownerId:
     return (hc || 0) < L.proHomepageVacancies ? null : `내 홈페이지 전용 공실은 ${L.proHomepageVacancies}건까지 걸 수 있어요. 다른 공실의 광고를 내린 뒤 다시 해 주세요.`;
   }
   if (tier !== 'free' && tier !== 'pro' && tier !== 'biz') return null; // 일반회원은 아래 예전 규칙, 최고관리자는 없음
-  const tierLimit = tier === 'free' ? L.freeVacancies : tier === 'pro' ? L.proVacancies : (L.bizVacancies > 0 ? L.bizVacancies : null); // 비즈니스 0 = 제한 없음
+  // 비즈니스회원은 광고하는 일반 업체라 공실을 걸지 않는다 — 등급 값 0 = 못 건다 (2026-11-11 사장님: "빼줘", 전엔 0 = 제한 없음)
+  const tierLimit = tier === 'free' ? L.freeVacancies : tier === 'pro' ? L.proVacancies : L.bizVacancies;
   const limit = m.use_custom_registration_limits && typeof m.max_vacancies === 'number' && m.max_vacancies > 0 ? m.max_vacancies : tierLimit;
   if (limit === null) return null;
+  if (tier === 'biz' && limit <= 0) return BIZ_NO_VACANCY;
   // 공실뉴스에 거는 공실만 센다 — 내 홈페이지 전용은 따로 (값이 비어 있는 예전 공실도 공실뉴스 쪽)
   let q = supabase.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('status', 'ACTIVE').or(`exposure_type.is.null,exposure_type.neq.${HOMEPAGE_ONLY}`);
   if (exceptId) q = q.neq('id', exceptId);
@@ -128,6 +133,7 @@ export async function createVacancy(data: {
     const plan = getEffectivePlan(member);
     
     // 2. 관리자가 아니면 한도 체크 — 부동산·비즈니스회원은 무료·스튜디오회원 모두 제한 없음 (2026-10-31 사장님: 공실이 많을수록 지역 뉴스가 는다)
+    // (비즈니스회원은 아래 vacancyRoom 이 막는다 — 2026-11-11)
     const noLimit = ['REALTOR', '부동산회원', 'BIZ', '비즈니스회원'].includes(String(member.role || ''));
     if (plan !== 'admin' && !noLimit) {
       const { count, error: countErr } = await supabase

@@ -241,7 +241,7 @@ function RealtyAdminContent() {
   useEffect(() => {
     const w = window as unknown as { __gsTierPro?: boolean; __gsAskUpgrade?: () => void };
     if (!userRole) return;
-    w.__gsTierPro = isAdminRole(userRole) || userRole === "BIZ" || isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate });
+    w.__gsTierPro = isAdminRole(userRole) || (userRole !== "BIZ" && isStudioMember({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate })); // 비즈니스회원은 빠짐 (2026-11-11)
     w.__gsAskUpgrade = () => setUpgradeOpen(true);
   }, [userRole, planType, planEndDate, studioEndDate]);
 
@@ -423,8 +423,9 @@ function RealtyAdminContent() {
   // 지금 등급 — 무료 · 프로 · 스튜디오 · 비즈니스 (permissionCheck studioPlan 과 같은 판정)
   // 중개법인이 Studio 를 쓰면 Studio(중개법인)
   const myTier: Tier = userRole === 'BIZ' ? "biz" : ((p) => (p === "studio" && bizKind === "corp" ? "corp" : p || "free"))(studioPlan({ role: userRole, plan_type: planType, plan_end_date: planEndDate, studio_end_date: studioEndDate }));
-  // 스튜디오회원 기능을 쓸 수 있나 (2026-10-31 사장님 권한표) — 스튜디오회원 · 비즈니스회원 · 최고관리자. 공실뉴스부동산(무료)은 잠금 → 금액안내
-  const studioPaid = isSuperAdmin || myTier !== "free";
+  // 스튜디오회원 기능을 쓸 수 있나 (2026-10-31 사장님 권한표) — 스튜디오회원 · 최고관리자. 공실뉴스부동산(무료)은 잠금 → 금액안내
+  // 비즈니스회원은 광고하는 일반 업체라 부동산용 기능이 없다 (2026-11-11 사장님: "빼줘")
+  const studioPaid = isSuperAdmin || (myTier !== "free" && myTier !== "biz");
   const askUpgrade = () => setUpgradeOpen(true);
   /* 이름 · 이메일 · 등급 칸 — 앱(공실마케팅 메뉴)에서는 머리줄 오른쪽, 웹 간단 화면에서는 왼쪽 */
   const userBlock = (

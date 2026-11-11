@@ -49,26 +49,45 @@ export async function GET(req: Request) {
   const k1 = params.get("kind");
   if (one && LAWD_NAMES[one]) jobs = [[one, k1 === "offi" ? "offi" : k1 === "villa" ? "villa" : "apt"]];
 
+  // 두 번에 나눠 돈다 (2026-11-11 사장님: "왜 못 받은거야?" → "그렇게 해줘")
+  //  예전엔 새 단지가 나오면 그 자리에서 세대수·단지 정보(건축물대장)를 남은 시간 끝까지 채워,
+  //  같은 덩이 뒤 순서 지역이 "시간 부족"으로 매일 빠졌다 (용인 처인·기흥·수지, 의왕 등)
+  //  1) 덩이 안 모든 곳의 실거래 먼저  2) 남는 시간에만 경매 맞추기 · 위치 · 평형 · 단지 정보 — 못 채운 것은 다음 회차·낮 채우기가 이어 간다
   const done: Record<string, unknown>[] = [];
+  const later: Record<string, unknown>[] = [];
   for (const [lawd, kind] of jobs) {
     if (Date.now() > deadline - 20_000) { done.push({ lawd, kind, skipped: "시간 부족" }); continue; }
     const r: Record<string, unknown> = { lawd, kind, name: LAWD_NAMES[lawd] };
     try {
       const t = mode === "full" ? await syncTrades(lawd, kind) : await syncRecent(lawd, kind, RECENT_MONTHS);
       r.trades = t;
-      // 새 단지가 생겼거나 한 달 전체를 받은 날만 위치·평형·정보 (이미 찾은 단지는 다시 찾지 않는다)
-      if (mode === "full" || ("added" in t && t.added > 0)) {
-        r.geo = await syncGeo(lawd, deadline);
-        if (kind !== "villa") { // 빌라는 위치만 (평형·단지 정보는 아파트·오피스텔만)
-          r.supply = await syncSupply(lawd, deadline);
-          r.info = await syncInfo(lawd, deadline);
-        }
-      }
-      if (kind === "apt" && mode === "recent") r.auctions = await matchAuctions(lawd); // 경매·공매 → 단지 (하루 한 번)
+      later.push(r);
     } catch (e) {
       r.error = e instanceof Error ? e.message : String(e);
     }
     done.push(r);
+  }
+  // 2) 남는 시간 — 경매 맞추기(가볍다)를 먼저 다 하고, 그다음 위치·평형·정보
+  for (const r of later) {
+    if (Date.now() > deadline - 20_000) break;
+    if (r.kind === "apt" && mode === "recent") r.auctions = await matchAuctions(String(r.lawd)).catch((e) => ({ error: e instanceof Error ? e.message : String(e) })); // 경매·공매 → 단지 (하루 한 번)
+  }
+  // 새 단지가 생긴 곳(또는 36개월 전체를 받은 날) 먼저, 남으면 나머지 — 지난 회차에 시간이 모자라 못 채운 단지도
+  //  여기서 이어 채운다 (새 단지는 다음 회차엔 "새"로 안 잡히므로). 채울 게 없는 곳은 조회 몇 번으로 바로 끝난다.
+  //  이미 찾은 단지는 다시 찾지 않는다
+  const isNew = (r: Record<string, unknown>) => mode === "full" || Number((r.trades as { added?: number } | undefined)?.added) > 0;
+  for (const r of [...later.filter(isNew), ...later.filter((x) => !isNew(x))]) {
+    if (Date.now() > deadline - 20_000) { if (isNew(r)) r.fill = "다음에"; continue; }
+    const lawd = String(r.lawd);
+    try {
+      r.geo = await syncGeo(lawd, deadline);
+      if (r.kind !== "villa") { // 빌라는 위치만 (평형·단지 정보는 아파트·오피스텔만)
+        r.supply = await syncSupply(lawd, deadline);
+        r.info = await syncInfo(lawd, deadline);
+      }
+    } catch (e) {
+      r.fillError = e instanceof Error ? e.message : String(e); // 채우기 실패는 실거래 받기 실패로 세지 않는다
+    }
   }
   // 회차 기록 (2026-11-09 사장님: "확인 몇 곳 → 바뀐 몇 곳 · 실패" 를 AI 비서실에서 보게) — 온비드처럼 agent_chats 에 한 줄
   if (mode === "recent" && jobs.length) {

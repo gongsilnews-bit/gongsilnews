@@ -120,7 +120,7 @@ export default function MenuPage() {
   const getRoleBadgeStyle = (role?: string, agencyStatus?: string, planType?: string): React.CSSProperties => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? { background: '#ffffff', color: '#047857' } : isNewsMember(role, planType) ? { background: '#ea580c', color: '#fff' } : { background: '#2563eb', color: '#fff' };
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? { background: '#ea8a0c', color: '#fff' } : isNewsMember(role, planType) ? { background: '#ea580c', color: '#fff' } : { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
@@ -235,14 +235,14 @@ export default function MenuPage() {
             </div>
           ) : (
             <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
-              {/* 공실스터디 멤버십(유료) 회원은 녹색 카드, 그 외는 공실뉴스 남색 */}
-              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실뉴스부동산' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
+              {/* 2026-11-11 사장님: "그냥 흰색배경으로 하자" — 등급 색 카드(녹색·남색) 대신 흰 카드, 등급은 이름 옆 딱지 색으로 */}
+              <div style={{ background: '#fff', border: '1px solid #e5e7eb', padding: '20px', borderRadius: '12px', color: '#111' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid #e5e7eb' }}>
                     {memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url ? (
                       <img src={memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', fontSize: '22px', fontWeight: 700 }}>
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', color: '#6b7280', fontSize: '22px', fontWeight: 700 }}>
                         {(memberData?.name || currentUser?.user_metadata?.full_name || '회')[0]}
                       </div>
                     )}
@@ -260,16 +260,16 @@ export default function MenuPage() {
                         <span style={{ background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>서류 보완</span>
                       )}
                     </div>
-                    <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>{memberData?.email || currentUser?.email}</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{memberData?.email || currentUser?.email}</p>
                   </div>
 
                   {/* 알림 종 (목록은 /m/notifications 에서 본다) */}
                   <button
                     onClick={() => router.push('/m/notifications')}
                     aria-label={unreadNoti > 0 ? `알림 ${unreadNoti}건` : '알림'}
-                    style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', padding: 0, cursor: 'pointer' }}
+                    style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#f3f4f6', border: 'none', padding: 0, cursor: 'pointer' }}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                     </svg>
@@ -291,8 +291,9 @@ export default function MenuPage() {
           {/* 공실뉴스부동산 — PC 헤더 오른쪽 위 버튼과 같은 자리 (2026-10-26). 누구에게나, 이미 회원·최고관리자면 "가입" 없이 */}
           {(() => { const joined = isAdminRole(memberData?.role) || getPlanLabel(memberData ? { role: memberData.role, plan_type: memberData.plan_type } : null) === '공실뉴스부동산'; if (!joined) return null; /* 2026-10-26 가입 버튼은 없앰 */ return (
             <div style={{ padding: '0 20px 10px', background: '#fff' }}>
-              <Link href={joined ? '/marketing' : '/m/newsrealty'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: `1px solid ${joined ? '#1a3a6b' : '#d1d5db'}`, borderRadius: 8, color: joined ? '#1a3a6b' : '#374151', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                {joined ? '공실마케팅 ›' : '부동산회원 가입 ›'}
+              {/* 2026-11-11 사장님: [공실마케팅] → [공실뉴스부동산이란?] 오렌지, 모바일 소개 페이지로 */}
+              <Link href="/m/newsrealty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '11px 0', border: '1px solid #ea8a0c', borderRadius: 8, color: '#c2410c', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                공실뉴스부동산이란? ›
               </Link>
             </div>
           ); })()}
@@ -378,8 +379,8 @@ export default function MenuPage() {
             </ul>
           </div>
 
-          {/* 6. 커뮤니티 */}
-          <div style={{ background: '#fff', marginBottom: '8px' }}>
+          {/* 6. 커뮤니티 — 모바일에서 숨김 (2026-11-11 사장님: "모바일에서 커뮤니티 안 보이게") */}
+          <div style={{ background: '#fff', marginBottom: '8px', display: 'none' }}>
             <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>커뮤니티</h3>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {communityMenus.map(menu => (

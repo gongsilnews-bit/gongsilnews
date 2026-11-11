@@ -15,11 +15,11 @@ import StudioPriceTable from "./StudioPriceTable";
 const ACCENT = "#e8890c";
 const ACCENT_SOFT = "#fdf4e7";
 const CSS = `
-.sv{font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;color:#111827;background:#fff;word-break:keep-all}
+.sv{container-type:inline-size;font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;color:#111827;background:#fff;word-break:keep-all}
 .sv-sec{max-width:1120px;margin:0 auto;padding:120px 24px 0;text-align:center}
 .sv-kicker{font-size:20px;font-weight:700;color:#6b7280;margin:0 0 14px}
-.sv-h1{font-size:clamp(40px,5.6vw,68px);line-height:1.2;font-weight:900;letter-spacing:-0.03em;margin:0 0 28px}
-.sv-h2{font-size:clamp(30px,3.6vw,42px);line-height:1.3;font-weight:900;letter-spacing:-0.02em;margin:0 0 18px}
+.sv-h1{font-size:clamp(34px,5.6cqw,68px);line-height:1.2;font-weight:900;letter-spacing:-0.03em;margin:0 0 28px}
+.sv-h2{font-size:clamp(26px,3.6cqw,42px);line-height:1.3;font-weight:900;letter-spacing:-0.02em;margin:0 0 18px}
 .sv-p{font-size:18px;line-height:1.75;color:#4b5563;margin:0 auto 32px;max-width:680px}
 .sv-p b{color:${ACCENT}}
 .sv-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
@@ -78,7 +78,7 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-src-list button:hover{background:#f9fafb}
 .sv-src-list button.on{background:${ACCENT_SOFT};color:${ACCENT}}
 .sv-src-view img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid #e5e7eb;box-shadow:0 24px 60px rgba(31,23,20,.16)}
-@media (max-width:860px){.sv-src{grid-template-columns:1fr}}
+@container (max-width:860px){.sv-src{grid-template-columns:1fr}}
 .sv-rv-wrap{--rv-w:640px;--rv-gap:24px;position:relative;margin:48px auto 0;overflow:hidden;max-width:1400px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
 .sv-rv-track{display:flex;gap:var(--rv-gap);width:100%}
 .sv-rv{flex:0 0 var(--rv-w);background:#fafafa;border:1px solid #e5e7eb;border-radius:28px;padding:40px 40px 34px;text-align:left;box-sizing:border-box;opacity:.4;cursor:pointer;transition:opacity .7s}
@@ -90,10 +90,10 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-rv-dots{display:flex;gap:8px;justify-content:center;margin-top:24px}
 .sv-rv-dots button{width:8px;height:8px;border-radius:4px;border:0;background:#d1d5db;cursor:pointer;padding:0}
 .sv-rv-dots button.on{width:22px;background:#1f1714}
-@media (max-width:860px){.sv-rv-wrap{--rv-w:calc(100vw - 64px);--rv-gap:14px}.sv-rv{padding:28px}}
+@container (max-width:860px){.sv-rv-wrap{--rv-w:calc(100cqw - 64px);--rv-gap:14px}.sv-rv{padding:28px}}
 .sv-after{margin:64px auto 0;padding:36px 32px;border-radius:20px;background:${ACCENT_SOFT};text-align:left}
-.sv-after .k{font-size:clamp(18px,2vw,22px);font-weight:700;color:#9a3412;margin-bottom:8px}
-.sv-after h3{font-size:clamp(22px,2.8vw,30px);line-height:1.35;margin:0 0 24px;letter-spacing:-0.02em;font-weight:800}
+.sv-after .k{font-size:clamp(18px,2cqw,22px);font-weight:700;color:#9a3412;margin-bottom:8px}
+.sv-after h3{font-size:clamp(22px,2.8cqw,30px);line-height:1.35;margin:0 0 24px;letter-spacing:-0.02em;font-weight:800}
 .sv-after .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .sv-after .ch{padding:18px;background:#fff;border-radius:12px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;color:#111827}
 .sv-after .ch svg{color:${ACCENT}}
@@ -101,17 +101,18 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-use img{display:block;width:100%;aspect-ratio:5/3;object-fit:cover;object-position:top;border-radius:18px;border:1px solid #e5e7eb}
 .sv-use .t{font-size:22px;font-weight:800;margin-top:22px}
 .sv-use .d{font-size:16px;line-height:1.7;color:#4b5563;margin-top:10px;white-space:pre-line}
-@media (max-width:860px){.sv-uses{grid-template-columns:1fr;gap:40px}}
+@container (max-width:860px){.sv-uses{grid-template-columns:1fr;gap:40px}}
 .sv-last-wrap{background:#1b1c1e;margin-top:120px} /* 맨 아래 진한 바탕 (2026-11-09 사장님) */
 .sv-last{padding-top:110px;padding-bottom:120px}
 .sv-last .logo{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:48px}
 .sv-last .logo img{width:96px;height:96px;border-radius:50%;object-fit:cover}
-.sv-last .logo span{font-size:clamp(40px,5vw,60px);font-weight:900;letter-spacing:-0.03em;color:#fff}
+.sv-last .logo span{font-size:clamp(40px,5cqw,60px);font-weight:900;letter-spacing:-0.03em;color:#fff}
 .sv-last .sv-h2{margin-bottom:40px;color:#fff}
+@container (max-width:860px){.sv-last{padding-top:72px;padding-bottom:80px}.sv-last .logo{gap:10px;margin-bottom:32px}.sv-last .logo img{width:52px;height:52px}.sv-last .logo span{font-size:28px}} /* 폰에서 넘치지 않게 (2026-11-11) */
 .sv-last .os{font-size:15px;color:#9ca3af;margin:28px 0 14px}
 .sv-last .osi{display:inline-flex;width:42px;height:42px;border:1px solid #e5e7eb;border-radius:10px;align-items:center;justify-content:center;color:#374151}
 .sv-dl{max-width:820px;margin:40px auto 0;text-align:left}
-@media (max-width:860px){.sv-steps,.sv-grid,.sv-grid.five,.sv-cases,.sv-price{grid-template-columns:1fr}.sv-grid.five .sv-card,.sv-grid.five .sv-card:nth-child(4){grid-column:auto}.sv-sec{padding-top:88px}}
+@container (max-width:860px){.sv-steps,.sv-grid,.sv-grid.five,.sv-cases,.sv-price{grid-template-columns:1fr}.sv-grid.five .sv-card,.sv-grid.five .sv-card:nth-child(4){grid-column:auto}.sv-sec{padding-top:88px}}
 `;
 
 /** 그림 — src 가 있으면 실제 앱에서 찍은 화면 (public/studio-shots, 2026-10-26), 없으면 자리 표시 */

@@ -79,7 +79,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
       <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: 68, zIndex: 9999990, background: "#ffffff", transition: "box-shadow 0.2s", boxShadow: stuck ? "0 4px 16px rgba(0,0,0,0.12)" : "none", borderBottom: stuck ? "1px solid #e5e7eb" : "1px solid #f1f1f1" }}>
         <nav
           aria-label="공실뉴스부동산 메뉴"
-          className="container px-20"
+          className="container px-20 ssh-nav"
           style={{
             display: "flex", alignItems: "center", gap: "32px",
             height: 68, padding: "0 20px",
@@ -93,6 +93,7 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
           </Link>
           <Link
             href="/newsrealty"
+            className="ssh-title"
             style={{
               fontSize: "22px", fontWeight: 900, color: "#111", letterSpacing: "-0.5px", lineHeight: 1,
               textDecoration: "none", whiteSpace: "nowrap",
@@ -103,7 +104,9 @@ export default function StudioSiteHeader(_props: StudioSiteHeaderProps = {}) {
             {/* 사이트 이름 공실뉴스부동산 (2026-11-05 사장님: PRO 이름 뺌 — 유료가 곧 공실뉴스부동산) */}
           </Link>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
+          {/* 폰(860px 이하)에서는 가운데 메뉴를 숨기고 로고 · [신청하기]만 (2026-11-11 — 신청 화면이 폰에서도 열리게 됨) */}
+          <style>{`@media (max-width:860px){.ssh-menu{display:none !important}.ssh-nav{gap:12px !important}.ssh-nav img{height:30px !important}.ssh-title{font-size:18px !important;margin-left:14px}}`}</style>
+          <div className="ssh-menu" style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
             {NAV_ITEMS.map((item) => {
               const isActive = item.match(pathname);
               const showSubBar = Boolean(item.subItems && hoveredNav === item.label);

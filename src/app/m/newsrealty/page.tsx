@@ -2,84 +2,62 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import NewsrealtyLanding from "@/components/newsrealty/NewsrealtyLanding";
+import StudioVrewLanding from "@/components/studio-site/StudioVrewLanding";
+import StudioFooter from "@/components/studio-site/StudioFooter";
+
+/**
+ * 모바일 공실뉴스부동산 소개 (2026-11-11 사장님: "지금 우리 사이트에 있는 내용으로 해야지")
+ *  PC /newsrealty 와 같은 화면(StudioVrewLanding — app/marketing/(site)/page.tsx)을 그대로 쓴다. 머리줄만 폰에 맞게.
+ *  예전 옛 소개(NewsrealtyLanding)는 쓰지 않는다
+ */
+const ORANGE = "#e8890c";
+const MENU = [
+  { label: "공실뉴스부동산이란?", id: "intro" },
+  { label: "SNS 자동화", id: "sns" },
+  { label: "부동산마케팅", id: "benefits" },
+  { label: "금액안내", id: "pricing" },
+];
 
 export default function MobileNewsRealtyPage() {
-  const router = useRouter();
-
-  const handleApplyClick = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("signup_member_type", "broker");
-    }
-    router.push("/m/newsrealty/apply");
+  const go = (id: string) => (e: React.MouseEvent) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    history.replaceState(null, "", `#${id}`);
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <div style={{ backgroundColor: "#fdfdfd", paddingBottom: 90, paddingTop: 50, overflowX: "hidden" }}>
-      {/* ── 고정 상단 헤더 ── */}
-      <div style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: 50,
-        background: "#181411",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 16px",
-        zIndex: 50,
-        borderBottom: "1px solid rgba(255,255,255,0.1)",
-        boxSizing: "border-box"
-      }}>
-        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#ffb347", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-        </button>
-        <div style={{ fontSize: 16, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.5px" }}>
-          공실뉴스부동산
+    <div style={{ backgroundColor: "#ffffff", paddingBottom: 140, overflowX: "hidden" }}>
+      {/* 폰 머리줄 — 로고 · 공실뉴스부동산 · [신청하기], 아래 줄에 PC 와 같은 메뉴 넷 (옆으로 밀어 봄) */}
+      <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #eee" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, height: 52, padding: "0 16px" }}>
+          <Link href="/" title="공실뉴스 홈으로" style={{ display: "inline-flex", flexShrink: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 28 }} />
+          </Link>
+          <Link href="/m/newsrealty" style={{ fontSize: 17, fontWeight: 900, color: "#111", letterSpacing: "-0.5px", textDecoration: "none", whiteSpace: "nowrap" }}>공실뉴스부동산</Link>
+          <Link href="/newsrealty/pro-apply" style={{ marginLeft: "auto", flexShrink: 0, background: ORANGE, color: "#fff", borderRadius: 8, padding: "7px 14px", fontSize: 13.5, fontWeight: 800, textDecoration: "none" }}>신청하기</Link>
         </div>
-        <Link href="/" style={{ color: "#ffb347", fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
-          홈으로
-        </Link>
+        <nav aria-label="공실뉴스부동산 메뉴" style={{ display: "flex", gap: 18, overflowX: "auto", padding: "0 16px", height: 40, alignItems: "center", scrollbarWidth: "none" }}>
+          {MENU.map((m) => (
+            <a key={m.id} href={`#${m.id}`} onClick={go(m.id)} style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textDecoration: "none", whiteSpace: "nowrap" }}>{m.label}</a>
+          ))}
+        </nav>
       </div>
 
-      <NewsrealtyLanding
-        onApply={handleApplyClick}
-        benefitsHref="/m/newsrealty/benefits/brokerage-article"
-        showFooter
-      />
+      {/* 칸으로 건너갈 때 머리줄(92px)에 가리지 않게 */}
+      <style>{`.m-nr [id]{scroll-margin-top:100px !important}`}</style>
+      <div className="m-nr">
+        <StudioVrewLanding />
+      </div>
+      <StudioFooter />
 
-      {/* ── 하단 고정 신청 바 ── */}
-      <div style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        width: "100%",
-        padding: "12px 16px",
-        background: "rgba(253, 253, 253, 0.92)",
-        backdropFilter: "blur(10px)",
-        borderTop: "1px solid rgba(46, 38, 33, 0.14)",
-        boxSizing: "border-box",
-        zIndex: 40
-      }}>
-        <button
-          onClick={handleApplyClick}
-          style={{
-            width: "100%",
-            padding: "14px 20px",
-            background: "oklch(0.48 0.14 45)",
-            color: "#ffffff",
-            fontFamily: "inherit",
-            fontSize: 16,
-            fontWeight: 700,
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
-          }}
-        >
-          부동산회원 무료 가입하기 &gt;
-        </button>
+      {/* 하단 고정 신청 바 — 아래 메뉴(높이 60px) 위에 (2026-11-11) */}
+      <div style={{ position: "fixed", bottom: 60, left: 0, width: "100%", padding: "10px 16px", background: "rgba(255,255,255,0.94)", backdropFilter: "blur(10px)", borderTop: "1px solid #eee", boxSizing: "border-box", zIndex: 40 }}>
+        <Link href="/newsrealty/pro-apply" style={{ display: "block", textAlign: "center", padding: "13px 20px", background: ORANGE, color: "#fff", fontSize: 16, fontWeight: 800, borderRadius: 8, textDecoration: "none" }}>
+          공실뉴스부동산 신청 &gt;&gt;
+        </Link>
       </div>
     </div>
   );

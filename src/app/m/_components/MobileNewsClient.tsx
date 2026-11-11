@@ -61,7 +61,7 @@ const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   ...(SHOW_STUDY ? [{ key: "study", label: "특강", path: "/m/study" }] : []),
-  { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
+  // 커뮤니티 탭은 모바일에서 숨김 (2026-11-11 사장님) — { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 
 const NEWS_PILL_TABS = [

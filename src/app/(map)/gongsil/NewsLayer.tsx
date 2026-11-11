@@ -35,7 +35,12 @@ const fits = (a: Art, cat: string) => {
   return true; // 전체
 };
 
-export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null; category: string }) {
+/**
+ * mobile — 모바일 공실열람 지도에도 (2026-11-11 사장님: "기사만 동그라미로 보이고 클릭하면 기사 리스트, 지금 PC와 같이")
+ *  동그라미·말풍선 목록은 PC 그대로. 다른 점: [기사 보러가기]는 옆 창 대신 모바일 기사 화면(/m/news/…)으로 · 단추 이름 [뉴스] ·
+ *  말풍선 폭은 화면에 맞춤 · 왼쪽 목록이 없으니 기사 창(NewsArticlePanel)은 띄우지 않는다
+ */
+export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category, mobile = false }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null; category: string; mobile?: boolean }) {
   const [on, setOn] = useState(false);
   useStars(); // ★ 찜 목록 불러오기
   const [arts, setArts] = useState<Art[] | null>(null);
@@ -111,7 +116,9 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
     closePopup(true); // 다른 말풍선으로 바꿀 때는 왼쪽 목록을 그대로 둔다
     // 동그라미가 화면 위쪽(검색 줄 근처)이면 말풍선을 아래로 — 지도는 옮기지 않는다
     const map = kakaoMapRef.current;
-    const below = map.getProjection().containerPointFromCoords(pos).y < 330;
+    const below = map.getProjection().containerPointFromCoords(pos).y < (mobile ? 260 : 330);
+    const link = (a: Art) => (mobile ? `/m/news/${a.article_no || a.id}` : href(a));
+    const boxW = (w: number) => (mobile ? `min(${w}px, calc(100vw - 32px))` : `${w}px`);
     const wrap = document.createElement("div");
     wrap.style.cssText = (below ? "margin-top:22px;" : "margin-bottom:22px;") + "position:relative;font-family:'Pretendard',inherit;line-height:1.4;cursor:default;white-space:normal"; // 지도 겹창은 줄바꿈을 막아 둔다 — 제목 2줄이 되게
     // 위: 썸네일 | 제목(부제목은 넣지 않는다, 11-04 사장님) · 아래: 날짜·글쓴이 / 기사 보러가기 — 아래 줄은 썸네일 밑까지 가로 전체
@@ -124,10 +131,10 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
       `</div></div>` +
       `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0">` +
       `<span style="font-size:12px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(day(a.published_at || a.created_at))} · ${esc(a.author_name || "공실뉴스")}</span>` +
-      `<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">${starHtml("art", a.id, 18)}<a href="${esc(href(a))}" data-open="${esc(a.id)}" style="font-size:13px;font-weight:700;color:${ORANGE};text-decoration:none;white-space:nowrap">기사 보러가기 &gt;</a></span>` +
+      `<span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">${starHtml("art", a.id, 18)}<a href="${esc(link(a))}" data-open="${esc(a.id)}" style="font-size:13px;font-weight:700;color:${ORANGE};text-decoration:none;white-space:nowrap">기사 보러가기 &gt;</a></span>` +
       `</div></div>`;
     wrap.innerHTML =
-      `<div data-box style="position:relative;background:#fff;padding:14px 16px;width:${group.some((a) => a.thumbnail_url) ? 300 : 250}px;max-height:340px;overflow-y:auto;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);border:1px solid #ddd">` +
+      `<div data-box style="position:relative;background:#fff;padding:14px 16px;width:${boxW(group.some((a) => a.thumbnail_url) ? 300 : 250)};max-height:${mobile ? 300 : 340}px;overflow-y:auto;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);border:1px solid #ddd">` +
       `<div data-x title="닫기" style="position:absolute;top:10px;right:12px;font-size:18px;color:#999;cursor:pointer;line-height:1;padding:4px;z-index:1">✕</div>` +
       group.map(row).join("") +
       `</div>` +
@@ -140,17 +147,29 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
     wrap.querySelector("[data-x]")?.addEventListener("click", (e) => { e.stopPropagation(); closePopup(); });
     // [기사 보러가기] — 페이지를 떠나지 않고 왼쪽 목록 옆에 기사 창 (새 탭으로 열기는 그대로 된다: Ctrl·가운데 단추)
     wrap.querySelectorAll<HTMLAnchorElement>("[data-open]").forEach((l) => l.addEventListener("click", (e) => {
+      if (mobile) { e.stopPropagation(); return; } // 모바일은 링크 그대로 — 모바일 기사 화면으로 넘어간다
       if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
       e.preventDefault(); e.stopPropagation();
       const id = l.dataset.open || null;
       setReading(readingRef.current === id ? null : id);
     }));
     ["mousedown", "touchstart", "wheel", "dblclick"].forEach((t) => wrap.addEventListener(t, (e) => e.stopPropagation())); // 창 안에서 지도가 움직이지 않게
+    // 모바일 — 지도 위 말풍선은 가장자리 동그라미에서 화면 밖으로 잘린다 → 화면 아래에서 올라오는 카드로 (같은 목록, 꼬리 없이)
+    if (mobile) {
+      wrap.style.cssText = "position:fixed;left:12px;right:12px;bottom:72px;z-index:60;font-family:'Pretendard',inherit;line-height:1.4;white-space:normal";
+      const box = wrap.querySelector<HTMLElement>("[data-box]");
+      if (box) { box.style.width = "auto"; box.style.maxHeight = "46vh"; box.style.borderRadius = "14px"; box.style.boxShadow = "0 -4px 24px rgba(0,0,0,.18)"; }
+      wrap.querySelectorAll<HTMLElement>("div").forEach((d) => { if (/border-(top|bottom):11px solid/.test(d.getAttribute("style") || "")) d.remove(); });
+      document.body.appendChild(wrap);
+      popup.current = { setMap: (m: unknown) => { if (m === null) wrap.remove(); } };
+      paintOpen(readingRef.current);
+      return;
+    }
     const o = new kakao.maps.CustomOverlay({ position: pos, content: wrap, xAnchor: 0.5, yAnchor: below ? 0 : 1, zIndex: 20, clickable: true });
     o.setMap(map);
     popup.current = o;
     paintOpen(readingRef.current);
-  }, [kakaoMapRef]);
+  }, [kakaoMapRef, mobile]);
 
   const draw = useCallback(() => {
     const kakao = (window as any).kakao, map = kakaoMapRef.current;
@@ -190,8 +209,10 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
       ["mousedown", "mouseup", "touchstart"].forEach((t) => el.addEventListener(t, (ev) => ev.stopPropagation())); // 겹친 공실 표시로 눌림이 새지 않게
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (popup.current && popupKey.current === key) { closePopup(); return; } // 또 누르면 닫기
         const list = [...c.list].sort((p, q) => String(q.published_at || q.created_at || "").localeCompare(String(p.published_at || p.created_at || "")));
+        // 모바일 — 공실 동그라미를 누르면 "공실광고 N개" 화면이 뜨듯이 "뉴스 N개" 목록 화면 (2026-11-11 사장님)
+        if (mobile) { openMobileList(list); return; }
+        if (popup.current && popupKey.current === key) { closePopup(); return; } // 또 누르면 닫기
         openPopup(list, pos);
         popupKey.current = key;
         // 왼쪽 목록에 이 동그라미 기사들 (11-04 사장님: 동그라미를 누르면 좌측 기사 목록에)
@@ -201,7 +222,31 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
       o.setMap(map);
       overlays.current.push(o);
     }
-  }, [arts, kakaoMapRef, openPopup, category]);
+  }, [arts, kakaoMapRef, openPopup, category, mobile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 모바일 "뉴스 N개" 목록 화면 — 공실 목록(list-panel)과 같은 자리·모양. 휴대폰 [뒤로]로도 닫힌다
+  const [mList, setMList] = useState<Art[] | null>(null);
+  const [mounted, setMounted] = useState(false); // 목록 화면은 브라우저에서만 그린다 (서버 화면과 어긋나지 않게)
+  useEffect(() => setMounted(true), []);
+  const openMobileList = (list: Art[]) => { window.history.pushState({ panel: "news" }, ""); setMList(list); };
+  useEffect(() => {
+    if (!mList) return;
+    const back = () => setMList(null);
+    window.addEventListener("popstate", back);
+    return () => window.removeEventListener("popstate", back);
+  }, [mList]);
+  const closeMobileList = () => { if (window.history.state?.panel === "news") window.history.back(); else setMList(null); };
+  // 모바일 — 단지 딱지의 주황 동그라미·단지 창 [뉴스]를 누르면 그 단지 기사 목록 (2026-11-11 사장님: "단지를 클릭하면 나와야지")
+  //  PC 는 같은 신호(gs-news-select)를 왼쪽 목록이 받는다. [뉴스] 단추가 꺼져 있어도 열린다
+  useEffect(() => {
+    if (!mobile) return;
+    const pick = (e: Event) => {
+      const list = (e as CustomEvent).detail;
+      if (Array.isArray(list) && list.length) openMobileList(list as Art[]);
+    };
+    window.addEventListener("gs-news-select", pick);
+    return () => window.removeEventListener("gs-news-select", pick);
+  }, [mobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 공실 표시나 부동산을 누르면 뉴스 말풍선은 닫는다 — 다음에 뉴스를 누르면 다시 열리게 (11-04 사장님: 왼쪽 목록은 누른 것에 따라)
   useEffect(() => {
@@ -242,14 +287,46 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
 
   const button = (
     <button type="button" onClick={toggle} title="우리동네뉴스 기사를 지도 위에 보기"
-      style={{ border: `1.5px solid ${ORANGE}`, borderRadius: 6, cursor: "pointer", padding: "6px 10px", fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", background: on ? ORANGE : "#fff", color: on ? "#fff" : ORANGE }}>
-      우리동네뉴스{on && busy ? "…" : ""}
+      style={mobile
+        ? { border: `1.5px solid ${ORANGE}`, borderRadius: 999, cursor: "pointer", padding: "6px 12px", fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", background: on ? ORANGE : "#fff", color: on ? "#fff" : ORANGE, boxShadow: "0 2px 8px rgba(0,0,0,.12)" }
+        : { border: `1.5px solid ${ORANGE}`, borderRadius: 6, cursor: "pointer", padding: "6px 10px", fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", background: on ? ORANGE : "#fff", color: on ? "#fff" : ORANGE }}>
+      {mobile ? "뉴스" : "우리동네뉴스"}{on && busy ? "…" : ""}
     </button>
   );
   return (
     <>
       {buttonSlot ? createPortal(button, buttonSlot) : null}
-      <NewsArticlePanel id={reading} onClose={() => setReading(null)} />
+      {!mobile && <NewsArticlePanel id={reading} onClose={() => setReading(null)} />}
+      {mobile && mounted && createPortal(
+        <div className={`list-panel ${mList ? "open" : ""}`} style={{ zIndex: 10001 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 10, backgroundColor: "#fff" }}>
+            <button type="button" onClick={closeMobileList} aria-label="뒤로" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4, marginLeft: -4 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111827", margin: 0 }}>뉴스 <span style={{ color: ORANGE }}>{mList?.length || 0}</span>개</h3>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 90px" }}>
+            {(mList || []).map((a) => (
+              <a key={a.id} href={`/m/news/${a.article_no || a.id}`} style={{ display: "flex", gap: 14, padding: "20px 0", borderBottom: "1px solid #f3f4f6", textDecoration: "none", color: "inherit" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    {a.section2 && <span style={{ fontSize: 12, fontWeight: 700, color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 4, padding: "2px 6px" }}>{a.section2}</span>}
+                    <span style={{ fontSize: 13, color: "#9ca3af" }}>{day(a.published_at || a.created_at)}</span>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>{a.title}</div>
+                  {a.subtitle && <div style={{ fontSize: 14, color: "#6b7280", marginTop: 6, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{String(a.subtitle).split("\n")[0]}</div>}
+                  <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 8 }}>{a.author_name || "공실뉴스"}{a.location_name ? ` · ${a.location_name}` : ""}</div>
+                </div>
+                {a.thumbnail_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.thumbnail_url} alt="" style={{ width: 130, height: 96, objectFit: "cover", borderRadius: 10, flexShrink: 0, background: "#f3f4f6" }} />
+                )}
+              </a>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

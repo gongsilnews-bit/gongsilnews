@@ -17,7 +17,7 @@ export type TierLimits = {
   /** 공실뉴스부동산 — 광고 중(공실뉴스·내 홈페이지) + 임시저장 합계 (2026-11-10 사장님: "total 50 · 공실뉴스 광고는 20건까지") */
   proTotalVacancies: number;
   proArticles: number;
-  /** 비즈니스회원 — 공실(0 = 제한 없음) · 월 기사 */
+  /** 비즈니스회원 — 공실(0 = 못 건다, 2026-11-11 전엔 제한 없음) · 월 기사 */
   bizVacancies: number;
   bizArticles: number;
 };

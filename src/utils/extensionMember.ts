@@ -16,9 +16,9 @@ import { isAdminRole } from "@/utils/permissionCheck";
 
 export const BLOG_PLANS = ["admin", "news_premium", "study_premium"] as const;
 export const YOUTUBE_WRITER_PLANS = ["admin", "news_premium", "study_premium"] as const;
-/** 리모델링 작성기: 위 요금제 + 비즈니스회원(역할로 판정) */
+/** 리모델링 작성기: 위 요금제 (비즈니스회원은 빠짐, 2026-11-11) */
 export const REMODEL_PLANS = ["admin", "news_premium", "study_premium"] as const;
-/** 뉴스메이커(newsmaker10) 블로그·유튜브 무제한: 위 요금제 + 비즈니스회원(역할로 판정). 그 외 회원은 무료 체험 */
+/** 뉴스메이커(newsmaker10) 블로그·유튜브 무제한: 위 요금제. 그 외 회원은 무료 체험 */
 export const NEWSMAKER_PLANS = ["admin", "news_premium", "study_premium"] as const;
 
 export const PLAN_LABELS: Record<string, string> = {
@@ -36,9 +36,9 @@ export type ExtensionMember = {
   planLabel: string;
   canBlog: boolean;
   canYoutubeWriter: boolean;
-  /** 리모델링 작성기(remodeling10) — 유료회원 전용. 비즈니스회원도 포함한다 */
+  /** 리모델링 작성기(remodeling10) — 유료회원 전용 */
   canRemodel: boolean;
-  /** 뉴스메이커(newsmaker10) 블로그·유튜브 대본 무제한 — 비즈니스회원도 포함한다 */
+  /** 뉴스메이커(newsmaker10) 블로그·유튜브 대본 무제한 */
   canNewsMaker: boolean;
 };
 
@@ -143,8 +143,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
   const plan = getEffectivePlan(member);
   const role = member.role || "";
   const isAdmin = plan === "admin" || isAdminRole(role);
-  // getEffectivePlan 은 비즈니스회원을 free 로 보므로 역할로 따로 연다
-  const isBiz = role === "BIZ" || role === "비즈니스회원";
+  // 비즈니스회원은 광고하는 일반 업체 — 공실로 쓰는 블로그·SNS·리모델링 무제한은 없다 (2026-11-11 사장님: "빼줘")
   return {
     id: member.id,
     name: member.name || "공실뉴스 회원",
@@ -152,9 +151,9 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
     role,
     plan,
     planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "부동산회원" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
-    canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan) || isBiz, // 비즈니스회원도 PRO 와 같이 무제한 (2026-11-04)
+    canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan),
     canYoutubeWriter: isAdmin || (YOUTUBE_WRITER_PLANS as readonly string[]).includes(plan),
-    canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan) || isBiz,
-    canNewsMaker: isAdmin || (NEWSMAKER_PLANS as readonly string[]).includes(plan) || isBiz,
+    canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan),
+    canNewsMaker: isAdmin || (NEWSMAKER_PLANS as readonly string[]).includes(plan),
   };
 }

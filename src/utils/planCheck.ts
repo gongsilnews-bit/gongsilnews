@@ -18,8 +18,9 @@ export function getEffectivePlan(member: {
   // 최고관리자는 모든 권한 무제한 통과용 특별 식별자 반환
   if (member.role === 'ADMIN' || member.role === '최고관리자') return 'admin';
 
-  // 공실마케팅 이용 중이면 예전 유료 등급(news_premium)과 같은 권한 — 비즈니스회원도 이용권을 사면 같다 (2026-10-26)
-  if (studioAlive(member) && (member.role === 'REALTOR' || member.role === '부동산회원' || member.role === 'BIZ')) return 'news_premium';
+  // 공실마케팅 이용 중이면 예전 유료 등급(news_premium)과 같은 권한 — 부동산회원만.
+  // 비즈니스회원은 광고하는 일반 업체라 이용 기간이 있어도 부동산용 유료 권한이 없다 (2026-11-11 사장님: "빼줘")
+  if (studioAlive(member) && (member.role === 'REALTOR' || member.role === '부동산회원')) return 'news_premium';
   
   // 일반 회원은 무료 취급
   if (member.role !== 'REALTOR' && member.role !== '부동산회원') return 'free';
@@ -49,7 +50,7 @@ function isSuperRole(role?: string | null): boolean {
 /**
  * 물건접수홈페이지를 다 쓸 수 있나(집주인 접수·로고·색상) — 공실마케팅 Pro · Studio 이용 중인 회원만 (2026-10-29 사장님).
  * 홈페이지가 보이는지는 canOpenHomepage — 무료 공실뉴스부동산도 열린다 (2026-10-30).
- * 비즈니스회원은 Studio 포함이라 예전처럼 켜 둔 권한·기간으로, 최고관리자는 늘. 공실뉴스부동산(무료)·일반회원은 못 쓴다.
+ * 최고관리자는 늘. 공실뉴스부동산(무료)·일반회원·비즈니스회원은 못 쓴다.
  */
 export function canUseHomepage(
   member: Parameters<typeof isPermissionAlive>[0],
@@ -57,10 +58,10 @@ export function canUseHomepage(
 ): boolean {
   if (!member) return false;
   if (isSuperRole(member.role)) return true;
+  // 비즈니스회원은 홈페이지 없음 (2026-11-11 사장님: "업체 홈페이지 없음") — 이용 기간이 있어도 닫는다
+  if (member.role === 'BIZ' || member.role === '비즈니스회원') return false;
   if (!granted) return false;
-  if (studioAlive(member)) return true;
-  if (member.role === 'BIZ' || member.role === '비즈니스회원') return isPermissionAlive(member, granted);
-  return false;
+  return studioAlive(member);
 }
 
 /**

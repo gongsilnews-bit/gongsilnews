@@ -1,6 +1,6 @@
 /**
  * 부동산 회원 등급 — 한곳에서 판정 (2026-11-04 사장님 회의, docs/2026-11-04_member_tiers_plan.md)
- *  공실뉴스부동산(무료) · 공실뉴스부동산 PRO(유료, 주황 PRO 딱지) · 비즈니스회원(PRO 와 같은 권한) · 최고관리자
+ *  공실뉴스부동산(무료) · 공실뉴스부동산 PRO(유료, 주황 PRO 딱지) · 비즈니스회원(광고하는 일반 업체 — 부동산용 PRO 권한 없음, 2026-11-11) · 최고관리자
  *  PRO 판정 = 이용 기간(members.studio_end_date) 이 남았나 — 예전 스튜디오회원(빌드온·착함임대 등)은 그대로 PRO
  *  등급 코드값(plan_type news_premium·study_premium 등)은 보지 않는다 (기간이 끝나도 유료로 읽히던 곳을 막는다)
  *  서버·화면 둘 다 쓴다 (브라우저 전용 코드를 넣지 않는다)
@@ -17,8 +17,9 @@ export function memberTier(m: TierMember): Tier {
   if (role === "REALTOR" || role === "부동산회원") return studioAlive(m) ? "pro" : "free";
   return "user";
 }
-/** PRO 기능을 쓸 수 있나 — PRO · 비즈니스회원 · 최고관리자 */
-export const isProTier = (t: Tier) => t === "pro" || t === "biz" || t === "admin";
+/** PRO 기능을 쓸 수 있나 — PRO · 최고관리자.
+ *  비즈니스회원은 부동산이 아니라 부동산·임대인에게 광고하는 일반 업체라 부동산용 PRO 기능은 없다 (2026-11-11 사장님: "같은 권한 아니야 · 빼줘") */
+export const isProTier = (t: Tier) => t === "pro" || t === "admin";
 export const isPro = (m: TierMember) => isProTier(memberTier(m));
 
 /** 한도 (광고 중인 공실만 센다) */
@@ -31,10 +32,11 @@ export const LIMITS = {
   proArticlePerMonth: 4,
 } as const;
 
-/** 공실 한도 — 비즈니스회원·최고관리자는 없음(null) */
+/** 공실 한도 — 최고관리자는 없음(null) · 비즈니스회원은 공실을 걸지 않는다(0, 2026-11-11) */
 export function vacancyLimit(t: Tier): number | null {
   if (t === "free") return LIMITS.vacancy.free;
   if (t === "pro") return LIMITS.vacancy.pro;
+  if (t === "biz") return 0;
   return null;
 }
 

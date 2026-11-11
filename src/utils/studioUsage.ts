@@ -50,8 +50,8 @@ function kstTodayStart(now = new Date()) {
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 3600 * 1000).toISOString();
 }
 
-/** PRO 기능을 쓰나 — PRO(이용 기간 안)·비즈니스회원·최고관리자 */
-export const proMember = (member: ExtensionMember) => isAdminRole(member.role) || member.canBlog || member.role === "BIZ";
+/** PRO 기능을 쓰나 — PRO(이용 기간 안)·최고관리자 (비즈니스회원은 빠짐, 2026-11-11) */
+export const proMember = (member: ExtensionMember) => isAdminRole(member.role) || member.canBlog;
 /** 등급 기본 한 달 횟수 — 무료는 블로그·SNS·유튜브를 묶어 공실 3건 (2026-11-04) */
 export function gradeBlogLimit(member: ExtensionMember, feature: StudioFeature = "blog", freeWrites = 3): number {
   void feature;

@@ -17,6 +17,7 @@ import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 import GongsilRegisterPromoOverlay from "@/app/(map)/gongsil/GongsilRegisterPromoOverlay";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import AptPriceLayer from "@/app/(map)/gongsil/AptPriceLayer";
+import NewsLayer from "@/app/(map)/gongsil/NewsLayer";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 const MAX_MOBILE_MAP_LEVEL = 6;
@@ -1467,7 +1468,8 @@ function MobileGongsilContent() {
 
             {/* 아파트·오피스텔 실거래가 (PC 공실열람과 같은 것, 2026-11-02 사장님: 모바일에도) */}
             {/* 위쪽 [초기화]와 [내 위치] 사이 가운데에 나란히 (2026-11-02 사장님) */}
-            <span ref={setPriceSlot} style={{ position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: 6, whiteSpace: "nowrap" }} />
+            {/* 2026-11-11: [뉴스] 단추가 늘어 [초기화]·[내 위치] 줄과 겹쳐서 — 단추 줄은 그 아래 한 줄로, 넘치면 옆으로 밀어 본다 */}
+            <span ref={setPriceSlot} style={{ position: "absolute", top: 66, left: 12, right: 12, zIndex: 20, display: "flex", justifyContent: "center", gap: 6, whiteSpace: "nowrap", overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto" }} />
             <AptPriceLayer
               mobile
               autoShow
@@ -1488,6 +1490,8 @@ function MobileGongsilContent() {
                 router.push(ids.length === 1 ? `/m/auction?id=${ids[0]}` : `/m/auction?lat=${c?.getLat()}&lng=${c?.getLng()}&level=3`);
               }}
             />
+            {/* 기사 동그라미 — PC 우리동네부동산 [우리동네뉴스]와 같은 것 (2026-11-11 사장님). 들어올 때는 꺼진 채로, 단추는 단지 단추들 뒤에 */}
+            <NewsLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} category="all" />
 
             {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (

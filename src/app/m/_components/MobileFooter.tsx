@@ -12,7 +12,7 @@ const CATEGORIES = [
   { label: "공실열람", href: "/m/gongsil" },
   ...(SHOW_STUDY ? [{ label: "부동산특강", href: "/m/study" }] : []),
   { label: "자료실", href: "/m/board?id=drone" },
-  { label: "커뮤니티", href: "/m/board?id=free" },
+  // 커뮤니티는 모바일에서 숨김 (2026-11-11 사장님) — { label: "커뮤니티", href: "/m/board?id=free" },
 ];
 
 export default function MobileFooter() {
