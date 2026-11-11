@@ -30,7 +30,12 @@ const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, 
     `<span style="width:22px;height:22px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${house(bg, 14)}</span>${esc(count > 1 ? `${short(name)} 외 ${count - 1}` : short(name))}${pro && count === 1 ? PRO_TAG : ""}${cnt}${tail}</div>`;
 };
 
-export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null }) {
+/**
+ * mobile — 모바일 공실열람 지도에도 (2026-11-11 사장님: "부동산도 나타나게, 모바일에서")
+ *  이름표·정보 상자는 PC 그대로. 다른 점: 이름표를 누르면 정보 상자만(왼쪽 목록이 없으니) → [상세보기]를 누르면
+ *  모바일 공실 목록 화면에 그 사무소 공실 전부 (m/gongsil 페이지가 gs-agency-open 을 받는다) · 단추 모양만 둥글게
+ */
+export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile = false }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; buttonSlot: HTMLElement | null; mobile?: boolean }) {
   const [on, setOn] = useState(true); // 들어올 때마다 켜진 채로 시작 (11-04 사장님: 부동산은 일단 켜 두자)
   useStars(); // ★ 찜 목록 불러오기
   const [list, setList] = useState<MapAgency[] | null>(null);
@@ -148,9 +153,17 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
       ev.preventDefault(); ev.stopPropagation(); hideTip();
       const x = g.find((y) => y.id === l.dataset.agOpen); if (x) openAgency.current(x);
     }));
+    // 모바일 — 지도 위 상자는 가장자리에서 잘리고 단추 줄에 가린다 → 화면 아래 카드로 (뉴스 목록과 같은 자리, 2026-11-11)
+    if (mobile) {
+      box.style.cssText += ";position:fixed;left:12px;right:12px;bottom:72px;z-index:60;margin:0;width:auto;max-width:none;max-height:46vh;overflow-y:auto;border-radius:14px;padding:14px 40px 14px 16px;box-shadow:0 -4px 24px rgba(0,0,0,.18)";
+      box.querySelectorAll<HTMLElement>("div").forEach((d) => { if (d.style.whiteSpace === "nowrap") d.style.whiteSpace = "normal"; });
+      document.body.appendChild(box);
+      tip.current = { setMap: (m: unknown) => { if (m === null) box.remove(); } };
+      return;
+    }
     tip.current = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(a.lat, a.lng), content: box, yAnchor: 1, zIndex: 30, clickable: true });
     tip.current.setMap(kakaoMapRef.current);
-  }, [kakaoMapRef]);
+  }, [kakaoMapRef, mobile]);
 
   useEffect(() => {
     const kakao = (window as any).kakao, map = kakaoMapRef.current;
@@ -190,6 +203,7 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
         const next = pickedRef.current === key ? null : key; // 또 누르면 닫기
         setPicked(next);
         if (next) showTip(g);
+        if (mobile) return; // 모바일은 정보 상자의 [상세보기]로 목록을 연다
         if (g.length > 1) {
           // 여러 사무소 — 왼쪽 목록에 그 사무소들 (줄로). 사무소 화면이 열려 있으면 닫는다
           window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null }));
@@ -227,7 +241,9 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot }: { ka
 
   const button = (
     <button type="button" onClick={toggle} title="공실뉴스 회원 부동산을 지도 위에 보기"
-      style={{ border: `1.5px solid ${NAVY}`, borderRadius: 6, cursor: "pointer", padding: "6px 10px", fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", background: on ? NAVY : "#fff", color: on ? "#fff" : NAVY }}>
+      style={mobile
+        ? { border: `1.5px solid ${NAVY}`, borderRadius: 999, cursor: "pointer", padding: "6px 12px", fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", background: on ? NAVY : "#fff", color: on ? "#fff" : NAVY, boxShadow: "0 2px 8px rgba(0,0,0,.12)" }
+        : { border: `1.5px solid ${NAVY}`, borderRadius: 6, cursor: "pointer", padding: "6px 10px", fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", background: on ? NAVY : "#fff", color: on ? "#fff" : NAVY }}>
       부동산{on && !list ? "…" : ""}
     </button>
   );

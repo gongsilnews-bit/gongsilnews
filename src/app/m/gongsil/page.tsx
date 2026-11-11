@@ -18,6 +18,30 @@ import GongsilRegisterPromoOverlay from "@/app/(map)/gongsil/GongsilRegisterProm
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import AptPriceLayer from "@/app/(map)/gongsil/AptPriceLayer";
 import NewsLayer from "@/app/(map)/gongsil/NewsLayer";
+import AgencyLayer from "@/app/(map)/gongsil/AgencyLayer";
+import type { MapAgency } from "@/app/actions/mapAgencies";
+
+/**
+ * 부동산 이름표 [상세보기] → 그 사무소가 올린 공실 전부를 공실 목록 화면("공실광고 N개")에 (2026-11-11)
+ *  PC GongsilClient 와 같은 방식 — 가진 것으로 먼저 보여 주고, 서버에서 전부 받아 바꾼다
+ */
+function AgencyVacancyList({ vacancies, onList, onUpdate }: { vacancies: any[] | null; onList: (l: any[], a: MapAgency) => void; onUpdate: (l: any[]) => void }) {
+  const vacRef = useRef(vacancies);
+  vacRef.current = vacancies;
+  useEffect(() => {
+    const on = (e: Event) => {
+      const a = (e as CustomEvent).detail as MapAgency | null;
+      if (!a) return;
+      onList((vacRef.current || []).filter((v: any) => v.owner_id === a.ownerId), a);
+      void getVacanciesForMap({ ownerId: String(a.ownerId), is_auction: false }).then((res: any) => {
+        if (res?.success && Array.isArray(res.data)) onUpdate(res.data);
+      }).catch(() => {});
+    };
+    window.addEventListener("gs-agency-open", on);
+    return () => window.removeEventListener("gs-agency-open", on);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 const MAX_MOBILE_MAP_LEVEL = 6;
@@ -76,6 +100,9 @@ function MobileGongsilContent() {
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
   const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
+  // 부동산 이름표 [상세보기]로 연 사무소 — 공실 목록 위에 사무소 카드 (다른 묶음을 열면 지운다, 2026-11-11)
+  const [agencyPicked, setAgencyPicked] = useState<MapAgency | null>(null);
+  useEffect(() => { if (!selectedCluster) setAgencyPicked(null); }, [selectedCluster]);
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [priceSlot, setPriceSlot] = useState<HTMLSpanElement | null>(null);
@@ -1492,6 +1519,9 @@ function MobileGongsilContent() {
             />
             {/* 기사 동그라미 — PC 우리동네부동산 [우리동네뉴스]와 같은 것 (2026-11-11 사장님). 들어올 때는 꺼진 채로, 단추는 단지 단추들 뒤에 */}
             <NewsLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} category="all" />
+            {/* 회원 부동산 이름표 — PC [부동산]과 같은 것 (2026-11-11 사장님: "부동산도 나타나게, 모바일에서"). PC 처럼 켜진 채로 시작 */}
+            <AgencyLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} />
+            <AgencyVacancyList vacancies={vacancies} onList={(list, a) => { window.history.pushState({ panel: "cluster" }, ""); setSelectedVacancy(null); setAgencyPicked(a); setSelectedCluster(list); }} onUpdate={(list) => setSelectedCluster((cur: any) => (cur ? list : cur))} />
 
             {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (
@@ -1937,6 +1967,7 @@ function MobileGongsilContent() {
         handleVacancyClick={handleVacancyClick}
         formatPrice={formatPrice}
         listScrollRef={listScrollRef}
+        agency={selectedCluster ? agencyPicked : null}
       />
 
 

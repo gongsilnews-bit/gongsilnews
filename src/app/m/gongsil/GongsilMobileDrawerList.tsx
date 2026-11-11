@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from "react";
 import { formatAmount } from "./page";
 import { getAuctionInfo, getCleanAddrText, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
+import type { MapAgency } from "@/app/actions/mapAgencies";
+import { MobileAgencyCard, MobileAgencyArticles, useAgencyArticles } from "./MobileAgencyCard";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
@@ -21,6 +23,8 @@ interface GongsilMobileDrawerListProps {
   handleVacancyClick: (v: any) => void;
   formatPrice: (v: any) => string;
   listScrollRef: React.RefObject<HTMLDivElement | null>;
+  /** 부동산 이름표 [상세보기]로 열었을 때 그 사무소 — 위에 사무소 카드 + [공실]·[기사] 탭 (2026-11-11) */
+  agency?: MapAgency | null;
 }
 
 const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
@@ -38,8 +42,12 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
   handleVacancyClick,
   formatPrice,
   listScrollRef,
+  agency = null,
 }) => {
   const currentList = selectedCluster || (showListView ? (listViewMode === 'map' ? visibleVacancies : filteredVacancies) : []);
+  const [agTab, setAgTab] = useState<"vac" | "art">("vac");
+  React.useEffect(() => setAgTab("vac"), [agency?.id]);
+  const agArts = useAgencyArticles(agency);
   const [auctionSort, setAuctionSort] = useState<AuctionSortKey>("latest");
 
   const sortedList = useMemo(() => {
@@ -90,12 +98,16 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
           <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", marginLeft: "-4px" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
+          {agency ? (
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agency.name}</h3>
+          ) : (
           <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
             {activeMode === "경매" ? "경공매" : "공실광고"}{" "}
             <span style={{ color: activeMode === "경매" ? "#1a73e8" : "#f97316" }}>
               {currentList?.length || 0}
             </span>개
           </h3>
+          )}
         </div>
         {activeMode === "경매" && (
           <select
@@ -121,7 +133,12 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
         )}
       </div>
       <div ref={listScrollRef} className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
-        {renderList?.map((v: any) => {
+        {agency && (
+          <div style={{ margin: "-8px -16px 0" }}>
+            <MobileAgencyCard agency={agency} vacCount={currentList?.length || 0} artCount={agArts ? agArts.length : agency.articles} tab={agTab} setTab={setAgTab} />
+          </div>
+        )}
+        {agency && agTab === "art" ? <MobileAgencyArticles arts={agArts} /> : renderList?.map((v: any) => {
           const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
           const cardMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2) && !isMyProperty;
           const cardAddr = getCleanAddrText(v);
