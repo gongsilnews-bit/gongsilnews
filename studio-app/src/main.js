@@ -389,7 +389,7 @@ function buildMenu() {
       submenu: [
         { label: "새로고침", accelerator: "F5", role: "reload" },
         { label: "관리자 화면으로", accelerator: "Alt+Home", click: () => mainWindow && mainWindow.loadURL(`${BASE_URL}/realty_admin`) },
-        { label: "내 저장 폴더 열기 (문서\\공실마케팅)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
+        { label: "내 저장 폴더 열기 (문서\\공실뉴스)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
         { type: "separator" },
         { label: "확대", role: "zoomIn" },
         { label: "축소", role: "zoomOut" },

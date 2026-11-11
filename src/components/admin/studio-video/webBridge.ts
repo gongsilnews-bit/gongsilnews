@@ -151,6 +151,12 @@ async function relink(p: Project): Promise<Project> {
     const r = await run<LibRow | undefined>("lib", "readonly", (st) => st.get(libId)).catch(() => undefined);
     if (r?.blob) v!.url = withUrl(r).url;
   }
+  // 배경 음악 (앱 .gss 에서 가져온 것 — settings.music) (2026-11-11)
+  const mu = (p.settings as any)?.music as { file?: string; url?: string } | undefined;
+  if (mu?.file?.startsWith("web-lib:")) {
+    const r = await run<LibRow | undefined>("lib", "readonly", (s) => s.get(mu.file!.slice(8))).catch(() => undefined);
+    if (r?.blob) mu.url = withUrl(r).url;
+  }
   // 내가 올린 음악·효과음 레이어도
   for (const l of (p.layers || []) as { file?: string; url?: string }[]) {
     if (!l.file && l.url && !l.url.startsWith("blob:")) l.file = l.url; // 예전 웹 프로젝트 — 미리보기 음악이 나오게
@@ -190,36 +196,77 @@ async function open(dir: string): Promise<Project> {
   return relink(p);
 }
 
-/* ── 작업 파일 .gsw (2026-11-05: 웹 프로젝트가 이 브라우저에만 있어 기록을 지우면 사라지던 것) ──
- *  zip 안: project.json + lib/<id>.json(자료 정보) + lib/<id>(파일). 공실 사진·드론·음악은 주소만 (다시 받는다) */
-function libIdsOf(p: Project): string[] {
-  const ids = new Set<string>();
-  const take = (v?: string) => { if (v?.startsWith("web-lib:")) ids.add(v.slice(8)); };
-  for (const a of Object.values(p.assets || {})) take(a.path);
-  for (const sc of p.scenes || []) for (const c of sc.clips || []) take(((c as any).voice as { file?: string } | null)?.file);
-  for (const l of (p.layers || []) as { file?: string }[]) take(l.file);
-  return [...ids];
-}
+/* ── 작업 파일 .gss — 앱(공실마케팅 스튜디오 = 확장판)과 같은 파일 (2026-11-11 사장님: "하나로 gss 로 맞춰줘, 서로 호환되게")
+ *  .gss = zip: project.json + 파일들. project.json 안 위치 표시는 앱 규칙 그대로:
+ *    {{GSS}}/media/… = 이 파일 안의 파일 · {{GSSURL}}/… = 그 파일의 화면용 주소 · gsremote:drone/<id> = 공실뉴스 드론(서버)
+ *    그 밖의 PC 위치(C:\…·{{HERE}}/…) = 앱 촬영 원본 — 파일 안에 없다 (웹에서는 "원본 없음"으로 보이고 다시 고른다)
+ *  웹 → .gss: 내 파일(web-lib)·AI 목소리·공실 사진·오픈자료(인터넷 주소)를 파일 안 media/ 에 넣는다 → 앱이 그대로 연다 (앱 코드는 안 고침)
+ *  .gss → 웹: 파일 안의 파일을 이 브라우저 보관함(web-lib)으로 옮긴다
+ *  예전 웹 .gsw (lib/<id>) 도 연다 */
+const EXT_OF: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "video/mp4": "mp4", "video/webm": "webm", "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "audio/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "m4a", "audio/aac": "aac" };
+const TYPE_OF: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", aac: "audio/aac", opus: "audio/ogg" };
+const extOf = (b: Blob, kind?: string, name?: string) => EXT_OF[b.type] || /\.([a-z0-9]{2,4})$/i.exec(name || "")?.[1]?.toLowerCase() || (kind === "image" ? "png" : kind === "video" ? "mp4" : "mp3");
+const kindOfExt = (ext: string): LibItem["kind"] => (/^(mp4|webm|mov|m4v)$/i.test(ext) ? "video" : /^(mp3|wav|ogg|m4a|aac|opus)$/i.test(ext) ? "audio" : "image");
+const isHttp = (s?: string) => typeof s === "string" && /^https?:\/\//i.test(s);
+const DRONE_WEB = /^stock:s-gongsil-d-(.+)$/, DRONE_APP = /^gsremote:drone\/(.+)$/;
+
 export async function exportProject(p: Project): Promise<Blob> {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
-  const copy = JSON.parse(JSON.stringify(p));
-  for (const a of Object.values(copy.assets || {}) as Asset[]) if (a.url?.startsWith("blob:")) a.url = "";
-  zip.file("project.json", JSON.stringify(copy));
-  for (const id of libIdsOf(p)) {
-    const r = await run<LibRow | undefined>("lib", "readonly", (st) => st.get(id)).catch(() => undefined);
-    if (!r?.blob) continue;
-    zip.file(`lib/${id}.json`, JSON.stringify({ ...r.item, url: "", thumb: "" }));
-    zip.file(`lib/${id}`, r.blob);
+  const copy = JSON.parse(JSON.stringify(p)) as any;
+  delete copy.dir; delete copy.file; // 앱 pack 과 같이 — 열 때 그 PC 위치로 채운다
+  const put = new Map<string, string>(); // web-lib id 또는 인터넷 주소 → media/파일이름
+  let n = 0;
+  /** 파일 안에 넣고 그 이름 — 못 넣으면 "" */
+  const embed = async (key: string, get: () => Promise<{ blob: Blob; kind?: string; name?: string } | null>) => {
+    if (put.has(key)) return put.get(key)!;
+    const got = await get().catch(() => null);
+    if (!got?.blob) return "";
+    const name = `media/${(++n).toString().padStart(3, "0")}_${String(key).replace(/^web-lib:/, "").replace(/[^\w-]/g, "").slice(-24) || "f"}.${extOf(got.blob, got.kind, got.name)}`;
+    zip.file(name, got.blob, { createFolders: false }); // 폴더 항목(media/)을 따로 넣지 않는다 — 앱 .gss 읽기가 폴더 항목을 파일로 쓰다 막힌다 (2026-11-11 시험에서 찾음)
+    put.set(key, name);
+    return name;
+  };
+  const fromLib = (id: string) => async () => { const r = await run<LibRow | undefined>("lib", "readonly", (st) => st.get(id)); return r?.blob ? { blob: r.blob, kind: r.item.kind, name: r.item.name } : null; };
+  const fromUrl = (u: string, kind?: string) => async () => { const r = await fetch(u); if (!r.ok) return null; return { blob: await r.blob(), kind, name: u.split("?")[0] }; };
+  /** 위치(path/file) 하나를 .gss 표시로 — 돌려줌: [새 위치, 화면 주소] */
+  const conv = async (path: string | undefined, url: string | undefined, kind?: string): Promise<[string, string]> => {
+    const d = DRONE_WEB.exec(path || "");
+    if (d) return [`gsremote:drone/${d[1]}`, ""]; // 드론은 서버 자료 — 앱도 열 때마다 받는다
+    let name = "";
+    if (path?.startsWith("web-lib:")) name = await embed(path, fromLib(path.slice(8)));
+    else if (isHttp(path)) name = await embed(path!, fromUrl(path!, kind));
+    else if (isHttp(url)) name = await embed(url!, fromUrl(url!, kind)); // 공실 사진·오픈자료 — 주소만 있던 것
+    if (name) return [`{{GSS}}/${name}`, `{{GSSURL}}/${name}`];
+    return [path || (isHttp(url) ? url! : ""), isHttp(url) ? url! : ""]; // 못 받으면 주소 그대로
+  };
+  for (const a of Object.values(copy.assets || {}) as any[]) {
+    const [np, nu] = await conv(a.path, a.url, a.kind);
+    a.path = np; a.url = nu; a.edit = "";
+    if (a.thumb && !isHttp(a.thumb)) a.thumb = nu || "";
+    delete a.missing;
   }
+  for (const sc of copy.scenes || []) for (const c of sc.clips || []) {
+    const v = c.voice;
+    if (v?.file || isHttp(v?.url)) { const [np, nu] = await conv(v.file, v.url, "audio"); v.file = np; v.url = nu; }
+  }
+  for (const l of copy.layers || []) {
+    if (l.file || isHttp(l.url)) { const [np, nu] = await conv(l.file, l.url, l.type === "music" || l.type === "sfx" ? "audio" : undefined); l.file = np; l.url = nu; }
+  }
+  const m = copy.settings?.music;
+  if (m?.file || isHttp(m?.url)) { const [np, nu] = await conv(m.file, m.url, "audio"); m.file = np; m.url = nu; }
+  zip.file("project.json", JSON.stringify(copy, null, 1));
   return zip.generateAsync({ type: "blob", compression: "STORE" });
 }
+
 export async function importProject(file: File): Promise<Project> {
   const JSZip = (await import("jszip")).default;
   const zip = await JSZip.loadAsync(file);
   const pj = zip.file("project.json");
-  if (!pj) throw new Error("공실 쇼츠 작업 파일(.gsw)이 아니에요.");
-  const p = JSON.parse(await pj.async("string")) as Project;
+  if (!pj) throw new Error("공실마케팅 영상 파일(.gss)이 아니에요.");
+  const p = JSON.parse(await pj.async("string")) as any;
+
+  // 예전 웹 .gsw — lib/<id>.json + lib/<id>
   for (const name of Object.keys(zip.files)) {
     const m = /^lib\/([^/]+)\.json$/.exec(name);
     if (!m) continue;
@@ -231,13 +278,73 @@ export async function importProject(file: File): Promise<Project> {
     const blob = new Blob([ab], { type: item.kind === "image" ? "image/png" : item.kind === "video" ? "video/mp4" : "audio/mpeg" });
     await run("lib", "readwrite", (st) => st.put({ id, item, blob } as LibRow));
   }
-  // 같은 프로젝트가 이 브라우저에 있으면 덮어쓰지 않고 새 이름으로
-  const had = await run<Project | undefined>("projects", "readonly", (st) => st.get(p.dir)).catch(() => undefined);
-  if (had) { p.dir = `web:${uid()}`; p.name = `${p.name} (가져옴)`; }
+
+  // .gss — 파일 안의 파일(앱·웹 모두)을 보관함으로, 위치 표시를 web-lib: 로
+  const toLib = new Map<string, string>(); // 파일 안 이름 → web-lib id
+  const libFor = async (rel: string, hint?: { name?: string; duration?: number; width?: number; height?: number }) => {
+    if (toLib.has(rel)) return toLib.get(rel)!;
+    const z = zip.file(rel);
+    if (!z) return "";
+    const ext = (/\.([a-z0-9]+)$/i.exec(rel)?.[1] || "").toLowerCase();
+    const kind = kindOfExt(ext);
+    const blob = new Blob([await z.async("arraybuffer")], { type: TYPE_OF[ext] || "application/octet-stream" });
+    const id = `g${uid()}`;
+    const item: LibItem = { id, name: hint?.name || rel.split("/").pop() || "파일", kind, source: "web", fav: false, addedAt: Date.now(), duration: hint?.duration || 0, width: hint?.width || 0, height: hint?.height || 0, url: "", thumb: "", ready: true };
+    await run("lib", "readwrite", (st) => st.put({ id, item, blob } as LibRow));
+    toLib.set(rel, id);
+    return id;
+  };
+  /** 위치 하나 — 돌려줌: [웹 위치, 빠짐 여부] */
+  const back = async (path: string | undefined, hint?: Parameters<typeof libFor>[1]): Promise<[string, boolean]> => {
+    const s = String(path || "");
+    const g = /^\{\{GSS\}\}\/(.+)$/.exec(s);
+    if (g) { const id = await libFor(g[1], hint); return id ? [`web-lib:${id}`, false] : ["", true]; }
+    const d = DRONE_APP.exec(s);
+    if (d) return [`stock:s-gongsil-d-${d[1]}`, false];
+    if (!s || s.startsWith("web-lib:") || s.startsWith("stock:") || isHttp(s)) return [s, false];
+    return [s, true]; // 앱 촬영 원본(PC 위치) — 웹에서는 못 읽는다
+  };
+  const webUrl = (u?: string) => (isHttp(u) ? u! : ""); // {{GSSURL}}·studio-media:// 는 열 때 다시 만든다
+  for (const a of Object.values(p.assets || {}) as any[]) {
+    const [np, miss] = await back(a.path, { name: a.name, duration: a.duration, width: a.width, height: a.height });
+    a.path = np; a.edit = "";
+    a.url = isHttp(np) ? np : webUrl(a.url);
+    if (np.startsWith("stock:s-gongsil-d-") || isHttp(np)) a.path = isHttp(np) ? "" : np; // 인터넷 주소는 웹 규칙대로 path 비우고 url
+    if (a.thumb && !isHttp(a.thumb)) a.thumb = "";
+    a.missing = miss;
+  }
+  // 앱 파일의 공실 사진은 앱 PC 보관함(photo-01.jpg …)에만 있다 — 그 공실 사진을 공실뉴스에서 다시 가져온다 (2026-11-11)
+  const lostVac = (Object.values(p.assets || {}) as any[]).filter((a) => a.missing && a.source === "vacancy");
+  if (lostVac.length && p.vacancyId) {
+    const r = await getVideoVacancy(String(p.vacancyId)).catch(() => null);
+    const photos = r && r.success ? r.data.photos : [];
+    for (const a of lostVac) {
+      const n = Number(/photo-(\d+)/i.exec(String(a.name || a.path || ""))?.[1] || 0);
+      const u = n > 0 ? photos[n - 1] : "";
+      if (u) { a.path = ""; a.url = u; a.thumb = u; a.missing = false; }
+    }
+  }
+  for (const sc of p.scenes || []) for (const c of sc.clips || []) {
+    const v = c.voice;
+    if (v?.file) { const [np] = await back(v.file, { name: "목소리" }); v.file = np; v.url = webUrl(v.url); }
+  }
+  for (const l of p.layers || []) {
+    if (l.file) { const [np] = await back(l.file, { name: l.name }); l.file = np; l.url = isHttp(np) ? np : webUrl(l.url); }
+  }
+  const mu = p.settings?.music;
+  if (mu?.file) { const [np] = await back(mu.file, { name: mu.name }); mu.file = np; mu.url = isHttp(np) ? np : webUrl(mu.url); }
+
+  // 이름 — 파일 이름이 곧 프로젝트 이름 (앱과 같이)
+  const base = file.name.replace(/\.(gss|gsw)$/i, "");
+  if (base) p.name = base;
+  delete p.file;
+  // 같은 프로젝트가 이 브라우저에 있으면 덮어쓰지 않고 새 자리로 (앱 파일은 dir 이 없다)
+  const had = p.dir ? await run<Project | undefined>("projects", "readonly", (st) => st.get(p.dir)).catch(() => undefined) : undefined;
+  if (!p.dir || !String(p.dir).startsWith("web:") || had) p.dir = `web:${uid()}`;
+  if (had) p.name = `${p.name} (가져옴)`;
   await run("projects", "readwrite", (st) => st.put(p));
   return relink(p);
 }
-
 async function recent(): Promise<Recent[]> {
   const all = await run<Project[]>("projects", "readonly", (s) => s.getAll()).catch(() => [] as Project[]);
   return all
@@ -344,22 +451,23 @@ export function webVideoBridge(): VideoBridge {
       openPick: async () => {
         // 저장 폴더를 정했으면 05 동영상studio 에서 바로 (2026-11-06 사장님: 저장한 .gsw 가 바로 보이게) — 아니면 보통 파일 고르기
         const { pickFromFolder } = await import("@/components/admin/studio-web/folder");
-        const got = await pickFromFolder("video", ".gsw", "공실 쇼츠 작업 파일");
+        // 작업 파일 .gss — 앱과 같은 파일·자리 05 동영상제작\프로젝트 (2026-11-11) · 예전 웹 .gsw 도 [모든 파일]로 열린다
+        const got = await pickFromFolder("video", ".gss", "공실마케팅 영상 파일", ["프로젝트"]);
         if (got === null) return null; // 닫음
-        const f = got || (await pickFiles(".gsw,application/zip"))[0];
+        const f = got || (await pickFiles(".gss,.gsw,application/zip"))[0];
         return f ? importProject(f) : null;
       },
       save,
-      // [저장](Ctrl+S) — 이 브라우저에 + 저장 폴더를 정했으면 PC 05 동영상studio 에 작업 파일(.gsw)도 (2026-11-05)
+      // [저장](Ctrl+S) — 이 브라우저에 + 저장 폴더를 정했으면 PC 05 동영상제작\프로젝트 에 작업 파일(.gss, 앱과 같은 파일)도 (2026-11-11)
       flush: async (p: Project) => {
         await save(p);
         try {
           const { saveToFolderHandle } = await import("@/components/admin/studio-web/folder");
-          // 05 동영상studio\년월일 제목.gsw — 하위 폴더 없이 바로 (2026-11-06 사장님: "날짜 폴더는 필요없어", "폴더없이 다이렉트로")
+          // 05 동영상제작\프로젝트\년월일 제목.gss — 앱과 같은 자리·이름 (날짜 폴더 없이, 2026-11-06·11-11)
           const nm = String(p.name || "쇼츠").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
           const day = /^(\d{8})/.exec(nm)?.[1] || ymd();
-          const file = `${(/^\d{8}/.test(nm) ? nm : `${day} ${nm}`).slice(0, 49)}.gsw`; // 년월일 8자리 + 제목 앞 40자
-          await saveToFolderHandle("video", [], file, await exportProject(p));
+          const file = `${(/^\d{8}/.test(nm) ? nm : `${day} ${nm}`).slice(0, 49)}.gss`; // 년월일 8자리 + 제목 앞 40자 — 앱과 같은 .gss
+          await saveToFolderHandle("video", ["프로젝트"], file, await exportProject(p));
         } catch { /* 폴더를 안 정했거나 권한 없음 — 브라우저 저장은 됐다 */ }
         return { savedAt: now() };
       },
@@ -467,13 +575,13 @@ export function webVideoBridge(): VideoBridge {
       const { blob, seconds } = await renderWebMp4(p, (text, frac) => renderFns.forEach((fn) => fn(text, frac)), () => cancelled.has(id));
       const name = `${(p.name || "영상").replace(/[\\/:*?"<>|]+/g, " ").trim()}.mp4`;
       lastOut = { name, blob };
-      // 완성 영상은 05 동영상studio\완성영상 에 (2026-11-06 사장님) — 작업 파일(.gsw)은 05 동영상studio 바로 밑. 폴더를 안 정했으면 다운로드 폴더
+      // 완성 영상은 06 완성영상\년월일 에 — 앱과 같은 자리 (2026-11-11, 예전 웹은 05 동영상studio\완성영상). 폴더를 안 정했으면 다운로드 폴더
       const { saveToFolderHandle } = await import("@/components/admin/studio-web/folder");
       const fileName = /^\d{8}/.test(name) ? name : `${ymd()} ${name}`;
-      const h = await saveToFolderHandle("video", ["완성영상"], fileName, blob);
+      const h = await saveToFolderHandle("done", [ymd()], fileName, blob);
       if (!h) await downloadWithHandle(name, blob, "video").catch(() => null); // 저장 폴더가 없으면 내려받기
       lastOut.inFolder = Boolean(h);
-      return { file: h ? `공실뉴스\\05 동영상studio\\완성영상\\${fileName}` : `다운로드 폴더\\${name}`, seconds, took: (Date.now() - t0) / 1000, encoder: "web", url: URL.createObjectURL(blob) };
+      return { file: h ? `06 완성영상\\${ymd()}\\${fileName}` : `다운로드 폴더\\${name}`, seconds, took: (Date.now() - t0) / 1000, encoder: "web", url: URL.createObjectURL(blob) };
     },
     renderCancel: async (id: string) => { cancelled.add(id); },
     // [폴더에서 보기] — 웹은 탐색기를 못 연다. 예전엔 같은 영상을 또 내려받아 "(3).mp4"가 쌓였다 (2026-11-06 사장님)
@@ -481,11 +589,11 @@ export function webVideoBridge(): VideoBridge {
     showFile: async () => {
       if (lastOut?.inFolder) {
         const { pickFromFolder } = await import("@/components/admin/studio-web/folder");
-        const f = await pickFromFolder("video", ".mp4", "영상", ["완성영상"]);
+        const f = await pickFromFolder("done", ".mp4", "영상", [ymd()]);
         if (f) { const u = URL.createObjectURL(f); window.open(u, "_blank", "noopener"); setTimeout(() => URL.revokeObjectURL(u), 60_000); return true; }
         if (f === null) return true; // 닫음
       }
-      alert(`영상은 크롬 다운로드 폴더에 있어요${lastOut ? ` (${lastOut.name})` : ""}.\n크롬 오른쪽 위 ⬇ (다운로드) 표시를 누르고 파일 옆 폴더 그림을 누르면 바로 열려요.\n\n왼쪽 아래 [저장 폴더]를 정해 두면 다음부터 공실뉴스\\05 동영상studio 에 저장되고, 여기서 바로 볼 수 있어요.`);
+      alert(`영상은 크롬 다운로드 폴더에 있어요${lastOut ? ` (${lastOut.name})` : ""}.\n크롬 오른쪽 위 ⬇ (다운로드) 표시를 누르고 파일 옆 폴더 그림을 누르면 바로 열려요.\n\n왼쪽 아래 [저장 폴더]를 정해 두면 다음부터 06 완성영상 폴더에 저장되고, 여기서 바로 볼 수 있어요.`);
       return true;
     },
     openPath: async () => true,

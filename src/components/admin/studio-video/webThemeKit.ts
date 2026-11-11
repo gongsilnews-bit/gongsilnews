@@ -215,7 +215,7 @@ export async function applyKit(p: Project, kit: ThemeKit, o: { b: VideoBridge; i
   // 7 드론 — 그 동네 공실뉴스 드론 영상
   if (kit.drone?.length && info?.dong && b.stock) {
     try {
-      const r = await b.stock.search(info.dong, "drone", "portrait", 1);
+      const r = await b.stock.search(info.dong, "drone", p.ratio === "9:16" || p.ratio === "4:5" ? "portrait" : "landscape", 1); // 가로 영상이면 가로 드론 (2026-11-11)
       const list = (r && r.success ? r.items : []) as { id: string; kind: "image" | "video"; thumb: string; url: string; width: number; height: number; duration?: number; credit: string; source: string }[];
       if (!list.length) notes.push(`${info.dong} 드론 영상이 아직 없어요 — 그 자리는 공실 사진으로 두었어요.`);
       let k = 0;

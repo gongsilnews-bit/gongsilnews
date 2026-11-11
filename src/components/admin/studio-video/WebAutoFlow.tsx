@@ -27,6 +27,7 @@ import { aptBrandOf } from "./Stickers";
 import { pointsLine, type VoiceFree } from "./webVoice";
 import { SHORTS_THEMES, lastThemeId, loadBaseThemes, loadMyThemes, rememberTheme, type ShortsTheme } from "./webThemes";
 import { LoadingCover } from "../sections/StudioLoading";
+import { RatioPick } from "./Flows";
 
 const PHOTO_SEC = 3; // 목소리 없을 때 사진 한 장 (초)
 const MAX_PHOTOS = 16;
@@ -81,7 +82,9 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const vacItems = (vacs || []).map((v) => ({ id: v.id, label: v.label }));
   const colItems = (free: boolean) => cols.filter((c) => c.free === free).map((c) => ({ id: c.id, label: `${c.label}${c.yt ? " · 쇼츠 대본 있음" : ""}` }));
   const tabItems: { id: string; label: string }[] = srcTab === "vac" ? vacItems : srcTab === "col" ? colItems(false) : srcTab === "free" ? colItems(true) : [...vacItems, ...colItems(false), ...colItems(true)];
-  const ratio: Ratio = "9:16"; // 웹은 60초 세로 쇼츠만 (2026-11-05 사장님: 가로 16:9 없앰)
+  // 화면 비율 — 앱과 같은 5가지 (2026-11-11 사장님: "가로·정사각형도, 앱과 같은 스타일"). 처음엔 세로 9:16
+  const [ratio, setRatio] = useState<Ratio>("9:16");
+  const shorts = ratio === "9:16"; // 60초 안내는 세로 쇼츠일 때만
   const [info, setInfo] = useState<VideoVacancy | null>(null);
   const [script, setScript] = useState(seed?.script || "");
   const [from, setFrom] = useState<"seed" | "youtube" | "">(seed?.script ? "seed" : "");
@@ -185,7 +188,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   // 읽는 데 걸리는 시간 (목소리 없으면 장면마다 3초)
   const secs = Math.round(mode === "none" ? paras.reduce((t, p) => t + holdOf(p), 0) : paras.reduce((t, p) => t + estimateSeconds(p, speed) + 0.2, 0));
   const chars = paras.join(" ").length; // AI 성우 포인트 — 1자 1P
-  const over = secs > MAX_SEC;
+  const over = shorts && secs > MAX_SEC;
 
   const make = async () => {
     const b = videoBridge();
@@ -304,13 +307,15 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
 
   // 심플하게 (2026-11-05 사장님: "대본 넣고 · 목소리 고르고 · 영상 편집 바로") — 세로 9:16 · 60초. 더 원하면 앱
   return (
-    <Modal title="쇼츠 만들기" onClose={busy ? () => {} : onCancel} width={780}
+    <Modal title="영상 만들기" onClose={busy ? () => {} : onCancel} width={780}
       footer={<><span style={{ marginRight: "auto" }} />
         <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={!paras.length || Boolean(busy)}><Icon name="video" size={16} />{busy || "편집 시작"}</Btn></>}>
       <div style={{ position: "relative" }}>
       {/* 만드는 동안 — 우리 점점점 덮개 (2026-11-10 사장님: "점점점 우리 나오는거 · 그거 나오게 해줘") */}
       {busy && (() => { const m = busy.match(/^(.*?)…\s*(.*)$/); return <LoadingCover theme={{ textSecondary: C.sub, darkMode: true }} title={m ? m[1] : busy} detail={m ? m[2] : ""} />; })()}
       <div style={{ padding: "4px 24px 20px", fontFamily: FONT, color: C.text, maxHeight: "72vh", overflowY: "auto" }}>
+        {head("화면 비율")}
+        <RatioPick value={ratio} onChange={(r) => { if (!busy) setRatio(r); }} />
         {head("① 대본")}
         {/* 한 줄 — 왼쪽 묶음 고르기(전체·공실뉴스·뉴스칼럼·자유 글쓰기) · 오른쪽 그 묶음의 대본 (2026-11-06 사장님: "한 줄로 카테고리 셀렉트 바, 그 옆에 해당 선택") */}
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -332,7 +337,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); if (noScript) { setNoScript(false); setErr(""); } }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
           style={{ ...box, padding: "12px 14px", lineHeight: 1.7, resize: "vertical" }} />
         <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 13 }}>
-          <b style={{ color: over ? "#f59f00" : C.accent }}>약 {secs}초 / {MAX_SEC}초{over ? ` — 조금 길어요. 그대로 편집을 시작하고, 편집에서 문장·클립을 지워 줄여도 돼요` : ""}</b>
+          <b style={{ color: over ? "#f59f00" : C.accent }}>약 {secs}초{shorts ? ` / ${MAX_SEC}초 (쇼츠·릴스)` : secs > 180 ? " — 3분이 넘어요. 웹은 PC 성능에 따라 느리거나 실패할 수 있어요 (10분 넘으면 앱 권장)" : " · 길이 제한 없어요"}{over ? ` — 조금 길어요. 그대로 편집을 시작하고, 편집에서 문장·클립을 지워 줄여도 돼요` : ""}</b>
           <span style={{ color: C.dim }}>{from === "youtube" || from === "seed" ? "쇼츠릴스 대본에서 가져왔어요" : ""}</span>
         </div>
         {/* 대본 없음 안내 + [대본 쓰러 가기] — 대본 칸 바로 아래 (2026-11-10 사장님: "위에 넣어줘") */}

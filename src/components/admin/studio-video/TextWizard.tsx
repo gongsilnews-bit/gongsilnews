@@ -164,7 +164,8 @@ const siteName = (url: string) => {
 };
 const columnBridge = () => (window as unknown as { gongsilStudio?: { column?: ColumnBridge } }).gongsilStudio?.column;
 
-export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, scriptOnly = false, onContinue, onLoad, onNew }: {
+export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, link, scriptOnly = false, onContinue, onLoad, onNew }: {
+  /** [링크로 만들기] 주소 — 뉴스 기사로 읽고 대본까지 저절로 (앱, 2026-11-11 사장님) */ link?: string;
   /** [대본 작성] 아래 단추 줄 — [불러오기] · [새 대본] (2026-11-03 사장님: 저장 옆에) */ onLoad?: () => void; onNew?: () => void; onCancel: () => void; onDone: (p: Project) => void; onRecord?: (script: string) => void;
   /** [대본 작성] 메뉴 (2026-11-03 사장님) — ①~⑧ 대본만 쓰고 멈춘다. 영상은 [동영상studio에서 이어서]로 (그 초안 .gss 를 넘긴다) */ scriptOnly?: boolean; onContinue?: (file: string) => void; /** 작성 중 초안(.gss)을 열었으면 — 그 단계에서 이어서 */ resume?: Project;
   /** 뉴스·SNS발행 › 유튜브 대본에서 넘어왔으면 — 매물 소개 · 그 공실 · 그 대본으로 시작 (2026-10-23 사장님) · col-… 이면 뉴스 기사로 */ seed?: { vacancyId: string; script: string } }) {
@@ -521,6 +522,16 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
     if (seed.script.trim()) setScript(seed.script);
     void chooseVac(seed.vacancyId);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // [링크로 만들기] — 뉴스 기사 칸에서 그 주소를 읽고(캡처 포함), 읽히면 바로 대본 쓰기 (2026-11-11 사장님)
+  const linkWrite = useRef(false);
+  useEffect(() => {
+    const u = (link || "").trim();
+    if (!u || seed?.vacancyId) return;
+    setSrc("news");
+    setNewsFrom(/gongsilnews\.com\/news\//i.test(u) ? "gongsil" : /\.(go|or)\.kr\//i.test(u) ? "press" : "naver");
+    linkWrite.current = true;
+    void takeNews("url", u).then(() => setTimeout(() => { if (!newsRef.current) linkWrite.current = false; }, 0)); // 못 읽었으면 나중에 고른 기사로 저절로 쓰지 않게
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 처음 열 때 내 공실 목록
   useEffect(() => {
     listMyStudioVacancies().then((r) => setVacs((cur) => cur ?? (r.success ? r.data.map((v) => ({ id: v.id, label: `[${v.trade_type || "-"}] ${v.building_name || v.property_type || "공실"} · ${v.address} · 사진 ${v.photoCount}장` })) : []))).catch(() => setVacs((cur) => cur ?? []));
@@ -536,6 +547,8 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
     else window.open(url, "_blank");
   };
   const [news, setNews] = useState<News | null>(null);
+  const newsRef = useRef<News | null>(null);
+  newsRef.current = news;
   const [arts, setArts] = useState<{ id: string; no: number | null; title: string; author: string; date: string }[] | null>(null);
   const [artQ, setArtQ] = useState("");
   const [newsUrl, setNewsUrl] = useState("");
@@ -626,6 +639,12 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
     setWriting("");
   };
 
+  // [링크로 만들기] — 기사가 읽히면 바로 대본 쓰기
+  useEffect(() => {
+    if (!news || !linkWrite.current) return;
+    linkWrite.current = false;
+    void write();
+  }, [news]); // eslint-disable-line react-hooks/exhaustive-deps
   /** 고른 부분만 다시 쓰기 — 나머지 대본은 그대로 (2026-10-23 사장님) */
   const rewriteSel = async (a: number, z: number, req: string) => {
     const part = script.slice(a, z);
@@ -1821,7 +1840,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
                 {head("기사 고르기")}
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                   <button type="button" onClick={() => setNewsFrom("gongsil")} style={{ ...chip(newsFrom === "gongsil"), height: 32 }}>공실뉴스 기사</button>
-                  <button type="button" onClick={() => setNewsFrom("naver")} style={{ ...chip(newsFrom === "naver"), height: 32 }}>네이버 뉴스</button>
+                  <button type="button" onClick={() => setNewsFrom("naver")} style={{ ...chip(newsFrom === "naver"), height: 32 }}>뉴스 주소</button>
                   <button type="button" onClick={() => setNewsFrom("press")} style={{ ...chip(newsFrom === "press"), height: 32 }}>보도자료</button>
                 </div>
                 {newsFrom === "gongsil" ? (
@@ -1863,7 +1882,7 @@ export default function TextWizard({ onCancel, onDone, onRecord, resume, seed, s
                 ) : (
                   <>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <input value={newsUrl} onChange={(e) => setNewsUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && newsUrl.trim()) void takeNews("url", newsUrl.trim()); }} placeholder="네이버 뉴스 기사 주소 붙여넣기 (https://n.news.naver.com/…)" style={{ ...input, fontSize: 13.5, height: 38, flex: 1, minWidth: 0 }} />
+                      <input value={newsUrl} onChange={(e) => setNewsUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && newsUrl.trim()) void takeNews("url", newsUrl.trim()); }} placeholder="뉴스·블로그 주소 붙여넣기 (네이버 뉴스 · 언론사 · 블로그 https://…)" style={{ ...input, fontSize: 13.5, height: 38, flex: 1, minWidth: 0 }} />
                       <Btn onClick={() => void takeNews("url", newsUrl.trim())} disabled={!newsUrl.trim() || Boolean(writing)}>가져오기</Btn>
                     </div>
                     {columnBridge() && (

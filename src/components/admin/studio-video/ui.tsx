@@ -166,6 +166,7 @@ export const FONT = "'Pretendard', 'Malgun Gothic', system-ui, sans-serif";
 const P: Record<string, React.ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   open: <><path d="M3 7h6l2 2h10v10H3z" /></>,
+  link: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
   play: <path d="M7 5l12 7-12 7z" />,
   pause: <><path d="M8 5v14M16 5v14" /></>,
   undo: <><path d="M9 7L4 12l5 5" /><path d="M4 12h11a5 5 0 010 10h-2" /></>,

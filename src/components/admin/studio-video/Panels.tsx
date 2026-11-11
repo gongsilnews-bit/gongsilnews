@@ -128,7 +128,32 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   const [vac, setVac] = useState(project.vacancyId || "");
   // 무료 자료
   const [stockQ, setStockQ] = useState("");
-  const [stockType, setStockType] = useState<"all" | "photo" | "video" | "drone">(initialTab === "drone" ? "drone" : "photo"); // [전체] 탭은 뺐다 (2026-10-29 사장님) — 이미지부터
+  const [stockType, setStockType] = useState<"all" | "photo" | "video" | "drone" | "gphoto">(initialTab === "drone" ? "drone" : "photo");
+  // [공실뉴스 사진] 탭 (2026-11-11 사장님) — 사장님 사진(R2). 묶음 드론·거리·매물 · 분류 · 공간(매물) · 검색, 60장씩
+  const [gphotos, setGphotos] = useState<StockItem[] | null>(null);
+  const [gpF, setGpF] = useState({ g: "", c: "", s: "" });
+  const [gpInfo, setGpInfo] = useState<{ total: number; more: boolean; page: number; cats: string[]; spaces: string[] }>({ total: 0, more: false, page: 1, cats: [], spaces: [] });
+  const loadGphotos = async (o: { g?: string; c?: string; s?: string; q?: string; page?: number } = {}) => {
+    const f = { g: o.g ?? gpF.g, c: o.c ?? gpF.c, s: o.s ?? gpF.s };
+    const word = o.q ?? stockQ, page = o.page ?? 1;
+    setGpF(f);
+    if (page === 1) { setBusy("공실뉴스 사진을 불러오는 중…"); setGphotos(null); }
+    setMsg("");
+    try {
+      const sp = new URLSearchParams({ type: "gphoto", ...f, q: word.trim(), page: String(page) });
+      const j = await fetch(`/api/studio/video/stock?${sp}`, { credentials: "include" }).then((r) => r.json());
+      if (!j.success) setMsg(j.error || "공실뉴스 사진을 불러오지 못했어요.");
+      const got = (j.items || []) as StockItem[];
+      setGphotos((prev) => (page === 1 ? got : [...(prev || []), ...got]));
+      setGpInfo({ total: j.total || 0, more: !!j.more, page, cats: j.cats || [], spaces: j.spaces || [] });
+    } catch (e) { setMsg(errText(e)); if (page === 1) setGphotos([]); }
+    setBusy("");
+  };
+  const openGphotos = () => {
+    setStockType("gphoto");
+    setStockQ("");
+    if (!gphotos) void loadGphotos({ q: "" });
+  }; // [전체] 탭은 뺐다 (2026-10-29 사장님) — 이미지부터
   // [공실뉴스 드론] 탭 (2026-10-28 사장님) — 처음 열 때 한 번 전부 받아 두고, 동·검색어로 여기서 거른다 (찍은 모양 단추는 빼기로)
   const [drones, setDrones] = useState<StockItem[] | null>(null);
   const [droneGu, setDroneGu] = useState("");
@@ -213,6 +238,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   //  비디오는 "한국 건물 서울" (2026-10-29 사장님)
   const baseQ = (type: string) => (type === "video" ? "한국 건물 서울" : "아파트 인테리어");
   const searchStock = async (word?: string, type = stockType) => {
+    if (type === "gphoto") { if (word !== undefined) setStockQ(word); return loadGphotos({ q: word ?? stockQ }); }
     const qq = (word ?? stockQ).trim() || baseQ(type);
     if (!b) return;
     if (word !== undefined) setStockQ(word);
@@ -320,7 +346,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           }}
           style={{ position: "relative", display: "block", width: "100%", marginBottom: 8, breakInside: "avoid", aspectRatio: it.width && it.height ? `${it.width} / ${it.height}` : "16 / 10", padding: 0, border: 0, borderRadius: 4, overflow: "hidden", background: "#000", cursor: "pointer" }}>
           {it.thumb && <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-          {it.source === "공실뉴스" && <span style={{ position: "absolute", left: 6, top: 6, fontSize: 11.5, fontWeight: 800, color: "#fff", background: "#E8590C", padding: "1px 6px", borderRadius: 3 }}>공실뉴스 드론</span>}
+          {it.source === "공실뉴스" && <span style={{ position: "absolute", left: 6, top: 6, fontSize: 11.5, fontWeight: 800, color: "#fff", background: "#E8590C", padding: "1px 6px", borderRadius: 3 }}>{it.kind === "video" ? "공실뉴스 드론" : "공실뉴스 사진"}</span>}
           {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{it.duration ? fmtTime(it.duration, false) : "영상"}</span>}
           {pro && plusBtn(it)}
           {/* 공실뉴스 드론은 PC에 받지 않는다 — 쓸 때마다 불러온다 (2026-10-28 사장님) */}
@@ -902,7 +928,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           <div style={{ padding: "12px 14px 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 10px", borderRadius: 8, border: "1px solid #22d3ee", background: C.bg }}>
               <Icon name="search" size={17} />
-              <input value={stockQ} onChange={(e) => setStockQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && stockType !== "drone" && searchStock()} placeholder={stockType === "drone" ? "동네·역·건물 이름 (예: 논현동, 역삼역)" : "예: 서울 아파트, 거실"}
+              <input value={stockQ} onChange={(e) => setStockQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && stockType !== "drone" && searchStock()} placeholder={stockType === "drone" ? "동네·역·건물 이름 (예: 논현동, 역삼역)" : stockType === "gphoto" ? "동네·특징 (예: 논현동, 루프탑, 한강뷰)" : "예: 서울 아파트, 거실"}
                 style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: C.text, fontSize: 15, fontFamily: FONT }} />
               {stockQ && <button type="button" onClick={() => { setStockQ(""); if (stockType !== "drone") void searchStock("", stockType); }} title="지우기" style={{ width: 22, height: 22, borderRadius: 11, border: 0, background: C.sub, color: C.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={13} stroke={2.6} /></button>}
             </div>
@@ -911,8 +937,30 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
           <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, marginTop: 8 }}>
             {(["photo", "video"] as const).map((k) => <button key={k} type="button" onClick={() => { setStockType(k); void searchStock(undefined, k); }} style={tabBtn(stockType === k)}>{k === "photo" ? "이미지" : "비디오"}</button>)}
             <button type="button" onClick={() => void openDrones()} title="공실뉴스가 직접 찍은 드론 영상" style={{ ...tabBtn(stockType === "drone"), whiteSpace: "nowrap" }}>공실뉴스 드론</button>
+            <button type="button" onClick={openGphotos} title="공실뉴스가 직접 찍은 사진" style={{ ...tabBtn(stockType === "gphoto"), whiteSpace: "nowrap" }}>공실뉴스 사진</button>
           </div>
-          {stockType === "drone" ? (
+          {stockType === "gphoto" ? (
+            <>
+              <div style={{ padding: "10px 14px 0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+                {["", "드론", "거리", "매물"].map((g) => <button key={g || "all"} type="button" onClick={() => void loadGphotos({ g, c: "", s: "" })} style={{ ...chip(gpF.g === g), height: 30, borderRadius: 15, flexShrink: 0, fontSize: 13 }}>{g || "전체"}</button>)}
+                {gpF.g && gpInfo.cats.length > 0 && (
+                  <select value={gpF.c} onChange={(e) => void loadGphotos({ c: e.target.value, s: "" })} style={{ height: 30, padding: "0 6px", borderRadius: 5, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 13, fontFamily: FONT }}>
+                    <option value="">{gpF.g === "매물" ? "모든 종류" : "모든 분류"}</option>
+                    {gpInfo.cats.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
+                {gpF.g === "매물" && gpInfo.spaces.length > 0 && (
+                  <select value={gpF.s} onChange={(e) => void loadGphotos({ s: e.target.value })} style={{ height: 30, padding: "0 6px", borderRadius: 5, border: `1px solid ${C.line2}`, background: C.bg, color: C.text, fontSize: 13, fontFamily: FONT }}>
+                    <option value="">모든 공간</option>
+                    {gpInfo.spaces.map((x) => <option key={x} value={x}>{x}</option>)}
+                  </select>
+                )}
+                {gphotos && <span style={{ marginLeft: "auto", fontSize: 12.5, color: C.sub }}>{gpInfo.total.toLocaleString()}장</span>}
+              </div>
+              {gphotos && (gphotos.length ? masonry(gphotos) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>맞는 사진이 없어요.</div>)}
+              {gphotos && gpInfo.more && !busy && <div style={{ textAlign: "center", padding: "0 14px 8px" }}><button type="button" onClick={() => void loadGphotos({ page: gpInfo.page + 1 })} style={{ ...chip(false), height: 34, padding: "0 20px" }}>더 보기</button></div>}
+            </>
+          ) : stockType === "drone" ? (
             <>
               {drones && drones.length > 0 && (
                 <div style={{ padding: "10px 14px 0", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -924,7 +972,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
               {drones && (droneShown.length ? masonry(droneShown) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>맞는 드론 영상이 없어요.</div>)}
             </>
           ) : stock && (stock.length ? masonry(stock) : !msg && !busy && <div style={{ padding: "16px 14px", color: C.sub, fontSize: 14 }}>찾은 자료가 없어요.</div>)}
-          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
+          <div style={{ fontSize: 12, color: C.dim, padding: "6px 14px 12px" }}>{stockType === "gphoto" ? "공실뉴스가 직접 찍은 사진이에요. 공실뉴스부동산 회원이 만드는 영상 안에서 쓸 수 있어요." : stockType === "drone" ? "공실뉴스가 직접 찍은 드론 영상이에요. 공실마케팅에서 만드는 영상 안에서만 쓸 수 있어요 (PC에 받지 않고 쓸 때마다 불러와요)." : <>무료 자료 (상업 이용 가능). 고르면 PC로 받아 둬요. ⬇ 는 PC [문서\공실마케팅\09 받은자료\무료영상·무료사진]에 받기, ★ 즐겨찾기는 [내 자료 → 즐겨찾기]에 모여요.</>}</div>
         </div>
       )}
 
@@ -1318,7 +1366,7 @@ export function RatioPanel({ ratio, fill, onRatio, onFill, onClose }: { ratio: R
   return (
     <Side title="화면 비율" onClose={onClose}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: 14 }}>
-        {(Object.keys(RATIO_LABEL) as Ratio[]).filter((r) => !(videoBridge() as { web?: boolean } | null)?.web || r === "9:16").map((r) => { // 웹은 9:16 쇼츠만 (2026-11-05)
+        {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => { // 웹도 모든 비율 (2026-11-11)
           const [w, h] = r.split(":").map(Number);
           const s = 30 / Math.max(w, h);
           return (

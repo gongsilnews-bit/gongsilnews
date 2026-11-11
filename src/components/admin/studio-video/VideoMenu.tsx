@@ -54,9 +54,9 @@ export default function VideoMenu({ view, onView, onMethod, web, onAuto }: { vie
       {web ? (
         <>
           <button type="button" onClick={() => onView("home")} style={item(view === "home")}><Icon name="folder" size={17} />내 프로젝트</button>
-          <button type="button" onClick={() => onAuto?.()} title="대본 넣고 · 목소리 고르고 · 바로 편집 (세로 60초)" style={{ ...item(false), color: C.accent, fontWeight: 800 }}><Icon name="plus" size={17} />쇼츠 만들기</button>
+          <button type="button" onClick={() => onAuto?.()} title="대본 넣고 · 화면 비율 · 목소리 고르고 · 바로 편집" style={{ ...item(false), color: C.accent, fontWeight: 800 }}><Icon name="plus" size={17} />영상 만들기</button>
           {/* 쇼츠·릴스만 (2026-11-05 사장님: "그냥 쇼츠 릴스만 되게 · 긴 건 나중에") — 잠긴 앱 메뉴·앱 다운로드 안내는 뺌 */}
-          <div style={{ fontSize: 12, color: C.dim, margin: "12px 8px 0", lineHeight: 1.6 }}>60초 세로 쇼츠·릴스를 만들어요.</div>
+          <div style={{ fontSize: 12, color: C.dim, margin: "12px 8px 0", lineHeight: 1.6 }}>쇼츠·릴스(세로)부터 유튜브(가로)·피드(정사각형)까지 만들어요. 길이 제한 없어요.</div>
         </>
       ) : <>
       <AiSettingsBox light={theme === "light"} />

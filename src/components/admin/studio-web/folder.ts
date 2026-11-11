@@ -12,7 +12,10 @@
  */
 
 export const ROOT_NAME = "공실뉴스";
-export const F = { sns: "01 뉴스SNS발행", mkt: "02 매물보고서", flyer: "03 물건홍보지", photo: "04 포토studio", video: "05 동영상studio", capture: "07 화면캡쳐" } as const; // capture — 웹 화면캡처 막대 (2026-11-05) // video — 웹 동영상studio 내보내기 (2026-11-05)
+/** 앱(공실마케팅 스튜디오 = 확장판)의 저장 폴더 이름 — 이 폴더를 고르면 그대로 쓴다 (2026-11-11 사장님: "폴더 정리도 서로 호환되게") */
+export const APP_ROOT_NAME = "공실마케팅";
+// video·done — 앱과 같은 자리 (2026-11-11): 작업 파일 05 동영상제작\프로젝트\*.gss · 완성 영상 06 완성영상\년월일\ (예전 웹은 05 동영상studio)
+export const F = { sns: "01 뉴스SNS발행", mkt: "02 매물보고서", flyer: "03 물건홍보지", photo: "04 포토studio", video: "05 동영상제작", done: "06 완성영상", videoOld: "05 동영상studio", capture: "07 화면캡쳐" } as const; // capture — 웹 화면캡처 막대 (2026-11-05)
 export type FolderKey = keyof typeof F;
 
 type Dir = any; // FileSystemDirectoryHandle (브라우저마다 타입이 달라 any)
@@ -67,7 +70,8 @@ export async function pickFolder(): Promise<FolderState & { aborted?: boolean }>
     if (e && e.name === "AbortError") return { ...(await folderState()), aborted: true }; // 회원이 닫았다 (크롬 "이 폴더를 열 수 없음"에서 [취소]도 여기로)
     throw new Error("폴더를 고르지 못했어요. 다른 폴더를 골라 주세요.");
   }
-  const root = picked.name === ROOT_NAME ? picked : await picked.getDirectoryHandle(ROOT_NAME, { create: true });
+  // 공실뉴스 또는 앱 폴더(공실마케팅)를 고르면 그대로, 아니면 그 안에 공실뉴스 (2026-11-11: 앱과 같은 폴더를 함께 쓰게)
+  const root = picked.name === ROOT_NAME || picked.name === APP_ROOT_NAME ? picked : await picked.getDirectoryHandle(ROOT_NAME, { create: true });
   await kv("readwrite", (s) => s.put(root, "root"));
   rootP = Promise.resolve(root);
   restored = false;

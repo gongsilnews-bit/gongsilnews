@@ -1433,7 +1433,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     if (c && !c.box && isPhotoClip(project, c) && (c.motion || project.settings.motion) !== "none") say("직접 옮기면 사진 움직임(줌인 등)은 쉬어요 · [채우기]로 돌리면 다시 움직여요");
   };
   /** 화면 비율 바꾸기 — 오른쪽 [화면 비율] 칸 · 위쪽 비율 단추가 같이 쓴다 */
-  const setRatio = (r: Ratio) => (b as { web?: boolean }).web && r !== "9:16" ? undefined : change((p) => { /* 웹은 9:16 고정 (2026-11-05) */ p.ratio = r; if (p.settings.subtitle.posAuto && typeof p.settings.subtitle.x !== "number") p.settings.subtitle.position = autoSubPosition(r); });
+  const setRatio = (r: Ratio) => change((p) => { /* 웹도 모든 비율 (2026-11-11, 예전엔 9:16 고정) */ p.ratio = r; if (p.settings.subtitle.posAuto && typeof p.settings.subtitle.x !== "number") p.settings.subtitle.position = autoSubPosition(r); });
   const openLayer = (id: string) => {
     const lay = (project.layers || []).find((x) => x.id === id);
     // 그래픽은 무엇을 보다가 골랐든 밑에 그래픽 창 — 속성 X 면 그래픽으로 (2026-10-21 사장님)
@@ -5389,7 +5389,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         ]} />;
       })()}
       {ratioMenu && <QuickMenu title="화면 비율 — 누르면 바로 바뀌어요" what="화면 비율" x={ratioMenu.x} y={ratioMenu.y} onClose={() => setRatioMenu(null)}
-        items={[...(Object.keys(RATIO_LABEL) as Ratio[]).filter((r) => !(b as { web?: boolean }).web || r === "9:16").map((r) => ({ icon: "ratio", iconEl: <RatioBox ratio={r} />, label: `${RATIO_LABEL[r]} (${r})`, desc: r === "9:16" ? "세로 영상 — 쇼츠·릴스·틱톡" : r === "16:9" ? "가로 영상 — 유튜브" : r === "1:1" ? "정사각형 — 피드" : r === "4:5" ? "인스타그램 피드 세로" : "예전 TV 화면 비율", on: project.ratio === r, run: () => setRatio(r) })),
+        items={[...(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => ({ icon: "ratio", iconEl: <RatioBox ratio={r} />, label: `${RATIO_LABEL[r]} (${r})`, desc: r === "9:16" ? "세로 영상 — 쇼츠·릴스·틱톡" : r === "16:9" ? "가로 영상 — 유튜브" : r === "1:1" ? "정사각형 — 피드" : r === "4:5" ? "인스타그램 피드 세로" : "예전 TV 화면 비율", on: project.ratio === r, run: () => setRatio(r) })),
           { icon: "gear", label: "채우기·자세히", desc: "사진·영상을 화면에 어떻게 채울지 (오른쪽 칸)", run: () => setPanel("ratio") }]} />}
       {/* 클립 아이콘 메뉴 — 메인자막 · 화면전환 (사진·글자·효과음 메뉴와 같은 생김새, 2026-10-21 사장님) */}
       {quick && (() => {
@@ -6034,6 +6034,18 @@ function ExportDialog({ project, selected, sceneOf, onClose }: { project: Projec
               </>)}
             </div>
           ) : null;
+        })()}
+        {/* 웹은 브라우저 안에서 굽는다 — 3분이 넘으면 안내만 (막지 않는다, 2026-11-11 사장님: "3분 넘으면 안내") */}
+        {kind === "mp4" && (b as { web?: boolean }).web && (() => {
+          const sec = project.scenes.flatMap((s) => s.clips).reduce((t, c) => t + (clipDuration(c, project.settings) || 0), 0);
+          if (sec <= 180) return null;
+          const mm = `${Math.floor(sec / 60)}분${Math.round(sec % 60) ? ` ${Math.round(sec % 60)}초` : ""}`;
+          return (
+            <div style={{ padding: "10px 12px", borderRadius: 6, border: "1px solid #f59f00", background: "rgba(245,159,0,0.1)", fontSize: 14, lineHeight: 1.6 }}>
+              <b style={{ color: "#f59f00" }}>영상이 {mm}로 길어요.</b><br />
+              <span style={{ color: C.sub }}>웹은 브라우저 안에서 영상을 만들어서, 길면 PC 성능에 따라 느리거나 실패할 수 있어요. 만드는 동안 이 창을 닫지 마세요. 10분이 넘는 영상은 공실마케팅 앱을 권해요.</span>
+            </div>
+          );
         })()}
         {offNames(project).length > 0 && (
           <div style={{ padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.danger}`, background: "rgba(239,68,68,0.1)", fontSize: 14, lineHeight: 1.6 }}>

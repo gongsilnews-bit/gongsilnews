@@ -70,10 +70,13 @@ function FoldersDialog({ onClose }: { onClose: () => void }) {
 
 /* ── 처음 화면 ── */
 const iconBtn: React.CSSProperties = { flexShrink: 0, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 4, background: "transparent", color: "#8b95a3", cursor: "pointer" };
-export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void; onImported?: (p: Project) => void }) {
+export function Home({ onNew, onOpenPick, onOpen, onImported, onLink }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void; onImported?: (p: Project) => void; /** [링크로 만들기] — 주소를 주면 읽고 요약해 대본까지 (앱, 2026-11-11 사장님) */ onLink?: (url: string) => void }) {
   const b = videoBridge()!;
   const web = Boolean((b as { web?: boolean }).web);
   const [importOpen, setImportOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  // 다른 사이트 글을 읽는 건 앱만 (웹은 나중에 — 2026-11-11 사장님)
+  const canLink = !web && Boolean(onLink && (window as unknown as { gongsilStudio?: { column?: unknown } }).gongsilStudio?.column);
   const [recent, setRecent] = useState<Recent[] | null>(null);
   useEffect(() => {
     b.project.recent().then(setRecent).catch(() => setRecent([]));
@@ -240,10 +243,12 @@ export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => v
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "64px 24px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
           {/* 웹 — 쇼츠릴스studio (2026-11-05): 쇼츠 만들기 · PC 작업 파일(.gsw) 열기 */}
-          {web ? big("plus", "쇼츠 만들기", "대본 넣고 · 테마 고르고 · 바로 편집 (60초 세로)", onNew, true) : big("plus", "새로 만들기", "원하는 방식으로 새 영상을 만들어요", onNew, true)}
-          {web ? big("open", "PC에서 열기", "저장해 둔 작업 파일(.gsw)을 열어 이어서 편집해요", onOpenPick) : big("open", "프로젝트 열기", "저장한 프로젝트를 이어서 편집해요", onOpenPick)}
+          {web ? big("plus", "영상 만들기", "대본 넣고 · 화면 비율 · 테마 고르고 · 바로 편집", onNew, true) : big("plus", "새로 만들기", "원하는 방식으로 새 영상을 만들어요", onNew, true)}
+          {web ? big("open", "PC에서 열기", "저장해 둔 작업 파일(.gss)을 열어 이어서 편집해요", onOpenPick) : big("open", "프로젝트 열기", "저장한 프로젝트를 이어서 편집해요", onOpenPick)}
+          {canLink && big("link", "링크로 만들기", "뉴스·보도자료·블로그 주소만 넣으면 읽고 요약해 대본까지 써요", () => setLinkOpen(true))}
           {b.project.importList && onImported && big("ai", "가져오기", "캡컷 프로젝트 · 프리미어·다빈치 XML 을 열어 마무리해요", () => setImportOpen(true))}
         </div>
+        {linkOpen && onLink && <LinkDialog onClose={() => setLinkOpen(false)} onGo={(u) => { setLinkOpen(false); onLink(u); }} />}
         {importOpen && onImported && <ImportDialog onClose={() => setImportOpen(false)} onDone={(p) => { setImportOpen(false); onImported(p); }} />}
         <div style={{ marginTop: 52 }}>
           {/* 캡컷처럼 — 검색 · 보기(크게/목록) · 휴지통 */}
@@ -318,7 +323,7 @@ export function Home({ onNew, onOpenPick, onOpen, onImported }: { onNew: () => v
               </div>
             )
           ) : recent === null ? <div style={{ color: C.sub }}>불러오는 중…</div> : recent.length === 0 ? (
-            <Hint>{web ? "아직 만든 쇼츠가 없어요. 위의 [쇼츠 만들기]를 눌러 시작하세요." : "아직 만든 영상이 없어요. 위의 [새로 만들기]를 눌러 시작하세요."}</Hint>
+            <Hint>{web ? "아직 만든 영상이 없어요. 위의 [영상 만들기]를 눌러 시작하세요." : "아직 만든 영상이 없어요. 위의 [새로 만들기]를 눌러 시작하세요."}</Hint>
           ) : shown.length === 0 ? (
             <Hint>“{q}” 이름이 들어간 프로젝트가 없어요.</Hint>
           ) : view === "grid" ? (
@@ -443,6 +448,31 @@ export function stillDetector() {
   };
 }
 
+/* ── 링크로 만들기 (앱, 2026-11-11 사장님: "url 링크만 주면 요약해서 영상을") ──
+ *  주소만 받는다. 읽기·캡처·대본 쓰기는 [대본 쓰고 편집하기] › 뉴스 기사 흐름 그대로 (TextWizard link)
+ *  원문 문장은 옮기지 않고 사실만 살려 새로 쓰고, 끝에 출처를 밝힌다 */
+export function LinkDialog({ onClose, onGo }: { onClose: () => void; onGo: (url: string) => void }) {
+  const [url, setUrl] = useState("");
+  const u = url.trim();
+  const ok = /^https?:\/\/\S+\.\S+/i.test(u);
+  const yt = /(^|\.)(youtube\.com|youtu\.be)\//i.test(u.replace(/^https?:\/\//i, ""));
+  const go = () => { if (ok && !yt) onGo(u); };
+  return (
+    <Modal title="링크로 만들기" onClose={onClose} width={640}
+      footer={<><Btn onClick={onClose}>닫기</Btn><Btn primary onClick={go} disabled={!ok || yt}><Icon name="ai" size={16} />읽고 대본 쓰기</Btn></>}>
+      <div style={{ padding: "18px 24px 22px" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>주소 붙여넣기</div>
+        <input autoFocus value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") go(); }}
+          placeholder="https://… (뉴스 기사 · 보도자료 · 블로그 · 공실뉴스 기사)" style={{ ...input, width: "100%", boxSizing: "border-box", height: 44, fontSize: 15 }} />
+        {yt && <div style={{ marginTop: 8, fontSize: 13.5, color: C.danger }}>유튜브 링크는 아직 안 돼요. 곧 붙일게요.</div>}
+        <div style={{ marginTop: 12 }}>
+          <Hint>앱이 그 페이지를 열어 본문을 읽고, 화면을 몇 장 캡처해요. 대본은 내 AI가 원문 문장을 옮기지 않고 사실만 살려 새로 쓰고, 끝에 출처를 밝혀요. 대본을 확인한 뒤 다음 단계로 넘어가요.</Hint>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ── 새로 만들기 창 — 만들 방법 4가지 (사장님 확정) ── */
 // 새로 만들기 = 3가지 (2026-10-20 사장님) — 롱폼→숏폼은 없앰, 녹화는 [강의/영상녹화] 메뉴에서만
 export const METHODS: { id: Method; icon: string; title: string; desc: string }[] = [
@@ -498,7 +528,7 @@ export function NewDialog({ onPick, onClose }: { onPick: (m: Method) => void; on
 export function RatioPick({ value, onChange }: { value: Ratio; onChange: (r: Ratio) => void }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-      {(Object.keys(RATIO_LABEL) as Ratio[]).filter((r) => !(videoBridge() as { web?: boolean } | null)?.web || r === "9:16").map((r) => { // 웹은 9:16 쇼츠만 (2026-11-05)
+      {(Object.keys(RATIO_LABEL) as Ratio[]).map((r) => { // 웹도 모든 비율 (2026-11-11 사장님: "가로·정사각형도 가능하게, 앱과 같은 스타일") — 예전엔 9:16만
         const [w, h] = r.split(":").map(Number);
         const s = 40 / Math.max(w, h);
         return (

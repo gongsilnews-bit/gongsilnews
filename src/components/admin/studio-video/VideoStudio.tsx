@@ -44,6 +44,7 @@ export default function VideoStudio() {
   const [recover, setRecover] = useState<Recover | null>(null);
   const [resume, setResume] = useState<Project | null>(null); // 작성 중 초안(.gss) — 대본 쓰고 편집 그 단계로
   // 뉴스·SNS발행 › 유튜브 대본의 [이 대본으로 동영상 만들기] — 공실·대본을 받아 대본 작성으로 (2026-10-23 사장님)
+  const [link, setLink] = useState(""); // [링크로 만들기] 주소 (앱, 2026-11-11)
   const [seed, setSeed] = useState<{ vacancyId: string; script: string; title?: string } | null>(null);
   useEffect(() => {
     try {
@@ -168,7 +169,7 @@ export default function VideoStudio() {
 
   // 만들기 화면 (편집 화면이 열려 있지 않으면 오른쪽 영역에 페이지로, 편집 중에 [새로 만들기]로 열면 뜨는 창으로)
   const flowEl = flow === "text" ? (
-    <TextWizard key={resume?.file || resume?.dir || (seed ? `seed-${seed.vacancyId}` : "new")} resume={resume || undefined} seed={seed || undefined} onCancel={() => { setFlow(""); setResume(null); setSeed(null); }} onDone={(p) => { setResume(null); setSeed(null); void done(p); }} onRecord={(script) => {
+    <TextWizard key={resume?.file || resume?.dir || (seed ? `seed-${seed.vacancyId}` : link ? `link-${link}` : "new")} resume={resume || undefined} seed={seed || undefined} link={link || undefined} onCancel={() => { setFlow(""); setResume(null); setSeed(null); setLink(""); }} onDone={(p) => { setResume(null); setSeed(null); setLink(""); void done(p); }} onRecord={(script) => {
       // 대본을 프롬프터에 넣고 녹화로 — 녹화가 끝나면 이 대본이 자막 글이 된다
       savePrompter({ ...loadPrompter(), on: true, text: script });
       setFlow("record");
@@ -208,7 +209,7 @@ export default function VideoStudio() {
               <div style={{ flex: 1, minHeight: 0, display: "flex", maxWidth: 760 }}><MyVoicePane selected={false} onPick={() => {}} /></div>
             </div>
           ) : (
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={goNew} onOpenPick={openPick} onOpen={open} onImported={(p) => take(p)} /></div>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}><Home onNew={goNew} onOpenPick={openPick} onOpen={open} onImported={(p) => take(p)} onLink={(u) => { setResume(null); setSeed(null); setLink(u); setFlow("text"); }} /></div>
           )}
         </div>
       )}
