@@ -1,0 +1,185 @@
+{
+  "공실뉴스": {
+    "기사작성": [
+      "2026-05-25_article_exposure_meeting.md",
+      "2026-10-03_newsmaker_complex_and_local_plan.md",
+      "2026-11-05_gongsilnews_content_plan.md",
+      "WORK_ORDER_NEWSMAKER_COMPLEX_AND_LOCAL.md",
+      "ai_agents/article_writer_spec.md",
+      "aside_reporter_guide.md",
+      "news_personalized_titles.md",
+      "category_ment.md"
+    ],
+    "기사관리": [
+      "devlog/2026-05-18_category_revamp.md",
+      "devlog/ai_article_review_workflow_20260506.md",
+      "devlog/2026-05-19_ai_agent_category_update.md",
+      "qa_apartment_registration_issues.md"
+    ],
+    "회원관리": [
+      "2026-09-23_member_plan_permission_meeting.md",
+      "2026-09-28_lecture_member_registration_settlement_meeting.md",
+      "2026-10-29_member_management_plan.md",
+      "2026-11-04_member_tiers_plan.md",
+      "ai_agents/membership_agent_spec.md",
+      "devlog/13_MEMBERSHIP_QUOTA_CONTROL.md"
+    ],
+    "AI에이전트": [
+      "2026-09-30_ai_dev_room_local_agent_meeting.md",
+      "ai_agents/realtor_verification_guide.md"
+    ],
+    "경매·공실등록": [
+      "2026-05-25_onbid_auction_meeting.md",
+      "2026-06-04_overview_field_templates.md",
+      "2026-06-16_vacancy_field_comparison.md",
+      "2026-10-01_window_flyer_by_property_type.md",
+      "2026-10-22_property_survey_plan.md",
+      "devlog/2026-05-23_onbid_auction_strategy.md",
+      "devlog/2026-06-01_onbid_sync_fix.md",
+      "devlog/2026-09-03_auction-access-policy.md"
+    ],
+    "공인중개사": [
+      "2026-09-22_realtor_onepage_homepage_meeting.md",
+      "devlog/2026-05-05_realtor_approval.md",
+      "devlog/12_REALTOR_APPROVAL_WORKFLOW.md",
+      "architecture/realtor_approval_improvement.md",
+      "manual/realtor_manual_draft.md"
+    ]
+  },
+  "공실마케팅스튜디오": {
+    "동영상제작": [
+      "2026-10-15_gongsil_studio_desktop_app_meeting.md",
+      "2026-10-15_studio_video_editor_plan.md",
+      "2026-10-16_studio_video_project_file_plan.md",
+      "2026-10-17_studio_video_timeline_mode_meeting.md",
+      "2026-10-19_ronbak_mogrt_templates.md",
+      "2026-10-19_studio_timeline_text_switch_meeting.md",
+      "2026-10-20_studio_ai_edit_meeting.md",
+      "2026-10-21_studio_ai_fill_plan.md",
+      "2026-10-28_motion_graphics_plan.md",
+      "2026-10-30_easystudio_plan.md"
+    ],
+    "쇼츠·릴스": [
+      "2026-09-26_youtube_writer_meeting_plan.md",
+      "2026-09-26_youtubewriter10_standalone_plan.md",
+      "2026-10-07_reel_desktop_local_architecture_meeting.md",
+      "2026-11-06_shorts_theme_plan.md"
+    ],
+    "포토스튜디오": [
+      "2026-10-19_photolab_meeting.md",
+      "2026-10-22_doc_editor_plan.md",
+      "2026-10-22_photo_ai_layout_plan.md",
+      "2026-10-23_photo_pages_ppt_plan.md"
+    ],
+    "SNS발행": [
+      "2026-10-03_sns_writer_tabs_meeting.md",
+      "2026-10-21_studio_sns_upload_plan.md"
+    ],
+    "보고서·홍보지": [
+      "2026-06-02_ai_im_report_meeting.md",
+      "2026-06-03_ai_report_flyer_meeting.md",
+      "2026-10-22_sim_report_plan.md",
+      "2026-10-23_report_without_vacancy_plan.md"
+    ],
+    "도우미확장": [
+      "2026-09-24_gongsil_article_writer_extension_plan.md",
+      "2026-09-24_gongsil_writer_workpanel_plan.md",
+      "2026-09-28_remodeling_writer_extension_plan.md"
+    ],
+    "AI설정·성우": [
+      "2026-10-17_studio_voice_portraits.md",
+      "2026-10-18_studio_ai_settings_meeting.md",
+      "2026-11-10_studio_voice_portraits_el.md"
+    ],
+    "회원·결제": [
+      "2026-10-08_study_naver_smartstore_payment_meeting.md",
+      "2026-10-26_studio_membership_plan.md",
+      "2026-11-03_trade_alert_plan.md",
+      "2026-11-06_point_system_review.md"
+    ]
+  },
+  "개발·기술": {
+    "아키텍처": [
+      "architecture/01_ARCHITECTURE_AND_SPEED_STRATEGY.md",
+      "architecture/02_FOLDER_STRUCTURE_AND_COMPONENTS.md",
+      "architecture/03_GONGSIL_MAP_ARCHITECTURE.md",
+      "architecture/04_ADMIN_ROLE_AND_LAYOUT_STRATEGY.md",
+      "architecture/05_NEWS_CATEGORY_SHARED_COMPONENT_STRATEGY.md",
+      "architecture/06_SOCIAL_LOGIN_ARCHITECTURE.md",
+      "architecture/07_FRONTEND_COMPONENT_AND_PERFORMANCE_STRATEGY.md",
+      "architecture/09_MULTI_TENANT_LAYOUT_ARCHITECTURE.md",
+      "architecture/11_MEMBER_DATA_ARCHITECTURE.md",
+      "architecture/13_BANNER_MANAGEMENT_PROPOSAL.md",
+      "architecture/13_SSR_AND_PPR_RENDERING_STRATEGY.md",
+      "architecture/14_ARTICLE_LOAD_PERFORMANCE_PLAN.md",
+      "architecture/15_DATABASE_SCHEMA.md",
+      "architecture/16_캐싱모드_속도가_느릴때_해결하는_방법.md",
+      "architecture/17_ADMIN_PAGE_MODULARIZATION.md",
+      "architecture/18_VERCEL_PRO_TOKYO_REGION_PLAN.md",
+      "architecture/19_PREMIUM_REALTY_AND_PAYMENT_SYSTEM.md",
+      "architecture/20_UNIFIED_BOARD_AND_QNA_ARCHITECTURE.md",
+      "architecture/21_LECTURE_REVIEW_UI_ARCHITECTURE.md",
+      "architecture/22_LECTURE_MOBILE_CHECKOUT_PLAN.md",
+      "architecture/23_MOBILE_ADMIN_IMPLEMENTATION.md",
+      "architecture/apt_villa_offi_map_display.md",
+      "architecture/board_permission_system.md",
+      "architecture/business_member_and_minihome_architecture.md",
+      "architecture/comment_inquiry_architecture.md",
+      "architecture/crm_architecture.md",
+      "architecture/gongsil_crm_plus_5_rules.md",
+      "architecture/gongsil_search_data_map.md",
+      "architecture/gongsil_talk_v2.md",
+      "architecture/hidden_features.md",
+      "architecture/mobile_gongsil_search.md",
+      "architecture/no_code_homepage_builder_architecture.md",
+      "architecture/property_category_mapping.md",
+      "architecture/theme_standardization_model.md",
+      "architecture/vacancy_permission_mobile_implementation.md",
+      "architecture/vacancy_permission_system.md",
+      "build_architecture.md",
+      "refactoring_implementation_plan.md"
+    ],
+    "개발로그": [
+      "devlog/08_MAIN_PAGE_MODULARIZATION_PROCESS.md",
+      "devlog/10_ADMIN_AND_MAP_PERFORMANCE_TIPS.md",
+      "devlog/2026-04-17.md",
+      "devlog/2026-04-18.md",
+      "devlog/2026-04-20.md",
+      "devlog/2026-04-21.md",
+      "devlog/2026-04-24.md",
+      "devlog/2026-04-25.md",
+      "devlog/2026-04-29.md",
+      "devlog/2026-05-02.md",
+      "devlog/2026-05-04.md",
+      "devlog/2026-05-16.md",
+      "devlog/2026-05-18.md",
+      "devlog/2026-05-26.md",
+      "devlog/2026-05-29_homepage_performance_optimization.md",
+      "devlog/20260504_UI_improvements.md",
+      "2026-10-03_daily_work_summary.md",
+      "2026-11-10_meeting_summary.md",
+      "mobile_ux_improvements_20260505.md"
+    ],
+    "성능·보안": [
+      "ddos_defense_strategy.md"
+    ]
+  },
+  "운영·기획": {
+    "서비스기획": [
+      "README.md",
+      "2026-10-23_folder_plan.md",
+      "2026-10-23_gsn_plan.md",
+      "2026-10-23_naming_plan.md",
+      "2026-10-22_studio_wait_ads_plan.md",
+      "2026-11-02_apt_price_map_cost.md",
+      "2026-11-05_ssam_marketing_studio_plan.md",
+      "2026-11-09_superadmin_page_plan.md",
+      "2026-11-11_faq_rewrite.md",
+      "ideas/gongsil_talk_spec.md"
+    ],
+    "최고관리자": [],
+    "FAQ·매뉴얼": [
+      "manual/realtor_manual_draft.md"
+    ]
+  }
+}
