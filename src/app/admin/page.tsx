@@ -26,6 +26,7 @@ const AdminArticleAdSection = lazy(() => import("@/components/admin/sections/Adm
 const PointSection = lazy(() => import("@/components/admin/sections/PointSection"));
 const AdminManual = lazy(() => import("./AdminManual"));
 const AIWorkspaceSection = lazy(() => import("@/components/admin/agents/AIWorkspaceSection"));
+const MDGuideSection = lazy(() => import("@/components/admin/sections/MDGuideSection"));
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const SmartstoreOrdersPanel = lazy(() => import("@/components/admin/sections/SmartstoreOrdersPanel"));
@@ -60,6 +61,7 @@ const MENU_GROUPS: AdminMenuGroup[] = [
       { key: "point", label: "포인트", icon: <IconPoint /> },
       { key: "apt_reports", label: "단지 정보 요청", icon: <IconBuilding /> }, // 시세 지도 공급면적·단지 정보 보완 (2026-11-02)
       { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
+      { key: "md_guide", label: "MD 지침서", icon: <IconManual /> },
       { key: "stt_words", label: "받아쓰기 낱말장", icon: <IconEdit /> },
       { key: "inquiry", label: "문의", icon: <IconComment /> },
       { key: "board", label: "게시판", icon: <IconBoard /> },
@@ -337,6 +339,7 @@ function AdminContent() {
           {activeMenu === "apt_reports" && <AptReportsSection theme={theme} />}
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
+          {activeMenu === "md_guide" && <MDGuideSection theme={theme} />}
           {activeMenu === "stt_words" && <SttWordsSection theme={theme} />}
           {/* 문의 = 1:1문의 하나 (예전 문의관리 탭은 쓰이지 않는 표를 읽어 늘 비어 있었다 — 11-09 정리) */}
           {activeMenu === "inquiry" && <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" />}

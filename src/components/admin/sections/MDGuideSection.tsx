@@ -1,0 +1,433 @@
+"use client";
+// 최고관리자 MD지침서 — docs/ 폴더를 1차·2차 카테고리로 정리·열람·편집 (2026-11-11)
+import React, { useState, useEffect, useCallback } from "react";
+import type { AdminTheme } from "./types";
+import {
+  listMdFiles,
+  readMdFile,
+  saveMdFile,
+  deleteMdFile,
+  getMdCategoryMap,
+  saveMdCategoryMap,
+  type CategoryMap,
+} from "@/app/actions/mdGuide";
+
+/* ── 단순 마크다운 뷰어 (외부 라이브러리 없음) ──────────── */
+function MdViewer({ content }: { content: string }) {
+  const lines = content.split("\n");
+  return (
+    <div style={{ fontFamily: "inherit", lineHeight: 1.75, color: "#1e293b", fontSize: 14 }}>
+      {lines.map((line, i) => {
+        if (line.startsWith("### ")) return <h3 key={i} style={{ margin: "16px 0 6px", fontSize: 15, fontWeight: 700, color: "#1e3a6e" }}>{line.slice(4)}</h3>;
+        if (line.startsWith("## ")) return <h2 key={i} style={{ margin: "20px 0 8px", fontSize: 17, fontWeight: 800, color: "#0f2b5b", borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>{line.slice(3)}</h2>;
+        if (line.startsWith("# ")) return <h1 key={i} style={{ margin: "24px 0 10px", fontSize: 20, fontWeight: 900, color: "#0f172a", borderBottom: "2px solid #1e3a6e", paddingBottom: 6 }}>{line.slice(2)}</h1>;
+        if (line.startsWith("- ") || line.startsWith("* ")) return <div key={i} style={{ marginLeft: 16 }}>• {line.slice(2)}</div>;
+        if (line.startsWith("  - ") || line.startsWith("  * ")) return <div key={i} style={{ marginLeft: 32 }}>◦ {line.slice(4)}</div>;
+        if (line === "") return <div key={i} style={{ height: 8 }} />;
+        if (line.startsWith("```")) return <div key={i} style={{ fontFamily: "monospace", background: "#f1f5f9", padding: "2px 6px", borderRadius: 3, fontSize: 12, color: "#475569" }}>{line}</div>;
+        if (line.startsWith(">")) return <blockquote key={i} style={{ borderLeft: "3px solid #94a3b8", paddingLeft: 12, color: "#64748b", margin: "4px 0" }}>{line.slice(1).trim()}</blockquote>;
+        return <div key={i}>{renderInline(line)}</div>;
+      })}
+    </div>
+  );
+}
+
+/** 인라인 볼드·이탤릭 처리 */
+function renderInline(text: string): React.ReactNode {
+  // **bold** 처리
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+/* ── 메인 섹션 ──────────────────────────────────────────── */
+export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
+  const [allFiles, setAllFiles] = useState<string[]>([]);
+  const [catMap, setCatMap] = useState<CategoryMap>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [selectedCat1, setSelectedCat1] = useState<string | null>(null);
+  const [selectedCat2, setSelectedCat2] = useState<string | null>(null);  // null = 미분류
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showNewFile, setShowNewFile] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignC1, setAssignC1] = useState("");
+  const [assignC2, setAssignC2] = useState("");
+  const [showAddCat, setShowAddCat] = useState(false);
+  const [newCat1, setNewCat1] = useState("");
+  const [newCat2, setNewCat2] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [filesRes, mapRes] = await Promise.all([listMdFiles(), getMdCategoryMap()]);
+    if (filesRes.success) setAllFiles(filesRes.files);
+    if (mapRes.success) {
+      setCatMap(mapRes.map);
+      // 첫 로드 — 1차 카테고리 모두 펼치기
+      const exp: Record<string, boolean> = {};
+      Object.keys(mapRes.map).forEach((k) => { exp[k] = true; });
+      setExpanded(exp);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  /* 분류된 파일 집합 */
+  const categorizedSet = useCallback((): Set<string> => {
+    const s = new Set<string>();
+    Object.values(catMap).forEach((subs) =>
+      Object.values(subs).forEach((files) => files.forEach((f) => s.add(f)))
+    );
+    return s;
+  }, [catMap]);
+
+  /* 파일 목록 계산 */
+  const getFiles = (): string[] => {
+    if (selectedCat1 === null) {
+      // 미분류
+      const cat = categorizedSet();
+      return allFiles.filter((f) => !cat.has(f));
+    }
+    if (selectedCat2 === null) {
+      // 1차 카테고리 전체
+      return Object.values(catMap[selectedCat1] || {}).flat();
+    }
+    return catMap[selectedCat1]?.[selectedCat2] || [];
+  };
+
+  /* 파일 열기 */
+  const openFile = async (fp: string) => {
+    setLoading(true);
+    setSelectedFile(fp);
+    setEditing(false);
+    setMsg("");
+    const res = await readMdFile(fp);
+    setFileContent(res.success ? res.content : res.content);
+    setLoading(false);
+  };
+
+  /* 저장 */
+  const saveFile = async () => {
+    if (!selectedFile) return;
+    setLoading(true);
+    const res = await saveMdFile(selectedFile, editContent);
+    setMsg(res.success ? "저장했습니다." : res.error || "저장 실패");
+    if (res.success) { setFileContent(editContent); setEditing(false); }
+    setLoading(false);
+  };
+
+  /* 삭제 */
+  const deleteFile = async (fp: string) => {
+    if (!window.confirm(`"${fp}" 파일을 삭제할까요?\n되돌릴 수 없습니다.`)) return;
+    setLoading(true);
+    const res = await deleteMdFile(fp);
+    setMsg(res.success ? "삭제했습니다." : res.error || "삭제 실패");
+    if (res.success) {
+      // 카테고리 맵에서도 제거
+      const newMap: CategoryMap = JSON.parse(JSON.stringify(catMap));
+      Object.keys(newMap).forEach((c1) =>
+        Object.keys(newMap[c1]).forEach((c2) => {
+          newMap[c1][c2] = newMap[c1][c2].filter((f) => f !== fp);
+        })
+      );
+      setCatMap(newMap);
+      await saveMdCategoryMap(newMap);
+      setAllFiles((prev) => prev.filter((f) => f !== fp));
+      if (selectedFile === fp) { setSelectedFile(null); setFileContent(""); }
+    }
+    setLoading(false);
+  };
+
+  /* 새 파일 만들기 */
+  const createFile = async () => {
+    if (!newFileName.trim()) return;
+    const name = newFileName.trim().endsWith(".md") ? newFileName.trim() : `${newFileName.trim()}.md`;
+    setLoading(true);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const fp = name.includes("/") ? name : `${today}_${name}`;
+    const res = await saveMdFile(fp, `# ${name.replace(".md", "")}\n\n`);
+    setMsg(res.success ? "파일을 만들었습니다." : res.error || "만들기 실패");
+    if (res.success) {
+      setAllFiles((prev) => [...prev, fp]);
+      setShowNewFile(false);
+      setNewFileName("");
+      await openFile(fp);
+    }
+    setLoading(false);
+  };
+
+  /* 카테고리에 파일 배정 */
+  const assignFile = async () => {
+    if (!selectedFile || !assignC1 || !assignC2) return;
+    const newMap: CategoryMap = JSON.parse(JSON.stringify(catMap));
+    // 기존 배정 제거
+    Object.keys(newMap).forEach((c1) =>
+      Object.keys(newMap[c1]).forEach((c2) => {
+        newMap[c1][c2] = newMap[c1][c2].filter((f) => f !== selectedFile);
+      })
+    );
+    if (!newMap[assignC1]) newMap[assignC1] = {};
+    if (!newMap[assignC1][assignC2]) newMap[assignC1][assignC2] = [];
+    newMap[assignC1][assignC2].push(selectedFile);
+    setCatMap(newMap);
+    await saveMdCategoryMap(newMap);
+    setShowAssign(false);
+    setMsg(`"${assignC2}" 카테고리에 넣었습니다.`);
+  };
+
+  /* 새 카테고리 추가 */
+  const addCategory = async () => {
+    if (!newCat1.trim()) return;
+    const newMap: CategoryMap = JSON.parse(JSON.stringify(catMap));
+    if (!newMap[newCat1]) newMap[newCat1] = {};
+    if (newCat2.trim() && !newMap[newCat1][newCat2]) newMap[newCat1][newCat2] = [];
+    setCatMap(newMap);
+    setExpanded((prev) => ({ ...prev, [newCat1]: true }));
+    await saveMdCategoryMap(newMap);
+    setShowAddCat(false);
+    setNewCat1(""); setNewCat2("");
+    setMsg("카테고리를 추가했습니다.");
+  };
+
+  /* 현재 선택 파일이 속한 카테고리 */
+  const fileCategory = (fp: string): string => {
+    for (const [c1, subs] of Object.entries(catMap)) {
+      for (const [c2, files] of Object.entries(subs)) {
+        if (files.includes(fp)) return `${c1} > ${c2}`;
+      }
+    }
+    return "미분류";
+  };
+
+  /* ── 스타일 상수 ── */
+  const C = {
+    primary: "#1e3a6e",
+    blue: "#2563eb",
+    border: theme.border,
+    bg: theme.bg,
+    card: theme.cardBg,
+    text: theme.textPrimary,
+    sub: theme.textSecondary,
+  };
+
+  const btnStyle = (active?: boolean): React.CSSProperties => ({
+    padding: "5px 12px", borderRadius: 6, border: `1px solid ${active ? C.blue : C.border}`,
+    background: active ? C.blue : C.card, color: active ? "#fff" : C.text,
+    fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: "inherit",
+  });
+
+  const fileList = getFiles();
+  const uncatCount = allFiles.filter((f) => !categorizedSet().has(f)).length;
+
+  return (
+    <div style={{ flex: 1, display: "flex", overflow: "hidden", background: C.bg }}>
+      {/* ── 왼쪽 카테고리 트리 ── */}
+      <aside style={{ width: 230, minWidth: 230, background: C.card, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: C.primary }}>MD 지침서</span>
+          <button onClick={() => setShowAddCat(true)} style={{ ...btnStyle(), padding: "3px 8px", fontSize: 11 }} title="카테고리 추가">+ 카테고리</button>
+        </div>
+        <nav style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+          {Object.entries(catMap).map(([c1, subs]) => {
+            const c1Files = Object.values(subs).flat().length;
+            return (
+              <div key={c1}>
+                {/* 1차 카테고리 */}
+                <button
+                  onClick={() => {
+                    setExpanded((p) => ({ ...p, [c1]: !p[c1] }));
+                    setSelectedCat1(c1); setSelectedCat2(null); setSelectedFile(null);
+                  }}
+                  style={{ width: "100%", textAlign: "left", padding: "7px 16px", border: "none", background: selectedCat1 === c1 && selectedCat2 === null ? "#eef2fb" : "transparent", color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}
+                >
+                  <span style={{ fontSize: 10, color: C.sub, marginRight: 2 }}>{expanded[c1] ? "▼" : "▶"}</span>
+                  <span style={{ flex: 1 }}>{c1}</span>
+                  <span style={{ fontSize: 11, color: C.sub, fontWeight: 400 }}>{c1Files}</span>
+                </button>
+                {/* 2차 카테고리 */}
+                {expanded[c1] && Object.entries(subs).map(([c2, files]) => (
+                  <button key={c2}
+                    onClick={() => { setSelectedCat1(c1); setSelectedCat2(c2); setSelectedFile(null); }}
+                    style={{ width: "100%", textAlign: "left", padding: "5px 16px 5px 32px", border: "none", background: selectedCat1 === c1 && selectedCat2 === c2 ? "#dbeafe" : "transparent", color: selectedCat1 === c1 && selectedCat2 === c2 ? C.blue : C.text, fontSize: 12, fontWeight: selectedCat1 === c1 && selectedCat2 === c2 ? 700 : 400, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "inherit" }}
+                  >
+                    <span>{c2}</span>
+                    <span style={{ fontSize: 11, color: C.sub }}>{files.length}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+          {/* 미분류 */}
+          <button
+            onClick={() => { setSelectedCat1(null); setSelectedCat2(null); setSelectedFile(null); }}
+            style={{ width: "100%", textAlign: "left", padding: "7px 16px", border: "none", background: selectedCat1 === null ? "#fef9ec" : "transparent", color: selectedCat1 === null ? "#92400e" : C.sub, fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "inherit", marginTop: 4, borderTop: `1px solid ${C.border}` }}
+          >
+            <span>미분류</span>
+            <span style={{ fontSize: 11 }}>{uncatCount}</span>
+          </button>
+        </nav>
+        <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}` }}>
+          <button onClick={() => setShowNewFile(true)} style={{ ...btnStyle(true), width: "100%", justifyContent: "center", display: "flex" }}>+ 새 파일</button>
+        </div>
+      </aside>
+
+      {/* ── 오른쪽 메인 영역 ── */}
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* 상단 툴바 */}
+        <div style={{ height: 50, padding: "0 20px", borderBottom: `1px solid ${C.border}`, background: C.card, display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {selectedFile ? (
+            <>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedFile}</span>
+              <span style={{ fontSize: 11, color: C.sub, whiteSpace: "nowrap" }}>{fileCategory(selectedFile)}</span>
+              <button onClick={() => { setShowAssign(true); setAssignC1(Object.keys(catMap)[0] || ""); setAssignC2(""); }} style={btnStyle()}>카테고리 배정</button>
+              {editing ? (
+                <>
+                  <button onClick={saveFile} disabled={loading} style={btnStyle(true)}>저장</button>
+                  <button onClick={() => { setEditing(false); setEditContent(""); }} style={btnStyle()}>취소</button>
+                </>
+              ) : (
+                <button onClick={() => { setEditing(true); setEditContent(fileContent); }} style={btnStyle()}>편집</button>
+              )}
+              <button onClick={() => deleteFile(selectedFile)} style={{ ...btnStyle(), color: "#dc2626", borderColor: "#fca5a5" }}>삭제</button>
+              <button onClick={() => { setSelectedFile(null); setEditing(false); }} style={btnStyle()}>목록</button>
+            </>
+          ) : (
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+              {selectedCat1 === null ? "미분류 파일" : selectedCat2 ? `${selectedCat1} › ${selectedCat2}` : selectedCat1}
+              <span style={{ fontSize: 12, fontWeight: 400, color: C.sub, marginLeft: 8 }}>({fileList.length}개)</span>
+            </span>
+          )}
+          {msg && <span style={{ fontSize: 12, color: msg.includes("실패") ? "#dc2626" : "#16a34a", marginLeft: "auto" }}>{msg}</span>}
+        </div>
+
+        {/* 콘텐츠 */}
+        <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
+          {loading && <div style={{ color: C.sub, fontSize: 13, textAlign: "center", padding: 40 }}>불러오는 중...</div>}
+
+          {/* 파일 목록 */}
+          {!loading && !selectedFile && (
+            fileList.length === 0 ? (
+              <div style={{ color: C.sub, fontSize: 13, textAlign: "center", padding: 60 }}>
+                이 카테고리에 파일이 없습니다.<br />
+                <span style={{ fontSize: 12 }}>미분류 탭에서 파일을 선택해 카테고리를 배정하세요.</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {fileList.map((fp) => (
+                  <div key={fp} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.card, cursor: "pointer" }}
+                    onClick={() => openFile(fp)}>
+                    <span style={{ fontSize: 11, color: "#6366f1", fontFamily: "monospace", minWidth: 14 }}>MD</span>
+                    <span style={{ flex: 1, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fp}</span>
+                    <button onClick={(e) => { e.stopPropagation(); deleteFile(fp); }} style={{ ...btnStyle(), padding: "2px 8px", fontSize: 11, color: "#dc2626", borderColor: "#fca5a5", flexShrink: 0 }}>삭제</button>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {/* 파일 뷰어 / 편집기 */}
+          {!loading && selectedFile && (
+            editing ? (
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                style={{ width: "100%", height: "calc(100vh - 180px)", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, padding: 16, border: `1px solid ${C.border}`, borderRadius: 8, background: C.card, color: C.text, resize: "none", outline: "none", boxSizing: "border-box" }}
+                spellCheck={false}
+              />
+            ) : (
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "24px 32px", minHeight: 200 }}>
+                <MdViewer content={fileContent} />
+              </div>
+            )
+          )}
+        </div>
+      </main>
+
+      {/* ── 모달: 새 파일 ── */}
+      {showNewFile && (
+        <Overlay onClose={() => setShowNewFile(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 28, minWidth: 360 }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 16, color: C.primary }}>새 MD 파일 만들기</h3>
+            <p style={{ fontSize: 12, color: C.sub, margin: "0 0 10px" }}>파일 이름을 입력하세요. .md 확장자는 자동으로 붙습니다.<br />앞에 오늘 날짜(YYYYMMDD)가 자동으로 붙습니다.</p>
+            <input
+              autoFocus
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") createFile(); if (e.key === "Escape") setShowNewFile(false); }}
+              placeholder="파일명 (예: 기사작성_가이드)"
+              style={{ width: "100%", padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, boxSizing: "border-box", marginBottom: 14 }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowNewFile(false)} style={btnStyle()}>취소</button>
+              <button onClick={createFile} disabled={!newFileName.trim()} style={btnStyle(true)}>만들기</button>
+            </div>
+          </div>
+        </Overlay>
+      )}
+
+      {/* ── 모달: 카테고리 배정 ── */}
+      {showAssign && selectedFile && (
+        <Overlay onClose={() => setShowAssign(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 28, minWidth: 360 }}>
+            <h3 style={{ margin: "0 0 6px", fontSize: 16, color: C.primary }}>카테고리 배정</h3>
+            <p style={{ fontSize: 12, color: C.sub, margin: "0 0 16px" }}>{selectedFile}</p>
+            <label style={{ fontSize: 12, fontWeight: 700, color: C.text, display: "block", marginBottom: 6 }}>1차 카테고리</label>
+            <select value={assignC1} onChange={(e) => { setAssignC1(e.target.value); setAssignC2(""); }}
+              style={{ width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, marginBottom: 12, fontFamily: "inherit" }}>
+              <option value="">선택</option>
+              {Object.keys(catMap).map((c1) => <option key={c1} value={c1}>{c1}</option>)}
+            </select>
+            <label style={{ fontSize: 12, fontWeight: 700, color: C.text, display: "block", marginBottom: 6 }}>2차 카테고리</label>
+            <select value={assignC2} onChange={(e) => setAssignC2(e.target.value)}
+              style={{ width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, marginBottom: 16, fontFamily: "inherit" }}>
+              <option value="">선택</option>
+              {assignC1 && Object.keys(catMap[assignC1] || {}).map((c2) => <option key={c2} value={c2}>{c2}</option>)}
+            </select>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowAssign(false)} style={btnStyle()}>취소</button>
+              <button onClick={assignFile} disabled={!assignC1 || !assignC2} style={btnStyle(true)}>배정</button>
+            </div>
+          </div>
+        </Overlay>
+      )}
+
+      {/* ── 모달: 카테고리 추가 ── */}
+      {showAddCat && (
+        <Overlay onClose={() => setShowAddCat(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 28, minWidth: 360 }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 16, color: C.primary }}>카테고리 추가</h3>
+            <label style={{ fontSize: 12, fontWeight: 700, color: C.text, display: "block", marginBottom: 6 }}>1차 카테고리 이름</label>
+            <input value={newCat1} onChange={(e) => setNewCat1(e.target.value)} placeholder="예: 공실뉴스"
+              style={{ width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, marginBottom: 12, boxSizing: "border-box", fontFamily: "inherit" }} />
+            <label style={{ fontSize: 12, fontWeight: 700, color: C.text, display: "block", marginBottom: 6 }}>2차 카테고리 이름 (선택)</label>
+            <input value={newCat2} onChange={(e) => setNewCat2(e.target.value)} placeholder="예: 기사작성"
+              style={{ width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, marginBottom: 16, boxSizing: "border-box", fontFamily: "inherit" }} />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowAddCat(false)} style={btnStyle()}>취소</button>
+              <button onClick={addCategory} disabled={!newCat1.trim()} style={btnStyle(true)}>추가</button>
+            </div>
+          </div>
+        </Overlay>
+      )}
+    </div>
+  );
+}
+
+function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div onClick={(e) => e.stopPropagation()}>{children}</div>
+    </div>
+  );
+}
