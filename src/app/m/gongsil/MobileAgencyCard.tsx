@@ -87,7 +87,8 @@ export function MobileAgencyArticles({ arts }: { arts: Art[] | null }) {
   return (
     <>
       {arts.map((a) => (
-        <a key={a.id} href={`/m/news/${a.article_no || a.id}`} style={{ display: "block", padding: "18px 4px", borderBottom: "1px solid #f0f0f0", textDecoration: "none", color: "inherit" }}>
+        // 누르면 우리동네뉴스 기사 화면 (MobileNewsDetailPanel, 2026-11-11 사장님: "지도에서는 우리동네뉴스 형식으로")
+        <a key={a.id} href={`/m/news/${a.article_no || a.id}`} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("gs-news-article", { detail: a.id })); }} style={{ display: "block", padding: "18px 4px", borderBottom: "1px solid #f0f0f0", textDecoration: "none", color: "inherit" }}>
           <div style={{ fontSize: 11, color: "#ff8e15", fontWeight: "bold", marginBottom: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ border: "1px solid #fdba74", background: "#fff7ed", borderRadius: 3, padding: "1px 6px" }}>{[a.section1, a.section2].filter(Boolean).join(" > ")}</span>
             {a.location_name && <span style={{ color: "#9ca3af", fontWeight: 600 }}>📍 {a.location_name}</span>}

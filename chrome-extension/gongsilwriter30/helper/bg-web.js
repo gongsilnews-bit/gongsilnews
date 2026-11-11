@@ -76,11 +76,14 @@
     return { ok: false };
   }
 
-  /* 채울 화면이 일감을 찾을 때 — 가장 최근 것 (일감이 없으면 평소 글쓰기라 아무것도 하지 않는다) */
+  /* 채울 화면이 일감을 찾을 때 — 웹에서 올린 가장 최근 것, 없으면 공실마케팅 앱 창구(bg-app.js, 2026-11-11 합침)
+     둘 다 없으면 평소 글쓰기라 아무것도 하지 않는다 */
+  const app = () => self.gsApp || null;
+  const isWebId = (id) => typeof id === "string" && id.startsWith("web-");
   async function claim(target) {
     const jobs = await jobsGet();
     const j = Object.values(jobs).filter((x) => x.target === target && !x.taken && x.payload && Date.now() - x.at < WEB_TTL).sort((a, b) => b.at - a.at)[0];
-    if (!j) return null;
+    if (!j) return app() ? app().claim(target) : null;
     const job = { id: j.id, target, ...j.payload };
     j.taken = Date.now();
     await jobsSave(jobs);
@@ -104,6 +107,9 @@
     if (type === "GS_WEB") { webMessage(msg.msg || {}).then(sendResponse, () => sendResponse({ ok: false })); return true; }
     if (type === "GS_FILE_CHUNK") { vget(`${msg.fileId}:${msg.i}`).then((b64) => sendResponse({ b64: b64 || "" }), () => sendResponse({ b64: "" })); return true; }
     if (type === "GS_CLAIM") { claim(msg.target || "").then((job) => sendResponse({ job }), () => sendResponse({ job: null })); return true; }
+    // 앱이 맡긴 일감(web- 로 시작하지 않는 번호)의 결과·발행 주소는 앱 창구로 (2026-11-11 합침)
+    if (type === "GS_DONE" && !isWebId(msg.id) && app()) { app().done(msg.id, msg.result).then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false })); return true; }
+    if (type === "GS_PUBLISHED" && !isWebId(msg.id) && app()) { app().published(msg.id, msg.url).then((ok) => sendResponse({ ok }), () => sendResponse({ ok: false })); return true; }
     if (type === "GS_DONE") {
       jobsGet().then(async (jobs) => { if (jobs[msg.id]) { jobs[msg.id].done = msg.result || { ok: false }; await jobsSave(jobs); } sendResponse({ ok: true }); });
       return true;
@@ -130,8 +136,11 @@
       });
       return true;
     }
-    // 기록·지운 글 확인은 앱 쪽 일이었다 — 웹에서는 받기만 한다
-    if (type === "GS_LOG" || type === "GS_VERIFY") { sendResponse({ ok: true }); return false; }
+    // 기록·지운 글 확인 — 앱 일 (bg-app.js). 앱이 꺼져 있으면 받기만 한다
+    if (type === "GS_LOG") { if (app()) void app().log(msg.text || ""); sendResponse({ ok: true }); return false; }
+    if (type === "GS_VERIFY") { if (app()) app().verified(sender && sender.tab && sender.tab.id, msg.gone); sendResponse({ ok: true }); return false; }
+    if (type === "GS_VERIFY_NOW") { (app() ? app().verifyNow() : Promise.resolve()).then(() => sendResponse({ ok: true })); return true; }
+    if (type === "GS_PING") { (app() ? app().ping() : Promise.resolve(false)).then((ok) => sendResponse({ ok })); return true; }
     return false;
   });
 })();

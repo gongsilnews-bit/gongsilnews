@@ -231,7 +231,8 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
   const openMobileList = (list: Art[]) => { window.history.pushState({ panel: "news" }, ""); setMList(list); };
   useEffect(() => {
     if (!mList) return;
-    const back = () => setMList(null);
+    // 기사 화면에서 [뒤로]로 돌아온 것(지금 자리가 이 목록)이면 목록은 그대로
+    const back = () => { const p = window.history.state?.panel; if (p !== "news" && p !== "news-article") setMList(null); };
     window.addEventListener("popstate", back);
     return () => window.removeEventListener("popstate", back);
   }, [mList]);
@@ -307,7 +308,8 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 90px" }}>
             {(mList || []).map((a) => (
-              <a key={a.id} href={`/m/news/${a.article_no || a.id}`} style={{ display: "flex", gap: 14, padding: "20px 0", borderBottom: "1px solid #f3f4f6", textDecoration: "none", color: "inherit" }}>
+              // 누르면 페이지를 떠나지 않고 우리동네뉴스 기사 화면 (MobileNewsDetailPanel, 2026-11-11 사장님)
+              <a key={a.id} href={`/m/news/${a.article_no || a.id}`} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("gs-news-article", { detail: a.id })); }} style={{ display: "flex", gap: 14, padding: "20px 0", borderBottom: "1px solid #f3f4f6", textDecoration: "none", color: "inherit" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     {a.section2 && <span style={{ fontSize: 12, fontWeight: 700, color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 4, padding: "2px 6px" }}>{a.section2}</span>}

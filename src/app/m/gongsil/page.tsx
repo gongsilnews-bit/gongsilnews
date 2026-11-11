@@ -20,6 +20,7 @@ import AptPriceLayer from "@/app/(map)/gongsil/AptPriceLayer";
 import NewsLayer from "@/app/(map)/gongsil/NewsLayer";
 import AgencyLayer from "@/app/(map)/gongsil/AgencyLayer";
 import type { MapAgency } from "@/app/actions/mapAgencies";
+import MobileNewsDetailPanel from "../_components/MobileNewsDetailPanel";
 
 /**
  * 부동산 이름표 [상세보기] → 그 사무소가 올린 공실 전부를 공실 목록 화면("공실광고 N개")에 (2026-11-11)
@@ -762,7 +763,8 @@ function MobileGongsilContent() {
         if (!showListView) {
           setTimeout(() => kakaoMapRef.current?.relayout(), 50);
         }
-      } else if (selectedCluster || showListView) {
+      } else if ((selectedCluster || showListView) && window.history.state?.panel !== "cluster") {
+        // 목록 위에 연 기사 화면에서 [뒤로]로 돌아온 것(지금 자리가 목록)이면 목록은 그대로 (2026-11-11)
         vacancyStackRef.current = [];
         setSelectedCluster(null);
         setShowListView(false);
@@ -1521,6 +1523,8 @@ function MobileGongsilContent() {
             <NewsLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} category="all" />
             {/* 회원 부동산 이름표 — PC [부동산]과 같은 것 (2026-11-11 사장님: "부동산도 나타나게, 모바일에서"). PC 처럼 켜진 채로 시작 */}
             <AgencyLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} />
+            {/* 지도에서 연 기사는 우리동네뉴스 기사 화면 모양으로 (2026-11-11 사장님) */}
+            <MobileNewsDetailPanel />
             <AgencyVacancyList vacancies={vacancies} onList={(list, a) => { window.history.pushState({ panel: "cluster" }, ""); setSelectedVacancy(null); setAgencyPicked(a); setSelectedCluster(list); }} onUpdate={(list) => setSelectedCluster((cur: any) => (cur ? list : cur))} />
 
             {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
