@@ -1,11 +1,44 @@
 "use server";
-// 최고관리자 MD지침서 — docs/ 폴더 파일 읽기·쓰기·카테고리 관리 (2026-11-11)
-import fs from "fs/promises";
-import fsSync from "fs";
-import path from "path";
+// 최고관리자 MD지침서 — 문서 읽기·쓰기·카테고리 관리 (2026-11-11)
+// 실제 사이트(Vercel)에서도 쓰게 문서는 Supabase Storage(비공개 버킷 md-docs)에 둔다 — Vercel 은 파일을 고칠 수 없어서 (2026-11-11 사장님)
+//  처음 문서는 저장소 docs/ 를 한 번 옮겨 담았다. 함수마다 최고관리자인지 확인한다 (서버 액션은 누구나 부를 수 있어서)
+import { createClient } from "@supabase/supabase-js";
+import { createClient as createSessionClient } from "@/utils/supabase/server";
+import { isAdminRole } from "@/utils/permissionCheck";
 
-const DOCS_DIR = path.join(process.cwd(), "docs");
-const MAP_FILE = path.join(DOCS_DIR, ".category_map.json");
+const BUCKET = "md-docs";
+const MAP_KEY = "_category_map.json";
+const META_KEY = "_file_meta.json";
+const DIR = "f"; // 문서는 f/<주소 이름을 base64url>.md — Storage 이름에 한글을 못 써서
+
+function db() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+async function isAdmin() {
+  const session = await createSessionClient();
+  const { data: { user } } = await session.auth.getUser();
+  if (!user) return false;
+  const { data: m } = await db().from("members").select("role").eq("id", user.id).maybeSingle();
+  return isAdminRole(m?.role);
+}
+const NO = "최고관리자만 쓸 수 있어요.";
+const keyOf = (rel: string) => `${DIR}/${Buffer.from(rel, "utf8").toString("base64url")}.md`;
+const relOf = (name: string) => Buffer.from(name.replace(/\.md$/, ""), "base64url").toString("utf8");
+/** 문서 주소 이름 다듬기 — 앞뒤 / 빼고, .. 같은 것 막기 */
+const cleanRel = (rel: string) => {
+  const r = String(rel || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "").trim();
+  if (!r || r.split("/").some((x) => !x || x === "." || x === "..")) return "";
+  return r;
+};
+async function readText(key: string): Promise<string | null> {
+  const { data, error } = await db().storage.from(BUCKET).download(key);
+  if (error || !data) return null;
+  return await data.text();
+}
+async function writeText(key: string, text: string, type = "text/markdown; charset=utf-8") {
+  const { error } = await db().storage.from(BUCKET).upload(key, new Blob([text], { type }), { upsert: true, contentType: type });
+  if (error) throw new Error(error.message);
+}
 
 // 1차 → 2차 → 파일 경로 목록
 export type CategoryMap = Record<string, Record<string, string[]>>;
@@ -41,18 +74,18 @@ const DEFAULT_MAP: CategoryMap = {
   },
 };
 
-/** 카테고리 맵 불러오기 (파일 없으면 기본값) */
+/** 카테고리 맵 불러오기 (없으면 기본값) */
 export async function getMdCategoryMap(): Promise<{ success: boolean; map: CategoryMap }> {
+  if (!(await isAdmin())) return { success: false, map: {} };
   try {
-    const data = await fs.readFile(MAP_FILE, "utf-8");
+    const data = await readText(MAP_KEY);
+    if (!data) return { success: true, map: DEFAULT_MAP };
     const saved = JSON.parse(data) as CategoryMap;
     // 기본값의 카테고리는 항상 포함 (새 카테고리가 기본값에 추가돼도 유지)
     const merged: CategoryMap = JSON.parse(JSON.stringify(DEFAULT_MAP));
     for (const [c1, subs] of Object.entries(saved)) {
       if (!merged[c1]) merged[c1] = {};
-      for (const [c2, files] of Object.entries(subs)) {
-        merged[c1][c2] = files;
-      }
+      for (const [c2, files] of Object.entries(subs)) merged[c1][c2] = files;
     }
     return { success: true, map: merged };
   } catch {
@@ -62,147 +95,98 @@ export async function getMdCategoryMap(): Promise<{ success: boolean; map: Categ
 
 /** 카테고리 맵 저장 */
 export async function saveMdCategoryMap(map: CategoryMap): Promise<{ success: boolean; error?: string }> {
+  if (!(await isAdmin())) return { success: false, error: NO };
   try {
-    await fs.writeFile(MAP_FILE, JSON.stringify(map, null, 2), "utf-8");
+    await writeText(MAP_KEY, JSON.stringify(map, null, 2), "application/json");
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
   }
 }
 
-/** docs/ 아래 모든 .md 파일 목록 (재귀, .으로 시작하는 파일·폴더 제외) */
+/** 모든 문서 목록 */
 export async function listMdFiles(): Promise<{ success: boolean; files: string[] }> {
-  async function walk(dir: string, base: string): Promise<string[]> {
-    let entries: fsSync.Dirent[];
-    try {
-      entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch {
-      return [];
-    }
-    const results: string[] = [];
-    for (const entry of entries) {
-      if (entry.name.startsWith(".")) continue;
-      const fullPath = path.join(dir, entry.name);
-      const relPath = path.join(base, entry.name).replace(/\\/g, "/");
-      if (entry.isDirectory()) {
-        results.push(...(await walk(fullPath, relPath)));
-      } else if (entry.name.endsWith(".md") || entry.name.endsWith(".MD")) {
-        results.push(relPath);
-      }
-    }
-    return results;
+  if (!(await isAdmin())) return { success: false, files: [] };
+  const files: string[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await db().storage.from(BUCKET).list(DIR, { limit: 1000, offset, sortBy: { column: "name", order: "asc" } });
+    if (error || !data) return { success: false, files };
+    for (const o of data) if (o.name.endsWith(".md")) files.push(relOf(o.name));
+    if (data.length < 1000) break;
   }
-  try {
-    const files = await walk(DOCS_DIR, "");
-    return { success: true, files };
-  } catch (e: any) {
-    return { success: false, files: [] };
-  }
+  files.sort((a, b) => a.localeCompare(b));
+  return { success: true, files };
 }
 
-/** MD 파일 내용 읽기 */
+/** 문서 읽기 */
 export async function readMdFile(relPath: string): Promise<{ success: boolean; content: string }> {
-  try {
-    const fullPath = path.resolve(DOCS_DIR, relPath);
-    // 경로 탈출 방지
-    if (!fullPath.startsWith(DOCS_DIR + path.sep) && fullPath !== DOCS_DIR) {
-      return { success: false, content: "잘못된 경로입니다." };
-    }
-    const content = await fs.readFile(fullPath, "utf-8");
-    return { success: true, content };
-  } catch (e: any) {
-    return { success: false, content: `파일을 읽지 못했습니다: ${e.message}` };
-  }
+  if (!(await isAdmin())) return { success: false, content: NO };
+  const rel = cleanRel(relPath);
+  if (!rel) return { success: false, content: "잘못된 경로입니다." };
+  const t = await readText(keyOf(rel));
+  return t == null ? { success: false, content: "파일을 읽지 못했습니다." } : { success: true, content: t };
 }
 
-/** MD 파일 저장 (없으면 생성, 있으면 덮어쓰기) */
+/** 문서 저장 (없으면 생성, 있으면 덮어쓰기) */
 export async function saveMdFile(relPath: string, content: string): Promise<{ success: boolean; error?: string }> {
+  if (!(await isAdmin())) return { success: false, error: NO };
+  const rel = cleanRel(relPath);
+  if (!rel) return { success: false, error: "잘못된 경로입니다." };
   try {
-    const fullPath = path.resolve(DOCS_DIR, relPath);
-    if (!fullPath.startsWith(DOCS_DIR + path.sep) && fullPath !== DOCS_DIR) {
-      return { success: false, error: "잘못된 경로입니다." };
-    }
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-    await fs.writeFile(fullPath, content, "utf-8");
+    await writeText(keyOf(rel), content);
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
   }
 }
 
-/** MD 파일 삭제 */
+/** 문서 삭제 */
 export async function deleteMdFile(relPath: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const fullPath = path.resolve(DOCS_DIR, relPath);
-    if (!fullPath.startsWith(DOCS_DIR + path.sep) && fullPath !== DOCS_DIR) {
-      return { success: false, error: "잘못된 경로입니다." };
-    }
-    await fs.unlink(fullPath);
-    return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
+  if (!(await isAdmin())) return { success: false, error: NO };
+  const rel = cleanRel(relPath);
+  if (!rel) return { success: false, error: "잘못된 경로입니다." };
+  const { error } = await db().storage.from(BUCKET).remove([keyOf(rel)]);
+  return error ? { success: false, error: error.message } : { success: true };
 }
 
-/* ── 파일 메타데이터 (작성자·날짜) ───────────────────────── */
+/* ── 문서 작성자·날짜 ───────────────────────── */
 
 export type FileMeta = { author: string; createdAt: string; updatedAt: string; updatedBy?: string };
 export type FileMetaMap = Record<string, FileMeta>;
 
-const META_FILE = path.join(DOCS_DIR, ".file_meta.json");
-
-/** 파일 메타데이터 맵 불러오기 */
+/** 작성자·날짜 맵 불러오기 */
 export async function getFileMetaMap(): Promise<{ success: boolean; map: FileMetaMap }> {
+  if (!(await isAdmin())) return { success: false, map: {} };
   try {
-    const data = await fs.readFile(META_FILE, "utf-8");
-    return { success: true, map: JSON.parse(data) as FileMetaMap };
+    const data = await readText(META_KEY);
+    return { success: true, map: data ? (JSON.parse(data) as FileMetaMap) : {} };
   } catch {
     return { success: true, map: {} };
   }
 }
 
-/** 특정 파일의 메타데이터 갱신 (신규 생성 또는 편집 후 호출) */
-export async function updateFileMeta(
-  relPath: string,
-  update: { author?: string; isNew?: boolean }
-): Promise<{ success: boolean }> {
+/** 특정 문서의 작성자·날짜 갱신 (새로 만들거나 고친 뒤) */
+export async function updateFileMeta(relPath: string, update: { author?: string; isNew?: boolean }): Promise<{ success: boolean }> {
+  if (!(await isAdmin())) return { success: false };
   try {
     const { map } = await getFileMetaMap();
     const now = new Date().toISOString();
     const existing = map[relPath];
-    if (!existing || update.isNew) {
-      map[relPath] = {
-        author: update.author || "관리자",
-        createdAt: now,
-        updatedAt: now,
-        updatedBy: update.author,
-      };
-    } else {
-      map[relPath] = {
-        ...existing,
-        updatedAt: now,
-        updatedBy: update.author || existing.updatedBy,
-      };
-    }
-    await fs.writeFile(META_FILE, JSON.stringify(map, null, 2), "utf-8");
+    map[relPath] = !existing || update.isNew
+      ? { author: update.author || "관리자", createdAt: now, updatedAt: now, updatedBy: update.author }
+      : { ...existing, updatedAt: now, updatedBy: update.author || existing.updatedBy };
+    await writeText(META_KEY, JSON.stringify(map, null, 2), "application/json");
     return { success: true };
   } catch {
     return { success: false };
   }
 }
 
-/** MD 파일 이름 변경 */
+/** 문서 이름 변경 */
 export async function renameMdFile(oldRelPath: string, newRelPath: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const oldFull = path.resolve(DOCS_DIR, oldRelPath);
-    const newFull = path.resolve(DOCS_DIR, newRelPath);
-    if (!oldFull.startsWith(DOCS_DIR + path.sep) || !newFull.startsWith(DOCS_DIR + path.sep)) {
-      return { success: false, error: "잘못된 경로입니다." };
-    }
-    await fs.mkdir(path.dirname(newFull), { recursive: true });
-    await fs.rename(oldFull, newFull);
-    return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
+  if (!(await isAdmin())) return { success: false, error: NO };
+  const a = cleanRel(oldRelPath), z = cleanRel(newRelPath);
+  if (!a || !z) return { success: false, error: "잘못된 경로입니다." };
+  const { error } = await db().storage.from(BUCKET).move(keyOf(a), keyOf(z));
+  return error ? { success: false, error: error.message } : { success: true };
 }
