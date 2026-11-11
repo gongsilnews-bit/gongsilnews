@@ -9,7 +9,10 @@ import {
   deleteMdFile,
   getMdCategoryMap,
   saveMdCategoryMap,
+  getFileMetaMap,
+  updateFileMeta,
   type CategoryMap,
+  type FileMetaMap,
 } from "@/app/actions/mdGuide";
 
 /* ── 단순 마크다운 뷰어 (외부 라이브러리 없음) ──────────── */
@@ -45,7 +48,7 @@ function renderInline(text: string): React.ReactNode {
 }
 
 /* ── 메인 섹션 ──────────────────────────────────────────── */
-export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
+export default function MDGuideSection({ theme, userName }: { theme: AdminTheme; userName?: string }) {
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const [catMap, setCatMap] = useState<CategoryMap>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -65,10 +68,11 @@ export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCat1, setNewCat1] = useState("");
   const [newCat2, setNewCat2] = useState("");
+  const [metaMap, setMetaMap] = useState<FileMetaMap>({});
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [filesRes, mapRes] = await Promise.all([listMdFiles(), getMdCategoryMap()]);
+    const [filesRes, mapRes, metaRes] = await Promise.all([listMdFiles(), getMdCategoryMap(), getFileMetaMap()]);
     if (filesRes.success) setAllFiles(filesRes.files);
     if (mapRes.success) {
       setCatMap(mapRes.map);
@@ -77,6 +81,7 @@ export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
       Object.keys(mapRes.map).forEach((k) => { exp[k] = true; });
       setExpanded(exp);
     }
+    if (metaRes.success) setMetaMap(metaRes.map);
     setLoading(false);
   }, []);
 
@@ -122,7 +127,13 @@ export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
     setLoading(true);
     const res = await saveMdFile(selectedFile, editContent);
     setMsg(res.success ? "저장했습니다." : res.error || "저장 실패");
-    if (res.success) { setFileContent(editContent); setEditing(false); }
+    if (res.success) {
+      setFileContent(editContent);
+      setEditing(false);
+      await updateFileMeta(selectedFile, { author: userName });
+      const metaRes = await getFileMetaMap();
+      if (metaRes.success) setMetaMap(metaRes.map);
+    }
     setLoading(false);
   };
 
@@ -158,6 +169,9 @@ export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
     const res = await saveMdFile(fp, `# ${name.replace(".md", "")}\n\n`);
     setMsg(res.success ? "파일을 만들었습니다." : res.error || "만들기 실패");
     if (res.success) {
+      await updateFileMeta(fp, { author: userName, isNew: true });
+      const metaRes = await getFileMetaMap();
+      if (metaRes.success) setMetaMap(metaRes.map);
       setAllFiles((prev) => [...prev, fp]);
       setShowNewFile(false);
       setNewFileName("");
@@ -197,6 +211,14 @@ export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
     setShowAddCat(false);
     setNewCat1(""); setNewCat2("");
     setMsg("카테고리를 추가했습니다.");
+  };
+
+  /* 날짜 포맷 (ISO → "2026-11-11 14:30") */
+  const fmtDate = (iso?: string): string => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   /* 현재 선택 파일이 속한 카테고리 */
@@ -324,19 +346,51 @@ export default function MDGuideSection({ theme }: { theme: AdminTheme }) {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {fileList.map((fp) => (
-                  <div key={fp} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.card, cursor: "pointer" }}
-                    onClick={() => openFile(fp)}>
-                    <span style={{ fontSize: 11, color: "#6366f1", fontFamily: "monospace", minWidth: 14 }}>MD</span>
-                    <span style={{ flex: 1, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fp}</span>
-                    <button onClick={(e) => { e.stopPropagation(); deleteFile(fp); }} style={{ ...btnStyle(), padding: "2px 8px", fontSize: 11, color: "#dc2626", borderColor: "#fca5a5", flexShrink: 0 }}>삭제</button>
-                  </div>
-                ))}
+                {fileList.map((fp) => {
+                  const meta = metaMap[fp];
+                  return (
+                    <div key={fp} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.card, cursor: "pointer" }}
+                      onClick={() => openFile(fp)}>
+                      <span style={{ fontSize: 11, color: "#6366f1", fontFamily: "monospace", minWidth: 14 }}>MD</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fp}</div>
+                        {meta && (
+                          <div style={{ fontSize: 11, color: C.sub, marginTop: 2, display: "flex", gap: 8 }}>
+                            <span>✍ {meta.author}</span>
+                            <span>{fmtDate(meta.updatedAt)}</span>
+                            {meta.updatedBy && meta.updatedBy !== meta.author && <span>수정: {meta.updatedBy}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); deleteFile(fp); }} style={{ ...btnStyle(), padding: "2px 8px", fontSize: 11, color: "#dc2626", borderColor: "#fca5a5", flexShrink: 0 }}>삭제</button>
+                    </div>
+                  );
+                })}
               </div>
             )
           )}
 
           {/* 파일 뷰어 / 편집기 */}
+          {!loading && selectedFile && (() => {
+            const meta = metaMap[selectedFile];
+            return (
+              <>
+                {meta && !editing && (
+                  <div style={{ display: "flex", gap: 20, fontSize: 12, color: C.sub, marginBottom: 10, padding: "6px 12px", background: C.card, borderRadius: 6, border: `1px solid ${C.border}` }}>
+                    <span>✍ 작성: <strong style={{ color: C.text }}>{meta.author}</strong></span>
+                    <span>📅 {fmtDate(meta.createdAt)}</span>
+                    {meta.updatedBy && (
+                      <>
+                        <span>|</span>
+                        <span>🖊 최종수정: <strong style={{ color: C.text }}>{meta.updatedBy}</strong></span>
+                        <span>{fmtDate(meta.updatedAt)}</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
           {!loading && selectedFile && (
             editing ? (
               <textarea

@@ -127,6 +127,53 @@ export async function deleteMdFile(relPath: string): Promise<{ success: boolean;
   }
 }
 
+/* ── 파일 메타데이터 (작성자·날짜) ───────────────────────── */
+
+export type FileMeta = { author: string; createdAt: string; updatedAt: string; updatedBy?: string };
+export type FileMetaMap = Record<string, FileMeta>;
+
+const META_FILE = path.join(DOCS_DIR, ".file_meta.json");
+
+/** 파일 메타데이터 맵 불러오기 */
+export async function getFileMetaMap(): Promise<{ success: boolean; map: FileMetaMap }> {
+  try {
+    const data = await fs.readFile(META_FILE, "utf-8");
+    return { success: true, map: JSON.parse(data) as FileMetaMap };
+  } catch {
+    return { success: true, map: {} };
+  }
+}
+
+/** 특정 파일의 메타데이터 갱신 (신규 생성 또는 편집 후 호출) */
+export async function updateFileMeta(
+  relPath: string,
+  update: { author?: string; isNew?: boolean }
+): Promise<{ success: boolean }> {
+  try {
+    const { map } = await getFileMetaMap();
+    const now = new Date().toISOString();
+    const existing = map[relPath];
+    if (!existing || update.isNew) {
+      map[relPath] = {
+        author: update.author || "관리자",
+        createdAt: now,
+        updatedAt: now,
+        updatedBy: update.author,
+      };
+    } else {
+      map[relPath] = {
+        ...existing,
+        updatedAt: now,
+        updatedBy: update.author || existing.updatedBy,
+      };
+    }
+    await fs.writeFile(META_FILE, JSON.stringify(map, null, 2), "utf-8");
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
 /** MD 파일 이름 변경 */
 export async function renameMdFile(oldRelPath: string, newRelPath: string): Promise<{ success: boolean; error?: string }> {
   try {

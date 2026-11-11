@@ -339,7 +339,7 @@ function AdminContent() {
           {activeMenu === "apt_reports" && <AptReportsSection theme={theme} />}
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
-          {activeMenu === "md_guide" && <MDGuideSection theme={theme} />}
+          {activeMenu === "md_guide" && <MDGuideSection theme={theme} userName={adminUserName} />}
           {activeMenu === "stt_words" && <SttWordsSection theme={theme} />}
           {/* 문의 = 1:1문의 하나 (예전 문의관리 탭은 쓰이지 않는 표를 읽어 늘 비어 있었다 — 11-09 정리) */}
           {activeMenu === "inquiry" && <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" />}
