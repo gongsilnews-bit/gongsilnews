@@ -44,9 +44,14 @@ function native(n) {
 }
 const decimal = (s) => {
   const [a, b] = s.replace(/,/g, "").split(".");
-  return sino(a) + (b ? " 점 " + b.split("").map((c) => DIGIT[+c]).join("") : "");
+  // 소수점 뒤 0 은 "영" — 0.07% → 영 점 영칠 ("공칠"로 읽던 것, 2026-11-12 사장님). 전화번호의 0 은 그대로 "공"
+  return sino(a) + (b ? " 점 " + b.split("").map((c) => (c === "0" ? "영" : DIGIT[+c])).join("") : "");
 };
-const NATIVE_UNITS = "개|명|시|살|대|채|곳|가지|마리|잔|권|군데|분께|사람|번째|가구|세대째|건(?!물|축|설|강|너)"; // 건 — 4건 → 네 건 (2026-10-31 사장님)
+const NATIVE_UNITS = "개|명|시|살|대|채|곳|가지|마리|잔|권|군데|분께|사람|번째|세대째";
+// 건·가구는 아홉까지만 고유어 — 4건 → 네 건 · 3건 중 2건 → 세 건 중 두 건, 90건 → 구십 건 ("아흔 건"으로 읽던 것, 2026-11-12 사장님 · 웹 koNumber.ts 와 같게)
+const SMALL_UNITS = "가구|건(?!물|축|설|강|너)";
+const LETTER = { A: "에이", B: "비", C: "씨", D: "디", E: "이", F: "에프", G: "지", H: "에이치", I: "아이", J: "제이", K: "케이", L: "엘", M: "엠", N: "엔", O: "오", P: "피", Q: "큐", R: "알", S: "에스", T: "티", U: "유", V: "브이", W: "더블유", X: "엑스", Y: "와이", Z: "지" };
+const spell = (s) => [...s].map((c) => LETTER[c] || c).join("");
 const UNIT_READ = [
   [/(?:㎡|m²|m2|제곱미터)/gi, " 제곱미터"],
   [/(?:㎢|km²|km2)/gi, " 제곱킬로미터"],
@@ -74,6 +79,9 @@ function toSpoken(text) {
   t = t.replace(/((?:물건|매물|공실|광고)\s*번호)\s*(은|는|:)?\s*(\d+)/g, (_m, k, j, n) => `${k}${j && j !== ":" ? j : ""} ${digits(n)}`);
   t = t.replace(/(?<![\d.,])(\d+)\s*((?:물건|매물|공실|광고)\s*번호)/g, (_m, n, k) => `${digits(n)} ${k}`);
   for (const [w, s] of READ_AS) t = t.split(w).join(s);
+  // 영어 약자 — M&A → 엠앤에이 · LH · GTX → 엘에이치 · 지티엑스 (2026-11-12 사장님 · 웹 koNumber.ts 와 같게)
+  t = t.replace(/(?<![A-Za-z])([A-Z]{1,3})\s*&\s*([A-Z]{1,3})(?![A-Za-z])/g, (_m, a, b) => `${spell(a)}앤${spell(b)}`);
+  t = t.replace(/(?<![A-Za-z])([A-Z]{2,4})(?![a-z])/g, (m) => spell(m));
   // 법정동·도로 "○○동2가 · ○○로3가" — 이름과 숫자를 붙여 읽으면 "용산동이가"(조사)처럼 들린다 → "용산동, 이가" (2026-11-02 사장님)
   t = t.replace(/([가-힣]{1,6}(?:동|로))\s*(\d{1,2})\s*가(?![가-힣]*(?:격|구|게|정|족|능))/g, (_m, name, n) => `${name}, ${sino(n)}가`);
   // 전화번호 — 숫자 하나씩
@@ -98,6 +106,7 @@ function toSpoken(text) {
   t = t.replace(/(?<![\d.,])(\d+)\s*(개월|개년)/g, (_m, n, u) => `${sino(n)}${u}`); // 띄우지 않는다 — "일 개월"이 어색해서 (2026-10-31)
   // 고유어 단위 — 3개 → 세 개 (99까지)
   t = t.replace(new RegExp(`(?<![\\d.,])(\\d{1,2})\\s*(${NATIVE_UNITS})`, "g"), (m, n, u) => { const w = native(+n); return w ? `${w} ${u}` : m; });
+  t = t.replace(new RegExp(`(?<![\\d.,])([1-9])\\s*(${SMALL_UNITS})`, "g"), (_m, n, u) => `${native(+n)} ${u}`);
   // 단위 기호 (숫자 뒤)
   for (const [re, w] of UNIT_READ) t = t.replace(new RegExp(`(\\d)\\s*(${re.source})`, re.flags), (_m, d) => `${d}${w}`);
   // 남은 숫자 (쉼표·소수점 포함) → 한자어

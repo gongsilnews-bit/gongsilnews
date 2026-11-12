@@ -7,6 +7,7 @@
  *  앱(studio-app/src/video/typecast.js · elevenlabs.js)과 같은 요청 · 같은 성우 id (tc_ · el_)
  */
 import type { TypecastVoice } from "./types";
+import { koReadNumbers } from "@/lib/studio-video/koNumber";
 
 const TC_API = "https://api.typecast.ai";
 const TC_MODEL = "ssfm-v30";
@@ -51,13 +52,14 @@ async function tcVoices(key: string): Promise<TypecastVoice[]> {
 async function tcSay(text: string, voiceId: string, emotion = "smart", prev = "", next = ""): Promise<Blob> {
   const key = read("typecast")?.key;
   if (!key) throw new Error("타입캐스트 키가 없어요. AI 목소리 › 타입캐스트에서 내 키를 넣어 주세요.");
+  // 성우에게만 숫자를 한글로 — 587건 → 오백팔십칠 건. 자막은 그대로 (일레븐랩스 서버와 같은 규칙, 2026-11-12 사장님)
   const prompt = emotion === "smart"
-    ? { emotion_type: "smart", ...(prev ? { previous_text: prev.slice(0, 2000) } : {}), ...(next ? { next_text: next.slice(0, 2000) } : {}) }
+    ? { emotion_type: "smart", ...(prev ? { previous_text: koReadNumbers(prev).slice(0, 2000) } : {}), ...(next ? { next_text: koReadNumbers(next).slice(0, 2000) } : {}) }
     : { emotion_type: "preset", emotion_preset: emotion, emotion_intensity: 1 };
   const r = await fetch(`${TC_API}/v1/text-to-speech`, {
     method: "POST",
     headers: { "X-API-KEY": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ text: text.slice(0, 2000), model: TC_MODEL, voice_id: voiceId, language: "kor", prompt, output: { audio_format: "wav" } }),
+    body: JSON.stringify({ text: koReadNumbers(text).slice(0, 2000), model: TC_MODEL, voice_id: voiceId, language: "kor", prompt, output: { audio_format: "wav" } }),
   });
   if (!r.ok) throw new Error(tcErr(r.status, await r.json().catch(() => null)));
   return r.blob();
@@ -96,7 +98,7 @@ async function elSay(text: string, voiceId: string, emotion = "normal", prev = "
   const r = await fetch(`${EL_API}/v1/text-to-speech/${encodeURIComponent(voiceId.replace(/^el_/, ""))}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ text: stripTags(text), model_id: EL_MODEL, voice_settings: { ...(EL_STYLE[emotion] || EL_STYLE.normal), use_speaker_boost: true }, ...(prev ? { previous_text: stripTags(prev).slice(0, 1000) } : {}), ...(next ? { next_text: stripTags(next).slice(0, 1000) } : {}) }),
+    body: JSON.stringify({ text: koReadNumbers(stripTags(text)), model_id: EL_MODEL, voice_settings: { ...(EL_STYLE[emotion] || EL_STYLE.normal), use_speaker_boost: true }, ...(prev ? { previous_text: koReadNumbers(stripTags(prev)).slice(0, 1000) } : {}), ...(next ? { next_text: koReadNumbers(stripTags(next)).slice(0, 1000) } : {}) }),
   });
   if (!r.ok) throw new Error(elErr(r.status, await r.json().catch(() => null)));
   return r.blob();
