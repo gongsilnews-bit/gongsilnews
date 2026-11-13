@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import AutoVideo from "./AutoVideo";
 import Link from "next/link";
 
 /** 스마트스토어 "공실뉴스 1년 수강권" — 결제되면 공실마케팅 1년이 자동으로 켜진다 (src/lib/smartstoreSync.ts) */
@@ -145,10 +146,10 @@ function Intro({ mobile, onGuide, part = "all" }: { mobile?: boolean; onGuide: (
       {part !== "title" && (
       <>
       {/* 사진 대신 첫 화면(/newsrealty)과 같은 영상 (2026-11-10 사장님) — 소리 없이 자동 재생 · 반복 */}
-      <video
+      <AutoVideo
         src="/studio-shots/intro.mp4"
         poster="/studio-shots/intro-poster.jpg"
-        autoPlay muted loop playsInline preload="auto"
+        preload="auto"
         aria-label="공인중개사가 동네를 취재하고 스마트폰으로 공실 뉴스를 전하는 모습"
         style={{ width: "100%", maxWidth: mobile ? "100%" : 480, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 14, background: "var(--surface)", display: "block" }}
       />

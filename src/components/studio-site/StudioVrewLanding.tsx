@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import AutoVideo from "./AutoVideo";
 import { useStartHref } from "./useStartHref";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
@@ -353,7 +354,7 @@ export default function StudioVrewLanding() {
           <Link href="/newsrealty/pro-apply" className="sv-btn solid big">공실뉴스부동산 신청 &gt;&gt;</Link>
         </div>
         {/* 첫 화면 영상 — 사장님이 만든 studio.mp4 (소리 빼고 줄임, 2026-10-26). 소리 없이 자동 재생 · 반복 */}
-        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4?v=4" poster="/studio-shots/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
+        <AutoVideo className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/hero.mp4?v=4" poster="/studio-shots/hero-poster.jpg" preload="auto" aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사" />
       </section>
 
       {/* 공실뉴스부동산이 되면 — 3단계 칸 (2026-11-10 사장님: 맨 위 소개 칸 없애고, 첫 화면 영상과 "클릭 한 번" 사이로 옮김. 위 메뉴 [공실뉴스부동산이란?]은 여기로) */}
@@ -374,7 +375,7 @@ export default function StudioVrewLanding() {
         <p className="sv-p">공실을 고르고 <b>[한 번에 쓰기]</b>만 누르세요.<br /><b>공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 페이스북 · 스레드</b> 글이 동시에 완성됩니다.<br />채널마다 따로 쓸 필요 없이, [발행]만 누르면 포스팅 끝.</p>
         {btns}
         {/* 네이버 블로그 자동 채우기 영상 — 사장님이 찍은 naver.mp4 (소리 빼고 줄임, 2026-10-26) */}
-        <video className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/sns.mp4" poster="/studio-shots/sns-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="공실뉴스가 네이버 블로그 글을 채우는 화면" />
+        <AutoVideo className="sv-img" style={{ maxWidth: 1060 }} src="/studio-shots/sns.mp4" poster="/studio-shots/sns-poster.jpg" preload="metadata" aria-label="공실뉴스가 네이버 블로그 글을 채우는 화면" />
       </section>
 
       {/* 2-1 어렵지 않아요 — 뉴스·SNS 바로 아래 (2026-10-26 사장님) */}
@@ -408,7 +409,7 @@ export default function StudioVrewLanding() {
         </p>
         <p style={{ fontSize: 12.5, color: "#9ca3af", margin: 0 }}>출처: data.ai 2023 모바일 현황 보고서(한국인 하루 앱 사용 약 5시간) · 와이즈앱 2023년 4월(인스타그램 이용자 2,167만 명, 42%)</p>
         {/* 빈 SNS 칸 앞에서 막막해하는 중개사 (2026-11-05 사장님 영상, 슬로모션 앞뒤로 반복) */}
-        <video className="sv-img" style={{ maxWidth: 960, marginTop: 36 }} src="/studio-shots/sns-frustrated.mp4?v=1" poster="/studio-shots/sns-frustrated-poster.jpg?v=1" autoPlay muted loop playsInline preload="metadata" aria-label="블로그·인스타그램·유튜브·스레드 빈 글 칸 앞에서 막막해하는 중개사" />
+        <AutoVideo className="sv-img" style={{ maxWidth: 960, marginTop: 36 }} src="/studio-shots/sns-frustrated.mp4?v=1" poster="/studio-shots/sns-frustrated-poster.jpg?v=1" preload="metadata" aria-label="블로그·인스타그램·유튜브·스레드 빈 글 칸 앞에서 막막해하는 중개사" />
       </section>
 
       {/* 해결 — 복사·붙여넣기만 하면 다섯 곳 글이 채워진다, [발행]은 대표님이 (2026-11-05 사장님. 자동 발행은 안 함 — 계정 보호) */}
@@ -419,14 +420,14 @@ export default function StudioVrewLanding() {
           대표님은 마지막 <b>[발행]</b>만 누르세요.
         </p>
         {/* 실제 화면 하이퍼랩스 광고 영상 (2026-11-05 사장님 녹화 "1분이면 ok", 이름·메일 흐림, 6배속) — 소리 없이 자동 재생 · 반복 */}
-        <video className="sv-img" style={{ maxWidth: 1060, marginTop: 36 }} src="/studio-shots/write-ad.mp4?v=3" poster="/studio-shots/write-ad-poster.jpg?v=3" autoPlay muted loop playsInline preload="metadata" aria-label="공실 하나를 고르고 한 번에 쓰기를 누르면 AI가 기사·블로그·SNS 글을 쓰는 실제 화면" />
+        <AutoVideo className="sv-img" style={{ maxWidth: 1060, marginTop: 36 }} src="/studio-shots/write-ad.mp4?v=3" poster="/studio-shots/write-ad-poster.jpg?v=3" preload="metadata" aria-label="공실 하나를 고르고 한 번에 쓰기를 누르면 AI가 기사·블로그·SNS 글을 쓰는 실제 화면" />
       </section>
 
       {/* 2026-11-05 사장님 — 해결(복사·붙여넣기) 다음, 비교표 앞 */}
       <section className="sv-sec">
         <h2 className="sv-h2" style={{ margin: 0 }}><span style={{ color: ACCENT }}>공실뉴스부동산</span>이 되시고,<br />내 지역 정보를 뉴스로 전달하세요!!</h2>
         {/* 커피 한 잔 하는 사이 다섯 곳 글 완성 (2026-11-05 사장님 영상 + 완성 카드) — 소리 없이 자동 재생 · 반복 */}
-        <video className="sv-img" style={{ maxWidth: 1060, marginTop: 40 }} src="/studio-shots/coffee-sns.mp4?v=5" poster="/studio-shots/coffee-sns-poster.jpg?v=5" autoPlay muted loop playsInline preload="metadata" aria-label="커피를 마시는 사이 블로그·인스타그램·스레드·유튜브·페이스북 글이 완성되는 모습" />
+        <AutoVideo className="sv-img" style={{ maxWidth: 1060, marginTop: 40 }} src="/studio-shots/coffee-sns.mp4?v=5" poster="/studio-shots/coffee-sns-poster.jpg?v=5" preload="metadata" aria-label="커피를 마시는 사이 블로그·인스타그램·스레드·유튜브·페이스북 글이 완성되는 모습" />
       </section>
 
       {/* 여기부터 혜택 이야기 — 노란 미색 띠로 구분 (2026-11-05 사장님) */}
@@ -514,7 +515,7 @@ export default function StudioVrewLanding() {
           </ul>
           <div className="sv-src-view">
             {/* 사장님이 찍은 실제 화면 (2026-11-09) — 위쪽 이름·메일은 흐림, 소리 뺌 */}
-            <video style={{ display: "block", width: "100%", height: "auto", borderRadius: 14, border: "1px solid #e5e7eb", boxShadow: "0 24px 60px rgba(31,23,20,.16)" }} src="/studio-shots/shorts.mp4?v=1" poster="/studio-shots/shorts-poster.jpg?v=1" autoPlay muted loop playsInline preload="metadata" aria-label="공실을 고르고 테마를 누르면 60초 쇼츠가 만들어지는 실제 화면" />
+            <AutoVideo style={{ display: "block", width: "100%", height: "auto", borderRadius: 14, border: "1px solid #e5e7eb", boxShadow: "0 24px 60px rgba(31,23,20,.16)" }} src="/studio-shots/shorts.mp4?v=1" poster="/studio-shots/shorts-poster.jpg?v=1" preload="metadata" aria-label="공실을 고르고 테마를 누르면 60초 쇼츠가 만들어지는 실제 화면" />
           </div>
         </div>
       </section>
