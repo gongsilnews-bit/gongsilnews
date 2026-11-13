@@ -69,6 +69,9 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
   const [newCat1, setNewCat1] = useState("");
   const [newCat2, setNewCat2] = useState("");
   const [metaMap, setMetaMap] = useState<FileMetaMap>({});
+  // 카테고리 이름 바꾸기·삭제 (2026-11-11 사장님) — 줄에 마우스를 올리면 ✎ · 🗑
+  const [hoverCat, setHoverCat] = useState("");
+  const [renaming, setRenaming] = useState<{ c1: string; c2?: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,16 +79,21 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
     if (filesRes.success) setAllFiles(filesRes.files);
     if (mapRes.success) {
       setCatMap(mapRes.map);
-      // 첫 로드 — 1차 카테고리 모두 펼치기
-      const exp: Record<string, boolean> = {};
-      Object.keys(mapRes.map).forEach((k) => { exp[k] = true; });
-      setExpanded(exp);
+      // 1차 카테고리는 펼쳐서 — 다시 불러올 때 사용자가 접어 둔 것은 그대로
+      setExpanded((prev) => { const exp = { ...prev }; Object.keys(mapRes.map).forEach((k) => { if (exp[k] === undefined) exp[k] = true; }); return exp; });
     }
     if (metaRes.success) setMetaMap(metaRes.map);
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  // 다른 창(클로드가 문서를 넣는 동안 등)에 다녀오면 최신 목록으로 — 예전 목록으로 저장해 배정이 지워지던 것 (2026-11-12)
+  useEffect(() => {
+    const on = () => { if (document.visibilityState === "visible") void load(); };
+    window.addEventListener("focus", on);
+    document.addEventListener("visibilitychange", on);
+    return () => { window.removeEventListener("focus", on); document.removeEventListener("visibilitychange", on); };
+  }, [load]);
 
   /* 분류된 파일 집합 */
   const categorizedSet = useCallback((): Set<string> => {
@@ -201,16 +209,52 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
 
   /* 새 카테고리 추가 */
   const addCategory = async () => {
-    if (!newCat1.trim()) return;
+    // 이름 앞뒤 빈칸은 뺀다 — "공실뉴스 "처럼 끝에 빈칸이 붙어 같은 이름이 둘 생기던 것 (2026-11-11)
+    const c1 = newCat1.trim(), c2 = newCat2.trim();
+    if (!c1) return;
     const newMap: CategoryMap = JSON.parse(JSON.stringify(catMap));
-    if (!newMap[newCat1]) newMap[newCat1] = {};
-    if (newCat2.trim() && !newMap[newCat1][newCat2]) newMap[newCat1][newCat2] = [];
+    if (!newMap[c1]) newMap[c1] = {};
+    if (c2 && !newMap[c1][c2]) newMap[c1][c2] = [];
     setCatMap(newMap);
-    setExpanded((prev) => ({ ...prev, [newCat1]: true }));
+    setExpanded((prev) => ({ ...prev, [c1]: true }));
     await saveMdCategoryMap(newMap);
     setShowAddCat(false);
     setNewCat1(""); setNewCat2("");
     setMsg("카테고리를 추가했습니다.");
+  };
+
+  /* 카테고리 이름 바꾸기 — 안의 문서는 그대로 따라간다. 순서도 그대로 */
+  const renameCategory = async () => {
+    if (!renaming) return;
+    const { c1, c2 } = renaming;
+    const name = renaming.name.trim();
+    const old = c2 ?? c1;
+    if (!name || name === old) { setRenaming(null); return; }
+    const siblings = c2 === undefined ? Object.keys(catMap) : Object.keys(catMap[c1] || {});
+    if (siblings.includes(name)) { setMsg(`"${name}" 카테고리가 이미 있어요.`); return; }
+    const newMap: CategoryMap = c2 === undefined
+      ? Object.fromEntries(Object.entries(catMap).map(([k, v]) => [k === c1 ? name : k, v]))
+      : { ...catMap, [c1]: Object.fromEntries(Object.entries(catMap[c1] || {}).map(([k, v]) => [k === c2 ? name : k, v])) };
+    setCatMap(newMap);
+    if (c2 === undefined) { setExpanded((p) => ({ ...p, [name]: p[c1] ?? true })); if (selectedCat1 === c1) setSelectedCat1(name); }
+    else if (selectedCat1 === c1 && selectedCat2 === c2) setSelectedCat2(name);
+    setRenaming(null);
+    const r = await saveMdCategoryMap(newMap);
+    setMsg(r.success ? `이름을 "${name}"(으)로 바꿨습니다.` : r.error || "저장 실패");
+  };
+
+  /* 카테고리 삭제 — 문서는 지우지 않고 미분류로 */
+  const deleteCategory = async (c1: string, c2?: string) => {
+    const n = c2 === undefined ? Object.values(catMap[c1] || {}).flat().length : (catMap[c1]?.[c2] || []).length;
+    const label = c2 === undefined ? `"${c1}" 카테고리(안의 2차 카테고리 포함)` : `"${c1} › ${c2}" 카테고리`;
+    if (!window.confirm(`${label}를 삭제할까요?${n ? `\n안의 문서 ${n}개는 지우지 않고 미분류로 옮겨요.` : ""}`)) return;
+    const newMap: CategoryMap = JSON.parse(JSON.stringify(catMap));
+    if (c2 === undefined) delete newMap[c1];
+    else delete newMap[c1][c2];
+    setCatMap(newMap);
+    if (selectedCat1 === c1 && (c2 === undefined || selectedCat2 === c2)) { setSelectedCat1(null); setSelectedCat2(null); setSelectedFile(null); }
+    const r = await saveMdCategoryMap(newMap);
+    setMsg(r.success ? `카테고리를 삭제했습니다.${n ? ` 문서 ${n}개는 미분류로 옮겼어요.` : ""}` : r.error || "저장 실패");
   };
 
   /* 날짜 포맷 (ISO → "2026-11-11 14:30") */
@@ -248,6 +292,23 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
     fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: "inherit",
   });
 
+  /* 카테고리 줄 오른쪽 작은 단추 — ✎ 이름 바꾸기 · 🗑 삭제 */
+  const catTools = (c1: string, c2?: string) => (
+    <span style={{ display: "flex", gap: 2, paddingRight: 8, flexShrink: 0 }}>
+      <button title="이름 바꾸기" onClick={() => setRenaming({ c1, c2, name: c2 ?? c1 })} style={{ width: 24, height: 24, border: "none", borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 13, color: C.sub }}>✎</button>
+      <button title="삭제 (문서는 미분류로)" onClick={() => void deleteCategory(c1, c2)} style={{ width: 24, height: 24, border: "none", borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 13, color: "#dc2626" }}>🗑</button>
+    </span>
+  );
+  /* 이름 고치는 칸 — Enter 저장 · Esc 그만 · 바깥 누르면 저장 */
+  const catInput = (sub?: boolean) => (
+    <div style={{ padding: sub ? "3px 8px 3px 28px" : "4px 8px 4px 12px" }}>
+      <input autoFocus value={renaming?.name || ""} onChange={(e) => setRenaming((r) => (r ? { ...r, name: e.target.value } : r))}
+        onKeyDown={(e) => { if (e.key === "Enter") void renameCategory(); if (e.key === "Escape") setRenaming(null); }}
+        onBlur={() => void renameCategory()}
+        style={{ width: "100%", boxSizing: "border-box", height: 28, padding: "0 8px", border: `1px solid ${C.blue}`, borderRadius: 4, fontSize: sub ? 12 : 13, fontWeight: sub ? 400 : 700, fontFamily: "inherit", color: C.text, background: C.card }} />
+    </div>
+  );
+
   const fileList = getFiles();
   const uncatCount = allFiles.filter((f) => !categorizedSet().has(f)).length;
 
@@ -264,27 +325,38 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
             const c1Files = Object.values(subs).flat().length;
             return (
               <div key={c1}>
-                {/* 1차 카테고리 */}
+                {/* 1차 카테고리 — 마우스를 올리면 ✎ 이름 바꾸기 · 🗑 삭제 */}
+                {renaming && renaming.c1 === c1 && renaming.c2 === undefined ? catInput() : (
+                <div onMouseEnter={() => setHoverCat(c1)} onMouseLeave={() => setHoverCat("")} style={{ display: "flex", alignItems: "center", background: selectedCat1 === c1 && selectedCat2 === null ? "#eef2fb" : "transparent" }}>
                 <button
                   onClick={() => {
                     setExpanded((p) => ({ ...p, [c1]: !p[c1] }));
                     setSelectedCat1(c1); setSelectedCat2(null); setSelectedFile(null);
                   }}
-                  style={{ width: "100%", textAlign: "left", padding: "7px 16px", border: "none", background: selectedCat1 === c1 && selectedCat2 === null ? "#eef2fb" : "transparent", color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}
+                  style={{ flex: 1, minWidth: 0, textAlign: "left", padding: "7px 4px 7px 16px", border: "none", background: "transparent", color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}
                 >
                   <span style={{ fontSize: 10, color: C.sub, marginRight: 2 }}>{expanded[c1] ? "▼" : "▶"}</span>
-                  <span style={{ flex: 1 }}>{c1}</span>
-                  <span style={{ fontSize: 11, color: C.sub, fontWeight: 400 }}>{c1Files}</span>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c1}</span>
+                  {hoverCat !== c1 && <span style={{ fontSize: 11, color: C.sub, fontWeight: 400 }}>{c1Files}</span>}
                 </button>
+                {hoverCat === c1 && catTools(c1)}
+                </div>
+                )}
+                {/* 2차 카테고리 */}
                 {/* 2차 카테고리 */}
                 {expanded[c1] && Object.entries(subs).map(([c2, files]) => (
-                  <button key={c2}
+                  renaming && renaming.c1 === c1 && renaming.c2 === c2 ? <React.Fragment key={c2}>{catInput(true)}</React.Fragment> : (
+                  <div key={c2} onMouseEnter={() => setHoverCat(`${c1}/${c2}`)} onMouseLeave={() => setHoverCat("")} style={{ display: "flex", alignItems: "center", background: selectedCat1 === c1 && selectedCat2 === c2 ? "#dbeafe" : "transparent" }}>
+                  <button
                     onClick={() => { setSelectedCat1(c1); setSelectedCat2(c2); setSelectedFile(null); }}
-                    style={{ width: "100%", textAlign: "left", padding: "5px 16px 5px 32px", border: "none", background: selectedCat1 === c1 && selectedCat2 === c2 ? "#dbeafe" : "transparent", color: selectedCat1 === c1 && selectedCat2 === c2 ? C.blue : C.text, fontSize: 12, fontWeight: selectedCat1 === c1 && selectedCat2 === c2 ? 700 : 400, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "inherit" }}
+                    style={{ flex: 1, minWidth: 0, textAlign: "left", padding: "5px 4px 5px 32px", border: "none", background: "transparent", color: selectedCat1 === c1 && selectedCat2 === c2 ? C.blue : C.text, fontSize: 12, fontWeight: selectedCat1 === c1 && selectedCat2 === c2 ? 700 : 400, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "inherit" }}
                   >
-                    <span>{c2}</span>
-                    <span style={{ fontSize: 11, color: C.sub }}>{files.length}</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c2}</span>
+                    {hoverCat !== `${c1}/${c2}` && <span style={{ fontSize: 11, color: C.sub }}>{files.length}</span>}
                   </button>
+                  {hoverCat === `${c1}/${c2}` && catTools(c1, c2)}
+                  </div>
+                  )
                 ))}
               </div>
             );

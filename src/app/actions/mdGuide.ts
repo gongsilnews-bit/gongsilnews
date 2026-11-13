@@ -12,7 +12,11 @@ const META_KEY = "_file_meta.json";
 const DIR = "f"; // 문서는 f/<주소 이름을 base64url>.md — Storage 이름에 한글을 못 써서
 
 function db() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+  // 늘 최신으로 — 저장 공간·Next 가 예전 목록을 기억해 방금 넣은 문서가 0개로 보이던 것 (2026-11-12)
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: "no-store" }) },
+  });
 }
 async function isAdmin() {
   const session = await createSessionClient();
@@ -36,7 +40,7 @@ async function readText(key: string): Promise<string | null> {
   return await data.text();
 }
 async function writeText(key: string, text: string, type = "text/markdown; charset=utf-8") {
-  const { error } = await db().storage.from(BUCKET).upload(key, new Blob([text], { type }), { upsert: true, contentType: type });
+  const { error } = await db().storage.from(BUCKET).upload(key, new Blob([text], { type }), { upsert: true, contentType: type, cacheControl: "0" });
   if (error) throw new Error(error.message);
 }
 
@@ -56,14 +60,8 @@ export async function getMdCategoryMap(): Promise<{ success: boolean; map: Categ
   try {
     const data = await readText(MAP_KEY);
     if (!data) return { success: true, map: DEFAULT_MAP };
-    const saved = JSON.parse(data) as CategoryMap;
-    // 기본값의 카테고리는 항상 포함 (새 카테고리가 기본값에 추가돼도 유지)
-    const merged: CategoryMap = JSON.parse(JSON.stringify(DEFAULT_MAP));
-    for (const [c1, subs] of Object.entries(saved)) {
-      if (!merged[c1]) merged[c1] = {};
-      for (const [c2, files] of Object.entries(subs)) merged[c1][c2] = files;
-    }
-    return { success: true, map: merged };
+    // 저장한 것이 있으면 그대로 — 기본 카테고리를 다시 끼워 넣지 않는다 (지우거나 이름을 바꾼 것이 되살아나지 않게, 2026-11-11)
+    return { success: true, map: JSON.parse(data) as CategoryMap };
   } catch {
     return { success: true, map: DEFAULT_MAP };
   }
