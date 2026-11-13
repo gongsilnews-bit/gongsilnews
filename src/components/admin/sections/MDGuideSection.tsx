@@ -16,11 +16,37 @@ import {
 } from "@/app/actions/mdGuide";
 
 /* ── 단순 마크다운 뷰어 (외부 라이브러리 없음) ──────────── */
+// 표: | 칸 | 칸 | 줄이 이어지면 표로. 둘째 줄 |---|---| 는 머리 구분 (2026-11-13 사장님 "표도 넣을 수 있게")
+const isRow = (l: string) => /^\s*\|.*\|\s*$/.test(l);
+const isSep = (l: string) => /^\s*\|(\s*:?-{2,}:?\s*\|)+\s*$/.test(l);
+const cells = (l: string) => l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+function MdTable({ rows }: { rows: string[] }) {
+  const hasHead = rows.length > 1 && isSep(rows[1]);
+  const head = hasHead ? cells(rows[0]) : null;
+  const body = (hasHead ? rows.slice(2) : rows).filter((r) => !isSep(r)).map(cells);
+  const td: React.CSSProperties = { border: "1px solid #cbd5e1", padding: "7px 12px", textAlign: "left", verticalAlign: "top" };
+  return (
+    <div style={{ overflowX: "auto", margin: "10px 0" }}>
+      <table style={{ borderCollapse: "collapse", fontSize: 13.5, minWidth: "60%" }}>
+        {head && <thead><tr>{head.map((c, j) => <th key={j} style={{ ...td, background: "#eef2f7", fontWeight: 800, color: "#0f2b5b" }}>{renderInline(c)}</th>)}</tr></thead>}
+        <tbody>{body.map((r, i) => <tr key={i} style={{ background: i % 2 ? "#f8fafc" : "#fff" }}>{r.map((c, j) => <td key={j} style={td}>{renderInline(c)}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
 function MdViewer({ content }: { content: string }) {
-  const lines = content.split("\n");
+  const raw = content.split("\n");
+  // 표 줄은 한 덩어리로 묶는다
+  const lines: (string | { table: string[] })[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    if (isRow(raw[i])) { const t: string[] = []; while (i < raw.length && isRow(raw[i])) t.push(raw[i++]); i--; lines.push({ table: t }); }
+    else lines.push(raw[i]);
+  }
   return (
     <div style={{ fontFamily: "inherit", lineHeight: 1.75, color: "#1e293b", fontSize: 14 }}>
       {lines.map((line, i) => {
+        if (typeof line !== "string") return <MdTable key={i} rows={line.table} />;
         if (line.startsWith("### ")) return <h3 key={i} style={{ margin: "16px 0 6px", fontSize: 15, fontWeight: 700, color: "#1e3a6e" }}>{line.slice(4)}</h3>;
         if (line.startsWith("## ")) return <h2 key={i} style={{ margin: "20px 0 8px", fontSize: 17, fontWeight: 800, color: "#0f2b5b", borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>{line.slice(3)}</h2>;
         if (line.startsWith("# ")) return <h1 key={i} style={{ margin: "24px 0 10px", fontSize: 20, fontWeight: 900, color: "#0f172a", borderBottom: "2px solid #1e3a6e", paddingBottom: 6 }}>{line.slice(2)}</h1>;
@@ -465,12 +491,29 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
           })()}
           {!loading && selectedFile && (
             editing ? (
+              <>
+              {/* 표 넣기 — 커서 자리에 3칸 표 틀 (2026-11-13) */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ta = document.getElementById("md-edit-ta") as HTMLTextAreaElement | null;
+                    const tpl = "\n| 제목1 | 제목2 | 제목3 |\n|---|---|---|\n| 내용 | 내용 | 내용 |\n| 내용 | 내용 | 내용 |\n";
+                    const at = ta ? ta.selectionStart : editContent.length;
+                    setEditContent(editContent.slice(0, at) + tpl + editContent.slice(at));
+                  }}
+                  style={{ ...btnStyle(), padding: "5px 12px", fontSize: 12 }}
+                >표 넣기</button>
+                <span style={{ fontSize: 12, color: C.sub, alignSelf: "center" }}>칸은 | 로 나눕니다. 둘째 줄 |---| 아래가 내용</span>
+              </div>
               <textarea
+                id="md-edit-ta"
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 style={{ width: "100%", height: "calc(100vh - 180px)", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, padding: 16, border: `1px solid ${C.border}`, borderRadius: 8, background: C.card, color: C.text, resize: "none", outline: "none", boxSizing: "border-box" }}
                 spellCheck={false}
               />
+              </>
             ) : (
               <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "24px 32px", minHeight: 200 }}>
                 <MdViewer content={fileContent} />
