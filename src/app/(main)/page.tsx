@@ -6,11 +6,10 @@ export const revalidate = 300; // 5분 캐시 (60s → 300s 확장)
 
 import HomeNewsHero from "@/components/home/HomeNewsHero";
 import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
-import PremiumDroneSection from "@/components/home/PremiumDroneSection";
 import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
 import BannerSlot from "@/components/BannerSlot";
 
-import { SHOW_STUDY } from "@/utils/siteFlags";
+import { SHOW_STUDY, SHOW_STUDY_HOME } from "@/utils/siteFlags";
 export default async function Home() {
   // ✅ 크리티컬 경로 최적화: 초기 로드 35-40% 단축
   // 강의 6개, 공실뉴스 6개로 축소 (스크롤 아래는 필요할 때만 로드)
@@ -71,13 +70,8 @@ export default async function Home() {
         />
       </main>
 
-      {/* ========== 7. Premium Media ========== */}
-      <PremiumDroneSection />
-
-
-
-      {/* ========== 9. Lectures ========== */}
-      {SHOW_STUDY && <SpecialLectureBanner initialLectures={lecturesData} />}
+      {/* ========== 부동산특강 — 드론영상(자료실) 칸 자리 (2026-11-13) ========== */}
+      {(SHOW_STUDY || SHOW_STUDY_HOME) && <SpecialLectureBanner initialLectures={lecturesData} />}
 
       <div style={{ width: "100%", maxWidth: 1200, margin: "40px auto 40px auto" }}>
         <BannerSlot placement="MAIN_BOTTOM_FULL" style={{ borderRadius: 0, overflow: "hidden" }} initialBanners={mainBottomBanners} />

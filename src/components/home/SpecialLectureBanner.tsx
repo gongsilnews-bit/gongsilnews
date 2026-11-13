@@ -40,24 +40,29 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
   };
 
   return (
-    <div className="container px-20 mt-50 mb-50">
+    /* 짙은 녹색 띠 (2026-11-13 사장님 — 드론 칸 자리, 부동산특강 녹색) */
+    <div className="study-home-bg">
+    <div className="container px-20">
       <div className="sec-title-wrap">
         <Link href="/study" style={{ textDecoration: "none" }}>
-          <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>부동산특강</h2>
+          <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150, color: "#fff" }}>부동산특강</h2>
         </Link>
-        <Link href="/study" className="sec-more-btn">more</Link>
+        <Link href="/study" className="sec-more-btn study-more">more</Link>
       </div>
       <style>{`
+        .study-home-bg { background: #064e3b; padding: 60px 0; margin-top: 50px; }
+        .study-home-bg .study-more { color: #fff; border-color: rgba(255,255,255,0.5); background: transparent; }
+        .study-home-bg .study-more:hover { color: #064e3b; background: #fff; border-color: #fff; }
         .lecture-card {
-          border: 2px solid #e2e8f0 !important;
+          border: 2px solid transparent !important;
           border-radius: 12px !important;
           background: #fff !important;
           transition: all 0.2s ease !important;
           box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
         }
         .lecture-card:hover {
-          border-color: #059669 !important;
-          box-shadow: 0 12px 24px rgba(5, 150, 105, 0.22) !important;
+          border-color: #34d399 !important;
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35) !important;
           transform: translateY(-5px) !important;
         }
         .lecture-card:hover .lecture-title {
@@ -65,7 +70,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
           text-underline-offset: 3px;
         }
       `}</style>
-      <div className="lecture-grid mb-50">
+      <div className="lecture-grid">
         {lectures.map((item, i) => (
           <Link 
             href={item.id ? `/study_read?id=${item.id}` : "/study_read"} 
@@ -132,6 +137,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
           </Link>
         ))}
       </div>
+    </div>
     </div>
   );
 }
