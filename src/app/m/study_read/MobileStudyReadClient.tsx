@@ -741,7 +741,7 @@ export default function MobileStudyReadClient({
             flex: 1,
             maxWidth: "240px",
             padding: "13px 0",
-            background: isEnrolled ? "#1a1613" : "#059669",
+            background: isEnrolled ? "#065f46" : "#059669", // 강의실 입장하기 = 짙은 녹색 (2026-11-13)
             color: "#ffffff",
             border: "none",
             borderRadius: 8,

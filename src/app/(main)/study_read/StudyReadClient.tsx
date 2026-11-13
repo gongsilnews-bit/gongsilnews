@@ -44,7 +44,8 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
   const usedInitialRef = useRef(!!initialLecture);
   // 탭·사이드바가 붙을 높이 = 스크롤 중 화면 위에 고정되는 공실스터디 메뉴 막대의 아래끝.
   // 사라지는 공실뉴스 머리글(header.header) 높이로 잡으면 막대와 탭 사이에 틈이 생겨 본문이 비쳤다 (2026-10-08)
-  const [headerHeight, setHeaderHeight] = useState(66);
+  // 위 헤더가 없는 화면이라 기본 0 — 예전 66px 이 남아 탭 위에 빈 틈이 떴다 (2026-11-13)
+  const [headerHeight, setHeaderHeight] = useState(0);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,7 +55,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const bar = document.querySelector<HTMLElement>('[data-study-bar="stuck"]');
-        if (bar) setHeaderHeight(Math.ceil(bar.getBoundingClientRect().bottom));
+        setHeaderHeight(bar ? Math.max(0, Math.ceil(bar.getBoundingClientRect().bottom)) : 0);
       });
     };
     update();
@@ -977,7 +978,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               style={{
                 width: "100%",
                 padding: "14px 0",
-                background: isEnrolled ? "#1a1613" : "#059669",
+                background: isEnrolled ? "#065f46" : "#059669", // 강의실 입장하기 = 짙은 녹색 (2026-11-13)
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 10,

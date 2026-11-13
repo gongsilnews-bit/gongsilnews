@@ -5,3 +5,6 @@
  *   다시 보이려면 true 로.
  */
 export const SHOW_STUDY = false;
+
+/** PC 위쪽 메뉴의 [부동산특강] 하나만 — 우리동네부동산과 고객센터 사이 (2026-11-13 사장님). 홈 칸·모바일·관리자 메뉴는 SHOW_STUDY 그대로 */
+export const SHOW_STUDY_NAV = true;

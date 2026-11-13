@@ -18,7 +18,7 @@ import NewsrealtyJoinButton, { showNewsrealtyJoin } from "@/components/Newsrealt
 import { getAdminEntryLabel, isNewsAdminButton, isStudioMember, NEWS_ADMIN_BUTTON_ORANGE } from "@/utils/permissionCheck";
 
 
-import { SHOW_STUDY } from "@/utils/siteFlags";
+import { SHOW_STUDY, SHOW_STUDY_NAV } from "@/utils/siteFlags";
 import LoginJoinButton, { InquiryButton } from "@/components/LoginJoinButton";
 import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 /** 우리동네부동산 위 말풍선 차례 (2026-11-04 사장님: 색상별로 텍스트가 계속 뜨게) */
@@ -456,7 +456,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                       return <NavHighlightBubble key={gsBubble} show={!!navCounts} text={b.text(navCounts?.auction ?? 0)} leaving={false} disabled={isSmallHeader} icon={b.icon} />;
                     })()}
                   </div>
-                  {SHOW_STUDY && (<div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                  {(SHOW_STUDY || SHOW_STUDY_NAV) && (<div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                     <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>부동산특강</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
