@@ -657,9 +657,18 @@ function ytOf(text: string, col = false) {
   return { title: String(d.title || "").trim(), titles: (Array.isArray(d.titles) ? d.titles : []).map((t: unknown) => String(t || "").trim()).filter(Boolean).slice(0, 3), narration };
 }
 function allParse(b: any) {
-  const o = outer(b.text);
+  let o = outer(b.text);
   if (!o) return { ok: false, error: "AI 답을 읽지 못했어요. 답이 다 나온 뒤 코드 상자의 [복사]를 눌러 주세요." };
   const keys: string[] = Array.isArray(b.keys) ? b.keys : [];
+  /* AI 가 묶음 껍데기({"sns": …})를 빼고 답해도 받는다 (2026-11-13 사장님: Aside 에서 "답에 SNS 글이 없어요")
+     - 글 하나만 쓸 때: 답 전체가 그 글
+     - SNS 칸이 없는데 instagram·threads·facebook 이 바로 있으면: 그게 SNS 글 */
+  const has = (k: string) => o[k] && typeof o[k] === "object";
+  const looks: Record<string, string[]> = { article: ["title", "body"], blog: ["title", "body"], youtube: ["narration", "script", "text"] };
+  if (keys.length === 1 && !has(keys[0]) && (looks[keys[0]] || []).some((f) => f in o)) o = { [keys[0]]: o };
+  if (keys.includes("sns") && !has("sns") && ["instagram", "threads", "facebook"].some((c) => o[c] && typeof o[c] === "object")) {
+    o = { ...o, sns: { instagram: o.instagram, threads: o.threads, facebook: o.facebook } };
+  }
   if (!keys.every((k) => o[k] && typeof o[k] === "object")) return { ok: false, error: `답에 ${keys.filter((k) => !(o[k] && typeof o[k] === "object")).map((k) => ({ article: "기사", blog: "블로그", sns: "SNS", youtube: "대본" } as Record<string, string>)[k] || k).join("·")} 글이 없어요. 답이 다 나온 뒤 복사해 주세요.` };
   const col = b.column === true;
   const AJ = col ? lib.nm().GWArticleJson : lib.aj();
