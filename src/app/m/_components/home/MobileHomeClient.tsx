@@ -363,11 +363,11 @@ export default function MobileHomeClient(props: Props) {
           onMouseLeave={() => setIsVideoHovered(false)}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
-            <Link href="/m/news" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <Link href="/m/news_video" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
               <svg width="24" height="17" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
               <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>동영상뉴스</span>
             </Link>
-            <Link href="/m/news" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
+            <Link href="/m/news_video" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div 
             ref={mobileVideoScrollRef}

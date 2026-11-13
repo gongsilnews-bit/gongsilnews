@@ -225,10 +225,12 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
       <div className="video-dark-bg" style={{ background: "#111", margin: "0 -9999px", padding: "40px 9999px 48px", position: "relative" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="sec-title-wrap">
-            <Link href="/news_all" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+            <Link href="/news_video" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
               <svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
               <h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>동영상뉴스</h2>
             </Link>
+            {/* 다른 칸과 같은 more 버튼 (2026-11-13 사장님) */}
+            <Link href="/news_video" className="sec-more-btn" style={{ color: "#fff", background: "transparent", borderColor: "rgba(255,255,255,0.45)" }}>more</Link>
           </div>
 
           <div 

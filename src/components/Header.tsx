@@ -434,8 +434,16 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </div>
                   </div>
 
+                  {/* 동영상뉴스 — 유튜브 표시 붙은 메뉴, 영상 있는 기사만 (2026-11-13 사장님) */}
+                  <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                    <Link href="/news_video" className={pathname === "/news_video" ? "active" : ""} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <svg width="22" height="16" viewBox="0 0 28 20" fill="none" aria-hidden="true"><rect width="28" height="20" rx="4" fill="#FF0000" /><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white" /></svg>
+                      동영상뉴스
+                    </Link>
+                  </div>
+
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
-                  
+
                   {/* 우리동네뉴스는 오른쪽 공실열람 바로 앞으로 (2026-10-30 사장님) — 일단 숨김 (2026-11-04 사장님: 우리동네부동산 지도에 [우리동네뉴스] 단추로) */}
                   <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "none", alignItems: "center" }}>
                     <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
@@ -721,15 +729,24 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("맛집/여행/건강")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>맛집/여행/건강</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("스포츠/연예/기타")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>스포츠/연예/기타</a></li>
                 </ul>
+                {/* 동영상뉴스 (2026-11-13) */}
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", margin: "28px 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg width="22" height="16" viewBox="0 0 28 20" fill="none" aria-hidden="true"><rect width="28" height="20" rx="4" fill="#FF0000" /><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white" /></svg>
+                  동영상뉴스
+                </div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_video"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>전체 영상</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_video?f=shorts"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>쇼츠</a></li>
+                </ul>
               </div>
-              
+
               {/* 공실마케팅 */}
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실마케팅</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네부동산</a></li>
                   {/* 우리동네뉴스 — 일단 숨김 (2026-11-04) */}
-                  {SHOW_STUDY && <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>}
+                  {(SHOW_STUDY || SHOW_STUDY_NAV) && <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>}
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>
                 </ul>
               </div>
