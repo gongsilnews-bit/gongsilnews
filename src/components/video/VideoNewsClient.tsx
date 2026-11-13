@@ -8,6 +8,7 @@ import type { VideoNewsItem } from "@/utils/videoNews";
 type Filter = "all" | "shorts" | "long";
 
 export default function VideoNewsClient({ items, mobile = false }: { items: VideoNewsItem[]; mobile?: boolean }) {
+  const dark = mobile; // 모바일은 홈 동영상뉴스처럼 검은 배경 (2026-11-13 사장님)
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState<number | null>(null);
   const list = items.filter((v) => (filter === "all" ? true : filter === "shorts" ? v.isShorts : !v.isShorts));
@@ -60,20 +61,29 @@ export default function VideoNewsClient({ items, mobile = false }: { items: Vide
     <div style={{ fontFamily: "'Pretendard', sans-serif" }}>
       {/* 머리 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: mobile ? 14 : 24 }}>
-        <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10, fontSize: mobile ? 22 : 28, fontWeight: 800, color: "#111", letterSpacing: "-0.5px" }}>
-          <svg width={mobile ? 26 : 32} height={mobile ? 18 : 22} viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000" /><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white" /></svg>
-          동영상뉴스
+        <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10, fontSize: mobile ? 20 : 28, fontWeight: 800, color: dark ? "#fff" : "#111", letterSpacing: "-0.5px" }}>
+          {mobile && (
+            <Link href="/m" aria-label="공실뉴스 홈" style={{ display: "inline-flex", alignItems: "center" }}>
+              {/* 모바일 홈 위쪽과 같은 글자 로고 (2026-11-13 사장님: 로고 대신 텍스트로) */}
+              <span style={{ color: "#fff", fontSize: 22, fontWeight: 900, fontStyle: "italic", letterSpacing: "-1px", lineHeight: 1 }}>공실뉴스</span>
+            </Link>
+          )}
+          {/* 동영상뉴스 앞 유튜브 표시 — 모바일도 로고 다음에 (2026-11-13 사장님) */}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: mobile ? 6 : 10 }}>
+            <svg width={mobile ? 24 : 32} height={mobile ? 17 : 22} viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000" /><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white" /></svg>
+            동영상뉴스
+          </span>
         </h1>
         <div style={{ display: "flex", gap: 6 }}>
           {([["all", "전체"], ["shorts", "쇼츠"], ["long", "영상"]] as [Filter, string][]).map(([k, label]) => (
-            <button key={k} onClick={() => setFilter(k)} style={{ padding: "7px 16px", borderRadius: 999, border: filter === k ? "1px solid #111" : "1px solid #d1d5db", background: filter === k ? "#111" : "#fff", color: filter === k ? "#fff" : "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+            <button key={k} onClick={() => setFilter(k)} style={{ padding: "7px 16px", borderRadius: 999, border: filter === k ? `1px solid ${dark ? "#fff" : "#111"}` : `1px solid ${dark ? "rgba(255,255,255,0.3)" : "#d1d5db"}`, background: filter === k ? (dark ? "#fff" : "#111") : "transparent", color: filter === k ? (dark ? "#111" : "#fff") : (dark ? "rgba(255,255,255,0.85)" : "#374151"), fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
           ))}
         </div>
       </div>
 
       {/* 카드 목록 */}
       {list.length === 0 ? (
-        <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>등록된 동영상뉴스가 없습니다.</div>
+        <div style={{ padding: "60px 0", textAlign: "center", color: dark ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>등록된 동영상뉴스가 없습니다.</div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: mobile ? "18px 10px" : "28px 20px" }}>
           {list.map((v, i) => (
@@ -87,8 +97,8 @@ export default function VideoNewsClient({ items, mobile = false }: { items: Vide
                 </span>
                 <span style={{ position: "absolute", left: 8, top: 8, padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800, color: "#fff", background: v.isShorts ? "#FF0000" : "rgba(0,0,0,0.7)" }}>{v.isShorts ? "쇼츠" : "영상"}</span>
               </div>
-              <div style={{ marginTop: 8, fontSize: mobile ? 14 : 15.5, fontWeight: 700, color: "#111", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.3px" }}>{v.title}</div>
-              <div style={{ marginTop: 4, fontSize: 12, color: "#9ca3af" }}>{date(v.publishedAt)} · {v.author}</div>
+              <div style={{ marginTop: 8, fontSize: mobile ? 14 : 15.5, fontWeight: 700, color: dark ? "#fff" : "#111", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.3px" }}>{v.title}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: dark ? "rgba(255,255,255,0.5)" : "#9ca3af" }}>{date(v.publishedAt)} · {v.author}</div>
             </button>
           ))}
         </div>

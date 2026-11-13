@@ -8,7 +8,7 @@ export const metadata = { title: "동영상뉴스 | 공실뉴스" };
 export default async function MobileNewsVideoPage() {
   const items = await getVideoNews(60);
   return (
-    <main style={{ padding: "18px 14px 90px", background: "#fff", minHeight: "100dvh" }}>
+    <main style={{ padding: "18px 14px 90px", background: "#111", minHeight: "100dvh" }}>
       <VideoNewsClient items={items} mobile />
     </main>
   );
