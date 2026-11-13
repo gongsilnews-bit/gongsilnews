@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { openChannelTalk } from "@/utils/channelTalk";
 
 import { SHOW_STUDY } from "@/utils/siteFlags";
+import SnsLinks from "@/components/SnsLinks";
 import { useStudioBoardPage } from "@/hooks/useStudioBoardPage";
 export default function Footer() {
   const pathname = usePathname();
@@ -307,6 +308,11 @@ export default function Footer() {
               <p>공실뉴스에 게재된 모든 콘텐츠(기사)는 저작권법의 보호를 받으며, 무단 전재, 복사, 배포 등을 금합니다.(저작권 문의는 별도 안내)</p>
               <p>Copyright © GONGSIL NEWS Co., Ltd. All Rights Reserved.</p>
             </div>
+          </div>
+
+          {/* SNS 바로가기 (2026-11-13) */}
+          <div style={{ flexShrink: 0, alignSelf: "center" }}>
+            <SnsLinks tone="dark" />
           </div>
         </div>
       </div>

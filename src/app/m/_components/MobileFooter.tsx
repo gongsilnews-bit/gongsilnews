@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import FooterAuthButtons from "./FooterAuthButtons";
+import SnsLinks from "@/components/SnsLinks";
 
 import { SHOW_STUDY } from "@/utils/siteFlags";
 const CATEGORIES = [
@@ -60,6 +61,11 @@ export default function MobileFooter() {
 
       {/* ── 로그인/PC보기 버튼 (Client Component) ── */}
       <FooterAuthButtons />
+
+      {/* ── SNS 바로가기 (2026-11-13) ── */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "16px 16px 4px", borderTop: "1px solid #ececec" }}>
+        <SnsLinks tone="light" />
+      </div>
 
       {/* ── 법적 링크 ── */}
       <div
