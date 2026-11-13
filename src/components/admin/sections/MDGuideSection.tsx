@@ -50,8 +50,8 @@ function MdViewer({ content }: { content: string }) {
         if (line.startsWith("### ")) return <h3 key={i} style={{ margin: "16px 0 6px", fontSize: 15, fontWeight: 700, color: "#1e3a6e" }}>{line.slice(4)}</h3>;
         if (line.startsWith("## ")) return <h2 key={i} style={{ margin: "20px 0 8px", fontSize: 17, fontWeight: 800, color: "#0f2b5b", borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>{line.slice(3)}</h2>;
         if (line.startsWith("# ")) return <h1 key={i} style={{ margin: "24px 0 10px", fontSize: 20, fontWeight: 900, color: "#0f172a", borderBottom: "2px solid #1e3a6e", paddingBottom: 6 }}>{line.slice(2)}</h1>;
-        if (line.startsWith("- ") || line.startsWith("* ")) return <div key={i} style={{ marginLeft: 16 }}>• {line.slice(2)}</div>;
-        if (line.startsWith("  - ") || line.startsWith("  * ")) return <div key={i} style={{ marginLeft: 32 }}>◦ {line.slice(4)}</div>;
+        if (line.startsWith("- ") || line.startsWith("* ")) return <div key={i} style={{ marginLeft: 16 }}>• {renderInline(line.slice(2))}</div>;
+        if (line.startsWith("  - ") || line.startsWith("  * ")) return <div key={i} style={{ marginLeft: 32 }}>◦ {renderInline(line.slice(4))}</div>;
         if (line === "") return <div key={i} style={{ height: 8 }} />;
         if (line.startsWith("```")) return <div key={i} style={{ fontFamily: "monospace", background: "#f1f5f9", padding: "2px 6px", borderRadius: 3, fontSize: 12, color: "#475569" }}>{line}</div>;
         if (line.startsWith(">")) return <blockquote key={i} style={{ borderLeft: "3px solid #94a3b8", paddingLeft: 12, color: "#64748b", margin: "4px 0" }}>{line.slice(1).trim()}</blockquote>;
@@ -61,15 +61,24 @@ function MdViewer({ content }: { content: string }) {
   );
 }
 
-/** 인라인 볼드·이탤릭 처리 */
-function renderInline(text: string): React.ReactNode {
-  // **bold** 처리
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+/* 글씨 색·형광펜 (2026-11-13 사장님) — [빨강]글자[/] · ==형광펜== · [형광노랑]글자[/]
+   AI(Aside)도 같은 표시로 쓰면 그대로 보인다. 다른 곳에서 열면 표시 글자만 보일 뿐 깨지지 않는다 */
+const TEXT_COLORS: Record<string, string> = { 빨강: "#dc2626", 파랑: "#2563eb", 초록: "#16a34a", 주황: "#ea580c", 보라: "#7c3aed", 회색: "#6b7280" };
+const MARKS: Record<string, string> = { 형광노랑: "#fef08a", 형광초록: "#bbf7d0", 형광분홍: "#fbcfe8", 형광파랑: "#bae6fd" };
+
+/** 인라인 처리 — **굵게** · 글씨 색 · 형광펜 */
+function renderInline(text: string, depth = 0): React.ReactNode {
+  if (depth > 3) return text;
+  const names = [...Object.keys(TEXT_COLORS), ...Object.keys(MARKS)].join("|");
+  const re = new RegExp(`(\\*\\*[^*]+\\*\\*|==[^=]+==|\\[(?:${names})\\][\\s\\S]*?\\[\\/\\])`, "g");
+  const parts = text.split(re).filter((x) => x !== undefined && x !== "");
   return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    }
-    return part;
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) return <strong key={i}>{renderInline(part.slice(2, -2), depth + 1)}</strong>;
+    if (part.startsWith("==") && part.endsWith("==") && part.length > 4) return <mark key={i} style={{ background: MARKS.형광노랑, color: "inherit", padding: "0 2px", borderRadius: 2 }}>{renderInline(part.slice(2, -2), depth + 1)}</mark>;
+    const m = part.match(/^\[([^\]]+)\]([\s\S]*?)\[\/\]$/);
+    if (m && TEXT_COLORS[m[1]]) return <span key={i} style={{ color: TEXT_COLORS[m[1]], fontWeight: 600 }}>{renderInline(m[2], depth + 1)}</span>;
+    if (m && MARKS[m[1]]) return <mark key={i} style={{ background: MARKS[m[1]], color: "inherit", padding: "0 2px", borderRadius: 2 }}>{renderInline(m[2], depth + 1)}</mark>;
+    return <React.Fragment key={i}>{part}</React.Fragment>;
   });
 }
 
@@ -283,6 +292,45 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
     setMsg(r.success ? `카테고리를 삭제했습니다.${n ? ` 문서 ${n}개는 미분류로 옮겼어요.` : ""}` : r.error || "저장 실패");
   };
 
+  /* 고른 글자를 표시로 감싼다 — 고른 게 없으면 표시만 넣고 그 사이에 커서 */
+  const wrapSel = (open: string, close: string) => {
+    const ta = document.getElementById("md-edit-ta") as HTMLTextAreaElement | null;
+    const a = ta ? ta.selectionStart : editContent.length, b = ta ? ta.selectionEnd : editContent.length;
+    const next = editContent.slice(0, a) + open + editContent.slice(a, b) + close + editContent.slice(b);
+    setEditContent(next);
+    requestAnimationFrame(() => { if (!ta) return; ta.focus(); ta.selectionStart = a + open.length; ta.selectionEnd = b + open.length; });
+  };
+
+  /* 순서 바꾸기 — 카테고리·문서를 ▲▼ 로 한 칸씩 (2026-11-13 사장님 "정렬 위치도 조절할 수 있게") */
+  const moveKey = <T,>(obj: Record<string, T>, key: string, dir: -1 | 1): Record<string, T> | null => {
+    const keys = Object.keys(obj); const i = keys.indexOf(key); const j = i + dir;
+    if (i < 0 || j < 0 || j >= keys.length) return null;
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+    return Object.fromEntries(keys.map((k) => [k, obj[k]]));
+  };
+  const moveCategory = async (c1: string, c2: string | undefined, dir: -1 | 1) => {
+    let newMap: CategoryMap | null;
+    if (c2 === undefined) newMap = moveKey(catMap, c1, dir) as CategoryMap | null;
+    else { const sub = moveKey(catMap[c1] || {}, c2, dir); newMap = sub ? { ...catMap, [c1]: sub } : null; }
+    if (!newMap) return;
+    setCatMap(newMap);
+    const r = await saveMdCategoryMap(newMap);
+    if (!r.success) setMsg(r.error || "저장 실패");
+  };
+  const moveFile = async (fp: string, dir: -1 | 1) => {
+    const newMap: CategoryMap = JSON.parse(JSON.stringify(catMap));
+    for (const subs of Object.values(newMap)) for (const files of Object.values(subs)) {
+      const i = files.indexOf(fp); const j = i + dir;
+      if (i < 0) continue;
+      if (j < 0 || j >= files.length) return;
+      [files[i], files[j]] = [files[j], files[i]];
+      setCatMap(newMap);
+      const r = await saveMdCategoryMap(newMap);
+      if (!r.success) setMsg(r.error || "저장 실패");
+      return;
+    }
+  };
+
   /* 날짜 포맷 (ISO → "2026-11-11 14:30") */
   const fmtDate = (iso?: string): string => {
     if (!iso) return "";
@@ -321,6 +369,8 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
   /* 카테고리 줄 오른쪽 작은 단추 — ✎ 이름 바꾸기 · 🗑 삭제 */
   const catTools = (c1: string, c2?: string) => (
     <span style={{ display: "flex", gap: 2, paddingRight: 8, flexShrink: 0 }}>
+      <button title="위로" onClick={() => void moveCategory(c1, c2, -1)} style={{ width: 20, height: 24, border: "none", borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 10, color: C.sub }}>▲</button>
+      <button title="아래로" onClick={() => void moveCategory(c1, c2, 1)} style={{ width: 20, height: 24, border: "none", borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 10, color: C.sub }}>▼</button>
       <button title="이름 바꾸기" onClick={() => setRenaming({ c1, c2, name: c2 ?? c1 })} style={{ width: 24, height: 24, border: "none", borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 13, color: C.sub }}>✎</button>
       <button title="삭제 (문서는 미분류로)" onClick={() => void deleteCategory(c1, c2)} style={{ width: 24, height: 24, border: "none", borderRadius: 4, background: "transparent", cursor: "pointer", fontSize: 13, color: "#dc2626" }}>🗑</button>
     </span>
@@ -460,6 +510,12 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
                           </div>
                         )}
                       </div>
+                      {selectedCat1 !== null && (
+                        <span style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                          <button title="위로" onClick={(e) => { e.stopPropagation(); void moveFile(fp, -1); }} style={{ ...btnStyle(), padding: "2px 7px", fontSize: 10 }}>▲</button>
+                          <button title="아래로" onClick={(e) => { e.stopPropagation(); void moveFile(fp, 1); }} style={{ ...btnStyle(), padding: "2px 7px", fontSize: 10 }}>▼</button>
+                        </span>
+                      )}
                       <button onClick={(e) => { e.stopPropagation(); deleteFile(fp); }} style={{ ...btnStyle(), padding: "2px 8px", fontSize: 11, color: "#dc2626", borderColor: "#fca5a5", flexShrink: 0 }}>삭제</button>
                     </div>
                   );
@@ -504,7 +560,16 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
                   }}
                   style={{ ...btnStyle(), padding: "5px 12px", fontSize: 12 }}
                 >표 넣기</button>
-                <span style={{ fontSize: 12, color: C.sub, alignSelf: "center" }}>칸은 | 로 나눕니다. 둘째 줄 |---| 아래가 내용</span>
+                <span style={{ width: 1, background: C.border, margin: "0 4px" }} />
+                {[["빨강", "#dc2626"], ["파랑", "#2563eb"], ["초록", "#16a34a"], ["주황", "#ea580c"]].map(([n, c]) => (
+                  <button key={n} type="button" title={`글씨 ${n}`} onClick={() => wrapSel(`[${n}]`, "[/]")} style={{ ...btnStyle(), padding: "5px 9px", fontSize: 12, color: c, fontWeight: 800 }}>가</button>
+                ))}
+                <span style={{ width: 1, background: C.border, margin: "0 4px" }} />
+                {[["형광노랑", "#fef08a"], ["형광초록", "#bbf7d0"], ["형광분홍", "#fbcfe8"]].map(([n, c]) => (
+                  <button key={n} type="button" title={n} onClick={() => wrapSel(`[${n}]`, "[/]")} style={{ ...btnStyle(), padding: "5px 9px", fontSize: 12, background: c, fontWeight: 800 }}>가</button>
+                ))}
+                <button type="button" title="굵게" onClick={() => wrapSel("**", "**")} style={{ ...btnStyle(), padding: "5px 9px", fontSize: 12, fontWeight: 900 }}>B</button>
+                <span style={{ fontSize: 12, color: C.sub, alignSelf: "center" }}>글자를 고른 뒤 색 단추를 누르세요</span>
               </div>
               <textarea
                 id="md-edit-ta"
