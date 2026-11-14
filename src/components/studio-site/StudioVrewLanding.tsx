@@ -387,7 +387,7 @@ export default function StudioVrewLanding() {
             {[
               { n: "1", t: "공실등록하기", d: "내 지역/단지, 공실을 등록합니다." },
               { n: "2", t: "AI 복사, 붙여넣기", d: "뉴스 · 블로그 · SNS 글과 유튜브 쇼츠를 AI가 만들어 채웁니다." },
-              { n: "3", t: "내가 발행", d: "확인하고 고친 뒤 [발행]은 대표님이 직접 누릅니다. 계정이 안전합니다." },
+              { n: "3", t: "블로그, 인스타그램 등 SNS 발행", d: "확인하고 고친 뒤 [발행]은 대표님이 직접 누릅니다. 계정이 안전합니다." },
             ].map((s) => (
               <div key={s.n} className="sv-step"><div className="n">{s.n}</div><div className="t">{s.t}</div><div className="d">{s.d}</div></div>
             ))}
@@ -569,8 +569,8 @@ export default function StudioVrewLanding() {
           <span>공실뉴스부동산</span>
           <ProTag size="md" style={{ fontSize: 16, padding: "4px 8px 5px", borderRadius: 4 }} />
         </div>
-        {/* 2026-11-10 사장님: 문구 바꾸고 [금액안내]는 뺌, [신청하기 >>]만 */}
-        <h2 className="sv-h2">내 지역/단지 <span style={{ color: ACCENT }}>SNS 뉴스 마케팅!</span><br />이제 쉬워집니다.</h2>
+        {/* 2026-11-10 사장님: 문구 바꾸고 [금액안내]는 뺌, [신청하기 >>]만 · 11-14 문구 "하루 10분! / 블로그, SNS마케팅 / 꾸준히 하실 수 있습니다!" */}
+        <h2 className="sv-h2">하루 10분!<br /><span style={{ color: ACCENT }}>블로그, SNS마케팅</span><br />꾸준히 하실 수 있습니다!</h2>
         <div className="sv-btns">
           <Link href="/newsrealty/pro-apply" className="sv-btn solid">신청하기 &gt;&gt;</Link>
         </div>

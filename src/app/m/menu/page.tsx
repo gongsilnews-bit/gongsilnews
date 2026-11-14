@@ -235,14 +235,14 @@ export default function MenuPage() {
             </div>
           ) : (
             <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
-              {/* 2026-11-11 사장님: "그냥 흰색배경으로 하자" — 등급 색 카드(녹색·남색) 대신 흰 카드, 등급은 이름 옆 딱지 색으로 */}
-              <div style={{ background: '#fff', border: '1px solid #e5e7eb', padding: '20px', borderRadius: '12px', color: '#111' }}>
+              {/* 2026-11-14 사장님: "예전처럼" — 11-11 흰 카드에서 다시 등급 색 카드로 (공실뉴스부동산 녹색, 그 외 공실뉴스 남색) */}
+              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실뉴스부동산' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid #e5e7eb' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
                     {memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url ? (
                       <img src={memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', color: '#6b7280', fontSize: '22px', fontWeight: 700 }}>
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', fontSize: '22px', fontWeight: 700 }}>
                         {(memberData?.name || currentUser?.user_metadata?.full_name || '회')[0]}
                       </div>
                     )}
@@ -260,16 +260,16 @@ export default function MenuPage() {
                         <span style={{ background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>서류 보완</span>
                       )}
                     </div>
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{memberData?.email || currentUser?.email}</p>
+                    <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>{memberData?.email || currentUser?.email}</p>
                   </div>
 
                   {/* 알림 종 (목록은 /m/notifications 에서 본다) */}
                   <button
                     onClick={() => router.push('/m/notifications')}
                     aria-label={unreadNoti > 0 ? `알림 ${unreadNoti}건` : '알림'}
-                    style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#f3f4f6', border: 'none', padding: 0, cursor: 'pointer' }}
+                    style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', padding: 0, cursor: 'pointer' }}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                     </svg>

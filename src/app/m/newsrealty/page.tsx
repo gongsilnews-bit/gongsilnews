@@ -28,7 +28,8 @@ export default function MobileNewsRealtyPage() {
   };
 
   return (
-    <div style={{ backgroundColor: "#ffffff", paddingBottom: 140, overflowX: "hidden" }}>
+    // overflowX "hidden" 이면 그 안의 sticky 머리줄이 따라오지 않는다 → "clip" (옆 넘침만 자르고 sticky 는 살림, 2026-11-14)
+    <div style={{ backgroundColor: "#ffffff", paddingBottom: 140, overflowX: "clip" }}>
       {/* 폰 머리줄 — 로고 · 공실뉴스부동산 · [신청하기], 아래 줄에 PC 와 같은 메뉴 넷 (옆으로 밀어 봄) */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #eee" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, height: 52, padding: "0 16px" }}>
