@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { storyBlock } from "@/utils/storyFlows";
 import vm from "node:vm";
+import { hiddenBits, privacyRule, privateVacancy, scrubDeep } from "./addressPrivacy";
 import { STUDIO_EXT_FILES, STUDIO_EXT_VERSION } from "@/app/api/studio/prompts/bundle.generated";
 
 /**
@@ -566,11 +567,13 @@ function allPrompt(b: any) {
   const parts: [string, string, string][] = [];
   const st = (m: "article" | "blog" | "sns" | "shorts") => storyBlock("vacancy", b.story || "intro", m); // 고른 이야기 (안 골랐으면 매물 소개) — 모든 글이 같은 이야기로 (2026-11-09)
   if (want.article) parts.push(["article", "공실뉴스 기사", P.gwBuildPrompt(v, { kind: artKind, length: artLen }) + st("article")]);
-  if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: v, article: REF }, { style: blogSt, length: blogLen }) + BLOG_FRIENDLY + st("blog")]);
+  // 블로그·SNS·쇼츠는 상세주소 뺀 매물 정보로 (2026-11-14 사장님) — 공실뉴스 기사는 그대로
+  const pv = privateVacancy(v), pr = privacyRule(v);
+  if (want.blog) parts.push(["blog", "네이버 블로그 글", B.gwBuildBlogPrompt({ vacancy: pv, article: REF }, { style: blogSt, length: blogLen }) + BLOG_FRIENDLY + st("blog") + pr]);
   const only = snsOnlyOf(b.snsOnly);
-  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF }) + toneLine(b.tone, only) + snsOnlyLine(only) + st("sns")]);
+  if (want.sns) parts.push(["sns", only.length ? `SNS 글 (${only.map((c) => CH_NAME[c]).join(" · ")})` : "SNS 글 (인스타그램 · 스레드 · 페이스북)", S.gwBuildSnsPrompt({ vacancy: pv, article: NO_REF }) + toneLine(b.tone, only) + snsOnlyLine(only) + st("sns") + pr]);
   const ytSet = want.youtube ? ytSettings(v, b.youtube || {}) : null;
-  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", ytPrompt(v, ytSet!, REF) + st("shorts")]);
+  if (want.youtube) parts.push(["youtube", "쇼츠릴스 대본", ytPrompt(pv, ytSet!, REF) + st("shorts") + pr]);
   const keys = parts.map((p) => p[0]);
   const prompt = [
     `여러 글을 한 번에 씁니다. 아래 [작업 ${parts.map((_, i) => i + 1).join("·")}]을 모두 하십시오.`,
@@ -678,6 +681,9 @@ function allParse(b: any) {
   if (keys.includes("blog")) { const p = AJ.parse(fence(o.blog)); if (p.ok) out.blog = docOf(p); else miss.push("블로그"); }
   if (keys.includes("sns")) { const p = (col ? lib.nm() : lib.sns()).gwSnsParse(fence(o.sns)); if (p.ok) out.sns = p.posts; else miss.push("SNS"); }
   if (keys.includes("youtube")) { try { out.youtube = ytOf(fence(o.youtube), col); } catch { miss.push("쇼츠릴스 대본"); } }
+  // AI 가 그래도 쓴 상세주소는 지운다 — 블로그·SNS·쇼츠만, 기사는 그대로 (2026-11-14)
+  const bits = col ? [] : hiddenBits(b.vacancy);
+  for (const k of ["blog", "sns", "youtube"]) if (out[k]) out[k] = scrubDeep(out[k], bits);
   return { ok: true, ...out, miss };
 }
 
@@ -756,42 +762,45 @@ function revisePrompt(b: any) {
   if (!req) throw new Error("어떻게 고칠지 적어 주세요.");
   if (colOf(b)) return colRevisePrompt(b, colOf(b), req);
   const d = b.draft || {};
+  const pv = privateVacancy(v), pr = privacyRule(v); // 블로그·SNS·쇼츠는 상세주소 빼고 (2026-11-14)
   if (b.doc === "article" || b.doc === "blog") {
     const P = lib.prompt(), B = lib.blog();
-    const ask = b.doc === "article" ? P.gwBuildRevisePrompt(req, v) : B.gwBuildBlogRevisePrompt(req, v);
+    const ask = b.doc === "article" ? P.gwBuildRevisePrompt(req, v) : B.gwBuildBlogRevisePrompt(req, pv);
     const original = b.doc === "article"
       ? P.gwBuildPrompt(v, { kind: d.style || "news", length: d.length || "normal" })
-      : B.gwBuildBlogPrompt({ vacancy: v, article: b.ref || NO_ARTICLE }, { style: d.style || "listing", length: d.length || "normal" }) + BLOG_FRIENDLY;
-    return `${original}\n\n[앞서 작성한 ${b.doc === "article" ? "기사" : "블로그"} — 미리보기에서 고친 내용 포함]\n${draftJson(d, b.doc)}\n\n${ask}`;
+      : B.gwBuildBlogPrompt({ vacancy: pv, article: b.ref || NO_ARTICLE }, { style: d.style || "listing", length: d.length || "normal" }) + BLOG_FRIENDLY;
+    return `${original}\n\n[앞서 작성한 ${b.doc === "article" ? "기사" : "블로그"} — 미리보기에서 고친 내용 포함]\n${draftJson(d, b.doc)}\n\n${ask}${b.doc === "blog" ? pr : ""}`;
   }
   if (b.doc === "sns") {
     const S = lib.sns();
     if (!CHANNELS.includes(b.channel)) throw new Error("알 수 없는 채널입니다.");
     const ask = S.gwBuildSnsRevisePrompt(b.channel, req);
     const now = "```json\n" + JSON.stringify(b.posts || {}, null, 2) + "\n```";
-    return `${S.gwBuildSnsPrompt({ vacancy: v, article: NO_REF })}${toneLine(b.tone)}\n\n[앞서 작성한 SNS 글 — 고친 내용 포함]\n${now}\n\n${ask}`;
+    return `${S.gwBuildSnsPrompt({ vacancy: pv, article: NO_REF })}${toneLine(b.tone)}\n\n[앞서 작성한 SNS 글 — 고친 내용 포함]\n${now}\n\n${ask}${pr}`;
   }
   if (b.doc === "youtube") {
     const full = { title: d.title, text: (d.narration || []).join("\n\n") };
-    const ask = lib.yt().gwBuildYtRevisePrompt(full, req, v);
-    return `${ytPrompt(v, ytSettings(v, d.settings || {}), b.ref || NO_ARTICLE)}\n\n${ask}`;
+    const ask = lib.yt().gwBuildYtRevisePrompt(full, req, pv);
+    return `${ytPrompt(pv, ytSettings(v, d.settings || {}), b.ref || NO_ARTICLE)}\n\n${ask}${pr}`;
   }
   throw new Error("알 수 없는 글입니다.");
 }
 function reviseParse(b: any) {
   const col = b.column === true;
+  const bits = col ? [] : hiddenBits(b.vacancy); // 블로그·SNS·쇼츠 상세주소 지우기 (2026-11-14)
   if (b.doc === "article" || b.doc === "blog") {
     const p = (col ? lib.nm().GWArticleJson : lib.aj()).parse(b.text);
     if (!p.ok) return { ok: false, error: p.reason || "AI 답변을 읽지 못했습니다." };
-    return { ok: true, doc: docOf(p, col && b.doc === "article") };
+    const doc = docOf(p, col && b.doc === "article");
+    return { ok: true, doc: b.doc === "blog" ? scrubDeep(doc, bits) : doc };
   }
   if (b.doc === "sns") {
     const p = (col ? lib.nm() : lib.sns()).gwSnsParse(b.text);
     if (!p.ok || !p.posts[b.channel]) return { ok: false, error: (p && p.reason) || "고친 글을 읽지 못했습니다." };
-    return { ok: true, post: p.posts[b.channel] };
+    return { ok: true, post: scrubDeep(p.posts[b.channel], bits) };
   }
   if (b.doc === "youtube") {
-    try { return { ok: true, script: ytOf(b.text, col) }; } catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
+    try { return { ok: true, script: scrubDeep(ytOf(b.text, col), bits) }; } catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
   }
   return { ok: false, error: "알 수 없는 글입니다." };
 }
@@ -803,8 +812,9 @@ function snsCompose(b: any) {
   const S = col ? lib.nm() : lib.sns();
   const ctx = col ? { credit: S.gwSnsCredit(col) } : { noun: b.noun || "매물", url: (b.listing && b.listing.detailUrl) || "", listing: b.listing || null };
   const out: Record<string, unknown> = {};
+  const bits = col ? [] : hiddenBits(b.vacancy); // 예전에 쓴 글·직접 고친 글도 상세주소 지우고 (2026-11-14)
   for (const ch of CHANNELS) {
-    const post = b.posts?.[ch] || null;
+    const post = b.posts?.[ch] ? scrubDeep(b.posts[ch], bits) : null;
     const ai = (b.ai?.[ch] || []).map((x: boolean) => ({ ai: Boolean(x) }));
     out[ch] = { composed: post ? S.gwSnsCompose(ch, col ? withColLink(ch, post, col) : post, ctx) : { posts: [], text: "" }, aiNote: S.gwSnsAiLabelNote(ch, ai) };
   }
@@ -840,10 +850,10 @@ function naverBlocks(b: any) {
       ? `물건 정보가 없어 멈췄습니다: ${problems.join(", ")}. 분석을 다시 해 주세요.`
       : `부동산 표시·광고 필수 정보가 없어 멈췄습니다: ${problems.join(", ")}. 공실의 등록자 정보를 확인해 주세요.`);
   }
-  const blog = b.blog || {};
+  const blog = scrubDeep(b.blog || {}, hiddenBits(b.vacancy)); // 상세주소 지우고 (2026-11-14)
   const design = N.DESIGNS[b.design] ? b.design : (B.GW_BLOG_STYLE?.[blog.style] || {}).design || "basic";
   const media = Array.isArray(b.media) ? b.media : [];
-  const blocks = N.buildNaverBlocks((blog.paragraphs || []).join("\n\n"), media, { design, title: blog.title, vacancy: { ...(b.vacancy || {}), vacancyId: b.vacancyId }, listing: b.listing });
+  const blocks = N.buildNaverBlocks((blog.paragraphs || []).join("\n\n"), media, { design, title: blog.title, vacancy: { ...(privateVacancy(b.vacancy) || {}), vacancyId: b.vacancyId }, listing: b.listing });
   return { blocks, tags: N.normalizeTags(blog.keywords || []), design };
 }
 

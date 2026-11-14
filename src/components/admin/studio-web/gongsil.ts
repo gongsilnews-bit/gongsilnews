@@ -431,7 +431,7 @@ async function blogRevise({ vacancyId, doc = "blog", request }: { vacancyId: str
   if (!d) throw new Error(`먼저 ${which === "article" ? "기사" : "블로그"}를 써 주세요.`);
   const { prompt } = await api("revisePrompt", { doc: which, request, vacancy: w.analysis.vacancy, draft: d, ref: which === "blog" ? referenceArticle(w) : null, ...colBody(w) });
   const r = await webAsk(prompt, `${which === "article" ? "기사" : "블로그"}를 고치고 있습니다`, async (text) => {
-    const x = await api("reviseParse", { doc: which, text, ...colBody(w) });
+    const x = await api("reviseParse", { doc: which, text, vacancy: w.analysis.vacancy, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x.doc;
   });
@@ -526,7 +526,7 @@ async function snsForWeb(w: Work) {
   const map = srcMap(w);
   const byId = new Map((data.pool || []).map((m) => [m.id, m]));
   const per: Record<string, DocMedia[]> = Object.fromEntries(CHANNELS.map((ch) => [ch, (data.media?.[ch] || []).map((id) => byId.get(id)).filter(Boolean) as DocMedia[]]));
-  const c = await api("snsCompose", { ...colBody(w), posts: data.posts, noun: data.noun, listing: data.listing, ai: Object.fromEntries(CHANNELS.map((ch) => [ch, per[ch].map((m) => m.kind === "ai")])) });
+  const c = await api("snsCompose", { ...colBody(w), vacancy: w.analysis?.vacancy, posts: data.posts, noun: data.noun, listing: data.listing, ai: Object.fromEntries(CHANNELS.map((ch) => [ch, per[ch].map((m) => m.kind === "ai")])) });
   const thumb = (m: DocMedia) => thumbOf(w, m, map);
   const channels: Record<string, unknown> = {};
   for (const ch of CHANNELS) {
@@ -563,7 +563,7 @@ async function snsRevise({ vacancyId, channel, request }: any) {
   if (!w.sns) throw new Error("먼저 SNS 글을 써 주세요.");
   const { prompt } = await api("revisePrompt", { doc: "sns", channel, request, vacancy: w.analysis.vacancy, posts: w.sns.posts, ref: referenceArticle(w), tone: w.sns.tone, ...colBody(w) });
   const post = await webAsk(prompt, "SNS 글을 고치고 있습니다", async (text) => {
-    const x = await api("reviseParse", { doc: "sns", channel, text, ...colBody(w) });
+    const x = await api("reviseParse", { doc: "sns", channel, text, vacancy: w.analysis.vacancy, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x.post;
   });
@@ -690,7 +690,7 @@ async function ytRevise({ vacancyId, request }: any) {
   const ref = referenceArticle(w) || (w.blog ? { title: w.blog.title, subtitles: [], body: w.blog.paragraphs.join("\n\n") } : null);
   const { prompt } = await api("revisePrompt", { doc: "youtube", request, vacancy: w.analysis.vacancy, draft: w.youtube, ref, ...colBody(w) });
   const s = await webAsk(prompt, "유튜브 대본을 고치고 있습니다", async (text) => {
-    const x = await api("reviseParse", { doc: "youtube", text, ...colBody(w) });
+    const x = await api("reviseParse", { doc: "youtube", text, vacancy: w.analysis.vacancy, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x.script;
   });
@@ -743,7 +743,7 @@ async function writeAll(o: any) {
   const P = await api("allPrompt", { vacancy: v, want, story: o.story, article: o.article, blog: o.blog, tone: o.sns?.tone, snsOnly, youtube: o.youtube, ref: want.article ? null : referenceArticle(w), ...colBody(w) });
   say("blog", `${webAi().name} 답을 기다리는 중…`);
   const r = await webAsk(P.prompt, `${P.keys.length}가지 글을 한 번에 쓰고 있습니다`, async (text) => {
-    const x = await api("allParse", { text, keys: P.keys, ...colBody(w) });
+    const x = await api("allParse", { text, keys: P.keys, vacancy: v, ...colBody(w) });
     if (!x.ok) throw new Error(x.error);
     return x;
   });
