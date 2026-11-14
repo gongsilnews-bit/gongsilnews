@@ -53,10 +53,26 @@ const leasePrice = (r: Rent) => (r.m ? `${fullPrice(r.dep)} / ${r.m.toLocaleStri
 
 /** 평형 묶기 — 매매·전월세·세대수를 같은 이름("33평")으로 */
 function groupsOf(c: AptDetail): Group[] {
+  // 전용면적이 0.1㎡ 안으로 붙어 있으면 같은 평형 (2026-11-14 사장님: 84.9858·84.9804·84.954 가 세 평형으로 갈려
+  //  평형마다 거래가 1건뿐 → 3개월·6개월·1년 평균이 다 같게 나오던 것). 이름은 거래가 가장 많은 면적으로
+  const all = [...(c.trades || []), ...(c.rents || [])].map((x) => x.a);
+  const freq = new Map<number, number>();
+  for (const a of all) freq.set(a, (freq.get(a) || 0) + 1);
+  for (const ex of Object.keys(c.unit_map || {})) if (!freq.has(Number(ex))) freq.set(Number(ex), 0);
+  const sorted = [...freq.keys()].sort((x, y) => x - y);
+  const repOf = new Map<number, number>();
+  for (let i = 0; i < sorted.length; ) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] - sorted[j] <= 0.1) j++;
+    const run = sorted.slice(i, j + 1);
+    const rep = run.reduce((m, a) => ((freq.get(a) || 0) > (freq.get(m) || 0) ? a : m), run[0]);
+    for (const a of run) repOf.set(a, rep);
+    i = j + 1;
+  }
   const map = new Map<string, Group>();
   const get = (a: number) => {
-    const s = supplyFor(c.supply_map, a);
-    const label = areaLabel(a, s);
+    const s = supplyFor(c.supply_map, repOf.get(a) ?? a);
+    const label = areaLabel(repOf.get(a) ?? a, s);
     const g = map.get(label) || { label, s, lo: a, hi: a, units: 0, sales: [], rents: [] };
     g.lo = Math.min(g.lo, a);
     g.hi = Math.max(g.hi, a);
@@ -66,7 +82,8 @@ function groupsOf(c: AptDetail): Group[] {
   for (const t of c.trades || []) get(t.a).sales.push(t);
   for (const r of c.rents || []) get(r.a).rents.push(r);
   for (const [ex, n] of Object.entries(c.unit_map || {})) {
-    const label = areaLabel(Number(ex), supplyFor(c.supply_map, Number(ex)));
+    const rep = repOf.get(Number(ex)) ?? Number(ex);
+    const label = areaLabel(rep, supplyFor(c.supply_map, rep));
     const g = map.get(label);
     if (g) g.units += n; // 거래가 한 번도 없는 평형은 목록에 넣지 않는다
   }
