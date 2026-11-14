@@ -14,6 +14,7 @@ import {
   type CategoryMap,
   type FileMetaMap,
 } from "@/app/actions/mdGuide";
+import MdComments from "./MdComments";
 
 /* ── 단순 마크다운 뷰어 (외부 라이브러리 없음) ──────────── */
 // 표: | 칸 | 칸 | 줄이 이어지면 표로. 둘째 줄 |---|---| 는 머리 구분 (2026-11-13 사장님 "표도 넣을 수 있게")
@@ -35,7 +36,7 @@ function MdTable({ rows }: { rows: string[] }) {
   );
 }
 
-function MdViewer({ content }: { content: string }) {
+export function MdViewer({ content }: { content: string }) {
   const raw = content.split("\n");
   // 표 줄은 한 덩어리로 묶는다
   const lines: (string | { table: string[] })[] = [];
@@ -582,6 +583,7 @@ export default function MDGuideSection({ theme, userName }: { theme: AdminTheme;
             ) : (
               <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "24px 32px", minHeight: 200 }}>
                 <MdViewer content={fileContent} />
+                {selectedFile && <MdComments path={selectedFile} />}
               </div>
             )
           )}

@@ -119,7 +119,7 @@ export async function deleteMdFile(relPath: string): Promise<{ success: boolean;
   if (!(await isAdmin())) return { success: false, error: NO };
   const rel = cleanRel(relPath);
   if (!rel) return { success: false, error: "잘못된 경로입니다." };
-  const { error } = await db().storage.from(BUCKET).remove([keyOf(rel)]);
+  const { error } = await db().storage.from(BUCKET).remove([keyOf(rel), commentKeyOf(rel)]); // 댓글도 같이
   return error ? { success: false, error: error.message } : { success: true };
 }
 
@@ -162,5 +162,71 @@ export async function renameMdFile(oldRelPath: string, newRelPath: string): Prom
   const a = cleanRel(oldRelPath), z = cleanRel(newRelPath);
   if (!a || !z) return { success: false, error: "잘못된 경로입니다." };
   const { error } = await db().storage.from(BUCKET).move(keyOf(a), keyOf(z));
+  if (!error) await db().storage.from(BUCKET).move(commentKeyOf(a), commentKeyOf(z)).catch(() => null); // 댓글도 따라가게 (없으면 그냥 넘어감)
   return error ? { success: false, error: error.message } : { success: true };
+}
+
+/* ── 문서 댓글 (2026-11-14 사장님: "md 지침서에 댓글도 쓸 수 있게") ──────────
+   문서마다 c/<주소 이름 base64url>.json 하나. 쓴 사람 이름은 서버가 로그인 계정에서 붙인다 */
+export type MdComment = { id: string; author: string; authorId: string; text: string; createdAt: string };
+// 작성자는 고른 이름 — 사장님이 직접 쓰면 "사장님", Aside(AI)가 쓰면 "Aside" (같은 계정으로 들어와도 구분, 2026-11-14)
+export type MdCommentBy = "사장님" | "Aside";
+const commentKeyOf = (rel: string) => `c/${Buffer.from(rel, "utf8").toString("base64url")}.json`;
+async function me() {
+  const session = await createSessionClient();
+  const { data: { user } } = await session.auth.getUser();
+  if (!user) return null;
+  const { data: m } = await db().from("members").select("role, name").eq("id", user.id).maybeSingle();
+  if (!isAdminRole(m?.role)) return null;
+  return { id: user.id, name: String(m?.name || user.email?.split("@")[0] || "관리자") };
+}
+async function readComments(rel: string): Promise<MdComment[]> {
+  const t = await readText(commentKeyOf(rel));
+  try { return t ? (JSON.parse(t) as MdComment[]) : []; } catch { return []; }
+}
+
+/** 문서 댓글 목록 (오래된 것부터) */
+export async function getMdComments(relPath: string): Promise<{ success: boolean; comments: MdComment[]; myId?: string; error?: string }> {
+  const u = await me();
+  if (!u) return { success: false, comments: [], error: NO };
+  const rel = cleanRel(relPath);
+  if (!rel) return { success: false, comments: [], error: "잘못된 경로입니다." };
+  return { success: true, comments: await readComments(rel), myId: u.id };
+}
+
+/** 댓글 달기 */
+export async function addMdComment(relPath: string, text: string, by: MdCommentBy = "사장님"): Promise<{ success: boolean; comments: MdComment[]; error?: string }> {
+  const u = await me();
+  if (!u) return { success: false, comments: [], error: NO };
+  const rel = cleanRel(relPath);
+  const body = String(text || "").trim().slice(0, 3000);
+  if (!rel) return { success: false, comments: [], error: "잘못된 경로입니다." };
+  if (!body) return { success: false, comments: [], error: "댓글 내용을 적어 주세요." };
+  try {
+    const list = await readComments(rel);
+    list.push({ id: crypto.randomUUID(), author: by === "Aside" ? "Aside" : "사장님", authorId: u.id, text: body, createdAt: new Date().toISOString() });
+    await writeText(commentKeyOf(rel), JSON.stringify(list, null, 2), "application/json");
+    return { success: true, comments: list };
+  } catch (e: any) {
+    return { success: false, comments: [], error: e.message };
+  }
+}
+
+/** 댓글 지우기 — 내가 쓴 것만 */
+export async function deleteMdComment(relPath: string, id: string): Promise<{ success: boolean; comments: MdComment[]; error?: string }> {
+  const u = await me();
+  if (!u) return { success: false, comments: [], error: NO };
+  const rel = cleanRel(relPath);
+  if (!rel) return { success: false, comments: [], error: "잘못된 경로입니다." };
+  try {
+    const list = await readComments(rel);
+    const c = list.find((x) => x.id === id);
+    if (!c) return { success: true, comments: list };
+    if (c.authorId !== u.id) return { success: false, comments: list, error: "내가 쓴 댓글만 지울 수 있어요." };
+    const next = list.filter((x) => x.id !== id);
+    await writeText(commentKeyOf(rel), JSON.stringify(next, null, 2), "application/json");
+    return { success: true, comments: next };
+  } catch (e: any) {
+    return { success: false, comments: [], error: e.message };
+  }
 }
