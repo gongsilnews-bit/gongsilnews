@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createVacancy, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
+import { searchNearbyInfrastructure } from "@/app/actions/geocode";
 
 const admin = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
 const no = (error: string, status = 400) => NextResponse.json({ success: false, error }, { status });
@@ -75,6 +76,10 @@ export async function POST(req: NextRequest) {
     if (!me.isRealtor) for (const k of REALTOR_ONLY) delete p[k];
     if (!p.property_type || !p.trade_type || !p.sido || !p.dong) return no("분류·거래유형·주소는 꼭 넣어 주세요.");
     const status = p.status === "DRAFT" ? "DRAFT" : "ACTIVE";
+    // 주변환경(지하철·버스·학교…) — 사이트 공실등록처럼 좌표로 찾아 넣는다 (앱이 보내지 않아도)
+    if (!p.infrastructure && typeof p.lat === "number" && typeof p.lng === "number") {
+      try { p.infrastructure = await searchNearbyInfrastructure(p.lat, p.lng); } catch { /* 없으면 빈칸 */ }
+    }
     const res = await createVacancy({ ...(p as Partial<Parameters<typeof createVacancy>[0]>), owner_id: me.user.id, owner_role: me.ownerRole, consent: true, status } as Parameters<typeof createVacancy>[0]);
     return res.success ? NextResponse.json({ success: true, id: (res as { id?: string }).id }) : no(res.error || "등록하지 못했습니다.", 400);
   }
