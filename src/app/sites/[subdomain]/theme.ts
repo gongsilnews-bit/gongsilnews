@@ -129,7 +129,7 @@ export function openPostcode(onPick: (addr: string) => void, onRaw?: (data: any)
   if (existing) return existing.addEventListener("load", run);
   const sc = document.createElement("script");
   sc.id = id;
-  sc.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+  sc.src = "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
   sc.onload = run;
   document.head.appendChild(sc);
 }

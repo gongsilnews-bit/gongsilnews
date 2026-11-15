@@ -304,7 +304,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     if (!document.getElementById("daum-postcode-script")) {
       const script = document.createElement("script");
       script.id = "daum-postcode-script";
-      script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+      script.src = "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
       script.async = true;
       document.body.appendChild(script);
     }
