@@ -511,7 +511,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   }, [activeProperty, currentUser]);
 
   useEffect(() => {
-    document.title = isAuctionMode ? "경/공매 | 공실뉴스" : "우리동네부동산 | 공실뉴스";
+    document.title = isAuctionMode ? "경/공매 | 공실뉴스" : "공실열람 | 공실뉴스";
   }, [isAuctionMode]);
 
   const toggleWishlist = (id: any) => {

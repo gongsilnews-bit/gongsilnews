@@ -218,7 +218,7 @@ export default function Footer() {
           </div>
           <div className="sitemap-col">
             <h4 className="sitemap-title">공실마케팅</h4>
-            <Link href="/gongsil" className="sitemap-link">우리동네부동산</Link>
+            <Link href="/gongsil" className="sitemap-link">공실열람</Link>
             {/* 우리동네뉴스 — 일단 숨김 (2026-11-04) */}
             {SHOW_STUDY && <Link href="/study" className="sitemap-link">부동산특강</Link>}
             <Link href="/board" className="sitemap-link">자료실</Link>

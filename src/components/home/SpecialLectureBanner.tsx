@@ -50,9 +50,9 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
         <Link href="/study" className="sec-more-btn study-more">more</Link>
       </div>
       <style>{`
-        .study-home-bg { background: #064e3b; padding: 60px 0; margin-top: 50px; }
+        .study-home-bg { background: #102c57; padding: 60px 0; margin-top: 50px; }
         .study-home-bg .study-more { color: #fff; border-color: rgba(255,255,255,0.5); background: transparent; }
-        .study-home-bg .study-more:hover { color: #064e3b; background: #fff; border-color: #fff; }
+        .study-home-bg .study-more:hover { color: #102c57; background: #fff; border-color: #fff; }
         .lecture-card {
           border: 2px solid transparent !important;
           border-radius: 12px !important;

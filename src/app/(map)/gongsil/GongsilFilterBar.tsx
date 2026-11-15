@@ -51,7 +51,7 @@ export default function GongsilFilterBar({
           onMouseLeave={(e) => (e.currentTarget.style.color = "#111")}
           title="경매/공매 매물 전체보기"
         >
-          우리동네부동산
+          공실열람
         </span>
       </div>
 

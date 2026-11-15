@@ -454,7 +454,11 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   </div>
                   <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
                     <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "inline-block", position: "relative" }}>
-                      <span style={{ position: "relative", zIndex: 1 }}>우리동네부동산</span>
+                      {/* 이름 다시 공실열람 + 건물 그림 (2026-11-15 사장님) */}
+                      <span style={{ position: "relative", zIndex: 1, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="1.5" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01" /></svg>
+                        공실열람
+                      </span>
                       {/* 우리동네부동산은 강조·말풍선을 늘 켜 둔다 (2026-11-04 사장님: "계속 이렇게 헤드라인 — 그래야 클릭하고 싶다"). 말풍선은 "실시간 경공매 N건" 하나로 */}
                       <NavCategoryHighlightMarker categoryKey="gongsil" active={!isSmallHeader} />
                     </Link>
@@ -744,7 +748,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실마케팅</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네부동산</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실열람</a></li>
                   {/* 우리동네뉴스 — 일단 숨김 (2026-11-04) */}
                   {(SHOW_STUDY || SHOW_STUDY_NAV) && <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>}
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>
