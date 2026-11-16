@@ -504,17 +504,9 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   {selectedVacancy.themes.map((theme: string, idx: number) => (
                     <span
                       key={idx}
-                      style={{
-                        background: "#f8fafc",
-                        color: "#3b82f6",
-                        fontSize: "12px",
-                        padding: "3px 9px",
-                        borderRadius: "12px",
-                        fontWeight: 700,
-                        border: "1px solid #bfdbfe",
-                      }}
+                      style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 13, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}
                     >
-                      {theme.startsWith('#') ? theme : `# ${theme}`}
+                      {theme.replace(/^#\s*/, "")}
                     </span>
                   ))}
                 </div>

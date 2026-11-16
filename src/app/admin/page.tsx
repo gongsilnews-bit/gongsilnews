@@ -255,6 +255,9 @@ function AdminContent() {
 
   /** 메뉴·탭 이동 — 주소에 남겨 새로고침·뒤로 가기에도 그 자리 */
   const go = useCallback((menu: string, sub?: string) => {
+    // 기사쓰기에 저장 안 한 글이 있으면 먼저 묻는다 (__leaveGuard, 2026-11-16) — [저장 안 하고 나가기]·[임시저장하고 나가기] 뒤 다시 이 함수
+    const leave = (window as unknown as { __leaveGuard?: (next: () => void) => void }).__leaveGuard;
+    if (leave) { leave(() => { delete (window as unknown as { __leaveGuard?: unknown }).__leaveGuard; go(menu, sub); }); return; }
     const r = resolveMenu(menu, sub || null);
     setActiveMenu(r.menu);
     if (r.sub) setActiveSubmenu(r.sub);

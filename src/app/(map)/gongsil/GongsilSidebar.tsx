@@ -833,18 +833,9 @@ export default function GongsilSidebar({
                     {prop.themes.slice(0, 4).map((theme: string, idx: number) => (
                       <span
                         key={idx}
-                        style={{
-                          background: "#f8fafc",
-                          color: "#3b82f6",
-                          fontSize: 11,
-                          padding: "2px 8px",
-                          borderRadius: 12,
-                          fontWeight: 700,
-                          border: "1px solid #bfdbfe",
-                          flexShrink: 0,
-                        }}
+                        style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 12, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}
                       >
-                        {theme.startsWith("#") ? theme : `# ${theme}`}
+                        {theme.replace(/^#\s*/, "")}
                       </span>
                     ))}
                     {prop.themes.length > 4 && (

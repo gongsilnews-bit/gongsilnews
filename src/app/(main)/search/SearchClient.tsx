@@ -235,8 +235,8 @@ export default function SearchClient({ query, articles, vacancies: initialVacanc
                         {v.themes && v.themes.length > 0 && (
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", overflow: "hidden", whiteSpace: "nowrap" }}>
                             {v.themes.slice(0, 3).map((theme: string, idx: number) => (
-                              <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "3px 9px", borderRadius: "14px", fontWeight: 700, border: "1px solid #bfdbfe", flexShrink: 0 }}>
-                                #{theme}
+                              <span key={idx} style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 12, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                {theme.replace(/^#\s*/, "")}
                               </span>
                             ))}
                             {v.themes.length > 3 && (

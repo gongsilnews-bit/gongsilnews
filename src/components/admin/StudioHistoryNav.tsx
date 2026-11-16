@@ -27,15 +27,17 @@ function canGo(step: -1 | 1) {
 function go(step: -1 | 1) {
   if (!canGo(step)) return;
   const move = () => (step === -1 ? window.history.back() : window.history.forward());
-  // 동영상 편집에 저장 안 한 내용이 있으면 먼저 묻는다 (메뉴 옮길 때와 같게 — selectMenu)
-  const guard = (window as unknown as { __gsvGuard?: (next: () => void) => void }).__gsvGuard;
+  // 동영상 편집·기사쓰기에 저장 안 한 내용이 있으면 먼저 묻는다 (메뉴 옮길 때와 같게 — selectMenu)
+  const w = window as unknown as { __gsvGuard?: (next: () => void) => void; __leaveGuard?: (next: () => void) => void };
+  const guard = w.__leaveGuard || w.__gsvGuard;
   if (guard) guard(move);
   else move();
 }
 
 // 새로 고침 — 동영상 편집에 저장 안 한 내용이 있으면 먼저 묻는다
 function reload() {
-  const guard = (window as unknown as { __gsvGuard?: (next: () => void) => void }).__gsvGuard;
+  const w = window as unknown as { __gsvGuard?: (next: () => void) => void; __leaveGuard?: (next: () => void) => void };
+  const guard = w.__leaveGuard || w.__gsvGuard;
   if (guard) guard(() => window.location.reload());
   else window.location.reload();
 }

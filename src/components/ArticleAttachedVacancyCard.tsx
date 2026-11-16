@@ -204,16 +204,9 @@ export default function ArticleAttachedVacancyCard({
               {vacancy.themes.slice(0, 3).map((theme: string, idx: number) => (
                 <span
                   key={idx}
-                  style={{
-                    background: "#eff6ff",
-                    color: "#2563eb",
-                    fontSize: 11,
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                    fontWeight: 600,
-                  }}
+                  style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 12, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}
                 >
-                  {theme.startsWith("#") ? theme : `# ${theme}`}
+                  {theme.replace(/^#\s*/, "")}
                 </span>
               ))}
             </div>

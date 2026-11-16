@@ -137,7 +137,7 @@ export default function MyStarsBoard({ vacancies, allVacancies, wishTab, setWish
         {p.images?.[0] && <div style={{ flexShrink: 0, marginLeft: 5, width: 110, height: 110, borderRadius: 6, overflow: "hidden" }}><img src={p.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></div>}
         {p.themes?.length > 0 && (
           <div style={{ flexBasis: "100%", display: "flex", gap: 6, marginTop: 10, overflow: "hidden", whiteSpace: "nowrap" }}>
-            {p.themes.slice(0, 4).map((t: string, i: number) => <span key={i} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 700, border: "1px solid #bfdbfe", flexShrink: 0 }}>{t.startsWith("#") ? t : `# ${t}`}</span>)}
+            {p.themes.slice(0, 4).map((t: string, i: number) => <span key={i} style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 12, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>{t.replace(/^#\s*/, "")}</span>)}
             {p.themes.length > 4 && <span style={{ color: "#94a3b8", fontSize: 13, fontWeight: 800 }}>...</span>}
           </div>
         )}

@@ -8,6 +8,7 @@
 //  POST { action: "art.list", page, filter, type, keyword, sort } → 관리자: 전체 기사(서버 페이징·건수) / 회원: 내 기사 전부
 //  POST { action: "noti.list" | "noti.read" (id) | "noti.readAll" } → 알림
 //  POST { action: "bm.cats" (type) | "sub.list" | "sub.toggle" (reporterId) } → 찜 폴더 · 구독 기자
+//  POST { action: "star.get" | "star.toggle" (id, on) } → 관심단지(★)
 //  POST { action: "art.approve" | "art.reject" | "art.request" | "art.flags" | "art.delete", id, ... }
 import { NextRequest, NextResponse } from "next/server";
 import { deleteVacancy, getVacancies, updateVacancyStatus } from "@/app/actions/vacancy";
@@ -74,6 +75,30 @@ export async function POST(req: NextRequest) {
     if (!reporterId) return no("기자 번호가 없습니다.");
     const res = await toggleSubscription(reporterId, uid);
     return res.success ? ok({ subscribed: (res as { subscribed?: boolean }).subscribed }) : no((res as { error?: string }).error || "구독을 바꾸지 못했습니다.", 500);
+  }
+
+  // ── 관심단지(★) — 사이트 지도 단지 찜과 같은 complex_bookmarks · 300개까지 (2026-11-16) ──
+  if (action === "star.get") {
+    if (!id) return no("단지 번호가 없습니다.");
+    const { data } = await me.db.from("complex_bookmarks").select("id").eq("user_id", uid).eq("complex_id", id).maybeSingle();
+    return ok({ on: !!data });
+  }
+  if (action === "star.toggle") {
+    if (!id) return no("단지 번호가 없습니다.");
+    const on = !!body.on;
+    if (on) {
+      const { data: had } = await me.db.from("complex_bookmarks").select("id").eq("user_id", uid).eq("complex_id", id).maybeSingle();
+      if (!had) {
+        const { count } = await me.db.from("complex_bookmarks").select("id", { count: "exact", head: true }).eq("user_id", uid);
+        if ((count || 0) >= 300) return no("관심단지는 300개까지 할 수 있어요. 안 보는 단지를 지운 뒤 다시 해 주세요.");
+        const { error } = await me.db.from("complex_bookmarks").insert({ user_id: uid, complex_id: id });
+        if (error) return no(error.message, 500);
+      }
+    } else {
+      const { error } = await me.db.from("complex_bookmarks").delete().eq("user_id", uid).eq("complex_id", id);
+      if (error) return no(error.message, 500);
+    }
+    return ok({ on });
   }
 
   // ── 공실관리 ──

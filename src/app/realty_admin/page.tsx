@@ -378,6 +378,9 @@ function RealtyAdminContent() {
       router.push(`?menu=${key}`, { scroll: false });
     };
     // 동영상제작에 저장 안 한 내용이 있으면 [저장 / 다른 이름으로 / 저장 안 함 / 취소] 를 먼저 묻는다 (편집 화면이 걸어 둔다)
+    // 기사쓰기 등에 저장 안 한 글이 있으면 먼저 묻는다 (__leaveGuard, 2026-11-16)
+    const leave = (window as unknown as { __leaveGuard?: (next: () => void) => void }).__leaveGuard;
+    if (leave) return leave(go);
     const guard = (window as unknown as { __gsvGuard?: (next: () => void) => void }).__gsvGuard;
     if (key !== "video" && guard) return guard(go);
     go();

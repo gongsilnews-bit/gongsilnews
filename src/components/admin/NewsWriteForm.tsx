@@ -128,7 +128,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   // 앱 + 웹 회원 화면 — 왼쪽 글쓰기 도구·앱 모양 (2026-11-03 사장님: 웹도 앱과 같이, 최고관리자 화면은 예전 그대로)
   useEffect(() => { setStudioMode(studioSurface()); }, []);
   const [aiFilled, setAiFilled] = useState(false);
+  // 나갈 때 묻기 (2026-11-16 사장님: 기사 쓰다가 뒤로가기·다른 메뉴로 나갈 때 임시저장 안 했으면 저장할 수 있게)
+  //  손으로 고치거나(입력·붙여넣기·끌어 놓기) AI 초안이 채워지면 "고친 것 있음" → 왼쪽 메뉴·위 ←/→/새로고침·[← 목록으로]·탭 닫기 때 묻는다
+  const [dirty, setDirty] = useState(false);
+  const [leaveNext, setLeaveNext] = useState<(() => void) | null>(null);
+  const markDirty = () => { if (!dirty) setDirty(true); };
+  const guardLeave = (next: () => void) => (dirty ? setLeaveNext(() => next) : next());
   const applyStudioDraft = async (d: ArticleDraft) => {
+    setDirty(true);
     setTitle(d.title);
     setSubtitle(d.subtitles.join("\n"));
     if (d.keywords.length) setKeywords(d.keywords);
@@ -192,6 +199,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   /* ── AI 초안 결과를 에디터에 즉시 주입하는 헬퍼 ── */
   const applyDraftToEditor = (draftData: any) => {
     if (!draftData) return;
+    setDirty(true);
     if (draftData.title) setTitle(draftData.title);
     if (draftData.subtitle) setSubtitle(draftData.subtitle.replaceAll('\\n', '\n'));
     setSection1("공실뉴스");
@@ -1859,6 +1867,21 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   };
 
   /* ── 기사 저장 ── */
+  // 고친 것이 있으면 관리자 화면(왼쪽 메뉴·위 ←/→/새로고침)이 부르는 window.__leaveGuard 를 걸고, 탭 닫기·주소 이동은 브라우저 확인창
+  const leavingRef = React.useRef(false);
+  useEffect(() => {
+    if (!dirty) return;
+    const w = window as unknown as { __leaveGuard?: (next: () => void) => void };
+    w.__leaveGuard = (next) => setLeaveNext(() => next);
+    const h = (e: BeforeUnloadEvent) => {
+      if (leavingRef.current || savingRef.current) return; // 저장하고 넘어가는 중·[저장 안 하고 나가기]
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", h);
+    return () => { delete w.__leaveGuard; window.removeEventListener("beforeunload", h); };
+  }, [dirty]);
+
   const handleSave = async (overrideStatus?: string, overrideRejectReason?: string, afterSave?: (articleId: string) => Promise<void>) => {
     if (!title.trim()) {
       alert("제목을 입력해주세요.");
@@ -2150,7 +2173,23 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   // 폼이 ArticleSection 안에서 렌더링되므로, 기존의 사이드바/상단헤더/전체화면높이 스타일은 제거하고 내부 컨텐츠 래퍼만 반환합니다.
   return (
-    <div style={{ flex: 1, overflowY: "auto", height: "100%", background: pageBg }}>
+    <div style={{ flex: 1, overflowY: "auto", height: "100%", background: pageBg }} onInputCapture={markDirty} onPasteCapture={markDirty} onDropCapture={markDirty}>
+      {leaveNext && (
+        <div onClick={() => setLeaveNext(null)} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 400, background: "#fff", borderRadius: 14, padding: "26px 24px 20px", boxShadow: "0 20px 50px rgba(0,0,0,0.25)" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#111827", marginBottom: 8 }}>저장하지 않은 글이 있어요</div>
+            <div style={{ fontSize: 14, color: "#4b5563", lineHeight: 1.6, marginBottom: 20 }}>이대로 나가면 쓴 내용이 사라집니다.<br />임시저장하면 기사관리의 <b>작성중</b>에서 이어 쓸 수 있어요.</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button type="button" disabled={saving} onClick={() => { const next = leaveNext; setLeaveNext(null); setStatus("DRAFT"); void handleSave("DRAFT", undefined, async () => { setDirty(false); next(); }); }}
+                style={{ height: 46, border: "none", borderRadius: 8, background: "#1a4282", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>임시저장하고 나가기</button>
+              <button type="button" onClick={() => { const next = leaveNext; setLeaveNext(null); leavingRef.current = true; setDirty(false); next(); }}
+                style={{ height: 44, border: "1px solid #fecaca", borderRadius: 8, background: "#fff", color: "#dc2626", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>저장 안 하고 나가기</button>
+              <button type="button" onClick={() => setLeaveNext(null)}
+                style={{ height: 44, border: "1px solid #e5e7eb", borderRadius: 8, background: "#f9fafb", color: "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>계속 쓰기</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{ maxWidth: studioMode ? 1880 : leftSidebarMode === "ai_chat" ? 1760 : 1400, margin: "0 auto", padding: studioMode ? "14px 16px 20px" : "10px 24px 24px 24px", display: "flex", gap: studioMode ? 14 : 20, alignItems: "flex-start", width: "100%", transition: "max-width 0.25s ease" }}>
 
         {/* 앱 — 왼쪽 글쓰기 도구 (대본 작성 모양) */}
@@ -2463,7 +2502,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               .gs-studio-form .gs-ai-filled, .gs-studio-form input.gs-ai-filled:not([type=checkbox]), .gs-studio-form textarea.gs-ai-filled { background: #f0f6ff !important; border-color: #bcd2fb !important; transition: background .6s; }
             `}</style>}
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
-              <button type="button" onClick={() => router.push(memberReturnPath)} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid #d1d5db`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+              <button type="button" onClick={() => guardLeave(() => router.push(memberReturnPath))} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid #d1d5db`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
                 ← 목록으로
               </button>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사쓰기</h2>

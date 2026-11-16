@@ -701,17 +701,9 @@ export default function GongsilDetailPanel({
               {prop.themes.map((theme: string, idx: number) => (
                 <span
                   key={idx}
-                  style={{
-                    background: "#f8fafc",
-                    color: accentColor || "#3b82f6",
-                    fontSize: 13,
-                    padding: "4px 12px",
-                    borderRadius: 16,
-                    fontWeight: 700,
-                    border: "1px solid #bfdbfe",
-                  }}
+                  style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 13, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}
                 >
-                  {theme.startsWith("#") ? theme : `# ${theme}`}
+                  {theme.replace(/^#\s*/, "")}
                 </span>
               ))}
             </div>

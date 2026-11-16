@@ -648,8 +648,8 @@ export default function HomepageViewPage() {
                   {vacancy.themes && vacancy.themes.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {vacancy.themes.map((theme: string, idx: number) => (
-                        <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: 13, padding: "4px 12px", borderRadius: 20, fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                          {theme.startsWith('#') ? theme : `# ${theme}`}
+                        <span key={idx} style={{ background: "#f3f4f6", color: "#4b5563", fontSize: 13, padding: "2px 8px", borderRadius: 4, fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>
+                          {theme.replace(/^#\s*/, "")}
                         </span>
                       ))}
                     </div>
