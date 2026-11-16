@@ -20,7 +20,12 @@ const PLACEMENT_OPTIONS = [
   { value: "POPUP", label: "팝업" },
   { value: "MOBILE_NEWS_TOP", label: "모바일 뉴스 상단 배너" },
   { value: "BOARD_SIDEBAR", label: "게시판·특강 사이드바" },
+  // 휴대폰 앱 자리 (2026-11-16 사장님: 앱 배너도 여기 최고관리자 광고/배너 관리에서)
+  { value: "APP_POPUP", label: "앱 · 시작 팝업" },
+  { value: "APP_HOME_STRIP", label: "앱 · 홈 띠 배너" },
 ];
+/** 앱 자리인지 — 위쪽 [전체 · 사이트 · 앱] 고르기에 쓴다 */
+const isAppPlacement = (code?: string | null) => String(code || "").startsWith("APP_");
 
 const MOBILE_NEWS_TABS = [
   { value: "all", label: "전체" },
@@ -151,6 +156,29 @@ const PLACEMENT_CARDS = [
     )
   },
   {
+    // 앱 시작 팝업 — 홈 첫 화면 가운데 네모 창 · [오늘 하루 보지 않기] [닫기]. 여러 개면 순서대로 넘김
+    value: "APP_POPUP", label: "앱 · 시작 팝업", size: "세로 600x800px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="30" y="4" width="40" height="67" rx="6" fill="#fff" />
+        <rect x="30" y="4" width="40" height="67" rx="6" fill="rgba(0,0,0,0.35)" stroke="none" />
+        <rect x="36" y="18" width="28" height="36" rx="3" fill={selected ? "#f97316" : "#fed7aa"} stroke="none" />
+      </svg>
+    )
+  },
+  {
+    // 앱 홈 띠 배너 — 홈 [공실등록] 카드 아래 가로 띠, 여러 개면 몇 초마다 넘어감
+    value: "APP_HOME_STRIP", label: "앱 · 홈 띠 배너", size: "가로 1000x300px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="30" y="4" width="40" height="67" rx="6" fill="#fff" />
+        <rect x="35" y="10" width="30" height="14" rx="2" fill="#e5e7eb" stroke="none" />
+        <rect x="35" y="30" width="30" height="10" rx="2" fill={selected ? "#f97316" : "#fed7aa"} stroke="none" />
+        <line x1="35" y1="48" x2="65" y2="48" stroke="#e5e7eb" strokeWidth="2" />
+      </svg>
+    )
+  },
+  {
     // 공실스터디 자료실·커뮤니티, 게시판 목록·글 읽기 오른쪽 위 (폭 260px)
     value: "BOARD_SIDEBAR", label: "게시판·특강 사이드바", size: "260x170px (선명하게 520x340)",
     icon: (selected: boolean) => (
@@ -231,6 +259,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   
   const [banners, setBanners] = useState<any[]>([]);
   const [filter, setFilter] = useState("전체");
+  const [where, setWhere] = useState<"전체" | "사이트" | "앱">("전체"); // 사이트 배너 / 앱 배너 나눠 보기 (2026-11-16)
   const [showForm, setShowForm] = useState(false);
   const [editingBanner, setEditingBanner] = useState<any>(null);
   const [selectedTabs, setSelectedTabs] = useState<string[]>(["all"]);
@@ -327,6 +356,8 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   };
 
   const filtered = banners.filter(b => {
+    if (where === "사이트" && isAppPlacement(b.placement_code)) return false;
+    if (where === "앱" && !isAppPlacement(b.placement_code)) return false;
     if (filter === "전체") return true;
     const status = getStatusInfo(b).label;
     return status === filter;
@@ -793,6 +824,18 @@ export default function BannerSection({ theme }: AdminSectionProps) {
             style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: checkedIds.length > 0 ? "#ef4444" : "#ccc", border: `1px solid ${checkedIds.length > 0 ? "#ef4444" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: checkedIds.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6 }}>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, verticalAlign: "-2px", marginRight: 4 }}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>선택삭제
           </button>
+          {/* 사이트 / 앱 배너 나눠 보기 */}
+          <div style={{ marginLeft: "auto", display: "flex", border: `1px solid ${border}`, borderRadius: 8, overflow: "hidden" }}>
+            {(["전체", "사이트", "앱"] as const).map((w) => {
+              const n = w === "전체" ? banners.length : banners.filter((b) => (w === "앱") === isAppPlacement(b.placement_code)).length;
+              return (
+                <button key={w} onClick={() => { setWhere(w); setCheckedIds([]); }}
+                  style={{ height: 34, padding: "0 14px", border: "none", borderLeft: w === "전체" ? "none" : `1px solid ${border}`, background: where === w ? (w === "앱" ? "#f97316" : "#3b82f6") : (darkMode ? "#2c2d31" : "#fff"), color: where === w ? "#fff" : textSecondary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  {w} {n}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 카드형 배너 목록 */}
