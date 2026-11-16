@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createSessionClient } from "@/utils/supabase/server";
+import { isAdminRole } from "@/utils/permissionCheck";
 
 function getAdminClient() {
   return createClient(
@@ -113,8 +115,25 @@ export async function adminAdjustPoints(memberId: string, amount: number, reason
   return { success: true, balance: newBalance };
 }
 
+/** 포인트 전송은 최고관리자만 (2026-11-16 사장님). 화면에서 가리는 것과 별도로 서버에서 로그인한 사람을 직접 확인한다 */
+async function transferAllowed(): Promise<string | null> {
+  const session = await createSessionClient();
+  const { data: { user } } = await session.auth.getUser();
+  if (!user) return null;
+  const { data: m } = await getAdminClient().from("members").select("role").eq("id", user.id).maybeSingle();
+  return isAdminRole(m?.role) ? user.id : null;
+}
+
+/** 지금 로그인한 사람이 포인트를 보낼 수 있는지 — 화면에서 [전송] 칸을 보여 줄지 정할 때 */
+export async function canTransferPoints() {
+  return { allowed: !!(await transferAllowed()) };
+}
+
 /* ── P2P 전송 ── */
 export async function transferPoints(fromId: string, toId: string, amount: number) {
+  const caller = await transferAllowed();
+  if (!caller) return { success: false, error: "포인트 전송은 최고관리자만 할 수 있습니다." };
+  if (fromId !== caller) return { success: false, error: "내 포인트만 보낼 수 있습니다." };
   if (amount <= 0) return { success: false, error: "전송 금액은 0보다 커야 합니다." };
   if (fromId === toId) return { success: false, error: "자신에게 전송할 수 없습니다." };
 
@@ -186,6 +205,7 @@ export async function transferPoints(fromId: string, toId: string, amount: numbe
 
 /* ── 회원 검색 (전송 시 사용) ── */
 export async function searchMembersForTransfer(query: string, excludeId: string) {
+  if (!(await transferAllowed())) return { success: false, data: [] };
   const supabase = getAdminClient();
   const { data, error } = await supabase
     .from("members")

@@ -236,7 +236,7 @@ export default function MenuPage() {
           ) : (
             <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
               {/* 2026-11-14 사장님: "예전처럼" — 11-11 흰 카드에서 다시 등급 색 카드로 (공실뉴스부동산 녹색, 그 외 공실뉴스 남색) */}
-              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실뉴스부동산' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
+              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실뉴스부동산' ? '#102c57' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
                     {memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url ? (

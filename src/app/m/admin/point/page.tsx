@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { 
   getPointBalance, getPointTransactions, transferPoints, searchMembersForTransfer,
-  getPointSettings, updatePointSetting, getAllMembersWithBalance, adminAdjustPoints 
+  getPointSettings, updatePointSetting, getAllMembersWithBalance, adminAdjustPoints, canTransferPoints 
 } from "@/app/actions/point";
 import { groupPointTx } from "@/utils/pointGroup";
 
@@ -24,6 +24,9 @@ function MobileUserPointView({ memberId, userName, balance, transactions, loadin
   const [filter, setFilter] = useState<"전체" | "적립" | "사용">("전체");
 
   const [showTransfer, setShowTransfer] = useState(false);
+  // 포인트 전송은 최고관리자만 (2026-11-16 사장님) — 서버가 로그인한 사람을 확인해 알려 준다
+  const [canSend, setCanSend] = useState(false);
+  useEffect(() => { canTransferPoints().then((r) => setCanSend(r.allowed)).catch(() => setCanSend(false)); }, []);
   const [transferAmount, setTransferAmount] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -108,12 +111,12 @@ function MobileUserPointView({ memberId, userName, balance, transactions, loadin
           {loading ? "---" : balance.toLocaleString()} <span style={{ fontSize: 20, fontWeight: 700 }}>P</span>
         </div>
         <div style={{ fontSize: 12, opacity: 0.7 }}>{userName}님의 포인트</div>
-        <button
+        {canSend && <button
           onClick={() => setShowTransfer(true)}
           style={{ marginTop: 16, padding: "10px 20px", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
         >
           💸 포인트 전송
-        </button>
+        </button>}
       </div>
 
       <div style={{ margin: "16px 16px 0", background: "#fff", borderRadius: 12, padding: 4, display: "flex", gap: 4, border: "1px solid #e5e7eb" }}>
@@ -163,7 +166,7 @@ function MobileUserPointView({ memberId, userName, balance, transactions, loadin
         )}
       </div>
 
-      {showTransfer && (
+      {canSend && showTransfer && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "flex-end" }}>
           <div style={{ width: "100%", background: "#fff", borderRadius: "20px 20px 0 0", padding: "24px 20px 32px", maxHeight: "85dvh", overflowY: "auto", animation: "slideUp 0.3s ease" }}>
             <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>

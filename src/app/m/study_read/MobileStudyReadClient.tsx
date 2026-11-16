@@ -295,7 +295,8 @@ export default function MobileStudyReadClient({
       
       {/* ── 미리보기 모달 ── */}
       {previewUrl && (
-        <div onClick={() => setPreviewUrl(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        // 2026-11-16 사장님: 영상이 살짝 중간 아래에 떠 보임 — 앱 위 머리줄만큼 화면 가운데보다 내려가 보여서 아래 여백으로 조금 올린다
+        <div onClick={() => setPreviewUrl(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 16px 12vh" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 500, background: "#1a1613", borderRadius: 12, overflow: "hidden", border: "1px solid #3a2c22", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
             <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1a1613", color: "#fff", borderBottom: "1px solid #3a2c22" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

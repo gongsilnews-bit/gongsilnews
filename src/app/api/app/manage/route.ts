@@ -8,7 +8,8 @@
 //  POST { action: "art.list", page, filter, type, keyword, sort } → 관리자: 전체 기사(서버 페이징·건수) / 회원: 내 기사 전부
 //  POST { action: "noti.list" | "noti.read" (id) | "noti.readAll" } → 알림
 //  POST { action: "bm.cats" (type) | "sub.list" | "sub.toggle" (reporterId) } → 찜 폴더 · 구독 기자
-//  POST { action: "star.get" | "star.toggle" (id, on) } → 관심단지(★)
+//  POST { action: "star.get" | "star.toggle" (id, on) | "star.list" | "star.count" } → 관심단지(★)
+//  POST { action: "prefs.get" | "prefs.set" (prefs) } → 앱 설정 알림 켜기·끄기
 //  POST { action: "art.approve" | "art.reject" | "art.request" | "art.flags" | "art.delete", id, ... }
 import { NextRequest, NextResponse } from "next/server";
 import { deleteVacancy, getVacancies, updateVacancyStatus } from "@/app/actions/vacancy";
@@ -99,6 +100,35 @@ export async function POST(req: NextRequest) {
       if (error) return no(error.message, 500);
     }
     return ok({ on });
+  }
+  // 내가 찜한 단지 목록 — 앱 MY [내가 찜한 단지] (2026-11-16 사장님). 찜한 차례(최근 먼저)대로, 단지 정보는 지도 말풍선과 같은 칸
+  if (action === "star.list") {
+    const { data: marks, error } = await me.db.from("complex_bookmarks").select("complex_id, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(300);
+    if (error) return no(error.message, 500);
+    const ids = (marks || []).map((m) => String(m.complex_id));
+    if (!ids.length) return ok({ data: [] });
+    const { data: cx, error: e2 } = await me.db.from("apt_complexes")
+      .select("id, kind, name, dong, build_year, rep_area, rep_price, rep_date, trade_count, t0:trades->0, rent0:rents->0").in("id", ids);
+    if (e2) return no(e2.message, 500);
+    const by = new Map((cx || []).map((c) => [String(c.id), c]));
+    return ok({ data: ids.map((i) => by.get(i)).filter(Boolean) });
+  }
+  // 앱 설정 > 알림 켜기·끄기 (2026-11-16) — members.notify_prefs. 모르는 칸은 버리고 참/거짓만 저장
+  if (action === "prefs.get" || action === "prefs.set") {
+    const KEYS = ["star_trade", "star_vacancy", "sub_article", "my_review", "inquiry", "news_push", "quiet"];
+    const { data: m, error } = await me.db.from("members").select("notify_prefs").eq("id", uid).maybeSingle();
+    if (error) return no(/notify_prefs/.test(error.message) ? "알림 설정 칸이 아직 없습니다. (SQL 실행 필요)" : error.message, 500);
+    const cur = ((m as { notify_prefs?: Record<string, boolean> | null } | null)?.notify_prefs || {}) as Record<string, boolean>;
+    if (action === "prefs.get") return ok({ prefs: cur });
+    const next = { ...cur };
+    for (const k of KEYS) if (typeof body.prefs?.[k] === "boolean") next[k] = body.prefs[k];
+    const { error: e2 } = await me.db.from("members").update({ notify_prefs: next }).eq("id", uid);
+    if (e2) return no(e2.message, 500);
+    return ok({ prefs: next });
+  }
+  if (action === "star.count") {
+    const { count } = await me.db.from("complex_bookmarks").select("id", { count: "exact", head: true }).eq("user_id", uid);
+    return ok({ count: count || 0 });
   }
 
   // ── 공실관리 ──

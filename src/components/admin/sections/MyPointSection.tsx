@@ -8,6 +8,7 @@ import {
   transferPoints,
   searchMembersForTransfer,
   getPointSettings,
+  canTransferPoints,
 } from "@/app/actions/point";
 import { groupPointTx } from "@/utils/pointGroup";
 
@@ -27,6 +28,9 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
 
   // 전송 모달
   const [showTransfer, setShowTransfer] = useState(false);
+  // 포인트 전송은 최고관리자만 (2026-11-16 사장님) — 서버가 로그인한 사람을 확인해 알려 준다
+  const [canSend, setCanSend] = useState(false);
+  useEffect(() => { canTransferPoints().then((r) => setCanSend(r.allowed)).catch(() => setCanSend(false)); }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedReceiver, setSelectedReceiver] = useState<any>(null);
@@ -106,10 +110,10 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
         <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginBottom: 6 }}>현재 잔액</div>
         <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 16 }}>{balance.toLocaleString()} <span style={{ fontSize: 20 }}>P</span></div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => setShowTransfer(true)}
+          {canSend && <button onClick={() => setShowTransfer(true)}
             style={{ padding: "10px 24px", background: "rgba(255,255,255,0.2)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}>
             🔄 포인트 전송
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -173,7 +177,7 @@ export default function MyPointSection({ theme, memberId, role }: MyPointSection
       </div>
 
       {/* ═══════ P2P 전송 모달 ═══════ */}
-      {showTransfer && (
+      {canSend && showTransfer && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setShowTransfer(false)}>
           <div style={{ background: cardBg, borderRadius: 16, padding: 32, width: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
