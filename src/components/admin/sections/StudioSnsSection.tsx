@@ -426,7 +426,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       {r.failures.length > 0 && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>못 가져온 것: {r.failures.join(" / ")}</div>}
     </>
   );
-  const vacancyLabel = (v: VacancyRow) => `${v.vacancy_no} · ${v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ") || "이름 없음"}${v.trade_type ? ` · ${v.trade_type}` : ""}`;
+  // 건물 이름이 없는 공실(빌라 등)은 동·종류로 (2026-11-16 사장님: "92199 · 이름 없음"으로 보이던 것) — 그래도 없을 때만 "이름 없음"
+  const vacancyLabel = (v: VacancyRow, fallback?: string) => `${v.vacancy_no} · ${v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ") || fallback || "이름 없음"}${v.trade_type ? ` · ${v.trade_type}` : ""}`;
   const connectedAi = ai.filter((a) => a.ok);
 
   const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
@@ -471,7 +472,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
               {result.vacancy.saleKind && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>}
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{picked ? vacancyLabel(picked) : result.vacancy.title}</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{picked ? vacancyLabel(picked, result.vacancy.title) : result.vacancy.title}</span>
             </div>
             <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
               {[result.vacancy.title, result.vacancy.priceText].filter(Boolean).join(" · ")}<br />사진 {result.media.length}장 분석·캡처 완료
