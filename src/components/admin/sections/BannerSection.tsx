@@ -23,9 +23,23 @@ const PLACEMENT_OPTIONS = [
   // 휴대폰 앱 자리 (2026-11-16 사장님: 앱 배너도 여기 최고관리자 광고/배너 관리에서)
   { value: "APP_POPUP", label: "앱 · 시작 팝업" },
   { value: "APP_HOME_STRIP", label: "앱 · 홈 띠 배너" },
+  { value: "APP_EXIT", label: "앱 · 종료 창 배너" },
+  { value: "APP_MAP_BOTTOM", label: "앱 · 공실열람 아래 큰 배너" },
 ];
 /** 앱 자리인지 — 위쪽 [전체 · 사이트 · 앱] 고르기에 쓴다 */
 const isAppPlacement = (code?: string | null) => String(code || "").startsWith("APP_");
+
+// 앱 공실열람 아래 큰 배너 — 종류마다 따로 (2026-11-16 사장님: 아파트·오피스텔·빌라주택 다 각각). 앱 공실열람 칸 이름과 같은 키
+const APP_MAP_CATS = [
+  { value: "all", label: "모든 종류" },
+  { value: "apart", label: "아파트" },
+  { value: "offi", label: "오피스텔" },
+  { value: "villa", label: "빌라·주택" },
+  { value: "one", label: "원룸·투룸" },
+  { value: "biz", label: "상가·사무실" },
+  { value: "sale", label: "신축/분양" },
+  { value: "auction", label: "경매/공매" },
+];
 
 const MOBILE_NEWS_TABS = [
   { value: "all", label: "전체" },
@@ -175,6 +189,28 @@ const PLACEMENT_CARDS = [
         <rect x="35" y="10" width="30" height="14" rx="2" fill="#e5e7eb" stroke="none" />
         <rect x="35" y="30" width="30" height="10" rx="2" fill={selected ? "#f97316" : "#fed7aa"} stroke="none" />
         <line x1="35" y1="48" x2="65" y2="48" stroke="#e5e7eb" strokeWidth="2" />
+      </svg>
+    )
+  },
+  {
+    // 앱 종료 창 — 홈에서 뒤로가기를 누르면 "공실뉴스를 종료하시겠습니까?" 위에 이 배너 (직방처럼)
+    value: "APP_EXIT", label: "앱 · 종료 창 배너", size: "가로 900x600px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="30" y="4" width="40" height="67" rx="6" fill="#fff" />
+        <rect x="34" y="20" width="32" height="34" rx="3" fill="#fff" stroke="#e5e7eb" strokeWidth="1" />
+        <rect x="34" y="20" width="32" height="20" rx="3" fill={selected ? "#f97316" : "#fed7aa"} stroke="none" />
+        <line x1="38" y1="48" x2="62" y2="48" stroke="#e5e7eb" strokeWidth="2" />
+      </svg>
+    )
+  },
+  {
+    // 앱 공실열람 아래 큰 배너 — 아파트·오피스텔 등 공실열람 지도에 들어가면 화면 아래 절반 + ✕ (앱을 켤 때마다 한 번)
+    value: "APP_MAP_BOTTOM", label: "앱 · 공실열람 아래 큰 배너", size: "세로 1000x1100px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="30" y="4" width="40" height="67" rx="6" fill="#e5e7eb" />
+        <rect x="30" y="38" width="40" height="33" rx="0" fill={selected ? "#f97316" : "#fed7aa"} stroke="none" />
       </svg>
     )
   },
@@ -373,7 +409,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
     const targetCats = formData.getAll("target_categories") as string[];
     if ((selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && targetCats.length > 0) {
       formData.set("link_target", `${oldTarget}|${targetCats.join(",")}`);
-    } else if (selectedPlacement === "MOBILE_NEWS_TOP" && selectedTabs.length > 0) {
+    } else if ((selectedPlacement === "MOBILE_NEWS_TOP" || selectedPlacement === "APP_MAP_BOTTOM") && selectedTabs.length > 0) {
       formData.set("link_target", `${oldTarget}|${selectedTabs.join(",")}`);
     } else {
       formData.set("link_target", oldTarget);
@@ -511,6 +547,29 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {selectedPlacement === "APP_MAP_BOTTOM" && (
+                <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#3a2412" : "#fff7ed", borderRadius: 8, border: "1px solid #f97316" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: darkMode ? "#fdba74" : "#c2410c", margin: 0 }}>공실열람 어느 종류에 띄울지 (중복선택 가능)</label>
+                    <span style={{ fontSize: 11, color: darkMode ? "#fdba74" : "#ea580c" }}>{selectedTabs.includes("all") ? "모든 종류" : `${selectedTabs.length}개 종류`}</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {APP_MAP_CATS.map(c => {
+                      const isChecked = selectedTabs.includes(c.value);
+                      return (
+                        <label key={c.value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 10px", borderRadius: 6, background: isChecked ? (darkMode ? "rgba(249,115,22,0.2)" : "#ffedd5") : "transparent", border: isChecked ? "1px solid #f97316" : "1px solid transparent" }}>
+                          <input type="checkbox" value={c.value} checked={isChecked}
+                            onChange={() => setSelectedTabs(prev => c.value === "all" ? ["all"] : (prev.includes(c.value) ? prev.filter(x => x !== c.value) : [...prev.filter(x => x !== "all"), c.value]))}
+                            style={{ accentColor: "#f97316", width: 16, height: 16, cursor: "pointer" }} />
+                          <span style={{ fontSize: 13, fontWeight: isChecked ? 700 : 500, color: isChecked ? (darkMode ? "#fdba74" : "#c2410c") : textPrimary }}>{c.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 12, color: textSecondary }}>예: 아파트 광고주는 [아파트]만 — 앱에서 아파트 공실열람에 들어갈 때만 뜹니다.</div>
                 </div>
               )}
 
