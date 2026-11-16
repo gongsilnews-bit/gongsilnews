@@ -37,6 +37,8 @@ import {
 
 // Import helpers and constants
 import {
+  APT_PILLS,
+  type AptKind,
   CATEGORY_CONFIG,
   CATEGORY_TO_PROPERTY_TYPE,
   PRICE_GRID,
@@ -138,6 +140,21 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return "경매";
   });
   const shareDropdownRef = useRef<HTMLDivElement>(null);
+  // [아파트] / [오피스텔] 어느 칸인지 — 알약에서 짐작하고, 둘 다 섞였으면(예전 저장값) 지난번 칸
+  const [aptKind, setAptKind] = useState<AptKind>("apt");
+  useEffect(() => { try { if (sessionStorage.getItem("gongsil_aptkind") === "offi") setAptKind("offi"); } catch {} }, []);
+  useEffect(() => {
+    if (activeCategory !== "apart") return;
+    const isOffi = (p: string) => p.includes("오피스텔");
+    const hasO = activePills.some(isOffi), hasA = activePills.some((p) => !isOffi(p));
+    const kind: AptKind = hasO && !hasA ? "offi" : hasA && !hasO ? "apt" : aptKind;
+    if (kind !== aptKind) setAptKind(kind);
+    // 이 칸에 없는 알약(예전 "아파트·오피스텔" 때 저장한 "기타" 등)은 빼고, 다 빠지면 이 칸 알약 전부
+    const allowed = APT_PILLS[kind];
+    const keep = activePills.filter((p) => allowed.includes(p));
+    if (keep.length !== activePills.length) setActivePills(keep.length ? keep : allowed);
+  }, [activeCategory, activePills, aptKind]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useMapFields("pc-gongsil-category", { activeCategory, activePills, activeMode, isAuctionMode }, { activeCategory: setActiveCategory, activePills: setActivePills, activeMode: setActiveMode, isAuctionMode: setIsAuctionMode });
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
@@ -1309,13 +1326,15 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     });
   };
 
-  const config = CATEGORY_CONFIG[activeCategory] || {
+  const baseConfig = CATEGORY_CONFIG[activeCategory] || {
     name: "전체",
     pills: [],
     basicFilters: [],
     detailFilters: [],
     showToggle: false,
   };
+  // [아파트] · [오피스텔] 칸 — 같은 apart 자료, 알약만 칸마다 (2026-11-16 사장님: PC 도 앱처럼 나눠)
+  const config = activeCategory === "apart" ? { ...baseConfig, name: aptKind === "offi" ? "오피스텔" : "아파트", pills: APT_PILLS[aptKind] } : baseConfig;
   const isOfficePill = (p: string) => p.includes("오피스텔");
 
   const getThemesByCategory = (category: string): string[] => {
@@ -1323,7 +1342,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     const isEmpty = activePills.length === 0;
 
     if (category === "apart") {
-      if (isEmpty || activePills.includes("아파트분양권") || activePills.includes("오피스텔분양권")) {
+      if (isEmpty || activePills.includes("아파트분양권") || activePills.includes("오피스텔분양권") || activePills.includes("분양권·재건축")) {
         ["마이너스피", "무피", "로열층", "중도금무이자", "전매제한없음", "하이엔드", "수익형", "역세권", "뻥뷰", "급매"].forEach(t => themes.add(t));
       }
       if (isEmpty || activePills.includes("아파트") || activePills.includes("오피스텔")) {
@@ -1484,6 +1503,16 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setIsWizardOpen(false);
     resetAllFilters();
     sessionStorage.setItem("gongsil_category", newKey);
+  };
+
+  /** 위쪽 [아파트] · [오피스텔] 칸 누르기 — apart 로 옮기고 그 칸 알약을 다 고른 채로 */
+  const pickAptKind = (k: AptKind) => {
+    if (activeCategory === "apart" && aptKind === k) return;
+    if (activeCategory !== "apart") handleCategoryChange("apart");
+    else { setShowDetail(false); setSelectedClusterIds(null); }
+    setAptKind(k);
+    setActivePills(APT_PILLS[k]);
+    try { sessionStorage.setItem("gongsil_aptkind", k); sessionStorage.setItem("gongsil_pills_apart", JSON.stringify(APT_PILLS[k])); } catch {}
   };
 
   const togglePill = (p: string) => {
@@ -1842,6 +1871,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         <GongsilFilterBar
           activeCategory={activeCategory}
           handleCategoryChange={handleCategoryChange}
+          aptKind={aptKind}
+          onPickAptKind={pickAptKind}
           popoverSearchKeyword={popoverSearchKeyword}
           setPopoverSearchKeyword={setPopoverSearchKeyword}
           handleSearch={handleSearch}

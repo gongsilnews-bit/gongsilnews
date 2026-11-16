@@ -20,7 +20,9 @@ export default async function MobileNewsReadPage({
 }) {
   const resolvedParams = params ? await params : null;
   const resolvedSearchParams = searchParams ? await searchParams : {};
-  const isEmbedded = resolvedSearchParams?.embed === 'true';
+  // 앱 기사 화면 아래쪽 (?part=footer, 2026-11-16) — 앱이 제목·본문을 그리고 태그·기자·광고·추천·댓글·많이 본 뉴스만 이 화면을 붙인다
+  const footerOnly = resolvedSearchParams?.part === 'footer';
+  const isEmbedded = resolvedSearchParams?.embed === 'true' || footerOnly;
   const articleId = typeof resolvedParams?.article_id === "string" && resolvedParams.article_id.trim()
     ? resolvedParams.article_id.trim()
     : null;
@@ -108,6 +110,7 @@ export default async function MobileNewsReadPage({
           nav { display: none !important; }
           .mobile-news-detail-wrapper { padding-bottom: 0 !important; }
           div[style*="padding-bottom: 60px"] { padding-bottom: 0 !important; }
+          ${footerOnly ? ".scroll-progress, header, footer { display: none !important; } .news-detail-page-container { padding-top: 0 !important; margin-top: 0 !important; } body { background: #fff !important; }" : ""}
         `}</style>
       )}
 
@@ -121,6 +124,7 @@ export default async function MobileNewsReadPage({
         initialAuthorEmail={authorEmail}
         initialAttachedVacancy={attachedVacancy}
       authorHomepage={authorHomepage}
+        footerOnly={footerOnly}
       />
     </div>
   );

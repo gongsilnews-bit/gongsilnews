@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
-import { CATEGORY_CONFIG } from "./gongsilHelpers";
+import { AptKind, CATEGORY_CONFIG } from "./gongsilHelpers";
 import GongsilSearchModal from "./GongsilSearchModal";
 
 interface GongsilFilterBarProps {
@@ -12,6 +12,8 @@ interface GongsilFilterBarProps {
   popoverSearchKeyword?: string;
   setPopoverSearchKeyword?: React.Dispatch<React.SetStateAction<string>>;
   handleSearch: (keyword: string) => void;
+  aptKind?: AptKind;
+  onPickAptKind?: (k: AptKind) => void;
 }
 
 export default function GongsilFilterBar({
@@ -20,7 +22,14 @@ export default function GongsilFilterBar({
   popoverSearchKeyword,
   setPopoverSearchKeyword,
   handleSearch,
+  aptKind = "apt",
+  onPickAptKind,
 }: GongsilFilterBarProps) {
+  // "아파트·오피스텔" 한 칸을 [아파트] · [오피스텔] 두 칸으로 (2026-11-16 사장님: 앱처럼). 나머지 칸은 그대로
+  const tabs = Object.entries(CATEGORY_CONFIG).flatMap(([key, cfg]) => key === "apart" && onPickAptKind
+    ? [{ id: "apart:apt", name: "아파트", on: activeCategory === "apart" && aptKind === "apt", go: () => onPickAptKind("apt") },
+       { id: "apart:offi", name: "오피스텔", on: activeCategory === "apart" && aptKind === "offi", go: () => onPickAptKind("offi") }]
+    : [{ id: key, name: cfg.name, on: activeCategory === key, go: () => handleCategoryChange(key) }]);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   return (
@@ -56,26 +65,26 @@ export default function GongsilFilterBar({
       </div>
 
       <div className="no-scrollbar" style={{ display: "flex", gap: 24, alignItems: "center", overflowX: "auto", flex: 1 }}>
-        {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
+        {tabs.map((tb) => (
           <button
-            key={key}
-            onClick={() => handleCategoryChange(key)}
+            key={tb.id}
+            onClick={tb.go}
             style={{
               background: "none",
               border: "none",
               fontSize: 16,
               fontWeight: "bold",
-              color: activeCategory === key ? "#1a73e8" : "#555",
+              color: tb.on ? "#1a73e8" : "#555",
               cursor: "pointer",
               padding: "16px 4px",
               position: "relative",
               whiteSpace: "nowrap",
-              borderBottom: activeCategory === key ? "3px solid #1a73e8" : "3px solid transparent",
+              borderBottom: tb.on ? "3px solid #1a73e8" : "3px solid transparent",
               fontFamily: "inherit",
               transition: "color 0.2s, border-color 0.2s",
             }}
           >
-            {cfg.name}
+            {tb.name}
           </button>
         ))}
 

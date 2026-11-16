@@ -210,6 +210,8 @@ export function filterVacancies({
     if (activePills.length === 0) return [];
     list = list.filter((v) => {
       if (activeCategory === "apart" && activePills.includes("기타") && ["아파트분양권", "재건축", "오피스텔분양권", "재개발"].includes(v.sub_category)) return true;
+      // [아파트] 칸 "분양권·재건축" 알약 (2026-11-16) — 오피스텔분양권은 [오피스텔] 칸의 같은 이름 알약이 바로 맞힌다
+      if (activeCategory === "apart" && activePills.includes("분양권·재건축") && ["아파트분양권", "재건축", "재개발"].includes(v.sub_category)) return true;
       if (activeCategory === "one" && activePills.length === 1 && activePills.includes("오피스텔만 보기")) return Boolean(v.themes && Array.isArray(v.themes) && v.themes.includes("오피스텔"));
       if (activeCategory === "biz" && activePills.includes("건물/빌딩") && (v.sub_category === "건물" || v.sub_category === "빌딩/건물" || v.sub_category === "건물/빌딩")) return true;
       if (activeCategory === "villa" && activePills.includes("단독/다가구") && v.sub_category === "상가주택") return true;

@@ -83,6 +83,8 @@ interface NewsReadContentProps {
   showEngagement?: boolean;
   /** 기사 작성자 맞춤 광고(부동산 프로필) 슬롯 */
   showAuthorAd?: boolean;
+  /** 앱 기사 화면용 — 제목·본문은 빼고 태그부터 아래(기자·광고·추천·댓글·목록·공실·많이 본 뉴스)만 (2026-11-16) */
+  footerOnly?: boolean;
 }
 
 const FONT_SIZES = [
@@ -114,6 +116,7 @@ export default function NewsReadContent({
   showBackToList = true,
   showEngagement = true,
   showAuthorAd = true,
+  footerOnly = false,
 }: NewsReadContentProps) {
   const pathname = usePathname() || "";
   const router = useRouter();
@@ -753,6 +756,8 @@ export default function NewsReadContent({
         <div className="news-layout">
           {/* 본문 영역 */}
           <div className="news-read-area">
+            {/* 앱 기사 화면 아래쪽만 (footerOnly, 2026-11-16) — 머리·본문은 앱이 직접 그린다 */}
+            {!footerOnly && (<>
             <div className="detail-breadcrumb">
               [{formatSection1(article.section1)} &gt; {article.section2 || "전체"}]
             </div>
@@ -978,6 +983,7 @@ export default function NewsReadContent({
                 />
               )}
             </div>
+            </>)}
 
             {article.article_keywords && article.article_keywords.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "24px 0", padding: "16px 0", borderTop: "1px solid #eee" }}>

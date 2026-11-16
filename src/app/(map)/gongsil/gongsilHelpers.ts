@@ -12,6 +12,14 @@ export const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; ba
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
+// PC 위쪽 메뉴 [아파트] · [오피스텔] (2026-11-16 사장님: 앱처럼 나눠) — 자료는 같은 "아파트·오피스텔"(apart) 하나,
+//  칸마다 고를 수 있는 알약만 다르다 (앱 src/lib/gongsil.ts CATS.apart · CATS.offi 와 같음)
+export type AptKind = "apt" | "offi";
+export const APT_PILLS: Record<AptKind, string[]> = {
+  apt: ["아파트", "분양권·재건축"],
+  offi: ["오피스텔", "오피스텔분양권"],
+};
+
 // 카테고리 키 → DB property_type 매핑
 export const CATEGORY_TO_PROPERTY_TYPE: Record<string, string> = {
   apart: "아파트·오피스텔",
