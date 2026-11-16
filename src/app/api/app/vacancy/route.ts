@@ -7,34 +7,11 @@
 //  POST  { action: "create", payload }          → 공실 등록 → { id }
 //  POST  multipart { action: "photo", vacancy_id, index, file } → 사진 1장 올리기 → { url }
 //  POST  { action: "sync", vacancy_id, urls }   → 사진 순서 맞추기
+//  POST  { action: "infra", lat, lng }           → 주변환경(지하철·버스·학교…) 미리 보기
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createVacancy, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { searchNearbyInfrastructure } from "@/app/actions/geocode";
-
-const admin = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
-const no = (error: string, status = 400) => NextResponse.json({ success: false, error }, { status });
-
-/** 토큰 → 회원 (없으면 null) */
-async function whoAmI(req: NextRequest) {
-  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  if (!token) return null;
-  const db = admin();
-  const { data, error } = await db.auth.getUser(token);
-  if (error || !data?.user) return null;
-  const { data: m } = await db.from("members").select("id, name, phone, role, plan_type").eq("id", data.user.id).maybeSingle();
-  if (!m) return null;
-  const r = String(m.role || "").toUpperCase();
-  const isAdmin = ["ADMIN", "SUPER_ADMIN", "최고관리자"].includes(r);
-  const isRealtor = isAdmin || ["REALTOR", "부동산회원"].includes(r);
-  return { db, user: data.user, member: m, isAdmin, isRealtor, ownerRole: isAdmin ? "ADMIN" : isRealtor ? "REALTOR" : "USER" };
-}
-
-/** 이 공실이 내 것인지 */
-async function mine(db: ReturnType<typeof admin>, vacancyId: string, uid: string, isAdmin: boolean) {
-  const { data } = await db.from("vacancies").select("owner_id").eq("id", vacancyId).maybeSingle();
-  return !!data && (data.owner_id === uid || isAdmin);
-}
+import { myVacancy as mine, no, whoAmI } from "../auth";
 
 export async function GET(req: NextRequest) {
   const me = await whoAmI(req);
@@ -69,6 +46,14 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   if (!body?.action) return no("요청 형식이 맞지 않습니다.");
+
+  // 주변환경 미리 보기 — 등록 화면에서 주소를 고르면 바로 보여 준다 (사이트 모바일 공실등록과 같은 함수)
+  if (body.action === "infra") {
+    const lat = Number(body.lat), lng = Number(body.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return no("좌표가 없습니다.");
+    try { return NextResponse.json({ success: true, infrastructure: await searchNearbyInfrastructure(lat, lng) }); }
+    catch { return no("주변환경을 찾지 못했습니다.", 500); }
+  }
 
   if (body.action === "create") {
     const p: Record<string, unknown> = { ...(body.payload || {}) };

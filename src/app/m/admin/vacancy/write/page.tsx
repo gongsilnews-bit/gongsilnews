@@ -925,19 +925,14 @@ function MobileVacancyWrite() {
     }
   };
 
+  // 만원 → "5,000만원" · "1억 5,000만원" (세 자리마다 쉼표 — 앱 공실등록과 같게, 2026-11-16)
   const formatKorean = (v: string) => {
-    const n = parseInt(v); if (isNaN(n) || n<=0) return "";
+    const n = parseInt(String(v).replace(/,/g, "")); if (isNaN(n) || n<=0) return "";
+    const comma = (x: number) => String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     const eok = Math.floor(n/10000); const man = n%10000;
     let result = "";
-    if (eok > 0) result += `${eok}억`;
-    if (man > 0) {
-      const cheon = Math.floor(man / 1000);
-      const rest = man % 1000;
-      let manStr = "";
-      if (cheon > 0) manStr += `${cheon}천`;
-      if (rest > 0) manStr += `${rest}`;
-      result += (result ? " " : "") + manStr + "만";
-    }
+    if (eok > 0) result += `${comma(eok)}억`;
+    if (man > 0) result += (result ? " " : "") + comma(man) + "만";
     return (result || "0") + "원";
   };
 

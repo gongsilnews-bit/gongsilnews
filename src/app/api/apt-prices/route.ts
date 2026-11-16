@@ -1,9 +1,14 @@
 // 공실열람 지도 [아파트 시세] 읽기 (2026-11-02). 모으기는 /api/cron/apt-prices
 //  GET ?sw=37.49,127.03&ne=37.52,127.07   화면 안 단지 (거래 많은 순 400개까지)
+//  GET ?agg=sido|gu|dong&kind=apt         지역(시·도·시군구·동) 평균 — 앱 지도를 넓게 볼 때
 //  GET ?id=11680:대치동:1014-3              단지 하나 — 매매·전월세 거래 전부 + 평형·세대수 + 단지 정보 (상세 창이 계산)
 import { NextRequest, NextResponse } from "next/server";
 import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
+import { regionAgg, type AggLevel, type AptKind } from "@/utils/aptRegionAgg";
+
+// 지역 평균(?agg)을 처음 만들 때 빌라는 20초 넘게 걸린다
+export const maxDuration = 60;
 
 const headers = { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" };
 
@@ -139,6 +144,21 @@ export async function GET(req: NextRequest) {
       if (close.length) found = close[0];
     }
     return NextResponse.json({ success: true, complex: found ? { id: found.id, kind: found.kind } : null }, { headers: { "Cache-Control": "no-store" } });
+  }
+
+  // ?agg=sido|gu|dong&kind=apt — 넓게 볼 때 지역 평균 (앱 지도, 2026-11-16). 전국 것을 한 번에 — 화면 안만 고르는 것은 앱이
+  const agg = params.get("agg");
+  if (agg) {
+    const kind = params.get("kind") as AptKind;
+    if (!["sido", "gu", "dong"].includes(agg) || !["apt", "offi", "villa"].includes(kind)) {
+      return NextResponse.json({ success: false, error: "agg=sido|gu|dong, kind=apt|offi|villa" }, { status: 400 });
+    }
+    try {
+      const all = await regionAgg(supabase, kind);
+      return NextResponse.json({ success: true, regions: all[agg as AggLevel] }, { headers: { "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400" } });
+    } catch (e) {
+      return NextResponse.json({ success: false, error: e instanceof Error ? e.message : "지역 평균을 만들지 못했습니다." }, { status: 500 });
+    }
   }
 
   const [swLat, swLng] = String(params.get("sw") || "").split(",").map(Number);
