@@ -7,6 +7,7 @@
  * 숫자는 국토부 실거래·건축물대장·공동주택 기본정보 그대로. 없는 값은 "-" (지어내지 않는다).
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import { aptViewerInfo, submitAptInfoCapture, submitAptInfoRequest } from "@/app/actions/aptReports";
 import { starSvg, useStars } from "./stars";
@@ -163,7 +164,7 @@ function PriceChart({ points, small = false }: { points: { d: string; v: number 
 }
 
 /* ── 로드뷰 ── */
-export function Roadview({ lat, lng }: { lat: number; lng: number }) {
+export function Roadview({ lat, lng, height = 240, onNone }: { lat: number; lng: number; height?: number | string; onNone?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const kakao = (window as any).kakao;
@@ -184,6 +185,7 @@ export function Roadview({ lat, lng }: { lat: number; lng: number }) {
           if (stop === noop) return;
           if (panoId) { stop(); stop = noop; box.replaceChildren(); new kakao.maps.Roadview(box).setPanoId(panoId, pos); }
           else if (radius < 600) find(radius * 2);
+          else onNone?.(); // 끝까지 없음 — 맨 위 칸이면 숨긴다
         });
       find(300);
     };
@@ -191,9 +193,39 @@ export function Roadview({ lat, lng }: { lat: number; lng: number }) {
     watch.observe(box, { attributes: true, attributeFilter: ["data-roadview-status"] });
     return () => { watch.disconnect(); stop(); stop = noop; };
   }, [lat, lng]);
-  return <div ref={ref} style={{ position: "relative", height: 240, background: "#e8eaed" }} />;
+  return <div ref={ref} style={{ position: "relative", height, background: "#e8eaed" }} />;
 }
 const noop = () => {};
+
+/** 단지 창 맨 위 로드뷰 — 직방 사진 자리 (2026-11-18 사장님: 앱에서 보고 "훨씬 좋은데 PC·모바일웹에도")
+ *  근처에 로드뷰가 없으면 칸을 숨기고, [크게 보기]로 화면 가득 */
+function HeroRoadview({ lat, lng }: { lat: number; lng: number }) {
+  const [none, setNone] = useState(false);
+  const [big, setBig] = useState(false);
+  if (none) return null;
+  return (
+    <div style={{ position: "relative" }}>
+      <Roadview lat={lat} lng={lng} height={230} onNone={() => setNone(true)} />
+      {/* 작은 로드뷰를 누르면 바로 크게 보기 (2026-11-18 사장님) — 위에 투명한 막을 덮어 누름을 받는다 */}
+      <div onClick={() => setBig(true)} title="로드뷰 크게 보기" style={{ position: "absolute", inset: 0, zIndex: 4, cursor: "zoom-in" }} />
+      <button onClick={() => setBig(true)} aria-label="로드뷰 크게 보기"
+        style={{ position: "absolute", right: 10, bottom: 10, zIndex: 5, display: "flex", alignItems: "center", gap: 4, border: "none", borderRadius: 14, padding: "5px 10px", background: "rgba(17,24,39,.72)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+        ⤢ 크게 보기
+      </button>
+      {/* 큰 창은 화면 맨 위에 따로 띄운다(document.body) — 단지 창 안에 두면 위 메뉴 아래에 깔렸다 (2026-11-18) */}
+      {big && typeof document !== "undefined" && createPortal(
+        <div onClick={() => setBig(false)} style={{ position: "fixed", inset: 0, zIndex: 10050, background: "rgba(0,0,0,.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "min(1200px, 100%)", height: "min(800px, 100%)", borderRadius: 10, overflow: "hidden" }}>
+            <Roadview lat={lat} lng={lng} height="100%" />
+            <button onClick={() => setBig(false)} aria-label="닫기"
+              style={{ position: "absolute", top: 10, right: 10, zIndex: 50, width: 36, height: 36, borderRadius: 18, border: "none", background: "rgba(17,24,39,.8)", color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
+}
 
 /* ── 주변 인프라 픽토그램 — 단색 SVG (2026-11-02 사장님) ── */
 const INFRA_ICON: Record<string, React.ReactNode> = {
@@ -704,6 +736,8 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
       </div>
 
       <div style={flat ? {} : { flex: 1, overflowY: "auto" }}>
+        {/* 맨 위 로드뷰 — 직방 사진 자리 (2026-11-18 사장님, 앱과 같게) */}
+        {!flat && Number.isFinite(detail.lat) && <HeroRoadview lat={detail.lat} lng={detail.lng} />}
         {/* 단지 한 줄 */}
         <div style={{ ...sectionStyle, padding: "16px 20px" }}>
           <div style={{ fontSize: 16, fontWeight: 800 }}>{address}</div>
@@ -781,12 +815,6 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
               {more ? "접기" : `더보기 (${Math.min(rows.length, 60) - 12}건)`}
             </button>
           )}
-        </div>}
-
-        {/* 로드뷰 */}
-        {!flat && <div style={sectionStyle}>
-          <h3 style={h3}>로드뷰</h3>
-          {Number.isFinite(detail.lat) && <Roadview lat={detail.lat} lng={detail.lng} />}
         </div>}
 
         {/* 주변 인프라 — 공실등록 화면과 같은 카카오 검색 (2026-11-02 사장님) */}
