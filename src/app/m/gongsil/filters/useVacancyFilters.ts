@@ -1,10 +1,14 @@
 import { useState, useMemo } from 'react';
 import { FilterState } from '../search/vacancySearch.types';
-import { getAuctionInfo } from '@/app/(map)/gongsil/gongsilHelpers';
+import { getAuctionInfo, matchGroupPill, GROUP_TABS } from '@/app/(map)/gongsil/gongsilHelpers';
 
 export type { FilterState } from '../search/vacancySearch.types';
 
-const ALL_PROPERTY_TYPES = [
+// 일반 공실 알약 전부 — 칸·알약은 gongsilHelpers GROUP_TABS 한 곳 (PC 전용 "오피스텔만 보기" 는 뺌)
+export const MOBILE_PROPERTY_GROUPS = GROUP_TABS.map((g) => ({ group: g.name, items: g.pills.filter((p) => p !== "오피스텔만 보기") }));
+const ALL_PROPERTY_TYPES = MOBILE_PROPERTY_GROUPS.flatMap((g) => g.items);
+// 예전(2026-11-17 전) 전체 선택 15개 — 저장된 예전 전체 선택도 전체로 본다
+const LEGACY_ALL_PROPERTY_TYPES = [
   "아파트", "오피스텔", "기타",
   "빌라/연립", "단독/다가구", "전원주택",
   "원룸", "1.5룸", "투룸",
@@ -148,66 +152,15 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
       }
     } else {
       // 🚀 [대표님 지침] '전체 매물' 선택 시 모든 일반공실 매물 100% 매칭
-      if (filters.propertyTypes.length >= ALL_PROPERTY_TYPES.length) {
+      // 전체: 지금 알약 전부, 또는 예전처럼 15개 이상(예전 전체 선택 저장값 · 공실 탭 기본값 17개).
+      //  칸은 한 번에 하나만 고를 수 있고 한 칸 알약은 많아야 8개라 15개 이상이면 전체 선택이다
+      if (filters.propertyTypes.length >= ALL_PROPERTY_TYPES.length || filters.propertyTypes.length >= LEGACY_ALL_PROPERTY_TYPES.length) {
         isPropMatch = true;
       } else {
         // 🚀 일반 공실 매물 필터링 (PC GongsilClient.tsx 100% 동일 매칭 로직)
-        isPropMatch = filters.propertyTypes.some((pill) => {
-          // ① 아파트·오피스텔
-          if (pill === "아파트") {
-            return v.sub_category === "아파트" || (v.property_type === "아파트·오피스텔" && (!v.sub_category || v.sub_category === "아파트"));
-          }
-          if (pill === "오피스텔") {
-            return v.sub_category === "오피스텔" || (v.property_type === "아파트·오피스텔" && v.sub_category === "오피스텔") || (v.themes && Array.isArray(v.themes) && v.themes.includes("오피스텔"));
-          }
-          if (pill === "기타") {
-            return ["아파트분양권", "재건축", "오피스텔분양권", "재개발"].includes(v.sub_category);
-          }
-
-          // ② 빌라·주택
-          if (pill === "빌라/연립") {
-            return v.sub_category === "빌라/연립" || v.sub_category === "빌라" || v.sub_category === "연립" || v.sub_category === "다세대";
-          }
-          if (pill === "단독/다가구") {
-            return v.sub_category === "단독/다가구" || v.sub_category === "단독" || v.sub_category === "다가구" || v.sub_category === "상가주택";
-          }
-          if (pill === "전원주택") {
-            return v.sub_category === "전원주택";
-          }
-
-          // ③ 원룸·투룸(풀옵션)
-          if (pill === "원룸") {
-            return v.sub_category === "원룸" || v.sub_category === "원룸/투룸" || v.sub_category === "원룸·투룸" || (v.property_type === "원룸·투룸(풀옵션)" && !v.sub_category);
-          }
-          if (pill === "1.5룸") {
-            return v.sub_category === "1.5룸";
-          }
-          if (pill === "투룸") {
-            return v.sub_category === "투룸";
-          }
-
-          // ④ 상가·사무실·공장·토지
-          if (pill === "상가") {
-            return v.sub_category === "상가" || v.sub_category === "근린상가" || v.sub_category === "상가건물";
-          }
-          if (pill === "사무실") {
-            return v.sub_category === "사무실" || v.sub_category === "업무시설";
-          }
-          if (pill === "지식산업센터") {
-            return v.sub_category === "지식산업센터" || v.sub_category === "아파트형공장";
-          }
-          if (pill === "건물/빌딩") {
-            return v.sub_category === "건물/빌딩" || v.sub_category === "건물" || v.sub_category === "빌딩/건물" || v.sub_category === "빌딩";
-          }
-          if (pill === "공장/창고") {
-            return v.sub_category === "공장/창고" || v.sub_category === "공장" || v.sub_category === "창고";
-          }
-          if (pill === "토지") {
-            return v.sub_category === "토지" || v.sub_category === "대지" || v.sub_category === "임야";
-          }
-
-          return v.sub_category === pill || v.property_type === pill;
-        });
+        // 🚀 칸 나눔(2026-11-17 사장님 최종) — PC 와 같은 알약 판별(gongsilHelpers matchGroupPill).
+        //  .some 이라 알약 여러 개에 걸려도 한 번만 나온다. 모바일 [오피스텔] 은 예전처럼 테마 "오피스텔" 물건도
+        isPropMatch = filters.propertyTypes.some((pill) => matchGroupPill(v, pill, { offiTheme: true }));
       }
     }
       

@@ -1,5 +1,6 @@
 import { complexRows } from "@/utils/complexRows";
 import React from "react";
+import VacancyReportSheet from "@/components/common/VacancyReportSheet";
 import Link from "next/link";
 import {
   getCleanAddrText,
@@ -166,6 +167,7 @@ export default function GongsilDetailPanel({
   accentColor,
   onPanToMap,
 }: GongsilDetailPanelProps) {
+  const [reportOpen, setReportOpen] = React.useState(false); // 오류제보 창 (2026-11-17)
   if (!showDetail || !activeProperty) return null;
 
   const baseProp = dbVacancies.find((v) => v.id === activeProperty);
@@ -391,7 +393,7 @@ export default function GongsilDetailPanel({
             <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
               {!hideFalseListingReport && (
                 <button
-                  onClick={() => alert("준비중입니다.")}
+                  onClick={() => setReportOpen(true)}
                   style={{
                     background: "none",
                     border: "none",
@@ -404,9 +406,12 @@ export default function GongsilDetailPanel({
                     fontSize: 11,
                   }}
                 >
-                  ● 허위공실광고신고
+                  ● 오류제보하기
                 </button>
               )}
+              {/* PC는 자리·모양 그대로, 글자만 "오류제보하기" (2026-11-17 사장님) — 로그인은 서버가 확인 */}
+              <VacancyReportSheet wide vacancyId={String(prop.id)} open={reportOpen} onClose={() => setReportOpen(false)} loggedIn={!!currentUser}
+                loginHref={"/login?returnTo=" + encodeURIComponent(`/gongsil?id=${prop.id}`)} />
               {!hidePrint && (
                 <button
                   onClick={() => handlePrint(prop)}
@@ -684,7 +689,7 @@ export default function GongsilDetailPanel({
           ) : (
             <>
               <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>
-                {prop.property_type} · {prop.direction || "방향없음"} · {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 ? formatAreaWithPy(prop.supply_m2) : "0㎡"}` : `공급/전용 면적: ${prop.supply_m2 ? formatAreaWithPy(prop.supply_m2) : "0㎡"} / ${prop.exclusive_m2 ? formatAreaWithPy(prop.exclusive_m2) : "0㎡"}`}
+                {prop.property_type} · {prop.direction || "방향없음"} · {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 ? formatAreaWithPy(prop.supply_m2) : "0㎡"}` : `공급/전용 면적: ${prop.supply_m2 ? formatAreaWithPy(prop.supply_m2) : "0㎡"} / ${prop.exclusive_m2 ? formatAreaWithPy(prop.exclusive_m2) : "0㎡"}`}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
                 <span>룸 {prop.room_count || 0}개</span>
@@ -892,7 +897,7 @@ export default function GongsilDetailPanel({
 
                     // 9. 공급/전용면적 또는 연면적
                     if (subCategory !== "토지") {
-                      const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+                      const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) ||
                                                    (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory));
                       
                       if (tradeType === "매매" && isStandaloneBuilding) {

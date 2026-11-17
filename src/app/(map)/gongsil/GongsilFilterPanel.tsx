@@ -10,7 +10,7 @@ import {
   UNIT_SCALE,
   getScaleIndex,
 } from "./gongsilFilterScales";
-import { MAINT_PRESETS } from "./gongsilHelpers";
+import { MAINT_PRESETS, isWholeBuildingPill } from "./gongsilHelpers";
 
 export interface GongsilFilterPanelProps {
   panel: Record<string, unknown>;
@@ -53,6 +53,7 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
     isAuctionMode,
     setTempFilterTradeTypes,
     activeCategory,
+    allowedTradeTypes,
     setTempMaemaeMin,
     formatPriceLabel,
     handleSliderRelease,
@@ -463,7 +464,8 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
                                     </button>
                                     
                                     {["매매", "전세", "월세", "단기"]
-                                      .filter((type) => !(activeCategory === "원룸·투룸(풀옵션)" && type === "매매"))
+                                      // 칸에 맞는 거래만 — 원룸투룸(풀옵션)은 매매 빼고, 빌딩/건물 매매는 매매만 (gongsilHelpers tradeTypesFor, 2026-11-17)
+                                      .filter((type) => !Array.isArray(allowedTradeTypes) || (allowedTradeTypes as string[]).includes(type))
                                       .map((type) => {
                                       const isSel = tempFilterTradeTypes.includes(type);
                                       return (
@@ -1254,7 +1256,7 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
                                     }
                                     if (activeCategory === "biz") {
                                       if (isEmpty || activePills.includes("상가")) ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설"].forEach(o => opts.add(o));
-                                      if (isEmpty || activePills.includes("사무실") || activePills.includes("건물/빌딩")) ["시스템에어컨", "개별난방", "엘리베이터", "내부화장실", "탕비실", "휴게공간", "주차편리", "보안시스템", "회의실"].forEach(o => opts.add(o));
+                                      if (isEmpty || activePills.includes("사무실") || activePills.some(isWholeBuildingPill)) ["시스템에어컨", "개별난방", "엘리베이터", "내부화장실", "탕비실", "휴게공간", "주차편리", "보안시스템", "회의실"].forEach(o => opts.add(o));
                                       if (isEmpty || activePills.includes("공장/창고") || activePills.includes("지식산업센터") || activePills.includes("토지")) ["호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"].forEach(o => opts.add(o));
                                       return Array.from(opts);
                                     }

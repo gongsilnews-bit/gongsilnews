@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CATEGORY_TO_PROPERTY_TYPE, MAINT_PRESETS, getAuctionInfo } from "./gongsilHelpers";
+import { CATEGORY_TO_PROPERTY_TYPE, MAINT_PRESETS, getAuctionInfo, getGroupTab, matchGroupPill } from "./gongsilHelpers";
 
 type FilterVacanciesOptions = {
   dbVacancies: any[];
   activeCategory: string;
+  /** 위쪽 칸(GROUP_TABS id) — 아파트·오피스텔·빌라/주택 … 공장/토지/기타. 없으면 예전처럼 큰 칸으로만 */
+  activeGroup?: string | null;
   activePills: string[];
   filterTradeTypes: string[];
   appliedMaemaeMin: number | null;
@@ -47,6 +49,7 @@ type FilterVacanciesOptions = {
 export function filterVacancies({
   dbVacancies,
   activeCategory,
+  activeGroup,
   activePills,
   filterTradeTypes,
   appliedMaemaeMin,
@@ -205,6 +208,13 @@ export function filterVacancies({
   }
 
   const dbPropType = CATEGORY_TO_PROPERTY_TYPE[activeCategory];
+  const group = getGroupTab(activeGroup);
+  if (group && group.base === activeCategory) {
+    // 새 칸 나눔 (2026-11-17) — 칸이 큰 칸 property_type 을 넘나들 수 있어(빌라/주택 · 빌딩/건물 매매 · 신축/분양/재건축) 알약마다 맞힌다.
+    //  .filter 한 번이라 알약 두 개에 걸려도 한 번만 나온다
+    if (activePills.length === 0) return [];
+    list = list.filter((v) => activePills.some((p) => matchGroupPill(v, p, { fallbackType: dbPropType || "" })));
+  } else {
   if (dbPropType) list = list.filter((v) => v.property_type === dbPropType);
   if (activeCategory !== "all") {
     if (activePills.length === 0) return [];
@@ -218,6 +228,7 @@ export function filterVacancies({
       if (activeCategory === "one" && activePills.includes("원룸") && (["원룸", "원룸/투룸", "원룸·투룸"].includes(v.sub_category) || (v.property_type === "원룸·투룸(풀옵션)" && !v.sub_category))) return true;
       return activePills.includes(v.sub_category);
     });
+  }
   }
 
   if (activeCategory === "apart" || activeCategory === "villa") {

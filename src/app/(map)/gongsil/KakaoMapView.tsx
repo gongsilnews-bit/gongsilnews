@@ -934,9 +934,10 @@ export default function KakaoMapView({
         mapLoaded={mapLoaded}
         vacancies={isAuctionMode ? [] : filteredVacancies}
         // 2차 카테고리(아파트·오피스텔)에 맞춰 시세도 거른다 — 아무것도 안 골랐거나 다른 카테고리면 둘 다 (2026-11-02 사장님)
+        // 2026-11-17: 신축 칸 알약은 "분양:아파트"처럼 앞말이 붙고, 분양권 알약도 아파트·오피스텔 시세가 맞다
         kinds={{
-          apt: !["apart", "sale", "auction", "one"].includes(activeCategory) || (activeCategory === "one" ? !activePills.includes("오피스텔만 보기") : activePills.length === 0 || activePills.includes("아파트")),
-          offi: !["apart", "sale", "auction"].includes(activeCategory) || activePills.length === 0 || activePills.includes("오피스텔"),
+          apt: !["apart", "sale", "auction", "one"].includes(activeCategory) || (activeCategory === "one" ? !activePills.includes("오피스텔만 보기") : activePills.length === 0 || activePills.some((p) => ["아파트", "분양:아파트", "분양권·재건축"].includes(p))),
+          offi: !["apart", "sale", "auction"].includes(activeCategory) || activePills.length === 0 || activePills.some((p) => ["오피스텔", "분양:오피스텔", "오피스텔분양권"].includes(p)),
         }}
         // 공실 보기는 공실 탭으로, 경매 보기는 경매/공매 탭으로 바꾸고 그 단지 물건만 (2026-11-02)
         onShowVacancies={(ids) => { window.dispatchEvent(new CustomEvent("gs-vacancy-list")); if (isAuctionMode) onSwitchCategory?.("all"); setSelectedClusterIds(ids); setShowDetail(false); }}

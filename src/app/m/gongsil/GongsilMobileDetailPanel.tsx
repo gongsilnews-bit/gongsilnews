@@ -1,5 +1,6 @@
 "use client";
 
+import VacancyReportSheet from "@/components/common/VacancyReportSheet";
 import { complexRows } from "@/utils/complexRows";
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
@@ -88,6 +89,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
   onPanToMap,
 }) => {
   const [onbidCount, setOnbidCount] = React.useState<number | null>(null);
+  const [reportOpen, setReportOpen] = React.useState(false); // 오류제보 창 (2026-11-17)
   const [mobileRoadviewOpen, setMobileRoadviewOpen] = React.useState(false);
   const mobileRoadviewCanvasRef = useRef<HTMLDivElement | null>(null);
 
@@ -363,9 +365,9 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                         )}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
+                        <span onClick={() => setReportOpen(true)} style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
                           <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
-                          허위공실광고신고
+                          오류제보하기
                         </span>
                       </div>
                     </div>
@@ -453,19 +455,11 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   <span style={{ fontSize: "15px", fontWeight: 800, color: "#ef4444" }}>
                     {selectedVacancy.vacancy_no || '-'}
                   </span>
-                  <span style={{ fontSize: "13px", color: "#888", marginLeft: "4px" }}>
-                    {selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}
-                  </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: "3px", cursor: "pointer" }}>
-                    <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#ef4444" }}></span>
-                    허위공실광고신고
-                  </span>
-                  <span onClick={goBack} style={{ fontSize: "12px", color: "#666", display: "inline-flex", alignItems: "center", gap: "3px", cursor: "pointer", fontWeight: "bold" }}>
-                    목록
-                  </span>
-                </div>
+                {/* 등록 날짜 — 오른쪽 위 (2026-11-17 사장님: 허위공실광고신고·목록 자리로, 앱과 같게) */}
+                <span style={{ fontSize: "13px", color: "#888" }}>
+                  {selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}
+                </span>
               </div>
 
               {/* Row 2: Title */}
@@ -512,9 +506,16 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 </div>
               )}
 
+              {/* 오류제보하기 — 탭 바로 위 오른쪽 (2026-11-17 사장님: 직방처럼) */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
+                <span onClick={() => setReportOpen(true)} style={{ fontSize: "12px", color: "#888", fontWeight: 600, cursor: "pointer" }}>오류제보하기 ›</span>
+              </div>
             </div>
           )}
         </div>
+
+        <VacancyReportSheet vacancyId={String(selectedVacancy.id)} open={reportOpen} onClose={() => setReportOpen(false)} loggedIn={!!currentUser}
+          loginHref={"/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`)} />
 
         {/* 탭 구조 */}
         <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", background: "#fff", position: "sticky", top: "0px", zIndex: 9 }}>
@@ -994,7 +995,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
           <div>
             {/* 용도 / 기본 스펙 테이블 디자인 (PC 버전 100% 대응) */}
             <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
-              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실번호</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.vacancy_no}</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>
@@ -1106,7 +1107,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
 
                   // 9. 공급/전용면적 또는 연면적
                   if (subCategory !== "토지") {
-                    const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+                    const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) ||
                                                  (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory));
                     
                     if (tradeType === "매매" && isStandaloneBuilding) {

@@ -110,7 +110,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   const SUB_CATEGORY_MAP: Record<string, string[]> = {
     "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
-    "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
+    "빌라·주택": ["빌라/연립", "다세대(통매매)", "단독/다가구", "전원주택", "상가주택"],
     "원룸·투룸(풀옵션)": ["원룸", "1.5룸", "투룸"],
     "상가·사무실·건물·공장·토지": ["상가", "사무실", "건물/빌딩", "공장/창고", "지식산업센터", "토지"],
     "분양": ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"],
@@ -580,7 +580,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 800, fontSize: 15 }}>{priceText}</span>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {row.trade_type === "매매" && ((row.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(row.sub_category)) || (row.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(row.sub_category))) ? (
+                      {row.trade_type === "매매" && ((row.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(row.sub_category)) || (row.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(row.sub_category))) ? (
                         `연면적 ${row.supply_m2 ? `${row.supply_m2}m²` : "-"}`
                       ) : (
                         `${row.room_count || "-"} / ${row.exclusive_m2 ? `${row.exclusive_m2}m²` : "m²"} / ${row.current_floor || "-"}`

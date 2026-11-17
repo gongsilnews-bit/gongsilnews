@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
-import { AptKind, CATEGORY_CONFIG } from "./gongsilHelpers";
+import { CATEGORY_CONFIG, GROUP_TABS, type GroupTabId } from "./gongsilHelpers";
 import GongsilSearchModal from "./GongsilSearchModal";
 
 interface GongsilFilterBarProps {
@@ -12,8 +12,8 @@ interface GongsilFilterBarProps {
   popoverSearchKeyword?: string;
   setPopoverSearchKeyword?: React.Dispatch<React.SetStateAction<string>>;
   handleSearch: (keyword: string) => void;
-  aptKind?: AptKind;
-  onPickAptKind?: (k: AptKind) => void;
+  groupTab?: GroupTabId;
+  onPickGroupTab?: (id: GroupTabId) => void;
 }
 
 export default function GongsilFilterBar({
@@ -22,13 +22,17 @@ export default function GongsilFilterBar({
   popoverSearchKeyword,
   setPopoverSearchKeyword,
   handleSearch,
-  aptKind = "apt",
-  onPickAptKind,
+  groupTab = "apt",
+  onPickGroupTab,
 }: GongsilFilterBarProps) {
-  // "아파트·오피스텔" 한 칸을 [아파트] · [오피스텔] 두 칸으로 (2026-11-16 사장님: 앱처럼). 나머지 칸은 그대로
-  const tabs = Object.entries(CATEGORY_CONFIG).flatMap(([key, cfg]) => key === "apart" && onPickAptKind
-    ? [{ id: "apart:apt", name: "아파트", on: activeCategory === "apart" && aptKind === "apt", go: () => onPickAptKind("apt") },
-       { id: "apart:offi", name: "오피스텔", on: activeCategory === "apart" && aptKind === "offi", go: () => onPickAptKind("offi") }]
+  // 큰 칸(apart·villa·one·biz)을 위쪽 9칸으로 (2026-11-16 아파트·오피스텔 → 2026-11-17 사장님 확정):
+  //  아파트 · 오피스텔 · 빌라/주택 · 원룸투룸(풀옵션) · 사무실·지식산업센터 · 상가 · 빌딩/건물 매매 · 공장/토지/기타 · 신축/분양/재건축.
+  //  예전 큰 칸 자리(apart)에 칸 전부를 넣고, 나머지 큰 칸(villa·one·biz·sale)은 따로 그리지 않는다. 경매/공매 · MY관심은 그대로
+  const groupBases = new Set(GROUP_TABS.map((t) => t.base));
+  const tabs = Object.entries(CATEGORY_CONFIG).flatMap(([key, cfg]) => onPickGroupTab && groupBases.has(key)
+    ? (key === "apart"
+      ? GROUP_TABS.map((t) => ({ id: `group:${t.id}`, name: t.name, on: activeCategory === t.base && groupTab === t.id, go: () => onPickGroupTab(t.id) }))
+      : [])
     : [{ id: key, name: cfg.name, on: activeCategory === key, go: () => handleCategoryChange(key) }]);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 

@@ -12,13 +12,155 @@ export const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; ba
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
-// PC 위쪽 메뉴 [아파트] · [오피스텔] (2026-11-16 사장님: 앱처럼 나눠) — 자료는 같은 "아파트·오피스텔"(apart) 하나,
-//  칸마다 고를 수 있는 알약만 다르다 (앱 src/lib/gongsil.ts CATS.apart · CATS.offi 와 같음)
-export type AptKind = "apt" | "offi";
-export const APT_PILLS: Record<AptKind, string[]> = {
-  apt: ["아파트", "분양권·재건축"],
-  offi: ["오피스텔", "오피스텔분양권"],
-};
+// 분양권·재건축 알약 — [신축/분양/재건축] 칸 맨 앞 (2026-11-17 사장님).
+//  자료는 그대로 아파트·오피스텔(property_type) 의 sub_category(아파트분양권·재건축·재개발 / 오피스텔분양권)
+export const RESALE_PILLS = ["분양권·재건축", "오피스텔분양권"];
+
+// 공실열람 칸 나눔 (2026-11-17 사장님 최종) — PC · 모바일 웹 같은 칸·같은 알약:
+//  아파트 · 오피스텔 · 빌라/주택 · 원룸투룸(풀옵션) · 사무실·지식산업센터 · 상가 · 빌딩/건물 매매 · 공장/토지/기타 · 신축/분양/재건축
+//  (+ 경매/공매 · MY관심공실은 예전 그대로)
+//  DB 는 그대로 — property_type · sub_category · trade_type 으로 칸을 정한다 (matchGroupPill).
+//  base = 예전 큰 칸(apart·villa·one·biz·sale). PC 상세 검색조건(거래유형·면적·방/욕실·층수·관리비·옵션·테마 등)은 base 것을 쓴다.
+//  알약 값은 칸끼리 겹치지 않게 — 같은 글자가 두 칸에 있으면 값 앞에 "통매매:" · "분양:" 을 붙이고 화면에는 떼고 보인다(pillLabel).
+export type GroupTabId = "apt" | "offi" | "villa" | "one" | "office" | "shop" | "bldg" | "factory" | "sale";
+export const GROUP_TABS: { id: GroupTabId; name: string; base: string; pills: string[] }[] = [
+  // [기타] — 아파트·오피스텔 중 아파트·오피스텔·분양권·재건축·도시형생활주택 말고 남은 것 (빠지는 물건이 없게)
+  { id: "apt", name: "아파트", base: "apart", pills: ["아파트", "기타"] },
+  { id: "offi", name: "오피스텔", base: "apart", pills: ["오피스텔"] },
+  { id: "villa", name: "빌라/주택", base: "villa", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"] },
+  // 원룸투룸은 전세·월세·단기만 (매매는 빌라/연립으로). "오피스텔만 보기" 는 PC 에만
+  { id: "one", name: "원룸투룸(풀옵션)", base: "one", pills: ["원룸", "1.5룸", "투룸", "오피스텔만 보기"] },
+  { id: "office", name: "사무실·지식산업센터", base: "biz", pills: ["사무실", "지식산업센터", "건물 통임대"] },
+  { id: "shop", name: "상가", base: "biz", pills: ["상가"] },
+  // 통으로 사고파는 건물 — 매매만
+  { id: "bldg", name: "빌딩/건물 매매", base: "biz", pills: ["통매매:건물", "통매매:다세대", "통매매:단독/다가구", "통매매:상가주택"] },
+  { id: "factory", name: "공장/토지/기타", base: "biz", pills: ["공장/창고", "토지"] },
+  // 분양권 알약을 고르면 아파트·오피스텔 검색조건 (PC GongsilClient condCategory). 신축 알약은 property_type "분양" 만
+  { id: "sale", name: "신축/분양/재건축", base: "sale", pills: [...RESALE_PILLS, "분양:아파트", "분양:오피스텔", "분양:빌라", "분양:도시형생활주택", "분양:생활숙박시설", "분양:상가/업무"] },
+];
+export const groupTabsOf = (base: string) => GROUP_TABS.filter((t) => t.base === base);
+export const getGroupTab = (id: string | null | undefined) => GROUP_TABS.find((t) => t.id === id);
+/** 원룸투룸(풀옵션) 칸 알약 — 이 칸만 고르면 거래유형에서 매매를 뺀다 */
+export const ONE_ROOM_PILLS = ["원룸", "1.5룸", "투룸", "오피스텔만 보기"];
+/** 통건물(건물 통임대 · 빌딩/건물 매매) 알약인가 — 건물 쪽 테마·옵션용 */
+export const isWholeBuildingPill = (p: string) => p === "건물 통임대" || p.startsWith("통매매:") || p === "건물/빌딩";
+
+// ── 상세 검색조건 고르기 (2026-11-17) ──
+//  알약마다 어느 검색조건 묶음을 쓰나: apart(아파트·오피스텔) · villa(빌라·주택) · one(원룸·투룸) · biz(상가·사무실·건물·공장·토지) · sale(분양)
+//  분양권·재건축 · 오피스텔분양권은 신축/분양/재건축 칸에 있어도 apart 조건
+export type ConditionSet = "apart" | "villa" | "one" | "biz" | "sale";
+const BASE_TO_CONDITION: Record<string, ConditionSet> = { apart: "apart", villa: "villa", one: "one", biz: "biz", sale: "sale" };
+export const PILL_CONDITION: Record<string, ConditionSet> = Object.fromEntries([
+  ...GROUP_TABS.flatMap((g) => g.pills.map((p) => [p, RESALE_PILLS.includes(p) ? "apart" : BASE_TO_CONDITION[g.base]])),
+  // 예전 저장값
+  ["건물/빌딩", "biz"], ["빌딩/사무실", "biz"], ["빌라", "sale"], ["도시형생활주택", "sale"], ["생활숙박시설", "sale"], ["상가/업무", "sale"],
+]);
+/** 고른 알약들이 쓰는 검색조건 묶음 (모바일: 여러 묶음이면 합쳐서 보인다) */
+export const conditionSetsOf = (pills: string[]) => new Set(pills.map((p) => PILL_CONDITION[p]).filter(Boolean) as ConditionSet[]);
+/** PC 상세 검색조건을 가져올 큰 칸 — 신축/분양/재건축에서 분양권 알약이 하나라도 있으면 apart(분양 조건이 그 안에 다 들어 있음) */
+export const pcConditionCategory = (activeCategory: string, pills: string[]) =>
+  activeCategory === "sale" && pills.some((p) => RESALE_PILLS.includes(p)) ? "apart" : activeCategory;
+/** PC 상세 검색조건 칸 목록 (예전 GongsilClient getWizardTabs 그대로 옮김) */
+export function pcWizardTabs(cat: string): string[] {
+  if (cat === "apart") return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
+  if (cat === "villa") return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"]; // 빌라·주택은 세대수로 찾지 않는다
+  if (cat === "one") return ["거래유형", "면적", "방/욕실수", "방향", "관리비", "기타옵션", "등록자", "중개보수", "테마"];
+  if (cat === "biz") return ["거래유형", "면적", "층수", "관리비", "주차", "기타옵션", "등록자", "중개보수", "테마"];
+  if (cat === "sale") return ["거래유형", "면적", "세대수", "등록자", "중개보수", "테마"];
+  if (cat === "auction") return ["감정가", "최저입찰가", "할인율", "유찰횟수", "입찰일"];
+  return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
+}
+/**
+ * 거래유형 고르기에 보일 항목 — 원룸투룸(풀옵션) 알약만 골랐으면 매매 빼고, 빌딩/건물 매매 알약만 골랐으면 매매만.
+ *  (아무것도 안 골랐거나 다른 칸이 섞이면 전부)
+ */
+export function tradeTypesFor(pills: string[], all: string[] = ["매매", "전세", "월세", "단기"]): string[] {
+  if (pills.length === 0) return all;
+  if (pills.every((p) => ONE_ROOM_PILLS.includes(p))) return all.filter((t) => t !== "매매");
+  if (pills.every((p) => p.startsWith("통매매:"))) return all.filter((t) => t === "매매");
+  return all;
+}
+
+// 알약 글자만 바꿔 보이는 것 (값은 그대로)
+export const PILL_LABEL: Record<string, string> = { "빌라/연립": "빌라/연립(다세대)" };
+export const pillLabel = (p: string) => PILL_LABEL[p] || p.replace(/^(통매매|분양):/, "");
+
+export const DANDOK_SUBS = ["단독/다가구", "단독", "다가구"];
+export const BUILDING_SUBS = ["건물/빌딩", "건물", "빌딩/건물", "빌딩"];
+const VILLA_SUBS = ["빌라/연립", "빌라", "연립", "다세대", "다세대(통매매)"];
+const APT_RESALE_SUBS = ["아파트분양권", "재건축", "재개발"];
+// 예전 신축/분양 알약(모바일 저장값) — 앞에 "분양:" 없이 저장된 것
+const LEGACY_SALE_PILLS = ["빌라", "도시형생활주택", "생활숙박시설", "상가/업무"];
+type GroupVacancy = { property_type?: string | null; sub_category?: string | null; trade_type?: string | null; themes?: unknown };
+/** 통건물 매매 — 단독/다가구 매매 · 상가주택 매매 · 다세대(통매매) · 건물/빌딩 매매 ([빌딩/건물 매매] 칸) */
+export const isWholeHouseSale = (v: GroupVacancy) =>
+  v.sub_category === "다세대(통매매)" ||
+  (v.trade_type === "매매" && (DANDOK_SUBS.includes(String(v.sub_category || "")) || v.sub_category === "상가주택" || BUILDING_SUBS.includes(String(v.sub_category || ""))));
+
+/**
+ * 공실열람 알약 하나가 이 공실을 맞히나 — PC · 모바일 웹 같이 쓴다 (2026-11-17 사장님 최종 칸 나눔).
+ *  분양(property_type "분양") 물건은 [신축/분양/재건축] 칸에만.
+ *  offiTheme: 모바일 [오피스텔] 알약은 예전처럼 테마 "오피스텔" 붙은 물건도 (PC 는 "오피스텔만 보기" 알약이 따로)
+ *  fallbackType: 칸에 없는 알약(바로가기로 들어온 sub_category 등)은 이 property_type 안에서 sub_category 로 맞힌다(PC)
+ */
+export function matchGroupPill(v: GroupVacancy, pill: string, opts: { offiTheme?: boolean; fallbackType?: string } = {}): boolean {
+  const sub = String(v.sub_category || "");
+  const type = String(v.property_type || "");
+  const sale = v.trade_type === "매매";
+  const themes = Array.isArray(v.themes) ? (v.themes as unknown[]) : [];
+  if (pill.startsWith("분양:")) return type === "분양" && sub === pill.slice(3);
+  if (LEGACY_SALE_PILLS.includes(pill)) return type === "분양" && sub === pill;
+  if (type === "분양") return false; // 분양 물건은 신축/분양/재건축 칸에만
+  switch (pill) {
+    // ① 아파트 · 오피스텔
+    case "아파트": return sub === "아파트" || (type === "아파트·오피스텔" && !sub);
+    case "기타": return type === "아파트·오피스텔" && Boolean(sub) && !["아파트", "오피스텔", ...APT_RESALE_SUBS, "오피스텔분양권", "도시형생활주택"].includes(sub);
+    case "오피스텔": return sub === "오피스텔" || (Boolean(opts.offiTheme) && themes.includes("오피스텔"));
+    case "분양권·재건축": return APT_RESALE_SUBS.includes(sub);
+    case "오피스텔분양권": return sub === "오피스텔분양권";
+    // ② 빌라/주택 — 빌라/연립(다세대)에 다세대(통매매) · 도시형생활주택(아파트·오피스텔) · 예전 원룸·투룸 매매도
+    case "빌라/연립": return VILLA_SUBS.includes(sub) || (type === "아파트·오피스텔" && sub === "도시형생활주택") || (type === "원룸·투룸(풀옵션)" && sale);
+    case "단독/다가구": return DANDOK_SUBS.includes(sub);
+    case "전원주택": return sub === "전원주택";
+    case "상가주택": return sub === "상가주택";
+    // ③ 원룸투룸(풀옵션) — 전세·월세·단기만
+    case "원룸": return !sale && (["원룸", "원룸/투룸", "원룸·투룸"].includes(sub) || (type === "원룸·투룸(풀옵션)" && !sub));
+    case "1.5룸": case "투룸": return !sale && sub === pill;
+    case "오피스텔만 보기": return !sale && type === "원룸·투룸(풀옵션)" && themes.includes("오피스텔");
+    // ④ 사무실·지식산업센터 · 상가 · 공장/토지/기타
+    case "사무실": return sub === "사무실" || sub === "업무시설";
+    case "지식산업센터": return sub === "지식산업센터" || sub === "아파트형공장";
+    case "건물 통임대": return BUILDING_SUBS.includes(sub) && !sale;
+    case "상가": return sub === "상가" || sub === "근린상가" || sub === "상가건물";
+    case "공장/창고": return sub === "공장/창고" || sub === "공장" || sub === "창고";
+    case "토지": return sub === "토지" || sub === "대지" || sub === "임야";
+    // ⑤ 빌딩/건물 매매 — 매매만
+    case "통매매:건물": return sale && BUILDING_SUBS.includes(sub);
+    case "통매매:다세대": return sub === "다세대(통매매)";
+    case "통매매:단독/다가구": return sale && DANDOK_SUBS.includes(sub);
+    case "통매매:상가주택": return sale && sub === "상가주택";
+    // 예전 저장값 — [건물/빌딩] 은 거래 무관 건물
+    case "건물/빌딩": return BUILDING_SUBS.includes(sub);
+    default:
+      if (opts.fallbackType !== undefined) return type === opts.fallbackType && sub === pill;
+      return sub === pill || type === pill;
+  }
+}
+
+/**
+ * 이 공실이 들어갈 칸과 알약 (물건 바로 열기 · 첫 화면용) — 칸 순서대로 처음 맞는 것.
+ *  예: 다세대(통매매) → 빌라/주택, 건물 매매 → 빌딩/건물 매매, 건물 월세 → 사무실·지식산업센터(건물 통임대). 못 찾으면 null(예전 방식)
+ */
+export function groupOfVacancy(v: GroupVacancy): { group: (typeof GROUP_TABS)[number]; pill: string } | null {
+  if (v.trade_type === "경매") return null;
+  for (const group of GROUP_TABS) {
+    for (const pill of group.pills) {
+      if (pill === "오피스텔만 보기") continue;
+      if (matchGroupPill(v, pill, { fallbackType: "" })) return { group, pill };
+    }
+  }
+  return null;
+}
 
 // 카테고리 키 → DB property_type 매핑
 export const CATEGORY_TO_PROPERTY_TYPE: Record<string, string> = {
@@ -548,3 +690,4 @@ export const getJitteredCoords = (prop: any, isZoomedIn: boolean = true) => {
 
   return { lat: prop.lat, lng: prop.lng };
 };
+

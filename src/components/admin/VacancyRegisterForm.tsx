@@ -103,7 +103,7 @@ const formatPrice = (v: any): string => {
 // ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
-  "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
+  "빌라·주택": ["빌라/연립", "다세대(통매매)", "단독/다가구", "전원주택", "상가주택"],
   "원룸·투룸(풀옵션)": ["원룸", "1.5룸", "투룸"],
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "건물/빌딩", "공장/창고", "지식산업센터", "토지"],
   "분양": ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"],
@@ -134,7 +134,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 원룸·투룸(풀옵션)은 매매 버튼이 없으므로, 기본값 "매매"가 남아 금액 칸이 "매매가"로 뜨지 않게 전세로 맞춘다.
   useEffect(() => {
     if (propertyType === "원룸·투룸(풀옵션)" && tradeType === "매매") setTradeType("전세");
-  }, [propertyType, tradeType]);
+    // 다세대(통매매)는 매매만 (2026-11-17 사장님)
+    if (subCategory === "다세대(통매매)" && tradeType !== "매매") setTradeType("매매");
+  }, [propertyType, subCategory, tradeType]);
   const [commissionType, setCommissionType] = useState<string>("법정수수료");
   const [commissionAmount, setCommissionAmount] = useState("");
   const [commissionEtc, setCommissionEtc] = useState("");
@@ -1094,7 +1096,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const isBunyang = propertyType === "분양";
   const isBunyangBiz = isBunyang && subCategory === "상가/업무";
   const hasRequiredRule = isApt || isVilla || isOneRoom || isCommercial || isBunyang;
-  const isWholeBuildingSale = tradeType === "매매" && ((isVilla && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory)));
+  const isWholeBuildingSale = tradeType === "매매" && ((isVilla && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory)));
   const areaRequired = (isApt || isCommercial || isBunyangBiz) && subCategory !== "토지" && !isWholeBuildingSale;
   const roomRequired = isApt || isVilla || isOneRoom || (isBunyang && !isBunyangBiz);
   const priceReq = hasRequiredRule ? reqMark : null;
@@ -1375,7 +1377,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <label style={{ ...labelStyle, color: "#f97316", fontSize: 13 }}>상세 종류 선택 (2차)</label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {SUB_CATEGORIES[propertyType].map(s => (
-                    <SelectBtn key={s} label={s} selected={subCategory === s} onClick={() => {
+                    <SelectBtn key={s} label={s === "빌라/연립" ? "빌라/연립(다세대)" /* 글자만, 저장 값은 그대로 (2026-11-17) */ : s} selected={subCategory === s} onClick={() => {
                       setSubCategory(s);
                       if (s === "원룸" || s === "1.5룸") setRoomCount("1");
                       if (s === "투룸") setRoomCount("2");
@@ -1707,6 +1709,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
               {["매매", "전세", "월세", "단기"]
                 .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
+                .filter(t => !(subCategory === "다세대(통매매)" && t !== "매매")) /* 다세대(통매매)는 매매만 */
                 .map(t => (
                 <SelectBtn key={t} label={t} selected={tradeType === t} onClick={() => setTradeType(t)} />
               ))}
@@ -1780,7 +1783,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* 면적 */}
-            {!isLand && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
+            {!isLand && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>공급면적{areaReq}</label>
@@ -1832,7 +1835,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) ? (
+                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) ? (
                     <>
                       <label style={labelStyle}>연면적</label>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1963,7 +1966,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               )}
               </>
             )}
-            {!isLand && tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
+            {!isLand && tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>건폐율</label>
@@ -1996,7 +1999,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* 공통 필드: 해당층 / 전체층 (단독 건물 매매 시 지상/지하 층수 및 도로 폭으로 대체) */}
-            {isLand ? null : (tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
+            {isLand ? null : (tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
               <>
                 <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                   <div style={{ flex: 1 }}>
@@ -2055,12 +2058,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>해당층</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <input type="text" placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) ? "예: 일부, 1, 2, 전체" : "예: 3, 저층, 고층")} value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
+                    <input type="text" placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory) ? "예: 일부, 1, 2, 전체" : "예: 3, 저층, 고층")} value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
                     {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {(() => {
-                      if (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) return ['일부', '1층', '2층', '전체'];
+                      if (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) return ['일부', '1층', '2층', '전체'];
                       if (propertyType === "상가·사무실·건물·공장·토지") return tradeType === "매매" ? ['지하', '루프탑', '통매매'] : ['지하', '루프탑', '통임대'];
                       if (propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") return ['지하', '저층', '중층', '고층', '옥탑'];
                       return ['저층', '중층', '고층'];
@@ -2198,7 +2201,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* 준공연도 (도로 폭이 없는 상가/사무실/지식산업센터 등의 경우) */}
-            {propertyType === "상가·사무실·건물·공장·토지" && !((tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "")) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
+            {propertyType === "상가·사무실·건물·공장·토지" && !((tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "")) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>준공연도</label>

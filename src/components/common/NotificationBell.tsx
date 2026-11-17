@@ -25,6 +25,7 @@ const TYPE_LABEL: Record<string, { icon: string; color: string }> = {
   intake_new: { icon: "📥", color: "#059669" },
   inquiry_reply: { icon: "💬", color: "#dc2626" },
   inquiry_answered: { icon: "✅", color: "#059669" },
+  vacancy_report: { icon: "⚠️", color: "#d97706" }, // 내 공실에 오류제보 (2026-11-17)
   lecture_pending: { icon: "🎓", color: "#d97706" },
   lecture_approved: { icon: "🎓", color: "#059669" },
   lecture_rejected: { icon: "🎓", color: "#dc2626" },

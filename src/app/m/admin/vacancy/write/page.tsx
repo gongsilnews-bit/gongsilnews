@@ -16,7 +16,7 @@ import { applyCenterWatermark, type WatermarkChoice } from "@/utils/centerWaterm
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
-  "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
+  "빌라·주택": ["빌라/연립", "다세대(통매매)", "단독/다가구", "전원주택", "상가주택"],
   "원룸·투룸(풀옵션)": ["원룸", "1.5룸", "투룸"],
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "건물/빌딩", "공장/창고", "지식산업센터", "토지"],
   "분양": ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"],
@@ -97,7 +97,9 @@ function MobileVacancyWrite() {
   // 원룸·투룸(풀옵션)은 매매 버튼이 없으므로, 기본값 "매매"가 남아 금액 칸이 "매매가"로 뜨지 않게 전세로 맞춘다.
   useEffect(() => {
     if (propertyType === "원룸·투룸(풀옵션)" && tradeType === "매매") setTradeType("전세");
-  }, [propertyType, tradeType]);
+    // 다세대(통매매)는 매매만 (2026-11-17 사장님)
+    if (subCategory === "다세대(통매매)" && tradeType !== "매매") setTradeType("매매");
+  }, [propertyType, subCategory, tradeType]);
 
   // 금액
   const [deposit, setDeposit] = useState("");
@@ -344,7 +346,7 @@ function MobileVacancyWrite() {
   const isBunyang = propertyType === "분양";
   const isBunyangBiz = isBunyang && subCategory === "상가/업무";
   const hasRequiredRule = isApt || isVilla || isOneRoom || isCommercial || isBunyang;
-  const isWholeBuildingSale = tradeType === "매매" && ((isVilla && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory)));
+  const isWholeBuildingSale = tradeType === "매매" && ((isVilla && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory)));
   const areaRequired = (isApt || isCommercial || isBunyangBiz) && subCategory !== "토지" && !isWholeBuildingSale;
   const roomRequired = isApt || isVilla || isOneRoom || (isBunyang && !isBunyangBiz);
   const reqStar = <span style={{color:"#ef4444"}}>*</span>;
@@ -1488,7 +1490,7 @@ function MobileVacancyWrite() {
           </div>
           <label style={labelStyle}>소분류</label>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-            {(SUB_CATEGORIES[propertyType]||[]).map(s => <SBtn key={s} label={s} sel={subCategory===s} onClick={() => {
+            {(SUB_CATEGORIES[propertyType]||[]).map(s => <SBtn key={s} label={s === "빌라/연립" ? "빌라/연립(다세대)" /* 글자만, 저장 값은 그대로 (2026-11-17) */ : s} sel={subCategory===s} onClick={() => {
               setSubCategory(s);
               if (s === "원룸" || s === "1.5룸") setRoomCount("1");
               if (s === "투룸") setRoomCount("2");
@@ -1641,6 +1643,7 @@ function MobileVacancyWrite() {
           <div style={{ display:"flex", gap:8, marginBottom:14 }}>
             {["매매","전세","월세","단기"]
               .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
+              .filter(t => !(subCategory === "다세대(통매매)" && t !== "매매")) /* 다세대(통매매)는 매매만 */
               .map(t => <SBtn key={t} label={t} sel={tradeType===t} onClick={() => setTradeType(t)} />)}
           </div>
 
@@ -1682,7 +1685,7 @@ function MobileVacancyWrite() {
               <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#1a73e8":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
             </div>
           </div>
-          {subCategory !== "토지" && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
+          {subCategory !== "토지" && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
           <>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
             <div style={{flex:1}}>
@@ -1720,7 +1723,7 @@ function MobileVacancyWrite() {
                   )}
                 </div>
                 <div style={{flex:1}}>
-                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) ? (
+                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) ? (
                     <>
                       <label style={labelStyle}>연면적 ({areaUnit==="m2"?"m²":"평"})</label>
                       {areaUnit==="m2" ? (
@@ -1745,12 +1748,12 @@ function MobileVacancyWrite() {
               <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#1a73e8", fontWeight:600, padding:"0 2px" }}>
                 <div style={{flex:1}}>{landShareM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(landShareM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(landShareM2).toFixed(1)}m²`) : ""}</div>
                 <div style={{flex:1}}>
-                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && supplyM2 ? (
+                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && supplyM2 ? (
                     areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`
                   ) : ""}
                 </div>
               </div>
-              {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
+              {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
                 <div style={{ display:"flex", gap:10, marginBottom:10 }}>
                   <div style={{flex:1}}>
                     <label style={labelStyle}>건폐율</label>
@@ -1862,7 +1865,7 @@ function MobileVacancyWrite() {
               )}
             </>
           )}
-          {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
+          {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
             <>
               <div style={{ display:"flex", gap:10, marginBottom:14 }}>
                 <div style={{flex:1}}>
@@ -1920,10 +1923,10 @@ function MobileVacancyWrite() {
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
               <div style={{flex:1}}>
                 <label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label>
-                <input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) ? "예: 일부, 1, 2, 전체" : "예: 3")} style={{...inputStyle, marginBottom: 8}}/>
+                <input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory) ? "예: 일부, 1, 2, 전체" : "예: 3")} style={{...inputStyle, marginBottom: 8}}/>
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                   {(() => {
-                    if (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) return ['일부', '1층', '2층', '전체'];
+                    if (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) return ['일부', '1층', '2층', '전체'];
                     if (propertyType === "상가·사무실·건물·공장·토지") return tradeType === "매매" ? ['지하', '루프탑', '통매매'] : ['지하', '루프탑', '통임대'];
                     if (propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") return ['지하', '저층', '중층', '고층', '옥탑'];
                     return ['저층', '중층', '고층'];
@@ -2041,7 +2044,7 @@ function MobileVacancyWrite() {
             </div>
           )}
 
-          {propertyType === "상가·사무실·건물·공장·토지" && !((tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "")) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
+          {propertyType === "상가·사무실·건물·공장·토지" && !((tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "")) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>준공연도</label>
               <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>

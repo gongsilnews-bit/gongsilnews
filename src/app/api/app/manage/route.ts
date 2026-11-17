@@ -10,6 +10,7 @@
 //  POST { action: "bm.cats" (type) | "sub.list" | "sub.toggle" (reporterId) } → 찜 폴더 · 구독 기자
 //  POST { action: "star.get" | "star.toggle" (id, on) | "star.list" | "star.count" } → 관심단지(★)
 //  POST { action: "prefs.get" | "prefs.set" (prefs) } → 앱 설정 알림 켜기·끄기
+//  POST { action: "vac.report", id, reason } → 공실 오류제보 (로그인 회원)
 //  POST { action: "pt.my" } → 내 포인트 잔액·내역 · "pt.admin.members" | "pt.admin.tx" | "pt.admin.settings" | "pt.admin.setting" (key, value) | "pt.admin.adjust" (id, amount, reason) → 최고관리자
 //  POST { action: "art.approve" | "art.reject" | "art.request" | "art.flags" | "art.delete", id, ... }
 import { NextRequest, NextResponse } from "next/server";
@@ -20,6 +21,7 @@ import { getBookmarkCategories } from "@/app/actions/bookmark";
 import { getMySubscriptions, toggleSubscription } from "@/app/actions/subscription";
 import { adminAdjustPoints, getAllMembersWithBalance, getPointBalance, getPointSettings, getPointTransactions, updatePointSetting } from "@/app/actions/point";
 import { groupPointTx, type PointTx } from "@/utils/pointGroup";
+import { submitVacancyReport } from "@/utils/vacancyReport";
 import { myArticle, myVacancy, no, whoAmI } from "../auth";
 
 const ok = (data: Record<string, unknown> = {}) => NextResponse.json({ success: true, ...data });
@@ -62,6 +64,12 @@ export async function POST(req: NextRequest) {
   if (action === "noti.readAll") {
     const res = await markAllNotificationsRead({ userId: uid, isAdmin: me.isAdmin });
     return res.success ? ok() : no(res.error || "읽음 처리하지 못했습니다.", 500);
+  }
+
+  // ── 공실 오류제보 (utils/vacancyReport — 웹과 같은 함수, 2026-11-17) ──
+  if (action === "vac.report") {
+    const res = await submitVacancyReport(me.db, uid, id, String(body?.reason || ""));
+    return res.success ? ok({ already: !!res.already }) : no(res.error || "제보하지 못했습니다.");
   }
 
   // ── 포인트 (사이트 모바일 /m/admin/point 와 같은 함수, 2026-11-17 앱 자체 화면) ──

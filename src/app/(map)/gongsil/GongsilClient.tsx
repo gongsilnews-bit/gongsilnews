@@ -37,8 +37,17 @@ import {
 
 // Import helpers and constants
 import {
-  APT_PILLS,
-  type AptKind,
+  type GroupTabId,
+  GROUP_TABS,
+  RESALE_PILLS,
+  isWholeBuildingPill,
+  pcConditionCategory,
+  pcWizardTabs,
+  tradeTypesFor,
+  getGroupTab,
+  groupTabsOf,
+  groupOfVacancy,
+  pillLabel,
   CATEGORY_CONFIG,
   CATEGORY_TO_PROPERTY_TYPE,
   PRICE_GRID,
@@ -77,6 +86,9 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     const first = initialVacancies[0];
     if (first) {
       if (first.trade_type === "경매") return "auction";
+      // 새 칸 나눔 (2026-11-17) — 단독/다가구·상가주택 매매처럼 큰 칸이 바뀌는 물건도 맞는 칸으로
+      const g = groupOfVacancy(first);
+      if (g) return g.group.base;
       const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
         ([, pType]) => pType === first.property_type
       );
@@ -93,6 +105,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         const info = getAuctionInfo(first);
         return [info.category];
       } else {
+        const g = groupOfVacancy(first);
+        if (g) return [g.pill];
         if (first.sub_category) {
           return [first.sub_category];
         }
@@ -140,22 +154,53 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return "경매";
   });
   const shareDropdownRef = useRef<HTMLDivElement>(null);
-  // [아파트] / [오피스텔] 어느 칸인지 — 알약에서 짐작하고, 둘 다 섞였으면(예전 저장값) 지난번 칸
-  const [aptKind, setAptKind] = useState<AptKind>("apt");
-  useEffect(() => { try { if (sessionStorage.getItem("gongsil_aptkind") === "offi") setAptKind("offi"); } catch {} }, []);
+  // 위쪽 칸(GROUP_TABS) — 아파트 · 오피스텔 · 빌라/주택 … 공장/토지/기타 (2026-11-17 사장님: 9칸으로 나눔)
+  //  activeCategory 는 예전 큰 칸(apart·villa·one·biz) 그대로 두고 상세 검색조건을 거기서 가져온다. 칸은 groupTab 으로
+  const [groupTab, setGroupTab] = useState<GroupTabId>(() => groupOfVacancy(initialVacancies[0] || {})?.group.id || "apt");
   useEffect(() => {
-    if (activeCategory !== "apart") return;
-    const isOffi = (p: string) => p.includes("오피스텔");
-    const hasO = activePills.some(isOffi), hasA = activePills.some((p) => !isOffi(p));
-    const kind: AptKind = hasO && !hasA ? "offi" : hasA && !hasO ? "apt" : aptKind;
-    if (kind !== aptKind) setAptKind(kind);
-    // 이 칸에 없는 알약(예전 "아파트·오피스텔" 때 저장한 "기타" 등)은 빼고, 다 빠지면 이 칸 알약 전부
-    const allowed = APT_PILLS[kind];
-    const keep = activePills.filter((p) => allowed.includes(p));
-    if (keep.length !== activePills.length) setActivePills(keep.length ? keep : allowed);
-  }, [activeCategory, activePills, aptKind]); // eslint-disable-line react-hooks/exhaustive-deps
+    try {
+      const saved = sessionStorage.getItem("gongsil_group");
+      if (getGroupTab(saved)) setGroupTab(saved as GroupTabId);
+      else if (sessionStorage.getItem("gongsil_aptkind") === "offi") setGroupTab("offi");
+    } catch {}
+  }, []);
+  useEffect(() => {
+    const tabs = groupTabsOf(activeCategory);
+    if (tabs.length === 0) return;
+    // 예전 [건물/빌딩] 알약(빌딩·건물(통) 칸) 저장값 — 매매 아닌 거래만 골라 두었으면 [건물 통임대], 아니면 [빌딩/건물 매매] 칸 전부
+    if (activePills.includes("건물/빌딩")) {
+      const rentOnly = filterTradeTypes.length > 0 && !filterTradeTypes.includes("매매");
+      const to = getGroupTab(rentOnly ? "office" : "bldg")!;
+      setActiveCategory(to.base); setGroupTab(to.id); setActivePills(rentOnly ? ["건물 통임대"] : to.pills);
+      return;
+    }
+    const cur = tabs.find((t) => t.id === groupTab);
+    const fits = (t: (typeof tabs)[number]) => activePills.length > 0 && activePills.every((p) => t.pills.includes(p));
+    // ① 지금 칸에 알약이 다 맞으면 그대로 ② 알약이 다 들어가는 칸 ③ 알약 하나라도 들어 있는 칸(예전 큰 칸 알약이 섞여 저장된 경우)
+    let g = cur && fits(cur) ? cur : tabs.find(fits) || tabs.find((t) => activePills.some((p) => t.pills.includes(p)));
+    if (!g) {
+      g = cur || tabs[0];
+      // 이 큰 칸의 예전 알약(예: 신축/분양 시절 "아파트" · 아파트·오피스텔 시절 "기타")이면 이 칸 알약 전부로
+      const oldPills = CATEGORY_CONFIG[activeCategory]?.pills || [];
+      if (activePills.length > 0 && activePills.every((p) => oldPills.includes(p))) {
+        if (g.id !== groupTab) setGroupTab(g.id);
+        setActivePills(g.pills.filter((p) => p !== "오피스텔만 보기"));
+        return;
+      }
+      // 다른 큰 칸의 칸 알약이면 그 칸으로 (예: 없앤 전원주택/토지 칸에 저장된 [토지] → 공장/토지/기타)
+      const other = activePills.length > 0 ? GROUP_TABS.find((t) => t.base !== activeCategory && activePills.every((p) => t.pills.includes(p))) : undefined;
+      if (other) { setActiveCategory(other.base); setGroupTab(other.id); return; }
+      // 칸에 없는 알약뿐(바로가기 sub_category 등) — 그대로 둔다
+      if (g.id !== groupTab) setGroupTab(g.id);
+      return;
+    }
+    if (g.id !== groupTab) setGroupTab(g.id);
+    // 이 칸에 없는 알약은 빼고, 다 빠지면 이 칸 알약 전부
+    const keep = activePills.filter((p) => g!.pills.includes(p));
+    if (keep.length !== activePills.length) setActivePills(keep.length ? keep : g.pills.filter((p) => p !== "오피스텔만 보기"));
+  }, [activeCategory, activePills, groupTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useMapFields("pc-gongsil-category", { activeCategory, activePills, activeMode, isAuctionMode }, { activeCategory: setActiveCategory, activePills: setActivePills, activeMode: setActiveMode, isAuctionMode: setIsAuctionMode });
+  useMapFields("pc-gongsil-category", { activeCategory, groupTab, activePills, activeMode, isAuctionMode }, { activeCategory: setActiveCategory, groupTab: (v: string) => { if (getGroupTab(v)) setGroupTab(v as GroupTabId); }, activePills: setActivePills, activeMode: setActiveMode, isAuctionMode: setIsAuctionMode });
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
   const [recentViews, setRecentViews] = useState<any[]>([]);
@@ -568,6 +613,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const vacancyFilterOptions = {
     dbVacancies,
     activeCategory,
+    activeGroup: groupTab,
     activePills,
     filterTradeTypes,
     appliedMaemaeMin,
@@ -728,7 +774,18 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
             localStorage.setItem("gongsil_pills", JSON.stringify(pills));
           } else {
             setActiveDetailTab("info");
-            const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
+            // 새 칸 나눔 (2026-11-17) — 물건이 들어갈 칸·알약으로 (단독/다가구·상가주택 매매 등)
+            const tg = groupOfVacancy(target);
+            if (tg) {
+              setActiveCategory(tg.group.base);
+              setGroupTab(tg.group.id);
+              setIsAuctionMode(false);
+              setActiveMode("공실");
+              setActivePills([tg.pill]);
+              localStorage.setItem("gongsil_pills", JSON.stringify([tg.pill]));
+              sessionStorage.setItem("gongsil_category", tg.group.base);
+            }
+            const catEntry = tg ? undefined : Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
               ([, pType]) => pType === target.property_type
             );
             if (catEntry) {
@@ -1186,13 +1243,13 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         <div class="price">${priceText}</div>
         <div style="font-size:13px;color:#555;margin-bottom:20px;">${prop.property_type} · ${
       prop.direction || "방향없음"
-    } · ${prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 || 0}㎡` : `공급/전용: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡`}</div>
+    } · ${prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 || 0}㎡` : `공급/전용: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡`}</div>
         <div class="info-row"><div class="info-label">공실광고번호</div><div class="info-value">${
           prop.vacancy_no || "-"
         }</div></div>
         <div class="info-row"><div class="info-label">소재지</div><div class="info-value">${fullAddr || "-"}</div></div>
-        <div class="info-row"><div class="info-label">${prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? "연면적" : "공급/전용면적"}</div><div class="info-value">${
-          prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) 
+        <div class="info-row"><div class="info-label">${prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? "연면적" : "공급/전용면적"}</div><div class="info-value">${
+          prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) 
             ? (prop.supply_m2 ? prop.supply_m2 + "m²" : "-")
             : `${prop.supply_m2 ? prop.supply_m2 + "m²" : "-"} / ${prop.exclusive_m2 ? prop.exclusive_m2 + "m²" : "-"}`
         }</div></div>
@@ -1333,13 +1390,24 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     detailFilters: [],
     showToggle: false,
   };
-  // [아파트] · [오피스텔] 칸 — 같은 apart 자료, 알약만 칸마다 (2026-11-16 사장님: PC 도 앱처럼 나눠)
-  const config = activeCategory === "apart" ? { ...baseConfig, name: aptKind === "offi" ? "오피스텔" : "아파트", pills: APT_PILLS[aptKind] } : baseConfig;
+  // 위쪽 칸(GROUP_TABS) — 큰 칸 검색조건은 그대로, 이름·알약만 칸마다 (2026-11-16 아파트·오피스텔 → 2026-11-17 9칸)
+  const curGroup = getGroupTab(groupTab);
+  // 상세 검색조건을 가져올 큰 칸 — [신축/분양/재건축] 에서 분양권·재건축 · 오피스텔분양권 알약을 고르면 아파트·오피스텔 조건 (2026-11-17)
+  const condCategory = pcConditionCategory(activeCategory, activePills);
+  // 거래유형에 보일 항목 — 원룸투룸(풀옵션)은 매매 빼고, 빌딩/건물 매매는 매매만 (2026-11-17)
+  const allowedTradeTypes = tradeTypesFor(activeCategory === "all" || activeCategory === "wish" || activeCategory === "auction" ? [] : activePills);
+  const config = curGroup && curGroup.base === activeCategory ? { ...baseConfig, name: curGroup.name, pills: curGroup.pills } : baseConfig;
   const isOfficePill = (p: string) => p.includes("오피스텔");
 
   const getThemesByCategory = (category: string): string[] => {
     let themes = new Set<string>();
     const isEmpty = activePills.length === 0;
+    // [신축/분양/재건축] 칸 — 분양권 알약 테마(아파트 쪽) + 신축 알약이 함께면 예전 분양 테마도
+    if (category === "apart" && activeCategory === "sale") {
+      if (activePills.some((p) => RESALE_PILLS.includes(p))) ["마이너스피", "무피", "로열층", "중도금무이자", "전매제한없음", "하이엔드", "수익형", "역세권", "뻥뷰", "급매"].forEach(t => themes.add(t));
+      if (activePills.some((p) => !RESALE_PILLS.includes(p))) ["급매", "추천공실광고"].forEach(t => themes.add(t));
+      return Array.from(themes);
+    }
 
     if (category === "apart") {
       if (isEmpty || activePills.includes("아파트분양권") || activePills.includes("오피스텔분양권") || activePills.includes("분양권·재건축")) {
@@ -1359,7 +1427,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     if (category === "biz") {
       if (isEmpty || activePills.includes("상가")) ["대로변상가", "가시성최상", "무권리", "카페추천", "음식점추천", "코너상가", "유동인구많음"].forEach(t => themes.add(t));
       if (isEmpty || activePills.includes("사무실")) ["역세권사무실", "채광우수", "가성비사무실", "사옥추천", "디자인사무실", "즉시입주", "주차편리"].forEach(t => themes.add(t));
-      if (isEmpty || activePills.includes("건물/빌딩")) ["사옥추천", "통임대", "수익형건물", "메디컬빌딩", "리모델링빌딩", "코너건물", "가시성우수"].forEach(t => themes.add(t));
+      if (isEmpty || activePills.some(isWholeBuildingPill)) ["사옥추천", "통임대", "수익형건물", "메디컬빌딩", "리모델링빌딩", "코너건물", "가시성우수"].forEach(t => themes.add(t));
       if (isEmpty || activePills.includes("공장/창고")) ["IC인접", "대로변접", "민원없는곳", "신축공장", "물류창고", "단독공장", "저렴한임대료"].forEach(t => themes.add(t));
       if (isEmpty || activePills.includes("지식산업센터")) ["드라이브인", "섹션오피스", "역세권지산", "코너호실", "로얄층", "풀인테리어", "가성비매물"].forEach(t => themes.add(t));
       if (isEmpty || activePills.includes("토지")) ["공장부지", "창고부지", "전원주택지", "투자가치최상", "자연녹지", "급매물", "남향"].forEach(t => themes.add(t));
@@ -1380,28 +1448,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return Array.from(themes);
   };
 
-  const getWizardTabs = (): string[] => {
-    if (activeCategory === "apart") {
-      return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
-    }
-    if (activeCategory === "villa") {
-      // 빌라·주택은 세대수로 찾지 않는다
-      return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
-    }
-    if (activeCategory === "one") {
-      return ["거래유형", "면적", "방/욕실수", "방향", "관리비", "기타옵션", "등록자", "중개보수", "테마"];
-    }
-    if (activeCategory === "biz") {
-      return ["거래유형", "면적", "층수", "관리비", "주차", "기타옵션", "등록자", "중개보수", "테마"];
-    }
-    if (activeCategory === "sale") {
-      return ["거래유형", "면적", "세대수", "등록자", "중개보수", "테마"];
-    }
-    if (activeCategory === "auction") {
-      return ["감정가", "최저입찰가", "할인율", "유찰횟수", "입찰일"];
-    }
-    return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
-  };
+  // 상세 검색조건 칸 — 큰 칸별 목록은 gongsilHelpers pcWizardTabs (신축/분양/재건축 + 분양권 알약이면 아파트·오피스텔 조건)
+  const getWizardTabs = (): string[] => pcWizardTabs(condCategory);
 
   const resetAllFilters = () => {
     setFilterTradeTypes([]);
@@ -1505,14 +1553,18 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     sessionStorage.setItem("gongsil_category", newKey);
   };
 
-  /** 위쪽 [아파트] · [오피스텔] 칸 누르기 — apart 로 옮기고 그 칸 알약을 다 고른 채로 */
-  const pickAptKind = (k: AptKind) => {
-    if (activeCategory === "apart" && aptKind === k) return;
-    if (activeCategory !== "apart") handleCategoryChange("apart");
-    else { setShowDetail(false); setSelectedClusterIds(null); }
-    setAptKind(k);
-    setActivePills(APT_PILLS[k]);
-    try { sessionStorage.setItem("gongsil_aptkind", k); sessionStorage.setItem("gongsil_pills_apart", JSON.stringify(APT_PILLS[k])); } catch {}
+  /** 위쪽 칸(아파트 · 오피스텔 · 빌라/주택 …) 누르기 — 큰 칸으로 옮기고 그 칸 알약을 다 고른 채로 */
+  const pickGroupTab = (id: GroupTabId) => {
+    const g = getGroupTab(id);
+    if (!g) return;
+    if (activeCategory === g.base && groupTab === id) return;
+    if (activeCategory !== g.base) handleCategoryChange(g.base);
+    // 같은 큰 칸 안에서 칸만 바꿔도 다른 칸 누를 때처럼 검색조건을 비운다 (칸마다 거래유형이 달라서 — 2026-11-17)
+    else { setShowDetail(false); setSelectedClusterIds(null); resetAllFilters(); }
+    const pills = g.pills.filter((p) => p !== "오피스텔만 보기");
+    setGroupTab(id);
+    setActivePills(pills);
+    try { sessionStorage.setItem("gongsil_group", id); sessionStorage.setItem(`gongsil_pills_${g.base}`, JSON.stringify(pills)); } catch {}
   };
 
   const togglePill = (p: string) => {
@@ -1598,7 +1650,18 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           localStorage.setItem("gongsil_pills", JSON.stringify(pills));
         } else {
           setActiveDetailTab("info");
-          const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
+          // 새 칸 나눔 (2026-11-17) — 물건이 들어갈 칸·알약으로 (단독/다가구·상가주택 매매 등)
+          const tg = groupOfVacancy(target);
+          if (tg) {
+            setActiveCategory(tg.group.base);
+            setGroupTab(tg.group.id);
+            setIsAuctionMode(false);
+            setActiveMode("공실");
+            setActivePills([tg.pill]);
+            localStorage.setItem("gongsil_pills", JSON.stringify([tg.pill]));
+            sessionStorage.setItem("gongsil_category", tg.group.base);
+          }
+          const catEntry = tg ? undefined : Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
             ([, pType]) => pType === target!.property_type
           );
           if (catEntry) {
@@ -1871,8 +1934,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         <GongsilFilterBar
           activeCategory={activeCategory}
           handleCategoryChange={handleCategoryChange}
-          aptKind={aptKind}
-          onPickAptKind={pickAptKind}
+          groupTab={groupTab}
+          onPickGroupTab={pickGroupTab}
           popoverSearchKeyword={popoverSearchKeyword}
           setPopoverSearchKeyword={setPopoverSearchKeyword}
           handleSearch={handleSearch}
@@ -1953,7 +2016,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
                       transition: "all 0.15s",
                     }}
                   >
-                    {isSelected ? `✓ ${p}` : p}
+                    {isSelected ? `✓ ${pillLabel(p)}` : pillLabel(p)}
                   </button>
                   {isAuctionMode && (p === "빌라/주택" || p === "토지") && (
                     <div style={{ width: 1, height: 16, background: "#ddd", margin: "0 6px", flexShrink: 0 }} />
@@ -2089,7 +2152,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
                       setActiveSection,
                       isAuctionMode,
                       setTempFilterTradeTypes,
-                      activeCategory,
+                      activeCategory: condCategory,
+                      allowedTradeTypes,
                       setTempMaemaeMin,
                       formatPriceLabel,
                       handleSliderRelease,
@@ -2153,7 +2217,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
                   />
                       {filterName === "거래방식" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {["매매", "전세", "월세"].map((type) => (
+                          {["매매", "전세", "월세"].filter((type) => allowedTradeTypes.includes(type)).map((type) => (
                             <label
                               key={type}
                               style={{
@@ -2649,7 +2713,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
                       {filterName === "테마" && (
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, width: 240 }}>
-                          {getThemesByCategory(activeCategory).map((t) => {
+                          {getThemesByCategory(condCategory).map((t) => {
                             const isThemeSelected = filterThemes.includes(t);
                             return (
                               <button

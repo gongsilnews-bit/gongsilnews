@@ -315,7 +315,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   const excArea = vacancy.exclusive_m2 ? parseFloat(vacancy.exclusive_m2) : 0;
   const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
 
-  const isSpecialSale = vacancy.trade_type === "매매" && ((vacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(vacancy.sub_category)) || (vacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(vacancy.sub_category)));
+  const isSpecialSale = vacancy.trade_type === "매매" && ((vacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(vacancy.sub_category)) || (vacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(vacancy.sub_category)));
   
   let areaLabel = isSpecialSale ? "연면적" : "공급/전용면적";
   let areaDisplay = '-';
@@ -417,7 +417,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     // ── 2그룹: 면적 및 물리적 규모 (대폭 상향 배치) ──
     // 10. 공급면적 / 전용면적 / 대지면적
     const isSpecialSale = tradeType === "매매" && (
-      (propType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+      (propType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) ||
       (propType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))
     );
 

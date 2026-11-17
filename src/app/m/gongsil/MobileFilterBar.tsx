@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { FilterState, filterVacanciesList, AUCTION_ALL_PROPERTY_TYPES } from "./filters/useVacancyFilters";
+import { FilterState, filterVacanciesList, AUCTION_ALL_PROPERTY_TYPES, MOBILE_PROPERTY_GROUPS } from "./filters/useVacancyFilters";
 import { VacancyRecord } from "./search/vacancySearch.types";
+import { pillLabel, conditionSetsOf, tradeTypesFor } from "@/app/(map)/gongsil/gongsilHelpers";
 import LocationFilterPanel from "./filters/LocationFilterPanel";
 import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
 import TradeTypeFilterPanel from "./filters/TradeTypeFilterPanel";
@@ -45,10 +46,12 @@ const RESIDENTIAL_THEMES = ['급매', '추천공실광고', '신축급', '올수
 
 // 🚀 [PC 동일] 카테고리별 맞춤 기타옵션 목록 생성기
 const getCategoryOptions = (types: string[]) => {
-  const hasApart = types.some(p => ["아파트", "오피스텔", "기타"].includes(p));
-  const hasOne = types.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
-  const hasVilla = types.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
-  const hasBiz = types.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+  // 알약 → 검색조건 묶음은 gongsilHelpers PILL_CONDITION (칸 나눔 2026-11-17)
+  const sets = conditionSetsOf(types);
+  const hasApart = sets.has("apart");
+  const hasOne = sets.has("one");
+  const hasVilla = sets.has("villa");
+  const hasBiz = sets.has("biz");
 
   if (hasApart) {
     return ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
@@ -62,7 +65,7 @@ const getCategoryOptions = (types: string[]) => {
   if (hasBiz) {
     return ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설", "시스템에어컨", "호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"];
   }
-  const hasSale = types.some(p => ["도시형생활주택", "생활숙박시설", "상가/업무"].includes(p));
+  const hasSale = sets.has("sale");
   if (hasSale) {
     return ["시스템에어컨", "빌트인냉장고", "발코니확장", "중문", "도어락", "엘리베이터", "CCTV", "주차가능"];
   }
@@ -112,11 +115,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const PROPERTY_TYPES = activeMode === "경매" ? [
     { group: "경·공매 자산유형", items: ["아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"] }
   ] : [
-    { group: "아파트·오피스텔", items: ["아파트", "오피스텔", "기타"] },
-    { group: "빌라·주택", items: ["빌라/연립", "단독/다가구", "전원주택"] },
-    { group: "원룸·투룸(풀옵션)", items: ["원룸", "1.5룸", "투룸"] },
-    { group: "상가·사무실·공장·토지", items: ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"] },
-    { group: "신축분양", items: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"] },
+    // 칸 나눔 (2026-11-17 사장님 최종) — 칸·알약은 PC 와 같이 gongsilHelpers GROUP_TABS 한 곳에서 (useVacancyFilters MOBILE_PROPERTY_GROUPS)
+    ...MOBILE_PROPERTY_GROUPS,
   ];
 
   // Text search
@@ -134,13 +134,19 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   // 🚀 [PC 동일] 카테고리별 동적 상세 필터 조건 판별기 (전체 선택 시에는 기본 공통 조건만 노출)
   const allPropTypesList = PROPERTY_TYPES.flatMap(g => g.items);
-  const isTempAll = tempFilters.propertyTypes.length >= allPropTypesList.length || tempFilters.propertyTypes.length === 0;
+  // 전체로 보는 개수 — 예전 저장값(15~17개)도 전체 (useVacancyFilters filterVacanciesList 와 같은 기준)
+  const allThreshold = Math.min(allPropTypesList.length, 15);
+  const isTempAll = tempFilters.propertyTypes.length >= allThreshold || tempFilters.propertyTypes.length === 0;
 
-  const isApartmentGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
-  const isVillaGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
-  const isOneRoomGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
-  const isCommercialGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
-  const isSaleGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["도시형생활주택", "생활숙박시설", "상가/업무"].includes(p));
+  // 알약 → 검색조건 묶음 (gongsilHelpers PILL_CONDITION — 분양권 알약은 아파트 조건, 건물 통임대·빌딩/건물 매매는 상가·사무실 조건)
+  const tempSets = conditionSetsOf(tempFilters.propertyTypes);
+  const isApartmentGroup = !isTempAll && tempSets.has("apart");
+  const isVillaGroup = !isTempAll && tempSets.has("villa");
+  const isOneRoomGroup = !isTempAll && tempSets.has("one");
+  const isCommercialGroup = !isTempAll && tempSets.has("biz");
+  const isSaleGroup = !isTempAll && tempSets.has("sale");
+  // 거래유형 항목 — 원룸투룸(풀옵션)만 고르면 매매 빼고, 빌딩/건물 매매만 고르면 매매만
+  const tempTradeTypes = isTempAll ? TRADE_TYPES : tradeTypesFor(tempFilters.propertyTypes, TRADE_TYPES);
 
   const showTempPrice = true;
   const showTempArea = true;
@@ -156,12 +162,13 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showTempTheme = true;
 
   // 바깥 스크롤바용 판별기 (전체 선택 시에는 공통 단축 필터만 노출)
-  const isExtAll = filters.propertyTypes.length >= allPropTypesList.length || filters.propertyTypes.length === 0;
-  const extIsApart = !isExtAll && filters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
-  const extIsVilla = !isExtAll && filters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
-  const extIsOne = !isExtAll && filters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
-  const extIsBiz = !isExtAll && filters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
-  const extIsSale = !isExtAll && filters.propertyTypes.some(p => ["도시형생활주택", "생활숙박시설", "상가/업무"].includes(p));
+  const isExtAll = filters.propertyTypes.length >= allThreshold || filters.propertyTypes.length === 0;
+  const extSets = conditionSetsOf(filters.propertyTypes);
+  const extIsApart = !isExtAll && extSets.has("apart");
+  const extIsVilla = !isExtAll && extSets.has("villa");
+  const extIsOne = !isExtAll && extSets.has("one");
+  const extIsBiz = !isExtAll && extSets.has("biz");
+  const extIsSale = !isExtAll && extSets.has("sale");
 
   const showPricePill = true;
   const showAreaPill = true;
@@ -355,7 +362,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         return "전체자산 ▾";
       }
     } else {
-      if (filters.propertyTypes.length >= allPropTypes.length) {
+      if (filters.propertyTypes.length >= Math.min(allPropTypes.length, 15)) { // 예전 전체 저장값(15~17개)도 전체
         return "전체매물 ▾";
       }
     }
@@ -368,12 +375,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     }
 
     if (filters.propertyTypes.length === 1) {
-      return `${filters.propertyTypes[0]} ▾`;
+      return `${pillLabel(filters.propertyTypes[0])} ▾`;
     }
     if (filters.propertyTypes.length === 2) {
-      return `${filters.propertyTypes[0]}, ${filters.propertyTypes[1]} ▾`;
+      return `${pillLabel(filters.propertyTypes[0])}, ${pillLabel(filters.propertyTypes[1])} ▾`;
     }
-    return `${filters.propertyTypes[0]} 외 ${filters.propertyTypes.length - 1} ▾`;
+    return `${pillLabel(filters.propertyTypes[0])} 외 ${filters.propertyTypes.length - 1} ▾`;
   })();
 
   const pillStyle = (active: boolean) => ({
@@ -616,7 +623,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               <>
                 <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-                  <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES} />
+                  <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={tempTradeTypes} />
                 </div>
                 
                 {showTempPrice && (

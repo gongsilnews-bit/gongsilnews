@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FilterState } from './useVacancyFilters';
+import { pillLabel } from '@/app/(map)/gongsil/gongsilHelpers';
+
+// 대분류 칸 앞 그림 — 칸 나눔(2026-11-17) 뒤에도 예전 큰 칸과 같은 그림
+const GROUP_ICON: Record<string, string> = {
+  "아파트": "🏢 ", "오피스텔": "🏢 ", "빌라/주택": "🏡 ", "원룸투룸(풀옵션)": "🛏️ ",
+  "사무실·지식산업센터": "🏬 ", "상가": "🏬 ", "빌딩/건물 매매": "🏬 ", "공장/토지/기타": "🏬 ", "신축/분양/재건축": "✨ ",
+};
 
 interface Props {
   filters: FilterState;
@@ -18,7 +25,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
       if (matched) return matched.group;
     }
     if (PROPERTY_TYPES.length > 0) return PROPERTY_TYPES[0].group;
-    return "아파트·오피스텔";
+    return "아파트";
   };
 
   const [activeGroup, setActiveGroup] = useState<string>(getInitialGroup);
@@ -232,11 +239,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
                 onClick={() => handleSelectGroupExclusive(g.group)}
                 style={mainTabStyle(isGroupActive)}
               >
-                {g.group === "아파트·오피스텔" && "🏢 "}
-                {g.group === "빌라·주택" && "🏡 "}
-                {g.group === "원룸·투룸(풀옵션)" && "🛏️ "}
-                {g.group === "상가·사무실·공장·토지" && "🏬 "}
-                {g.group === "신축분양" && "✨ "}
+                {GROUP_ICON[g.group] || ""}
                 {g.group} {isGroupActive && "✓"}
               </button>
             );
@@ -268,7 +271,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
                 onClick={() => toggleGroupProp(item)}
                 style={subPillStyle(isSel)}
               >
-                {item} {isSel && "✓"}
+                {pillLabel(item)} {isSel && "✓"}
               </button>
             );
           })}

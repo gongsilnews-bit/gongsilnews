@@ -37,7 +37,8 @@ export type NotificationType =
   | "smartstore_order"  // 스마트스토어 결제 자동 연동 결과 (최고관리자용)
   | "star_vacancy"      // 찜한 부동산·단지에 새 공실 (회원용, utils/starAlerts)
   | "star_article"      // 찜한 부동산·단지에 새 기사
-  | "star_trade";       // 찜한 단지에 새 실거래
+  | "star_trade"        // 찜한 단지에 새 실거래
+  | "vacancy_report";   // 내 공실에 오류제보가 들어옴 (회원용, utils/vacancyReport)
 
 export type NotificationRow = {
   id: string;

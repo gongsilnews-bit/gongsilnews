@@ -169,7 +169,7 @@ export default function HomepageViewPage() {
 
     // 9. 공급/전용면적 또는 연면적
     if (subCategory !== "토지") {
-      const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+      const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택", "다세대(통매매)"].includes(subCategory)) ||
                                    (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory));
       
       if (tradeType === "매매" && isStandaloneBuilding) {
