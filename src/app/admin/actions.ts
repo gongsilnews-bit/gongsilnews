@@ -295,7 +295,16 @@ async function getRequesterContext(): Promise<RequesterContext> {
   try {
     const cookieClient = await createCookieSupabase();
     const { data } = await cookieClient.auth.getUser();
-    const userId = data?.user?.id;
+    let userId = data?.user?.id;
+    // 안드로이드 앱(/api/app/*)은 쿠키 대신 Authorization: Bearer <토큰> 을 보낸다 — 토큰을 서버에서 다시 확인한다 (2026-11-17)
+    if (!userId) {
+      const { headers } = await import('next/headers');
+      const token = ((await headers()).get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const { data: byToken } = await getAdminClient().auth.getUser(token);
+        userId = byToken?.user?.id;
+      }
+    }
     if (!userId) return { userId: null, isAdmin: false };
     const { data: me } = await getAdminClient().from('members').select('role, plan_type, plan_end_date, studio_end_date').eq('id', userId).maybeSingle();
     if (!me) return { userId, isAdmin: false };
