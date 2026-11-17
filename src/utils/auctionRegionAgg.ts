@@ -7,7 +7,8 @@ import { LAWD_NAMES } from "@/utils/aptMapShared";
 import { regionAgg } from "@/utils/aptRegionAgg";
 
 export type AucRegion = { key: string; name: string; lat: number; lng: number; n: number; c: Record<string, number> };
-type Out = { sido: AucRegion[]; gu: AucRegion[]; total: number };
+/** grid = 약 1km(위도·경도 0.01도) 칸마다 건수 — 앱 경매 지도를 넓게 볼 때 지역 이름 없이 원 숫자로 (2026-11-17 사장님) */
+type Out = { sido: AucRegion[]; gu: AucRegion[]; grid: AucRegion[]; total: number };
 
 const KEEP_MS = 10 * 60 * 1000;
 let cache: { at: number; data: Out } | null = null;
@@ -59,9 +60,15 @@ async function build(supabase: SupabaseClient): Promise<Out> {
   const nearest = (lat: number, lng: number, list: { k: string }[]) => list.reduce((best, x) => (d2(lat, lng, x.k) < d2(lat, lng, best.k) ? x : best), list[0]).k;
 
   const acc = new Map<string, { n: number; c: Record<string, number> }>();
+  const cells = new Map<string, AucRegion>();
   let total = 0;
   for (const r of rows) {
     if (!r.lat || !r.lng) continue;
+    const ck = `${Math.round(r.lat * 100)}:${Math.round(r.lng * 100)}`;
+    const cell = cells.get(ck) || { key: ck, name: "", lat: 0, lng: 0, n: 0, c: {} };
+    const cc = categoryOf(r);
+    cell.lat += r.lat; cell.lng += r.lng; cell.n++; cell.c[cc] = (cell.c[cc] || 0) + 1;
+    cells.set(ck, cell);
     const b = r.building_name || "";
     const named = gus.filter((g) => g.gu && b.includes(g.gu));
     // 시·도 이름까지 맞는 것을 먼저 (같은 이름 구가 여러 시·도에 있음)
@@ -86,7 +93,8 @@ async function build(supabase: SupabaseClient): Promise<Out> {
     for (const [cat, n] of Object.entries(g.c)) s.c[cat] = (s.c[cat] || 0) + n;
     sidoAcc.set(k, s);
   }
-  return { sido: [...sidoAcc.values()], gu, total };
+  const grid = [...cells.values()].map((g) => ({ ...g, lat: Math.round((g.lat / g.n) * 1e5) / 1e5, lng: Math.round((g.lng / g.n) * 1e5) / 1e5 }));
+  return { sido: [...sidoAcc.values()], gu, grid, total };
 }
 
 export async function auctionRegionAgg(supabase: SupabaseClient): Promise<Out> {
