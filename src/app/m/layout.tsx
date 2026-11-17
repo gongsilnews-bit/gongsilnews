@@ -2,6 +2,7 @@ import React from "react";
 import MobileBottomNav from "./_components/MobileBottomNav";
 
 import LocationPermissionInitializer from './_components/LocationPermissionInitializer';
+import AppOpenSheet from './_components/AppOpenSheet';
 import RealtorApprovalNotice from '@/components/RealtorApprovalNotice';
 import ComingSoon from "@/components/common/ComingSoon";
 
@@ -55,6 +56,10 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       {/* 공통 하단 탭바 및 전역 드로어 */}
       <React.Suspense fallback={null}>
         <RealtorApprovalNotice />
+      </React.Suspense>
+      {/* 공유받은 공실·기사를 웹으로 열면 [공실뉴스 앱으로 보기] (앱 출시 전엔 꺼짐) */}
+      <React.Suspense fallback={null}>
+        <AppOpenSheet />
       </React.Suspense>
       <MobileBottomNav />
       <LocationPermissionInitializer />
