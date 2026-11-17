@@ -8,7 +8,7 @@ import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actio
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
-import { formatSection1, formatSection2 } from "@/utils/formatCategory";
+import { formatSection1, formatSection2, GONGSIL_SECTION2, section2Label } from "@/utils/formatCategory";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import BannerSlot from "@/components/BannerSlot";
 
@@ -608,12 +608,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
             style={{ padding: "5px 8px", border: "none", outline: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: "transparent", color: "#333" }}>
             <option value="">2차섹션 전체</option>
             {(section1 === "공실뉴스" || section1 === "공실현장") && (<>
-              <option value="아파트/오피스텔">아파트/오피스텔</option>
-              <option value="빌라/주택/다가구/다세대">빌라/주택/다가구/다세대</option>
-              <option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option>
-              <option value="상가/사무실/빌딩/공장/토지">상가/사무실/빌딩/공장/토지</option>
-              <option value="신축/분양">신축/분양</option>
-              <option value="경매/공매">경매/공매</option>
+              {GONGSIL_SECTION2.map((s2) => <option key={s2} value={s2}>{section2Label(s2)}</option>)}
             </>)}
             {(section1 === "부동산·경제" || section1 === "정책시장") && (<>
               <option value="부동산정책/정치">부동산정책/정치</option>

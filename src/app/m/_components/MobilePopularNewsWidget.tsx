@@ -1,5 +1,6 @@
 "use client";
 
+import { section2Matches } from "@/utils/formatCategory";
 import React, { useMemo } from "react";
 import Link from "next/link";
 
@@ -43,7 +44,7 @@ function MobilePopularNewsWidgetImpl({
 
     // 세부 카테고리 필터링
     if (section2Tab && section2Tab !== "전체") {
-      const subList = pool.filter((a) => a.section2 === section2Tab);
+      const subList = pool.filter((a) => section2Matches(a.section2, section2Tab));
       if (subList.length > 0) {
         pool = subList;
       }

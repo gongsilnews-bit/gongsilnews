@@ -13,7 +13,8 @@ export function formatSection1(sec1?: string | null): string {
 }
 
 const SECTION2_ALIASES: Record<string, string[]> = {
-  "빌라/주택/다가구/다세대": ["빌라/주택/다가구/다세대", "빌라/주택"],
+  // 2026-11-17: 새 10칸 이름 "빌라/주택"이 표준 — 예전 "빌라/주택/다가구/다세대" 기사도 같은 칸으로
+  "빌라/주택": ["빌라/주택", "빌라/주택/다가구/다세대"],
   "상가/사무실/빌딩/공장/토지": ["상가/사무실/빌딩/공장/토지", "상가/사무실/공장/토지"],
 };
 
@@ -28,10 +29,48 @@ export function formatSection2(sec2?: string | null): string {
   return canonical?.[0] || trimmed;
 }
 
-/** 새 명칭으로 필터링할 때 과거 DB 명칭까지 함께 조회합니다. */
+/**
+ * 공실뉴스 2차섹션 10칸 — 공실열람 칸과 똑같이 (2026-11-17 사장님: "똑같이 맞춰야 공실열람에서 기사가 맞춰서 보여질 것")
+ * 기사 쓰기에서 고르는 값. 예전 "빌라/주택/다가구/다세대" 기사는 "빌라/주택"으로 읽는다(SECTION2_ALIASES).
+ */
+export const GONGSIL_SECTION2 = [
+  "아파트", "오피스텔", "빌라/주택", "원룸투룸(풀옵션)", "사무실·지식산업센터",
+  "상가", "빌딩/건물 매매", "공장/토지/기타", "신축/분양/재건축", "경매/공매",
+] as const;
+
+/** 메뉴·탭에서만 쓰는 짧은 이름 (저장 이름은 그대로) — 칸이 늘어 한 줄에 들어가게 (2026-11-17 사장님) */
+const SECTION2_SHORT: Record<string, string> = { "원룸투룸(풀옵션)": "원룸투룸", "사무실·지식산업센터": "사무실·지산", "신축/분양/재건축": "신축/분양" };
+export const section2Label = (s: string) => SECTION2_SHORT[s] || s;
+
+/** 새 10칸 → 예전 6칸 (메뉴를 10칸으로 바꾸기 전까지 새 기사가 예전 메뉴에서도 보이게) */
+const OLD_GROUP_OF: Record<string, string> = {
+  "아파트": "아파트/오피스텔",
+  "오피스텔": "아파트/오피스텔",
+  "원룸투룸(풀옵션)": "원룸/투룸(풀옵션)",
+  "사무실·지식산업센터": "상가/사무실/빌딩/공장/토지",
+  "상가": "상가/사무실/빌딩/공장/토지",
+  "빌딩/건물 매매": "상가/사무실/빌딩/공장/토지",
+  "공장/토지/기타": "상가/사무실/빌딩/공장/토지",
+  "신축/분양/재건축": "신축/분양",
+};
+
+/** 새 명칭으로 필터링할 때 과거 DB 명칭까지 함께 조회합니다.
+ *  예전 6칸 이름이면 그 칸에 속하는 새 10칸 이름도, 새 이름이면 그 이름이 속한 예전 칸 이름도 함께 (2026-11-17) */
 export function getSection2Aliases(sec2: string): string[] {
   const canonical = formatSection2(sec2);
-  return SECTION2_ALIASES[canonical] || [canonical];
+  const base = SECTION2_ALIASES[canonical] || [canonical];
+  const newMembers = Object.keys(OLD_GROUP_OF).filter((k) => OLD_GROUP_OF[k] === canonical);
+  const oldGroup = OLD_GROUP_OF[canonical] ? [OLD_GROUP_OF[canonical]] : [];
+  return [...new Set([...base, ...newMembers, ...oldGroup])];
+}
+
+/** 기사의 2차섹션이 고른 칸에 들어가는지 — 예전 6칸 ↔ 새 10칸을 같은 칸으로 본다 (목록·많이 본 뉴스 등 화면 거르기용) */
+export function section2Matches(articleSec2?: string | null, selected?: string | null): boolean {
+  if (!selected) return true;
+  if (!articleSec2) return false;
+  const a = formatSection2(articleSec2);
+  const sel = formatSection2(selected);
+  return a === sel || OLD_GROUP_OF[a] === sel || OLD_GROUP_OF[sel] === a;
 }
 
 export function formatCategoryBadge(sec1?: string | null, sec2?: string | null): string {

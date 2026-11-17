@@ -1,5 +1,6 @@
 "use client";
 
+import { GONGSIL_SECTION2, formatSection2 } from "@/utils/formatCategory";
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -1046,12 +1047,9 @@ function MobileArticleWrite() {
               <option value="">세부 분류 (선택사항)</option>
               {(section1 === "공실뉴스" || section1 === "공실현장") && (
                 <>
-                  <option value="아파트/오피스텔">아파트/오피스텔</option>
-                  <option value="빌라/주택/다가구/다세대">빌라/주택/다가구/다세대</option>
-                  <option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option>
-                  <option value="상가/사무실/빌딩/공장/토지">상가/사무실/빌딩/공장/토지</option>
-                  <option value="신축/분양">신축/분양</option>
-                  <option value="경매/공매">경매/공매</option>
+                  {/* 공실열람과 같은 10칸 (2026-11-17 사장님) · 예전 칸으로 저장된 기사를 고칠 때는 그 칸도 보이게 */}
+                  {section2 && !(GONGSIL_SECTION2 as readonly string[]).includes(formatSection2(section2)) && <option value={section2}>{section2} (예전 칸)</option>}
+                  {GONGSIL_SECTION2.map((s2) => <option key={s2} value={s2}>{s2}</option>)}
                 </>
               )}
               {(section1 === "부동산·경제" || section1 === "정책시장") && (

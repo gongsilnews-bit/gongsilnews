@@ -1,5 +1,6 @@
 "use client";
 
+import { section2Matches } from "@/utils/formatCategory";
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -84,7 +85,7 @@ export default function MobileReporterClient({
   const filteredArticles =
     activeTab === "all"
       ? articles
-      : articles.filter((a: any) => a.section2 === activeTab);
+      : articles.filter((a: any) => section2Matches(a.section2, activeTab));
   const visibleVacancies = vacancies.filter(v => v.trade_type !== '경매' && v.trade_type !== '공매');
 
   const [userLevel, setUserLevel] = React.useState<number>(0);

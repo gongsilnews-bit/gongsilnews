@@ -1,5 +1,6 @@
 "use client";
 
+import { GONGSIL_SECTION2, section2Label } from "@/utils/formatCategory";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -387,12 +388,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
                     <div className="gnb-dropdown">
                       <ul>
-                        <li><Link href="/news_gongsil?section2=아파트/오피스텔">아파트/오피스텔</Link></li>
-                        <li><Link href="/news_gongsil?section2=빌라/주택/다가구/다세대">빌라/주택/다가구/다세대</Link></li>
-                        <li><Link href="/news_gongsil?section2=원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</Link></li>
-                        <li><Link href="/news_gongsil?section2=상가/사무실/빌딩/공장/토지">상가/사무실/빌딩/공장/토지</Link></li>
-                        <li><Link href="/news_gongsil?section2=신축/분양">신축/분양</Link></li>
-                        <li><Link href="/news_gongsil?section2=경매/공매">경매/공매</Link></li>
+                        {/* 공실열람과 같은 10칸, 글자는 짧은 이름 (2026-11-17) */}
+                        {GONGSIL_SECTION2.map((s2) => <li key={s2}><Link href={"/news_gongsil?section2=" + encodeURIComponent(s2)}>{section2Label(s2)}</Link></li>)}
                       </ul>
                     </div>
                   </div>
@@ -695,12 +692,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실뉴스</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("아파트/오피스텔")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>아파트/오피스텔</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("빌라/주택/다가구/다세대")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>빌라/주택/다가구/다세대</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("원룸/투룸(풀옵션)")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>원룸/투룸(풀옵션)</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("상가/사무실/빌딩/공장/토지")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>상가/사무실/빌딩/공장/토지</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("신축/분양")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>신축/분양</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("경매/공매")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>경매/공매</a></li>
+                  {/* 공실열람과 같은 10칸 (2026-11-17) */}
+                  {GONGSIL_SECTION2.map((s2) => <li key={s2}><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent(s2)); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>{section2Label(s2)}</a></li>)}
                 </ul>
               </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { section2Matches } from "@/utils/formatCategory";
 import React, { useMemo } from "react";
 import Link from "next/link";
 
@@ -44,7 +45,7 @@ function PopularNewsSidebarWidgetImpl({
 
     // 세부 카테고리가 선택되었으면 해당 카테고리로 필터링
     if (selectedSubCategory && selectedSubCategory !== "전체") {
-      const subList = pool.filter((a) => a.section2 === selectedSubCategory);
+      const subList = pool.filter((a) => section2Matches(a.section2, selectedSubCategory));
       if (subList.length > 0) {
         pool = subList;
       }

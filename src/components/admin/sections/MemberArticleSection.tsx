@@ -1,5 +1,6 @@
 "use client";
 
+import FoldReason from "@/components/admin/FoldReason";
 import { actionFor } from "@/utils/menuAction";
 import { useStudioLight, StudioListCss, Ico, ICON, C_GREEN, C_RED, C_AMBER, C_VIOLET, C_GRAY } from "@/components/admin/studioLight";
 import React, { useState, useEffect } from "react";
@@ -690,14 +691,10 @@ export default function MemberArticleSection({
                       {a.title || "(제목 없음)"}
                     </button>
                     {a.status === "REJECTED" && a.reject_reason && (
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
-                        반려 사유: {a.reject_reason}
-                      </div>
+                      <FoldReason label="반려 사유" text={a.reject_reason} color="#ef4444" />
                     )}
                     {a.status === "APPROVED" && a.reject_reason && a.reject_reason.includes("[AI 승인") && (
-                      <div className="gs-al-fb" style={{ marginTop: 4, fontSize: 12, color: "#10b981", fontWeight: 600 }}>
-                        심사 피드백: {a.reject_reason}
-                      </div>
+                      <FoldReason className="gs-al-fb" label="심사 피드백" text={a.reject_reason} color="#10b981" />
                     )}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>

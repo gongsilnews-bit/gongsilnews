@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getArticleBookmarks, getBookmarkCategories } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
-import { formatSection1, formatSection2 } from "@/utils/formatCategory";
+import { formatSection1, formatSection2, section2Matches, section2Label } from "@/utils/formatCategory";
 import { PopularNewsSidebarWidget } from "./PopularNewsSidebarWidget";
 import CategoryImportantHero from "./CategoryImportantHero";
 
@@ -242,14 +242,14 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
   // 서브 카테고리 필터 적용 (section2 기준)
   if (selectedSubCategory && !isBookmarkMode) {
-    displayArticles = displayArticles.filter(a => a.section2 === selectedSubCategory);
+    displayArticles = displayArticles.filter(a => section2Matches(a.section2, selectedSubCategory));
   }
 
   // 중요 추천 기사 필터링 (세부 카테고리가 지정되었으면 해당 카테고리만 추천)
   let displayImportantArticles = importantArticles;
   if (selectedSubCategory && !isBookmarkMode) {
     // 1. 해당 서브카테고리에 명시적으로 중요 표시된 기사 필터링
-    displayImportantArticles = importantArticles.filter(a => a.section2 === selectedSubCategory);
+    displayImportantArticles = importantArticles.filter(a => section2Matches(a.section2, selectedSubCategory));
   }
 
   const displayTitle = isBookmarkMode ? "📌 관심기사" : title;
@@ -404,7 +404,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                       transition: "all 0.2s"
                     }}
                   >
-                    {sub}
+                    {section2Label(sub)}
                   </button>
                 );
               })}
@@ -748,6 +748,16 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
     "전체": "공동중개 열람 무료! 임대인 공실등록 무료!",
     "아파트/오피스텔": "100% 실매물 아파트·오피스텔 무료 공동중개",
     "빌라/주택/다가구/다세대": "현장 확인 완료 빌라·주택·다가구·다세대 무료 공실 소식",
+    // 새 10칸 (2026-11-17)
+    "아파트": "100% 실매물 아파트 무료 공동중개",
+    "오피스텔": "100% 실매물 오피스텔 무료 공동중개",
+    "빌라/주택": "현장 확인 완료 빌라·주택·다가구·다세대 무료 공실 소식",
+    "원룸투룸(풀옵션)": "임대인 직등록 원룸·투룸 실시간 무료 공유",
+    "사무실·지식산업센터": "사무실·지식산업센터 무료 공동중개 네트워크",
+    "상가": "상가 무료 공동중개 네트워크",
+    "빌딩/건물 매매": "빌딩·건물 통매매 무료 공동중개",
+    "공장/토지/기타": "공장·창고·토지 무료 공동중개",
+    "신축/분양/재건축": "전국 신축·분양·재건축 무료 정보",
     "원룸/투룸(풀옵션)": "임대인 직등록 원룸·투룸 실시간 무료 공유",
     "상가/사무실/빌딩/공장/토지": "상가·사무실·빌딩·토지 무료 공동중개 네트워크",
     "신축/분양": "전국 신축 분양·청약 무료 정보",

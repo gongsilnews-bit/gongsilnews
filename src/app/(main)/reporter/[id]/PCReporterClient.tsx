@@ -1,5 +1,6 @@
 "use client";
 
+import { section2Matches } from "@/utils/formatCategory";
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -83,7 +84,7 @@ export default function PCReporterClient({
   const filteredArticles =
     activeTab === "all"
       ? articles
-      : articles.filter((a: any) => a.section2 === activeTab);
+      : articles.filter((a: any) => section2Matches(a.section2, activeTab));
   const visibleVacancies = vacancies.filter(v => v.trade_type !== '경매' && v.trade_type !== '공매');
 
   const [userLevel, setUserLevel] = React.useState<number>(0);
@@ -437,7 +438,7 @@ export default function PCReporterClient({
           <>
             {/* 카테고리 서브탭 */}
             <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '16px', gap: '4px', flexWrap: 'wrap' }}>
-              {CATEGORIES.filter(cat => cat.key === "all" || articles.some((a: any) => a.section2 === cat.key)).map((cat) => (
+              {CATEGORIES.filter(cat => cat.key === "all" || articles.some((a: any) => section2Matches(a.section2, cat.key))).map((cat) => (
                 <button key={cat.key} onClick={() => setActiveTab(cat.key)} style={{ padding: '10px 14px', fontSize: '13px', fontWeight: activeTab === cat.key ? 700 : 500, color: activeTab === cat.key ? '#111' : '#888', background: 'none', border: 'none', borderBottom: activeTab === cat.key ? '2px solid #111' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', marginBottom: '-1px' }}>
                   {cat.label}
                 </button>

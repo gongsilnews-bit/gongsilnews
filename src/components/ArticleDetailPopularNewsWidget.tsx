@@ -1,5 +1,6 @@
 "use client";
 
+import { section2Matches } from "@/utils/formatCategory";
 import React, { useMemo } from "react";
 import Link from "next/link";
 
@@ -50,7 +51,7 @@ function ArticleDetailPopularNewsWidgetImpl({
     // 1. 해당 기사의 2차 카테고리(section2) 우선 필터링
     let pool = baseList;
     if (section2) {
-      const subList = baseList.filter((a) => a.section2 === section2);
+      const subList = baseList.filter((a) => section2Matches(a.section2, section2));
       if (subList.length > 0) {
         pool = subList;
       }
@@ -98,7 +99,7 @@ function ArticleDetailPopularNewsWidgetImpl({
       const existingIds = new Set(top5.map((a) => a.id));
       let fallbackPool = baseList;
       if (section2) {
-        fallbackPool = baseList.filter((a) => a.section2 === section2 && !existingIds.has(a.id));
+        fallbackPool = baseList.filter((a) => section2Matches(a.section2, section2) && !existingIds.has(a.id));
       } else {
         fallbackPool = baseList.filter((a) => !existingIds.has(a.id));
       }

@@ -1,4 +1,5 @@
 import NewsListLayout from "@/components/NewsListLayout";
+import { GONGSIL_SECTION2 } from "@/utils/formatCategory";
 import { getImportantArticles, getArticles } from "@/app/actions/article";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,8 @@ export default async function NewsLocalPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양", "경매/공매"];
+  // 공실열람과 같은 10칸 (2026-11-17 사장님)
+  const subCategories = [...GONGSIL_SECTION2];
 
   return <NewsListLayout 
     category="공실뉴스" 
