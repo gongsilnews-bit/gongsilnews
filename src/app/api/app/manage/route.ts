@@ -10,6 +10,7 @@
 //  POST { action: "bm.cats" (type) | "sub.list" | "sub.toggle" (reporterId) } → 찜 폴더 · 구독 기자
 //  POST { action: "star.get" | "star.toggle" (id, on) | "star.list" | "star.count" } → 관심단지(★)
 //  POST { action: "prefs.get" | "prefs.set" (prefs) } → 앱 설정 알림 켜기·끄기
+//  POST { action: "pt.my" } → 내 포인트 잔액·내역 · "pt.admin.members" | "pt.admin.tx" | "pt.admin.settings" | "pt.admin.setting" (key, value) | "pt.admin.adjust" (id, amount, reason) → 최고관리자
 //  POST { action: "art.approve" | "art.reject" | "art.request" | "art.flags" | "art.delete", id, ... }
 import { NextRequest, NextResponse } from "next/server";
 import { deleteVacancy, getVacancies, updateVacancyStatus } from "@/app/actions/vacancy";
@@ -17,6 +18,8 @@ import { adminUpdateArticleFlags, adminUpdateArticleStatus, deleteArticle, getAr
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/actions/notification";
 import { getBookmarkCategories } from "@/app/actions/bookmark";
 import { getMySubscriptions, toggleSubscription } from "@/app/actions/subscription";
+import { adminAdjustPoints, getAllMembersWithBalance, getPointBalance, getPointSettings, getPointTransactions, updatePointSetting } from "@/app/actions/point";
+import { groupPointTx, type PointTx } from "@/utils/pointGroup";
 import { myArticle, myVacancy, no, whoAmI } from "../auth";
 
 const ok = (data: Record<string, unknown> = {}) => NextResponse.json({ success: true, ...data });
@@ -59,6 +62,41 @@ export async function POST(req: NextRequest) {
   if (action === "noti.readAll") {
     const res = await markAllNotificationsRead({ userId: uid, isAdmin: me.isAdmin });
     return res.success ? ok() : no(res.error || "읽음 처리하지 못했습니다.", 500);
+  }
+
+  // ── 포인트 (사이트 모바일 /m/admin/point 와 같은 함수, 2026-11-17 앱 자체 화면) ──
+  //  회원: 내 잔액·내역 / 최고관리자: 회원 현황·전체 내역·정책 설정·지급/차감
+  if (action === "pt.my") {
+    const [bal, tx] = await Promise.all([getPointBalance(uid), getPointTransactions({ memberId: uid, limit: 100 })]);
+    if (!bal.success || !tx.success) return no("포인트를 불러오지 못했습니다.", 500);
+    return ok({ name: me.member.name, balance: bal.balance, data: groupPointTx(tx.data as PointTx[]) });
+  }
+  if (action.startsWith("pt.admin.")) {
+    if (!me.isAdmin) return no("최고관리자만 볼 수 있습니다.", 403);
+    if (action === "pt.admin.members") {
+      const res = await getAllMembersWithBalance();
+      return res.success ? ok({ data: res.data }) : no(res.error || "회원을 불러오지 못했습니다.", 500);
+    }
+    if (action === "pt.admin.tx") {
+      const res = await getPointTransactions({ limit: 100 });
+      return res.success ? ok({ data: groupPointTx(res.data as PointTx[]) }) : no(res.error || "내역을 불러오지 못했습니다.", 500);
+    }
+    if (action === "pt.admin.settings") {
+      const res = await getPointSettings();
+      return res.success ? ok({ data: res.data }) : no(res.error || "정책을 불러오지 못했습니다.", 500);
+    }
+    if (action === "pt.admin.setting") {
+      const key = String(body?.key || ""), value = Number(body?.value);
+      if (!key || !Number.isFinite(value)) return no("값을 확인해 주세요.");
+      const res = await updatePointSetting(key, value);
+      return res.success ? ok() : no(res.error || "저장하지 못했습니다.", 500);
+    }
+    if (action === "pt.admin.adjust") {
+      const amount = Math.trunc(Number(body?.amount));
+      if (!id || !Number.isFinite(amount) || amount === 0) return no("금액을 확인해 주세요.");
+      const res = await adminAdjustPoints(id, amount, String(body?.reason || "").trim());
+      return res.success ? ok({ balance: res.balance }) : no(res.error || "처리하지 못했습니다.", 500);
+    }
   }
 
   // ── 찜 폴더 · 구독 기자 (사이트 모바일 찜·구독 화면과 같은 함수) ──
