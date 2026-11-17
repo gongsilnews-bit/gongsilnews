@@ -10,7 +10,7 @@ import {
   UNIT_SCALE,
   getScaleIndex,
 } from "./gongsilFilterScales";
-import { MAINT_PRESETS, isWholeBuildingPill } from "./gongsilHelpers";
+import { MAINT_PRESETS, pcOptionList } from "./gongsilHelpers";
 
 export interface GongsilFilterPanelProps {
   panel: Record<string, unknown>;
@@ -25,6 +25,7 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
     setIsWizardOpen,
     setActiveFilterDropdown,
     filterOffset,
+    wizardTop,
     isDraggingFilter,
     getWizardTabs,
     activeSection,
@@ -122,7 +123,8 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
                       onMouseDown={filterName === "거래유형" ? handleDragStart : undefined}
                       style={isPremiumWizard ? {
                         position: "fixed",
-                        top: 130,
+                        // 위쪽 줄 바로 아래 (2026-11-17 위쪽 3줄 — GongsilClient 가 잰 값, 없으면 예전 130)
+                        top: typeof wizardTop === "number" ? wizardTop : 130,
                         left: 400,
                         marginTop: 4,
                         background: "#fff",
@@ -1241,27 +1243,8 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
                               >
                                 <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>기타옵션</div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
-                                  {(() => {
-                                    const opts = new Set<string>();
-                                    const isEmpty = activePills.length === 0;
-
-                                    if (activeCategory === "apart") {
-                                      return ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
-                                    }
-                                    if (activeCategory === "one") {
-                                      return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락"];
-                                    }
-                                    if (activeCategory === "villa") {
-                                      return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락", "무인택배함", "CCTV", "엘리베이터"];
-                                    }
-                                    if (activeCategory === "biz") {
-                                      if (isEmpty || activePills.includes("상가")) ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설"].forEach(o => opts.add(o));
-                                      if (isEmpty || activePills.includes("사무실") || activePills.some(isWholeBuildingPill)) ["시스템에어컨", "개별난방", "엘리베이터", "내부화장실", "탕비실", "휴게공간", "주차편리", "보안시스템", "회의실"].forEach(o => opts.add(o));
-                                      if (isEmpty || activePills.includes("공장/창고") || activePills.includes("지식산업센터") || activePills.includes("토지")) ["호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"].forEach(o => opts.add(o));
-                                      return Array.from(opts);
-                                    }
-                                    return ["주차가능", "엘리베이터"];
-                                  })().map((opt) => {
+                                  {/* 칸별 기타옵션 목록은 gongsilHelpers pcOptionList 한 곳 (3줄 칩 작은 창과 같이 씀, 2026-11-17) */}
+                                  {pcOptionList(String(activeCategory), (activePills as string[]) || []).map((opt) => {
                                     const isSel = filterOptions.includes(opt);
                                     return (
                                       <button

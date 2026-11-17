@@ -38,6 +38,8 @@ export const GROUP_TABS: { id: GroupTabId; name: string; base: string; pills: st
   // 분양권 알약을 고르면 아파트·오피스텔 검색조건 (PC GongsilClient condCategory). 신축 알약은 property_type "분양" 만
   { id: "sale", name: "신축/분양/재건축", base: "sale", pills: [...RESALE_PILLS, "분양:아파트", "분양:오피스텔", "분양:빌라", "분양:도시형생활주택", "분양:생활숙박시설", "분양:상가/업무"] },
 ];
+/** 사실상 한 종류뿐인 칸 — 2차 알약(✓전체선택 포함)을 숨기고 늘 그 칸 알약 전부로 고른다 (2026-11-17 사장님, PC) */
+export const SINGLE_TYPE_GROUPS: GroupTabId[] = ["apt", "offi", "shop"];
 export const groupTabsOf = (base: string) => GROUP_TABS.filter((t) => t.base === base);
 export const getGroupTab = (id: string | null | undefined) => GROUP_TABS.find((t) => t.id === id);
 /** 원룸투룸(풀옵션) 칸 알약 — 이 칸만 고르면 거래유형에서 매매를 뺀다 */
@@ -79,6 +81,22 @@ export function tradeTypesFor(pills: string[], all: string[] = ["매매", "전�
   if (pills.every((p) => ONE_ROOM_PILLS.includes(p))) return all.filter((t) => t !== "매매");
   if (pills.every((p) => p.startsWith("통매매:"))) return all.filter((t) => t === "매매");
   return all;
+}
+
+/** PC 기타옵션 목록 — 상세검색 창과 3줄 칩 작은 창이 같이 쓴다 (예전 GongsilFilterPanel 안 목록 그대로 옮김) */
+export function pcOptionList(cat: string, pills: string[]): string[] {
+  if (cat === "apart") return ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
+  if (cat === "one") return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락"];
+  if (cat === "villa") return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락", "무인택배함", "CCTV", "엘리베이터"];
+  if (cat === "biz") {
+    const opts = new Set<string>();
+    const isEmpty = pills.length === 0;
+    if (isEmpty || pills.includes("상가")) ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설"].forEach((o) => opts.add(o));
+    if (isEmpty || pills.includes("사무실") || pills.some(isWholeBuildingPill)) ["시스템에어컨", "개별난방", "엘리베이터", "내부화장실", "탕비실", "휴게공간", "주차편리", "보안시스템", "회의실"].forEach((o) => opts.add(o));
+    if (isEmpty || pills.includes("공장/창고") || pills.includes("지식산업센터") || pills.includes("토지")) ["호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"].forEach((o) => opts.add(o));
+    return Array.from(opts);
+  }
+  return ["주차가능", "엘리베이터"];
 }
 
 // 알약 글자만 바꿔 보이는 것 (값은 그대로)

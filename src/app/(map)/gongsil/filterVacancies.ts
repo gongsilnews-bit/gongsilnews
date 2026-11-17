@@ -28,6 +28,10 @@ type FilterVacanciesOptions = {
   filterUnitMin: number | null;
   filterUnitMax: number | null;
   filterOwnerRole: string | null;
+  /** 층수 (2026-11-17 3줄 칩) — 1층·저층·중간층·고층·탑층, 상세검색 창 값(지하·2층·3~5층·6층이상)도 */
+  filterFloor?: string | null;
+  /** 기타옵션 — 고른 것을 다 가진 물건만 */
+  filterOptions?: string[];
   filterCommissionType: string | null;
   filterThemes: string[];
   filterSearchKeyword: string;
@@ -72,6 +76,8 @@ export function filterVacancies({
   filterUnitMin,
   filterUnitMax,
   filterOwnerRole,
+  filterFloor,
+  filterOptions,
   filterCommissionType,
   filterThemes,
   filterSearchKeyword,
@@ -284,7 +290,14 @@ export function filterVacancies({
     const units = v.total_units || 0;
     return Boolean(units) && !(filterUnitMin !== null && units < filterUnitMin) && !(filterUnitMax !== null && units > filterUnitMax);
   });
-  if (filterOwnerRole) list = list.filter((v) => v.owner_role === filterOwnerRole);
+  // 등록자 — 중개사(REALTOR) / 임대인·일반(OWNER·USER: 중개사 아닌 등록자 — 상세검색 창의 "임대인"이 OWNER 라 DB 값 USER 와 안 맞던 것 함께 고침)
+  if (filterOwnerRole) list = list.filter((v) => (filterOwnerRole === "OWNER" || filterOwnerRole === "USER") ? v.owner_role !== "REALTOR" : v.owner_role === filterOwnerRole);
+  if (filterFloor) list = list.filter((v) => matchFloor(v, filterFloor));
+  if (filterOptions && filterOptions.length > 0) list = list.filter((v) => {
+    const raw = v.options || v.facilities || [];
+    const all: string[] = Array.isArray(raw) ? raw.map((x: unknown) => String(x).trim()) : String(raw).split(",").map((x) => x.trim());
+    return filterOptions.every((o) => all.some((x) => x.includes(o)));
+  });
   if (filterCommissionType) list = list.filter((v) => {
     const vc = v.realtor_commission || v.commission_type || "";
     const percentMatch = vc.match(/(\d+)%/);
@@ -299,4 +312,30 @@ export function filterVacancies({
     list = list.filter((v) => String(v.vacancy_no || "").toLowerCase().includes(kw) || String(v.building_name || "").toLowerCase().includes(kw) || String(v.dong || "").toLowerCase().includes(kw) || String(v.sigungu || "").toLowerCase().includes(kw) || String(v.detail_addr || "").toLowerCase().includes(kw));
   }
   return list;
+}
+
+/**
+ * 층수 맞히기 (2026-11-17) — current_floor(해당 층) · total_floor(전체 층) 기준.
+ *  3줄 칩: 1층 · 저층(전체의 아래 1/3) · 중간층 · 고층(위 1/3, 탑층 제외) · 탑층(해당 층 = 전체 층)
+ *  상세검색 창: 지하 · 1층 · 2층 · 3~5층 · 6층이상
+ */
+export function matchFloor(v: any, floor: string): boolean {
+  const raw = String(v.current_floor ?? v.floor ?? "").trim();
+  if (!raw) return false;
+  const under = /^(B|b|지하|반지하)/.test(raw);
+  const n = parseInt(raw.replace(/[^0-9-]/g, ""), 10);
+  const total = parseInt(String(v.total_floor ?? "").replace(/[^0-9]/g, ""), 10);
+  if (floor === "지하") return under;
+  if (under || isNaN(n)) return false;
+  if (floor === "1층") return n === 1;
+  if (floor === "2층") return n === 2;
+  if (floor === "3~5층") return n >= 3 && n <= 5;
+  if (floor === "6층이상") return n >= 6;
+  if (floor === "탑층") return !isNaN(total) && total > 0 && n === total;
+  if (isNaN(total) || total <= 0) return false;
+  const r = n / total;
+  if (floor === "저층") return n >= 2 && r <= 1 / 3;
+  if (floor === "중간층") return r > 1 / 3 && r <= 2 / 3;
+  if (floor === "고층") return r > 2 / 3 && n < total;
+  return true;
 }

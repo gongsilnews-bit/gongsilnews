@@ -22,8 +22,8 @@ import MyStarsBoard, { MY_DIM } from "./MyStarsBoard";
 import KakaoMapView from "./KakaoMapView";
 import WebCapture from "@/components/capture/WebCapture";
 import GongsilFilterBar from "./GongsilFilterBar";
-import GongsilFilterPanel from "./GongsilFilterPanel";
 import { filterVacancies } from "./filterVacancies";
+import ConditionChips from "./ConditionChips";
 import { useGongsilFilterState } from "./useGongsilFilterState";
 import {
   MAEMAE_SCALE,
@@ -39,11 +39,13 @@ import {
 import {
   type GroupTabId,
   GROUP_TABS,
+  SINGLE_TYPE_GROUPS,
   RESALE_PILLS,
   isWholeBuildingPill,
   pcConditionCategory,
   pcWizardTabs,
   tradeTypesFor,
+  pcOptionList,
   getGroupTab,
   groupTabsOf,
   groupOfVacancy,
@@ -199,6 +201,13 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     const keep = activePills.filter((p) => g!.pills.includes(p));
     if (keep.length !== activePills.length) setActivePills(keep.length ? keep : g.pills.filter((p) => p !== "오피스텔만 보기"));
   }, [activeCategory, activePills, groupTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 아파트 · 오피스텔 · 상가 칸은 알약을 숨기므로 늘 그 칸 알약 전부 — 예전에 일부만(예: [기타]만) 저장된 것도 전부로 (숨은 필터에 갇히지 않게)
+  useEffect(() => {
+    const g = getGroupTab(groupTab);
+    if (!g || g.base !== activeCategory || !SINGLE_TYPE_GROUPS.includes(g.id)) return;
+    const all = g.pills.filter((p) => p !== "오피스텔만 보기");
+    if (all.length !== activePills.length || !all.every((p) => activePills.includes(p))) setActivePills(all);
+  }, [activeCategory, activePills, groupTab]);
 
   useMapFields("pc-gongsil-category", { activeCategory, groupTab, activePills, activeMode, isAuctionMode }, { activeCategory: setActiveCategory, groupTab: (v: string) => { if (getGroupTab(v)) setGroupTab(v as GroupTabId); }, activePills: setActivePills, activeMode: setActiveMode, isAuctionMode: setIsAuctionMode });
 
@@ -230,6 +239,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
   const [realtorTradeType, setRealtorTradeType] = useState<string>("전체");
 
+  // 필터 상태 한 묶음 — 3줄 검색조건 칩(ConditionChips)과 상세검색 창이 같이 쓴다
+  const filterState = useGongsilFilterState();
   const {
     filterTradeTypes, setFilterTradeTypes, tempFilterTradeTypes, setTempFilterTradeTypes,
     tempMaemaeMin, setTempMaemaeMin, tempMaemaeMax, setTempMaemaeMax,
@@ -254,7 +265,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     filterSaleType, setFilterSaleType, filterOptions, setFilterOptions,
     filterOwnerRole, setFilterOwnerRole, filterCommissionType, setFilterCommissionType,
     filterThemes, setFilterThemes,
-  } = useGongsilFilterState();
+  } = filterState;
   const [savedCategoryAlerts, setSavedCategoryAlerts] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -285,7 +296,6 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
   const [activeSection, setActiveSection] = useState<string>("거래유형");
   const [isFilterCollapsed, setIsFilterCollapsed] = useState<boolean>(false);
-  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
   const [filterOffset, setFilterOffset] = useState({ x: 0, y: 0 });
   const [isDraggingFilter, setIsDraggingFilter] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -636,6 +646,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     filterUnitMin,
     filterUnitMax,
     filterOwnerRole,
+    filterFloor,
+    filterOptions,
     filterCommissionType,
     filterThemes,
     filterSearchKeyword,
@@ -1394,6 +1406,27 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const curGroup = getGroupTab(groupTab);
   // 상세 검색조건을 가져올 큰 칸 — [신축/분양/재건축] 에서 분양권·재건축 · 오피스텔분양권 알약을 고르면 아파트·오피스텔 조건 (2026-11-17)
   const condCategory = pcConditionCategory(activeCategory, activePills);
+  // 2차 알약을 숨기는 칸 (아파트 · 오피스텔 · 상가)
+  const hideSubPills = !isAuctionMode && Boolean(curGroup && curGroup.base === activeCategory && SINGLE_TYPE_GROUPS.includes(curGroup.id));
+  // 지도 켜기·끄기 단추(실거래가·우리동네뉴스·부동산)를 그려 넣을 2줄 오른쪽 자리 (2026-11-17)
+  const [toggleSlot, setToggleSlot] = useState<HTMLSpanElement | null>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  // 화면캡처 단추를 3줄 오른쪽 끝에 (2026-11-17 사장님: "화면캡쳐 위로 올려") — 3줄 위치를 재서 맞춘다, 3줄이 없으면 예전 자리
+  const row3Ref = useRef<HTMLDivElement | null>(null);
+  const [capTop, setCapTop] = useState<number | null>(null);
+  // 위쪽 줄 크기가 바뀔 때(칸 바꿈·줄넘김·창 크기)만 다시 잰다 — 매 그림마다 재지 않게 (2026-11-17)
+  useEffect(() => {
+    const measure = () => {
+      const r = row3Ref.current?.getBoundingClientRect();
+      const next = r && r.height ? Math.round(r.top + Math.min(r.height, 56) / 2 - 19) : null;
+      setCapTop((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    if (ro && headerRef.current) ro.observe(headerRef.current);
+    window.addEventListener("resize", measure);
+    return () => { ro?.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
   // 거래유형에 보일 항목 — 원룸투룸(풀옵션)은 매매 빼고, 빌딩/건물 매매는 매매만 (2026-11-17)
   const allowedTradeTypes = tradeTypesFor(activeCategory === "all" || activeCategory === "wish" || activeCategory === "auction" ? [] : activePills);
   const config = curGroup && curGroup.base === activeCategory ? { ...baseConfig, name: curGroup.name, pills: curGroup.pills } : baseConfig;
@@ -1548,7 +1581,6 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setShowDetail(false);
     setShowDetailFilters(false);
     setSelectedClusterIds(null);
-    setIsWizardOpen(false);
     resetAllFilters();
     sessionStorage.setItem("gongsil_category", newKey);
   };
@@ -1928,6 +1960,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     >
       {/* ===== 상단 필터 바 ===== */}
       <div
+        ref={headerRef}
         // 아래 화면(MY관심 3000·상세 창)보다 위 — 🔔 알림 목록·검색 창이 가려지지 않게 (2026-11-04)
         style={{ background: "#fff", width: "100%", zIndex: 3500, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}
       >
@@ -1936,24 +1969,28 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           handleCategoryChange={handleCategoryChange}
           groupTab={groupTab}
           onPickGroupTab={pickGroupTab}
+          onToggleSlot={setToggleSlot}
           popoverSearchKeyword={popoverSearchKeyword}
           setPopoverSearchKeyword={setPopoverSearchKeyword}
           handleSearch={handleSearch}
         />
 
-        {/* Tier 2: 서브 필터(Pills + 드롭다운) */}
+        {/* 3줄 (2026-11-17 사장님): 알약 · 칸 조건 칩 전부 · ↺ 조건삭제 (지역 검색은 지도 위 그대로) */}
         {activeCategory !== "wish" && activeCategory !== "all" && (
           <div
+            ref={row3Ref}
             style={{
               display: "flex",
               alignItems: "center",
+              flexWrap: "wrap", // 3줄 — 좁으면 다음 줄로 (가로 넘침 없음, 2026-11-17)
               gap: 8,
-              padding: "10px 20px",
+              padding: "10px 140px 10px 20px", // 오른쪽 끝 140px = 화면캡처 단추 자리 (2026-11-17)
               borderBottom: "1px solid #e0e0e0",
               overflowX: "visible",
             }}
           >
-            {config.pills.length > 0 && (
+            {/* 아파트 · 오피스텔 · 상가 칸은 2차 알약을 숨긴다 (늘 전부 고름, 2026-11-17 사장님) */}
+            {config.pills.length > 0 && !hideSubPills && (
               <button
                 onClick={() => {
                   const selectablePills = config.pills.filter(p => p !== "오피스텔만 보기");
@@ -1982,7 +2019,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
                 {(config.pills.filter(p => p !== "오피스텔만 보기").length > 0 && config.pills.filter(p => p !== "오피스텔만 보기").every(p => activePills.includes(p))) ? "✓ 전체선택" : "전체선택"}
               </button>
             )}
-            {config.pills.map((p, idx) => {
+            {!hideSubPills && config.pills.map((p, idx) => {
               let activeBg = "#e8f0fe";
               let activeBorder = "#1a73e8";
               let activeColor = "#1a73e8";
@@ -2072,149 +2109,22 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
                     alignItems: "center"
                   }}
                 >
-                  <button
-                    onClick={() => {
-                      if (isWizardOpen) {
-                        setIsWizardOpen(false);
-                      } else {
-                        setActiveSection("거래유형");
-                        setIsWizardOpen(true);
-                      }
-                    }}
-                    style={{
-                      background: isWizardOpen ? "#e8f0fe" : "#fff",
-                      border: `1px solid ${isWizardOpen ? "#1a73e8" : "#ccc"}`,
-                      fontSize: 13,
-                      color: isWizardOpen ? "#1a73e8" : "#333",
-                      cursor: "pointer",
-                      padding: "6px 14px",
-                      borderRadius: 20,
-                      whiteSpace: "nowrap",
-                      fontWeight: isWizardOpen ? "bold" : "normal",
-                      fontFamily: "inherit",
-                      transition: "all 0.15s",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: isWizardOpen ? "none" : "0 1px 2px rgba(0,0,0,0.05)"
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
-                      <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
-                      <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
-                      <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
-                      <line x1="17" y1="16" x2="23" y2="16"></line>
-                    </svg>
-                    {isWizardOpen ? "상세검색 ▲" : "상세검색 ▼"}
-                  </button>
-                  
-                  {summaryString && (
-                    <span style={{ fontSize: 14, color: "#111", fontWeight: 600, marginLeft: 4 }}>
-                      {summaryString}
-                    </span>
-                  )}
+                  {/* 3줄 검색조건 칩 (2026-11-17 사장님) — 칸 조건 전부, 칩마다 바로 아래 작은 창 */}
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                    {/* 2차 카테고리 알약 | 검색조건 칩 사이 세로 구분선 (2026-11-17 사장님) */}
+                    {!hideSubPills && <span aria-hidden style={{ width: 1, height: 22, background: "#d1d5db", margin: "0 6px 0 4px", flexShrink: 0 }} />}
+                    {/* 칩마다 바로 아래 작은 창 (2026-11-17 사장님: 네이버처럼) — 같은 필터 상태를 바로 바꾼다 */}
+                    <ConditionChips
+                      isAuctionMode={isAuctionMode}
+                      condCategory={condCategory}
+                      allowedTradeTypes={allowedTradeTypes}
+                      optionList={pcOptionList(condCategory, activePills)}
+                      themeList={getThemesByCategory(condCategory)}
+                      s={filterState}
+                    />
+                  </div>
 
-                  {/* 드롭다운 필터 내용 */}
-                  <GongsilFilterPanel
-                    panel={{
-                      filterName,
-                      isWizardOpen,
-                      handleDragStart,
-                      isPremiumWizard,
-                      setIsWizardOpen,
-                      setActiveFilterDropdown,
-                      filterOffset,
-                      isDraggingFilter,
-                      getWizardTabs,
-                      activeSection,
-                      tempFilterTradeTypes,
-                      tempMaemaeMin,
-                      tempMaemaeMax,
-                      tempDepositMin,
-                      tempDepositMax,
-                      tempRentMin,
-                      tempRentMax,
-                      filterAreaMin,
-                      filterAreaMax,
-                      filterYearMin,
-                      filterYearMax,
-                      filterUnitMin,
-                      filterUnitMax,
-                      filterRoomCount,
-                      filterBathCount,
-                      filterDirection,
-                      filterOwnerRole,
-                      filterCommissionType,
-                      filterThemes,
-                      scrollToSection,
-                      scrollDebounceRef,
-                      setActiveSection,
-                      isAuctionMode,
-                      setTempFilterTradeTypes,
-                      activeCategory: condCategory,
-                      allowedTradeTypes,
-                      setTempMaemaeMin,
-                      formatPriceLabel,
-                      handleSliderRelease,
-                      setTempMaemaeMax,
-                      setTempDepositMin,
-                      setTempDepositMax,
-                      setTempRentMin,
-                      setTempRentMax,
-                      setFilterAreaMin,
-                      setFilterAreaMax,
-                      setFilterFloor,
-                      filterFloor,
-                      setFilterYearMin,
-                      setFilterYearMax,
-                      setFilterUnitMin,
-                      setFilterUnitMax,
-                      setRoomBathInteractions,
-                      setFilterRoomCount,
-                      setFilterBathCount,
-                      setFilterDirection,
-                      setFilterMaintIdx,
-                      filterMaintIdx,
-                      setFilterParking,
-                      filterParking,
-                      activePills,
-                      setFilterOptions,
-                      filterOptions,
-                      setFilterAuctionAppraisalMin,
-                      setFilterAuctionAppraisalMax,
-                      filterAuctionAppraisalMin,
-                      filterAuctionAppraisalMax,
-                      setFilterAuctionBidPriceMin,
-                      setFilterAuctionBidPriceMax,
-                      filterAuctionBidPriceMin,
-                      filterAuctionBidPriceMax,
-                      filterAuctionDiscount,
-                      setFilterAuctionDiscount,
-                      filterAuctionBidCount,
-                      setFilterAuctionBidCount,
-                      filterAuctionStartDate,
-                      setFilterAuctionStartDate,
-                      setFilterOwnerRole,
-                      setFilterCommissionType,
-                      getThemesByCategory,
-                      setFilterThemes,
-                      setPopoverSearchKeyword,
-                      setFilterSearchKeyword,
-                      setFilterTradeTypes,
-                      setFilterPriceMin,
-                      setFilterPriceMax,
-                      setFilterSaleStage,
-                      setFilterSaleType,
-                      setAppliedMaemaeMin,
-                      setAppliedMaemaeMax,
-                      setAppliedDepositMin,
-                      setAppliedDepositMax,
-                      setAppliedRentMin,
-                      setAppliedRentMax,
-                      setIsFilterCollapsed,
-                    }}
-                  />
+                  {/* 예전 큰 상세검색 창(GongsilFilterPanel)은 PC 에서 뺐다 (2026-11-17 사장님) — 조건은 모두 ConditionChips 칩 */}
                       {filterName === "거래방식" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                           {["매매", "전세", "월세"].filter((type) => allowedTradeTypes.includes(type)).map((type) => (
@@ -2870,8 +2780,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           onDismiss={() => setSelectedClusterIds(null)}
         />
         {/* 화면캡처·판서 막대 — 우리 사이트 안에서만 (2026-11-05 사장님). 빠른메뉴는 지도엔 넣지 않음 (2026-11-10 사장님) */}
-        <WebCapture />
+        {/* 3줄 안에 둘 때는 위쪽 줄(겹침 3500)보다 위로 — 아래에 깔려 안 보이던 것 (2026-11-17) */}
+        <WebCapture launcherStyle={capTop !== null ? { top: capTop, right: 20, zIndex: 3600 } : undefined} />
         <KakaoMapView
+          toggleSlot={toggleSlot}
           activePills={activePills}
           onSwitchCategory={handleCategoryChange}
           kakaoMapRef={kakaoMapRef}

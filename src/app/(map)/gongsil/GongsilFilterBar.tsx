@@ -14,6 +14,8 @@ interface GongsilFilterBarProps {
   handleSearch: (keyword: string) => void;
   groupTab?: GroupTabId;
   onPickGroupTab?: (id: GroupTabId) => void;
+  /** 2줄 오른쪽 지도 단추 자리 (2026-11-17) */
+  onToggleSlot?: (el: HTMLSpanElement | null) => void;
 }
 
 export default function GongsilFilterBar({
@@ -24,6 +26,7 @@ export default function GongsilFilterBar({
   handleSearch,
   groupTab = "apt",
   onPickGroupTab,
+  onToggleSlot,
 }: GongsilFilterBarProps) {
   // 큰 칸(apart·villa·one·biz)을 위쪽 9칸으로 (2026-11-16 아파트·오피스텔 → 2026-11-17 사장님 확정):
   //  아파트 · 오피스텔 · 빌라/주택 · 원룸투룸(풀옵션) · 사무실·지식산업센터 · 상가 · 빌딩/건물 매매 · 공장/토지/기타 · 신축/분양/재건축.
@@ -37,7 +40,9 @@ export default function GongsilFilterBar({
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   return (
-    <div style={{ display: "flex", borderBottom: "1px solid #ddd", alignItems: "center", width: "100%", padding: "0 20px" }}>
+    // 2026-11-17 사장님: 1줄 = 로고 · 공실열람 … 오른쪽 검색·알림·로그인 / 2줄 = 칸 탭(로고 아래 왼쪽부터)
+    <div style={{ width: "100%" }}>
+    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 20px" }}>
       <div style={{ display: "flex", alignItems: "center", flexShrink: 0, marginRight: 24 }}>
         <Link href="/" style={{ marginRight: 15, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
           <img
@@ -67,30 +72,6 @@ export default function GongsilFilterBar({
           공실열람
         </span>
       </div>
-
-      <div className="no-scrollbar" style={{ display: "flex", gap: 24, alignItems: "center", overflowX: "auto", flex: 1 }}>
-        {tabs.map((tb) => (
-          <button
-            key={tb.id}
-            onClick={tb.go}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: 16,
-              fontWeight: "bold",
-              color: tb.on ? "#1a73e8" : "#555",
-              cursor: "pointer",
-              padding: "16px 4px",
-              position: "relative",
-              whiteSpace: "nowrap",
-              borderBottom: tb.on ? "3px solid #1a73e8" : "3px solid transparent",
-              fontFamily: "inherit",
-              transition: "color 0.2s, border-color 0.2s",
-            }}
-          >
-            {tb.name}
-          </button>
-        ))}
 
         <div style={{ display: "flex", gap: "16px", alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
           {/* 🔍 세련된 대형 검색 모달 트리거 버튼 */}
@@ -148,6 +129,37 @@ export default function GongsilFilterBar({
             <MapTopAuthButtons />
           </div>
         </div>
+      </div>
+
+      {/* 2줄 — 왼쪽 칸 탭, 오른쪽 지도 켜기·끄기 단추(실거래가·우리동네뉴스·부동산, 지도 쪽에서 이 자리로 그려 넣음).
+          좁으면 단추가 다음 줄로 내려간다 (가로 넘침 없음) */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 16, padding: "0 20px", borderTop: "1px solid #eee", borderBottom: "1px solid #ddd" }}>
+      {/* 탭 사이 간격만 화면이 좁으면 조금 줄인다(1280에서도 MY관심공실까지 보이게) */}
+      <div className="no-scrollbar" style={{ display: "flex", gap: "clamp(14px, 1.6vw, 24px)", alignItems: "center", overflowX: "auto", minWidth: 0, flex: "1 1 auto" }}>
+        {tabs.map((tb) => (
+          <button
+            key={tb.id}
+            onClick={tb.go}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 16,
+              fontWeight: "bold",
+              color: tb.on ? "#1a73e8" : "#555",
+              cursor: "pointer",
+              padding: "16px 4px",
+              position: "relative",
+              whiteSpace: "nowrap",
+              borderBottom: tb.on ? "3px solid #1a73e8" : "3px solid transparent",
+              fontFamily: "inherit",
+              transition: "color 0.2s, border-color 0.2s",
+            }}
+          >
+            {tb.name}
+          </button>
+        ))}
+      </div>
+      {onToggleSlot && <span ref={onToggleSlot} style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, marginLeft: "auto", padding: "6px 0" }} />}
       </div>
 
       {/* 대형 풀스크린 검색 오버레이 모달 */}

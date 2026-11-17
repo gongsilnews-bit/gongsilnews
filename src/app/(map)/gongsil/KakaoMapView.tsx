@@ -15,6 +15,8 @@ interface KakaoMapViewProps {
   initialVacancies: any[];
   filteredVacancies: any[];
   activeCategory: string;
+  /** 지도 켜기·끄기 단추(실거래가·우리동네뉴스·부동산)를 그려 넣을 자리 — 공실열람 2줄 오른쪽 (2026-11-17). 없으면 예전처럼 [내 위치] 옆 */
+  toggleSlot?: HTMLElement | null;
   activeProperty: string | number | null;
   isAuctionMode: boolean;
   setIsAuctionMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -48,6 +50,7 @@ export default function KakaoMapView({
   initialVacancies,
   filteredVacancies,
   activeCategory,
+  toggleSlot,
   activeProperty,
   isAuctionMode,
   setIsAuctionMode,
@@ -87,6 +90,8 @@ export default function KakaoMapView({
   const [mapPick, setMapPick] = useState<{ ids: string[]; n: number } | null>(null);
   const drawnVacanciesRef = useRef<any[]>([]);
   const [priceButtonSlot, setPriceButtonSlot] = useState<HTMLSpanElement | null>(null); // 검색 줄 [내 위치] 옆
+  // 공실열람 2줄 오른쪽 자리를 주면 거기로 (2026-11-17), 아니면 [내 위치] 옆
+  const layerButtonSlot = toggleSlot !== undefined ? toggleSlot : priceButtonSlot;
 
   // Sync state to refs for standard non-stale callback references inside Kakao Map events
   useEffect(() => {
@@ -927,7 +932,7 @@ export default function KakaoMapView({
 
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
       <AptPriceLayer
-        buttonSlot={priceButtonSlot}
+        buttonSlot={layerButtonSlot}
         autoShow={!isAuctionMode && (activeCategory === "all" || activeCategory === "apart")}
         villaTab={!isAuctionMode && activeCategory === "villa"}
         kakaoMapRef={kakaoMapRef}
@@ -946,9 +951,9 @@ export default function KakaoMapView({
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
       />
       {/* [우리동네뉴스] 켜기·끄기 — 실거래가 단추 옆, 모든 기사를 지도 위 자리 그대로 (2026-11-04 사장님) */}
-      <NewsLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceButtonSlot} category={isAuctionMode ? "auction" : activeCategory} />
+      <NewsLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} category={isAuctionMode ? "auction" : activeCategory} />
       {/* [부동산] 켜기·끄기 — 회원 부동산 집 모양 · 누르면 왼쪽 목록에 그 사무소 (2026-11-04 사장님) */}
-      <AgencyLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceButtonSlot} />
+      <AgencyLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} />
     </div>
   );
 }
