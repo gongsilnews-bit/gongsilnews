@@ -18,7 +18,7 @@ const NAVY = "#1e3a6e";
 const ORANGE = "#ff8e15";
 type Tab = "info" | "ad" | "logs";
 type Art = { id: string; article_no: number | null; title: string; section1: string | null; section2: string | null; thumbnail_url: string | null; published_at: string | null };
-type Log = { id: string; kind: string; title: string; body: string | null; link: string | null; audience: { tier?: string; region?: string } | null; recipients: number; devices: number; failed: number; opened: number; created_at: string };
+type Log = { id: string; kind: string; title: string; body: string | null; link: string | null; audience: { tier?: string; region?: string; image?: string } | null; recipients: number; devices: number; failed: number; opened: number; created_at: string };
 
 const TIERS: { key: PushTier; label: string }[] = [
   { key: "everyone", label: "앱 설치한 모든 사람" }, // 로그인 안 한 설치자 포함 (2026-11-18)
@@ -87,6 +87,29 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
   }, []);
   useEffect(() => { if (tab === "logs") loadLogs(); }, [tab, loadLogs]);
 
+  // 보낸 기록 — 줄을 누르면 보낸 내용 펼쳐 보기, [다시 보내기]는 그 내용을 보내기 화면에 채운다 (2026-11-18 사장님)
+  const [openLog, setOpenLog] = useState<string | null>(null);
+  const reuse = async (l: Log) => {
+    const ad = l.kind === "ad";
+    setTab(ad ? "ad" : "info");
+    setTier(((l.audience?.tier as PushTier) && l.kind !== "test" ? l.audience!.tier : "everyone") as PushTier);
+    setRegion(l.kind === "test" ? "" : l.audience?.region || "");
+    setTitle(ad ? l.title.replace(/^\(광고\)\s*/, "") : l.title);
+    setBody((l.body || "").replace(AD_TAIL, "").trim()); // 광고 끝에 붙은 수신 거부 줄은 빼고 (보낼 때 다시 붙는다)
+    setImage(l.audience?.image || "");
+    setArt(null); setUrl("");
+    const m = (l.link || "").match(/^\/m\/news\/([\w-]+)$/);
+    if (m) {
+      setLinkMode("article");
+      const r = await adminPushFindArticles(m[1]).catch(() => null);
+      const a = (r?.articles || []) as Art[];
+      const hit = a.find((x) => String(x.article_no) === m[1] || x.id === m[1]);
+      if (hit) setArt(hit); else { setLinkMode("url"); setUrl(l.link || ""); }
+    } else if (l.link) { setLinkMode("url"); setUrl(l.link); }
+    else setLinkMode("article");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const pickArt = (a: Art) => {
     setArt(a);
     if (!title.trim()) setTitle(a.title.slice(0, 60));
@@ -149,12 +172,13 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, color: textPrimary }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${NAVY}`, textAlign: "left" }}>
-                  {["보낸 때", "종류", "제목", "대상", "회원", "휴대폰", "누름"].map((h) => <th key={h} style={{ padding: "10px 8px", fontWeight: 800 }}>{h}</th>)}
+                  {["보낸 때", "종류", "제목", "대상", "회원", "휴대폰", "누름", ""].map((h, i) => <th key={i} style={{ padding: "10px 8px", fontWeight: 800 }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {logs.map((l) => (
-                  <tr key={l.id} style={{ borderBottom: `1px solid ${border}` }}>
+                  <React.Fragment key={l.id}>
+                  <tr onClick={() => setOpenLog(openLog === l.id ? null : l.id)} style={{ borderBottom: openLog === l.id ? "none" : `1px solid ${border}`, cursor: "pointer", background: openLog === l.id ? (darkMode ? "#1f2023" : "#f8fafc") : undefined }}>
                     <td style={{ padding: "10px 8px", whiteSpace: "nowrap", color: textSecondary }}>{fmt(l.created_at)}</td>
                     <td style={{ padding: "10px 8px" }}>{l.kind === "ad" ? "광고" : l.kind === "test" ? "시험" : "안내"}</td>
                     <td style={{ padding: "10px 8px", maxWidth: 360 }}>
@@ -165,7 +189,27 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
                     <td style={{ padding: "10px 8px" }}>{l.recipients.toLocaleString()}</td>
                     <td style={{ padding: "10px 8px" }}>{l.devices.toLocaleString()}{l.failed ? <span style={{ color: "#ef4444" }}> (실패 {l.failed})</span> : null}</td>
                     <td style={{ padding: "10px 8px", fontWeight: 700 }}>{l.opened.toLocaleString()}</td>
+                    <td style={{ padding: "10px 8px", whiteSpace: "nowrap" }}>
+                      <button onClick={(e) => { e.stopPropagation(); void reuse(l); }} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${NAVY}`, background: "transparent", color: NAVY, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>다시 보내기</button>
+                    </td>
                   </tr>
+                  {openLog === l.id && (
+                    <tr style={{ borderBottom: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#f8fafc" }}>
+                      <td colSpan={8} style={{ padding: "4px 8px 16px" }}>
+                        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, color: textSecondary, marginBottom: 4 }}>보낸 내용</div>
+                            <div style={{ fontWeight: 800 }}>{l.title}</div>
+                            <div style={{ whiteSpace: "pre-wrap", marginTop: 4, color: textPrimary }}>{l.body || <span style={{ color: textSecondary }}>(내용 없음)</span>}</div>
+                            <div style={{ fontSize: 12, color: textSecondary, marginTop: 8 }}>누르면 → {l.link || "앱 알림함"}</div>
+                          </div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          {l.audience?.image && <img src={l.audience.image} alt="" style={{ width: 200, aspectRatio: "2 / 1", objectFit: "cover", borderRadius: 8, border: `1px solid ${border}` }} />}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
