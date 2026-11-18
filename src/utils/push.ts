@@ -73,7 +73,7 @@ export async function sendPushFor(n: {
   await sendExpoPush(tokens.map((to) => ({ to, title: n.title, body: n.body || undefined, data: { link: n.link || "", type: n.type } })));
 }
 
-export type PushMessage = { to: string; title: string; body?: string; data?: Record<string, unknown> };
+export type PushMessage = { to: string; title: string; body?: string; data?: Record<string, unknown>; richContent?: { image?: string } };
 
 /** Expo 로 보내기 — 100개씩, 없어진 휴대폰 토큰은 지운다. 보낸 수·실패 수를 돌려준다 */
 export async function sendExpoPush(list: PushMessage[]) {

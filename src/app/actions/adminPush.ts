@@ -15,6 +15,7 @@ import { createClient as createSessionClient } from "@/utils/supabase/server";
 import { isAdminRole } from "@/utils/permissionCheck";
 import { memberTier } from "@/utils/tier";
 import { sendExpoPush } from "@/utils/push";
+import { webpForUpload } from "@/utils/serverWebp";
 
 const db = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
 
@@ -107,8 +108,24 @@ export async function adminPushFindArticles(q: string) {
   return { success: true, articles: data || [] };
 }
 
+/** 푸시에 붙일 그림 올리기 — 잠금화면에 큰 그림으로 보인다(안드로이드). 가로 1024px WebP 로 줄여 저장 */
+export async function adminPushUploadImage(fd: FormData) {
+  if (!(await requireAdmin())) return { success: false, error: "최고관리자만 쓸 수 있어요." };
+  const file = fd.get("file");
+  if (!(file instanceof File) || !file.type.startsWith("image/")) return { success: false, error: "그림 파일을 골라 주세요." };
+  if (file.size > 10 * 1024 * 1024) return { success: false, error: "10MB 이하 그림만 올릴 수 있어요." };
+  const up = await webpForUpload(file, `push/${Date.now()}.jpg`, { maxWidth: 1024, quality: 80 });
+  const supabase = db();
+  const { error } = await supabase.storage.from("article-media").upload(up.path, up.body, { upsert: true, contentType: up.contentType });
+  if (error) return { success: false, error: error.message };
+  return { success: true, url: supabase.storage.from("article-media").getPublicUrl(up.path).data.publicUrl };
+}
+
+/** 열릴 곳 — 우리 사이트 주소(/m/…)나 https 주소 */
+const okLink = (l: string) => !l || /^\/[\w\-/?=&.%가-힣#]*$/.test(l) || /^https?:\/\/[^\s"'<>]+$/.test(l);
+
 /** 보내기 */
-export async function adminSendPush(input: { kind: PushKind | "test"; title: string; body: string; link: string; tier: PushTier; region?: string }) {
+export async function adminSendPush(input: { kind: PushKind | "test"; title: string; body: string; link: string; image?: string; tier: PushTier; region?: string }) {
   const adminId = await requireAdmin();
   if (!adminId) return { success: false, error: "최고관리자만 쓸 수 있어요." };
   const isAd = input.kind === "ad";
@@ -116,7 +133,9 @@ export async function adminSendPush(input: { kind: PushKind | "test"; title: str
   let body = input.body.trim().slice(0, 300);
   const link = input.link.trim().slice(0, 300);
   if (!title) return { success: false, error: "제목을 써 주세요." };
-  if (link && !/^\/[\w\-/?=&.%가-힣]*$/.test(link)) return { success: false, error: "열릴 주소가 올바르지 않습니다." };
+  if (!okLink(link)) return { success: false, error: "열릴 주소가 올바르지 않습니다. (https:// 로 시작하는 주소)" };
+  const image = String(input.image || "").trim();
+  if (image && !/^https:\/\/[^\s"'<>]+$/.test(image)) return { success: false, error: "그림 주소가 올바르지 않습니다." };
   if (isAd) {
     if (adNight()) return { success: false, error: "광고 푸시는 밤 9시부터 아침 8시까지 보낼 수 없습니다." };
     if (!title.startsWith("(광고)")) title = `(광고) ${title}`;
@@ -142,11 +161,11 @@ export async function adminSendPush(input: { kind: PushKind | "test"; title: str
   // 기록 먼저 — 누른 수를 세려면 알림에 기록 번호가 들어가야 한다
   const { data: camp } = await supabase.from("push_campaigns").insert({
     kind: input.kind, title, body, link: link || null,
-    audience: { tier: input.tier, region: input.region || "" }, recipients: members.length, created_by: adminId,
+    audience: { tier: input.tier, region: input.region || "", image: image || undefined }, recipients: members.length, created_by: adminId,
   }).select("id").maybeSingle();
   const campaign = camp?.id ? String(camp.id) : "";
 
-  const r = await sendExpoPush(tokens.map((to) => ({ to, title, body: body || undefined, data: { link, type: "admin_push", campaign } })));
+  const r = await sendExpoPush(tokens.map((to) => ({ to, title, body: body || undefined, data: { link, type: "admin_push", campaign }, ...(image ? { richContent: { image } } : {}) })));
   if (campaign) await supabase.from("push_campaigns").update({ devices: r.sent, failed: r.failed }).eq("id", campaign);
   return { success: true, members: members.length, sent: r.sent, failed: r.failed };
 }

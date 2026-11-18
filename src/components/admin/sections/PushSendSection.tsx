@@ -2,7 +2,7 @@
 
 /**
  * 최고관리자 — 앱 푸시 보내기 (2026-11-18 사장님: "어떤 회원에게 보내고, 어떤 내용과 기사를 보낼지")
- *  ① 받는 회원(등급·지역) → ② 내용(제목·내용) → ③ 누르면 열릴 기사(검색해서 고르기)
+ *  ① 받는 회원(등급·지역) → ② 내용(제목·내용) → ③ 누르면 열릴 곳(기사 고르기 또는 주소 직접) → ④ 그림(선택, 잠금화면 큰 그림)
  *  - [안내 푸시] 속보·추천 기사 등. 앱 설정 "속보·추천 기사"를 끈 회원은 빠진다
  *  - [광고 푸시] 광고·혜택 알림에 동의한 회원만 · 제목 앞 (광고) · 끝에 수신 거부 · 밤 9시~아침 8시 못 보냄 (서버가 붙이고 막는다)
  *  - [나에게 시험] 내 휴대폰에만 먼저
@@ -12,7 +12,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { AdminTheme } from "./types";
-import { adminPushFindArticles, adminPushLogs, adminPushPreview, adminSendPush, type PushTier } from "@/app/actions/adminPush";
+import { adminPushFindArticles, adminPushLogs, adminPushPreview, adminPushUploadImage, adminSendPush, type PushTier } from "@/app/actions/adminPush";
 
 const NAVY = "#1e3a6e";
 const ORANGE = "#ff8e15";
@@ -51,6 +51,12 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
   const [q, setQ] = useState("");
   const [arts, setArts] = useState<Art[]>([]);
   const [art, setArt] = useState<Art | null>(null);
+  // ③ 기사 대신 주소를 직접 (2026-11-18 사장님: url 입력)
+  const [linkMode, setLinkMode] = useState<"article" | "url">("article");
+  const [url, setUrl] = useState("");
+  // ④ 그림 — 올리거나 주소를 넣음, 기사를 고르면 대표 사진을 쓸 수 있음
+  const [image, setImage] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [logs, setLogs] = useState<Log[] | null>(null);
   const [logErr, setLogErr] = useState("");
@@ -84,7 +90,18 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
     setArt(a);
     if (!title.trim()) setTitle(a.title.slice(0, 60));
   };
-  const link = art ? `/m/news/${art.article_no || art.id}` : "";
+  const link = linkMode === "url" ? url.trim() : art ? `/m/news/${art.article_no || art.id}` : "";
+  const upload = async (f: File | undefined) => {
+    if (!f) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", f);
+    try {
+      const r = await adminPushUploadImage(fd);
+      if (r.success && r.url) setImage(r.url); else alert(r.error || "그림을 올리지 못했습니다.");
+    } catch { alert("그림을 올리지 못했습니다."); }
+    setUploading(false);
+  };
   const shownTitle = (isAd && !title.trim().startsWith("(광고)") ? "(광고) " : "") + (title.trim() || "제목");
   const shownBody = [body.trim(), isAd ? AD_TAIL : ""].filter(Boolean).join("\n");
 
@@ -96,7 +113,8 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
     }
     setSending(true);
     try {
-      const r = await adminSendPush({ kind: test ? "test" : isAd ? "ad" : "info", title, body, link, tier, region });
+      if (linkMode === "url" && url.trim() && !/^(https?:\/\/|\/)/.test(url.trim())) { setSending(false); return alert("주소는 https:// 로 시작해 주세요."); }
+      const r = await adminSendPush({ kind: test ? "test" : isAd ? "ad" : "info", title, body, link, image, tier, region });
       if (!r.success) alert(r.error || "보내지 못했습니다.");
       else alert(test ? `내 휴대폰으로 보냈습니다. (${r.sent}대)` : `보냈습니다. 회원 ${r.members}명 · 휴대폰 ${r.sent}대${r.failed ? ` · 실패 ${r.failed}대` : ""}`);
     } catch {
@@ -187,8 +205,17 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
 
             {/* ③ 기사 */}
             <div style={card}>
-              <div style={label}>{num(3)} 누르면 열릴 기사 <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>(고르지 않으면 앱 알림함이 열립니다)</span></div>
-              {art ? (
+              <div style={label}>{num(3)} 누르면 열릴 곳 <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>(비워 두면 앱 알림함이 열립니다)</span></div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                <button onClick={() => setLinkMode("article")} style={chip(linkMode === "article")}>기사 고르기</button>
+                <button onClick={() => setLinkMode("url")} style={chip(linkMode === "url")}>주소 직접 입력</button>
+              </div>
+              {linkMode === "url" ? (
+                <>
+                  <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.gongsilnews.com/... 또는 다른 사이트 주소" style={input} />
+                  <div style={{ marginTop: 6, fontSize: 12, color: textSecondary }}>공실뉴스 주소(공실·기사·특강)는 앱 화면으로, 다른 사이트는 앱 안 웹 화면으로 열립니다.</div>
+                </>
+              ) : art ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, border: `2px solid ${NAVY}`, borderRadius: 10 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {art.thumbnail_url && <img src={art.thumbnail_url} alt="" style={{ width: 64, height: 48, objectFit: "cover", borderRadius: 6 }} />}
@@ -216,6 +243,30 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
                 </>
               )}
             </div>
+
+            {/* ④ 그림 */}
+            <div style={card}>
+              <div style={label}>{num(4)} 그림 <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>(선택 · 잠금화면에 큰 그림으로 보입니다)</span></div>
+              {image ? (
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="" style={{ width: 160, height: 90, objectFit: "cover", borderRadius: 8, border: `1px solid ${border}` }} />
+                  <button onClick={() => setImage("")} style={{ border: `1px solid ${border}`, background: "transparent", color: textSecondary, borderRadius: 6, padding: "6px 12px", cursor: "pointer" }}>빼기</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  <label style={{ ...chip(false), display: "inline-flex", alignItems: "center", cursor: uploading ? "wait" : "pointer" }}>
+                    {uploading ? "올리는 중…" : "그림 올리기"}
+                    <input type="file" accept="image/*" onChange={(e) => { void upload(e.target.files?.[0]); e.target.value = ""; }} style={{ display: "none" }} disabled={uploading} />
+                  </label>
+                  {art?.thumbnail_url && linkMode === "article" && (
+                    <button onClick={() => setImage(art.thumbnail_url!)} style={chip(false)}>고른 기사 대표 사진 쓰기</button>
+                  )}
+                  <input placeholder="또는 그림 주소 붙여넣기 (https://…)" onBlur={(e) => { const v = e.target.value.trim(); if (/^https:\/\//.test(v)) setImage(v); }} style={{ ...input, flex: 1, minWidth: 220 }} />
+                </div>
+              )}
+              <div style={{ marginTop: 6, fontSize: 12, color: textSecondary }}>가로로 긴 그림(2:1 정도)이 잘 보입니다. 안드로이드 휴대폰에서 알림을 펼치면 크게 나옵니다.</div>
+            </div>
           </div>
 
           {/* 미리 보기 + 보내기 */}
@@ -226,8 +277,10 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
                 <div style={{ fontSize: 11.5, color: "#6b7280", marginBottom: 4 }}>🔔 공실뉴스 · 지금</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{shownTitle}</div>
                 {shownBody && <div style={{ fontSize: 13, color: "#374151", marginTop: 2, whiteSpace: "pre-wrap" }}>{shownBody}</div>}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {image && <img src={image} alt="" style={{ width: "100%", aspectRatio: "2 / 1", objectFit: "cover", borderRadius: 8, marginTop: 8 }} />}
               </div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>누르면 → {art ? `기사 「${art.title.slice(0, 24)}${art.title.length > 24 ? "…" : ""}」` : "앱 알림함"}</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8, wordBreak: "break-all" }}>누르면 → {linkMode === "url" ? (url.trim() || "앱 알림함") : art ? `기사 「${art.title.slice(0, 24)}${art.title.length > 24 ? "…" : ""}」` : "앱 알림함"}</div>
             </div>
             <button onClick={() => send(true)} disabled={sending} style={{ height: 46, borderRadius: 10, border: `1px solid ${NAVY}`, background: cardBg, color: NAVY, fontWeight: 800, fontSize: 14.5, cursor: "pointer" }}>나에게 시험 보내기</button>
             <button onClick={() => send(false)} disabled={sending || !count || count.devices === 0 || !!count.adNight}
