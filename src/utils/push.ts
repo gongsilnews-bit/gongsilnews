@@ -70,16 +70,16 @@ export async function sendPushFor(n: {
   if (error || !rows?.length) return; // 표가 아직 없거나 휴대폰이 없음
   const tokens = [...new Set(rows.map((r) => String(r.token)))];
 
-  const messages = tokens.map((to) => ({
-    to,
-    title: n.title,
-    body: n.body || undefined,
-    sound: "default",
-    channelId: "default",
-    priority: "high",
-    data: { link: n.link || "", type: n.type },
-  }));
+  await sendExpoPush(tokens.map((to) => ({ to, title: n.title, body: n.body || undefined, data: { link: n.link || "", type: n.type } })));
+}
 
+export type PushMessage = { to: string; title: string; body?: string; data?: Record<string, unknown> };
+
+/** Expo 로 보내기 — 100개씩, 없어진 휴대폰 토큰은 지운다. 보낸 수·실패 수를 돌려준다 */
+export async function sendExpoPush(list: PushMessage[]) {
+  const supabase = db();
+  let sent = 0, failed = 0;
+  const messages = list.map((m) => ({ ...m, sound: "default", channelId: "default", priority: "high" }));
   // Expo 는 한 번에 100개까지
   for (let i = 0; i < messages.length; i += 100) {
     const part = messages.slice(i, i + 100);
@@ -92,14 +92,18 @@ export async function sendPushFor(n: {
           ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
         },
         body: JSON.stringify(part),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(10000),
       });
       const j = await r.json().catch(() => null);
       const tickets: { status: string; details?: { error?: string } }[] = j?.data || [];
+      if (!tickets.length) { failed += part.length; continue; }
+      tickets.forEach((t) => (t.status === "ok" ? sent++ : failed++));
       const gone = tickets.map((t, k) => (t.status === "error" && t.details?.error === "DeviceNotRegistered" ? part[k].to : null)).filter(Boolean) as string[];
       if (gone.length) await supabase.from("push_tokens").delete().in("token", gone);
     } catch (e) {
+      failed += part.length;
       console.warn("[push]", e instanceof Error ? e.message : e);
     }
   }
+  return { sent, failed };
 }

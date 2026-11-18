@@ -31,6 +31,7 @@ const InquiryBoardSection = lazy(() => import("@/components/admin/sections/Inqui
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const SmartstoreOrdersPanel = lazy(() => import("@/components/admin/sections/SmartstoreOrdersPanel"));
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
+const PushSendSection = lazy(() => import("@/components/admin/sections/PushSendSection"));
 const SttWordsSection = lazy(() => import("@/components/admin/sections/SttWordsSection"));
 const AptReportsSection = lazy(() => import("@/components/admin/sections/AptReportsSection"));
 // 공실뉴스 홍보 — 회원 도구를 같이 쓴다 (관리자용을 따로 만들지 않음, 2026-11-09)
@@ -81,7 +82,10 @@ const MENU_GROUPS: AdminMenuGroup[] = [
   },
   {
     title: "회원에게 연락",
-    items: [{ key: "message", label: "문자·카톡 보내기", icon: <IconSend /> }],
+    items: [
+      { key: "message", label: "문자·카톡 보내기", icon: <IconSend /> },
+      { key: "push", label: "앱 푸시 보내기", icon: <IconMegaphone /> }, // 앱 잠금화면 알림 (2026-11-18)
+    ],
   },
 ];
 const BOTTOM_MENU: MenuItem[] = [
@@ -359,6 +363,7 @@ function AdminContent() {
 
           {/* ── 회원에게 연락 ── */}
           {activeMenu === "message" && <MarketingSection theme={theme} />}
+          {activeMenu === "push" && <PushSendSection theme={theme} />}
 
           {activeMenu === "manual" && <AdminManual />}
           {activeMenu === "settings" && (

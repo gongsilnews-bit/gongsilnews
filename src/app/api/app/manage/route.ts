@@ -181,6 +181,26 @@ export async function POST(req: NextRequest) {
     });
     return error ? no(/push_tokens/.test(error.message) ? "푸시 표가 아직 없습니다. (SQL 실행 필요)" : error.message, 500) : ok();
   }
+  // 광고·혜택 푸시 수신 동의 (2026-11-18) — 켜고 끌 때마다 날짜를 남긴다 (정보통신망법)
+  if (action === "pushad.get") {
+    const { data, error } = await me.db.from("members").select("marketing_push, marketing_push_at").eq("id", uid).maybeSingle();
+    if (error) return ok({ on: null }); // 칸이 아직 없으면(SQL 전) 화면이 그 줄을 그리지 않는다
+    const d = data as { marketing_push?: boolean; marketing_push_at?: string | null } | null;
+    return ok({ on: !!d?.marketing_push, at: d?.marketing_push_at || null });
+  }
+  if (action === "pushad.set") {
+    const on = !!body.on;
+    const { error } = await me.db.from("members").update({ marketing_push: on, marketing_push_at: new Date().toISOString() }).eq("id", uid);
+    return error ? no(error.message, 500) : ok({ on });
+  }
+  // 최고관리자 푸시를 눌렀다 — 보낸 기록의 누른 수 +1
+  if (action === "push.opened") {
+    const id = String(body.campaign || "");
+    if (!/^[0-9a-f-]{36}$/.test(id)) return ok();
+    const { data } = await me.db.from("push_campaigns").select("opened").eq("id", id).maybeSingle();
+    if (data) await me.db.from("push_campaigns").update({ opened: (Number(data.opened) || 0) + 1 }).eq("id", id);
+    return ok();
+  }
   if (action === "push.unregister") {
     await me.db.from("push_tokens").delete().eq("token", String(body.token || "")).eq("user_id", uid);
     return ok();
