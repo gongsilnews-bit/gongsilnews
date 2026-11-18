@@ -21,7 +21,8 @@ type Art = { id: string; article_no: number | null; title: string; section1: str
 type Log = { id: string; kind: string; title: string; body: string | null; link: string | null; audience: { tier?: string; region?: string } | null; recipients: number; devices: number; failed: number; opened: number; created_at: string };
 
 const TIERS: { key: PushTier; label: string }[] = [
-  { key: "all", label: "전체" },
+  { key: "everyone", label: "앱 설치한 모든 사람" }, // 로그인 안 한 설치자 포함 (2026-11-18)
+  { key: "all", label: "로그인한 회원 전체" },
   { key: "free", label: "부동산회원 (무료)" },
   { key: "pro", label: "공실뉴스부동산 (유료)" },
   { key: "biz", label: "비즈니스회원" },
@@ -41,9 +42,9 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
   const isAd = tab === "ad";
 
   // ① 받는 회원
-  const [tier, setTier] = useState<PushTier>("all");
+  const [tier, setTier] = useState<PushTier>("everyone");
   const [region, setRegion] = useState("");
-  const [count, setCount] = useState<{ members: number; devices: number; adNight?: boolean; error?: string } | null>(null);
+  const [count, setCount] = useState<{ members: number; guests?: number; devices: number; adNight?: boolean; error?: string } | null>(null);
   // ② 내용
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -67,7 +68,7 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
     let alive = true;
     const t = setTimeout(() => {
       adminPushPreview({ tier, region, kind: isAd ? "ad" : "info" })
-        .then((r) => { if (alive) setCount(r.success ? { members: r.members, devices: r.devices, adNight: r.adNight } : { members: 0, devices: 0, error: r.error }); })
+        .then((r) => { if (alive) setCount(r.success ? { members: r.members + (r.guests || 0), guests: r.guests || 0, devices: r.devices, adNight: r.adNight } : { members: 0, devices: 0, error: r.error }); })
         .catch(() => { if (alive) setCount({ members: 0, devices: 0, error: "세지 못했습니다." }); });
     }, 300);
     return () => { alive = false; clearTimeout(t); };
@@ -189,11 +190,11 @@ export default function PushSendSection({ theme }: { theme: AdminTheme }) {
               <input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="지역 (선택) — 예: 강남구 · 서초동. 부동산 사무소 주소로 고릅니다" style={input} />
               <div style={{ marginTop: 12, fontSize: 14, color: textPrimary }}>
                 {!count ? <span style={{ color: textSecondary }}>세는 중…</span> : count.error ? <span style={{ color: "#ef4444" }}>{count.error}</span> : (
-                  <>받는 회원 <b style={{ color: NAVY, fontSize: 17 }}>{count.members.toLocaleString()}명</b> · 휴대폰 <b>{count.devices.toLocaleString()}대</b>
+                  <>받는 사람 <b style={{ color: NAVY, fontSize: 17 }}>{count.members.toLocaleString()}명</b>{count.guests ? <span style={{ color: textSecondary }}> (로그인 안 한 설치자 {count.guests.toLocaleString()}명 포함)</span> : null} · 휴대폰 <b>{count.devices.toLocaleString()}대</b>
                     {count.adNight && <span style={{ color: "#ef4444", marginLeft: 8 }}>지금은 광고를 보낼 수 없는 시간입니다 (밤 9시~아침 8시)</span>}</>
                 )}
               </div>
-              <div style={{ marginTop: 6, fontSize: 12, color: textSecondary }}>앱을 깔고 로그인해 알림을 허락한 회원만 셉니다{isAd ? " · 광고는 광고·혜택 알림에 동의한 회원만" : " · 앱 설정에서 \"속보·추천 기사\"를 끈 회원은 빠집니다"}.</div>
+              <div style={{ marginTop: 6, fontSize: 12, color: textSecondary }}>앱을 깔고 알림을 허락한 휴대폰만 셉니다. &quot;앱 설치한 모든 사람&quot;은 로그인 안 한 설치자도 포함하고, 나머지 칸은 로그인한 회원만입니다{isAd ? " · 광고는 광고·혜택 알림에 동의한 회원만(로그인 안 한 설치자 제외)" : " · \"속보·추천 기사\" 알림을 끈 사람은 빠집니다"}.</div>
             </div>
 
             {/* ② 내용 */}

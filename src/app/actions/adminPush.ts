@@ -27,7 +27,8 @@ async function requireAdmin(): Promise<string | null> {
   return isAdminRole(me?.role) ? user.id : null;
 }
 
-export type PushTier = "all" | "user" | "free" | "pro" | "biz";
+/** everyone = 앱 설치한 모든 사람 (로그인 안 한 설치자 포함, 2026-11-18) · all = 앱에 로그인한 회원 전체 */
+export type PushTier = "everyone" | "all" | "user" | "free" | "pro" | "biz";
 export type PushKind = "info" | "ad";
 export type PushAudience = { tier: PushTier; region?: string; kind: PushKind };
 
@@ -42,15 +43,20 @@ type Row = { id: string; role: string | null; plan_type: string | null; plan_end
 async function audience(a: PushAudience) {
   const supabase = db();
   // 푸시 받을 휴대폰이 있는 회원부터 (회원이 많아도 휴대폰 있는 회원만 읽는다)
-  const tokens: { token: string; user_id: string }[] = [];
+  const tokens: { token: string; user_id: string | null; news_off?: boolean }[] = [];
+  let guestCol = true; // news_off 칸(로그인 안 한 설치자) — SQL 전이면 없음
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from("push_tokens").select("token, user_id").range(from, from + 999);
-    if (error) return { error: /push_tokens/.test(error.message) ? "푸시 표가 아직 없습니다. (SQL 실행 필요)" : error.message, members: [] as string[], tokens: [] as string[] };
+    let { data, error } = await supabase.from("push_tokens").select("token, user_id, news_off").range(from, from + 999);
+    if (error && /news_off/.test(error.message)) { guestCol = false; ({ data, error } = await supabase.from("push_tokens").select("token, user_id").range(from, from + 999) as never); }
+    if (error) return { error: /push_tokens/.test(error.message) ? "푸시 표가 아직 없습니다. (SQL 실행 필요)" : error.message, members: [] as string[], tokens: [] as string[], guests: 0 };
     tokens.push(...((data || []) as typeof tokens));
     if (!data || data.length < 1000) break;
   }
-  const ids = [...new Set(tokens.map((t) => t.user_id))];
-  if (!ids.length) return { members: [] as string[], tokens: [] as string[] };
+  // 로그인 안 한 설치자 — "앱 설치한 모든 사람" 안내 푸시에만, 지역을 고르면 빠진다(주소가 없음), 광고는 동의를 못 받아 빠진다
+  const guestTokens = a.tier === "everyone" && a.kind !== "ad" && !(a.region || "").trim() && guestCol
+    ? tokens.filter((t) => !t.user_id && !t.news_off).map((t) => t.token) : [];
+  const ids = [...new Set(tokens.map((t) => t.user_id).filter(Boolean) as string[])];
+  if (!ids.length) return { members: [] as string[], tokens: guestTokens, guests: guestTokens.length };
 
   const rows: Row[] = [];
   for (let i = 0; i < ids.length; i += 300) {
@@ -58,10 +64,10 @@ async function audience(a: PushAudience) {
     const cols = "id, role, plan_type, plan_end_date, studio_end_date, is_deleted, notify_prefs";
     let res = await supabase.from("members").select(`${cols}, marketing_push`).in("id", part);
     if (res.error && /marketing_push/.test(res.error.message)) {
-      if (a.kind === "ad") return { error: "광고 푸시 동의 칸이 아직 없습니다. (SQL 실행 필요)", members: [] as string[], tokens: [] as string[] };
+      if (a.kind === "ad") return { error: "광고 푸시 동의 칸이 아직 없습니다. (SQL 실행 필요)", members: [] as string[], tokens: [] as string[], guests: 0 };
       res = await supabase.from("members").select(cols).in("id", part) as typeof res;
     }
-    if (res.error) return { error: res.error.message, members: [] as string[], tokens: [] as string[] };
+    if (res.error) return { error: res.error.message, members: [] as string[], tokens: [] as string[], guests: 0 };
     rows.push(...((res.data || []) as unknown as Row[]));
   }
 
@@ -77,7 +83,7 @@ async function audience(a: PushAudience) {
   const picked = rows.filter((m) => {
     if (m.is_deleted) return false;
     const t = memberTier(m);
-    if (a.tier !== "all" && t !== a.tier) return false;
+    if (a.tier !== "all" && a.tier !== "everyone" && t !== a.tier) return false;
     if (inRegion && !inRegion.has(m.id)) return false;
     const p = m.notify_prefs || {};
     if (a.kind === "ad") { if (m.marketing_push !== true) return false; }
@@ -86,15 +92,16 @@ async function audience(a: PushAudience) {
     return true;
   }).map((m) => m.id);
   const want = new Set(picked);
-  return { members: picked, tokens: [...new Set(tokens.filter((t) => want.has(t.user_id)).map((t) => t.token))] };
+  const memberTokens = tokens.filter((t) => t.user_id && want.has(t.user_id)).map((t) => t.token);
+  return { members: picked, tokens: [...new Set([...memberTokens, ...guestTokens])], guests: guestTokens.length };
 }
 
 /** 보내기 전에 — 몇 명 · 몇 대에게 가는지 */
 export async function adminPushPreview(a: PushAudience) {
-  if (!(await requireAdmin())) return { success: false, error: "최고관리자만 쓸 수 있어요.", members: 0, devices: 0 };
+  if (!(await requireAdmin())) return { success: false, error: "최고관리자만 쓸 수 있어요.", members: 0, guests: 0, devices: 0 };
   const r = await audience(a);
-  if (r.error) return { success: false, error: r.error, members: 0, devices: 0 };
-  return { success: true, members: r.members.length, devices: r.tokens.length, adNight: a.kind === "ad" && adNight() };
+  if (r.error) return { success: false, error: r.error, members: 0, guests: 0, devices: 0 };
+  return { success: true, members: r.members.length, guests: r.guests || 0, devices: r.tokens.length, adNight: a.kind === "ad" && adNight() };
 }
 
 /** 기사 고르기 — 제목으로 찾기 (빈칸이면 최근 발행 기사) */
@@ -145,6 +152,7 @@ export async function adminSendPush(input: { kind: PushKind | "test"; title: str
   const supabase = db();
   let members: string[] = [];
   let tokens: string[] = [];
+  let guests = 0;
   if (input.kind === "test") {
     const { data } = await supabase.from("push_tokens").select("token").eq("user_id", adminId);
     members = [adminId];
@@ -154,6 +162,7 @@ export async function adminSendPush(input: { kind: PushKind | "test"; title: str
     const r = await audience({ tier: input.tier, region: input.region, kind: input.kind });
     if (r.error) return { success: false, error: r.error };
     members = r.members;
+    guests = r.guests || 0;
     tokens = r.tokens;
     if (!tokens.length) return { success: false, error: "받을 휴대폰이 없습니다. (앱을 깔고 알림을 허락한 회원이 아직 없거나 조건에 맞는 회원이 없음)" };
   }
@@ -161,13 +170,13 @@ export async function adminSendPush(input: { kind: PushKind | "test"; title: str
   // 기록 먼저 — 누른 수를 세려면 알림에 기록 번호가 들어가야 한다
   const { data: camp } = await supabase.from("push_campaigns").insert({
     kind: input.kind, title, body, link: link || null,
-    audience: { tier: input.tier, region: input.region || "", image: image || undefined }, recipients: members.length, created_by: adminId,
+    audience: { tier: input.tier, region: input.region || "", image: image || undefined }, recipients: members.length + guests, created_by: adminId,
   }).select("id").maybeSingle();
   const campaign = camp?.id ? String(camp.id) : "";
 
   const r = await sendExpoPush(tokens.map((to) => ({ to, title, body: body || undefined, data: { link, type: "admin_push", campaign }, ...(image ? { richContent: { image } } : {}) })));
   if (campaign) await supabase.from("push_campaigns").update({ devices: r.sent, failed: r.failed }).eq("id", campaign);
-  return { success: true, members: members.length, sent: r.sent, failed: r.failed };
+  return { success: true, members: members.length + guests, sent: r.sent, failed: r.failed };
 }
 
 /** 보낸 기록 */
