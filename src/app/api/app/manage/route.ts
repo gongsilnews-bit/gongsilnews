@@ -172,6 +172,19 @@ export async function POST(req: NextRequest) {
     if (e2) return no(e2.message, 500);
     return ok({ prefs: next });
   }
+  // 휴대폰 푸시 토큰 (2026-11-18) — 앱이 로그인하면 등록, 로그아웃하면 지움. 같은 휴대폰을 다른 계정이 쓰면 새 계정으로 옮겨진다
+  if (action === "push.register") {
+    const token = String(body.token || "").trim();
+    if (!/^(Exponent|Expo)PushToken\[.+\]$/.test(token)) return no("푸시 토큰이 올바르지 않습니다.");
+    const { error } = await me.db.from("push_tokens").upsert({
+      token, user_id: uid, platform: String(body.platform || "").slice(0, 20), device: String(body.device || "").slice(0, 80), updated_at: new Date().toISOString(),
+    });
+    return error ? no(/push_tokens/.test(error.message) ? "푸시 표가 아직 없습니다. (SQL 실행 필요)" : error.message, 500) : ok();
+  }
+  if (action === "push.unregister") {
+    await me.db.from("push_tokens").delete().eq("token", String(body.token || "")).eq("user_id", uid);
+    return ok();
+  }
   if (action === "star.count") {
     const { count } = await me.db.from("complex_bookmarks").select("id", { count: "exact", head: true }).eq("user_id", uid);
     return ok({ count: count || 0 });

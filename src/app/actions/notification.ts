@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { after } from "next/server";
+import { sendPushFor } from "@/utils/push";
 
 /**
  * 알림 생성/조회
@@ -95,6 +97,12 @@ export async function createNotification(payload: {
       console.warn("[createNotification]", payload.type, error.message);
       return { success: false };
     }
+    // 휴대폰 푸시도 함께 (2026-11-18) — 응답을 늦추지 않게 끝난 뒤에. 요청 밖(스크립트 등)이면 그 자리에서
+    const push = () => sendPushFor({
+      recipientId: payload.recipientId, recipientRole: payload.recipientRole, type: payload.type,
+      title: payload.title, body: payload.body, link: payload.mobileLink || payload.link,
+    }).catch((e) => console.warn("[push]", e instanceof Error ? e.message : e));
+    try { after(push); } catch { await push(); }
     return { success: true };
   } catch (err: unknown) {
     console.warn("[createNotification]", err instanceof Error ? err.message : err);
