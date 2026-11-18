@@ -4,7 +4,7 @@
 //  주소가 엉망이면(온비드 "강남구청역 …" 같은 것) 좌표에서 가장 가까운 구 가운데로. 구 가운데 = 아파트 지역 평균의 가운데
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { LAWD_NAMES } from "@/utils/aptMapShared";
-import { regionAgg } from "@/utils/aptRegionAgg";
+import { storedRegionAgg } from "@/utils/aptRegionAgg";
 
 export type AucRegion = { key: string; name: string; lat: number; lng: number; n: number; c: Record<string, number> };
 /** grid = 약 1km(위도·경도 0.01도) 칸마다 건수 — 앱 경매 지도를 넓게 볼 때 지역 이름 없이 원 숫자로 (2026-11-17 사장님) */
@@ -52,7 +52,7 @@ async function readAll(supabase: SupabaseClient): Promise<Row[]> {
 }
 
 async function build(supabase: SupabaseClient): Promise<Out> {
-  const [rows, apt] = await Promise.all([readAll(supabase), regionAgg(supabase, "apt")]);
+  const [rows, apt] = await Promise.all([readAll(supabase), storedRegionAgg(supabase, "apt")]);
   const guCenter = new Map(apt.gu.map((g) => [g.key, g]));
   const sidoCenter = new Map(apt.sido.map((g) => [g.key, g]));
   const gus = Object.entries(LAWD_NAMES).filter(([k]) => guCenter.has(k)).map(([k, full]) => ({ k, full, gu: full.split(" ").slice(1).join(" ") }));

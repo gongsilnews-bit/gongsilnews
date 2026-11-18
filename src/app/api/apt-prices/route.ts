@@ -2,10 +2,10 @@
 //  GET ?sw=37.49,127.03&ne=37.52,127.07   화면 안 단지 (거래 많은 순 400개까지)
 //  GET ?agg=sido|gu|dong&kind=apt         지역(시·도·시군구·동) 평균 — 앱 지도를 넓게 볼 때
 //  GET ?id=11680:대치동:1014-3              단지 하나 — 매매·전월세 거래 전부 + 평형·세대수 + 단지 정보 (상세 창이 계산)
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
-import { regionAgg, type AggLevel, type AptKind } from "@/utils/aptRegionAgg";
+import { storedRegionAgg, type AggLevel, type AptKind } from "@/utils/aptRegionAgg";
 import { complexLotKey, ensureLots } from "@/utils/articleLot";
 
 // 지역 평균(?agg)을 처음 만들 때 빌라는 20초 넘게 걸린다
@@ -192,7 +192,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "agg=sido|gu|dong, kind=apt|offi|villa" }, { status: 400 });
     }
     try {
-      const all = await regionAgg(supabase, kind);
+      // DB 에 저장해 둔 것을 읽기만 (2026-11-18) — 묵었으면 응답 뒤에 새로 계산
+      const all = await storedRegionAgg(supabase, kind, (job) => after(job));
       return NextResponse.json({ success: true, regions: all[agg as AggLevel] }, { headers: { "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400" } });
     } catch (e) {
       return NextResponse.json({ success: false, error: e instanceof Error ? e.message : "지역 평균을 만들지 못했습니다." }, { status: 500 });

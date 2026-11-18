@@ -81,3 +81,24 @@ export async function regionAgg(supabase: SupabaseClient, kind: AptKind): Promis
   }
   return loading.get(kind)!;
 }
+
+// ── DB 에 저장해 둔 지역 평균 (2026-11-18 사장님: 지역 고르기가 처음에 오래 걸림) ──
+//  계산(9~25초)은 하루 한 번 /api/cron/region-agg 가 해서 region_agg 표에 저장, 앱 요청은 저장된 것을 읽기만 → 배포와 상관없이 늘 빠르다
+//  저장된 게 없으면(처음) 그때 계산해 저장, 하루 넘게 묵었으면 바로 주고 뒤에서 새로 (refresh 로 받은 일을 응답 뒤에 돌린다)
+const STALE_MS = 26 * 60 * 60 * 1000;
+
+/** 새로 계산해 표에 저장 (정기 작업 · 처음 · 묵었을 때) */
+export async function saveRegionAgg(supabase: SupabaseClient, kind: AptKind) {
+  cache.delete(kind);
+  const data = await regionAgg(supabase, kind);
+  await supabase.from("region_agg").upsert({ kind, data, updated_at: new Date().toISOString() });
+  return data;
+}
+
+export async function storedRegionAgg(supabase: SupabaseClient, kind: AptKind, refresh?: (job: () => Promise<unknown>) => void): Promise<Record<AggLevel, RegionAgg[]>> {
+  const { data: row, error } = await supabase.from("region_agg").select("data, updated_at").eq("kind", kind).maybeSingle();
+  if (error) return regionAgg(supabase, kind); // 표가 아직 없으면(SQL 전) 예전처럼 계산
+  if (!row?.data) return saveRegionAgg(supabase, kind);
+  if (refresh && Date.now() - new Date(row.updated_at).getTime() > STALE_MS) refresh(() => saveRegionAgg(supabase, kind));
+  return row.data as Record<AggLevel, RegionAgg[]>;
+}

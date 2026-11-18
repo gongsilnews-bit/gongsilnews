@@ -92,6 +92,10 @@
     {
       "path": "/api/cron/apt-prices/round?mode=geo",
       "schedule": "*/5 3-14 * * *"
+    },
+    {
+      "path": "/api/cron/region-agg",
+      "schedule": "0 3 * * *"
     }
   ]
 }
