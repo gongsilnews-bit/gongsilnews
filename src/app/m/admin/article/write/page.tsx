@@ -4,6 +4,7 @@ import { GONGSIL_SECTION2, formatSection2 } from "@/utils/formatCategory";
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { lookupArticleLot } from "@/app/actions/articleLot";
 import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite, hidePhotoFromLibrary, getMyArticles, purgeReplacedArticlePhotos } from "@/app/actions/article";
 import PhotoMosaicEditor from "@/components/admin/article_form/PhotoMosaicEditor";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
@@ -50,6 +51,17 @@ function LocationPickerModal({ initial, onClose, onConfirm }: {
   const [searchKw, setSearchKw] = useState("");
   const [picked, setPicked] = useState<ArticleLocation | null>(initial);
   const [mapError, setMapError] = useState("");
+  // 찍은 자리의 번지와 그 번지 단지 — 단지 이름이 보이면 그 단지 화면 [뉴스]에 나온다 (2026-11-18 사장님)
+  const [lotInfo, setLotInfo] = useState<{ at: string; lot: string; complexes: string[] } | null>(null);
+  const pickedAt = picked ? `${picked.lat.toFixed(6)},${picked.lng.toFixed(6)}` : "";
+  useEffect(() => {
+    if (!picked) return;
+    const at = `${picked.lat.toFixed(6)},${picked.lng.toFixed(6)}`;
+    let alive = true;
+    lookupArticleLot(picked.lat, picked.lng).then((r) => { if (alive) setLotInfo({ at, ...r }); }).catch(() => { if (alive) setLotInfo({ at, lot: "", complexes: [] }); });
+    return () => { alive = false; };
+  }, [picked]);
+  const lotNow = lotInfo && lotInfo.at === pickedAt ? lotInfo : null;
 
   useEffect(() => {
     const init = () => {
@@ -165,6 +177,18 @@ function LocationPickerModal({ initial, onClose, onConfirm }: {
         <div style={{ fontSize: 13, color: "#374151", marginBottom: 8, minHeight: 18 }}>
           {picked ? `${picked.name || "선택한 위치"} · ${picked.lat.toFixed(6)}, ${picked.lng.toFixed(6)}` : "아직 선택한 위치가 없습니다."}
         </div>
+        {picked && (
+          <div style={{ fontSize: 13, marginBottom: 8, lineHeight: 1.5 }}>
+            {!lotNow ? <span style={{ color: "#9ca3af" }}>번지 확인 중…</span> : (
+              <>
+                <span style={{ color: "#111827", fontWeight: 700 }}>{lotNow.lot || "번지 없음"}</span>
+                {lotNow.complexes.length > 0
+                  ? <span style={{ color: "#1d4ed8", fontWeight: 700 }}> · 🏢 {lotNow.complexes.join(", ")}</span>
+                  : <span style={{ color: "#9ca3af" }}> · 이 번지의 단지 없음 (단지 화면에는 안 나옴)</span>}
+              </>
+            )}
+          </div>
+        )}
         <button
           type="button"
           disabled={!picked}

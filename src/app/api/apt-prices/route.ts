@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
 import { regionAgg, type AggLevel, type AptKind } from "@/utils/aptRegionAgg";
+import { complexLotKey, ensureLots } from "@/utils/articleLot";
 
 // 지역 평균(?agg)을 처음 만들 때 빌라는 20초 넘게 걸린다
 export const maxDuration = 60;
@@ -22,9 +23,46 @@ async function listingsOf(supabase: ReturnType<typeof db>, id: string) {
   };
 }
 
-/** 이 단지 뉴스 — 단지에서 50m 안에 찍힌 기사 + 근처(약 2km)에서 제목에 단지 이름이 든 기사 (2026-11-04 사장님: 단지 창 [뉴스 N])
+/** 이 단지 뉴스 (2026-11-18 사장님: 번지가 정확히 같은 기사만) — 기사 좌표의 번지(articles.loc_lot)가 단지 번지와 같은 것
+ *  예전(50m 안 전부 + 제목 이름)에는 강남역처럼 촘촘한 곳에서 옆 단지 기사가 붙었다 (풍림아이원플러스에 현대ESA 기사)
+ *  loc_lot 칸이 아직 없으면(SQL 실행 전) 예전 방식으로 */
+const NEWS_COLS = "id, article_no, title, subtitle, section1, section2, location_name, published_at, created_at, author_name, thumbnail_url, lat, lng";
+const noLotColumn = (e: { message?: string } | null) => !!e && /loc_lot/.test(e.message || "");
+async function newsOf(supabase: ReturnType<typeof db>, c: { id: string; name: string; lat: number | null; lng: number | null }) {
+  const key = complexLotKey(c.id);
+  if (!c.lat || !c.lng || !key) return [];
+  const d = 0.003; // 둘레 약 300m 안 기사만 번지를 견준다 (한 필지가 아무리 커도 이 안)
+  const { data, error } = await supabase.from("articles").select(`${NEWS_COLS}, loc_lot`)
+    .eq("status", "APPROVED").eq("is_deleted", false).lte("published_at", new Date().toISOString())
+    .gte("lat", c.lat - d).lte("lat", c.lat + d).gte("lng", c.lng - d * 1.25).lte("lng", c.lng + d * 1.25).limit(200);
+  if (noLotColumn(error)) return newsOfOld(supabase, c);
+  const arts = (data || []) as unknown as { id: string; lat: number; lng: number; loc_lot: string | null; published_at?: string; created_at?: string }[];
+  const keys = await ensureLots(supabase as never, arts);
+  return arts.filter((a) => keys.get(a.id) === key)
+    .map(({ loc_lot: _l, ...a }) => a)
+    .sort((p, q) => String(q.published_at || q.created_at || "").localeCompare(String(p.published_at || p.created_at || "")));
+}
+
+/** 지도 단지 표시 주황 뉴스 수 — 단지 창 [뉴스 N](newsOf)과 같은 규칙(번지가 같은 기사). 화면 안 기사를 한 번만 읽어 나눈다 */
+async function countNews(supabase: ReturnType<typeof db>, list: { id: string; name: string; lat: number | null; lng: number | null; news?: number }[], box: number[]) {
+  const [s, w, n, e] = box;
+  if (!list.length || n - s > 0.5 || e - w > 0.5) return;
+  const d = 0.003;
+  const { data, error } = await supabase.from("articles").select("id, lat, lng, loc_lot")
+    .eq("status", "APPROVED").eq("is_deleted", false).lte("published_at", new Date().toISOString())
+    .gte("lat", s - d).lte("lat", n + d).gte("lng", w - d * 1.25).lte("lng", e + d * 1.25).limit(2000);
+  if (noLotColumn(error)) return countNewsOld(supabase, list, box);
+  const arts = (data || []) as { id: string; lat: number; lng: number; loc_lot: string | null }[];
+  if (!arts.length) return;
+  const keys = await ensureLots(supabase as never, arts);
+  const per = new Map<string, number>();
+  for (const k of keys.values()) per.set(k, (per.get(k) || 0) + 1);
+  for (const c of list) { const k = per.get(complexLotKey(c.id)); if (k) c.news = k; }
+}
+
+/** (예전) 이 단지 뉴스 — 단지에서 50m 안에 찍힌 기사 + 근처(약 2km)에서 제목에 단지 이름이 든 기사 (2026-11-04 사장님: 단지 창 [뉴스 N])
  *  저장해 둔 연결 없이 그때그때 찾는다. 흔한 짧은 이름(2글자)은 이름으로 찾지 않는다 */
-async function newsOf(supabase: ReturnType<typeof db>, c: { name: string; lat: number | null; lng: number | null }) {
+async function newsOfOld(supabase: ReturnType<typeof db>, c: { name: string; lat: number | null; lng: number | null }) {
   if (!c.lat || !c.lng) return [];
   const cols = "id, article_no, title, subtitle, section1, section2, location_name, published_at, created_at, author_name, thumbnail_url, lat, lng";
   const now = new Date().toISOString();
@@ -44,7 +82,7 @@ async function newsOf(supabase: ReturnType<typeof db>, c: { name: string; lat: n
 
 /** 지도 단지 표시 오른쪽 아래 주황 뉴스 수 (2026-11-04 사장님) — 단지 창 [뉴스 N](newsOf)과 같은 규칙.
  *  단지마다 묻지 않고, 화면(+약 2km) 안 기사를 한 번만 읽어 나눈다 (회원 10만 명이어도 가볍게) */
-async function countNews(supabase: ReturnType<typeof db>, list: { name: string; lat: number | null; lng: number | null; news?: number }[], [s, w, n, e]: number[]) {
+async function countNewsOld(supabase: ReturnType<typeof db>, list: { name: string; lat: number | null; lng: number | null; news?: number }[], [s, w, n, e]: number[]) {
   if (!list.length || n - s > 0.5 || e - w > 0.5) return; // 너무 넓게 보면 세지 않는다
   const d = 0.02;
   const { data } = await supabase.from("articles").select("id, title, lat, lng")

@@ -24,6 +24,7 @@ import ArticleStockModal, { type StockPick } from "./ArticleStockModal";
 import { pixelateCanvasRegion } from "@/utils/imageMosaic";
 
 import Link from "next/link";
+import { lookupArticleLot } from "@/app/actions/articleLot";
 
 /* ─── 타입 ─── */
 type StatusType = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | string;
@@ -1789,6 +1790,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     const content = `
       <div style="padding: 12px; background: #fff; border-radius: 8px; min-width: 200px; text-align: center; font-family: sans-serif;">
         <div style="font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px;">${safeTitle}</div>
+        <div id="kakao-modal-lot" data-for="${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}" style="font-size: 12.5px; color: #9ca3af; margin-bottom: 6px; line-height: 1.5;">번지 확인 중…</div>
         <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px;">📍 좌표: ${parseFloat(lat as any).toFixed(6)}, ${parseFloat(lng as any).toFixed(6)}</div>
         <button id="kakao-modal-confirm-btn" style="width: 100%; padding: 10px 0; background: #e8590c; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
           ✔ 이 위치를 기사 좌표로 등록
@@ -1797,6 +1799,20 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     `;
     kakaoInfoWindowRef.current.setContent(content);
     kakaoInfoWindowRef.current.open(kakaoMapRef.current, kakaoMarkerRef.current);
+
+    // 찍은 자리의 번지와 그 번지 단지 — 단지 이름이 보이면 그 단지 화면 [뉴스]에 나온다 (2026-11-18 사장님)
+    const lotAt = `${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+    lookupArticleLot(Number(lat), Number(lng)).then((r) => {
+      const el = document.getElementById('kakao-modal-lot');
+      if (!el || el.dataset.at === 'done' || (el.dataset.for && el.dataset.for !== lotAt)) return;
+      const esc = (t: string) => t.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] || ch));
+      el.innerHTML = `<b style="color:#111827">${esc(r.lot || '번지 없음')}</b>` + (r.complexes.length
+        ? `<br><span style="color:#1d4ed8;font-weight:700">🏢 ${esc(r.complexes.join(', '))}</span>`
+        : `<br><span style="color:#9ca3af">이 번지의 단지 없음 (단지 화면에는 안 나옴)</span>`);
+    }).catch(() => {
+      const el = document.getElementById('kakao-modal-lot');
+      if (el) el.textContent = '';
+    });
 
     setTimeout(() => {
       const btn = document.getElementById('kakao-modal-confirm-btn');
