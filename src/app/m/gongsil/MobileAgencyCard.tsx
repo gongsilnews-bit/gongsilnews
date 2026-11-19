@@ -27,7 +27,6 @@ export function MobileAgencyCard({ agency, vacCount, artCount, tab, setTab }: { 
   const { isStar, toggleStar } = useStars();
   const [introOpen, setIntroOpen] = useState(false);
   useEffect(() => setIntroOpen(false), [agency.id]);
-  const tel = (agency.cell || agency.phone || "").replace(/[^0-9]/g, "");
   return (
     <div style={{ flexShrink: 0, background: "#fff", borderBottom: "1px solid #f3f4f6" }}>
       <div style={{ position: "relative", margin: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 14px 12px", boxShadow: "0 4px 14px -4px rgba(0,0,0,.06)" }}>
@@ -61,13 +60,6 @@ export function MobileAgencyCard({ agency, vacCount, artCount, tab, setTab }: { 
             <div style={introOpen ? undefined : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{agency.intro}</div>
             {agency.intro.length > 60 && <button onClick={() => setIntroOpen((v) => !v)} style={{ border: "none", background: "none", padding: 0, marginTop: 3, fontSize: 12, color: "#1e3a6e", fontWeight: 700, cursor: "pointer" }}>{introOpen ? "접기" : "더보기"}</button>}
           </div>
-        )}
-        {tel && (
-          <a href={`tel:${tel}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 40, marginTop: 12, borderRadius: 8, background: "#1e3a6e", color: "#fff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}>
-            {/* 전화 그림은 흰색 (2026-11-11 사장님: 빨간 그림 말고 흰색) */}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z" /></svg>
-            전화하기
-          </a>
         )}
       </div>
       <div style={{ display: "flex", gap: 6, padding: "0 16px 12px" }}>
@@ -108,5 +100,23 @@ export function MobileAgencyArticles({ arts }: { arts: Art[] | null }) {
         </a>
       ))}
     </>
+  );
+}
+
+/** 사무소 보기 맨 아래 고정 [문자] [연락하기] — 공실 상세 아래 단추와 같은 모양 (2026-11-19 사장님: 통일, 앱과 같게) */
+export function MobileAgencyCallBar({ agency }: { agency: MapAgency }) {
+  const tel = (agency.cell || agency.phone || "").replace(/[^0-9]/g, "");
+  if (!tel) return null;
+  const mobileNo = [agency.cell, agency.phone].map((p) => (p || "").replace(/[^0-9]/g, "")).find((p) => /^01\d/.test(p));
+  const BLUE = "#1a73e8";
+  const btn: React.CSSProperties = { height: 52, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, textDecoration: "none", cursor: "pointer" };
+  return (
+    <div style={{ flexShrink: 0, display: "flex", gap: 8, padding: "10px 16px calc(10px + env(safe-area-inset-bottom))", borderTop: "1px solid #e5e7eb", background: "#fff" }}>
+      <a href={mobileNo ? `sms:${mobileNo}` : undefined} onClick={mobileNo ? undefined : (e) => { e.preventDefault(); alert("문자를 받을 휴대폰 번호가 없어요. 전화로 연락해 주세요."); }}
+        style={{ ...btn, width: 96, gap: 5, background: "#fff", color: BLUE, border: `1.5px solid ${BLUE}`, fontSize: 16 }}>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" /><circle cx="8.5" cy="12" r=".6" fill={BLUE} /><circle cx="12.5" cy="12" r=".6" fill={BLUE} /><circle cx="16.5" cy="12" r=".6" fill={BLUE} /></svg>문자
+      </a>
+      <a href={`tel:${tel}`} style={{ ...btn, flex: 1, background: BLUE, color: "#fff", fontSize: 17 }}>연락하기</a>
+    </div>
   );
 }

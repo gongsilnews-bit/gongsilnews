@@ -358,7 +358,7 @@ export default function GongsilSidebar({
       ) : agency ? (
         <div style={{ flexShrink: 0, borderBottom: "1px solid #eee", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 14px 10px", fontSize: 15, fontWeight: 800, color: "#111" }}>
-            <button onClick={closeAgency} title="목록으로" aria-label="목록으로" style={{ border: "none", background: "none", padding: "0 4px 0 0", fontSize: 22, lineHeight: 1, fontWeight: 700, color: "#333", cursor: "pointer" }}>‹</button>
+            <button onClick={() => (agency?.fromApt ? window.history.back() : closeAgency())} title={agency?.fromApt ? "단지 정보로" : "목록으로"} aria-label={agency?.fromApt ? "단지 정보로" : "목록으로"} style={{ border: "none", background: "none", padding: "0 4px 0 0", fontSize: 22, lineHeight: 1, fontWeight: 700, color: "#333", cursor: "pointer" }}>‹</button>
             <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agency.name}</span>
             <button onClick={closeAgency} title="닫기" aria-label="닫기" style={{ border: "none", background: "none", fontSize: 20, lineHeight: 1, color: "#999", cursor: "pointer" }}>✕</button>
           </div>

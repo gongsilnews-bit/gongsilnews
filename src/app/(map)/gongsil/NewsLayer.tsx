@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { mapNewsInBox } from "@/app/actions/mapNews";
 import NewsArticlePanel from "./NewsArticlePanel";
 import { starHtml, useStars } from "./stars";
+import { keepAptMark } from "@/utils/aptHistory";
 
 const ORANGE = "#ff8e15";
 const KEY = "gs-news-layer";
@@ -228,7 +229,7 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
   const [mList, setMList] = useState<Art[] | null>(null);
   const [mounted, setMounted] = useState(false); // 목록 화면은 브라우저에서만 그린다 (서버 화면과 어긋나지 않게)
   useEffect(() => setMounted(true), []);
-  const openMobileList = (list: Art[]) => { window.history.pushState({ panel: "news" }, ""); setMList(list); };
+  const openMobileList = (list: Art[]) => { window.history.pushState({ ...keepAptMark(), panel: "news" }, ""); setMList(list); };
   useEffect(() => {
     if (!mList) return;
     // 기사 화면에서 [뒤로]로 돌아온 것(지금 자리가 이 목록)이면 목록은 그대로
@@ -258,6 +259,25 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
     window.addEventListener("gs-agency-open", shut);
     return () => { window.removeEventListener("gs-vacancy-pick", shut); window.removeEventListener("gs-agency-open", shut); window.removeEventListener("gs-map-moved", moved); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // PC 기사 창 — 열면 뒤로가기 한 칸. 뒤로가기 = 기사만 닫고 보던 목록(사무소 보기 등) 그대로 (2026-11-19 사장님)
+  //  지금 history.state 를 그대로 펼쳐 넣어, 돌아온 자리의 aptList·gongsilView 표시가 남는다 (AptPriceLayer·GongsilClient 가 반응하지 않게)
+  const readPushed = useRef(false);
+  useEffect(() => {
+    if (mobile) return;
+    if (reading && !readPushed.current) {
+      window.history.pushState({ ...(window.history.state || {}), newsRead: 1 }, "");
+      readPushed.current = true;
+    } else if (!reading && readPushed.current) {
+      readPushed.current = false; // ✕ 로 닫음 — 만든 한 칸을 되돌린다
+      if (window.history.state?.newsRead) window.history.back();
+    }
+  }, [reading, mobile]);
+  useEffect(() => {
+    if (mobile) return;
+    const onPop = () => { if (readPushed.current && !window.history.state?.newsRead) { readPushed.current = false; setReading(null); } };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [mobile]);
   useEffect(() => { if (!on) { setReading(null); window.dispatchEvent(new CustomEvent("gs-news-visible", { detail: null })); } }, [on]);
   // 왼쪽 뉴스 목록에서 고른 기사 — 지도에 말풍선 + 옆에 기사 창
   useEffect(() => {

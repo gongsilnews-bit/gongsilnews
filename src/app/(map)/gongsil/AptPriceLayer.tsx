@@ -247,12 +247,26 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
       repArea: t?.a ?? null, repPrice: t?.p ?? null, repDate: t?.d ?? null, tradeCount: (detail.trades || []).length, newTrades: 0, newVacancies: 0, newArticles: 0 });
   }, [detail]);
   // 부동산(사무소·묶음)을 누르면 — 왼쪽을 덮고 있는 단지 창을 닫아 부동산 목록이 보이게 (11-04 사장님)
+  //  단지 창 [입점부동산]에서 연 사무소(fromApt)는 닫지 않고 [공실 n]처럼 잠깐 숨긴다 — 뒤로가기(‹) = 보던 단지 창 (2026-11-19 사장님)
+  const agencyFromApt = useRef(false);
   useEffect(() => {
-    const shut = (e: Event) => { if ((e as CustomEvent).detail) close(); };
+    const shut = (e: Event) => {
+      const d = (e as CustomEvent).detail as { fromApt?: boolean } | null;
+      if (!d) return;
+      if (d.fromApt && pickedRef.current) {
+        // 모바일은 [공실 n]처럼 단지 창 위에 목록 화면이 덮인다 — 닫지만 않으면 뒤로가기 = 단지 창 (2026-11-19 사장님)
+        if (mobile) return;
+        agencyFromApt.current = true; setListOpen(true); return;
+      }
+      close();
+    };
+    // 사무소 보기를 ✕ 로 닫으면 숨겨 둔 단지 창도 닫는다
+    const end = () => { if (agencyFromApt.current) { agencyFromApt.current = false; close(); } };
     window.addEventListener("gs-agency-open", shut);
     window.addEventListener("gs-agency-group", shut);
-    return () => { window.removeEventListener("gs-agency-open", shut); window.removeEventListener("gs-agency-group", shut); };
-  }, [close]);
+    window.addEventListener("gs-agency-close", end);
+    return () => { window.removeEventListener("gs-agency-open", shut); window.removeEventListener("gs-agency-group", shut); window.removeEventListener("gs-agency-close", end); };
+  }, [close, mobile]);
 
   // 주소 ?apt=<단지 id> — 그 단지로 지도를 옮기고 단지 창을 연다 (대본·기사 글쓰기의 "공실열람 단지 시세" 캡처, 2026-11-03 사장님)
   const aptParamDone = useRef(false);
@@ -348,13 +362,19 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
   useEffect(() => {
     if (mobile) return;
     if (listOpen && !listPushed.current) {
-      window.history.pushState({ ...(window.history.state || {}), aptList: 1 }, "");
+      // gongsilView "list" — 그 목록에서 공실을 열면 GongsilClient 가 뒤로가기 칸을 하나 더 만든다 → 뒤로가기 = 공실 닫기 → 한 번 더 = 단지 창 (2026-11-19)
+      window.history.pushState({ ...(window.history.state || {}), gongsilView: "list", aptList: 1 }, "");
       listPushed.current = true;
     } else if (!listOpen && listPushed.current) {
       listPushed.current = false; // 지도를 움직였거나 다른 공실을 눌러 끝남 — 만든 한 칸을 조용히 되돌린다
       if (window.history.state?.aptList) { ignorePop.current++; window.history.back(); }
     }
     window.dispatchEvent(new CustomEvent("gongsil-apt-list", { detail: listOpen }));
+    // 입점부동산에서 연 사무소 보기 — 단지 창으로 돌아오면 왼쪽 사무소 보기를 닫는다
+    if (!listOpen && agencyFromApt.current) {
+      agencyFromApt.current = false;
+      window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null }));
+    }
   }, [listOpen, mobile]);
   useEffect(() => {
     if (mobile) return;

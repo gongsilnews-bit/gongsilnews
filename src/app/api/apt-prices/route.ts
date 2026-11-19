@@ -7,6 +7,7 @@ import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
 import { storedRegionAgg, type AggLevel, type AptKind } from "@/utils/aptRegionAgg";
 import { complexLotKey, ensureLots } from "@/utils/articleLot";
+import { agenciesOf } from "@/utils/complexAgencies";
 
 // 지역 평균(?agg)을 처음 만들 때 빌라는 20초 넘게 걸린다
 export const maxDuration = 60;
@@ -156,6 +157,7 @@ export async function GET(req: NextRequest) {
       agent_supply_keys: Object.keys(agentSupply || {}),
       ...(await listingsOf(supabase, data.id)),
       news: await newsOf(supabase, data).catch(() => []),
+      agencies: await agenciesOf(supabase as never, data).catch(() => []), // 입점부동산 — 번지가 같은 승인 사무소 (2026-11-19)
     };
     return NextResponse.json({ success: true, complex }, { headers: { "Cache-Control": "no-store" } });
   }

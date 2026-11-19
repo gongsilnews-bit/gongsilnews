@@ -12,6 +12,7 @@ import { getArticleDetail } from "@/app/actions/article";
 import BannerSlot from "@/components/BannerSlot";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import { formatSection1 } from "@/utils/formatCategory";
+import { keepAptMark } from "@/utils/aptHistory";
 
 function formatDateFull(dateStr: string) {
   if (!dateStr) return "";
@@ -30,7 +31,7 @@ export default function MobileNewsDetailPanel() {
     const open = (e: Event) => {
       const next = String((e as CustomEvent).detail || "");
       if (!next) return;
-      window.history.pushState({ panel: "news-article" }, "");
+      window.history.pushState({ ...keepAptMark(), panel: "news-article" }, "");
       setId(next);
     };
     const back = () => { if (window.history.state?.panel !== "news-article") setId(null); };

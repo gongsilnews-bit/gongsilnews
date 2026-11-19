@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { formatAmount } from "./page";
 import { getAuctionInfo, getCleanAddrText, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
 import type { MapAgency } from "@/app/actions/mapAgencies";
-import { MobileAgencyCard, MobileAgencyArticles, useAgencyArticles } from "./MobileAgencyCard";
+import { MobileAgencyCard, MobileAgencyArticles, MobileAgencyCallBar, useAgencyArticles } from "./MobileAgencyCard";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
@@ -329,6 +329,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
           );
         })}
       </div>
+      {agency && <MobileAgencyCallBar agency={agency} />}
     </div>
   );
 };

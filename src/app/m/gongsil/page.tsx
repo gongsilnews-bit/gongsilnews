@@ -21,6 +21,7 @@ import NewsLayer from "@/app/(map)/gongsil/NewsLayer";
 import AgencyLayer from "@/app/(map)/gongsil/AgencyLayer";
 import type { MapAgency } from "@/app/actions/mapAgencies";
 import MobileNewsDetailPanel from "../_components/MobileNewsDetailPanel";
+import { keepAptMark } from "@/utils/aptHistory";
 
 /**
  * 부동산 이름표 [상세보기] → 그 사무소가 올린 공실 전부를 공실 목록 화면("공실광고 N개")에 (2026-11-11)
@@ -175,7 +176,7 @@ function MobileGongsilContent() {
   }, [showGalleryFullscreen]);
 
   const openGalleryFullscreen = () => {
-    window.history.pushState({ modal: "gallery-m" }, "", "");
+    window.history.pushState({ ...keepAptMark(), modal: "gallery-m" }, "", "");
     setShowGalleryFullscreen(true);
   };
 
@@ -1093,7 +1094,7 @@ function MobileGongsilContent() {
       kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
         const mks = cluster.getMarkers();
         const items = mks.flatMap((m: any) => m.customData || []);
-        window.history.pushState({ panel: "cluster" }, "");
+        window.history.pushState({ ...keepAptMark(), panel: "cluster" }, "");
         setSelectedVacancy(null);
         setSelectedCluster(items);
       });
@@ -1149,7 +1150,7 @@ function MobileGongsilContent() {
       marker.customData = group;
 
       kakao.maps.event.addListener(marker, "click", () => {
-        window.history.pushState({ panel: "cluster" }, "");
+        window.history.pushState({ ...keepAptMark(), panel: "cluster" }, "");
         setSelectedVacancy(null);
         setSelectedCluster(group);
       });
@@ -1253,7 +1254,7 @@ function MobileGongsilContent() {
       listScrollTopRef.current = listScrollRef.current?.scrollTop || 0;
       const currentParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
       currentParams.set("id", v.id);
-      window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?" + currentParams.toString());
+      window.history.pushState({ ...keepAptMark(), panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?" + currentParams.toString());
     }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
@@ -1481,7 +1482,7 @@ function MobileGongsilContent() {
                 setSelectedVacancy(null);
                 setSelectedCluster(null);
                 setListViewMode(mode || "filter");
-                window.history.pushState({ panel: "list" }, "");
+                window.history.pushState({ ...keepAptMark(), panel: "list" }, "");
                 setShowListView(true);
               }}
               locLabel={locLabel}
@@ -1508,7 +1509,7 @@ function MobileGongsilContent() {
               vacancies={filteredVacancies}
               onShowVacancies={(ids) => {
                 const list = (vacancies || []).filter((v: any) => ids.includes(String(v.id)));
-                window.history.pushState({ panel: "cluster" }, "");
+                window.history.pushState({ ...keepAptMark(), panel: "cluster" }, "");
                 setSelectedVacancy(null);
                 setSelectedCluster(list);
               }}
@@ -1525,7 +1526,7 @@ function MobileGongsilContent() {
             <AgencyLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} />
             {/* 지도에서 연 기사는 우리동네뉴스 기사 화면 모양으로 (2026-11-11 사장님) */}
             <MobileNewsDetailPanel />
-            <AgencyVacancyList vacancies={vacancies} onList={(list, a) => { window.history.pushState({ panel: "cluster" }, ""); setSelectedVacancy(null); setAgencyPicked(a); setSelectedCluster(list); }} onUpdate={(list) => setSelectedCluster((cur: any) => (cur ? list : cur))} />
+            <AgencyVacancyList vacancies={vacancies} onList={(list, a) => { window.history.pushState({ ...keepAptMark(), panel: "cluster" }, ""); setSelectedVacancy(null); setAgencyPicked(a); setSelectedCluster(list); }} onUpdate={(list) => setSelectedCluster((cur: any) => (cur ? list : cur))} />
 
             {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (
@@ -1652,7 +1653,7 @@ function MobileGongsilContent() {
               onClick={(e) => {
                 e.stopPropagation();
                 setListViewMode("map");
-                window.history.pushState({ panel: "list" }, "");
+                window.history.pushState({ ...keepAptMark(), panel: "list" }, "");
                 setShowListView(true);
               }}
               style={{

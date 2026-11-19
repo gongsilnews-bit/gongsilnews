@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import { aptViewerInfo, submitAptInfoCapture, submitAptInfoRequest } from "@/app/actions/aptReports";
 import { starSvg, useStars } from "./stars";
+import { listMapAgencies } from "@/app/actions/mapAgencies";
 import { LAWD_NAMES, areaLabel, brokerFee, fullPrice, isNewDeal, supplyFor, type Rent, type Trade } from "@/utils/aptMapShared";
 
 export type AptDetail = {
@@ -28,7 +29,9 @@ export type AptDetail = {
   news?: { id: string; title: string; subtitle?: string | null; section1?: string | null; section2?: string | null; location_name?: string | null; published_at?: string | null; created_at?: string | null; author_name?: string | null; thumbnail_url?: string | null; lat?: number | null; lng?: number | null }[]; // 이 단지 뉴스 (50m 안 · 제목에 단지 이름)
   vacancy_ids?: string[];       // 이 단지 공실 (DB, 탭과 상관없이)
   auction_ids?: string[];       // 이 단지 경매·공매 (2026-11-02)
+  agencies?: ComplexAgencyRow[]; // 입점부동산 — 번지가 같은 승인 사무소, 유료 먼저 (2026-11-19)
 };
+type ComplexAgencyRow = import("@/utils/complexAgencies").ComplexAgency;
 
 export const BRAND = "#1a56db";
 /** NEW — 지도 배지와 같은 빨간 작은 표 */
@@ -538,10 +541,52 @@ function InfoRequest({ detail, groups }: { detail: AptDetail; groups: { label: s
  *  로그인 안 함: [무료 공실등록] → 로그인 뒤 등록 화면 · 부동산 회원·관리자: 단지가 미리 채워진 등록 화면 · 일반 회원: 등록 단추 숨김
  *  조회수는 실제로 센 것만, 5번 이상일 때만 보인다 (지어내지 않는다) */
 const VIEW_SHOW_MIN = 5;
-/** 맨 아래 개수 줄 (2026-11-04 사장님: 파란 등록 단추를 빼고 공실·뉴스 개수만 — 누르면 왼쪽 목록에). 입점은 회의 뒤 */
+/** 입점부동산 (2026-11-19 사장님) — 지도 아래에 바로 펼친 목록. 따로 뜨는 창 아님
+ *  단지와 번지가 같은 승인 사무소 · 공실뉴스부동산(유료) 먼저 · 사진 | 이름 + 딱지 · 대표·주소 · ☎ 연락처 | 매물 n개 › (소개 글은 뺌)
+ *  줄을 누르면 지도 [부동산]의 사무소 보기와 같게 — 그 사무소 광고중 매물 전체가 목록에 (지도 범위와 상관없이). 앱(app/apt/[id].tsx)과 같은 모양 */
+function AgencySection({ detail, h3, sectionStyle }: { detail: AptDetail; h3: React.CSSProperties; sectionStyle: React.CSSProperties }) {
+  const list = detail.agencies || [];
+  // 지도 [부동산]에서 사무소를 누른 것과 같게 — 사무소 카드 + 그 사무소 공실 전부 (지도 범위와 상관없이, PC 왼쪽 목록·모바일 목록 화면)
+  const open = (id: string) => { void listMapAgencies(null, id).then((l) => { if (l[0]) window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: { ...l[0], fromApt: true } })); }).catch(() => {}); };
+  if (!list.length) return null;
+  return (
+    <div id="apt-agencies" style={{ ...sectionStyle, scrollMarginTop: 8 }}>
+      <h3 style={h3}>입점부동산 <span style={{ color: ACC }}>{list.length}</span></h3>
+      <div style={{ paddingBottom: 6 }}>
+        {list.map((a, i) => {
+          const can = a.listings > 0;
+          return (
+            <div key={a.id} onClick={can ? () => open(a.id) : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", cursor: can ? "pointer" : "default", borderTop: i ? `1px solid ${LINE}` : "none" }}>
+              {a.photo
+                ? <img src={a.photo} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0, background: "#e5e7eb" }} />
+                : <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, background: "#e5e7eb", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800 }}>{a.name.slice(0, 1)}</div>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* 공실뉴스부동산 = 이름 옆 작은 NEWS 딱지 (지도 사무소 이름표 PRO_TAG 와 같은 모양) */}
+                <div style={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+                  <span style={{ fontSize: 15.5, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                  {a.paid && <span title="공실뉴스부동산" style={{ flexShrink: 0, background: "#ea8a0c", color: "#fff", fontSize: 9.5, fontWeight: 800, letterSpacing: ".3px", lineHeight: 1, padding: "2px 4px 3px", borderRadius: 3, marginLeft: 5 }}>NEWS</span>}
+                </div>
+                {/* 주소 / ☎ 전화 / 상세보기 › — 공실·기사 수는 뺌 (2026-11-19 사장님) */}
+                {a.address && <div style={{ fontSize: 13, color: SUB, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[a.address, a.address_detail].filter(Boolean).join(" ")}</div>}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, fontSize: 13.5, fontWeight: 800, whiteSpace: "nowrap" }}>
+                  {(a.cell || a.phone) && <a href={`tel:${(a.cell || a.phone || "").replace(/[^0-9]/g, "")}`} onClick={(e) => e.stopPropagation()} style={{ color: "#4b5563", fontWeight: 700, textDecoration: "none" }}>{a.cell || a.phone}</a>}
+                </div>
+              </div>
+              {can && <span style={{ alignSelf: "flex-end", fontSize: 13, fontWeight: 700, color: "#111", flexShrink: 0 }}>상세보기 ›</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** 맨 아래 개수 줄 (2026-11-04 사장님: 파란 등록 단추를 빼고 공실·뉴스 개수만 — 누르면 왼쪽 목록에). 입점부동산은 11-19 지도 아래 목록으로 */
 function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, onShowNews }: { detail: AptDetail; vacancyCount: number; onShowVacancies?: () => void; onShowAuctions?: () => void; onShowNews?: () => void }) {
   const auctionCount = (detail.auction_ids || []).length;
   const newsCount = (detail.news || []).length;
+  const agencyCount = (detail.agencies || []).length;
   // 조회 수는 그대로 센다 (손님에게 보이지는 않는다)
   useEffect(() => {
     const key = `apt-view:${detail.id}:${new Date().toISOString().slice(0, 10)}`;
@@ -562,6 +607,8 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
     <div style={{ flexShrink: 0, background: bg, display: "flex", alignItems: "stretch" }}>
       {cell("공실", vacancyCount, vacancyCount ? onShowVacancies : undefined)}
       {bar}
+      {/* 입점부동산이 있을 때만 — 누르면 지도 아래 입점부동산 칸으로 내려간다 (2026-11-19 사장님) */}
+      {agencyCount > 0 && <>{cell("부동산", agencyCount, () => document.getElementById("apt-agencies")?.scrollIntoView({ behavior: "smooth", block: "start" }))}{bar}</>}
       {cell("뉴스", newsCount, onShowNews)}
       {auctionCount > 0 && <>{bar}{cell("경매", auctionCount, onShowAuctions)}</>}
     </div>
@@ -878,6 +925,9 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
           <h3 style={h3}>지도</h3>
           {Number.isFinite(detail.lat) && <MiniMap lat={detail.lat} lng={detail.lng} name={detail.name} />}
         </div>}
+
+        {/* 입점부동산 — 지도 아래 (2026-11-19 사장님) */}
+        {!flat && <AgencySection detail={detail} h3={h3} sectionStyle={sectionStyle} />}
 
         {/* 거래비용 — 맨 아래 (2026-11-02 사장님) */}
         {!flat && <div style={sectionStyle}>
