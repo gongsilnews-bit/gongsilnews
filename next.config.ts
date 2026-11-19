@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // 개발 서버에 휴대폰 테스트 앱이 PC 주소로 붙을 때 — 화면 코드(/_next)를 막아 버튼·로그인 확인이 멈추던 것 (2026-11-19). 실제 사이트에는 영향 없음
+  allowedDevOrigins: ['121.163.209.9', '192.168.*.*'],
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',

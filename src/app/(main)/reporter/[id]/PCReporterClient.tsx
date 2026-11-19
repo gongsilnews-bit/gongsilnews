@@ -480,7 +480,7 @@ export default function PCReporterClient({
               <div style={{ border: "1px solid #eee", borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
                 <div style={{ display: "flex", background: "#f9f9f9", borderBottom: "1px solid #eee" }}>
                   <div style={{ flex: "none", padding: "16px 20px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center" }}>
-                    공실등록현황
+                    등록공실
                   </div>
                   <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666", overflowX: "auto", whiteSpace: "nowrap" }}>
                     {[

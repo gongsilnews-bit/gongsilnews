@@ -695,7 +695,7 @@ export default function ArticleAuthorAdSlot({
                 gap: 6,
               }}
             >
-              <span>공실등록현황</span>
+              <span>등록공실</span>
             </div>
 
             <Link

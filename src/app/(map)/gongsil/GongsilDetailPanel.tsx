@@ -2342,7 +2342,7 @@ const filteredFields = fields.filter(field => {
                         alignItems: "center",
                       }}
                     >
-                      공실등록현황
+                      등록공실
                     </div>
                     <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666" }}>
                       {[

@@ -838,7 +838,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                 {ownerCounts && ownerCounts.전체 > 0 && (
                   <div style={{ marginTop: 20 }}>
                     <div style={{ display: 'flex', background: '#f9f9f9', borderRadius: 8, overflow: 'hidden', border: '1px solid #eee' }}>
-                      <div style={{ flex: 'none', padding: '12px 16px', fontSize: 13, fontWeight: 'bold', color: '#111', borderRight: '1px solid #eee', display: 'flex', alignItems: 'center' }}>공실등록현황</div>
+                      <div style={{ flex: 'none', padding: '12px 16px', fontSize: 13, fontWeight: 'bold', color: '#111', borderRight: '1px solid #eee', display: 'flex', alignItems: 'center' }}>등록공실</div>
                       <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, fontSize: 12, color: '#666', flexWrap: 'wrap' }}>
                         {[
                           { label: '전체', count: ownerCounts.전체 },

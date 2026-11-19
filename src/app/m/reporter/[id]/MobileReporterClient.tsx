@@ -530,7 +530,7 @@ export default function MobileReporterClient({
             <div style={{ border: "1px solid #eee", borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
               <div style={{ display: "flex", background: "#f9f9f9", borderBottom: "1px solid #eee" }}>
                 <div style={{ flex: "none", padding: "12px 16px", fontSize: 13, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center" }}>
-                  공실등록현황
+                  등록공실
                 </div>
                 <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", padding: "0 16px", gap: 12, fontSize: 12, color: "#666", overflowX: "auto", whiteSpace: "nowrap" }}>
                   {[

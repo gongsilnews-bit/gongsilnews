@@ -1649,7 +1649,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     return (
                       <div style={{ padding: "20px 16px" }}>
                         <div style={{ display: "flex", background: "#f9f9f9", borderRadius: 8, overflow: "hidden", border: "1px solid #eee", marginBottom: "16px" }}>
-                          <div style={{ flex: 1, padding: "12px 14px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center", justifyContent: "center" }}>공실등록현황</div>
+                          <div style={{ flex: 1, padding: "12px 14px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center", justifyContent: "center" }}>등록공실</div>
                           <div style={{ display: "flex", alignItems: "center", padding: "0 14px", gap: 10, fontSize: 13, color: "#666" }}>
                             {[
                               { label: '전체', count: totalCnt },

@@ -13,6 +13,21 @@ type Lesson = { id: string; title: string; duration: string | null; is_preview: 
 
 const priceOf = (l: { discount_price?: number | null; price?: number | null }) => l.discount_price || l.price || 0;
 
+// GET ?id= → 특강 상세의 [강사]·[후기] 탭 (로그인 없이 누구나 — 사이트 특강 상세와 같은 내용, 2026-11-19)
+//   { instructor_photo, description_html(AI 소개를 다듬은 것), short_description, keywords, reviews: [{ id, user_name, user_avatar, rating, content, created_at }] }
+export async function GET(req: NextRequest) {
+  const id = String(req.nextUrl.searchParams.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return no("특강을 찾지 못했습니다.", 404);
+  const d = await getLectureDetail(id);
+  if (!d.success || !d.data) return no("특강을 불러오지 못했습니다.", 404);
+  const L = d.data as { instructor_photo?: string | null; description_html?: string | null; short_description?: string | null; keywords?: unknown; sidebar_copy?: { keywords?: unknown } | null; reviews?: { id: string; user_name?: string | null; user_avatar?: string | null; rating: number; content: string; created_at: string }[] };
+  const reviews = (L.reviews || []).map((r) => ({ id: r.id, user_name: r.user_name || "익명", user_avatar: r.user_avatar || null, rating: r.rating, content: r.content, created_at: r.created_at }));
+  // 제목 아래 회색 한 줄 설명 · 녹색 딱지 (사이트 모바일 특강 상세와 같은 자료)
+  const kw = Array.isArray(L.keywords) ? L.keywords : Array.isArray(L.sidebar_copy?.keywords) ? L.sidebar_copy!.keywords as unknown[] : [];
+  const keywords = kw.filter((x): x is string => typeof x === "string" && !!x.trim());
+  return NextResponse.json({ success: true, instructor_photo: L.instructor_photo || null, description_html: L.description_html || null, short_description: L.short_description || null, keywords, reviews });
+}
+
 export async function POST(req: NextRequest) {
   const me = await whoAmI(req);
   if (!me) return no("로그인이 필요합니다.", 401);
