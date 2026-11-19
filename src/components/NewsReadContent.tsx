@@ -1038,7 +1038,7 @@ export default function NewsReadContent({
                     ) : (
                       <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
                     )}
-                    <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
+                    <span style={{ color: "#666", fontSize: 14 }}>기자</span>{/* 객원기자 표시 없앰 — 모두 "기자" (2026-11-19 사장님) */}
                     {article.author_id && showAuthorLinks && (
                       <>
                         <span style={{ color: "#ddd", fontSize: "12px" }}>|</span>

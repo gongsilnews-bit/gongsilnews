@@ -42,6 +42,7 @@ import { StickerPanel, stickerFileName, stickerPng, stickerSpecOf, warmStickers 
 import { TemplatePanel, drawTemplate, isTplStyle, tplFonts, tplOptsOf } from "./Templates";
 import type { SubLook } from "./SubPresets";
 import { SHORTS_THEMES, loadBaseThemes, loadMyThemes, saveMyThemeAt, themeFromProject } from "./webThemes";
+import WebEditTools from "./WebEditTools";
 import { canEditShortsThemes, saveShortsTheme } from "@/app/actions/shortsThemes";
 import { AnimPanel, type AnimBodyProps } from "./Anim";
 import { TRANS_DEFAULT, TRANS_MAX, TRANS_MIN, TRANSITIONS, transLabel } from "./transitions";
@@ -4911,6 +4912,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
           style={{ width: 34, height: 32, marginRight: 8, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: dirty && gssMode ? C.text : C.sub, cursor: "pointer" }}>
           <Icon name="save" size={18} />
         </button>
+        {/* 웹 — [빈 장면 채우기] · [AI편집] (2026-11-11 사장님) */}
+        {(b as { web?: boolean }).web && <WebEditTools get={() => pref.current} change={(fn) => change(fn)} undo={undo} say={say} />}
         {/* 웹 — 편집한 모양(자막·제목 상자·음악·성우)을 내 테마로 (2026-11-05 사장님) */}
         {(b as { web?: boolean }).web && (
           <span style={{ position: "relative", marginRight: 8 }}>

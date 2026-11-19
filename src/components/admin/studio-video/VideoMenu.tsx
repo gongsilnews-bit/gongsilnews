@@ -57,6 +57,9 @@ export default function VideoMenu({ view, onView, onMethod, web, onAuto }: { vie
           <button type="button" onClick={() => onAuto?.()} title="대본 넣고 · 화면 비율 · 목소리 고르고 · 바로 편집" style={{ ...item(false), color: C.accent, fontWeight: 800 }}><Icon name="plus" size={17} />영상 만들기</button>
           {/* 쇼츠·릴스만 (2026-11-05 사장님: "그냥 쇼츠 릴스만 되게 · 긴 건 나중에") — 잠긴 앱 메뉴·앱 다운로드 안내는 뺌 */}
           <div style={{ fontSize: 12, color: C.dim, margin: "12px 8px 0", lineHeight: 1.6 }}>쇼츠·릴스(세로)부터 유튜브(가로)·피드(정사각형)까지 만들어요. 길이 제한 없어요.</div>
+          {/* 강의녹화는 앱에서만 — 웹은 안내만 (2026-11-11 사장님 회의) */}
+          <div style={head}>스튜디오</div>
+          <button type="button" onClick={() => window.alert("강의녹화는 공실뉴스 스튜디오 앱에서 할 수 있어요.\n화면·카메라를 녹화하면 바로 편집 화면으로 이어져요.")} title="강의녹화는 공실뉴스 스튜디오 앱에서 할 수 있어요" style={{ ...item(false), opacity: 0.6 }}><Icon name="record" size={17} />강의/영상녹화<span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 800, color: C.dim, border: `1px solid ${C.line2}`, borderRadius: 4, padding: "0 5px" }}>앱</span></button>
         </>
       ) : <>
       <AiSettingsBox light={theme === "light"} />

@@ -22,6 +22,8 @@ import { loadWebVoiceSpeed, saveWebVoiceSpeed } from "./webBridge";
 import { VoiceFace, VoicePanel } from "./Panels";
 import { koVoice } from "./voiceKo";
 import WebThemePick from "./WebThemePick";
+import { AiEditBox, aiPrompt, applyPlan, parsePlan, type AiPlan } from "./webAiEdit";
+import { FILL_DEFAULT, FILL_LABELS, assignVisuals, gatherFill, loadFill, saveFill, type FillOpts } from "./webFill";
 import { applyKit } from "./webThemeKit";
 import { aptBrandOf } from "./Stickers";
 import { pointsLine, type VoiceFree } from "./webVoice";
@@ -117,6 +119,15 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const [hookTitle, setHookTitle] = useState(""); // 쇼츠릴스 대본 제목 — 첫 1초 훅
   // 디자인 테마 (2026-11-05 사장님) — 고르면 성우·자막·제목 상자·음악까지 한 번에, 세부는 아래 줄에서
   const [theme, setTheme] = useState<ShortsTheme>(SHORTS_THEMES[0]);
+  // [자유편집] — 테마 꾸밈 없이 자막·목소리(·고른 음악)만 넣고 시작 (2026-11-11 사장님: "테마 없이도 시작 가능하게")
+  const [free, setFree] = useState(false);
+  // [AI편집] — 복사 → 내 AI → 붙여넣기 → 적용 (2026-11-11). aiPlan 이 있으면 만들 때 제목·훅·강조·음악·사진 찾는 말로
+  const [aiOn, setAiOn] = useState(false);
+  const [aiPlan, setAiPlan] = useState<AiPlan | null>(null);
+  // 빈 장면 채우기 — 체크 네 개, 이 PC 에 기억 (2026-11-11)
+  const [fill, setFillRaw] = useState<FillOpts>(FILL_DEFAULT);
+  useEffect(() => setFillRaw(loadFill()), []);
+  const setFill = (k: keyof FillOpts, v: boolean) => setFillRaw((o) => { const n = { ...o, [k]: v }; saveFill(n); return n; });
   // 테마 성우 — 직접 고르기 전까지는 늘 지금 테마의 성우 (2026-11-05: 상큼 민트인데 크리스가 나오던 것 — 목록이 먼저 오면 첫 테마 성우로 굳었다)
   const voicePicked = useRef(false);
   useEffect(() => { if (voices?.length && !voicePicked.current) setVoiceId(voiceOf(theme, voices)); }, [theme, voices]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -195,13 +206,19 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
     if (!b) return;
     setErr("");
     try {
-      if (!paras.length) throw new Error("대본을 한 줄 이상 써 주세요.");
+      // 대본이 비었으면 — 빈 타임라인으로 (비율만). 사진·영상·글·음악은 편집에서 (2026-11-11 사장님: "그냥 빈 타임라인을 시작할 때는")
+      if (!paras.length) {
+        const blank = await b.project.create({ method: "text", ratio, name: datedName("새 영상"), vacancyId: "" });
+        await b.project.save(blank);
+        onDone(blank);
+        return;
+      }
       // 60초가 넘어도 막지 않는다 — 편집에서 줄이면 된다 (2026-11-06 사장님: "60초 넘으니까 줄이라고 하더라, 편집도 안 되고, 그러면 안 되지")
       const ai = mode === "ai" && voiceId;
       const p = await b.project.create({ method: "text", ratio, name: datedName(hookTitle || seed?.title || info?.title || "쇼츠") /* 쇼츠릴스 대본 제목 먼저 (2026-11-06: 지역 이름 "강남구 논현동" 만 들어가던 것) */, vacancyId: vac || "" });
       // 공실을 골랐으면 그 사진을 차례로 (없으면 화면은 편집에서 넣는다)
       const assetIds: string[] = [];
-      if (vac) {
+      if (vac && (fill.vacancy || vac.startsWith("col-"))) { // 공실 사진 체크 (뉴스칼럼은 칼럼 사진 그대로)
         setBusy("공실 사진을 불러오는 중…");
         // 뉴스칼럼(col-…) — 칼럼 "사진·화면"의 사진을 차례로 (2026-11-05 사장님: "사진 화면에 다 넣어줘 쇼츠에서 뉴스칼럼할 때")
         const col = vac.startsWith("col-") ? await studioBridge<{ column?: { get: (id: string) => Promise<{ captures?: { thumb: string | null; caption: string }[] } | null> } }>()?.column?.get(vac).catch(() => null) : null;
@@ -210,24 +227,15 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           : await b.vacancy(vac).catch(() => ({ photos: [] as { id: string }[] }));
         for (const ph of r.photos.slice(0, MAX_PHOTOS)) { const a = await b.project.addAsset(ph.id).catch(() => null); if (a) { p.assets[a.id] = a; assetIds.push(a.id); } }
       }
-      // 사진이 문장보다 모자라면 무료 이미지로 채운다 — 같은 사진 되풀이·빈 화면 없이 (2026-11-05 사장님: "무료 이미지도 넣어줘 · 블랭크가 없게")
+      // 사진이 문장보다 모자라면 — 체크한 갈래(단지 화면·공실뉴스 사진·드론·무료 사진)에서 관련 있는 것만 (2026-11-11 사장님)
       const need = Math.min(paras.length, MAX_PHOTOS) - assetIds.length;
-      if (need > 0 && b.stock) {
-        setBusy("빈 장면에 넣을 무료 이미지를 찾는 중…");
-        const q = assetIds.length ? "Seoul apartment" : "Seoul city real estate";
-        const res = await b.stock.search(q, "photo", ratio === "9:16" ? "portrait" : "landscape", 1).catch(() => null);
-        const items = (res?.items || []).filter((x) => x.kind === "image").slice(0, need);
-        for (const s of items) {
-          const it = await b.stock.get(p.dir, s).catch(() => null);
-          const a = it ? await b.project.addAsset(it.id).catch(() => null) : null;
-          if (a) { p.assets[a.id] = a; assetIds.push(a.id); }
-        }
-      }
+      if (need > 0) assetIds.push(...await gatherFill(b, p, { opts: fill, vacId: vac, info, need, ratio, words: aiOn ? aiPlan?.scenes.map((x) => x.photo || "") : undefined, skipVacancy: true, say: setBusy }));
       const clips: Clip[] = paras.map((t, i) => ({
         id: uid(), type: "voice", text: ai ? t : "", words: [], voice: null,
-        ...(assetIds.length ? { visual: { asset: assetIds[i % assetIds.length], s: 0 } } : {}),
+        ...(assetIds[i] ? { visual: { asset: assetIds[i], s: 0 } } : {}),
         hold: ai ? PHOTO_SEC : holdOf(t), ...(ai ? {} : { subText: t }),
       }) as Clip);
+      assignVisuals(clips, []); // 자료가 모자란 장면은 앞 장면 사진 그대로 — 엉뚱한 사진을 넣지 않는다
       if (ai) {
         // 한 문장씩 차례로 (2026-11-09 사장님: "빨리 만들지 않아도 되니 정확하게 꼼꼼하게") — 앞뒤 문장을 이어 듣고 만들어 말투가 고르게
         let doneN = 0, next = 0;
@@ -249,7 +257,23 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
       if (last) clips.push(last);
       p.scenes = [{ id: uid(), clips }];
       const first = clips[0].id, end = clips[clips.length - 1].id;
-      p.settings.subtitle = { ...p.settings.subtitle, ...theme.sub }; // 테마 자막
+      // 테마 자막 — 자유편집은 테마 자막(예: 뉴스속보 레드)을 입히지 않고 기본 자막 그대로 (2026-11-11 사장님: "자유편집을 하면 자꾸 뉴스속보 레드로 나오네")
+      if (!free) p.settings.subtitle = { ...p.settings.subtitle, ...theme.sub };
+      if (free) {
+        // 자유편집·AI편집 — 제목·훅·연락처·그래픽·전환 없이. 음악은 골랐을 때만
+        //  끝 장면(사무소·표시광고)은 남긴다 — 공실 광고 법정 표시 (2026-11-11 사장님: "끝 장면 남겨줘")
+        const body = last ? clips.slice(0, -1) : clips;
+        if (theme.music) p.layers = [{ id: uid(), type: "music", from: clips[0].id, to: clips[clips.length - 1].id, url: theme.music, file: theme.music, volume: 0.15, duck: "mid", loop: true, fadeOut: 1.5, name: theme.musicName || "배경음악" } as Layer];
+        if (aiOn && aiPlan) applyPlan(p, aiPlan, body); // AI편집 — 제목·훅·장면 강조·음악
+        if (last && info?.outro) {
+          p.layers = p.layers || [];
+          p.layers.push({ id: uid(), type: "text", from: last.id, to: last.id, text: info.outro.name, pos: "middle", size: 110, color: "#FFFFFF", font: "Pretendard", bold: true, box: true, boxColor: "#111827", boxOpacity: 0.92, name: "사무소" } as Layer);
+          if (info.outro.lines.length) p.layers.push({ id: uid(), type: "text", from: last.id, to: last.id, text: info.outro.lines.join("\n"), pos: "bottom", size: 58, color: "#FFFFFF", box: true, boxColor: "#000000", boxOpacity: 0.65, name: "사무소 정보" } as Layer);
+        }
+        await b.project.save(p);
+        onDone(p);
+        return;
+      }
       clips[0].motionPower = "high"; // 첫 장면은 크게 움직여 눈길을 (사진 줌)
       const layers: Layer[] = [];
       // 위쪽 고정 머리 (2026-11-05 사장님 회의: "상단 제목은 왜 1클립에만", "부동산 상호·연락처가 왜 한 번도 안 들어가지")
@@ -309,7 +333,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   return (
     <Modal title="영상 만들기" onClose={busy ? () => {} : onCancel} width={780}
       footer={<><span style={{ marginRight: "auto" }} />
-        <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={!paras.length || Boolean(busy)}><Icon name="video" size={16} />{busy || "편집 시작"}</Btn></>}>
+        <Btn onClick={onCancel} disabled={Boolean(busy)}>취소</Btn><Btn primary onClick={() => void make()} disabled={Boolean(busy)} title={paras.length ? "" : "대본 없이 빈 타임라인을 열어요 — 사진·영상·글·음악은 편집에서 넣어요"}><Icon name="video" size={16} />{busy || (paras.length ? "편집 시작" : "빈 타임라인으로 시작")}</Btn></>}>
       <div style={{ position: "relative" }}>
       {/* 만드는 동안 — 우리 점점점 덮개 (2026-11-10 사장님: "점점점 우리 나오는거 · 그거 나오게 해줘") */}
       {busy && (() => { const m = busy.match(/^(.*?)…\s*(.*)$/); return <LoadingCover theme={{ textSecondary: C.sub, darkMode: true }} title={m ? m[1] : busy} detail={m ? m[2] : ""} />; })()}
@@ -334,7 +358,7 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
             </>) : tabItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
           </select>
         </div>
-        <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); if (noScript) { setNoScript(false); setErr(""); } }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
+        <textarea value={script} onChange={(e) => { setScript(e.target.value); setFrom(""); if (noScript) { setNoScript(false); setErr(""); } }} disabled={Boolean(busy)} rows={8} placeholder={"대본을 넣으세요. 한 줄 = 한 장면이에요. 비워 두면 빈 타임라인으로 시작해요.\n\n예) 논현동 신축 빌라, 월세 100만입니다.\n전용 21평, 방 셋에 욕실 둘."}
           style={{ ...box, padding: "12px 14px", lineHeight: 1.7, resize: "vertical" }} />
         <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 13 }}>
           <b style={{ color: over ? "#f59f00" : C.accent }}>약 {secs}초{shorts ? ` / ${MAX_SEC}초 (쇼츠·릴스)` : secs > 180 ? " — 3분이 넘어요. 웹은 PC 성능에 따라 느리거나 실패할 수 있어요 (10분 넘으면 앱 권장)" : " · 길이 제한 없어요"}{over ? ` — 조금 길어요. 그대로 편집을 시작하고, 편집에서 문장·클립을 지워 줄여도 돼요` : ""}</b>
@@ -348,13 +372,36 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
           </div>
         )}
 
-        {head("② 테마 — 누르면 성우·자막·음악까지 한 번에")}
+        {head("빈 장면 채우기 — 대본 줄보다 사진이 모자랄 때")}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px" }}>
+          {FILL_LABELS.map(([k, l, d]) => (
+            <label key={k} title={d} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: busy ? "default" : "pointer", color: fill[k] ? C.text : C.sub }}>
+              <input type="checkbox" checked={fill[k]} disabled={Boolean(busy)} onChange={(e) => setFill(k, e.target.checked)} style={{ width: 16, height: 16, accentColor: C.accent }} />{l}
+            </label>
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 4 }}>관련 있는 것만 넣어요. 그래도 모자라면 앞 장면 사진을 이어 써요.</div>
+        {head("② 테마 — 누르면 성우·자막·음악까지 한 번에 · 꾸밈 없이는 [자유편집]")}
         <WebThemePick theme={theme} disabled={Boolean(busy)}
-          onTheme={(t, fromTile) => { setTheme(t); if (fromTile) { rememberTheme(t.id); voicePicked.current = false; if (voices?.length) setVoiceId(voiceOf(t, voices)); } }}
+          free={free} onFree={() => { setFree(true); setAiOn(false); setTheme((t) => ({ ...t, music: "", musicName: "" })); }}
+          ai={aiOn} onAi={() => { setFree(true); setAiOn(true); setTheme((t) => ({ ...t, music: "", musicName: "" })); }}
+          onTheme={(t, fromTile) => { setTheme(t); if (fromTile) { setFree(false); setAiOn(false); rememberTheme(t.id); voicePicked.current = false; if (voices?.length) setVoiceId(voiceOf(t, voices)); } }}
           photo={info?.photos[0] || ""} place={info ? [info.intro.place, info.intro.kind].filter(Boolean).join(" · ") : "우리 동네 · 빌라"}
           sample="바로 입주 가능해요"
           voices={voices} voiceId={voiceId} voiceOn={mode === "ai"} onVoiceOn={(on) => setMode(on ? "ai" : "none")} onPickVoice={() => setPicker(true)} speed={speed} onSpeed={pickSpeed}
           cat={vac && !vac.startsWith("col-") ? "vacancy" : undefined} /* 뉴스칼럼 테마는 없앰 (2026-11-08) */ /* 대본 종류로 탭 (단지소개는 회원이 탭을 눌러서) */ />
+        {aiOn && (
+          <div style={{ marginTop: 10, padding: 12, borderRadius: 8, border: `1px solid ${C.accent}`, background: C.card }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>AI편집 — 내 ChatGPT·Gemini 가 제목·강조 글·장면 사진·음악을 정해요</div>
+            {!paras.length ? <div style={{ fontSize: 13.5, color: C.sub }}>먼저 위에 대본을 넣어 주세요.</div> : (
+              <AiEditBox prompt={(req) => aiPrompt(paras, { place: info?.intro.place, kind: info?.intro.kind, request: req, ratio })}
+                onApply={(ans) => setAiPlan(parsePlan(ans, paras.length))}
+                applied={aiPlan ? `적용됨 — 장면 ${aiPlan.scenes.length}개${aiPlan.title ? ` · 제목 "${aiPlan.title}"` : ""}${aiPlan.music ? ` · 음악 ${aiPlan.music}` : ""}` : ""}
+                onClear={() => setAiPlan(null)} />
+            )}
+            <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>답을 넣지 않고 [편집 시작]을 누르면 자유편집처럼 꾸밈 없이 시작해요. 편집 화면에서도 [AI편집]으로 다시 할 수 있어요.</div>
+          </div>
+        )}
         {picker && <VoicePanel web pickLabel="이 성우로" targetCount={0} initial={{ id: voiceId || "", speed, volume: 1 }}
           onApply={(v) => { if (v.id) { voicePicked.current = true; setVoiceId(v.id); setMode("ai"); } if (v.speed) { const s = Math.min(1.5, Math.max(0.9, Math.round(v.speed * 10) / 10)); if (s !== speed) pickSpeed(s); } setPicker(false); }} onClose={() => setPicker(false)} />}
         {/* 만들기 전에 포인트 미리 (2026-11-05) — 1자 1P, 내 포인트에서 (11-06 통합: 서버가 free 를 null 로 줌) */}

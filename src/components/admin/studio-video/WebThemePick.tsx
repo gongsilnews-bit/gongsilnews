@@ -81,7 +81,13 @@ const CAT_OF: Record<string, ThemeCat> = { navy: "vacancy", impact: "vacancy", p
   cx_sig: "complex", cx_ivory: "vacancy" /* 래미안은 공실소개로 (2026-11-10) */, cx_green: "complex", cx_night: "complex", cx_news: "complex" }; // 단지소개 (2026-11-06)
 export const catOfTheme = (id: string): ThemeCat => CAT_OF[id] || "vacancy";
 
-export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled, cat: catProp, speed, onSpeed }: {
+export default function WebThemePick({ theme, onTheme, photo, place, sample, voices, voiceId, voiceOn, onVoiceOn, onPickVoice, disabled, cat: catProp, speed, onSpeed, free, onFree, ai, onAi }: {
+  /** [AI편집] — 꾸밈은 내 AI 가 (복붙). 자유편집 칸 아래 반쪽 (2026-11-11) */
+  ai?: boolean;
+  onAi?: () => void;
+  /** [자유편집] — 테마 꾸밈 없이 시작 (2026-11-11 사장님: "테마 없이도 시작 가능하게") */
+  free?: boolean;
+  onFree?: () => void;
   theme: ShortsTheme;
   onTheme: (t: ShortsTheme, fromTile: boolean) => void;
   photo: string;
@@ -162,7 +168,7 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderTop: `1px solid ${C.line2}` };
   const label: React.CSSProperties = { width: 54, flexShrink: 0, fontSize: 13.5, fontWeight: 800, color: C.sub, display: "flex", alignItems: "center", gap: 5 };
   const change = (on: boolean): React.CSSProperties => ({ marginLeft: "auto", height: 32, padding: "0 12px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: on ? C.text : C.sub, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" });
-  const W = 132; // 테마 칸 폭 (2026-11-05 사장님: "테마 너무 작아 · 크게") — 기본 5개 한 줄, 내 테마 3개 아랫줄
+  const W = onFree ? 112 : 132; // 테마 칸 폭 — 자유편집 칸이 있으면 6칸이 한 줄에 들어가게 (2026-11-11) (2026-11-05 사장님: "테마 너무 작아 · 크게") — 기본 5개 한 줄, 내 테마 3개 아랫줄
 
   return (
     <div style={{ fontFamily: FONT }}>
@@ -176,7 +182,26 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
       </div>}
       {emptyCat && <div style={{ padding: "18px 14px", marginBottom: 10, borderRadius: 8, border: `1px dashed ${C.line2}`, color: C.sub, fontSize: 13.5, lineHeight: 1.6 }}>{THEME_CATS.find(([k]) => k === cat)?.[1]} 테마는 준비 중이에요. 지금은 [공실소개] 테마나 아래 내 테마를 써 주세요.</div>}
       {/* 테마 칸 — 누르면 성우·자막·음악까지 한 번에 */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(5, ${W}px)`, columnGap: 12, rowGap: 10, justifyContent: "space-between", paddingBottom: 4 }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${onFree ? 6 : 5}, ${W}px)`, columnGap: onFree ? 8 : 12, rowGap: 10, justifyContent: "space-between", paddingBottom: 4 }}>
+        {/* 자유편집 · AI편집 — 한 칸을 위아래 반으로 (2026-11-11 사장님: "자유편집 또는 AI편집 테마를 하나 둬서") */}
+        {onFree && (() => {
+          const H = Math.round(((W - 5) * 16) / 9);
+          const half = (on: boolean, icon: string, name: string, sub: string, onClick: () => void, tip: string) => (
+            <button type="button" disabled={disabled} onClick={onClick} title={tip}
+              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, width: W, height: Math.round((H - 6) / 2) + 5, padding: 0, borderRadius: 10, border: `2.5px solid ${on ? C.accent : C.line2}`, background: C.card, color: C.text, cursor: "pointer", fontFamily: FONT, textAlign: "center" }}>
+              {on && <span style={{ position: "absolute", left: 6, top: 6, width: 20, height: 20, borderRadius: 10, background: C.accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="check" size={11} /></span>}
+              <Icon name={icon} size={20} />
+              <span style={{ fontSize: 14, fontWeight: 800 }}>{name}</span>
+              <span style={{ fontSize: 11, color: C.sub, lineHeight: 1.35 }}>{sub}</span>
+            </button>
+          );
+          return (
+            <div key="free" style={{ width: W, display: "flex", flexDirection: "column", gap: 6 }}>
+              {half(Boolean(free && !ai), "pen", "자유편집", "꾸밈 없이 시작", onFree, "테마 꾸밈 없이 시작해요. 자막·목소리만 넣고 나머지는 편집에서 직접 꾸며요")}
+              {onAi && half(Boolean(ai), "ai", "AI편집", "내 AI가 꾸밈", onAi, "내 ChatGPT·Gemini 에 복사해 보내고, 답을 붙여 넣으면 제목·강조·사진·음악을 정해요")}
+            </div>
+          );
+        })()}
         {tiles.flatMap((t, i) => [
           i === catBases.length ? <div key="myhead" style={{ gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: C.sub, marginTop: 6 }}>내 테마 <span style={{ fontWeight: 600, color: C.dim, fontSize: 12.5 }}>— 아래에서 고친 뒤 [내 테마로 저장] (3개까지)</span></div> : null,
           (() => {
@@ -191,7 +216,7 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
               </div>
             );
           }
-          const on = base === t.id;
+          const on = !free && base === t.id;
           return (
             <div key={t.id} style={{ width: W, position: "relative" }}>
               <button type="button" disabled={disabled} onClick={() => pick(t)} title={`${t.name} — 누르면 성우·자막·음악까지 이 테마로`}
@@ -215,9 +240,10 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
       {/* 고른 테마의 세부 — 줄마다 [바꾸기] */}
       <div style={{ marginTop: 12, borderRadius: 8, border: `1px solid ${C.line2}`, background: C.card }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px" }}>
-          <b style={{ fontSize: 14.5 }}>{theme.name}</b>
-          {changed && <span style={{ fontSize: 12, fontWeight: 800, color: "#F59E0B", border: "1px solid #F59E0B", borderRadius: 4, padding: "0 5px" }}>내가 고침</span>}
-          <span style={{ fontSize: 12.5, color: C.dim }}>세부는 아래에서 바꿀 수 있어요</span>
+          <b style={{ fontSize: 14.5 }}>{ai ? "AI편집" : free ? "자유편집" : theme.name}</b>
+          {free && <span style={{ fontSize: 12.5, color: C.dim }}>테마 없이 기본 자막·목소리만 (음악은 고르면 넣어요). 자막 모양은 편집에서</span>}
+          {!free && changed && <span style={{ fontSize: 12, fontWeight: 800, color: "#F59E0B", border: "1px solid #F59E0B", borderRadius: 4, padding: "0 5px" }}>내가 고침</span>}
+          {!free && <span style={{ fontSize: 12.5, color: C.dim }}>세부는 아래에서 바꿀 수 있어요</span>}
           <button type="button" disabled={disabled} onClick={() => setOpen(open === "save" ? "" : "save")} style={{ ...change(open === "save"), color: C.accent, borderColor: C.accent }}>내 테마로 저장</button>
         </div>
         {open === "save" && (
@@ -246,13 +272,13 @@ export default function WebThemePick({ theme, onTheme, photo, place, sample, voi
           </span>
         </div>
 
-        {/* 자막 */}
-        <div style={row}>
+        {/* 자막 — 자유편집은 기본 자막으로 시작하고 편집에서 고른다 */}
+        {!free && <div style={row}>
           <span style={label}><Icon name="text" size={15} />자막</span>
           <span style={{ padding: "3px 10px", borderRadius: 4, background: theme.sub.bg ? hexA(theme.sub.bgColor || "#000", theme.sub.bgOpacity ?? 0.62) : "#3a3f4b", fontFamily: fontCss(theme.sub.font), fontWeight: 800, fontSize: 16, color: theme.sub.color || "#fff", ...stroke(theme.sub, 16) }}>바로 입주 가능해요</span>
           <button type="button" disabled={disabled} onClick={() => setOpen(open === "sub" ? "" : "sub")} style={change(open === "sub")}>{open === "sub" ? "닫기" : "바꾸기"}</button>
-        </div>
-        {open === "sub" && (
+        </div>}
+        {!free && open === "sub" && (
           <div style={{ padding: "4px 12px 12px", maxHeight: 260, overflowY: "auto" }}>
             <SubPresetGrid value={theme.sub} groups={BASIC_GROUPS} sample="바로 입주" onPick={(look) => onTheme({ ...theme, sub: { ...look } }, false)} />
           </div>
