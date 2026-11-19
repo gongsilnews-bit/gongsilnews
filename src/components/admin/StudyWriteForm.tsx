@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { saveLecture, getLectureDetail, uploadLectureImage } from "@/app/actions/lecture";
 import { previewLectureAiHtml } from "@/app/actions/lectureAiHtml";
 import { AI_HTML_MARKER } from "@/utils/aiHtml/marker";
-import { extractEmbeddedImages, hasEmbeddedImages } from "@/utils/aiHtml/extractEmbeddedImages";
-import { isDesignBundle, unpackDesignBundle } from "@/utils/aiHtml/unpackDesignBundle";
 import { getStudySettings } from "@/app/actions/studySettings";
 import { createClient } from "@/utils/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -102,45 +100,8 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
   const [aiPreview, setAiPreview] = useState("");
   const [aiPreviewLoading, setAiPreviewLoading] = useState(false);
   const [aiPreviewWidth, setAiPreviewWidth] = useState<"pc" | "mobile">("pc");
-  // HTML 파일 첨부·끌어다 놓기는 뺐다 — 붙여넣기만 (2026-11-19 사장님)
+  // AI HTML 붙여넣기·파일 첨부는 뺐다 — 상세 설명은 일반 편집(글·사진)만 (2026-11-19 사장님)
 
-  /* ── HTML 안에 통째로 들어 있는 사진(base64) → WebP 압축·업로드 후 주소로 바꿈 ── */
-  const [aiImgProgress, setAiImgProgress] = useState<{ done: number; total: number } | null>(null);
-  const moveEmbeddedImages = async (input: string): Promise<string | null> => {
-    let html = input;
-    // 클로드 디자인 "묶음 페이지"는 먼저 일반 HTML로 푼다 (글꼴 제거, 사진 칸·아이콘 복원)
-    if (isDesignBundle(html)) {
-      try {
-        html = await unpackDesignBundle(html);
-      } catch (e) {
-        alert("디자인 파일을 풀지 못했습니다: " + (e instanceof Error ? e.message : String(e)));
-        return null;
-      }
-    }
-    let out = html;
-    if (hasEmbeddedImages(html)) {
-      const result = await extractEmbeddedImages(
-        html,
-        async (file) => {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("lecture_id", loadId || "temp");
-          formData.append("type", "content");
-          const res = await uploadLectureImage(formData).catch(() => null);
-          return res?.success && res.url ? res.url : null;
-        },
-        (done, total) => setAiImgProgress({ done, total }),
-      );
-      setAiImgProgress(null);
-      out = result.html;
-      if (result.failed > 0) alert(`사진 ${result.uploaded + result.failed}장 중 ${result.failed}장을 올리지 못했습니다. 잠시 후 다시 첨부해 주세요.`);
-    }
-    if (out.length > 2_000_000) {
-      alert(`사진을 정리해도 HTML이 너무 큽니다. (${(out.length / 1_000_000).toFixed(1)}MB, 최대 2MB)\nAI에게 "사진은 빼고 HTML만 만들어줘"라고 요청해 보세요.`);
-      return null;
-    }
-    return out;
-  };
 
   /* ── 강사 정보 ── */
   const [instructorName, setInstructorName] = useState("");
@@ -602,7 +563,6 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
     }
     const savedChapters = chapters.map(ch => ({ ...ch, lessons: ch.lessons.filter(ls => ls.title.trim()).map((ls, i) => ({ ...ls, lesson_no: i + 1, sort_order: i })) }));
     if (materialUploads > 0) { alert("자료 업로드가 끝난 후 저장해 주세요."); return; }
-    if (aiImgProgress) { alert("HTML 사진 업로드가 끝난 후 저장해 주세요."); return; }
     setSaving(true);
     try {
       const res = await saveLecture({
@@ -836,61 +796,22 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
                   <label style={{ ...labelStyle, marginBottom: 0 }}>상세 설명</label>
-                  <div style={{ display: "inline-flex", border: "1px solid #d1d5db", borderRadius: 8, overflow: "hidden" }}>
-                    {([["editor", "일반 편집"], ["aihtml", "AI HTML 붙여넣기"]] as const).map(([mode, label]) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setDescMode(mode)}
-                        style={{
-                          padding: "7px 14px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
-                          background: descMode === mode ? "#059669" : "#fff",
-                          color: descMode === mode ? "#fff" : "#374151",
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {descMode === "aihtml" && (
                   <div>
-                    <div style={{ fontSize: 13, color: "#4b5563", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, padding: "10px 14px", marginBottom: 10, lineHeight: 1.6 }}>
-                      ChatGPT·제미나이·클로드가 만들어 준 HTML을 <b>통째로</b> 붙여넣으세요. 디자인(CSS·Tailwind)은 그대로 보이고, 검색(네이버·구글)에도 노출됩니다.
-                      <br />
-                      <span style={{ color: "#6b7280" }}>보안을 위해 스크립트는 빠지므로 클릭해서 움직이는 기능(탭 전환·슬라이드 등)은 멈춘 화면으로 보입니다. 저장하면 이 HTML이 상세 설명이 됩니다.</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                      {aiImgProgress && (
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>
-                          ⏳ 사진 압축·업로드 중... {aiImgProgress.done} / {aiImgProgress.total}장
-                        </span>
-                      )}
+                    {/* HTML 붙여넣기는 없앴다 (2026-11-19 사장님: 글·사진 첨부만). 예전에 HTML로 만든 특강은 그대로 두고 보여만 준다 */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", fontSize: 13, color: "#4b5563", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", marginBottom: 10, lineHeight: 1.6 }}>
+                      <span>이 특강의 상세 설명은 예전에 HTML로 만든 것입니다. 그대로 저장하면 바뀌지 않습니다.</span>
+                      <button
+                        type="button"
+                        onClick={() => { if (confirm("HTML 상세 설명을 버리고 일반 편집으로 새로 쓸까요?\n저장해야 바뀝니다.")) setDescMode("editor"); }}
+                        style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: "1px solid #059669", background: "#fff", color: "#059669", cursor: "pointer", whiteSpace: "nowrap" }}
+                      >
+                        일반 편집으로 새로 쓰기
+                      </button>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12 }}>
-                      <textarea
-                        value={aiHtml}
-                        onChange={(e) => setAiHtml(e.target.value)}
-                        onPaste={async (e) => {
-                          // 사진이 통째로 들어 있는 큰 HTML을 붙여넣으면 사진을 압축·업로드해 정리한다
-                          const text = e.clipboardData.getData("text/plain");
-                          if (!hasEmbeddedImages(text) && !isDesignBundle(text)) return;
-                          e.preventDefault();
-                          const el = e.currentTarget;
-                          const start = el.selectionStart, end = el.selectionEnd;
-                          const html = await moveEmbeddedImages(text);
-                          if (html !== null) setAiHtml(prev => prev.slice(0, start) + html + prev.slice(end));
-                        }}
-                        readOnly={!!aiImgProgress}
-                        spellCheck={false}
-                        placeholder={"<!DOCTYPE html>\n<html>\n  ... AI가 만들어 준 HTML 전체를 여기에 붙여넣으세요 ..."}
-                        style={{
-                          width: "100%", boxSizing: "border-box", height: 280, padding: 12, resize: "vertical",
-                          border: "1px solid #d1d5db", borderRadius: 8, background: "#0f172a", color: "#e2e8f0",
-                          fontFamily: "Consolas, Menlo, monospace", fontSize: 12.5, lineHeight: 1.55, whiteSpace: "pre", overflow: "auto",
-                        }}
-                      />
                       <div style={{ border: "1px solid #d1d5db", borderRadius: 8, background: "#f3f4f6", display: "flex", flexDirection: "column", minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", fontSize: 12.5, fontWeight: 700, color: "#374151" }}>
                           <span>미리보기 {aiPreviewLoading && <span style={{ color: "#f59e0b", fontWeight: 600 }}>⏳ 변환 중...</span>}</span>
@@ -918,7 +839,7 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                             {aiPreview ? (
                               <div dangerouslySetInnerHTML={{ __html: aiPreview }} />
                             ) : (
-                              <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>왼쪽에 HTML을 붙여넣으면 여기에 실제 모습이 보입니다.</div>
+                              <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>미리보기를 불러오는 중입니다.</div>
                             )}
                           </div>
                         </div>
