@@ -365,7 +365,7 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
         `■ 신청자: ${data.name} 대표님\n` +
         `■ 사무소: ${data.agencyName}${interestsSummary}\n\n` +
         `전문 담당 매니저가 기재해주신 내용을 검토 후 1영업일 이내 유선 안내드리겠습니다.\n\n` +
-        `공실뉴스 고객지원: 1555-5343`;
+        `문의: 1:1 문의 또는 카카오톡 "공실뉴스" 실시간 상담`;
 
       const smsRes = await sendPpurioSms({
         to: cleanPhone,
@@ -635,7 +635,7 @@ export async function resendNewsrealtySms(phone: string, applicantName: string, 
     const applicantMsg = `[공실뉴스] 공실뉴스부동산 파트너 신청 안내\n\n` +
       `안녕하세요, ${applicantName} 대표님 (${agencyName}).\n` +
       `공실뉴스부동산 입점 및 파트너십 안내 관련하여 담당자가 배정되었습니다.\n\n` +
-      `문의 및 상담: 1555-5343 (공실뉴스 파트너팀)`;
+      `문의 및 상담: 1:1 문의 또는 카카오톡 "공실뉴스" 실시간 상담`;
 
     const res = await sendPpurioSms({
       to: cleanPhone,

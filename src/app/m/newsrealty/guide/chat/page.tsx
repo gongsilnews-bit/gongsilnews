@@ -9,8 +9,7 @@ export default function MobileGuideChatPage() {
   const router = useRouter();
 
   const channels = [
-    { title: "카카오톡 1:1 실시간 상담", desc: "공식 채널을 통해 담당 매니저와 가장 빠른 채팅 상담.", actionText: "카카오톡 상담하기 ➔", href: "https://pf.kakao.com", color: "#fee500", textColor: "#3c1e1e", icon: "💬" },
-    { title: "대표 유선 전화 상담", desc: "입점 심사 및 제휴 사항을 전문 상담원과 직통 통화.", actionText: "1555-5343 전화 걸기", href: "tel:1555-5343", color: "#ff8e15", textColor: "#ffffff", icon: "📞" },
+    { title: "카카오톡 1:1 실시간 상담", desc: "공식 채널을 통해 담당 매니저와 가장 빠른 채팅 상담.", actionText: "카카오톡 상담하기 ➔", href: "https://pf.kakao.com/_ckHkG/chat", color: "#fee500", textColor: "#3c1e1e", icon: "💬" },
   ];
 
   return (

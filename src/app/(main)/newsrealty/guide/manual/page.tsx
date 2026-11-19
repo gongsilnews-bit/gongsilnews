@@ -124,7 +124,7 @@ export default function GuideManualPage() {
 
       {/* ━━━ 푸터 ━━━ */}
       <footer style={{ backgroundColor: "#0f172a", borderTop: "1px solid #1e293b", padding: "30px 20px", textAlign: "center", color: "#64748b", fontSize: "13px" }}>
-        © {new Date().getFullYear()} 공실뉴스부동산. All rights reserved. 대표전화 1555-5343
+        © {new Date().getFullYear()} 공실뉴스부동산. All rights reserved.
       </footer>
     </div>
   );

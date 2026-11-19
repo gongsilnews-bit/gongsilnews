@@ -110,7 +110,7 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
           `[공실뉴스부동산] 신청이 정상 접수되었습니다.\n\n` +
           `■ 신청자: ${name}님\n\n` +
           `담당자가 확인 후 1~2일 이내 연락드리겠습니다.\n\n` +
-          `공실뉴스 고객지원: 1555-5343`,
+          `문의: 1:1 문의 또는 카카오톡 "공실뉴스" 실시간 상담`,
         subject: "[공실뉴스부동산] 신청완료",
       });
       smsSent = !!smsRes.success;

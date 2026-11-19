@@ -154,7 +154,9 @@ export async function middleware(request: NextRequest) {
     hostname === 'localhost:3000' ||
     hostname === 'gongsilnews.com' ||
     hostname === 'www.gongsilnews.com' ||
-    hostname.endsWith('.vercel.app')
+    hostname.endsWith('.vercel.app') ||
+    // 개발 중 PC 주소(예: 121.163.209.9:3000)로 휴대폰 테스트 앱이 붙을 때 — 회원 홈페이지로 오인해 "페이지를 찾을 수 없습니다"가 뜨던 것 (2026-11-19). 실제 사이트에는 해당 없음
+    (process.env.NODE_ENV !== 'production' && /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(hostname))
   ) {
     // 모바일 기기 접속 여부 확인
     const userAgent = request.headers.get('user-agent') || '';
@@ -177,6 +179,7 @@ export async function middleware(request: NextRequest) {
       !url.pathname.startsWith('/user_admin') &&
       !url.pathname.startsWith('/com') &&
       !url.pathname.startsWith('/go/') && // 홈페이지로 넘겨주는 길 (카톡 공유, 2026-10-29)
+      !url.pathname.startsWith('/s/') && // 앱에서 공유한 공실·기사 받는 화면 (2026-11-19) — /m 으로 바꾸지 않는다
       // 공실뉴스부동산 신청·기능 소개는 모바일 화면이 따로 없다 — PC 화면을 폰 너비로 그대로 (2026-11-11)
       !url.pathname.startsWith('/newsrealty/pro-apply') &&
       !url.pathname.startsWith('/newsrealty/feature/') &&

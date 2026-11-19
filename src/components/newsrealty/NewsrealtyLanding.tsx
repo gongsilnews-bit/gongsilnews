@@ -467,7 +467,7 @@ export default function NewsrealtyLanding({
         <footer style={{ maxWidth: 1120, margin: "0 auto", padding: "32px 24px 48px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12, lineHeight: 1.7, color: "var(--n500)", borderTop: "1px solid var(--divider)" }}>
           <span style={{ color: "var(--n400)", fontSize: 13 }}>(주)공실마케팅 · 공실뉴스</span>
           <span>서울특별시 강남구 논현로115길 31, 105호 · 대표 김윤경 · 사업자등록번호 337-81-03010</span>
-          <span>인터넷신문 등록번호 서울 아55037 · master@gongsilnews.com · 고객센터 1555-5343</span>
+          <span>인터넷신문 등록번호 서울 아55037 · master@gongsilnews.com</span>
         </footer>
       )}
     </div>

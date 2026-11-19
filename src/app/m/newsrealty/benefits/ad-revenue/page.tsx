@@ -216,7 +216,7 @@ export default function MobileAdRevenuePage() {
         }}
       >
         <a
-          href="tel:1555-5343"
+          href="https://pf.kakao.com/_ckHkG/chat" target="_blank" rel="noopener noreferrer"
           style={{
             flex: 1,
             padding: "12px",
@@ -229,7 +229,7 @@ export default function MobileAdRevenuePage() {
             textDecoration: "none",
           }}
         >
-          전화 상담
+          카톡 상담
         </a>
         <Link
           href="/m/newsrealty/apply"

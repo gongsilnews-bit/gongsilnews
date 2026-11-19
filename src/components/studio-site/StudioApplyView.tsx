@@ -308,7 +308,7 @@ export default function StudioApplyView(p: NewsrealtyApplyViewProps) {
           ]}
         />
         <p style={{ fontSize: 13, color: "var(--n400)", lineHeight: 1.6, margin: "0 0 24px", textAlign: "left" }}>
-          신청 내용 변경이나 빠른 상담이 필요하신 경우 고객센터 <strong style={{ color: "var(--text)" }}>1555-5343</strong> (평일 10:00~17:00)로 문의해 주시기 바랍니다.
+          신청 내용 변경이나 빠른 상담이 필요하신 경우 <strong style={{ color: "var(--text)" }}>1:1 문의</strong> 또는 카카오톡 <strong style={{ color: "var(--text)" }}>"공실뉴스"</strong>에서 실시간 상담을 받으실 수 있습니다.
         </p>
         <div style={{ display: "flex", gap: 10 }}>
           <Link href={links.home} className="nra-btn nra-btn-ghost" style={{ flex: 1 }}>메인 홈으로</Link>

@@ -405,7 +405,7 @@ export default function GongsilStudyClient() {
           <div style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", letterSpacing: "2px", marginBottom: 16 }}>CONTACT US</div>
           <p style={{ fontSize: 13.5, lineHeight: 1.9, margin: "0 0 20px 0" }}>
             서울특별시 강남구 논현로115길 31, 105호 (논현동)<br />
-            고객센터 1555-5343 (평일 10:00~17:00) · master@gongsilnews.com
+            1:1 문의 · 카카오톡 "공실뉴스" 실시간 상담 · master@gongsilnews.com
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: 18, fontSize: 13, fontWeight: 600 }}>
             <Link href="/" style={{ color: "#a7f3d0", textDecoration: "none" }}>공실뉴스</Link>

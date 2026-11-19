@@ -269,7 +269,7 @@ export default function NewsrealtyBenefits({
 
       {showFooter && (
         <footer style={{ maxWidth: 1120, margin: "0 auto", padding: "32px 24px 48px", fontSize: 12, lineHeight: 1.7, color: "var(--n500)", borderTop: "1px solid var(--divider)" }}>
-          (주)공실마케팅 · 공실뉴스 · 고객센터 1555-5343
+          (주)공실마케팅 · 공실뉴스
         </footer>
       )}
     </div>
