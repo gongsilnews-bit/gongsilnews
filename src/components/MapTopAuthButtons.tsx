@@ -32,12 +32,21 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('members')
           .select('signup_completed, email, name, role, plan_type, plan_end_date, studio_end_date')
           .eq('id', user.id)
-          .single();
-          
+          .maybeSingle();
+
+        // 로그인은 됐는데 회원 줄이 없는 계정 — 가입 마무리 창으로 회원 줄을 다시 만든다 (2026-11-20, Header 와 같게)
+        if (!data && !error) {
+          setCurrentUser(user);
+          setSignupEmail(user.email || '');
+          setSignupName(user.user_metadata?.full_name || user.user_metadata?.name || '');
+          setIsSignupCompleteOpen(true);
+          return;
+        }
+
         if (data) {
           setCurrentUser(user);
           setPaidOn(isStudioMember(data as any));

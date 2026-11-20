@@ -1022,8 +1022,16 @@ export async function adminHardDeleteMember(memberId: string) {
     if (dbError) return { success: false, error: dbError.message };
 
     // 3. Supabase Auth 사용자 삭제 (완전한 계정 삭제)
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(memberId);
-    if (authError) console.error("Auth User 삭제 실패:", authError.message);
+    //  실패를 "성공"으로 넘기면 회원 줄만 없는 로그인 계정이 남아, 그 사람이 다시 오면
+    //  로그인도 가입도 안 되는 상태에 갇혔다 (2026-11-20). 한 번 더 해 보고, 그래도 안 되면 실패로 알린다
+    let { error: authError } = await supabaseAdmin.auth.admin.deleteUser(memberId);
+    if (authError && !/not.?found/i.test(authError.message)) {
+      ({ error: authError } = await supabaseAdmin.auth.admin.deleteUser(memberId));
+    }
+    if (authError && !/not.?found/i.test(authError.message)) {
+      console.error("Auth User 삭제 실패:", authError.message);
+      return { success: false, error: `회원 정보는 지웠지만 로그인 계정 삭제에 실패했습니다. 이 사람이 다시 로그인하면 가입 마무리 창이 뜹니다. (${authError.message})` };
+    }
 
     return { success: true };
   } catch (error: any) {

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import SignupCompleteModal from '@/components/SignupCompleteModal';
 
 function MobileLoginClient() {
   const router = useRouter();
@@ -11,6 +12,7 @@ function MobileLoginClient() {
 
   // 🔒 이미 로그인된 상태면 로그인 폼을 보여주지 않고 즉시 returnTo로 이동
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [orphan, setOrphan] = useState<{ email: string; name: string } | null>(null);
 
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -18,9 +20,18 @@ function MobileLoginClient() {
         const supabase = createClient();
         const { data } = await supabase.auth.getUser();
         if (data?.user) {
-          // 이미 로그인 상태 → returnTo로 즉시 리다이렉트 (히스토리 replace)
-          router.replace(returnToParam);
-          return;
+          // 회원 줄까지 있어야 "이미 로그인됨"으로 돌려보낸다 (2026-11-20, PC /login 과 같게)
+          const { data: member, error: memberErr } = await supabase
+            .from('members').select('id').eq('id', data.user.id).maybeSingle();
+          if (member) {
+            router.replace(returnToParam);
+            return;
+          }
+          if (!memberErr) {
+            // 회원 줄 없음 → 이 자리에서 가입 마무리 (completeMemberSignup 이 줄을 새로 만든다)
+            setOrphan({ email: data.user.email || '', name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || '' });
+          }
+          // 조회 실패(통신 등)면 되돌리지 않고 로그인 화면을 보여 준다
         }
       } catch (e) {
         // 세션 확인 실패 시 로그인 폼 표시
@@ -345,6 +356,7 @@ function MobileLoginClient() {
           </div>
         </div>
       </div>
+      <SignupCompleteModal isOpen={!!orphan} onClose={() => setOrphan(null)} email={orphan?.email} name={orphan?.name} />
     </div>
   );
 }

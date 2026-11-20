@@ -269,7 +269,12 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             if (checkedMemberIds.length === 0) { alert("삭제할 회원을 선택해주세요."); return; }
             if (isDormant) {
               if (confirm(`선택한 ${checkedMemberIds.length}명을 영구 삭제하시겠습니까?`)) {
-                for (const id of checkedMemberIds) await adminHardDeleteMember(id);
+                const fails: string[] = [];
+                for (const id of checkedMemberIds) {
+                  const r = await adminHardDeleteMember(id);
+                  if (!r.success) fails.push(r.error || "알 수 없는 오류");
+                }
+                if (fails.length) alert(`${fails.length}명 삭제 실패:\n` + fails.join("\n"));
                 adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
                 setCheckedMemberIds([]);
               }

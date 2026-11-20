@@ -188,7 +188,16 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
           .from('members')
           .select('signup_completed, email, name, role, plan_type, plan_end_date, studio_end_date, point_balance')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
+        // 로그인은 됐는데 회원 줄이 없는 계정 — 비로그인으로 그리면 [로그인] → 로그인 화면이 되돌려 보내는 고리에 갇힌다 (2026-11-20)
+        //  가입 마무리 창을 띄워 completeMemberSignup 이 회원 줄을 새로 만들게 한다
+        if (!data && !error) {
+          setCurrentUser(user);
+          setSignupEmail(user.email || '');
+          setSignupName(user.user_metadata?.full_name || user.user_metadata?.name || '');
+          setIsSignupCompleteOpen(true);
+          return;
+        }
         if (data) {
           setCurrentUser(user);
           setMyPoints(Number((data as { point_balance?: number }).point_balance) || 0);
