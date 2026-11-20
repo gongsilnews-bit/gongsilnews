@@ -221,7 +221,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
           <div className="adp-toolbar">
             <button className="adp-toolbar-btn" onClick={onBack}>➖ 목록</button>
             <button className="adp-toolbar-btn" onClick={onEdit}>✏️ 수정</button>
-            <button className="adp-toolbar-btn" onClick={async () => { if(confirm('이 기사를 삭제하시겠습니까?')) { await deleteArticle(article.id); onBack(); } }}>🗑️ 삭제</button>
+            <button className="adp-toolbar-btn" onClick={async () => { if(confirm('이 기사를 삭제하시겠습니까?')) { const r = await deleteArticle(article.id); if (!r.success) { alert('삭제 실패: ' + (r.error || '')); return; } onBack(); } }}>🗑️ 삭제</button>
             <button className="adp-toolbar-btn" onClick={() => { const url = `https://gongsilnews.com${articleUrl}`; navigator.clipboard?.writeText(url).then(() => alert('URL 복사됨')); }}>🔗 주소복사</button>
             <button className="adp-toolbar-btn" onClick={() => window.open(articleUrl)}>💻 미리보기</button>
             {isAdmin ? (

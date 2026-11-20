@@ -418,7 +418,8 @@ export default function MemberArticleSection({
       <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 상세 내용을 불러오는 중입니다...</div>}>
         <ArticleDetailPanel
           articleId={editId}
-          onBack={() => router.push("?menu=article")}
+          // 목록으로 돌아올 때 다시 불러온다 — 상세에서 삭제한 기사가 목록에 그대로 남아 "삭제가 안 된다"로 보였다 (2026-11-20)
+          onBack={() => { router.push("?menu=article"); fetchArticles(); }}
           onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)}
           role={role}
         />

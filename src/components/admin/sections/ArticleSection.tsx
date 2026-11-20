@@ -322,7 +322,7 @@ export default function ArticleSection({ theme, initialData, initialFilter, auth
   if (action === "detail" && editId) {
     return (
       <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 상세 내용을 불러오는 중입니다...</div>}>
-        <ArticleDetailPanel role="admin" articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />
+        <ArticleDetailPanel role="admin" articleId={editId} onBack={() => { router.push('?menu=article'); loadData(false); }} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />
       </React.Suspense>
     );
   }
