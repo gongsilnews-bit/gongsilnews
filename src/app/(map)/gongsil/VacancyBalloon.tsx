@@ -77,7 +77,11 @@ export default function VacancyBalloon({ kakaoMapRef, vacancies, userLevel, curr
       const d = (e as CustomEvent).detail as { ids: string[]; lat: number; lng: number } | null;
       if (!d || !map || !kakao?.maps) { close(); return; }
       const key = [...d.ids].sort().join(",");
-      if (popup.current && popupKey.current === key) { dismiss(); return; } // 또 누르면 닫기
+      // 2026-11-21 사장님: 누른 공실은 왼쪽 목록에 나오니 표시 위 말풍선은 띄우지 않는다 — 같은 표시를 또 누르면 고른 것만 푼다
+      if (popupKey.current === key) { close(); dismissRef.current(); return; }
+      close();
+      popupKey.current = key;
+      if (key) return;
       const all = d.ids.map((id) => vacRef.current.find((v) => String(v.id) === id)).filter(Boolean);
       close();
       if (!all.length) return;

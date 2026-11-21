@@ -1969,7 +1969,6 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           handleCategoryChange={handleCategoryChange}
           groupTab={groupTab}
           onPickGroupTab={pickGroupTab}
-          onToggleSlot={setToggleSlot}
           popoverSearchKeyword={popoverSearchKeyword}
           setPopoverSearchKeyword={setPopoverSearchKeyword}
           handleSearch={handleSearch}
@@ -2781,7 +2780,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         />
         {/* 화면캡처·판서 막대 — 우리 사이트 안에서만 (2026-11-05 사장님). 빠른메뉴는 지도엔 넣지 않음 (2026-11-10 사장님) */}
         {/* 3줄 안에 둘 때는 위쪽 줄(겹침 3500)보다 위로 — 아래에 깔려 안 보이던 것 (2026-11-17) */}
-        <WebCapture launcherStyle={capTop !== null ? { top: capTop, right: 20, zIndex: 3600 } : undefined} />
+        {/* 2026-11-21 사장님: 화면캡처는 지도 오른쪽 맨 아래로 — 오른쪽 위는 [시세][뉴스][부동산] 자리 */}
+        <WebCapture launcherStyle={{ top: "auto", bottom: 24, right: 20, zIndex: 3600 }} />
         <KakaoMapView
           toggleSlot={toggleSlot}
           activePills={activePills}

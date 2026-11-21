@@ -13,6 +13,7 @@ import { mapNewsInBox } from "@/app/actions/mapNews";
 import NewsArticlePanel from "./NewsArticlePanel";
 import { starHtml, useStars } from "./stars";
 import { keepAptMark } from "@/utils/aptHistory";
+import { mapSquareButton, mapSquareSub } from "./mapSquareButton";
 
 const ORANGE = "#ff8e15";
 const KEY = "gs-news-layer";
@@ -306,7 +307,12 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
     };
   }, [on, mapLoaded, arts, draw, kakaoMapRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const button = (
+  // PC 는 지도 오른쪽 네모 [뉴스 동네] (2026-11-21 사장님: 직방처럼 심플하게)
+  const button = !mobile ? (
+    <button type="button" onClick={toggle} title="우리동네뉴스 기사를 지도 위에 보기" style={mapSquareButton(on, ORANGE)}>
+      뉴스<span style={mapSquareSub(on, ORANGE)}>{on && busy ? "…" : "동네"}</span>
+    </button>
+  ) : (
     <button type="button" onClick={toggle} title="우리동네뉴스 기사를 지도 위에 보기"
       style={mobile
         ? { border: `1.5px solid ${ORANGE}`, borderRadius: 999, cursor: "pointer", padding: "6px 12px", fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", background: on ? ORANGE : "#fff", color: on ? "#fff" : ORANGE, boxShadow: "0 2px 8px rgba(0,0,0,.12)" }

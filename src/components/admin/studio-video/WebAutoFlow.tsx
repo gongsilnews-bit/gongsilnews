@@ -79,8 +79,10 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
   const [cols, setCols] = useState<{ id: string; label: string; free: boolean; yt: boolean }[]>([]); // 뉴스칼럼 · 자유 글쓰기 (2026-11-06)
   const [vac, setVac] = useState(seed?.vacancyId || "");
   // 대본 가져오기 탭 — 고른 대본(넘어온 대본)이 있는 묶음으로 시작
-  const [srcTab, setSrcTab] = useState<"all" | "vac" | "col" | "free">(seed?.vacancyId?.startsWith("col-") ? "col" : seed?.vacancyId ? "vac" : "all");
-  useEffect(() => { if (vac.startsWith("col-")) { const c = cols.find((x) => x.id === vac); if (c) setSrcTab(c.free ? "free" : "col"); } }, [vac, cols]);
+  // 공실뉴스만 (2026-11-21 사장님: "여기서도 간단하게 공실뉴스만") — 묶음 고르기는 숨김, 뉴스칼럼·자유 글쓰기 코드는 그대로
+  const ONLY_VAC = true;
+  const [srcTab, setSrcTab] = useState<"all" | "vac" | "col" | "free">(ONLY_VAC ? "vac" : seed?.vacancyId?.startsWith("col-") ? "col" : seed?.vacancyId ? "vac" : "all");
+  useEffect(() => { if (ONLY_VAC) return; if (vac.startsWith("col-")) { const c = cols.find((x) => x.id === vac); if (c) setSrcTab(c.free ? "free" : "col"); } }, [vac, cols]); // eslint-disable-line react-hooks/exhaustive-deps
   const vacItems = (vacs || []).map((v) => ({ id: v.id, label: v.label }));
   const colItems = (free: boolean) => cols.filter((c) => c.free === free).map((c) => ({ id: c.id, label: `${c.label}${c.yt ? " · 쇼츠 대본 있음" : ""}` }));
   const tabItems: { id: string; label: string }[] = srcTab === "vac" ? vacItems : srcTab === "col" ? colItems(false) : srcTab === "free" ? colItems(true) : [...vacItems, ...colItems(false), ...colItems(true)];
@@ -343,14 +345,14 @@ export default function WebAutoFlow({ onCancel, onDone, seed }: { onCancel: () =
         {head("① 대본")}
         {/* 한 줄 — 왼쪽 묶음 고르기(전체·공실뉴스·뉴스칼럼·자유 글쓰기) · 오른쪽 그 묶음의 대본 (2026-11-06 사장님: "한 줄로 카테고리 셀렉트 바, 그 옆에 해당 선택") */}
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <select value={srcTab} onChange={(e) => setSrcTab(e.target.value as typeof srcTab)} disabled={Boolean(busy)} style={{ ...box, width: 170, flexShrink: 0, height: 40, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>
+          {!ONLY_VAC && <select value={srcTab} onChange={(e) => setSrcTab(e.target.value as typeof srcTab)} disabled={Boolean(busy)} style={{ ...box, width: 170, flexShrink: 0, height: 40, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>
             <option value="all">전체 ({vacItems.length + cols.length})</option>
             <option value="vac">공실뉴스 ({vacItems.length})</option>
             <option value="col">뉴스칼럼 ({colItems(false).length})</option>
             <option value="free">자유 글쓰기 ({colItems(true).length})</option>
-          </select>
+          </select>}
           <select value={tabItems.some((x) => x.id === vac) ? vac : ""} onChange={(e) => { setVac(e.target.value); setErr(""); setNoScript(false); }} disabled={Boolean(busy)} style={{ ...box, flex: 1, minWidth: 0, height: 40, fontSize: 14, padding: "0 10px", color: vac ? C.text : C.sub }}>
-            <option value="">{vacs === null ? "불러오는 중…" : tabItems.length ? `대본 가져오기 — ${tabItems.length}개에서 고르기` : srcTab === "vac" ? "광고 중인 공실이 없어요" : srcTab === "col" ? "아직 뉴스칼럼이 없어요" : srcTab === "free" ? "아직 자유 글쓰기로 쓴 글이 없어요" : "가져올 글이 없어요"}</option>
+            <option value="">{vacs === null ? "불러오는 중…" : tabItems.length ? `공실뉴스 대본 가져오기 — ${tabItems.length}개에서 고르기` : srcTab === "vac" ? "광고 중인 공실이 없어요" : srcTab === "col" ? "아직 뉴스칼럼이 없어요" : srcTab === "free" ? "아직 자유 글쓰기로 쓴 글이 없어요" : "가져올 글이 없어요"}</option>
             {srcTab === "all" ? (<>
               {vacItems.length > 0 && <optgroup label="공실뉴스">{vacItems.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</optgroup>}
               {colItems(false).length > 0 && <optgroup label="뉴스칼럼">{colItems(false).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</optgroup>}

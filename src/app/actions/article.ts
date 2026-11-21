@@ -265,7 +265,7 @@ export async function saveArticle(data: {
       }
       if (wasDraft) {
         const quota = await checkMonthlyArticleQuota(supabase, authorMember, effectiveAuthorId);
-        if (!quota.allowed) return { success: false, error: "quotaFull" in quota && quota.quotaFull ? `${quota.error} 기사 등록 없이 블로그·SNS·쇼츠릴스 대본은 뉴스·SNS자동화 › 블로그·SNS 글쓰기에서 제한 없이 쓸 수 있어요.` : quota.error };
+        if (!quota.allowed) return { success: false, error: quota.error };
       }
     }
     // ---------------------------------------------

@@ -202,19 +202,32 @@ const noop = () => {};
 
 /** 단지 창 맨 위 로드뷰 — 직방 사진 자리 (2026-11-18 사장님: 앱에서 보고 "훨씬 좋은데 PC·모바일웹에도")
  *  근처에 로드뷰가 없으면 칸을 숨기고, [크게 보기]로 화면 가득 */
-function HeroRoadview({ lat, lng }: { lat: number; lng: number }) {
-  const [none, setNone] = useState(false);
+const heroBtn = (dark: boolean): React.CSSProperties => ({ border: "none", width: 34, height: 34, borderRadius: "50%", background: dark ? "rgba(0,0,0,.32)" : "#f3f4f6", color: dark ? "#fff" : "#374151", fontSize: 20, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "inherit" });
+
+function HeroRoadview({ lat, lng, title, sub, tag, actions }: { lat: number; lng: number; title: string; sub: string; tag?: string; actions: (dark: boolean) => React.ReactNode }) {
+  // 2026-11-21 사장님: 직방처럼 맨 위 로드뷰 사진 + 그 위에 흰 글자(단지 이름·주소). 로드뷰가 없으면 흰 머리에 검은 글자
+  const [none, setNone] = useState(!Number.isFinite(lat));
   const [big, setBig] = useState(false);
-  if (none) return null;
+  const titleBlock = (dark: boolean) => (
+    <div style={{ minWidth: 0 }}>
+      {tag && <span style={{ display: "inline-block", fontSize: 11.5, fontWeight: 700, borderRadius: 5, padding: "2px 7px", marginBottom: 6, background: dark ? "rgba(255,255,255,.22)" : "var(--apt-soft)", color: dark ? "#fff" : "var(--apt-accent)" }}>{tag}</span>}
+      <div style={{ fontSize: 21, fontWeight: 800, lineHeight: 1.25, color: dark ? "#fff" : "#111827", wordBreak: "keep-all" }}>{title}</div>
+      <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4, color: dark ? "rgba(255,255,255,.88)" : "#6b7280" }}>{sub}</div>
+    </div>
+  );
+  if (none) return (
+    <div style={{ background: "#fff", padding: "14px 16px 16px", borderBottom: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>{actions(false)}</div>
+      {titleBlock(false)}
+    </div>
+  );
   return (
     <div style={{ position: "relative" }}>
-      <Roadview lat={lat} lng={lng} height={230} onNone={() => setNone(true)} />
+      <Roadview lat={lat} lng={lng} height={250} onNone={() => setNone(true)} />
       {/* 작은 로드뷰를 누르면 바로 크게 보기 (2026-11-18 사장님) — 위에 투명한 막을 덮어 누름을 받는다 */}
-      <div onClick={() => setBig(true)} title="로드뷰 크게 보기" style={{ position: "absolute", inset: 0, zIndex: 4, cursor: "zoom-in" }} />
-      <button onClick={() => setBig(true)} aria-label="로드뷰 크게 보기"
-        style={{ position: "absolute", right: 10, bottom: 10, zIndex: 5, display: "flex", alignItems: "center", gap: 4, border: "none", borderRadius: 14, padding: "5px 10px", background: "rgba(17,24,39,.72)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-        ⤢ 크게 보기
-      </button>
+      <div onClick={() => setBig(true)} title="로드뷰 크게 보기" style={{ position: "absolute", inset: 0, zIndex: 4, cursor: "zoom-in", background: "linear-gradient(180deg, rgba(0,0,0,.38) 0%, rgba(0,0,0,0) 28%, rgba(0,0,0,0) 45%, rgba(0,0,0,.62) 100%)" }} />
+      <div style={{ position: "absolute", left: 10, right: 10, top: 10, zIndex: 5, display: "flex", alignItems: "center", gap: 6 }}>{actions(true)}</div>
+      <div style={{ position: "absolute", left: 18, right: 18, bottom: 16, zIndex: 5, pointerEvents: "none", textShadow: "0 1px 6px rgba(0,0,0,.45)" }}>{titleBlock(true)}</div>
       {/* 큰 창은 화면 맨 위에 따로 띄운다(document.body) — 단지 창 안에 두면 위 메뉴 아래에 깔렸다 (2026-11-18) */}
       {big && typeof document !== "undefined" && createPortal(
         <div onClick={() => setBig(false)} style={{ position: "fixed", inset: 0, zIndex: 10050, background: "rgba(0,0,0,.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -616,13 +629,13 @@ function BottomActions({ detail, vacancyCount, onShowVacancies, onShowAuctions, 
 }
 
 /** 단지 찜 ★ — 머리 ✕ 옆, 누르면 노란 별 (11-04 사장님) */
-function AptStar({ id }: { id: string }) {
+function AptStar({ id, dark = false }: { id: string; dark?: boolean }) {
   const { isStar, toggleStar } = useStars();
   const on = isStar("apt", id);
   return (
     <button onClick={() => void toggleStar("apt", id)} title={on ? "관심 단지 해제" : "관심 단지로 찜하기"} aria-label="찜하기"
-      style={{ border: "none", background: "rgba(255,255,255,.18)", borderRadius: "50%", width: 34, height: 34, marginRight: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-      dangerouslySetInnerHTML={{ __html: starSvg(on, 20).replace('stroke="#9ca3af"', 'stroke="#ffffff"') }} />
+      style={{ border: "none", background: dark ? "rgba(0,0,0,.32)" : "#f3f4f6", borderRadius: "50%", width: 34, height: 34, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+      dangerouslySetInnerHTML={{ __html: dark ? starSvg(on, 20).replace('stroke="#9ca3af"', 'stroke="#ffffff"') : starSvg(on, 20) }} />
   );
 }
 
@@ -756,7 +769,6 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const address = `${LAWD_NAMES[detail.lawd_cd] || ""} ${detail.dong} ${detail.jibun}`.trim();
   const perHome = info?.parking && info?.households ? Math.round((info.parking / info.households) * 100) / 100 : null;
 
-  const chip: React.CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 6, height: 40, padding: "0 12px", borderRadius: 8, background: "rgba(255,255,255,.16)", color: "#fff", border: "none", fontSize: 15, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden" };
   const sectionStyle: React.CSSProperties = { background: "#fff", marginBottom: 10 };
   const h3: React.CSSProperties = { fontSize: 16, fontWeight: 800, margin: 0, padding: "18px 20px 10px" };
 
@@ -765,33 +777,32 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
     <div onClick={side || flat ? undefined : close} style={flat ? { display: "flex", justifyContent: "center" } : side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: side.hidden ? "none" : "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
     <div data-gs-apt-panel="" onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: villa ? VILLA_ROSE : detail.kind === "offi" ? OFFI_GREEN : BRAND, ["--apt-soft" as string]: villa ? "#fdf2f8" : detail.kind === "offi" ? "#ecfdf5" : "#eef3ff", position: "relative", width: mobile || side ? "100%" : flat ? 1000 : 600, maxWidth: "100%", height: flat ? "auto" : "100%", maxHeight: mobile || side || flat ? undefined : 860, borderRadius: mobile || side ? 0 : 16, overflow: flat ? "visible" : "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
       {/* 머리 */}
-      <div ref={headRef} style={{ background: ACC, padding: "14px 16px 14px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff" }}>
-          {side && <button onClick={onClose} aria-label="목록으로" title="공실 목록으로" style={{ border: "none", background: "none", color: "#fff", fontSize: 26, cursor: "pointer", lineHeight: 1, padding: "0 4px 0 0" }}>‹</button>}
-          <div style={{ flex: 1, fontSize: 19, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {(detail.kind === "offi" || villa) && <span style={{ fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,.22)", borderRadius: 6, padding: "2px 7px", marginRight: 8, verticalAlign: "middle" }}>{villa ? detail.house_type || "빌라" : "오피스텔"}</span>}
-            {detail.dong} {detail.name}
-          </div>
-{!flat && <AptStar id={detail.id} />}
-{!flat && <button onClick={close} aria-label="닫기" style={{ border: "none", background: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>✕</button>}
+      {/* 머리 — 캡처 한 장(flat)일 때만 따로. 평소엔 맨 위 로드뷰 사진 위에 이름·주소 (2026-11-21 사장님: 직방처럼) */}
+      {flat && (
+        <div ref={headRef} style={{ background: "#fff", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#111827" }}>{detail.name}</div>
+          <div style={{ fontSize: 13.5, color: "#6b7280", marginTop: 4 }}>{address}</div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 0.6fr", gap: 8, marginTop: 12 }}>
-          <button style={chip} onClick={() => setMode(mode === "sale" ? "lease" : "sale")}>{mode === "sale" ? "매매" : "전월세"} <span style={{ fontSize: 11 }}>⇄</span></button>
-          <button style={chip} onClick={() => setSheet(!sheet)}>{g?.label || "-"} <span style={{ fontSize: 11 }}>{sheet ? "▲" : "▼"}</span></button>
-          <div style={{ ...chip, cursor: "default", justifyContent: "center", fontSize: 13 }}>{mode === "sale" ? g?.sales.length || 0 : g?.rents.length || 0}건</div>
-        </div>
-      </div>
+      )}
 
       <div style={flat ? {} : { flex: 1, overflowY: "auto" }}>
         {/* 맨 위 로드뷰 — 직방 사진 자리 (2026-11-18 사장님, 앱과 같게) */}
-        {!flat && Number.isFinite(detail.lat) && <HeroRoadview lat={detail.lat} lng={detail.lng} />}
+        {!flat && (
+          <HeroRoadview lat={Number.isFinite(detail.lat) ? detail.lat : NaN} lng={detail.lng} title={detail.name} sub={address}
+            tag={detail.kind === "offi" ? "오피스텔" : villa ? detail.house_type || "빌라" : undefined}
+            actions={(dark) => (<>
+              {side && <button onClick={onClose} aria-label="목록으로" title="공실 목록으로" style={heroBtn(dark)}>‹</button>}
+              <span style={{ flex: 1 }} />
+              <AptStar id={detail.id} dark={dark} />
+              <button onClick={close} aria-label="닫기" style={heroBtn(dark)}>✕</button>
+            </>)} />
+        )}
         {/* 단지 한 줄 */}
         <div style={{ ...sectionStyle, padding: "16px 20px" }}>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>{address}</div>
           {villa ? (
-            <div style={{ color: "#4b5563", marginTop: 6 }}>{detail.house_type || "연립·다세대"} <span style={{ color: "#d1d5db" }}>|</span> {builtText}</div>
+            <div style={{ color: "#4b5563" }}>{detail.house_type || "연립·다세대"} <span style={{ color: "#d1d5db" }}>|</span> {builtText}</div>
           ) : (<>
-          <div style={{ color: "#4b5563", marginTop: 6 }}>
+          <div style={{ color: "#4b5563" }}>
             {info?.households ? `${info.households.toLocaleString("ko-KR")}${detail.kind === "offi" ? "호" : "세대"}` : detail.kind === "offi" ? "호수 -" : "세대수 -"} <span style={{ color: "#d1d5db" }}>|</span> {builtText}
           </div>
           <div style={{ color: "#4b5563", marginTop: 2 }}>
@@ -960,7 +971,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (
-        <div onClick={() => setSheet(false)} style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: headH, background: "rgba(0,0,0,.25)", zIndex: 2 }}>
+        <div onClick={() => setSheet(false)} style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: flat ? headH : 0, background: "rgba(0,0,0,.25)", zIndex: 2 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", width: "100%", maxHeight: "70%", overflowY: "auto", boxShadow: "0 8px 20px rgba(0,0,0,.18)", borderRadius: "0 0 14px 14px" }}>
             {groups.map((x) => {
               const lastSale = x.sales[0], lastJeonse = x.rents.find((r) => !r.m), lastAny = x.rents[0];

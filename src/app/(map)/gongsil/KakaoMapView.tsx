@@ -91,7 +91,10 @@ export default function KakaoMapView({
   const drawnVacanciesRef = useRef<any[]>([]);
   const [priceButtonSlot, setPriceButtonSlot] = useState<HTMLSpanElement | null>(null); // 검색 줄 [내 위치] 옆
   // 공실열람 2줄 오른쪽 자리를 주면 거기로 (2026-11-17), 아니면 [내 위치] 옆
-  const layerButtonSlot = toggleSlot !== undefined ? toggleSlot : priceButtonSlot;
+  // 2026-11-21 사장님: 위쪽 줄 단추들을 없애고 지도 오른쪽 네모 [시세][뉴스][부동산]으로 (직방처럼 심플하게)
+  const [rightSlot, setRightSlot] = useState<HTMLDivElement | null>(null);
+  void toggleSlot; void priceButtonSlot;
+  const layerButtonSlot = rightSlot;
 
   // Sync state to refs for standard non-stale callback references inside Kakao Map events
   useEffect(() => {
@@ -860,8 +863,7 @@ export default function KakaoMapView({
         style={{
           position: "absolute",
           right: 20,
-          top: "30%",
-          transform: "translateY(-50%)",
+          top: 72, // [리스트검색|지도검색] 바로 아래 — 화면캡처는 맨 아래로 내렸다 (2026-11-21)
           zIndex: 1000,
           display: "flex",
           flexDirection: "column",
@@ -869,6 +871,8 @@ export default function KakaoMapView({
           gap: 8,
         }}
       >
+        {/* [시세 최근] · [뉴스] · [부동산] 네모 단추 자리 (2026-11-21 사장님) */}
+        <div ref={setRightSlot} style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 4 }} />
         {/* Zoom In / Out Container */}
         <div
           style={{
@@ -933,6 +937,8 @@ export default function KakaoMapView({
       {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
       <AptPriceLayer
         buttonSlot={layerButtonSlot}
+        // [아파트]·[오피스텔]·[빌라/주택] 칸은 그 종류 시세만 (2026-11-21 사장님) — [전체]는 [시세]를 눌러 고른다
+        onlyKind={isAuctionMode ? undefined : activeCategory === "villa" ? "villa" : activeCategory === "apart" && activePills.length > 0 ? (activePills.every((p) => p.includes("오피스텔")) ? "offi" : activePills.some((p) => p.includes("오피스텔")) ? undefined : "apt") : undefined}
         autoShow={!isAuctionMode && (activeCategory === "all" || activeCategory === "apart")}
         villaTab={!isAuctionMode && activeCategory === "villa"}
         kakaoMapRef={kakaoMapRef}
@@ -951,9 +957,10 @@ export default function KakaoMapView({
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
       />
       {/* [우리동네뉴스] 켜기·끄기 — 실거래가 단추 옆, 모든 기사를 지도 위 자리 그대로 (2026-11-04 사장님) */}
-      <NewsLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} category={isAuctionMode ? "auction" : activeCategory} />
       {/* [부동산] 켜기·끄기 — 회원 부동산 집 모양 · 누르면 왼쪽 목록에 그 사무소 (2026-11-04 사장님) */}
       <AgencyLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} />
+      {/* [우리동네뉴스] — [부동산] 아래 (2026-11-21 사장님: 우리동네뉴스도 있어야지) */}
+      <NewsLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} category={isAuctionMode ? "auction" : activeCategory} />
     </div>
   );
 }

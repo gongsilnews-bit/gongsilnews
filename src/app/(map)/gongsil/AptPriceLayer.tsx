@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { LAWD_NAMES, areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShared";
 import { addRecent } from "./stars";
+import { mapSquareButton, mapSquareSub } from "./mapSquareButton";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
 type Complex = { news?: number; t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
@@ -21,28 +22,17 @@ const VAC = "#4b89ff"; // 공실 묶음 동그라미와 같은 색
 const NEWS_ORANGE = "#ff8e15"; // 우리동네뉴스(NewsLayer) 주황
 const OFFI = "#0f766e"; // 오피스텔 — 아파트(파랑)와 구분
 
-/** 누른 단지는 같은 색을 진하게 + 흰 테두리 + 조금 크게 (2026-11-02 사장님: 주황이 튀고 촌스럽다) — 상자(0번)와 꼬리(1번)만 (2번은 공실 동그라미) */
-const PICKED_OF: Record<string, string> = { [OFFI]: "#134e4a" };
-const PICKED_APT = "#1e3a8a";
+/** 단지 상자 — 앱(공실뉴스 앱 kakaoMapHtml)과 같은 모양 (2026-11-20 사장님: 촌스럽다, 앱처럼 깔끔하게 라인 형식으로)
+ *  평소 = 흰 바탕 + 종류 색 얇은 선 + 흰 꼬리 · 고른 단지 = 종류 색으로 칠하고 글자 흰색 */
 const paint = (el: HTMLElement, picked: boolean) => {
-  if (el.dataset.outline) { // 흰 바탕 상자 — 빌라, 전월세만 있는 아파트·오피스텔
-    const line = el.dataset.color || VILLA_ROSE;
-    const box = el.children[0] as HTMLElement | undefined, price = box?.lastElementChild as HTMLElement | undefined;
-    if (box) { box.style.background = picked ? line : "#fff"; box.style.color = picked ? "#fff" : line; }
-    if (price) price.style.color = picked ? "#fff" : el.dataset.sale ? line : "#4b5563";
-    el.style.transform = picked ? "scale(1.1)" : "";
-    el.style.transformOrigin = "50% 100%";
-    if (el.parentElement) el.parentElement.style.zIndex = picked ? "5" : "1";
-    return;
-  }
-  const base = el.dataset.color || BRAND;
-  const color = picked ? PICKED_OF[base] || PICKED_APT : base;
+  const line = el.dataset.color || BRAND;
   const box = el.children[0] as HTMLElement | undefined;
   const tip = el.children[1] as HTMLElement | undefined;
-  if (box) { box.style.background = color; box.style.boxShadow = picked ? "0 0 0 2px #fff, 0 0 0 3.5px " + color : ""; }
-  if (tip) tip.style.borderTopColor = color;
-  el.style.transform = picked ? "scale(1.1)" : "";
-  el.style.transformOrigin = "50% 100%";
+  const area = box?.firstElementChild as HTMLElement | undefined, price = box?.lastElementChild as HTMLElement | undefined;
+  if (box) { box.style.background = picked ? line : "#fff"; box.style.borderColor = line; }
+  if (area) area.style.color = picked ? "rgba(255,255,255,.85)" : "#6b7280";
+  if (price) price.style.color = picked ? "#fff" : el.dataset.sale ? line : "#4b5563";
+  if (tip) tip.style.borderTopColor = picked ? line : "#fff";
   if (el.parentElement) el.parentElement.style.zIndex = picked ? "5" : "1";
 };
 
@@ -135,9 +125,11 @@ function matchVacancies(complexes: Complex[], vacancies: any[]) {
   return out;
 }
 
-export default function AptPriceLayer({ villaTab = false, mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies, mapPick }: {
+export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = false, autoShow = false, buttonSlot, kakaoMapRef, mapLoaded, vacancies, kinds = { apt: true, offi: true }, onShowVacancies, onShowAuctions, onHideVacancies, mapPick }: {
   /** 지도에서 공실 표시를 누름 (PC) — 그 단지 공실이면 창을 접고 [‹ 단지 정보], 다른 공실이면 창을 닫는다 */
   mapPick?: { ids: string[]; n: number } | null;
+  /** [아파트]·[오피스텔]·[빌라/주택] 칸 — 그 종류 시세만 ([시세]는 고르기 없이 바로 켜고 끔, 2026-11-21 사장님) */
+  onlyKind?: "apt" | "offi" | "villa";
   kakaoMapRef: React.MutableRefObject<any>;
   kinds?: { apt: boolean; offi: boolean };
   /** [빌라·주택] 탭 — 빌라(연립·다세대) 실거래가를 처음부터 켠다 (2026-11-03 사장님: 같은 지도에) */
@@ -469,7 +461,8 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
     // 겹치지 않게 — 거래 많은 단지부터 화면 자리를 잡고, 이미 잡힌 자리와 겹치면 뺀다 (축소하면 큰 단지만 남는다)
     const proj = map.getProjection();
     const taken: { x: number; y: number }[] = [];
-    const BOX_W = 74, BOX_H = 44;
+    // 앱처럼 살짝 겹치는 것은 두고, 절반 넘게 덮일 때만 뺀다 (상자 크기의 55%·60%, 2026-11-20)
+    const BOX_W = mobile ? 34 : 38, BOX_H = mobile ? 20 : 22;
     // 매매가 없으면 최근 전월세로 (전세 "전세 2.3억" · 월세 "월세 100") — 빌라, 그리고 분양권으로만 팔린 새 아파트 (11-04, 모양은 매매와 똑같이)
     const priceOf = (c: Complex) => (c.rep_price && c.rep_area ? { a: c.rep_area, label: shortPrice(c.rep_price) }
       : c.rent0 && c.rent0.a ? { a: c.rent0.a, label: c.rent0.m ? `월세 ${c.rent0.m.toLocaleString("ko-KR")}` : `전세 ${shortPrice(c.rent0.dep)}` } : null);
@@ -509,22 +502,17 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
         });
         el.addEventListener("mouseleave", (e) => { if (el.contains(e.relatedTarget as Node | null)) return; hidePeek(); });
       }
-      el.style.cssText = "position:relative;cursor:pointer;user-select:none;text-align:center;font-family:inherit;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))";
-      if (c.kind === "villa") {
-        // 빌라 — 흰 바탕 + 자주 테두리 · 매매는 자주 굵은 가격, 전월세만 있는 건물은 회색 "전세·월세" (견본 때 정한 모양)
-        const sale = Boolean(c.rep_price && c.rep_area);
-        el.dataset.outline = "1";
-        if (sale) el.dataset.sale = "1";
-        el.innerHTML =
-          `<div style="background:#fff;color:${VILLA_ROSE};border:1.5px solid ${VILLA_ROSE};border-radius:9px;padding:3px 8px 4px;min-width:48px;line-height:1.15;white-space:nowrap">` +
-          `<div style="font-size:10.5px;opacity:.85">${areaLabel(pr.a)}</div>` +
-          `<div style="font-size:${sale ? 14 : 12.5}px;font-weight:800;letter-spacing:-.3px;color:${sale ? VILLA_ROSE : "#4b5563"}">${pr.label}</div></div>` +
-          `<div style="width:0;height:0;margin:-1px auto 0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid ${VILLA_ROSE}"></div>`;
-      } else el.innerHTML =
-        `<div style="background:${color};color:#fff;border-radius:9px;padding:4px 9px 5px;min-width:52px;line-height:1.15;white-space:nowrap">` +
-        `<div style="font-size:11px;opacity:.85">${areaLabel(pr.a)}</div>` +
-        `<div style="font-size:${pr.label.length > 7 ? 13 : 15}px;font-weight:800;letter-spacing:-.3px">${pr.label}</div></div>` +
-        `<div style="width:0;height:0;margin:-1px auto 0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color}"></div>`;
+      el.style.cssText = "position:relative;cursor:pointer;user-select:none;text-align:center;font-family:inherit;filter:drop-shadow(0 1px 2px rgba(0,0,0,.22))";
+      // 앱과 같은 작은 흰 말풍선 — 얇은 종류 색 선 · 면적은 작은 회색 · 가격은 종류 색 굵게(전월세만 있으면 회색) · 흰 꼬리 (2026-11-20 사장님)
+      //  아파트(파랑)·오피스텔(초록)·빌라(자주) 모두 같은 모양, 색만 다르다. PC는 글자를 한 치수 크게
+      const sale = Boolean(c.rep_price && c.rep_area);
+      if (sale) el.dataset.sale = "1";
+      const fa = mobile ? 9.5 : 10.5, fp = (mobile ? 12 : 13.5) - (pr.label.length > 7 ? 1 : 0);
+      el.innerHTML =
+        `<div style="background:#fff;border:1px solid ${color};border-radius:6px;padding:${mobile ? "2px 6px 3px" : "3px 7px 4px"};line-height:1.15;white-space:nowrap">` +
+        `<div style="font-size:${fa}px;font-weight:600;color:#6b7280">${areaLabel(pr.a)}</div>` +
+        `<div style="font-size:${fp}px;font-weight:800;letter-spacing:-.3px;color:${sale ? color : "#4b5563"}">${pr.label}</div></div>` +
+        `<div style="width:0;height:0;margin:-1px auto 0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #fff"></div>`;
       // 새로 신고된 거래가 들어온 단지 — 1주일 동안 오른쪽 위에 NEW (2026-11-04 사장님). 공실 수 동그라미가 있으면 그 왼쪽
       // 배지에 보이는 거래(매매, 없으면 전월세)가 지난 7일 안에 계약됐으면 NEW
       const shownDeal = c.rep_price && c.rep_area ? c.t0 : c.rent0;
@@ -532,14 +520,16 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
         const nb = document.createElement("div");
         nb.textContent = "NEW";
         nb.title = `최근 계약 ${String(shownDeal!.d).replace(/-/g, ".")}`;
-        nb.style.cssText = `position:absolute;top:-9px;right:${ids.length ? 15 : -8}px;padding:0 4px;height:15px;border-radius:8px;background:#ef4444;color:#fff;font-size:9.5px;font-weight:900;line-height:15px;letter-spacing:.2px;pointer-events:none`;
+        // 앱처럼 왼쪽 위 작은 빨간 NEW (공실 수와 부딪치지 않는다)
+        nb.style.cssText = `position:absolute;top:-7px;left:-7px;padding:0 3px;height:12px;border-radius:6px;background:#ef4444;color:#fff;font-size:8px;font-weight:900;line-height:12px;pointer-events:none`;
         el.appendChild(nb);
       }
       if (ids.length) {
         const badge = document.createElement("div");
         badge.textContent = String(ids.length);
         badge.title = `이 단지 공실 ${ids.length}개 보기`;
-        badge.style.cssText = `position:absolute;top:-11px;right:-13px;min-width:26px;height:26px;padding:0 5px;box-sizing:border-box;border-radius:13px;background:#fff;border:2px solid ${VAC};color:${VAC};font-size:13px;font-weight:900;line-height:22px;text-align:center`;
+        // 앱처럼 작은 파란 숫자 (2026-11-20)
+        badge.style.cssText = `position:absolute;top:-8px;right:-9px;min-width:${mobile ? 17 : 19}px;height:${mobile ? 17 : 19}px;padding:0 4px;box-sizing:border-box;border-radius:10px;background:${VAC};border:1.5px solid #fff;color:#fff;font-size:${mobile ? 10 : 11}px;font-weight:900;line-height:${mobile ? 14 : 16}px;text-align:center`;
         badge.addEventListener("click", (e) => {
           // 공실 수를 누르면 — 단지 창을 닫고 이 단지 공실만 (11-04 사장님)
           e.stopPropagation(); hidePeek(); closeRef.current();
@@ -553,7 +543,7 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
         const nb2 = document.createElement("div");
         nb2.textContent = String(c.news);
         nb2.title = `이 단지 뉴스 ${c.news}개 보기`;
-        nb2.style.cssText = `position:absolute;bottom:-4px;right:-13px;min-width:22px;height:22px;padding:0 4px;box-sizing:border-box;border-radius:11px;background:#fff;border:2px solid ${NEWS_ORANGE};color:${NEWS_ORANGE};font-size:12px;font-weight:900;line-height:18px;text-align:center`;
+        nb2.style.cssText = `position:absolute;bottom:-1px;right:-9px;min-width:${mobile ? 17 : 19}px;height:${mobile ? 17 : 19}px;padding:0 4px;box-sizing:border-box;border-radius:10px;background:#fff;border:1.5px solid ${NEWS_ORANGE};color:${NEWS_ORANGE};font-size:${mobile ? 10 : 11}px;font-weight:900;line-height:${mobile ? 14 : 16}px;text-align:center`;
         nb2.addEventListener("click", async (e) => {
           // 바로 왼쪽 목록에 이 단지 뉴스 (단지 창을 거치지 않는다, 11-04 사장님 — 파란 공실 수와 같이)
           e.stopPropagation(); hidePeek(); closeRef.current();
@@ -635,8 +625,35 @@ export default function AptPriceLayer({ villaTab = false, mobile = false, autoSh
       </button>
     );
   };
+  // PC 는 지도 오른쪽 [시세 최근] 네모 하나 — 누르면 왼쪽으로 [아파트][오피스텔][빌라/주택] 고르기가 펼쳐진다
+  //  (2026-11-21 사장님: 직방처럼 심플하게 → 시세를 누르면 종류를 고를 수 있게)
+  const [menu, setMenu] = useState(false);
+  const KIND_LABEL: Record<"apt" | "offi" | "villa", string> = { apt: "아파트", offi: "오피스텔", villa: "빌라/주택" };
   // 모바일은 "실거래가" 글자를 앞에 두고 [아파트][오피스텔] (2026-11-02 사장님)
-  const buttons = (
+  const buttons = !mobile ? (
+    <div style={{ position: "relative" }}>
+      <button type="button" title={onlyKind ? `${KIND_LABEL[onlyKind]} 최근 실거래 시세 켜기·끄기` : "단지별 최근 실거래 시세 — 종류 고르기"}
+        onClick={() => { if (onlyKind) { setShow({ apt: false, offi: false, villa: false, [onlyKind]: !on }); close(); } else setMenu((m) => !m); }}
+        style={mapSquareButton(on || (menu && !onlyKind), BRAND)}>
+        시세<span style={mapSquareSub(on || (menu && !onlyKind), NEWS_ORANGE)}>최근</span>
+      </button>
+      {/* 고르기는 [전체] 등 여러 종류가 섞인 칸에서만 */}
+      {menu && !onlyKind && (
+        <div style={{ position: "absolute", right: 62, top: 0, height: 54, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", background: "#fff", borderRadius: 10, boxShadow: "0 2px 10px rgba(0,0,0,.18)", whiteSpace: "nowrap" }}>
+          {(["apt", "offi", "villa"] as const).map((k) => {
+            const color = k === "offi" ? OFFI : k === "villa" ? VILLA_ROSE : BRAND;
+            return (
+              <button key={k} type="button" onClick={() => toggle(k)}
+                style={{ height: 34, padding: "0 13px", borderRadius: 17, cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+                  border: `1.5px solid ${show[k] ? color : "#e5e7eb"}`, background: show[k] ? color : "#fff", color: show[k] ? "#fff" : "#374151" }}>
+                {show[k] ? "✓ " : ""}{KIND_LABEL[k]}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  ) : (
     <>
       {mobile && (
         <span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: "#1f2937", background: "rgba(255,255,255,.92)", borderRadius: 12, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>실거래가</span>

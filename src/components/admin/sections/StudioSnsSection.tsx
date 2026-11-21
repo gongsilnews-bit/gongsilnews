@@ -95,7 +95,9 @@ const NEWS_CATEGORIES = [
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
 // 웹에서 보이는 카테고리 — 공실뉴스 · 뉴스칼럼(내 기사로, 2026-11-04 사장님: 공실뉴스 하단에)
-const WEB_CATEGORIES = ["gongsil", "column", "free"]; // 경매공매 숨김 · 자유 글쓰기는 "SNS 글만" 메뉴로 따로 (2026-11-10 사장님: "sns 글만 따로 빼자") // 경매·공매도 웹에 (2026-11-09 사장님: 온비드 물건을 따로 불러오게)
+// 웹은 등록한 공실만 (2026-11-21 사장님: 블로그·SNS 글쓰기·뉴스칼럼 없앰, 기사는 공실 카드의 [뉴스기사]로) — 코드는 그대로, 다시 보이려면 "column"·"free" 넣기
+// 하나만 남으면 왼쪽 작은 목록 칸은 통째로 숨긴다
+const WEB_CATEGORIES = ["gongsil"]; // 경매공매 숨김 · 자유 글쓰기는 "SNS 글만" 메뉴로 따로 (2026-11-10 사장님: "sns 글만 따로 빼자") // 경매·공매도 웹에 (2026-11-09 사장님: 온비드 물건을 따로 불러오게)
 const WEB_LEAD: Record<string, string> = { auction: "온비드 공매 물건 하나로 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 지역·종류·반값 이하·마감 임박으로 골라 찾습니다.", column: "내가 쓴 공실뉴스 기사 하나로 네이버 블로그·SNS 글·유튜브 대본을 소장님 AI가 씁니다. 글 속 링크는 내 물건접수 홈페이지의 그 기사로 갑니다." };
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
@@ -267,7 +269,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       setPicked(p);
       setTab(t);
       setError("");
-      setResult(null); // 분석·캡처는 [분석·캡처 시작]을 눌렀을 때 (2026-11-09)
+      setResult(null);
+      // 카드에서 눌렀으면 공실 고르기 없이 그 공실 작업 화면을 바로 연다 → 누른 탭 (2026-11-21 사장님: "공실고르기를 하면 안되고 그 공실이 나와야지")
+      // 화면 캡처·분석은 하지 않는다 — 공실 정보·등록 사진만 (사장님: "캡쳐하고 분석부터 하는데 그러지마"), 캡처는 작업 화면 [다시 분석]으로
+      setFromCard(true);
+      setMode("");
+      void analyze(p, false);
     }
   };
   /* 작업해 둔 공실 열기 — 분석·캡처는 다시 하지 않는다 */
@@ -283,7 +290,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     chooseTab("article");
   };
   const openList = () => { setMode("list"); setWorkQ(""); loadWorks(); };
-  const openNew = () => { setMode("new"); setPicked(null); setNoInput(""); setError(""); };
+  const [fromCard, setFromCard] = useState(false); // 카드에서 연 공실 — ① 공실 고르기 칸을 숨긴다
+  const [loadTitle, setLoadTitle] = useState("분석·캡처 중"); // 처음 열 때는 "공실 불러오는 중" (화면 캡처 없음)
+  const openNew = () => { setFromCard(false); setMode("new");setPicked(null); setNoInput(""); setError(""); };
   const cancelPick = () => { setMode(""); setPicked(curPicked); setError(""); };
 
   /* 분석 결과를 화면에 올린다 (써 둔 기사·블로그·SNS 는 채널 탭이 불러온다) */
@@ -318,6 +327,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         if (!saved!.auto || !saved!.picked) { setMode("list"); return; }
         setPicked(saved!.picked);
         if (saved!.tab) setTab(saved!.tab);
+        setFromCard(true); setMode(""); // 불러오는 동안 ① 공실 고르기 칸은 숨긴다 (2026-11-21)
         await analyze(saved!.picked, false); // 화면 캡처 없이 — 캡처는 [↻ 다시 분석]을 누를 때 (2026-11-10)
         return;
       }
@@ -340,6 +350,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const analyze = async (v: VacancyRow | null = picked, shots = true) => {
     const b = bridge();
     if (!b || !v) return;
+    setLoadTitle(shots ? "분석·캡처 중" : "공실 불러오는 중");
     setBusy(true);
     setError("");
     const off = b.vacancy.onProgress(setProgress);
@@ -431,6 +442,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const connectedAi = ai.filter((a) => a.ok);
 
   const navy = theme.darkMode ? "#5b8def" : "#1a3a6b";
+  // 화면 캡처까지 했는지 — 처음엔 공실 정보·등록 사진만 불러오고, 캡처는 [화면 캡처·분석]을 눌렀을 때 (2026-11-21 사장님)
+  const captured = Boolean(result?.media.some((m) => ["proof", "map", "roadview", "capture"].includes(String(m.kind))));
+  const mediaNote = result ? (captured ? `사진·화면 ${result.media.length}장 · 화면 캡처 완료` : `공실 정보 불러옴 · 등록 사진 ${result.media.length}장`) : "";
   const desk = (category === "gongsil" || category === "auction") && Boolean(result) && mode === "";
   // 뉴스칼럼·내 영상 홍보도 작업대 모양일 때는 여백 없이 꽉 채운다 (2026-11-03 사장님: 공실뉴스 디자인으로)
   const [subDesk, setSubDesk] = useState(false);
@@ -475,7 +489,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{picked ? vacancyLabel(picked, result.vacancy.title) : result.vacancy.title}</span>
             </div>
             <div style={{ fontSize: 12.5, color: theme.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
-              {[result.vacancy.title, result.vacancy.priceText].filter(Boolean).join(" · ")}<br />사진 {result.media.length}장 분석·캡처 완료
+              {[result.vacancy.title, result.vacancy.priceText].filter(Boolean).join(" · ")}<br />{mediaNote}
             </div>
           </div>
         </div>
@@ -483,7 +497,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <button onClick={() => chooseTab("source")} style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>📋 분석 내용</button>
           <button onClick={() => void analyze(picked)} disabled={busy} title="같은 공실의 사진·화면을 새로 받습니다"
             style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: 0, background: navy, color: "#fff", fontSize: 12.5, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
-            {busy ? <>분석 중<BusyDots /></> : "↻ 다시 분석"}
+            {busy ? <>분석 중<BusyDots /></> : captured ? "↻ 다시 분석" : "화면 캡처·분석"}
           </button>
           <button onClick={openList} title="다른 공실 고르기" style={{ flex: 1.5, padding: "7px 0", borderRadius: 8, border: `1px solid ${theme.border}`, background: soft, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{category === "auction" ? "다른 물건 고르기" : "다른 공실 고르기"}</button>
         </div>
@@ -496,8 +510,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     <div style={{ background: theme.cardBg, borderRadius: 14, border: `1px solid ${theme.border}`, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderBottom: `1px solid ${theme.border}`, fontSize: 12.5, color: theme.textSecondary, flexWrap: "wrap" }}>
         <span style={{ flex: 1, minWidth: 260 }}>AI가 이 내용만 보고 기사·블로그·SNS를 씁니다. 사진은 끌어서 순서를 바꾸고 빼거나 더할 수 있어요.</span>
-        <span>사진 {result.media.length}장 분석·캡처 완료</span>
-        <button onClick={() => void analyze(picked)} disabled={busy} style={{ border: 0, background: "transparent", color: theme.darkMode ? "#93c5fd" : "#2563eb", fontSize: 12.5, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>{busy ? "분석 중…" : "↻ 다시 분석·캡처"}</button>
+        <span>{mediaNote}</span>
+        <button onClick={() => void analyze(picked)} disabled={busy} style={{ border: 0, background: "transparent", color: theme.darkMode ? "#93c5fd" : "#2563eb", fontSize: 12.5, fontWeight: 800, cursor: busy ? "default" : "pointer" }}>{busy ? "분석 중…" : captured ? "↻ 다시 분석·캡처" : "화면 캡처·분석"}</button>
       </div>
       {/* 고치기 줄 — [✎ 고치기] / 고치는 중이면 [저장] [취소] (2026-11-06) */}
       {canEdit && (
@@ -571,8 +585,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
   return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-      {/* 왼쪽: 작업 메뉴 — 제목·내 AI 연결·카테고리 (메인 메뉴처럼 글자 위주로 얌전하게) */}
-      <aside style={{ width: 210, flexShrink: 0, background: theme.cardBg, borderRight: `1px solid ${theme.border}`, padding: "22px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* 왼쪽: 작업 메뉴 — 제목·내 AI 연결·카테고리 (메인 메뉴처럼 글자 위주로 얌전하게) · 웹은 공실뉴스 하나뿐이라 숨김 (2026-11-21) */}
+      {!(web && WEB_CATEGORIES.length === 1) && <aside style={{ width: 210, flexShrink: 0, background: theme.cardBg, borderRight: `1px solid ${theme.border}`, padding: "22px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
         <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>뉴스·SNS자동화</h2>
           {/* 연결되면 초록, 아니면 회색 — 누르면 [내 AI 연결] 창 */}
           <button onClick={() => bridge()?.openAiConnect()} title="내 AI 연결"
@@ -600,12 +614,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             );
           })}
         </nav>
-      </aside>
+      </aside>}
 
       {/* 오른쪽 — 위 줄(제목 · 이용 횟수 · [파일 ▾]) + 작업 공간 (2026-11-03 사장님: 메뉴는 원래대로 왼쪽에) */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
       <div style={{ height: 56, flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 24px", background: theme.cardBg, borderBottom: `1px solid ${theme.border}` }}>
-        <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: theme.textPrimary, whiteSpace: "nowrap" }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
+        <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: theme.textPrimary, whiteSpace: "nowrap" }}>{web && WEB_CATEGORIES.length === 1 ? "뉴스·SNS자동화" : NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "nowrap" }}>
           {(() => {
@@ -749,7 +763,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         {/* [+ 새로 작성] (또는 처음) — ① 공실 고르기 ② 분석·캡처. 고르면 저절로 시작한다 */}
         {(!result || mode === "new") && mode !== "list" && (<>
-        <div style={card}>
+        {!fromCard && <div style={card}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <div style={{ flex: 1 }}>{stepTitle(1, category === "auction" ? "경매·공매 물건 찾기" : "공실 고르기")}</div>
             {!result && works && works.length > 0 && <button onClick={openList}
@@ -796,11 +810,13 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           )}
           {/* 온비드 물건을 번호 없이 골라 찾기 (2026-11-09) */}
           {category === "auction" && <OnbidPicker theme={theme as unknown as React.ComponentProps<typeof OnbidPicker>["theme"]} onPick={(r) => choose(r as unknown as VacancyRow)} />}
-        </div>
+        </div>}
 
         {/* 2. 분석·캡처 — [분석·캡처 시작]을 눌러야 시작 (2026-11-09 사장님) */}
         <div style={{ ...card, position: "relative", minHeight: busy ? 200 : undefined }}>
-          {busy && <LoadingCover theme={theme} title="분석·캡처 중" detail={progress} />}
+          {busy && <LoadingCover theme={theme} title={loadTitle} detail={progress} />}
+          {fromCard && !busy && <button onClick={() => { setFromCard(false); openList(); }}
+            style={{ float: "right", padding: "7px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>← 목록</button>}
           {stepTitle(2, "공실 분석·캡처")}
           {!picked ? (
             <div style={{ fontSize: 14, color: theme.textSecondary }}>공실을 고르고 [분석·캡처 시작]을 누르세요. 전에 작업한 공실이면 써 둔 글이 바로 열립니다.</div>

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { listMapAgencies, type MapAgency } from "@/app/actions/mapAgencies";
 import { starHtml, useStars } from "./stars";
+import { mapSquareButton, mapSquareSub } from "./mapSquareButton";
 
 const NAVY = "#1e3a6e", NAVY_DARK = "#0f2347";
 const KEY = "gs-agency-layer";
@@ -239,7 +240,12 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
   // 이름표 [상세보기] — 집을 누른 것과 같이 왼쪽에 사무소 화면 (이미 열려 있으면 그대로)
   openAgency.current = (a: MapAgency) => { setPicked(a.id); window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: a })); };
 
-  const button = (
+  // PC 는 지도 오른쪽 네모 [부동산 회원] (2026-11-21 사장님: 직방처럼 심플하게)
+  const button = !mobile ? (
+    <button type="button" onClick={toggle} title="공실뉴스 회원 부동산을 지도 위에 보기" style={mapSquareButton(on, NAVY)}>
+      <span style={{ fontSize: 14 }}>부동산</span><span style={mapSquareSub(on, NAVY)}>{on && !list ? "…" : "회원"}</span>
+    </button>
+  ) : (
     <button type="button" onClick={toggle} title="공실뉴스 회원 부동산을 지도 위에 보기"
       style={mobile
         ? { border: `1.5px solid ${NAVY}`, borderRadius: 999, cursor: "pointer", padding: "6px 12px", fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", background: on ? NAVY : "#fff", color: on ? "#fff" : NAVY, boxShadow: "0 2px 8px rgba(0,0,0,.12)" }

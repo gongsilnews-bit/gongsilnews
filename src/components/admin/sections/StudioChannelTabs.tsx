@@ -53,8 +53,12 @@ const loadAll = (kind: string, free = false): AllOpts => {
   const ALL_KEY = allKey(kind, free);
   const d: AllOpts = free
     ? { article: { on: true, kind: "column", length: "normal" }, blog: { on: true, style: "expert", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false, videoType: "info", tone: "friendly" } }
-    : { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: false } };
-  try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); return v ? { story: v.story, article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } } : d; } catch { return d; }
+    : { article: { on: true, kind: "news", length: "normal" }, blog: { on: true, style: "", length: "normal" }, sns: { on: true, tone: "polite" }, youtube: { on: kind === "gongsil" } };
+  let o = d;
+  try { const v = JSON.parse(localStorage.getItem(ALL_KEY) || "null"); if (v) o = { story: v.story, article: { ...d.article, ...v.article }, blog: { ...d.blog, ...v.blog }, sns: { ...d.sns, ...v.sns }, youtube: { ...d.youtube, ...v.youtube } }; } catch { /* */ }
+  // 공실은 열 때마다 기사부터 6개 모두 켠 채로 시작 — 스타일·분량·문체만 기억 (2026-11-21 사장님: "기사부터 6개 자동으로 작성되게, 기사도 선택하게 처음에")
+  if (kind === "gongsil") o = { ...o, article: { ...o.article, on: true }, blog: { ...o.blog, on: true }, sns: { ...o.sns, on: true, chs: undefined }, youtube: { ...o.youtube, on: true } };
+  return o;
 };
 const bridge = (): Bridge | null => studioBridge<Bridge>();
 /** 어떤 이야기로 — 공실은 매물 이야기, 뉴스칼럼은 단지 중심(기사 흐름 그대로가 기본) (2026-11-09 사장님: 자연스럽게 선택하고 이어지게) */
