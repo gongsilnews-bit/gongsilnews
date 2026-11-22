@@ -157,7 +157,8 @@ export function layLeads(p: Project) {
     gen.push({
       id: "lead-" + c.id, type: "image", lead: c.id, asset: a.id, name: a.name, vs: +((c.visual!.s || 0) - L).toFixed(3), volume: c.visualVolume || 0,
       from: pr.clip.id, to: c.id, ts: +(pr.dur - L).toFixed(3), ...(te !== undefined ? { te } : {}),
-      fit: "cover", x: 0.5, y: 0.5, w: 1, opacity: 1, track: 2, lock: true,
+      // 처음엔 잠그지 않는다 (2026-11-21 사장님) — 회원이 잠갔으면 다시 그려도 그대로
+      fit: "cover", x: 0.5, y: 0.5, w: 1, opacity: 1, track: 2, ...(all.find((l) => l.id === "lead-" + c.id)?.lock ? { lock: true } : {}),
     } as Layer);
   });
   if (gen.length || others.length !== all.length) p.layers = [...gen, ...others];
@@ -185,7 +186,7 @@ export function layRolls(p: Project) {
       gen.push({
         id, type: "image", roll: r.id, asset: pc.asset, name: p.assets[pc.asset]?.name, vs: +pc.vs.toFixed(3), volume: r.volume ?? 0,
         from: a.clip.id, to: b.clip.id, ...(ts > 0.005 ? { ts: +ts.toFixed(3) } : {}), ...(te < b.dur - 0.005 ? { te: +Math.max(0.05, te).toFixed(3) } : {}),
-        fit: "cover", x: 0.5, y: 0.5, w: 1, opacity: 1, track: 2, lock: true, ...(old?.off ? { off: true } : {}),
+        fit: "cover", x: 0.5, y: 0.5, w: 1, opacity: 1, track: 2, ...(old?.lock ? { lock: true } : {}), ...(old?.off ? { off: true } : {}), // 처음엔 잠그지 않는다 (2026-11-21 사장님)
       } as Layer);
     });
     return true;

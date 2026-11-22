@@ -214,8 +214,9 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
         const list = [...c.list].sort((p, q) => String(q.published_at || q.created_at || "").localeCompare(String(p.published_at || p.created_at || "")));
         // 모바일 — 공실 동그라미를 누르면 "공실광고 N개" 화면이 뜨듯이 "뉴스 N개" 목록 화면 (2026-11-11 사장님)
         if (mobile) { openMobileList(list); return; }
-        if (popup.current && popupKey.current === key) { closePopup(); return; } // 또 누르면 닫기
-        openPopup(list, pos);
+        // 2026-11-21 사장님: 지도 위 말풍선 목록은 없애고 왼쪽 목록만 — 같은 동그라미를 또 누르면 고른 것을 푼다
+        if (popupKey.current === key) { popupKey.current = ""; window.dispatchEvent(new CustomEvent("gs-news-select", { detail: null })); return; }
+        closePopup(true);
         popupKey.current = key;
         // 왼쪽 목록에 이 동그라미 기사들 (11-04 사장님: 동그라미를 누르면 좌측 기사 목록에)
         window.dispatchEvent(new CustomEvent("gs-news-select", { detail: list }));
@@ -286,7 +287,7 @@ export default function NewsLayer({ kakaoMapRef, mapLoaded, buttonSlot, category
       const id = String((e as CustomEvent).detail || "");
       const a = arts?.find((x) => x.id === id);
       const kakao = (window as any).kakao;
-      if (a && kakao?.maps) openPopup([a], new kakao.maps.LatLng(a.lat, a.lng));
+      void a; void kakao; // 지도 말풍선은 띄우지 않는다 (2026-11-21) — 옆에 기사 창만
       setReading(readingRef.current === id ? null : id || null);
     };
     window.addEventListener("gs-news-open", pick);
