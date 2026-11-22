@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVacancyDetail } from "@/app/actions/vacancy";
 import { canSendBlog, getExtensionMember } from "@/utils/extensionMember";
-import { getHomepageBase } from "@/app/actions/homepage";
+import { vacancyListing } from "@/utils/vacancyListing";
 
 /**
  * 크롬 확장 블로그 작성용 매물 출처 정보
@@ -43,49 +42,22 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const res = await getVacancyDetail(id);
-  if (!res.success || !res.data) {
+  // 출처 계산은 utils/vacancyListing (앱 SNS 올리기와 같이 씀, 2026-11-22)
+  const l = await vacancyListing(id, requester?.id);
+  if (!l) {
     return NextResponse.json({ success: false, error: "매물을 찾을 수 없습니다." }, { status: 404, headers: corsHeaders });
   }
-
-  const v: any = res.data;
-  const member = v.members || {};
-  const agency = (Array.isArray(member.agencies) ? member.agencies[0] : member.agencies) || null;
-  const isAgency = Boolean(agency) && (member.role === "REALTOR" || v.owner_role === "REALTOR" || Boolean(agency.registration_no || agency.reg_num));
-
-  const clean = (value: unknown) => String(value ?? "").trim();
-  // 내 홈페이지를 쓸 수 있는 회원(Pro · Studio)이면 글 링크·소개를 홈페이지로 (2026-10-29 사장님). 무료 회원은 "" — 글에 언급하지 않는다
-  const homepage = isAgency ? await getHomepageBase(String(v.owner_id || "")).catch(() => "") : "";
-  const phones = agency ? [agency.phone, agency.cell !== agency.phone ? agency.cell : ""].filter(Boolean) : [];
-  const owner = isAgency
-    ? {
-        type: "agency",
-        name: clean(agency.agency_name || agency.name),
-        ceo: clean(agency.ceo_name),
-        regNo: clean(agency.registration_no || agency.reg_num),
-        address: [agency.address, agency.address_detail].map(clean).filter(Boolean).join(" "),
-        phone: phones.map(clean).join(", "),
-        homepage,
-        vacancyNo: v.vacancy_no || null,
-      }
-    : {
-        // 임대인이 본인 이름·본인 전화로 직접 내놓은 매물 (2026-10-29 사장님) — 전화는 본인이 쓰는 글일 때만
-        type: "general",
-        name: clean(member.name || v.client_name),
-        phone: requester?.id && requester.id === v.owner_id ? clean(member.phone) : "",
-        vacancyNo: v.vacancy_no || null,
-      };
 
   return NextResponse.json(
     {
       success: true,
-      id: v.id,
-      vacancyNo: v.vacancy_no || null,
-      detailPath: `/gongsil/detail/${v.id}`,
-      location: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" "),
-      propertyType: [v.property_type, v.sub_category].filter(Boolean).join(" · "),
-      tradeType: v.trade_type || "",
-      owner,
+      id: l.id,
+      vacancyNo: l.vacancyNo,
+      detailPath: l.detailPath,
+      location: l.location,
+      propertyType: l.propertyType,
+      tradeType: l.tradeType,
+      owner: l.owner,
     },
     { headers: { ...corsHeaders, "Cache-Control": "no-store" } }
   );
