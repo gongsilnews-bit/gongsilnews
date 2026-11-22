@@ -7,6 +7,7 @@ import { db, UNITS_FIXED_AT, withAgent } from "@/utils/aptMap";
 import { LAWD_NAMES, type Trade } from "@/utils/aptMapShared";
 import { storedRegionAgg, type AggLevel, type AptKind } from "@/utils/aptRegionAgg";
 import { complexLotKey, ensureLots } from "@/utils/articleLot";
+import { fillAround, fillLots, lotKeysOf } from "@/utils/complexLots";
 import { agenciesOf } from "@/utils/complexAgencies";
 
 // 지역 평균(?agg)을 처음 만들 때 빌라는 20초 넘게 걸린다
@@ -30,8 +31,9 @@ async function listingsOf(supabase: ReturnType<typeof db>, id: string) {
 const NEWS_COLS = "id, article_no, title, subtitle, section1, section2, location_name, published_at, created_at, author_name, thumbnail_url, lat, lng";
 const noLotColumn = (e: { message?: string } | null) => !!e && /loc_lot/.test(e.message || "");
 async function newsOf(supabase: ReturnType<typeof db>, c: { id: string; name: string; lat: number | null; lng: number | null }) {
-  const key = complexLotKey(c.id);
-  if (!c.lat || !c.lng || !key) return [];
+  if (!c.lat || !c.lng || !complexLotKey(c.id)) return [];
+  // 단지 번지 목록 — 대표 번지 + 딸린 번지 (2026-11-22 사장님: 큰 단지는 번지 여러 개를 한 단지로)
+  const mine = (await lotKeysOf(supabase, [c])).get(c.id) || new Set<string>();
   const d = 0.003; // 둘레 약 300m 안 기사만 번지를 견준다 (한 필지가 아무리 커도 이 안)
   const { data, error } = await supabase.from("articles").select(`${NEWS_COLS}, loc_lot`)
     .eq("status", "APPROVED").eq("is_deleted", false).lte("published_at", new Date().toISOString())
@@ -39,7 +41,7 @@ async function newsOf(supabase: ReturnType<typeof db>, c: { id: string; name: st
   if (noLotColumn(error)) return newsOfOld(supabase, c);
   const arts = (data || []) as unknown as { id: string; lat: number; lng: number; loc_lot: string | null; published_at?: string; created_at?: string }[];
   const keys = await ensureLots(supabase as never, arts);
-  return arts.filter((a) => keys.get(a.id) === key)
+  return arts.filter((a) => mine.has(keys.get(a.id) || ""))
     .map(({ loc_lot: _l, ...a }) => a)
     .sort((p, q) => String(q.published_at || q.created_at || "").localeCompare(String(p.published_at || p.created_at || "")));
 }
@@ -58,7 +60,19 @@ async function countNews(supabase: ReturnType<typeof db>, list: { id: string; na
   const keys = await ensureLots(supabase as never, arts);
   const per = new Map<string, number>();
   for (const k of keys.values()) per.set(k, (per.get(k) || 0) + 1);
-  for (const c of list) { const k = per.get(complexLotKey(c.id)); if (k) c.news = k; }
+  // 단지마다 대표 번지 + 딸린 번지의 기사 수를 더한다 (2026-11-22). 딸린 번지는 화면 안 기사 번지에 해당하는 것만 묻는다
+  const reps = new Set(list.map((c) => complexLotKey(c.id)));
+  const extra = [...per.keys()].filter((k) => !reps.has(k));
+  const lots = await lotKeysOf(supabase, list, extra);
+  const used = new Set<string>();
+  for (const c of list) {
+    let k = 0;
+    for (const key of lots.get(c.id) || []) { k += per.get(key) || 0; if (per.has(key)) used.add(key); }
+    if (k) c.news = k;
+  }
+  // 어느 단지 번지에도 안 맞은 기사 — 둘레 단지의 딸린 번지를 응답 뒤에 받아 둔다 (단지마다 한 번만, 다음부터 맞음)
+  const loose = arts.filter((a) => { const k = keys.get(a.id); return k && !used.has(k); }).slice(0, 3);
+  if (loose.length) after(async () => { for (const a of loose) await fillAround(supabase, a.lat, a.lng, ["apt", "offi"], undefined, 3).catch(() => {}); });
 }
 
 /** (예전) 이 단지 뉴스 — 단지에서 50m 안에 찍힌 기사 + 근처(약 2km)에서 제목에 단지 이름이 든 기사 (2026-11-04 사장님: 단지 창 [뉴스 N])
@@ -144,6 +158,11 @@ export async function GET(req: NextRequest) {
       resetHubLimited();
       const got = await Promise.race([fillInfo(data as never).catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 8000))]);
       if (got) (data as { info: unknown }).info = got;
+    }
+    // 이 단지의 딸린 번지를 아직 안 받았으면 지금 (단지마다 한 번, 최대 4초) — [뉴스 N]이 큰 단지의 다른 번지 기사까지 (2026-11-22)
+    if (data.kind === "apt" || data.kind === "offi") {
+      const { data: lt, error: ltErr } = await supabase.from("apt_complexes").select("lots_tried_at").eq("id", data.id).maybeSingle();
+      if (!ltErr && lt && !lt.lots_tried_at) await Promise.race([fillLots(supabase, data as never).catch(() => true), new Promise((r) => setTimeout(r, 4000))]);
     }
     // 부동산이 보완한 값이 공공 자료보다 우선 — 어느 칸이 부동산 값인지도 함께 (화면에 "공인중개사 제공")
     const { agent_supply: agentSupply, agent_info: agentInfo, supply_tried_at: unitsAt, info_tried_at: _infoAt, bcode: _bcode, ...rest } = data;

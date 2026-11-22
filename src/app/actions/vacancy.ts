@@ -181,6 +181,8 @@ export async function createVacancy(data: {
       .single();
 
     if (error) return { success: false, error: error.message };
+    // 아파트·오피스텔 공실은 주소(번지)로 단지를 정해 둔다 — 앱·웹 등록 모두 여기를 지난다 (2026-11-22, utils/complexLots.ts)
+    await import("@/utils/complexLots").then((m) => m.linkVacancyComplex(supabase, String(result.id))).catch(() => {});
     clearServerMapCache();
 
     // 회원이 올린 공실은 최고관리자가 확인해야 하므로 알림을 남긴다
@@ -772,6 +774,10 @@ export async function updateVacancy(vacancyId: string, updates: Record<string, a
       .eq('id', vacancyId);
 
     if (error) return { success: false, error: error.message };
+    // 자리·종류가 바뀌었으면 단지를 다시 정한다 (2026-11-22)
+    if (['lat', 'lng', 'property_type', 'sub_category', 'trade_type', 'complex_id'].some((k) => k in (updates || {}))) {
+      await import("@/utils/complexLots").then((m) => m.linkVacancyComplex(supabase, vacancyId)).catch(() => {});
+    }
     clearServerMapCache();
     return { success: true };
   } catch (error: any) {

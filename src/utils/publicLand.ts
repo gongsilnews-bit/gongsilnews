@@ -59,13 +59,46 @@ export let hubLimited = false;
 export const resetHubLimited = () => { hubLimited = false; };
 
 /** 건축HUB 한 창구 호출 (지번 기준) */
-async function hub(service: string, op: string, p: Parcel, rows = 100) {
+async function hubJson(service: string, op: string, p: Parcel, rows = 100, page = 1) {
   const key = process.env.DATA_GO_KR_API_KEY;
   if (!key) throw new Error("공공데이터포털 키(DATA_GO_KR_API_KEY)가 서버에 없어요.");
-  const url = `https://apis.data.go.kr/1613000/${service}/${op}?serviceKey=${key}&sigunguCd=${p.sigungu}&bjdongCd=${p.bjdong}&platGbCd=${p.mountain ? 1 : 0}&bun=${p.bun}&ji=${p.ji}&numOfRows=${rows}&pageNo=1&_type=json`;
+  const url = `https://apis.data.go.kr/1613000/${service}/${op}?serviceKey=${key}&sigunguCd=${p.sigungu}&bjdongCd=${p.bjdong}&platGbCd=${p.mountain ? 1 : 0}&bun=${p.bun}&ji=${p.ji}&numOfRows=${rows}&pageNo=${page}&_type=json`;
   const text = await fetch(url).then((r) => r.text());
   if (/LIMITED_NUMBER_OF_SERVICE_REQUESTS|SERVICE_KEY_IS_NOT_REGISTERED|<returnReasonCode>22</.test(text)) { hubLimited = true; throw new Error("공공데이터포털 하루 한도"); }
-  return itemsOf(JSON.parse(text));
+  return JSON.parse(text);
+}
+async function hub(service: string, op: string, p: Parcel, rows = 100) {
+  return itemsOf(await hubJson(service, op, p, rows));
+}
+
+/** 건축물대장 부속지번 — 이 번지(대표 번지)에 딸린 다른 번지들 (2026-11-22 사장님: 큰 단지는 번지 여러 개를 한 단지로)
+ *  예: 압구정동 481(현대아파트) → 481-1, 482. 같은 법정동이 아닌 번지는 뺀다. 호출이 실패하면 throw (빈 목록과 구별) */
+export async function attachedLotsAt(p: Parcel): Promise<{ mountain: boolean; bun: number; ji: number }[]> {
+  // 이 창구는 자주 "연결 실패"·빈 응답을 준다 (2026-11-22 시험: 넷 중 하나) — 쪽마다 세 번까지 다시, 그래도 안 되면 throw
+  const rows: Record<string, unknown>[] = [];
+  for (let page = 1; page <= 20; page++) {
+    let got: { items: Record<string, unknown>[]; total: number } | null = null;
+    for (let t = 0; t < 3 && !got; t++) {
+      try {
+        const j = await hubJson("BldRgstHubService", "getBrAtchJibunInfo", p, 100, page);
+        if (j?.response?.header?.resultCode !== "00") continue;
+        got = { items: itemsOf(j), total: Number(j.response.body?.totalCount) || 0 };
+      } catch (e) { if (hubLimited) throw e; }
+    }
+    if (!got) throw new Error("건축물대장 부속지번 응답 없음");
+    rows.push(...got.items);
+    if (got.items.length < 100 || rows.length >= got.total) break;
+  }
+  const seen = new Set<string>();
+  const out: { mountain: boolean; bun: number; ji: number }[] = [];
+  for (const r of rows) {
+    if (s(r.atchSigunguCd) !== p.sigungu || s(r.atchBjdongCd) !== p.bjdong) continue;
+    const bun = Number(r.atchBun), ji = Number(r.atchJi) || 0, mountain = s(r.atchPlatGbCd) === "1";
+    if (!bun) continue;
+    const k = `${mountain}:${bun}:${ji}`;
+    if (!seen.has(k)) { seen.add(k); out.push({ mountain, bun, ji }); }
+  }
+  return out;
 }
 
 /** 건축물대장 표제부 — 주건축물 먼저 */
