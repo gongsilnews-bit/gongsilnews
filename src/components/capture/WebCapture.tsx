@@ -13,6 +13,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { allowFolder, folderState, pickFolder, saveToFolder } from "@/components/admin/studio-web/folder";
+import { helper } from "@/components/admin/studio-web/core";
+import { askCapture } from "@/components/admin/writing/realScreenShot";
 
 const FONT = '"Pretendard", "Malgun Gothic", sans-serif';
 const BAR_BG = "rgba(17, 20, 28, 0.95)";
@@ -301,18 +303,39 @@ export default function WebCapture({ launcherStyle, noLauncher }: { launcherStyl
   useEffect(() => { setUi(true); }, []);
   const stopRec = () => recRef.current?.stop();
 
+  // 도우미(크롬 확장 4.1.3+)가 있으면 크롬이 "이 탭을 보도록 허용?"을 묻지 않고 찍는다 (2026-11-23 사장님: "무조건 허용")
+  //  사이트만으로는 그 창을 없앨 수 없어(크롬 규칙) 도우미가 없을 때만 예전처럼 탭 공유. 한 번 물어본 결과는 이 화면 동안 기억
+  const helperOk = useRef<boolean | null>(null);
+  const helperReady = async () => {
+    if (helperOk.current === null) { const r = await helper({ op: "ping" }, 800); helperOk.current = Boolean(r?.ok); }
+    return helperOk.current;
+  };
+  const helperImage = async (): Promise<HTMLImageElement | null> => {
+    const r = await askCapture();
+    if (!r?.ok || !r.dataUrl) { helperOk.current = false; return null; } // 예전 판 도우미 등 — 다음부터 탭 공유로
+    const img = new Image();
+    img.src = r.dataUrl;
+    try { await img.decode(); return img; } catch { return null; }
+  };
   const grab = async (rect?: { x: number; y: number; w: number; h: number }) => {
-    if (!(await ensureStream())) return;
+    const viaHelper = await helperReady();
+    if (!viaHelper && !(await ensureStream())) return;
     if (txt) commitTxt();
     setHide(true);
     await nextFrame(); await new Promise((r) => setTimeout(r, 200)); // 막대·알림이 사라진 화면이 공유에 들어올 때까지
-    const v = videoRef.current!, vw = v.videoWidth, vh = v.videoHeight;
+    let src: CanvasImageSource | null = viaHelper ? await helperImage() : null;
+    let vw = src ? (src as HTMLImageElement).naturalWidth : 0, vh = src ? (src as HTMLImageElement).naturalHeight : 0;
+    if (!src) {
+      if (!(await ensureStream())) { setHide(false); return; }
+      const v = videoRef.current!;
+      src = v; vw = v.videoWidth; vh = v.videoHeight;
+    }
     if (!vw || !vh) { setHide(false); setErr("화면을 읽지 못했어요. 다시 눌러 주세요."); return; }
     const sx = vw / window.innerWidth, sy = vh / window.innerHeight;
     const r = rect || { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(r.w * sx)); c.height = Math.max(1, Math.round(r.h * sy));
-    c.getContext("2d")!.drawImage(v, r.x * sx, r.y * sy, r.w * sx, r.h * sy, 0, 0, c.width, c.height);
+    c.getContext("2d")!.drawImage(src, r.x * sx, r.y * sy, r.w * sx, r.h * sy, 0, 0, c.width, c.height);
     setHide(false);
     const blob: Blob = await new Promise((res) => c.toBlob((b) => res(b!), "image/png"));
     const name = `화면캡쳐_${stamp()}.png`;
@@ -397,7 +420,8 @@ export default function WebCapture({ launcherStyle, noLauncher }: { launcherStyl
     <>
       <style>{`.gwc-b:hover{background:rgba(255,255,255,0.10)!important}.gwc-stop:hover{background:#b91c1c!important}.gwc-dot{animation:gwcBlink 1s infinite}@keyframes gwcBlink{50%{opacity:.25}}`}</style>
       {!open && !noLauncher && (
-        <button type="button" data-gs-cap-launcher onClick={() => setOpen(true)} title="화면캡처 · 판서 — 지금 보이는 화면을 찍어 클립보드·폴더에"
+        // 누르면 막대가 열리면서 바로 [캡처 › 영역] 고르기 (2026-11-23 사장님: 누르면 영역 지정으로 바로 캡처되게) — Esc 면 막대만 남는다
+        <button type="button" data-gs-cap-launcher onClick={() => { setOpen(true); setInk({ drawing: false }); setSelFor("shot"); setArea(true); }} title="화면캡처 — 찍을 곳을 마우스로 끌어 고르면 클립보드·폴더에"
           style={{ position: "fixed", right: 16, top: 232, zIndex: 900, height: 38, padding: "0 13px", borderRadius: 19, border: BORDER, background: BAR_BG, color: "#e5e7eb", fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: "pointer", boxShadow: SHADOW, display: "flex", alignItems: "center", gap: 6, ...launcherStyle }}>
           <Svg k="area" size={17} />화면캡처
         </button>

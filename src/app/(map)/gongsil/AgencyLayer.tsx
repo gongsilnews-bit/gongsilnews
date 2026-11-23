@@ -27,7 +27,9 @@ const badge = (name: string, mode: "normal" | "hover" | "picked", count = 1, pro
   // 작은 핀 — 한 자리에 여러 사무소면 오른쪽 위에 작은 개수
   const cnt = count > 1 ? `<span style="position:absolute;top:-7px;right:-8px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid ${bg};color:${bg};font-size:10px;font-weight:900;line-height:13px;text-align:center">${count}</span>` : "";
   const pinTail = `<div style="position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid ${bg}"></div>`;
-  const pin = `<div style="position:relative;width:22px;height:22px;box-sizing:border-box;border-radius:50%;background:${bg};border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(15,35,71,.35)">${house("#fff", 12)}${cnt}${pinTail}</div>`;
+  // 마우스를 올리면 핀만 살짝 떠오르며 커진다 (11-23 사장님: 롤오버하면 살짝 움직이게) — 상자 글씨는 그대로
+  const lift = mode === "hover" ? "animation:agPinUp .16s ease-out forwards;transform-origin:50% 100%;" : "";
+  const pin = `<style>@keyframes agPinUp{to{transform:translateY(-3px) scale(1.15)}}</style><div style="${lift}position:relative;width:22px;height:22px;box-sizing:border-box;border-radius:50%;background:${bg};border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(15,35,71,.35)">${house("#fff", 12)}${cnt}${pinTail}</div>`;
   if (mode === "normal") return pin;
   // 마우스를 올리거나 고르면 — 핀은 그 자리에 두고 위로 흰 상자 (11-23 사장님: 옆이 아니라 위로, 단지 정보 상자처럼)
   const border = mode === "picked" ? `2px solid ${NAVY_DARK}` : "1px solid #d6d9de";
@@ -187,6 +189,7 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
       const key = g.length > 1 ? `g:${g.map((x) => x.id).sort().join(",")}` : a.id;
       const el = document.createElement("div");
       el.style.cssText = "cursor:pointer;line-height:1.2;font-family:'Pretendard',inherit";
+      el.dataset.agPin = "1";
       el.dataset.name = a.name;
       el.dataset.count = String(g.length);
       el.dataset.pro = a.pro ? "1" : "";
@@ -227,10 +230,19 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
   // 지도 빈 곳 · 지도 끌기 · 공실·뉴스 누르기 → 이름표 닫기 (고른 사무소 화면은 각자 규칙대로)
   useEffect(() => {
     const kakao = (window as any).kakao, map = kakaoMapRef.current;
-    const shut = () => hideTip();
+    // 다른 것을 누르거나 지도를 움직이면 고른 부동산 이름 상자도 내린다 (11-23 사장님 — 묶음 "외 1"은 사무소 카드가 없어 남던 것)
+    const shut = () => { hideTip(); setPicked(null); };
+    // 지도 안에서 부동산 핀이 아닌 곳(공실·시세·뉴스 표시, 빈 곳 무엇이든)을 누르면 내린다 — 표시마다 알림이 달라 한 곳에서 (PC)
+    const downAnywhere = (ev: PointerEvent) => {
+      const t = ev.target as Element | null;
+      if (!pickedRef.current || !t?.closest?.("[data-gs-map]") || t.closest("[data-ag-pin]")) return;
+      setPicked(null);
+    };
+    document.addEventListener("pointerdown", downAnywhere, true);
     ["gs-map-moved", "gs-vacancy-pick", "gs-news-select"].forEach((t) => window.addEventListener(t, shut));
     if (map && kakao?.maps) kakao.maps.event.addListener(map, "click", shut);
     return () => {
+      document.removeEventListener("pointerdown", downAnywhere, true);
       ["gs-map-moved", "gs-vacancy-pick", "gs-news-select"].forEach((t) => window.removeEventListener(t, shut));
       if (map && kakao?.maps) kakao.maps.event.removeListener(map, "click", shut);
     };

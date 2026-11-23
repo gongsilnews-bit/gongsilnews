@@ -836,7 +836,7 @@ export default function KakaoMapView({
         afterLocation={<span ref={setPriceButtonSlot} style={{ display: "inline-flex", gap: 6 }} />}
       />
 
-      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
+      <div ref={mapRef} data-gs-map="" style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
         {mapError && (
           <div
             style={{

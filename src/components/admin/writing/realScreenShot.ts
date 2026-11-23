@@ -19,7 +19,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** 도우미에 "이 탭 찍기" — 도우미가 둘 깔려 있으면(웹스토어 예전 판 + 새 판) 둘 다 대답한다.
  *  예전 판은 찍기를 몰라 곧바로 실패로 답하므로, 실패가 먼저 와도 2.5초 더 기다려 성공한 답을 쓴다 */
-function askCapture(): Promise<{ ok?: boolean; dataUrl?: string; error?: string } | null> {
+export function askCapture(): Promise<{ ok?: boolean; dataUrl?: string; error?: string } | null> {
   return new Promise((resolve) => {
     const id = `${Date.now()}-${Math.random()}`;
     let fail: { ok?: boolean; error?: string } | null = null;
