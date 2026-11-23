@@ -685,6 +685,21 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
   const [mode, setMode] = useState<Mode>("sale");
   const [label, setLabel] = useState(defaultGroup);
   const [sheet, setSheet] = useState(false);
+  // 평형 고르기 창 자리 — [전용 ▾] 단추 바로 아래에 붙여 연다 (2026-11-23 사장님: 위로 깨져 보임)
+  const areaBtn = useRef<HTMLButtonElement>(null);
+  const [sheetAt, setSheetAt] = useState<{ top: number; left: number; width: number; maxH: number } | null>(null);
+  const openSheet = () => {
+    const b = areaBtn.current, panel = b?.closest("[data-gs-apt-panel]") as HTMLElement | null;
+    const box = b?.closest("[data-apt-scroll]") as HTMLElement | null;
+    if (!b || !panel || !box) { setSheetAt(null); setSheet(true); return; }
+    // 아래 자리가 좁으면 단추를 창 위쪽으로 올린 뒤 연다
+    let r = b.getBoundingClientRect();
+    const boxTop = box.getBoundingClientRect().top;
+    if (window.innerHeight - r.bottom < 360) { box.scrollTop += r.top - boxTop - 12; r = b.getBoundingClientRect(); }
+    const p = panel.getBoundingClientRect();
+    setSheetAt({ top: r.bottom + 6, left: p.left, width: p.width, maxH: Math.max(220, Math.min(p.bottom, window.innerHeight) - r.bottom - 14) });
+    setSheet(true);
+  };
   // 모바일 뒤로가기 = 단지 창만 닫기 (2026-11-03 사장님: 뉴스 메인으로 넘어가지 않게) — 열 때 기록 한 칸, 닫을 때 그 칸을 되돌린다
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -785,7 +800,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
         </div>
       )}
 
-      <div style={flat ? {} : { flex: 1, overflowY: "auto" }}>
+      <div data-apt-scroll="" style={flat ? {} : { flex: 1, overflowY: "auto" }}>
         {/* 맨 위 로드뷰 — 직방 사진 자리 (2026-11-18 사장님, 앱과 같게) */}
         {!flat && (
           <HeroRoadview lat={Number.isFinite(detail.lat) ? detail.lat : NaN} lng={detail.lng} title={detail.name} sub={address}
@@ -822,7 +837,7 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
               ))}
             </div>
             <div style={{ flex: 1 }} />
-            <button onClick={() => setSheet(true)} style={{ border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, borderRadius: 6, padding: "6px 12px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>{g?.label} ▾</button>
+            <button ref={areaBtn} onClick={openSheet} style={{ border: `1.5px solid ${ACC}`, background: "#fff", color: ACC, borderRadius: 6, padding: "6px 12px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>{g?.label} ▾</button>
           </div>
           <div style={{ padding: "16px 20px 4px", display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ flex: 1, color: ACC, fontWeight: 600 }}>최근 실거래 기준 {avgMonths === 12 ? "1년" : `${avgMonths}개월`} 평균{leaseTag}</span>
@@ -971,8 +986,14 @@ export default function AptDetailPanel({ detail, onClose, vacancyCount = 0, onSh
 
       {/* 평형 고르기 — 머리 바로 아래로 펼친다 (2026-11-02 사장님: 아래에서 올라오는 창 말고) */}
       {sheet && (
-        <div onClick={() => setSheet(false)} style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: flat ? headH : 0, background: "rgba(0,0,0,.25)", zIndex: 2 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", width: "100%", maxHeight: "70%", overflowY: "auto", boxShadow: "0 8px 20px rgba(0,0,0,.18)", borderRadius: "0 0 14px 14px" }}>
+        <div onClick={() => setSheet(false)} onWheel={() => setSheet(false)}
+          style={sheetAt && !flat
+            ? { position: "fixed", inset: 0, background: "transparent", zIndex: 20 }
+            : { position: "absolute", left: 0, right: 0, bottom: 0, top: flat ? headH : 0, background: "rgba(0,0,0,.25)", zIndex: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}
+            style={sheetAt && !flat
+              ? { position: "fixed", top: sheetAt.top, left: sheetAt.left + 10, width: sheetAt.width - 20, maxHeight: sheetAt.maxH, overflowY: "auto", background: "#fff", border: `1px solid ${LINE}`, borderRadius: 12, boxShadow: "0 12px 28px rgba(0,0,0,.18)" }
+              : { background: "#fff", width: "100%", maxHeight: "70%", overflowY: "auto", boxShadow: "0 8px 20px rgba(0,0,0,.18)", borderRadius: "0 0 14px 14px" }}>
             {groups.map((x) => {
               const lastSale = x.sales[0], lastJeonse = x.rents.find((r) => !r.m), lastAny = x.rents[0];
               const on = x.label === g?.label;
