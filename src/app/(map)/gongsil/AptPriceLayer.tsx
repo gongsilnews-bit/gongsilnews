@@ -305,13 +305,21 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
     })();
   }, [mapLoaded, on, mobile, openDetail, kakaoMapRef, aptReq]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 검색 핀 — 다른 단지 창을 열면 핀도 없앤다 (검색한 그 단지 창이면 그대로)
+  const pinCx = useRef<string | null>(null);
+  const pinRemove = useRef<() => void>(() => {});
+  useEffect(() => { if (detail?.id && pinCx.current && detail.id !== pinCx.current) pinRemove.current(); }, [detail?.id]);
   // 지도 주소 검색으로 고른 자리 — 남색 주소 말풍선 + 퍼지는 점, 그 번지 단지가 있으면 단지 창 (2026-11-05 사장님)
   // 다른 곳을 검색하거나 지도를 누르면 핀은 없어진다
   useEffect(() => {
     if (!mapLoaded) return;
     const kakao = (window as any).kakao;
     let pin: any = null;
-    const removePin = () => { if (pin) { pin.setMap(null); pin = null; } };
+    const removePin = () => { if (pin) { pin.setMap(null); pin = null; } pinCx.current = null; };
+    pinRemove.current = removePin;
+    // 지도를 끌거나 다른 공실·뉴스·부동산을 고르면 검색 핀도 없앤다 (2026-11-23 사장님)
+    const PIN_OFF = ["gs-map-moved", "gs-vacancy-pick", "gs-news-select", "gs-agency-open", "gs-agency-group"];
+    PIN_OFF.forEach((t) => window.addEventListener(t, removePin));
     if (!document.getElementById("gs-map-pin-style")) {
       const st = document.createElement("style");
       st.id = "gs-map-pin-style";
@@ -340,6 +348,7 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
       const r = await fetch(`/api/apt-prices?${q}`).then((x) => x.json()).catch(() => null);
       const c = r?.success ? r.complex : null;
       if (!c?.id) return;
+      pinCx.current = c.id;
       const k = c.kind === "offi" ? "offi" : c.kind === "villa" ? "villa" : "apt";
       setShow((s) => (s[k] ? s : { ...s, [k]: true }));
       if (pickedRef.current !== c.id) void openDetail(c.id);
@@ -350,6 +359,7 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
     attachClick();
     return () => {
       window.removeEventListener("gs-map-pin", onPin);
+      PIN_OFF.forEach((t) => window.removeEventListener(t, removePin));
       if (map && kakao?.maps) kakao.maps.event.removeListener(map, "click", removePin);
       removePin();
     };

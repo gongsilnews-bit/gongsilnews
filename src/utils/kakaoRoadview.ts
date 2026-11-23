@@ -52,6 +52,27 @@ type SearchPoint = {
 
 const activeMounts = new WeakMap<HTMLDivElement, symbol>();
 
+/* 깨진 로드뷰 기억 (2026-11-23 대우디오빌플러스: 단지 앞 로드뷰 1212106627 은 카카오에서 끝내 안 뜬다 → 매번 4.5초 기다림)
+   "앞 것은 안 뜨고 옆 것은 떴을 때"만 깨진 것으로 기억한다 — 인터넷이 느려 늦은 것은 기억하지 않는다. 이 브라우저에 2주 */
+const BROKEN_KEY = "gs-roadview-broken-v2";
+const BROKEN_MS = 14 * 86400000;
+function brokenPanos(): Set<number> {
+  try {
+    localStorage.removeItem("gs-roadview-broken"); // 11-23 시험 때 잘못 쌓인 옛 목록
+    const raw = JSON.parse(localStorage.getItem(BROKEN_KEY) || "{}") as Record<string, number>;
+    const now = Date.now();
+    return new Set(Object.entries(raw).filter(([, at]) => now - at < BROKEN_MS).map(([k]) => Number(k)));
+  } catch { return new Set(); }
+}
+function rememberBroken(ids: number[]) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BROKEN_KEY) || "{}") as Record<string, number>;
+    for (const id of ids) raw[String(id)] = Date.now();
+    const keep = Object.entries(raw).sort((a, b) => b[1] - a[1]).slice(0, 500);
+    localStorage.setItem(BROKEN_KEY, JSON.stringify(Object.fromEntries(keep)));
+  } catch { /* 저장 못 해도 이번엔 넘어간다 */ }
+}
+
 function setStatusMessage(
   container: HTMLDivElement,
   message: string,
@@ -254,6 +275,8 @@ export function mountKakaoRoadview({
     const client = new kakao.maps.RoadviewClient();
     const searchPoints = buildSearchPoints(lat, lng);
     const attemptedPanoIds = new Set<number>();
+    const failedPanoIds: number[] = [];
+    const broken = brokenPanos();
     let attemptedCount = 0;
 
     for (const point of searchPoints) {
@@ -262,19 +285,23 @@ export function mountKakaoRoadview({
 
       const candidate = await findNearestPano(kakao, client, point, isCancelled);
       if (!candidate || attemptedPanoIds.has(candidate.panoId)) continue;
-
       attemptedPanoIds.add(candidate.panoId);
+      if (broken.has(candidate.panoId)) continue; // 전에 깨진 것으로 확인된 로드뷰 — 기다리지 않고 다음
+
       attemptedCount += 1;
       const loaded = await tryCandidate(candidate);
       if (isCancelled()) return;
 
       if (loaded) {
+        // 옆 로드뷰는 떴는데 앞 것은 끝내 안 떴다 = 인터넷 탓이 아니라 그 로드뷰가 깨진 것 → 기억해 두고 다음엔 건너뛴다
+        if (failedPanoIds.length) rememberBroken(failedPanoIds);
         container.dataset.roadviewStatus = "ready";
         container.dataset.roadviewPanoId = String(candidate.panoId);
         container.dataset.roadviewFallback = attemptedCount > 1 ? "true" : "false";
         return;
       }
 
+      failedPanoIds.push(candidate.panoId);
       container.dataset.roadviewStatus = "retrying";
       setStatusMessage(
         container,
