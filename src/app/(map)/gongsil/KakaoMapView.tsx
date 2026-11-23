@@ -281,6 +281,7 @@ export default function KakaoMapView({
 
     kakao.maps.event.addListener(map, "zoom_changed", () => {
       setSelectedClusterIds(null);
+      setSelectedRegion(null); // 휠·+−로 움직여도 위 동네 고정은 풀고 지도 화면 공실로 (끌 때만 풀리던 것, 11-23)
       const currentLevel = map.getLevel();
       setZoomLevel(currentLevel);
     });
@@ -587,6 +588,7 @@ export default function KakaoMapView({
     });
 
     kakao.maps.event.addListener(clustererRef.current, "clusterclick", (cluster: any) => {
+      window.dispatchEvent(new CustomEvent("gs-vacancy-pick")); // 묶음 동그라미도 낱개 표시처럼 — 사무소·뉴스 화면을 닫고 공실 목록으로 (11-23)
       const markers = cluster.getMarkers();
       const ids = markers.flatMap((m: any) => {
         const pos = m.getPosition();
@@ -815,6 +817,8 @@ export default function KakaoMapView({
         onSearchCoord={(lat: any, lng: any, zoomLevel: any) => {
           if (!kakaoMapRef.current) return;
           const kakao = (window as any).kakao;
+          setSelectedRegion(null); // 검색으로 옮겨도 지도 화면 공실로 (11-23)
+          setSelectedClusterIds(null);
           if (zoomLevel) kakaoMapRef.current.setLevel(zoomLevel);
           kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
           if (onResetSearchRef.current) {

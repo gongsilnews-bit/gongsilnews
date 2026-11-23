@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { LAWD_NAMES, areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShared";
 import { addRecent } from "./stars";
-import { mapSquareButton, mapSquareSub } from "./mapSquareButton";
+import { mapLayerBox, mapLayerRow, mapSquareButton, mapSquareSub } from "./mapSquareButton";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
 
 type Complex = { news?: number; t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
@@ -607,24 +607,6 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
     setShow((v) => ({ ...v, [k]: !v[k] }));
     close();
   };
-  const btn = (k: "apt" | "offi" | "villa") => {
-    const color = k === "offi" ? OFFI : k === "villa" ? VILLA_ROSE : BRAND;
-    return (
-      <button
-        type="button"
-        onClick={() => toggle(k)}
-        title={k === "offi" ? "오피스텔 실거래 시세 보기" : k === "villa" ? "빌라(연립·다세대) 실거래 시세 보기" : "아파트 실거래 시세 보기"}
-        style={{
-          border: `1.5px solid ${color}`, borderRadius: mobile ? 16 : 6, cursor: "pointer", padding: mobile ? "6px 11px" : "6px 10px", fontSize: mobile ? 12.5 : 14, fontWeight: 800, whiteSpace: "nowrap",
-          boxShadow: mobile ? "0 2px 8px rgba(0,0,0,0.12)" : undefined,
-          background: show[k] ? color : "#fff", color: show[k] ? "#fff" : color,
-        }}
-      >
-        {/* 모바일은 [초기화]·[내 위치] 사이에 들어가게 짧게 */}
-        {mobile ? (k === "offi" ? "오피스텔" : k === "villa" ? "빌라" : "아파트") : k === "offi" ? "오피스텔 실거래가" : k === "villa" ? "빌라 실거래가" : "아파트 실거래가"}
-      </button>
-    );
-  };
   // PC 는 지도 오른쪽 [시세 최근] 네모 하나 — 누르면 왼쪽으로 [아파트][오피스텔][빌라/주택] 고르기가 펼쳐진다
   //  (2026-11-21 사장님: 직방처럼 심플하게 → 시세를 누르면 종류를 고를 수 있게)
   const [menu, setMenu] = useState(false);
@@ -635,7 +617,10 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
       <button type="button" title={onlyKind ? `${KIND_LABEL[onlyKind]} 최근 실거래 시세 켜기·끄기` : "단지별 최근 실거래 시세 — 종류 고르기"}
         onClick={() => { if (onlyKind) { setShow({ apt: false, offi: false, villa: false, [onlyKind]: !on }); close(); } else setMenu((m) => !m); }}
         style={mapSquareButton(on || (menu && !onlyKind), BRAND)}>
-        시세<span style={mapSquareSub(on || (menu && !onlyKind), NEWS_ORANGE)}>최근</span>
+        {/* 아파트·오피스텔·빌라/주택 칸에선 그 종류 이름 + "실거래" (11-23 사장님), [전체] 칸만 시세·최근 */}
+        {onlyKind
+          ? <><span style={{ fontSize: KIND_LABEL[onlyKind].length >= 5 ? 11.5 : 13, letterSpacing: "-.4px" }}>{KIND_LABEL[onlyKind]}</span><span style={mapSquareSub(on, NEWS_ORANGE)}>실거래</span></>
+          : <>시세<span style={mapSquareSub(on || menu, NEWS_ORANGE)}>최근</span></>}
       </button>
       {/* 고르기는 [전체] 등 여러 종류가 섞인 칸에서만 */}
       {menu && !onlyKind && (
@@ -654,11 +639,17 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
       )}
     </div>
   ) : (
+    // 모바일: [지도 표시] 창 안 체크 줄 — 앱과 같게 (2026-11-22 사장님: 줄 단추 대신 겹쳐 보기 아이콘을 누르면)
     <>
-      {mobile && (
-        <span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: "#1f2937", background: "rgba(255,255,255,.92)", borderRadius: 12, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>실거래가</span>
-      )}
-      {btn("apt")}{btn("offi")}{btn("villa")}
+      {(["apt", "offi", "villa"] as const).map((k) => {
+        const color = k === "offi" ? OFFI : k === "villa" ? VILLA_ROSE : BRAND;
+        return (
+          <button key={k} type="button" onClick={() => toggle(k)} style={mapLayerRow(show[k], color)}>
+            <span style={mapLayerBox(show[k], color)}>{show[k] ? "✓" : ""}</span>
+            {k === "offi" ? "오피스텔" : k === "villa" ? "빌라" : "아파트"} 실거래
+          </button>
+        );
+      })}
     </>
   );
 

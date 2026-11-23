@@ -1,7 +1,7 @@
 "use client";
 /**
  * 공실열람 지도 [부동산] 켜기·끄기 (2026-11-04 사장님) — 가입한 회원 부동산을 곤색 집 모양으로.
- *  마우스를 올리면 이름·주소·"공실 5 · 기사 3"(0도 그대로) · 누르면 왼쪽 목록이 그 사무소(카드 + 공실 전부 + 기사 전부)로 바뀐다.
+ *  평소엔 작은 핀 · 마우스를 올리면 이름표 · 누르면 왼쪽 목록이 그 사무소(카드 + 공실 전부 + 기사 전부)로 바뀐다 (11-23).
  *  지도는 움직이지 않는다. 들어올 때마다 켜진 채로 시작 (11-04).
  *  알림: "gs-agency-open"(고른 사무소) → GongsilClient(공실 목록) · GongsilSidebar(카드·기사) / "gs-agency-close" ← 목록에서 닫기
  */
@@ -9,26 +9,33 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { listMapAgencies, type MapAgency } from "@/app/actions/mapAgencies";
 import { starHtml, useStars } from "./stars";
-import { mapSquareButton, mapSquareSub } from "./mapSquareButton";
+import { mapLayerBox, mapLayerRow, mapSquareButton, mapSquareSub } from "./mapSquareButton";
 
 const NAVY = "#1e3a6e", NAVY_DARK = "#0f2347";
 const KEY = "gs-agency-layer";
 const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 const house = (fill: string, size: number) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 11.5h3V21h5.5v-5.5h3V21H19v-9.5h3z" fill="${fill}"/></svg>`;
-const FAR_LEVEL = 7; // 이만큼 축소하면 이름 없이 동그라미만 (빽빽하지 않게)
 const short = (name: string) => (name.length > 8 ? `${name.slice(0, 8)}…` : name);
 /** 이름표형 (2026-11-04 사장님: 집 그림이 마음에 안 든다 → 권고안) — 곤색 이름표 + 흰 동그라미 집 + 아래 꼬리 */
 const PRO_TAG = `<span style="display:inline-block;background:#ea8a0c;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px;line-height:1;padding:2px 4px 3px;border-radius:3px;margin-left:4px;vertical-align:middle" title="공실뉴스부동산">NEWS</span>`;
-const badge = (name: string, mode: "normal" | "hover" | "picked", far: boolean, count = 1, pro = false) => {
+/**
+ * 2026-11-23 사장님: 이름표가 지도를 너무 가린다 → 평소엔 이름 없는 작은 핀, 마우스를 올리거나 고르면 이름표
+ */
+const badge = (name: string, mode: "normal" | "hover" | "picked", count = 1, pro = false, addr = "") => {
   const bg = mode === "normal" ? NAVY : NAVY_DARK;
-  const ring = mode === "picked" ? "box-shadow:0 0 0 2px #fff,0 0 0 4px #0f2347,0 4px 10px rgba(15,35,71,.45);" : "box-shadow:0 3px 8px rgba(15,35,71,.35);";
-  // 한 자리에 여러 사무소 — 오른쪽 위에 개수 (공실 묶음 동그라미처럼, 11-04 사장님)
-  const cnt = count > 1 ? `<span style="position:absolute;top:-9px;right:-9px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#fff;border:2px solid ${bg};color:${bg};font-size:11.5px;font-weight:900;line-height:16px;text-align:center">${count}</span>` : "";
-  const tail = `<div style="position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${bg}"></div>`;
-  if (far) return `<div style="position:relative;width:26px;height:26px;border-radius:50%;background:${bg};border:2px solid #fff;display:flex;align-items:center;justify-content:center;${ring}">${house("#fff", 14)}${cnt}${tail}</div>`;
-  return `<div style="position:relative;display:flex;align-items:center;gap:6px;background:${bg};color:#fff;border-radius:18px;padding:4px 11px 4px 4px;font-size:13px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;${ring}">` +
-    `<span style="width:22px;height:22px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${house(bg, 14)}</span>${esc(count > 1 ? `${short(name)} 외 ${count - 1}` : short(name))}${pro && count === 1 ? PRO_TAG : ""}${cnt}${tail}</div>`;
+  // 작은 핀 — 한 자리에 여러 사무소면 오른쪽 위에 작은 개수
+  const cnt = count > 1 ? `<span style="position:absolute;top:-7px;right:-8px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid ${bg};color:${bg};font-size:10px;font-weight:900;line-height:13px;text-align:center">${count}</span>` : "";
+  const pinTail = `<div style="position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid ${bg}"></div>`;
+  const pin = `<div style="position:relative;width:22px;height:22px;box-sizing:border-box;border-radius:50%;background:${bg};border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(15,35,71,.35)">${house("#fff", 12)}${cnt}${pinTail}</div>`;
+  if (mode === "normal") return pin;
+  // 마우스를 올리거나 고르면 — 핀은 그 자리에 두고 위로 흰 상자 (11-23 사장님: 옆이 아니라 위로, 단지 정보 상자처럼)
+  const border = mode === "picked" ? `2px solid ${NAVY_DARK}` : "1px solid #d6d9de";
+  // 지도 표시는 처음 크기로 자리를 잡으니 — 핀 크기는 그대로 두고 상자만 핀 위에 떠 있게 (커지면 옆으로 밀리던 것 11-23)
+  const label = `<div style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:10px;z-index:1;background:#fff;border:${border};border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:10px 14px 11px;white-space:nowrap;text-align:left;cursor:pointer">` +
+    `<div style="display:flex;align-items:center;font-size:15.5px;font-weight:800;color:#111;letter-spacing:-.2px">${esc(count > 1 ? `${short(name)} 외 ${count - 1}` : name)}${pro && count === 1 ? PRO_TAG : ""}</div>` +
+    (addr ? `<div style="font-size:13px;color:#444;margin-top:3px;font-weight:400">${esc(addr)}</div>` : "") + `</div>`;
+  return `<div style="position:relative">${label}${pin}</div>`;
 };
 
 /**
@@ -109,11 +116,10 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
   }, [list]);
   useEffect(() => { if (!on && picked) { setPicked(null); window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null })); } }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const farRef = useRef(false);
   const paint = (el: HTMLElement, mode: "normal" | "hover" | "picked") => {
-    el.innerHTML = badge(el.dataset.name || "", mode, farRef.current, Number(el.dataset.count || 1), el.dataset.pro === "1");
-    el.style.transform = mode === "hover" ? "scale(1.08)" : "";
-    el.style.transformOrigin = "50% 100%";
+    // 모바일은 누르면 아래 정보 상자가 뜨니 핀 위 상자는 띄우지 않는다
+    el.innerHTML = badge(el.dataset.name || "", mobile ? "normal" : mode, Number(el.dataset.count || 1), el.dataset.pro === "1", el.dataset.addr || "");
+    el.style.padding = "0 0 5px"; // 핀 꼬리 끝이 늘 같은 자리 (이름표가 떠도 핀은 안 움직인다)
     if (el.parentElement) el.parentElement.style.zIndex = mode === "normal" ? "8" : "100";
   };
   useEffect(() => { overlays.current.forEach((x) => paint(x.el, x.id === picked ? "picked" : "normal")); }, [picked]);
@@ -170,15 +176,6 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
     const kakao = (window as any).kakao, map = kakaoMapRef.current;
     const clear = () => { overlays.current.forEach((x) => x.o.setMap(null)); overlays.current = []; hideTip(); };
     if (!on || !mapLoaded || !list || !map || !kakao?.maps) { clear(); return; }
-    farRef.current = map.getLevel() >= FAR_LEVEL;
-    // 축소·확대하면 이름표 ↔ 동그라미
-    const onZoom = () => {
-      const far = map.getLevel() >= FAR_LEVEL;
-      if (far === farRef.current) return;
-      farRef.current = far;
-      overlays.current.forEach((x) => paint(x.el, x.id === pickedRef.current ? "picked" : "normal"));
-    };
-    kakao.maps.event.addListener(map, "zoom_changed", onZoom);
     // 한 자리(약 25m 안)에 사무소가 여러 개면 이름표 하나로 묶는다 — 공실 많은 사무소가 앞
     const groups: MapAgency[][] = [];
     for (const a of [...list].sort((p, q) => q.vacancies - p.vacancies || q.articles - p.articles)) {
@@ -189,12 +186,13 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
       const a = g[0];
       const key = g.length > 1 ? `g:${g.map((x) => x.id).sort().join(",")}` : a.id;
       const el = document.createElement("div");
-      el.style.cssText = "cursor:pointer;line-height:1.2;padding-bottom:6px;transition:transform .12s ease;font-family:'Pretendard',inherit";
+      el.style.cssText = "cursor:pointer;line-height:1.2;font-family:'Pretendard',inherit";
       el.dataset.name = a.name;
       el.dataset.count = String(g.length);
       el.dataset.pro = a.pro ? "1" : "";
+      el.dataset.addr = a.address || "";
       paint(el, key === picked ? "picked" : "normal");
-      // 마우스를 올리면 살짝 커지기만 — 정보 이름표는 누를 때 뜬다 (11-04 사장님: 뉴스·공실처럼)
+      // 마우스를 올리면 작은 핀 → 이름표 (11-23 사장님)
       el.addEventListener("mouseenter", () => { if (key !== pickedRef.current) paint(el, "hover"); });
       el.addEventListener("mouseleave", () => { paint(el, key === pickedRef.current ? "picked" : "normal"); });
       ["mousedown", "mouseup", "touchstart"].forEach((t) => el.addEventListener(t, (ev) => ev.stopPropagation())); // 겹친 공실 표시로 눌림이 새지 않게
@@ -203,8 +201,8 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
         hideTip();
         const next = pickedRef.current === key ? null : key; // 또 누르면 닫기
         setPicked(next);
-        if (next) showTip(g);
-        if (mobile) return; // 모바일은 정보 상자의 [상세보기]로 목록을 연다
+        // 모바일은 왼쪽 목록이 없으니 정보 상자 → [상세보기]로 목록을 연다. PC 는 상자 없이 왼쪽 목록만 (11-23 사장님)
+        if (mobile) { if (next) showTip(g); return; }
         if (g.length > 1) {
           // 여러 사무소 — 왼쪽 목록에 그 사무소들 (줄로). 사무소 화면이 열려 있으면 닫는다
           window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null }));
@@ -215,7 +213,7 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
       o.setMap(map);
       overlays.current.push({ o, el, id: key });
     }
-    return () => { kakao.maps.event.removeListener(map, "zoom_changed", onZoom); clear(); };
+    return () => { clear(); };
   }, [on, mapLoaded, list, kakaoMapRef, showTip]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pickedRef = useRef<string | null>(null);
@@ -246,10 +244,9 @@ export default function AgencyLayer({ kakaoMapRef, mapLoaded, buttonSlot, mobile
       <span style={{ fontSize: 14 }}>부동산</span><span style={mapSquareSub(on, NAVY)}>{on && !list ? "…" : "회원"}</span>
     </button>
   ) : (
-    <button type="button" onClick={toggle} title="공실뉴스 회원 부동산을 지도 위에 보기"
-      style={mobile
-        ? { border: `1.5px solid ${NAVY}`, borderRadius: 999, cursor: "pointer", padding: "6px 12px", fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", background: on ? NAVY : "#fff", color: on ? "#fff" : NAVY, boxShadow: "0 2px 8px rgba(0,0,0,.12)" }
-        : { border: `1.5px solid ${NAVY}`, borderRadius: 6, cursor: "pointer", padding: "6px 10px", fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", background: on ? NAVY : "#fff", color: on ? "#fff" : NAVY }}>
+    // 모바일: [지도 표시] 창 안 체크 줄 — 앱과 같게 (2026-11-22 사장님)
+    <button type="button" onClick={toggle} title="공실뉴스 회원 부동산을 지도 위에 보기" style={mapLayerRow(on, NAVY)}>
+      <span style={mapLayerBox(on, NAVY)}>{on ? "✓" : ""}</span>
       부동산{on && !list ? "…" : ""}
     </button>
   );

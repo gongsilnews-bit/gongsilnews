@@ -368,9 +368,22 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       }).catch(() => {});
       setShowDetail(false);
     };
+    // 사무소 화면을 닫으면(지도 공실을 누를 때 포함) 사무소 공실 묶음도 푼다 — 안 풀면 공실을 눌러도 왼쪽은 사무소 공실 그대로 (11-23)
+    const off = () => setAgencyVacs(null);
     window.addEventListener("gs-agency-open", on);
-    return () => window.removeEventListener("gs-agency-open", on);
+    window.addEventListener("gs-agency-close", off);
+    return () => { window.removeEventListener("gs-agency-open", on); window.removeEventListener("gs-agency-close", off); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 사무소 공실 묶음은 사무소 카드가 열려 있을 때만 (11-23 사장님: "지도를 움직이면 왼쪽은 언제나 지금 보이는 지도 공실")
+  //  고른 것이 풀리면(지도 끌기·확대·축소·빈 곳·또 누르기) 같이 풀고, 위 종류 칸을 바꾸면 사무소 카드도 닫는다
+  useEffect(() => { if (selectedClusterIds === null) setAgencyVacs(null); }, [selectedClusterIds]);
+  const agencyVacsRef = useRef<any[] | null>(null);
+  agencyVacsRef.current = agencyVacs;
+  useEffect(() => {
+    if (!agencyVacsRef.current) return;
+    window.dispatchEvent(new CustomEvent("gs-agency-open", { detail: null }));
+    window.dispatchEvent(new CustomEvent("gs-agency-close"));
+  }, [activeCategory]);
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(6);
   const [selectedRegion, setSelectedRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);

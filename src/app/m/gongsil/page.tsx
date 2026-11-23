@@ -108,6 +108,7 @@ function MobileGongsilContent() {
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [priceSlot, setPriceSlot] = useState<HTMLSpanElement | null>(null);
+  const [layerOpen, setLayerOpen] = useState(false); // [지도 표시] 창 (겹쳐 보기 아이콘, 2026-11-22)
   const [aptHiddenIds, setAptHiddenIds] = useState<Set<string>>(new Set()); // 단지 실거래가 표시에 숫자로 붙은 공실 — 지도에 따로 안 그림 // [아파트 실거래가][오피스텔 실거래가] 단추 자리 (내 위치 아래)
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -1499,7 +1500,16 @@ function MobileGongsilContent() {
             {/* 아파트·오피스텔 실거래가 (PC 공실열람과 같은 것, 2026-11-02 사장님: 모바일에도) */}
             {/* 위쪽 [초기화]와 [내 위치] 사이 가운데에 나란히 (2026-11-02 사장님) */}
             {/* 2026-11-11: [뉴스] 단추가 늘어 [초기화]·[내 위치] 줄과 겹쳐서 — 단추 줄은 그 아래 한 줄로, 넘치면 옆으로 밀어 본다 */}
-            <span ref={setPriceSlot} style={{ position: "absolute", top: 66, left: 12, right: 12, zIndex: 20, display: "flex", justifyContent: "center", gap: 6, whiteSpace: "nowrap", overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto" }} />
+            {/* 2026-11-22 사장님: 줄 단추 대신 앱처럼 겹쳐 보기 아이콘 하나([내 위치] 아래) — 누르면 [지도 표시] 창에 체크 줄
+                실거래·뉴스·부동산 단추는 그대로 이 창(priceSlot) 안에 그려진다. 닫아도 켜 둔 것은 그대로 */}
+            <button type="button" aria-label="지도 표시" aria-expanded={layerOpen} onClick={() => setLayerOpen((o) => !o)}
+              style={{ position: "absolute", top: 60, right: 16, zIndex: 21, width: 40, height: 40, borderRadius: 8, cursor: "pointer",
+                background: "#fff", border: `1.5px solid ${layerOpen ? "#1a2e5a" : "#ddd"}`, boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2e5a" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z" /><path d="m2 12 10 5 10-5" /><path d="m2 16 10 5 10-5" /></svg>
+            </button>
+            <span ref={setPriceSlot} style={{ position: "absolute", top: 106, right: 16, zIndex: 21, display: layerOpen ? "flex" : "none", flexDirection: "column", minWidth: 150,
+              background: "#fff", borderRadius: 10, padding: "4px 12px", boxShadow: "0 2px 10px rgba(0,0,0,0.15)", pointerEvents: "auto" }} />
             <AptPriceLayer
               mobile
               autoShow
