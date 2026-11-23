@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import { SvgIcon, IconBuilding, IconArticle, IconHomepage, IconSend, IconFilm, IconImage } from "./AdminIcons";
 import VacancyCardGrid, { CardTools, CardHoverStyle, CardMenu, LoadingDots, IconReport, IconOut, IconPen, IconStar, IconTrash, IconLink, kakaoShare, type MenuItem } from "./VacancyCardGrid";
-import ArticleCardGrid from "./ArticleCardGrid";
 import { listMyStudioReports } from "@/app/actions/studio";
 // 강의영상녹화 창 — 홈 위에 바로 (2026-10-30 사장님). 누를 때만 불러온다
 const RecordFlow = React.lazy(() => import("@/components/admin/studio-video/Flows").then((m) => ({ default: m.RecordFlow })));
@@ -272,15 +271,7 @@ export default function StudioHomeSection({ theme, memberId, onMenuChange }: Adm
         <VacancyCardGrid theme={theme} memberId={memberId} onMenuChange={onMenuChange} keyword={q} limit={11} onAdd={newVacancy} row />
       </div>
 
-      {/* 내 기사 — 공실 홍보현황 아래 · 작업 계속하기 위 (2026-10-28 사장님) */}
-      <div style={{ marginTop: 40 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h2 style={sectionTitle}>내 기사</h2>
-          <span style={{ fontSize: 13, color: textSecondary }}>누르면 그 기사로 블로그·SNS 글을 써요</span>
-          <button onClick={() => onMenuChange("article")} style={{ marginLeft: "auto", border: 0, background: "transparent", color: textSecondary, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>모두 보기</button>
-        </div>
-        <ArticleCardGrid theme={theme} memberId={memberId} onMenuChange={onMenuChange} keyword={q} layout="row" />
-      </div>
+      {/* 내 기사 줄은 홈에서 뺌 (2026-11-23 사장님) — 기사는 왼쪽 [기사관리]에서 */}
 
       {/* 작업 카드 ☆ 상자 · (공실 카드와 같은 모양) · 기사 사진 위 채널 아이콘 */}
       <CardHoverStyle darkMode={darkMode} />

@@ -72,6 +72,26 @@ export function openDocked(url: string, name = "gs-fill-window"): Window | null 
   return w;
 }
 
+/**
+ * 도우미(크롬 확장 4.1.6+)가 있으면 AI 창에서 [복사]를 누르는 순간 답이 바로 온다 (2026-11-23 사장님: "복사하기만 클릭하면 자동으로")
+ *  기다리는 동안만 도우미에 "기다리는 중"을 알리고, 온 글을 on(text) 으로 넘긴다. 도우미가 없으면 아무 일도 없다(돌아오면 가져오기 그대로)
+ */
+export function useAiCopied(active: boolean, on: (text: string) => void) {
+  const ref = useRef(on);
+  ref.current = on;
+  useEffect(() => {
+    if (!active) return;
+    const say = (v: boolean) => { try { window.postMessage({ gsHelperReq: true, id: `aiwait-${Date.now()}-${Math.random()}`, msg: { op: "aiWait", on: v } }, location.origin); } catch { /* */ } };
+    say(true);
+    const h = (e: MessageEvent) => {
+      if (e.source !== window || !e.data || e.data.gsAiCopied !== true) return;
+      ref.current(String(e.data.text || ""));
+    };
+    window.addEventListener("message", h);
+    return () => { window.removeEventListener("message", h); say(false); };
+  }, [active]);
+}
+
 function mount<T>(render: (done: (v: T) => void) => React.ReactNode): Promise<T> {
   return new Promise((resolve) => {
     const host = document.createElement("div");
@@ -152,6 +172,7 @@ function AskBox<T>({ prompt, what, check, done }: { prompt: string; what: string
     if (!copied) setMsg("질문을 복사하지 못했어요. 아래 [질문 복사]를 눌러 주세요.");
   };
 
+  useAiCopied(true, (text) => void tryText(text, false)); // 도우미가 AI 창 [복사]를 알려 주면 바로 (11-23)
   useEffect(() => {
     void open();
     const t = window.setInterval(() => setSec((x) => x + 1), 1000);
@@ -170,7 +191,7 @@ function AskBox<T>({ prompt, what, check, done }: { prompt: string; what: string
         <div style={{ fontSize: 18.5, fontWeight: 800, color: "#fff", marginBottom: 14 }}>{site.name} 내 계정(무료·수동)으로 {what}<Dots /></div>
         <div style={{ textAlign: "left", lineHeight: 1.75, fontSize: 14, maxWidth: 540, margin: "0 auto" }}>
           <b>1.</b> 질문을 복사해 두고 오른쪽에 <b>{site.name}</b> 창을 열었어요. 입력칸에 <b>붙여 넣기(Ctrl+V)</b> 하고 보내세요.<br />
-          <b>2.</b> 답이 다 나오면 답 안의 <b>코드 상자 오른쪽 위 [복사]</b>를 누르고 이 창으로 돌아오세요 — 알아서 가져와요.
+          <b>2.</b> 답이 다 나오면 답 안의 <b>코드 상자 오른쪽 위 [복사]</b>를 누르세요 — 알아서 가져와요. (도우미가 없으면 이 창으로 돌아오면 가져와요)
         </div>
         {/* AI 고르기는 왼쪽 위 [AI 설정]에서만 (2026-11-04 사장님: 쓰는 중 창에는 의미 없음) */}
         <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16, flexWrap: "wrap" }}>

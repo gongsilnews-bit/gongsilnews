@@ -947,12 +947,13 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 {originalPrice && (
-                  <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>
+                  <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through", whiteSpace: "nowrap" }}>
                     {originalPrice.toLocaleString()}P
                   </span>
                 )}
+                {/* 회원 무료여도 가격은 그대로 "120,000P" (2026-11-23 사장님: "회원 무료 수강" 글 대신) — 무료인 것은 아래 단추가 알려 준다 */}
                 <span style={{ fontSize: 26, fontWeight: 900, color: "#1c1917" }}>
-                  {access.free ? "회원 무료 수강" : access.membersOnly ? "공실뉴스부동산 회원 전용" : displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
+                  {access.free ? (displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강") : access.membersOnly ? "공실뉴스부동산 회원 전용" : displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
                 </span>
               </div>
               <div style={{ fontSize: 12.5, color: "#059669", fontWeight: 700, marginTop: 4 }}>

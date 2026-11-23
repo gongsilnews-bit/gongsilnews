@@ -14,6 +14,7 @@ import { LAWD_NAMES, areaLabel, isNewDeal, shortPrice } from "@/utils/aptMapShar
 import { addRecent } from "./stars";
 import { mapLayerBox, mapLayerRow, mapSquareButton, mapSquareSub } from "./mapSquareButton";
 import AptDetailPanel, { BRAND, type AptDetail, VILLA_ROSE } from "./AptDetailPanel";
+import RegionPanel, { type AggLevel, type RegionAgg } from "./RegionPanel";
 
 type Complex = { news?: number; t0?: { d: string } | null; rent0?: { a: number; dep: number; m: number; d: string } | null; id: string; kind?: "apt" | "offi" | "villa"; name: string; lat: number; lng: number; rep_area: number | null; rep_supply: number | null; rep_price: number | null; rep_date: string | null; trade_count: number };
 
@@ -60,6 +61,18 @@ const normName = (name: string, dong: string) =>
 /** 2 = 이름이 같다(한쪽이 다른 쪽을 품음) · 1 = 한글 3자 이상 겹침 · 0 = 다름 */
 /* 마우스를 올리면 뜨는 카드 — 이름 · 주소 · 시세 흐름 (PC만, 2026-11-02 사장님: 호갱노노처럼) */
 type Peek = { name: string; kind: string; addr: string; series: { m: string; p: number }[] };
+/** 지역(시·도·구·동) 평균 — 앱과 같은 서버 자료 /api/apt-prices?agg= (전국 한 번에, 종류·단계마다 한 번만 받는다) */
+const aggCache = new Map<string, Promise<RegionAgg[] | null>>();
+function regionAgg(level: AggLevel, kind: "apt" | "offi" | "villa"): Promise<RegionAgg[] | null> {
+  const k = `${level}:${kind}`;
+  if (!aggCache.has(k)) {
+    aggCache.set(k, fetch(`/api/apt-prices?agg=${level}&kind=${kind}`).then((r) => r.json())
+      .then((r) => (r?.success && Array.isArray(r.regions) ? (r.regions as RegionAgg[]) : null))
+      .catch(() => null)
+      .then((v) => { if (!v) aggCache.delete(k); return v; })); // 실패는 기억하지 않는다 — 다음에 다시
+  }
+  return aggCache.get(k)!;
+}
 const esc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch] as string);
 function sparkSvg(series: Peek["series"], color: string) {
   if (series.length < 3) return ""; // 거래가 적으면 흐름은 빼고 이름·주소만
@@ -409,8 +422,21 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
     else close();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapPick?.n]);
+  // 지역 분석 창 (2026-11-23 사장님: 동·구·시도 말풍선을 누르면 앱처럼 그 지역 분석) — 아래 단계 평균도 같이 받아 둔다
+  const [region, setRegion] = useState<{ level: AggLevel; r: RegionAgg; kind: "apt" | "offi" | "villa" } | null>(null);
+  const [subRegions, setSubRegions] = useState<RegionAgg[] | null>(null);
+  const backRegion = useRef<{ level: AggLevel; r: RegionAgg; kind: "apt" | "offi" | "villa" } | null>(null); // 지역 분석에서 연 단지 — 닫으면 그 지역 분석으로
   useEffect(() => {
-    if (mobile || !detail) return;
+    if (!region || region.level === "dong") { setSubRegions(null); return; }
+    let alive = true;
+    setSubRegions(null);
+    regionAgg(region.level === "sido" ? "gu" : "dong", region.kind).then((l) => { if (alive) setSubRegions(l || []); });
+    return () => { alive = false; };
+  }, [region?.level, region?.r.key, region?.kind]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (detail) setRegion(null); }, [detail]); // 단지 창이 열리면 지역 창은 닫는다
+  useEffect(() => { if (!on) setRegion(null); }, [on]);
+  useEffect(() => {
+    if (mobile || (!detail && !region)) return;
     const measure = () => {
       const el = document.querySelector("aside[data-gongsil-side]") as HTMLElement | null;
       if (!el) return setSide(null);
@@ -420,7 +446,7 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [mobile, detail]);
+  }, [mobile, detail, Boolean(region)]); // eslint-disable-line react-hooks/exhaustive-deps
   // 창이 지도 왼쪽을 조금(40px) 덮는다 — 고른 단지가 가리면 지도를 옮긴다
   useEffect(() => {
     if (mobile || !detail || !side) return;
@@ -448,6 +474,42 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
+    // 넓게 보면 단지 대신 지역 평균 — 앱과 같게 (2026-11-23 사장님: "어플과 같이 동별 구별 정보")
+    //  축척 1~2km(7·8) 동 · 4~8km(9·10) 구 · 16km 이상(11~) 시·도. 500m 이하(6 이하)는 지금처럼 단지
+    const zone: AggLevel | null = map.getLevel() >= 11 ? "sido" : map.getLevel() >= 9 ? "gu" : map.getLevel() >= 7 ? "dong" : null;
+    if (zone) {
+      const kind = (["apt", "offi", "villa"] as const).find((k) => kindsRef.current[k])!;
+      setLoading(true);
+      const list = await regionAgg(zone, kind);
+      if (ac.signal.aborted) return;
+      setLoading(false);
+      setLoadError(list ? "" : "지역 시세를 불러오지 못했습니다. 잠시 뒤 지도를 다시 움직여 보세요.");
+      clear();
+      setVacancyMap(new Map());
+      hideRef.current(new Set()); // 공실은 원래 표시대로
+      const color = kind === "offi" ? OFFI : kind === "villa" ? VILLA_ROSE : BRAND;
+      const padLat = (ne.getLat() - sw.getLat()) * 0.1, padLng = (ne.getLng() - sw.getLng()) * 0.1;
+      for (const x of list || []) {
+        if (x.lat < sw.getLat() - padLat || x.lat > ne.getLat() + padLat || x.lng < sw.getLng() - padLng || x.lng > ne.getLng() + padLng) continue;
+        const el = document.createElement("div");
+        el.style.cssText = "cursor:pointer;user-select:none;text-align:center;font-family:inherit;filter:drop-shadow(0 1px 2px rgba(0,0,0,.22))";
+        el.title = `${x.name} 평균 ${shortPrice(x.price)} · 단지 ${x.n}곳 — 누르면 ${zone === "dong" ? "동네" : "지역"} 분석`;
+        el.innerHTML =
+          `<div style="background:#fff;border:1.5px solid ${color};border-radius:7px;padding:${mobile ? "3px 7px 4px" : "4px 9px 5px"};line-height:1.2;white-space:nowrap">` +
+          `<div style="font-size:${mobile ? 10 : 11.5}px;font-weight:700;color:#374151">${esc(x.name)}</div>` +
+          `<div style="font-size:${mobile ? 12.5 : 14}px;font-weight:800;letter-spacing:-.3px;color:${color}">${shortPrice(x.price)}</div></div>` +
+          `<div style="width:0;height:0;margin:-1px auto 0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #fff"></div>`;
+        const pos = new kakao.maps.LatLng(x.lat, x.lng);
+        // 누르면 지역 분석 창 — 지도는 그대로 (11-23 사장님: "누르면 가까이가 아니라" 앱처럼 분석)
+        el.addEventListener("click", (e) => { e.stopPropagation(); hidePeek(); closeRef.current(); setRegion({ level: zone, r: x, kind }); });
+        const overlay = new kakao.maps.CustomOverlay({ position: pos, content: el, yAnchor: 1, zIndex: 1, clickable: true });
+        el.addEventListener("mouseenter", () => overlay.setZIndex(6));
+        el.addEventListener("mouseleave", () => overlay.setZIndex(1));
+        overlay.setMap(map);
+        overlaysRef.current.push(overlay);
+      }
+      return;
+    }
     setLoading(true);
     const want = (["apt", "offi", "villa"] as const).filter((k) => kindsRef.current[k]).join(",");
     const res = await fetch(`/api/apt-prices?sw=${sw.getLat()},${sw.getLng()}&ne=${ne.getLat()},${ne.getLng()}&kinds=${want}`, { signal: ac.signal })
@@ -668,13 +730,40 @@ export default function AptPriceLayer({ onlyKind, villaTab = false, mobile = fal
           mobile={mobile}
           side={!mobile && side ? { ...side, hidden: listOpen } : undefined}
           detail={detail}
-          onClose={close}
+          onClose={() => { close(); if (backRegion.current) { setRegion(backRegion.current); backRegion.current = null; } }}
           vacancyCount={[...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])].length}
           // 창은 그대로 두고 왼쪽 목록만 그 단지 공실로 (2026-11-02 사장님)
           onShowVacancies={() => { window.dispatchEvent(new CustomEvent("gs-vacancy-list")); onShowVacancies([...new Set([...(vacancyMap.get(detail.id) || []), ...(detail.vacancy_ids || [])])]); if (!mobile && side) setListOpen(true); }}
           onShowAuctions={onShowAuctions ? () => { onShowAuctions(detail.auction_ids || []); if (!mobile && side) setListOpen(true); } : undefined}
           // [뉴스 N] — 왼쪽 목록에 이 단지 기사 (GongsilSidebar 가 받는다)
           onShowNews={() => { window.dispatchEvent(new CustomEvent("gs-news-select", { detail: detail.news || [] })); if (!mobile && side) setListOpen(true); }}
+        />
+      )}
+      {on && region && !detail && (
+        <RegionPanel
+          level={region.level}
+          region={region.r}
+          kind={region.kind}
+          color={region.kind === "offi" ? OFFI : region.kind === "villa" ? VILLA_ROSE : BRAND}
+          side={!mobile && side ? side : undefined}
+          mobile={mobile}
+          subRegions={subRegions}
+          onClose={() => setRegion(null)}
+          // 동별·구별 줄 — 그 지역 분석으로, 지도도 그 지역 말풍선이 보이는 크기로
+          onRegion={(lv, r) => {
+            setRegion({ level: lv, r, kind: region.kind });
+            const map = kakaoMapRef.current, kakao = (window as any).kakao;
+            if (map && kakao?.maps) { const p = new kakao.maps.LatLng(r.lat, r.lng); map.setCenter(p); map.setLevel(lv === "gu" ? 9 : 7, { anchor: p }); }
+          }}
+          // 단지를 누르면 — 지도를 그 단지로(단지 말풍선이 보이는 크기) + 단지 창. 단지 창을 닫으면 보던 지역 분석으로 (11-23 사장님)
+          onComplex={(id, lat, lng) => {
+            backRegion.current = region;
+            setRegion(null);
+            const map = kakaoMapRef.current, kakao = (window as any).kakao;
+            // 가운데를 먼저 옮기고 그 점을 기준으로 확대 — 확대 먼저 하면 멀리서 확대되는 동안 가운데가 엉뚱한 곳(하남시)으로 갔다
+            if (map && kakao?.maps && Number.isFinite(lat) && Number.isFinite(lng)) { const p = new kakao.maps.LatLng(lat, lng); map.setCenter(p); map.setLevel(4, { anchor: p }); }
+            openDetail(id);
+          }}
         />
       )}
       {on && detailError && (

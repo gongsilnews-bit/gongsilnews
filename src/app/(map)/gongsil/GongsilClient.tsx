@@ -1146,13 +1146,23 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   };
 
   useEffect(() => {
-    if (
-      (window as any).kakao &&
-      (window as any).kakao.maps &&
-      typeof (window as any).kakao.maps.LatLng === "function"
-    ) {
+    // 지도가 다 준비됐나 — 기본 지도(LatLng)만 먼저 생기고 묶음(MarkerClusterer)·주소 찾기(services)는 조금 뒤에 붙는다.
+    //  다른 화면이 먼저 지도를 불러 둔 채로 들어오면 묶음이 아직 없을 때 그리다 "MarkerClusterer is not a constructor" 로 멈췄다 (2026-11-23)
+    const ready = () => {
+      const m = (window as any).kakao?.maps;
+      return Boolean(m && typeof m.LatLng === "function" && typeof m.MarkerClusterer === "function" && m.services);
+    };
+    if (ready()) {
       setMapLoaded(true);
       return;
+    }
+    if ((window as any).kakao?.maps?.load) {
+      // 이미 받아 둔 지도 — 덧붙는 것까지 불러 달라고 한 번 더 부탁하고, 준비될 때까지 본다
+      try { (window as any).kakao.maps.load(() => { if (ready()) setMapLoaded(true); }); } catch { /* */ }
+      const wait = setInterval(() => { if (ready()) { clearInterval(wait); setMapLoaded(true); } }, 100);
+      // 끝내 묶음이 안 붙으면(다른 화면이 묶음 없이 불러 둠) 지도만이라도 띄운다 — 묶음 없이 낱개로 그린다(KakaoMapView)
+      const giveUp = setTimeout(() => { clearInterval(wait); if (typeof (window as any).kakao?.maps?.LatLng === "function") setMapLoaded(true); }, 6000);
+      return () => { clearInterval(wait); clearTimeout(giveUp); };
     }
     const scriptId = "kakao-map-script";
     if (!document.getElementById(scriptId)) {
@@ -1164,16 +1174,13 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       document.head.appendChild(script);
       script.onload = () => {
         (window as any).kakao.maps.load(() => {
-          setMapLoaded(true);
+          if (ready()) { setMapLoaded(true); return; }
+          const w = setInterval(() => { if (ready()) { clearInterval(w); setMapLoaded(true); } }, 100);
         });
       };
     } else {
       const check = setInterval(() => {
-        if (
-          (window as any).kakao &&
-          (window as any).kakao.maps &&
-          typeof (window as any).kakao.maps.LatLng === "function"
-        ) {
+        if (ready()) {
           clearInterval(check);
           setMapLoaded(true);
         }

@@ -24,6 +24,28 @@ chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
   .catch(() => {});
 
+/* ── AI 답 [복사] → 기다리는 공실뉴스 화면으로 (2026-11-23 사장님: "AI 에서 복사하기만 클릭하면 자동으로") ──
+   공실뉴스 화면이 GS_AI_WAIT 로 "기다리는 중"을 알린 탭에만 보낸다 (30분 지나면 잊는다). 잠들었다 깨도 남게 storage.session */
+const AI_WAIT_KEY = "gsAiWait";
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (msg.type === "GS_AI_WAIT" && sender.tab && sender.tab.id != null) {
+    chrome.storage.session.get(AI_WAIT_KEY).then((o) => {
+      const w = (o && o[AI_WAIT_KEY]) || {};
+      if (msg.on) w[sender.tab.id] = Date.now(); else delete w[sender.tab.id];
+      return chrome.storage.session.set({ [AI_WAIT_KEY]: w });
+    }).catch(() => {});
+  }
+  if (msg.type === "GS_AI_COPIED" && typeof msg.text === "string") {
+    chrome.storage.session.get(AI_WAIT_KEY).then((o) => {
+      const w = (o && o[AI_WAIT_KEY]) || {};
+      for (const [id, at] of Object.entries(w)) {
+        if (Date.now() - at > 30 * 60 * 1000) continue;
+        chrome.tabs.sendMessage(Number(id), { type: "GS_AI_COPIED", text: msg.text }).catch(() => {});
+      }
+    }).catch(() => {});
+  }
+});
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   /* ── 기사쓰기 폼으로 넘기기 ── */
   if (msg.type === "GW_SEND_TO_GONGSIL") {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사 & 블로그·SNS·유튜브 작성기",
-  "version": "4.1.5",
+  "version": "4.1.6",
   "description": "오른쪽 작업창에서 공실 매물과 경매·공매 물건을 기사, 블로그·SNS, 유튜브 대본으로 만들고, 공실뉴스 웹·공실마케팅 앱에서 쓴 글·사진·영상을 네이버 블로그·인스타그램·스레드·페이스북·유튜브 글쓰기 화면에 채워 줍니다.",
   "icons": {
     "16": "icons/icon16.png",
@@ -151,6 +151,29 @@
       ],
       "js": [
         "helper/web-bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "helper/ai-copy-main.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "helper/ai-copy.js"
       ],
       "run_at": "document_start"
     }

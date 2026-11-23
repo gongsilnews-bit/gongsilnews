@@ -442,7 +442,14 @@ export default function KakaoMapView({
     const kakao = (window as any).kakao;
     const map = kakaoMapRef.current;
 
-    clustererRef.current = new kakao.maps.MarkerClusterer({
+    // 묶음(clusterer)이 없는 지도로 불렸으면 멈추지 말고 낱개로 그린다 (2026-11-23 "MarkerClusterer is not a constructor")
+    const noCluster = typeof kakao.maps.MarkerClusterer !== "function";
+    const ev = noCluster ? () => {} : kakao.maps.event.addListener;
+    clustererRef.current = noCluster ? {
+      list: [] as any[],
+      addMarkers(ms: any[]) { ms.forEach((m) => { m.setMap(map); this.list.push(m); }); },
+      clear() { this.list.forEach((m: any) => m.setMap(null)); this.list = []; },
+    } : new kakao.maps.MarkerClusterer({
       map: map,
       averageCenter: true,
       minLevel: 4,
@@ -570,7 +577,7 @@ export default function KakaoMapView({
     });
 
     // Add cluster events only once
-    kakao.maps.event.addListener(clustererRef.current, "clusterover", (cluster: any) => {
+    ev(clustererRef.current, "clusterover", (cluster: any) => {
       const overlay = cluster.getClusterMarker().getContent();
       if (overlay && overlay.style) {
         overlay.style.transform = "scale(1.15)";
@@ -579,7 +586,7 @@ export default function KakaoMapView({
       }
     });
 
-    kakao.maps.event.addListener(clustererRef.current, "clusterout", (cluster: any) => {
+    ev(clustererRef.current, "clusterout", (cluster: any) => {
       const overlay = cluster.getClusterMarker().getContent();
       if (overlay && overlay.style) {
         overlay.style.transform = "scale(1)";
@@ -587,7 +594,7 @@ export default function KakaoMapView({
       }
     });
 
-    kakao.maps.event.addListener(clustererRef.current, "clusterclick", (cluster: any) => {
+    ev(clustererRef.current, "clusterclick", (cluster: any) => {
       window.dispatchEvent(new CustomEvent("gs-vacancy-pick")); // 묶음 동그라미도 낱개 표시처럼 — 사무소·뉴스 화면을 닫고 공실 목록으로 (11-23)
       const markers = cluster.getMarkers();
       const ids = markers.flatMap((m: any) => {
@@ -605,7 +612,7 @@ export default function KakaoMapView({
       setMapPick((b) => ({ ids: Array.from(new Set(ids)) as string[], n: (b?.n || 0) + 1 }));
     });
 
-    kakao.maps.event.addListener(clustererRef.current, "clustered", (clusters: any[]) => {
+    ev(clustererRef.current, "clustered", (clusters: any[]) => {
       clusters.forEach((cluster) => {
         const markers = cluster.getMarkers();
         // Sum the counts of all coordinate groups inside this cluster

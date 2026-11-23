@@ -8,7 +8,7 @@
  */
 import { MARKET_STORIES, VACANCY_STORIES, type Story } from "@/utils/storyFlows";
 import React, { useEffect, useState } from "react";
-import { openDocked, dockArea } from "../studio-web/ai-ask";
+import { openDocked, dockArea, useAiCopied } from "../studio-web/ai-ask";
 import { createPortal } from "react-dom";
 import AiCopyGuide from "./AiCopyGuide";
 import { InstallGuideModal, useStudioInstaller } from "@/components/admin/sections/StudioInstallGuide";
@@ -505,10 +505,16 @@ export default function ArticleAiTool({ onDraft, hasContent, noVacancy = false, 
   const webWaitRef = React.useRef(webWait);
   webWaitRef.current = webWait;
   const webTry = async (quiet: boolean) => {
-    const w = webWaitRef.current;
-    if (!w) return;
+    if (!webWaitRef.current) return;
     let raw = "";
     try { raw = await navigator.clipboard.readText(); } catch { if (!quiet) setErr("클립보드를 읽지 못했어요. 브라우저가 묻는 [허용]을 누르거나 [AI 답 붙여넣기]를 눌러 주세요."); return; }
+    webTryText(raw, quiet);
+  };
+  // 도우미(4.1.6+)가 AI 창 [복사]를 알려 주면 클립보드를 읽지 않고 바로 (2026-11-23 사장님)
+  useAiCopied(Boolean(webWait), (text) => webTryText(text, true));
+  const webTryText = (raw: string, quiet: boolean) => {
+    const w = webWaitRef.current;
+    if (!w) return;
     if (!raw.trim() || raw.trim() === w.prompt.trim()) { if (!quiet) setNote("아직 질문이 복사돼 있어요. AI 답 아래 복사 단추를 누르고 돌아오세요."); return; }
     if (!parseArticleDraft(raw)) { if (!quiet) setNote("복사한 글이 기사 답 모양이 아니에요. 답이 다 나온 뒤 답 아래 복사 단추를 눌러 주세요."); return; }
     setWebWait(null); setBusy(""); setNote("");

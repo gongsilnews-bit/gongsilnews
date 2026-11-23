@@ -437,9 +437,20 @@ export default function StudyLecturesClient({
                               </div>
 
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
-                                <span style={{ fontSize: 16, fontWeight: 800, color: item.price ? "#1c1917" : "#059669" }}>
-                                  {formatLecturePrice(item)}
-                                </span>
+                                {/* 할인가가 있으면 정가는 줄 긋고 할인가 — "~~360,000P~~ 120,000P" (2026-11-23 사장님) */}
+                                {(() => {
+                                  const list = Number(item.price ?? 0);
+                                  const sale = item.discount_price !== null && item.discount_price !== undefined && list > 0 && Number(item.discount_price) < list ? Number(item.discount_price) : null;
+                                  const pay = sale ?? list;
+                                  return (
+                                    <span style={{ display: "flex", alignItems: "baseline", gap: 6, whiteSpace: "nowrap" }}>
+                                      {sale !== null && <span style={{ fontSize: 13, color: "#94a3b8", textDecoration: "line-through" }}>{list.toLocaleString()}P</span>}
+                                      <span style={{ fontSize: 16, fontWeight: 800, color: pay ? "#1c1917" : "#059669" }}>
+                                        {sale !== null ? (pay ? `${pay.toLocaleString()}P` : "무료 수강") : formatLecturePrice(item)}
+                                      </span>
+                                    </span>
+                                  );
+                                })()}
                                 <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>
                                   수강신청 ›
                                 </span>
