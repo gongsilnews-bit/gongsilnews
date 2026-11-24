@@ -1,6 +1,5 @@
 "use client";
 
-import { useStartHref } from "./useStartHref";
 import React from "react";
 import Link from "next/link";
 import { ProTag } from "@/components/admin/ProBadge";
@@ -65,7 +64,7 @@ export const PLANS: Plan[] = [
     cta: { label: "신청하기", href: "/newsrealty/pro-apply", solid: true },
     base: ["공실 50건 (공실뉴스 광고 20건까지)", "기사 쓰기 월 4건"],
     items: ["블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본 무제한", "뉴스칼럼 (내 기사로 블로그 · SNS · 유튜브)", "AI 매물보고서 모든 쪽 · 디자인 · AI 채우기", "유리창홍보지 모든 디자인", "물건접수홈페이지 (집주인 접수 · 로고 · 색상 · 사진 · 영상)", "포토studio (AI 포함)", "고객관리", "기사 아래 광고 · 배너"],
-    extraTitle: "부동산회원의 모든 기능 포함",
+    extraTitle: "함께 드려요", // 11-24 금액표에서 부동산회원 칸을 빼며 (전: "부동산회원의 모든 기능 포함")
     extra: ["주황 NEWS 딱지 (지도 · 공실 카드 · 기자란)", "모든 링크는 내 물건접수홈페이지로", "일반 중개사무소 · 중개법인 같은 금액"],
   },
   /* 비즈니스회원 칸은 금액표에서 뺐다 (2026-11-11 사장님: "이거 비용 빼자") — 광고하는 일반 업체라 부동산 요금표에 두지 않는다.
@@ -75,7 +74,6 @@ export const PLANS: Plan[] = [
 const NOTES = [
   "공실뉴스부동산 금액은 부가세(VAT) 별도예요.",
   "모든 요금제는 1년 단위로 결제해요. 폐업, 휴업 시 환불이 가능하며, 규정이 있어요.", // 2026-11-10 사장님
-  "부동산회원은 중개사 서류가 승인되면 무료로 이용할 수 있어요.",
   "공실은 50건까지 쓸 수 있고, 그중 공실뉴스 광고는 20건까지예요. 나머지는 내 홈페이지 전용·임시저장으로 자유롭게 쓰세요.", // 2026-11-10 사장님: 전체 50 · 공실뉴스 20
   "자세한 사항은 1:1 게시판을 이용해 주세요.", // 2026-11-10 사장님
 ];
@@ -155,23 +153,14 @@ const coin = (
  *  위 여백·제목만 조금 줄이고, [시작하기]는 새 창으로 (앱 화면을 떠나지 않게). 아래 기능 알약 줄도 그대로 흘러간다
  * current · allowed 는 예전 업그레이드 창(지금 등급 회색 · 고르기)에서 쓰던 것 — 지금은 화면에 안 쓴다
  */
-/** 폰에서 금액표 — 한 줄에 요금제 하나, 칸 사이 띄움, 빈 추천 띠는 숨김 (2026-11-11) */
-/*  창 너비가 아니라 금액표가 담긴 칸의 너비로 (모바일 틀 안의 좁은 칸에서도 — 2026-11-11 사장님: "모바일에서 맞지 않는 것이 많아") */
-const PT_MOBILE_CSS = `@container (max-width:860px){.pt-grid{grid-template-columns:1fr !important}.pt-cell{order:var(--o)}.pt-cell:not(.pt-empty){border-right:1px solid var(--lc,#e5e7eb) !important}.pt-empty{display:none !important}.pt-last{margin-bottom:24px}}`;
+/** 폰에서는 항목을 한 줄씩 — 창 너비가 아니라 금액표가 담긴 칸의 너비로 (2026-11-11 · 11-24 한 칸으로 바꾸며) */
+const PT_ONE_CSS = `@container (max-width:620px){.pt1-list,.pt1-base{grid-template-columns:1fr !important}}`;
 
 export default function StudioPriceTable({ compact = false, current, allowed }: { compact?: boolean; current?: string; allowed?: string[] } = {}) {
-  const startHref = useStartHref(); // 부동산회원 [시작하기] — 로그인 안 했으면 회원가입, 했으면 관리자 (2026-11-05)
-  const yearly = false; // 연 구독만 — 금액은 늘 월 금액으로 보여 준다
-  // 창 안도 웹 금액안내와 같은 디자인 (2026-10-31 사장님: 고르기·지금 등급 회색 칸은 촌스러움 → 원래 디자인으로)
-  //  스튜디오회원 칸만 늘 주황으로 · 버튼은 모두 [시작하기] (창 안에서는 새 창)
-  const isHl = (key: string) => key === "standard";
-  /** 칸 색 — Studio 주황 · Business 검은 갈색 (띠 색과 같게) */
-  const toneOf = (key: string) => (key === "biz" ? { line: "#1f1714", soft: "#f4f1ef", text: "#1f1714" } : { line: ACCENT, soft: SOFT, text: ACCENT });
-  const cellBg = (key: string) => (isHl(key) ? toneOf(key).soft : "#fff");
-  const lineOf = (key: string) => (isHl(key) ? toneOf(key).line : LINE);
+  // 2026-11-24 사장님: 금액안내에 0원(부동산회원) 칸은 빼고 공실뉴스부동산 1만원 한 칸만 크게
+  const p = PLANS.find((x) => x.key === "standard")!;
+  const pr = p.price(false); // 연 구독만 — 금액은 늘 월 금액으로 보여 준다
   const font = "'Pretendard Variable','Pretendard',-apple-system,sans-serif";
-  const cols = PLANS.length;
-  const W = (cols > 4 ? 250 : 290) * cols; // 다섯 칸이면 칸을 조금 좁게
 
   return (
     <div style={{ containerType: "inline-size", fontFamily: font, color: "#111827", background: "#fff", wordBreak: "keep-all" }}>
@@ -197,64 +186,44 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
         </div>
       </section>
 
-      {/* 요금제 칸 */}
-      <section style={{ maxWidth: W, margin: "0 auto", padding: "0 24px", boxSizing: "content-box" }}>
-        <div className="pt-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
-          {/* 폰(860px 이하)에서는 요금제를 한 칸씩 세로로 — 칸마다 --o(요금제 순서×4 + 줄)로 다시 줄 세운다 (2026-11-11) */}
-          <style>{PT_MOBILE_CSS}</style>
-          {/* 추천 띠 */}
-          {PLANS.map((p, i) => (
-            <div key={p.key + "tag"} className={`pt-cell${p.tag ? "" : " pt-empty"}`} style={{ ["--o" as string]: i * 4, height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: p.tag ? (p.key === "biz" ? "#1f1714" : ACCENT) : "transparent" }}>{p.tag || ""}</div>
-          ))}
-          {/* 머리 */}
-          {PLANS.map((p, i) => {
-            const pr = p.price(yearly);
-            const hl = isHl(p.key);
-            return (
-              <div key={p.key + "head"} className="pt-cell" style={{ ["--o" as string]: i * 4 + 1, ["--lc" as string]: lineOf(p.key), position: "relative", padding: "32px 24px 24px", textAlign: "center", background: cellBg(p.key), borderTop: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 600, color: hl ? toneOf(p.key).text : "#6b7280" }}>{p.icon}{p.name}{p.pro && <ProTag size="md" style={{ marginLeft: 2 }} />}</div>
-                {/* 할인 전 정가 — 줄 긋기 (2026-10-31 사장님: 월 5만 → 특별 할인 월 3만) */}
-                <div style={{ marginTop: 14, minHeight: 20, fontSize: 15, color: "#9ca3af" }}>{pr.was ? <><s>₩{pr.was}</s> <b style={{ color: "#dc2626", marginLeft: 4 }}>{Math.round((1 - Number(pr.won.replace(/,/g, "")) / Number(pr.was.replace(/,/g, ""))) * 100)}% 할인</b></> : ""}</div>
-                <div style={{ margin: "2px 0 6px", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
-                  <span style={{ fontSize: 20, fontWeight: 700 }}>₩</span>
-                  <span style={{ fontSize: 30, fontWeight: 700 }}>{pr.won}</span>
-                  <span style={{ fontSize: 13, color: "#6b7280" }}>{pr.per}</span>
-                </div>
-                <div style={{ fontSize: 13, color: "#6b7280", minHeight: 20 }}>{pr.sub || ""}</div>
-                <div style={{ fontSize: 12, color: "#9ca3af", minHeight: 18 }}>{pr.day || ""}</div>
-                {/* 창 안도 웹 금액안내처럼 모든 칸 [시작하기] — 누르면 새 창으로 신청 (2026-10-31 사장님: "여기 페이지 같이 그냥 신청하게") */}
-                <Link href={p.key === "free" ? startHref : p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 50, marginTop: 20, borderRadius: 8, fontSize: 15, fontWeight: 700, textDecoration: "none", background: p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#fff", color: p.cta.solid ? "#fff" : ACCENT, border: `1px solid ${p.cta.solid ? (p.key === "biz" ? "#1f1714" : ACCENT) : "#cbd5e1"}` }}>{p.cta.label}</Link>
-                <div style={{ marginTop: 20, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
-                  {p.base.map((b) => <div key={b} style={{ fontSize: 14, color: "#374151", display: "flex", gap: 8 }}>{coin}<span><Bold t={b} /></span></div>)}
-                </div>
+      {/* 요금제 칸 — 2026-11-24 사장님: "0원 필요 없고 그냥 1만원으로 가독성 있게" → 공실뉴스부동산 한 칸만 크게 */}
+      <section style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px", boxSizing: "content-box" }}>
+        <style>{PT_ONE_CSS}</style>
+        <div style={{ border: `2px solid ${ACCENT}`, borderRadius: 18, overflow: "hidden", background: "#fff", boxShadow: "0 12px 40px rgba(232,137,12,.12)" }}>
+          {p.tag && <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", background: ACCENT, letterSpacing: "0.02em" }}>{p.tag}</div>}
+          {/* 이름 · 가격 · 신청 */}
+          <div style={{ background: SOFT, padding: compact ? "28px 24px 26px" : "36px 28px 32px", textAlign: "center" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 20, fontWeight: 800, color: ACCENT }}>{p.icon}{p.name}{p.pro && <ProTag size="md" style={{ marginLeft: 2 }} />}</div>
+            {pr.was && (
+              <div style={{ marginTop: 16, fontSize: 17, color: "#9ca3af" }}>
+                <s>월 ₩{pr.was}</s>
+                <b style={{ color: "#dc2626", marginLeft: 8 }}>{Math.round((1 - Number(pr.won.replace(/,/g, "")) / Number(pr.was.replace(/,/g, ""))) * 100)}% 할인</b>
               </div>
-            );
-          })}
+            )}
+            <div style={{ marginTop: 4, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
+              <span style={{ fontSize: 22, fontWeight: 600, color: "#374151" }}>월</span>
+              <span style={{ fontSize: compact ? 46 : "clamp(46px,7cqw,60px)", fontWeight: 900, color: "#111827", letterSpacing: "-0.03em", lineHeight: 1.1 }}>{pr.won}</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>원</span>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 15, color: "#4b5563" }}>VAT 별도 · {pr.sub}</div>
+            <div style={{ marginTop: 2, fontSize: 14, color: "#9ca3af" }}>{pr.day}</div>
+            <Link href={p.cta.href} target={compact ? "_blank" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", maxWidth: 360, height: 56, margin: "24px auto 0", borderRadius: 12, fontSize: 17, fontWeight: 800, textDecoration: "none", background: ACCENT, color: "#fff" }}>{p.cta.label}</Link>
+            {/* 기본 제공 — 크게 두 개 */}
+            <div className="pt1-base" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 24 }}>
+              {p.base.map((b) => (
+                <div key={b} style={{ background: "#fff", border: "1px solid #f3d9b5", borderRadius: 12, padding: "14px 12px", fontSize: 15.5, color: "#374151", fontWeight: 600 }}><Bold t={b} /></div>
+              ))}
+            </div>
+          </div>
           {/* 사용 가능 항목 */}
-          {PLANS.map((p, i) => {
-            const hl = isHl(p.key);
-            return (
-              <div key={p.key + "items"} className="pt-cell" style={{ ["--o" as string]: i * 4 + 2, ["--lc" as string]: lineOf(p.key), padding: "26px 24px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
-                <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 4 }}>사용 가능 항목</div>
-                <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 18 }}>{p.key === "free" ? "승인만 받으면 바로 써요." : p.key === "biz" ? "웹에서 바로 써요. 설치할 것이 없어요." : "웹에서 바로 써요. 설치할 것이 없어요."}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {p.items.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span>{info}</div>)}
-                </div>
-              </div>
-            );
-          })}
-          {/* 특별한 기능 */}
-          {PLANS.map((p, i) => {
-            const hl = isHl(p.key);
-            return (
-              <div key={p.key + "extra"} className="pt-cell pt-last" style={{ ["--o" as string]: i * 4 + 3, ["--lc" as string]: lineOf(p.key), padding: "26px 24px 32px", textAlign: "left", background: cellBg(p.key), borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${lineOf(p.key)}`, borderLeft: `1px solid ${lineOf(p.key)}`, borderRight: hl || i === cols - 1 ? `1px solid ${lineOf(p.key)}` : "none" }}>
-                <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 18 }}>{p.extraTitle}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {p.extra.map((t) => <div key={t} style={{ fontSize: 14, color: "#4b5563", display: "flex", gap: 8 }}>{check}<span><Bold t={t} /></span></div>)}
-                </div>
-              </div>
-            );
-          })}
+          <div style={{ padding: compact ? "24px 24px 26px" : "30px 32px 34px", textAlign: "left" }}>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>사용 가능 항목</div>
+            <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 18 }}>웹에서 바로 써요. 설치할 것이 없어요.</div>
+            <div className="pt1-list" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 28, rowGap: 14 }}>
+              {p.items.map((t) => <div key={t} style={{ fontSize: 15, lineHeight: 1.55, color: "#374151", display: "flex", gap: 10 }}>{check}<span><Bold t={t} /></span></div>)}
+            </div>
+          </div>
+          {/* "함께 드려요"(p.extra) 칸은 뺐다 — 2026-11-24 사장님 */}
         </div>
 
         {/* 안내 */}
@@ -268,7 +237,8 @@ export default function StudioPriceTable({ compact = false, current, allowed }: 
       <section style={{ maxWidth: 1440, margin: "0 auto", padding: compact ? "64px 0 72px" : "96px 0 112px", textAlign: "center" }}>
         <style>{MARQUEE_CSS}</style>
         <h2 style={{ fontSize: "clamp(22px,2.6cqw,32px)", fontWeight: 600, margin: "0 0 40px" }}>
-          모든 요금제에서 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden style={{ verticalAlign: "-2px" }}><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#f5b301" /></svg>AI를 포함한 다양한 기능을 경험하세요.
+          {/* 2026-11-24 사장님 (전: 모든 요금제에서 AI를 포함한 다양한 기능을 경험하세요.) */}
+          2027년 부동산마케팅이 <span style={{ color: ACCENT }}>쉬워집니다.</span>
         </h2>
         {/* 양 끝은 흐리게 사라지게 (브루처럼) — 마우스를 올리면 멈춘다 */}
         <div className="pm-wrap" style={{ overflow: "hidden", display: "flex", flexDirection: "column", gap: 16, WebkitMaskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)", maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)" }}>
