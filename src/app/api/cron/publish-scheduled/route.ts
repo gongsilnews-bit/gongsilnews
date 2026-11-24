@@ -21,16 +21,12 @@ function getAdminClient() {
 
 export async function GET(request: Request) {
   try {
-    // Vercel Cron 인증 검증
+    // Vercel Cron 인증 검증 — CRON_SECRET 이 있을 때만 확인 (다른 cron 과 같게)
+    //  2026-11-24: Vercel 에 CRON_SECRET 이 없고 Vercel 은 x-vercel-cron 헤더를 보내지 않아
+    //  실서버에서 늘 401 → 주간·월간 조회수가 한 번도 리셋되지 않았다 (많이 본 뉴스 "1달"이 누적과 같아짐)
     const authHeader = request.headers.get("authorization");
-    if (
-      authHeader !== `Bearer ${process.env.CRON_SECRET}` &&
-      !request.headers.get("x-vercel-cron")
-    ) {
-      // 로컬 개발환경에서는 허용
-      if (process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const supabase = getAdminClient();
@@ -66,7 +62,8 @@ export async function GET(request: Request) {
       const nowKST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
       const dayOfWeek = nowKST.getUTCDay(); // 1 = 월요일
       const dayOfMonth = nowKST.getUTCDate(); // 1 = 매월 1일
-      const currentWeekKey = `${nowKST.getUTCFullYear()}-W${Math.ceil(nowKST.getUTCDate() / 7)}`;
+      // 주 표시는 그 월요일 날짜로 (예전 "2026-W3" 은 달이 빠져 11월 셋째 주와 12월 셋째 주가 같은 값 → 리셋을 건너뜀)
+      const currentWeekKey = nowKST.toISOString().slice(0, 10);
       const currentMonthKey = `${nowKST.getUTCFullYear()}-${nowKST.getUTCMonth() + 1}`;
 
       const { data: resetSetting } = await supabase

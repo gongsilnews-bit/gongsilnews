@@ -3,6 +3,7 @@
 import { section2Matches } from "@/utils/formatCategory";
 import React, { useMemo } from "react";
 import Link from "next/link";
+import { usePopularByPeriod, commonSection1 } from "@/components/usePopularByPeriod";
 
 interface PopularNewsSidebarWidgetProps {
   title?: string;
@@ -40,7 +41,7 @@ function PopularNewsSidebarWidgetImpl({
   };
 
   // 1. 해당 2차 카테고리 필터링 + 기간별(주간/월간 실제클릭수 또는 기간별 조회수) 상위 5개 추출
-  const popularArticles = useMemo(() => {
+  const localPopular = useMemo(() => {
     let pool = allArticles;
 
     // 세부 카테고리가 선택되었으면 해당 카테고리로 필터링
@@ -99,6 +100,10 @@ function PopularNewsSidebarWidgetImpl({
 
     return top5;
   }, [allArticles, selectedSubCategory, period]);
+  // 기간을 고르면 서버가 이 카테고리 전체에서 상위 5개를 뽑아 온다 (2026-11-24) — 받기 전엔 위 목록
+  const section1 = useMemo(() => commonSection1(allArticles), [allArticles]);
+  const serverPopular = usePopularByPeriod({ section1, section2: selectedSubCategory, period });
+  const popularArticles = serverPopular ?? localPopular;
 
   // 동적 타이틀: 세부 카테고리명 1:1 반영
   const displayTitle = selectedSubCategory && selectedSubCategory !== "전체"

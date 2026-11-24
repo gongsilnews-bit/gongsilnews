@@ -8,12 +8,10 @@ import { syncSmartstoreOrders } from "@/lib/smartstoreSync";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
+  // CRON_SECRET 이 있을 때만 확인 (다른 cron 과 같게) — 2026-11-24: Vercel 에 CRON_SECRET 이 없고
+  //  x-vercel-cron 헤더도 오지 않아 실서버에서 늘 401 이었다
   const authHeader = request.headers.get("authorization");
-  if (
-    authHeader !== `Bearer ${process.env.CRON_SECRET}` &&
-    !request.headers.get("x-vercel-cron") &&
-    process.env.NODE_ENV === "production"
-  ) {
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

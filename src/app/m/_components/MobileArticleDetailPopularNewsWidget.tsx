@@ -3,6 +3,7 @@
 import { section2Matches } from "@/utils/formatCategory";
 import React, { useMemo } from "react";
 import Link from "next/link";
+import { usePopularByPeriod, commonSection1 } from "@/components/usePopularByPeriod";
 
 interface MobileArticleDetailPopularNewsWidgetProps {
   currentArticleId?: string | number;
@@ -41,7 +42,7 @@ function MobileArticleDetailPopularNewsWidgetImpl({
   };
 
   // 2차 카테고리별 + 기간별(주간/월간 실제클릭수 또는 기간별 조회수) 0.001초 인메모리 필터링
-  const popularArticles = useMemo(() => {
+  const localPopular = useMemo(() => {
     // 현재 열람 중인 기사 제외
     const curIdStr = String(currentArticleId || "");
     const baseList = allArticles.filter(
@@ -122,6 +123,9 @@ function MobileArticleDetailPopularNewsWidgetImpl({
 
     return top5;
   }, [allArticles, currentArticleId, section2, period]);
+  // 기간을 고르면 서버가 이 카테고리 전체에서 상위 5개를 뽑아 온다 (2026-11-24) — 받기 전엔 위 목록
+  const serverPopular = usePopularByPeriod({ section1, section2, period, excludeId: currentArticleId });
+  const popularArticles = serverPopular ?? localPopular;
 
   const displayCategoryName = section2 || section1 || "공실뉴스";
 
