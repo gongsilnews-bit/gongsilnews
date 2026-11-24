@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
@@ -67,6 +66,7 @@ export default function StudyLecturesClient({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+
 
   // 유저 세션 로드
   useEffect(() => {
@@ -139,85 +139,58 @@ export default function StudyLecturesClient({
       {/* ━━━ 1. HERO (윤자동 스타일: 배경을 화면 끝까지 깔지 않고 본문 폭에 맞춘 둥근 카드) ━━━ */}
       <section style={{ backgroundColor: "#ffffff", padding: "18px 0 4px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
+          {/* 2026-11-24 사장님: 첫 배너는 "2027 공실뉴스부동산 사전모집" 하나만 (두 장 번갈아 → 예전 "이제 유튜브 강의로" 배너는 뺌)
+              배경: 공실뉴스부동산 소개(/newsrealty) 첫 영상 — 사무실에서 SNS로 한 번에 올리는 중개사 ("이런 이미지가 되어야") */}
           <div
             style={{
               position: "relative",
               display: "flex",
               alignItems: "center",
-              // 사진 좌측 여백과 같은 색이라 커버 크롭으로 남는 자리가 생겨도 티가 안 난다
-              backgroundColor: "#211b17",
+              backgroundColor: "#111827",
               color: "#ffffff",
               borderRadius: 16,
               overflow: "hidden",
               minHeight: 400,
             }}
           >
-            {/* 사진을 카드 전면에 깐다. 좌측 어두운 여백은 사진에 이미 들어가 있다 */}
-            <Image
-              src="/study_lectures_hero.png"
-              alt="공실 앞에서 막막해하는 부동산 대표"
-              fill
-              priority
-              sizes="(max-width: 1160px) 100vw, 1112px"
-              style={{ objectFit: "cover", objectPosition: "center" }}
+            <video
+              src="/studio-shots/hero.mp4?v=4"
+              poster="/studio-shots/hero-poster.jpg"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-label="공실뉴스로 블로그 · 인스타그램 · 페이스북 · 스레드에 한 번에 올리는 중개사"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
             />
-
-            {/* 카피 가독성 확보용. 사진 좌측과 같은 색이라 색이 뜨지 않는다 */}
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                inset: 0,
-                pointerEvents: "none",
-                background: "linear-gradient(to right, rgba(33, 27, 23,0.88) 0%, rgba(33, 27, 23,0.5) 34%, rgba(33, 27, 23,0) 62%)",
-              }}
-            />
-
-            {/* 좌측 카피 */}
-            <div style={{ position: "relative", zIndex: 2, flex: "1 1 400px", maxWidth: 620, minWidth: 300, padding: "56px 48px" }}>
-              <h1 style={{ fontSize: "32px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.8px", margin: "0 0 28px 0" }}>
-                {/* 2026-10-26: 부동산특강이란?(/study/about) 첫 제목과 같게 */}
-                내 지역, 단지, 물건 정보<br />
-                <span style={{ color: "#34d399" }}>이제 유튜브 강의로</span>
+            {/* 글씨 잘 보이게 왼쪽만 어둡게 */}
+            <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(to right, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0.62) 36%, rgba(17,24,39,0) 66%)" }} />
+            <div style={{ position: "relative", zIndex: 2, maxWidth: 620, padding: "56px 48px" }}>
+              <span style={{ display: "inline-block", background: "#e8890c", color: "#fff", fontSize: 13, fontWeight: 800, padding: "4px 12px", borderRadius: 999, letterSpacing: "0.04em", marginBottom: 16 }}>EVENT</span>
+              <h1 style={{ fontSize: "32px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.8px", margin: "0 0 14px 0" }}>
+                2027 공실뉴스부동산<br />
+                <span style={{ color: "#fbbf24" }}>사전모집</span>
               </h1>
-
-              {/* 부동산특강이란? + 공실뉴스부동산 신청 */}
+              <div style={{ fontSize: 19, fontWeight: 700, color: "#e5e7eb", margin: "0 0 28px 0" }}>
+                월 <s style={{ color: "#9ca3af" }}>3만원</s> → <span style={{ color: "#fbbf24", fontSize: 26, fontWeight: 900 }}>1만원</span>
+                <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500, marginLeft: 6 }}>(VAT 별도)</span>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
                 <Link
-                  href="/study/about"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "10px 22px",
-                    background: "#059669",
-                    color: "#ffffff",
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: 800,
-                    textDecoration: "none",
-                    boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
-                    transition: "all 0.2s",
-                  }}
+                  href="/newsrealty/pro-apply"
+                  style={{ display: "inline-flex", alignItems: "center", padding: "10px 22px", background: "#e8890c", color: "#ffffff", borderRadius: 8, fontSize: 14, fontWeight: 800, textDecoration: "none", boxShadow: "0 3px 10px rgba(232, 137, 12, 0.35)" }}
                 >
-                  부동산특강이란?
+                  신청하기
                 </Link>
                 <Link
-                  href="/newsrealty/apply"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "10px 4px",
-                    color: "#ffffff",
-                    fontSize: 14,
-                    fontWeight: 800,
-                    textDecoration: "none",
-                  }}
+                  href="/newsrealty#pricing"
+                  style={{ display: "inline-flex", alignItems: "center", padding: "10px 4px", color: "#ffffff", fontSize: 14, fontWeight: 800, textDecoration: "none" }}
                 >
-                  부동산회원 무료 가입하기 &gt;&gt;
+                  자세히 보기 &gt;&gt;
                 </Link>
               </div>
             </div>
-
           </div>
         </div>
       </section>
