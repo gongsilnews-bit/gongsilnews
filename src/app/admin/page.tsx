@@ -32,6 +32,7 @@ const NewsrealtySection = lazy(() => import("@/components/admin/sections/Newsrea
 const SmartstoreOrdersPanel = lazy(() => import("@/components/admin/sections/SmartstoreOrdersPanel"));
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 const PushSendSection = lazy(() => import("@/components/admin/sections/PushSendSection"));
+const CrmSection = lazy(() => import("@/components/admin/sections/CrmSection")); // 고객관리 — 전국 부동산 명단·문자·반응 (2026-11-25)
 const SttWordsSection = lazy(() => import("@/components/admin/sections/SttWordsSection"));
 const AptReportsSection = lazy(() => import("@/components/admin/sections/AptReportsSection"));
 // 공실뉴스 홍보 — 회원 도구를 같이 쓴다 (관리자용을 따로 만들지 않음, 2026-11-09)
@@ -83,7 +84,8 @@ const MENU_GROUPS: AdminMenuGroup[] = [
   {
     title: "회원에게 연락",
     items: [
-      { key: "message", label: "문자·카톡 보내기", icon: <IconSend /> },
+      { key: "crm", label: "주소록", icon: <IconMembers /> }, // 전국 부동산 명단 · 그룹 · 문자와 반응 — 뿌리오 주소록처럼 (2026-11-25)
+      { key: "message", label: "문자 보내기", icon: <IconSend /> }, // 주소록 · 공실뉴스 회원 · 직접입력 (2026-11-25)
       { key: "push", label: "앱 푸시 보내기", icon: <IconMegaphone /> }, // 앱 잠금화면 알림 (2026-11-18)
     ],
   },
@@ -362,6 +364,7 @@ function AdminContent() {
           {activeMenu === "video" && <VideoStudio />}
 
           {/* ── 회원에게 연락 ── */}
+          {activeMenu === "crm" && <CrmSection theme={theme} />}
           {activeMenu === "message" && <MarketingSection theme={theme} />}
           {activeMenu === "push" && <PushSendSection theme={theme} />}
 

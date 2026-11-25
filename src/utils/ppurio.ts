@@ -205,25 +205,35 @@ export function ppurioMessageType(content: string): "SMS" | "LMS" {
   return getEucKrByteLength(content) > 90 ? "LMS" : "SMS";
 }
 
-export async function sendPpurioSmsBulk({ targets, content, subject }: { targets: { to: string; name?: string }[]; content: string; subject?: string }) {
+/* 사람마다 다른 글자 (2026-11-25 고객관리): 글 안의 [*1*] 자리에 changeWord.var1 이 들어간다 (뿌리오 치환 문자)
+   acceptedTo — 뿌리오가 접수한 번호 (묶음 단위로 실패하면 그 묶음 번호는 빠진다) */
+export async function sendPpurioSmsBulk({ targets, content, subject }: { targets: { to: string; name?: string; changeWord?: Record<string, string> }[]; content: string; subject?: string }) {
   const ppurioId = process.env.PPURIO_ID || "";
   const ppurioKey = process.env.PPURIO_KEY || "";
   const ppurioFrom = process.env.PPURIO_FROM || "";
   if (!ppurioId || !ppurioKey || !ppurioFrom) {
-    return { success: false, accepted: 0, failed: targets.length, error: "문자 발송 설정(PPURIO_ID·PPURIO_KEY·PPURIO_FROM)이 없습니다." };
+    return { success: false, accepted: 0, failed: targets.length, acceptedTo: [] as string[], error: "문자 발송 설정(PPURIO_ID·PPURIO_KEY·PPURIO_FROM)이 없습니다." };
   }
-  const clean = targets.map((t) => ({ to: t.to.replace(/[^0-9]/g, ""), name: t.name || "" })).filter((t) => /^01\d{8,9}$/.test(t.to));
+  const clean = targets
+    .map((t) => ({ to: t.to.replace(/[^0-9]/g, ""), name: t.name || "", ...(t.changeWord ? { changeWord: t.changeWord } : {}) }))
+    .filter((t) => /^01\d{8,9}$/.test(t.to));
   const badNumbers = targets.length - clean.length;
-  if (!clean.length) return { success: false, accepted: 0, failed: targets.length, error: "보낼 수 있는 휴대폰 번호가 없습니다." };
+  const acceptedTo: string[] = [];
+  if (!clean.length) return { success: false, accepted: 0, failed: targets.length, acceptedTo, error: "보낼 수 있는 휴대폰 번호가 없습니다." };
 
   try {
     const credentials = Buffer.from(`${ppurioId}:${ppurioKey}`).toString("base64");
     const tokenRes = await fetch(`${PPURIO_API_URL}/token`, { method: "POST", headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/json" } });
-    if (!tokenRes.ok) return { success: false, accepted: 0, failed: targets.length, error: `토큰 발급 실패: ${await tokenRes.text()}` };
+    if (!tokenRes.ok) return { success: false, accepted: 0, failed: targets.length, acceptedTo, error: `토큰 발급 실패: ${await tokenRes.text()}` };
     const token = (await tokenRes.json()).token;
-    if (!token) return { success: false, accepted: 0, failed: targets.length, error: "인증 토큰이 비어 있습니다." };
+    if (!token) return { success: false, accepted: 0, failed: targets.length, acceptedTo, error: "인증 토큰이 비어 있습니다." };
 
-    const messageType = ppurioMessageType(content);
+    // 치환 글자가 있으면 가장 긴 값으로 길이를 잰다 (단문·장문 판단)
+    const longest = clean.reduce((a, t) => {
+      const v = "changeWord" in t && t.changeWord ? Object.values(t.changeWord).join("") : "";
+      return v.length > a.length ? v : a;
+    }, "");
+    const messageType = ppurioMessageType(content.replace(/\[\*\d\*\]/g, longest));
     let accepted = 0;
     const errors: string[] = [];
     for (let i = 0; i < clean.length; i += 1000) {
@@ -243,12 +253,12 @@ export async function sendPpurioSmsBulk({ targets, content, subject }: { targets
           subject: messageType === "LMS" ? (subject || "공실뉴스") : undefined,
         }),
       });
-      if (res.ok) accepted += chunk.length;
+      if (res.ok) { accepted += chunk.length; acceptedTo.push(...chunk.map((t) => t.to)); }
       else errors.push(await res.text());
     }
     const failed = targets.length - accepted;
-    return { success: accepted > 0, accepted, failed, badNumbers, error: errors.length ? `일부 발송 실패: ${errors[0]}` : undefined };
+    return { success: accepted > 0, accepted, failed, badNumbers, acceptedTo, error: errors.length ? `일부 발송 실패: ${errors[0]}` : undefined };
   } catch (error: unknown) {
-    return { success: false, accepted: 0, failed: targets.length, error: error instanceof Error ? error.message : "서버 오류가 발생했습니다." };
+    return { success: false, accepted: 0, failed: targets.length, acceptedTo, error: error instanceof Error ? error.message : "서버 오류가 발생했습니다." };
   }
 }
