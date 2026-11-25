@@ -3,11 +3,11 @@
 /**
  * 공유받은 공실·기사를 모바일 웹으로 열었을 때 아래에서 올라오는 [공실뉴스 앱으로 보기] 창 (2026-11-18 사장님: 직방처럼)
  *
- * - 띄우는 곳: 공실 상세(/m/gongsil?id=…) · 기사(/m/news/<id>) — 카톡 등으로 공유되는 주소
+ * - 띄우는 곳: 모바일 웹 모든 화면(11-25부터, 로그인·관리·약관·작업 화면 제외). 공실 상세·기사는 그 화면으로 열림
  * - 안드로이드 휴대폰 브라우저에서만. 우리 앱 안 웹 화면(사용자 에이전트 GongsilNewsApp)에서는 절대 안 띄운다
  * - [앱으로 보기] → 앱이 깔려 있으면 앱의 그 화면, 없으면 플레이스토어 설치 화면 (안드로이드 intent 주소 하나로)
  * - [모바일 웹으로 볼게요] → 하루 동안 다시 안 띄움
- * - 앱이 플레이스토어에 오르기 전에는 꺼 둔다: NEXT_PUBLIC_APP_STORE_LIVE=1 일 때만 켜짐
+ * - 11-25부터 켜져 있다. NEXT_PUBLIC_APP_STORE_LIVE=0 이면 꺼짐
  *   (미리 보기: 주소 끝에 &apptest=1 을 붙이면 꺼져 있어도 보인다)
  */
 
@@ -31,7 +31,8 @@ const ORANGE = "#ff8e15";
 const PACKAGE = "com.gongsilnews.app";
 const STORE_URL = `https://play.google.com/store/apps/details?id=${PACKAGE}`;
 const HIDE_KEY = "gsn_app_sheet_hide_until";
-const LIVE = process.env.NEXT_PUBLIC_APP_STORE_LIVE === "1";
+// 2026-11-25 플레이스토어 게시 뒤 켬 (사장님). 다시 끄려면 Vercel 에 NEXT_PUBLIC_APP_STORE_LIVE=0
+const LIVE = process.env.NEXT_PUBLIC_APP_STORE_LIVE !== "0";
 
 export default function AppOpenSheet() {
   const pathname = usePathname() || "";
@@ -42,7 +43,9 @@ export default function AppOpenSheet() {
   const isVacancy = pathname === "/m/gongsil" && !!search.get("id");
   const isNews = /^\/m\/news\/[\w-]+$/.test(pathname);
   const test = search.get("apptest") === "1";
-  const show = isClient && !closed && (LIVE || test) && (isVacancy || isNews) && !search.get("part") && canShow(test);
+  // 11-25 사장님 "앱을 많이 설치하게": 모바일 웹 어느 화면이든 하루 한 번. 로그인·관리·약관·작업 화면만 뺀다
+  const excluded = /^\/m\/(admin|login|terms|flyer|report|study_watch|board_write)(\/|$)/.test(pathname);
+  const show = isClient && !closed && (LIVE || test) && !excluded && !search.get("part") && canShow(test);
 
   // 창이 떠 있는 동안 뒤 화면이 같이 밀리지 않게
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function AppOpenSheet() {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 19, fontWeight: 800, color: "#111827", lineHeight: 1.4, letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
-              {isVacancy ? "공유받은 공실," : "공실뉴스 기사,"}<br />앱에서 바로 보세요
+              {isVacancy ? "공유받은 공실," : isNews ? "공실뉴스 기사," : "공실뉴스,"}<br />{isVacancy || isNews ? "앱에서 바로 보세요" : "앱에서 더 편하게 보세요"}
             </div>
             <div style={{ fontSize: 13.5, color: "#6b7280", marginTop: 6, wordBreak: "keep-all" }}>
               {isVacancy ? "사진·위치·연락처를 한 화면에서, 주변 공실은 지도로." : "기사와 우리 동네 공실을 한 곳에서 볼 수 있어요."}
