@@ -955,6 +955,15 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     display: block;
     margin: 20px auto;
 }
+/* 사진이 내려오는 동안 설명 글(alt)이 글자로 잠깐 보이던 것 (2026-11-26 사장님: 영 거슬림)
+   글자는 투명하게(검색·화면 읽기에는 그대로), 자리는 연한 회색 칸. 투명 배경 PNG·드론 영상 로고는 회색 빼기 */
+.article-body img, .m-news-detail-body img {
+    color: transparent;
+    background-color: #f3f4f6;
+}
+.article-body img[src$=".png"], .m-news-detail-body img[src$=".png"], .article-body .gs-drone-box img {
+    background-color: transparent;
+}
 /* 에디터 잔여 UI 요소 숨김 (삭제 X 버튼, 리사이즈 핸들 등) */
 .article-body .ProseMirror-selectednode,
 .article-body [contenteditable],
