@@ -220,6 +220,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     }
   };
 
+  // 상세·글쓰기 화면에서 목록으로 돌아오면 다시 불러온다 (2026-11-26 사장님: 상세에서 [삭제]했는데 목록에 그대로 보였음)
+  const prevAction = React.useRef(action);
+  useEffect(() => {
+    const was = prevAction.current;
+    prevAction.current = action;
+    if (was && !action && isStateRestored) fetchAllVacancies();
+  }, [action]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!isStateRestored) return;
     fetchAllVacancies();

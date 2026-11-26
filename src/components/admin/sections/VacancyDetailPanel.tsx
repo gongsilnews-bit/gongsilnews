@@ -715,7 +715,12 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
             <div className="gdv-article-toolbar">
               <button className="gdv-btn-toolbar" onClick={onBack}>➖ 목록</button>
               <button className="gdv-btn-toolbar" onClick={onEdit}>✏️ 수정</button>
-              <button className="gdv-btn-toolbar" onClick={async () => { if(confirm('이 공실을 삭제하시겠습니까?')) { await deleteVacancy(vacancyId); onBack(); } }}>🗑️ 삭제</button>
+              <button className="gdv-btn-toolbar" onClick={async () => {
+                if (!confirm('이 공실을 삭제하시겠습니까?')) return;
+                const res = await deleteVacancy(vacancyId);
+                if (!res.success) { alert(res.error || '삭제하지 못했어요. 잠시 뒤 다시 해 주세요.'); return; } // 실패를 말없이 넘기지 않는다 (2026-11-26)
+                onBack();
+              }}>🗑️ 삭제</button>
               <button className="gdv-btn-toolbar" onClick={() => {
                 // 보고서·홍보지 메뉴로 — 이 공실을 고른 채로 (2026-11-04 사장님: 새 창 대신 그 페이지로)
                 try { localStorage.setItem("studio_marketing_category", "report"); localStorage.setItem("studio_marketing_vacancy", vacancyId); } catch { /* */ }
