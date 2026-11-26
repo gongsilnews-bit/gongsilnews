@@ -590,18 +590,17 @@ const ArticleRow = React.memo(({ a, activeTab, formatDate, stripHtml, extractYou
 
       {/* 오른쪽 텍스트 컨텐츠 */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
-        <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "6px" }}>
-          <span style={{ color: "#508bf5", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "#666", fontWeight: 500 }}>
-              {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
-            </span>
-            {a.location_name && <span style={{ color: "#666", fontWeight: 500 }}>📍{a.location_name}</span>}
-          </div>
+        {/* 첫 줄: 분류 · 시간·기자 — 한 줄로 (위치까지 한 줄에 넣어 좁은 폰에서 여러 줄로 깨지던 것, 2026-11-26 사장님) */}
+        <div style={{ fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "6px", whiteSpace: "nowrap" }}>
+          <span style={{ color: "#508bf5", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{a.section2 || "뉴스"}</span>
+          <span style={{ color: "#666", fontWeight: 500, flexShrink: 0 }}>
+            {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
+          </span>
         </div>
         <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: "4px", lineHeight: 1.4 }}>
           {a.title}
         </div>
+        {/* 위치(📍 주소)는 목록에 넣지 않는다 (2026-11-26 사장님) */}
         <div style={{ fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>
           {a.subtitle || stripHtml(a.content || "").slice(0, 80)}
         </div>
