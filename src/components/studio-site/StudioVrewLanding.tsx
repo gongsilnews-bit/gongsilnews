@@ -363,8 +363,8 @@ export default function StudioVrewLanding() {
           <p className="sv-p">AI · 스마트폰 시대, 내 지역/단지 정보를<br />뉴스로 전달하세요!</p>
           <div className="sv-steps">
             <div className="sv-step"><div className="n">1</div><div className="t">내 지역·단지 기사 작성</div><div className="d">매월 4회 기사를 꾸준히 발행하세요. 지역 전문가로 알려집니다.</div></div>
-            <div className="sv-step"><div className="n">2</div><div className="t">공실 20건 등록</div><div className="d">공실을 20건까지 등록해 지도와 내 홈페이지에 함께 알릴 수 있습니다.</div></div>
-            <div className="sv-step"><div className="n">3</div><div className="t">쉬워지는 부동산마케팅</div><div className="d">SNS·뉴스 발행 · 매물보고서 · 물건접수 홈페이지를 공실 하나 등록하면 한 번에 만듭니다.</div></div>
+            <div className="sv-step"><div className="n">2</div><div className="t">공실 20건 등록</div><div className="d">공실을 20건까지 등록해, 타부동산과 손님에게 내 공실을 홍보할 수 있습니다.</div></div>
+            <div className="sv-step"><div className="n">3</div><div className="t">쉬워지는 AI 부동산마케팅</div><div className="d">등록된 공실을 AI를 활용해 SNS뉴스 발행, 매물보고서 등 클릭 한 번으로 마케팅합니다.</div></div>
           </div>
         </section>
       </div>
@@ -461,7 +461,7 @@ export default function StudioVrewLanding() {
 
       {/* 3-1 물건접수홈페이지 제공 (2026-11-04 사장님: "매물접수홈페이지 제공도 넣어줘") — PRO 혜택. 그림은 실제 화면 */}
       <section className="sv-sec">
-        <h2 className="sv-h2">내 부동산 홈페이지를<br />바로 열어 드립니다</h2>
+        <h2 className="sv-h2">부동산 홈페이지를<br />무료로 드립니다</h2>
         <p className="sv-p">
           공실뉴스부동산 회원에게 <b>물건접수홈페이지</b>를 만들어 드려요. 내 공실이 저절로 올라가고,<br />
           집주인은 <b>[물건 접수]</b>로 직접 물건을 맡깁니다. 로고 · 색상 · 첫 화면 사진 · 영상도 내 마음대로.<br />
