@@ -9,6 +9,8 @@ import { listPresaleRequests, updatePresaleRequest, type PresaleRequestRow } fro
 
 const PURPLE = "#6d28d9";
 const STATUS: Record<string, string> = { new: "새 접수", contacted: "연락함", done: "마침" };
+/** 회원 구분 색 (2026-11-26 사장님: 신청자 명단에 부동산회원·일반회원처럼) */
+const TYPE_COLOR: Record<string, string> = { "공실뉴스부동산": "#ea580c", "부동산회원": "#1a2e5a", "비즈니스회원": "#0f766e", "일반회원": "#2563eb", "최고관리자": "#6b7280", "비회원": "#9ca3af" };
 
 export default function PresaleRequestsSection({ theme }: { theme: AdminTheme }) {
   const [rows, setRows] = useState<PresaleRequestRow[] | null>(null);
@@ -18,12 +20,13 @@ export default function PresaleRequestsSection({ theme }: { theme: AdminTheme })
   useEffect(() => { load(); }, []);
 
   const groups = useMemo(() => {
-    const m = new Map<string, { id: string; name: string; n: number; third: number; fresh: number; areas: Map<string, number>; last: string }>();
+    const m = new Map<string, { id: string; name: string; n: number; third: number; fresh: number; areas: Map<string, number>; types: Map<string, number>; last: string }>();
     for (const r of rows || []) {
-      const g = m.get(r.presale_id) || { id: r.presale_id, name: r.presale_name, n: 0, third: 0, fresh: 0, areas: new Map(), last: r.created_at };
+      const g = m.get(r.presale_id) || { id: r.presale_id, name: r.presale_name, n: 0, third: 0, fresh: 0, areas: new Map(), types: new Map(), last: r.created_at };
       g.n++;
       if (r.agree_third) g.third++;
       if (r.status === "new") g.fresh++;
+      g.types.set(r.member_type, (g.types.get(r.member_type) || 0) + 1);
       if (r.area_type) g.areas.set(r.area_type, (g.areas.get(r.area_type) || 0) + 1);
       if (r.created_at > g.last) g.last = r.created_at;
       m.set(r.presale_id, g);
@@ -58,6 +61,7 @@ export default function PresaleRequestsSection({ theme }: { theme: AdminTheme })
               <div style={{ marginTop: 6, fontSize: 13.5 }}>
                 신청 <b style={{ color: PURPLE, fontSize: 17 }}>{g.n}</b>명 · 분양사 제공 동의 <b>{g.third}</b>명{g.fresh ? <> · <span style={{ color: "#dc2626", fontWeight: 700 }}>새 접수 {g.fresh}</span></> : null}
               </div>
+              <div style={{ marginTop: 4, fontSize: 12.5, display: "flex", flexWrap: "wrap", gap: "2px 8px" }}>{[...g.types.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => <span key={k} style={{ color: TYPE_COLOR[k] || theme.textSecondary, fontWeight: 700 }}>{k} {v}</span>)}</div>
               {g.areas.size > 0 && <div style={{ marginTop: 4, fontSize: 12.5, color: theme.textSecondary }}>{[...g.areas.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>}
             </button>
           ))}
@@ -65,9 +69,9 @@ export default function PresaleRequestsSection({ theme }: { theme: AdminTheme })
 
         {/* 목록 */}
         <div style={{ marginTop: 22, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 860 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 940 }}>
             <thead>
-              <tr>{["접수", "단지", "이름", "휴대폰", "평형", "분양사 제공", "상태", "메모"].map((h) => <th key={h} style={{ ...cell, fontWeight: 700, color: theme.textSecondary, textAlign: "left", fontSize: 13 }}>{h}</th>)}</tr>
+              <tr>{["접수", "단지", "이름", "회원", "휴대폰", "평형", "분양사 제공", "상태", "메모"].map((h) => <th key={h} style={{ ...cell, fontWeight: 700, color: theme.textSecondary, textAlign: "left", fontSize: 13 }}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {shown.map((r) => (
@@ -75,6 +79,7 @@ export default function PresaleRequestsSection({ theme }: { theme: AdminTheme })
                   <td style={{ ...cell, whiteSpace: "nowrap" }}>{day(r.created_at)}</td>
                   <td style={cell}>{r.presale_name}</td>
                   <td style={cell}>{r.name}</td>
+                  <td style={{ ...cell, whiteSpace: "nowrap" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 800, color: "#fff", background: TYPE_COLOR[r.member_type] || "#9ca3af" }}>{r.member_type}</span></td>
                   <td style={{ ...cell, whiteSpace: "nowrap" }}><a href={`tel:${r.phone}`} style={{ color: theme.textPrimary }}>{r.phone}</a></td>
                   <td style={cell}>{r.area_type || "-"}</td>
                   <td style={cell} title={r.third_party || ""}>{r.agree_third ? <span style={{ color: PURPLE, fontWeight: 700 }}>동의</span> : <span style={{ color: theme.textSecondary }}>안 함</span>}</td>
