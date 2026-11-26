@@ -12,7 +12,9 @@ export async function GET(req: Request) {
   }
   try {
     const done = await syncPresales(db(), Date.now() + 270_000);
-    return NextResponse.json({ success: true, ...done });
+    // 분양자료 신청은 1년 보관 — 동의 화면에 적은 기간이 지나면 지운다 (2026-11-26)
+    const { count: purged } = await db().from("presale_requests").delete({ count: "exact" }).lt("created_at", new Date(Date.now() - 365 * 86400000).toISOString());
+    return NextResponse.json({ success: true, ...done, purged: purged || 0 });
   } catch (e) {
     return NextResponse.json({ success: false, error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }

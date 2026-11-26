@@ -7,6 +7,8 @@
  *  - 자료는 /api/presale (매일 /api/cron/presale 이 청약홈으로 채운다)
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { mapLayerBox, mapLayerRow } from "./mapSquareButton";
 import { areaLabel, shortPrice } from "@/utils/aptMapShared";
 import PresaleDetailPanel, { PRESALE, PRESALE_DIM, presaleStage, type PresaleItem } from "./PresaleDetailPanel";
 
@@ -16,7 +18,10 @@ type Marker = { id: string; kind: string; name: string; lat: number; lng: number
 
 const esc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch] as string);
 
-export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile = false }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; enabled: boolean; mobile?: boolean }) {
+/** buttonSlot 을 주면(모바일 웹 [지도 표시] 창) "분양 단지" 켜기·끄기 줄을 넣고, 처음엔 꺼 둔다 (2026-11-26 사장님: 모바일에도) */
+export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile = false, buttonSlot }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; enabled: boolean; mobile?: boolean; buttonSlot?: HTMLElement | null }) {
+  const [on, setOn] = useState(false);
+  const active = enabled && (buttonSlot === undefined || on);
   const overlays = useRef<any[]>([]);
   const els = useRef<Map<string, HTMLElement>>(new Map());
   const abort = useRef<AbortController | null>(null);
@@ -67,7 +72,8 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
     if (ac.signal.aborted) return;
     clear();
     if (!r?.success) { setError("분양 정보를 불러오지 못했습니다. 잠시 뒤 지도를 다시 움직여 보세요."); return; }
-    setError("");
+    // 화면 안에 분양 단지가 없으면 알려 준다 — 고장으로 보이지 않게 (11-26 사장님: "안보여")
+    setError((r.items || []).length ? "" : "이 지도 안에는 분양 단지가 없어요. 지도를 넓혀 보세요");
     const proj = map.getProjection();
     const taken: { x: number; y: number }[] = [];
     const level = map.getLevel();
@@ -127,7 +133,7 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
   }, [kakaoMapRef, mobile, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!enabled || !mapLoaded) return;
+    if (!active || !mapLoaded) return;
     let map: any = null, stopped = false, timer: ReturnType<typeof setTimeout> | undefined;
     const listener = () => draw();
     const attach = () => {
@@ -148,7 +154,7 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
       clear();
       close();
     };
-  }, [enabled, mapLoaded, kakaoMapRef, draw]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [active, mapLoaded, kakaoMapRef, draw]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // PC — 왼쪽 목록 자리에 (단지 창과 같은 자리)
   useEffect(() => {
@@ -164,11 +170,17 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
     return () => window.removeEventListener("resize", measure);
   }, [mobile, detail]);
 
-  if (!enabled) return null;
+  const row = buttonSlot ? createPortal(
+    <button type="button" onClick={() => setOn((v) => !v)} title="청약홈 분양 단지를 지도 위에 보기" style={mapLayerRow(on, PRESALE)}>
+      <span style={mapLayerBox(on, PRESALE)}>{on ? "✓" : ""}</span>
+      분양 단지
+    </button>, buttonSlot) : null;
+  if (!active) return row;
   return (
     <>
+      {row}
       {error && (
-        <div style={{ position: "absolute", left: "50%", bottom: 28, transform: "translateX(-50%)", zIndex: 1000, background: "rgba(17,24,39,.88)", color: "#fff", fontSize: 14, fontWeight: 600, padding: "10px 18px", borderRadius: 20, pointerEvents: "none" }}>{error}</div>
+        <div style={{ position: "absolute", left: "50%", bottom: mobile ? 110 : 28, transform: "translateX(-50%)", zIndex: 1000, background: "rgba(109,40,217,.92)", color: "#fff", fontSize: mobile ? 13 : 14, fontWeight: 600, padding: "9px 16px", borderRadius: 20, pointerEvents: "none", whiteSpace: "nowrap" }}>{error}</div>
       )}
       {detail && <PresaleDetailPanel item={detail} onClose={close} mobile={mobile} side={!mobile && side ? side : undefined} />}
     </>

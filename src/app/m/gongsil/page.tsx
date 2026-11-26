@@ -19,6 +19,7 @@ import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import AptPriceLayer from "@/app/(map)/gongsil/AptPriceLayer";
 import NewsLayer from "@/app/(map)/gongsil/NewsLayer";
 import AgencyLayer from "@/app/(map)/gongsil/AgencyLayer";
+import PresaleLayer from "@/app/(map)/gongsil/PresaleLayer";
 import type { MapAgency } from "@/app/actions/mapAgencies";
 import MobileNewsDetailPanel from "../_components/MobileNewsDetailPanel";
 import { keepAptMark } from "@/utils/aptHistory";
@@ -1534,6 +1535,8 @@ function MobileGongsilContent() {
             <NewsLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} category="all" />
             {/* 회원 부동산 이름표 — PC [부동산]과 같은 것 (2026-11-11 사장님: "부동산도 나타나게, 모바일에서"). PC 처럼 켜진 채로 시작 */}
             <AgencyLayer mobile kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} />
+            {/* 청약홈 분양 단지(보라) — [지도 표시] 창의 "분양 단지" 줄, 처음엔 꺼 둠 (2026-11-26 사장님: 모바일에도) */}
+            <PresaleLayer mobile enabled kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={priceSlot} />
             {/* 지도에서 연 기사는 우리동네뉴스 기사 화면 모양으로 (2026-11-11 사장님) */}
             <MobileNewsDetailPanel />
             <AgencyVacancyList vacancies={vacancies} onList={(list, a) => { window.history.pushState({ ...keepAptMark(), panel: "cluster" }, ""); setSelectedVacancy(null); setAgencyPicked(a); setSelectedCluster(list); }} onUpdate={(list) => setSelectedCluster((cur: any) => (cur ? list : cur))} />

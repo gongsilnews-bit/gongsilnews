@@ -7,6 +7,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { HeroRoadview, heroBtn } from "./AptDetailPanel";
 import { repType } from "@/utils/presale";
+import { collectText, thirdText } from "@/utils/presaleConsent";
+import { submitPresaleRequest } from "@/app/actions/presale";
+import { createClient } from "@/utils/supabase/client";
 
 export const PRESALE = "#6d28d9";      // 분양 보라 — 청약 전·진행 중 (11-26 사장님: 더 진하게)
 export const PRESALE_DIM = "#7c3aed";  // 청약 마감 (연보라는 안 보여서 진하게, 11-26)
@@ -40,15 +43,6 @@ export function presalePrice(v: number | null) {
   const eok = Math.floor(v / 10000), man = v % 10000;
   return `${eok ? `${eok}억` : ""}${eok && man ? " " : ""}${man ? `${man.toLocaleString("ko-KR")}만` : ""}` || "-";
 }
-/** "15513560" → "1551-3560" · "0635628881" → "063-562-8881" */
-const telText = (p: string) => {
-  const r = p.replace(/\D/g, "");
-  if (r.length === 8 && /^1[5-9]/.test(r)) return `${r.slice(0, 4)}-${r.slice(4)}`;
-  if (r.startsWith("02")) return r.length === 9 ? `02-${r.slice(2, 5)}-${r.slice(5)}` : `02-${r.slice(2, 6)}-${r.slice(6)}`;
-  if (r.length === 10) return `${r.slice(0, 3)}-${r.slice(3, 6)}-${r.slice(6)}`;
-  if (r.length === 11) return `${r.slice(0, 3)}-${r.slice(3, 7)}-${r.slice(7)}`;
-  return p;
-};
 const dot = (d: string | null) => (d ? d.slice(2).replace(/-/g, ".") : "-");
 const range = (a: string | null, b: string | null) => (a ? (b && b !== a ? `${dot(a)} ~ ${dot(b).slice(3)}` : dot(a)) : "-");
 
@@ -57,7 +51,20 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
   // 처음 고른 평형 = 지도 표시와 같은 대표 평형 (repType)
   const first = useMemo(() => (repType(types) || types[0])?.type || "", [types]);
   const [sel, setSel] = useState(first);
+  const [ask, setAsk] = useState(false);
+  useEffect(() => setAsk(false), [item.id]);
   useEffect(() => setSel(first), [item.id, first]);
+  // 모바일 뒤로가기 = 분양 창만 닫기 (단지 창과 같게) — 열 때 기록 한 칸, 닫을 때 그 칸을 되돌린다
+  const closeRef = React.useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    if (!mobile) return;
+    if (!window.history.state?.presale) window.history.pushState({ ...(window.history.state || {}), presale: 1 }, "");
+    const onPop = (e: PopStateEvent) => { if ((e.state as { presale?: number } | null)?.presale) return; e.stopImmediatePropagation(); closeRef.current(); };
+    window.addEventListener("popstate", onPop, true);
+    return () => window.removeEventListener("popstate", onPop, true);
+  }, [mobile]);
+  const close = mobile ? () => { if (window.history.state?.presale) window.history.back(); else onClose(); } : onClose;
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", k);
@@ -88,14 +95,14 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
   const lat = Number(item.lat), lng = Number(item.lng);
 
   return (
-    <div onClick={side ? undefined : onClose} style={side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
+    <div onClick={side ? undefined : close} style={side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: PRESALE, ["--apt-soft" as string]: SOFT, position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: mobile ? "88%" : "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: side ? 0 : mobile ? "16px 16px 0 0" : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
         <div style={{ flex: 1, overflowY: "auto" }}>
           <HeroRoadview lat={Number.isFinite(lat) ? lat : NaN} lng={lng} title={item.name} sub={item.address || ""} tag={tag}
             actions={(dark) => (<>
               {side && <button onClick={onClose} aria-label="목록으로" title="공실 목록으로" style={heroBtn(dark)}>‹</button>}
               <span style={{ flex: 1 }} />
-              <button onClick={onClose} aria-label="닫기" style={heroBtn(dark)}>✕</button>
+              <button onClick={close} aria-label="닫기" style={heroBtn(dark)}>✕</button>
             </>)} />
 
           {/* 단지 한 줄 — 세대수 · 입주 예정 / 시공 · 시행 */}
@@ -159,25 +166,112 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
                   <span style={{ textAlign: "right", fontWeight: 800, color: PRESALE }}>{presalePrice(x.price)}</span>
                 </div>
               ))}
-              <div style={{ padding: "10px 20px 14px", color: SUB, fontSize: 12 }}>출처: 청약홈(한국부동산원) 모집공고 · 자세한 조건은 모집공고에서 확인하세요.</div>
+              <div style={{ padding: "10px 20px 14px", color: SUB, fontSize: 12 }}>
+                출처: 청약홈(한국부동산원) 모집공고
+                {item.notice_url && <> · <a href={item.notice_url} target="_blank" rel="noopener noreferrer" style={{ color: SUB, textDecoration: "underline" }}>모집공고 원문 보기</a></>}
+              </div>
             </div>
           )}
-
-          {(item.phone || item.homepage) && (
-            <div style={{ ...section, padding: "14px 20px", color: "#4b5563", lineHeight: 1.7 }}>
-              {item.phone && <div>분양 문의 <a href={`tel:${item.phone}`} style={{ color: PRESALE, fontWeight: 700 }}>{telText(item.phone)}</a></div>}
-              {item.homepage && <div>홈페이지 <a href={item.homepage} target="_blank" rel="noopener noreferrer" style={{ color: PRESALE, fontWeight: 700, wordBreak: "break-all" }}>{item.homepage}</a></div>}
-            </div>
-          )}
+          {/* 분양사 문의 전화·홈페이지는 보이지 않는다 — 신청은 [분양자료 신청하기] 하나로 (2026-11-26 사장님 회의) */}
         </div>
 
-        {/* 맨 아래 — 단지 창의 보라 줄 자리에 모집공고 */}
-        {item.notice_url && (
-          <a href={item.notice_url} target="_blank" rel="noopener noreferrer"
-            style={{ flexShrink: 0, height: 52, background: PRESALE, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, textDecoration: "none" }}>
-            청약홈 모집공고 보기 →
-          </a>
-        )}
+        {/* 맨 아래 — [분양자료 신청하기] (11-26 사장님 회의: 청약홈으로 내보내지 않고 공실뉴스가 신청을 받는다) */}
+        <button type="button" onClick={() => setAsk(true)}
+          style={{ flexShrink: 0, height: 52, border: "none", background: PRESALE, color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+          분양자료 신청하기 →
+        </button>
+        {ask && <PresaleRequestForm item={item} types={types.map((x) => x.type)} defaultType={t?.type || ""} onClose={() => setAsk(false)} />}
+      </div>
+    </div>
+  );
+}
+
+/** 분양자료 신청 창 — 이름 · 휴대폰("-" 자동) · 관심 평형 · 동의 2개(수집 필수 · 분양사 제공 선택). 로그인 회원은 이름·번호를 미리 채운다 */
+function PresaleRequestForm({ item, types, defaultType, onClose }: { item: PresaleItem; types: string[]; defaultType: string; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [area, setArea] = useState(defaultType);
+  const [a1, setA1] = useState(false);
+  const [a2, setA2] = useState(false);
+  const [open1, setOpen1] = useState(false);
+  const [open2, setOpen2] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [done, setDone] = useState(false);
+  const fmt = (v: string) => {
+    const r = v.replace(/\D/g, "").slice(0, 11);
+    return r.length <= 3 ? r : r.length <= 7 ? `${r.slice(0, 3)}-${r.slice(3)}` : r.length <= 10 ? `${r.slice(0, 3)}-${r.slice(3, 6)}-${r.slice(6)}` : `${r.slice(0, 3)}-${r.slice(3, 7)}-${r.slice(7)}`;
+  };
+  useEffect(() => {
+    (async () => {
+      try {
+        const sb = createClient();
+        const { data } = await sb.auth.getUser();
+        if (!data?.user) return;
+        const { data: m } = await sb.from("members").select("name, phone").eq("id", data.user.id).maybeSingle();
+        if (m?.name) setName((v) => v || String(m.name));
+        if (m?.phone) setPhone((v) => v || fmt(String(m.phone)));
+      } catch { /* 비회원 */ }
+    })();
+  }, []);
+  const send = async () => {
+    setMsg("");
+    if (!a1) { setMsg("개인정보 수집·이용에 동의해 주세요."); return; }
+    setBusy(true);
+    const r = await submitPresaleRequest({ presaleId: item.id, name, phone, areaType: area || undefined, agreeCollect: a1, agreeThird: a2 }).catch(() => null);
+    setBusy(false);
+    if (r?.success) setDone(true);
+    else setMsg(r?.error || "신청하지 못했습니다. 잠시 뒤 다시 해 주세요.");
+  };
+  const input: React.CSSProperties = { width: "100%", boxSizing: "border-box", height: 46, padding: "0 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 15, fontFamily: "inherit" };
+  const agree = (on: boolean, set: (v: boolean) => void, label: string, opened: boolean, setOpened: (v: boolean) => void, text: string) => (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#374151" }}>
+          <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} style={{ width: 18, height: 18, accentColor: PRESALE }} />{label}
+        </label>
+        <button type="button" onClick={() => setOpened(!opened)} style={{ border: "none", background: "none", color: SUB, fontSize: 12.5, cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>{opened ? "접기" : "자세히"}</button>
+      </div>
+      {opened && <pre style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", padding: "10px 12px", background: "#f9fafb", borderRadius: 8, fontSize: 12, lineHeight: 1.6, color: "#4b5563", fontFamily: "inherit" }}>{text}</pre>}
+    </div>
+  );
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgba(17,24,39,.45)", display: "flex", alignItems: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxHeight: "92%", overflowY: "auto", background: "#fff", borderRadius: "16px 16px 0 0", padding: "20px 20px 18px", boxSizing: "border-box" }}>
+        {done ? (
+          <div style={{ textAlign: "center", padding: "18px 0 6px" }}>
+            <div style={{ fontSize: 40 }}>✅</div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>신청이 접수됐어요</div>
+            <div style={{ color: SUB, marginTop: 8, lineHeight: 1.6 }}>{item.name} 분양자료를<br />적어 주신 번호로 안내해 드릴게요.</div>
+            <button type="button" onClick={onClose} style={{ marginTop: 18, width: "100%", height: 50, border: "none", borderRadius: 10, background: PRESALE, color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>확인</button>
+          </div>
+        ) : (<>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ flex: 1, fontSize: 18, fontWeight: 800 }}>분양자료 신청</div>
+            <button type="button" onClick={onClose} aria-label="닫기" style={{ border: "none", background: "none", fontSize: 22, cursor: "pointer", color: SUB }}>✕</button>
+          </div>
+          <div style={{ color: PRESALE, fontWeight: 700, marginTop: 4 }}>{item.name}</div>
+          <div style={{ color: SUB, fontSize: 13, marginTop: 4, lineHeight: 1.5 }}>분양가표·평면도·청약 일정 등 분양자료를 보내 드려요.</div>
+          <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="이름" maxLength={30} style={input} />
+            <input value={phone} onChange={(e) => setPhone(fmt(e.target.value))} placeholder="휴대폰 번호 010-0000-0000" inputMode="numeric" style={input} />
+            {types.length > 0 && (
+              <select value={area} onChange={(e) => setArea(e.target.value)} style={{ ...input, background: "#fff" }}>
+                <option value="">관심 평형 (선택)</option>
+                {types.map((x) => <option key={x} value={x}>{x}</option>)}
+              </select>
+            )}
+          </div>
+          <div style={{ marginTop: 14, paddingTop: 4, borderTop: "1px solid #f3f4f6" }}>
+            {agree(a1, setA1, "개인정보 수집·이용 동의 (필수)", open1, setOpen1, collectText(item.name))}
+            {agree(a2, setA2, "분양사 개인정보 제공 동의 (선택)", open2, setOpen2, thirdText(item.name, item.developer))}
+          </div>
+          {msg && <div style={{ color: "#dc2626", fontSize: 13.5, fontWeight: 600, marginTop: 12 }}>{msg}</div>}
+          <button type="button" onClick={send} disabled={busy}
+            style={{ marginTop: 16, width: "100%", height: 52, border: "none", borderRadius: 10, background: PRESALE, color: "#fff", fontSize: 16, fontWeight: 800, cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1, fontFamily: "inherit" }}>
+            {busy ? "보내는 중…" : "신청하기"}
+          </button>
+        </>)}
       </div>
     </div>
   );

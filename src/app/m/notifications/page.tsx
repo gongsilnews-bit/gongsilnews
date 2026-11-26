@@ -22,6 +22,7 @@ const TYPE_ICON: Record<string, string> = {
   inquiry_reply: "💬",
   inquiry_answered: "✅",
   vacancy_report: "⚠️", // 내 공실에 오류제보 (2026-11-17)
+  presale_request: "🏗️", // 분양자료 신청 (2026-11-26)
 };
 
 const timeAgo = (iso: string) => {

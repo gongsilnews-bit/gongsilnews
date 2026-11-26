@@ -35,6 +35,7 @@ const PushSendSection = lazy(() => import("@/components/admin/sections/PushSendS
 const CrmSection = lazy(() => import("@/components/admin/sections/CrmSection")); // 고객관리 — 전국 부동산 명단·문자·반응 (2026-11-25)
 const SttWordsSection = lazy(() => import("@/components/admin/sections/SttWordsSection"));
 const AptReportsSection = lazy(() => import("@/components/admin/sections/AptReportsSection"));
+const PresaleRequestsSection = lazy(() => import("@/components/admin/sections/PresaleRequestsSection"));
 // 공실뉴스 홍보 — 회원 도구를 같이 쓴다 (관리자용을 따로 만들지 않음, 2026-11-09)
 const PromoCalendarSection = lazy(() => import("@/components/admin/sections/PromoCalendarSection"));
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
@@ -62,6 +63,7 @@ const MENU_GROUPS: AdminMenuGroup[] = [
     items: [
       { key: "point", label: "포인트", icon: <IconPoint /> },
       { key: "apt_reports", label: "단지 정보 요청", icon: <IconBuilding /> }, // 시세 지도 공급면적·단지 정보 보완 (2026-11-02)
+      { key: "presale_requests", label: "분양 신청", icon: <IconBuilding /> }, // 분양자료 신청 접수 현황 (2026-11-26)
       { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
       { key: "md_guide", label: "MD 지침서", icon: <IconManual /> },
       { key: "stt_words", label: "받아쓰기 낱말장", icon: <IconEdit /> },
@@ -346,6 +348,7 @@ function AdminContent() {
           {activeMenu === "point" && <PointSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={(s) => go("point", s)} />}
           {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} />}
           {activeMenu === "apt_reports" && <AptReportsSection theme={theme} />}
+          {activeMenu === "presale_requests" && <PresaleRequestsSection theme={theme} />}
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
           {activeMenu === "md_guide" && <MDGuideSection theme={theme} userName={adminUserName} />}
