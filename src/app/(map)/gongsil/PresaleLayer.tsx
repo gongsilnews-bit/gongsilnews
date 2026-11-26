@@ -34,7 +34,7 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
     const c = el.dataset.color || PRESALE;
     const box = el.children[0] as HTMLElement | undefined, tip = el.children[1] as HTMLElement | undefined;
     if (box) { box.style.background = on ? c : "#fff"; box.querySelectorAll<HTMLElement>("[data-t]").forEach((t) => { t.style.color = on ? "#fff" : t.dataset.t!; }); }
-    if (tip) tip.style.borderTopColor = c; // 꼬리는 늘 보라
+    if (tip) { tip.style.background = on ? c : "#fff"; tip.style.borderColor = c; } // 꼬리: 평소 흰 바탕 + 보라 선, 고르면 보라로 채움
     if (el.parentElement) el.parentElement.style.zIndex = on ? "5" : "2";
   };
   const pick = (id: string | null) => {
@@ -95,7 +95,8 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
         `<div style="font-size:${fa}px;font-weight:600;color:#6b7280" data-t="#6b7280"><span style="display:inline-block;background:${color};color:#fff;border-radius:3px;padding:0 3px;margin-right:3px;font-size:${fa - 1}px;font-weight:800">분양</span>${esc(top)}</div>` +
         `<div style="font-size:${fp}px;font-weight:800;letter-spacing:-.3px;color:${color}" data-t="${color}">${esc(price)}</div>` +
         `<div style="font-size:${fa}px;font-weight:800;color:${st.done ? "#6b7280" : color}" data-t="${st.done ? "#6b7280" : color}">${esc(st.short)}</div></div>` +
-        `<div style="width:0;height:0;margin:0 auto;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color}"></div>`;
+        // 꼬리 — 흰 바탕 + 보라 선 (11-26 사장님: 칠하지 말고 선으로, 흰색이 보이게). 네모를 45도 돌려 아래 두 변만 선
+        `<div style="width:9px;height:9px;margin:-6px auto 2px;background:#fff;border-right:2px solid ${color};border-bottom:2px solid ${color};transform:rotate(45deg);position:relative"></div>`;
       const pos = new kakao.maps.LatLng(m.lat, m.lng);
       const ov = new kakao.maps.CustomOverlay({ position: pos, content: el, yAnchor: 1, zIndex: 2, clickable: true });
       if (!mobile) {
