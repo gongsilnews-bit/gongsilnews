@@ -322,11 +322,62 @@ const colOf = (b: any) => (b && b.source && typeof b.source === "object" ? b.sou
 
 const CHANNELS = ["instagram", "threads", "facebook"];
 const fence = (o: unknown) => "```json\n" + JSON.stringify(o) + "\n```";
+/* AI 답 너그럽게 읽기 (2026-11-26 사장님: 휴대폰 SNS 올리기 "답을 읽지 못했어요")
+   AI 가 JSON 을 조금 틀리게 써도 바로잡는다 — 글 안 줄바꿈 그대로 · 둥근 따옴표 · 글 안 따옴표 · 끝 쉼표 · 보이지 않는 칸
+   그대로 읽히면 손대지 않는다. 바로잡은 뒤에도 안 되면 null */
+function repairJson(s: string) {
+  // 곧은 따옴표가 하나도 없으면 둥근 따옴표가 JSON 따옴표 자리 → 곧은 따옴표로
+  if (!s.includes('"')) s = s.replace(/[“”„‟]/g, '"');
+  let out = "", inStr = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (!inStr) {
+      if (c === '"') { inStr = true; out += c; continue; }
+      if (c === " " || c === "　") { out += " "; continue; }
+      if (c === "​" || c === "﻿" || c === "‌" || c === "‍") continue;
+      out += c;
+      continue;
+    }
+    // 글 안
+    if (c === "\\") { out += c + (s[i + 1] ?? ""); i++; continue; }
+    if (c === '"') {
+      // 뒤에 , } ] : 가 오면 글 끝 따옴표, 아니면 글 안에 쓴 따옴표 → \"
+      let j = i + 1;
+      while (j < s.length && /\s/.test(s[j])) j++;
+      if (j >= s.length || ",}]:".includes(s[j])) { inStr = false; out += c; }
+      else out += '\\"';
+      continue;
+    }
+    if (c === "\n") { out += "\\n"; continue; }
+    if (c === "\r") continue;
+    if (c === "\t") { out += "\\t"; continue; }
+    out += c;
+  }
+  // 끝 쉼표 {"a":1,} [1,2,]
+  return out.replace(/,(\s*[}\]])/g, "$1");
+}
 function outer(text: string) {
   const t = String(text || "");
   const a = t.indexOf("{"), z = t.lastIndexOf("}");
   if (a < 0 || z <= a) return null;
-  try { return JSON.parse(t.slice(a, z + 1)); } catch { return null; }
+  const body = t.slice(a, z + 1);
+  try { return JSON.parse(body); } catch { /* 아래에서 바로잡아 다시 */ }
+  try { return JSON.parse(repairJson(body)); } catch { return null; }
+}
+/* 끝이 잘린 답인지 — 여는 괄호가 닫는 괄호보다 많다 (답이 다 나오기 전에 복사) */
+function cutShort(text: string) {
+  const t = String(text || "");
+  const a = t.indexOf("{");
+  if (a < 0) return false;
+  let depth = 0, inStr = false;
+  for (let i = a; i < t.length; i++) {
+    const c = t[i];
+    if (inStr) { if (c === "\\") i++; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === "{" || c === "[") depth++;
+    else if (c === "}" || c === "]") depth--;
+  }
+  return depth > 0;
 }
 const NO_ARTICLE = { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 [확인된 매물 정보]만 사용해 작성하십시오." };
 const NO_REF = { title: "(참조 기사 없음)", subtitles: [], body: "참조 기사 없이, 아래 [확인된 매물 정보](처음 분석·캡처한 공실 정보)만 사용해 작성하십시오." };
@@ -661,7 +712,9 @@ function ytOf(text: string, col = false) {
 }
 function allParse(b: any) {
   let o = outer(b.text);
-  if (!o) return { ok: false, error: "AI 답을 읽지 못했어요. 답이 다 나온 뒤 코드 상자의 [복사]를 눌러 주세요." };
+  if (!o) return { ok: false, error: cutShort(b.text)
+    ? "답이 끝까지 오지 않았어요. AI 답이 다 나온 뒤 코드 상자의 [복사]를 다시 눌러 주세요."
+    : "AI 답을 읽지 못했어요. 답이 다 나온 뒤 코드 상자의 [복사]를 눌러 주세요." };
   const keys: string[] = Array.isArray(b.keys) ? b.keys : [];
   /* AI 가 묶음 껍데기({"sns": …})를 빼고 답해도 받는다 (2026-11-13 사장님: Aside 에서 "답에 SNS 글이 없어요")
      - 글 하나만 쓸 때: 답 전체가 그 글

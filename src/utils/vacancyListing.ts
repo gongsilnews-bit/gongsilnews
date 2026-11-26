@@ -36,7 +36,8 @@ export async function vacancyListing(id: string, requesterId?: string | null) {
         // 임대인이 본인 이름·본인 전화로 직접 내놓은 매물 (2026-10-29 사장님) — 전화는 본인이 쓰는 글일 때만
         type: "general",
         name: clean(member.name || v.client_name),
-        phone: requesterId && requesterId === v.owner_id ? clean(member.phone) : "",
+        // 공실 등록 때 넣은 연락처(client_phone) 먼저, 없으면 회원 전화 (2026-11-26 사장님: 카카오·구글 가입자는 회원 전화가 비어 SNS 글 끝에 연락처가 안 나왔음)
+        phone: requesterId && requesterId === v.owner_id ? clean(v.client_phone || member.phone) : "",
         vacancyNo: v.vacancy_no || null,
       };
 
