@@ -23,7 +23,7 @@ export type NavCounts = { auction: number; vacancy: number; lecture: number };
 const SLIDES: Slide[] = [
   { key: "map", text: () => "지도뉴스검색" },
   { key: "gongsil", text: c => `실시간 경공매 ${c.auction.toLocaleString("ko-KR")}건` },
-  { key: "study", text: c => (c.lecture > 0 ? `무료 특강 ${c.lecture}개 수강중` : "무료 특강 열려 있어요") },
+  { key: "study", text: () => "세무무료특강" }, // 2026-11-26 사장님: "무료 특강 16개 수강중" 대신
   { key: "gongsil", text: () => "공실 3건 무료 등록" },
 ];
 
