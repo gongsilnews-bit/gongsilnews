@@ -202,9 +202,9 @@ const noop = () => {};
 
 /** 단지 창 맨 위 로드뷰 — 직방 사진 자리 (2026-11-18 사장님: 앱에서 보고 "훨씬 좋은데 PC·모바일웹에도")
  *  근처에 로드뷰가 없으면 칸을 숨기고, [크게 보기]로 화면 가득 */
-const heroBtn = (dark: boolean): React.CSSProperties => ({ border: "none", width: 34, height: 34, borderRadius: "50%", background: dark ? "rgba(0,0,0,.32)" : "#f3f4f6", color: dark ? "#fff" : "#374151", fontSize: 20, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "inherit" });
+export const heroBtn = (dark: boolean): React.CSSProperties => ({ border: "none", width: 34, height: 34, borderRadius: "50%", background: dark ? "rgba(0,0,0,.32)" : "#f3f4f6", color: dark ? "#fff" : "#374151", fontSize: 20, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "inherit" });
 
-function HeroRoadview({ lat, lng, title, sub, tag, actions }: { lat: number; lng: number; title: string; sub: string; tag?: string; actions: (dark: boolean) => React.ReactNode }) {
+export function HeroRoadview({ lat, lng, title, sub, tag, actions }: { lat: number; lng: number; title: string; sub: string; tag?: string; actions: (dark: boolean) => React.ReactNode }) {
   // 2026-11-21 사장님: 직방처럼 맨 위 로드뷰 사진 + 그 위에 흰 글자(단지 이름·주소). 로드뷰가 없으면 흰 머리에 검은 글자
   const [none, setNone] = useState(!Number.isFinite(lat));
   const [big, setBig] = useState(false);

@@ -96,6 +96,10 @@
     {
       "path": "/api/cron/region-agg",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/presale",
+      "schedule": "30 21 * * *"
     }
   ]
 }

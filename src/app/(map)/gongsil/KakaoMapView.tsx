@@ -4,6 +4,7 @@ import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
 import AptPriceLayer from "./AptPriceLayer";
 import NewsLayer from "./NewsLayer";
+import PresaleLayer from "./PresaleLayer";
 import AgencyLayer from "./AgencyLayer";
 
 interface KakaoMapViewProps {
@@ -967,6 +968,8 @@ export default function KakaoMapView({
         mapPick={mapPick}
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
       />
+      {/* [분양] — 신축/분양/재건축 칸에서 청약홈 분양 단지 (보라, 2026-11-26 사장님) */}
+      <PresaleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} enabled={!isAuctionMode && activeCategory === "sale"} />
       {/* [우리동네뉴스] 켜기·끄기 — 실거래가 단추 옆, 모든 기사를 지도 위 자리 그대로 (2026-11-04 사장님) */}
       {/* [부동산] 켜기·끄기 — 회원 부동산 집 모양 · 누르면 왼쪽 목록에 그 사무소 (2026-11-04 사장님) */}
       <AgencyLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} />
