@@ -43,6 +43,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     email: "",
     name: "",
     phone: "",
+    introduction: "", // 소개 100자 (2026-11-26)
     role: "일반회원",
     created_at: "",
     memberNumber: "",
@@ -182,6 +183,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             email: res.member.email || "",
             name: res.member.name || "",
             phone: res.member.phone || "",
+            introduction: res.member.introduction || "",
             role: resolvedRole,
             created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
             memberNumber: res.member.memberNumber || "",
@@ -693,6 +695,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         const updateRes = await adminUpdateMember(editMemberId, {
           name: formData.name,
           phone: formData.phone,
+          introduction: formData.introduction,
           ...(isAdmin ? { role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : formData.role === '비즈니스회원' ? 'BIZ' : 'USER' } : {}),
           sns_links: { ...snsLinks, api_list: apiList },
           plan_type: plan.plan_type,
@@ -1192,6 +1195,18 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             <input type="text" name="phone" value={formData.phone} onChange={handleMemberChange} style={inputStyle} placeholder="010-0000-0000" />
           </div>
         </div>
+
+        {/* 소개 100자 — 기자 페이지에 "기자 소개"(일반회원) · "부동산 소개"(부동산)로 보인다 (2026-11-26) */}
+        {editMemberId && (
+          <div style={rowStyle}>
+            <div style={labelStyle}>소개</div>
+            <div style={contentStyle}>
+              <textarea value={formData.introduction} onChange={(e) => setFormData((f) => ({ ...f, introduction: e.target.value.slice(0, 100) }))} rows={3} maxLength={100}
+                placeholder="기자·부동산 페이지에 보이는 소개 (100자)" style={{ ...inputStyle, height: "auto", minHeight: 72, padding: "8px 10px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }} />
+              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4, textAlign: "right" }}>{formData.introduction.length}/100</div>
+            </div>
+          </div>
+        )}
 
         <div style={rowStyle}>
           <div style={labelStyle}>회원구분</div>

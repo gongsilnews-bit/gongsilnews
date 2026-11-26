@@ -115,6 +115,8 @@ export async function adminUpdateMember(memberId: string, updates: {
   can_sns_links?: boolean;
   /** 스튜디오 블로그 한 달 횟수. null=등급 기본, -1=무제한, n=월 n회 */
   studio_blog_limit?: number | null;
+  /** 소개 100자 — 기자 페이지 "기자 소개"·"부동산 소개" (2026-11-26) */
+  introduction?: string | null;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -140,6 +142,7 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.can_hero_video !== undefined) dbUpdates.can_hero_video = updates.can_hero_video;
     if (updates.can_sns_links !== undefined) dbUpdates.can_sns_links = updates.can_sns_links;
     if (updates.studio_blog_limit !== undefined) dbUpdates.studio_blog_limit = updates.studio_blog_limit;
+    if (updates.introduction !== undefined) dbUpdates.introduction = String(updates.introduction || "").trim().slice(0, 100) || null;
 
     const { data: currentMember, error: currentMemberError } = await supabaseAdmin
       .from('members')

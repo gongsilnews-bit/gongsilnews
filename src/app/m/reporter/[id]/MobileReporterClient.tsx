@@ -1,22 +1,13 @@
 "use client";
 
-import { section2Matches } from "@/utils/formatCategory";
+import { inReporterTab, reporterTabs } from "@/utils/reporterTabs";
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
 import { toggleSubscription, getSubscriptionStatus, cheerReporter, getCheerStatus, getSubscriptionCount, getCheerCount } from "@/app/actions/subscription";
 
-const CATEGORIES = [
-  { key: "all", label: "전체 기사" },
-  { key: "부동산·주식·재테크", label: "부동산·재테크" },
-  { key: "정치·경제·사회", label: "정치·경제" },
-  { key: "세무·법률", label: "세무·법률" },
-  { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "IT·가전·가구", label: "IT·가전" },
-  { key: "스포츠·연예·Car", label: "스포츠·연예" },
-  { key: "인물·미션·기타", label: "인물·기타" },
-];
+// 분류 탭은 그 기자 기사의 실제 분류로 만든다 — utils/reporterTabs (2026-11-26)
 
 function formatDate(d: string) {
   if (!d) return "";
@@ -85,7 +76,7 @@ export default function MobileReporterClient({
   const filteredArticles =
     activeTab === "all"
       ? articles
-      : articles.filter((a: any) => section2Matches(a.section2, activeTab));
+      : articles.filter((a: any) => inReporterTab(a, activeTab));
   const visibleVacancies = vacancies.filter(v => v.trade_type !== '경매' && v.trade_type !== '공매');
 
   const [userLevel, setUserLevel] = React.useState<number>(0);
@@ -353,7 +344,7 @@ export default function MobileReporterClient({
           {/* 부동산 소개란 (본문처럼 삽입) */}
           {(agencyInfo?.intro || profile.introduction) && (
             <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", fontSize: "13px", color: "#eee", border: "1px solid rgba(255,255,255,0.1)", lineHeight: 1.5, wordBreak: "keep-all", marginBottom: "16px" }}>
-              <div style={{ fontWeight: "bold", fontSize: "12px", color: "#aaa", marginBottom: "6px" }}>부동산 소개</div>
+              <div style={{ fontWeight: "bold", fontSize: "12px", color: "#aaa", marginBottom: "6px" }}>{agencyInfo?.intro || profile.role === "REALTOR" ? "부동산 소개" : profile.role === "BIZ" ? "업체 소개" : "기자 소개"}</div>
               {agencyInfo?.intro || profile.introduction}
             </div>
           )}
@@ -490,7 +481,7 @@ export default function MobileReporterClient({
         <>
           {/* ═══ 카테고리 서브탭 ═══ */}
           <div className="hide-scrollbar" style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #e5e7eb', background: '#fff', WebkitOverflowScrolling: 'touch' }}>
-            {CATEGORIES.map((cat) => (
+            {reporterTabs(articles).map((cat) => (
               <button key={cat.key} onClick={() => setActiveTab(cat.key)} style={{ flexShrink: 0, padding: '12px 14px', fontSize: '13px', fontWeight: activeTab === cat.key ? 700 : 500, color: activeTab === cat.key ? '#111' : '#888', background: 'none', border: 'none', borderBottom: activeTab === cat.key ? '2px solid #111' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 {cat.label}
               </button>
