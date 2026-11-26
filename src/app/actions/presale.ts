@@ -6,8 +6,7 @@
 import { createClient as createCookieSupabase } from "@/utils/supabase/server";
 import { isAdminRole } from "@/utils/permissionCheck";
 import { db } from "@/utils/aptMap";
-import { collectText, thirdPartyName, thirdText } from "@/utils/presaleConsent";
-import { createNotification } from "@/app/actions/notification";
+import { savePresaleRequest, type PresaleRequestInput } from "@/utils/presaleRequest";
 
 async function myId() {
   const { data } = await (await createCookieSupabase()).auth.getUser();
@@ -20,41 +19,8 @@ async function admin() {
   return isAdminRole(String(m?.role || ""));
 }
 
-export async function submitPresaleRequest(input: { presaleId: string; name: string; phone: string; areaType?: string; agreeCollect: boolean; agreeThird: boolean }) {
-  const name = String(input.name || "").trim().slice(0, 30);
-  const digits = String(input.phone || "").replace(/\D/g, "");
-  if (!input.agreeCollect) return { success: false, error: "개인정보 수집·이용에 동의해 주세요." };
-  if (name.length < 2) return { success: false, error: "이름을 적어 주세요." };
-  if (!/^01\d{8,9}$/.test(digits)) return { success: false, error: "휴대폰 번호를 확인해 주세요." };
-  const phone = digits.length === 11 ? `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}` : `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  const supabase = db();
-  const { data: p } = await supabase.from("presale_complexes").select("id, name, developer, types").eq("id", String(input.presaleId || "")).maybeSingle();
-  if (!p) return { success: false, error: "분양 단지를 찾지 못했습니다." };
-  const types = Array.isArray(p.types) ? (p.types as { type: string }[]).map((t) => t.type) : [];
-  const areaType = input.areaType && types.includes(input.areaType) ? input.areaType : null;
-  const agreeThird = Boolean(input.agreeThird);
-  const row = {
-    presale_id: p.id, presale_name: p.name, name, phone, area_type: areaType,
-    agree_collect: true, agree_third: agreeThird,
-    third_party: agreeThird ? thirdPartyName(p.name, p.developer) : null,
-    consent_text: [collectText(p.name), agreeThird ? thirdText(p.name, p.developer) : ""].filter(Boolean).join("\n\n"),
-    user_id: await myId(),
-  };
-  // 같은 번호로 같은 단지를 하루 안에 또 누르면 새 줄 대신 고친다 (여러 번 눌러도 한 명)
-  const since = new Date(Date.now() - 86400000).toISOString();
-  const { data: same } = await supabase.from("presale_requests").select("id").eq("presale_id", p.id).eq("phone", phone).gte("created_at", since).maybeSingle();
-  const { error } = same
-    ? await supabase.from("presale_requests").update(row).eq("id", same.id)
-    : await supabase.from("presale_requests").insert(row);
-  if (error) return { success: false, error: "신청을 저장하지 못했습니다. 잠시 뒤 다시 해 주세요." };
-  if (!same) {
-    await createNotification({
-      recipientRole: "ADMIN", type: "presale_request",
-      title: `분양자료 신청 · ${p.name}`, body: `${name}${areaType ? ` · ${areaType}` : ""}${agreeThird ? " · 분양사 제공 동의" : ""}`,
-      link: "/admin?menu=presale_requests",
-    }).catch(() => {});
-  }
-  return { success: true };
+export async function submitPresaleRequest(input: PresaleRequestInput) {
+  return savePresaleRequest(input, await myId());
 }
 
 export type PresaleRequestRow = { id: string; presale_id: string; presale_name: string; name: string; phone: string; area_type: string | null; agree_third: boolean; third_party: string | null; status: string; memo: string | null; created_at: string };
@@ -74,5 +40,37 @@ export async function updatePresaleRequest(id: string, patch: { status?: string;
   if (patch.status && ["new", "contacted", "done"].includes(patch.status)) set.status = patch.status;
   if (typeof patch.memo === "string") set.memo = patch.memo.slice(0, 500);
   const { error } = await db().from("presale_requests").update(set).eq("id", id);
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+/* ── 내 분양 신청 (2026-11-26 사장님: MY 에서 보기) — 로그인한 회원 것만: 로그인해 신청한 것 + 회원 휴대폰과 같은 번호로 신청한 것 ── */
+async function myRequestsFilter() {
+  const id = await myId();
+  if (!id) return null;
+  const { data: m } = await db().from("members").select("phone").eq("id", id).maybeSingle();
+  const d = String(m?.phone || "").replace(/\D/g, "");
+  const phone = d.length === 11 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : "";
+  return { id, phone };
+}
+
+export type MyPresaleRequest = { id: string; presale_id: string; presale_name: string; area_type: string | null; agree_third: boolean; status: string; created_at: string };
+
+export async function listMyPresaleRequests() {
+  const me = await myRequestsFilter();
+  if (!me) return { success: false as const, error: "로그인이 필요합니다." };
+  let q = db().from("presale_requests").select("id, presale_id, presale_name, area_type, agree_third, status, created_at");
+  q = me.phone ? q.or(`user_id.eq.${me.id},phone.eq.${me.phone}`) : q.eq("user_id", me.id);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(200);
+  if (error) return { success: false as const, error: error.message };
+  return { success: true as const, rows: (data || []) as MyPresaleRequest[] };
+}
+
+/** 내 신청 취소 — 연락처까지 지운다 (동의 철회) */
+export async function cancelMyPresaleRequest(id: string) {
+  const me = await myRequestsFilter();
+  if (!me) return { success: false, error: "로그인이 필요합니다." };
+  const { data: r } = await db().from("presale_requests").select("id, user_id, phone").eq("id", id).maybeSingle();
+  if (!r || (r.user_id !== me.id && (!me.phone || r.phone !== me.phone))) return { success: false, error: "내 신청만 취소할 수 있습니다." };
+  const { error } = await db().from("presale_requests").delete().eq("id", id);
   return error ? { success: false, error: error.message } : { success: true };
 }

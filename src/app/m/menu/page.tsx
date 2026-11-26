@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getUserActivityCounts } from '@/app/actions/userActivity';
+import { listMyPresaleRequests } from '@/app/actions/presale';
 import { openChannelTalk } from '@/utils/channelTalk';
 import { isAdminRole, getPlanLabel } from '@/utils/permissionCheck';
 
@@ -21,6 +22,9 @@ export default function MenuPage() {
     bookmarkedVacancies: 0, subscribedReporters: 0, myLectures: 0
   });
   const router = useRouter();
+  // 내 분양 신청 수 (2026-11-26) — 로그인 안 했으면 서버가 실패를 돌려주고 0 그대로
+  const [myPresale, setMyPresale] = useState(0);
+  useEffect(() => { listMyPresaleRequests().then((r) => { if (r.success) setMyPresale(r.rows.length); }).catch(() => {}); }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -165,6 +169,7 @@ export default function MenuPage() {
     { icon: '❤️', label: '내가 찜한 공실', href: '/m/gongsil_bookmarks', count: userActivityCounts.bookmarkedVacancies },
     { icon: '👥', label: '내가 구독한 기자', href: '/m/subscribed_reporters', count: userActivityCounts.subscribedReporters },
     { icon: '📚', label: '내 수강특강', href: '/m/my_lectures', count: userActivityCounts.myLectures },
+    { icon: '🏗️', label: '내 분양 신청', href: '/m/my_presale', count: myPresale }, // 분양자료 신청 (2026-11-26)
   ];
 
   const newsMenus = [
