@@ -34,7 +34,7 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
     const c = el.dataset.color || PRESALE;
     const box = el.children[0] as HTMLElement | undefined, tip = el.children[1] as HTMLElement | undefined;
     if (box) { box.style.background = on ? c : "#fff"; box.querySelectorAll<HTMLElement>("[data-t]").forEach((t) => { t.style.color = on ? "#fff" : t.dataset.t!; }); }
-    if (tip) tip.style.borderTopColor = on ? c : "#fff";
+    if (tip) tip.style.borderTopColor = c; // 꼬리는 늘 보라
     if (el.parentElement) el.parentElement.style.zIndex = on ? "5" : "2";
   };
   const pick = (id: string | null) => {
@@ -90,11 +90,12 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
       const top = m.rep?.area ? areaLabel(m.rep.area) : m.house_type || "분양";
       const price = m.rep?.price ? shortPrice(m.rep.price) : "분양";
       el.innerHTML =
-        `<div style="background:#fff;border:1px solid ${color};border-radius:6px;padding:${mobile ? "2px 6px 3px" : "3px 7px 4px"};line-height:1.15;white-space:nowrap">` +
+        // 테두리 2px · 꼬리도 보라 (11-26 사장님: 라인이 잘 안 보임)
+        `<div style="background:#fff;border:2px solid ${color};border-radius:6px;padding:${mobile ? "2px 6px 3px" : "3px 7px 4px"};line-height:1.15;white-space:nowrap">` +
         `<div style="font-size:${fa}px;font-weight:600;color:#6b7280" data-t="#6b7280"><span style="display:inline-block;background:${color};color:#fff;border-radius:3px;padding:0 3px;margin-right:3px;font-size:${fa - 1}px;font-weight:800">분양</span>${esc(top)}</div>` +
         `<div style="font-size:${fp}px;font-weight:800;letter-spacing:-.3px;color:${color}" data-t="${color}">${esc(price)}</div>` +
-        `<div style="font-size:${fa}px;font-weight:800;color:${st.done ? "#9ca3af" : color}" data-t="${st.done ? "#9ca3af" : color}">${esc(st.short)}</div></div>` +
-        `<div style="width:0;height:0;margin:-1px auto 0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #fff"></div>`;
+        `<div style="font-size:${fa}px;font-weight:800;color:${st.done ? "#6b7280" : color}" data-t="${st.done ? "#6b7280" : color}">${esc(st.short)}</div></div>` +
+        `<div style="width:0;height:0;margin:0 auto;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color}"></div>`;
       const pos = new kakao.maps.LatLng(m.lat, m.lng);
       const ov = new kakao.maps.CustomOverlay({ position: pos, content: el, yAnchor: 1, zIndex: 2, clickable: true });
       if (!mobile) {

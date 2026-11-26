@@ -8,8 +8,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { HeroRoadview, heroBtn } from "./AptDetailPanel";
 import { repType } from "@/utils/presale";
 
-export const PRESALE = "#7c3aed";      // 분양 보라 — 청약 전·진행 중
-export const PRESALE_DIM = "#a78bfa";  // 청약 마감
+export const PRESALE = "#6d28d9";      // 분양 보라 — 청약 전·진행 중 (11-26 사장님: 더 진하게)
+export const PRESALE_DIM = "#7c3aed";  // 청약 마감 (연보라는 안 보여서 진하게, 11-26)
 const SOFT = "#f5f3ff";
 const SUB = "#6b7280";
 
