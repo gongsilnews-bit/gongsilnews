@@ -8,7 +8,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { mapLayerBox, mapLayerRow } from "./mapSquareButton";
+import { mapLayerBox, mapLayerRow, mapSquareButton, mapSquareSub } from "./mapSquareButton";
 import { areaLabel, shortPrice } from "@/utils/aptMapShared";
 import PresaleDetailPanel, { PRESALE, PRESALE_DIM, presaleStage, type PresaleItem } from "./PresaleDetailPanel";
 
@@ -19,9 +19,15 @@ type Marker = { id: string; kind: string; name: string; lat: number; lng: number
 const esc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch] as string);
 
 /** buttonSlot 을 주면(모바일 웹 [지도 표시] 창) "분양 단지" 켜기·끄기 줄을 넣고, 처음엔 꺼 둔다 (2026-11-26 사장님: 모바일에도) */
-export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile = false, buttonSlot }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; enabled: boolean; mobile?: boolean; buttonSlot?: HTMLElement | null }) {
+/** pcButton — PC 지도 오른쪽 [시세] 자리에 [청약] 네모, 누르면 [진행][마감] 고르기 (2026-11-26 사장님: 시세 대신 청약, 그 안에서 마감·진행) */
+export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile = false, buttonSlot, pcButton = false }: { kakaoMapRef: React.MutableRefObject<any>; mapLoaded: boolean; enabled: boolean; mobile?: boolean; buttonSlot?: HTMLElement | null; pcButton?: boolean }) {
   const [on, setOn] = useState(false);
-  const active = enabled && (buttonSlot === undefined || on);
+  // 진행(청약 전·중·발표 전) · 마감 — 처음엔 둘 다 켠다
+  const [kinds, setKinds] = useState({ live: true, done: true });
+  const kindsRef = useRef(kinds);
+  kindsRef.current = kinds;
+  const [menu, setMenu] = useState(false);
+  const active = enabled && (pcButton ? kinds.live || kinds.done : buttonSlot === undefined || on);
   const overlays = useRef<any[]>([]);
   const els = useRef<Map<string, HTMLElement>>(new Map());
   const abort = useRef<AbortController | null>(null);
@@ -79,7 +85,7 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
     const level = map.getLevel();
     // 겹치면 — 청약이 가까운(진행 중·곧 시작) 것부터 자리를 잡는다
     const order = (m: Marker) => { const s = presaleStage(m); return s.live ? 0 : s.done ? 2 : 1; };
-    const list = ((r.items || []) as Marker[]).sort((a, b) => order(a) - order(b)).filter((m) => {
+    const list = ((r.items || []) as Marker[]).filter((m) => (presaleStage(m).done ? kindsRef.current.done : kindsRef.current.live)).sort((a, b) => order(a) - order(b)).filter((m) => {
       if (level <= 2) return true;
       const pt = proj.containerPointFromCoords(new kakao.maps.LatLng(m.lat, m.lng));
       if (taken.some((t) => Math.abs(t.x - pt.x) < 46 && Math.abs(t.y - pt.y) < 34)) return false;
@@ -115,7 +121,7 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
           const when = [m.receipt_start && `청약 ${m.receipt_start.slice(5).replace("-", ".")}${m.receipt_end && m.receipt_end !== m.receipt_start ? `~${m.receipt_end.slice(5).replace("-", ".")}` : ""}`, m.winner_date && `발표 ${m.winner_date.slice(5).replace("-", ".")}`].filter(Boolean).join(" · ");
           box.innerHTML = `<div style="background:#fff;border:1px solid #d6d9de;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:10px 14px 11px;white-space:nowrap">` +
             `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:15.5px;font-weight:800;color:#111">${esc(m.name)}</span><span style="font-size:11.5px;font-weight:800;color:#fff;background:${color};border-radius:4px;padding:1px 6px">${esc(st.short)}</span></div>` +
-            (when ? `<div style="font-size:13px;color:${PRESALE};font-weight:700;margin-top:4px">${esc(when)}</div>` : "") +
+            (when ? `<div style="font-size:13px;color:${color};font-weight:700;margin-top:4px">${esc(when)}</div>` : "") +
             `<div style="font-size:12.5px;color:#444;margin-top:2px">${esc([m.house_type, m.total_units ? `${m.total_units.toLocaleString("ko-KR")}세대` : ""].filter(Boolean).join(" · "))}</div></div>`;
           const p = new kakao.maps.CustomOverlay({ position: pos, content: box, yAnchor: 1, zIndex: 50, clickable: false });
           p.setMap(map);
@@ -170,7 +176,30 @@ export default function PresaleLayer({ kakaoMapRef, mapLoaded, enabled, mobile =
     return () => window.removeEventListener("resize", measure);
   }, [mobile, detail]);
 
-  const row = buttonSlot ? createPortal(
+  // 진행·마감을 바꾸면 바로 다시 그린다
+  useEffect(() => { if (active && mapLoaded) draw(); }, [kinds.live, kinds.done]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sub = kinds.live && kinds.done ? "전체" : kinds.live ? "진행" : kinds.done ? "마감" : "꺼짐";
+  const square = (
+    // order -1 — 오른쪽 네모 줄 맨 위 ([시세] 자리)
+    <div style={{ position: "relative", order: -1 }}>
+      <button type="button" title="청약홈 분양 단지 — 진행·마감 고르기" onClick={() => setMenu((m) => !m)} style={mapSquareButton(active || menu, PRESALE)}>
+        청약<span style={mapSquareSub(active || menu, PRESALE)}>{sub}</span>
+      </button>
+      {menu && (
+        <div style={{ position: "absolute", right: 62, top: 0, height: 54, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", background: "#fff", borderRadius: 10, boxShadow: "0 2px 10px rgba(0,0,0,.18)", whiteSpace: "nowrap" }}>
+          {([["live", "진행", PRESALE], ["done", "마감", PRESALE_DIM]] as const).map(([k, label, c]) => (
+            <button key={k} type="button" onClick={() => { setKinds((v) => ({ ...v, [k]: !v[k] })); close(); }}
+              style={{ height: 34, padding: "0 13px", borderRadius: 17, cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+                border: `1.5px solid ${kinds[k] ? c : "#e5e7eb"}`, background: kinds[k] ? c : "#fff", color: kinds[k] ? "#fff" : "#374151" }}>
+              {kinds[k] ? "✓ " : ""}{label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+  const row = pcButton ? (enabled && buttonSlot ? createPortal(square, buttonSlot) : null) : buttonSlot ? createPortal(
     <button type="button" onClick={() => setOn((v) => !v)} title="청약홈 분양 단지를 지도 위에 보기" style={mapLayerRow(on, PRESALE)}>
       <span style={mapLayerBox(on, PRESALE)}>{on ? "✓" : ""}</span>
       분양 단지

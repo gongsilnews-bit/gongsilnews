@@ -12,7 +12,7 @@ import { submitPresaleRequest } from "@/app/actions/presale";
 import { createClient } from "@/utils/supabase/client";
 
 export const PRESALE = "#6d28d9";      // 분양 보라 — 청약 전·진행 중 (11-26 사장님: 더 진하게)
-export const PRESALE_DIM = "#7c3aed";  // 청약 마감 (연보라는 안 보여서 진하게, 11-26)
+export const PRESALE_DIM = "#4b5563";  // 청약 마감 — 짙은 회색 (11-26 사장님: 마감은 보라 말고 그레이, 지금 청약할 수 있는 곳만 보라로 눈에 띄게)
 const SOFT = "#f5f3ff";
 const SUB = "#6b7280";
 
@@ -96,7 +96,7 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
 
   return (
     <div onClick={side ? undefined : close} style={side ? { position: "fixed", left: side.left, top: side.top, height: side.height, width: 420, zIndex: 1002, display: "flex" } : { position: mobile ? "fixed" : "absolute", inset: 0, zIndex: mobile ? 9000 : 1002, background: "rgba(17,24,39,.45)", display: "flex", alignItems: mobile ? "flex-end" : "center", justifyContent: "center", padding: mobile ? 0 : 24 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: PRESALE, ["--apt-soft" as string]: SOFT, position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: mobile ? "88%" : "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: side ? 0 : mobile ? "16px 16px 0 0" : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ["--apt-accent" as string]: color, ["--apt-soft" as string]: stage.done ? "#f3f4f6" : SOFT, position: "relative", width: mobile || side ? "100%" : 600, maxWidth: "100%", height: mobile ? "88%" : "100%", maxHeight: mobile || side ? undefined : 860, borderRadius: side ? 0 : mobile ? "16px 16px 0 0" : 16, overflow: "hidden", background: "#f3f4f6", boxShadow: side ? "4px 0 16px rgba(0,0,0,.14)" : "0 18px 50px rgba(0,0,0,.35)", display: "flex", flexDirection: "column", fontSize: 14, color: "#1f2937" }}>
         <div style={{ flex: 1, overflowY: "auto" }}>
           <HeroRoadview lat={Number.isFinite(lat) ? lat : NaN} lng={lng} title={item.name} sub={item.address || ""} tag={tag}
             actions={(dark) => (<>
@@ -122,13 +122,13 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
               <div style={{ flex: 1 }} />
               {types.length > 0 && (
                 <select value={t?.type} onChange={(e) => setSel(e.target.value)}
-                  style={{ border: `1.5px solid ${PRESALE}`, background: "#fff", color: PRESALE, borderRadius: 6, padding: "6px 10px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ border: `1.5px solid ${color}`, background: "#fff", color: color, borderRadius: 6, padding: "6px 10px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
                   {types.map((x) => <option key={x.type} value={x.type}>{x.area ? `전용 ${Math.round(x.area * 100) / 100}㎡ · ${x.type}` : x.type}</option>)}
                 </select>
               )}
             </div>
-            <div style={{ padding: "16px 20px 4px", color: PRESALE, fontWeight: 600 }}>{priceLabel}</div>
-            <div style={{ padding: "0 20px", fontSize: 30, fontWeight: 900, color: PRESALE, letterSpacing: "-0.5px" }}>{presalePrice(t?.price ?? null)}</div>
+            <div style={{ padding: "16px 20px 4px", color: color, fontWeight: 600 }}>{priceLabel}</div>
+            <div style={{ padding: "0 20px", fontSize: 30, fontWeight: 900, color: color, letterSpacing: "-0.5px" }}>{presalePrice(t?.price ?? null)}</div>
             <div style={{ padding: "4px 20px 16px", color: SUB, fontSize: 12 }}>
               {[t?.units ? `${t.units.toLocaleString("ko-KR")}세대` : "", t?.supply_area ? `공급 ${Math.round(t.supply_area * 100) / 100}㎡` : ""].filter(Boolean).join(" · ") || "평형 정보 없음"}
             </div>
@@ -160,15 +160,14 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
                 <span>평형</span><span style={{ textAlign: "right" }}>세대</span><span style={{ textAlign: "right" }}>{item.kind === "ofc" ? "공급금액" : "최고가"}</span>
               </div>
               {types.map((x) => (
-                <div key={x.type} onClick={() => setSel(x.type)} style={{ display: "grid", gridTemplateColumns: "1fr 70px auto", gap: 10, padding: "10px 20px", borderBottom: "1px solid #f3f4f6", cursor: "pointer", background: x.type === t?.type ? SOFT : "#fff" }}>
+                <div key={x.type} onClick={() => setSel(x.type)} style={{ display: "grid", gridTemplateColumns: "1fr 70px auto", gap: 10, padding: "10px 20px", borderBottom: "1px solid #f3f4f6", cursor: "pointer", background: x.type === t?.type ? (stage.done ? "#f3f4f6" : SOFT) : "#fff" }}>
                   <span style={{ fontWeight: 700 }}>{x.type}{x.area ? <span style={{ color: SUB, fontWeight: 500 }}> · 전용 {Math.round(x.area * 100) / 100}㎡</span> : null}</span>
                   <span style={{ textAlign: "right", color: "#4b5563" }}>{x.units ?? "-"}</span>
-                  <span style={{ textAlign: "right", fontWeight: 800, color: PRESALE }}>{presalePrice(x.price)}</span>
+                  <span style={{ textAlign: "right", fontWeight: 800, color: color }}>{presalePrice(x.price)}</span>
                 </div>
               ))}
               <div style={{ padding: "10px 20px 14px", color: SUB, fontSize: 12 }}>
-                출처: 청약홈(한국부동산원) 모집공고
-                {item.notice_url && <> · <a href={item.notice_url} target="_blank" rel="noopener noreferrer" style={{ color: SUB, textDecoration: "underline" }}>모집공고 원문 보기</a></>}
+                출처: 청약홈(한국부동산원) 모집공고 {/* 원문 링크는 뺌 — 밖으로 나가는 길 없이 [분양자료 신청하기] 하나로 (2026-11-26 사장님) */}
               </div>
             </div>
           )}
@@ -177,7 +176,7 @@ export default function PresaleDetailPanel({ item, onClose, mobile = false, side
 
         {/* 맨 아래 — [분양자료 신청하기] (11-26 사장님 회의: 청약홈으로 내보내지 않고 공실뉴스가 신청을 받는다) */}
         <button type="button" onClick={() => setAsk(true)}
-          style={{ flexShrink: 0, height: 52, border: "none", background: PRESALE, color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+          style={{ flexShrink: 0, height: 52, border: "none", background: color, color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
           분양자료 신청하기 →
         </button>
         {ask && <PresaleRequestForm item={item} types={types.map((x) => x.type)} defaultType={t?.type || ""} onClose={() => setAsk(false)} />}

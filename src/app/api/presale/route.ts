@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const KEEP_DAYS = 92;
 const LIST = "id, kind, name, lat, lng, house_type, total_units, notice_date, receipt_start, receipt_end, winner_date, types";
-const FULL = "id, kind, house_manage_no, pblanc_no, name, address, house_type, supply_kind, total_units, notice_date, special_start, special_end, rank1_date, rank2_date, receipt_start, receipt_end, winner_date, contract_start, contract_end, move_in_ym, builder, developer, notice_url, types, lat, lng"; // 분양사 전화·홈페이지는 화면에 내보내지 않는다 (11-26)
+const FULL = "id, kind, house_manage_no, pblanc_no, name, address, house_type, supply_kind, total_units, notice_date, special_start, special_end, rank1_date, rank2_date, receipt_start, receipt_end, winner_date, contract_start, contract_end, move_in_ym, builder, developer, types, lat, lng"; // 분양사 전화·홈페이지·모집공고 주소는 화면에 내보내지 않는다 (11-26)
 
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;

@@ -946,8 +946,8 @@ export default function KakaoMapView({
       {/* 건물 실거래 견본(논현동)은 내렸다 (2026-11-04 사장님) */}
       {/* 빌라 실거래 견본(논현동)은 내렸다 — 실제 자료가 [빌라 실거래가] 단추로 같은 지도에 (2026-11-03 사장님) */}
 
-      {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) */}
-      <AptPriceLayer
+      {/* [아파트 시세] 켜기·끄기 + 단지 시세 (2026-11-02) — 신축/분양 칸에서는 [시세] 대신 [청약] (2026-11-26 사장님) */}
+      {(isAuctionMode || activeCategory !== "sale") && <AptPriceLayer
         buttonSlot={layerButtonSlot}
         // [아파트]·[오피스텔]·[빌라/주택] 칸은 그 종류 시세만 (2026-11-21 사장님) — [전체]는 [시세]를 눌러 고른다
         onlyKind={isAuctionMode ? undefined : activeCategory === "villa" ? "villa" : activeCategory === "apart" && activePills.length > 0 ? (activePills.every((p) => p.includes("오피스텔")) ? "offi" : activePills.some((p) => p.includes("오피스텔")) ? undefined : "apt") : undefined}
@@ -967,9 +967,9 @@ export default function KakaoMapView({
         onShowAuctions={(ids) => { if (!isAuctionMode) onSwitchCategory?.("auction"); setSelectedClusterIds(ids); setShowDetail(false); }}
         mapPick={mapPick}
         onHideVacancies={(ids) => setHiddenVacancyIds((before) => (before.size === ids.size && [...ids].every((id) => before.has(id)) ? before : ids))}
-      />
-      {/* [분양] — 신축/분양/재건축 칸에서 청약홈 분양 단지 (보라, 2026-11-26 사장님) */}
-      <PresaleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} enabled={!isAuctionMode && activeCategory === "sale"} />
+      />}
+      {/* [분양] — 신축/분양/재건축 칸에서 청약홈 분양 단지 (보라, 2026-11-26 사장님) · 오른쪽 [청약] 네모로 진행·마감 고르기 */}
+      <PresaleLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} enabled={!isAuctionMode && activeCategory === "sale"} buttonSlot={layerButtonSlot} pcButton />
       {/* [우리동네뉴스] 켜기·끄기 — 실거래가 단추 옆, 모든 기사를 지도 위 자리 그대로 (2026-11-04 사장님) */}
       {/* [부동산] 켜기·끄기 — 회원 부동산 집 모양 · 누르면 왼쪽 목록에 그 사무소 (2026-11-04 사장님) */}
       <AgencyLayer kakaoMapRef={kakaoMapRef} mapLoaded={mapLoaded} buttonSlot={layerButtonSlot} />
