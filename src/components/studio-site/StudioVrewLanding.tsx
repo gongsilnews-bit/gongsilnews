@@ -114,6 +114,8 @@ button.sv-btn{cursor:pointer;font-family:inherit}
 .sv-last .osi{display:inline-flex;width:42px;height:42px;border:1px solid #e5e7eb;border-radius:10px;align-items:center;justify-content:center;color:#374151}
 .sv-dl{max-width:820px;margin:40px auto 0;text-align:left}
 @container (max-width:860px){.sv-steps,.sv-grid,.sv-grid.five,.sv-cases,.sv-price{grid-template-columns:1fr}.sv-grid.five .sv-card,.sv-grid.five .sv-card:nth-child(4){grid-column:auto}.sv-sec{padding-top:88px}}
+/* 폰 — 버튼 두 개를 옆으로 한 줄, 높이·글자 같게 ([금액안내] 좁게 · [신청] 넓게) (2026-11-26 사장님: 모바일에서 버튼이 이상함 → 옆으로 1줄) */
+@container (max-width:860px){.sv-btns{flex-wrap:nowrap;gap:8px;width:100%;max-width:460px;margin-left:auto;margin-right:auto}.sv-btns .sv-btn.big{height:56px;min-width:0;padding:0 10px;border-radius:12px;font-size:15.5px;letter-spacing:-.3px;white-space:nowrap}.sv-btns .sv-btn.big.line{flex:0 0 34%}.sv-btns .sv-btn.big.solid{flex:1 1 auto}}
 `;
 
 /** 그림 — src 가 있으면 실제 앱에서 찍은 화면 (public/studio-shots, 2026-10-26), 없으면 자리 표시 */
@@ -321,14 +323,11 @@ export default function StudioVrewLanding() {
   const [video, setVideo] = React.useState<string | null>(null);
   const [src, setSrc] = React.useState(0);
   const [shortsStep, setShortsStep] = React.useState(0);
-  /** 칸마다 같은 두 버튼 — [영상보기] 유튜브 창 · [무료로 시작하기] (2026-11-04: 앱 설치 대신 웹) */
+  /** 칸마다 같은 두 버튼 — 첫 화면과 같이 [금액안내] · [공실뉴스부동산 신청 >>] (2026-11-26 사장님: 영상보기·무료로 시작하기 말고) */
   const btns = (
     <div className="sv-btns">
-      <button type="button" className="sv-btn line" onClick={() => setVideo(SAMPLE_VIDEO)}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
-        영상보기
-      </button>
-      <Link href={START_HREF} className="sv-btn solid">무료로 시작하기</Link>
+      <a href="#pricing" className="sv-btn line big">금액안내</a>
+      <Link href="/newsrealty/pro-apply" className="sv-btn solid big">공실뉴스부동산 신청 &gt;&gt;</Link>
     </div>
   );
   return (
@@ -530,11 +529,12 @@ export default function StudioVrewLanding() {
       <section className="sv-sec">
         <h2 className="sv-h2">1~2인 부동산에 강력 추천합니다.</h2>
         <div className="sv-cases">
-          {/* 공실뉴스부동산 소개(/newsrealty) "이런 부동산에게 추천합니다" 사진 그대로 (2026-10-26 사장님) */}
+          {/* 사진 새로 (2026-11-26 사장님: 예전 사진이 촌스러움) — 보고서 뽑기 · SNS 올리기 · 유튜브 찍기, 카드 글과 맞춤 */}
           {[
-            { t: "사무실 · 상가 전문", d: "빠른 브리핑이 필요할 때, AI 매물보고서로 바로.", src: "/images/study/recommend_real_teheran_man.jpg" },
-            { t: "아파트 · 오피스텔 입점", d: "블로그 · SNS 꾸준한 포스팅과 물건접수 홈페이지로 차별화!", src: "/images/study/recommend_real_apartment.jpg" },
-            { t: "빌라 · 주택 · 건물", d: "블로그 · SNS · 유튜브로 꾸준히 알리고 싶은 소장님!", src: "/images/study/recommend_real_villa.jpg" },
+            // 설명도 사진에 맞게 두 문장으로 (2026-11-26 사장님: 내용이 하다가 만 것 같다)
+            { t: "사무실 · 상가 전문", d: "손님 브리핑 전에 AI 매물보고서를 바로 뽑으세요. 위치·실거래·투자 요약까지 한 장에 담겨, 출력해서 건네기만 하면 됩니다.", src: "/images/study/recommend_2026_office_report.jpg" },
+            { t: "아파트 · 오피스텔 입점", d: "등록한 공실을 인스타그램·스레드·페이스북에 한 번에 올리세요. 물건접수 홈페이지로 집주인 매물까지 직접 받습니다.", src: "/images/study/recommend_2026_apt_sns.jpg" },
+            { t: "빌라 · 주택 · 건물", d: "공실 하나로 60초 쇼츠를 만들어 유튜브·인스타 릴스에 올리세요. 블로그 글까지 이어 써서 내 동네에 꾸준히 알릴 수 있습니다.", src: "/images/study/recommend_2026_villa_youtube.jpg" },
           ].map((c) => (
             // eslint-disable-next-line @next/next/no-img-element
             <div key={c.t} className="sv-case"><img src={c.src} alt={c.t} loading="lazy" style={{ display: "block", width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 14, marginBottom: 16 }} /><div className="t">{c.t}</div><div className="d">{c.d}</div></div>
