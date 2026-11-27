@@ -3,6 +3,21 @@
   overflow-x: clip;
 }
 
+.pageWidth {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.mainLayout {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 44px;
+}
+
 .tabs {
   position: sticky;
   z-index: 20;
@@ -14,4 +29,22 @@
   align-self: start;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+
+/* 풀HD PC에서는 HTML 상세 설명을 원본 디자인 폭에 가깝게 보여 준다. */
+@media (min-width: 1680px) {
+  .pageWidth,
+  .mainLayout {
+    max-width: 1360px;
+  }
+
+  .mainLayout {
+    gap: 40px;
+  }
+
+  :global(body.study-detail-sticky .quick-menu) {
+    left: auto;
+    right: 24px;
+    margin-left: 0;
+  }
 }

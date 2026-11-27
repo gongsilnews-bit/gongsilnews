@@ -439,7 +439,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
       {/* ── 상단 Breadcrumb ── */}
       <div style={{ borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "12px 24px", fontSize: 14, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+        <div className={styles.pageWidth} style={{ padding: "12px 24px", fontSize: 14, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
           <StudyBackButton />
           <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>부동산특강</Link>
           <span>›</span>
@@ -455,7 +455,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       </div>
 
       {/* ── 메인 컨텐츠 영역 (윤자동 스타일 2열 구조) ── */}
-      <main style={{ maxWidth: 1160, margin: "0 auto", padding: "36px 24px 0", display: "grid", gridTemplateColumns: "1fr 360px", gap: 44, alignItems: "start" }}>
+      <main className={styles.mainLayout} style={{ padding: "36px 24px 0", alignItems: "start" }}>
         
         {/* ━━━ 좌측: 메인 상세 소개 ━━━ */}
         <div>

@@ -960,8 +960,8 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                           </div>
                         </div>
                         <div style={{ height: 600, overflow: "auto", padding: 12, resize: "vertical" }}>
-                          {/* 상세 페이지의 설명 칸 너비: PC 약 708px, 모바일 약 358px */}
-                          <div style={{ width: aiPreviewWidth === "pc" ? 708 : 358, maxWidth: aiPreviewWidth === "pc" ? undefined : "100%", margin: "0 auto", background: "#fff", minHeight: "100%" }}>
+                          {/* 상세 페이지의 설명 칸 너비: 풀HD PC 약 912px, 모바일 약 358px */}
+                          <div style={{ width: aiPreviewWidth === "pc" ? 912 : 358, maxWidth: "100%", margin: "0 auto", background: "#fff", minHeight: "100%" }}>
                             {aiPreview ? (
                               <div dangerouslySetInnerHTML={{ __html: aiPreview }} />
                             ) : (
