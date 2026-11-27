@@ -2,6 +2,7 @@
 // 안전하게 직접 넣을 수 있는 조각으로 바꾼다. (서버 전용)
 //  - <style> CSS와 Tailwind 클래스 → 일반 CSS로 만들고 .study-html 안에서만 적용되게 묶음
 //  - 화면 너비 기준(@media) → 상세 설명 칸 너비 기준(@container)으로 바꿔 PC·모바일 모두 맞게
+//  - 고정폭 디자인은 좁은 칸에서 축소하고, 넓은 칸에서는 최대 1.08배까지만 비례 확대
 //  - <script>, on* 속성, javascript: 링크 등 위험한 코드는 제거
 import { createHash } from "crypto";
 import * as cheerio from "cheerio";
@@ -76,7 +77,7 @@ async function convert(raw: string): Promise<string> {
   const rootClass = [$("html").attr("class"), body.attr("class")].filter(Boolean).join(" ").trim();
   const rootStyle = cleanStyleAttr(body.attr("style") || "");
   sanitizeTree($, body);
-  const designWidth = fixedDesignWidth($, body);
+  const fixedDesign = fixedDesignWidth($, body);
   const bodyHtml = body.html() || "";
 
   // 4) CSS 만들기 — <style> 블록마다 따로 다뤄서 깨진 블록 하나가 전체를 망치지 않게 한다
@@ -100,31 +101,41 @@ async function convert(raw: string): Promise<string> {
   }
 
   const linkTags = [...new Set(links)].map(h => `<link rel="stylesheet" href="${escAttr(h)}">`).join("");
-  const styleTag = `<style>${BOX_CSS}\n${scoped.replace(/<\/style/gi, "<\\/style")}\n${designWidth ? fitCss(designWidth) : ""}</style>`;
+  const styleTag = `<style>${BOX_CSS}\n${scoped.replace(/<\/style/gi, "<\\/style")}\n${fixedDesign ? fitCss(fixedDesign.width, fixedDesign.allowUpscale) : ""}</style>`;
   return `${linkTags}${styleTag}<div class="${BOX}"><div class="study-html${rootClass ? " " + escAttr(rootClass) : ""}"${rootStyle ? ` style="${escAttr(rootStyle)}"` : ""}>${bodyHtml}</div></div>`;
 }
 
 /* ── 가로 고정 디자인(예: 클로드 디자인 860px) 자동 맞춤 ── */
 
 // 맨 위쪽(본문에서 3단계 안) 요소가 width:860px 처럼 가로를 고정했으면 그 너비를 디자인 너비로 본다
-function fixedDesignWidth($: cheerio.CheerioAPI, body: cheerio.Cheerio<any>): number | null {
+function fixedDesignWidth($: cheerio.CheerioAPI, body: cheerio.Cheerio<any>): { width: number; allowUpscale: boolean } | null {
   const bodyEl = body.get(0);
+  const topLevelElements = body.children().toArray();
   for (const el of body.find("*").toArray().slice(0, 40)) {
     let depth = 0;
     for (let p = el.parent; p && p !== bodyEl; p = p.parent) depth++;
     if (depth > 2) continue;
     const m = /(?:^|;)\s*width\s*:\s*(\d{3,4})px/i.exec($(el).attr("style") || "");
     const w = m ? Number(m[1]) : 0;
-    if (w >= 480 && w <= 1600) return w;
+    if (w >= 480 && w <= 1600) {
+      const isSingleTopLevelDesign = depth === 0 && topLevelElements.length === 1 && topLevelElements[0] === el;
+      return { width: w, allowUpscale: isSingleTopLevelDesign };
+    }
   }
   return null;
 }
 
-// 설명 칸이 디자인보다 좁으면 칸 너비에 맞춰 통째로 줄인다 (10px 단위, 스크립트 없이 CSS만으로)
-function fitCss(width: number): string {
+// 설명 칸이 좁으면 줄이고, 최상위 고정폭 디자인은 넓은 칸에서 최대 1.08배까지만 통째로 키운다.
+function fitCss(width: number, allowUpscale: boolean): string {
   const rules: string[] = [];
   for (let x = width; x > 200; x -= 10) {
     rules.push(`@container ${BOX} (width < ${x}px){${SCOPE}{zoom:${((x - 10) / width).toFixed(4)};}}`);
+  }
+  if (allowUpscale) {
+    const maxWidth = Math.floor(width * 1.08);
+    for (let x = width + 2; x <= maxWidth; x += 2) {
+      rules.push(`@container ${BOX} (width >= ${x}px){${SCOPE}{zoom:${(x / width).toFixed(4)};}}`);
+    }
   }
   return rules.join("\n");
 }
