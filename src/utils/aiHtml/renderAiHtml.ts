@@ -110,8 +110,28 @@ async function convert(raw: string): Promise<string> {
 // 맨 위쪽(본문에서 3단계 안) 요소가 width:860px 처럼 가로를 고정했으면 그 너비를 디자인 너비로 본다
 function fixedDesignWidth($: cheerio.CheerioAPI, body: cheerio.Cheerio<any>): { width: number; allowUpscale: boolean } | null {
   const bodyEl = body.get(0);
-  const topLevelElements = body.children().toArray();
-  for (const el of body.find("*").toArray().slice(0, 40)) {
+  const allTopLevelElements = body.children().toArray();
+  const isNonLayoutTopLevelElement = (el: (typeof allTopLevelElements)[number]): boolean => {
+    const $el = $(el);
+    const style = $el.attr("style") || "";
+    if ($el.attr("hidden") !== undefined || /(?:^|;)\s*display\s*:\s*none\b/i.test(style)) return true;
+
+    const tag = (el.tagName || el.name || "").toLowerCase();
+    const position = /(?:^|;)\s*position\s*:\s*(absolute|fixed)\b/i.test(style);
+    const zeroWidth = /(?:^|;)\s*width\s*:\s*0(?:px)?(?:\s*!important)?\s*(?:;|$)/i.test(style)
+      || $el.attr("width") === "0";
+    const zeroHeight = /(?:^|;)\s*height\s*:\s*0(?:px)?(?:\s*!important)?\s*(?:;|$)/i.test(style)
+      || $el.attr("height") === "0";
+
+    return zeroWidth && zeroHeight && (tag === "svg" || position);
+  };
+
+  // Icon sprite sheets and SVG <defs> are often placed before the actual design root.
+  // Ignore only top-level elements that are explicitly hidden or have no layout box,
+  // so they do not prevent a single fixed-width design from using the wider PC canvas.
+  const topLevelElements = allTopLevelElements.filter(el => !isNonLayoutTopLevelElement(el));
+  const candidates = [...new Set([...topLevelElements, ...body.find("*").toArray().slice(0, 40)])];
+  for (const el of candidates) {
     let depth = 0;
     for (let p = el.parent; p && p !== bodyEl; p = p.parent) depth++;
     if (depth > 2) continue;
